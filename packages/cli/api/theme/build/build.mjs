@@ -45,7 +45,11 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {parse} from '@babel/parser';
 import {createJiti} from 'jiti';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
-import {CLI_ROOT, findCoreDir} from '../../../foundation/fs/paths.mjs';
+import {
+  CLI_ROOT,
+  findCoreDir,
+  findInstalledPackage,
+} from '../../../foundation/fs/paths.mjs';
 import {
   assertWithin,
   sanitizeName,
@@ -123,6 +127,232 @@ try {
   // unrelated commands (the entry wraps loads in try/catch and degrades the
   // command to a stub). The hard failure happens when `theme build` runs.
   _coreImportError = e;
+}
+
+/**
+ * The bindings one Core provides: the namespaces interception spreads, the
+ * functions the build calls, and why the import failed, if it did.
+ * @typedef {{
+ *   themeModule: any,
+ *   rootModule: any,
+ *   importError: any,
+ *   defineTheme: any,
+ *   generateThemeRulesSplit: any,
+ *   generateOnMediaCSS: any,
+ *   generateAdaptationCSS: any,
+ *   dataTokenDefaults: any,
+ * }} CoreBindings
+ */
+
+/**
+ * The bindings exactly as the CLI's own import left them, kept so each build
+ * can choose between them and the project's installed Core.
+ * @type {CoreBindings}
+ */
+const _cliCore = {
+  themeModule: _coreThemeModule,
+  rootModule: _coreRootModule,
+  importError: _coreImportError,
+  defineTheme: _defineTheme,
+  generateThemeRulesSplit: _generateThemeRulesSplit,
+  generateOnMediaCSS: _generateOnMediaCSS,
+  generateAdaptationCSS: _generateAdaptationCSS,
+  dataTokenDefaults: _dataTokenDefaults,
+};
+
+/**
+ * Point the build at one Core: the module-level bindings every step reads.
+ * @param {CoreBindings} core
+ */
+function setCore(core) {
+  _coreThemeModule = core.themeModule;
+  _coreRootModule = core.rootModule;
+  _coreImportError = core.importError;
+  _defineTheme = core.defineTheme;
+  _generateThemeRulesSplit = core.generateThemeRulesSplit;
+  _generateOnMediaCSS = core.generateOnMediaCSS;
+  _generateAdaptationCSS = core.generateAdaptationCSS;
+  _dataTokenDefaults = core.dataTokenDefaults;
+}
+
+/**
+ * The file an `import` of `subpath` reaches through a package's `exports` map,
+ * or null when the map has no entry for it. Conditions are taken in the map's
+ * own order, as Node does, accepting the ones an import matches here: `node`,
+ * `import`, and `default` (so `source` and `types` are skipped).
+ *
+ * @param {string} dir - The package directory.
+ * @param {string} subpath - `'.'` or a subpath such as `'./theme'`.
+ * @returns {string|null}
+ */
+function importTarget(dir, subpath) {
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
+  } catch {
+    return null;
+  }
+  const map = pkg?.exports;
+  const bySubpath =
+    map &&
+    typeof map === 'object' &&
+    !Array.isArray(map) &&
+    Object.keys(map).some(key => key.startsWith('.'));
+  const entry = bySubpath ? map[subpath] : subpath === '.' ? map : undefined;
+  /** @param {any} value @returns {string|null} */
+  const pick = value => {
+    if (typeof value === 'string') return value;
+    if (!value || typeof value !== 'object' || Array.isArray(value))
+      return null;
+    for (const [condition, target] of Object.entries(value)) {
+      if (
+        condition !== 'node' &&
+        condition !== 'import' &&
+        condition !== 'default'
+      )
+        continue;
+      const picked = pick(target);
+      if (picked) return picked;
+    }
+    return null;
+  };
+  const target = pick(entry);
+  return target ? path.resolve(dir, target) : null;
+}
+
+/** @param {string} file @returns {string} its real path, or itself */
+function realOrSelf(file) {
+  try {
+    return fs.realpathSync(file);
+  } catch {
+    return file;
+  }
+}
+
+/**
+ * The Core the project at `cwd` installed, when it differs from the one the
+ * CLI's own import found and loads. The app's `<Theme>` runs on the app's
+ * Core, so building with it keeps the CSS identical; and a CLI run one-off
+ * (`npx @astryxdesign/cli`) has no Core beside it at all. Null when there is
+ * nothing better than the CLI's own import: no installed Core (the Astryx
+ * repository, a bare directory), the same Core, or one that does not load.
+ *
+ * @param {string} cwd
+ * @returns {Promise<CoreBindings | null>}
+ */
+async function loadProjectCore(cwd) {
+  const dir = findInstalledPackage(cwd, '@astryxdesign/core');
+  const themeFile = dir ? importTarget(dir, './theme') : null;
+  if (!dir || !themeFile) return null;
+  if (_cliCore.themeModule) {
+    try {
+      const own = fileURLToPath(
+        import.meta.resolve('@astryxdesign/core/theme'),
+      );
+      if (realOrSelf(own) === realOrSelf(themeFile)) return null;
+    } catch {
+      // The CLI's own Core cannot be located; load the project's.
+    }
+  }
+  let themeModule;
+  try {
+    themeModule = await import(pathToFileURL(themeFile).href);
+  } catch {
+    return null;
+  }
+  if (!themeModule.defineTheme || !themeModule.generateThemeRulesSplit)
+    return null;
+  let rootModule = null;
+  const rootFile = importTarget(dir, '.');
+  if (rootFile) {
+    try {
+      rootModule = await import(pathToFileURL(rootFile).href);
+    } catch {
+      // As with the CLI's own import, the theme namespace stands in for it.
+    }
+  }
+  return {
+    themeModule,
+    rootModule,
+    importError: null,
+    defineTheme: themeModule.defineTheme,
+    generateThemeRulesSplit: themeModule.generateThemeRulesSplit,
+    generateOnMediaCSS: themeModule.generateOnMediaCSS,
+    generateAdaptationCSS: themeModule.generateAdaptationCSS,
+    dataTokenDefaults: themeModule.dataTokenDefaults,
+  };
+}
+
+/** @type {Map<string, Awaited<ReturnType<typeof loadProjectCore>>>} */
+const _projectCores = new Map();
+
+/**
+ * Choose the Core this build generates with: the project's installed one when
+ * {@link loadProjectCore} finds it, else the CLI's own.
+ * @param {string} cwd
+ */
+async function selectCore(cwd) {
+  if (!_projectCores.has(cwd))
+    _projectCores.set(cwd, await loadProjectCore(cwd));
+  setCore(_projectCores.get(cwd) ?? _cliCore);
+}
+
+/**
+ * Whether `cwd` sits in the Astryx repository, where Core is built from
+ * source rather than installed.
+ * @param {string} cwd
+ */
+function inAstryxRepository(cwd) {
+  let dir = cwd;
+  for (let i = 0; i < 6; i++) {
+    try {
+      const pkg = JSON.parse(
+        fs.readFileSync(
+          path.join(dir, 'packages', 'core', 'package.json'),
+          'utf-8',
+        ),
+      );
+      if (pkg?.name === '@astryxdesign/core') return true;
+    } catch {
+      // Not here; keep walking up.
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return false;
+}
+
+/**
+ * Why `theme build` has no Core to generate with, and the fix for where it
+ * ran: the Astryx repository builds Core, an app installs it, and an installed
+ * Core that will not load is named.
+ *
+ * @param {string} cwd
+ * @param {any} importError - Why the import failed, when it threw.
+ * @returns {string}
+ */
+export function coreUnavailableMessage(cwd, importError) {
+  const why =
+    '`astryx theme build` generates CSS with @astryxdesign/core, the same code the runtime <Theme> uses';
+  const detail = importError ? `\n  Import error: ${importError.message}` : '';
+  if (inAstryxRepository(cwd)) {
+    return (
+      `Could not load @astryxdesign/core/theme: ${why}. Build @astryxdesign/core ` +
+      `first (e.g. \`pnpm -F @astryxdesign/core build\`).${detail}`
+    );
+  }
+  const installed = findInstalledPackage(cwd, '@astryxdesign/core');
+  if (installed) {
+    return (
+      `Could not load the @astryxdesign/core installed at ` +
+      `${path.relative(cwd, installed) || '.'}: ${why}. Reinstall it.${detail}`
+    );
+  }
+  return (
+    `This project does not have @astryxdesign/core installed: ${why}. Install ` +
+    `it: \`npm install @astryxdesign/core\` (or yarn/pnpm/bun).${detail}`
+  );
 }
 
 /**
@@ -2107,6 +2337,8 @@ async function themeBuildInternal(
 
   logger.log(`\nBuilding theme from ${path.relative(cwd, filePath)}...`);
 
+  await selectCore(cwd);
+
   // Standalone builds only need interception when an older Core could erase
   // adaptations. Family preparation always supplies the same recorder as its
   // shared loader so exact authored parent identity stays CLI-private instead
@@ -2233,13 +2465,7 @@ async function themeBuildInternal(
   // capability exports are checked against what the theme actually asks for.
   if (!_defineTheme || !_generateThemeRulesSplit) {
     throw new AstryxError(
-      'Could not load @astryxdesign/core/theme: `astryx theme build` requires a ' +
-        'built, resolvable @astryxdesign/core so it emits the same CSS as the ' +
-        'runtime <Theme>. Build @astryxdesign/core first (e.g. `pnpm -F @astryxdesign/core ' +
-        'build`)' +
-        (_coreImportError
-          ? `.\n  Import error: ${_coreImportError.message}`
-          : '.'),
+      coreUnavailableMessage(cwd, _coreImportError),
       undefined,
       ERROR_CODES.ERR_CORE_NOT_FOUND,
     );
@@ -2807,6 +3033,7 @@ export async function themeBuildFamily(
       error instanceof Error ? error.message : 'Invalid family key.';
     throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
   }
+  await selectCore(cwd);
   const familyInterception = interceptCore(_coreThemeModule, _coreRootModule);
   // prettier-ignore
   const familyLoader = createJiti(import.meta.url, {moduleCache: true, interopDefault: false, jsx: true, extensions: THEME_MODULE_EXTENSIONS, virtualModules: familyInterception.modules});

@@ -4,7 +4,7 @@
  * @file container.stylex.ts
  * @input Uses @stylexjs/stylex, spacing from theme
  * @output StyleX utility for layout container styling
- * @position Layout utility; used by Card, Section components
+ * @position Layout utility; used by Card, Section, Dialog, and BottomSheet
  *
  * ## Public API for themes
  *
@@ -18,13 +18,16 @@
  *   --astryx-card-padding-block-end
  *
  * Read order per level: `var(--astryx-…, <next level>)`, terminating at
- * `--spacing-4`. Same pattern for section and dialog.
+ * `--spacing-4`. Same pattern for section and dialog. Bottom-sheet keeps its
+ * released unpadded default: its edges terminate at 0px and its Layout insets
+ * at no value, so an unthemed sheet changes nothing for descendants.
  *
  * ```ts
  * components: {
  *   card: { base: { padding: '20px' } },          // → --astryx-card-padding: 20px
  *   section: { base: { padding: '12px 20px' } },  // → directional tokens
  *   dialog: { base: { padding: '16px' } },
+ *   'bottom-sheet': { base: { padding: '16px' } },
  * }
  * ```
  *
@@ -72,7 +75,7 @@ const baseStyles = stylex.create({
 /**
  * Component-scoped padding tokens.
  *
- * Each container component (card, section, dialog) has public CSS custom
+ * Each container component (card, section, dialog, bottom-sheet) has public CSS custom
  * properties that themes can set. The pipeline emits the `--astryx-*` names,
  * which the component reads via `var(--astryx-…, …)`:
  *
@@ -129,6 +132,25 @@ const dialogInlineStart = `var(--astryx-dialog-padding-inline-start, ${dialogInl
 const dialogInlineEnd = `var(--astryx-dialog-padding-inline-end, ${dialogInline})`;
 const dialogBlockStart = `var(--astryx-dialog-padding-block-start, ${dialogShorthand})`;
 const dialogBlockEnd = `var(--astryx-dialog-padding-block-end, ${dialogShorthand})`;
+
+// Bottom sheet padding chains: --astryx-* then the next specificity level.
+// Unlike card/section/dialog, the sheet's released default is no padding, so
+// the edge chains terminate at 0px. The Layout inset chains have NO terminal
+// value: with no theme padding they are invalid at computed-value time, which
+// leaves the overlay reset in force and lets a Layout inside the sheet fall
+// back to its own default, exactly as before the sheet was a container. Built
+// as chained const strings (no function calls) so StyleX can statically
+// analyze them; see naming.ts for the prefix policy.
+const bottomSheetThemeShorthand = 'var(--astryx-bottom-sheet-padding)';
+const bottomSheetThemeInline = `var(--astryx-bottom-sheet-padding-inline, ${bottomSheetThemeShorthand})`;
+const bottomSheetThemeInlineStart = `var(--astryx-bottom-sheet-padding-inline-start, ${bottomSheetThemeInline})`;
+const bottomSheetThemeBlockStart = `var(--astryx-bottom-sheet-padding-block-start, ${bottomSheetThemeShorthand})`;
+const bottomSheetShorthand = 'var(--astryx-bottom-sheet-padding, 0px)';
+const bottomSheetInline = `var(--astryx-bottom-sheet-padding-inline, ${bottomSheetShorthand})`;
+const bottomSheetInlineStart = `var(--astryx-bottom-sheet-padding-inline-start, ${bottomSheetInline})`;
+const bottomSheetInlineEnd = `var(--astryx-bottom-sheet-padding-inline-end, ${bottomSheetInline})`;
+const bottomSheetBlockStart = `var(--astryx-bottom-sheet-padding-block-start, ${bottomSheetShorthand})`;
+const bottomSheetBlockEnd = `var(--astryx-bottom-sheet-padding-block-end, ${bottomSheetShorthand})`;
 
 const cardDefaultPaddingStyles = stylex.create({
   containerPaddingInlineStart: {
@@ -211,6 +233,33 @@ const dialogDefaultPaddingStyles = stylex.create({
   },
 });
 
+const bottomSheetDefaultPaddingStyles = stylex.create({
+  containerPaddingInlineStart: {
+    '--container-padding-inline-start': bottomSheetInlineStart,
+  },
+  containerPaddingInlineEnd: {
+    '--container-padding-inline-end': bottomSheetInlineEnd,
+  },
+  containerPaddingBlockStart: {
+    '--container-padding-block-start': bottomSheetBlockStart,
+  },
+  containerPaddingBlockEnd: {
+    '--container-padding-block-end': bottomSheetBlockEnd,
+  },
+  layoutPaddingOuterX: {
+    '--layout-padding-outer-x': bottomSheetThemeInlineStart,
+  },
+  layoutPaddingOuterY: {
+    '--layout-padding-outer-y': bottomSheetThemeBlockStart,
+  },
+  layoutPaddingInnerX: {
+    '--layout-padding-inner-x': bottomSheetThemeInlineStart,
+  },
+  layoutPaddingInnerY: {
+    '--layout-padding-inner-y': bottomSheetThemeBlockStart,
+  },
+});
+
 /**
  * Map from component name to its theme default padding styles.
  * Each component reads from its own public CSS custom property.
@@ -219,6 +268,7 @@ const themeDefaultStyles = {
   card: cardDefaultPaddingStyles,
   section: sectionDefaultPaddingStyles,
   dialog: dialogDefaultPaddingStyles,
+  'bottom-sheet': bottomSheetDefaultPaddingStyles,
 };
 
 export type ContainerComponent = keyof typeof themeDefaultStyles;
@@ -426,7 +476,8 @@ export interface ContainerOptions {
   paddingInnerY?: SpacingToken;
 
   /**
-   * When set to a component name ('card' | 'section'), internal layout
+   * When set to a component name ('card' | 'section' | 'dialog' |
+   * 'bottom-sheet'), internal layout
    * padding variables cascade from the component-specific public CSS
    * container tokens (set by theme pipeline from `padding` shorthand)
    * instead of being set to explicit spacing token values.
@@ -434,7 +485,8 @@ export interface ContainerOptions {
    * This allows themes to override container padding via component-specific
    * public CSS custom properties without touching internal vars.
    *
-   * Used by Card and Section when no explicit padding prop is provided.
+   * Used by Card, Section, Dialog, and BottomSheet when no explicit padding
+   * prop is provided.
    * @default undefined (uses explicit spacing token values)
    */
   useThemeDefault?: ContainerComponent;

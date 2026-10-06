@@ -2,11 +2,11 @@
 
 /**
  * @file EnumDoc for the `type` discriminant carried on every --json success
- * envelope. The vocabulary mirrors the RESPONSE_TYPES map (each command's
- * `jsonOut(...)` call sites) plus ROOT_RESPONSE_TYPES (help, version) in
- * `clients/cli/lib/manifest.mjs`; a consumer switches on `type` to narrow the
- * `data` payload. Descriptions follow the currently published response
- * projection, not a future package-version boundary.
+ * envelope. The vocabulary equals the manifest's response types (each
+ * command's FunctionDoc returns; see `clients/cli/lib/manifest.mjs`) plus
+ * ROOT_RESPONSE_TYPES (help, version) there; a consumer switches on `type` to
+ * narrow the `data` payload. Descriptions follow the currently published
+ * response projection, not a future package-version boundary.
  *
  * @input Public response discriminants and their currently released payloads.
  * @output Generated consumer reference for every typed JSON success response.
@@ -184,7 +184,7 @@ export const doc = {
     {
       value: 'template.show',
       description:
-        "The resolved template's raw source plus its description, kind, and the component names it composes.",
+        "The resolved template's source, exactly as a copy writes it, plus its description, kind, the component names it composes, and demoMediaReplaced (how many Astryx demo media references were replaced with placeholders for you to swap for your own media).",
     },
     {
       value: 'template.skeleton',
@@ -194,7 +194,7 @@ export const doc = {
     {
       value: 'template.copy',
       description:
-        'A scaffold receipt: template id, output directory, written file name, and file count.',
+        'A scaffold receipt: template id, output directory, written file name, file count, and demoMediaReplaced (how many Astryx demo media references were replaced with placeholders for you to swap for your own media).',
     },
 
     {
@@ -276,7 +276,7 @@ export const doc = {
     {
       value: 'upgrade.run',
       description:
-        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and per-codemod errors.',
+        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, sourcePathFound (false when the resolved source directory does not exist, so no source file was read), and (apply mode) filesChanged, transformsApplied, and per-codemod errors.',
     },
 
     // manifest
@@ -320,29 +320,29 @@ export const doc = {
     {
       value: 'integration.validate',
       description:
-        'The validation result: the package name and version (both null when no local manifest is found) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
+        'The validation result: validated (false when no integration manifest was found, so nothing was checked and the empty issues list proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
     },
     {
       value: 'integration.template-conflicts',
       description:
-        'The integration identity, structural issues, and non-blocking Core template-id conflicts as {id, severity: warning, integrationPackage, integrationType, integrationName, coreMatches, message, command}.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking Core template-id conflicts as {id, severity: warning, integrationPackage, integrationType, integrationName, coreMatches, message, command}.',
     },
     {
       value: 'integration.component-conflicts',
       description:
-        'The integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
     },
     {
       value: 'integration.doc-conflicts',
       description:
-        'The integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
     },
 
     // layout (XLE/XLO)
     {
       value: 'layout.expand',
       description:
-        'The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, and written (the output path, or null when nothing was written).',
+        'The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, written (the output path, or null when nothing was written), and demoMediaReplaced (count of demo media placeholders).',
     },
     {
       value: 'layout.check',

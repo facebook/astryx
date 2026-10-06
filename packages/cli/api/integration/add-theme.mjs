@@ -4,6 +4,9 @@
  * @file `astryx integration add theme` — scaffold one strongly typed,
  * same-stem source/descriptor pair into an integration package and declare the
  * themes root on first use.
+ *
+ * `--from <base>` forks an existing theme's source files as the starting point
+ * instead of writing a blank `defineTheme` skeleton.
  */
 
 import * as fs from 'node:fs';
@@ -15,7 +18,10 @@ import {
   PathSafetyError,
   sanitizeName,
 } from '../../foundation/fs/path-safety.mjs';
-import {discoverThemeDirectory} from '../../foundation/discovery/theme-discovery.mjs';
+import {
+  discoverBundledThemes,
+  discoverThemeDirectory,
+} from '../../foundation/discovery/theme-discovery.mjs';
 import {
   findLocalIntegrationManifestOrNull,
   IntegrationRootConflictError,
@@ -25,9 +31,11 @@ import {loadManifestObject} from '../../foundation/integrations/integrations.mjs
 import {themeDescriptorSource} from '../../foundation/integrations/theme-descriptor.mjs';
 import {assertContributionVisible} from '../../foundation/integrations/contribution-inventory.mjs';
 import {
+  THEMES_CLI,
   themesCliProblem,
-  withDocsTreeCli,
+  withCliPeer,
 } from '../../foundation/integrations/cli-requirement.mjs';
+import {stripCopyrightHeader} from '../../foundation/text/copyright-header.mjs';
 import {
   applyWrites,
   findPackageDir,
@@ -69,6 +77,7 @@ function themeIdentity(slug) {
     .join(' ');
   return {
     slug,
+    identifier,
     displayName,
     exportName: `${identifier}Theme`,
     entry: `${identifier}Theme.ts`,
@@ -90,6 +99,182 @@ function themeDescriptor(identity) {
     description: `${identity.displayName} theme.`,
     maintained: true,
   });
+}
+
+// ── --from: resolve and fork a base theme ───────────────────────────
+
+/**
+ * Resolve a theme slug to its discovered record, searching the bundled themes
+ * and the package's own themes root (when it has one).
+ * @param {string} slug
+ * @param {string} packageDir
+ * @param {string} owner
+ * @param {string | undefined} themesRoot  resolved absolute themes root, if any
+ * @returns {import('../../foundation/discovery/theme-discovery.mjs').DiscoveredTheme}
+ */
+function resolveBaseTheme(slug, packageDir, owner, themesRoot) {
+  const normalized = slug.toLowerCase();
+
+  /** @type {import('../../foundation/discovery/theme-discovery.mjs').DiscoveredTheme[]} */
+  let candidates = [];
+  try {
+    candidates = discoverBundledThemes();
+  } catch {
+    // Bundled themes unavailable — not fatal, package themes may suffice.
+  }
+
+  // Also check the package's own themes root.
+  if (themesRoot && fs.existsSync(themesRoot)) {
+    try {
+      candidates = [...candidates, ...discoverThemeDirectory(themesRoot, owner)];
+    } catch {
+      // A broken local root is not the caller's problem here.
+    }
+  }
+
+  const match = candidates.find(t => t.slug.toLowerCase() === normalized);
+  if (!match) {
+    throw new AstryxError(
+      `Unknown base theme "${slug}". Available themes: ${candidates.map(t => t.slug).join(', ') || '(none)'}.`,
+      candidates.map(t => ({
+        name: t.slug,
+        reason: t.bundled ? 'bundled theme' : `provided by ${t.package}`,
+      })),
+      ERROR_CODES.ERR_UNKNOWN_THEME,
+    );
+  }
+  return match;
+}
+
+/**
+ * Rename a file from the base theme's namespace to the new theme's namespace.
+ * Files whose name starts with the base identifier get the new identifier;
+ * others keep their name as-is.
+ * @param {string} file  POSIX relative path inside the theme directory
+ * @param {string} baseIdentifier
+ * @param {string} newIdentifier
+ * @returns {string}
+ */
+function renameThemeFile(file, baseIdentifier, newIdentifier) {
+  const basename = path.posix.basename(file);
+  const dir = path.posix.dirname(file);
+  if (!basename.startsWith(baseIdentifier)) return file;
+  const renamed = newIdentifier + basename.slice(baseIdentifier.length);
+  return dir === '.' ? renamed : `${dir}/${renamed}`;
+}
+
+/**
+ * Rewrite a source file's contents from the base theme's names to the new
+ * theme's names. This replaces:
+ *   1. Identifier prefixes (camelCase variables, import paths): baseIdentifier
+ *      followed by an uppercase letter.
+ *   2. The theme slug in string literals: 'baseSlug' → 'newSlug' and
+ *      'astryx-baseSlug' → 'astryx-newSlug'.
+ *   3. CSS custom properties scoped to the theme: --astryx-theme-baseSlug-.
+ * @param {string} source
+ * @param {string} baseSlug
+ * @param {string} baseIdentifier
+ * @param {string} newSlug
+ * @param {string} newIdentifier
+ * @returns {string}
+ */
+function rewriteThemeSource(
+  source,
+  baseSlug,
+  baseIdentifier,
+  newSlug,
+  newIdentifier,
+) {
+  let result = source;
+  // 1. Identifier prefixes: neutralPalettes → oceanPalettes, neutralTheme → oceanTheme
+  const identRe = new RegExp(`${escapeRegExp(baseIdentifier)}(?=[A-Z])`, 'gu');
+  result = result.replace(identRe, newIdentifier);
+  // 2. String-literal theme names
+  result = result.replace(
+    new RegExp(`'astryx-${escapeRegExp(baseSlug)}'`, 'gu'),
+    `'astryx-${newSlug}'`,
+  );
+  result = result.replace(
+    new RegExp(`'${escapeRegExp(baseSlug)}'`, 'gu'),
+    `'${newSlug}'`,
+  );
+  // 3. CSS custom properties scoped to the base theme
+  result = result.replace(
+    new RegExp(
+      `--astryx-theme-${escapeRegExp(baseSlug)}-`,
+      'gu',
+    ),
+    `--astryx-theme-${newSlug}-`,
+  );
+  return result;
+}
+
+/** @param {string} s */
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+}
+
+/**
+ * Build the write plans for a forked theme.
+ * @param {import('../../foundation/discovery/theme-discovery.mjs').DiscoveredTheme} base
+ * @param {ReturnType<typeof themeIdentity>} identity  new theme identity
+ * @param {string} themeDir  absolute target directory
+ * @returns {import('./add-helpers.mjs').WritePlan[]}
+ */
+function forkThemePlans(base, identity, themeDir) {
+  const baseIdentity = themeIdentity(base.slug);
+  /** @type {import('./add-helpers.mjs').WritePlan[]} */
+  const plans = [];
+
+  // Copy every file the base theme ships (entry first, then the rest), except
+  // the descriptor — we write a fresh one.
+  const filesToCopy = base.files.filter(
+    file => path.posix.basename(file) !== `${baseIdentity.exportName}.doc.mjs`,
+  );
+
+  for (const file of filesToCopy) {
+    const srcPath = path.join(base.sourceDir, file);
+    const newFileName = renameThemeFile(
+      file,
+      baseIdentity.identifier,
+      identity.identifier,
+    );
+    const destPath = assertWithin(newFileName, themeDir, {
+      label: `forked theme file "${newFileName}"`,
+    });
+
+    // Read source bytes; for text, strip copyright and rewrite identifiers.
+    const bytes = fs.readFileSync(srcPath);
+    const text = bytes.toString('utf-8');
+    const isText = Buffer.from(text, 'utf-8').equals(bytes);
+
+    /** @type {string | Buffer} */
+    let contents;
+    if (isText) {
+      contents = rewriteThemeSource(
+        stripCopyrightHeader(text),
+        base.slug,
+        baseIdentity.identifier,
+        identity.slug,
+        identity.identifier,
+      );
+    } else {
+      contents = bytes;
+    }
+    plans.push({path: destPath, contents, createOnly: true});
+  }
+
+  // Write a fresh descriptor — the fork is a new theme, not a derivative.
+  const descriptorPath = assertWithin(identity.descriptor, themeDir, {
+    label: 'theme descriptor file',
+  });
+  plans.push({
+    path: descriptorPath,
+    contents: themeDescriptor(identity),
+    createOnly: true,
+  });
+
+  return plans;
 }
 
 /**
@@ -129,7 +314,7 @@ async function verifyThemeContribution(packageDir, manifestFile, owner, slug) {
  * @returns {Promise<import('./integration-authoring.type.mjs').IntegrationAddResponse>}
  */
 export async function integrationAddTheme(name, options = {}) {
-  const {cwd = process.cwd(), dryRun = false} = options;
+  const {cwd = process.cwd(), dryRun = false, from} = options;
   const packageDir = findPackageDir(cwd);
   const packageFile = path.join(packageDir, 'package.json');
   let pkg;
@@ -211,32 +396,64 @@ export async function integrationAddTheme(name, options = {}) {
   const themeDir = assertWithin(identity.slug, root, {
     label: 'theme directory',
   });
-  const sourceFile = assertWithin(identity.entry, themeDir, {
-    label: 'theme source file',
-  });
-  const descriptorFile = assertWithin(identity.descriptor, themeDir, {
-    label: 'theme descriptor file',
-  });
-  // An existing folder is filled; only a file this would write is refused.
-  for (const file of [sourceFile, descriptorFile]) {
-    if (fs.existsSync(file)) {
+
+  // Resolve the base theme when --from is given, before writing anything.
+  /** @type {import('../../foundation/discovery/theme-discovery.mjs').DiscoveredTheme | undefined} */
+  let baseTheme;
+  if (from != null) {
+    if (from === name) {
       throw new AstryxError(
-        `Refusing to overwrite existing file ${projectPath(path.relative(packageDir, file))}.`,
+        `Cannot fork theme "${from}" into itself.`,
         undefined,
-        ERROR_CODES.ERR_FILE_EXISTS,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
       );
     }
+    baseTheme = resolveBaseTheme(from, packageDir, owner, root);
   }
 
   /** @type {import('./add-helpers.mjs').WritePlan[]} */
-  const plans = [
-    {path: sourceFile, contents: themeSource(identity), createOnly: true},
-    {
-      path: descriptorFile,
-      contents: themeDescriptor(identity),
-      createOnly: true,
-    },
-  ];
+  let plans;
+
+  if (baseTheme) {
+    // Fork: copy the base theme's files, renamed and rewritten.
+    plans = forkThemePlans(baseTheme, identity, themeDir);
+    // Check that no target file already exists.
+    for (const plan of plans) {
+      if (fs.existsSync(plan.path)) {
+        throw new AstryxError(
+          `Refusing to overwrite existing file ${projectPath(path.relative(packageDir, plan.path))}.`,
+          undefined,
+          ERROR_CODES.ERR_FILE_EXISTS,
+        );
+      }
+    }
+  } else {
+    // Blank scaffold.
+    const sourceFile = assertWithin(identity.entry, themeDir, {
+      label: 'theme source file',
+    });
+    const descriptorFile = assertWithin(identity.descriptor, themeDir, {
+      label: 'theme descriptor file',
+    });
+    for (const file of [sourceFile, descriptorFile]) {
+      if (fs.existsSync(file)) {
+        throw new AstryxError(
+          `Refusing to overwrite existing file ${projectPath(path.relative(packageDir, file))}.`,
+          undefined,
+          ERROR_CODES.ERR_FILE_EXISTS,
+        );
+      }
+    }
+    plans = [
+      {path: sourceFile, contents: themeSource(identity), createOnly: true},
+      {
+        path: descriptorFile,
+        contents: themeDescriptor(identity),
+        createOnly: true,
+      },
+    ];
+  }
+
   let packageUpdate = packageJsonUpdate(
     packageFile,
     rootPath,
@@ -253,7 +470,7 @@ export async function integrationAddTheme(name, options = {}) {
     if (themesCliProblem(current) != null) {
       packageUpdate = {
         contents:
-          JSON.stringify(withDocsTreeCli(current), null, 2) +
+          JSON.stringify(withCliPeer(current, THEMES_CLI), null, 2) +
           (text.endsWith('\n') ? '\n' : ''),
         expectedOriginal,
       };
@@ -308,7 +525,8 @@ export async function integrationAddTheme(name, options = {}) {
     writtenFiles.push(manifestPath);
   }
 
-  return {
+  /** @type {import('./integration-authoring.type.mjs').IntegrationAddResponse} */
+  const response = {
     type: 'integration.add',
     data: {
       kind: 'theme',
@@ -320,4 +538,8 @@ export async function integrationAddTheme(name, options = {}) {
       dryRun,
     },
   };
+  if (from != null) {
+    response.data.from = from;
+  }
+  return response;
 }

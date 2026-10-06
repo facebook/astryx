@@ -18,6 +18,7 @@ import userEvent from '@testing-library/user-event';
 import {transformSync} from '@babel/core';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
 import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
 import path from 'node:path';
 import {ButtonGroup} from './ButtonGroup';
 import {Button} from '../Button';
@@ -250,14 +251,20 @@ describe('ButtonGroup', () => {
     function compileButtonRules(): CompiledRule[] {
       const repoRoot = path.resolve(__dirname, '../../../..');
       const buttonSrc = path.resolve(__dirname, '../Button/Button.tsx');
+      // Babel looks bare preset names up from the cwd, the repo root, which
+      // does not declare them. Resolve them from this package, which does.
+      const require = createRequire(__filename);
 
       const result = transformSync(readFileSync(buttonSrc, 'utf8'), {
         babelrc: false,
         configFile: false,
         filename: buttonSrc,
         presets: [
-          ['@babel/preset-typescript', {isTSX: true, allExtensions: true}],
-          ['@babel/preset-react', {runtime: 'automatic'}],
+          [
+            require.resolve('@babel/preset-typescript'),
+            {isTSX: true, allExtensions: true},
+          ],
+          [require.resolve('@babel/preset-react'), {runtime: 'automatic'}],
         ],
         plugins: [
           [
