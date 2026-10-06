@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useRef, useState} from 'react';
+import {useId, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   RichTextEditor,
@@ -380,6 +380,7 @@ Supports **bold**, _italic_, and lists:
 export const MarkdownSerializers = {
   render: () => {
     const [markdown, setMarkdown] = useState<string>(SAMPLE_MARKDOWN);
+    const inputLabelID = useId();
 
     const json = markdownToEditorStateJSON(markdown);
     const roundTripped = editorStateJSONToMarkdown(json);
@@ -397,10 +398,11 @@ export const MarkdownSerializers = {
     return (
       <div style={{display: 'grid', gap: 24, maxWidth: 720}}>
         <div>
-          <div style={{fontWeight: 600, marginBottom: 8}}>
+          <div id={inputLabelID} style={{fontWeight: 600, marginBottom: 8}}>
             1. Input Markdown (edit me)
           </div>
           <textarea
+            aria-labelledby={inputLabelID}
             value={markdown}
             onChange={e => setMarkdown(e.target.value)}
             rows={10}
