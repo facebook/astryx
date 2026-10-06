@@ -1163,21 +1163,51 @@ jobs:
       # block lands; geometry, the read/edit switch and the scroll anchor only
       # exist in a real engine. The spec proves the sandbox still works and
       # banks screenshots plus a geometry manifest of today's differences. It
-      # asserts no parity. Cheap enough to run on every PR, like the contract
-      # above, so a Markdown or RichText change cannot silently break it. Its
-      # own --output directory, with the upload immediately after.
+      # asserts no parity. A pull request runs it only when it can change what
+      # the sandbox shows: Markdown or a RichText component is in the PR scope,
+      # the RichText package changed, or the sandbox's own stories or spec
+      # changed. Release-check always runs it. Its own --output directory, with
+      # the upload immediately after.
       - name: Run Markdown/RichText parity sandbox evidence
+        id: markdown-parity
         if: ${{ !cancelled() }}
         env:
           ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
+          should_run=true
+          if [ "${{ github.event_name }}" = 'pull_request' ]; then
+            should_run=false
+            COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+            case ",${COMPONENTS}," in
+              *,core/Markdown,* | *,richtext/*) should_run=true ;;
+            esac
+            if node -e "process.exit(require('./analysis.json').changedPackages?.includes('@astryxdesign/richtext') ? 0 : 1)"; then
+              should_run=true
+            fi
+            # The sandbox's stories belong to no package, so compare file names
+            # with the base. If the base cannot be fetched, run the evidence.
+            if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
+              if git diff --name-only "$BASE_SHA" HEAD \
+                | grep -qE '^(apps/storybook/stories/RichTextEditor\.(markdownParity|stories)|packages/richtext/src/__tests__/MarkdownParitySandbox)'; then
+                should_run=true
+              fi
+            else
+              should_run=true
+            fi
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "Markdown, RichText, and the parity sandbox are not in PR scope; skipping parity evidence."
+            exit 0
+          fi
           pnpm exec playwright test \
             packages/richtext/src/__tests__/MarkdownParitySandbox.a11y.chromium.spec.ts \
             --project chromium \
             --output richtext-markdown-parity-output
 
       - name: Upload Markdown/RichText parity sandbox evidence
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.markdown-parity.outputs.should_run == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: richtext-markdown-parity-evidence-${{ needs.build-storybook.outputs.short_hash }}
