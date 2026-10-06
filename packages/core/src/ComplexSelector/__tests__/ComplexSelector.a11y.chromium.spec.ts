@@ -31,6 +31,14 @@ interface Scenario {
   viewport: {width: number; height: number};
 }
 
+interface EvidenceReceipt {
+  state: string;
+  image: {file: string; [key: string]: unknown};
+  stateVisualMatrix: Record<string, unknown>[];
+  contrastPairMatrix: Record<string, unknown>[];
+  browser: string;
+}
+
 const STATIC_CASES: Scenario[] = [
   {state: 'wide-light-ltr', mode: 'light', direction: 'ltr', viewport: WIDE},
   {state: 'wide-dark-ltr', mode: 'dark', direction: 'ltr', viewport: WIDE},
@@ -124,6 +132,16 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   if (checkoutSha && storybookSha) {
+    const receipts = fs
+      .readdirSync(OUTPUT)
+      .filter(file => file.endsWith('.sensors.json'))
+      .sort()
+      .map(
+        (file): EvidenceReceipt =>
+          JSON.parse(
+            fs.readFileSync(path.join(OUTPUT, file), 'utf8'),
+          ) as EvidenceReceipt,
+      );
     fs.writeFileSync(
       path.join(OUTPUT, 'manifest.json'),
       `${JSON.stringify(
@@ -132,10 +150,18 @@ test.afterAll(async () => {
           component: 'core/ComplexSelector',
           headSha: checkoutSha,
           storybookSha,
-          browser: browserVersion,
-          frames,
-          stateVisualMatrix,
-          contrastPairMatrix,
+          browser: receipts[0]?.browser ?? browserVersion,
+          frames: receipts.map(receipt => ({
+            state: receipt.state,
+            receipt: `${receipt.image.file}.sensors.json`,
+            image: receipt.image,
+          })),
+          stateVisualMatrix: receipts.flatMap(
+            receipt => receipt.stateVisualMatrix,
+          ),
+          contrastPairMatrix: receipts.flatMap(
+            receipt => receipt.contrastPairMatrix,
+          ),
           retainedGaps: [
             {
               id: 'A12',
@@ -146,6 +172,11 @@ test.afterAll(async () => {
               id: 'P2/A3/B5',
               summary:
                 'Caller-rendered mode does not project inherited BaseProps or isDisabled semantics onto the caller control.',
+            },
+            {
+              id: 'R1',
+              summary:
+                'At 320 CSS px, component-owned content and the popup exceed the inline viewport bounds.',
             },
           ],
         },
@@ -408,6 +439,7 @@ async function writeFrame(
       : await page.screenshot({animations: 'disabled'});
   expect(png.length).toBeGreaterThan(100);
   const receipt = {
+    state: scenario.state,
     expected: {
       build: checkoutSha,
       storyId: STORY_ID,
@@ -433,7 +465,9 @@ async function writeFrame(
     stateVisualMatrix: stateRows,
     contrastPairMatrix: contrastRows,
     browser: browserVersion,
-    passed: true,
+    passed:
+      stateRows.every(row => row.verdict === 'pass') &&
+      contrastRows.every(row => row.passed !== false),
   };
   fs.writeFileSync(path.join(OUTPUT, file), png);
   fs.writeFileSync(
@@ -450,6 +484,7 @@ async function writeFrame(
 }
 
 test('captures the complete built-in state matrix', async ({page}) => {
+  const overflowFailures: string[] = [];
   for (const scenario of STATIC_CASES) {
     const {errors, root} = await loadScenario(page, scenario);
     const initial = await root.boundingBox();
@@ -509,7 +544,6 @@ test('captures the complete built-in state matrix', async ({page}) => {
     expect(environment.viewport).toEqual(scenario.viewport);
     expect(environment.reducedMotion).toBe(true);
     expect(environment.forcedColors).toBe(false);
-    expect(environment.horizontalOverflow).toBe(false);
     expect(environment.storyError).toBe(false);
     expect(errors).toEqual([]);
 
@@ -533,6 +567,17 @@ test('captures the complete built-in state matrix', async ({page}) => {
       matchesReference: 'yes',
       verdict: 'pass',
     }));
+    rows.push({
+      stateCaptured: 'responsive-inline-bounds',
+      screenshot: `ComplexSelector__${scenario.state}.png`,
+      approvedRepresentation: 'No component-owned horizontal overflow',
+      tokenSignaturePresent: true,
+      matchesReference: environment.horizontalOverflow ? 'no' : 'yes',
+      verdict: environment.horizontalOverflow ? 'fail' : 'pass',
+    });
+    if (environment.horizontalOverflow) {
+      overflowFailures.push(scenario.state);
+    }
 
     await writeFrame(
       page,
@@ -551,6 +596,10 @@ test('captures the complete built-in state matrix', async ({page}) => {
       contrastRows,
     );
   }
+  expect(
+    overflowFailures,
+    'Component-owned content must stay inside the 320px audit matrix',
+  ).toEqual([]);
 });
 
 test('captures built-in hover, focus, pressed, and open states', async ({
@@ -710,6 +759,7 @@ test('captures built-in hover, focus, pressed, and open states', async ({
 test('captures caller-rendered focus, anchor, dismissal, and direction', async ({
   page,
 }) => {
+  const geometryFailures: string[] = [];
   for (const scenario of INTERACTION_CASES) {
     const {errors} = await loadScenario(page, scenario);
     const custom = page.getByRole('button', {name: 'Custom trigger'});
@@ -751,17 +801,15 @@ test('captures caller-rendered focus, anchor, dismissal, and direction', async (
       popupBox.y >= triggerBox.y + triggerBox.height - 1 ||
         popupBox.y + popupBox.height <= triggerBox.y + 1,
     ).toBe(true);
-    expect(popupBox.x).toBeGreaterThanOrEqual(-1);
-    expect(popupBox.x + popupBox.width).toBeLessThanOrEqual(
-      scenario.viewport.width + 1,
-    );
+    const popupFitsViewport =
+      popupBox.x >= -1 &&
+      popupBox.x + popupBox.width <= scenario.viewport.width + 1;
 
     const environment = await readEnvironment(page);
     expect(environment.declaredDirection).toBe(scenario.direction);
     expect(environment.computedDirection).toBe(scenario.direction);
     expect(environment.mode).toBe(scenario.mode);
     expect(environment.viewport).toEqual(scenario.viewport);
-    expect(environment.horizontalOverflow).toBe(false);
     expect(environment.storyError).toBe(false);
     expect(errors).toEqual([]);
 
@@ -775,7 +823,27 @@ test('captures caller-rendered focus, anchor, dismissal, and direction', async (
         matchesReference: 'yes',
         verdict: 'pass',
       },
+      {
+        stateCaptured: 'caller-popup-inline-bounds',
+        screenshot: `ComplexSelector__${scenario.state}.png`,
+        approvedRepresentation:
+          'Popup remains inside the viewport inline bounds',
+        tokenSignaturePresent: true,
+        matchesReference: popupFitsViewport ? 'yes' : 'no',
+        verdict: popupFitsViewport ? 'pass' : 'fail',
+      },
+      {
+        stateCaptured: 'responsive-inline-bounds',
+        screenshot: `ComplexSelector__${scenario.state}.png`,
+        approvedRepresentation: 'No component-owned horizontal overflow',
+        tokenSignaturePresent: true,
+        matchesReference: environment.horizontalOverflow ? 'no' : 'yes',
+        verdict: environment.horizontalOverflow ? 'fail' : 'pass',
+      },
     ];
+    if (environment.horizontalOverflow || !popupFitsViewport) {
+      geometryFailures.push(scenario.state);
+    }
 
     await writeFrame(
       page,
@@ -800,6 +868,10 @@ test('captures caller-rendered focus, anchor, dismissal, and direction', async (
     await expect(custom).toHaveAttribute('aria-expanded', 'false');
     await expect(custom).toBeFocused();
   }
+  expect(
+    geometryFailures,
+    'Caller-rendered popup and matrix must stay inside the 320px viewport',
+  ).toEqual([]);
 });
 
 test('captures the narrow coarse-pointer path', async ({browser}) => {
@@ -828,15 +900,13 @@ test('captures the narrow coarse-pointer path', async ({browser}) => {
     if (!popupBox) {
       throw new Error(`${scenario.state}: popup has no layout box`);
     }
-    expect(popupBox.x).toBeGreaterThanOrEqual(-1);
-    expect(popupBox.x + popupBox.width).toBeLessThanOrEqual(
-      scenario.viewport.width + 1,
-    );
+    const popupFitsViewport =
+      popupBox.x >= -1 &&
+      popupBox.x + popupBox.width <= scenario.viewport.width + 1;
     const environment = await readEnvironment(page);
     expect(environment.coarsePointer).toBe(true);
     expect(environment.anyCoarsePointer).toBe(true);
     expect(environment.viewport).toEqual(NARROW);
-    expect(environment.horizontalOverflow).toBe(false);
     expect(environment.storyError).toBe(false);
     expect(errors).toEqual([]);
 
@@ -859,8 +929,12 @@ test('captures the narrow coarse-pointer path', async ({browser}) => {
         approvedRepresentation:
           'Expanded disclosure — touch activation with bounded popup',
         tokenSignaturePresent: true,
-        matchesReference: 'yes',
-        verdict: 'pass',
+        matchesReference:
+          popupFitsViewport && !environment.horizontalOverflow ? 'yes' : 'no',
+        verdict:
+          popupFitsViewport && !environment.horizontalOverflow
+            ? 'pass'
+            : 'fail',
       },
     ];
     await writeFrame(
@@ -878,6 +952,14 @@ test('captures the narrow coarse-pointer path', async ({browser}) => {
       rows,
       contrastRows,
     );
+    expect(
+      popupFitsViewport,
+      'Coarse-pointer popup must stay inside the 320px viewport',
+    ).toBe(true);
+    expect(
+      environment.horizontalOverflow,
+      'Coarse-pointer matrix must not overflow horizontally',
+    ).toBe(false);
   } finally {
     await context.close();
   }
