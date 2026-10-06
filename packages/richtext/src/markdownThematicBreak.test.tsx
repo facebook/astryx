@@ -19,6 +19,15 @@ interface SerializedNode {
   text?: string;
 }
 
+function paragraphTexts(markdown: string): Array<string> {
+  const state = JSON.parse(markdownToEditorStateJSON(markdown)) as {
+    root: SerializedNode;
+  };
+  return (state.root.children ?? [])
+    .filter(node => node.type === 'paragraph')
+    .map(node => (node.children ?? []).map(child => child.text ?? '').join(''));
+}
+
 function blockTypes(markdown: string): Array<string> {
   const state = JSON.parse(markdownToEditorStateJSON(markdown)) as {
     root: SerializedNode;
@@ -54,15 +63,76 @@ describe('thematic breaks (spec:AST-061 FR5)', () => {
     }
   });
 
-  it('keeps a dash line under a paragraph line with that paragraph', () => {
-    // CommonMark reads this as a setext heading underline, not a break.
-    expect(blockTypes('Title\n---\n\nAfter')).not.toContain('horizontalrule');
-    // With a blank line between, it is a break again.
-    expect(blockTypes('Title\n\n---\n\nAfter')).toEqual([
-      'paragraph',
+  it('keeps a dash line under a paragraph line as literal text in that paragraph', () => {
+    // CommonMark reads these as setext heading underlines, not breaks; the
+    // editor keeps the underline as text rather than dropping it.
+    for (const [markdown, text] of [
+      ['Title\n---\n\nAfter', 'Title ---'],
+      ['  Title\n   ---  \n\nAfter', 'Title ---'],
+      ['Title\n===\n\nAfter', 'Title ==='],
+    ] as const) {
+      expect(blockTypes(markdown), markdown).toEqual([
+        'paragraph',
+        'paragraph',
+      ]);
+      // Lexical keeps a paragraph's indentation as text; the dashes survive.
+      expect(paragraphTexts(markdown)[0]?.trim(), markdown).toBe(text);
+    }
+    // Two underlined paragraphs keep both underlines.
+    expect(paragraphTexts('A\n---\n\nB\n---\n')).toEqual(['A ---', 'B ---']);
+  });
+
+  it('breaks after a blank line, a heading, a list, a quote, or with spaced dashes', () => {
+    for (const markdown of [
+      'Title\n\n---\n\nAfter',
+      '# Heading\n---\n\nAfter',
+      '> Quote\n---\n\nAfter',
+      // `- - -` cannot underline a heading, so it breaks even under a line.
+      'Title\n- - -\n\nAfter',
+    ]) {
+      expect(blockTypes(markdown), markdown).toContain('horizontalrule');
+    }
+    expect(blockTypes('- item\n---\n\nAfter')).toEqual([
+      'list',
       'horizontalrule',
       'paragraph',
     ]);
+  });
+
+  it('keeps an underlined paragraph exact, and keeps its dashes when edited (spec:AST-062)', () => {
+    const markdown = 'Title\n---\n\nAfter\n';
+    expect(editorStateJSONToMarkdown(markdownToEditorStateJSON(markdown))).toBe(
+      markdown,
+    );
+    const edit = (needle: string, suffix: string): string => {
+      const editor = createHeadlessEditor({
+        namespace: 'astryx-thematic-break-edit',
+        nodes: [...DEFAULT_NODES],
+        onError(error: Error) {
+          throw error;
+        },
+      });
+      editor.setEditorState(
+        editor.parseEditorState(markdownToEditorStateJSON(markdown)),
+      );
+      editor.update(
+        () => {
+          const node = $getRoot()
+            .getAllTextNodes()
+            .find(candidate => candidate.getTextContent().startsWith(needle));
+          node?.setTextContent(node.getTextContent() + suffix);
+        },
+        {discrete: true},
+      );
+      return editorStateJSONToMarkdown(
+        JSON.stringify(editor.getEditorState().toJSON()),
+      );
+    };
+    // Editing the next paragraph leaves the underlined one byte-identical.
+    expect(edit('After', ' more')).toBe('Title\n---\n\nAfter more\n');
+    // Editing the underlined paragraph keeps its dashes as text.
+    expect(edit('Title', '!')).toContain('---');
+    expect(blockTypes(edit('Title', '!'))).not.toContain('horizontalrule');
   });
 
   it('keeps an imported rule as written and writes a new rule as ---', () => {
