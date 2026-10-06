@@ -34,12 +34,12 @@ export const docs = {
               'Run `npm init -y` and `npm pkg set name=@acme/astryx-widgets` first, in the package folder.',
             ],
             [
-              '`Error: Could not find @astryxdesign/core package`',
-              'Component commands read Core. Run `npm install -D @astryxdesign/core` in the package.',
+              '`Error: This view requires an installed @astryxdesign/core package; bundled docs cover component details and props only`',
+              'The CLI bundles version-matched component details for CDN and other no-build projects. Install `@astryxdesign/core` only when you need source, showcase, or block lookups.',
             ],
             [
               '`core_not_found`: `Could not resolve @astryxdesign/core, so component names could not be checked.`',
-              'Same fix. The check exits 1.',
+              'Install `@astryxdesign/core` in the package. The integration check exits 1.',
             ],
             [
               "`Error: unknown subcommand 'integration verify'`, or `Error: Pass --check to verify the integration tarball.`",
@@ -78,7 +78,7 @@ export const docs = {
               "The `exports` map has no entry for it. Run `npm pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'`, or `'exports[./templates/acme-dashboard]=./templates/acme-dashboard.tsx'` for a template.",
             ],
             [
-              '`component_import_unresolvable`: `…but a consumer cannot resolve it: Cannot find package \'@acme/old-name\'`',
+              "`component_import_unresolvable`: `…but a consumer cannot resolve it: Cannot find package '@acme/old-name'`",
               "You renamed the package after the add wrote each doc's `import`. Change `import` in every component doc to the new name.",
             ],
             [

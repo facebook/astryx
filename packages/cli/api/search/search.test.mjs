@@ -457,16 +457,28 @@ describe('search leaf — error paths (pinned)', () => {
     ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
   }, SLOW);
 
-  it('searches the docs without @astryxdesign/core, and throws for a domain that needs it', async () => {
+  it('uses bundled component docs without Core and still rejects source-backed domains', async () => {
     const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-no-core-'));
     try {
-      // An open search outside an app covers the docs, as `astryx docs` does.
-      const open = await search('make an integration', {cwd: empty});
-      expect(open.data.results.length).toBeGreaterThan(0);
-      expect(new Set(open.data.results.map(r => r.domain))).toEqual(
-        new Set(['doc']),
-      );
-      for (const type of ['component', 'hook', 'template']) {
+      // Open search combines ordinary docs with the CLI's bundled Core snapshot.
+      const open = await search('button', {cwd: empty});
+      expect(open.data.results.some(r => r.domain === 'component')).toBe(true);
+      expect(open.meta?.componentDocs).toMatchObject({
+        source: 'bundled',
+        package: '@astryxdesign/core',
+      });
+
+      const components = await search('button', {
+        cwd: empty,
+        type: 'component',
+      });
+      expect(components.data.results[0]).toMatchObject({
+        domain: 'component',
+        name: 'Button',
+        import: '@astryxdesign/core/Button',
+      });
+
+      for (const type of ['hook', 'template']) {
         await expect(
           search('button', {cwd: empty, type: /** @type {any} */ (type)}),
         ).rejects.toMatchObject({code: 'ERR_CORE_NOT_FOUND'});

@@ -21,7 +21,9 @@ export const doc = {
     'integration packages; an array returns one ordered result row per selector at ' +
     'every array length; and no name returns the catalog grouped by category. ' +
     'Boolean flags narrow each resolved component to just its props, source, ' +
-    'showcase, or example blocks.',
+    'showcase, or example blocks. When Core is not installed, details, props, and ' +
+    'lists come from the version-matched Core snapshot shipped with the CLI; the ' +
+    'response meta identifies that package version.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'component(name?: string | string[], options?: ComponentOptions): Promise<ComponentListResponse | ComponentBatchResponse | ComponentDetailResponse | ComponentDetailPropsResponse | ComponentDetailSourceResponse | ComponentDetailShowcaseResponse | ComponentDetailBlocksResponse>',
@@ -44,7 +46,8 @@ export const doc = {
     {
       name: 'options.cwd',
       type: 'string',
-      description: 'Directory to resolve @astryxdesign/core from.',
+      description:
+        'Directory to resolve @astryxdesign/core from. Without a local installation, list, detail, and props reads use the version-matched Core snapshot bundled with the CLI.',
       default: 'process.cwd()',
     },
     {
@@ -123,7 +126,7 @@ export const doc = {
     {
       type: 'component.detail',
       description:
-        "One component's authored ComponentDoc plus ownership metadata (owner package, import specifier, whether source is available). When the name is a sub-component documented in a parent's doc, the payload is scoped to it and parentDoc names that parent.",
+        "One component's authored ComponentDoc plus ownership metadata (owner package, import specifier, whether source is available). When bundled docs are used, meta.componentDocs names their package, version, and bundled source. When the name is a sub-component documented in a parent's doc, the payload is scoped to it and parentDoc names that parent.",
     },
     {
       type: 'component.detail.props',
@@ -159,7 +162,7 @@ export const doc = {
     },
     {
       code: 'ERR_CORE_NOT_FOUND',
-      when: '@astryxdesign/core cannot be resolved from cwd',
+      when: '@astryxdesign/core cannot be resolved from cwd and a source, showcase, or block view requires installed package files',
     },
     {
       code: 'ERR_UNKNOWN_CATEGORY',

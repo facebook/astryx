@@ -105,6 +105,10 @@ import {
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {setResultCoverage} from './coverage.mjs';
+import {
+  BUNDLED_COMPONENT_DOCS_META,
+  getBundledComponentRecords,
+} from '../../foundation/discovery/bundled-component-docs.mjs';
 
 /**
  * A search candidate gathered from one content domain. Extra underscore-
@@ -469,7 +473,11 @@ const STRONG_TOKEN_SCORE = 70;
  * @returns {string[]}
  */
 function phraseWords(text) {
-  return unlinkText(text).toLowerCase().match(/[a-z0-9]+/g) ?? [];
+  return (
+    unlinkText(text)
+      .toLowerCase()
+      .match(/[a-z0-9]+/g) ?? []
+  );
 }
 
 /**
@@ -656,8 +664,7 @@ export function scoreQuery(term, tokens, candidate) {
   if (matched === tokens.length && strongest >= STRONG_TOKEN_SCORE) {
     return {
       score:
-        FULL_COVERAGE_SCORE +
-        Math.floor((strongest - MIN_TOKEN_SCORE) / 6.25),
+        FULL_COVERAGE_SCORE + Math.floor((strongest - MIN_TOKEN_SCORE) / 6.25),
       reason,
       matched,
       total,
@@ -946,6 +953,22 @@ async function gatherCoreComponents(coreDir) {
 }
 
 /**
+ * Build component candidates from the version-matched snapshot shipped with
+ * the CLI. Used only when Core is not installed in the consuming project.
+ * @returns {Candidate[]}
+ */
+function gatherBundledCoreComponents() {
+  return getBundledComponentRecords().map(({name, doc}) => ({
+    domain: 'component',
+    name,
+    keywords: Array.isArray(doc.keywords) ? doc.keywords : [],
+    description: doc.usage?.description || doc.description || '',
+    guidance: guidanceFrom(doc),
+    _import: doc.import,
+  }));
+}
+
+/**
  * Build component candidates contributed by the project's configured
  * integrations (astryx.config's `integrations`): name + keywords +
  * usage/description from each component's .doc.mjs, same as core. Without
@@ -1050,7 +1073,8 @@ export async function componentKeywords(coreDir, cwd) {
     });
   const integrations = (await loadIntegrationsSafely(cwd)).map(
     async integration => {
-      const {components} = await discoverValidIntegrationComponents(integration);
+      const {components} =
+        await discoverValidIntegrationComponents(integration);
       return Promise.all(
         components.map(async rec => ({
           name: rec.name,
@@ -1151,7 +1175,11 @@ async function gatherDocs(cwd) {
     const packages = new Map([
       [entry.providerId ?? entry.package, entry.package],
       ...entry.extensions.map(
-        ext => /** @type {[string, string]} */ ([ext.providerId ?? ext.package, ext.package]),
+        ext =>
+          /** @type {[string, string]} */ ([
+            ext.providerId ?? ext.package,
+            ext.package,
+          ]),
       ),
     ]);
     candidates.push(
@@ -1229,7 +1257,8 @@ async function gatherDocs(cwd) {
       _topic: node.route,
       _title: path.join(' › '),
       _command: `astryx docs ${node.route}`,
-      _parent: node.parent == null ? 'astryx docs' : `astryx docs ${node.parent}`,
+      _parent:
+        node.parent == null ? 'astryx docs' : `astryx docs ${node.parent}`,
       _package: node.provider,
     });
   }
@@ -1393,7 +1422,9 @@ function topicCandidates(
       _title: `${docTitle} › ${section.title}`,
       _command: `astryx docs ${name} ${key}`,
       _parent: `astryx docs ${name} --index`,
-      ...((sectionPackage?.(key) ?? pkg) ? {_package: sectionPackage?.(key) ?? pkg} : {}),
+      ...((sectionPackage?.(key) ?? pkg)
+        ? {_package: sectionPackage?.(key) ?? pkg}
+        : {}),
     });
   }
   return out;
@@ -1568,25 +1599,30 @@ export async function search(query, options = {}) {
   const term = String(query).trim().toLowerCase();
   const tokens = tokenizeQuery(term);
 
-  // `astryx docs` reads docs without @astryxdesign/core, so a docs-only
-  // search must too. Every other domain reads core: asked for by name, it is
-  // an error without core; an open search then covers the docs alone.
+  // Component docs are also shipped with the CLI for no-build/CDN projects.
+  // Hooks and templates still depend on an installed Core package; docs never
+  // have. An open search covers the bundled component snapshot plus docs.
   const docsOnly = type === 'doc';
   const coreDir = docsOnly ? null : findCoreDir(cwd);
-  if (type && !docsOnly && !coreDir) {
+  if (type && !docsOnly && type !== 'component' && !coreDir) {
     throw new AstryxError(
       'Could not find @astryxdesign/core package',
       undefined,
       ERROR_CODES.ERR_CORE_NOT_FOUND,
     );
   }
+  const usesBundledComponents =
+    coreDir == null && (type == null || type === 'component');
 
   // Gather candidates from each requested domain in parallel.
   /** @param {string} d */
-  const wants = d => (!type && (coreDir != null || d === 'doc')) || type === d;
+  const wants = d =>
+    type ? type === d : coreDir != null || d === 'doc' || d === 'component';
   const [components, hooks, docTopics, templates] = await Promise.all([
     wants('component')
-      ? gatherComponents(/** @type {string} */ (coreDir), cwd)
+      ? coreDir
+        ? gatherComponents(coreDir, cwd)
+        : gatherBundledCoreComponents()
       : [],
     wants('hook') ? gatherHooks(/** @type {string} */ (coreDir)) : [],
     wants('doc') ? gatherDocs(cwd) : [],
@@ -1637,6 +1673,9 @@ export async function search(query, options = {}) {
       ),
     },
   };
+  if (usesBundledComponents) {
+    response.meta = BUNDLED_COMPONENT_DOCS_META;
+  }
   if (wants('component')) {
     searchedComponentsOf.set(
       response,

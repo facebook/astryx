@@ -94,9 +94,11 @@
     "typecheck:strict": "tsc --project tsconfig.strict.json",
     "typecheck:authoring": "tsc --project tsconfig.authoring-contract.json",
     "sync:api-types": "node scripts/sync-api-types.mjs",
+    "bundle:core-docs": "node scripts/generate-bundled-component-docs.mjs",
+    "bundle:core-docs:check": "node scripts/generate-bundled-component-docs.mjs --check",
     "readme": "node scripts/generate-cli-readme.mjs",
     "readme:check": "node scripts/generate-cli-readme.mjs --check",
-    "prepack": "pnpm sync:api-types"
+    "prepack": "pnpm bundle:core-docs && pnpm sync:api-types"
   },
   "dependencies": {
     "@babel/core": "7.29.7",

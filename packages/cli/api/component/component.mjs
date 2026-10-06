@@ -16,7 +16,7 @@ import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../error.mjs';
 import {
   CORE_PACKAGE,
-  requireCoreDir,
+  findOptionalCoreDir,
   loadIntegrationsSafely,
   resolveOwners,
   classifyScope,
@@ -28,6 +28,12 @@ import {
   scopeSubComponent,
   ComponentAmbiguityError,
   installedComponentPackageVersion,
+  BUNDLED_COMPONENT_DOCS_META,
+  bundledCoreVersion,
+  getBundledComponentDoc,
+  getBundledComponentGroups,
+  getBundledComponentRecords,
+  levenshteinDistance,
 } from './_adapter.mjs';
 import {componentList} from './list/list.mjs';
 import {componentDetail} from './detail/detail.mjs';
@@ -227,6 +233,179 @@ async function componentBatch(selectors, options, coreDir) {
   return {type: 'component.batch', data: {count: results.length, results}};
 }
 
+/** @param {{type: string, data: any}} response */
+function fromBundledDocs(response) {
+  return {...response, meta: BUNDLED_COMPONENT_DOCS_META};
+}
+
+/**
+ * Resolve component documentation from the immutable Core snapshot shipped with
+ * this CLI. The fallback intentionally serves docs only: source, showcases, and
+ * blocks still require an installed Core package.
+ * @param {string|string[]|undefined} name
+ * @param {object} options
+ * @param {boolean} options.list
+ * @param {string|undefined} options.category
+ * @param {string|undefined} options.packageScope
+ * @param {boolean} options.props
+ * @param {boolean} options.source
+ * @param {boolean} options.showcase
+ * @param {boolean} options.blocks
+ * @param {'full'|'compact'|'brief'} options.detail
+ * @param {string|null} options.lang
+ * @param {boolean} options.zh
+ * @param {boolean} options.dense
+ * @returns {Promise<any>}
+ */
+async function componentFromBundledDocs(name, options) {
+  const {
+    list,
+    category,
+    packageScope,
+    props,
+    source,
+    showcase,
+    blocks,
+    detail,
+    lang,
+    zh,
+    dense,
+  } = options;
+
+  if (Array.isArray(name)) {
+    const results = [];
+    for (const value of name) {
+      const selector = typeof value === 'string' ? value : String(value);
+      try {
+        results.push({
+          selector,
+          status: 'found',
+          result: await componentFromBundledDocs(selector, options),
+        });
+      } catch (error) {
+        results.push(batchFailure(selector, error));
+      }
+    }
+    return fromBundledDocs({
+      type: 'component.batch',
+      data: {count: results.length, results},
+    });
+  }
+
+  const noName = !name;
+  if (category || list || noName) {
+    const allGroups = getBundledComponentGroups();
+    let groups = allGroups;
+    if (category) {
+      const match = Object.entries(allGroups).find(
+        ([key]) => key.toLowerCase() === category.toLowerCase(),
+      );
+      if (!match) {
+        throw new AstryxError(
+          `Unknown category "${category}"`,
+          Object.keys(allGroups).map(key => ({
+            name: key,
+            reason: 'valid category',
+          })),
+          ERROR_CODES.ERR_UNKNOWN_CATEGORY,
+        );
+      }
+      groups = {[match[0]]: match[1]};
+    }
+
+    /** @type {Record<string, any[]>} */
+    const components = {};
+    for (const [group, names] of Object.entries(groups)) {
+      if (detail === 'brief') {
+        components[group] = names.map(componentName => {
+          const doc = getBundledComponentDoc(componentName);
+          return {
+            name: componentName,
+            package: CORE_PACKAGE,
+            import: doc.import,
+          };
+        });
+      } else if (detail === 'compact') {
+        components[group] = names.map(componentName => {
+          const doc = getBundledComponentDoc(componentName, {lang, zh, dense});
+          return {
+            name: componentName,
+            description: doc.usage?.description || doc.description || '',
+            import: doc.import,
+          };
+        });
+      } else {
+        components[group] = names.map(componentName =>
+          getBundledComponentDoc(componentName, {lang, zh, dense}),
+        );
+      }
+    }
+    return fromBundledDocs({
+      type: 'component.list',
+      data: {
+        detail: detail === 'brief' ? 'names' : detail,
+        components,
+      },
+    });
+  }
+
+  const target = parseComponentSelector(name, packageScope);
+  if (target.package && target.package !== CORE_PACKAGE) {
+    throw new AstryxError(
+      `External package "${target.package}" not found`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_PACKAGE,
+    );
+  }
+  if (target.version && target.version !== bundledCoreVersion) {
+    throw new AstryxError(
+      `Bundled component docs describe ${CORE_PACKAGE}@${bundledCoreVersion}, not ${target.version}`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_PACKAGE,
+    );
+  }
+  if (source || showcase || blocks) {
+    throw new AstryxError(
+      `This view requires an installed ${CORE_PACKAGE} package; bundled docs cover component details and props only`,
+      undefined,
+      ERROR_CODES.ERR_CORE_NOT_FOUND,
+    );
+  }
+
+  const componentName = target.name.replace(/^XDS/, '');
+  const doc = getBundledComponentDoc(componentName, {lang, zh, dense});
+  if (!doc) {
+    const suggestions = getBundledComponentRecords()
+      .map(record => ({
+        name: record.name,
+        distance: levenshteinDistance(
+          componentName.toLowerCase(),
+          record.name.toLowerCase(),
+        ),
+      }))
+      .sort((a, b) => a.distance - b.distance || a.name.localeCompare(b.name))
+      .slice(0, 5)
+      .map(record => ({name: record.name, reason: 'bundled Core component'}));
+    throw new AstryxError(
+      `No component named "${name}"`,
+      suggestions,
+      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+    );
+  }
+
+  if (props) {
+    return fromBundledDocs({
+      type: 'component.detail.props',
+      data:
+        doc.props ||
+        (doc.components
+          ? doc.components.flatMap((/** @type {any} */ c) => c.props || [])
+          : []),
+    });
+  }
+  return fromBundledDocs({type: 'component.detail', data: doc});
+}
+
 /**
  * @param {string|string[]} [name]
  * @param {object} [options]
@@ -305,8 +484,6 @@ export async function component(name, options = {}) {
     );
   }
 
-  const coreDir = requireCoreDir(cwd);
-
   // A public API caller could pass a non-string category; the list leaf does
   // `category.toLowerCase()`, so guard it up front (same class as the name
   // guard below) instead of throwing a raw TypeError with no `.code`.
@@ -316,6 +493,23 @@ export async function component(name, options = {}) {
       undefined,
       ERROR_CODES.ERR_UNKNOWN_CATEGORY,
     );
+  }
+
+  const coreDir = findOptionalCoreDir(cwd);
+  if (!coreDir) {
+    return componentFromBundledDocs(name, {
+      list,
+      category,
+      packageScope,
+      props,
+      source,
+      showcase,
+      blocks,
+      detail,
+      lang,
+      zh,
+      dense,
+    });
   }
 
   // ── Explicit batch selector list ─────────────────────────────────

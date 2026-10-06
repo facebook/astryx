@@ -239,10 +239,18 @@ export function registerComponent(program) {
       }
 
       // ── Text output ────────────────────────────────────────────
-      // The api layer already resolved against core (result exists), so core is
-      // present on this path; narrow away the null branch findCoreDir allows.
-      const coreDir = /** @type {string} */ (findCoreDir(process.cwd()));
-      const themeData = resolveTheme(process.cwd());
+      // Core is optional for documentation-only reads: when absent, the API
+      // returns the version-matched snapshot shipped with the CLI.
+      const coreDir = findCoreDir(process.cwd());
+      const themeData = coreDir ? resolveTheme(process.cwd()) : null;
+      const bundledDocs = result.meta?.componentDocs;
+      const sourceNote = bundledDocs
+        ? [
+            text(
+              `Component docs: ${bundledDocs.package}@${bundledDocs.version} (bundled with the CLI; no local Core installation found).`,
+            ),
+          ]
+        : [];
 
       // Footer shared by the compact + names list views (prose → text()).
       const listFooter = text(
@@ -259,7 +267,18 @@ export function registerComponent(program) {
           if (result.data.detail === 'full') {
             // --detail full — dense per-component docs (signature, props, theming,
             // examples). Verbatim doc block from the shared formatter.
-            emit(code(await formatBriefAll(coreDir, {zh, lang, themeData})));
+            const rendered = coreDir
+              ? await formatBriefAll(coreDir, {zh, lang, themeData})
+              : Object.values(result.data.components)
+                  .flat()
+                  .map(doc =>
+                    formatFull(doc, {
+                      themeData,
+                      importHint: doc.import,
+                    }),
+                  )
+                  .join('\n\n');
+            emit(...sourceNote, code(rendered));
             break;
           }
 
@@ -278,7 +297,7 @@ export function registerComponent(program) {
               out.push(records(items, {fields: ['name', 'import', 'description']}));
             }
             out.push(listFooter);
-            emit(...out);
+            emit(...sourceNote, ...out);
             break;
           }
 
@@ -303,7 +322,11 @@ export function registerComponent(program) {
             // Use a precomputed import when the API supplies one (integration
             // components carry it); only fall back to the core resolver for
             // core components.
-            const importPath = item.import ?? resolveImportPath(coreDir, item.name);
+            const importPath =
+              item.import ??
+              (coreDir
+                ? resolveImportPath(coreDir, item.name)
+                : `${CORE_PKG}/${item.name}`);
             const qualify =
               item.package !== CORE_PKG || (nameCounts.get(item.name)?.size ?? 0) > 1;
             return qualify ? `${importPath}  [${item.package}]` : importPath;
@@ -315,6 +338,7 @@ export function registerComponent(program) {
           const sorted = [...entries].sort((a, b) => a.name.localeCompare(b.name));
 
           emit(
+            ...sourceNote,
             options.category && firstGroup
               ? section(firstGroup[0])
               : section(`Components (${sorted.length})`),
@@ -368,7 +392,7 @@ export function registerComponent(program) {
               );
             }
           }
-          emit(...out);
+          emit(...sourceNote, ...out);
           break;
         }
 
@@ -378,6 +402,7 @@ export function registerComponent(program) {
         case 'component.detail.showcase':
         case 'component.detail.blocks':
           emit(
+            ...sourceNote,
             ...componentDetailBlocks(
               result,
               name ?? '',
