@@ -403,7 +403,12 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-3'],
   },
   auditMatrix: {
-    width: 'min(720px, calc(100vw - 32px))',
+    width: 'calc(100% - 32px)',
+    maxWidth: 720,
+    minWidth: 0,
+  },
+  auditPopupContent: {
+    width: 220,
   },
 });
 
@@ -905,8 +910,14 @@ export const AuditMatrix: Story = {
         <ComplexSelector
           label="Custom trigger selector"
           value="Custom"
+          contentXstyle={styles.auditPopupContent}
           renderTrigger={props => (
-            <Button label="Custom trigger" variant="secondary" {...props} />
+            <Button
+              data-testid="rtl-custom-trigger"
+              label="Custom trigger"
+              variant="secondary"
+              {...props}
+            />
           )}>
           {content}
         </ComplexSelector>

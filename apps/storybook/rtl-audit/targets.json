@@ -417,11 +417,11 @@
     "storyId": "core-complexselector--audit-matrix",
     "dims": ["D4"],
     "setup": {
-      "click": "[data-testid=\"rtl-trigger\"] button"
+      "click": "[data-testid=\"rtl-custom-trigger\"]"
     },
     "selectors": {
       "overlay": ".astryx-complex-selector-popup",
-      "overlayRoot": "[data-testid=\"rtl-trigger\"]"
+      "overlayRoot": "[data-testid=\"rtl-custom-trigger\"]"
     }
   },
   {

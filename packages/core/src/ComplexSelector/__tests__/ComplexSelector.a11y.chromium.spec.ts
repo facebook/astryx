@@ -210,7 +210,28 @@ async function readEnvironment(page: Page) {
     anyCoarsePointer: matchMedia('(any-pointer: coarse)').matches,
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     forcedColors: matchMedia('(forced-colors: active)').matches,
+    scrollWidth: document.documentElement.scrollWidth,
     horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+    overflowingElements: [...document.querySelectorAll('body *')]
+      .filter(element => {
+        const rect = element.getBoundingClientRect();
+        return (
+          rect.width > 0 && (rect.right > innerWidth + 1 || rect.left < -1)
+        );
+      })
+      .slice(0, 10)
+      .map(element => {
+        const rect = element.getBoundingClientRect();
+        return {
+          tag: element.tagName.toLowerCase(),
+          id: element.id,
+          className:
+            typeof element.className === 'string' ? element.className : '',
+          left: Number(rect.left.toFixed(2)),
+          right: Number(rect.right.toFixed(2)),
+          width: Number(rect.width.toFixed(2)),
+        };
+      }),
     storyError: [
       ...document.querySelectorAll(
         '.sb-errordisplay, [data-testid="story-error"]',
@@ -322,8 +343,14 @@ async function readContrastPairs(page: Page) {
       const threshold =
         fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700) ? 3 : 4.5;
       const measured = Number(ratio(foreground, background).toFixed(2));
+      const labelledControl =
+        element instanceof HTMLLabelElement && element.htmlFor
+          ? document.getElementById(element.htmlFor)
+          : null;
       const isDisabled =
-        element instanceof HTMLButtonElement && element.disabled;
+        (element instanceof HTMLButtonElement && element.disabled) ||
+        (labelledControl instanceof HTMLButtonElement &&
+          labelledControl.disabled);
       return {
         part: `${element.tagName.toLowerCase()}-${index}: ${(element.textContent ?? '').trim()}`,
         state: isDisabled ? 'disabled' : 'rest',
@@ -745,7 +772,6 @@ test('captures the narrow coarse-pointer path', async ({browser}) => {
     viewport: NARROW,
     deviceScaleFactor: 1,
     hasTouch: true,
-    isMobile: true,
   });
   const page = await context.newPage();
   const scenario: Scenario = {
