@@ -41,7 +41,10 @@ import {
   validateStaticConfig,
 } from './projects.mjs';
 import {buildReports, summarize} from './report.mjs';
-import {verifySelectedConfigs} from './run.mjs';
+import {
+  requireVerifiedScoringIsolation,
+  verifySelectedConfigs,
+} from './run.mjs';
 import {resolveConcurrency, runInBatches, runInPhases} from './scheduler.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -761,6 +764,19 @@ test('selected delivery configs each receive an evaluator preflight', async () =
 });
 
 test('parallel concurrency requires a passing isolation probe', () => {
+  assert.equal(
+    requireVerifiedScoringIsolation({
+      parallelIsolation: {passed: false, pidNamespacePrivate: true},
+    }),
+    'verified-private-pid-namespace',
+  );
+  assert.throws(
+    () =>
+      requireVerifiedScoringIsolation({
+        parallelIsolation: {passed: false, pidNamespacePrivate: false},
+      }),
+    /private PID namespace/,
+  );
   assert.deepEqual(resolveConcurrency(4, {}), {
     requested: 4,
     effective: 1,
@@ -858,75 +874,98 @@ fs.writeFileSync('dist/index.html', '<!doctype html><main><h1>Sandbox evaluator 
   assert.equal(evaluation.judge.skipped, true);
 });
 
-test('agent build processes cannot forge evaluator receipts', async () => {
-  const launcherRoot = await fs.promises.mkdtemp(
-    path.join(os.tmpdir(), 'delivery-forgery-launcher-'),
+test('no-PID launchers refuse scoring before survivor code can run', async () => {
+  const root = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-no-pid-integrity-'),
   );
-  temporaryDirectories.push(launcherRoot);
-  const launcherPath = await writePassthroughLauncher(launcherRoot);
-  const privateRun = await createPrivateRunRoot('forgery-test-');
-  temporaryDirectories.push(privateRun.root);
-  await fs.promises.writeFile(
-    path.join(privateRun.projectDir, 'package.json'),
-    `${JSON.stringify({
-      type: 'module',
-      scripts: {typecheck: 'node -e ""', build: 'node build.mjs'},
-    })}\n`,
-  );
-  await fs.promises.writeFile(
-    path.join(privateRun.projectDir, 'build.mjs'),
-    `import {spawn} from 'node:child_process';
-import * as fs from 'node:fs';
+  temporaryDirectories.push(root);
+  const launcherPath = await writePassthroughLauncher(root);
+  const markerPath = path.join(root, 'agent-output-started');
+  const maliciousRunnerPath = path.join(root, 'malicious-runner.mjs');
+  const survivorSource = `import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
-fs.mkdirSync('dist', {recursive: true});
-fs.writeFileSync('dist/index.html', '<!doctype html><body></body>');
-spawn(process.execPath, ['forger.mjs', path.dirname(process.cwd())], {
-  cwd: process.cwd(),
-  detached: true,
-  stdio: 'ignore',
-}).unref();
-`,
-  );
-  await fs.promises.writeFile(
-    path.join(privateRun.projectDir, 'forger.mjs'),
-    `import * as fs from 'node:fs';
-import * as path from 'node:path';
-const root = process.argv[2];
-for (let attempt = 0; attempt < 100; attempt += 1) {
-  const output = path.join(root, '.evaluation-output.json');
-  if (fs.existsSync(output)) {
-    fs.writeFileSync(output, JSON.stringify({render: {passed: true, adoptionShare: 1, forged: true}}));
+const base = path.join(os.homedir(), '.astryx-vibe-private');
+setInterval(() => {
+  let entries = [];
+  try { entries = fs.readdirSync(base, {withFileTypes: true}); } catch {}
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !entry.name.startsWith('evaluation-')) continue;
+    const served = path.join(base, entry.name, 'project', 'dist', 'index.html');
+    try {
+      fs.chmodSync(path.dirname(served), 0o755);
+      fs.chmodSync(served, 0o644);
+      fs.writeFileSync(served, '<main><h1>Forged result</h1><p>A survivor replaced the blank build.</p><button>Done</button></main>');
+    } catch {}
   }
-  await new Promise(resolve => setTimeout(resolve, 20));
-}
+}, 10);`;
+  const buildSource = `import {spawn} from 'node:child_process';
+import * as fs from 'node:fs';
+fs.mkdirSync('dist', {recursive: true});
+fs.writeFileSync('dist/index.html', '<main></main>');
+fs.writeFileSync('survivor.mjs', ${JSON.stringify(survivorSource)});
+spawn(process.execPath, ['survivor.mjs'], {detached: true, stdio: 'ignore'}).unref();`;
+  await fs.promises.writeFile(
+    maliciousRunnerPath,
+    `import * as fs from 'node:fs';
+fs.writeFileSync(${JSON.stringify(markerPath)}, 'runner started');
+fs.writeFileSync('package.json', JSON.stringify({
+  type: 'module',
+  scripts: {typecheck: 'node -e ""', build: 'node build.mjs'},
+}));
+fs.writeFileSync('build.mjs', ${JSON.stringify(buildSource)});
 `,
   );
-  const baselineSources = await captureAuthoredSources(privateRun.projectDir);
+
   const profile = exampleProfile();
   usePassthroughLauncher(profile, launcherPath);
-  profile.evaluator = {
+  profile.preflight = {
     command: process.execPath,
-    args: [
-      path.join(here, 'evaluator.mjs'),
-      '--worker',
-      '{evaluationInput}',
-      '{evaluationOutput}',
-    ],
+    args: ['-e', 'process.stdout.write("isolated")'],
     cwd: '{sandboxProject}',
   };
-  const evaluation = await evaluateRun({
-    config: 'react-build',
-    privateRun,
-    prompt: {prompt: 'Render a complete page.'},
-    screenshotPath: path.join(privateRun.root, 'screenshot.png'),
-    baselineSources,
-    skipJudge: true,
-    profile,
-  });
-  assert.equal(evaluation.build.passed, true);
-  assert.equal(evaluation.render.passed, false);
-  assert.equal(evaluation.render.adoptionShare, 0);
-  assert.equal(evaluation.render.forged, undefined);
+  profile.isolationProbe = {
+    command: process.execPath,
+    args: ['{probeFile}'],
+    cwd: '{sandboxProject}',
+  };
+  profile.runners.sample = {
+    command: process.execPath,
+    args: [maliciousRunnerPath],
+    stdin: 'prompt',
+    transcript: structuredClone(exampleTranscriptAdapter),
+    audit: {rules: []},
+  };
+  const profilePath = path.join(root, 'profile.json');
+  const outputDir = path.join(root, 'output');
+  await fs.promises.writeFile(profilePath, JSON.stringify(profile));
+
+  const result = spawnSync(
+    process.execPath,
+    [
+      path.join(here, 'run.mjs'),
+      '--sample',
+      '1',
+      '--runners',
+      'sample',
+      '--skip-judge',
+      '--output-dir',
+      outputDir,
+    ],
+    {
+      cwd: path.resolve(here, '../../..'),
+      env: {...process.env, VIBE_RUNNER_PROFILE: profilePath},
+      encoding: 'utf8',
+      timeout: 15_000,
+    },
+  );
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(
+    result.stderr,
+    /Verified scoring requires the launcher isolation probe to prove a private PID namespace/,
+  );
+  assert.equal(fs.existsSync(markerPath), false);
+  assert.equal(fs.existsSync(path.join(outputDir, 'manifest.json')), false);
 });
 
 test('process visibility scans every numeric proc entry', async () => {

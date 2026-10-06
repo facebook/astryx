@@ -68,6 +68,7 @@ async function main() {
     );
   }
   const isolationReceipt = await runProfilePreflight(profile);
+  const scoringIntegrity = requireVerifiedScoringIsolation(isolationReceipt);
   const concurrency = resolveConcurrency(options.concurrency, isolationReceipt);
   if (concurrency.fallbackReason) {
     console.warn(
@@ -137,6 +138,7 @@ async function main() {
         )
       : null,
     isolation: isolationReceipt,
+    scoringIntegrity,
     runnerVersions: await runnerVersions(profile, runners),
     runnerBatches: priorManifest?.runnerBatches ?? [],
   };
@@ -269,6 +271,7 @@ function assertCompatibleManifest(prior, current) {
     'transcriptAudit',
     'transcriptAdapterHashes',
     'judgeAdapterHash',
+    'scoringIntegrity',
   ];
   for (const key of keys) {
     if (JSON.stringify(prior[key]) !== JSON.stringify(current[key])) {
@@ -324,6 +327,15 @@ async function loadCheckpointResults({
 
 function jobId(promptId, config, runner) {
   return `${promptId}-${config}-${runner}`;
+}
+
+export function requireVerifiedScoringIsolation(isolationReceipt) {
+  if (isolationReceipt?.parallelIsolation?.pidNamespacePrivate !== true) {
+    throw new Error(
+      'Verified scoring requires the launcher isolation probe to prove a private PID namespace. Refusing to run agent output because build descendants could survive and modify evaluator inputs.',
+    );
+  }
+  return 'verified-private-pid-namespace';
 }
 
 export async function verifySelectedConfigs({
