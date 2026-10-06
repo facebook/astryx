@@ -477,9 +477,12 @@ describe('build kit — every page starts from a template', () => {
     expect(r.data.pages.map(p => p.name)).not.toContain('side-gallery');
   });
 
-  it('keeps a template search matched directly rather than the app shell', async () => {
+  it('keeps the ranker\'s pick when search matches a page directly', async () => {
     for (const [idea, name] of [
       ['a login screen with single sign-on', 'login'],
+      ['a login form', 'login'],
+      ['a code editor', 'editor'],
+      ['a payment form', 'payment-form'],
       ['a photo gallery for product shots', 'product-gallery'],
       ['a docs site for our API', 'documentation'],
     ]) {
@@ -490,6 +493,15 @@ describe('build kit — every page starts from a template', () => {
     }
   });
 
+  it('starts a part that names no page from the app shell', async () => {
+    for (const idea of ['a kanban card', 'an inbox list']) {
+      const r = await build(idea, {cwd: REPO});
+      if (r.type !== 'build.kit') throw new Error(r.type);
+      expect(r.data.start).toMatchObject({name: 'shell-top-nav', basis: 'fallback'});
+      expect(r.data.start?.reason).toMatch(/part of a page/);
+    }
+  });
+
   it('does not keep a loose match over the app shell', async () => {
     // Search matches no template directly, so the ranker's closest page does
     // not override the shell the weights choose.
@@ -497,6 +509,13 @@ describe('build kit — every page starts from a template', () => {
     if (r.type !== 'build.kit') throw new Error(r.type);
     expect(r.data.directMatch).toBe(false);
     expect(r.data.start).toMatchObject({name: 'shell-top-nav', basis: 'fallback'});
+    expect(r.data.start?.reason).toMatch(/closest/);
+  });
+
+  it('starts a new page with no matching template from the app shell', async () => {
+    const r = await build('a new page', {cwd: REPO});
+    if (r.type !== 'build.kit') throw new Error(r.type);
+    expect(r.data.start?.name).toBe('shell-top-nav');
   });
 
   it('starts a page the words describe from its template', async () => {

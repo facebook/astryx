@@ -13,9 +13,10 @@
  * @output `weighStart(idea, ranked, pick, catalog)`: the template id to start
  *   from, null for the app shell, or undefined when no table is available, in
  *   which case the ranker's own pick stands.
- * @position Beside rank.mjs (api/build/kit/); kit.mjs calls it when choosing
- *   the start. Templates a table does not list are still scored by the ranker
- *   inside the blend, so a new template can start a build.
+ * @position Beside rank.mjs (api/build/kit/); kit.mjs calls it for a whole
+ *   page that search matched no template for directly. The ranker's pick of a
+ *   template the tables do not list stands, so a new template can start a
+ *   build.
  */
 
 /** The app shell, as one candidate. */
@@ -287,15 +288,18 @@ export function weighStart(
     }
     return at < 0 ? null : cands[at];
   };
-  const top = best(() => true);
-  if (top !== SHELL) return top;
-  // The shell never starts an idea that asks for a new page, and a part placed
-  // in a frame keeps the frame's template (spec:AST-048/FR3).
   const kept =
     pick && pick.family !== SHELL_FAMILY && cands.includes(pick.name)
       ? pick.name
       : null;
-  if (newPage) return kept ?? best(c => c !== SHELL);
-  if (kept && pick?.containerMatched) return kept;
+  // The tables cannot judge a template they do not list, and a template the
+  // ranker placed by its frame stays (spec:AST-048/FR3): the ranker's pick
+  // stands for both.
+  if (kept && (!position.has(kept) || pick?.containerMatched)) return kept;
+  const top = best(() => true);
+  if (top !== SHELL) return top;
+  // An idea that asks for a new page keeps the ranker's template rather than
+  // the shell.
+  if (newPage && kept) return kept;
   return null;
 }

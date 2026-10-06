@@ -183,15 +183,23 @@ function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
   // pick stands; a shell start keeps the shell the ranker named, if any, and
   // never replaces a template the ranker chose when search matched one by name.
   const proposed = pickStart(ranked, kind);
-  const weighed = weighStart(idea, ranked, proposed, catalog, {
-    weights: loadWeights(),
-    newPage: asksForNewPage(idea, catalog),
-  });
+  // The checked-in word weights (weights.mjs), blended with the ranker's
+  // scores, decide only a whole page that search matched no template for
+  // directly. A part or an edit starts where the ranker's placement rules put
+  // it (spec:AST-048/FR3), and a direct match keeps the ranker's pick.
+  const weighed =
+    kind === 'page' && !direct
+      ? weighStart(idea, ranked, proposed, catalog, {
+          weights: loadWeights(),
+          newPage: asksForNewPage(idea, catalog),
+        })
+      : undefined;
+  // A shell start keeps the shell the ranker named, if any.
   const pick =
     weighed === undefined
       ? proposed
       : weighed === null
-        ? proposed?.family === 'Shell' || (proposed && direct && !unready)
+        ? proposed?.family === 'Shell'
           ? proposed
           : null
         : (ranked.find(r => r.name === weighed) ?? proposed);
@@ -218,7 +226,9 @@ function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
     if (shell) {
       // The shell can also be the ranker's best guess without the evidence to
       // lead ("horizontal site navigation"); say so rather than "no match".
-      const nearest = ranked[0]?.name === shell.name && ranked[0].hits > 0;
+      const nearest =
+        (ranked[0]?.name === shell.name && ranked[0].hits > 0) ||
+        (weighed === null && !!proposed && proposed.family !== 'Shell');
       const place = placement(kind, false);
       return {
         ...asTemplate(shell),

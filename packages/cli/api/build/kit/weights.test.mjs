@@ -2,6 +2,7 @@
 
 import {describe, expect, it} from 'vitest';
 
+import {isWeightsFile} from '../_adapter.mjs';
 import {SHELL, stem, weighStart, weightWords} from './weights.mjs';
 
 // A made-up table for tests only: three page templates and the app shell.
@@ -115,17 +116,16 @@ describe('weighStart', () => {
     expect(start).not.toBe('board');
   });
 
-  it('scores a template the table does not list through the ranker', () => {
-    const rankerLed = {...WEIGHTS, blend: [0.1, 0, 0, 2, 0, 1, 0.1, 0, 0, 0]};
+  it("keeps the ranker's pick of a template the tables do not list", () => {
     const catalog = [...CATALOG, {name: 'fresh'}];
     const ranked = [page('fresh', 9, 'Fresh'), ...RANKED];
-    const start = weighStart('a page', ranked, ranked[0], catalog, {
-      weights: rankerLed,
+    const start = weighStart('a kanban', ranked, ranked[0], catalog, {
+      weights: WEIGHTS,
     });
     expect(start).toBe('fresh');
   });
 
-  it('never starts an idea that asks for a new page from the shell', () => {
+  it("keeps the ranker's template for an idea that asks for a new page", () => {
     const start = weighStart('the existing page', RANKED, RANKED[0], CATALOG, {
       weights: WEIGHTS,
       newPage: true,
@@ -133,12 +133,22 @@ describe('weighStart', () => {
     expect(start).toBe('charts');
   });
 
+  it('starts a new page from the shell when the ranker has no template', () => {
+    const start = weighStart('the existing page', RANKED, null, CATALOG, {
+      weights: WEIGHTS,
+      newPage: true,
+    });
+    expect(start).toBeNull();
+  });
+
   it('keeps a template the ranker placed by its frame', () => {
     const framed = {...RANKED[1], containerMatched: true};
-    const start = weighStart('the existing page', RANKED, framed, CATALOG, {
-      weights: WEIGHTS,
-    });
-    expect(start).toBe('grid');
+    for (const idea of ['the existing page', 'a kanban']) {
+      const start = weighStart(idea, RANKED, framed, CATALOG, {
+        weights: WEIGHTS,
+      });
+      expect(start).toBe('grid');
+    }
   });
 
   it('is deterministic', () => {
@@ -157,5 +167,24 @@ describe('weightWords', () => {
       'dashboard',
       'kpis',
     ]);
+  });
+});
+
+describe('isWeightsFile', () => {
+  it('accepts a well-formed file', () => {
+    expect(isWeightsFile(WEIGHTS)).toBe(true);
+  });
+
+  it('rejects a file whose rows, bias or blend do not fit the candidates', () => {
+    const [first, second] = WEIGHTS.tables;
+    expect(isWeightsFile({...WEIGHTS, blend: [1, 2, 3]})).toBe(false);
+    expect(
+      isWeightsFile({...WEIGHTS, tables: [{...first, rows: ['ab']}, second]}),
+    ).toBe(false);
+    expect(
+      isWeightsFile({...WEIGHTS, tables: [{...first, bias: [0]}, second]}),
+    ).toBe(false);
+    expect(isWeightsFile({version: 1})).toBe(false);
+    expect(isWeightsFile(null)).toBe(false);
   });
 });

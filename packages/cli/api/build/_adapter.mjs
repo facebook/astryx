@@ -103,12 +103,46 @@ let weights;
 export function loadWeights() {
   if (weights === undefined) {
     try {
-      weights = JSON.parse(
+      const file = JSON.parse(
         fs.readFileSync(new URL('./kit/weights.json', import.meta.url), 'utf8'),
       );
+      weights = isWeightsFile(file) ? file : null;
     } catch {
       weights = null;
     }
   }
   return weights ?? null;
+}
+
+/**
+ * Whether a parsed weights file has the shape the kit reads: every row has a
+ * weight per candidate, every bias a number per candidate, and three blend
+ * numbers per member (the tables plus the ranker) and one for the shell.
+ * @param {any} file
+ * @returns {file is import('./kit/weights.mjs').WeightsFile}
+ */
+export function isWeightsFile(file) {
+  const n = Array.isArray(file?.candidates) ? file.candidates.length : 0;
+  return (
+    n > 0 &&
+    Array.isArray(file.tables) &&
+    file.tables.length > 0 &&
+    file.tables.every(
+      (/** @type {any} */ t) =>
+        Array.isArray(t?.words) &&
+        Array.isArray(t.rows) &&
+        t.rows.length === t.words.length &&
+        t.rows.every(
+          (/** @type {any} */ r) => typeof r === 'string' && r.length === n,
+        ) &&
+        Array.isArray(t.bias) &&
+        t.bias.length === n &&
+        t.bias.every((/** @type {any} */ b) => Number.isFinite(b)) &&
+        Number.isFinite(t.clip) &&
+        Number.isFinite(t.step),
+    ) &&
+    Array.isArray(file.blend) &&
+    file.blend.length === 3 * (file.tables.length + 1) + 1 &&
+    file.blend.every((/** @type {any} */ x) => Number.isFinite(x))
+  );
 }
