@@ -88,7 +88,7 @@ export function CommandPaletteList({
     <div
       ref={ref}
       {...props}
-      id={ctx?.listId}
+      id={ctx?.listId ?? props.id}
       role="listbox"
       aria-label={label}
       {...mergeProps(

@@ -186,7 +186,7 @@ export function CommandPaletteItem({
     <div
       ref={useMergedRefs(ref, itemRef)}
       {...props}
-      id={ctx && itemIndex >= 0 ? ctx.getItemId(itemIndex) : undefined}
+      id={ctx && itemIndex >= 0 ? ctx.getItemId(itemIndex) : props.id}
       role="option"
       aria-selected={isSelected}
       aria-disabled={isDisabled || undefined}
