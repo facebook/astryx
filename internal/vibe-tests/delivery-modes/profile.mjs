@@ -182,6 +182,12 @@ function validateTranscript(transcript, label) {
     throw new Error(`${label}.toolCalls must be an array.`);
   }
   for (const [index, rule] of (transcript.toolCalls ?? []).entries()) {
+    if (rule.recordsPath != null) {
+      validatePath(
+        rule.recordsPath,
+        `${label}.toolCalls[${index}].recordsPath`,
+      );
+    }
     validateMatches(rule.matches, `${label}.toolCalls[${index}].matches`);
     validatePath(rule.commandPath, `${label}.toolCalls[${index}].commandPath`);
   }

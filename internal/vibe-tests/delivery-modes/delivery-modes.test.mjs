@@ -15,6 +15,7 @@ import {
 } from './constants.mjs';
 import {
   captureAuthoredSources,
+  evaluateRun,
   resolveJudgeAttempts,
   scanAuthoredSource,
 } from './evaluator.mjs';
@@ -237,7 +238,17 @@ function exampleProfile() {
 }
 
 test('runner profile validates commands, capabilities, transcripts, and audits', () => {
-  assert.equal(validateRunnerProfile(exampleProfile()).schemaVersion, 2);
+  const profile = exampleProfile();
+  profile.runners.sample.transcript.toolCalls[0].recordsPath =
+    'message.content';
+  assert.equal(validateRunnerProfile(profile).schemaVersion, 2);
+  const invalidPath = exampleProfile();
+  invalidPath.runners.sample.transcript.toolCalls[0].recordsPath =
+    'message.content[]';
+  assert.throws(
+    () => validateRunnerProfile(invalidPath),
+    /recordsPath must be a dotted JSON field path/,
+  );
   const invalid = exampleProfile();
   invalid.runners.sample.audit.rules = [
     {
@@ -472,6 +483,62 @@ test('capability audit fails closed on unexpected restricted context', () => {
   }
 });
 
+test('profile adapter iterates arrays for tool counts and command audits', () => {
+  const adapter = {
+    format: 'jsonl',
+    toolCalls: [
+      {
+        recordsPath: 'message.content',
+        matches: [{path: 'kind', equals: 'tool-call'}],
+        commandPath: 'input.command',
+      },
+    ],
+  };
+  const transcript = JSON.stringify({
+    message: {
+      content: [
+        {
+          kind: 'tool-call',
+          input: {command: 'npx astryx component Button'},
+        },
+        {kind: 'text', text: 'Checking the docs.'},
+        {
+          kind: 'tool-call',
+          input: {command: 'pnpm exec astryx docs principles'},
+        },
+      ],
+    },
+  });
+  assert.equal(countToolCalls(transcript, adapter), 2);
+  assert.deepEqual(extractToolCommands(transcript, adapter), [
+    'npx astryx component Button',
+    'pnpm exec astryx docs principles',
+  ]);
+  assert.equal(countCliLookups(transcript, adapter), 2);
+  const audit = auditTranscript(
+    transcript,
+    '',
+    {
+      rules: [
+        {
+          label: 'no docs command',
+          source: 'command',
+          kind: 'forbidden',
+          class: 'strict',
+          pattern: '\\bdocs\\b',
+        },
+      ],
+    },
+    adapter,
+  );
+  assert.equal(audit.commandCount, 2);
+  assert.equal(audit.passed, false);
+  assert.deepEqual(
+    audit.strictFindings.map(finding => finding.label),
+    ['no docs command'],
+  );
+});
+
 test('source scanner separates comments and theme definitions', async () => {
   const directory = await fs.promises.mkdtemp(
     path.join(os.tmpdir(), 'delivery-source-'),
@@ -548,6 +615,67 @@ test('browser helper probe proves the advertised name is on launcher PATH', asyn
   assert.equal(receipt.passed, true);
   assert.equal(receipt.name, 'screenshot');
   assert.equal(receipt.usage, 'screenshot <file-or-url> [output.png]');
+});
+
+test('agent preview failures are scored instead of retryable infrastructure', async () => {
+  const projectDir = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-preview-failure-'),
+  );
+  temporaryDirectories.push(projectDir);
+  await fs.promises.writeFile(
+    path.join(projectDir, 'package.json'),
+    JSON.stringify({
+      scripts: {
+        typecheck: 'node -e "process.exit(0)"',
+        build: 'node -e "process.exit(0)"',
+        preview: 'node -e "process.exit(3)"',
+      },
+    }),
+  );
+  await fs.promises.writeFile(
+    path.join(projectDir, 'index.html'),
+    '<main>Agent-authored preview fixture</main>',
+  );
+  const evaluation = await evaluateRun({
+    config: 'react-build',
+    projectDir,
+    prompt: {prompt: 'Render the fixture.'},
+    screenshotPath: path.join(projectDir, 'evidence', 'screenshot.png'),
+    baselineSources: {},
+    skipJudge: true,
+  });
+  assert.equal(evaluation.build.passed, true);
+  assert.equal(evaluation.render.passed, false);
+  assert.equal(evaluation.render.adoptionShare, 0);
+  assert.equal(evaluation.judge.visualQuality, 0);
+  assert.match(evaluation.render.error, /Vite preview exited early/);
+});
+
+test('harness-owned browser launch failures remain retryable', async () => {
+  const projectDir = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-browser-failure-'),
+  );
+  temporaryDirectories.push(projectDir);
+  await fs.promises.writeFile(
+    path.join(projectDir, 'index.html'),
+    '<main>Static browser fixture with enough visible text</main>',
+  );
+  await assert.rejects(
+    evaluateRun({
+      config: 'static-html',
+      projectDir,
+      prompt: {prompt: 'Render the fixture.'},
+      screenshotPath: path.join(projectDir, 'evidence', 'screenshot.png'),
+      baselineSources: {},
+      skipJudge: true,
+      browserType: {
+        launch: async () => {
+          throw new Error('browser service unavailable');
+        },
+      },
+    }),
+    /browser service unavailable/,
+  );
 });
 
 test('private run roots use mode 0700', async () => {

@@ -326,9 +326,14 @@ export function countToolCalls(text, adapter) {
   return records.reduce(
     (total, record) =>
       total +
-      (adapter.toolCalls ?? []).filter(rule =>
-        matchesRecord(record, rule.matches),
-      ).length,
+      (adapter.toolCalls ?? []).reduce(
+        (ruleTotal, rule) =>
+          ruleTotal +
+          expandRuleRecords(record, rule).filter(candidate =>
+            matchesRecord(candidate, rule.matches),
+          ).length,
+        0,
+      ),
     0,
   );
 }
@@ -396,16 +401,26 @@ export function extractToolCommands(text, adapter) {
   const commands = [];
   for (const record of parseTranscript(text, adapter)) {
     for (const rule of adapter.toolCalls ?? []) {
-      if (!matchesRecord(record, rule.matches)) {
-        continue;
-      }
-      const command = readPath(record, rule.commandPath);
-      if (typeof command === 'string') {
-        commands.push(command);
+      for (const candidate of expandRuleRecords(record, rule)) {
+        if (!matchesRecord(candidate, rule.matches)) {
+          continue;
+        }
+        const command = readPath(candidate, rule.commandPath);
+        if (typeof command === 'string') {
+          commands.push(command);
+        }
       }
     }
   }
   return commands;
+}
+
+function expandRuleRecords(record, rule) {
+  if (!rule.recordsPath) {
+    return [record];
+  }
+  const candidates = readPath(record, rule.recordsPath);
+  return Array.isArray(candidates) ? candidates : [];
 }
 
 function matchesRecord(record, matches = []) {
