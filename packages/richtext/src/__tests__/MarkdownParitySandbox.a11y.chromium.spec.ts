@@ -410,11 +410,37 @@ for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
               .filter(element => element.getBoundingClientRect().width > 0)
               .map(element => {
                 const wrapper = element.parentElement as HTMLElement;
+                // The table's own width: its max-content width, measured
+                // with the inline width restored right after.
+                const previousWidth = element.style.width;
+                let intrinsic: number;
+                try {
+                  element.style.width = 'max-content';
+                  intrinsic = element.getBoundingClientRect().width;
+                } finally {
+                  element.style.width = previousWidth;
+                }
+                // The widest the wrapper could be: the view's containing
+                // block, less the space between the view's edge and the
+                // wrapper.
+                const view = element.closest('[contenteditable]')
+                  ?.parentElement as HTMLElement | null;
+                const host = view?.parentElement;
+                const hostStyle = host == null ? null : getComputedStyle(host);
+                const available =
+                  host == null || hostStyle == null || view == null
+                    ? 0
+                    : host.clientWidth -
+                      parseFloat(hostStyle.paddingLeft) -
+                      parseFloat(hostStyle.paddingRight) -
+                      (view.offsetWidth - wrapper.clientWidth);
                 return {
                   inView: element.closest('[contenteditable="false"]') != null,
                   clientWidth: wrapper.clientWidth,
                   scrollWidth: wrapper.scrollWidth,
-                  tableWidth: element.getBoundingClientRect().width,
+                  intrinsic,
+                  available,
+                  restored: element.style.width === previousWidth,
                 };
               }),
           }));
@@ -440,13 +466,25 @@ for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
               );
             }
           }
-          if (columnCount === 2 && styles.view !== '') {
-            // A shrink-to-fit host gives the view's small table its natural
-            // width instead of stretching or collapsing it: the wrapper hugs
-            // the table, whose columns keep their readable floors.
+          for (const wrapper of layout.wrappers) {
+            // Measuring the table left its style as it was.
+            expect(wrapper.restored, label).toBe(true);
+          }
+          if (styles.view !== '') {
+            // A shrink-to-fit host gives the view's table its natural width,
+            // up to the room it has: neither stretched nor collapsed. A small
+            // table is narrower than the room, so stretching it fails here.
             const view = layout.wrappers.find(wrapper => wrapper.inView);
+            if (columnCount === 2) {
+              expect(view?.intrinsic ?? 0, label).toBeLessThan(
+                (view?.available ?? 0) - 8,
+              );
+            }
             expect(
-              Math.abs((view?.clientWidth ?? 0) - (view?.tableWidth ?? 0)),
+              Math.abs(
+                (view?.clientWidth ?? 0) -
+                  Math.min(view?.intrinsic ?? 0, view?.available ?? 0),
+              ),
               label,
             ).toBeLessThanOrEqual(1);
           }
