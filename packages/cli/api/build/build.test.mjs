@@ -492,8 +492,30 @@ describe('build kit — every page starts from a template', () => {
     }
   });
 
+  it('keeps a template search matched directly rather than the app shell', async () => {
+    for (const [idea, name] of [
+      ['a login screen', 'login'],
+      ['a checkout wizard', 'checkout-wizard'],
+    ]) {
+      const r = await build(idea, {cwd: REPO});
+      if (r.type !== 'build.kit') throw new Error(r.type);
+      expect(r.data.directMatch).toBe(true);
+      expect(r.data.start?.name).toBe(name);
+    }
+  });
+
+  it('lets the weights choose another template over a direct match', async () => {
+    const r = await build('a login form', {cwd: REPO});
+    if (r.type !== 'build.kit') throw new Error(r.type);
+    expect(r.data.directMatch).toBe(true);
+    const match = r.data.pages[0].name;
+    expect(r.data.start?.name).not.toBe('shell-top-nav');
+    expect(r.data.start?.name).not.toBe(match);
+    expect(r.data.start?.reason).toContain(`\`${match}\``);
+  });
+
   it('starts a part that names no page from the app shell', async () => {
-    for (const idea of ['a kanban card', 'an inbox list']) {
+    for (const idea of ['a kanban card', 'a date range picker']) {
       const r = await build(idea, {cwd: REPO});
       if (r.type !== 'build.kit') throw new Error(r.type);
       expect(r.data.start).toMatchObject({name: 'shell-top-nav', basis: 'fallback'});

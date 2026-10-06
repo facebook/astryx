@@ -189,12 +189,13 @@ function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
           newPage: asksForNewPage(idea, catalog),
         })
       : undefined;
-  // A shell start keeps the shell the ranker named, if any.
+  // A shell start keeps the shell the ranker named, if any, and never replaces
+  // the template the ranker chose for a page search matched directly.
   const pick =
     weighed === undefined
       ? proposed
       : weighed === null
-        ? proposed?.family === 'Shell'
+        ? proposed?.family === 'Shell' || (proposed && direct && !unready)
           ? proposed
           : null
         : (ranked.find(r => r.name === weighed) ?? proposed);
