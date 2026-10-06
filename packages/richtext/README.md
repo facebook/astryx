@@ -7,7 +7,7 @@ with Astryx design tokens.
 import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';
 
 <RichTextEditor label="Notes" onChange={setState} />;
-<RichTextView label="Notes" value={serializedState} />;
+<RichTextView value={serializedState} />;
 ```
 
 The editor is deliberately minimal and extensible: pass `nodes` and `plugins` to

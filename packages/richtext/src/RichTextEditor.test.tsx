@@ -910,14 +910,31 @@ describe('RichTextEditor Tab keyboard trap escape (WCAG 2.1.2)', () => {
 
 describe('RichTextView', () => {
   it('renders serialized content read-only', async () => {
-    render(<RichTextView value={HELLO_STATE} />);
+    const {container} = render(<RichTextView value={HELLO_STATE} />);
     await waitFor(() =>
       expect(screen.getByText('Hello world')).toBeInTheDocument(),
     );
-    expect(screen.getByRole('textbox')).toHaveAttribute(
+    expect(container.querySelector('[data-lexical-editor]')).toHaveAttribute(
       'contenteditable',
       'false',
     );
+  });
+
+  it('renders document content rather than a form field', async () => {
+    const {container} = render(<RichTextView value={HELLO_STATE} />);
+    await waitFor(() =>
+      expect(screen.getByText('Hello world')).toBeInTheDocument(),
+    );
+    // Lexical's ContentEditable applies role="textbox" and widget-only ARIA
+    // even when it is not editable. A view is content: an unnamed widget
+    // fails axe aria-input-field-name, and the widget role exposes the
+    // document as a form field rather than as content.
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    const content = container.querySelector('[data-lexical-editor]');
+    expect(content).not.toBeNull();
+    expect(content).not.toHaveAttribute('role');
+    expect(content).not.toHaveAttribute('aria-readonly');
+    expect(content).not.toHaveAttribute('aria-autocomplete');
   });
 
   it('renders custom read-only plugins passed via the plugins prop', () => {
@@ -961,7 +978,9 @@ describe('RichTextView', () => {
     expect(onError.mock.calls[0][0]).toBeInstanceOf(Error);
     expect(screen.getByTestId('view-fallback')).toBeInTheDocument();
     // No editor surface is rendered in the error state.
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(
+      document.querySelector('[data-lexical-editor]'),
+    ).not.toBeInTheDocument();
   });
 
   it('renders bullet lists with a disc marker (not bare indentation)', async () => {
@@ -1012,7 +1031,9 @@ describe('RichTextView', () => {
 
   it('renders nothing (no crash) on malformed JSON with no fallback', () => {
     expect(() => render(<RichTextView value={'garbage'} />)).not.toThrow();
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(
+      document.querySelector('[data-lexical-editor]'),
+    ).not.toBeInTheDocument();
   });
 
   it('updates the rendered content when the value prop changes', async () => {

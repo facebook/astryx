@@ -7,11 +7,12 @@
  * @input Uses React, Lexical (lexical + @lexical/react, composed through
  *   LexicalExtensionComposer), design tokens
  * @output Exports RichTextView component and RichTextViewProps
- * @position Read-only renderer for serialized Lexical editor state; experimental
- *   (richtext), exported from @astryxdesign/richtext
+ * @position Read-only renderer for serialized Lexical editor state, exposed to
+ *   assistive technology as document content rather than a form field;
+ *   experimental (richtext), exported from @astryxdesign/richtext
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/richtext/src/RichTextView.test.tsx
+ * - /packages/richtext/src/RichTextEditor.test.tsx
  * - /packages/richtext/src/index.ts
  * - /apps/storybook/stories/RichTextEditor.stories.tsx
  */
@@ -54,6 +55,33 @@ const DEFAULT_NODES: ReadonlyArray<Klass<LexicalNode>> = [
   CodeNode,
   CodeHighlightNode,
 ];
+
+/**
+ * Lexical's `ContentEditable` renders `role="textbox"` and widget-only ARIA
+ * (`aria-autocomplete`, `aria-readonly`) even when the editor is not editable.
+ * A view renders document content, not a form field, so all three are cleared:
+ *
+ * - A textbox is a widget, so an unnamed one fails axe
+ *   `aria-input-field-name` — and a view has no name to give, because it is
+ *   content rather than a labelled input.
+ * - The widget role exposes the rendered document to assistive technology
+ *   as a form field rather than as the content it is.
+ * - Widget-only ARIA is invalid without a widget role, so clearing only the
+ *   role would trade `aria-input-field-name` for `aria-allowed-attr`.
+ *
+ * `role` must be `null`, not `undefined`: Lexical substitutes its `textbox`
+ * default for `undefined`. The ARIA keys reach the element through Lexical's
+ * trailing prop spread, which is why `undefined` clears them. A proposed
+ * upstream fix (facebook/lexical#9270) would make these overrides no-ops.
+ *
+ * A caller who wants read-only form-field semantics instead wants
+ * `<RichTextEditor isReadOnly />`, which is a labelled field by construction.
+ */
+const VIEW_CONTENT_EDITABLE_PROPS = {
+  'aria-autocomplete': undefined,
+  'aria-readonly': undefined,
+  role: null as unknown as undefined,
+} as const;
 
 export interface RichTextViewProps extends BaseProps {
   /**
@@ -132,6 +160,10 @@ function SyncValuePlugin({value}: {value: string}): null {
 /**
  * A read-only renderer for serialized Lexical content. Renders the same styled
  * output as {@link RichTextEditor} without any editing affordances.
+ *
+ * The output is document content, not a form field: headings, lists and links
+ * keep their own roles for assistive technology, and the view takes no label.
+ * For a labelled, read-only field, use `<RichTextEditor isReadOnly />`.
  *
  * @example
  * ```
@@ -231,7 +263,7 @@ export function RichTextView({
         contentEditable={null}>
         <SyncValuePlugin value={value} />
         <RichTextPlugin
-          contentEditable={<ContentEditable />}
+          contentEditable={<ContentEditable {...VIEW_CONTENT_EDITABLE_PROPS} />}
           placeholder={null}
           ErrorBoundary={LexicalErrorBoundary}
         />
