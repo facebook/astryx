@@ -183,6 +183,7 @@ describe('gapReport categories and validation', () => {
       context: {
         product: '  Admin dashboard  ',
         task: ' Edit a saved filter ',
+        attemptedApproach: ' Keep the selected IDs in local state ',
         observedBehavior: ' Selection resets ',
         expectedBehavior: ' Selection remains ',
         workaround: {
@@ -204,6 +205,7 @@ describe('gapReport categories and validation', () => {
       context: {
         product: 'Admin dashboard',
         task: 'Edit a saved filter',
+        attemptedApproach: 'Keep the selected IDs in local state',
         observedBehavior: 'Selection resets',
         expectedBehavior: 'Selection remains',
         workaround: {
@@ -226,6 +228,7 @@ describe('gapReport categories and validation', () => {
       cwd: projectDir,
       context: {
         product: '   ',
+        attemptedApproach: '   ',
         workaround: {},
         affectedVersions: [],
         impact: {},
@@ -240,6 +243,8 @@ describe('gapReport categories and validation', () => {
     const invalid = [
       'not-an-object',
       {unknown: 'field'},
+      {attemptedApproach: 42},
+      {attemptedApproach: 'x'.repeat(8001)},
       {workaround: 'manual'},
       {impact: {releaseBlocking: 'yes'}},
       {affectedVersions: '0.6.5'},
@@ -965,6 +970,7 @@ console.log('https://github.com/acme/widgets/issues/42');
       context: {
         product: 'Admin dashboard',
         task: 'Edit a saved filter',
+        attemptedApproach: 'Keep the selected IDs in local state',
         observedBehavior: 'Selection resets',
         expectedBehavior: 'Selection remains',
         workaround: {
@@ -994,6 +1000,8 @@ console.log('https://github.com/acme/widgets/issues/42');
       'Admin dashboard',
       '## Task context',
       'Edit a saved filter',
+      '## Attempted approach',
+      'Keep the selected IDs in local state',
       '## Observed behavior',
       'Selection resets',
       '## Expected behavior',

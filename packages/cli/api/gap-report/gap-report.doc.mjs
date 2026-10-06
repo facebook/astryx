@@ -15,7 +15,7 @@ export const doc = {
   summary:
     'Report a missing or hard-to-use design-system capability to the package that owns it.',
   description:
-    'Sends a gap report to every configured handler: the project config handler first, then each integration handler in config order. Optional structured context carries product and task context, behavior, workaround, affected versions, reproduction or code location, and release impact. ' +
+    'Sends a gap report to every configured handler: the project config handler first, then each integration handler in config order. Optional structured context carries product and task context, an attempted approach, behavior, workaround, affected versions, reproduction or code location, and release impact. ' +
     'Each handler has 30 s to finish, and its output goes to stderr. Public handlers run only with confirmPublic; internal handlers always run. ' +
     "With no handler, it files a GitHub issue for the owning package only with confirmPublic (without it nothing is sent), or returns the package's issues URL when that is not on GitHub. " +
     'The report records whether an agent or a person ran it, and the response lists each handler outcome in order.',
@@ -67,6 +67,12 @@ export const doc = {
       type: 'string',
       description:
         'Optional task or workflow the caller was trying to complete (up to 8000 characters).',
+    },
+    {
+      name: 'options.context.attemptedApproach',
+      type: 'string',
+      description:
+        'Optional approach the caller already tried before reporting the gap (up to 8000 characters).',
     },
     {
       name: 'options.context.observedBehavior',
@@ -220,7 +226,7 @@ export const doc = {
     },
     {
       label: 'Include structured triage context',
-      code: "const receipt = await gapReport('Button', {category: 'api_friction', reason: 'Selection state is hard to preserve', context: {product: 'Admin dashboard', task: 'Edit a saved filter', observedBehavior: 'Selection resets when the dialog reopens', expectedBehavior: 'Selection remains until explicitly cleared', workaround: {type: 'custom_code', cost: 'high', description: 'Mirror state outside the component'}, affectedVersions: ['0.6.5'], codeLocation: 'src/filters/EditFilter.tsx', impact: {releaseBlocking: true, description: 'Blocks the next dashboard release'}}});",
+      code: "const receipt = await gapReport('Button', {category: 'api_friction', reason: 'Selection state is hard to preserve', context: {product: 'Admin dashboard', task: 'Edit a saved filter', attemptedApproach: 'Keep the selected IDs in local state', observedBehavior: 'Selection resets when the dialog reopens', expectedBehavior: 'Selection remains until explicitly cleared', workaround: {type: 'custom_code', cost: 'high', description: 'Mirror state outside the component'}, affectedVersions: ['0.6.5'], codeLocation: 'src/filters/EditFilter.tsx', impact: {releaseBlocking: true, description: 'Blocks the next dashboard release'}}});",
     },
   ],
   command: 'gap-report',

@@ -20,7 +20,7 @@ export function registerGapReport(program) {
     fn: gapReportFn,
     action: async (
       /** @type {string|undefined} */ component,
-      /** @type {{category?: string, reason?: string, additionalContext?: string, productContext?: string, taskContext?: string, observedBehavior?: string, expectedBehavior?: string, workaroundType?: string, workaroundCost?: string, workaroundDescription?: string, affectedVersion?: string[], reproduction?: string, codeLocation?: string, releaseBlocking?: boolean, impact?: string, package?: string, confirmPublic?: boolean, listCategories?: boolean}} */ options,
+      /** @type {{category?: string, reason?: string, additionalContext?: string, productContext?: string, taskContext?: string, attemptedApproach?: string, observedBehavior?: string, expectedBehavior?: string, workaroundType?: string, workaroundCost?: string, workaroundDescription?: string, affectedVersion?: string[], reproduction?: string, codeLocation?: string, releaseBlocking?: boolean, impact?: string, package?: string, confirmPublic?: boolean, listCategories?: boolean}} */ options,
     ) => {
       /** @type {Awaited<ReturnType<typeof gapReportApi>>} */
       let result;
@@ -36,6 +36,7 @@ export function registerGapReport(program) {
           context: {
             product: options.productContext,
             task: options.taskContext,
+            attemptedApproach: options.attemptedApproach,
             observedBehavior: options.observedBehavior,
             expectedBehavior: options.expectedBehavior,
             workaround: {

@@ -34,6 +34,8 @@ export interface GapReportContext {
   product?: string;
   /** Task or workflow the caller was trying to complete. */
   task?: string;
+  /** Approach the caller already tried before reporting the gap. */
+  attemptedApproach?: string;
   /** What happened in the current implementation. */
   observedBehavior?: string;
   /** What would have supported the task. */

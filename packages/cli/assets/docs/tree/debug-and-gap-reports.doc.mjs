@@ -104,7 +104,7 @@ export const gapReport = {
         },
         {
           type: 'prose',
-          text: 'Every handler in the app gets every report, so check `report.target.package` and skip reports about other packages. Required fields stay `component`, `category`, and `intention`; `report.target` still supplies the selected package and installed version. When the caller provides richer triage data, `report.context` groups product and task context, observed and expected behavior, a workaround, additional affected versions, reproduction or code location, and release impact. Calls that provide none omit `context`, so existing handlers can keep reading the original fields.',
+          text: 'Every handler in the app gets every report, so check `report.target.package` and skip reports about other packages. Required fields stay `component`, `category`, and `intention`; `report.target` still supplies the selected package and installed version. When the caller provides richer triage data, `report.context` groups product and task context, an attempted approach, observed and expected behavior, a workaround, additional affected versions, reproduction or code location, and release impact. Calls that provide none omit `context`, so existing handlers can keep reading the original fields.',
         },
         {
           type: 'code',
@@ -114,6 +114,7 @@ export const gapReport = {
   --reason 'Selection state is hard to preserve' \\
   --product-context 'Admin dashboard' \\
   --task-context 'Edit a saved filter' \\
+  --attempted-approach 'Keep the selected IDs in local state' \\
   --observed-behavior 'Selection resets when the dialog reopens' \\
   --expected-behavior 'Selection remains until explicitly cleared' \\
   --workaround-type custom_code \\

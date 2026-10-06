@@ -212,6 +212,7 @@ function normalizeGapReportContext(value) {
     [
       'product',
       'task',
+      'attemptedApproach',
       'observedBehavior',
       'expectedBehavior',
       'workaround',
@@ -296,6 +297,11 @@ function normalizeGapReportContext(value) {
   const context = {
     product: optionalText(input.product, 'context.product', CONTEXT_TEXT_MAX),
     task: optionalText(input.task, 'context.task', CONTEXT_TEXT_MAX),
+    attemptedApproach: optionalText(
+      input.attemptedApproach,
+      'context.attemptedApproach',
+      CONTEXT_TEXT_MAX,
+    ),
     observedBehavior: optionalText(
       input.observedBehavior,
       'context.observedBehavior',
@@ -682,6 +688,7 @@ function contextBody(context) {
 
   textSection('Product context', context.product);
   textSection('Task context', context.task);
+  textSection('Attempted approach', context.attemptedApproach);
   textSection('Observed behavior', context.observedBehavior);
   textSection('Expected behavior', context.expectedBehavior);
 

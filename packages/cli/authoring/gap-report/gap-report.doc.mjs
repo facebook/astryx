@@ -94,6 +94,12 @@ export const doc = {
                     'The task or workflow the caller was trying to complete.',
                 },
                 {
+                  name: 'report.context.attemptedApproach',
+                  type: 'string',
+                  description:
+                    'The approach the caller already tried before reporting the gap.',
+                },
+                {
                   name: 'report.context.observedBehavior',
                   type: 'string',
                   description: 'What happened in the current implementation.',

@@ -115,6 +115,8 @@ describe('gap-report CLI and API parity', () => {
           'Admin dashboard',
           '--task-context',
           'Edit a saved filter',
+          '--attempted-approach',
+          'Keep the selected IDs in local state',
           '--observed-behavior',
           'Selection resets',
           '--expected-behavior',
@@ -147,6 +149,7 @@ describe('gap-report CLI and API parity', () => {
         context: {
           product: 'Admin dashboard',
           task: 'Edit a saved filter',
+          attemptedApproach: 'Keep the selected IDs in local state',
           observedBehavior: 'Selection resets',
           expectedBehavior: 'Selection remains',
           workaround: {
@@ -316,6 +319,7 @@ describe('gap-report control docs', () => {
     for (const flag of [
       '--product-context',
       '--task-context',
+      '--attempted-approach',
       '--observed-behavior',
       '--expected-behavior',
       '--workaround-type',
@@ -360,6 +364,14 @@ describe('gap-report control docs', () => {
         [
           option('--product-context'),
           value => gapReport('Button', {...base, context: {product: value}}),
+        ],
+        [
+          option('--attempted-approach'),
+          value =>
+            gapReport('Button', {
+              ...base,
+              context: {attemptedApproach: value},
+            }),
         ],
       ];
       for (const [text, call] of limits) {
