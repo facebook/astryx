@@ -97,7 +97,7 @@ and remains available through explicit Core package selection.
   condition, not a fallback. A command with nothing to do exits with a result,
   never a question.
 - **INV2 — Every `--json` emission is one valid envelope.** Success is
-  `{apiVersion, type, data}` plus optional `meta`. Failure is
+  `{apiVersion, type, data}` plus optional `package` (INV28) and `meta`. Failure is
   `{apiVersion, error, code}` plus optional `suggestions`. There is no third
   shape, no partial write, and no raw stack trace: an uncaught throw becomes an
   envelope at the bin error boundary.
@@ -255,14 +255,19 @@ and remains available through explicit Core package selection.
   `astryx search` meet it first.
   A link between docs names its target by doc identity and is resolved on
   every read; Doctor warns on one that names no doc.
-- **INV28 — Every surfaced artifact names its source package.** Every JSON
-  response that presents a CLI artifact (component, template, theme, doc,
-  codemod, build recommendation) includes a `package` field naming the npm
-  package that owns it. Core components use `@astryxdesign/core`; CLI-authored
-  docs use `@astryxdesign/cli`. Text output shows the same ownership inline.
-  Where `data` is an array, the package sits in `meta.package`.
-  Verbatim-piped source code (--source, --showcase) is exempt in the body
-  but carries `package` in its JSON envelope.
+- **INV28 — Every result names the package each artifact comes from.** A
+  `--json` result about one artifact (a component, doc, template, hook, or
+  theme) carries `package` in its envelope, directly after `type`. A result
+  that lists artifacts gives each listed artifact its own `package`, and a
+  doc's sections each name the package that wrote them. Core's components,
+  hooks, templates, and codemods name `@astryxdesign/core`; the docs the CLI
+  ships name `@astryxdesign/cli`; an integration's artifacts name the
+  integration's package, with nothing written for it by the integration's
+  author. Two lists of plain names, `hook --list` and `swizzle --list`, hold
+  only Core's artifacts and name `package` once, in the envelope; `build`'s
+  `frame` and `foundation` are fixed lists of Core component names. Text
+  output names the same package, except verbatim source output (`--source`,
+  `--showcase`, and a template's source), which prints only the source.
 
 Some modules predate INV20–INV23 and do not meet them yet; `spec:AST-042` lists
 the known gaps.
@@ -360,7 +365,7 @@ non-interactive guarantee.
 | INV23     | `clients/cli/formatters/index.test.mjs` for the kit; review of handlers; no mechanical check yet                                                           | A handler pads, aligns, or draws text itself, or a block kind is missing from the help "Output format" list.                                    |
 | INV24     | `api/integration/add-contribution.test.mjs`, `api/integration/add-theme.test.mjs`, `foundation/discovery/theme-discovery.test.mjs`                         | New authoring emits an untyped or non-`.doc.mjs` item, adding one item edits a shared file, or an item catalog becomes authoritative.           |
 | INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
-| INV28     | `test/inv28-package-provenance.test.mjs`, `cli-api-types-verify`                                                                                          | A response envelope that surfaces a CLI artifact omits `package`, or a new surface is added without it.                                        |
+| INV28     | `test/inv28-package-provenance.test.mjs`, `clients/cli/commands/text-json-parity.test.mjs`, `cli-api-types-verify`                                         | A result about one artifact has no envelope `package`, a listed artifact has no `package`, or text omits the package the envelope names.        |
 
 ## Open questions
 
