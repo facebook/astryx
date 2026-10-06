@@ -47,40 +47,56 @@ No source text disappears because the editor could not represent it.
   imported into RichText and exported with no edit is identical to the input,
   byte for byte, for any input: supported, unsupported, and malformed. This
   holds for `markdownToEditorStateJSON` followed by `editorStateJSONToMarkdown`,
-  and for an editor's `getMarkdown()` after it loads imported content.
+  and for an editor's `getMarkdown()` after it loads imported content. An edit
+  is a change a person or caller makes to the document's content. Loading,
+  import normalization, autolinking, registered node transforms, selection,
+  history, and other bookkeeping are not edits and do not change the export.
 - **FR2 — An edit regenerates only what it changed.** After an edit, every
   top-level block whose content the edit did not change exports exactly as
   authored, including the blank lines and whitespace that follow it. Only the
   blocks the edit changed or created export in canonical form.
-- **FR3 — Unsupported source is kept, never dropped.** Source that RichText
+- **FR3 — Regenerated Markdown means what the editor showed.** A regenerated
+  block's Markdown imports again as the same structure the editor showed: text
+  that was literal stays literal, so an edited paragraph that begins with an
+  escaped `\#` never reloads as a heading.
+- **FR4 — The document's envelope and line endings survive.** A byte order
+  mark and anything before the first block are kept exactly, and the bytes
+  after the last block are kept with it. A regenerated block keeps the line
+  ending style it was written with; a new block uses the document's first line
+  ending, or LF when there is none, so an export never mixes line endings the
+  input did not.
+- **FR5 — Unsupported source is kept, never dropped.** Source that RichText
   cannot represent as a structure imports as visible literal text. Untouched,
   it exports as authored (FR1, FR2); edited, it exports with every character a
   person did not delete.
-- **FR4 — Every shipped transformer conforms.** FR1–FR3 hold for every
-  transformer and node RichText ships by default. A caller's custom
-  transformer gets the same preservation for blocks it does not change.
+- **FR6 — Every shipped transformer conforms.** FR1–FR5 hold for every
+  transformer, node, and plugin RichText ships, including the transforms they
+  register. A caller's custom transformer gets the same preservation for
+  blocks it does not change.
 
 ### Platform support
 
 - Supported feature/engine floor: wherever RichText's Markdown import and
   export run, including headless in Node.
-- Unsupported behavior: none; FR1 and FR3 cover every input.
+- Unsupported behavior: none; FR1 and FR5 cover every input.
 - Browser evidence: not required; the contract is string in, string out.
 
 ## Current-state impact
 
-RichText's Markdown import and export adopt FR1–FR4. Content imported before
+RichText's Markdown import and export adopt FR1–FR6. Content imported before
 this contract carries no record of its authored form and exports in canonical
 form until it is imported again.
 
 ## Verification
 
-| Contract | Verification                                                                    | Representative states                                                                                                                                                                                                                                                                | Mutation or failure expectation                                           |
-| -------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| FR1      | Conformance corpus of at least 30 documents, imported and exported with no edit | Nested lists at 2- and 3-space indentation; backslash escapes such as `\#`; character references such as `&#169;`; fenced code with an info string and metadata; tables; unsupported HTML, reference definitions, and setext headings; trailing whitespace and missing final newline | Exporting any block in canonical form instead of its authored bytes fails |
-| FR2      | The same corpus with one block edited                                           | An edit in the first, a middle, and the last block; a new block inserted; a block deleted                                                                                                                                                                                            | Any untouched block changing a byte fails                                 |
-| FR3      | Unsupported constructs edited and untouched                                     | Raw HTML block; reference definition; footnote                                                                                                                                                                                                                                       | A character the edit did not delete missing from the export fails         |
-| FR4      | The corpus run with the default transformers, including tables                  | Every shipped transformer represented                                                                                                                                                                                                                                                | A shipped transformer that bypasses preservation fails                    |
+| Contract | Verification                                                                                                                                    | Representative states                                                                                                                                                                                                                                                                                                      | Mutation or failure expectation                                           |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| FR1      | Conformance corpus of at least 30 documents, imported and exported with no edit, headless and through a mounted editor with the shipped plugins | Nested lists at 2- and 3-space indentation; backslash escapes such as `\#`; character references such as `&#169;`; fenced code with an info string and metadata; tables; unsupported HTML, reference definitions, and setext headings; trailing whitespace and missing final newline; a bare URL under the autolink plugin | Exporting any block in canonical form instead of its authored bytes fails |
+| FR2      | The same corpus with one block edited                                                                                                           | An edit in the first, a middle, and the last block; a new block inserted; a block deleted                                                                                                                                                                                                                                  | Any untouched block changing a byte fails                                 |
+| FR3      | Edited blocks exported and imported again                                                                                                       | An edited paragraph that starts with an escaped `\#`, contains escaped `*` and `[`, or starts with `1.`                                                                                                                                                                                                                    | A regenerated block that imports as a different structure fails           |
+| FR4      | Envelope and line endings, untouched and edited                                                                                                 | A byte order mark; leading blank lines; CRLF, LF, and a missing final newline, with the first, a middle, and the last block edited and a block added                                                                                                                                                                       | A dropped envelope byte, or an LF inside a CRLF document, fails           |
+| FR5      | Unsupported constructs edited and untouched                                                                                                     | Raw HTML block; reference definition; footnote                                                                                                                                                                                                                                                                             | A character the edit did not delete missing from the export fails         |
+| FR6      | The corpus run with the default transformers and shipped plugins, including tables and autolinks                                                | Every shipped transformer represented                                                                                                                                                                                                                                                                                      | A shipped transformer that bypasses preservation fails                    |
 
 ## Decision log
 
