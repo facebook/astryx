@@ -908,6 +908,99 @@ for (const globals of [
   });
 }
 
+// spec:AST-061 DEC-6 in core Markdown: each level draws the marker for its
+// depth modulo 3, counting lists of either kind; numbering keeps its start.
+for (const globals of [
+  'colorMode:light;direction:ltr',
+  'colorMode:dark;direction:rtl',
+]) {
+  test(`core Markdown list markers cycle by depth (${globals})`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(DESKTOP);
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=core-markdown--nested-lists&viewMode=story&globals=astryxTheme:neutral;${globals}`,
+      {waitUntil: 'load'},
+    );
+    await expect(page.getByText('Start 0', {exact: true})).toBeVisible();
+    const lists = await page.evaluate(() => {
+      const document_ = document.querySelector('[role="document"]');
+      if (document_ == null) {
+        throw new Error('No Markdown document');
+      }
+      const markerOf = (item: Element): string => {
+        for (const span of item.querySelectorAll('span')) {
+          if (span.closest('li') !== item) {
+            continue;
+          }
+          const before = getComputedStyle(span, '::before').content;
+          if (before.includes('counter(')) {
+            return before.includes('lower-alpha')
+              ? 'lower-alpha'
+              : before.includes('lower-roman')
+                ? 'lower-roman'
+                : 'decimal';
+          }
+          const style = getComputedStyle(span);
+          if (style.width === '6px') {
+            if (style.borderTopLeftRadius === '0px') {
+              return 'square';
+            }
+            return style.backgroundColor === 'rgba(0, 0, 0, 0)'
+              ? 'circle'
+              : 'disc';
+          }
+        }
+        return 'none';
+      };
+      return [...document_.querySelectorAll('ul, ol')].map(list => {
+        let depth = 0;
+        for (
+          let ancestor = list.parentElement;
+          ancestor != null && ancestor !== document_;
+          ancestor = ancestor.parentElement
+        ) {
+          if (ancestor.tagName === 'UL' || ancestor.tagName === 'OL') {
+            depth++;
+          }
+        }
+        const items = [...list.querySelectorAll(':scope > li')];
+        return {
+          tag: list.tagName,
+          depth,
+          markers: [...new Set(items.map(markerOf))],
+          text: items[0]?.textContent ?? '',
+          counterReset: getComputedStyle(list).counterReset,
+        };
+      });
+    });
+    for (const list of lists) {
+      const markers = list.tag === 'UL' ? BULLET_MARKERS : NUMBER_MARKERS;
+      expect(list.markers, `${list.tag} at depth ${list.depth}`).toEqual([
+        markers[list.depth % 3],
+      ]);
+    }
+    // Every depth from 0 to 8 of each kind.
+    for (const tag of ['UL', 'OL']) {
+      expect(
+        lists
+          .filter(
+            list =>
+              list.tag === tag &&
+              (list.text.startsWith('Bullet') ||
+                list.text.startsWith('Number')),
+          )
+          .map(list => list.depth),
+      ).toEqual(Array.from({length: 9}, (_, depth) => depth));
+    }
+    // Numbering keeps its start.
+    const startOf = (text: string) =>
+      lists.find(list => list.text.startsWith(text));
+    expect(startOf('Start 26')?.counterReset).toBe('astryx-list 25');
+    expect(startOf('Start 0')?.counterReset).toBe('astryx-list -1');
+  });
+}
+
 for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
   for (const globals of [
     'colorMode:light;direction:ltr',

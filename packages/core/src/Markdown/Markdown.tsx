@@ -32,6 +32,7 @@ import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
 import {Blockquote} from '../Blockquote/Blockquote';
 import {List} from '../List/List';
 import {ListItem} from '../List/ListItem';
+import {ListMarkerScope, type ListMarker} from '../List/ListContext';
 import {Table} from '../Table/Table';
 import {TableRow} from '../Table/TableRow';
 import {TableCell} from '../Table/TableCell';
@@ -90,6 +91,19 @@ type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
 type RenderExtensionNode = MarkdownExtensionNode;
 type RenderInlineNode = MarkdownAstPhrasingContent<RenderExtensionNode>;
 type RenderBlockNode = MarkdownAstBlockContent<RenderExtensionNode>;
+
+// spec:AST-061 DEC-6: a list nested inside n lists, of either kind, draws the
+// marker at n modulo 3.
+const BULLET_MARKERS: readonly [ListMarker, ListMarker, ListMarker] = [
+  'disc',
+  'circle',
+  'square',
+];
+const NUMBER_MARKERS: readonly [ListMarker, ListMarker, ListMarker] = [
+  'decimal',
+  'lower-alpha',
+  'lower-roman',
+];
 type RenderTable = MarkdownAstTable<RenderExtensionNode>;
 
 // ---------------------------------------------------------------------------
@@ -1310,6 +1324,8 @@ function renderBlock(
   preparedPlugins: PreparedMarkdownPlugins | undefined,
   t: TranslatorFn,
   headingProjection?: MarkdownHeadingProjection,
+  // How many lists enclose this block (spec:AST-061 DEC-6).
+  listDepth = 0,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1551,6 +1567,7 @@ function renderBlock(
             preparedPlugins,
             t,
             headingProjection,
+            listDepth,
           ),
         );
         return <BlockquoteComp key={index}>{bqC}</BlockquoteComp>;
@@ -1588,6 +1605,7 @@ function renderBlock(
               preparedPlugins,
               t,
               headingProjection,
+              listDepth,
             ),
           )}
         </Blockquote>
@@ -1666,6 +1684,7 @@ function renderBlock(
                         preparedPlugins,
                         t,
                         headingProjection,
+                        listDepth + 1,
                       ),
                     )}
                   </>
@@ -1751,17 +1770,23 @@ function renderBlock(
                       preparedPlugins,
                       t,
                       headingProjection,
+                      listDepth + 1,
                     ),
                   )}
                 </>
               );
 
               return (
-                <ListItem
+                <ListMarkerScope
                   // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown list items are rendered from positional AST nodes
                   key={i}
-                  label={label}
-                />
+                  marker={
+                    (node.ordered ? NUMBER_MARKERS : BULLET_MARKERS)[
+                      listDepth % 3
+                    ]
+                  }>
+                  <ListItem label={label} />
+                </ListMarkerScope>
               );
             })}
           </List>
