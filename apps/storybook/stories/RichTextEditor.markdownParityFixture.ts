@@ -123,6 +123,33 @@ export const MARKDOWN_PARITY_BLOCKS: readonly MarkdownParityBlock[] = [
       '```',
     ),
   },
+  // Fences that show no language label, as core CodeBlock decides: no info
+  // string, a blank one, and `plaintext`; and an unknown language, which
+  // shows its name.
+  {
+    key: 'code-plain',
+    label: 'Fenced code, no info string',
+    probe: 'plainFence',
+    markdown: lines('```', 'const plainFence = true;', '```'),
+  },
+  {
+    key: 'code-blank',
+    label: 'Fenced code, blank info string',
+    probe: 'blankFence',
+    markdown: lines('```   ', 'const blankFence = true;', '```'),
+  },
+  {
+    key: 'code-plaintext',
+    label: 'Fenced code, plaintext',
+    probe: 'typedAsIs',
+    markdown: lines('```plaintext', 'typedAsIs = 1', '```'),
+  },
+  {
+    key: 'code-unknown',
+    label: 'Fenced code, unknown language',
+    probe: 'unknownFence',
+    markdown: lines('```notalanguage', 'unknownFence()', '```'),
+  },
   {
     key: 'table',
     label: 'Table',

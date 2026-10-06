@@ -86,6 +86,19 @@ const styles = stylex.create({
   }),
 });
 
+/**
+ * The language a header names, as core CodeBlock decides it: none for a fence
+ * without one, and none for exactly `plaintext`, which core Markdown gives a
+ * fence with no info string.
+ */
+function displayLanguageOf(language: string | null | undefined): string | null {
+  return language == null || language === '' || language === PLAIN_TEXT
+    ? null
+    : language;
+}
+
+const PLAIN_TEXT = 'plaintext';
+
 function samePlacements(
   a: ReadonlyArray<HeaderPlacement>,
   b: ReadonlyArray<HeaderPlacement>,
@@ -198,7 +211,7 @@ export function CodeBlockHeaderPlugin(): JSX.Element {
             return [
               {
                 key: node.getKey(),
-                language: node.getLanguage() || null,
+                language: displayLanguageOf(node.getLanguage()),
                 top: box.top - origin.top + element.clientTop,
                 left: box.left - origin.left + element.clientLeft,
                 width: element.clientWidth,

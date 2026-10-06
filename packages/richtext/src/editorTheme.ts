@@ -375,7 +375,10 @@ const editorTheme = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     paddingBlockStart: {
       default: CODE_SPACE,
-      ':is([data-language])': CODE_HEADER_SPACE,
+      // Only a block whose header names a language; `plaintext` names none,
+      // as in core CodeBlock (CodeBlockHeaderPlugin).
+      ':is([data-language]:not([data-language="plaintext"]))':
+        CODE_HEADER_SPACE,
     },
     paddingBlockEnd: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],

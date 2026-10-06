@@ -385,8 +385,13 @@ for (const viewport of [DESKTOP, {width: 2200, height: 900}] as const) {
     if (viewport.width > DESKTOP.width) {
       expect(span?.block ?? 0).toBeGreaterThan(680);
     }
-    const header = page.locator(`${RICH_TEXT} [data-richtext-code-header]`);
-    await expect(header).toHaveCount(1);
+    // One header per fenced block; the first is the `ts` block's.
+    await expect(
+      page.locator(`${RICH_TEXT} [data-richtext-code-header]`),
+    ).toHaveCount(5);
+    const header = page
+      .locator(`${RICH_TEXT} [data-richtext-code-header]`)
+      .first();
     await expect(header).toContainText('ts');
     await expect(header.getByRole('button', {name: 'Copy code'})).toBeVisible();
     expect(
@@ -444,6 +449,75 @@ test('code blocks wrap long lines at phone width and copy from the keyboard', as
     `const id = "${token}";`,
   );
 });
+
+// spec:AST-061 FR8: a fence names a language exactly when core CodeBlock
+// does — not with no info string, a blank one, or `plaintext` — and only a
+// named block reserves the header row, so every fence is as tall as core
+// Markdown's on both surfaces, in both color modes and directions.
+for (const globals of [
+  'colorMode:light;direction:ltr',
+  'colorMode:dark;direction:rtl',
+]) {
+  test(`side by side: fences without a language have no label row (${globals})`, async ({
+    page,
+  }) => {
+    const errors = await openStory(page, STORY.sideBySide, DESKTOP, globals);
+    await waitForDocument(page, MARKDOWN);
+    await waitForDocument(page, RICH_TEXT);
+    const fences = {
+      'code-fence': 'ts',
+      'code-plain': '',
+      'code-blank': '',
+      'code-plaintext': '',
+      'code-unknown': 'notalanguage',
+    } as const;
+    const markdown = await surfaceGeometry(page, MARKDOWN);
+    const richText = await surfaceGeometry(page, RICH_TEXT);
+    for (const key of Object.keys(fences)) {
+      const height = (geometry: SurfaceGeometry) =>
+        geometry.blocks.find(block => block.key === key)?.height ?? 0;
+      expect(
+        Math.abs(height(richText) - height(markdown)),
+        `${key} height`,
+      ).toBeLessThanOrEqual(2);
+    }
+    // The label core Markdown shows for each fence.
+    const markdownLabels = await page.evaluate(
+      ({selector, names}) =>
+        Object.keys(names).map(key => {
+          const block = document.querySelector(
+            `${selector} [data-parity-block="${key}"]`,
+          );
+          const label = [...(block?.querySelectorAll('*') ?? [])].find(
+            element =>
+              element.childElementCount === 0 &&
+              ['ts', 'notalanguage', 'plaintext'].includes(
+                element.textContent?.trim() ?? '',
+              ),
+          );
+          return label?.textContent?.trim() ?? '';
+        }),
+      {selector: MARKDOWN, names: fences},
+    );
+    expect(markdownLabels).toEqual(Object.values(fences));
+    // RichText draws one header per fence, in order, each with a copy button
+    // and the same label.
+    const headers = page.locator(`${RICH_TEXT} [data-richtext-code-header]`);
+    await expect(headers).toHaveCount(5);
+    const richTextLabels = await headers.evaluateAll(elements =>
+      elements.map(element =>
+        (element.textContent ?? '').replace('Copy code', '').trim(),
+      ),
+    );
+    expect(richTextLabels).toEqual(Object.values(fences));
+    for (const index of [0, 1, 2, 3, 4]) {
+      await expect(
+        headers.nth(index).getByRole('button', {name: 'Copy code'}),
+      ).toBeVisible();
+    }
+    expect(errors).toEqual([]);
+  });
+}
 
 for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
   for (const globals of [

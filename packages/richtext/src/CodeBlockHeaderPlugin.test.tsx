@@ -48,6 +48,29 @@ describe('code block headers (spec:AST-061 FR8)', () => {
     expect(screen.getByRole('button', {name: 'Copy code'})).toBeTruthy();
   });
 
+  it('names no language for a plaintext fence, as core CodeBlock does', async () => {
+    const {container} = render(
+      <RichTextView
+        value={markdownToEditorStateJSON(
+          '```plaintext\nas typed\n```\n\n```Plaintext\ncased\n```\n',
+        )}
+      />,
+    );
+    await waitFor(() =>
+      expect(
+        container.querySelectorAll('[data-richtext-code-header]'),
+      ).toHaveLength(2),
+    );
+    const headers = [
+      ...container.querySelectorAll('[data-richtext-code-header]'),
+    ];
+    // Exactly `plaintext` names nothing; core compares it case-sensitively.
+    expect(headers.map(header => header.textContent)).toEqual([
+      'Copy code',
+      'PlaintextCopy code',
+    ]);
+  });
+
   it('draws one header per code block in the editor, outside the editable text', async () => {
     const {container} = render(
       <RichTextEditor
