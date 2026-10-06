@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as Astryx components
  */
 
-import {Component, Suspense, useMemo, useRef} from 'react';
+import {Suspense, useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -70,6 +70,10 @@ import {
   reportMarkdownPluginFailure,
 } from './plugins/protocol';
 import {getMarkdownFenceProposal} from './plugins/semanticFence';
+import {
+  MarkdownPluginBoundary,
+  renderMarkdownPluginNode,
+} from './plugin-renderer/MarkdownPluginNodeRenderer';
 import type {
   MarkdownExtensionNode,
   MarkdownPluginEntry,
@@ -787,57 +791,6 @@ function applyInlinePlugins(
   return segments;
 }
 
-interface MarkdownPluginBoundaryProps {
-  children: React.ReactNode;
-  fallback: React.ReactNode;
-  pluginName: string;
-  resetKey: unknown;
-  resetRenderer: unknown;
-}
-
-interface MarkdownPluginBoundaryState {
-  failed: boolean;
-  resetKey: unknown;
-  resetRenderer: unknown;
-}
-
-class MarkdownPluginBoundary extends Component<
-  MarkdownPluginBoundaryProps,
-  MarkdownPluginBoundaryState
-> {
-  state: MarkdownPluginBoundaryState = {
-    failed: false,
-    resetKey: this.props.resetKey,
-    resetRenderer: this.props.resetRenderer,
-  };
-
-  static getDerivedStateFromError(): Partial<MarkdownPluginBoundaryState> {
-    return {failed: true};
-  }
-
-  static getDerivedStateFromProps(
-    props: MarkdownPluginBoundaryProps,
-    state: MarkdownPluginBoundaryState,
-  ): Partial<MarkdownPluginBoundaryState> | null {
-    return props.resetKey === state.resetKey &&
-      props.resetRenderer === state.resetRenderer
-      ? null
-      : {
-          failed: false,
-          resetKey: props.resetKey,
-          resetRenderer: props.resetRenderer,
-        };
-  }
-
-  componentDidCatch(error: unknown): void {
-    reportMarkdownPluginFailure(this.props.pluginName, 'render', error);
-  }
-
-  render(): React.ReactNode {
-    return this.state.failed ? this.props.fallback : this.props.children;
-  }
-}
-
 function useStableMarkdownSyntaxEntries(
   plugins: PreparedMarkdownPlugins | undefined,
 ): ReadonlyArray<MarkdownPluginEntry> | undefined {
@@ -1139,34 +1092,17 @@ function renderInline(
         />
       );
     }
-    case 'extension': {
-      const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
-      const fallback = wrapTextWithFade(
-        node.source ?? markdownExtensionText(preparedPlugins, node),
-        cursor,
+    case 'extension':
+      return renderMarkdownPluginNode(
+        preparedPlugins,
+        node,
+        wrapTextWithFade(
+          node.source ?? markdownExtensionText(preparedPlugins, node),
+          cursor,
+          index,
+        ),
         index,
       );
-      if (renderer == null) {
-        return fallback;
-      }
-      let rendered: React.ReactNode;
-      try {
-        rendered = renderer.render({node});
-      } catch (error) {
-        reportMarkdownPluginFailure(node.plugin, 'render', error);
-        return fallback;
-      }
-      return (
-        <MarkdownPluginBoundary
-          key={index}
-          pluginName={node.plugin}
-          resetKey={node}
-          resetRenderer={renderer.render}
-          fallback={fallback}>
-          <Suspense fallback={fallback}>{rendered}</Suspense>
-        </MarkdownPluginBoundary>
-      );
-    }
     case 'break':
       cursor.offset += 1;
       return <br key={index} />;
@@ -1896,27 +1832,15 @@ function renderBlock(
       );
     }
     case 'extension': {
-      const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
-      const fallbackText =
-        node.source ?? markdownExtensionText(preparedPlugins, node);
-      const fallback = wrapTextWithFade(fallbackText, cursor, index);
-      let content: React.ReactNode = fallback;
-      if (renderer != null) {
-        try {
-          const rendered = renderer.render({node});
-          content = (
-            <MarkdownPluginBoundary
-              pluginName={node.plugin}
-              resetKey={node}
-              resetRenderer={renderer.render}
-              fallback={fallback}>
-              <Suspense fallback={fallback}>{rendered}</Suspense>
-            </MarkdownPluginBoundary>
-          );
-        } catch (error) {
-          reportMarkdownPluginFailure(node.plugin, 'render', error);
-        }
-      }
+      const content = renderMarkdownPluginNode(
+        preparedPlugins,
+        node,
+        wrapTextWithFade(
+          node.source ?? markdownExtensionText(preparedPlugins, node),
+          cursor,
+          index,
+        ),
+      );
       return (
         <div
           key={index}

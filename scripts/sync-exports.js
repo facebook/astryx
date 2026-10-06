@@ -100,9 +100,14 @@ const STATIC_EXPORTS = {
   },
 };
 
-/** Nested modules backed by an index.ts entry point. */
+/**
+ * Nested modules backed by an index.ts entry point. `Markdown/plugin-renderer`
+ * is client-only (its entry starts with 'use client'); the plugin protocol and
+ * parser entries stay server-safe (spec:AST-064 DEC-6).
+ */
 const DIRECTORY_MODULE_SUBPATH_EXPORTS = [
   'Markdown/plugins',
+  'Markdown/plugin-renderer',
   'Markdown/parser',
 ];
 
