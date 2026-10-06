@@ -256,8 +256,8 @@ and remains available through explicit Core package selection.
   A link between docs names its target by doc identity and is resolved on
   every read; Doctor warns on one that names no doc.
 - **INV28 — Every result names the package each artifact comes from.** A
-  `--json` result about one artifact (a component, doc, template, hook, or
-  theme) carries `package` in its envelope, directly after `type`. A result
+  `--json` result about one artifact (a component, doc, template, or hook)
+  carries `package` in its envelope, directly after `type`. A result
   that lists artifacts gives each listed artifact its own `package`, and a
   doc's sections each name the package that wrote them. Core's components,
   hooks, templates, and codemods name `@astryxdesign/core`; the docs the CLI
