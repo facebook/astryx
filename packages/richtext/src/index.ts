@@ -34,6 +34,11 @@ export {
   editorStateJSONToMarkdown,
 } from './markdownSerializers';
 export type {MarkdownSerializerOptions} from './markdownSerializers';
+export {
+  createRichTextExtension,
+  RichTextExtensionError,
+} from './markdownExtensions';
+export type {RichTextMarkdownExtension} from './markdownExtensions';
 
 export {
   RichTextEditorToolbar,

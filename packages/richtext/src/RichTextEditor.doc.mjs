@@ -207,7 +207,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'To produce a defaultValue from Markdown without mounting an editor (e.g. on the server), use markdownToEditorStateJSON(markdown). Convert the other way with editorStateJSONToMarkdown(json). Both run headless via @lexical/headless and accept the same transformers/nodes options as the editor. The round trip keeps the Markdown as written: exporting unchanged content returns the input exactly, including indentation, escapes, character references, fence metadata, and constructs the editor shows as plain text, and an edit regenerates only the blocks it changed.',
+          'To produce a defaultValue from Markdown without mounting an editor (e.g. on the server), use markdownToEditorStateJSON(markdown). Convert the other way with editorStateJSONToMarkdown(json). Both run headless via @lexical/headless and accept the same transformers/nodes options as the editor. The round trip keeps the Markdown as written: exporting unchanged content returns the input exactly, including indentation, escapes, character references, fence metadata, and constructs the editor shows as plain text, and an edit regenerates only the blocks it changed. On the server or in Node, import them from @astryxdesign/richtext/markdown, which loads no React or client code.',
+      },
+      {
+        guidance: true,
+        description:
+          "To recognize a Markdown plugin made with createMarkdownPlugin, adopt it with createRichTextExtension(plugin) and pass the result in the extensions option of markdownToEditorStateJSON. Core's parser finds the plugin's syntax, and each node keeps its exact source, which is what it exports; base Markdown inside plugin source stays part of the node. A plugin that declares a transform is refused with a RichTextExtensionError, and so is a configuration that adopts one plugin twice. Without the extension, plugin syntax stays text. createRichTextExtension and the serializers are also exported from @astryxdesign/richtext/markdown for server code.",
       },
       {
         guidance: true,

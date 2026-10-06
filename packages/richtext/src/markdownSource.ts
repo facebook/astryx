@@ -3,7 +3,8 @@
 /**
  * @file markdownSource.ts
  * @input Uses lexical (node state, root, node classes), @lexical/markdown
- *   ($convertFromMarkdownString / $convertToMarkdownString), and @lexical/code.
+ *   ($convertFromMarkdownString / $convertToMarkdownString), @lexical/code,
+ *   and the plugin node shielding and export in markdownExtensions.ts.
  * @output Exports importMarkdownKeepingSource and $exportMarkdownKeepingSource,
  *   the source-preserving Markdown import and export behind
  *   markdownToEditorStateJSON, editorStateJSONToMarkdown, and getMarkdown().
@@ -46,6 +47,7 @@ import {
   type ElementNode,
   type LexicalEditor,
   type LexicalNode,
+  type NodeKey,
 } from 'lexical';
 import {isMarkedHardLineBreak} from './markdownHardLineBreak';
 import {normalizeListIndentation} from './markdownListIndentation';
@@ -53,6 +55,15 @@ import {
   $restoreCharacterReferences,
   protectCharacterReferences,
 } from './markdownCharacterReferences';
+import {
+  $restoreExtensionSources,
+  absentCharacters,
+  extensionTextView,
+  shieldExtensionSources,
+  withExtensionExport,
+} from './markdownExtensions';
+import {$isRichTextExtensionNode} from './markdownExtensionNode';
+import type {MarkdownPluginEntry} from '@astryxdesign/core/Markdown/plugins';
 
 /** The whitespace and content one chunk of Markdown source was split into. */
 export interface MarkdownChunk {
@@ -327,6 +338,7 @@ export function importMarkdownKeepingSource(
   editor: LexicalEditor,
   markdown: string,
   transformers: Array<Transformer>,
+  plugins: ReadonlyArray<MarkdownPluginEntry> = [],
 ): void {
   const importId = nextImportId();
   const byteOrderMark = markdown.startsWith('\uFEFF');
@@ -349,12 +361,19 @@ export function importMarkdownKeepingSource(
         const holder = $createParagraphNode();
         root.append(holder);
         // Lexical imports LF lines; the record keeps the authored endings.
-        // Character references go through as stand-ins and come back decoded.
-        const {markdown: chunkMarkdown, standIns} = protectCharacterReferences(
+        // Adopted plugins' nodes, and then character references, go through
+        // as stand-ins: plugin nodes come back as extension nodes holding
+        // their source, references come back decoded.
+        const shielded = shieldExtensionSources(
           withoutCarriageReturns(importChunks[index]?.content ?? chunk.content),
+          plugins,
+        );
+        const {markdown: chunkMarkdown, standIns} = protectCharacterReferences(
+          shielded.markdown,
         );
         $convertFromMarkdownString(chunkMarkdown, transformers, holder);
         $restoreCharacterReferences(holder, standIns);
+        $restoreExtensionSources(holder, shielded.standIns);
         $joinSoftLineBreaks(holder);
         for (const node of holder.getChildren()) {
           $setState(node, groupState, {group: `${importId}:${index}`});
@@ -580,7 +599,10 @@ function $canonicalMarkdown(
   ) {
     return cached;
   }
-  const markdown = $convertToMarkdownString(transformers, childrenOf(nodes));
+  const markdown = $convertToMarkdownString(
+    withExtensionExport(transformers),
+    childrenOf(nodes),
+  );
   const entry = {descendants, transformers, markdown, hash: hashOf(markdown)};
   canonicalCache.set(nodes[0], entry);
   return entry;
@@ -644,7 +666,15 @@ export function absentToken(text: string): string {
  * with `token`. Views delegate everything else to the node they wrap, so
  * Lexical's exporter reads them like the real tree without changing it.
  */
-function markedView(node: LexicalNode, token: string): LexicalNode {
+function markedView(
+  node: LexicalNode,
+  token: string,
+  placeholders: ReadonlyMap<NodeKey, string>,
+): LexicalNode {
+  const placeholder = placeholders.get(node.getKey());
+  if (placeholder != null && $isRichTextExtensionNode(node)) {
+    return extensionTextView(node, placeholder);
+  }
   if ($isTextNode(node)) {
     if (node.hasFormat('code') || $isCodeNode(node.getParent())) {
       return node;
@@ -666,7 +696,19 @@ function markedView(node: LexicalNode, token: string): LexicalNode {
     return view;
   }
   if ($isElementNode(node) && !$isCodeNode(node)) {
-    const children = node.getChildren().map(child => markedView(child, token));
+    const children = node
+      .getChildren()
+      .map(child => markedView(child, token, placeholders));
+    // Each view's siblings are the views beside it, so a text view sees a
+    // plugin node's text view as text with formats, not as a gap.
+    children.forEach((child, index) => {
+      if (child !== node.getChildren()[index]) {
+        child.getPreviousSibling = <T extends LexicalNode>() =>
+          (children[index - 1] ?? null) as T | null;
+        child.getNextSibling = <T extends LexicalNode>() =>
+          (children[index + 1] ?? null) as T | null;
+      }
+    });
     const view = Object.create(node) as typeof node;
     view.getChildren = <T extends LexicalNode>() => children as Array<T>;
     return view;
@@ -685,14 +727,34 @@ function $regeneratedMarkdown(
 ): string {
   // The token is absent from the plain export and from every text the views
   // mark, so each token in the marked export is one of the marks.
-  const token = absentToken(
-    canonical + nodes.map(node => node.getTextContent()).join(''),
-  );
-  const marked = $convertToMarkdownString(
-    transformers,
-    childrenOf(nodes.map(node => markedView(node, token))),
-  );
-  return marked.split(token).join('\\');
+  const text = canonical + nodes.map(node => node.getTextContent()).join('');
+  const token = absentToken(text);
+  // Inline plugin nodes export as placeholders inside the text around them,
+  // so the marks around a node wrap it; each placeholder becomes the node's
+  // exact source afterwards.
+  const placeholders = new Map<NodeKey, string>();
+  const sources = new Map<string, string>();
+  const free = absentCharacters(text + token);
+  for (const node of descendantsOf(nodes)) {
+    if ($isRichTextExtensionNode(node) && node.isInline()) {
+      const placeholder = free.next().value;
+      if (placeholder == null) {
+        break;
+      }
+      placeholders.set(node.getKey(), placeholder);
+      sources.set(placeholder, node.getSource());
+    }
+  }
+  let marked = $convertToMarkdownString(
+    withExtensionExport(transformers),
+    childrenOf(nodes.map(node => markedView(node, token, placeholders))),
+  )
+    .split(token)
+    .join('\\');
+  for (const [placeholder, source] of sources) {
+    marked = marked.split(placeholder).join(source);
+  }
+  return marked;
 }
 
 interface ExportPiece {
