@@ -845,7 +845,7 @@ export const AuditMatrix: Story = {
     const content = () => <Button label="Apply selection" size="sm" />;
 
     return (
-      <VStack gap={4} xstyle={styles.auditMatrix}>
+      <VStack gap={4} xstyle={styles.auditMatrix} data-testid="audit-matrix">
         <ComplexSelector label="Empty small" value="" size="sm">
           {content}
         </ComplexSelector>

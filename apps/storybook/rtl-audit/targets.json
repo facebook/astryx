@@ -414,14 +414,14 @@
   },
   {
     "component": "ComplexSelector",
-    "storyId": "core-complexselector--audit-matrix",
+    "storyId": "core-complexselector--controlled-toolbar-trigger",
     "dims": ["D4"],
     "setup": {
-      "click": "[data-testid=\"rtl-custom-trigger\"]"
+      "click": "button[aria-haspopup=\"dialog\"]"
     },
     "selectors": {
       "overlay": ".astryx-complex-selector-popup",
-      "overlayRoot": "[data-testid=\"rtl-custom-trigger\"]"
+      "overlayRoot": "button[aria-haspopup=\"dialog\"]"
     }
   },
   {

@@ -190,63 +190,85 @@ async function loadScenario(page: Page, scenario: Scenario) {
 }
 
 async function readEnvironment(page: Page) {
-  return page.evaluate(() => ({
-    theme: document
-      .querySelector('[data-astryx-theme]')
-      ?.getAttribute('data-astryx-theme'),
-    declaredDirection: document
-      .querySelector('#storybook-root [dir]')
-      ?.getAttribute('dir'),
-    computedDirection: getComputedStyle(
-      document.querySelector('#storybook-root [dir]') ??
-        document.documentElement,
-    ).direction,
-    mode: document.documentElement.getAttribute('data-theme'),
-    colorScheme: getComputedStyle(document.documentElement).colorScheme,
-    fonts: document.fonts.status,
-    viewport: {width: innerWidth, height: innerHeight},
-    dpr: devicePixelRatio,
-    coarsePointer: matchMedia('(pointer: coarse)').matches,
-    anyCoarsePointer: matchMedia('(any-pointer: coarse)').matches,
-    reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-    forcedColors: matchMedia('(forced-colors: active)').matches,
-    scrollWidth: document.documentElement.scrollWidth,
-    horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
-    overflowingElements: [...document.querySelectorAll('body *')]
-      .filter(element => {
+  return page.evaluate(() => {
+    const auditRoot = document.querySelector('[data-testid="audit-matrix"]');
+    if (!(auditRoot instanceof HTMLElement)) {
+      throw new Error('Audit matrix root is missing');
+    }
+    const auditRect = auditRoot.getBoundingClientRect();
+    const horizontalOverflow =
+      auditRoot.scrollWidth > auditRoot.clientWidth + 1 ||
+      auditRect.left < -1 ||
+      auditRect.right > innerWidth + 1;
+
+    return {
+      theme: document
+        .querySelector('[data-astryx-theme]')
+        ?.getAttribute('data-astryx-theme'),
+      declaredDirection: document
+        .querySelector('#storybook-root [dir]')
+        ?.getAttribute('dir'),
+      computedDirection: getComputedStyle(
+        document.querySelector('#storybook-root [dir]') ??
+          document.documentElement,
+      ).direction,
+      mode: document.documentElement.getAttribute('data-theme'),
+      colorScheme: getComputedStyle(document.documentElement).colorScheme,
+      fonts: document.fonts.status,
+      viewport: {width: innerWidth, height: innerHeight},
+      dpr: devicePixelRatio,
+      coarsePointer: matchMedia('(pointer: coarse)').matches,
+      anyCoarsePointer: matchMedia('(any-pointer: coarse)').matches,
+      reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+      forcedColors: matchMedia('(forced-colors: active)').matches,
+      pageScrollWidth: document.documentElement.scrollWidth,
+      pageHorizontalOverflow:
+        document.documentElement.scrollWidth > innerWidth + 1,
+      rootScrollWidth: auditRoot.scrollWidth,
+      rootClientWidth: auditRoot.clientWidth,
+      rootBounds: {
+        left: Number(auditRect.left.toFixed(2)),
+        right: Number(auditRect.right.toFixed(2)),
+        width: Number(auditRect.width.toFixed(2)),
+      },
+      horizontalOverflow,
+      overflowingElements: [...auditRoot.querySelectorAll('*')]
+        .filter(element => {
+          const rect = element.getBoundingClientRect();
+          return (
+            rect.width > 0 &&
+            (rect.right > auditRect.right + 1 || rect.left < auditRect.left - 1)
+          );
+        })
+        .slice(0, 10)
+        .map(element => {
+          const rect = element.getBoundingClientRect();
+          return {
+            tag: element.tagName.toLowerCase(),
+            id: element.id,
+            className:
+              typeof element.className === 'string' ? element.className : '',
+            left: Number(rect.left.toFixed(2)),
+            right: Number(rect.right.toFixed(2)),
+            width: Number(rect.width.toFixed(2)),
+          };
+        }),
+      storyError: [
+        ...document.querySelectorAll(
+          '.sb-errordisplay, [data-testid="story-error"]',
+        ),
+      ].some(element => {
         const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
         return (
-          rect.width > 0 && (rect.right > innerWidth + 1 || rect.left < -1)
+          rect.width > 0 &&
+          rect.height > 0 &&
+          style.display !== 'none' &&
+          style.visibility !== 'hidden'
         );
-      })
-      .slice(0, 10)
-      .map(element => {
-        const rect = element.getBoundingClientRect();
-        return {
-          tag: element.tagName.toLowerCase(),
-          id: element.id,
-          className:
-            typeof element.className === 'string' ? element.className : '',
-          left: Number(rect.left.toFixed(2)),
-          right: Number(rect.right.toFixed(2)),
-          width: Number(rect.width.toFixed(2)),
-        };
       }),
-    storyError: [
-      ...document.querySelectorAll(
-        '.sb-errordisplay, [data-testid="story-error"]',
-      ),
-    ].some(element => {
-      const rect = element.getBoundingClientRect();
-      const style = getComputedStyle(element);
-      return (
-        rect.width > 0 &&
-        rect.height > 0 &&
-        style.display !== 'none' &&
-        style.visibility !== 'hidden'
-      );
-    }),
-  }));
+    };
+  });
 }
 
 async function readContrastPairs(page: Page) {
@@ -378,7 +400,12 @@ async function writeFrame(
   contrastRows: Record<string, unknown>[],
 ) {
   const file = `ComplexSelector__${scenario.state}.png`;
-  const png = await page.screenshot({animations: 'disabled', fullPage: true});
+  const png =
+    kind === 'matrix'
+      ? await page
+          .locator('[data-testid="audit-matrix"]')
+          .screenshot({animations: 'disabled'})
+      : await page.screenshot({animations: 'disabled'});
   expect(png.length).toBeGreaterThan(100);
   const receipt = {
     expected: {
@@ -653,6 +680,10 @@ test('captures built-in hover, focus, pressed, and open states', async ({
     if (!popupBox) {
       throw new Error(`${baseScenario.state}: popup has no layout box`);
     }
+    expect(popupBox.x).toBeGreaterThanOrEqual(-1);
+    expect(popupBox.x + popupBox.width).toBeLessThanOrEqual(
+      baseScenario.viewport.width + 1,
+    );
     const indicatorTransform = await owner
       .locator('svg')
       .last()
@@ -720,6 +751,10 @@ test('captures caller-rendered focus, anchor, dismissal, and direction', async (
       popupBox.y >= triggerBox.y + triggerBox.height - 1 ||
         popupBox.y + popupBox.height <= triggerBox.y + 1,
     ).toBe(true);
+    expect(popupBox.x).toBeGreaterThanOrEqual(-1);
+    expect(popupBox.x + popupBox.width).toBeLessThanOrEqual(
+      scenario.viewport.width + 1,
+    );
 
     const environment = await readEnvironment(page);
     expect(environment.declaredDirection).toBe(scenario.direction);
@@ -788,6 +823,15 @@ test('captures the narrow coarse-pointer path', async ({browser}) => {
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     const dialog = page.getByRole('dialog', {name: 'Selected medium'});
     await expect(dialog).toBeVisible();
+    const popup = page.locator('.astryx-complex-selector-popup:visible');
+    const popupBox = await popup.boundingBox();
+    if (!popupBox) {
+      throw new Error(`${scenario.state}: popup has no layout box`);
+    }
+    expect(popupBox.x).toBeGreaterThanOrEqual(-1);
+    expect(popupBox.x + popupBox.width).toBeLessThanOrEqual(
+      scenario.viewport.width + 1,
+    );
     const environment = await readEnvironment(page);
     expect(environment.coarsePointer).toBe(true);
     expect(environment.anyCoarsePointer).toBe(true);
@@ -828,6 +872,7 @@ test('captures the narrow coarse-pointer path', async ({browser}) => {
         ...environment,
         expanded: await trigger.getAttribute('aria-expanded'),
         dialogVisible: await dialog.isVisible(),
+        popupGeometry: popupBox,
         pageErrors: errors.length,
       },
       rows,
