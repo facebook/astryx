@@ -1393,6 +1393,35 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # ComplexSelector's whole-component audit grades the rendered state matrix,
+      # caller-rendered trigger anchor/focus behavior, RTL, and 320px reflow from
+      # exact-head Chromium receipts. Keep this with the existing pr-a11y owner.
+      - name: Run ComplexSelector audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ComplexSelector:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output complex-selector-a11y-report.json \
+            --components ComplexSelector \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/ComplexSelector/__tests__/ComplexSelector.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload ComplexSelector audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ComplexSelector:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: complex-selector-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            complex-selector-a11y-report.json
+            test-results/complex-selector-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # Component-owned metadata fixtures retain exact-head browser receipts on
       # audit PRs, including failed pre-fix cases for before/after comparison.
       - name: Run ChatMessageMetadata audit browser evidence

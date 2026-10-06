@@ -413,6 +413,18 @@
     }
   },
   {
+    "component": "ComplexSelector",
+    "storyId": "core-complexselector--audit-matrix",
+    "dims": ["D4"],
+    "setup": {
+      "click": "button[aria-haspopup=\"dialog\"]:has-text(\"Design systems\")"
+    },
+    "selectors": {
+      "overlay": ".astryx-complex-selector-popup",
+      "overlayRoot": "button[aria-haspopup=\"dialog\"]:has-text(\"Design systems\")"
+    }
+  },
+  {
     "component": "SideNav",
     "storyId": "core-sidenav--default",
     "dims": ["D2"],
