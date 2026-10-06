@@ -198,7 +198,6 @@ const editorTheme = stylex.create({
     },
     maxWidth: PROSE_MEASURE,
     paddingInlineStart: spacingVars['--spacing-6'],
-    listStyleType: 'disc',
     listStylePosition: 'outside',
   },
   ol: {
@@ -212,38 +211,21 @@ const editorTheme = stylex.create({
     },
     maxWidth: PROSE_MEASURE,
     paddingInlineStart: spacingVars['--spacing-6'],
-    listStyleType: 'decimal',
     listStylePosition: 'outside',
   },
-  // Nested lists: no extra vertical margin, and cycle marker styles per depth
-  // to match native browser list nesting. Lexical indexes ulDepth/olDepth by
-  // `depth % array.length`, so three entries give three distinct levels that
-  // then repeat — matching the browser default disc → circle → square cycle.
-  ulNested: {
-    marginBlockStart: 0,
-    marginBlockEnd: 0,
-  },
-  ulDepth2: {
-    listStyleType: 'circle',
-  },
-  ulDepth3: {
-    listStyleType: 'square',
-  },
-  olNested: {
-    marginBlockStart: 0,
-    marginBlockEnd: 0,
-  },
-  olDepth2: {
-    listStyleType: 'lower-alpha',
-  },
-  olDepth3: {
-    listStyleType: 'lower-roman',
-  },
-  // Lexical's own checkbox lists (`<ul __lexicallisttype="check">`): every
-  // item is a task, laid out like the task items of a bulleted list below.
-  checklist: {
-    listStyleType: 'none',
-  },
+  // Markers by depth (spec:AST-061 DEC-6): a list nested inside n lists, of
+  // either kind, draws disc, circle, or square, or writes decimal,
+  // lower-alpha, or lower-roman numbers, for n modulo 3 = 0, 1, 2. Lexical
+  // gives every list its tag's class above and the depth class at
+  // `depth % 3`; only the depth class names a marker, so no two classes on a
+  // list compete for it. A nested list sits alone in its item, so the first-
+  // and last-child rules above already take its margins away.
+  ulMarker0: {listStyleType: 'disc'},
+  ulMarker1: {listStyleType: 'circle'},
+  ulMarker2: {listStyleType: 'square'},
+  olMarker0: {listStyleType: 'decimal'},
+  olMarker1: {listStyleType: 'lower-alpha'},
+  olMarker2: {listStyleType: 'lower-roman'},
   // List items space like core Markdown's compact list rows: 4px padding and
   // a 2px gap between rows. Lexical puts a nested list in an item of its own
   // after its parent item; that wrapper adds no top padding and no marker,
@@ -424,28 +406,8 @@ export function sharedEditorTheme(): EditorThemeClasses {
   // A class for a block Lexical may mark `dir="auto"`.
   const block = (...styles: Array<stylex.StyleXStyles>): string =>
     stylex.props(...styles, editorTheme.providerDirection).className ?? '';
-  const ulClass = block(editorTheme.ul);
-  const olClass = block(editorTheme.ol);
-  const ulDepth2Class = block(
-    editorTheme.ul,
-    editorTheme.ulNested,
-    editorTheme.ulDepth2,
-  );
-  const ulDepth3Class = block(
-    editorTheme.ul,
-    editorTheme.ulNested,
-    editorTheme.ulDepth3,
-  );
-  const olDepth2Class = block(
-    editorTheme.ol,
-    editorTheme.olNested,
-    editorTheme.olDepth2,
-  );
-  const olDepth3Class = block(
-    editorTheme.ol,
-    editorTheme.olNested,
-    editorTheme.olDepth3,
-  );
+  const className = (style: stylex.StyleXStyles): string =>
+    stylex.props(style).className ?? '';
   return {
     paragraph: block(editorTheme.paragraph),
     heading: {
@@ -458,17 +420,23 @@ export function sharedEditorTheme(): EditorThemeClasses {
     },
     quote: block(editorTheme.quote),
     list: {
-      ul: ulClass,
-      ol: olClass,
-      checklist: block(editorTheme.ul, editorTheme.checklist),
+      ul: block(editorTheme.ul),
+      ol: block(editorTheme.ol),
       listitem: stylex.props(editorTheme.listItem).className,
       nested: {
         listitem: stylex.props(editorTheme.listItem).className,
       },
-      // Depth arrays cycle via `depth % length`, so three entries give three
-      // distinct nesting levels before repeating (disc→circle→square, etc.).
-      ulDepth: [ulClass, ulDepth2Class, ulDepth3Class],
-      olDepth: [olClass, olDepth2Class, olDepth3Class],
+      // Lexical picks the class at `depth % 3` (spec:AST-061 DEC-6).
+      ulDepth: [
+        className(editorTheme.ulMarker0),
+        className(editorTheme.ulMarker1),
+        className(editorTheme.ulMarker2),
+      ],
+      olDepth: [
+        className(editorTheme.olMarker0),
+        className(editorTheme.olMarker1),
+        className(editorTheme.olMarker2),
+      ],
     },
     link: stylex.props(editorTheme.link).className,
     text: {

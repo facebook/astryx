@@ -812,6 +812,102 @@ for (const globals of [
   });
 }
 
+// spec:AST-061 DEC-6: a list nested inside n lists, of either kind, draws
+// disc, circle, or square, or writes decimal, lower-alpha, or lower-roman
+// numbers, for n modulo 3 = 0, 1, 2, in the editor and the view alike.
+const BULLET_MARKERS = ['disc', 'circle', 'square'];
+const NUMBER_MARKERS = ['decimal', 'lower-alpha', 'lower-roman'];
+
+for (const globals of [
+  'colorMode:light;direction:ltr',
+  'colorMode:dark;direction:rtl',
+]) {
+  test(`list markers cycle by depth (${globals})`, async ({page}) => {
+    await page.setViewportSize(DESKTOP);
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
+      {waitUntil: 'load'},
+    );
+    const depths = Array.from({length: 9}, (_, depth) => depth);
+    const bullets = depths
+      .map(depth => `${'  '.repeat(depth)}- bullet ${depth}`)
+      .join('\n');
+    const numbers = depths
+      .map(depth => `${'   '.repeat(depth)}1. number ${depth}`)
+      .join('\n');
+    const mixed = [
+      '- mixed 0',
+      '  1. mixed 1',
+      '     - mixed 2',
+      '       1. mixed 3',
+    ].join('\n');
+    await page.locator('textarea').fill([bullets, numbers, mixed].join('\n\n'));
+    await expect(page.getByText('mixed 3', {exact: true})).toHaveCount(2);
+    const surfaces = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('[data-lexical-editor]')]
+        // The story keeps some sections hidden until a test shows them.
+        .filter(root => root.checkVisibility())
+        .map(root =>
+          [...root.querySelectorAll('ul, ol')].map(list => {
+            let depth = 0;
+            for (
+              let ancestor = list.parentElement;
+              ancestor != null && ancestor !== root;
+              ancestor = ancestor.parentElement
+            ) {
+              if (ancestor.tagName === 'UL' || ancestor.tagName === 'OL') {
+                depth++;
+              }
+            }
+            return {
+              tag: list.tagName,
+              depth,
+              marker: getComputedStyle(list).listStyleType,
+              // The list's own first item's text; none when that item only
+              // holds a nested list.
+              text: (() => {
+                const first = list.querySelector(':scope > li');
+                const only =
+                  first?.children.length === 1 ? first.children[0] : null;
+                return only != null && /^(UL|OL)$/.test(only.tagName)
+                  ? ''
+                  : (first?.textContent ?? '');
+              })(),
+            };
+          }),
+        ),
+    );
+    expect(surfaces).toHaveLength(2);
+    for (const lists of surfaces) {
+      for (const list of lists) {
+        const markers = list.tag === 'UL' ? BULLET_MARKERS : NUMBER_MARKERS;
+        expect(list.marker, `${list.tag} at depth ${list.depth}`).toBe(
+          markers[list.depth % 3],
+        );
+      }
+      // Every depth from 0 to 8 of each kind, and the mixed nesting.
+      for (const tag of ['UL', 'OL']) {
+        expect(
+          [
+            ...new Set(
+              lists
+                .filter(
+                  list => list.tag === tag && !list.text.startsWith('mixed'),
+                )
+                .map(list => list.depth),
+            ),
+          ].sort((a, b) => a - b),
+        ).toEqual(depths);
+      }
+      // Depth counts lists of either kind.
+      const mixed = (text: string) => lists.find(list => list.text === text);
+      expect(mixed('mixed 1')?.marker).toBe('lower-alpha');
+      expect(mixed('mixed 2')?.marker).toBe('square');
+      expect(mixed('mixed 3')?.marker).toBe('decimal');
+    }
+  });
+}
+
 for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
   for (const globals of [
     'colorMode:light;direction:ltr',
