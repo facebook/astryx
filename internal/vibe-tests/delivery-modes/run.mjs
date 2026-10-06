@@ -326,17 +326,26 @@ function jobId(promptId, config, runner) {
   return `${promptId}-${config}-${runner}`;
 }
 
-async function verifySelectedConfigs({configs, specs, outputDir, profile}) {
+export async function verifySelectedConfigs({
+  configs,
+  specs,
+  outputDir,
+  profile,
+  dependencies = {},
+}) {
+  const createRun = dependencies.createPrivateRunRoot ?? createPrivateRunRoot;
+  const prepare = dependencies.prepareProject ?? prepareProject;
+  const captureSources =
+    dependencies.captureAuthoredSources ?? captureAuthoredSources;
+  const evaluate = dependencies.evaluateRun ?? evaluateRun;
   const receipts = {};
   for (const config of configs) {
-    const privateRun = await createPrivateRunRoot(`preflight-${config}-`);
+    const privateRun = await createRun(`preflight-${config}-`);
     const privateScreenshot = path.join(privateRun.root, 'starter.png');
     try {
-      await prepareProject(specs[config], privateRun.projectDir);
-      const baselineSources = await captureAuthoredSources(
-        privateRun.projectDir,
-      );
-      const verification = await evaluateRun({
+      await prepare(specs[config], privateRun.projectDir);
+      const baselineSources = await captureSources(privateRun.projectDir);
+      const verification = await evaluate({
         config,
         privateRun,
         prompt: {prompt: `Render the supplied ${config} starter.`},
@@ -780,9 +789,11 @@ function formatNumber(value) {
   return Number.isFinite(value) ? Math.round(value) : '—';
 }
 
-main().catch(error => {
-  console.error(
-    error instanceof Error ? (error.stack ?? error.message) : error,
-  );
-  process.exitCode = 1;
-});
+if (path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(error => {
+    console.error(
+      error instanceof Error ? (error.stack ?? error.message) : error,
+    );
+    process.exitCode = 1;
+  });
+}

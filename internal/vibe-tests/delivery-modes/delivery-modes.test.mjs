@@ -41,6 +41,7 @@ import {
   validateStaticConfig,
 } from './projects.mjs';
 import {buildReports, summarize} from './report.mjs';
+import {verifySelectedConfigs} from './run.mjs';
 import {resolveConcurrency, runInBatches, runInPhases} from './scheduler.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -709,6 +710,54 @@ test('completed batches checkpoint before later runner work can fail', async () 
   );
   assert.deepEqual(resumedPrepared, [3, 4]);
   assert.ok(prepared.includes(3));
+});
+
+test('selected delivery configs each receive an evaluator preflight', async () => {
+  const outputDir = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-config-preflights-'),
+  );
+  temporaryDirectories.push(outputDir);
+  await fs.promises.mkdir(path.join(outputDir, 'screenshots'));
+  const evaluated = [];
+  const configs = ['react-build', 'react-nobuild', 'static-html'];
+  const receipts = await verifySelectedConfigs({
+    configs,
+    specs: Object.fromEntries(configs.map(config => [config, {config}])),
+    outputDir,
+    profile: exampleProfile(),
+    dependencies: {
+      prepareProject: async () => {},
+      captureAuthoredSources: async () => ({}),
+      evaluateRun: async options => {
+        evaluated.push({
+          config: options.config,
+          verifyStarterTyping: options.verifyStarterTyping,
+        });
+        await fs.promises.writeFile(options.screenshotPath, 'screenshot');
+        return {
+          build: {passed: true},
+          typecheck: null,
+          render: {passed: true},
+        };
+      },
+    },
+  });
+  assert.deepEqual(
+    evaluated.map(item => item.config),
+    configs,
+  );
+  assert.deepEqual(
+    evaluated.map(item => item.verifyStarterTyping),
+    [false, true, false],
+  );
+  assert.deepEqual(Object.keys(receipts), configs);
+  const persisted = JSON.parse(
+    await fs.promises.readFile(
+      path.join(outputDir, 'config-preflights.json'),
+      'utf8',
+    ),
+  );
+  assert.deepEqual(Object.keys(persisted), configs);
 });
 
 test('parallel concurrency requires a passing isolation probe', () => {
