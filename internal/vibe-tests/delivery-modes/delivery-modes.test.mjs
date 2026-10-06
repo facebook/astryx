@@ -15,8 +15,10 @@ import {
 } from './constants.mjs';
 import {
   captureAuthoredSources,
+  evaluateRun,
   resolveJudgeAttempts,
   scanAuthoredSource,
+  startStaticServer,
 } from './evaluator.mjs';
 import {
   auditTranscript,
@@ -27,6 +29,7 @@ import {
   extractToolCommands,
   parseUsage,
   runCommand,
+  runProfilePreflight,
   sanitizeChildEnv,
 } from './process.mjs';
 import {renderCommand, validateRunnerProfile, wrapCommand} from './profile.mjs';
@@ -37,6 +40,7 @@ import {
   validateStaticConfig,
 } from './projects.mjs';
 import {buildReports, summarize} from './report.mjs';
+import {resolveConcurrency, runInPhases} from './scheduler.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const temporaryDirectories = [];
@@ -188,6 +192,21 @@ function exampleProfile() {
       args: ['-lc', 'true'],
       cwd: '{sandboxProject}',
     },
+    evaluator: {
+      command: '/path/to/node',
+      args: [
+        '/path/to/evaluator.mjs',
+        '--worker',
+        '{evaluationInput}',
+        '{evaluationOutput}',
+      ],
+      cwd: '{sandboxProject}',
+    },
+    isolationProbe: {
+      command: '/path/to/node',
+      args: ['{probeFile}'],
+      cwd: '{sandboxProject}',
+    },
     runners: {
       sample: {
         command: '/path/to/runner',
@@ -204,6 +223,53 @@ function exampleProfile() {
       transcript: structuredClone(exampleTranscriptAdapter),
       audit: {rules: []},
     },
+  };
+}
+
+async function writePassthroughLauncher(root) {
+  const launcherPath = path.join(root, 'launcher.mjs');
+  await fs.promises.writeFile(
+    launcherPath,
+    `import {spawnSync} from 'node:child_process';
+import * as fs from 'node:fs';
+const [privateRoot, runnerCwd, command, ...args] = process.argv.slice(2);
+const map = value => value.replaceAll('/isolated-run', privateRoot);
+const mappedArgs = args.map(map);
+for (const argument of mappedArgs) {
+  if (argument.endsWith('.evaluation-input.json') && fs.existsSync(argument)) {
+    fs.writeFileSync(
+      argument,
+      fs.readFileSync(argument, 'utf8').replaceAll('/isolated-run', privateRoot),
+    );
+  }
+}
+const child = spawnSync(map(command), mappedArgs, {
+  cwd: map(runnerCwd),
+  env: process.env,
+  stdio: 'inherit',
+});
+if (child.error) throw child.error;
+process.exit(child.status ?? 1);
+`,
+  );
+  return launcherPath;
+}
+
+function usePassthroughLauncher(profile, launcherPath, env = {}) {
+  profile.sandbox = {
+    root: '/isolated-run',
+    projectDir: '/isolated-run/project',
+  };
+  profile.launcher = {
+    command: process.execPath,
+    args: [
+      launcherPath,
+      '{privateRoot}',
+      '{runnerCwd}',
+      '{runnerCommand}',
+      '{runnerArgs}',
+    ],
+    env,
   };
 }
 
@@ -440,6 +506,153 @@ test('private run roots use mode 0700', async () => {
     (await fs.promises.stat(privateRun.projectDir)).isDirectory(),
     true,
   );
+});
+
+test('runner phases finish before any cell is scored', async () => {
+  const events = [];
+  const {results} = await runInPhases([1, 2], 2, {
+    prepare: async value => {
+      await new Promise(resolve => setTimeout(resolve, value === 1 ? 30 : 5));
+      events.push(`runner-${value}`);
+      return value;
+    },
+    evaluate: async value => {
+      assert.equal(
+        events.filter(event => event.startsWith('runner-')).length,
+        2,
+      );
+      events.push(`score-${value}`);
+      return value * 10;
+    },
+  });
+  assert.deepEqual(results, [10, 20]);
+  assert.ok(events.indexOf('score-1') > events.indexOf('runner-1'));
+  assert.ok(events.indexOf('score-2') > events.indexOf('runner-1'));
+});
+
+test('parallel concurrency requires a passing isolation probe', () => {
+  assert.deepEqual(resolveConcurrency(4, {}), {
+    requested: 4,
+    effective: 1,
+    fallbackReason: 'parallel PID and network isolation was not proven',
+  });
+  assert.deepEqual(resolveConcurrency(4, {parallelIsolation: {passed: true}}), {
+    requested: 4,
+    effective: 4,
+    fallbackReason: null,
+  });
+});
+
+test('evaluator static servers choose independent ephemeral ports', async () => {
+  const roots = await Promise.all(
+    ['a', 'b'].map(async name => {
+      const root = await fs.promises.mkdtemp(
+        path.join(os.tmpdir(), `delivery-server-${name}-`),
+      );
+      temporaryDirectories.push(root);
+      await fs.promises.writeFile(path.join(root, 'index.html'), name);
+      return root;
+    }),
+  );
+  const servers = await Promise.all(roots.map(root => startStaticServer(root)));
+  try {
+    assert.notEqual(new URL(servers[0].url).port, new URL(servers[1].url).port);
+    assert.equal(await (await fetch(servers[0].url)).text(), 'a');
+    assert.equal(await (await fetch(servers[1].url)).text(), 'b');
+  } finally {
+    await Promise.all(servers.map(server => server.stop()));
+  }
+});
+
+test('react build and serving execute through the evaluator launcher', async () => {
+  const launcherRoot = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-evaluator-launcher-'),
+  );
+  temporaryDirectories.push(launcherRoot);
+  const launcherPath = await writePassthroughLauncher(launcherRoot);
+  const privateRun = await createPrivateRunRoot('evaluator-test-');
+  temporaryDirectories.push(privateRun.root);
+  await fs.promises.writeFile(
+    path.join(privateRun.projectDir, 'package.json'),
+    `${JSON.stringify({
+      type: 'module',
+      scripts: {
+        typecheck: 'node typecheck.mjs',
+        build: 'node build.mjs',
+      },
+    })}\n`,
+  );
+  await fs.promises.writeFile(
+    path.join(privateRun.projectDir, 'typecheck.mjs'),
+    "if (process.env.EVALUATOR_SANDBOX_SENTINEL !== 'present') process.exit(2);\n",
+  );
+  await fs.promises.writeFile(
+    path.join(privateRun.projectDir, 'build.mjs'),
+    `import * as fs from 'node:fs';
+if (process.env.EVALUATOR_SANDBOX_SENTINEL !== 'present') process.exit(2);
+fs.mkdirSync('dist', {recursive: true});
+fs.writeFileSync('dist/index.html', '<!doctype html><main><h1>Sandbox evaluator proof</h1><p>The isolated build completed successfully.</p><button>Done</button></main>');
+`,
+  );
+  const baselineSources = await captureAuthoredSources(privateRun.projectDir);
+  const profile = exampleProfile();
+  usePassthroughLauncher(profile, launcherPath, {
+    EVALUATOR_SANDBOX_SENTINEL: 'present',
+  });
+  profile.evaluator = {
+    command: process.execPath,
+    args: [
+      path.join(here, 'evaluator.mjs'),
+      '--worker',
+      '{evaluationInput}',
+      '{evaluationOutput}',
+    ],
+    cwd: '{sandboxProject}',
+  };
+  const evaluation = await evaluateRun({
+    config: 'react-build',
+    privateRun,
+    prompt: {prompt: 'Render the proof page.'},
+    screenshotPath: path.join(privateRun.root, 'screenshot.png'),
+    baselineSources,
+    skipJudge: true,
+    profile,
+  });
+  assert.equal(evaluation.typecheck.passed, true);
+  assert.equal(evaluation.build.passed, true);
+  assert.equal(
+    evaluation.render.passed,
+    true,
+    JSON.stringify(evaluation.render),
+  );
+  assert.equal(evaluation.judge.skipped, true);
+});
+
+test('isolation probe rejects a shared PID, network, and proc namespace', async () => {
+  const root = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-launcher-'),
+  );
+  temporaryDirectories.push(root);
+  const launcherPath = await writePassthroughLauncher(root);
+  const profile = exampleProfile();
+  usePassthroughLauncher(profile, launcherPath);
+  profile.preflight = {
+    command: process.execPath,
+    args: ['-e', "require('node:fs').accessSync('input.txt')"],
+    cwd: '{sandboxProject}',
+  };
+  profile.isolationProbe = {
+    command: process.execPath,
+    args: ['{probeFile}'],
+    cwd: '{sandboxProject}',
+  };
+  const receipt = await runProfilePreflight(profile);
+  assert.equal(receipt.parallelIsolation.passed, false);
+  assert.equal(receipt.parallelIsolation.pidNamespacePrivate, false);
+  assert.equal(receipt.parallelIsolation.networkNamespacePrivate, false);
+  assert.equal(receipt.parallelIsolation.siblingProcUnreadable, false);
+  assert.equal(receipt.parallelIsolation.portCollisionContained, false);
+  assert.equal(receipt.parallelIsolation.processKillContained, false);
 });
 
 test('summary includes failure zeros in medians and sample counts', () => {

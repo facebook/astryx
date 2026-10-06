@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-/* global URL, document, fetch, process, setTimeout, window */
+/* global URL, document, process, window */
 
-import {spawn} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {AxeBuilder} from '@axe-core/playwright';
 import {chromium} from 'playwright';
 import {
@@ -18,13 +18,69 @@ const fsp = fs.promises;
 
 export async function evaluateRun({
   config,
-  projectDir,
+  privateRun,
   prompt,
   screenshotPath,
   baselineSources,
   skipJudge = false,
   verifyStarterTyping = false,
-  judgeProfile,
+  profile,
+}) {
+  const inputPath = path.join(privateRun.root, '.evaluation-input.json');
+  const outputPath = path.join(privateRun.root, '.evaluation-output.json');
+  const sandboxInputPath = path.join(
+    profile.sandbox.root,
+    path.relative(privateRun.root, inputPath),
+  );
+  const sandboxOutputPath = path.join(
+    profile.sandbox.root,
+    path.relative(privateRun.root, outputPath),
+  );
+  const sandboxScreenshotPath = path.join(
+    profile.sandbox.root,
+    path.relative(privateRun.root, screenshotPath),
+  );
+  await fsp.writeFile(
+    inputPath,
+    `${JSON.stringify({
+      config,
+      projectDir: profile.sandbox.projectDir,
+      screenshotPath: sandboxScreenshotPath,
+      baselineSources,
+      verifyStarterTyping,
+    })}\n`,
+  );
+  const worker = await runProfileCommand(
+    profile,
+    profile.evaluator,
+    privateRun,
+    {
+      evaluatorFile: fileURLToPath(import.meta.url),
+      evaluationInput: sandboxInputPath,
+      evaluationOutput: sandboxOutputPath,
+    },
+    {timeoutMs: 10 * 60 * 1000},
+  );
+  if (worker.code !== 0 || worker.timedOut || !fs.existsSync(outputPath)) {
+    throw new Error(
+      `Sandboxed evaluation failed: ${worker.stderr || worker.stdout || `exit ${worker.code}`}`,
+    );
+  }
+  const evaluation = JSON.parse(await fsp.readFile(outputPath, 'utf8'));
+  if (evaluation.render.passed) {
+    evaluation.judge = skipJudge
+      ? {skipped: true}
+      : await runBlindJudge({prompt, screenshotPath, profile});
+  }
+  return evaluation;
+}
+
+async function evaluateProject({
+  config,
+  projectDir,
+  screenshotPath,
+  baselineSources,
+  verifyStarterTyping = false,
 }) {
   const typecheck =
     config === 'react-build'
@@ -52,10 +108,9 @@ export async function evaluateRun({
   }
 
   await fsp.mkdir(path.dirname(screenshotPath), {recursive: true});
-  const server =
-    config === 'react-build'
-      ? await startVitePreview(projectDir)
-      : await startStaticServer(projectDir);
+  const documentRoot =
+    config === 'react-build' ? path.join(projectDir, 'dist') : projectDir;
+  const server = await startStaticServer(documentRoot);
 
   let browser;
   try {
@@ -112,13 +167,7 @@ export async function evaluateRun({
     }
     const judge = !render.passed
       ? zeroJudgment('Render failed, was blank, or emitted runtime errors')
-      : skipJudge
-        ? {skipped: true}
-        : await runBlindJudge({
-            prompt,
-            screenshotPath,
-            profile: judgeProfile,
-          });
+      : null;
 
     return {
       build: commandReceipt(build),
@@ -548,7 +597,7 @@ async function walk(directory, files) {
   }
 }
 
-async function startStaticServer(root) {
+export async function startStaticServer(root) {
   const server = http.createServer(async (request, response) => {
     try {
       const requestUrl = new URL(request.url ?? '/', 'http://localhost');
@@ -581,79 +630,6 @@ async function startStaticServer(root) {
     url: `http://127.0.0.1:${port}/`,
     stop: () => new Promise(resolve => server.close(resolve)),
   };
-}
-
-async function startVitePreview(projectDir) {
-  const port = await reservePort();
-  const logPath = path.join(projectDir, '.vite-preview.log');
-  const log = fs.createWriteStream(logPath);
-  const child = spawn(
-    'npm',
-    [
-      'run',
-      'preview',
-      '--',
-      '--host',
-      '127.0.0.1',
-      '--port',
-      String(port),
-      '--strictPort',
-    ],
-    {cwd: projectDir, detached: process.platform !== 'win32'},
-  );
-  child.stdout.pipe(log);
-  child.stderr.pipe(log);
-  const url = `http://127.0.0.1:${port}/`;
-  await waitForUrl(url, child, logPath);
-  return {
-    url,
-    stop: async () => {
-      try {
-        if (process.platform !== 'win32' && child.pid) {
-          process.kill(-child.pid, 'SIGTERM');
-        } else {
-          child.kill('SIGTERM');
-        }
-      } catch {
-        // Best-effort server cleanup.
-      }
-      log.end();
-    },
-  };
-}
-
-async function reservePort() {
-  const server = http.createServer();
-  await new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', resolve);
-  });
-  const address = server.address();
-  const port = typeof address === 'object' && address ? address.port : 0;
-  await new Promise(resolve => server.close(resolve));
-  return port;
-}
-
-async function waitForUrl(url, child, logPath) {
-  const deadline = Date.now() + 30_000;
-  while (Date.now() < deadline) {
-    if (child.exitCode != null) {
-      const logs = fs.existsSync(logPath)
-        ? await fsp.readFile(logPath, 'utf8')
-        : '';
-      throw new Error(`Vite preview exited early:\n${logs}`);
-    }
-    try {
-      const response = await fetch(url);
-      if (response.ok) {
-        return;
-      }
-    } catch {
-      // The preview may not be listening yet.
-    }
-    await new Promise(resolve => setTimeout(resolve, 250));
-  }
-  throw new Error(`Timed out waiting for ${url}`);
 }
 
 async function runBlindJudge({prompt, screenshotPath, profile}) {
@@ -929,4 +905,27 @@ function mimeType(filePath) {
       '.svg': 'image/svg+xml',
     }[extension] ?? 'application/octet-stream'
   );
+}
+
+async function workerMain() {
+  const inputPath = process.argv[3];
+  const outputPath = process.argv[4];
+  if (!inputPath || !outputPath) {
+    throw new Error('Usage: evaluator.mjs --worker <input.json> <output.json>');
+  }
+  const input = JSON.parse(await fsp.readFile(inputPath, 'utf8'));
+  const evaluation = await evaluateProject(input);
+  await fsp.writeFile(outputPath, `${JSON.stringify(evaluation)}\n`);
+}
+
+if (
+  process.argv[2] === '--worker' &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  workerMain().catch(error => {
+    console.error(
+      error instanceof Error ? (error.stack ?? error.message) : error,
+    );
+    process.exitCode = 1;
+  });
 }

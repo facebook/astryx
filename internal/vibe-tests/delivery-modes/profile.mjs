@@ -43,6 +43,10 @@ export function validateRunnerProfile(profile) {
   }
   validateCommand(profile.launcher, 'launcher', {allowWrappedArgs: true});
   validateCommand(profile.preflight, 'preflight');
+  validateCommand(profile.evaluator, 'evaluator');
+  if (profile.isolationProbe != null) {
+    validateCommand(profile.isolationProbe, 'isolationProbe');
+  }
   if (!profile.runners || typeof profile.runners !== 'object') {
     throw new Error('Runner profile requires at least one runner.');
   }

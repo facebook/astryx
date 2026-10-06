@@ -1,10 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 /* global clearTimeout, process, setTimeout */
 
+import {randomUUID} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {renderCommand, wrapCommand} from './profile.mjs';
 
 const DEFAULT_CAPTURE_LIMIT = 20 * 1024 * 1024;
@@ -26,6 +28,7 @@ export async function runCommand(command, args, options = {}) {
     timeoutMs = 15 * 60 * 1000,
     transcriptPath,
     captureLimit = DEFAULT_CAPTURE_LIMIT,
+    onStdout,
   } = options;
   if (transcriptPath) {
     await fs.promises.mkdir(path.dirname(transcriptPath), {recursive: true});
@@ -49,6 +52,7 @@ export async function runCommand(command, args, options = {}) {
         : (current + chunk.toString()).slice(0, captureLimit);
     child.stdout.on('data', chunk => {
       stdout = append(stdout, chunk);
+      onStdout?.(chunk.toString());
     });
     child.stderr.on('data', chunk => {
       stderr = append(stderr, chunk);
@@ -151,10 +155,173 @@ export async function runProfilePreflight(profile) {
       passed: true,
       privateRootMode: mode.toString(8).padStart(4, '0'),
       output: result.stdout.trim(),
+      parallelIsolation: await probeParallelIsolation(profile),
     };
   } finally {
     await fs.promises.rm(privateRun.root, {recursive: true, force: true});
   }
+}
+
+async function probeParallelIsolation(profile) {
+  if (!profile.isolationProbe) {
+    return {
+      passed: false,
+      available: false,
+      reason: 'the runner profile does not define an isolationProbe command',
+    };
+  }
+
+  const victim = await createPrivateRunRoot('probe-victim-');
+  const attacker = await createPrivateRunRoot('probe-attacker-');
+  const token = `vibe-probe-${randomUUID().slice(0, 8)}`;
+  const probeSource = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    'isolation-probe.mjs',
+  );
+  let victimSettled = false;
+
+  try {
+    for (const privateRun of [victim, attacker]) {
+      await fs.promises.copyFile(
+        probeSource,
+        path.join(privateRun.projectDir, 'isolation-probe.mjs'),
+      );
+    }
+    await writeProbeInput(victim, {mode: 'victim', token});
+
+    let victimOutput = '';
+    let resolveReady;
+    const readyPromise = new Promise(resolve => {
+      resolveReady = resolve;
+    });
+    const victimPromise = runProfileCommand(
+      profile,
+      profile.isolationProbe,
+      victim,
+      {probeFile: `${profile.sandbox.projectDir}/isolation-probe.mjs`},
+      {
+        timeoutMs: 15_000,
+        onStdout: chunk => {
+          victimOutput += chunk;
+          const ready = findProbeRecord(victimOutput, 'isolation-probe-ready');
+          if (ready) {
+            resolveReady(ready);
+          }
+        },
+      },
+    ).finally(() => {
+      victimSettled = true;
+    });
+    const ready = await Promise.race([
+      readyPromise,
+      victimPromise.then(result => {
+        throw new Error(
+          `Isolation probe victim exited before ready: ${result.stderr || result.stdout || `exit ${result.code}`}`,
+        );
+      }),
+      rejectAfter(5_000, 'Isolation probe victim did not become ready.'),
+    ]);
+
+    await writeProbeInput(attacker, {
+      mode: 'attacker',
+      token,
+      target: ready,
+    });
+    const attackResult = await runProfileCommand(
+      profile,
+      profile.isolationProbe,
+      attacker,
+      {probeFile: `${profile.sandbox.projectDir}/isolation-probe.mjs`},
+      {timeoutMs: 10_000},
+    );
+    const attack = findProbeRecord(
+      attackResult.stdout,
+      'isolation-probe-attack',
+    );
+    if (attackResult.code !== 0 || !attack) {
+      throw new Error(
+        `Isolation probe attacker failed: ${attackResult.stderr || attackResult.stdout || `exit ${attackResult.code}`}`,
+      );
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const processKillContained = attack.pkillAvailable && !victimSettled;
+    await fs.promises.writeFile(
+      path.join(victim.projectDir, '.isolation-probe-stop'),
+      'stop\n',
+    );
+    await victimPromise;
+
+    const pidNamespacePrivate = ready.pidNamespace !== attack.pidNamespace;
+    const networkNamespacePrivate =
+      ready.networkNamespace !== attack.networkNamespace;
+    const siblingProcUnreadable = !attack.siblingProcReadable;
+    const portCollisionContained = attack.samePortAvailable;
+    const passed =
+      pidNamespacePrivate &&
+      networkNamespacePrivate &&
+      siblingProcUnreadable &&
+      processKillContained &&
+      portCollisionContained;
+    const missing = [
+      [pidNamespacePrivate, 'private PID namespaces'],
+      [networkNamespacePrivate, 'private network namespaces'],
+      [siblingProcUnreadable, 'unreadable sibling /proc roots'],
+      [processKillContained, 'contained process-group kills'],
+      [portCollisionContained, 'independent loopback ports'],
+    ]
+      .filter(([ok]) => !ok)
+      .map(([, label]) => label);
+    return {
+      passed,
+      available: true,
+      pidNamespacePrivate,
+      networkNamespacePrivate,
+      siblingProcUnreadable,
+      processKillContained,
+      portCollisionContained,
+      reason: passed ? null : `missing ${missing.join(', ')}`,
+    };
+  } catch (error) {
+    return {
+      passed: false,
+      available: true,
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  } finally {
+    await Promise.all(
+      [victim.root, attacker.root].map(root =>
+        fs.promises.rm(root, {recursive: true, force: true}),
+      ),
+    );
+  }
+}
+
+async function writeProbeInput(privateRun, value) {
+  await fs.promises.writeFile(
+    path.join(privateRun.projectDir, '.isolation-probe-input.json'),
+    `${JSON.stringify(value)}\n`,
+  );
+}
+
+function findProbeRecord(output, type) {
+  for (const line of output.split('\n')) {
+    try {
+      const value = JSON.parse(line);
+      if (value.type === type) {
+        return value;
+      }
+    } catch {
+      // Probe launchers may emit diagnostics around the JSON receipt.
+    }
+  }
+  return null;
+}
+
+function rejectAfter(milliseconds, message) {
+  return new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(message)), milliseconds),
+  );
 }
 
 function terminate(child) {

@@ -24,6 +24,21 @@
     "args": ["-lc", "test -r input.txt && printf isolated"],
     "cwd": "{sandboxProject}"
   },
+  "isolationProbe": {
+    "command": "node",
+    "args": ["{probeFile}"],
+    "cwd": "{sandboxProject}"
+  },
+  "evaluator": {
+    "command": "node",
+    "args": [
+      "/path/to/exposed/delivery-modes/evaluator.mjs",
+      "--worker",
+      "{evaluationInput}",
+      "{evaluationOutput}"
+    ],
+    "cwd": "{sandboxProject}"
+  },
   "runners": {
     "example-agent": {
       "command": "/path/to/agent-cli",

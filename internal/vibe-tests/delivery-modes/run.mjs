@@ -29,6 +29,7 @@ import {
 import {loadRunnerProfile} from './profile.mjs';
 import {prepareProject, validateStaticConfig} from './projects.mjs';
 import {buildReports} from './report.mjs';
+import {resolveConcurrency, runInPhases} from './scheduler.mjs';
 
 const fsp = fs.promises;
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -67,6 +68,12 @@ async function main() {
     );
   }
   const isolationReceipt = await runProfilePreflight(profile);
+  const concurrency = resolveConcurrency(options.concurrency, isolationReceipt);
+  if (concurrency.fallbackReason) {
+    console.warn(
+      `Requested concurrency ${concurrency.requested} fell back to 1: ${concurrency.fallbackReason}.`,
+    );
+  }
   const iterationId =
     options.iteration ??
     new Date().toISOString().replaceAll(/[:.]/g, '-').replace('Z', '');
@@ -95,7 +102,8 @@ async function main() {
     staticConfigHash: staticConfig
       ? stableId(JSON.stringify(staticConfig))
       : null,
-    concurrency: options.concurrency,
+    requestedConcurrency: concurrency.requested,
+    concurrency: concurrency.effective,
     agentTimeoutMinutes: options.timeoutMinutes,
     runnerProfileSchemaVersion: profile.schemaVersion,
     runnerLimits: Object.fromEntries(
@@ -145,7 +153,7 @@ async function main() {
     )
   ) {
     console.log('Verifying the React no-build starter with hooks and icons…');
-    await verifyStarter(specs['react-nobuild'], outputDir);
+    await verifyStarter(specs['react-nobuild'], outputDir, profile);
   }
 
   const jobs = [];
@@ -173,24 +181,41 @@ async function main() {
     ? pendingJobs.slice(0, options.maxNewJobs)
     : pendingJobs;
   console.log(
-    `Running ${scheduledJobs.length} new of ${jobs.length} total jobs (${results.length} resumed, ${options.concurrency} concurrent, ${options.timeoutMinutes} minute timeout)…`,
+    `Running ${scheduledJobs.length} new of ${jobs.length} total jobs (${results.length} resumed, ${concurrency.effective} concurrent, ${options.timeoutMinutes} minute timeout)…`,
   );
-  let completed = results.length;
-  await runWithConcurrency(scheduledJobs, options.concurrency, async job => {
-    const result = await runOne({
-      ...job,
-      spec: specs[job.config],
-      outputDir,
-      options,
-      profile,
+  let preparedCount = 0;
+  let scoredCount = results.length;
+  let runnerBatchCompletedAt = null;
+  if (scheduledJobs.length > 0) {
+    const batch = await runInPhases(scheduledJobs, concurrency.effective, {
+      prepare: async job => {
+        const prepared = await prepareOne({
+          ...job,
+          spec: specs[job.config],
+          outputDir,
+          options,
+          profile,
+        });
+        preparedCount += 1;
+        console.log(
+          `[${preparedCount}/${scheduledJobs.length}] runner exited: ${job.prompt.id} ${job.config} ${job.agent}`,
+        );
+        return prepared;
+      },
+      evaluate: async (prepared, {barrierAt}) => {
+        const result = await scoreOne(prepared, barrierAt);
+        scoredCount += 1;
+        console.log(
+          `[${scoredCount}/${jobs.length}] scored: ${result.promptId} ${result.config} ${result.agent}: ${result.evaluation?.render?.passed ? 'rendered' : 'failed'}`,
+        );
+        return result;
+      },
     });
-    results.push(result);
-    completed += 1;
-    console.log(
-      `[${completed}/${jobs.length}] ${job.prompt.id} ${job.config} ${job.agent}: ${result.evaluation?.render?.passed ? 'rendered' : 'failed'}`,
-    );
-  });
+    runnerBatchCompletedAt = batch.barrierAt;
+    results.push(...batch.results);
+  }
   results.sort((a, b) => a.id.localeCompare(b.id));
+  manifest.runnerBatchCompletedAt = runnerBatchCompletedAt;
   const completedJobs = results.filter(checkpointIsComplete).length;
   manifest.completedJobs = completedJobs;
   manifest.totalJobs = jobs.length;
@@ -225,6 +250,7 @@ function assertCompatibleManifest(prior, current) {
     'seed',
     'reactVersion',
     'staticConfigHash',
+    'requestedConcurrency',
     'concurrency',
     'agentTimeoutMinutes',
     'runnerProfileSchemaVersion',
@@ -289,7 +315,7 @@ function jobId(promptId, config, runner) {
   return `${promptId}-${config}-${runner}`;
 }
 
-async function verifyStarter(spec, outputDir) {
+async function verifyStarter(spec, outputDir, profile) {
   const privateRun = await createPrivateRunRoot('starter-');
   const privateScreenshot = path.join(privateRun.root, 'starter.png');
   try {
@@ -297,12 +323,13 @@ async function verifyStarter(spec, outputDir) {
     const baselineSources = await captureAuthoredSources(privateRun.projectDir);
     const verification = await evaluateRun({
       config: 'react-nobuild',
-      projectDir: privateRun.projectDir,
+      privateRun,
       prompt: {prompt: 'Render the supplied starter.'},
       screenshotPath: privateScreenshot,
       baselineSources,
       skipJudge: true,
       verifyStarterTyping: true,
+      profile,
     });
     if (!verification.render.passed) {
       throw new Error(
@@ -322,7 +349,7 @@ async function verifyStarter(spec, outputDir) {
   }
 }
 
-async function runOne({
+async function prepareOne({
   prompt,
   config,
   agent,
@@ -354,10 +381,11 @@ async function runOne({
     startedAt: new Date().toISOString(),
   };
   let phase = 'setup';
+  let baselineSources = {};
 
   try {
     await prepareProject(spec, privateRun.projectDir);
-    const baselineSources = await captureAuthoredSources(privateRun.projectDir);
+    baselineSources = await captureAuthoredSources(privateRun.projectDir);
     await fsp.writeFile(
       path.join(privateRun.projectDir, 'TASK.md'),
       `${taskPrompt}\n`,
@@ -371,71 +399,120 @@ async function runOne({
       taskPrompt,
       timeoutMs: options.timeoutMinutes * 60 * 1000,
     });
-
-    phase = 'evaluation';
-    result.evaluation = await evaluateRun({
-      config,
-      projectDir: privateRun.projectDir,
-      prompt,
-      screenshotPath: privateScreenshot,
-      baselineSources,
-      skipJudge: options.skipJudge,
-      judgeProfile: profile,
-    });
-    if (result.runner.timedOut) {
-      result.evaluation.bestBeforeTimeout = {
-        renderPassed: result.evaluation.render?.passed ?? false,
-        adoptionShare: result.evaluation.render?.adoptionShare ?? 0,
-        promptFulfillment: result.evaluation.judge?.promptFulfillment ?? null,
-        visualQuality: result.evaluation.judge?.visualQuality ?? null,
-        screenshotCaptured: fs.existsSync(privateScreenshot),
-      };
-    }
-    if (!result.runner.success) {
-      forceFailedScores(
-        result.evaluation,
-        result.runner.transcriptAudit?.passed === false
-          ? `Strict transcript audit failed: ${result.runner.transcriptAudit.strictFindings.map(finding => finding.label).join('; ')}`
-          : 'Agent runner failed or timed out',
-      );
-    }
-    result.completed = true;
   } catch (error) {
-    const message =
-      error instanceof Error ? (error.stack ?? error.message) : String(error);
     result.infrastructureFailure = {
       phase,
       retryable: true,
-      message,
+      message:
+        error instanceof Error ? (error.stack ?? error.message) : String(error),
     };
     result.completed = false;
   }
-  result.finishedAt = new Date().toISOString();
+  result.runnerFinishedAt = new Date().toISOString();
 
-  await fsp.rm(sharedRunDir, {recursive: true, force: true});
-  await fsp.mkdir(sharedRunDir, {recursive: true});
-  if (fs.existsSync(privateScreenshot)) {
-    await fsp.copyFile(privateScreenshot, sharedScreenshot);
-  } else {
-    await fsp.rm(sharedScreenshot, {force: true});
-    result.screenshotPath = null;
-  }
-  await copyProjectEvidence(
-    privateRun.projectDir,
-    path.join(sharedRunDir, 'project'),
-  );
-  for (const file of ['transcript.jsonl', 'transcript.jsonl.stderr.log']) {
-    const source = path.join(privateRun.root, file);
-    if (fs.existsSync(source)) {
-      await fsp.copyFile(source, path.join(sharedRunDir, `${agent}.${file}`));
+  return {
+    prompt,
+    config,
+    agent,
+    options,
+    profile,
+    sharedRunDir,
+    sharedScreenshot,
+    privateRun,
+    privateScreenshot,
+    baselineSources,
+    result,
+  };
+}
+
+async function scoreOne(prepared, barrierAt) {
+  const {
+    prompt,
+    config,
+    agent,
+    options,
+    profile,
+    sharedRunDir,
+    sharedScreenshot,
+    privateRun,
+    privateScreenshot,
+    baselineSources,
+    result,
+  } = prepared;
+  result.scoringBarrierAt = barrierAt;
+  result.scoringStartedAt = new Date().toISOString();
+
+  try {
+    if (!result.infrastructureFailure) {
+      try {
+        result.evaluation = await evaluateRun({
+          config,
+          privateRun,
+          prompt,
+          screenshotPath: privateScreenshot,
+          baselineSources,
+          skipJudge: options.skipJudge,
+          profile,
+        });
+        if (result.runner.timedOut) {
+          result.evaluation.bestBeforeTimeout = {
+            renderPassed: result.evaluation.render?.passed ?? false,
+            adoptionShare: result.evaluation.render?.adoptionShare ?? 0,
+            promptFulfillment:
+              result.evaluation.judge?.promptFulfillment ?? null,
+            visualQuality: result.evaluation.judge?.visualQuality ?? null,
+            screenshotCaptured: fs.existsSync(privateScreenshot),
+          };
+        }
+        if (!result.runner.success) {
+          forceFailedScores(
+            result.evaluation,
+            result.runner.transcriptAudit?.passed === false
+              ? `Strict transcript audit failed: ${result.runner.transcriptAudit.strictFindings.map(finding => finding.label).join('; ')}`
+              : 'Agent runner failed or timed out',
+          );
+        }
+        result.completed = true;
+      } catch (error) {
+        result.infrastructureFailure = {
+          phase: 'evaluation',
+          retryable: true,
+          message:
+            error instanceof Error
+              ? (error.stack ?? error.message)
+              : String(error),
+        };
+        result.completed = false;
+      }
     }
+    result.finishedAt = new Date().toISOString();
+
+    await fsp.rm(sharedRunDir, {recursive: true, force: true});
+    await fsp.mkdir(sharedRunDir, {recursive: true});
+    if (fs.existsSync(privateScreenshot)) {
+      await fsp.copyFile(privateScreenshot, sharedScreenshot);
+    } else {
+      await fsp.rm(sharedScreenshot, {force: true});
+      result.screenshotPath = null;
+    }
+    await copyProjectEvidence(
+      privateRun.projectDir,
+      path.join(sharedRunDir, 'project'),
+    );
+    for (const file of ['transcript.jsonl', 'transcript.jsonl.stderr.log']) {
+      const source = path.join(privateRun.root, file);
+      if (fs.existsSync(source)) {
+        await fsp.copyFile(source, path.join(sharedRunDir, `${agent}.${file}`));
+      }
+    }
+    await fsp.writeFile(
+      path.join(sharedRunDir, 'run.json'),
+      `${JSON.stringify(result, null, 2)}\n`,
+    );
+    return result;
+  } finally {
+    await fsp.rm(privateRun.root, {recursive: true, force: true});
   }
-  await fsp.writeFile(
-    path.join(sharedRunDir, 'run.json'),
-    `${JSON.stringify(result, null, 2)}\n`,
-  );
-  await fsp.rm(privateRun.root, {recursive: true, force: true});
-  return result;
 }
 
 async function runAgent({name, profile, privateRun, taskPrompt, timeoutMs}) {
@@ -522,24 +599,6 @@ async function copyProjectEvidence(source, destination) {
         .some(part => ['node_modules', 'dist', '.cache'].includes(part));
     },
   });
-}
-
-async function runWithConcurrency(items, concurrency, worker) {
-  let index = 0;
-  const threads = Array.from(
-    {length: Math.min(concurrency, items.length)},
-    async () => {
-      while (true) {
-        const current = index;
-        index += 1;
-        if (current >= items.length) {
-          return;
-        }
-        await worker(items[current]);
-      }
-    },
-  );
-  await Promise.all(threads);
 }
 
 function printDryRun(options, prompts, specs) {

@@ -39,6 +39,8 @@ Schema version 1 defines:
 - `sandbox.root` and `sandbox.projectDir`: paths visible inside the isolated run.
 - `launcher`: the local isolation wrapper. Its argument list may use `{privateRoot}`, `{sandboxRoot}`, `{runnerCommand}`, `{runnerCwd}`, and the whole-argument `{runnerArgs}` expansion.
 - `preflight`: a command that must succeed through the launcher before any cell runs.
+- `isolationProbe`: a runtime command for the harness-owned PID, network, port, process-kill, and sibling-`/proc` probe. The harness copies its probe script into the private project and provides `{probeFile}`.
+- `evaluator`: a runtime command that executes the harness evaluator worker with `{evaluationInput}` and `{evaluationOutput}` inside the launcher namespace. The configured evaluator script must be exposed read-only to that namespace.
 - `runners`: named command entries. Arguments may use `{sandboxProject}` and `{taskFile}`; `stdin: "prompt"` sends the shared task prompt.
 - `transcript`: a declarative adapter for each runner and judge. The shipped public adapter format is JSONL: `toolCalls` selects records with field-path matchers and extracts a command path, while optional `usage` paths select input and output token counts. The harness has no built-in knowledge of any agent CLI event schema.
 - `judge`: the blind screenshot evaluator. Its arguments may use `{sandboxProject}` and `{schema}`; the prompt is available through stdin. Optional `resultPath` selects the score object from the judge's JSON or last JSONL record.
@@ -52,7 +54,9 @@ Every audit rule is classified as:
 
 Runner commands, executable paths, launcher flags, environment variables, transcript adapters, context expectations, limits, audit patterns, and version probes belong in the local profile. None are hard-coded in the harness. The profile path and inline profile variables are removed from every launcher, runner, judge, and version-probe child environment; agents receive only the task prompt, project, and configured browser-helper syntax.
 
-The launcher owns OS-level isolation for runner and judge processes. It should expose only the private run root and required runtime assets, map the host project to `sandbox.projectDir`, keep sibling and host-user data inaccessible, and provide the browser helper named by `browserCommand`. Project preparation, builds, preview servers, browser evaluation, and evidence copying run host-side under a mode-`0700` private root; they do not run through the profile launcher. The harness runs the launcher preflight before any cell and records its receipt in the manifest.
+The launcher owns OS-level isolation for runner, evaluator, and judge processes. It should expose only the private run root and required runtime assets, map the host project to `sandbox.projectDir`, keep sibling and host-user data inaccessible, and provide the browser helper named by `browserCommand`. The harness creates each host-side private root with mode `0700` and runs a live capability probe through two launcher instances. Parallel agents are enabled only when that probe proves distinct PID and network namespaces, an agent-side process-group kill cannot reach the sibling, the sibling's `/proc/<pid>/root` is unreadable, and both runs can bind the same loopback port. A missing or failed probe safely reduces requested concurrency to 1.
+
+Runner processes complete as a batch before scoring starts. Builds, typechecks, the evaluator-owned static server, and browser capture then run through `evaluator` in a fresh launcher namespace for that private run. The static server binds port `0`, so the operating system assigns an unused ephemeral port without a reserve-then-bind race. Shared evidence copies happen only after sandboxed evaluation finishes, and the manifest records the probe receipt, requested/effective concurrency, and runner-batch barrier.
 
 ## Static HTML
 
@@ -86,7 +90,7 @@ VIBE_RUNNER_PROFILE=/absolute/path/to/runner-profile.json \
   --resume
 ```
 
-Concurrency defaults to 1 so local browser servers and launcher resources do not interfere. Every attempted cell writes `runs/<id>/run.json`. Successfully scored cells are reusable checkpoints. Setup, runner-launch, and evaluator crashes are classified as retryable infrastructure failures, excluded from score denominators, and rerun by the same command with `--resume`; `--max-new-jobs <n>` can stop after a checkpoint batch.
+Concurrency defaults to 1. A higher requested value is honored only when the live launcher capability probe proves private PID and network namespaces plus contained process kills, loopback ports, and sibling `/proc`; otherwise the harness records the reason and falls back to 1. Every runner in a scheduled batch exits before any cell is scored. Every attempted cell writes `runs/<id>/run.json`; successfully scored cells are reusable checkpoints. Setup, runner-launch, and evaluator crashes are classified as retryable infrastructure failures, excluded from score denominators, and rerun by the same command with `--resume`; `--max-new-jobs <n>` can stop after a checkpoint batch.
 
 ## React no-build starter
 
@@ -96,8 +100,8 @@ The no-build starter exercises an icon-bearing Banner, component hooks, theme co
 
 The shared evaluator:
 
-1. runs `vite build` for `react-build` and records `tsc --noEmit` diagnostics as a non-gating quality metric;
-2. serves the result and checks for a non-blank render, browser console errors, and page errors;
+1. runs `vite build` and `tsc --noEmit` for `react-build` inside the run's evaluator sandbox;
+2. serves every delivery mode with the same evaluator-owned static server on an OS-assigned ephemeral port, then checks for a non-blank render, browser console errors, and page errors;
 3. captures a full-page screenshot;
 4. measures visible semantic targets from Astryx React and static class taxonomies;
 5. scans only runner-authored changes after removing comments, separating hard-coded values from custom-property and theme definitions;
