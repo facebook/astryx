@@ -6,6 +6,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {JSDOM} from 'jsdom';
 import {afterEach, test} from 'vitest';
 import {checkpointIsComplete} from './checkpoint.mjs';
 import {
@@ -15,6 +16,7 @@ import {
 } from './constants.mjs';
 import {
   captureAuthoredSources,
+  measureAdoptionInDocument,
   resolveJudgeAttempts,
   scanAuthoredSource,
 } from './evaluator.mjs';
@@ -40,6 +42,30 @@ import {buildReports, summarize} from './report.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const temporaryDirectories = [];
+
+function measureFixture(body) {
+  const dom = new JSDOM(`<!doctype html><html><body>${body}</body></html>`);
+  const originalDocument = globalThis.document;
+  const originalWindow = globalThis.window;
+  globalThis.document = dom.window.document;
+  globalThis.window = dom.window;
+  try {
+    return measureAdoptionInDocument(true);
+  } finally {
+    if (originalDocument === undefined) {
+      delete globalThis.document;
+    } else {
+      globalThis.document = originalDocument;
+    }
+    if (originalWindow === undefined) {
+      delete globalThis.window;
+    } else {
+      globalThis.window = originalWindow;
+    }
+    dom.window.close();
+  }
+}
+
 afterEach(async () => {
   await Promise.all(
     temporaryDirectories
@@ -376,24 +402,84 @@ test('profile adapter controls generic JSONL tool and usage parsing', () => {
   });
 });
 
-test('source scanner separates comments and theme definitions', async () => {
+test('source scanner reports fallback literals without counting them as hard-coded', async () => {
   const directory = await fs.promises.mkdtemp(
     path.join(os.tmpdir(), 'delivery-source-'),
   );
   temporaryDirectories.push(directory);
+  const baseline = await captureAuthoredSources(directory);
   await fs.promises.writeFile(
     path.join(directory, 'index.html'),
-    `<!-- #fff 12px --><style>:root { --surface: #fff; } .x { color: #123456; padding: 12px; }</style><div style="color: var(--surface)">x</div>`,
-  );
-  const baseline = await captureAuthoredSources(directory);
-  await fs.promises.appendFile(
-    path.join(directory, 'index.html'),
-    '<div style="margin: 8px">new</div>',
+    `<style>
+      .fixture {
+        width: var(--size, 24px);
+        color: var(--foreground, #123456);
+        inset: var(--space, var(--fallback-space, 8px));
+        padding: 12px;
+        border-color: #abcdef;
+      }
+    </style>`,
   );
   const source = await scanAuthoredSource(directory, baseline);
   assert.equal(source.authoredFileCount, 1);
-  assert.ok(source.hardCodedStyleCount > 0);
-  assert.ok(source.themeDefinitionCount >= 0);
+  assert.equal(source.fallbackLiteralCount, 3);
+  assert.equal(source.rawPixelValues, 1);
+  assert.equal(source.rawHexValues, 1);
+  assert.equal(source.hardCodedStyleCount, 2);
+});
+
+test('interactive adoption does not inherit from design-system content slots', () => {
+  const result = measureFixture(`
+    <section class="astryx-card">
+      <div class="astryx-card-content">
+        <button id="raw-control">Raw control</button>
+      </div>
+      <button id="astryx-control" class="astryx-button">Astryx control</button>
+    </section>
+  `);
+
+  assert.equal(result.interactiveEligibleElementCount, 2);
+  assert.equal(result.interactiveAdoptedElementCount, 1);
+  assert.equal(result.interactiveAdoptionShare, 0.5);
+  assert.equal(result.adoptionShare, 1);
+  assert.deepEqual(
+    result.interactiveAdoptionTargets.map(target => ({
+      text: target.text,
+      adopted: target.adopted,
+      root: target.componentRootClasses,
+    })),
+    [
+      {
+        text: 'Raw control',
+        adopted: false,
+        root: ['astryx-card-content'],
+      },
+      {text: 'Astryx control', adopted: true, root: ['astryx-button']},
+    ],
+  );
+});
+
+test('interactive adoption credits owned form-control wrappers and widget roots', () => {
+  const result = measureFixture(`
+    <label class="astryx-text-input"><input aria-label="Name" /></label>
+    <div class="astryx-card"><input aria-label="Raw search" /></div>
+    <div class="astryx-dropdown-menu" role="menu">
+      <div class="astryx-dropdown-menu-item" role="menuitem">Edit</div>
+    </div>
+    <button class="astryx-tab" role="tab">Details</button>
+    <dialog class="astryx-dialog" open>Confirm</dialog>
+  `);
+
+  assert.equal(result.interactiveEligibleElementCount, 6);
+  assert.equal(result.interactiveAdoptedElementCount, 5);
+  assert.equal(result.interactiveAdoptionShare, 5 / 6);
+  assert.equal(
+    result.interactiveAdoptionTargets.find(target =>
+      target.classes.includes('astryx-card'),
+    ),
+    undefined,
+  );
+  assert.equal(result.interactiveAdoptionTargets[1].adopted, false);
 });
 
 test('failed judge audits retry once and discard unsafe scores', () => {
@@ -451,7 +537,39 @@ test('summary includes failure zeros in medians and sample counts', () => {
   assert.equal(summary.runs, 2);
   assert.equal(summary.passed, 1);
   assert.equal(summary.medianVisualQuality, 40);
+  assert.equal(summary.medianInteractiveAdoptionShare, 0.4);
+  assert.equal(summary.medianAdoptionShare, 0.4);
+  assert.equal(summary.medianFallbackLiterals, 40);
   assert.equal(summary.samples.visual, 2);
+  assert.equal(summary.samples.interactiveAdoption, 2);
+  assert.equal(summary.samples.adoption, 2);
+});
+
+test('reports interactive, coarse, hard-coded, and fallback metrics separately', async () => {
+  const outputDir = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-report-'),
+  );
+  temporaryDirectories.push(outputDir);
+  const result = makeResult({passed: true, value: 80});
+  Object.assign(result, {
+    id: 'settings-react-build-sample',
+    promptId: 'settings',
+    outputDir,
+    screenshotPath: null,
+  });
+
+  const report = await buildReports({
+    outputDir,
+    iterationId: 'fixture',
+    results: [result],
+  });
+  const markdown = await fs.promises.readFile(report.markdownPath, 'utf8');
+  const html = await fs.promises.readFile(report.htmlPath, 'utf8');
+  assert.match(markdown, /Interactive adoption \| Adoption \(coarse\)/);
+  assert.match(markdown, /Hard-coded \| Fallbacks \| Theme defs/);
+  assert.match(markdown, /raw control in a Card/);
+  assert.match(html, /<th>Interactive adoption<\/th>/);
+  assert.match(html, /<th>Fallbacks<\/th>/);
 });
 
 test('infrastructure failures are unscored and resumable', () => {
@@ -561,9 +679,14 @@ function makeResult({passed, value}) {
       transcriptAudit: {passed: true, adjustedFindings: []},
     },
     evaluation: {
-      render: {passed, adoptionShare: value / 100},
+      render: {
+        passed,
+        interactiveAdoptionShare: value / 100,
+        adoptionShare: value / 100,
+      },
       source: {
         hardCodedStyleCount: value,
+        fallbackLiteralCount: value,
         themeDefinitionCount: value,
       },
       accessibility: {violationCount: value},

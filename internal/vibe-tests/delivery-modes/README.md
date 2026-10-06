@@ -99,12 +99,13 @@ The shared evaluator:
 1. runs `vite build` for `react-build` and records `tsc --noEmit` diagnostics as a non-gating quality metric;
 2. serves the result and checks for a non-blank render, browser console errors, and page errors;
 3. captures a full-page screenshot;
-4. measures visible semantic targets from Astryx React and static class taxonomies;
-5. scans only runner-authored changes after removing comments, separating hard-coded values from custom-property and theme definitions;
-6. runs axe-core;
-7. asks the profile's blind judge to score prompt fulfillment and visual quality from an anonymized screenshot and the task prompt only.
+4. measures visible interactive targets — buttons, links, form controls, menus, tabs, and dialogs — and credits one only when its nearest component root is an Astryx component, so raw controls inside Card bodies, table cells, panels, and other content slots stay raw;
+5. retains the former ancestor-credit adoption metric as `coarse` for longitudinal comparisons;
+6. scans only runner-authored changes after removing comments, reporting CSS-variable fallback literals separately from hard-coded values and token/theme definitions;
+7. runs axe-core;
+8. asks the profile's blind judge to score prompt fulfillment and visual quality from an anonymized screenshot and the task prompt only.
 
-A build failure, page error, blank render, runner failure, timeout, or strict audit failure receives adoption, prompt-fulfillment, and visual-quality scores of 0. Those scored rows remain in every median and pass-rate denominator. A timeout separately records the last complete on-disk state as **best before timeout** without changing the primary score. Infrastructure failures are reported separately, contribute no score, and remain retryable checkpoints.
+A build failure, page error, blank render, runner failure, timeout, or strict audit failure receives both adoption scores, prompt-fulfillment, and visual-quality scores of 0. Those scored rows remain in every median and pass-rate denominator. A timeout separately records the last complete on-disk state as **best before timeout** without changing the primary score. Infrastructure failures are reported separately, contribute no score, and remain retryable checkpoints.
 
 The blind judge prompt describes only the requested UI and visible scoring criteria. A judge process crash, nonzero exit, invalid result, or strict context-audit failure is retried once. Each attempt and error is recorded; if both attempts fail, judge scores remain null and the report marks the judge unavailable rather than assigning zero.
 

@@ -205,7 +205,7 @@ async function main() {
   console.log(`JSON: ${report.jsonPath}`);
   for (const row of report.summary) {
     console.log(
-      `${row.config}/${row.agent}: ${row.passed}/${row.runs} render pass, median adoption ${formatPercent(row.medianAdoptionShare)}, visual ${formatNumber(row.medianVisualQuality)}`,
+      `${row.config}/${row.agent}: ${row.passed}/${row.runs} render pass, median interactive adoption ${formatPercent(row.medianInteractiveAdoptionShare)} (coarse ${formatPercent(row.medianAdoptionShare)}), visual ${formatNumber(row.medianVisualQuality)}`,
     );
   }
 }
@@ -385,6 +385,8 @@ async function runOne({
     if (result.runner.timedOut) {
       result.evaluation.bestBeforeTimeout = {
         renderPassed: result.evaluation.render?.passed ?? false,
+        interactiveAdoptionShare:
+          result.evaluation.render?.interactiveAdoptionShare ?? 0,
         adoptionShare: result.evaluation.render?.adoptionShare ?? 0,
         promptFulfillment: result.evaluation.judge?.promptFulfillment ?? null,
         visualQuality: result.evaluation.judge?.visualQuality ?? null,
@@ -480,6 +482,8 @@ async function runAgent({name, profile, privateRun, taskPrompt, timeoutMs}) {
 
 function forceFailedScores(evaluation, reason) {
   evaluation.render.passed = false;
+  evaluation.render.interactiveAdoptedElementCount = 0;
+  evaluation.render.interactiveAdoptionShare = 0;
   evaluation.render.adoptedElementCount = 0;
   evaluation.render.adoptionShare = 0;
   evaluation.render.error ??= reason;

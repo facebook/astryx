@@ -107,6 +107,8 @@ export async function evaluateRun({
       url: server.url,
     };
     if (!render.passed) {
+      render.interactiveAdoptionShare = 0;
+      render.interactiveAdoptedElementCount = 0;
       render.adoptionShare = 0;
       render.adoptedElementCount = 0;
     }
@@ -159,6 +161,9 @@ function failedEvaluation({build, typecheck, source, reason}) {
       nonBlank: false,
       textLength: 0,
       visibleElementCount: 0,
+      interactiveEligibleElementCount: 0,
+      interactiveAdoptedElementCount: 0,
+      interactiveAdoptionShare: 0,
       eligibleElementCount: 0,
       adoptedElementCount: 0,
       adoptionShare: 0,
@@ -190,7 +195,7 @@ export function measureAdoptionInDocument(assumeVisible = false) {
   // These layout-only families come from the stable classes emitted by the
   // React Layout/Stack/etc. sources and Vanilla Layout.css/Stack.css. All
   // other Astryx classes, including BEM or hyphenated component parts, are
-  // component classes that may confer adoption.
+  // component classes that may confer coarse adoption.
   const reactLayoutRoots = [
     'astryx-stack',
     'astryx-layout',
@@ -213,21 +218,53 @@ export function measureAdoptionInDocument(assumeVisible = false) {
     'ax-stepper-frame',
     'ax-collapsible__content',
   ];
-  const semanticSelector = [
+  // These components own a nested native form control. Most interactive
+  // components put their stable class directly on the target; wrappers are
+  // listed explicitly so an arbitrary control in Card, Table, Dialog, or any
+  // other content slot never inherits adoption from its container.
+  const interactiveWrapperRoots = new Set([
+    'astryx-text-input',
+    'astryx-search-input',
+    'astryx-text-area',
+    'astryx-number-input',
+    'astryx-date-input',
+    'astryx-date-range-input',
+    'astryx-time-input',
+    'astryx-file-input',
+    'astryx-select',
+    'astryx-multi-selector',
+    'astryx-checkbox',
+    'astryx-radio',
+    'astryx-radio-list',
+    'astryx-switch',
+    'astryx-slider',
+    'astryx-combobox',
+    'ax-input',
+    'ax-text-input',
+    'ax-search-input',
+    'ax-textarea',
+    'ax-text-area',
+    'ax-number-input',
+    'ax-date-input',
+    'ax-date-range-input',
+    'ax-time-input',
+    'ax-file-input',
+    'ax-select',
+    'ax-multi-selector',
+    'ax-checkbox',
+    'ax-radio',
+    'ax-radio-list',
+    'ax-switch',
+    'ax-slider',
+    'ax-combobox',
+  ]);
+  const interactiveSelector = [
     'button',
     'a[href]',
     'input',
     'select',
     'textarea',
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'h5',
-    'h6',
-    'table',
     'dialog',
-    'nav',
     '[role="button"]',
     '[role="link"]',
     '[role="textbox"]',
@@ -235,8 +272,25 @@ export function measureAdoptionInDocument(assumeVisible = false) {
     '[role="checkbox"]',
     '[role="radio"]',
     '[role="switch"]',
-    '[role="table"]',
+    '[role="menu"]',
+    '[role="menuitem"]',
+    '[role="menuitemcheckbox"]',
+    '[role="menuitemradio"]',
+    '[role="tab"]',
     '[role="dialog"]',
+    '[role="alertdialog"]',
+  ].join(',');
+  const semanticSelector = [
+    interactiveSelector,
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'table',
+    'nav',
+    '[role="table"]',
     '[role="navigation"]',
   ].join(',');
   const containerSelector = [
@@ -257,6 +311,7 @@ export function measureAdoptionInDocument(assumeVisible = false) {
     ...doc.querySelectorAll(semanticSelector),
     ...doc.querySelectorAll(containerSelector),
   ]);
+  const interactiveTargets = new Set(doc.querySelectorAll(interactiveSelector));
 
   const classNames = element =>
     (element.getAttribute('class') ?? '').split(/\s+/).filter(Boolean);
@@ -309,7 +364,7 @@ export function measureAdoptionInDocument(assumeVisible = false) {
     const rect = element.getBoundingClientRect();
     return rect.width > 1 && rect.height > 1;
   };
-  const isAdopted = element => {
+  const isCoarselyAdopted = element => {
     let candidate = element;
     while (candidate && candidate !== doc.body) {
       const classes = designSystemClasses(candidate);
@@ -320,6 +375,35 @@ export function measureAdoptionInDocument(assumeVisible = false) {
     }
     return false;
   };
+  const nearestComponentRoot = element => {
+    let candidate = element;
+    while (candidate && candidate !== doc.body) {
+      const classes = designSystemClasses(candidate).filter(
+        name => !isLayoutClass(name),
+      );
+      if (classes.length > 0) {
+        return {element: candidate, classes};
+      }
+      candidate = candidate.parentElement;
+    }
+    return null;
+  };
+  const interactiveTarget = element => {
+    const root = nearestComponentRoot(element);
+    return {
+      tag: element.tagName.toLowerCase(),
+      classes: classNames(element),
+      text: (element.textContent ?? '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .slice(0, 80),
+      componentRootClasses: root?.classes ?? [],
+      adopted:
+        root != null &&
+        (root.element === element ||
+          root.classes.some(name => interactiveWrapperRoots.has(name))),
+    };
+  };
 
   const visibleElements = [...doc.querySelectorAll('body *')].filter(isVisible);
   const eligible = [...targets].filter(isVisible);
@@ -327,15 +411,28 @@ export function measureAdoptionInDocument(assumeVisible = false) {
     tag: element.tagName.toLowerCase(),
     classes: classNames(element),
     text: (element.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 80),
-    adopted: isAdopted(element),
+    adopted: isCoarselyAdopted(element),
   }));
   const adoptedElementCount = adoptionTargets.filter(
+    target => target.adopted,
+  ).length;
+  const interactiveEligible = [...interactiveTargets].filter(isVisible);
+  const interactiveAdoptionTargets = interactiveEligible.map(interactiveTarget);
+  const interactiveAdoptedElementCount = interactiveAdoptionTargets.filter(
     target => target.adopted,
   ).length;
   return {
     textLength: (doc.body?.innerText ?? doc.body?.textContent ?? '').trim()
       .length,
     visibleElementCount: visibleElements.length,
+    interactiveEligibleElementCount: interactiveEligible.length,
+    interactiveAdoptedElementCount,
+    interactiveAdoptionShare:
+      interactiveEligible.length === 0
+        ? 0
+        : interactiveAdoptedElementCount / interactiveEligible.length,
+    interactiveAdoptionTargets,
+    // Preserve the original ancestor-credit metric for longitudinal continuity.
     eligibleElementCount: eligible.length,
     adoptedElementCount,
     adoptionShare:
@@ -366,16 +463,21 @@ export async function scanAuthoredSource(projectDir, baselineSources = {}) {
   let inlineStyleAttributes = 0;
   let customPropertyOnlyStyles = 0;
   let themeDefinitionCount = 0;
+  let fallbackLiteralCount = 0;
   let rawHexValues = 0;
   let rawPixelValues = 0;
   for (const [relativePath, source] of authored) {
     const uncommented = stripSourceComments(source, path.extname(relativePath));
     const styleCounts = countInlineStyles(uncommented);
     const themeAnalysis = separateThemeDefinitions(uncommented);
-    const scannableSource = themeAnalysis.scannableSource;
+    const fallbackAnalysis = separateCssVariableFallbacks(
+      themeAnalysis.scannableSource,
+    );
+    const scannableSource = fallbackAnalysis.scannableSource;
     inlineStyleAttributes += styleCounts.hardCoded;
     customPropertyOnlyStyles += styleCounts.customPropertyOnly;
     themeDefinitionCount += themeAnalysis.count;
+    fallbackLiteralCount += fallbackAnalysis.fallbackLiteralCount;
     rawHexValues += (scannableSource.match(/#[0-9a-f]{3,8}\b/gi) ?? []).length;
     rawPixelValues += (scannableSource.match(/\b\d+(?:\.\d+)?px\b/gi) ?? [])
       .length;
@@ -385,10 +487,77 @@ export async function scanAuthoredSource(projectDir, baselineSources = {}) {
     inlineStyleAttributes,
     customPropertyOnlyStyles,
     themeDefinitionCount,
+    fallbackLiteralCount,
     rawHexValues,
     rawPixelValues,
     hardCodedStyleCount: inlineStyleAttributes + rawHexValues + rawPixelValues,
   };
+}
+
+function separateCssVariableFallbacks(source) {
+  const fallbackRanges = [];
+  const pattern = /\bvar\s*\(/g;
+  for (const match of source.matchAll(pattern)) {
+    const open = source.indexOf('(', match.index);
+    let depth = 1;
+    let quote = null;
+    let comma = -1;
+    let end = -1;
+    for (let index = open + 1; index < source.length; index += 1) {
+      const character = source[index];
+      if (quote) {
+        if (character === '\\') {
+          index += 1;
+        } else if (character === quote) {
+          quote = null;
+        }
+        continue;
+      }
+      if (character === "'" || character === '"' || character === '`') {
+        quote = character;
+      } else if (character === '(') {
+        depth += 1;
+      } else if (character === ')') {
+        depth -= 1;
+        if (depth === 0) {
+          end = index;
+          break;
+        }
+      } else if (character === ',' && depth === 1 && comma < 0) {
+        comma = index;
+      }
+    }
+    if (comma >= 0 && end >= 0) {
+      fallbackRanges.push([comma + 1, end]);
+    }
+  }
+
+  const mergedRanges = [];
+  for (const range of fallbackRanges.sort(
+    (left, right) => left[0] - right[0],
+  )) {
+    const previous = mergedRanges.at(-1);
+    if (previous && range[0] <= previous[1]) {
+      previous[1] = Math.max(previous[1], range[1]);
+    } else {
+      mergedRanges.push([...range]);
+    }
+  }
+
+  let fallbackLiteralCount = 0;
+  let scannableSource = '';
+  let cursor = 0;
+  for (const [start, end] of mergedRanges) {
+    const fallback = source.slice(start, end);
+    fallbackLiteralCount +=
+      (fallback.match(/#[0-9a-f]{3,8}\b/gi) ?? []).length +
+      (fallback.match(/\b\d+(?:\.\d+)?px\b/gi) ?? []).length;
+    scannableSource += source.slice(cursor, start);
+    scannableSource += fallback.replace(/[^\n]/g, ' ');
+    cursor = end;
+  }
+  scannableSource += source.slice(cursor);
+  return {fallbackLiteralCount, scannableSource};
 }
 
 export function countInlineStyles(source) {

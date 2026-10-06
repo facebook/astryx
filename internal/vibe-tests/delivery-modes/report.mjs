@@ -53,11 +53,17 @@ export function summarize(results) {
         }),
       );
       const cli = metric(scoredRuns.map(run => run.runner?.cliLookups));
+      const interactiveAdoption = metric(
+        scoredRuns.map(run => run.evaluation?.render?.interactiveAdoptionShare),
+      );
       const adoption = metric(
         scoredRuns.map(run => run.evaluation?.render?.adoptionShare),
       );
       const hardCoded = metric(
         scoredRuns.map(run => run.evaluation?.source?.hardCodedStyleCount),
+      );
+      const fallbackLiterals = metric(
+        scoredRuns.map(run => run.evaluation?.source?.fallbackLiteralCount),
       );
       const themeDefinitions = metric(
         scoredRuns.map(run => run.evaluation?.source?.themeDefinitionCount),
@@ -107,8 +113,11 @@ export function summarize(results) {
         medianWallTimeMs: wall.value,
         medianTokens: tokens.value,
         medianCliLookups: cli.value,
+        medianInteractiveAdoptionShare: interactiveAdoption.value,
+        // Keep the original ancestor-credit series under its existing name.
         medianAdoptionShare: adoption.value,
         medianHardCodedStyles: hardCoded.value,
+        medianFallbackLiterals: fallbackLiterals.value,
         medianThemeDefinitions: themeDefinitions.value,
         medianAxeViolations: axe.value,
         medianPromptFulfillment: prompt.value,
@@ -120,8 +129,10 @@ export function summarize(results) {
           wall: wall.count,
           tokens: tokens.count,
           cli: cli.count,
+          interactiveAdoption: interactiveAdoption.count,
           adoption: adoption.count,
           hardCoded: hardCoded.count,
+          fallbackLiterals: fallbackLiterals.count,
           themeDefinitions: themeDefinitions.count,
           axe: axe.count,
           prompt: prompt.count,
@@ -141,20 +152,20 @@ function markdownReport(iterationId, summary, results) {
   const lines = [
     `# Delivery-mode vibe test — ${iterationId}`,
     '',
-    'The same prompt battery and evaluator were used for every configuration. A build failure, runtime page error, or blank render contributes adoption, prompt-fulfillment, and visual-quality scores of 0 and remains in every scored median and pass-rate denominator. Infrastructure failures are classified separately, unscored, and retryable.',
+    'The same prompt battery and evaluator were used for every configuration. A build failure, runtime page error, or blank render contributes both adoption scores, prompt-fulfillment, and visual-quality scores of 0 and remains in every scored median and pass-rate denominator. Infrastructure failures are classified separately, unscored, and retryable.',
     '',
-    'TypeScript errors are reported for `react-build` as a non-gating quality metric; only `vite build` gates its render. Hard-coded values exclude comments and token/theme definitions, which have their own column. A timed-out run keeps primary scores at 0 and separately reports the last complete on-disk state as best-before-timeout. The visual judge receives one anonymized default-state screenshot and the task prompt in its own filesystem namespace, so multi-step flows are judged from their default state equally across configs.',
+    'TypeScript errors are reported for `react-build` as a non-gating quality metric; only `vite build` gates its render. Hard-coded values exclude comments, token/theme definitions, and CSS-variable fallback literals; fallbacks and theme definitions have their own columns. A timed-out run keeps primary scores at 0 and separately reports the last complete on-disk state as best-before-timeout. The visual judge receives one anonymized default-state screenshot and the task prompt in its own filesystem namespace, so multi-step flows are judged from their default state equally across configs.',
     '',
     'Runner and launcher details come from the local profile and are identical across delivery configs. Strict transcript-audit findings fail a cell; adjusted findings remain visible without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave judge scores null and are reported. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.',
     '',
-    '**Adoption is coarse.** Ancestor credit can include hand-rolled controls placed inside Astryx content slots. Use render, blind-judge, axe, hard-coded-style, theme-definition, and efficiency metrics as the primary comparison.',
+    '**Interactive adoption** credits visible buttons, links, form controls, menus, tabs, and dialogs only when their nearest component root is an Astryx component. A raw control in a Card, Table cell, panel, or other content slot stays raw. **Adoption (coarse)** preserves the previous ancestor-credit metric for longitudinal continuity.',
     '',
-    '| Config | Runner | Attempts | Scored | Infra | Judge unavailable | Pass | Timeouts | Strict audit | Adjusted audit | Wall | Tokens | CLI | Adoption (coarse) | Hard-coded | Theme defs | axe | Type errors | Prompt | Visual | Best-before timeout P/V |',
-    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+    '| Config | Runner | Attempts | Scored | Infra | Judge unavailable | Pass | Timeouts | Strict audit | Adjusted audit | Wall | Tokens | CLI | Interactive adoption | Adoption (coarse) | Hard-coded | Fallbacks | Theme defs | axe | Type errors | Prompt | Visual | Best-before timeout P/V |',
+    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
   ];
   for (const row of summary) {
     lines.push(
-      `| ${row.config} | ${row.agent} | ${row.attempts} | ${row.runs} | ${row.infrastructureFailures} | ${row.judgeUnavailable} | ${percent(row.passRate)} | ${row.timeouts} | ${row.contextFailures} | ${row.transcriptFlaggedRuns} | ${metricText(seconds(row.medianWallTimeMs), row.samples.wall)} | ${metricText(formatNumber(row.medianTokens), row.samples.tokens)} | ${metricText(formatNumber(row.medianCliLookups), row.samples.cli)} | ${metricText(percent(row.medianAdoptionShare), row.samples.adoption)} | ${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)} | ${metricText(formatNumber(row.medianThemeDefinitions), row.samples.themeDefinitions)} | ${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)} | ${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)} | ${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)} | ${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)} | ${formatBestBefore(row)} |`,
+      `| ${row.config} | ${row.agent} | ${row.attempts} | ${row.runs} | ${row.infrastructureFailures} | ${row.judgeUnavailable} | ${percent(row.passRate)} | ${row.timeouts} | ${row.contextFailures} | ${row.transcriptFlaggedRuns} | ${metricText(seconds(row.medianWallTimeMs), row.samples.wall)} | ${metricText(formatNumber(row.medianTokens), row.samples.tokens)} | ${metricText(formatNumber(row.medianCliLookups), row.samples.cli)} | ${metricText(percent(row.medianInteractiveAdoptionShare), row.samples.interactiveAdoption)} | ${metricText(percent(row.medianAdoptionShare), row.samples.adoption)} | ${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)} | ${metricText(formatNumber(row.medianFallbackLiterals), row.samples.fallbackLiterals)} | ${metricText(formatNumber(row.medianThemeDefinitions), row.samples.themeDefinitions)} | ${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)} | ${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)} | ${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)} | ${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)} | ${formatBestBefore(row)} |`,
     );
   }
   lines.push('', '## Transcript audit flags', '');
@@ -236,7 +247,7 @@ async function htmlReport(iterationId, summary, results) {
 <td>${escapeHtml(row.config)}</td><td>${escapeHtml(row.agent)}</td><td>${row.attempts}</td><td>${row.runs}</td><td>${row.infrastructureFailures}</td><td>${row.judgeUnavailable}</td><td>${percent(row.passRate)}</td>
 <td>${row.timeouts}</td><td>${row.contextFailures}</td><td>${row.transcriptFlaggedRuns}</td><td>${metricText(seconds(row.medianWallTimeMs), row.samples.wall)}</td>
 <td>${metricText(formatNumber(row.medianTokens), row.samples.tokens)}</td><td>${metricText(formatNumber(row.medianCliLookups), row.samples.cli)}</td>
-<td>${metricText(percent(row.medianAdoptionShare), row.samples.adoption)}</td><td>${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)}</td>
+<td>${metricText(percent(row.medianInteractiveAdoptionShare), row.samples.interactiveAdoption)}</td><td>${metricText(percent(row.medianAdoptionShare), row.samples.adoption)}</td><td>${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)}</td><td>${metricText(formatNumber(row.medianFallbackLiterals), row.samples.fallbackLiterals)}</td>
 <td>${metricText(formatNumber(row.medianThemeDefinitions), row.samples.themeDefinitions)}</td><td>${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)}</td><td>${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)}</td>
 <td>${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)}</td><td>${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)}</td><td>${formatBestBefore(row)}</td>
 </tr>`,
@@ -253,10 +264,11 @@ async function htmlReport(iterationId, summary, results) {
       }
       cards.push(`<article><h3>${escapeHtml(result.config)} · ${escapeHtml(result.agent)}</h3>${image}<dl>
 <dt>Status</dt><dd>${result.infrastructureFailure ? 'infrastructure failure' : result.evaluation?.render?.passed ? 'render pass' : 'render fail'}</dd>
+<dt>Interactive adoption</dt><dd>${percent(result.evaluation?.render?.interactiveAdoptionShare)}</dd>
 <dt>Adoption (coarse)</dt><dd>${percent(result.evaluation?.render?.adoptionShare)}</dd>
 <dt>axe</dt><dd>${formatNumber(result.evaluation?.accessibility?.violationCount)}</dd>
 <dt>Type errors</dt><dd>${formatNumber(result.evaluation?.typecheck?.errorCount)}</dd>
-<dt>Hard-coded / theme defs</dt><dd>${formatNumber(result.evaluation?.source?.hardCodedStyleCount)} / ${formatNumber(result.evaluation?.source?.themeDefinitionCount)}</dd>
+<dt>Hard-coded / fallbacks / theme defs</dt><dd>${formatNumber(result.evaluation?.source?.hardCodedStyleCount)} / ${formatNumber(result.evaluation?.source?.fallbackLiteralCount)} / ${formatNumber(result.evaluation?.source?.themeDefinitionCount)}</dd>
 <dt>Prompt / visual</dt><dd>${formatNumber(result.evaluation?.judge?.promptFulfillment)} / ${formatNumber(result.evaluation?.judge?.visualQuality)}</dd>
 <dt>Best before timeout</dt><dd>${formatNumber(result.evaluation?.bestBeforeTimeout?.promptFulfillment)} / ${formatNumber(result.evaluation?.bestBeforeTimeout?.visualQuality)}</dd>
 </dl></article>`);
@@ -327,10 +339,10 @@ async function htmlReport(iterationId, summary, results) {
 :root{color-scheme:light dark;font-family:Inter,system-ui,sans-serif}body{max-width:1800px;margin:auto;padding:24px;background:#f4f6f8;color:#18202a}h1,h2{letter-spacing:-.02em}p{max-width:90ch}table{border-collapse:collapse;width:100%;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px #0002}th,td{padding:10px;border-bottom:1px solid #d9dee5;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}.table-wrap{overflow:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}article{background:white;border:1px solid #d9dee5;border-radius:12px;padding:12px;box-shadow:0 1px 4px #0001}article h3{margin:0 0 10px}img{width:100%;max-height:420px;object-fit:contain;object-position:top;background:#eef1f4;border-radius:8px}.missing{height:180px;display:grid;place-items:center;background:#eef1f4;border-radius:8px}dl{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:0}dt{font-weight:600}dd{margin:0;text-align:right}@media(prefers-color-scheme:dark){body{background:#111820;color:#e8edf2}table,article{background:#1b2530;border-color:#34404d}th,td{border-color:#34404d}.missing,img{background:#10161d}}
 </style></head><body>
 <h1>Delivery-mode vibe test</h1>
-<p>Iteration <code>${escapeHtml(iterationId)}</code>. Every config uses the same evaluator. Failed builds, runtime errors, and blank renders contribute 0 to adoption, prompt, and visual metrics and stay in every scored denominator. Infrastructure failures are unscored and retryable. Parenthetical <code>n</code> is the sample count for each median.</p>
-<p>TypeScript diagnostics are non-gating. Comments are excluded from hard-coded scanning, and token/theme definitions are reported separately. Timed-out runs keep zero primary scores and expose their last complete screenshot under best-before-timeout. The blind judge sees only an anonymized default-state screenshot and prompt in a private filesystem namespace. Runner and launcher details come from the local profile and remain identical across delivery configs. Strict audit findings fail a cell; adjusted findings are reported without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave scores null. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.</p>
-<p><strong>Adoption is coarse.</strong> Ancestor credit can include hand-rolled controls inside Astryx content slots. Render, blind-judge, axe, hard-coded-style, theme-definition, and efficiency metrics lead the comparison.</p>
-<div class="table-wrap"><table><thead><tr><th>Config</th><th>Runner</th><th>Attempts</th><th>Scored</th><th>Infra</th><th>Judge unavailable</th><th>Pass</th><th>Timeouts</th><th>Strict audit</th><th>Adjusted audit</th><th>Wall</th><th>Tokens</th><th>CLI</th><th>Adoption (coarse)</th><th>Hard-coded</th><th>Theme defs</th><th>axe</th><th>Type errors</th><th>Prompt</th><th>Visual</th><th>Best-before P/V</th></tr></thead><tbody>${rows}</tbody></table></div>
+<p>Iteration <code>${escapeHtml(iterationId)}</code>. Every config uses the same evaluator. Failed builds, runtime errors, and blank renders contribute 0 to both adoption metrics, prompt, and visual metrics and stay in every scored denominator. Infrastructure failures are unscored and retryable. Parenthetical <code>n</code> is the sample count for each median.</p>
+<p>TypeScript diagnostics are non-gating. Comments, CSS-variable fallback literals, and token/theme definitions are excluded from hard-coded scanning; fallbacks and theme definitions are reported separately. Timed-out runs keep zero primary scores and expose their last complete screenshot under best-before-timeout. The blind judge sees only an anonymized default-state screenshot and prompt in a private filesystem namespace. Runner and launcher details come from the local profile and remain identical across delivery configs. Strict audit findings fail a cell; adjusted findings are reported without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave scores null. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.</p>
+<p><strong>Interactive adoption</strong> credits visible buttons, links, form controls, menus, tabs, and dialogs only when their nearest component root is an Astryx component. Raw controls in content slots stay raw. <strong>Adoption (coarse)</strong> preserves the previous ancestor-credit metric for longitudinal continuity.</p>
+<div class="table-wrap"><table><thead><tr><th>Config</th><th>Runner</th><th>Attempts</th><th>Scored</th><th>Infra</th><th>Judge unavailable</th><th>Pass</th><th>Timeouts</th><th>Strict audit</th><th>Adjusted audit</th><th>Wall</th><th>Tokens</th><th>CLI</th><th>Interactive adoption</th><th>Adoption (coarse)</th><th>Hard-coded</th><th>Fallbacks</th><th>Theme defs</th><th>axe</th><th>Type errors</th><th>Prompt</th><th>Visual</th><th>Best-before P/V</th></tr></thead><tbody>${rows}</tbody></table></div>
 <section><h2>Transcript audit flags</h2>${transcriptAuditHtml}</section>
 <section><h2>Infrastructure failures</h2>${infrastructureHtml}</section>
 <section><h2>Judge retries and failures</h2>${judgeRetryHtml}</section>
