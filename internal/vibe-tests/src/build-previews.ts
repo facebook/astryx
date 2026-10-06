@@ -7,6 +7,8 @@
  * Takes .tsx result files and builds each into a standalone HTML page
  * that renders the component. Supports Astryx, baseline, and raw HTML targets.
  *
+ * @output Standalone preview pages, or a nonzero exit when any requested cell fails
+ *
  * Usage:
  *   tsx src/build-previews.ts --iterations 8734233a,d4ff8c2c,68ef2a62
  *   tsx src/build-previews.ts --iterations 8734233a --prompts tc-4
@@ -687,13 +689,18 @@ async function main() {
   const manifest: PreviewManifest = {};
   /** Track which prompts needed auto-imported components (quality signal) */
   const importFixes: Record<string, string[]> = {};
+  const requestedCells = new Set<string>();
+  const builtCells = new Set<string>();
+  const failures: string[] = [];
 
   for (const iterationId of iterations) {
     const iterDir = path.join(resultsDir, iterationId);
     const manifestPath = path.join(iterDir, 'manifest.json');
 
     if (!fs.existsSync(manifestPath)) {
-      console.error(`  ⚠ No manifest for ${iterationId}, skipping`);
+      const message = `${iterationId}: no manifest found`;
+      console.error(`  ✗ ${message}`);
+      failures.push(message);
       continue;
     }
 
@@ -702,6 +709,9 @@ async function main() {
     const codeDir = path.join(iterDir, 'results');
 
     if (!fs.existsSync(codeDir)) {
+      const message = `${iterationId}/${target}: no results directory found`;
+      console.error(`  ✗ ${message}`);
+      failures.push(message);
       continue;
     }
 
@@ -709,6 +719,29 @@ async function main() {
     ensureTsxFiles(codeDir);
 
     const files = fs.readdirSync(codeDir).filter(f => f.endsWith('.tsx'));
+    const selectedFiles = files.filter(file => {
+      const promptId = path.basename(file, '.tsx');
+      return !prompts || prompts.includes(promptId);
+    });
+
+    if (prompts) {
+      const availablePrompts = new Set(
+        files.map(file => path.basename(file, '.tsx')),
+      );
+      for (const promptId of prompts) {
+        if (!availablePrompts.has(promptId)) {
+          const cell = `${promptId}/${target}`;
+          requestedCells.add(cell);
+          const message = `${cell}: no source result found`;
+          console.error(`  ✗ ${message}`);
+          failures.push(message);
+        }
+      }
+    } else if (selectedFiles.length === 0) {
+      const message = `${iterationId}/${target}: no result files found`;
+      console.error(`  ✗ ${message}`);
+      failures.push(message);
+    }
 
     // Run tsc type checking on raw generated files BEFORE auto-import fixes
     runTscChecks(codeDir, iterDir, target, files, prompts);
@@ -719,11 +752,10 @@ async function main() {
       continue;
     }
 
-    for (const file of files) {
+    for (const file of selectedFiles) {
       const promptId = path.basename(file, '.tsx');
-      if (prompts && !prompts.includes(promptId)) {
-        continue;
-      }
+      const requestedCell = `${promptId}/${target}`;
+      requestedCells.add(requestedCell);
 
       const componentPath = path.resolve(codeDir, file);
       const previewFile = `${promptId}/${target}.html`;
@@ -746,6 +778,7 @@ async function main() {
 
       const ok = buildPreview(componentPath, target, promptId, previewPath);
       if (ok) {
+        builtCells.add(requestedCell);
         // Post-build validation: ensure no unresolved Astryx references
         if (target === 'astryx' || target === 'astryx-tailwind') {
           const unresolved = validatePreviewHtml(previewPath);
@@ -761,6 +794,8 @@ async function main() {
         }
         manifest[promptId][target] = `previews/${previewFile}`;
         console.log(`  ✓ ${previewFile}`);
+      } else {
+        failures.push(`${requestedCell}: build failed or produced no output`);
       }
     }
   }
@@ -775,6 +810,10 @@ async function main() {
         manifest[promptId] = {};
       }
       for (const [target, url] of Object.entries(targets)) {
+        const cell = `${promptId}/${target}`;
+        if (requestedCells.has(cell) && !builtCells.has(cell)) {
+          continue;
+        }
         if (!manifest[promptId][target]) {
           manifest[promptId][target] = url;
         }
@@ -805,9 +844,17 @@ async function main() {
     } prompt(s)`,
   );
   console.log(`   Manifest: ${manifestOutPath}`);
+
+  if (failures.length > 0) {
+    throw new Error(
+      `Preview generation failed for ${failures.length} requested cell${failures.length === 1 ? '' : 's'}:\n${failures
+        .map(failure => `  - ${failure}`)
+        .join('\n')}`,
+    );
+  }
 }
 
 main().catch(err => {
-  console.error(err);
+  console.error(err instanceof Error ? err.message : err);
   process.exit(1);
 });
