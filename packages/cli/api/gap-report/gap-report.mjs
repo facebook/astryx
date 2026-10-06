@@ -1,7 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Automatic gap-report routing and delivery — fan-out composition.
+ * @file Automatic gap-report normalization, routing, and delivery — fan-out
+ * composition. Preserves the required component/category/reason contract while
+ * adding optional structured triage context.
  *
  * Resolves the report target from the configured project, then fans the
  * normalized report out to every effective handler: project config first,
@@ -88,29 +90,244 @@ function requiredText(value, label, max) {
   return normalized;
 }
 
+const CONTEXT_TEXT_MAX = 8000;
+const AFFECTED_VERSION_MAX = 120;
+const AFFECTED_VERSION_COUNT_MAX = 20;
+
 /**
  * @param {unknown} value
+ * @param {string} label
+ * @param {number} max
  * @returns {string|undefined}
  */
-function optionalDetail(value) {
+function optionalText(value, label, max) {
   if (value == null || value === '') return undefined;
   if (typeof value !== 'string') {
     throw new AstryxError(
-      'detail must be a string.',
+      `${label} must be a string.`,
       undefined,
       ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
   const normalized = value.trim();
   if (normalized === '') return undefined;
-  if (characterCount(normalized) > 8000) {
+  if (characterCount(normalized) > max) {
     throw new AstryxError(
-      'detail must be 8000 characters or fewer.',
+      `${label} must be ${max} characters or fewer.`,
       undefined,
       ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
   return normalized;
+}
+
+/**
+ * @param {unknown} value
+ * @param {string} label
+ * @returns {Record<string, unknown>|undefined}
+ */
+function optionalRecord(value, label) {
+  if (value == null) return undefined;
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new AstryxError(
+      `${label} must be an object.`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  return /** @type {Record<string, unknown>} */ (value);
+}
+
+/**
+ * @param {Record<string, unknown>} value
+ * @param {readonly string[]} allowed
+ * @param {string} label
+ */
+function assertKnownKeys(value, allowed, label) {
+  const unknown = Object.keys(value).find(key => !allowed.includes(key));
+  if (unknown != null) {
+    throw new AstryxError(
+      `${label} contains unknown field "${unknown}".`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+}
+
+/** @param {unknown} value @returns {string[]|undefined} */
+function normalizeAffectedVersions(value) {
+  if (value == null) return undefined;
+  if (!Array.isArray(value)) {
+    throw new AstryxError(
+      'context.affectedVersions must be an array of strings.',
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+
+  /** @type {string[]} */
+  const versions = [];
+  for (const item of value) {
+    if (typeof item !== 'string') {
+      throw new AstryxError(
+        'context.affectedVersions must be an array of strings.',
+        undefined,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
+    const normalized = item.trim();
+    if (normalized === '' || versions.includes(normalized)) continue;
+    if (characterCount(normalized) > AFFECTED_VERSION_MAX) {
+      throw new AstryxError(
+        `Each affected version must be ${AFFECTED_VERSION_MAX} characters or fewer.`,
+        undefined,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
+    versions.push(normalized);
+  }
+
+  if (versions.length > AFFECTED_VERSION_COUNT_MAX) {
+    throw new AstryxError(
+      `context.affectedVersions accepts at most ${AFFECTED_VERSION_COUNT_MAX} values.`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  return versions.length === 0 ? undefined : versions;
+}
+
+/**
+ * Normalize optional structured context. The field is omitted entirely when no
+ * context remains, preserving the event shape for existing callers and handlers.
+ *
+ * @param {unknown} value
+ * @returns {import('../../authoring/gap-report/type').GapReportContext|undefined}
+ */
+function normalizeGapReportContext(value) {
+  const input = optionalRecord(value, 'context');
+  if (input == null) return undefined;
+  assertKnownKeys(
+    input,
+    [
+      'product',
+      'task',
+      'observedBehavior',
+      'expectedBehavior',
+      'workaround',
+      'affectedVersions',
+      'reproduction',
+      'codeLocation',
+      'impact',
+    ],
+    'context',
+  );
+
+  const workaroundInput = optionalRecord(
+    input.workaround,
+    'context.workaround',
+  );
+  if (workaroundInput != null) {
+    assertKnownKeys(
+      workaroundInput,
+      ['type', 'cost', 'description'],
+      'context.workaround',
+    );
+  }
+  const workaroundType = optionalText(
+    workaroundInput?.type,
+    'context.workaround.type',
+    CONTEXT_TEXT_MAX,
+  );
+  const workaroundCost = optionalText(
+    workaroundInput?.cost,
+    'context.workaround.cost',
+    CONTEXT_TEXT_MAX,
+  );
+  const workaroundDescription = optionalText(
+    workaroundInput?.description,
+    'context.workaround.description',
+    CONTEXT_TEXT_MAX,
+  );
+  const workaround =
+    workaroundType == null &&
+    workaroundCost == null &&
+    workaroundDescription == null
+      ? undefined
+      : {
+          ...(workaroundType == null ? {} : {type: workaroundType}),
+          ...(workaroundCost == null ? {} : {cost: workaroundCost}),
+          ...(workaroundDescription == null
+            ? {}
+            : {description: workaroundDescription}),
+        };
+
+  const impactInput = optionalRecord(input.impact, 'context.impact');
+  if (impactInput != null) {
+    assertKnownKeys(
+      impactInput,
+      ['releaseBlocking', 'description'],
+      'context.impact',
+    );
+  }
+  const releaseBlocking = impactInput?.releaseBlocking;
+  if (releaseBlocking != null && typeof releaseBlocking !== 'boolean') {
+    throw new AstryxError(
+      'context.impact.releaseBlocking must be a boolean.',
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  const impactDescription = optionalText(
+    impactInput?.description,
+    'context.impact.description',
+    CONTEXT_TEXT_MAX,
+  );
+  const impact =
+    releaseBlocking == null && impactDescription == null
+      ? undefined
+      : {
+          ...(releaseBlocking == null ? {} : {releaseBlocking}),
+          ...(impactDescription == null
+            ? {}
+            : {description: impactDescription}),
+        };
+
+  const context = {
+    product: optionalText(input.product, 'context.product', CONTEXT_TEXT_MAX),
+    task: optionalText(input.task, 'context.task', CONTEXT_TEXT_MAX),
+    observedBehavior: optionalText(
+      input.observedBehavior,
+      'context.observedBehavior',
+      CONTEXT_TEXT_MAX,
+    ),
+    expectedBehavior: optionalText(
+      input.expectedBehavior,
+      'context.expectedBehavior',
+      CONTEXT_TEXT_MAX,
+    ),
+    workaround,
+    affectedVersions: normalizeAffectedVersions(input.affectedVersions),
+    reproduction: optionalText(
+      input.reproduction,
+      'context.reproduction',
+      CONTEXT_TEXT_MAX,
+    ),
+    codeLocation: optionalText(
+      input.codeLocation,
+      'context.codeLocation',
+      CONTEXT_TEXT_MAX,
+    ),
+    impact,
+  };
+  const normalized = Object.fromEntries(
+    Object.entries(context).filter(([, item]) => item != null),
+  );
+  return Object.keys(normalized).length === 0
+    ? undefined
+    : /** @type {import('../../authoring/gap-report/type').GapReportContext} */ (
+        normalized
+      );
 }
 
 /**
@@ -450,11 +667,67 @@ function githubRoute(issuesUrl) {
 }
 
 /**
+ * Render optional structured context into public fallback issue sections.
+ * @param {import('../../authoring/gap-report/type').GapReportContext|undefined} context
+ * @returns {string[]}
+ */
+function contextBody(context) {
+  if (context == null) return [];
+  /** @type {string[]} */
+  const lines = [];
+  /** @param {string} title @param {string|undefined} value */
+  const textSection = (title, value) => {
+    if (value != null) lines.push('', `## ${title}`, '', value);
+  };
+
+  textSection('Product context', context.product);
+  textSection('Task context', context.task);
+  textSection('Observed behavior', context.observedBehavior);
+  textSection('Expected behavior', context.expectedBehavior);
+
+  if (context.workaround != null) {
+    const workaround = [
+      ...(context.workaround.type ? [`Type: ${context.workaround.type}`] : []),
+      ...(context.workaround.cost ? [`Cost: ${context.workaround.cost}`] : []),
+      ...(context.workaround.description
+        ? [context.workaround.description]
+        : []),
+    ];
+    lines.push('', '## Workaround', '', workaround.join('\n\n'));
+  }
+
+  if (context.affectedVersions != null) {
+    lines.push(
+      '',
+      '## Affected versions',
+      '',
+      ...context.affectedVersions.map(version => `- ${version}`),
+    );
+  }
+  textSection('Reproduction', context.reproduction);
+  textSection('Code location', context.codeLocation);
+
+  if (context.impact != null) {
+    const impact = [
+      ...(context.impact.releaseBlocking == null
+        ? []
+        : [
+            `Release blocking: ${context.impact.releaseBlocking ? 'yes' : 'no'}`,
+          ]),
+      ...(context.impact.description ? [context.impact.description] : []),
+    ];
+    lines.push('', '## Release impact', '', impact.join('\n\n'));
+  }
+
+  return lines;
+}
+
+/**
  * Built-in GitHub fallback — runs only when the effective handler set is empty.
  * Requires confirmPublic.
  *
  * @param {ReportTarget} target
- * @param {{component: string, categoryLabel: string, intention: string, detail?: string, source: string, timestamp: string}} report
+ * @param {GapReport} report
  * @param {{repo: string}} github
  * @returns {Promise<Pick<import('./gap-report.type.mjs').GapReportDelivery, 'status'|'url'|'message'>>}
  */
@@ -464,6 +737,8 @@ async function runGithubFallback(target, report, github) {
   const body = [
     `Component: ${report.component}`,
     `Category: ${report.categoryLabel}`,
+    `Package: ${target.package}`,
+    `Package version: ${target.version ?? 'unknown'}`,
     `Source: ${report.source}`,
     `Reported: ${report.timestamp}`,
     '',
@@ -471,6 +746,7 @@ async function runGithubFallback(target, report, github) {
     '',
     report.intention,
     ...(report.detail ? ['', '## Additional context', '', report.detail] : []),
+    ...contextBody(report.context),
   ].join('\n');
 
   try {
@@ -593,7 +869,8 @@ export async function gapReport(component, options = {}) {
     );
   }
   const intention = requiredText(options.reason, 'reason', 2000);
-  const detail = optionalDetail(options.detail);
+  const detail = optionalText(options.detail, 'detail', 8000);
+  const context = normalizeGapReportContext(options.context);
   const cwd = (await import('node:path')).resolve(options.cwd ?? process.cwd());
   const project = await Project.load(cwd);
   const target = await selectTarget(
@@ -618,6 +895,7 @@ export async function gapReport(component, options = {}) {
     categoryLabel: categoryEntry.label,
     intention,
     ...(detail ? {detail} : {}),
+    ...(context ? {context} : {}),
     source,
     timestamp,
     target: {
@@ -656,18 +934,7 @@ export async function gapReport(component, options = {}) {
         message: PUBLIC_CONFIRMATION_MESSAGE,
       });
     } else if (github) {
-      const outcome = await runGithubFallback(
-        target,
-        {
-          component: resolvedComponent,
-          categoryLabel: categoryEntry.label,
-          intention,
-          detail,
-          source,
-          timestamp,
-        },
-        github,
-      );
+      const outcome = await runGithubFallback(target, report, github);
       deliveries.push({
         handlerType: 'fallback',
         handler: 'github',

@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Public type surface for gap-report handlers.
+ * Public type surface for gap-report handlers and their optional structured
+ * triage context.
  *
  * A handler receives a normalized gap report and routes it to a destination.
  * Project config may define one (`gapReport` in `astryx.config`); every loaded
@@ -27,6 +28,46 @@ export type GapReportCategory =
   | 'docs_gap'
   | 'other';
 
+/** Structured, optional triage context attached to a gap report. */
+export interface GapReportContext {
+  /** Product or surface where the gap was encountered. */
+  product?: string;
+  /** Task or workflow the caller was trying to complete. */
+  task?: string;
+  /** What happened in the current implementation. */
+  observedBehavior?: string;
+  /** What would have supported the task. */
+  expectedBehavior?: string;
+  /** Workaround the caller is using, when any. */
+  workaround?: GapReportWorkaround;
+  /** Additional design-system or product versions where the gap was observed. */
+  affectedVersions?: string[];
+  /** Steps, command, or minimal description that reproduces the gap. */
+  reproduction?: string;
+  /** File, symbol, route, or other code location related to the gap. */
+  codeLocation?: string;
+  /** Release impact of leaving the gap unresolved. */
+  impact?: GapReportImpact;
+}
+
+/** Structured workaround context without a closed, project-specific vocabulary. */
+export interface GapReportWorkaround {
+  /** General workaround kind, such as `manual`, `custom_code`, or `none`. */
+  type?: string;
+  /** Caller-estimated cost, such as time, complexity, or maintenance burden. */
+  cost?: string;
+  /** What the workaround does or why it is insufficient. */
+  description?: string;
+}
+
+/** Structured release impact for a gap report. */
+export interface GapReportImpact {
+  /** Whether this gap blocks the caller's release. */
+  releaseBlocking?: boolean;
+  /** Users, scope, timing, or severity affected by the gap. */
+  description?: string;
+}
+
 /**
  * The normalized report event handed to each handler. Plain camelCase,
  * with no handler-private context.
@@ -38,6 +79,8 @@ export interface GapReport {
   categoryLabel: string;
   intention: string;
   detail?: string;
+  /** Optional structured triage context. Omitted when the caller supplies none. */
+  context?: GapReportContext;
   source: DebugInvocationSource;
   timestamp: string;
   target: GapReportTarget;

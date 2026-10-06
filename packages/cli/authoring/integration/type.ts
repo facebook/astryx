@@ -58,6 +58,9 @@ export type {
   GapReportHandlerContext,
   GapReport,
   GapReportCategory,
+  GapReportContext,
+  GapReportWorkaround,
+  GapReportImpact,
   GapReportTarget,
   GapReportHandlerReceipt,
 } from '../gap-report/type.js';
