@@ -75,7 +75,7 @@ describe('search leaf — envelope + ranking', () => {
 });
 
 describe('search leaf — per-domain result fields', () => {
-  it('carries import for components and hooks, title for docs, displayName and kind for templates', async () => {
+  it('carries import for components and hooks, title for docs, displayName and kind for templates, displayName for themes', async () => {
     const r = await search('theme', {cwd, limit: 60});
     expect(new Set(r.data.results.map(res => res.domain))).toEqual(
       new Set(SEARCH_DOMAINS),
@@ -89,9 +89,12 @@ describe('search leaf — per-domain result fields', () => {
         expect(res.title).toMatch(/\S/);
         const read = `astryx docs ${res.name}`;
         expect([read, `${read} --index`, `${read} ${res.section}`]).toContain(res.command);
-      } else {
+      } else if (res.domain === 'template') {
         expect(res.displayName).toMatch(/\S/);
         expect(['page', 'block']).toContain(res.kind);
+      } else if (res.domain === 'theme') {
+        expect(res.displayName).toMatch(/\S/);
+        expect(res.command).toMatch(/^astryx theme add /);
       }
     }
   }, SLOW);
@@ -397,11 +400,10 @@ describe('search leaf — a candidate that matches every word outranks a partial
     expect(score(q, all)).toBeLessThan(160);
   });
 
-  // Among candidates that match every word, the stronger match should come
-  // first. Today every all-word match with a keyword hit gets the same score,
-  // so this records the order without enforcing it: it fails, as expected,
-  // until the scoring tells the two apart.
-  it.fails('ranks the stronger of two all-word matches first', () => {
+  // Among candidates that match every word, the stronger match comes first:
+  // the all-words tier uses total match quality (sum of token scores), not
+  // just the strongest, so an exact keyword outranks a stem-form keyword.
+  it('ranks the stronger of two all-word matches first', () => {
     const all = {name: 'x', keywords: ['alphas'], description: 'alpha beta gamma delta'};
     const q = 'alpha beta gamma delta';
     expect(score(q, {name: 'y', keywords: ['alpha'], description: 'beta gamma delta'})).toBeGreaterThan(

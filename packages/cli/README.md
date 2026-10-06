@@ -69,7 +69,7 @@ Results for "button" (20 of 239):
 
 Options:
 
-- `--type <component|hook|doc|template>`: restrict to a single domain
+- `--type <component|hook|doc|template|theme>`: restrict to a single domain (`doc` and `theme` work outside an app too)
 - `--limit <n>`: cap the number of results (default 20)
 - `--verbose`: also print each result's match score and reason
 - `--json`: typed `{ apiVersion, type: 'search', data: { query, matchCount, results } }` envelope — `matchCount` is how many candidates matched in total, `results` the slice `--limit` allowed
@@ -91,7 +91,7 @@ Options:
 | `init`        | Initialize the design system in your project                                                  |
 | `integration` | Author and verify an Astryx integration package                                               |
 | `layout`      | Generate XDS layouts from compressed expressions (XLE/XLO)                                    |
-| `search`      | Search components, hooks, docs, and templates in one ranked list                              |
+| `search`      | Search components, hooks, docs, templates, and themes in one ranked list                      |
 | `swizzle`     | Copy component source for customization                                                       |
 | `template`    | List, show, or scaffold page and block templates                                              |
 | `theme`       | Create and build themes: add a shipped one, compile to CSS, or list what a theme can override |

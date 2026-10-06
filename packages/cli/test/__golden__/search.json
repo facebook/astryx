@@ -3,7 +3,7 @@
   "type": "search",
   "data": {
     "query": "zorblax",
-    "matchCount": 3,
+    "matchCount": 4,
     "results": [
       {
         "domain": "component",
@@ -13,6 +13,16 @@
         "description": "A zorblax card that groups one topic.",
         "import": "@acme/kit",
         "command": "astryx component AcmeCard"
+      },
+      {
+        "domain": "theme",
+        "name": "ocean",
+        "score": 90,
+        "reason": "keyword \"zorblax\"",
+        "description": "A zorblax blue.",
+        "displayName": "Ocean",
+        "command": "astryx theme add ocean",
+        "package": "@acme/kit"
       },
       {
         "domain": "doc",

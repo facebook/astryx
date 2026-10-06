@@ -61,13 +61,13 @@ const RUNNERS = {
     sites: ['child_process.execFileSync'],
   },
   'api/theme/build/build.mjs': {
-    runs: 'theme source modules, through jiti; eval for legacy theme object literals',
+    runs: "theme source modules, through jiti; eval for legacy theme object literals; the project's installed Core",
     sites: [
       '.evalModule() ×2',
       '.import()',
-      'createJiti ×4',
+      'createJiti ×5',
       'eval ×2',
-      'import(<computed>)',
+      'import(<computed>) ×3',
     ],
   },
   'api/theme/build/core-interception.mjs': {
