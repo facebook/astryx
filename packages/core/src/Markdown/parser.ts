@@ -38,7 +38,10 @@ import type {
   PreparedMarkdownPlugins,
   PreparedSyntaxContribution,
 } from './plugins/protocol';
-import {matchCharacterReference} from './characterReferences';
+import {
+  decodeLiteralText,
+  matchCharacterReference,
+} from './characterReferences';
 import {isSafeMarkdownParserUrl} from './url';
 
 // ---------------------------------------------------------------------------
@@ -1027,7 +1030,10 @@ function matchReferenceImage(
       const label = rawLabel === '' ? alt : rawLabel;
       const src = linkDefs.get(normalizeLinkLabel(label));
       if (src != null && isSafeMarkdownParserUrl(src)) {
-        return {node: {type: 'image', url: src, alt}, end: labelClose + 1};
+        return {
+          node: {type: 'image', url: src, alt: decodeLiteralText(alt)},
+          end: labelClose + 1,
+        };
       }
       // No match — fall back to a shortcut `![alt]`.
     }
@@ -1039,7 +1045,10 @@ function matchReferenceImage(
   if (src == null || !isSafeMarkdownParserUrl(src)) {
     return null;
   }
-  return {node: {type: 'image', url: src, alt}, end: altClose + 1};
+  return {
+    node: {type: 'image', url: src, alt: decodeLiteralText(alt)},
+    end: altClose + 1,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1535,7 +1544,7 @@ function parseInlineImpl(
             nodes.push({
               type: 'image',
               url: src,
-              alt: text.slice(i + 2, altClose),
+              alt: decodeLiteralText(text.slice(i + 2, altClose)),
             });
           }
           i = srcClose + 1;
@@ -2753,7 +2762,11 @@ function parseMarkdownImpl(
       line.trim() === imageMatch[0] &&
       isSafeMarkdownParserUrl(imageSrc)
     ) {
-      pushBlock({type: 'image', alt: imageMatch[1], url: imageSrc});
+      pushBlock({
+        type: 'image',
+        alt: decodeLiteralText(imageMatch[1]),
+        url: imageSrc,
+      });
       index++;
       continue;
     }

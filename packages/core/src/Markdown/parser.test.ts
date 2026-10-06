@@ -358,6 +358,28 @@ describe('parseInline', () => {
     });
   });
 
+  it('decodes character references and escapes in image alt text', () => {
+    expect(parseInline('![Fish &amp; chips \\*fresh\\*](fish.png)')).toEqual([
+      {type: 'image', src: 'fish.png', alt: 'Fish & chips *fresh*'},
+    ]);
+    expect(parseMarkdown('![&copy; 2026 &#169;](logo.png)')[0]).toMatchObject({
+      type: 'image',
+      alt: '\u00a9 2026 \u00a9',
+    });
+    expect(
+      parseMarkdown('![Q&amp;A][logo]\n\n[logo]: /logo.png')[0],
+    ).toMatchObject({
+      type: 'paragraph',
+      children: [{type: 'image', src: '/logo.png', alt: 'Q&A'}],
+    });
+  });
+
+  it('keeps an escaped ampersand and unknown names literal in alt text', () => {
+    expect(parseInline('![\\&amp; &nope;](x.png)')).toEqual([
+      {type: 'image', src: 'x.png', alt: '&amp; &nope;'},
+    ]);
+  });
+
   it('handles parentheses in image URLs', () => {
     const result = parseInline('![alt](https://example.com/img_(1).png)');
     expect(result[0].type).toBe('image');

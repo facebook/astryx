@@ -4,7 +4,9 @@
  * @file characterReferences.ts
  * @input The HTML named character references, inlined below.
  * @output matchCharacterReference: the character a `&name;`, `&#N;`, or
- *   `&#xH;` reference names, and where the reference ends.
+ *   `&#xH;` reference names, and where the reference ends. decodeLiteralText:
+ *   text with backslash escapes and character references resolved, for text
+ *   that is not parsed as Markdown, such as an image's alt text.
  * @position Used by parser.ts while it parses inline text, so references
  *   render as the characters they name (spec:AST-061 FR7, DEC-3). Code spans
  *   and code blocks never reach it and keep references literal.
@@ -72,4 +74,36 @@ export function matchCharacterReference(
     codePoint <= 0x10ffff &&
     (codePoint < 0xd800 || codePoint > 0xdfff);
   return {value: isValid ? String.fromCodePoint(codePoint) : '\uFFFD', end};
+}
+
+/**
+ * Resolves backslash escapes and character references the way inline parsing
+ * does, for text that is shown as written rather than parsed as Markdown, such
+ * as an image's alt text. An escaped `&` stays literal.
+ */
+export function decodeLiteralText(text: string): string {
+  if (!text.includes('\\') && !text.includes('&')) {
+    return text;
+  }
+  let output = '';
+  let index = 0;
+  while (index < text.length) {
+    const character = text[index];
+    if (character === '\\' && index + 1 < text.length) {
+      output += text[index + 1];
+      index += 2;
+      continue;
+    }
+    if (character === '&') {
+      const reference = matchCharacterReference(text, index);
+      if (reference != null) {
+        output += reference.value;
+        index = reference.end;
+        continue;
+      }
+    }
+    output += character;
+    index++;
+  }
+  return output;
 }

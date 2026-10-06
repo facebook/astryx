@@ -348,6 +348,17 @@ describe('Markdown', () => {
     expect(container.querySelector('code')?.textContent).toBe('&amp;');
   });
 
+  it('names an image with decoded alt text', () => {
+    render(
+      <Markdown>
+        {'![Fish &amp; chips \\*fresh\\*](https://example.com/fish.png)'}
+      </Markdown>,
+    );
+    expect(
+      screen.getByRole('img', {name: 'Fish & chips *fresh*'}),
+    ).toBeInTheDocument();
+  });
+
   it('adds target="_blank" to external links', () => {
     render(<Markdown>{'[ext](https://example.com)'}</Markdown>);
     const link = screen.getByText('ext');
