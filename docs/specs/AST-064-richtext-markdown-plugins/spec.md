@@ -3,12 +3,12 @@ schema_version: 4
 template_version: 2
 kind: system-spec
 id: spec:AST-064
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
-phase: proposed
+approved_by: cixzhang
+approved_at: 2026-10-06
+phase: accepted
 owners: [cixzhang]
 affects_architecture: []
 affects_families: []
@@ -190,7 +190,7 @@ client module, and the Markdown serializers are reachable only through it;
 ### DEC-1 — A plugin is written once, in core's protocol
 
 **Reference:** `spec:AST-064/DEC-1`
-**Decider:** pending
+**Decider:** cixzhang, 2026-10-06
 
 Core's plugin protocol already bounds syntax, shields built-in constructs,
 validates nodes, and renders with fallbacks. RichText adopts those entries
@@ -202,7 +202,7 @@ each plugin's parsing and rendering and let them drift.
 ### DEC-2 — Each surface adopts plugins explicitly
 
 **Reference:** `spec:AST-064/DEC-2`
-**Decider:** pending
+**Decider:** cixzhang, 2026-10-06
 
 A surface's extensions are the ones its caller passes, as `Markdown`'s
 `plugins` are. Rejected: a global registry, which lets one product's plugin
@@ -212,7 +212,7 @@ order.
 ### DEC-3 — Default-deny: adopt only what RichText honors exactly
 
 **Reference:** `spec:AST-064/DEC-3`
-**Decider:** pending
+**Decider:** cixzhang, 2026-10-06
 
 An editor that silently skipped part of a plugin — its transform, say —
 would show a different document than `Markdown` shows for the same source.
@@ -223,7 +223,7 @@ with a warning.
 ### DEC-4 — Core recognizes plugin syntax; RichText imports the rest
 
 **Reference:** `spec:AST-064/DEC-4`
-**Decider:** pending
+**Decider:** cixzhang, 2026-10-06
 
 Plugin syntax means what core's parser says it means, so core finds it
 first and its range is closed to RichText's import; base Markdown stays with
@@ -237,7 +237,7 @@ document because base syntax appears inside plugin source.
 ### DEC-5 — Extension nodes are atomic, and their source is the truth
 
 **Reference:** `spec:AST-064/DEC-5`
-**Decider:** pending
+**Decider:** cixzhang, 2026-10-06
 
 Core's protocol reads syntax into nodes and renders them; it has no way to
 write a changed node back to Markdown. An atomic node keeps its authored
