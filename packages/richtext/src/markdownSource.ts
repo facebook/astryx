@@ -294,7 +294,12 @@ export function importMarkdownKeepingSource(
       const root = $getRoot();
       root.clear();
       chunks.forEach((chunk, index) => {
+        // The holder is attached while Lexical imports into it: Lexical only
+        // continues a paragraph, list item, or quote onto the next line
+        // inside an attached tree, and would otherwise start a new paragraph
+        // at every line ending.
         const holder = $createParagraphNode();
+        root.append(holder);
         // Lexical imports LF lines; the record keeps the authored endings.
         $convertFromMarkdownString(
           withoutCarriageReturns(chunk.content),
@@ -304,7 +309,10 @@ export function importMarkdownKeepingSource(
         for (const node of holder.getChildren()) {
           $setState(node, groupState, {group: `${importId}:${index}`});
         }
-        root.append(...holder.getChildren());
+        for (const node of holder.getChildren()) {
+          holder.insertBefore(node);
+        }
+        holder.remove();
       });
       if (root.getChildrenSize() === 0) {
         // Nothing to import: keep one empty paragraph, as Lexical does.

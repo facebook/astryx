@@ -5,6 +5,7 @@ import {render, waitFor} from '@testing-library/react';
 import {createRef} from 'react';
 import {createHeadlessEditor} from '@lexical/headless';
 import {
+  $convertFromMarkdownString,
   BOLD_STAR,
   ITALIC_STAR,
   UNORDERED_LIST,
@@ -21,6 +22,7 @@ import {
   type SerializedLexicalNode,
 } from 'lexical';
 import {DEFAULT_NODES} from './editorNodes';
+import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import {
   editorStateJSONToMarkdown,
   markdownToEditorStateJSON,
@@ -275,9 +277,7 @@ describe('Markdown source preservation (spec:AST-062)', () => {
     // group writes two paragraphs, in the group's CRLF style.
     expect(
       editAndExport(crlf, () => $appendToBlockContaining('First', ' one')),
-    ).toBe(
-      '\uFEFF\r\n# Title\r\n\r\nFirst one\r\n\r\nsecond line\r\n\r\nLast\r\n',
-    );
+    ).toBe('\uFEFF\r\n# Title\r\n\r\nFirst one\r\nsecond line\r\n\r\nLast\r\n');
     expect(
       editAndExport(crlf, () => {
         const paragraph = $createParagraphNode();
@@ -320,6 +320,39 @@ describe('Markdown source preservation (spec:AST-062)', () => {
     ).toBe(
       'Intro  \n\n| Area | Owner |\n| :--- | ---: |\n| Search 2 | Ada |\n\n\\# Outro\n',
     );
+  });
+
+  it('imports the same structure as importing the whole document at once', () => {
+    // Node state aside, chunked import must build exactly the tree Lexical's
+    // own import builds: soft breaks, lazy continuation lines, loose lists.
+    const structureOf = (json: string): unknown =>
+      JSON.parse(json, (key, value: unknown) =>
+        key === '$' ? undefined : value,
+      );
+    const wholeDocument = (markdown: string): string => {
+      const editor = createHeadlessEditor({
+        namespace: 'astryx-markdown-source-whole',
+        nodes: [...DEFAULT_NODES],
+        onError(error: Error) {
+          throw error;
+        },
+      });
+      editor.update(
+        () => {
+          $convertFromMarkdownString(
+            markdown.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n'),
+            [...DEFAULT_TRANSFORMERS],
+          );
+        },
+        {discrete: true},
+      );
+      return JSON.stringify(editor.getEditorState().toJSON());
+    };
+    for (const [name, markdown] of Object.entries(CORPUS)) {
+      expect(structureOf(markdownToEditorStateJSON(markdown)), name).toEqual(
+        structureOf(wholeDocument(markdown)),
+      );
+    }
   });
 
   it('keeps document facts at the document when blocks move, repeat, or go (FR4)', () => {
