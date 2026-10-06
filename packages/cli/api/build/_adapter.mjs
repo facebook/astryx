@@ -2,7 +2,7 @@
 
 /**
  * @file The build subject's environment access: the page templates a project
- * can scaffold, and the components it can use.
+ * can scaffold, the components it can use, and the checked-in matcher weights.
  *
  * @input Template and component discovery for `cwd` — the CLI's own templates
  *   and Core's components, plus any that the project's configured integrations
@@ -15,6 +15,8 @@
  *   only environment access. This adds no discovery of its own: templates come
  *   from the template subject's, components from search's.
  */
+
+import fs from 'node:fs';
 
 import {discoverTemplates} from '../template/template.mjs';
 import {componentKeywords} from '../search/search.mjs';
@@ -88,4 +90,24 @@ export async function loadComponents(cwd) {
   } catch {
     return [];
   }
+}
+
+/** @type {import('./kit/weights.mjs').WeightsFile | null | undefined} */
+let weights;
+
+/**
+ * The matcher weights checked in beside the kit (`kit/weights.json`), read
+ * once; null when the file is absent or unreadable.
+ * @returns {import('./kit/weights.mjs').WeightsFile | null}
+ */
+export function loadWeights() {
+  if (weights !== undefined) return weights;
+  try {
+    weights = JSON.parse(
+      fs.readFileSync(new URL('./kit/weights.json', import.meta.url), 'utf8'),
+    );
+  } catch {
+    weights = null;
+  }
+  return weights;
 }

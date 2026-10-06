@@ -269,7 +269,7 @@ describe('build kit — a thin kit says what to try next', () => {
     // A skeleton is a 35-line excerpt: a reader who studies it and composes
     // the rest loses the spacing the template exists to carry. A loose match
     // is still the best start there is, so `start` scaffolds it.
-    const r = await build('quarterly business review', {cwd: REPO});
+    const r = await build('weekly business review with targets', {cwd: REPO});
     expect(r.type).toBe('build.kit');
     if (r.type !== 'build.kit') return;
     expect(r.data.directMatch).toBe(false);
