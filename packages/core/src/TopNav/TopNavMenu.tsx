@@ -41,6 +41,7 @@ import {isSafeUrl} from '../utils/safeUrl';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {
   colorVars,
   spacingVars,
@@ -345,6 +346,7 @@ export function TopNavMenu({
   onMouseLeave: onMouseLeaveProp,
   ...rest
 }: TopNavMenuProps) {
+  const pressable = usePressFeedback();
   const renderMode = useTopNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
   const LinkComponent = useLinkComponent();
@@ -460,6 +462,7 @@ export function TopNavMenu({
           )}
           aria-expanded={drawerExpanded}
           aria-controls={`${menuId}-items`}
+          {...pressable}
           {...mergeProps(
             focusOutlineProps.focusVisible(
               navItemStyles.item,
@@ -492,6 +495,7 @@ export function TopNavMenu({
               <LinkComponent
                 key={getMenuItemKey(item)}
                 href={item.href}
+                {...pressable}
                 onClick={(_e: React.MouseEvent) => {
                   item.onClick?.();
                   closeMobileNav();

@@ -26,6 +26,16 @@ export interface BaseTemplateDoc extends AuthoredDocGraphFields {
   /** One-sentence description of what the template provides. */
   description?: string;
 
+  /** Search keywords for CLI discovery: the ideas, domains, and other names a
+   *  builder might use for what this template serves (e.g. `['monitoring',
+   *  'uptime', 'on-call']` for a service-health dashboard). Lowercase.
+   *  `astryx search` matches them as it matches the description, and
+   *  `astryx build` ranks page templates on them, so the `description` can
+   *  stay a description of the layout. Integration templates need
+   *  `@astryxdesign/cli` 0.7.0 or later: earlier CLIs reject the field, drop
+   *  that template, and hide the package's doc topics. */
+  keywords?: string[];
+
   /** Optional stable slug override and prior aliases for registry output. */
   registry?: RegistryDocIdentity;
 

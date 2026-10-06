@@ -18,6 +18,7 @@ import * as stylex from '@stylexjs/stylex';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuDivider} from './DropdownMenuDivider';
+import {DropdownMenuGroup} from './DropdownMenuGroup';
 import {Divider} from '../Divider';
 import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
@@ -520,11 +521,10 @@ describe('DropdownMenu', () => {
     const popover = screen
       .getByRole('menu', {hidden: true})
       .closest('[popover]');
-    expect(popover?.className).toContain(
-      'DropdownMenu__styles.popoverViewportBlockStart',
-    );
+    // The gutter is the layer runtime's (spec:AST-059 FR1, FR7).
+    expect(popover?.className).toContain('useLayer__styles.gutterBlockEnd');
     expect(popover?.className).not.toContain(
-      'DropdownMenu__styles.popoverViewportStart',
+      'useLayer__styles.gutterInlineEnd',
     );
   });
 
@@ -557,9 +557,13 @@ describe('DropdownMenu', () => {
     expect(popover?.className).toContain(
       'DropdownMenu__styles.popoverViewport',
     );
-    expect(popover?.className).toContain('DropdownMenu__styles.popoverAligned');
+    expect(popover?.className).toContain(
+      'DropdownMenu__styles.popoverMatchTrigger',
+    );
+    // The cap is the viewport, never the span beside the trigger
+    // (spec:AST-059 FR2, FR7).
     expect(popover).toHaveStyle(
-      'min-width: min(anchor-size(width),calc(100% - max(var(--spacing-4),env(safe-area-inset-left,0px),env(safe-area-inset-right,0px))))',
+      'min-width: min(anchor-size(width),calc(100vi - calc(max(var(--spacing-4), env(safe-area-inset-left, 0px)) + var(--astryx-layer-inset-inline-start, 0px)) - calc(max(var(--spacing-4), env(safe-area-inset-right, 0px)) + var(--astryx-layer-inset-inline-end, 0px))))',
     );
 
     unmount();
@@ -576,7 +580,8 @@ describe('DropdownMenu', () => {
       'DropdownMenu__styles.popoverViewport',
     );
     expect(popover).toHaveStyle({minWidth: 'var(--x-minWidth)'});
-    expect(popover?.getAttribute('style')).toContain('min(640px, calc(100%');
+    expect(popover?.getAttribute('style')).toContain('min(640px, calc(100vw');
+    expect(popover?.getAttribute('style')).not.toContain('100%');
   });
 
   it.each(['max-content', 'fit-content', 'auto'])(
@@ -597,9 +602,7 @@ describe('DropdownMenu', () => {
         'DropdownMenu__styles.popoverCustomIntrinsicWidth',
       );
       expect(popover?.getAttribute('style')).toContain(menuWidth);
-      expect(popover?.className).toContain(
-        'DropdownMenu__styles.popoverViewportAligned',
-      );
+      expect(popover?.className).toContain('useLayer__styles.gutterInlineEnd');
       expect(popover?.getAttribute('style')).not.toContain(`min(${menuWidth},`);
     },
   );
@@ -628,7 +631,7 @@ describe('DropdownMenu', () => {
         );
       });
       expect(menu).toHaveStyle(
-        'max-height: min(300px,calc(100dvb - max(var(--spacing-4),env(safe-area-inset-top,0px)) - max(var(--spacing-4),env(safe-area-inset-bottom,0px))))',
+        'max-height: min(300px,calc(100dvb - calc(max(var(--spacing-4), env(safe-area-inset-top, 0px)) + var(--astryx-layer-inset-block-start, 0px)) - calc(max(var(--spacing-4), env(safe-area-inset-bottom, 0px)) + var(--astryx-layer-inset-block-end, 0px))))',
       );
       expect(menu).not.toHaveStyle({overflowY: 'auto'});
       expect(menu).toHaveAttribute('tabindex', '-1');
@@ -1450,6 +1453,190 @@ describe('DropdownMenuItem ref', () => {
     );
     expect(ref.current).toBe(
       screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    );
+  });
+});
+
+describe('DropdownMenuGroup (compound mode)', () => {
+  it('a focusable node in the heading is not reachable by the arrow keys', async () => {
+    // A heading is not a menu row, so a control inside one lands in the
+    // group but outside the roving focus order. The type does not prevent
+    // this — a rich heading is a legitimate need — so the behavior is
+    // pinned rather than discovered.
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuGroup
+          title={
+            <>
+              Version history <button type="button">Info</button>
+            </>
+          }>
+          <DropdownMenuItem label="Restore" onClick={() => {}} />
+          <DropdownMenuItem label="Compare" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    const info = screen.getByRole('button', {name: 'Info', hidden: true});
+    const restore = screen.getByRole('menuitem', {
+      name: 'Restore',
+      hidden: true,
+    });
+    const compare = screen.getByRole('menuitem', {
+      name: 'Compare',
+      hidden: true,
+    });
+
+    restore.focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(compare).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(info).not.toHaveFocus();
+  });
+
+  it('arrow navigation steps across a group boundary as if the rows were flat', async () => {
+    // The group renders a wrapper between the menu and its rows, which is
+    // where flat navigation usually breaks.
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Open" onClick={() => {}} />
+        <DropdownMenuGroup title="Version history">
+          <DropdownMenuItem label="Restore" onClick={() => {}} />
+        </DropdownMenuGroup>
+        <DropdownMenuGroup title="Danger zone">
+          <DropdownMenuItem label="Delete" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    const row = (name: string) =>
+      screen.getByRole('menuitem', {name, hidden: true});
+
+    row('Open').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(row('Restore')).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(row('Delete')).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowUp'});
+    expect(row('Restore')).toHaveFocus();
+  });
+
+  it('renders a role="group" named by its heading', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuGroup title="Version history">
+          <DropdownMenuItem label="Restore" onClick={() => {}} />
+          <DropdownMenuItem label="Compare" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+
+    const group = screen.getByRole('group', {
+      name: 'Version history',
+      hidden: true,
+    });
+    const heading = screen.getByText('Version history');
+    expect(group).toHaveAttribute('aria-labelledby', heading.id);
+    expect(heading.id).not.toBe('');
+    expect(group).toContainElement(
+      screen.getByRole('menuitem', {name: 'Restore', hidden: true}),
+    );
+  });
+
+  it('renders the heading with the data-mode theme class', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuGroup title="Version history">
+          <DropdownMenuItem label="Restore" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+
+    expect(screen.getByText('Version history')).toHaveClass(
+      'astryx-dropdown-menu-section-heading',
+    );
+  });
+
+  it('the heading is not a menuitem and roving focus skips it', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <DropdownMenuGroup title="Danger zone">
+          <DropdownMenuItem label="Delete" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    expect(screen.getByText('Danger zone')).not.toHaveAttribute('role');
+    expect(screen.getAllByRole('menuitem', {hidden: true})).toHaveLength(2);
+
+    const menu = screen.getByRole('menu', {hidden: true});
+    screen.getByRole('menuitem', {name: 'Edit', hidden: true}).focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowUp'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('typeahead never lands on the heading', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <DropdownMenuGroup title="Danger zone">
+          <DropdownMenuItem label="Delete" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+
+    // "d" matches both the heading ("Danger zone") and the row ("Delete");
+    // only the row is a menu item.
+    fireEvent.keyDown(menu, {key: 'd'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('an untitled group is an unnamed role="group"', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuGroup>
+          <DropdownMenuItem label="Only" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    const group = screen.getByRole('group', {hidden: true});
+    expect(group).not.toHaveAttribute('aria-labelledby');
+    expect(group.querySelector('.astryx-dropdown-menu-section-heading')).toBe(
+      null,
+    );
+  });
+
+  it('forwards a ref to the group element', () => {
+    const ref = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuGroup title="T" ref={ref}>
+          <DropdownMenuItem label="Only" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    expect(ref).toHaveBeenCalledWith(
+      screen.getByRole('group', {name: 'T', hidden: true}),
     );
   });
 });

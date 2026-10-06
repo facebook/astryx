@@ -61,6 +61,8 @@ import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
+import {clampInlineSize} from '../Layer/clampInlineSize';
 // =============================================================================
 // Types
 // =============================================================================
@@ -273,10 +275,6 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
 // Styles
 // =============================================================================
 
-const TYPEAHEAD_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
-const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${TYPEAHEAD_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
-const TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${TYPEAHEAD_VIEWPORT_GUTTER})`;
-
 const styles = stylex.create({
   input: {
     display: 'block',
@@ -312,16 +310,19 @@ const styles = stylex.create({
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
   },
+  // The menu prefers the input's width and renders an explicit menuWidth at
+  // its size, both clamped to the layer runtime's viewport cap rather than to
+  // the room beside the input (spec:AST-059 FR2, FR7).
   popover: {
     boxSizing: 'border-box',
-    minWidth: 'anchor-size(width)',
-    maxInlineSize: stylex.firstThatWorks(
-      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE,
-      TYPEAHEAD_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
+    minWidth: stylex.firstThatWorks(
+      `min(anchor-size(width), ${layerViewportInset.maxInlineSize})`,
+      `min(anchor-size(width), ${layerViewportInset.maxInlineSizeFallback})`,
+      'anchor-size(width)',
     ),
   },
-  popoverCustomWidth: (width: number) => ({
-    width: `${width}px`,
+  popoverCustomWidth: (width: string) => ({
+    width,
   }),
   groupHeading: {
     paddingInline: spacingVars['--spacing-2'],
@@ -485,6 +486,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   onPointerDown: onPointerDownProp,
   onFocus: onFocusProp,
   onBlur: onBlurProp,
+  onClick: onClickProp,
   id: nativeInputId,
   'aria-describedby': nativeAriaDescribedBy,
   'aria-labelledby': nativeAriaLabelledBy,
@@ -582,6 +584,23 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // pointerup/click causes the browser's light-dismiss to immediately
   // close it (the click is seen as "outside" the newly-opened popover).
   const pointerActiveRef = useRef(false);
+
+  // Whether the input was ALREADY the active element the moment the current
+  // click gesture began, captured at pointerdown -- before the browser's own
+  // focus-on-pointerdown behavior can move focus onto it. pointerdown always
+  // fires before focus in a mouse/touch-driven click (pointerdown -> focus ->
+  // pointerup -> click), so this reflects the pre-click focus state exactly,
+  // with no dependency on event-loop timing between focus and click (a
+  // microtask-based flag cleared between the two was tried and measured
+  // clearing before the click arrived for an async bootstrap source,
+  // double-firing it). A click that itself just caused the input to gain
+  // focus reads false here and is left to handleFocus, which already opens
+  // it; a click on an input that was already focused -- closing the
+  // dropdown (selecting a result, committing a token elsewhere in a
+  // composing component) often re-focuses the same input programmatically,
+  // which dispatches no focus event at all -- reads true and reopens it in
+  // handleClick.
+  const wasAlreadyFocusedRef = useRef(false);
 
   // Debounce ref
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -871,8 +890,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     [onChange, popover, searchSource, setLoading],
   );
 
-  // Handle focus
-  const handleFocus = useCallback(() => {
+  // Shared by handleFocus and handleClick: bootstrap entries if none are
+  // loaded yet, or re-show cached results that haven't been invalidated by
+  // a selection since (comparing the two generation refs catches that).
+  const openIfEligible = useCallback(() => {
     if (isDisabled) {
       return;
     }
@@ -881,9 +902,6 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     } else if (
       results.length > 0 &&
       (query.length > 0 || hasEntriesOnFocus) &&
-      // Only re-show cached results if they haven't been invalidated by
-      // a selection. Refs are always current, so this check isn't affected
-      // by React's closure staleness the way results.length is.
       resultsGenRef.current === searchGenRef.current
     ) {
       showLayer();
@@ -896,6 +914,25 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     performBootstrap,
     showLayer,
   ]);
+
+  // Handle focus
+  const handleFocus = useCallback(() => {
+    openIfEligible();
+  }, [openIfEligible]);
+
+  // Handle click — a click that focuses a previously-unfocused input is
+  // already covered by handleFocus. A click on an input that was ALREADY
+  // focused (the common case right after selecting a result or committing a
+  // token elsewhere re-focuses this input programmatically, closing the
+  // dropdown) dispatches no focus event at all, so without this the
+  // dropdown never reopens until the user clicks away and back (#6845). See
+  // wasAlreadyFocusedRef above for how the two cases are told apart.
+  const handleClick = useCallback(() => {
+    if (!wasAlreadyFocusedRef.current || popover.isOpen) {
+      return;
+    }
+    openIfEligible();
+  }, [popover.isOpen, openIfEligible]);
 
   // Handle blur — close the dropdown when focus leaves the input for an
   // element that is neither inside the field wrapper (anchor) nor inside the
@@ -1082,6 +1119,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         value={query}
         onChange={handleInputChange}
         onPointerDown={composeEventHandlers(() => {
+          // Captured before the browser's own default action moves focus
+          // onto the input as part of this same pointerdown — see
+          // wasAlreadyFocusedRef above.
+          wasAlreadyFocusedRef.current =
+            document.activeElement === inputRef.current;
           pointerActiveRef.current = true;
           document.addEventListener(
             'click',
@@ -1092,6 +1134,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           );
         }, onPointerDownProp)}
         onFocus={composeEventHandlers(handleFocus, onFocusProp)}
+        onClick={composeEventHandlers(handleClick, onClickProp)}
         onBlur={composeEventHandlers(handleBlur, onBlurProp)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
@@ -1207,7 +1250,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           offset: spacingVars['--spacing-1'],
           xstyle: [
             styles.popover,
-            menuWidth != null && styles.popoverCustomWidth(menuWidth),
+            menuWidth != null &&
+              styles.popoverCustomWidth(
+                clampInlineSize(
+                  menuWidth,
+                  layerViewportInset.maxInlineSizeFallback,
+                ),
+              ),
           ],
         },
       )}

@@ -292,6 +292,8 @@
     "/templates/DividerVertical/",
     "/templates/DropdownMenuActions/",
     "/templates/DropdownMenuBottomSheet/",
+    "/templates/DropdownMenuGroupShowcase/",
+    "/templates/DropdownMenuGroupWithSelectable/",
     "/templates/DropdownMenuItemBasic/",
     "/templates/DropdownMenuItemShowcase/",
     "/templates/DropdownMenuNoChevron/",

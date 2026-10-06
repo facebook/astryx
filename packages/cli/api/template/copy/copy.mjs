@@ -16,9 +16,9 @@ import {
   isFilePathArg,
   PathSafetyError,
 } from '../../../foundation/fs/path-safety.mjs';
-import {AstryxError} from '../../error.mjs';
+import {AstryxError, writeFailed} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {stripTemplateAssetRefs} from '../../../foundation/discovery/template-adapter.mjs';
+import {replaceDemoMedia} from '../../../foundation/discovery/template-adapter.mjs';
 
 /**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
@@ -80,13 +80,18 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
     );
   }
 
-  fs.mkdirSync(outputDir, {recursive: true});
-
   // Strip demo image references so the scaffolded file renders without a
-  // Meta-only network dependency.
-  const source = fs.readFileSync(match.filePath, 'utf-8');
-  const outputSource = stripTemplateAssetRefs(source);
-  fs.writeFileSync(outputFilePath, outputSource);
+  // Meta-only network dependency. Read before any write, so a failure below
+  // leaves nothing behind.
+  const {source: outputSource, demoMediaReplaced} = replaceDemoMedia(
+    fs.readFileSync(match.filePath, 'utf-8'),
+  );
+  try {
+    fs.mkdirSync(outputDir, {recursive: true});
+    fs.writeFileSync(outputFilePath, outputSource);
+  } catch (err) {
+    throw writeFailed(outputFilePath, cwd, err);
+  }
 
   const relOutput = path.relative(cwd, outputDir) || '.';
   return {
@@ -96,6 +101,7 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
       outputDir: relOutput,
       fileName: outputFileName,
       filesCopied: 1,
+      demoMediaReplaced,
     },
   };
 }

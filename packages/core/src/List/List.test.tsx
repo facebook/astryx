@@ -14,6 +14,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {List} from './List';
 import {ListItem} from './ListItem';
+import {ListMarkerScope} from './ListContext';
 
 describe('List', () => {
   // ===========================================================================
@@ -842,5 +843,67 @@ describe('List', () => {
       </List>,
     );
     expect(screen.getByText('42')).toBeInTheDocument();
+  });
+
+  describe('ListMarkerScope (internal, for Markdown nested lists)', () => {
+    /** The shape inside the item's marker box. */
+    const markerShape = (container: HTMLElement) => {
+      // The dot, ring, or square: an empty element in the marker box.
+      const shape = container.querySelector('li > span > span:empty');
+      return shape == null ? null : getComputedStyle(shape);
+    };
+
+    it('draws the list style marker without a scope', () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListItem label="Item" />
+        </List>,
+      );
+      expect(markerShape(container)?.borderRadius).toBe('50%');
+    });
+
+    it('draws the scope marker in place of the list style', () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListMarkerScope marker="square">
+            <ListItem label="Item" />
+          </ListMarkerScope>
+        </List>,
+      );
+      const shape = markerShape(container);
+      expect(shape).not.toBeNull();
+      expect(shape?.borderRadius).not.toBe('50%');
+      expect(container.querySelector('ul')).not.toBeNull();
+    });
+
+    it('keeps a numbered list ordered with a letter marker', () => {
+      render(
+        <List listStyle="decimal" start={3}>
+          <ListMarkerScope marker="lower-alpha">
+            <ListItem label="Item" />
+          </ListMarkerScope>
+        </List>,
+      );
+      const list = screen.getByRole('list');
+      expect(list.tagName).toBe('OL');
+      expect(list).toHaveAttribute('start', '3');
+    });
+
+    it('draws no marker in a list without markers, or outside a list', () => {
+      const {container} = render(
+        <>
+          <List>
+            <ListMarkerScope marker="square">
+              <ListItem label="In a plain list" />
+            </ListMarkerScope>
+          </List>
+          <ListMarkerScope marker="square">
+            <span>Outside a list</span>
+          </ListMarkerScope>
+        </>,
+      );
+      expect(markerShape(container)).toBeNull();
+      expect(screen.getByText('Outside a list')).toBeInTheDocument();
+    });
   });
 });

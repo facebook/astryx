@@ -92,6 +92,7 @@ function addErrors(issues, errors, code) {
 export async function integrationTemplateConflicts(pkg, options = {}) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
+  const validated = resolved.found;
   const name = resolved.found ? (resolved.name ?? null) : null;
   const version = resolved.found ? (resolved.version ?? null) : null;
   const issues = [...resolved.issues];
@@ -99,7 +100,7 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
   if (!resolved.integration || name == null) {
     return {
       type: 'integration.template-conflicts',
-      data: {name, version, conflicts: [], issues},
+      data: {validated, name, version, conflicts: [], issues},
     };
   }
 
@@ -215,7 +216,7 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
 
   return {
     type: 'integration.template-conflicts',
-    data: {name, version, conflicts, issues},
+    data: {validated, name, version, conflicts, issues},
   };
 }
 
@@ -228,6 +229,7 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
 export async function integrationComponentConflicts(pkg, options = {}) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
+  const validated = resolved.found;
   const name = resolved.found ? (resolved.name ?? null) : null;
   const version = resolved.found ? (resolved.version ?? null) : null;
   const issues = [...resolved.issues];
@@ -235,7 +237,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
   if (!resolved.integration?.components || name == null) {
     return {
       type: 'integration.component-conflicts',
-      data: {name, version, conflicts: [], issues},
+      data: {validated, name, version, conflicts: [], issues},
     };
   }
 
@@ -249,7 +251,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
     });
     return {
       type: 'integration.component-conflicts',
-      data: {name, version, conflicts: [], issues},
+      data: {validated, name, version, conflicts: [], issues},
     };
   }
 
@@ -274,7 +276,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
 
   return {
     type: 'integration.component-conflicts',
-    data: {name, version, conflicts, issues},
+    data: {validated, name, version, conflicts, issues},
   };
 }
 
@@ -287,6 +289,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
 export async function integrationDocConflicts(pkg, options = {}) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
+  const validated = resolved.found;
   const name = resolved.found ? (resolved.name ?? null) : null;
   const version = resolved.found ? (resolved.version ?? null) : null;
   const issues = [...resolved.issues];
@@ -294,7 +297,7 @@ export async function integrationDocConflicts(pkg, options = {}) {
   if (!resolved.integration?.docs || name == null) {
     return {
       type: 'integration.doc-conflicts',
-      data: {name, version, findings: [], issues},
+      data: {validated, name, version, findings: [], issues},
     };
   }
 
@@ -388,6 +391,6 @@ export async function integrationDocConflicts(pkg, options = {}) {
 
   return {
     type: 'integration.doc-conflicts',
-    data: {name, version, findings, issues},
+    data: {validated, name, version, findings, issues},
   };
 }

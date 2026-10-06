@@ -6,8 +6,9 @@ export const docs = {
   name: 'theme',
   title: 'Theme System',
   category: 'guide',
+  keywords: ['use', 'apply', 'setup'],
   description:
-    'Theme provider, custom themes, theme build for production/SSR, light/dark mode, and component style overrides.',
+    'How to use and apply themes in your app: providers, custom themes, light/dark mode, production builds, and component style overrides.',
 
   sections: [
     {

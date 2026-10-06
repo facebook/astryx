@@ -14,6 +14,11 @@ import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Button} from './Button';
 import * as stylex from '@stylexjs/stylex';
+import {
+  hasPressedArm,
+  hasReleaseFade,
+  readsPressStrength,
+} from '../__tests__/pressState';
 import {Badge} from '../Badge/Badge';
 import {ButtonGroup} from '../ButtonGroup';
 import {IconButton} from '../IconButton';
@@ -639,5 +644,20 @@ describe('Button', () => {
     render(<Button label="Docs" href="https://example.com" />);
     const link = screen.getByRole('link');
     expect(link).not.toHaveAttribute('aria-busy');
+  });
+});
+
+describe('Button pressed state (touch)', () => {
+  it('fades the touch press out over the release, painting the pressed token at its strength on both arms', () => {
+    render(<Button label="Save" />);
+    const button = screen.getByRole('button', {name: 'Save'});
+    // The touch arms the controller writes: `on` paints the pressed token at
+    // strength 1 on the first frame; `fading` keeps the paint and runs the
+    // release animation on the machine's clock. A mouse keeps `:active`.
+    expect(button).toHaveAttribute('data-astryx-pressable');
+    expect(hasPressedArm(button)).toBe(true);
+    expect(readsPressStrength(button, '[data-astryx-press="on"]')).toBe(true);
+    expect(readsPressStrength(button)).toBe(true);
+    expect(hasReleaseFade(button)).toBe(true);
   });
 });

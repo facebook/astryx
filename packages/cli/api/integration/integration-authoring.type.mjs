@@ -37,7 +37,11 @@
  */
 
 /** @typedef {IntegrationAddBaseOptions} IntegrationAddAgentDocOptions */
-/** @typedef {IntegrationAddBaseOptions} IntegrationAddThemeOptions */
+/**
+ * @typedef {IntegrationAddBaseOptions & {
+ *   from?: string,
+ * }} IntegrationAddThemeOptions
+ */
 
 /**
  * Options for the generic `integrationAdd` dispatcher. Prefer a per-kind API
@@ -73,6 +77,7 @@
  * @property {string[]} files
  * @property {boolean} written
  * @property {boolean} dryRun
+ * @property {string} [from]
  */
 
 export {};

@@ -53,6 +53,7 @@
  * @property {'page' | 'block'} data.type
  * @property {string[]} data.components
  * @property {string} data.source
+ * @property {number} data.demoMediaReplaced Astryx demo media references (images, posters, videos) replaced in the returned source: images with a neutral placeholder, videos with an empty source. Swap in your own media at those points; no media is installed. 0 when the template carried none.
  */
 
 /**
@@ -75,6 +76,7 @@
  * @property {string} data.outputDir
  * @property {string} data.fileName
  * @property {number} data.filesCopied
+ * @property {number} data.demoMediaReplaced Astryx demo media references (images, posters, videos) replaced in the written file: images with a neutral placeholder, videos with an empty source. Swap in your own media at those points; no media is installed. 0 when the template carried none.
  */
 
 /**

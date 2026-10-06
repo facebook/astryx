@@ -41,6 +41,7 @@ export {
   discoverCoreTemplates,
   discoverIntegrationTemplatesForOne,
   stripTemplateAssetRefs,
+  replaceDemoMedia,
   listTemplates,
   findRelatedBlocks,
   findShowcase,
