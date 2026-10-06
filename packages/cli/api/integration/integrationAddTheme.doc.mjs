@@ -37,7 +37,7 @@ export const doc = {
       name: 'options.from',
       type: 'string',
       description:
-        'Slug of an existing theme to fork as the starting point. The new theme copies the base and has no link back.',
+        'Slug of an existing theme to fork as the starting point. The new theme copies the base and has no link back, and package.json `dependencies` gains the npm packages the copied files import (other than Core and React).',
     },
   ],
   returns: [

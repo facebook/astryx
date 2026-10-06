@@ -20,6 +20,7 @@ import {
   $convertToMarkdownString,
   TEXT_FORMAT_TRANSFORMERS,
   TEXT_MATCH_TRANSFORMERS,
+  ORDERED_LIST,
   TRANSFORMERS,
   type MultilineElementTransformer,
   type Transformer,
@@ -41,6 +42,7 @@ import {HARD_LINE_BREAK} from './markdownHardLineBreak';
 import {THEMATIC_BREAK} from './markdownThematicBreak';
 import {LIST_EXPORT} from './markdownListExport';
 import {TASK_LIST} from './markdownTaskList';
+import {ORDERED_LIST_KEEPING_START} from './markdownOrderedList';
 
 /**
  * Cells hold inline Markdown only, so they are imported and exported with the
@@ -240,8 +242,8 @@ export const TABLE: MultilineElementTransformer = {
 /**
  * The editor's default Markdown transformers: thematic breaks, list export
  * that nests to each parent's content column, GFM task list items, Lexical's
- * standard set, hard line breaks for breaks typed in the editor, and GFM
- * tables. Thematic breaks come first so a line such as `* * *` is a rule
+ * standard set (its ordered list keeping each nested list's start), hard line
+ * breaks for breaks typed in the editor, and GFM tables. Thematic breaks come first so a line such as `* * *` is a rule
  * rather than a list item, and task items before bullets so `- [ ] text` is a
  * task rather than a bullet that starts with `[ ]`.
  */
@@ -249,7 +251,9 @@ export const DEFAULT_TRANSFORMERS: ReadonlyArray<Transformer> = [
   THEMATIC_BREAK,
   LIST_EXPORT,
   TASK_LIST,
-  ...TRANSFORMERS,
+  ...TRANSFORMERS.map(transformer =>
+    transformer === ORDERED_LIST ? ORDERED_LIST_KEEPING_START : transformer,
+  ),
   HARD_LINE_BREAK,
   TABLE,
 ];

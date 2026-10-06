@@ -6,7 +6,11 @@
  * @position Subpath entry point: `@astryxdesign/core/Markdown/plugins`
  */
 
-export {createMarkdownPlugin, isMarkdownExtensionNode} from './protocol';
+export {
+  createMarkdownPlugin,
+  getMarkdownPluginCapabilities,
+  isMarkdownExtensionNode,
+} from './protocol';
 export {createMarkdownTextTransform} from './textTransform';
 export type {
   MarkdownTextTransformContext,
@@ -37,6 +41,7 @@ export type {
   MarkdownFrontmatterParseResult,
 } from './frontmatter';
 export type {
+  MarkdownPluginCapabilities,
   MarkdownPluginData,
   MarkdownExtensionNode,
   MarkdownTokenizerInput,

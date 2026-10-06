@@ -201,6 +201,15 @@ function moduleSpecifiers(file, jscodeshift) {
 }
 
 /**
+ * Every module a theme source file imports or re-exports, as written.
+ * @param {string} file
+ * @returns {string[]}
+ */
+export function themeFileImports(file) {
+  return moduleSpecifiers(file, sourceParser());
+}
+
+/**
  * Validate that every local static dependency is copied with the theme.
  * @param {string} file
  * @param {any} jscodeshift

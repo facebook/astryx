@@ -236,11 +236,17 @@ described.
 - **FR14 — Search finds the themes the list shows.** `astryx search` MUST index
   each theme `theme list` shows as a `theme` result, which `--type theme`
   selects. A theme result MUST carry its slug as `name`, its display name, its
-  description, the package that ships it, and the `theme add` command FR13
-  names. Searching themes MUST NOT need `@astryxdesign/core`, because listing
-  them does not, so an open search outside an app includes them (DEC-8). Help,
-  the manifest, and the API reference MUST list the `theme` domain and its
-  result fields.
+  description, the package that ships it, and the `theme add` command for the
+  CLI's FR12 stage: `theme add <slug>` in a CLI without `--import`,
+  `theme add --import <slug>` while the copy default is deprecated, and
+  `theme add <slug>` after the cleanup (FR13). A theme's slug and display name
+  are its names, and its description is prose (DEC-9): a query word the theme
+  shares only through its description ranks it as a description mention, never
+  as a name or keyword match, so that word alone never ranks the theme above a
+  result that matches it by name, title, or keyword. Searching themes MUST NOT
+  need `@astryxdesign/core`, because listing them does not, so an open search
+  outside an app includes them (DEC-8). Help, the manifest, and the API
+  reference MUST list the `theme` domain and its result fields.
 
 ### Platform support
 
@@ -259,8 +265,8 @@ described.
   deprecated and leave `theme add` in a scheduled minor (FR12); `theme eject`,
   `theme remove`, and `theme use` join the `theme` command; `theme list` gains
   its app fields and lists local themes;
-- `astryx search` finds the themes `theme list` shows, as the `theme` domain
-  (FR14);
+- `astryx search` finds the themes `theme list` shows, as the `theme` domain,
+  and ranks a word found only in a theme's description as prose (FR14);
 - `architecture:cli-surface` INV19: integration themes are importable packages,
   and editable source is an explicit eject;
 - `integration add theme` writes theme exports, and `integration verify` checks
@@ -290,7 +296,7 @@ unchanged.
 | FR11     | Doctor tests, one planted fault per check                                                           | each of the ten faults; a correct app                                                                                                                                                                                                | A check passes on its fault, or passes without positive evidence                                                                                                                                                                                                                                                                                                                                                          |
 | FR12     | Lifecycle tests against the latest stable CLI, migration tests on a project it made, and docs tests | plain `theme add`; the cleanup build; a copy made by the latest stable `theme add`; the upgrade codemod run twice; no theme module                                                                                                   | Before the cleanup, plain `theme add` stops copying, changes its exit status, stdout, or `theme.add` fields, omits the deprecation id, or warns more than once; after it, plain `theme add` copies; a theme command or doctor fails on an unmigrated copy; the codemod changes more than the descriptor or changes anything on its second run; a copy is moved or deleted; or doctor fails a project with no theme module |
 | FR13     | Docs and agent-docs tests                                                                           | theme guide, integration guide, agent block, init next steps                                                                                                                                                                         | A surface teaches copying as the way to use a theme, or names a different import command than the current lifecycle stage                                                                                                                                                                                                                                                                                                 |
-| FR14     | Search tests and CLI runs                                                                           | a bundled theme; an integration theme; `--type theme` and an open search outside an app; help and the manifest                                                                                                                       | A theme `theme list` shows is missing from search, a theme result lacks a field or names another command than FR13, a themes-only search needs Core, or help, the manifest, or the API reference omits the domain                                                                                                                                                                                                         |
+| FR14     | Search tests and CLI runs                                                                           | bundled and integration themes; `--type theme` and an open search outside an app; a word only in a theme's description, such as `focus`; an exact slug or display name; a CLI with and without `--import`; help and the manifest     | A theme `theme list` shows is missing from search, a theme result lacks a field or names another command than its FR12 stage, a word only in a theme's description ranks it as a name or keyword match or above a result matching that word by name, title, or keyword, a themes-only search needs Core, or help, the manifest, or the API reference omits the domain                                                     |
 
 ## Decision log
 
@@ -440,6 +446,20 @@ has not set up an app yet can still find a theme by how it looks.
 
 Rejected: requiring Core for every domain but docs, which fails a themes-only
 search where `theme list` works.
+
+### DEC-9 — A theme's description is prose
+
+**Reference:** `spec:AST-050/DEC-9`
+**Decider:** `cixzhang`, `2026-10-06`
+
+A theme's description is a sentence written for a person choosing a look. Its
+words describe a mood, so a word in it is a passing mention, ranked like any
+other description, and not a label the theme's author chose for search. A
+theme's names are its slug and its display name, and a theme declares no
+keywords.
+
+Rejected: reading every description word as a keyword, which ranks a theme first
+for any word its description happens to use.
 
 ## Open questions
 

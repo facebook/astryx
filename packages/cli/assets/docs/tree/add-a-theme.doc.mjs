@@ -67,6 +67,10 @@ Declare theme root ./themes in astryx.integration.mjs.
         },
         {
           type: 'prose',
+          text: 'The copy keeps the packages the base theme uses, such as `lucide-react` for its icons: `--from` adds them to your `dependencies`, so an app that installs your package gets them too. Install your dependencies again before you build the theme.',
+        },
+        {
+          type: 'prose',
           text: 'Use `--from` when you want to change a lot. For a small change that should stay linked to a base theme, use `extends` instead ({@link generic:define-the-theme}).',
         },
       ],

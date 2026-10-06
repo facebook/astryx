@@ -60,7 +60,7 @@ export const doc = {
       flag: '--from <theme>',
       param: 'options.from',
       description:
-        'Existing theme slug to fork as a starting point instead of a blank scaffold; the new theme copies the base and has no link back. Only valid for theme',
+        'Existing theme slug to fork as a starting point instead of a blank scaffold; the new theme copies the base and has no link back, and package.json `dependencies` gains the npm packages the copied files import (other than Core and React). Only valid for theme',
     },
     {
       flag: '--to <version>',

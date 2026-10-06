@@ -288,22 +288,31 @@ describe('search CLI — exit codes + JSON contract', () => {
   });
 
   it('prints every result field under its JSON key (score and reason with --verbose)', async () => {
-    // One query that reaches every domain, so every per-domain field shows.
-    const args = ['search', 'theme', '--limit', '60'];
-    const env = JSON.parse((await runCli(['--json', ...args], REPO_ROOT)).stdout);
-    expect(new Set(env.data.results.map(r => r.domain))).toEqual(new Set(SEARCH_DOMAINS));
-    const plain = (await runCli(args, REPO_ROOT)).stdout.split('\n');
-    const verbose = (await runCli([...args, '--verbose'], REPO_ROOT)).stdout.split('\n');
-    for (const result of env.data.results) {
-      for (const [key, value] of Object.entries(result)) {
-        if (value == null || value === '') continue;
-        const label = `${result.domain} ${result.name}: ${key}`;
-        expect(printsField(verbose, key, value), label).toBe(true);
-        if (key !== 'score' && key !== 'reason') {
-          expect(printsField(plain, key, value), label).toBe(true);
+    // Between them these reach every domain, so every per-domain field shows.
+    // A theme matches `theme` only through its description, a prose mention
+    // ranked below every name and keyword hit, so the theme domain comes from
+    // a theme's own name.
+    const domains = new Set();
+    for (const args of [
+      ['search', 'theme', '--limit', '60'],
+      ['search', 'neutral', '--type', 'theme'],
+    ]) {
+      const env = JSON.parse((await runCli(['--json', ...args], REPO_ROOT)).stdout);
+      const plain = (await runCli(args, REPO_ROOT)).stdout.split('\n');
+      const verbose = (await runCli([...args, '--verbose'], REPO_ROOT)).stdout.split('\n');
+      for (const result of env.data.results) {
+        domains.add(result.domain);
+        for (const [key, value] of Object.entries(result)) {
+          if (value == null || value === '') continue;
+          const label = `${result.domain} ${result.name}: ${key}`;
+          expect(printsField(verbose, key, value), label).toBe(true);
+          if (key !== 'score' && key !== 'reason') {
+            expect(printsField(plain, key, value), label).toBe(true);
+          }
         }
       }
     }
+    expect(domains).toEqual(new Set(SEARCH_DOMAINS));
   }, 90_000);
 
   it('--verbose exits 0 and prints import/match detail', async () => {

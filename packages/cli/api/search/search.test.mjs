@@ -25,6 +25,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {docs} from '../docs/docs.mjs';
+import {listAvailableThemes} from '../theme/_adapter.mjs';
+import {doc as themeAddCommandDoc} from '../../clients/cli/commands/theme-add.doc.mjs';
 import {
   headingWithPhrase,
   titleInQuery,
@@ -76,7 +78,10 @@ describe('search leaf — envelope + ranking', () => {
 
 describe('search leaf — per-domain result fields', () => {
   it('carries import for components and hooks, title for docs, displayName and kind for templates, displayName for themes', async () => {
-    const r = await search('theme', {cwd, limit: 60});
+    // `theme` reaches every domain, but a theme matches it only through its
+    // description, a prose mention below every name and keyword hit, so read
+    // the whole result list.
+    const r = await search('theme', {cwd, limit: 400});
     expect(new Set(r.data.results.map(res => res.domain))).toEqual(
       new Set(SEARCH_DOMAINS),
     );
@@ -497,6 +502,114 @@ describe('search leaf — limit validation (API matches the CLI contract)', () =
       code: 'ERR_INVALID_ARGUMENT',
     });
   }, SLOW);
+});
+
+describe('search leaf — a theme is found by its names; its description is prose (AST-050 FR14)', () => {
+  /** A result that answers the query by a name or a declared keyword, not a typo or a mention. */
+  const matchesByNameOrKeyword = (/** @type {{reason: string}} */ result) =>
+    /^(exact name|plural of the name|name "|name contains ")/.test(result.reason) ||
+    /^keyword "[^"]*"$/.test(result.reason);
+
+  /**
+   * The `theme add` command AST-050 FR12 and FR13 name for the stage that
+   * `theme add` itself declares: no `--import` yet, a deprecated copy default
+   * beside `--import`, or the cleanup, which keeps `--import` and drops the
+   * copy's `--overwrite`.
+   * @param {string} slug
+   */
+  function themeAddCommandForStage(slug) {
+    const flags = themeAddCommandDoc.options.flatMap(option => option.flag.split(/[\s,]+/));
+    if (!flags.includes('--import')) return `astryx theme add ${slug}`;
+    if (flags.includes('--overwrite')) return `astryx theme add --import ${slug}`;
+    return `astryx theme add ${slug}`;
+  }
+
+  it(
+    'ranks a theme found only through its description below every name and keyword match',
+    async () => {
+      for (const [query, slugs] of [
+        ['focus', ['neutral']],
+        ['content', ['matcha', 'neutral']],
+      ]) {
+        const {results} = (await search(query, {cwd, limit: 400})).data;
+        const strong = results.filter(
+          result => result.domain !== 'theme' && matchesByNameOrKeyword(result),
+        );
+        expect(strong.length).toBeGreaterThan(0);
+        const lastStrong = Math.max(...strong.map(result => results.indexOf(result)));
+        for (const slug of slugs) {
+          const at = results.findIndex(result => result.domain === 'theme' && result.name === slug);
+          expect(at).toBeGreaterThan(-1);
+          expect(results[at].reason).toMatch(/^description mentions /);
+          expect(at).toBeGreaterThan(lastStrong);
+        }
+      }
+    },
+    SLOW,
+  );
+
+  it(
+    'scores a word in a theme description the same as a word in a component description',
+    async () => {
+      const {results} = (await search('minimal', {cwd, limit: 400})).data;
+      const neutral = results.find(result => result.domain === 'theme' && result.name === 'neutral');
+      const topNav = results.find(result => result.domain === 'component' && result.name === 'TopNav');
+      expect(neutral?.reason).toMatch(/^description mentions /);
+      expect(topNav?.reason).toMatch(/^description mentions /);
+      expect(neutral?.score).toBe(topNav?.score);
+    },
+    SLOW,
+  );
+
+  it(
+    'keeps a theme that matches every word only in its description below results with a keyword hit',
+    async () => {
+      // Overlay and Dialog declare `focus` and mention `content`; neutral only
+      // mentions both, in "so the content stays the focus".
+      const {results} = (await search('content focus', {cwd, limit: 400})).data;
+      const neutral = results.findIndex(result => result.domain === 'theme' && result.name === 'neutral');
+      expect(neutral).toBeGreaterThan(-1);
+      for (const name of ['Overlay', 'Dialog']) {
+        const at = results.findIndex(result => result.domain === 'component' && result.name === name);
+        expect(at).toBeGreaterThan(-1);
+        expect(at).toBeLessThan(neutral);
+      }
+    },
+    SLOW,
+  );
+
+  it(
+    'still finds a theme first by its slug or its display name',
+    async () => {
+      for (const query of ['neutral', 'Matcha', 'Y2K']) {
+        const [first] = (await search(query, {cwd})).data.results;
+        expect(first).toMatchObject({domain: 'theme', name: query.toLowerCase(), reason: 'exact name'});
+      }
+    },
+    SLOW,
+  );
+
+  it('scores a display name with the same name signals as the slug', () => {
+    const theme = {name: 'ocean', aliases: ['Ocean Blue'], description: 'Deep blues for calm reading.'};
+    expect(scoreCandidate('ocean blue', theme)).toEqual(scoreCandidate('ocean', theme));
+    expect(scoreCandidate('ocean blue', {...theme, aliases: []})?.score ?? 0).toBeLessThan(
+      scoreCandidate('ocean', theme).score,
+    );
+  });
+
+  it(
+    'names the theme add command for the stage theme add declares',
+    async () => {
+      const themes = await listAvailableThemes(cwd);
+      expect(themes.length).toBeGreaterThan(0);
+      for (const {slug} of themes) {
+        const {results} = (await search(slug, {cwd, type: 'theme'})).data;
+        const result = results.find(entry => entry.name === slug);
+        expect(result?.command).toBe(themeAddCommandForStage(slug));
+      }
+    },
+    SLOW,
+  );
 });
 
 describe('search leaf — integration components', () => {

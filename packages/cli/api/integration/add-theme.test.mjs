@@ -1,8 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {CLI_ROOT, findInstalledPackage} from '../../foundation/fs/paths.mjs';
 import {integrationAddTheme} from './add-theme.mjs';
 import {validateLocalIntegration} from './validate-integration.mjs';
 
@@ -471,6 +473,104 @@ describe('integrationAddTheme --from', () => {
     await expect(
       integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'}),
     ).rejects.toMatchObject({code: 'ERR_FILE_EXISTS'});
+  });
+
+  it('declares the npm packages the forked files import, at the range the bundled themes use', async () => {
+    setup({includeFiles: false});
+    await integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'});
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
+    );
+    const cli = JSON.parse(
+      fs.readFileSync(path.join(CLI_ROOT, 'package.json'), 'utf-8'),
+    );
+    // The copied icons.tsx imports lucide-react; Core and React are every
+    // app's own, so the fork does not declare them.
+    expect(pkg.dependencies).toEqual({
+      'lucide-react': cli.devDependencies['lucide-react'],
+    });
+    expect(pkg.peerDependencies).toEqual({'@astryxdesign/cli': '>=0.6.4'});
+  });
+
+  it('keeps a dependency the package already declares', async () => {
+    setup({includeFiles: false});
+    const file = path.join(tmpDir, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    fs.writeFileSync(
+      file,
+      `${JSON.stringify({...pkg, dependencies: {'lucide-react': '^1.0.0'}}, null, 2)}\n`,
+    );
+    await integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'});
+    expect(JSON.parse(fs.readFileSync(file, 'utf-8')).dependencies).toEqual({
+      'lucide-react': '^1.0.0',
+    });
+  });
+
+  it('declares nothing for a fork of a theme the package owns', async () => {
+    setup({includeFiles: false});
+    await integrationAddTheme('base', {cwd: tmpDir});
+    await integrationAddTheme('variant', {cwd: tmpDir, from: 'base'});
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
+    );
+    expect(pkg.dependencies).toBeUndefined();
+  });
+
+  it('builds a forked neutral theme once the package installs what --from declared', async () => {
+    setup({includeFiles: false});
+    await integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'});
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
+    );
+    // Install exactly what the package declares, plus what every Astryx
+    // project has: Core and React.
+    for (const name of [
+      ...Object.keys(pkg.dependencies ?? {}),
+      '@astryxdesign/core',
+      'react',
+    ]) {
+      const installed = findInstalledPackage(CLI_ROOT, name);
+      expect(installed, name).not.toBeNull();
+      const link = path.join(tmpDir, 'node_modules', ...name.split('/'));
+      fs.mkdirSync(path.dirname(link), {recursive: true});
+      fs.symlinkSync(
+        fs.realpathSync(/** @type {string} */ (installed)),
+        link,
+        'dir',
+      );
+    }
+    // A separate process without NODE_PATH, so only what the package
+    // installed can resolve.
+    let status = 0;
+    let output = '';
+    try {
+      execFileSync(
+        process.execPath,
+        [
+          path.join(CLI_ROOT, 'clients/cli/bin/astryx.mjs'),
+          'theme',
+          'build',
+          'themes/ocean/oceanTheme.ts',
+        ],
+        {
+          cwd: tmpDir,
+          env: {...process.env, NODE_PATH: ''},
+          encoding: 'utf-8',
+          stdio: 'pipe',
+        },
+      );
+    } catch (error) {
+      const failure = /** @type {any} */ (error);
+      status = failure.status ?? 1;
+      output = `${failure.stdout ?? ''}${failure.stderr ?? ''}`;
+    }
+    expect({status, output: status === 0 ? '' : output}).toEqual({
+      status: 0,
+      output: '',
+    });
+    expect(fs.existsSync(path.join(tmpDir, 'themes/ocean/ocean.css'))).toBe(
+      true,
+    );
   });
 
   it('works with different bundled themes', async () => {

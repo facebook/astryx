@@ -19,6 +19,7 @@ import {
   MarkdownParitySandbox,
   type MarkdownParitySandboxProps,
 } from './RichTextEditor.markdownParity';
+import {MarkdownPluginsImportExport as MarkdownPluginsImportExportStory} from './RichTextEditor.markdownPluginsImportExport';
 
 const meta: Meta<typeof RichTextEditor> = {
   title: 'Lab/RichTextEditor',
@@ -377,6 +378,20 @@ Supports **bold**, _italic_, and lists:
  *  4. Round-trip it back to Markdown with `editorStateJSONToMarkdown`
  *     so you can eyeball that Markdown -> JSON -> Markdown is stable.
  */
+/**
+ * Markdown with plugin syntax in, and out again (spec:AST-064). A mention
+ * plugin and a note-block plugin, adopted with createRichTextExtension, are
+ * recognized as RichText imports the Markdown; the exported Markdown sits
+ * beside the input, byte for byte. Nodes inside emphasis, strong, and
+ * strikethrough stay inside them, a note that starts on the line after a
+ * paragraph line becomes its own block, and a plugin with a transform is
+ * refused. Edit the text around the nodes and export to see them kept.
+ */
+export const MarkdownPluginsImportExport = {
+  name: 'Markdown plugins: import and export',
+  render: () => <MarkdownPluginsImportExportStory />,
+};
+
 export const MarkdownSerializers = {
   render: () => {
     const [markdown, setMarkdown] = useState<string>(SAMPLE_MARKDOWN);
