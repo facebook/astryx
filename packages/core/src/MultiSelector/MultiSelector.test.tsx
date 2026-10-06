@@ -3507,7 +3507,11 @@ describe('MultiSelector option actions (grid)', () => {
       value: 'bug',
       label: 'Bug',
       action: (
-        <button type="button" onClick={() => edit('bug')}>
+        <button
+          type="button"
+          onClick={() => {
+            edit('bug');
+          }}>
           Edit Bug
         </button>
       ),
@@ -3518,7 +3522,11 @@ describe('MultiSelector option actions (grid)', () => {
       label: 'Docs',
       disabled: true,
       action: (
-        <button type="button" onClick={() => edit('docs')}>
+        <button
+          type="button"
+          onClick={() => {
+            edit('docs');
+          }}>
           Edit Docs
         </button>
       ),
