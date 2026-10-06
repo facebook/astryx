@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Text} from '@astryxdesign/core';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
@@ -738,12 +738,27 @@ const busyMonthEvents: CalendarEvent[] = [
 export const MonthOverflow: Story = {
   render: () => {
     const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const [monthEvents, setMonthEvents] = useState(busyMonthEvents);
     const view = useMemo(() => createScheduleMonthlyView(), []);
+    // Test seam for the month-overflow browser contract: removes an event the
+    // way a data refresh would, while a day's popover stays open.
+    useEffect(() => {
+      const seam = window as unknown as {
+        scheduleMonthOverflowStory?: {removeEvent: (id: string) => void};
+      };
+      seam.scheduleMonthOverflowStory = {
+        removeEvent: id =>
+          setMonthEvents(current => current.filter(event => event.id !== id)),
+      };
+      return () => {
+        delete seam.scheduleMonthOverflowStory;
+      };
+    }, []);
 
     return (
       <Schedule
         view={view}
-        events={busyMonthEvents}
+        events={monthEvents}
         categories={categories}
         date={date}
         focusDate={FIXTURE_DATE}

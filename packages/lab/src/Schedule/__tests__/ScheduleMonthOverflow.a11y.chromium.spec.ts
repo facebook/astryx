@@ -259,6 +259,27 @@ test('the month is a table: weekday and week headers, date-named cells, and "+N 
         table
           ?.querySelector('[role="cell"][aria-current="date"]')
           ?.getAttribute('aria-label') ?? null,
+      // One real header-to-cell association: the column header at the
+      // Sunday cell's position in its row, by DOM position and by index.
+      sunday: (() => {
+        const cell = table?.querySelector(
+          '[role="cell"][aria-label="Sunday, May 10, 2026"]',
+        );
+        const row = cell?.closest('[role="row"]');
+        const position =
+          row == null || cell == null
+            ? -1
+            : [...row.children].indexOf(cell as Element);
+        const headers = [
+          ...(rows[0]?.querySelectorAll('[role="columnheader"]') ?? []),
+        ];
+        const header = headers[position];
+        return {
+          header: header?.getAttribute('aria-label') ?? header?.textContent,
+          cellIndex: cell?.getAttribute('aria-colindex') ?? null,
+          headerIndex: header?.getAttribute('aria-colindex') ?? null,
+        };
+      })(),
       moreButtons: [...(table?.querySelectorAll('button') ?? [])].map(
         button => ({
           name: button.getAttribute('aria-label'),
@@ -301,6 +322,11 @@ test('the month is a table: weekday and week headers, date-named cells, and "+N 
   }
   expect(reading.cellsPerRow).toEqual([7, 7, 7, 7, 7, 7]);
   expect(reading.wednesdayCell).toBe(WEDNESDAY);
+  expect(reading.sunday).toEqual({
+    header: 'Sunday',
+    cellIndex: '2',
+    headerIndex: '2',
+  });
   expect(reading.moreButtons).toEqual([
     {name: `3 more events, ${WEDNESDAY}`, cell: WEDNESDAY, tabIndex: 0},
     {name: `2 more events, ${FRIDAY}`, cell: FRIDAY, tabIndex: 0},
@@ -521,6 +547,91 @@ test('a focused "+N more" paints its whole focus ring above the chips', async ({
   expect(style.outlineStyle).not.toBe('none');
   expect(style.outlineWidth).toBeGreaterThan(0);
   expect(style.zIndex).toBe('2');
+  expect(ringPixels).toBeGreaterThan(
+    ((box?.width ?? 0) + (box?.height ?? 0)) * 2,
+  );
+});
+
+test('when a refresh takes away an open day\'s "+N more", focus lands on that day\'s cell with the ring', async ({
+  page,
+}) => {
+  await openStory(evidence, page, STORY, WIDE);
+  const stops: string[] = [];
+  let reached = false;
+  for (let press = 0; press < 10 && !reached; press += 1) {
+    await page.keyboard.press('Tab');
+    const label = await page.evaluate(
+      () => document.activeElement?.getAttribute('aria-label') ?? null,
+    );
+    stops.push(label ?? 'other');
+    reached = label === `2 more events, ${FRIDAY}`;
+  }
+  expect(reached, `Tab reached Friday's "+N more": ${stops.join(' → ')}`).toBe(
+    true,
+  );
+  await page.keyboard.press('Enter');
+  await expect.poll(async () => (await readDialog(page)).label).toBe(FRIDAY);
+  expect((await readDialog(page)).focusInside).toBe(true);
+
+  // Friday drops to three levels: its "+N more" is no longer rendered.
+  await page.evaluate(() => {
+    (
+      window as unknown as {
+        scheduleMonthOverflowStory: {removeEvent: (id: string) => void};
+      }
+    ).scheduleMonthOverflowStory.removeEvent('focus');
+  });
+  await expect.poll(async () => (await readDialog(page)).openCount).toBe(0);
+  const focus = await page.evaluate(() => {
+    const active = document.activeElement as HTMLElement | null;
+    const computed = active == null ? null : getComputedStyle(active);
+    return {
+      role: active?.getAttribute('role') ?? null,
+      label: active?.getAttribute('aria-label') ?? null,
+      tabIndex: active?.tabIndex ?? null,
+      outlineStyle: computed?.outlineStyle ?? null,
+      outlineWidth: Number.parseFloat(computed?.outlineWidth ?? '0'),
+      fridayMore: [...document.querySelectorAll('button')].some(button =>
+        button.getAttribute('aria-label')?.endsWith(`, ${FRIDAY}`),
+      ),
+    };
+  });
+  const cell = page.getByRole('cell', {name: FRIDAY});
+  const box = await cell.boundingBox();
+  expect(box).not.toBeNull();
+  const clip = {
+    x: box?.x ?? 0,
+    y: box?.y ?? 0,
+    width: box?.width ?? 0,
+    height: box?.height ?? 0,
+  };
+  const ringed = await page.screenshot({clip});
+  // The same cell without focus, for the ring's pixels.
+  await page.evaluate(() => (document.activeElement as HTMLElement).blur());
+  const plain = await page.screenshot({clip});
+  const decode = (png: Buffer) =>
+    PNG.sync.read(png) as {width: number; height: number; data: Buffer};
+  const ringPixels = pixelmatch(
+    decode(plain).data,
+    decode(ringed).data,
+    undefined,
+    decode(plain).width,
+    decode(plain).height,
+    {threshold: 0.1},
+  );
+  await record(evidence, page, 'month-refresh-focus', STORY, 'ltr', {
+    stops,
+    focus,
+    ringPixels,
+  });
+  expect(focus).toMatchObject({
+    role: 'cell',
+    label: FRIDAY,
+    tabIndex: -1,
+    fridayMore: false,
+  });
+  expect(focus.outlineStyle).not.toBe('none');
+  expect(focus.outlineWidth).toBeGreaterThan(0);
   expect(ringPixels).toBeGreaterThan(
     ((box?.width ?? 0) + (box?.height ?? 0)) * 2,
   );

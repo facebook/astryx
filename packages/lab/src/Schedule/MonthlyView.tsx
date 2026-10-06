@@ -196,6 +196,8 @@ function ScheduleMonthlyView(
                         index % 7 === 6 && styles.monthCellLastColumn,
                         index >= days.length - 7 && styles.monthCellLastRow,
                         isOutsideMonth && styles.monthCellOutside,
+                        focusOutlineStyles.focusVisible,
+                        styles.monthCellFocus,
                       )}>
                       <div
                         {...stylex.props(

@@ -763,6 +763,15 @@ export const styles = stylex.create({
     borderBlockEndColor: colorVars['--color-border'],
     backgroundColor: colorVars['--color-background-card'],
   },
+  // A day cell takes focus only when its "+N more" goes away while its
+  // popover is open. The shared ring sits inset, so the table's scroll edge
+  // never clips it, and the cell stays under the chips it holds.
+  monthCellFocus: {
+    outlineOffset: {
+      default: null,
+      ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,
+    },
+  },
   monthCellLastColumn: {
     borderInlineEndWidth: 0,
   },
