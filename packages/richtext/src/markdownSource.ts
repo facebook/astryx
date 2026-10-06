@@ -49,6 +49,10 @@ import {
 } from 'lexical';
 import {isMarkedHardLineBreak} from './markdownHardLineBreak';
 import {normalizeListIndentation} from './markdownListIndentation';
+import {
+  $restoreCharacterReferences,
+  protectCharacterReferences,
+} from './markdownCharacterReferences';
 
 /** The whitespace and content one chunk of Markdown source was split into. */
 export interface MarkdownChunk {
@@ -309,11 +313,12 @@ export function importMarkdownKeepingSource(
         const holder = $createParagraphNode();
         root.append(holder);
         // Lexical imports LF lines; the record keeps the authored endings.
-        $convertFromMarkdownString(
+        // Character references go through as stand-ins and come back decoded.
+        const {markdown: chunkMarkdown, standIns} = protectCharacterReferences(
           withoutCarriageReturns(importChunks[index]?.content ?? chunk.content),
-          transformers,
-          holder,
         );
+        $convertFromMarkdownString(chunkMarkdown, transformers, holder);
+        $restoreCharacterReferences(holder, standIns);
         $joinSoftLineBreaks(holder);
         for (const node of holder.getChildren()) {
           $setState(node, groupState, {group: `${importId}:${index}`});

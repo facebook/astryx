@@ -24,6 +24,10 @@ import {
 } from 'lexical';
 import {DEFAULT_NODES} from './editorNodes';
 import {normalizeListIndentation} from './markdownListIndentation';
+import {
+  $restoreCharacterReferences,
+  protectCharacterReferences,
+} from './markdownCharacterReferences';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import {
   editorStateJSONToMarkdown,
@@ -354,12 +358,16 @@ describe('Markdown source preservation (spec:AST-062)', () => {
       });
       editor.update(
         () => {
-          $convertFromMarkdownString(
-            normalizeListIndentation(
-              markdown.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n'),
-            ),
-            [...DEFAULT_TRANSFORMERS],
-          );
+          const {markdown: protectedMarkdown, standIns} =
+            protectCharacterReferences(
+              normalizeListIndentation(
+                markdown.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n'),
+              ),
+            );
+          $convertFromMarkdownString(protectedMarkdown, [
+            ...DEFAULT_TRANSFORMERS,
+          ]);
+          $restoreCharacterReferences($getRoot(), standIns);
           $nestFollowingLists($getRoot());
           $joinSoftLineBreaks($getRoot());
         },

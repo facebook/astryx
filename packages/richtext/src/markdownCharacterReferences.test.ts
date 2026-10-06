@@ -74,6 +74,75 @@ describe('character references (spec:AST-061 FR7, DEC-5)', () => {
     }
   });
 
+  it('decode the same way in headings, lists, quotes, links, and table cells', () => {
+    const {root} = JSON.parse(
+      markdownToEditorStateJSON(
+        [
+          '# Caf&eacute; &#x2014; menu',
+          '',
+          '- Fish &amp; chips',
+          '> &copy; 2026',
+          '',
+          '[Terms &amp; conditions](https://example.com/?a=1&amp;b=2 "T&amp;C")',
+          '',
+          '| Item &amp; size | Price |',
+          '| --- | --- |',
+          '| Tea \\| &frac12; `&copy;` **&#169;** | &#12345678; \\&copy; |',
+          '',
+        ].join('\n'),
+      ),
+    ) as {root: SerializedNode & {children: Array<SerializedNode>}};
+    const texts: Array<string> = [];
+    const links: Array<{url?: unknown; title?: unknown}> = [];
+    const visit = (node: SerializedNode & {url?: unknown; title?: unknown}) => {
+      if (node.text != null) {
+        texts.push(node.text);
+      }
+      if (node.type === 'link') {
+        links.push({url: node.url, title: node.title});
+      }
+      (node.children as Array<typeof node> | undefined)?.forEach(visit);
+    };
+    visit(root);
+    const all = texts.join('|');
+    expect(all).toContain('Café — menu');
+    expect(all).toContain('Fish & chips');
+    expect(all).toContain('© 2026');
+    expect(all).toContain('Terms & conditions');
+    expect(all).toContain('Item & size');
+    expect(all).toContain('½');
+    // Inline code keeps the reference; strong text decodes it.
+    expect(texts).toContain('&copy;');
+    expect(texts).toContain('©');
+    // Not a reference, and an escaped one: literal.
+    expect(all).toContain('&#12345678;');
+    expect(all).toContain('&copy;');
+    expect(links).toEqual([
+      {url: 'https://example.com/?a=1&b=2', title: 'T&C'},
+    ]);
+  });
+
+  it('decode thousands of references in one pass, without extra nodes', () => {
+    for (const count of [2000, 6000, 10000]) {
+      const unit = '&copy; &#169; &#12345678; \\&amp; &nope; ';
+      const markdown = `${unit.repeat(count / 5)}\n`;
+      const started = performance.now();
+      const {root} = JSON.parse(markdownToEditorStateJSON(markdown)) as {
+        root: SerializedNode;
+      };
+      const elapsed = performance.now() - started;
+      const paragraph = root.children?.[0];
+      // One paragraph, one text node: nothing split per reference.
+      expect(paragraph?.children, String(count)).toHaveLength(1);
+      const expected = '© © &#12345678; &amp; &nope; '.repeat(count / 5);
+      // Compared as a flag, so a mismatch does not print the whole text.
+      expect(paragraph?.children?.[0].text === expected, String(count)).toBe(
+        true,
+      );
+      expect(elapsed, String(count)).toBeLessThan(5000);
+    }
+  });
+
   it('stay literal in fenced code, as core Markdown keeps them', () => {
     const markdown = '```\n&copy; &#169;\n```\n';
     expect(richTextText(markdown)).toBe('&copy; &#169;');
