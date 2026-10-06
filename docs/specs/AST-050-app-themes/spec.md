@@ -13,7 +13,7 @@ owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
 affects_contributing: []
-affects_consumer_docs: [theme, cli/integrations]
+affects_consumer_docs: [theme, cli/integrations, cli]
 ---
 
 # App themes system spec
@@ -22,8 +22,8 @@ affects_consumer_docs: [theme, cli/integrations]
 
 A builder, a person or a coding agent, wants an app that uses one or more themes:
 a first-party theme, a theme from an installed integration package, or a theme
-the app makes itself. They want to add a theme, choose the default, let users
-switch between themes at runtime, and know that the setup is correct.
+the app makes itself. They want to find a theme, add it, choose the default,
+let users switch between themes at runtime, and know that the setup is correct.
 
 A theme that an app copies as source stops receiving its owner's updates, loses
 its package identity, and must be built again by the app. It also loses any
@@ -32,10 +32,10 @@ fallback fonts with no error. An app that uses several themes needs one place
 that lists them, one way to switch among them, and a check that proves the
 setup.
 
-This record owns how an app declares, imports, switches, and checks its themes
-through the CLI. The rule is the same for every theme: an app uses a theme by
-importing its built form and passing it to `Theme`, and customizes it by
-extending that theme. Copying a theme's source is an explicit author fork.
+This record owns how an app finds, declares, imports, switches, and checks its
+themes through the CLI. The rule is the same for every theme: an app uses a
+theme by importing its built form and passing it to `Theme`, and customizes it
+by extending that theme. Copying a theme's source is an explicit author fork.
 `theme add` reaches that rule in two lifecycle stages (FR12): an opt-in import
 ships beside its deprecated copy default, and the import becomes the default in
 a minor an owner schedules. `architecture:theme-application` already supports
@@ -233,6 +233,14 @@ described.
   fork. They name `theme add --import` while the copy default is deprecated and
   `theme add` once it is removed. No surface teaches copying as the way to use a
   theme.
+- **FR14 — Search finds the themes the list shows.** `astryx search` MUST index
+  each theme `theme list` shows as a `theme` result, which `--type theme`
+  selects. A theme result MUST carry its slug as `name`, its display name, its
+  description, the package that ships it, and the `theme add` command FR13
+  names. Searching themes MUST NOT need `@astryxdesign/core`, because listing
+  them does not, so an open search outside an app includes them (DEC-8). Help,
+  the manifest, and the API reference MUST list the `theme` domain and its
+  result fields.
 
 ### Platform support
 
@@ -251,6 +259,8 @@ described.
   deprecated and leave `theme add` in a scheduled minor (FR12); `theme eject`,
   `theme remove`, and `theme use` join the `theme` command; `theme list` gains
   its app fields and lists local themes;
+- `astryx search` finds the themes `theme list` shows, as the `theme` domain
+  (FR14);
 - `architecture:cli-surface` INV19: integration themes are importable packages,
   and editable source is an explicit eject;
 - `integration add theme` writes theme exports, and `integration verify` checks
@@ -280,6 +290,7 @@ unchanged.
 | FR11     | Doctor tests, one planted fault per check                                                           | each of the ten faults; a correct app                                                                                                                                                                                                | A check passes on its fault, or passes without positive evidence                                                                                                                                                                                                                                                                                                                                                          |
 | FR12     | Lifecycle tests against the latest stable CLI, migration tests on a project it made, and docs tests | plain `theme add`; the cleanup build; a copy made by the latest stable `theme add`; the upgrade codemod run twice; no theme module                                                                                                   | Before the cleanup, plain `theme add` stops copying, changes its exit status, stdout, or `theme.add` fields, omits the deprecation id, or warns more than once; after it, plain `theme add` copies; a theme command or doctor fails on an unmigrated copy; the codemod changes more than the descriptor or changes anything on its second run; a copy is moved or deleted; or doctor fails a project with no theme module |
 | FR13     | Docs and agent-docs tests                                                                           | theme guide, integration guide, agent block, init next steps                                                                                                                                                                         | A surface teaches copying as the way to use a theme, or names a different import command than the current lifecycle stage                                                                                                                                                                                                                                                                                                 |
+| FR14     | Search tests and CLI runs                                                                           | a bundled theme; an integration theme; `--type theme` and an open search outside an app; help and the manifest                                                                                                                       | A theme `theme list` shows is missing from search, a theme result lacks a field or names another command than FR13, a themes-only search needs Core, or help, the manifest, or the API reference omits the domain                                                                                                                                                                                                         |
 
 ## Decision log
 
@@ -417,6 +428,18 @@ Rejected: reading `ASTRYX_THEME` with a warning until the minor, which keeps
 reading a variable `spec:AST-017/FR14` forbids.
 
 Rejected: warning when `ASTRYX_THEME` is set, which reads the variable to warn.
+
+### DEC-8 — Searching themes needs no Core
+
+**Reference:** `spec:AST-050/DEC-8`
+**Decider:** `josephfarina`, `2026-10-06`
+
+`theme list` reads bundled themes without `@astryxdesign/core`, so a search of
+themes does too, and an open search outside an app includes them. A builder who
+has not set up an app yet can still find a theme by how it looks.
+
+Rejected: requiring Core for every domain but docs, which fails a themes-only
+search where `theme list` works.
 
 ## Open questions
 
