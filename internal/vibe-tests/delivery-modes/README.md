@@ -41,12 +41,12 @@ Schema version 2 defines:
 - `preflight`: a command that must succeed through the launcher before any cell runs.
 - `browserHelper`: one executable basename, its identical prompt syntax, and probe arguments. The harness invokes that basename through the launcher before the run, proving every runner can discover it on `PATH` under the advertised name.
 - `runners`: named command entries. Arguments may use `{sandboxProject}` and `{taskFile}`; `stdin: "prompt"` sends the shared task prompt.
-- `runners.<name>.capabilities`: required built-in, skill, MCP-server, and hook lists plus a probe command. Missing requirements stop the run; additional capabilities are recorded without failing it.
+- `runners.<name>.capabilities`: explicit built-in, skill, MCP-server, hook, and plugin allowlists plus a probe command. Missing allowlisted capabilities fail the affected cells. Unexpected skills, MCP servers, hooks, or plugins also fail them with a score of 0; additional built-ins are recorded but remain non-blocking.
 - `transcript`: a declarative adapter for each runner and judge. The shipped public adapter format is JSONL: `toolCalls` selects records with field-path matchers and extracts a command path, while optional `usage` paths select input and output token counts. The harness has no built-in knowledge of any agent CLI event schema. Missing usage or tool-call measurements are reported as `unavailable`, never guessed.
 - `judge`: the blind screenshot evaluator. Its arguments may use `{sandboxProject}` and `{schema}`; the prompt is available through stdin. Optional `resultPath` selects the score object from the judge's JSON or last JSONL record.
 - `audit.rules`: required or forbidden regular expressions over `stdout`, `stderr`, `combined`, or adapter-extracted tool `command` records.
 
-Capability probes emit exactly one JSON object. The profile's `expected` lists are required subsets, so executable updates do not fail cells while the required surface remains present:
+Capability probes emit exactly one JSON object. Every list in the profile is an explicit allowlist; wildcards are rejected. Skills, MCP servers, hooks, and plugins are exact, while built-ins are a required subset so generic runner updates can add basic tools without contaminating context:
 
 ```json
 {
@@ -54,7 +54,8 @@ Capability probes emit exactly one JSON object. The profile's `expected` lists a
   "builtIns": ["read", "shell", "write"],
   "skills": ["ui-authoring"],
   "mcpServers": ["browser"],
-  "hooks": ["before-tool"]
+  "hooks": ["before-tool"],
+  "plugins": []
 }
 ```
 
@@ -121,4 +122,4 @@ A build failure, page error, blank render, runner failure, timeout, or strict au
 
 The blind judge prompt describes only the requested UI and visible scoring criteria. A judge process crash, nonzero exit, invalid result, or strict context-audit failure is retried once. Each attempt and error is recorded; if both attempts fail, judge scores remain null and the report marks the judge unavailable rather than assigning zero.
 
-The output directory contains `report.md`, a self-contained `report.html`, `report.json`, screenshots, transcripts, per-run receipts, and a manifest. The manifest records the selected prompts, config hash, concurrency, time limits, profile schema version, runner limits, helper and capability-probe receipts, opaque transcript-adapter hashes, baseline and observed runner versions, audit-rule counts, and resumable completion state without copying the local profile. Reports mark unavailable token or tool-call measurements explicitly and flag any runner whose executable version changed within the run.
+The output directory contains `report.md`, a self-contained `report.html`, `report.json`, screenshots, transcripts, per-run receipts, and a manifest. The manifest records the selected prompts, config hash, concurrency, time limits, profile schema version, runner limits, capability-allowlist hashes, helper and capability-probe receipts, opaque transcript-adapter hashes, baseline and observed runner versions, audit-rule counts, and resumable completion state without copying the local profile. Reports list every unexpected restricted capability for each failed cell, mark unavailable token or tool-call measurements explicitly, and flag any runner whose executable version changed within the run.

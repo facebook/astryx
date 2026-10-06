@@ -1,6 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-export const CAPABILITY_GROUPS = ['builtIns', 'skills', 'mcpServers', 'hooks'];
+export const CAPABILITY_GROUPS = [
+  'builtIns',
+  'skills',
+  'mcpServers',
+  'hooks',
+  'plugins',
+];
+export const EXACT_ALLOWLIST_GROUPS = [
+  'skills',
+  'mcpServers',
+  'hooks',
+  'plugins',
+];
 
 export function parseCapabilityReceipt(text) {
   let receipt;
@@ -44,12 +56,20 @@ export function compareCapabilities(expected, observed) {
       capability => !expectedSet.has(capability),
     );
   }
+  const disallowedAdditional = Object.fromEntries(
+    EXACT_ALLOWLIST_GROUPS.map(group => [group, additional[group]]),
+  );
   return {
-    passed: CAPABILITY_GROUPS.every(group => missing[group].length === 0),
+    passed:
+      CAPABILITY_GROUPS.every(group => missing[group].length === 0) &&
+      EXACT_ALLOWLIST_GROUPS.every(
+        group => disallowedAdditional[group].length === 0,
+      ),
     expected: normalizedExpected,
     observed,
     missing,
     additional,
+    disallowedAdditional,
   };
 }
 

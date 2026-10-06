@@ -101,13 +101,20 @@ function validateCapabilities(capabilities, label) {
   ) {
     throw new Error(`${label}.expected must be an object.`);
   }
-  for (const group of ['builtIns', 'skills', 'mcpServers', 'hooks']) {
+  for (const group of [
+    'builtIns',
+    'skills',
+    'mcpServers',
+    'hooks',
+    'plugins',
+  ]) {
+    const allowlist = capabilities.expected[group];
     if (
-      !Array.isArray(capabilities.expected[group]) ||
-      !capabilities.expected[group].every(isString)
+      !Array.isArray(allowlist) ||
+      !allowlist.every(value => isNonEmptyString(value) && value !== '*')
     ) {
       throw new Error(
-        `${label}.expected.${group} must be an array of strings.`,
+        `${label}.expected.${group} must be an explicit array of non-empty strings.`,
       );
     }
   }

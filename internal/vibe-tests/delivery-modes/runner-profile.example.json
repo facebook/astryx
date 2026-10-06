@@ -48,7 +48,8 @@
           "builtIns": ["read", "shell", "write"],
           "skills": ["ui-authoring"],
           "mcpServers": ["browser"],
-          "hooks": ["before-tool"]
+          "hooks": ["before-tool"],
+          "plugins": []
         },
         "probe": {
           "command": "/path/to/capability-adapter",

@@ -105,7 +105,9 @@ export function summarize(results) {
         passRate: scoredRuns.length === 0 ? null : passed / scoredRuns.length,
         timeouts: scoredRuns.filter(run => run.runner?.timedOut).length,
         contextFailures: scoredRuns.filter(
-          run => run.runner?.transcriptAudit?.passed === false,
+          run =>
+            run.runner?.capabilityAudit?.passed === false ||
+            run.runner?.transcriptAudit?.passed === false,
         ).length,
         transcriptFlaggedRuns: scoredRuns.filter(
           run =>
@@ -197,7 +199,7 @@ function markdownReport(iterationId, summary, runnerVersions, results) {
     '',
     'TypeScript errors are reported for `react-build` as a non-gating quality metric; only `vite build` gates its render. Hard-coded values exclude comments and token/theme definitions, which have their own column. A timed-out run keeps primary scores at 0 and separately reports the last complete on-disk state as best-before-timeout. The visual judge receives one anonymized default-state screenshot and the task prompt in its own filesystem namespace, so multi-step flows are judged from their default state equally across configs.',
     '',
-    'Runner and launcher details come from the local profile and are identical across delivery configs. Capability probes gate the run; executable versions are provenance only, and any within-run version mix is reported. Declarative transcript adapters supply token and tool-call measurements, which are marked unavailable when the runner does not expose them. Strict transcript-audit findings fail a cell; adjusted findings remain visible without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave judge scores null and are reported. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.',
+    'Runner and launcher details come from the local profile and are identical across delivery configs. Capability probes require exact allowlists for skills, MCP servers, hooks, and plugins; unexpected context fails each affected cell with a score of 0 and is listed below. Additional built-ins remain visible but non-blocking. Executable versions are provenance only, and any within-run version mix is reported. Declarative transcript adapters supply token and tool-call measurements, which are marked unavailable when the runner does not expose them. Strict transcript-audit findings fail a cell; adjusted findings remain visible without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave judge scores null and are reported. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.',
     '',
     '**Adoption is coarse.** Ancestor credit can include hand-rolled controls placed inside Astryx content slots. Use render, blind-judge, axe, hard-coded-style, theme-definition, and efficiency metrics as the primary comparison.',
     '',
@@ -213,7 +215,21 @@ function markdownReport(iterationId, summary, runnerVersions, results) {
   for (const receipt of runnerVersions) {
     lines.push(`- **${receipt.runner}** — ${formatVersionReceipt(receipt)}`);
   }
-  lines.push('', '## Transcript audit flags', '');
+  lines.push('', '## Capability audit failures', '');
+  const capabilityFailures = results.filter(
+    result => result.runner?.capabilityAudit?.passed === false,
+  );
+  if (capabilityFailures.length === 0) {
+    lines.push('None.', '');
+  } else {
+    for (const result of capabilityFailures) {
+      lines.push(
+        `- **${result.id}** — ${formatCapabilityAudit(result.runner.capabilityAudit)}`,
+      );
+    }
+    lines.push('');
+  }
+  lines.push('## Transcript audit flags', '');
   const flaggedResults = results.filter(
     result =>
       result.runner?.transcriptAudit?.passed === false ||
@@ -375,6 +391,18 @@ async function htmlReport(iterationId, summary, runnerVersions, results) {
         })
         .join('')}</ul>`
     : '<p>None.</p>';
+  const capabilityFailures = results.filter(
+    result => result.runner?.capabilityAudit?.passed === false,
+  );
+  const capabilityFailureHtml =
+    capabilityFailures.length === 0
+      ? '<p>None.</p>'
+      : `<ul>${capabilityFailures
+          .map(
+            result =>
+              `<li><strong>${escapeHtml(result.id)}</strong> — ${escapeHtml(formatCapabilityAudit(result.runner.capabilityAudit, false))}</li>`,
+          )
+          .join('')}</ul>`;
   const runnerVersionHtml = `<ul>${runnerVersions
     .map(
       receipt =>
@@ -390,10 +418,11 @@ async function htmlReport(iterationId, summary, runnerVersions, results) {
 </style></head><body>
 <h1>Delivery-mode vibe test</h1>
 <p>Iteration <code>${escapeHtml(iterationId)}</code>. Every config uses the same evaluator. Failed builds, runtime errors, and blank renders contribute 0 to adoption, prompt, and visual metrics and stay in every scored denominator. Infrastructure failures are unscored and retryable. Parenthetical <code>n</code> is the sample count for each median.</p>
-<p>TypeScript diagnostics are non-gating. Comments are excluded from hard-coded scanning, and token/theme definitions are reported separately. Timed-out runs keep zero primary scores and expose their last complete screenshot under best-before-timeout. The blind judge sees only an anonymized default-state screenshot and prompt in a private filesystem namespace. Runner and launcher details come from the local profile and remain identical across delivery configs. Capability probes gate the run; executable versions are provenance only, and any within-run version mix is reported. Declarative transcript adapters supply token and tool-call measurements, which are marked unavailable when the runner does not expose them. Strict audit findings fail a cell; adjusted findings are reported without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave scores null. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.</p>
+<p>TypeScript diagnostics are non-gating. Comments are excluded from hard-coded scanning, and token/theme definitions are reported separately. Timed-out runs keep zero primary scores and expose their last complete screenshot under best-before-timeout. The blind judge sees only an anonymized default-state screenshot and prompt in a private filesystem namespace. Runner and launcher details come from the local profile and remain identical across delivery configs. Capability probes require exact allowlists for skills, MCP servers, hooks, and plugins; unexpected context fails each affected cell with a score of 0 and is listed below. Additional built-ins remain visible but non-blocking. Executable versions are provenance only, and any within-run version mix is reported. Declarative transcript adapters supply token and tool-call measurements, which are marked unavailable when the runner does not expose them. Strict audit findings fail a cell; adjusted findings are reported without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave scores null. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.</p>
 <p><strong>Adoption is coarse.</strong> Ancestor credit can include hand-rolled controls inside Astryx content slots. Render, blind-judge, axe, hard-coded-style, theme-definition, and efficiency metrics lead the comparison.</p>
 <div class="table-wrap"><table><thead><tr><th>Config</th><th>Runner</th><th>Attempts</th><th>Scored</th><th>Infra</th><th>Judge unavailable</th><th>Pass</th><th>Timeouts</th><th>Strict audit</th><th>Adjusted audit</th><th>Wall</th><th>Tokens</th><th>Tools</th><th>CLI</th><th>Versions</th><th>Adoption (coarse)</th><th>Hard-coded</th><th>Theme defs</th><th>axe</th><th>Type errors</th><th>Prompt</th><th>Visual</th><th>Best-before P/V</th></tr></thead><tbody>${rows}</tbody></table></div>
 <section><h2>Runner version provenance</h2>${runnerVersionHtml}</section>
+<section><h2>Capability audit failures</h2>${capabilityFailureHtml}</section>
 <section><h2>Transcript audit flags</h2>${transcriptAuditHtml}</section>
 <section><h2>Infrastructure failures</h2>${infrastructureHtml}</section>
 <section><h2>Judge retries and failures</h2>${judgeRetryHtml}</section>
@@ -431,6 +460,36 @@ function formatBestBefore(row) {
     return '—';
   }
   return `${formatNumber(row.medianBestBeforeTimeoutPrompt)} / ${formatNumber(row.medianBestBeforeTimeoutVisual)} (n=${count})`;
+}
+
+function formatCapabilityAudit(audit, markdown = true) {
+  const details = [];
+  for (const [group, values] of Object.entries(audit.missing)) {
+    if (values.length > 0) {
+      details.push(
+        `missing ${group}: ${formatCapabilityValues(values, markdown)}`,
+      );
+    }
+  }
+  for (const [group, values] of Object.entries(audit.disallowedAdditional)) {
+    if (values.length > 0) {
+      details.push(
+        `unexpected ${group}: ${formatCapabilityValues(values, markdown)}`,
+      );
+    }
+  }
+  return details.join('; ');
+}
+
+function formatCapabilityValues(values, markdown) {
+  return values
+    .map(value => String(value).replaceAll(/\s+/g, ' ').trim())
+    .map(value =>
+      markdown
+        ? `\`${value.replaceAll('`', "'").replaceAll('|', '\\|')}\``
+        : value,
+    )
+    .join(', ');
 }
 
 function formatVersionReceipt(receipt, markdown = true) {

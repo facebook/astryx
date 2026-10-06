@@ -75,15 +75,6 @@ async function main() {
   for (const runner of runners) {
     const capabilityReceipt = await probeRunnerCapabilities(profile, runner);
     runnerCapabilities[runner] = capabilityReceipt;
-    if (!capabilityReceipt.passed) {
-      const missing = Object.entries(capabilityReceipt.missing)
-        .filter(([, values]) => values.length > 0)
-        .map(([group, values]) => `${group}: ${values.join(', ')}`)
-        .join('; ');
-      throw new Error(
-        `Runner ${runner} is missing required capabilities (${missing}).`,
-      );
-    }
     runnerVersionBaselines[runner] = await probeRunnerVersion(profile, runner);
   }
   const iterationId =
@@ -119,6 +110,12 @@ async function main() {
     runnerProfileSchemaVersion: profile.schemaVersion,
     runnerLimits: Object.fromEntries(
       runners.map(name => [name, profile.runners[name].limits ?? {}]),
+    ),
+    capabilityAllowlistHashes: Object.fromEntries(
+      runners.map(name => [
+        name,
+        stableId(JSON.stringify(profile.runners[name].capabilities.expected)),
+      ]),
     ),
     transcriptAudit: Object.fromEntries(
       runners.map(name => [
@@ -169,6 +166,7 @@ async function main() {
   await fsp.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
   if (
+    Object.values(runnerCapabilities).some(receipt => receipt.passed) &&
     options.configs.includes('react-nobuild') &&
     !(
       options.resume &&
@@ -215,6 +213,7 @@ async function main() {
       options,
       profile,
       baselineRunnerVersion: runnerVersionBaselines[job.agent],
+      capabilityAudit: runnerCapabilities[job.agent],
     });
     results.push(result);
     completed += 1;
@@ -278,6 +277,8 @@ function assertCompatibleManifest(prior, current) {
     'agentTimeoutMinutes',
     'runnerProfileSchemaVersion',
     'runnerLimits',
+    'capabilityAllowlistHashes',
+    'runnerCapabilities',
     'transcriptAudit',
     'transcriptAdapterHashes',
     'judgeAdapterHash',
@@ -380,6 +381,7 @@ async function runOne({
   options,
   profile,
   baselineRunnerVersion,
+  capabilityAudit,
 }) {
   const id = jobId(prompt.id, config, agent);
   const sharedRunDir = path.join(outputDir, 'runs', id);
@@ -405,61 +407,78 @@ async function runOne({
   };
   let phase = 'setup';
 
-  try {
-    await prepareProject(spec, privateRun.projectDir);
-    const baselineSources = await captureAuthoredSources(privateRun.projectDir);
-    await fsp.writeFile(
-      path.join(privateRun.projectDir, 'TASK.md'),
-      `${taskPrompt}\n`,
-    );
-
-    phase = 'runner-launch';
-    result.runner = await runAgent({
-      name: agent,
-      profile,
-      privateRun,
-      taskPrompt,
-      timeoutMs: options.timeoutMinutes * 60 * 1000,
+  if (!capabilityAudit.passed) {
+    result.runner = capabilityFailureResult(
+      agent,
+      capabilityAudit,
       baselineRunnerVersion,
-    });
-
-    phase = 'evaluation';
-    result.evaluation = await evaluateRun({
-      config,
-      projectDir: privateRun.projectDir,
-      prompt,
-      screenshotPath: privateScreenshot,
-      baselineSources,
-      skipJudge: options.skipJudge,
-      judgeProfile: profile,
-    });
-    if (result.runner.timedOut) {
-      result.evaluation.bestBeforeTimeout = {
-        renderPassed: result.evaluation.render?.passed ?? false,
-        adoptionShare: result.evaluation.render?.adoptionShare ?? 0,
-        promptFulfillment: result.evaluation.judge?.promptFulfillment ?? null,
-        visualQuality: result.evaluation.judge?.visualQuality ?? null,
-        screenshotCaptured: fs.existsSync(privateScreenshot),
-      };
-    }
-    if (!result.runner.success) {
-      forceFailedScores(
-        result.evaluation,
-        result.runner.transcriptAudit?.passed === false
-          ? `Strict transcript audit failed: ${result.runner.transcriptAudit.strictFindings.map(finding => finding.label).join('; ')}`
-          : 'Agent runner failed or timed out',
-      );
-    }
+    );
+    result.evaluation = capabilityFailureEvaluation(
+      result.runner.capabilityFindings
+        .map(finding => finding.label)
+        .join('; '),
+    );
     result.completed = true;
-  } catch (error) {
-    const message =
-      error instanceof Error ? (error.stack ?? error.message) : String(error);
-    result.infrastructureFailure = {
-      phase,
-      retryable: true,
-      message,
-    };
-    result.completed = false;
+  } else {
+    try {
+      await prepareProject(spec, privateRun.projectDir);
+      const baselineSources = await captureAuthoredSources(
+        privateRun.projectDir,
+      );
+      await fsp.writeFile(
+        path.join(privateRun.projectDir, 'TASK.md'),
+        `${taskPrompt}\n`,
+      );
+
+      phase = 'runner-launch';
+      result.runner = await runAgent({
+        name: agent,
+        profile,
+        privateRun,
+        taskPrompt,
+        timeoutMs: options.timeoutMinutes * 60 * 1000,
+        baselineRunnerVersion,
+        capabilityAudit,
+      });
+
+      phase = 'evaluation';
+      result.evaluation = await evaluateRun({
+        config,
+        projectDir: privateRun.projectDir,
+        prompt,
+        screenshotPath: privateScreenshot,
+        baselineSources,
+        skipJudge: options.skipJudge,
+        judgeProfile: profile,
+      });
+      if (result.runner.timedOut) {
+        result.evaluation.bestBeforeTimeout = {
+          renderPassed: result.evaluation.render?.passed ?? false,
+          adoptionShare: result.evaluation.render?.adoptionShare ?? 0,
+          promptFulfillment: result.evaluation.judge?.promptFulfillment ?? null,
+          visualQuality: result.evaluation.judge?.visualQuality ?? null,
+          screenshotCaptured: fs.existsSync(privateScreenshot),
+        };
+      }
+      if (!result.runner.success) {
+        forceFailedScores(
+          result.evaluation,
+          result.runner.transcriptAudit?.passed === false
+            ? `Strict transcript audit failed: ${result.runner.transcriptAudit.strictFindings.map(finding => finding.label).join('; ')}`
+            : 'Agent runner failed or timed out',
+        );
+      }
+      result.completed = true;
+    } catch (error) {
+      const message =
+        error instanceof Error ? (error.stack ?? error.message) : String(error);
+      result.infrastructureFailure = {
+        phase,
+        retryable: true,
+        message,
+      };
+      result.completed = false;
+    }
   }
   result.finishedAt = new Date().toISOString();
 
@@ -496,6 +515,7 @@ async function runAgent({
   taskPrompt,
   timeoutMs,
   baselineRunnerVersion,
+  capabilityAudit,
 }) {
   const entry = profile.runners[name];
   const version = await probeRunnerVersion(profile, name, privateRun);
@@ -537,9 +557,93 @@ async function runAgent({
     usage,
     toolCalls: countToolCalls(execution.stdout, entry.transcript),
     cliLookups: countCliLookups(execution.stdout, entry.transcript),
+    capabilityAudit,
     transcriptAudit,
     limits: entry.limits ?? {},
     stderr: execution.stderr,
+  };
+}
+
+function capabilityFailureResult(name, capabilityAudit, baselineRunnerVersion) {
+  const strictFindings = [];
+  for (const [group, values] of Object.entries(capabilityAudit.missing)) {
+    if (values.length > 0) {
+      strictFindings.push({
+        label: `Missing required ${group}: ${values.join(', ')}`,
+        class: 'strict',
+        source: 'capabilities',
+        kind: 'required',
+      });
+    }
+  }
+  for (const [group, values] of Object.entries(
+    capabilityAudit.disallowedAdditional,
+  )) {
+    if (values.length > 0) {
+      strictFindings.push({
+        label: `Unexpected ${group}: ${values.join(', ')}`,
+        class: 'strict',
+        source: 'capabilities',
+        kind: 'forbidden',
+      });
+    }
+  }
+  return {
+    command: name,
+    code: null,
+    signal: null,
+    success: false,
+    durationMs: null,
+    timedOut: false,
+    stalled: false,
+    gaveUp: false,
+    version: baselineRunnerVersion ?? {status: 'unavailable'},
+    versionChanged: false,
+    usage: {inputTokens: null, outputTokens: null},
+    toolCalls: null,
+    cliLookups: null,
+    capabilityAudit,
+    capabilityFindings: strictFindings,
+    transcriptAudit: null,
+    limits: {},
+    stderr: '',
+  };
+}
+
+function capabilityFailureEvaluation(reason) {
+  const message = `Capability audit failed: ${reason}`;
+  return {
+    build: null,
+    typecheck: null,
+    render: {
+      passed: false,
+      nonBlank: false,
+      adoptionShare: 0,
+      adoptedElementCount: 0,
+      eligibleElementCount: 0,
+      visibleElementCount: 0,
+      textLength: 0,
+      error: message,
+    },
+    source: {
+      authoredFileCount: 0,
+      inlineStyleAttributes: null,
+      customPropertyOnlyStyles: null,
+      themeDefinitionCount: null,
+      rawHexValues: null,
+      rawPixelValues: null,
+      hardCodedStyleCount: null,
+    },
+    accessibility: {violationCount: null, violations: []},
+    judge: {
+      configBlind: true,
+      promptFulfillment: 0,
+      visualQuality: 0,
+      success: false,
+      notes: message,
+      failureReasons: [message],
+      automaticFailure: true,
+    },
   };
 }
 

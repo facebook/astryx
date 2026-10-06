@@ -215,6 +215,7 @@ function exampleProfile() {
             skills: [],
             mcpServers: [],
             hooks: [],
+            plugins: [],
           },
           probe: {
             command: '/path/to/capability-adapter',
@@ -260,7 +261,14 @@ test('runner profile validates commands, capabilities, transcripts, and audits',
   delete missingCapabilityList.runners.sample.capabilities.expected.hooks;
   assert.throws(
     () => validateRunnerProfile(missingCapabilityList),
-    /expected.hooks must be an array/,
+    /expected.hooks must be an explicit array/,
+  );
+
+  const wildcardCapabilityList = exampleProfile();
+  wildcardCapabilityList.runners.sample.capabilities.expected.skills = ['*'];
+  assert.throws(
+    () => validateRunnerProfile(wildcardCapabilityList),
+    /expected.skills must be an explicit array/,
   );
 });
 
@@ -423,27 +431,45 @@ test('profile adapter controls generic JSONL tool and usage parsing', () => {
   });
 });
 
-test('capability audit requires expected subsets and records additions', () => {
-  const observed = parseCapabilityReceipt(
-    JSON.stringify({
-      schemaVersion: 1,
-      builtIns: ['write', 'read', 'write'],
-      skills: ['ui-authoring', 'extra-skill'],
-      mcpServers: ['browser'],
-      hooks: [],
-    }),
-  );
-  const audit = compareCapabilities(
-    {
-      builtIns: ['read', 'write'],
-      skills: ['ui-authoring'],
-      mcpServers: ['browser'],
-      hooks: [],
-    },
-    observed,
-  );
-  assert.equal(audit.passed, true);
-  assert.deepEqual(audit.additional.skills, ['extra-skill']);
+test('capability audit fails closed on unexpected restricted context', () => {
+  const expected = {
+    builtIns: ['read', 'write'],
+    skills: ['ui-authoring'],
+    mcpServers: ['browser'],
+    hooks: ['before-tool'],
+    plugins: [],
+  };
+  const observed = overrides =>
+    parseCapabilityReceipt(
+      JSON.stringify({
+        schemaVersion: 1,
+        builtIns: ['read', 'shell', 'write'],
+        skills: ['ui-authoring'],
+        mcpServers: ['browser'],
+        hooks: ['before-tool'],
+        plugins: [],
+        ...overrides,
+      }),
+    );
+
+  const extraBuiltIn = compareCapabilities(expected, observed({}));
+  assert.equal(extraBuiltIn.passed, true);
+  assert.deepEqual(extraBuiltIn.additional.builtIns, ['shell']);
+
+  const missingSkill = compareCapabilities(expected, observed({skills: []}));
+  assert.equal(missingSkill.passed, false);
+  assert.deepEqual(missingSkill.missing.skills, ['ui-authoring']);
+
+  for (const [group, values] of [
+    ['skills', ['ui-authoring', 'extra-skill']],
+    ['mcpServers', ['browser', 'extra-server']],
+    ['hooks', ['before-tool', 'after-tool']],
+    ['plugins', ['extra-plugin']],
+  ]) {
+    const audit = compareCapabilities(expected, observed({[group]: values}));
+    assert.equal(audit.passed, false, group);
+    assert.deepEqual(audit.disallowedAdditional[group], [values.at(-1)]);
+  }
 });
 
 test('source scanner separates comments and theme definitions', async () => {
@@ -623,6 +649,59 @@ test('reports expose infrastructure and judge attempt failures', async () => {
   assert.match(markdown, /registry unavailable \(unscored; retryable\)/);
   assert.match(markdown, /Judge retries and failures/);
   assert.match(markdown, /attempt 1: process — judge crashed/);
+});
+
+test('capability failures are scored zero and reports list extras', async () => {
+  const outputDir = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-report-capability-'),
+  );
+  temporaryDirectories.push(outputDir);
+  const result = makeResult({passed: false, value: 0});
+  Object.assign(result, {
+    id: 'prompt-react-build-sample',
+    promptId: 'prompt',
+    outputDir,
+    screenshotPath: null,
+  });
+  result.runner.capabilityAudit = {
+    passed: false,
+    missing: {
+      builtIns: [],
+      skills: [],
+      mcpServers: [],
+      hooks: [],
+      plugins: [],
+    },
+    disallowedAdditional: {
+      skills: ['extra-skill'],
+      mcpServers: ['extra-server'],
+      hooks: ['after-tool'],
+      plugins: ['extra-plugin'],
+    },
+  };
+  result.runner.transcriptAudit = {
+    passed: true,
+    classification: 'clean',
+    adjustedFindings: [],
+    findings: [],
+  };
+
+  const report = await buildReports({
+    outputDir,
+    iterationId: 'capability-failure',
+    results: [result],
+  });
+  const markdown = await fs.promises.readFile(report.markdownPath, 'utf8');
+  assert.equal(report.summary[0].runs, 1);
+  assert.equal(report.summary[0].contextFailures, 1);
+  assert.equal(report.summary[0].passRate, 0);
+  assert.equal(report.summary[0].medianPromptFulfillment, 0);
+  assert.equal(report.summary[0].medianVisualQuality, 0);
+  assert.match(markdown, /Capability audit failures/);
+  assert.match(markdown, /unexpected skills: `extra-skill`/);
+  assert.match(markdown, /unexpected mcpServers: `extra-server`/);
+  assert.match(markdown, /unexpected hooks: `after-tool`/);
+  assert.match(markdown, /unexpected plugins: `extra-plugin`/);
 });
 
 test('reports unavailable runner metrics without guessing zeros', async () => {
