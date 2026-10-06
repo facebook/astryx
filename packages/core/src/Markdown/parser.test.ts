@@ -380,6 +380,25 @@ describe('parseInline', () => {
     ]);
   });
 
+  it('makes two spaces or a backslash before a CRLF line ending a hard break', () => {
+    expect(parseInline('two  \r\nspaces')).toEqual([
+      {type: 'text', content: 'two'},
+      {type: 'break'},
+      {type: 'text', content: 'spaces'},
+    ]);
+    expect(parseInline('back\\\r\nslash')).toEqual([
+      {type: 'text', content: 'back'},
+      {type: 'break'},
+      {type: 'text', content: 'slash'},
+    ]);
+    // A Windows path ending a line keeps its other backslashes.
+    expect(parseInline('C:\\Users\\Ada\\\r\nnext')).toEqual([
+      {type: 'text', content: 'C:\\Users\\Ada'},
+      {type: 'break'},
+      {type: 'text', content: 'next'},
+    ]);
+  });
+
   it('escapes only ASCII punctuation and keeps other backslashes literal', () => {
     const textOf = (source: string) =>
       parseInline(source)
@@ -435,6 +454,77 @@ describe('parseInline', () => {
 });
 
 describe('parseMarkdown', () => {
+  describe('hard breaks in CRLF documents', () => {
+    const hasBreak = (value: unknown): boolean =>
+      JSON.stringify(value).includes('"type":"break"');
+    const lf = (source: string) => source.replace(/\r\n/g, '\n');
+    // The parser keeps each CRLF line's `\r` in its text; drop it, and any text
+    // node left empty, to compare structure with the LF document. Parsed
+    // blocks are plain JSON data, so the comparison works on that shape.
+    type Json =
+      string | number | boolean | null | Json[] | {[key: string]: Json};
+    const isEmptyText = (node: Json): boolean =>
+      typeof node === 'object' &&
+      node !== null &&
+      !Array.isArray(node) &&
+      node.type === 'text' &&
+      node.content === '';
+    const withoutCarriageReturns = (value: Json): Json => {
+      if (Array.isArray(value)) {
+        return value
+          .map(withoutCarriageReturns)
+          .filter(node => !isEmptyText(node));
+      }
+      if (typeof value === 'object' && value !== null) {
+        return Object.fromEntries(
+          Object.entries(value).map(([key, entry]) => [
+            key,
+            withoutCarriageReturns(entry),
+          ]),
+        );
+      }
+      return typeof value === 'string' ? value.replace(/\r/g, '') : value;
+    };
+    const asJson = (blocks: ReadonlyArray<BlockNode>): Json =>
+      JSON.parse(JSON.stringify(blocks)) as Json;
+
+    it('breaks lines the same way as the LF document', () => {
+      for (const source of [
+        'Line one  \r\nLine two\r\n',
+        'C:\\Users\\Ada\\\r\nnext\r\n',
+        '[two  \r\nlines](https://example.com)\r\n',
+        '> quoted  \r\n> lines\r\n',
+      ]) {
+        const crlf = parseMarkdown(source);
+        expect(hasBreak(crlf), source).toBe(true);
+        expect(withoutCarriageReturns(asJson(crlf)), source).toEqual(
+          asJson(parseMarkdown(lf(source))),
+        );
+      }
+    });
+
+    it('leaves code spans, code blocks, and table cells without breaks', () => {
+      for (const source of [
+        '`a  \r\nb` and `c\\\r\nd`\r\n',
+        '```\r\ncode  \r\nmore\\\r\n```\r\n',
+        '| a |\r\n| --- |\r\n| x  |\r\n',
+      ]) {
+        expect(hasBreak(parseMarkdown(source)), source).toBe(false);
+      }
+    });
+
+    it('streams to the same result when chunks split the line ending', () => {
+      const source = 'One  \r\ntwo\\\r\nthree\r\n\r\nC:\\Users\r\n';
+      const state = createIncrementalState();
+      let blocks: BlockNode[] = [];
+      for (let end = 1; end <= source.length; end++) {
+        blocks = parseMarkdownIncremental(source.slice(0, end), state);
+      }
+      expect(blocks).toEqual(parseMarkdown(source));
+      expect(hasBreak(blocks)).toBe(true);
+    });
+  });
+
   it('parses headings', () => {
     const result = parseMarkdown('# Hello');
     expect(result[0].type).toBe('heading');

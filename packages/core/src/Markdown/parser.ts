@@ -1364,6 +1364,17 @@ type IncrementalMathParseOptionsWithoutPlugins = Omit<
   'plugins'
 >;
 
+/**
+ * The length of the line ending at `index` in inline text: 1 for LF, 2 for
+ * CRLF (the parser keeps a CRLF line's `\r`), or 0 when none starts there.
+ */
+function lineEndingLengthAt(text: string, index: number): number {
+  if (text[index] === '\n') {
+    return 1;
+  }
+  return text[index] === '\r' && text[index + 1] === '\n' ? 2 : 0;
+}
+
 export function parseInline(
   text: string,
   sourceIds?: ReadonlySet<string>,
@@ -1487,9 +1498,10 @@ function parseInlineImpl(
     // break it is a hard break; before anything else it is a literal
     // backslash (CommonMark 0.31, backslash escapes and hard line breaks).
     if (text[i] === '\\' && i + 1 < text.length) {
-      if (text[i + 1] === '\n') {
+      const lineEnding = lineEndingLengthAt(text, i + 1);
+      if (lineEnding > 0) {
         nodes.push({type: 'break'});
-        i += 2;
+        i += 1 + lineEnding;
         continue;
       }
       if (isAsciiPunctuation(text[i + 1])) {
@@ -1773,10 +1785,13 @@ function parseInlineImpl(
 
     const content = text.slice(i, end);
 
-    // Detect trailing-space line break: 2+ spaces immediately before \n
+    // Detect trailing-space line break: 2+ spaces immediately before the
+    // line ending. A CRLF line keeps its `\r` in the text; it belongs to the
+    // line ending, not to the spaces before it.
     if (end < text.length && text[end] === '\n') {
-      const trimmed = content.replace(/ +$/, '');
-      if (content.length - trimmed.length >= 2) {
+      const line = content.endsWith('\r') ? content.slice(0, -1) : content;
+      const trimmed = line.replace(/ +$/, '');
+      if (line.length - trimmed.length >= 2) {
         if (trimmed.length > 0) {
           const last = nodes[nodes.length - 1];
           if (last?.type === 'text') {
