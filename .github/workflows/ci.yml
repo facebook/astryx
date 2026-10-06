@@ -1243,6 +1243,55 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # The toggle-button contract's pressed state, keyboard and pointer round
+      # trips, aborted press, focus, and unavailable state are accessibility-tree
+      # and engine facts that jsdom cannot observe. Run the contract's own
+      # fixture proof and the ToggleButton binding whenever the PR scope names
+      # ToggleButton or the contract changes. Its own --output directory; the
+      # JSON report is the head-bound record, uploaded immediately after.
+      - name: Run ToggleButton accessibility contract
+        id: toggle-button-contract
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: toggle-button-contract/report.json
+        run: |
+          should_run=false
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,core/ToggleButton,*) should_run=true ;;
+          esac
+          # The contract belongs to no package, so compare file names with the
+          # base. If the base cannot be fetched, run the evidence.
+          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
+            if git diff --name-only "$BASE_SHA" HEAD \
+              | grep -qE '^internal/a11y-spec/src/patterns/toggle-button'; then
+              should_run=true
+            fi
+          else
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "ToggleButton and its contract are not in PR scope; skipping toggle-button evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/toggle-button.chromium.spec.ts \
+            packages/core/src/ToggleButton/__tests__/ToggleButton.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output toggle-button-contract-output
+
+      - name: Upload ToggleButton accessibility contract evidence
+        if: ${{ !cancelled() && steps.toggle-button-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: toggle-button-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: toggle-button-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The Schedule time grid owns scroll geometry — pinned header and gutter
       # alignment under classic scrollbars, inline scroll ownership, keyboard
       # reach and its focus ring — none of which exists in jsdom. Every

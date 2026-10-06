@@ -10,6 +10,7 @@
  */
 
 import {useState, type ReactElement} from 'react';
+import {BoldIcon} from '@heroicons/react/24/outline';
 import {ToggleButton} from '../ToggleButton';
 import {ToggleButtonGroup} from '../ToggleButtonGroup';
 import {
@@ -33,13 +34,10 @@ function StatefulToggle({
     tooltip,
   };
   if (state.renderKind === 'icon-only') {
+    // A drawn icon, as product callers pass: a text glyph such as "B" would be
+    // a visible label the accessible name "Bold" does not contain.
     return (
-      <ToggleButton
-        {...common}
-        label="Bold"
-        isIconOnly
-        icon={<span aria-hidden="true">B</span>}
-      />
+      <ToggleButton {...common} label="Bold" isIconOnly icon={<BoldIcon />} />
     );
   }
   if (state.renderKind === 'composed-label') {

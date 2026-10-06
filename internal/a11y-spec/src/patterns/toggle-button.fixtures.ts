@@ -68,8 +68,11 @@ export const TOGGLE_BUTTON_FIXTURES: readonly ToggleButtonFixture[] = [
     summary:
       'a toggle button named for assistive technology with no visible words',
     facts: facts(),
+    // A drawn icon, not a letter: a visible "B" would be words a person can
+    // read, which the accessible name "Bold" does not contain.
     html: nativeToggle({
-      label: '<span aria-hidden="true">B</span>',
+      label:
+        '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16"><path fill="currentColor" d="M4 2h5a3 3 0 0 1 0 6H4zm0 6h6a3 3 0 0 1 0 6H4z"></path></svg>',
       attributes: 'aria-label="Bold"',
     }),
   },
