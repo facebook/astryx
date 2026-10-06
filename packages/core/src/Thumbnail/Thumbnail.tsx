@@ -184,9 +184,19 @@ const styles = stylex.create({
       backgroundColor: colorVars['--color-overlay-pressed'],
     },
   },
+  // Bare :hover::after, not the guarded form @astryx/no-hover-on-disabled
+  // otherwise wants: this class is only ever applied via `isInteractive &&
+  // styles.hoverOnPointer` below, and isInteractive already excludes
+  // isDisabled, so a non-interactive thumbnail never carries it in the first
+  // place — the CSS-level guard is redundant here. It also actively broke
+  // the overlay — combining a hover pseudo-class with a pseudo-element
+  // selector hits a StyleX 0.19.0 tokenizer bug (nested parens in
+  // `:where(:not(...))` collapse the compound-selector priority lookup to a
+  // wrong default), which dropped this rule's specificity boost and let the
+  // resting `background-color: transparent` win instead. See #5442.
   hoverOnPointer: {
     '@media (hover: hover)': {
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
+      ':hover::after': {
         backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
