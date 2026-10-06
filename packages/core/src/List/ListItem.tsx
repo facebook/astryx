@@ -5,7 +5,8 @@
 /**
  * @file ListItem.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, List edge compensation,
- *   and the marker a ListMarkerScope sets (Markdown's nested lists)
+ *   CheckboxInput, and the marker or task checkbox a ListMarkerScope sets
+ *   (Markdown's nested lists and the task items of mixed lists)
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -30,6 +31,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {ListContext, type ListMarker} from './ListContext';
+import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
 import {themeProps} from '../utils/themeProps';
@@ -222,6 +224,20 @@ const markerStyles = stylex.create({
   },
 });
 
+/** The width and height of CheckboxInput's small control. */
+const TASK_CHECKBOX_SIZE = 20;
+
+const taskMarkerStyles = stylex.create({
+  // A task item's checkbox stands where the marker would, centered on the
+  // item's first line, as a task list's checkboxes are.
+  container: {
+    alignSelf: 'flex-start',
+    display: 'flex',
+    flexShrink: 0,
+    marginTop: `calc((1em * ${typeScaleVars['--text-body-leading']} - ${TASK_CHECKBOX_SIZE}px) / 2)`,
+  },
+});
+
 /** The number styles, by marker. */
 const NUMBER_STYLES = {
   decimal: markerStyles.decimal,
@@ -281,10 +297,23 @@ export function ListItem({
   const markerKind: ListMarker | null =
     listStyle === 'none' ? null : (ctx?.marker ?? listStyle);
 
+  // A task item in a list with markers shows its checkbox instead.
+  const task = markerKind == null ? undefined : ctx?.task;
+
   const marker =
-    markerKind === 'disc' ||
-    markerKind === 'circle' ||
-    markerKind === 'square' ? (
+    task != null ? (
+      <span {...stylex.props(taskMarkerStyles.container)}>
+        <CheckboxInput
+          size="sm"
+          value={task.isChecked}
+          label={task.label}
+          isLabelHidden
+          isReadOnly
+        />
+      </span>
+    ) : markerKind === 'disc' ||
+      markerKind === 'circle' ||
+      markerKind === 'square' ? (
       <span {...stylex.props(markerStyles.container)}>
         <span
           {...stylex.props(

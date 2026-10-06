@@ -10,7 +10,8 @@
  *
  * Coverage: ATX headings 1-4; emphasis, strong, strikethrough, inline code,
  * titled and bare links; soft and hard line breaks; a blockquote; nested
- * unordered (2-space) and ordered (3-space) lists; a GFM task list; a fenced
+ * unordered (2-space) and ordered (3-space) lists; a GFM task list, and a
+ * list that mixes task and plain items; a fenced
  * code block with an info string; a GFM table with column alignment; a
  * thematic break; backslash escapes and character references; a right-to-left
  * paragraph; and the Storybook demo plugins' mention, TODO, and callout syntax.
@@ -121,6 +122,17 @@ export const MARKDOWN_PARITY_BLOCKS: readonly MarkdownParityBlock[] = [
       '  return Math.min(30_000, 2 ** attempt * 250);',
       '}',
       '```',
+    ),
+  },
+  {
+    key: 'list-task-mixed',
+    label: 'Task and plain items',
+    probe: 'Mixed open task',
+    // Not right after the task list, which it would continue as one list.
+    markdown: lines(
+      '- [ ] Mixed open task',
+      '- Mixed plain item',
+      '- [x] Mixed done task',
     ),
   },
   // Fences that show no language label, as core CodeBlock decides: no info

@@ -876,6 +876,40 @@ describe('List', () => {
       expect(container.querySelector('ul')).not.toBeNull();
     });
 
+    it("draws a task item's read-only checkbox in place of its marker", () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListMarkerScope
+            marker="disc"
+            task={{isChecked: true, label: 'Done'}}>
+            <ListItem label="Done" />
+          </ListMarkerScope>
+          <ListItem label="Plain" />
+        </List>,
+      );
+      const checkbox = screen.getByRole('checkbox', {name: 'Done'});
+      expect(checkbox).toBeChecked();
+      expect(checkbox).toHaveAttribute('aria-readonly', 'true');
+      const [task, plain] = container.querySelectorAll('li');
+      expect(task?.contains(checkbox)).toBe(true);
+      // The task item has no dot in its marker box; the plain item keeps it.
+      expect(task?.querySelector(':scope > span > span:empty')).toBeNull();
+      expect(plain?.querySelector(':scope > span > span:empty')).not.toBeNull();
+    });
+
+    it('draws no task checkbox in a list without markers', () => {
+      render(
+        <List>
+          <ListMarkerScope
+            marker="disc"
+            task={{isChecked: true, label: 'Done'}}>
+            <ListItem label="Done" />
+          </ListMarkerScope>
+        </List>,
+      );
+      expect(screen.queryByRole('checkbox')).toBeNull();
+    });
+
     it('keeps a numbered list ordered with a letter marker', () => {
       render(
         <List listStyle="decimal" start={3}>

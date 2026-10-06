@@ -56,7 +56,7 @@ import {
   trimStreamingArtifacts,
 } from './parser';
 import type {IncrementalState, MathParseOptions, ParseOptions} from './parser';
-import {getMarkdownAstLegacyCodeLanguage} from './ast';
+import {getMarkdownAstLegacyCodeLanguage, markdownAstText} from './ast';
 import type {
   MarkdownAstBlockContent,
   MarkdownAstPhrasingContent,
@@ -1712,6 +1712,30 @@ function renderBlock(
                 </>
               );
 
+              // A task item beside plain items keeps its own checked state
+              // (FR23): it shows a read-only checkbox where its marker
+              // would be, named by its text.
+              const firstParagraph = item.children.find(
+                block => block.type === 'paragraph',
+              );
+              const task =
+                item.checked == null
+                  ? undefined
+                  : {
+                      isChecked: item.checked,
+                      label:
+                        firstParagraph?.type === 'paragraph'
+                          ? markdownAstText(
+                              firstParagraph.children,
+                              extension =>
+                                markdownExtensionText(
+                                  preparedPlugins,
+                                  extension,
+                                ),
+                            )
+                          : t('@astryx.markdown.taskList'),
+                    };
+
               return (
                 <ListMarkerScope
                   // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown list items are rendered from positional AST nodes
@@ -1720,7 +1744,8 @@ function renderBlock(
                     (node.ordered ? NUMBER_MARKERS : BULLET_MARKERS)[
                       listDepth % 3
                     ]
-                  }>
+                  }
+                  task={task}>
                   <ListItem label={label} />
                 </ListMarkerScope>
               );
