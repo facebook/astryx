@@ -320,6 +320,19 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.stdout).toContain('reason:');
   });
 
+  it('points at discover for packages that could add more, except for hooks', async () => {
+    const open = await runCli(['search', 'data', 'table'], REPO_ROOT);
+    expect(open.status).toBe(0);
+    expect(open.stdout).toMatch(/^More in packages you could add: .*discover 'data table'$/m);
+    const none = await runCli(['search', 'zzqqxxnomatch'], REPO_ROOT);
+    expect(none.stdout).toMatch(/^More in packages you could add: .*discover zzqqxxnomatch$/m);
+    const hooks = await runCli(['search', 'click', '--type', 'hook'], REPO_ROOT);
+    expect(hooks.status).toBe(0);
+    expect(hooks.stdout).not.toContain('More in packages you could add');
+    const json = await runCli(['--json', 'search', 'button'], REPO_ROOT);
+    expect(json.stdout).not.toContain('More in packages you could add');
+  });
+
   it('searches the docs and themes when no @astryxdesign/core is reachable, and exits 1 for --type component', async () => {
     const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-cli-no-core-'));
     try {

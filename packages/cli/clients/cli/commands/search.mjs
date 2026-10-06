@@ -123,6 +123,7 @@ export function registerSearch(program) {
           text(
             `Try a broader term, or browse: ${run} ${note.length > 0 ? 'docs' : 'component --list'}`,
           ),
+          ...discoverHint(run, q, options.type),
         );
         return answered;
       }
@@ -174,10 +175,33 @@ export function registerSearch(program) {
           format: {command: formatCliCommand, parent: formatCliCommand},
         }),
         ...note,
+        ...discoverHint(run, q, options.type),
       );
       return answered;
     },
   });
+}
+
+/**
+ * Search reads only what is installed. Point at `discover` for the packages
+ * that could add more, except for hooks, which no integration adds.
+ * @param {string} run - The caller's CLI invocation prefix.
+ * @param {string} query
+ * @param {string | undefined} type
+ */
+function discoverHint(run, query, type) {
+  if (type === 'hook') return [];
+  return [
+    text(`More in packages you could add: ${run} discover ${shellWord(query)}`),
+  ];
+}
+
+/**
+ * One shell word: the value itself when it is plain, else single-quoted.
+ * @param {string} value
+ */
+function shellWord(value) {
+  return /^[\w@./:-]+$/.test(value) ? value : `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
 // Re-export the API for external consumers.
