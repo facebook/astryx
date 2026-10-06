@@ -34,6 +34,7 @@ export async function index(topic, options = {}) {
     ...view,
     // A guide the docs tree places is read by its route, not its doc name.
     name: entry.tree ? entry.name : view.name,
+    package: entry.package,
     links: await topicLinks(catalog, entry),
   };
   return {type: 'docs.index', data};

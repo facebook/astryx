@@ -20,10 +20,17 @@ import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
  * @param {{name: string, notFoundInPackage?: string|null}} ctx - `name` is the caller's original input; `notFoundInPackage` scopes the not-found message to a package
  * @returns {import('../../component.type.mjs').ComponentDetailSourceResponse}
  */
-export function componentDetailSource(componentName, sourcePath, {name, notFoundInPackage = null}) {
+export function componentDetailSource(componentName, sourcePath, {name, notFoundInPackage = null, ownerPackage = null}) {
   if (!sourcePath) {
     const suffix = notFoundInPackage ? ` in package "${notFoundInPackage}"` : '';
     throw new AstryxError(`Source for "${name}" not found${suffix}`, undefined, ERROR_CODES.ERR_NO_SOURCE);
   }
-  return {type: 'component.detail.source', data: {component: componentName, source: fs.readFileSync(sourcePath, 'utf-8')}};
+  return {
+    type: 'component.detail.source',
+    data: {
+      component: componentName,
+      package: ownerPackage,
+      source: fs.readFileSync(sourcePath, 'utf-8'),
+    },
+  };
 }

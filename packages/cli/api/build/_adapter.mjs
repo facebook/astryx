@@ -27,6 +27,7 @@ import {findCoreDir} from '../../foundation/fs/paths.mjs';
  * @property {string} command `astryx template <id> --type page`, the command that selects exactly this template: an integration replacement is selected by the Core id it replaces, and `--type page` keeps a block with the same id from making it ambiguous. Search prints template commands the same way.
  * @property {string} displayName Human-facing name.
  * @property {string} description What the page is and how it is laid out.
+ * @property {string} package The npm package that owns this template.
  * @property {string} category The template's own `Family - Variant` label; empty when it declares none.
  * @property {string[]} keywords The ideas the page serves, as its own descriptor names them; empty when it declares none.
  */
@@ -63,6 +64,7 @@ export async function loadPageTemplates(cwd) {
       name: t.dirName,
       displayName: t.displayName || t.name,
       description: t.description || '',
+      package: t.package ?? '@astryxdesign/core',
       category: t.category || '',
       keywords: t.keywords ?? [],
       // The id `template()` resolves back to this entry: an active replacement

@@ -143,27 +143,28 @@
  * @typedef {object} ComponentDetailPropsResponse
  * @property {'component.detail.props'} type
  * @property {import('@astryxdesign/cli/authoring').ComponentPropDoc[]} data
+ * @property {{package: string}} meta
  */
 
 /**
  * astryx --json component <name> --source
  * @typedef {object} ComponentDetailSourceResponse
  * @property {'component.detail.source'} type
- * @property {{component: string; source: string}} data
+ * @property {{component: string; package: string; source: string}} data
  */
 
 /**
  * astryx --json component <name> --showcase
  * @typedef {object} ComponentDetailShowcaseResponse
  * @property {'component.detail.showcase'} type
- * @property {{component: string; aspectRatio: number; source: string}} data
+ * @property {{component: string; package: string; aspectRatio: number; source: string}} data
  */
 
 /**
  * astryx --json component <name> --blocks
  * @typedef {object} ComponentDetailBlocksResponse
  * @property {'component.detail.blocks'} type
- * @property {{component: string; showcase: BlockEntry | null; examples: BlockEntry[]; related: BlockEntry[]}} data
+ * @property {{component: string; package: string; showcase: BlockEntry | null; examples: BlockEntry[]; related: BlockEntry[]}} data
  */
 
 /**

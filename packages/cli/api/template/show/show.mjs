@@ -13,6 +13,7 @@ import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {
   extractComponents,
+  pkgOf,
   replaceDemoMedia,
 } from '../../../foundation/discovery/template-adapter.mjs';
 
@@ -43,6 +44,7 @@ export function templateShow(match) {
       template: match.dirName,
       description: match.description,
       type: match.type,
+      package: pkgOf(match),
       components: extractComponents(match.filePath),
       source,
       demoMediaReplaced,

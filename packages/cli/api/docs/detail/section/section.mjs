@@ -84,6 +84,6 @@ export async function section(topic, sectionName, options = {}) {
   }
   return {
     type: 'docs.detail.section',
-    data: {...sectionView(node, linked), links},
+    data: {...sectionView(node, linked), package: entry.package, links},
   };
 }

@@ -25,6 +25,12 @@ export async function list() {
   logger.log('Done\n');
   return {
     type: 'upgrade.list',
-    data: codemods.map(({name, title, version, optional}) => ({name, title, version, optional})),
+    data: codemods.map(({name, title, version, optional}) => ({
+      name,
+      title,
+      version,
+      optional,
+      package: '@astryxdesign/core',
+    })),
   };
 }

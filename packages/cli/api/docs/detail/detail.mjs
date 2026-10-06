@@ -36,6 +36,7 @@ export async function detail(topic, options = {}) {
       ...detailView(linked),
       // A guide the docs tree places is read by its route, not its doc name.
       ...(entry.tree ? {name: entry.name} : {}),
+      package: entry.package,
       links: await topicLinks(catalog, entry),
     },
   };

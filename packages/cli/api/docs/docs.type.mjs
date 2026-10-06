@@ -56,7 +56,7 @@
  * astryx --json docs <topic>
  * @typedef {object} DocsDetailResponse
  * @property {'docs.detail'} type
- * @property {DocsReadDoc & {links: DocsLinks}} data
+ * @property {DocsReadDoc & {package: string, links: DocsLinks}} data
  *   the whole doc, and the moves from it
  */
 
@@ -110,6 +110,7 @@
  * @property {string} name the topic
  * @property {string} title
  * @property {string} description
+ * @property {string} package the npm package that owns this topic
  * @property {DocsIndexSection[]} sections
  * @property {DocsLinks} links the moves from the index
  */
@@ -126,7 +127,7 @@
  * astryx --json docs <topic> <section>
  * @typedef {object} DocsDetailSectionResponse
  * @property {'docs.detail.section'} type
- * @property {DocsReadSection & {links: DocsLinks}} data
+ * @property {DocsReadSection & {package: string, links: DocsLinks}} data
  *   the section, and the moves from it: up to its topic's index, and across to
  *   the sections before and after it
  */

@@ -26,7 +26,7 @@ import {findShowcase} from '../../../template/template.mjs';
  * @param {boolean} [ctx.resolve] - when false, skip discovery and treat as not found
  * @returns {Promise<import('../../component.type.mjs').ComponentDetailShowcaseResponse>}
  */
-export async function componentDetailShowcase(componentName, {cwd, name, packageScope = null, resolve = true}) {
+export async function componentDetailShowcase(componentName, {cwd, name, packageScope = null, resolve = true, ownerPackage = null}) {
   const match = resolve
     ? await findShowcase(componentName, cwd, packageScope ? {package: packageScope} : undefined)
     : null;
@@ -38,6 +38,7 @@ export async function componentDetailShowcase(componentName, {cwd, name, package
     type: 'component.detail.showcase',
     data: {
       component: componentName,
+      package: ownerPackage,
       aspectRatio: /** @type {number} */ (match.aspectRatio),
       source: fs.readFileSync(match.filePath, 'utf-8'),
     },
