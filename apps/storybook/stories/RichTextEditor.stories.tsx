@@ -14,6 +14,11 @@ import {
 import type {EditorState} from 'lexical';
 import {BOLD_STAR, ITALIC_STAR, UNORDERED_LIST} from '@lexical/markdown';
 import {$getRoot} from 'lexical';
+import {
+  LONG_DOCUMENT_COPIES,
+  MarkdownParitySandbox,
+  type MarkdownParitySandboxProps,
+} from './RichTextEditor.markdownParity';
 
 const meta: Meta<typeof RichTextEditor> = {
   title: 'Lab/RichTextEditor',
@@ -447,5 +452,96 @@ export const MarkdownSerializers = {
         </details>
       </div>
     );
+  },
+};
+
+/**
+ * Markdown parity sandbox: one Markdown document rendered by core Markdown
+ * (read) and RichTextEditor (edit). It is diagnostic: it shows current behavior
+ * and promises no parity. Theme, color mode, and direction come from the
+ * toolbar; the viewport menu offers 390px and 1440px.
+ */
+type MarkdownParityStory = StoryObj<MarkdownParitySandboxProps>;
+
+const markdownParity: MarkdownParityStory = {
+  render: args => <MarkdownParitySandbox {...args} />,
+  // Page-sized diagnostics, not usage examples: keep them off the docs page.
+  tags: ['!autodocs'],
+  argTypes: {
+    view: {
+      control: 'inline-radio',
+      options: ['side-by-side', 'toggle', 'overlay'],
+    },
+    isLongDocument: {
+      control: 'boolean',
+      description: `Repeat the fixture ${LONG_DOCUMENT_COPIES} times.`,
+    },
+    hasPlugins: {
+      control: 'boolean',
+      description:
+        'Demo Markdown plugins on the read side; task lists and autolinks on the edit side.',
+    },
+    hostWidth: {control: 'inline-radio', options: ['fill', '680px']},
+  },
+  parameters: {
+    controls: {include: ['view', 'isLongDocument', 'hasPlugins', 'hostWidth']},
+    viewport: {
+      options: {
+        parityPhone: {
+          name: 'Phone (390px)',
+          styles: {width: '390px', height: '844px'},
+          type: 'mobile',
+        },
+        parityDesktop: {
+          name: 'Desktop (1440px)',
+          styles: {width: '1440px', height: '900px'},
+          type: 'desktop',
+        },
+      },
+    },
+  },
+};
+
+export const MarkdownParity: MarkdownParityStory = {
+  ...markdownParity,
+  name: 'Markdown parity: side by side',
+  args: {
+    view: 'side-by-side',
+    isLongDocument: false,
+    hasPlugins: true,
+    hostWidth: 'fill',
+  },
+};
+
+export const MarkdownParityToggle: MarkdownParityStory = {
+  ...markdownParity,
+  name: 'Markdown parity: read/edit toggle',
+  args: {
+    view: 'toggle',
+    isLongDocument: false,
+    hasPlugins: true,
+    hostWidth: '680px',
+  },
+};
+
+export const MarkdownParityOverlay: MarkdownParityStory = {
+  ...markdownParity,
+  name: 'Markdown parity: overlay',
+  args: {
+    view: 'overlay',
+    isLongDocument: false,
+    hasPlugins: true,
+    hostWidth: '680px',
+  },
+};
+
+export const MarkdownParityLongDocument: MarkdownParityStory = {
+  ...markdownParity,
+  name: 'Markdown parity: long document',
+  args: {
+    view: 'toggle',
+    isLongDocument: true,
+    hasPlugins: true,
+    hostWidth: '680px',
   },
 };
