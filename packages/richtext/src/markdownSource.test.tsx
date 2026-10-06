@@ -27,7 +27,11 @@ import {
   editorStateJSONToMarkdown,
   markdownToEditorStateJSON,
 } from './markdownSerializers';
-import {absentToken, splitMarkdownChunks} from './markdownSource';
+import {
+  $joinSoftLineBreaks,
+  absentToken,
+  splitMarkdownChunks,
+} from './markdownSource';
 import {RichTextEditor, type RichTextEditorRef} from './RichTextEditor';
 import {RichTextEditorAutoLinkPlugin} from './RichTextEditorAutoLinkPlugin';
 
@@ -35,6 +39,12 @@ import {RichTextEditorAutoLinkPlugin} from './RichTextEditorAutoLinkPlugin';
  * The conformance corpus for spec:AST-062. Each document must come back byte
  * for byte from a no-op round trip, whatever RichText makes of it.
  */
+interface SerializedShapeNode {
+  readonly type: string;
+  readonly text?: string;
+  readonly children?: ReadonlyArray<SerializedShapeNode>;
+}
+
 const CORPUS: Record<string, string> = {
   empty: '',
   whitespaceOnly: '   \n\n\t\n',
@@ -277,7 +287,7 @@ describe('Markdown source preservation (spec:AST-062)', () => {
     // group writes two paragraphs, in the group's CRLF style.
     expect(
       editAndExport(crlf, () => $appendToBlockContaining('First', ' one')),
-    ).toBe('\uFEFF\r\n# Title\r\n\r\nFirst one\r\nsecond line\r\n\r\nLast\r\n');
+    ).toBe('\uFEFF\r\n# Title\r\n\r\nFirst second line one\r\n\r\nLast\r\n');
     expect(
       editAndExport(crlf, () => {
         const paragraph = $createParagraphNode();
@@ -324,7 +334,8 @@ describe('Markdown source preservation (spec:AST-062)', () => {
 
   it('imports the same structure as importing the whole document at once', () => {
     // Node state aside, chunked import must build exactly the tree Lexical's
-    // own import builds: soft breaks, lazy continuation lines, loose lists.
+    // own import builds, soft breaks joined: lazy continuation lines, loose
+    // lists, and line breaks all land in the same blocks.
     const structureOf = (json: string): unknown =>
       JSON.parse(json, (key, value: unknown) =>
         key === '$' ? undefined : value,
@@ -343,6 +354,7 @@ describe('Markdown source preservation (spec:AST-062)', () => {
             markdown.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n'),
             [...DEFAULT_TRANSFORMERS],
           );
+          $joinSoftLineBreaks($getRoot());
         },
         {discrete: true},
       );
@@ -353,6 +365,46 @@ describe('Markdown source preservation (spec:AST-062)', () => {
         structureOf(wholeDocument(markdown)),
       );
     }
+  });
+
+  it('continues a block across soft line breaks and keeps hard breaks', () => {
+    const shape = (markdown: string): string => {
+      const {root} = JSON.parse(markdownToEditorStateJSON(markdown)) as {
+        root: SerializedShapeNode;
+      };
+      const describe = (node: SerializedShapeNode): string =>
+        node.children != null
+          ? `${node.type}[${node.children.map(describe).join(',')}]`
+          : node.type === 'text'
+            ? JSON.stringify(node.text)
+            : node.type;
+      return root.children?.map(describe).join(' ') ?? '';
+    };
+    expect(shape('One line\nsame paragraph\nstill same\n')).toBe(
+      'paragraph["One line same paragraph still same"]',
+    );
+    expect(shape('Two spaces  \nand a backslash\\\nend\n')).toBe(
+      'paragraph["Two spaces",linebreak,"and a backslash",linebreak,"end"]',
+    );
+    expect(shape('- An item\n  that continues\n')).toBe(
+      'list[listitem["An item that continues"]]',
+    );
+    expect(shape('> A quote\n> on two lines\n')).toBe(
+      'quote["A quote on two lines"]',
+    );
+    expect(shape('**Bold**\nthen plain\n')).toBe(
+      'paragraph["Bold"," then plain"]',
+    );
+    // Code keeps its line endings.
+    expect(shape('```\nline one\nline two\n```\n')).toBe(
+      'code["line one\\nline two"]',
+    );
+    // An edited paragraph is written again on one line.
+    expect(
+      editAndExport('One line\nsame paragraph\n\nNext\n', () =>
+        $appendToTextContaining('One line', ' edited'),
+      ),
+    ).toBe('One line same paragraph edited\n\nNext\n');
   });
 
   it('keeps document facts at the document when blocks move, repeat, or go (FR4)', () => {
