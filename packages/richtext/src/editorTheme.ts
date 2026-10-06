@@ -4,8 +4,8 @@
  * @file editorTheme.ts
  * @input Uses StyleX + Astryx design tokens
  * @output Exports sharedEditorTheme(), which builds a Lexical EditorThemeClasses
- *   object mapping Lexical's theme slots to StyleX-generated class names and
- *   normalizes paragraph spacing for editor/view alignment.
+ *   object mapping Lexical's theme slots to StyleX-generated class names, with
+ *   document blocks styled like core Markdown (spec:AST-061 FR2–FR4).
  * @position Shared by RichTextEditor.tsx and RichTextView.tsx so editor and
  *   read-only view render identically.
  *
@@ -22,50 +22,159 @@ import {
   fontWeightVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import type {EditorThemeClasses} from 'lexical';
+import {documentSpacing} from './documentSpacing.stylex';
+
+// Document blocks follow core Markdown's typography, spacing, and measure
+// (spec:AST-061 FR2–FR4): type-scale tokens for text, one block spacing table
+// with no margin before the first block or after the last, and prose capped
+// at Markdown's default content width while code and tables span the editor.
+const PROSE_MEASURE = '680px';
 
 const editorTheme = stylex.create({
   paragraph: {
-    // A leading margin collapses through Lexical's wrapper and stacks with the
-    // input inset. Keep the same between-paragraph rhythm on the end edge so
+    // The first block's leading margin would stack with the input inset, so
     // the first line aligns with TextArea and the empty-editor placeholder.
-    marginBlockStart: spacingVars['--spacing-0'],
-    marginBlockEnd: spacingVars['--spacing-1'],
+    marginBlockStart: {
+      default: documentSpacing.textBlock,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.textBlock,
+      ':last-child': spacingVars['--spacing-0'],
+    },
+    maxWidth: PROSE_MEASURE,
   },
   h1: {
     fontFamily: typographyVars['--font-family-heading'],
-    fontSize: '1.5rem',
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    marginBlock: spacingVars['--spacing-2'],
+    fontSize: typeScaleVars['--text-heading-1-size'],
+    fontWeight: typeScaleVars['--text-heading-1-weight'],
+    lineHeight: typeScaleVars['--text-heading-1-leading'],
+    marginBlockStart: {
+      default: documentSpacing.majorHeadingBefore,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.majorHeadingAfter,
+      ':last-child': spacingVars['--spacing-0'],
+    },
+    maxWidth: PROSE_MEASURE,
   },
   h2: {
     fontFamily: typographyVars['--font-family-heading'],
-    fontSize: '1.25rem',
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    marginBlock: spacingVars['--spacing-2'],
+    fontSize: typeScaleVars['--text-heading-2-size'],
+    fontWeight: typeScaleVars['--text-heading-2-weight'],
+    lineHeight: typeScaleVars['--text-heading-2-leading'],
+    marginBlockStart: {
+      default: documentSpacing.majorHeadingBefore,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.majorHeadingAfter,
+      ':last-child': spacingVars['--spacing-0'],
+    },
+    maxWidth: PROSE_MEASURE,
   },
   h3: {
     fontFamily: typographyVars['--font-family-heading'],
-    fontSize: '1.125rem',
-    fontWeight: fontWeightVars['--font-weight-semibold'],
-    marginBlock: spacingVars['--spacing-1'],
+    fontSize: typeScaleVars['--text-heading-3-size'],
+    fontWeight: typeScaleVars['--text-heading-3-weight'],
+    lineHeight: typeScaleVars['--text-heading-3-leading'],
+    marginBlockStart: {
+      default: documentSpacing.majorHeadingBefore,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.majorHeadingAfter,
+      ':last-child': spacingVars['--spacing-0'],
+    },
+    maxWidth: PROSE_MEASURE,
+  },
+  h4: {
+    fontFamily: typographyVars['--font-family-heading'],
+    fontSize: typeScaleVars['--text-heading-4-size'],
+    fontWeight: typeScaleVars['--text-heading-4-weight'],
+    lineHeight: typeScaleVars['--text-heading-4-leading'],
+    marginBlockStart: {
+      default: documentSpacing.minorHeadingBefore,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.minorHeadingAfter,
+      ':last-child': spacingVars['--spacing-0'],
+    },
+    maxWidth: PROSE_MEASURE,
+  },
+  h5: {
+    fontFamily: typographyVars['--font-family-heading'],
+    fontSize: typeScaleVars['--text-heading-5-size'],
+    fontWeight: typeScaleVars['--text-heading-5-weight'],
+    lineHeight: typeScaleVars['--text-heading-5-leading'],
+    marginBlockStart: {
+      default: documentSpacing.minorHeadingBefore,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.minorHeadingAfter,
+      ':last-child': spacingVars['--spacing-0'],
+    },
+    maxWidth: PROSE_MEASURE,
+  },
+  h6: {
+    fontFamily: typographyVars['--font-family-heading'],
+    fontSize: typeScaleVars['--text-heading-6-size'],
+    fontWeight: typeScaleVars['--text-heading-6-weight'],
+    lineHeight: typeScaleVars['--text-heading-6-leading'],
+    marginBlockStart: {
+      default: documentSpacing.minorHeadingBefore,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.minorHeadingAfter,
+      ':last-child': spacingVars['--spacing-0'],
+    },
+    maxWidth: PROSE_MEASURE,
   },
   quote: {
-    marginBlock: spacingVars['--spacing-2'],
+    marginBlockStart: {
+      default: documentSpacing.wideBlock,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.wideBlock,
+      ':last-child': spacingVars['--spacing-0'],
+    },
     marginInline: 0,
-    paddingInlineStart: spacingVars['--spacing-3'],
-    borderInlineStartWidth: '3px',
+    maxWidth: PROSE_MEASURE,
+    paddingInlineStart: spacingVars['--spacing-4'],
+    borderInlineStartWidth: '2px',
     borderInlineStartStyle: 'solid',
     borderInlineStartColor: colorVars['--color-border-emphasized'],
     color: colorVars['--color-text-secondary'],
   },
   ul: {
-    marginBlock: spacingVars['--spacing-1'],
+    marginBlockStart: {
+      default: documentSpacing.textBlock,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.textBlock,
+      ':last-child': spacingVars['--spacing-0'],
+    },
+    maxWidth: PROSE_MEASURE,
     paddingInlineStart: spacingVars['--spacing-6'],
     listStyleType: 'disc',
     listStylePosition: 'outside',
   },
   ol: {
-    marginBlock: spacingVars['--spacing-1'],
+    marginBlockStart: {
+      default: documentSpacing.textBlock,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.textBlock,
+      ':last-child': spacingVars['--spacing-0'],
+    },
+    maxWidth: PROSE_MEASURE,
     paddingInlineStart: spacingVars['--spacing-6'],
     listStyleType: 'decimal',
     listStylePosition: 'outside',
@@ -75,7 +184,8 @@ const editorTheme = stylex.create({
   // `depth % array.length`, so three entries give three distinct levels that
   // then repeat — matching the browser default disc → circle → square cycle.
   ulNested: {
-    marginBlock: 0,
+    marginBlockStart: 0,
+    marginBlockEnd: 0,
   },
   ulDepth2: {
     listStyleType: 'circle',
@@ -84,7 +194,8 @@ const editorTheme = stylex.create({
     listStyleType: 'square',
   },
   olNested: {
-    marginBlock: 0,
+    marginBlockStart: 0,
+    marginBlockEnd: 0,
   },
   olDepth2: {
     listStyleType: 'lower-alpha',
@@ -108,7 +219,7 @@ const editorTheme = stylex.create({
     textDecoration: 'underline',
     cursor: 'pointer',
   },
-  textBold: {fontWeight: fontWeightVars['--font-weight-bold']},
+  textBold: {fontWeight: fontWeightVars['--font-weight-semibold']},
   textItalic: {fontStyle: 'italic'},
   textUnderline: {textDecoration: 'underline'},
   textStrikethrough: {textDecoration: 'line-through'},
@@ -116,9 +227,7 @@ const editorTheme = stylex.create({
     fontFamily: typographyVars['--font-family-code'],
     backgroundColor: colorVars['--color-background-muted'],
     paddingInline: spacingVars['--spacing-1'],
-    paddingBlock: spacingVars['--spacing-0-5'],
     borderRadius: radiusVars['--radius-inner'],
-    fontSize: '0.9em',
   },
   // GFM tables, styled like core Markdown's table: semibold secondary header
   // text, a divider under every row but the last, and a wide table that
@@ -132,11 +241,18 @@ const editorTheme = stylex.create({
     // sizes to the table's natural width.
     display: 'grid',
     gridTemplateColumns: 'minmax(0, 1fr)',
+    marginBlockStart: {
+      default: documentSpacing.wideBlock,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.wideBlock,
+      ':last-child': spacingVars['--spacing-0'],
+    },
   },
   table: {
     borderCollapse: 'collapse',
     width: '100%',
-    marginBlock: spacingVars['--spacing-4'],
   },
   tableRow: {
     borderBottomWidth: '1px',
@@ -164,7 +280,14 @@ const editorTheme = stylex.create({
     padding: spacingVars['--spacing-3'],
     borderRadius: radiusVars['--radius-inner'],
     fontSize: typeScaleVars['--text-supporting-size'],
-    marginBlock: spacingVars['--spacing-2'],
+    marginBlockStart: {
+      default: documentSpacing.wideBlock,
+      ':first-child': spacingVars['--spacing-0'],
+    },
+    marginBlockEnd: {
+      default: documentSpacing.wideBlock,
+      ':last-child': spacingVars['--spacing-0'],
+    },
     whiteSpace: 'pre-wrap',
   },
 });
@@ -194,6 +317,9 @@ export function sharedEditorTheme(): EditorThemeClasses {
       h1: stylex.props(editorTheme.h1).className,
       h2: stylex.props(editorTheme.h2).className,
       h3: stylex.props(editorTheme.h3).className,
+      h4: stylex.props(editorTheme.h4).className,
+      h5: stylex.props(editorTheme.h5).className,
+      h6: stylex.props(editorTheme.h6).className,
     },
     quote: stylex.props(editorTheme.quote).className,
     list: {
