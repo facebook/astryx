@@ -477,6 +477,39 @@ describe('build kit — every page starts from a template', () => {
     expect(r.data.pages.map(p => p.name)).not.toContain('side-gallery');
   });
 
+  it('keeps a template search matched directly rather than the app shell', async () => {
+    for (const [idea, name] of [
+      ['a login screen with single sign-on', 'login'],
+      ['a photo gallery for product shots', 'product-gallery'],
+      ['a docs site for our API', 'documentation'],
+    ]) {
+      const r = await build(idea, {cwd: REPO});
+      if (r.type !== 'build.kit') throw new Error(r.type);
+      expect(r.data.directMatch).toBe(true);
+      expect(r.data.start?.name).toBe(name);
+    }
+  });
+
+  it('does not keep a loose match over the app shell', async () => {
+    // Search matches no template directly, so the ranker's closest page does
+    // not override the shell the weights choose.
+    const r = await build('quarterly business review', {cwd: REPO});
+    if (r.type !== 'build.kit') throw new Error(r.type);
+    expect(r.data.directMatch).toBe(false);
+    expect(r.data.start).toMatchObject({name: 'shell-top-nav', basis: 'fallback'});
+  });
+
+  it('starts a page the words describe from its template', async () => {
+    for (const [idea, name] of [
+      ['a weekly report of sales by region', 'dashboard-scorecard'],
+      ['a pricing page with three plans and a comparison table', 'table-page'],
+    ]) {
+      const r = await build(idea, {cwd: REPO});
+      if (r.type !== 'build.kit') throw new Error(r.type);
+      expect(r.data.start?.name).toBe(name);
+    }
+  });
+
   it('starts a component in a container from a template with that frame', async () => {
     // "in a modal": the modal is the frame, so the dialog template leads
     // instead of the app shell.

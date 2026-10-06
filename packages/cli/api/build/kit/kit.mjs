@@ -180,7 +180,8 @@ function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
       : place[0].toUpperCase() + place.slice(1);
   // The ranker proposes a start; the checked-in word weights, blended with the
   // ranker's scores, decide it (weights.mjs). Without weights the ranker's
-  // pick stands; a shell start keeps the shell the ranker named, if any.
+  // pick stands; a shell start keeps the shell the ranker named, if any, and
+  // never replaces a template the ranker chose when search matched one by name.
   const proposed = pickStart(ranked, kind);
   const weighed = weighStart(idea, ranked, proposed, catalog, {
     weights: loadWeights(),
@@ -190,7 +191,7 @@ function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
     weighed === undefined
       ? proposed
       : weighed === null
-        ? proposed?.family === 'Shell'
+        ? proposed?.family === 'Shell' || (proposed && direct && !unready)
           ? proposed
           : null
         : (ranked.find(r => r.name === weighed) ?? proposed);
