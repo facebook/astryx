@@ -1,5 +1,74 @@
 # @xds/core
 
+# 0.6.6
+
+#### New Features
+
+- `ComplexSelector` can hang off a control the caller renders. ([#6827](https://github.com/facebook/astryx/pull/6827))
+  A new `renderTrigger` render prop renders the control the popup hangs off — a glyph in a list row, a chip, an icon button — in place of the selector's own field and button. Spread the given props onto it; the popup is anchored to it, keeps its dialog label from `label`, opens on click or ArrowDown, and returns focus to the control on close. The existing `handleRef` and `onOpenChange` work unchanged beside it. Off by default; existing selectors are unchanged.
+- ContextMenu takes `triggerAs` (`div` | `span`) so a reference inside prose can own a context menu without breaking the text flow. ([#6839](https://github.com/facebook/astryx/pull/6839))
+- The message a component shows when a query matched nothing is now `emptySearchText` everywhere, and it takes a `ReactNode`. ([#6906](https://github.com/facebook/astryx/pull/6906))
+  `Selector`, `MultiSelector`, and `CommandPalette` already called it `emptySearchText` and already accepted a node. `Tokenizer`, `Typeahead`, `BaseTypeahead`, and each `ChatComposerInput` trigger called it `emptySearchResultsText` and accepted only a string — so the same product could offer a "no results, create one" row in one component and not in its neighbour, and a builder who learned one had to discover the other.
+
+  Nothing breaks. The type only widens, so every existing value stays valid, and `emptySearchResultsText` keeps working exactly as released. Set both and `emptySearchText` wins, with a development warning. Migration is the name alone.
+
+  Deprecation lifecycle (`spec:AST-017` FR28, FR31) — removal only in a later minor whose frozen manifest carries both ids of a pair:
+
+- Add the first-party Markdown heading-links module. ([#6911](https://github.com/facebook/astryx/pull/6911))
+  `createMarkdownHeadingLinks()` is exported from `@astryxdesign/core/Markdown/plugins` and gives every built-in h1–h6 a collision-safe generated fragment plus an accessible inline trailing `#` copy button, including headings nested in blockquotes and lists. Its frozen, versioned entry carries the namespace and safe URL base across compatible Core package copies without module-local state. The heading row uses `useContainerReveal`: the button is hidden at fine-pointer rest, reveals on row hover or keyboard focus, and follows the canonical coarse/touch behavior. An unmodified tap, click, Enter, or Space copies the canonical URL without navigating, scrolling, or mutating the hash and briefly shows a check confirmation; failures stay silent. The same opaque plugin entry keeps Markdown-derived Outline aligned, supports Unicode NFKC slugs, an optional caller-owned namespace and safe permalink URL base, and leaves default Markdown plus custom heading renderers unchanged.
+- DropdownMenu takes a `trigger` render prop: hang a menu off any control. ([#6836](https://github.com/facebook/astryx/pull/6836))
+  `trigger` renders the control the menu opens from — an IconButton, a chip, an avatar, a list row — and hands it `DropdownMenuTriggerProps` to spread: the press model, the keyboard opens, the toggle click and the ARIA wiring. The menu is named by that control through `aria-labelledby`. `button` and `trigger` are mutually exclusive (a dev warning).
+- Menu arrows wrap and PageUp/PageDown page. ([#6823](https://github.com/facebook/astryx/pull/6823))
+  In `DropdownMenu`, `ContextMenu` and `DropdownMenuSubMenu`, ArrowDown on the last row wraps to the first and ArrowUp on the first to the last, as macOS menus do (`Selector` keeps clamping like a native select). PageDown and PageUp move to the last and first fully visible row of a scrolling menu, and pressed there again one viewport further, never wrapping. ArrowUp on the trigger opens the menu with the last row highlighted. The key that opened the menu no longer activates the first row through its auto-repeat, and typeahead ignores a key that is part of an input-method composition. `useListFocus` gains `hasPaging`.
+- DropdownMenuItem takes `href`: a menu row that navigates is a real link. ([#6835](https://github.com/facebook/astryx/pull/6835))
+  `DropdownMenuItem` (and a data-mode item) takes `href`, `target` and `rel`. The row renders as the anchor itself, with `role="menuitem"`, routed through `LinkProvider`, so a ⌘-click, Ctrl-click or middle click keeps the browser's meaning and skips `onClick`; a plain click runs `onClick`, closes the menu and navigates. The touch sheet renders the same item as a link row. `onClick` now receives the click event. Enter and Space in every menu synthesize a click that carries the key's modifiers.
+- DropdownMenu takes `menuMaxHeight` to lift the 300px cap for a menu that must fit its rows; the viewport still bounds it. ([#6837](https://github.com/facebook/astryx/pull/6837))
+- Menus and pickers act on the row under the pointer at release, and the highlight follows a held finger or mouse. ([#6681](https://github.com/facebook/astryx/pull/6681))
+  `DropdownMenu`, `ContextMenu`, `DropdownMenuSubMenu`, `Selector` and the menu bottom sheet share one press model, the one macOS and iOS menus use: the row under the pointer when it is released is the row that acts, and the highlight follows a held pointer across the rows. A finger that lands on one row and lifts on another acts on the second — once; the click the browser aims at the first row is swallowed. A mouse released outside a menu closes it; a finger released outside leaves it open. A menu whose rows fit declares `touch-action: none` so a slide stays a slide; one that scrolls lets the browser pan it and ends the gesture. Menu rows no longer paint a pressed look where hover does not exist. New public hook: `useMenuPress`.
+- A mouse opens a DropdownMenu on press and can drag straight into it; a finger held on the trigger opens it with the finger down. ([#6826](https://github.com/facebook/astryx/pull/6826))
+  A `DropdownMenu` trigger now opens its menu on a mouse press-down, and a drag from the trigger into the menu that lets go over a row picks it, as macOS menus do. The release of the opening press acts only after the pointer has entered the menu or the press has lasted about a third of a second, so a menu that opens under the pointer never picks a row nobody chose. Pressing the trigger of an open menu closes it without reopening in the same gesture. A tap still opens through its click; a finger held on the trigger for half a second opens the menu with the finger down, and a slide then picks. `useMenuPress` gains `onTriggerPress`, `triggerProps`, `isTriggerClickFromPress` and `longPressDelayMs`.
+- DropdownMenuSubMenu drills in on a phone instead of opening a flyout. ([#6682](https://github.com/facebook/astryx/pull/6682))
+  When a coarse pointer opened the menu, a sub-menu row replaces the menu's rows with its own and a "Back to <parent>" row, in the same box; Back, Escape or ArrowLeft return to the row. Works in compound and data mode, inside `DropdownMenu` and `ContextMenu`; `presentation` (`flyout` | `drill-in` | `adaptive`) overrides the policy.
+- Sub-menu flyouts stay open while the pointer travels toward them, and a press on a sub-menu row opens it without ever closing the menu. ([#6824](https://github.com/facebook/astryx/pull/6824))
+  In `DropdownMenuSubMenu` the flyout now stays open while the mouse moves from the row toward the flyout inside the triangle to its near edge, and closes after the existing delay once the pointer has left both the row and that triangle, so a diagonal path to the flyout no longer folds it. A click or release on a sub-menu row opens its flyout; on an open one it confirms the flyout and moves focus into it instead of toggling it shut, as macOS sub-menu rows do. `useMenuHover` gains `flyoutRef` and passes the leave event to `onMouseLeave`.
+
+#### Fixes
+
+- Selector and MultiSelector announce the empty-state message they actually show, and announce it on every path that reaches one. ([#6905](https://github.com/facebook/astryx/pull/6905))
+  Two defects, one cause — the live region was fed from the props instead of from what rendered:
+- Prevent disabled `ClickableCard` links from retaining an activatable destination. ([#6913](https://github.com/facebook/astryx/pull/6913))
+- Make Code's complete public API and theme target discoverable in component documentation. ([#6914](https://github.com/facebook/astryx/pull/6914))
+- Keep collapsible code blocks named and recoverable when header controls disappear, honor zero-pixel height limits, and document the public root ref. ([#6930](https://github.com/facebook/astryx/pull/6930))
+- Expose Collapsible open, disabled, position, and divided states to themes, and document grouped state ownership and root customization. ([#6933](https://github.com/facebook/astryx/pull/6933))
+- A DropdownMenu returns focus to its trigger after a pointer dismissal, without painting a focus ring. ([#6825](https://github.com/facebook/astryx/pull/6825))
+  `DropdownMenu` used to blur its trigger after a pointer pick or an outside press, dropping focus to the page so the next arrow key went nowhere. Focus now returns to the trigger with the focus ring suppressed after pointer input, as the bottom-sheet presentation already did, and stays visible after a keyboard pick. A press outside that landed on a focusable control keeps focus there.
+- A nav or menu trigger disabled while a hover is in flight no longer opens its surface. ([#6904](https://github.com/facebook/astryx/pull/6904))
+  Hover intent schedules an open after a short delay. Disabling the trigger in that window left the scheduled open to land anyway, on a surface whose handlers were already inert — so it opened and nothing could dismiss it. The pending intent is now abandoned when the integration is disabled.
+- Restore Outline's visible keyboard focus indicator. ([#6920](https://github.com/facebook/astryx/pull/6920))
+- Toolbar's center slot no longer clips its content, so focus rings, box-shadows, and the selected-tab indicator of a TabList in `centerContent` are drawn in full. Center content that cannot shrink and is wider than the space between the start and end slots now overflows it instead of being cut off. ([#6898](https://github.com/facebook/astryx/pull/6898))
+
+#### Other Changes
+
+- `emptyText` and `emptySearchText` accept a `ReactNode`, but the region spoke the value only when it was a string and announced the built-in default otherwise. A product that put a link or a "create one" row in the dead end showed one message and announced another, so the screen-reader user was told something the sighted user was not reading.
+- An empty result that arrived _after_ the keystroke — an async load landing with nothing that matches an active query — was never announced at all. The message sat on screen and the region stayed silent.
+
+  Both components now read the rendered message out of the DOM and announce that, from one place that watches the panel's state rather than the keystroke. An element is announced as written, text a child component generates is announced correctly, and anything marked `aria-hidden` is left out of the announcement exactly as it is left out of the screen. A loading panel still announces nothing.
+
+- deprecation `DEP-0001` / cleanup `CLN-0001` — `Tokenizer.emptySearchResultsText`
+- deprecation `DEP-0002` / cleanup `CLN-0002` — `Typeahead.emptySearchResultsText`
+- deprecation `DEP-0003` / cleanup `CLN-0003` — `BaseTypeahead.emptySearchResultsText`
+- deprecation `DEP-0004` / cleanup `CLN-0004` — `ChatComposerTrigger.emptySearchResultsText`
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @kentonquatman
+- @vjeux
+
+---
+
 # 0.6.5
 
 #### New Features
