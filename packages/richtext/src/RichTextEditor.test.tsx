@@ -275,10 +275,13 @@ describe('RichTextEditor', () => {
     // packages/core/src only, so nothing upstream checks this package's doc
     // against its themeProps() call — which is how the target came to declare
     // `visualProps: []` while reflecting two. This asserts the two agree.
-    const {targets} = (await import('./RichTextEditor.doc.mjs')).docs.theming;
-    const declared = targets.find(
+    const {docs} = await import('./RichTextEditor.doc.mjs');
+    const declared = docs.theming?.targets.find(
       t => t.className === 'astryx-rich-text-editor',
     );
+    // Not a cast: if the target is ever renamed or dropped, the assertion
+    // below would silently pass against `undefined`.
+    expect(declared).toBeDefined();
 
     const {container} = render(
       <RichTextEditor label="Notes" size="lg" status={{type: 'error'}} />,
@@ -290,7 +293,7 @@ describe('RichTextEditor', () => {
       .map(a => a.name.slice('data-'.length))
       .sort();
 
-    expect([...(declared.visualProps ?? [])].sort()).toEqual(reflected);
+    expect([...(declared?.visualProps ?? [])].sort()).toEqual(reflected);
     // …and the values are the props, not stale defaults.
     expect(wrapper).toHaveAttribute('data-size', 'lg');
     expect(wrapper).toHaveAttribute('data-status', 'error');
