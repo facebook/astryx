@@ -67,12 +67,19 @@ export const MAX_CAPTURED_OUTPUT = 32 * 1024;
 /**
  * Raw text the tee holds per stream, in UTF-16 code units, before `finish`
  * scrubs it and cuts it at MAX_CAPTURED_OUTPUT bytes. A unit is at least one
- * byte, so the window always reaches well past the cap: a secret that
- * straddles the cut is held whole for the scrubber, and redaction can shrink
- * the text without pulling the window's edge into what is kept. A secret that
- * runs past the window's edge is still cut there.
+ * byte, so the window reaches well past the cap, and a secret that crosses the
+ * cap is held whole for the scrubber.
  */
 export const CAPTURE_WINDOW = 4 * MAX_CAPTURED_OUTPUT;
+
+/**
+ * Bytes kept clear of the end of the scrubbed text when output ran past the
+ * window. The window's edge is a raw cut, so a secret crossing it can survive
+ * scrubbing unrecognized, and it does so at the very end of the text. Nothing
+ * within this many bytes of the end is kept, so a secret has to be longer
+ * than this for any of it to reach a handler.
+ */
+export const CAPTURE_GUARD = 16 * 1024;
 
 /**
  * The leading `maxBytes` bytes of `text`, never splitting a character.
@@ -174,7 +181,13 @@ function captureOutput() {
             sink.chunks.push(text);
             sink.held += text.length;
           } else {
-            if (room > 0) sink.chunks.push(text.slice(0, room));
+            // A copy, not `text.slice`: a slice can keep the whole write
+            // alive behind it, which here is the command's largest output.
+            if (room > 0) {
+              sink.chunks.push(
+                Buffer.from(text.slice(0, room), 'utf16le').toString('utf16le'),
+              );
+            }
             sink.held = CAPTURE_WINDOW;
             sink.overflow = true;
           }
@@ -209,16 +222,18 @@ function releaseOutput() {
 function collected(sink, redact) {
   const text = scrubText(sink.chunks.join(''), redact);
   if (sink.bytes <= MAX_CAPTURED_OUTPUT) return text;
-  let kept = sliceToBytes(text, MAX_CAPTURED_OUTPUT);
-  // Redaction can shrink the held text below the cap. Then the window's raw
-  // edge is inside what is kept, and the word there may be part of a secret
-  // the scrubber never saw whole.
-  if (sink.overflow && kept.length === text.length) {
-    let end = kept.length;
-    while (end > 0 && !/\s/.test(kept[end - 1])) end -= 1;
-    kept = kept.slice(0, end);
+  let limit = MAX_CAPTURED_OUTPUT;
+  if (sink.overflow) {
+    limit = Math.min(limit, Buffer.byteLength(text) - CAPTURE_GUARD);
   }
+  const kept = limit > 0 ? sliceToBytes(text, limit) : '';
   return `${kept}\n…[truncated, ${sink.bytes} bytes total]`;
+}
+
+/** Let go of the held text: it has been read, or nothing will read it. */
+function dropHeldOutput() {
+  _stdout.chunks.length = 0;
+  _stderr.chunks.length = 0;
 }
 
 /**
@@ -694,7 +709,10 @@ export function finish({exitCode} = {}) {
     // a handler. Nothing to do, and nothing was paid for: the environment probe
     // below never runs.
     const handlers = effectiveHandlers();
-    if (handlers.length === 0) return;
+    if (handlers.length === 0) {
+      dropHeldOutput();
+      return;
+    }
 
     _event.env = captureEnv({cliVersion: _cliVersion});
     // Captured output echoes back paths and argument values, so it gets the
@@ -705,6 +723,7 @@ export function finish({exitCode} = {}) {
     const outputRedact = createRedactor({maxLength: Number.MAX_SAFE_INTEGER});
     _event.output.stdout = collected(_stdout, outputRedact);
     _event.output.stderr = collected(_stderr, outputRedact);
+    dropHeldOutput();
     _event.output.stdoutBytes = _stdout.bytes;
     _event.output.stderrBytes = _stderr.bytes;
     _event.output.truncated =

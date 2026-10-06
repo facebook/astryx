@@ -30,6 +30,7 @@ import {
   recordEnvelope,
   recordHelp,
   resetRecorder,
+  CAPTURE_GUARD,
   CAPTURE_WINDOW,
   MAX_CAPTURED_OUTPUT,
 } from './recorder.mjs';
@@ -668,10 +669,28 @@ describe('captured output — what the CLI answered', () => {
     expect(kept).not.toContain('ghp_');
   });
 
-  it('drops a partial word where redaction pulls the window edge into the capture', () => {
-    // Each token is 101 characters and redacts to 11, so the held window
-    // scrubs down to well under the cap. Its raw edge lands 8 characters into
-    // a final token, too few for the token pattern to match.
+  it('keeps nothing near the window edge when output ran past it', () => {
+    // Redaction shrinks the held window to 8 bytes over the cap, and the
+    // window's raw edge falls 16 characters into a token, too few for the
+    // token pattern to match. Cutting at the cap alone would keep 8 of them.
+    const shrink = CAPTURE_WINDOW - (MAX_CAPTURED_OUTPUT + 8);
+    const count = Math.floor((shrink - 10) / 90);
+    const rest = shrink - count * 90;
+    const head =
+      `ghp_${'A'.repeat(96)} `.repeat(count) + `ghp_${'A'.repeat(rest + 6)} `;
+    const edge = `ghp_${'B'.repeat(12)}`;
+    const pad = ' '.repeat(CAPTURE_WINDOW - head.length - edge.length);
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write(`${head}${pad}${edge}${'B'.repeat(24)} tail`);
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout;
+    expect(kept).toContain('[redacted]');
+    expect(kept).not.toContain('ghp_B');
+  });
+
+  it('keeps nothing when redaction shrinks the window inside the guard', () => {
     const token = `ghp_${'A'.repeat(96)} `;
     const count = Math.floor((CAPTURE_WINDOW - 8) / token.length);
     const pad = ' '.repeat(CAPTURE_WINDOW - 8 - count * token.length);
@@ -682,9 +701,21 @@ describe('captured output — what the CLI answered', () => {
     );
     finish({exitCode: 0});
 
-    const kept = seen[0].output.stdout;
-    expect(kept).toContain('[redacted]');
-    expect(kept).not.toContain('ghp_');
+    const {output} = seen[0];
+    expect(output.truncated).toBe(true);
+    expect(output.stdout.startsWith('\n…[truncated')).toBe(true);
+  });
+
+  it('holds nothing written after the window fills', () => {
+    const token = `ghp_${'A'.repeat(96)} `;
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write(
+      token.repeat(Math.ceil(CAPTURE_WINDOW / token.length)),
+    );
+    process.stdout.write(` ${'Z'.repeat(CAPTURE_GUARD + 4000)} tail`);
+    finish({exitCode: 0});
+    expect(seen[0].output.stdout).not.toContain('Z');
   });
 
   it('scrubs a token that an earlier write started', () => {
@@ -729,9 +760,10 @@ describe('captured output — what the CLI answered', () => {
   it('scrubs captured output once', () => {
     const seen = collect();
     begin({argv: []});
-    say('token=hunter2');
+    // A second pass over `token=[redacted] ok` would close the bracket twice.
+    say('token=hunter2 ok');
     finish({exitCode: 0});
-    expect(seen[0].output.stdout).toBe('token=[redacted]\n');
+    expect(seen[0].output.stdout).toBe('token=[redacted] ok\n');
   });
 
   it('keeps a long answer intact below the cap, unlike other fields', () => {
