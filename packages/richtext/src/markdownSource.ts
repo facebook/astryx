@@ -32,6 +32,7 @@ import {
   type Transformer,
 } from '@lexical/markdown';
 import {$isCodeNode} from '@lexical/code';
+import {$isListItemNode, $isListNode} from '@lexical/list';
 import {
   $createParagraphNode,
   $createTextNode,
@@ -322,6 +323,7 @@ export function importMarkdownKeepingSource(
         }
         holder.remove();
       });
+      $nestFollowingLists(root);
       if (root.getChildrenSize() === 0) {
         // Nothing to import: keep one empty paragraph, as Lexical does.
         root.append($createParagraphNode());
@@ -377,6 +379,35 @@ export function $joinSoftLineBreaks(element: ElementNode): void {
       next.setTextContent(next.getTextContent().replace(/^[ \t]+/, ''));
     }
     child.replace($createTextNode(' '));
+  }
+}
+
+/**
+ * Moves a list that begins nested right after another list into that list's
+ * last item. Lexical starts a new top-level list for an item of a different
+ * type (a bullet under `1. item`) and nests it there, while CommonMark nests
+ * it inside the item above; without this, writing it back would lose the
+ * nesting (spec:AST-061 FR5, spec:AST-062 FR3).
+ */
+export function $nestFollowingLists(root: ElementNode): void {
+  for (const node of root.getChildren()) {
+    const previous = node.getPreviousSibling();
+    if (!$isListNode(node) || !$isListNode(previous)) {
+      continue;
+    }
+    // Lexical keeps a nested list in an item of its own after its parent.
+    let first = node.getFirstChild();
+    while (
+      $isListItemNode(first) &&
+      first.getChildrenSize() === 1 &&
+      $isListNode(first.getFirstChild())
+    ) {
+      previous.append(first);
+      first = node.getFirstChild();
+    }
+    if (node.getChildrenSize() === 0) {
+      node.remove();
+    }
   }
 }
 

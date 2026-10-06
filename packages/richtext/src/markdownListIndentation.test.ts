@@ -1,6 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
+import {createHeadlessEditor} from '@lexical/headless';
+import {$createListItemNode, $isListItemNode, $isListNode} from '@lexical/list';
+import {$createTextNode, $getRoot, type LexicalNode} from 'lexical';
+import {DEFAULT_NODES} from './editorNodes';
 import {normalizeListIndentation} from './markdownListIndentation';
 import {
   editorStateJSONToMarkdown,
@@ -35,6 +39,39 @@ function listItems(markdown: string): Array<string> {
     }
   };
   visit(root, -1);
+  return items;
+}
+
+/** Edits the imported document and exports it again. */
+function editAndExport(markdown: string, edit: () => void): string {
+  const editor = createHeadlessEditor({
+    namespace: 'astryx-list-nesting-test',
+    nodes: [...DEFAULT_NODES],
+    onError(error: Error) {
+      throw error;
+    },
+  });
+  editor.setEditorState(
+    editor.parseEditorState(markdownToEditorStateJSON(markdown)),
+  );
+  editor.update(edit, {discrete: true});
+  return editorStateJSONToMarkdown(
+    JSON.stringify(editor.getEditorState().toJSON()),
+  );
+}
+
+/** Every list item node, in document order. */
+function $listItems(): Array<LexicalNode> {
+  const items: Array<LexicalNode> = [];
+  const visit = (node: LexicalNode) => {
+    if ($isListItemNode(node)) {
+      items.push(node);
+    }
+    if ($isListNode(node) || $isListItemNode(node)) {
+      node.getChildren().forEach(visit);
+    }
+  };
+  $getRoot().getChildren().forEach(visit);
   return items;
 }
 
@@ -82,6 +119,111 @@ describe('list nesting (spec:AST-061 FR5)', () => {
     expect(normalized.split('\n')).toHaveLength(markdown.split('\n').length);
     expect(normalized).toContain('```\n  - not a list\n```');
     expect(normalized).toContain('- a\n  continued');
+  });
+
+  it('measures the content column across a tab after the marker', () => {
+    expect(listItems('-\tparent\n\t-\tchild\n\t\t-\tgrandchild\n')).toEqual([
+      '0:parent',
+      '1:child',
+      '2:grandchild',
+    ]);
+    expect(listItems('1.\ta\n\t1.\tb\n')).toEqual(['0:a', '1:b']);
+    expect(listItems('- a\n  -\tb\n      - c\n')).toEqual([
+      '0:a',
+      '1:b',
+      '2:c',
+    ]);
+    expect(listItems('- a\r\n  - b\r\n    - c\r\n')).toEqual([
+      '0:a',
+      '1:b',
+      '2:c',
+    ]);
+  });
+
+  it('writes an edited nested list so it reads back at the same depths (spec:AST-062 FR3)', () => {
+    for (const parent of ['9.', '10.', '100.']) {
+      const child = ' '.repeat(parent.length + 1);
+      const markdown = `${parent} a\n${child}- one\n${child}- two\n`;
+      expect(listItems(markdown), parent).toEqual(['0:a', '1:one', '1:two']);
+      // Edit a child.
+      const edited = editAndExport(markdown, () => {
+        const one = $getRoot()
+          .getAllTextNodes()
+          .find(node => node.getTextContent() === 'one');
+        one?.setTextContent('one!');
+      });
+      expect(listItems(edited), `${parent} edited`).toEqual([
+        '0:a',
+        '1:one!',
+        '1:two',
+      ]);
+      // Insert a child after the last one.
+      const inserted = editAndExport(markdown, () => {
+        const two = $listItems().find(node => node.getTextContent() === 'two');
+        two?.insertAfter(
+          $createListItemNode().append($createTextNode('three')),
+        );
+      });
+      expect(listItems(inserted), `${parent} inserted`).toEqual([
+        '0:a',
+        '1:one',
+        '1:two',
+        '1:three',
+      ]);
+      // Move the second child before the first.
+      const moved = editAndExport(markdown, () => {
+        const items = $listItems();
+        const one = items.find(node => node.getTextContent() === 'one');
+        const two = items.find(node => node.getTextContent() === 'two');
+        if (one != null && two != null) {
+          one.insertBefore(two);
+        }
+      });
+      expect(listItems(moved), `${parent} moved`).toEqual([
+        '0:a',
+        '1:two',
+        '1:one',
+      ]);
+    }
+    // A list of another type nested under the item above, as CommonMark
+    // reads it, through the same edits.
+    for (const parent of ['9.', '100.']) {
+      const child = ' '.repeat(parent.length + 1);
+      const markdown = `${parent} a\n${child}- one\n${child}- two\n${parent.replace(/\d+/, n => String(Number(n) + 1))} b\n`;
+      expect(listItems(markdown), parent).toEqual([
+        '0:a',
+        '1:one',
+        '1:two',
+        '0:b',
+      ]);
+      const edited = editAndExport(markdown, () => {
+        const one = $getRoot()
+          .getAllTextNodes()
+          .find(node => node.getTextContent() === 'one');
+        one?.setTextContent('one!');
+      });
+      expect(listItems(edited), `${parent} mixed edited`).toEqual([
+        '0:a',
+        '1:one!',
+        '1:two',
+        '0:b',
+      ]);
+    }
+    // Three levels, and CRLF line endings.
+    for (const ending of ['\n', '\r\n']) {
+      const markdown = ['- a', '  - b', '    - c', ''].join(ending);
+      const edited = editAndExport(markdown, () => {
+        const c = $getRoot()
+          .getAllTextNodes()
+          .find(node => node.getTextContent() === 'c');
+        c?.setTextContent('c!');
+      });
+      expect(listItems(edited), JSON.stringify(ending)).toEqual([
+        '0:a',
+        '1:b',
+        '2:c!',
+      ]);
+    }
   });
 
   it('keeps the authored indentation of an untouched list (spec:AST-062)', () => {

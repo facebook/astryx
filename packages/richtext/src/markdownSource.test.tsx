@@ -31,6 +31,7 @@ import {
 } from './markdownSerializers';
 import {
   $joinSoftLineBreaks,
+  $nestFollowingLists,
   absentToken,
   splitMarkdownChunks,
 } from './markdownSource';
@@ -359,6 +360,7 @@ describe('Markdown source preservation (spec:AST-062)', () => {
             ),
             [...DEFAULT_TRANSFORMERS],
           );
+          $nestFollowingLists($getRoot());
           $joinSoftLineBreaks($getRoot());
         },
         {discrete: true},

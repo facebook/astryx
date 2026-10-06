@@ -78,7 +78,10 @@ export function normalizeListIndentation(markdown: string): string {
       open.pop();
     }
     const depth = open.length;
-    const markerEnd = indent + item[2].length + Math.max(columnsOf(item[3]), 1);
+    // The content column, counted across the whole prefix so a tab after
+    // the marker stops at the right column; a marker that ends the line has
+    // its content one column after it.
+    const markerEnd = columnsOf(item[0]) + (item[3] === '' ? 1 : 0);
     open.push(markerEnd);
     lines[index] = ' '.repeat(depth * 4) + line.slice(item[1].length);
   }
