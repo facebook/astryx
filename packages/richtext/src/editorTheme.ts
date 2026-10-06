@@ -126,6 +126,10 @@ const editorTheme = stylex.create({
   tableScrollableWrapper: {
     overflowX: 'auto',
     maxWidth: '100%',
+    // The wrapper's width comes from its container, never from the table.
+    // Without this, a grid or flex host sizes the editor to the table's
+    // min-content width and the page scrolls instead of the wrapper.
+    contain: 'inline-size',
   },
   table: {
     borderCollapse: 'collapse',

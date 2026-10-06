@@ -174,6 +174,22 @@ describe('GFM tables', () => {
     });
   });
 
+  it('sizes the scroll wrapper from its container, not from the table', async () => {
+    const {container} = render(
+      <RichTextEditor
+        label="Notes"
+        defaultValue={markdownToEditorStateJSON(
+          '| Name | Role |\n| --- | --- |\n| Ada | Engineer |',
+        )}
+      />,
+    );
+    await waitFor(() => {
+      const wrapper = container.querySelector('table')?.parentElement;
+      expect(wrapper?.getAttribute('contenteditable')).toBeNull();
+      expect(wrapper).toHaveStyle({contain: 'inline-size'});
+    });
+  });
+
   it('renders a table from the editor in RichTextView, inside a scroll wrapper', async () => {
     const {container} = render(
       <RichTextView

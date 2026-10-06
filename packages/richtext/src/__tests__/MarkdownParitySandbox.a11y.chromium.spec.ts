@@ -259,6 +259,65 @@ const MARKDOWN = '[data-parity-surface="markdown"]';
 const RICH_TEXT = '[data-parity-surface="richtext"]';
 const TOGGLE = '[data-parity-surface="toggle"]';
 
+// A wide table must scroll inside its own wrapper in the editor and the view,
+// whatever lays the editor out. Grid and flex items take their content's
+// min-content width unless told otherwise, so a wrapper sized by its table
+// widens the whole page. The Markdown Serializers story renders both surfaces
+// in a grid; the same page is then measured with the grid swapped for flex.
+test('a wide table scrolls inside its wrapper in grid and flex hosts at phone width', async ({
+  page,
+}) => {
+  const columns = Array.from({length: 20}, (_, index) => `Column ${index + 1}`);
+  const table = [
+    `| ${columns.join(' | ')} |`,
+    `| ${columns.map(() => '---').join(' | ')} |`,
+    `| ${columns.map((_, index) => `value-${index + 1}`).join(' | ')} |`,
+  ].join('\n');
+  for (const globals of [
+    'colorMode:light;direction:ltr',
+    'colorMode:dark;direction:rtl',
+  ]) {
+    await page.setViewportSize(PHONE);
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
+      {waitUntil: 'load'},
+    );
+    await page.locator('textarea').fill(table);
+    for (const display of ['grid', 'flex'] as const) {
+      await page.evaluate(value => {
+        const host = document
+          .querySelector('textarea')
+          ?.closest<HTMLElement>('div[style*="grid"], div[style*="flex"]');
+        if (host != null) {
+          host.style.display = value;
+          host.style.flexDirection = 'column';
+        }
+      }, display);
+      await settle(page);
+      const layout = await page.evaluate(() => ({
+        pageOverflow: document.documentElement.scrollWidth - window.innerWidth,
+        wrappers: [...document.querySelectorAll('table')]
+          .filter(element => element.getBoundingClientRect().width > 0)
+          .map(element => {
+            const wrapper = element.parentElement as HTMLElement;
+            return {
+              clientWidth: wrapper.clientWidth,
+              scrollWidth: wrapper.scrollWidth,
+            };
+          }),
+      }));
+      const label = `${globals}, ${display} host`;
+      expect(layout.pageOverflow, label).toBeLessThanOrEqual(0);
+      // The editor and the view each show the table.
+      expect(layout.wrappers, label).toHaveLength(2);
+      for (const wrapper of layout.wrappers) {
+        expect(wrapper.clientWidth, label).toBeLessThanOrEqual(PHONE.width);
+        expect(wrapper.scrollWidth, label).toBeGreaterThan(wrapper.clientWidth);
+      }
+    }
+  }
+});
+
 test('side by side: one fixture renders on both surfaces', async ({page}) => {
   const errors = await openStory(page, STORY.sideBySide, DESKTOP);
   await waitForDocument(page, MARKDOWN);
