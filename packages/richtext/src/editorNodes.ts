@@ -16,6 +16,7 @@ import {HeadingNode, QuoteNode} from '@lexical/rich-text';
 import {LinkNode, AutoLinkNode} from '@lexical/link';
 import {CodeNode, CodeHighlightNode} from '@lexical/code';
 import {TableNode, TableRowNode, TableCellNode} from '@lexical/table';
+import {HorizontalRuleNode} from '@lexical/extension';
 import type {Klass, LexicalNode} from 'lexical';
 
 /**
@@ -35,4 +36,5 @@ export const DEFAULT_NODES: ReadonlyArray<Klass<LexicalNode>> = [
   TableNode,
   TableRowNode,
   TableCellNode,
+  HorizontalRuleNode,
 ];

@@ -20,6 +20,8 @@ import {
   typographyVars,
   typeScaleVars,
   fontWeightVars,
+  borderVars,
+  focusVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import type {EditorThemeClasses} from 'lexical';
 
@@ -314,6 +316,22 @@ const editorTheme = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-secondary'],
   },
+  // Thematic breaks, drawn like core Markdown's rule.
+  hr: {
+    borderWidth: 0,
+    borderTopWidth: borderVars['--border-width'],
+    borderTopStyle: 'solid',
+    borderTopColor: colorVars['--color-border'],
+    marginBlock: spacingVars['--spacing-6'],
+  },
+  // A selected rule (click, or arrow onto it) shows the focus ring, so
+  // keyboard users can see what Backspace will delete.
+  hrSelected: {
+    outlineWidth: focusVars['--focus-outline-width'],
+    outlineStyle: focusVars['--focus-outline-style'],
+    outlineColor: focusVars['--focus-outline-color'],
+    outlineOffset: focusVars['--focus-outline-offset'],
+  },
   code: {
     display: 'block',
     fontFamily: typographyVars['--font-family-code'],
@@ -385,6 +403,8 @@ export function sharedEditorTheme(): EditorThemeClasses {
       code: stylex.props(editorTheme.textCode).className,
     },
     code: stylex.props(editorTheme.code).className,
+    hr: stylex.props(editorTheme.hr).className,
+    hrSelected: stylex.props(editorTheme.hrSelected).className,
     table: stylex.props(editorTheme.table).className,
     tableRow: stylex.props(editorTheme.tableRow).className,
     tableCell: stylex.props(editorTheme.tableCell).className,

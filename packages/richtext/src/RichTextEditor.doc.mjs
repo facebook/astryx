@@ -109,14 +109,14 @@ export const docs = {
       name: 'hasMarkdownShortcuts',
       type: 'boolean',
       description:
-        'Enable Markdown shortcut typing (e.g. "# " for a heading). Uses the transformers prop (defaults to the standard @lexical/markdown transformers, hard line breaks, and GFM tables).',
+        'Enable Markdown shortcut typing (e.g. "# " for a heading). Uses the transformers prop (defaults to thematic breaks, the standard @lexical/markdown transformers, hard line breaks, and GFM tables).',
       default: 'true',
     },
     {
       name: 'transformers',
       type: 'ReadonlyArray<Transformer>',
       description:
-        'Markdown transformers: the single source of truth for markdown behaviour. Defaults to the standard @lexical/markdown TRANSFORMERS, hard line breaks (a line break typed with Shift+Enter exports as a backslash before the line ending, so it reads back as a line break), and GFM tables; a custom array replaces the default, tables included. In Lexical the same array drives all three markdown operations (shortcut typing, markdown->state import, state->markdown export); this prop wires shortcut typing today and is the intended input for the serialization APIs added in later phases. Pass a custom array to support additional node types (e.g. transformers layered in via the nodes extension point) consistently across all three. Shortcut typing is only applied when hasMarkdownShortcuts is true.',
+        'Markdown transformers: the single source of truth for markdown behaviour. Defaults to thematic breaks, the standard @lexical/markdown TRANSFORMERS, hard line breaks (a line break typed with Shift+Enter exports as a backslash before the line ending, so it reads back as a line break), and GFM tables; a custom array replaces the default, thematic breaks and tables included. In Lexical the same array drives all three markdown operations (shortcut typing, markdown->state import, state->markdown export); this prop wires shortcut typing today and is the intended input for the serialization APIs added in later phases. Pass a custom array to support additional node types (e.g. transformers layered in via the nodes extension point) consistently across all three. Shortcut typing is only applied when hasMarkdownShortcuts is true.',
       default: 'TRANSFORMERS',
     },
     {
@@ -198,6 +198,11 @@ export const docs = {
         guidance: true,
         description:
           'GFM pipe tables import, edit, and export by default. The first row renders as header cells, delimiter-row colons set each column alignment, rows shorter than the widest row gain empty cells, and a wide table scrolls inside its own wrapper. Arrow keys move between cells; Tab keeps its editor meaning, so Escape then Tab still leaves the editor. Tables export in the canonical form: outer pipes and three-dash delimiters. RichTextView renders the same tables. Install @lexical/table with the other lexical peers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Thematic breaks (---, ***, ___, with or without spaces between) import as horizontal rules and export as ---. A dash line directly under a paragraph line stays with that paragraph, as in Markdown. Click a rule or arrow onto it to select it; Backspace removes it. RichTextView draws the same rules. Install @lexical/extension with the other lexical peers.',
       },
       {
         guidance: true,

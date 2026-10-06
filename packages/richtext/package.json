@@ -76,6 +76,7 @@
     "@lexical/rich-text": "^0.46.0",
     "@lexical/selection": "^0.46.0",
     "@lexical/code": "^0.46.0",
+    "@lexical/extension": "^0.46.0",
     "@lexical/table": "^0.46.0",
     "@lexical/utils": "^0.46.0"
   },
@@ -110,6 +111,9 @@
     "@lexical/code": {
       "optional": true
     },
+    "@lexical/extension": {
+      "optional": true
+    },
     "@lexical/table": {
       "optional": true
     },
@@ -125,6 +129,7 @@
     "@babel/preset-react": "catalog:",
     "@babel/preset-typescript": "catalog:",
     "@lexical/code": "^0.46.0",
+    "@lexical/extension": "^0.46.0",
     "@lexical/headless": "^0.46.0",
     "@lexical/html": "^0.46.0",
     "@lexical/link": "^0.46.0",

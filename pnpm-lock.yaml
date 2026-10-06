@@ -983,6 +983,9 @@ importers:
       '@lexical/code':
         specifier: ^0.46.0
         version: 0.46.0(typescript@6.0.3)
+      '@lexical/extension':
+        specifier: ^0.46.0
+        version: 0.46.0(typescript@6.0.3)
       '@lexical/headless':
         specifier: ^0.46.0
         version: 0.46.0(typescript@6.0.3)

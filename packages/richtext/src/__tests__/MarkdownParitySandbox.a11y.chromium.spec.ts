@@ -705,7 +705,8 @@ test('overlay: both layers start together and the drawn editor is inert', async 
   await expect(page.locator(RICH_TEXT)).toHaveAttribute('inert', '');
   // An inert editor refuses focus, so neither keyboard nor pointer reach it.
   const focusable = await page
-    .locator(`${RICH_TEXT} [contenteditable]`)
+    // The editor root, not a horizontal rule's contenteditable="false".
+    .locator(`${RICH_TEXT} [data-lexical-editor]`)
     .evaluate(editor => {
       (editor as HTMLElement).focus();
       return document.activeElement === editor;

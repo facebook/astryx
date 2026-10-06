@@ -38,6 +38,7 @@ import {
 } from '@lexical/table';
 import type {ElementFormatType} from 'lexical';
 import {HARD_LINE_BREAK} from './markdownHardLineBreak';
+import {THEMATIC_BREAK} from './markdownThematicBreak';
 
 /**
  * Cells hold inline Markdown only, so they are imported and exported with the
@@ -235,10 +236,13 @@ export const TABLE: MultilineElementTransformer = {
 };
 
 /**
- * The editor's default Markdown transformers: Lexical's standard set, hard
- * line breaks for breaks typed in the editor, and GFM tables.
+ * The editor's default Markdown transformers: thematic breaks, Lexical's
+ * standard set, hard line breaks for breaks typed in the editor, and GFM
+ * tables. Thematic breaks come first so a line such as `* * *` is a rule
+ * rather than a list item.
  */
 export const DEFAULT_TRANSFORMERS: ReadonlyArray<Transformer> = [
+  THEMATIC_BREAK,
   ...TRANSFORMERS,
   HARD_LINE_BREAK,
   TABLE,

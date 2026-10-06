@@ -30,11 +30,6 @@ import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {ContentEditable} from '@lexical/react/LexicalContentEditable';
 import {LexicalErrorBoundary} from '@lexical/react/LexicalErrorBoundary';
 import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
-import {ListNode, ListItemNode} from '@lexical/list';
-import {HeadingNode, QuoteNode} from '@lexical/rich-text';
-import {LinkNode, AutoLinkNode} from '@lexical/link';
-import {CodeNode, CodeHighlightNode} from '@lexical/code';
-import {TableNode, TableRowNode, TableCellNode} from '@lexical/table';
 import {TableScrollRegionPlugin} from './TableScrollRegionPlugin';
 import type {
   AnyLexicalExtension,
@@ -43,26 +38,14 @@ import type {
   EditorThemeClasses,
 } from 'lexical';
 import {defineExtension} from 'lexical';
+// The same node set as the editor, so anything it writes renders here.
+import {DEFAULT_NODES} from './editorNodes';
 
 const styles = stylex.create({
   root: {
     width: '100%',
   },
 });
-
-const DEFAULT_NODES: ReadonlyArray<Klass<LexicalNode>> = [
-  HeadingNode,
-  QuoteNode,
-  ListNode,
-  ListItemNode,
-  LinkNode,
-  AutoLinkNode,
-  CodeNode,
-  CodeHighlightNode,
-  TableNode,
-  TableRowNode,
-  TableCellNode,
-];
 
 /**
  * Lexical's `ContentEditable` renders `role="textbox"` and widget-only ARIA
