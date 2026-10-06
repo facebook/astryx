@@ -113,9 +113,11 @@ const notes = createMarkdownPlugin<'sandbox-notes', NoteNode>({
   renderers: {
     note: {
       render: ({node}) => (
-        <aside aria-label="Note" data-note="">
+        // A note, not a landmark: the story shows the same note on three
+        // surfaces, and landmarks must be unique on a page.
+        <div role="note" aria-label="Note" data-note="">
           {node.data.body}
-        </aside>
+        </div>
       ),
       toText: node => node.data.body,
     },

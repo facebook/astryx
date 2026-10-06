@@ -13,6 +13,7 @@
  *   pnpm exec playwright test packages/richtext --project chromium
  */
 
+import AxeBuilder from '@axe-core/playwright';
 import {expect, test, type Page} from '@playwright/test';
 import {
   DEFAULT_STORYBOOK_DIR,
@@ -90,7 +91,7 @@ test('a plugin node renders the same DOM and accessibility in Markdown, the view
       surface(page, name).getByRole('link', {name: '@ada'}),
     ).toHaveAttribute('href', '#people/ada');
     await expect(
-      surface(page, name).getByRole('complementary', {name: 'Note'}),
+      surface(page, name).getByRole('note', {name: 'Note'}),
     ).toHaveText('Ship on Thursday');
   }
   // The node adds no tab stop of its own beyond the plugin's link.
@@ -125,6 +126,33 @@ async function caretAt(
   }
 }
 
+/**
+ * Waits until the editor's own selection holds `text`. The editor formats and
+ * copies its selection, which follows the browser's a moment after each key.
+ */
+async function expectEditorSelection(page: Page, text: string): Promise<void> {
+  await expect
+    .poll(() =>
+      surface(page, 'editor')
+        .locator('[contenteditable="true"]')
+        .evaluate(root => {
+          const editor = (
+            root as HTMLElement & {
+              __lexicalEditor?: {
+                getEditorState(): {
+                  read<T>(fn: () => T): T;
+                  _selection: {getTextContent(): string} | null;
+                };
+              };
+            }
+          ).__lexicalEditor;
+          const state = editor?.getEditorState();
+          return state?.read(() => state._selection?.getTextContent());
+        }),
+    )
+    .toBe(text);
+}
+
 test('the editor moves over, deletes, and restores a plugin node as one unit', async ({
   page,
 }) => {
@@ -156,6 +184,7 @@ test('italic toggled on a range takes the plugin node in it along', async ({
   const italic = surface(page, 'editor').getByRole('button', {name: 'Italic'});
   // Select "Ping " and the node, then make them italic.
   await caretAt(page, 6, true);
+  await expectEditorSelection(page, 'Ping @{ada}');
   await italic.click();
   await expect(
     surface(page, 'editor').locator('em [data-mention="ada"]'),
@@ -163,6 +192,7 @@ test('italic toggled on a range takes the plugin node in it along', async ({
   expect(await markdownOutput(page)).toContain('*Ping @{ada}* about');
   // And back.
   await caretAt(page, 6, true);
+  await expectEditorSelection(page, 'Ping @{ada}');
   await italic.click();
   await expect(
     surface(page, 'editor').locator('em [data-mention="ada"]'),
@@ -178,6 +208,7 @@ test('a copied plugin node pastes whole, drawn where the plugin is given and as 
   const errors = await openStory(page);
   // Select "Ping " and the node, then copy them.
   await caretAt(page, 6, true);
+  await expectEditorSelection(page, 'Ping @{ada}');
   await page.keyboard.press('ControlOrMeta+c');
   for (const [name, drawn] of [
     ['paste-with', true],
@@ -196,5 +227,29 @@ test('a copied plugin node pastes whole, drawn where the plugin is given and as 
     }
   }
   expect(await markdownOutput(page)).toContain('---\nPing @{ada}');
+  expect(errors).toEqual([]);
+});
+
+// The repository's Storybook audit runs axe with these exemptions; the same
+// note on three surfaces must not make three identical landmarks.
+const AXE_DISABLED_RULES = [
+  'html-has-lang',
+  'document-title',
+  'landmark-one-main',
+  'page-has-heading-one',
+  'region',
+];
+
+test('the story has no axe violations, landmarks included', async ({page}) => {
+  const errors = await openStory(page);
+  const results = await new AxeBuilder({page})
+    .disableRules(AXE_DISABLED_RULES)
+    .analyze();
+  expect(
+    results.violations.map(violation => [
+      violation.id,
+      violation.nodes.map(node => node.target.join(' ')),
+    ]),
+  ).toEqual([]);
   expect(errors).toEqual([]);
 });
