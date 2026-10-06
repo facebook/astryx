@@ -75,15 +75,21 @@ interface MonthReading {
 function readMonth(page: Page): Promise<MonthReading> {
   return page.evaluate(
     ([dayNames]) => {
-      const findText = (root: Node): Text | null => {
+      // The label's text can span several nodes ("+", "3", " more"), so
+      // each glyph run is found on its own.
+      const rectOf = (root: Node, needle: string): DOMRect | null => {
         const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
         for (
           let node = walker.nextNode();
           node != null;
           node = walker.nextNode()
         ) {
-          if ((node.textContent ?? '').includes('more')) {
-            return node as Text;
+          const at = (node.textContent ?? '').indexOf(needle);
+          if (at >= 0) {
+            const range = document.createRange();
+            range.setStart(node, at);
+            range.setEnd(node, at + needle.length);
+            return range.getBoundingClientRect();
           }
         }
         return null;
@@ -182,19 +188,10 @@ function readMonth(page: Page): Promise<MonthReading> {
       const wednesdayMore = [...grid.querySelectorAll('button')].find(button =>
         /^3 more events,/.test(button.getAttribute('aria-label') ?? ''),
       );
-      let countReadsInOrder: boolean | null = null;
-      const text = wednesdayMore == null ? null : findText(wednesdayMore);
-      if (text != null) {
-        const value = text.textContent ?? '';
-        const range = document.createRange();
-        range.setStart(text, value.indexOf('+'));
-        range.setEnd(text, value.indexOf('+') + 1);
-        const plus = range.getBoundingClientRect();
-        range.setStart(text, value.indexOf('more'));
-        range.setEnd(text, value.indexOf('more') + 4);
-        const more = range.getBoundingClientRect();
-        countReadsInOrder = plus.right <= more.left + 1;
-      }
+      const plus = wednesdayMore == null ? null : rectOf(wednesdayMore, '+');
+      const more = wednesdayMore == null ? null : rectOf(wednesdayMore, 'more');
+      const countReadsInOrder =
+        plus == null || more == null ? null : plus.right <= more.left + 1;
       return {
         chipsOutsideRow,
         chipCount: chips.length,
