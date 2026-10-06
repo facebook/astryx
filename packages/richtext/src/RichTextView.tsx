@@ -5,7 +5,7 @@
 /**
  * @file RichTextView.tsx
  * @input Uses React, Lexical (lexical + @lexical/react, composed through
- *   LexicalExtensionComposer), design tokens
+ *   LexicalExtensionComposer), mergeProps from core utils, design tokens
  * @output Exports RichTextView component and RichTextViewProps
  * @position Read-only renderer for serialized Lexical editor state, exposed to
  *   assistive technology as document content rather than a form field;
@@ -21,6 +21,7 @@ import {useEffect, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {sharedEditorTheme} from './editorTheme';
 import type {BaseProps} from '@astryxdesign/core';
+import {mergeProps} from '@astryxdesign/core/utils';
 
 import {LexicalExtensionComposer} from '@lexical/react/LexicalExtensionComposer';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
@@ -205,8 +206,26 @@ export function RichTextView({
     lastValueRef.current = value;
   }
 
+  // A parse failure is recorded during render (below, or from Lexical's
+  // `onError` while the composer builds the editor) but reported to the
+  // consumer only after commit. Updating this component's own state during
+  // render is allowed; running a consumer's callback is not — a callback that
+  // updates its own component would do so during another component's render,
+  // and StrictMode or a discarded concurrent render would repeat it or run it
+  // for output that never commits. This Effect synchronizes the consumer's
+  // `onParseError`, reporting each distinct failure exactly once.
+  const pendingErrorRef = useRef<Error | null>(null);
+  const reportedErrorRef = useRef<Error | null>(null);
+  useEffect(() => {
+    const error = pendingErrorRef.current;
+    if (error !== null && error !== reportedErrorRef.current) {
+      reportedErrorRef.current = error;
+      onParseError?.(error);
+    }
+  });
+
   const handleError = (error: Error) => {
-    onParseError?.(error);
+    pendingErrorRef.current = error;
     setHasError(true);
   };
 
@@ -229,9 +248,7 @@ export function RichTextView({
     extensionRef.current = null;
     return (
       <div
-        {...stylex.props(styles.root, xstyle)}
-        className={className}
-        style={style}
+        {...mergeProps(stylex.props(styles.root, xstyle), className, style)}
         {...rest}>
         {errorFallback}
       </div>
@@ -254,9 +271,7 @@ export function RichTextView({
 
   return (
     <div
-      {...stylex.props(styles.root, xstyle)}
-      className={className}
-      style={style}
+      {...mergeProps(stylex.props(styles.root, xstyle), className, style)}
       {...rest}>
       <LexicalExtensionComposer
         extension={extensionRef.current}

@@ -16,7 +16,8 @@
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {createRef, useEffect} from 'react';
+import {createRef, StrictMode, useEffect, useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import type {EditorState, LexicalEditor} from 'lexical';
 import {
@@ -973,6 +974,99 @@ describe('RichTextView', () => {
     expect(content).not.toHaveAttribute('role');
     expect(content).not.toHaveAttribute('aria-readonly');
     expect(content).not.toHaveAttribute('aria-autocomplete');
+  });
+
+  it('keeps its own StyleX class alongside a consumer className', () => {
+    // A JSX attribute after an object spread wins even when it is undefined,
+    // so `className={className}` after `{...stylex.props(...)}` dropped every
+    // generated class, including styles.root's `width: 100%`.
+    const {container} = render(
+      <RichTextView value={HELLO_STATE} className="consumer-class" />,
+    );
+    const root = container.firstElementChild;
+    expect(root).toHaveClass('consumer-class');
+    expect(root?.classList.length).toBeGreaterThan(1);
+  });
+
+  it('applies a consumer xstyle', () => {
+    const overrides = stylex.create({custom: {opacity: 0.5}});
+    const {container: withXstyle} = render(
+      <RichTextView value={HELLO_STATE} xstyle={overrides.custom} />,
+    );
+    const {container: plain} = render(<RichTextView value={HELLO_STATE} />);
+    const withClasses = withXstyle.firstElementChild?.className ?? '';
+    expect(withClasses).not.toBe('');
+    expect(withClasses).not.toBe(plain.firstElementChild?.className ?? '');
+  });
+
+  it('merges className and its own styles on the error fallback too', () => {
+    const {container} = render(
+      <RichTextView
+        value={'{ not valid json'}
+        className="consumer-class"
+        errorFallback={<div>Unavailable</div>}
+      />,
+    );
+    const root = container.firstElementChild;
+    expect(root).toHaveClass('consumer-class');
+    expect(root?.classList.length).toBeGreaterThan(1);
+  });
+
+  it('reports a parse error after render, so the callback can update state', () => {
+    // A consumer commonly surfaces the failure from its own state. Called
+    // during RichTextView's render, that update would land while React is
+    // rendering a different component, which React reports as an error.
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    function Host() {
+      const [failure, setFailure] = useState('');
+      return (
+        <>
+          <RichTextView
+            value={'{ not valid json'}
+            onParseError={error => setFailure(error.name)}
+          />
+          <output>{failure}</output>
+        </>
+      );
+    }
+    try {
+      const {container} = render(<Host />);
+      expect(container.querySelector('output')).toHaveTextContent(
+        'SyntaxError',
+      );
+      expect(consoleError).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it('reports a parse error once under StrictMode', () => {
+    const onParseError = vi.fn();
+    render(
+      <StrictMode>
+        <RichTextView value={'{ not valid json'} onParseError={onParseError} />
+      </StrictMode>,
+    );
+    expect(onParseError).toHaveBeenCalledTimes(1);
+    expect(onParseError.mock.calls[0][0]).toBeInstanceOf(Error);
+  });
+
+  it('reports each distinct parse failure once across re-renders', () => {
+    const onParseError = vi.fn();
+    const {rerender} = render(
+      <RichTextView value={'{ bad'} onParseError={onParseError} />,
+    );
+    expect(onParseError).toHaveBeenCalledTimes(1);
+
+    // Re-rendering with the same bad value does not report it again…
+    rerender(<RichTextView value={'{ bad'} onParseError={onParseError} />);
+    expect(onParseError).toHaveBeenCalledTimes(1);
+
+    // …but a different bad value is a new failure.
+    rerender(<RichTextView value={'{ worse'} onParseError={onParseError} />);
+    expect(onParseError).toHaveBeenCalledTimes(2);
   });
 
   it('renders custom read-only plugins passed via the plugins prop', () => {
