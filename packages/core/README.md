@@ -288,7 +288,8 @@ npx astryx template --cdn        # writes cdn.template.html
           "react/jsx-runtime": "https://esm.sh/react@19.2.0/jsx-runtime",
           "react-dom": "https://esm.sh/react-dom@19.2.0",
           "react-dom/client": "https://esm.sh/react-dom@19.2.0/client",
-          "@astryxdesign/core": "https://esm.sh/@astryxdesign/core@0.4.1?external=react,react-dom"
+          "@astryxdesign/core": "https://esm.sh/@astryxdesign/core@0.4.1?external=react,react-dom",
+          "@astryxdesign/theme-neutral": "https://esm.sh/@astryxdesign/theme-neutral@0.4.1?external=react,react-dom"
         }
       }
     </script>
@@ -303,21 +304,39 @@ npx astryx template --cdn        # writes cdn.template.html
     <script type="module">
       import * as React from 'react';
       import {createRoot} from 'react-dom/client';
-      import {Card, Stack, Heading, Text, Button} from '@astryxdesign/core';
+      import {
+        Theme,
+        Card,
+        Stack,
+        Heading,
+        Text,
+        Button,
+        Icon,
+      } from '@astryxdesign/core';
+      import {neutralTheme} from '@astryxdesign/theme-neutral';
       const e = React.createElement;
+      const themedIcon = e(Icon, {icon: 'check'});
       createRoot(document.getElementById('root')).render(
         e(
-          Stack,
-          {padding: 6, align: 'start'},
+          Theme,
+          {theme: neutralTheme, mode: 'system'},
           e(
-            Card,
-            {maxWidth: 480, elevation: 'low'},
+            Stack,
+            {padding: 6, align: 'start'},
             e(
-              Stack,
-              {gap: 3, align: 'start'},
-              e(Heading, {level: 1}, 'Hello from a CDN'),
-              e(Text, null, 'No bundler, no install, no build step.'),
-              e(Button, {variant: 'primary', label: 'Try me'}),
+              Card,
+              {maxWidth: 480, elevation: 'low'},
+              e(
+                Stack,
+                {gap: 3, align: 'start'},
+                e(Heading, {level: 1}, 'Hello from a CDN'),
+                e(Text, null, 'No bundler, no install, no build step.'),
+                e(Button, {
+                  variant: 'primary',
+                  label: 'Try me',
+                  icon: themedIcon,
+                }),
+              ),
             ),
           ),
         ),
@@ -332,8 +351,10 @@ Six details carry the whole recipe:
 - **`data-astryx-theme` on `<html>`.** Theme CSS is scoped to that attribute, so
   without it the page renders with the built-in defaults instead of the theme you
   just loaded.
-- **`?external=react,react-dom`.** Without it esm.sh bundles its own React and
-  every hook throws `Cannot read properties of null (reading 'useState')`.
+- **`?external=react,react-dom` on every Astryx esm.sh URL.** Without it
+  esm.sh bundles its own React. The core package and every theme package must
+  reuse the import map's copy; otherwise a themed semantic icon fails as soon
+  as it reads React context.
 - **`react/jsx-runtime` in the import map.** The published bundle imports it;
   omit the entry and the page dies with `Failed to resolve module specifier`.
 - **A font on `body`.** Nothing in the three stylesheets sets a document font:

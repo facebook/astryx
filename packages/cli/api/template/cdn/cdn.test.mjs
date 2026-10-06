@@ -6,8 +6,9 @@
  *
  * Two things matter here: it never destroys work (the page lands once, a second
  * run leaves an edited copy alone, a path that escapes the project is refused),
- * and the page it writes is pinned — a leftover version placeholder would ship
- * a file whose every CDN URL 404s.
+ * and every CDN recipe is pinned and reuses the import map's React. A leftover
+ * version placeholder would ship URLs that 404; an unexternalized Astryx module
+ * would bundle a second React and fail when a themed icon reads context.
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
@@ -30,6 +31,10 @@ afterEach(() => {
 
 const written = () =>
   fs.readFileSync(path.join(tmpDir, CDN_TEMPLATE_DEFAULT_PATH), 'utf-8');
+const repoRoot = path.resolve(import.meta.dirname, '../../../../..');
+const coreReadme = path.join(repoRoot, 'packages/core/README.md');
+const astryxEsmImports = source =>
+  source.match(/https:\/\/esm\.sh\/@astryxdesign\/[^\s"'<>`]+/g) ?? [];
 
 describe('templateCdn()', () => {
   it('writes the page and returns a template.cdn receipt', () => {
@@ -52,6 +57,27 @@ describe('templateCdn()', () => {
     expect(urls?.length).toBeGreaterThan(0);
     for (const url of urls ?? []) {
       expect(url).toContain(`@${data.version}`);
+    }
+  });
+
+  it('externalizes React for every Astryx esm.sh import in CDN recipes', () => {
+    templateCdn({cwd: tmpDir});
+    const recipes = [
+      ['generated CDN page', written()],
+      ['Core README', fs.readFileSync(coreReadme, 'utf-8')],
+    ];
+
+    for (const [label, source] of recipes) {
+      const urls = astryxEsmImports(source);
+      expect(
+        urls.length,
+        `${label} should contain Astryx esm.sh imports`,
+      ).toBeGreaterThan(0);
+      for (const url of urls) {
+        const external =
+          new URL(url).searchParams.get('external')?.split(',') ?? [];
+        expect(external, `${label}: ${url}`).toEqual(['react', 'react-dom']);
+      }
     }
   });
 

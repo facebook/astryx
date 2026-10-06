@@ -5,7 +5,7 @@
  * CDN starter-page smoke test — scaffolds `astryx template --cdn` into a temp
  * directory, serves it, and opens it in headless Chromium. Fails on any console
  * error, page error, or failed request, and on a page that loaded without
- * rendering anything.
+ * rendering a button and its theme-provided semantic icon.
  *
  * This is the one recipe we ship that runs entirely outside the repo: no
  * bundler resolves its imports, no test double stands in for jsDelivr or
@@ -117,13 +117,17 @@ async function render() {
     await page.goto(url, {waitUntil: 'networkidle', timeout: 90_000});
     // A page that throws during render still reaches networkidle with an empty
     // root, so the render itself has to be asserted, not just the error streams.
-    const button = await page
-      .getByRole('button')
-      .first()
+    const buttonLocator = page.getByRole('button', {name: 'Try me'}).first();
+    const button = await buttonLocator
       .textContent({timeout: 15_000})
       .catch(() => null);
+    const themedIcon = await buttonLocator
+      .locator('svg')
+      .first()
+      .isVisible()
+      .catch(() => false);
 
-    return {consoleErrors, pageErrors, failedRequests, button};
+    return {consoleErrors, pageErrors, failedRequests, button, themedIcon};
   } finally {
     await browser.close();
   }
@@ -137,7 +141,8 @@ for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
     result.consoleErrors.length === 0 &&
     result.pageErrors.length === 0 &&
     result.failedRequests.length === 0 &&
-    result.button;
+    result.button &&
+    result.themedIcon;
   if (clean) break;
   if (attempt < ATTEMPTS) console.log(`  retry ${attempt} of ${ATTEMPTS - 1}`);
 }
@@ -160,6 +165,11 @@ if (result.button) {
   console.log(`  ok    rendered a button: "${result.button.trim()}"`);
 } else {
   fail('the page loaded but rendered no button');
+}
+if (result.themedIcon) {
+  console.log('  ok    rendered the themed semantic icon');
+} else {
+  fail('the button rendered without its themed semantic icon');
 }
 
 fs.rmSync(tmpDir, {recursive: true, force: true});
