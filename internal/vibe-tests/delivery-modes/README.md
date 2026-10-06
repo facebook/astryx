@@ -40,7 +40,7 @@ Schema version 1 defines:
 - `launcher`: the local isolation wrapper. Its argument list may use `{privateRoot}`, `{sandboxRoot}`, `{runnerCommand}`, `{runnerCwd}`, and the whole-argument `{runnerArgs}` expansion.
 - `preflight`: a command that must succeed through the launcher before any cell runs.
 - `runners`: named command entries. Arguments may use `{sandboxProject}` and `{taskFile}`; `stdin: "prompt"` sends the shared task prompt.
-- `transcript`: a declarative adapter for each runner and judge. The shipped public adapter format is JSONL: `toolCalls` selects records with field-path matchers and extracts a command path, while optional `usage` paths select input and output token counts. The harness has no built-in knowledge of any agent CLI event schema.
+- `transcript`: a declarative adapter for each runner and judge. The shipped public adapter format is JSONL: `toolCalls` selects records with field-path matchers and extracts a command path; optional `recordsPath` iterates an array of calls inside each record. Optional `usage` paths select input and output token counts. The harness has no built-in knowledge of any agent CLI event schema.
 - `judge`: the blind screenshot evaluator. Its arguments may use `{sandboxProject}` and `{schema}`; the prompt is available through stdin. Optional `resultPath` selects the score object from the judge's JSON or last JSONL record.
 - `browserCommand`: the identical browser-helper syntax advertised to every runner.
 - `audit.rules`: required or forbidden regular expressions over `stdout`, `stderr`, `combined`, or adapter-extracted tool `command` records.
@@ -86,7 +86,7 @@ VIBE_RUNNER_PROFILE=/absolute/path/to/runner-profile.json \
   --resume
 ```
 
-Concurrency defaults to 1 so local browser servers and launcher resources do not interfere. Every attempted cell writes `runs/<id>/run.json`. Successfully scored cells are reusable checkpoints. Setup, runner-launch, and evaluator crashes are classified as retryable infrastructure failures, excluded from score denominators, and rerun by the same command with `--resume`; `--max-new-jobs <n>` can stop after a checkpoint batch.
+Concurrency defaults to 1 so local browser servers and launcher resources do not interfere. Every attempted cell writes `runs/<id>/run.json`. Successfully scored cells are reusable checkpoints. Setup failures before the agent runs, launcher-spawn failures, and harness-owned failures such as a browser launch error are retryable infrastructure failures that are excluded from score denominators. Failures caused by agent-authored output after the runner completes—including build or preview-script failures—are scored as failed cells and reused by `--resume`; `--max-new-jobs <n>` can stop after a checkpoint batch.
 
 ## React no-build starter
 
@@ -105,7 +105,7 @@ The shared evaluator:
 7. runs axe-core;
 8. asks the profile's blind judge to score prompt fulfillment and visual quality from an anonymized screenshot and the task prompt only.
 
-A build failure, page error, blank render, runner failure, timeout, or strict audit failure receives both adoption scores, prompt-fulfillment, and visual-quality scores of 0. Those scored rows remain in every median and pass-rate denominator. A timeout separately records the last complete on-disk state as **best before timeout** without changing the primary score. Infrastructure failures are reported separately, contribute no score, and remain retryable checkpoints.
+A build failure, preview-script failure, page error, blank render, runner failure, timeout, or strict audit failure receives both adoption scores, prompt-fulfillment, and visual-quality scores of 0. Those scored rows remain in every median and pass-rate denominator. A timeout separately records the last complete on-disk state as **best before timeout** without changing the primary score. Failures the harness owns before evaluation can proceed are reported separately as infrastructure failures, contribute no score, and remain retryable checkpoints.
 
 The blind judge prompt describes only the requested UI and visible scoring criteria. A judge process crash, nonzero exit, invalid result, or strict context-audit failure is retried once. Each attempt and error is recorded; if both attempts fail, judge scores remain null and the report marks the judge unavailable rather than assigning zero.
 
