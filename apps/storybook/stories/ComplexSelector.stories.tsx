@@ -403,9 +403,7 @@ const styles = stylex.create({
     padding: spacingVars['--spacing-3'],
   },
   auditMatrix: {
-    width: 'calc(100% - 32px)',
-    maxWidth: 720,
-    minWidth: 0,
+    width: 'min(720px, calc(100vw - 32px))',
   },
   auditPopupContent: {
     width: 220,

@@ -173,11 +173,6 @@ test.afterAll(async () => {
               summary:
                 'Caller-rendered mode does not project inherited BaseProps or isDisabled semantics onto the caller control.',
             },
-            {
-              id: 'R1',
-              summary:
-                'At 320 CSS px, component-owned content and the popup exceed the inline viewport bounds.',
-            },
           ],
         },
         null,
