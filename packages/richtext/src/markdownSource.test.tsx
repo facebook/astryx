@@ -15,13 +15,17 @@ import {
   $createTextNode,
   $getRoot,
   $isElementNode,
+  $parseSerializedNode,
+  REDO_COMMAND,
+  UNDO_COMMAND,
+  type SerializedLexicalNode,
 } from 'lexical';
 import {DEFAULT_NODES} from './editorNodes';
 import {
   editorStateJSONToMarkdown,
   markdownToEditorStateJSON,
 } from './markdownSerializers';
-import {splitMarkdownChunks} from './markdownSource';
+import {absentToken, splitMarkdownChunks} from './markdownSource';
 import {RichTextEditor, type RichTextEditorRef} from './RichTextEditor';
 import {RichTextEditorAutoLinkPlugin} from './RichTextEditorAutoLinkPlugin';
 
@@ -315,6 +319,106 @@ describe('Markdown source preservation (spec:AST-062)', () => {
       editAndExport(source, () => $appendToTextContaining('Search', ' 2')),
     ).toBe(
       'Intro  \n\n| Area | Owner |\n| :--- | ---: |\n| Search 2 | Ada |\n\n\\# Outro\n',
+    );
+  });
+
+  it('keeps document facts at the document when blocks move, repeat, or go (FR4)', () => {
+    const source = '\uFEFF\n\nAlpha\n\n\\# Beta\n\nGamma\n\n';
+    // Moving the first block to the end keeps the envelope at the edges.
+    expect(
+      editAndExport(source, () => {
+        const [alpha] = $getRoot().getChildren();
+        $getRoot().append(alpha);
+      }),
+    ).toBe('\uFEFF\n\n\\# Beta\n\nGamma\n\nAlpha\n\n');
+    // Repeating a block does not repeat the envelope.
+    expect(
+      editAndExport(source, () => {
+        const [alpha] = $getRoot().getChildren();
+        const copy = $parseSerializedNode(
+          alpha.exportJSON() as SerializedLexicalNode,
+        );
+        if ($isElementNode(alpha) && $isElementNode(copy)) {
+          copy.append($createTextNode(alpha.getTextContent()));
+        }
+        $getRoot().getLastChild()?.insertAfter(copy);
+      }),
+    ).toBe('\uFEFF\n\nAlpha\n\n\\# Beta\n\nGamma\n\nAlpha\n\n');
+    // Deleting the first block keeps the byte order mark and leading lines.
+    expect(
+      editAndExport(source, () => {
+        $getRoot().getFirstChild()?.remove();
+      }),
+    ).toBe('\uFEFF\n\n\\# Beta\n\nGamma\n\n');
+  });
+
+  it('writes a block taken from another document in the line endings of the one it joins (FR4)', () => {
+    const lf = 'One\n\nTwo\n';
+    const crlf = 'Uno\r\n\r\nDos\r\nmismo\r\n';
+    const moveFirstBlock = (from: string, to: string): string => {
+      const source = createHeadlessEditor({
+        namespace: 'astryx-markdown-source-from',
+        nodes: [...DEFAULT_NODES],
+        onError(error: Error) {
+          throw error;
+        },
+      });
+      source.setEditorState(
+        source.parseEditorState(markdownToEditorStateJSON(from)),
+      );
+      const block = JSON.parse(JSON.stringify(source.getEditorState().toJSON()))
+        .root.children[0] as SerializedLexicalNode;
+      return editAndExport(to, () => {
+        $getRoot().append($parseSerializedNode(block));
+      });
+    };
+    expect(moveFirstBlock(crlf, lf)).toBe('One\n\nTwo\n\nUno\n');
+    expect(moveFirstBlock(lf, crlf)).toBe(
+      'Uno\r\n\r\nDos\r\nmismo\r\n\r\nOne\r\n',
+    );
+  });
+
+  it('never mistakes text for an escape token, whatever it contains (FR3)', () => {
+    const tricky = 'Keeps \uFDD0 and \uE000 and \u{F0000} as written';
+    expect(
+      editAndExport(`${tricky}\n\nNext\n`, () =>
+        $appendToTextContaining('Keeps', ' [x]'),
+      ),
+    ).toBe(`${tricky} \\[x\\]\n\nNext\n`);
+    expect(absentToken('')).toBe('\uE000');
+    expect(absentToken('\uE000')).toBe('\uE001');
+    const everySingle = Array.from({length: 0xf8ff - 0xe000 + 1}, (_, index) =>
+      String.fromCodePoint(0xe000 + index),
+    ).join('');
+    expect(absentToken(everySingle)).toBe('\u{F0000}');
+  });
+
+  it('follows edits, undo, and redo in a mounted editor (FR1, FR2)', async () => {
+    const markdown = '# Title\n\n- One\n  - Two\n\nLast &#169;\n';
+    const ref = createRef<RichTextEditorRef>();
+    render(
+      <RichTextEditor
+        label="Notes"
+        ref={ref}
+        defaultValue={markdownToEditorStateJSON(markdown)}
+      />,
+    );
+    await waitFor(() => expect(ref.current).not.toBeNull());
+    const editor = ref.current?.getEditor();
+    expect(ref.current?.getMarkdown()).toBe(markdown);
+    editor?.update(() => $appendToTextContaining('Last', ' edited'), {
+      discrete: true,
+    });
+    expect(ref.current?.getMarkdown()).toBe(
+      '# Title\n\n- One\n  - Two\n\nLast \u00a9 edited\n',
+    );
+    editor?.dispatchCommand(UNDO_COMMAND, undefined);
+    await waitFor(() => expect(ref.current?.getMarkdown()).toBe(markdown));
+    editor?.dispatchCommand(REDO_COMMAND, undefined);
+    await waitFor(() =>
+      expect(ref.current?.getMarkdown()).toBe(
+        '# Title\n\n- One\n  - Two\n\nLast \u00a9 edited\n',
+      ),
     );
   });
 

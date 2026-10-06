@@ -26,7 +26,7 @@ import {createHeadlessEditor} from '@lexical/headless';
 import {type Transformer} from '@lexical/markdown';
 import {DEFAULT_NODES} from './editorNodes';
 import {
-  exportMarkdownKeepingSource,
+  $exportMarkdownKeepingSource,
   importMarkdownKeepingSource,
 } from './markdownSource';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
@@ -94,9 +94,7 @@ export function editorStateJSONToMarkdown(
   options: MarkdownSerializerOptions = {},
 ): string {
   const {transformers = DEFAULT_TRANSFORMERS, nodes} = options;
-  return exportMarkdownKeepingSource(
-    editorStateJSON,
-    transformers,
-    nodes ? [...DEFAULT_NODES, ...nodes] : DEFAULT_NODES,
-  );
+  const editor = createSerializerEditor(nodes);
+  const state = editor.parseEditorState(editorStateJSON);
+  return state.read(() => $exportMarkdownKeepingSource([...transformers]));
 }

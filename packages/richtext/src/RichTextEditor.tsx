@@ -76,7 +76,7 @@ import {type Transformer} from '@lexical/markdown';
 export type {Transformer} from '@lexical/markdown';
 import {$generateHtmlFromNodes} from '@lexical/html';
 import {DEFAULT_NODES} from './editorNodes';
-import {exportMarkdownKeepingSource} from './markdownSource';
+import {$exportMarkdownKeepingSource} from './markdownSource';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import {
   BLUR_COMMAND,
@@ -548,11 +548,6 @@ export const RichTextEditor = forwardRef<
   // and the content it holds — is unaffected by later renders (a consumer
   // passing an inline `nodes={[...]}` array would otherwise blow away the
   // editor's content on every render).
-  // The node set is fixed for the editor's lifetime, like the extension below;
-  // getMarkdown() exports through a headless editor with the same nodes.
-  const [editorNodes] = useState<ReadonlyArray<Klass<LexicalNode>>>(() =>
-    nodes ? [...DEFAULT_NODES, ...nodes] : DEFAULT_NODES,
-  );
   const extensionRef = useRef<AnyLexicalExtension | null>(null);
   if (extensionRef.current === null) {
     extensionRef.current = defineExtension({
@@ -706,7 +701,6 @@ export const RichTextEditor = forwardRef<
                 editorRef={ref}
                 editable={editable}
                 transformers={markdownTransformers}
-                nodes={editorNodes}
               />
               {maxLength != null && (
                 <CharCountPlugin onCountChange={setCharCount} />
@@ -856,12 +850,10 @@ function EditorRefBridge({
   editorRef,
   editable,
   transformers,
-  nodes,
 }: {
   editorRef: Ref<RichTextEditorRef>;
   editable: boolean;
   transformers: Array<Transformer>;
-  nodes: ReadonlyArray<Klass<LexicalNode>>;
 }): null {
   const [editor] = useLexicalComposerContext();
 
@@ -904,13 +896,11 @@ function EditorRefBridge({
       getMarkdown: () =>
         // Untouched blocks export exactly as imported and changed blocks in
         // canonical form (spec:AST-062). Honors the same transformers the
-        // editor uses for shortcuts, so custom transformers round-trip, and
-        // runs on a throwaway headless editor, so this editor is untouched.
-        exportMarkdownKeepingSource(
-          editor.getEditorState(),
-          transformers,
-          nodes,
-        ),
+        // editor uses for shortcuts, so custom transformers round-trip. Reads
+        // the state without changing it.
+        editor
+          .getEditorState()
+          .read(() => $exportMarkdownKeepingSource(transformers)),
       getHTML: () =>
         // $generateHtmlFromNodes serializes the whole document (null selection)
         // to HTML; must run in a read context and requires a DOM.
@@ -920,7 +910,7 @@ function EditorRefBridge({
           .read(() => $generateHtmlFromNodes(editor, null)),
       getEditor: () => editor,
     }),
-    [editor, editable, transformers, nodes],
+    [editor, editable, transformers],
   );
   return null;
 }

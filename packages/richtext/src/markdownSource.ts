@@ -2,10 +2,9 @@
 
 /**
  * @file markdownSource.ts
- * @input Uses lexical (node state, root), @lexical/markdown
- *   ($convertFromMarkdownString / $convertToMarkdownString), and
- *   @lexical/headless for the throwaway export editor.
- * @output Exports importMarkdownKeepingSource and exportMarkdownKeepingSource,
+ * @input Uses lexical (node state, root, node classes), @lexical/markdown
+ *   ($convertFromMarkdownString / $convertToMarkdownString), and @lexical/code.
+ * @output Exports importMarkdownKeepingSource and $exportMarkdownKeepingSource,
  *   the source-preserving Markdown import and export behind
  *   markdownToEditorStateJSON, editorStateJSONToMarkdown, and getMarkdown().
  * @position Internal to @astryxdesign/richtext. Implements spec:AST-062: an
@@ -15,14 +14,18 @@
  * Import splits the source into chunks (runs of non-blank lines; a fenced code
  * block is one chunk even across blank lines) and imports each chunk on its
  * own. Once node transforms settle the tree, the top-level nodes from one or
- * more consecutive chunks form a group. The group's first node records the
- * exact bytes it came from (with the whitespace before and after them) and the
- * group's canonical Markdown at import. Export regenerates each group's
- * canonical Markdown; when it still matches the recorded one, the group is
- * unchanged and its recorded bytes are written instead.
+ * more consecutive chunks form a group, and the group's first node records the
+ * exact bytes it came from and its canonical Markdown at import. Facts about
+ * the whole document — its byte order mark, the bytes before the first block
+ * and after the last, its line ending — live on the root, so moving, copying,
+ * or deleting blocks never moves or duplicates them.
+ *
+ * Export reads the tree without changing it. Each group's canonical Markdown
+ * is regenerated (and cached per node, so an unchanged tree costs a lookup per
+ * group); when it still matches the recorded one, the recorded bytes are
+ * written instead.
  */
 
-import {createHeadlessEditor} from '@lexical/headless';
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
@@ -33,12 +36,12 @@ import {
   $createParagraphNode,
   $getRoot,
   $getState,
+  $isElementNode,
   $isLineBreakNode,
+  $isTextNode,
   $setState,
   createState,
   type ElementNode,
-  type EditorState,
-  type Klass,
   type LexicalEditor,
   type LexicalNode,
 } from 'lexical';
@@ -47,42 +50,112 @@ import {
 export interface MarkdownChunk {
   /** Blank lines before the chunk; only the first chunk has any. */
   readonly leading: string;
-  /** The chunk's lines, without the line break that ends the last one. */
+  /** The chunk's lines, without the line ending that ends the last one. */
   readonly content: string;
   /** Everything after the content up to the next chunk, or to the end. */
   readonly trailing: string;
 }
 
 /** What a group of top-level nodes was imported from. */
-interface SourceRecord {
+interface GroupRecord {
+  /** The import and chunk this group came from; unique across documents. */
   readonly group: string;
   /** The rest is recorded on the group's first node only. */
   readonly size?: number;
-  readonly leading?: string;
   readonly content?: string;
+  /** The bytes between this group and the next one. */
   readonly trailing?: string;
-  readonly canonical?: string;
-  /** The chunk ended the document, so its trailing text ends the export. */
-  readonly isLast?: boolean;
-  /** The line ending the group's source uses, for a regenerated group. */
+  /** A hash of the group's canonical Markdown at import. */
+  readonly canonicalHash?: string;
+  /** The line ending the group's source uses. */
   readonly lineEnding?: string;
-  /** The document's first line ending, for blocks added later. */
-  readonly documentLineEnding?: string;
-  /** The document starts with a byte order mark. */
-  readonly byteOrderMark?: boolean;
 }
 
-function isSourceRecord(value: unknown): value is SourceRecord {
+/**
+ * The serialized form of a group record: short keys, and defaults left out,
+ * because every imported group carries one.
+ */
+interface SerializedGroupRecord {
+  g: string;
+  n?: number;
+  s?: string;
+  t?: string;
+  h?: string;
+  e?: string;
+}
+
+/** Facts about the whole imported document, kept on the root. */
+interface DocumentRecord {
+  readonly importId: string;
+  readonly byteOrderMark: boolean;
+  /** The bytes before the first block, without the byte order mark. */
+  readonly leading: string;
+  /** The bytes after the last block. */
+  readonly trailing: string;
+  /** The document's first line ending, or LF when it has none. */
+  readonly lineEnding: string;
+}
+
+function parseGroupRecord(value: unknown): GroupRecord | null {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+  const serialized = value as Partial<SerializedGroupRecord>;
+  if (typeof serialized.g !== 'string') {
+    return null;
+  }
+  if (typeof serialized.s !== 'string') {
+    return {group: serialized.g};
+  }
+  return {
+    group: serialized.g,
+    size: typeof serialized.n === 'number' ? serialized.n : 1,
+    content: serialized.s,
+    trailing: typeof serialized.t === 'string' ? serialized.t : '\n\n',
+    canonicalHash: typeof serialized.h === 'string' ? serialized.h : '',
+    lineEnding: typeof serialized.e === 'string' ? serialized.e : '\n',
+  };
+}
+
+function unparseGroupRecord(
+  record: GroupRecord | null,
+): SerializedGroupRecord | null {
+  if (record == null) {
+    return null;
+  }
+  const serialized: SerializedGroupRecord = {g: record.group};
+  if (record.content != null) {
+    serialized.s = record.content;
+    if (record.size !== 1) {
+      serialized.n = record.size;
+    }
+    if (record.trailing !== '\n\n') {
+      serialized.t = record.trailing;
+    }
+    serialized.h = record.canonicalHash;
+    if (record.lineEnding !== '\n') {
+      serialized.e = record.lineEnding;
+    }
+  }
+  return serialized;
+}
+
+function isDocumentRecord(value: unknown): value is DocumentRecord {
   return (
     typeof value === 'object' &&
     value !== null &&
-    typeof (value as {group?: unknown}).group === 'string'
+    typeof (value as {importId?: unknown}).importId === 'string'
   );
 }
 
-const markdownSourceState = createState('astryxMarkdownSource', {
-  parse: (value: unknown): SourceRecord | null =>
-    isSourceRecord(value) ? value : null,
+const groupState = createState('astryxMd', {
+  parse: parseGroupRecord,
+  unparse: unparseGroupRecord,
+});
+
+const documentState = createState('astryxMdDocument', {
+  parse: (value: unknown): DocumentRecord | null =>
+    isDocumentRecord(value) ? value : null,
 });
 
 const BLANK_LINE = /^[ \t]*\r?$/;
@@ -117,7 +190,7 @@ export function splitMarkdownChunks(markdown: string): Array<MarkdownChunk> {
         const close = new RegExp(
           `^ {0,3}${fence[0]}{${fence.length},}[ \\t]*\\r?$`,
         );
-        if (close.test(line) && index - 1 > start) {
+        if (close.test(line)) {
           fence = null;
         }
         continue;
@@ -143,7 +216,7 @@ export function splitMarkdownChunks(markdown: string): Array<MarkdownChunk> {
       index++;
     }
     if (index < lines.length) {
-      // The line break before the next chunk's first line.
+      // The line ending before the next chunk's first line.
       trailing += '\n';
     }
     chunks.push({
@@ -169,10 +242,40 @@ function lineEndingOf(text: string, fallback: string): string {
   return index > 0 && text[index - 1] === '\r' ? '\r\n' : '\n';
 }
 
+/** Rewrites every line ending in `text` as `lineEnding`. */
+function withLineEnding(text: string, lineEnding: string): string {
+  const lf = text.replace(/\r\n/g, '\n');
+  return lineEnding === '\n' ? lf : lf.replace(/\n/g, lineEnding);
+}
+
 /**
- * Imports Markdown into the editor's root and records each group's authored
- * bytes. Runs two discrete updates: the first imports every chunk and stamps
- * its nodes with the chunk's index; the second runs after node transforms have
+ * A 64-bit hash of `text`, from two independent 32-bit FNV-1a passes. Only
+ * equality matters: it tells an unchanged group from a changed one without
+ * storing the canonical Markdown itself.
+ */
+function hashOf(text: string): string {
+  let first = 0x811c9dc5;
+  let second = 0x01000193 ^ text.length;
+  for (let index = 0; index < text.length; index++) {
+    const code = text.charCodeAt(index);
+    first = Math.imul(first ^ code, 0x01000193) >>> 0;
+    second = Math.imul(second ^ code, 0x5bd1e995) >>> 0;
+  }
+  return first.toString(36) + second.toString(36).padStart(7, '0');
+}
+
+let importCount = 0;
+
+/** An id no other import in this or any other document shares. */
+function nextImportId(): string {
+  importCount++;
+  return `${Math.random().toString(36).slice(2, 8)}${importCount.toString(36)}`;
+}
+
+/**
+ * Imports Markdown into the editor's root and records its authored bytes. Runs
+ * two discrete updates: the first imports every chunk and stamps its nodes
+ * with the chunk's group id; the second runs after node transforms have
  * settled the tree (adjacent lists merge, for example), so each group covers
  * exactly the chunks that ended up in its nodes.
  */
@@ -181,12 +284,11 @@ export function importMarkdownKeepingSource(
   markdown: string,
   transformers: Array<Transformer>,
 ): void {
-  // A byte order mark is document envelope: kept, but never part of a block.
-  const byteOrderMark = markdown.startsWith('\uFEFF') ? '\uFEFF' : '';
-  const chunks = splitMarkdownChunks(markdown.slice(byteOrderMark.length));
-  if (byteOrderMark !== '' && chunks.length > 0) {
-    chunks[0] = {...chunks[0], leading: byteOrderMark + chunks[0].leading};
-  }
+  const importId = nextImportId();
+  const byteOrderMark = markdown.startsWith('\uFEFF');
+  const body = byteOrderMark ? markdown.slice(1) : markdown;
+  const chunks = splitMarkdownChunks(body);
+  const lineEnding = lineEndingOf(body, '\n');
   editor.update(
     () => {
       const root = $getRoot();
@@ -199,18 +301,34 @@ export function importMarkdownKeepingSource(
           transformers,
           holder,
         );
-        const nodes = holder.getChildren();
-        for (const node of nodes) {
-          $setState(node, markdownSourceState, {group: String(index)});
+        for (const node of holder.getChildren()) {
+          $setState(node, groupState, {group: `${importId}:${index}`});
         }
-        root.append(...nodes);
+        root.append(...holder.getChildren());
       });
+      if (root.getChildrenSize() === 0) {
+        // Nothing to import: keep one empty paragraph, as Lexical does.
+        root.append($createParagraphNode());
+      }
     },
     {discrete: true},
   );
   editor.update(
     () => {
-      $recordGroups(chunks, markdown, transformers);
+      $recordGroups(chunks, importId, transformers);
+      const root = $getRoot();
+      const hasGroups = root
+        .getChildren()
+        .some(node => $getState(node, groupState)?.content != null);
+      $setState(root, documentState, {
+        importId,
+        byteOrderMark,
+        leading: hasGroups ? (chunks[0]?.leading ?? '') : '',
+        trailing: hasGroups
+          ? (chunks[chunks.length - 1]?.trailing ?? '')
+          : body,
+        lineEnding,
+      });
     },
     {discrete: true},
   );
@@ -220,72 +338,69 @@ export function importMarkdownKeepingSource(
  * Turns the first pass's chunk stamps into groups. Consecutive nodes stamped
  * with one chunk form a group, and the group also covers every later chunk up
  * to the next group's: those chunks merged into its nodes or imported to
- * nothing.
+ * nothing. Chunks before the first group become part of it.
  */
 function $recordGroups(
   chunks: ReadonlyArray<MarkdownChunk>,
-  markdown: string,
+  importId: string,
   transformers: Array<Transformer>,
 ): void {
-  const root = $getRoot();
-  const children = root.getChildren();
-  if (children.length === 0) {
-    $importWhitespace(markdown, transformers);
-    return;
-  }
-  const documentLineEnding = lineEndingOf(markdown, '\n');
-  const chunkOf = (node: LexicalNode): number =>
-    Number($getState(node, markdownSourceState)?.group ?? '0');
+  const children = $getRoot().getChildren();
+  const chunkOf = (node: LexicalNode): number | null => {
+    const group = $getState(node, groupState)?.group;
+    if (group == null || !group.startsWith(`${importId}:`)) {
+      return null;
+    }
+    return Number(group.slice(importId.length + 1));
+  };
   let index = 0;
+  let isFirstGroup = true;
   while (index < children.length) {
     const firstChunk = chunkOf(children[index]);
+    if (firstChunk == null) {
+      index++;
+      continue;
+    }
     const group: Array<LexicalNode> = [];
     while (index < children.length && chunkOf(children[index]) === firstChunk) {
       group.push(children[index]);
       index++;
     }
-    const isLast = index === children.length;
-    const nextChunk = isLast ? chunks.length : chunkOf(children[index]);
-    const covered = chunks.slice(firstChunk, nextChunk);
-    // Content runs from the first chunk to the last one's content; the last
-    // covered chunk's trailing text separates this group from the next.
+    const nextChunk =
+      index === children.length
+        ? chunks.length
+        : (chunkOf(children[index]) ?? chunks.length);
+    const startChunk = isFirstGroup ? 0 : firstChunk;
+    isFirstGroup = false;
+    const covered = chunks.slice(startChunk, nextChunk);
     const content = covered
-      .map((chunk, position) =>
-        position === covered.length - 1
-          ? chunk.content
-          : chunk.content + chunk.trailing,
+      .map(
+        (chunk, position) =>
+          (position === 0 ? '' : chunk.leading) +
+          (position === covered.length - 1
+            ? chunk.content
+            : chunk.content + chunk.trailing),
       )
       .join('');
-    const leading =
-      group[0] === children[0]
-        ? chunks
-            .slice(0, firstChunk + 1)
-            .map((chunk, position) =>
-              position === firstChunk
-                ? chunk.leading
-                : chunk.leading + chunk.content + chunk.trailing,
-            )
-            .join('')
-        : '';
-    const record: SourceRecord = {
-      group: String(firstChunk),
+    const isLastGroup = index === children.length;
+    const trailing = isLastGroup
+      ? ''
+      : (covered[covered.length - 1]?.trailing ?? '');
+    const record: GroupRecord = {
+      group: `${importId}:${firstChunk}`,
       size: group.length,
-      leading,
       content,
-      trailing: covered[covered.length - 1]?.trailing ?? '',
-      canonical: $canonicalMarkdown(group, transformers),
-      isLast,
+      trailing,
+      canonicalHash: $canonicalMarkdown(group, transformers).hash,
       lineEnding: lineEndingOf(
         content + (covered[covered.length - 1]?.trailing ?? ''),
-        documentLineEnding,
+        '\n',
       ),
-      documentLineEnding,
-      byteOrderMark: markdown.startsWith('\uFEFF'),
     };
     group.forEach((node, position) => {
       $setState(
         node,
-        markdownSourceState,
+        groupState,
         position === 0 ? record : {group: record.group},
       );
     });
@@ -293,235 +408,254 @@ function $recordGroups(
 }
 
 /**
- * The canonical Markdown of a run of top-level nodes. Moves them into a
- * detached holder to export them on their own, then puts them back.
+ * An element that lists `nodes` as its children without adopting them, so
+ * Lexical's exporter can read a run of top-level nodes on its own. The
+ * exporter only ever asks the root it is given for its children.
  */
+function childrenOf(nodes: ReadonlyArray<LexicalNode>): ElementNode {
+  return {getChildren: () => [...nodes]} as unknown as ElementNode;
+}
+
+/** Every node in the runs' subtrees, in document order. */
+function descendantsOf(nodes: ReadonlyArray<LexicalNode>): Array<LexicalNode> {
+  const out: Array<LexicalNode> = [];
+  const visit = (node: LexicalNode) => {
+    out.push(node);
+    if ($isElementNode(node)) {
+      node.getChildren().forEach(visit);
+    }
+  };
+  nodes.forEach(visit);
+  return out;
+}
+
+/**
+ * Canonical Markdown per run of nodes, keyed by the run's first node. Lexical
+ * keeps a node's object across editor states until that node itself changes,
+ * so a run whose every descendant is the same object as last time is
+ * unchanged and costs a walk instead of an export.
+ */
+const canonicalCache = new WeakMap<
+  LexicalNode,
+  {
+    readonly descendants: ReadonlyArray<LexicalNode>;
+    readonly transformers: ReadonlyArray<Transformer>;
+    readonly markdown: string;
+    readonly hash: string;
+  }
+>();
+
 function $canonicalMarkdown(
   nodes: ReadonlyArray<LexicalNode>,
   transformers: Array<Transformer>,
-): string {
-  const anchor = nodes[nodes.length - 1].getNextSibling();
-  const holder = $createParagraphNode();
-  holder.append(...nodes);
-  const markdown = $convertToMarkdownString(transformers, holder);
-  if (anchor != null) {
-    for (const node of nodes) {
-      anchor.insertBefore(node);
-    }
-  } else {
-    $getRoot().append(...nodes);
+): {readonly markdown: string; readonly hash: string} {
+  const descendants = descendantsOf(nodes);
+  const cached = canonicalCache.get(nodes[0]);
+  if (
+    cached != null &&
+    cached.transformers === transformers &&
+    cached.descendants.length === descendants.length &&
+    cached.descendants.every((node, index) => node === descendants[index])
+  ) {
+    return cached;
   }
-  return markdown;
+  const markdown = $convertToMarkdownString(transformers, childrenOf(nodes));
+  const entry = {descendants, transformers, markdown, hash: hashOf(markdown)};
+  canonicalCache.set(nodes[0], entry);
+  return entry;
 }
-
-/**
- * Source with nothing to import keeps the editor's single empty paragraph,
- * which records the whole source so it exports unchanged.
- */
-function $importWhitespace(
-  markdown: string,
-  transformers: Array<Transformer>,
-): void {
-  $convertFromMarkdownString('', transformers);
-  const root = $getRoot();
-  const paragraph = root.getFirstChild();
-  if (paragraph != null) {
-    $setState(paragraph, markdownSourceState, {
-      group: 'whitespace',
-      size: root.getChildrenSize(),
-      leading: '',
-      content: '',
-      trailing: markdown,
-      canonical: $convertToMarkdownString(transformers),
-      isLast: true,
-    });
-  }
-}
-
-interface ExportPiece {
-  readonly text: string;
-  readonly trailing: string | null;
-  readonly isLast: boolean;
-}
-
-const BLOCK_SEPARATOR = '\n\n';
-const ENDS_WITH_BLANK_LINE = /\n[ \t]*\r?\n[ \t\r]*$/;
-
-/**
- * Exports the root, writing each unchanged group's authored bytes and
- * regenerating the rest. Mutates the tree to measure groups, so it must run in
- * an update on a throwaway editor.
- */
-function $exportKeepingSource(transformers: Array<Transformer>): string {
-  const children = $getRoot().getChildren();
-  const pieces: Array<ExportPiece> = [];
-  let finalTrailing = '';
-  const documentLineEnding =
-    children
-      .map(child => $getState(child, markdownSourceState)?.documentLineEnding)
-      .find(lineEnding => lineEnding != null) ?? '\n';
-  let index = 0;
-  while (index < children.length) {
-    const first = children[index];
-    const record = $getState(first, markdownSourceState);
-    const group: Array<LexicalNode> = [first];
-    index++;
-    if (record?.content != null) {
-      while (
-        index < children.length &&
-        $getState(children[index], markdownSourceState)?.group ===
-          record.group &&
-        $getState(children[index], markdownSourceState)?.content == null
-      ) {
-        group.push(children[index]);
-        index++;
-      }
-    }
-    const holder = $createParagraphNode();
-    holder.append(...group);
-    const canonical = $convertToMarkdownString(transformers, holder);
-    if (record?.content == null) {
-      pieces.push({
-        text: withLineEnding(
-          $regeneratedMarkdown(holder, transformers),
-          documentLineEnding,
-        ),
-        trailing: null,
-        isLast: false,
-      });
-      continue;
-    }
-    if (record.isLast) {
-      finalTrailing = record.trailing ?? '';
-    }
-    const unchanged =
-      group.length === record.size && canonical === record.canonical;
-    pieces.push({
-      text:
-        (record.leading ?? '') +
-        (unchanged
-          ? record.content
-          : withLineEnding(
-              $regeneratedMarkdown(holder, transformers),
-              record.lineEnding ?? '\n',
-            )),
-      trailing: record.trailing ?? null,
-      isLast: record.isLast === true,
-    });
-  }
-  const separator = withLineEnding(BLOCK_SEPARATOR, documentLineEnding);
-  const byteOrderMark = children.some(
-    child => $getState(child, markdownSourceState)?.byteOrderMark === true,
-  );
-  let output = '';
-  pieces.forEach((piece, position) => {
-    output += piece.text;
-    if (position === pieces.length - 1) {
-      output += finalTrailing;
-    } else if (
-      piece.trailing != null &&
-      !piece.isLast &&
-      ENDS_WITH_BLANK_LINE.test(piece.trailing)
-    ) {
-      output += piece.trailing;
-    } else {
-      output += separator;
-    }
-  });
-  // The byte order mark survives even when the block that carried it did not.
-  return byteOrderMark && !output.startsWith('\uFEFF')
-    ? `\uFEFF${output}`
-    : output;
-}
-
-function withLineEnding(text: string, lineEnding: string): string {
-  return lineEnding === '\n' ? text : text.replace(/\n/g, lineEnding);
-}
-
-/**
- * Stands in for a backslash while Lexical exports text, because Lexical
- * escapes every backslash already in the text. A noncharacter, so no document
- * text contains it.
- */
-const ESCAPE_MARKER = '\uFDD0';
 
 /** Line starts that would turn literal text into a block structure. */
-const LINE_START_SYNTAX: ReadonlyArray<[RegExp, string]> = [
+const LINE_START_SYNTAX: ReadonlyArray<RegExp> = [
   // ATX heading, block quote, bullet list item.
-  [/^(#{1,6})(?=[ \t]|$)/, `${ESCAPE_MARKER}$1`],
-  [/^>/, `${ESCAPE_MARKER}>`],
-  [/^([-+])(?=[ \t]|$)/, `${ESCAPE_MARKER}$1`],
-  // Ordered list item.
-  [/^(\d{1,9})([.)])(?=[ \t]|$)/, `$1${ESCAPE_MARKER}$2`],
+  /^#{1,6}(?=[ \t]|$)/,
+  /^>/,
+  /^[-+](?=[ \t]|$)/,
   // Setext underline or thematic break made of `=` or `-`.
-  [/^([=-])(?=[=\- \t]*$)/, `${ESCAPE_MARKER}$1`],
+  /^[=-](?=[=\- \t]*$)/,
   // Table delimiter row.
-  [/^([|:])(?=[|:\- \t]*-[|:\- \t]*$)/, `${ESCAPE_MARKER}$1`],
+  /^[|:](?=[|:\- \t]*-[|:\- \t]*$)/,
 ];
+// An ordered list item escapes its delimiter, not its first character.
+const ORDERED_LIST_START = /^(\d{1,9})([.)])(?=[ \t]|$)/;
 
 // Inline syntax Lexical's export leaves unescaped: link and image brackets and
 // character references.
 const INLINE_SYNTAX =
   /[[\]]|&(?=#[0-9]{1,7};|#[xX][0-9a-fA-F]{1,6};|[A-Za-z][A-Za-z0-9]*;)/g;
 
+const PRIVATE_USE_RANGES: ReadonlyArray<readonly [number, number]> = [
+  [0xe000, 0xf8ff],
+  [0xf0000, 0xffffd],
+  [0x100000, 0x10fffd],
+];
+
 /**
- * The canonical Markdown of a changed group, with literal text escaped so the
- * Markdown imports again as the structure the editor showed (spec:AST-062
- * FR3). Mutates the group's text, so it must run on a throwaway editor.
+ * A token that appears nowhere in `text`. There are 137,468 private-use code
+ * points, so a text shorter than that always misses one of them; a longer
+ * text cannot contain every one of the 137,468² ordered pairs.
  */
-function $regeneratedMarkdown(
-  holder: ElementNode,
-  transformers: Array<Transformer>,
-): string {
-  for (const text of holder.getAllTextNodes()) {
-    if (text.hasFormat('code') || $isCodeNode(text.getParent())) {
-      continue;
-    }
-    let content = text
-      .getTextContent()
-      .replace(INLINE_SYNTAX, match => ESCAPE_MARKER + match);
-    const previous = text.getPreviousSibling();
-    if (previous == null || $isLineBreakNode(previous)) {
-      for (const [pattern, replacement] of LINE_START_SYNTAX) {
-        content = content.replace(pattern, replacement);
+export function absentToken(text: string): string {
+  const present = new Set(text);
+  for (const [first, last] of PRIVATE_USE_RANGES) {
+    for (let codePoint = first; codePoint <= last; codePoint++) {
+      const candidate = String.fromCodePoint(codePoint);
+      if (!present.has(candidate)) {
+        return candidate;
       }
     }
-    text.setTextContent(content);
   }
-  return $convertToMarkdownString(transformers, holder).replace(
-    /\uFDD0/g,
-    '\\',
-  );
+  for (const [first, last] of PRIVATE_USE_RANGES) {
+    for (let a = first; a <= last; a++) {
+      for (let b = first; b <= last; b++) {
+        const candidate = String.fromCodePoint(a, b);
+        if (!text.includes(candidate)) {
+          return candidate;
+        }
+      }
+    }
+  }
+  throw new Error('No escape token is absent from the text');
 }
 
 /**
- * Exports an editor state as Markdown per spec:AST-062: unchanged groups as
- * authored, changed and new blocks in canonical form. Runs on a throwaway
- * headless editor, so the caller's editor is never touched.
+ * A view of `node` whose text marks every character that needs a backslash
+ * with `token`. Views delegate everything else to the node they wrap, so
+ * Lexical's exporter reads them like the real tree without changing it.
  */
-export function exportMarkdownKeepingSource(
-  state: EditorState | string,
-  transformers: ReadonlyArray<Transformer>,
-  nodes: ReadonlyArray<Klass<LexicalNode>>,
+function markedView(node: LexicalNode, token: string): LexicalNode {
+  if ($isTextNode(node)) {
+    if (node.hasFormat('code') || $isCodeNode(node.getParent())) {
+      return node;
+    }
+    let text = node
+      .getTextContent()
+      .replace(INLINE_SYNTAX, match => token + match);
+    const previous = node.getPreviousSibling();
+    if (previous == null || $isLineBreakNode(previous)) {
+      const ordered = ORDERED_LIST_START.exec(text);
+      if (ordered != null) {
+        text = ordered[1] + token + text.slice(ordered[1].length);
+      } else if (LINE_START_SYNTAX.some(pattern => pattern.test(text))) {
+        text = token + text;
+      }
+    }
+    const view = Object.create(node) as typeof node;
+    view.getTextContent = () => text;
+    return view;
+  }
+  if ($isElementNode(node) && !$isCodeNode(node)) {
+    const children = node.getChildren().map(child => markedView(child, token));
+    const view = Object.create(node) as typeof node;
+    view.getChildren = <T extends LexicalNode>() => children as Array<T>;
+    return view;
+  }
+  return node;
+}
+
+/**
+ * The canonical Markdown of a changed group, with literal text escaped so it
+ * imports again as the structure the editor showed (spec:AST-062 FR3).
+ */
+function $regeneratedMarkdown(
+  nodes: ReadonlyArray<LexicalNode>,
+  canonical: string,
+  transformers: Array<Transformer>,
 ): string {
-  const editor = createHeadlessEditor({
-    namespace: 'astryx-editor-markdown-export',
-    nodes: [...nodes],
-    onError(error: Error) {
-      throw error;
-    },
+  // The token is absent from the plain export and from every text the views
+  // mark, so each token in the marked export is one of the marks.
+  const token = absentToken(
+    canonical + nodes.map(node => node.getTextContent()).join(''),
+  );
+  const marked = $convertToMarkdownString(
+    transformers,
+    childrenOf(nodes.map(node => markedView(node, token))),
+  );
+  return marked.split(token).join('\\');
+}
+
+interface ExportPiece {
+  readonly text: string;
+  /** Recorded bytes after the piece, when they belong to this document. */
+  readonly trailing: string | null;
+}
+
+const ENDS_WITH_BLANK_LINE = /\n[ \t]*\r?\n[ \t\r]*$/;
+
+/**
+ * Exports the root per spec:AST-062: unchanged groups as authored, changed and
+ * new blocks in canonical form, all in the document's envelope. Reads the tree
+ * without changing it, so it runs in a read of the live editor state.
+ */
+export function $exportMarkdownKeepingSource(
+  transformers: ReadonlyArray<Transformer>,
+): string {
+  const transformerList = transformers as Array<Transformer>;
+  const root = $getRoot();
+  const document = $getState(root, documentState);
+  const lineEnding = document?.lineEnding ?? '\n';
+  const children = root.getChildren();
+  const pieces: Array<ExportPiece> = [];
+  let index = 0;
+  while (index < children.length) {
+    const first = children[index];
+    const record = $getState(first, groupState);
+    const group: Array<LexicalNode> = [first];
+    index++;
+    if (record?.content != null) {
+      while (
+        index < children.length &&
+        $getState(children[index], groupState)?.group === record.group &&
+        $getState(children[index], groupState)?.content == null
+      ) {
+        group.push(children[index]);
+        index++;
+      }
+    }
+    const canonical = $canonicalMarkdown(group, transformerList);
+    // A group imported into another document keeps its content but takes this
+    // document's line ending and separators.
+    const isOwn =
+      document != null &&
+      record?.group.startsWith(`${document.importId}:`) === true;
+    if (
+      record?.content != null &&
+      group.length === record.size &&
+      canonical.hash === record.canonicalHash
+    ) {
+      pieces.push({
+        text: isOwn
+          ? record.content
+          : withLineEnding(record.content, lineEnding),
+        trailing: isOwn ? (record.trailing ?? null) : null,
+      });
+      continue;
+    }
+    const regenerated = $regeneratedMarkdown(
+      group,
+      canonical.markdown,
+      transformerList,
+    );
+    pieces.push({
+      text: withLineEnding(
+        regenerated,
+        isOwn && record?.lineEnding != null ? record.lineEnding : lineEnding,
+      ),
+      trailing: isOwn ? (record?.trailing ?? null) : null,
+    });
+  }
+  const separator = lineEnding + lineEnding;
+  let output =
+    (document?.byteOrderMark === true ? '\uFEFF' : '') +
+    (document?.leading ?? '');
+  pieces.forEach((piece, position) => {
+    output += piece.text;
+    if (position < pieces.length - 1) {
+      output +=
+        piece.trailing != null && ENDS_WITH_BLANK_LINE.test(piece.trailing)
+          ? piece.trailing
+          : separator;
+    }
   });
-  editor.setEditorState(
-    editor.parseEditorState(
-      typeof state === 'string' ? state : JSON.stringify(state.toJSON()),
-    ),
-  );
-  let markdown = '';
-  editor.update(
-    () => {
-      markdown = $exportKeepingSource([...transformers]);
-    },
-    {discrete: true},
-  );
-  return markdown;
+  return output + (document?.trailing ?? '');
 }
