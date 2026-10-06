@@ -23,6 +23,7 @@ import {
 } from './markdownSerializers';
 import {splitMarkdownChunks} from './markdownSource';
 import {RichTextEditor, type RichTextEditorRef} from './RichTextEditor';
+import {RichTextEditorAutoLinkPlugin} from './RichTextEditorAutoLinkPlugin';
 
 /**
  * The conformance corpus for spec:AST-062. Each document must come back byte
@@ -203,7 +204,7 @@ describe('Markdown source preservation (spec:AST-062)', () => {
     ).toBe('Alpha  \n\n\\# Beta\n\nGamma &copy;\n\nAppended\n');
   });
 
-  it('keeps unsupported source when other blocks change, and keeps its characters when it changes (FR3)', () => {
+  it('keeps unsupported source when other blocks change, and keeps its characters when it changes (FR5)', () => {
     const source =
       '<div align="center">\n  <b>HTML</b>\n</div>\n\n[docs]: https://example.com/docs\n\nEdit me\n';
     expect(
@@ -222,7 +223,81 @@ describe('Markdown source preservation (spec:AST-062)', () => {
     ).toBe(true);
   });
 
-  it('gives a custom transformer array the same preservation (FR4)', () => {
+  it('writes a regenerated block so it imports again as what the editor showed (FR3)', () => {
+    const source = '\\# not a heading\n\nKeep\n';
+    const edited = editAndExport(source, () =>
+      $appendToBlockContaining('not a heading', ' [x] 1. *y* &copy;'),
+    );
+    expect(edited).toBe(
+      '\\# not a heading \\[x\\] 1. \\*y\\* \\&copy;\n\nKeep\n',
+    );
+    // Importing the regenerated Markdown shows the same literal text again.
+    const reloaded = JSON.parse(markdownToEditorStateJSON(edited)) as {
+      root: {children: Array<{type: string}>};
+    };
+    expect(reloaded.root.children.map(node => node.type)).toEqual([
+      'paragraph',
+      'paragraph',
+    ]);
+    expect(
+      editAndExport('Lead\n', () => {
+        const paragraph = $createParagraphNode();
+        paragraph.append($createTextNode('1. not a list'));
+        $getRoot().append(paragraph);
+      }),
+    ).toBe('Lead\n\n1\\. not a list\n');
+  });
+
+  it('keeps the byte order mark, leading bytes, and line endings (FR4)', () => {
+    const crlf =
+      '\uFEFF\r\n# Title\r\n\r\nFirst\r\nsecond line\r\n\r\nLast\r\n';
+    expect(roundTrip(crlf)).toBe(crlf);
+    expect(
+      editAndExport(crlf, () => $appendToBlockContaining('Title', '!')),
+    ).toBe('\uFEFF\r\n# Title!\r\n\r\nFirst\r\nsecond line\r\n\r\nLast\r\n');
+    // The editor shows the two lines as two paragraphs, so the regenerated
+    // group writes two paragraphs, in the group's CRLF style.
+    expect(
+      editAndExport(crlf, () => $appendToBlockContaining('First', ' one')),
+    ).toBe(
+      '\uFEFF\r\n# Title\r\n\r\nFirst one\r\n\r\nsecond line\r\n\r\nLast\r\n',
+    );
+    expect(
+      editAndExport(crlf, () => {
+        const paragraph = $createParagraphNode();
+        paragraph.append($createTextNode('Added'));
+        $getRoot().append(paragraph);
+      }),
+    ).toBe(
+      '\uFEFF\r\n# Title\r\n\r\nFirst\r\nsecond line\r\n\r\nLast\r\n\r\nAdded\r\n',
+    );
+    expect(
+      editAndExport(crlf, () => {
+        $getRoot().getChildren()[0].remove();
+      }).startsWith('\uFEFF'),
+    ).toBe(true);
+  });
+
+  it('keeps a bare URL as written when the autolink plugin links it on load (FR1, FR6)', async () => {
+    const markdown = 'Status at https://example.com/status today.\n\n- item\n';
+    const ref = createRef<RichTextEditorRef>();
+    render(
+      <RichTextEditor
+        label="Notes"
+        ref={ref}
+        defaultValue={markdownToEditorStateJSON(markdown)}
+        plugins={<RichTextEditorAutoLinkPlugin />}
+      />,
+    );
+    await waitFor(() =>
+      expect(
+        document.querySelector('a[href="https://example.com/status"]'),
+      ).not.toBeNull(),
+    );
+    expect(ref.current?.getMarkdown()).toBe(markdown);
+  });
+
+  it('gives a custom transformer array the same preservation (FR6)', () => {
     const custom = [BOLD_STAR, ITALIC_STAR, UNORDERED_LIST];
     const source = '# Not a heading here\n\n- **bold** item\n  - nested\n';
     expect(roundTrip(source, custom)).toBe(source);

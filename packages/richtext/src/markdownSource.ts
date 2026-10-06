@@ -28,12 +28,15 @@ import {
   $convertToMarkdownString,
   type Transformer,
 } from '@lexical/markdown';
+import {$isCodeNode} from '@lexical/code';
 import {
   $createParagraphNode,
   $getRoot,
   $getState,
+  $isLineBreakNode,
   $setState,
   createState,
+  type ElementNode,
   type EditorState,
   type Klass,
   type LexicalEditor,
@@ -61,6 +64,12 @@ interface SourceRecord {
   readonly canonical?: string;
   /** The chunk ended the document, so its trailing text ends the export. */
   readonly isLast?: boolean;
+  /** The line ending the group's source uses, for a regenerated group. */
+  readonly lineEnding?: string;
+  /** The document's first line ending, for blocks added later. */
+  readonly documentLineEnding?: string;
+  /** The document starts with a byte order mark. */
+  readonly byteOrderMark?: boolean;
 }
 
 function isSourceRecord(value: unknown): value is SourceRecord {
@@ -122,8 +131,13 @@ export function splitMarkdownChunks(markdown: string): Array<MarkdownChunk> {
       }
       index++;
     }
-    const content = lines.slice(start, index).join('\n');
+    let content = lines.slice(start, index).join('\n');
     let trailing = '';
+    // A CRLF line ending belongs to the trailing text, not the content.
+    if (content.endsWith('\r')) {
+      content = content.slice(0, -1);
+      trailing = '\r';
+    }
     while (index < lines.length && BLANK_LINE.test(lines[index])) {
       trailing += `\n${lines[index]}`;
       index++;
@@ -141,6 +155,20 @@ export function splitMarkdownChunks(markdown: string): Array<MarkdownChunk> {
   return chunks;
 }
 
+/** Lines without the carriage return before each line feed. */
+function withoutCarriageReturns(text: string): string {
+  return text.replace(/\r(?=\n|$)/g, '');
+}
+
+/** The first line ending in `text`, or `fallback` when it has none. */
+function lineEndingOf(text: string, fallback: string): string {
+  const index = text.indexOf('\n');
+  if (index === -1) {
+    return fallback;
+  }
+  return index > 0 && text[index - 1] === '\r' ? '\r\n' : '\n';
+}
+
 /**
  * Imports Markdown into the editor's root and records each group's authored
  * bytes. Runs two discrete updates: the first imports every chunk and stamps
@@ -153,14 +181,24 @@ export function importMarkdownKeepingSource(
   markdown: string,
   transformers: Array<Transformer>,
 ): void {
-  const chunks = splitMarkdownChunks(markdown);
+  // A byte order mark is document envelope: kept, but never part of a block.
+  const byteOrderMark = markdown.startsWith('\uFEFF') ? '\uFEFF' : '';
+  const chunks = splitMarkdownChunks(markdown.slice(byteOrderMark.length));
+  if (byteOrderMark !== '' && chunks.length > 0) {
+    chunks[0] = {...chunks[0], leading: byteOrderMark + chunks[0].leading};
+  }
   editor.update(
     () => {
       const root = $getRoot();
       root.clear();
       chunks.forEach((chunk, index) => {
         const holder = $createParagraphNode();
-        $convertFromMarkdownString(chunk.content, transformers, holder);
+        // Lexical imports LF lines; the record keeps the authored endings.
+        $convertFromMarkdownString(
+          withoutCarriageReturns(chunk.content),
+          transformers,
+          holder,
+        );
         const nodes = holder.getChildren();
         for (const node of nodes) {
           $setState(node, markdownSourceState, {group: String(index)});
@@ -195,6 +233,7 @@ function $recordGroups(
     $importWhitespace(markdown, transformers);
     return;
   }
+  const documentLineEnding = lineEndingOf(markdown, '\n');
   const chunkOf = (node: LexicalNode): number =>
     Number($getState(node, markdownSourceState)?.group ?? '0');
   let index = 0;
@@ -236,6 +275,12 @@ function $recordGroups(
       trailing: covered[covered.length - 1]?.trailing ?? '',
       canonical: $canonicalMarkdown(group, transformers),
       isLast,
+      lineEnding: lineEndingOf(
+        content + (covered[covered.length - 1]?.trailing ?? ''),
+        documentLineEnding,
+      ),
+      documentLineEnding,
+      byteOrderMark: markdown.startsWith('\uFEFF'),
     };
     group.forEach((node, position) => {
       $setState(
@@ -311,6 +356,10 @@ function $exportKeepingSource(transformers: Array<Transformer>): string {
   const children = $getRoot().getChildren();
   const pieces: Array<ExportPiece> = [];
   let finalTrailing = '';
+  const documentLineEnding =
+    children
+      .map(child => $getState(child, markdownSourceState)?.documentLineEnding)
+      .find(lineEnding => lineEnding != null) ?? '\n';
   let index = 0;
   while (index < children.length) {
     const first = children[index];
@@ -332,7 +381,14 @@ function $exportKeepingSource(transformers: Array<Transformer>): string {
     holder.append(...group);
     const canonical = $convertToMarkdownString(transformers, holder);
     if (record?.content == null) {
-      pieces.push({text: canonical, trailing: null, isLast: false});
+      pieces.push({
+        text: withLineEnding(
+          $regeneratedMarkdown(holder, transformers),
+          documentLineEnding,
+        ),
+        trailing: null,
+        isLast: false,
+      });
       continue;
     }
     if (record.isLast) {
@@ -341,11 +397,22 @@ function $exportKeepingSource(transformers: Array<Transformer>): string {
     const unchanged =
       group.length === record.size && canonical === record.canonical;
     pieces.push({
-      text: (record.leading ?? '') + (unchanged ? record.content : canonical),
+      text:
+        (record.leading ?? '') +
+        (unchanged
+          ? record.content
+          : withLineEnding(
+              $regeneratedMarkdown(holder, transformers),
+              record.lineEnding ?? '\n',
+            )),
       trailing: record.trailing ?? null,
       isLast: record.isLast === true,
     });
   }
+  const separator = withLineEnding(BLOCK_SEPARATOR, documentLineEnding);
+  const byteOrderMark = children.some(
+    child => $getState(child, markdownSourceState)?.byteOrderMark === true,
+  );
   let output = '';
   pieces.forEach((piece, position) => {
     output += piece.text;
@@ -358,10 +425,73 @@ function $exportKeepingSource(transformers: Array<Transformer>): string {
     ) {
       output += piece.trailing;
     } else {
-      output += BLOCK_SEPARATOR;
+      output += separator;
     }
   });
-  return output;
+  // The byte order mark survives even when the block that carried it did not.
+  return byteOrderMark && !output.startsWith('\uFEFF')
+    ? `\uFEFF${output}`
+    : output;
+}
+
+function withLineEnding(text: string, lineEnding: string): string {
+  return lineEnding === '\n' ? text : text.replace(/\n/g, lineEnding);
+}
+
+/**
+ * Stands in for a backslash while Lexical exports text, because Lexical
+ * escapes every backslash already in the text. A noncharacter, so no document
+ * text contains it.
+ */
+const ESCAPE_MARKER = '\uFDD0';
+
+/** Line starts that would turn literal text into a block structure. */
+const LINE_START_SYNTAX: ReadonlyArray<[RegExp, string]> = [
+  // ATX heading, block quote, bullet list item.
+  [/^(#{1,6})(?=[ \t]|$)/, `${ESCAPE_MARKER}$1`],
+  [/^>/, `${ESCAPE_MARKER}>`],
+  [/^([-+])(?=[ \t]|$)/, `${ESCAPE_MARKER}$1`],
+  // Ordered list item.
+  [/^(\d{1,9})([.)])(?=[ \t]|$)/, `$1${ESCAPE_MARKER}$2`],
+  // Setext underline or thematic break made of `=` or `-`.
+  [/^([=-])(?=[=\- \t]*$)/, `${ESCAPE_MARKER}$1`],
+  // Table delimiter row.
+  [/^([|:])(?=[|:\- \t]*-[|:\- \t]*$)/, `${ESCAPE_MARKER}$1`],
+];
+
+// Inline syntax Lexical's export leaves unescaped: link and image brackets and
+// character references.
+const INLINE_SYNTAX =
+  /[[\]]|&(?=#[0-9]{1,7};|#[xX][0-9a-fA-F]{1,6};|[A-Za-z][A-Za-z0-9]*;)/g;
+
+/**
+ * The canonical Markdown of a changed group, with literal text escaped so the
+ * Markdown imports again as the structure the editor showed (spec:AST-062
+ * FR3). Mutates the group's text, so it must run on a throwaway editor.
+ */
+function $regeneratedMarkdown(
+  holder: ElementNode,
+  transformers: Array<Transformer>,
+): string {
+  for (const text of holder.getAllTextNodes()) {
+    if (text.hasFormat('code') || $isCodeNode(text.getParent())) {
+      continue;
+    }
+    let content = text
+      .getTextContent()
+      .replace(INLINE_SYNTAX, match => ESCAPE_MARKER + match);
+    const previous = text.getPreviousSibling();
+    if (previous == null || $isLineBreakNode(previous)) {
+      for (const [pattern, replacement] of LINE_START_SYNTAX) {
+        content = content.replace(pattern, replacement);
+      }
+    }
+    text.setTextContent(content);
+  }
+  return $convertToMarkdownString(transformers, holder).replace(
+    /\uFDD0/g,
+    '\\',
+  );
 }
 
 /**
