@@ -157,10 +157,12 @@ export function registerTemplate(program) {
         }
 
         case 'template.show': {
-          // Source must survive piping byte-for-byte, so the note about
-          // replaced demo media goes to stderr, in the copy receipt's words.
-          // (Text mode only: --json returned above with the count in data.)
+          // Source must survive piping byte-for-byte, so the package it comes
+          // from (cli-surface INV28) and the note about replaced demo media go
+          // to stderr, the note in the copy receipt's words. (Text mode only:
+          // --json returned above with both in the envelope.)
           const {source, demoMediaReplaced} = result.data;
+          console.error(`package: ${result.package}`);
           emit(code(source));
           if (demoMediaReplaced > 0) {
             console.error(

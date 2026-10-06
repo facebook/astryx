@@ -311,6 +311,7 @@ export async function node(route, options = {}) {
     throw await unknownTopicError(route, found.catalog);
   return {
     type: 'docs.node',
+    // The docs tree names each node's npm package as its provider.
     package: found.node.provider,
     data: await nodeView(found.catalog, found.tree, found.node),
   };

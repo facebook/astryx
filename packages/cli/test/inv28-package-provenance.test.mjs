@@ -48,6 +48,13 @@ async function json(args) {
 }
 
 /** @param {string[]} args */
+async function stderrOf(args) {
+  const {status, stdout, stderr} = await runCli(args);
+  expect(status, stdout).toBe(0);
+  return stderr;
+}
+
+/** @param {string[]} args */
 async function text(args) {
   const {status, stdout} = await runCli(args);
   expect(status, stdout).toBe(0);
@@ -175,10 +182,22 @@ describe('INV28: text names the same package', () => {
     expect(await text(['hook', 'useCollapsible'])).toContain(`package: ${CORE}`);
   });
 
-  it('verbatim source output prints only the source', async () => {
+  it('verbatim source output keeps stdout to the source and names the package on stderr', async () => {
     const source = await text(['component', 'Button', '--source']);
     expect(source).not.toContain('package:');
     expect(source.trimStart().startsWith('// Copyright')).toBe(true);
+    for (const args of [
+      ['component', 'Button', '--source'],
+      ['component', 'Button', '--showcase'],
+      ['template', 'dashboard'],
+    ]) {
+      expect(await stderrOf(args), args.join(' ')).toContain(`package: ${CORE}`);
+    }
+  });
+
+  it('a batch names the package of each source row', async () => {
+    const out = await text(['component', 'Button', 'Badge', '--source']);
+    expect(out.match(/package:\s+@astryxdesign\/core/g)?.length).toBe(2);
   });
 
   it('build names the package of each template, block, and component', async () => {

@@ -353,6 +353,12 @@ export function registerComponent(program) {
               out.push(
                 record(row, {fields: ['selector', 'status']}),
                 section('Result'),
+                // A batch is not piped as one file, so a source row names its
+                // package here; the other rows name it themselves.
+                ...(row.result.type === 'component.detail.source' ||
+                row.result.type === 'component.detail.showcase'
+                  ? [record({package: row.result.package})]
+                  : []),
                 ...componentDetailBlocks(
                   row.result,
                   row.selector,
@@ -390,6 +396,15 @@ export function registerComponent(program) {
         case 'component.detail.source':
         case 'component.detail.showcase':
         case 'component.detail.blocks':
+          // Source and showcase print the file alone so it pipes byte for
+          // byte; the package they come from goes to stderr (cli-surface
+          // INV28).
+          if (
+            result.type === 'component.detail.source' ||
+            result.type === 'component.detail.showcase'
+          ) {
+            console.error(`package: ${result.package}`);
+          }
           emit(
             ...componentDetailBlocks(
               result,
