@@ -5,7 +5,8 @@
 /**
  * @file RichTextView.tsx
  * @input Uses React, Lexical (lexical + @lexical/react, composed through
- *   LexicalExtensionComposer), mergeProps from core utils, design tokens
+ *   LexicalExtensionComposer), mergeProps from core utils, design tokens,
+ *   TableScrollRegionPlugin
  * @output Exports RichTextView component and RichTextViewProps
  * @position Read-only renderer for serialized Lexical editor state, exposed to
  *   assistive technology as document content rather than a form field;
@@ -34,6 +35,7 @@ import {HeadingNode, QuoteNode} from '@lexical/rich-text';
 import {LinkNode, AutoLinkNode} from '@lexical/link';
 import {CodeNode, CodeHighlightNode} from '@lexical/code';
 import {TableNode, TableRowNode, TableCellNode} from '@lexical/table';
+import {TableScrollRegionPlugin} from './TableScrollRegionPlugin';
 import type {
   AnyLexicalExtension,
   Klass,
@@ -169,7 +171,9 @@ function SyncValuePlugin({value}: {value: string}): null {
  *
  * The output is document content, not a form field: headings, lists and links
  * keep their own roles for assistive technology, and the view takes no label.
- * For a labelled, read-only field, use `<RichTextEditor isReadOnly />`.
+ * For a labelled, read-only field, use `<RichTextEditor isReadOnly />`. A
+ * table wider than the view scrolls inside a region named "Table" that takes a
+ * tab stop while it overflows, as core `Table` does.
  *
  * @example
  * ```
@@ -290,6 +294,7 @@ export function RichTextView({
           hasTabHandler={false}
           hasHorizontalScroll
         />
+        <TableScrollRegionPlugin />
         <RichTextPlugin
           contentEditable={<ContentEditable {...VIEW_CONTENT_EDITABLE_PROPS} />}
           placeholder={null}
