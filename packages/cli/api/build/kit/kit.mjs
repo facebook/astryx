@@ -178,17 +178,12 @@ function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
     direct && direct !== startName
       ? `Search matched \`${direct}\` by name, but ${place}`
       : place[0].toUpperCase() + place.slice(1);
-  // The ranker proposes a start; the checked-in word weights, blended with the
-  // ranker's scores, decide it (weights.mjs). Without weights the ranker's
-  // pick stands; a shell start keeps the shell the ranker named, if any, and
-  // never replaces a template the ranker chose when search matched one by name.
   const proposed = pickStart(ranked, kind);
   // The checked-in word weights (weights.mjs), blended with the ranker's
-  // scores, decide only a whole page that search matched no template for
-  // directly. A part or an edit starts where the ranker's placement rules put
-  // it (spec:AST-048/FR3), and a direct match keeps the ranker's pick.
+  // scores, decide the start of a whole page. A part or an edit starts where
+  // the ranker's placement rules put it (spec:AST-048/FR3).
   const weighed =
-    kind === 'page' && !direct
+    kind === 'page'
       ? weighStart(idea, ranked, proposed, catalog, {
           weights: loadWeights(),
           newPage: asksForNewPage(idea, catalog),
