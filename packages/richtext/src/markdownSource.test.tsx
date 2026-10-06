@@ -419,7 +419,8 @@ describe('Markdown source preservation (spec:AST-062)', () => {
         defaultValue={markdownToEditorStateJSON(markdown)}
       />,
     );
-    await waitFor(() => expect(ref.current).not.toBeNull());
+    // Edit only once the document has loaded.
+    await waitFor(() => expect(ref.current?.getMarkdown()).toBe(markdown));
     const editor = ref.current?.getEditor();
     // Shift+Enter after the first word of the paragraph, the list item, the
     // quote, and the code line.
@@ -474,7 +475,10 @@ describe('Markdown source preservation (spec:AST-062)', () => {
         defaultValue={markdownToEditorStateJSON('## Release title\n\nBody\n')}
       />,
     );
-    await waitFor(() => expect(ref.current).not.toBeNull());
+    // Edit only once the document has loaded.
+    await waitFor(() =>
+      expect(ref.current?.getMarkdown()).toBe('## Release title\n\nBody\n'),
+    );
     const editor = ref.current?.getEditor();
     editor?.update(
       () => {
@@ -486,9 +490,9 @@ describe('Markdown source preservation (spec:AST-062)', () => {
       {discrete: true},
     );
     editor?.dispatchCommand(INSERT_LINE_BREAK_COMMAND, false);
-    const markdown = ref.current?.getMarkdown() ?? '';
     // No backslash: a heading has no hard-break form.
-    expect(markdown).not.toContain('\\');
+    const markdown = '## Release\n title\n\nBody\n';
+    await waitFor(() => expect(ref.current?.getMarkdown()).toBe(markdown));
     const {root} = JSON.parse(markdownToEditorStateJSON(markdown)) as {
       root: SerializedShapeNode;
     };
