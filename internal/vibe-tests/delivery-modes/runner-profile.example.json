@@ -39,6 +39,20 @@
       "limits": {
         "maxModelSteps": 80
       },
+      "transcript": {
+        "format": "jsonl",
+        "toolCalls": [
+          {
+            "matches": [{"path": "kind", "equals": "tool-call"}],
+            "commandPath": "payload.command"
+          }
+        ],
+        "usage": {
+          "matches": [{"path": "kind", "equals": "usage"}],
+          "inputTokensPath": "payload.inputTokens",
+          "outputTokensPath": "payload.outputTokens"
+        }
+      },
       "audit": {
         "rules": [
           {
@@ -70,6 +84,11 @@
       "--json"
     ],
     "stdin": "prompt",
+    "resultPath": "payload.result",
+    "transcript": {
+      "format": "jsonl",
+      "toolCalls": []
+    },
     "audit": {
       "rules": []
     }

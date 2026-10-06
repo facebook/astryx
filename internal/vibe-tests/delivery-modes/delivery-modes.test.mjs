@@ -7,6 +7,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {afterEach, test} from 'vitest';
+import {checkpointIsComplete} from './checkpoint.mjs';
 import {
   buildTaskPrompt,
   getDeliverySpecs,
@@ -21,8 +22,12 @@ import {
   auditTranscript,
   countAstryxInvocations,
   countCliLookups,
+  countToolCalls,
   createPrivateRunRoot,
+  extractToolCommands,
   parseUsage,
+  runCommand,
+  sanitizeChildEnv,
 } from './process.mjs';
 import {renderCommand, validateRunnerProfile, wrapCommand} from './profile.mjs';
 import {
@@ -31,7 +36,7 @@ import {
   staticHtmlStarter,
   validateStaticConfig,
 } from './projects.mjs';
-import {summarize} from './report.mjs';
+import {buildReports, summarize} from './report.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const temporaryDirectories = [];
@@ -147,6 +152,21 @@ test('static-html config validates URL collections and optional values', () => {
   );
 });
 
+const exampleTranscriptAdapter = {
+  format: 'jsonl',
+  toolCalls: [
+    {
+      matches: [{path: 'kind', equals: 'tool-call'}],
+      commandPath: 'payload.command',
+    },
+  ],
+  usage: {
+    matches: [{path: 'kind', equals: 'usage'}],
+    inputTokensPath: 'payload.inputTokens',
+    outputTokensPath: 'payload.outputTokens',
+  },
+};
+
 function exampleProfile() {
   return {
     schemaVersion: 1,
@@ -173,6 +193,7 @@ function exampleProfile() {
         command: '/path/to/runner',
         args: ['--workspace', '{sandboxProject}'],
         stdin: 'prompt',
+        transcript: structuredClone(exampleTranscriptAdapter),
         audit: {rules: []},
       },
     },
@@ -180,6 +201,7 @@ function exampleProfile() {
       command: '/path/to/judge',
       args: ['--schema', '{schema}'],
       stdin: 'prompt',
+      transcript: structuredClone(exampleTranscriptAdapter),
       audit: {rules: []},
     },
   };
@@ -198,6 +220,48 @@ test('runner profile validates generic commands and audit classes', () => {
     },
   ];
   assert.throws(() => validateRunnerProfile(invalid), /class is invalid/);
+});
+
+test('runner profile is removed from child environments', () => {
+  assert.deepEqual(
+    sanitizeChildEnv({
+      PATH: '/bin',
+      VIBE_RUNNER_PROFILE: '/private/profile.json',
+      VIBE_RUNNER_PROFILE_JSON: '{"secret":true}',
+    }),
+    {PATH: '/bin'},
+  );
+  const invalid = exampleProfile();
+  invalid.runners.sample.env = {
+    VIBE_RUNNER_PROFILE: '/private/profile.json',
+  };
+  assert.throws(
+    () => validateRunnerProfile(invalid),
+    /cannot expose the runner profile/,
+  );
+});
+
+test('child processes cannot inherit runner profile inputs', async () => {
+  const result = await runCommand(
+    process.execPath,
+    [
+      '-e',
+      'process.stdout.write(JSON.stringify({file: process.env.VIBE_RUNNER_PROFILE ?? null, inline: process.env.VIBE_RUNNER_PROFILE_JSON ?? null, visible: process.env.VISIBLE_TEST_VALUE}))',
+    ],
+    {
+      env: {
+        VIBE_RUNNER_PROFILE: '/private/profile.json',
+        VIBE_RUNNER_PROFILE_JSON: '{"secret":true}',
+        VISIBLE_TEST_VALUE: 'visible',
+      },
+    },
+  );
+  assert.equal(result.code, 0);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    file: null,
+    inline: null,
+    visible: 'visible',
+  });
 });
 
 test('profile command rendering and launcher wrapping preserve argument boundaries', () => {
@@ -227,44 +291,54 @@ test('profile command rendering and launcher wrapping preserve argument boundari
 });
 
 test('transcript audit separates strict failures from adjusted findings', () => {
-  const audit = auditTranscript('ready\n', 'compatibility warning\n', {
-    rules: [
-      {
-        label: 'initialization receipt',
-        source: 'stdout',
-        kind: 'required',
-        class: 'strict',
-        pattern: 'ready',
-      },
-      {
-        label: 'compatibility warning',
-        source: 'stderr',
-        kind: 'forbidden',
-        class: 'adjusted',
-        pattern: 'warning',
-      },
-    ],
-  });
+  const audit = auditTranscript(
+    'ready\n',
+    'compatibility warning\n',
+    {
+      rules: [
+        {
+          label: 'initialization receipt',
+          source: 'stdout',
+          kind: 'required',
+          class: 'strict',
+          pattern: 'ready',
+        },
+        {
+          label: 'compatibility warning',
+          source: 'stderr',
+          kind: 'forbidden',
+          class: 'adjusted',
+          pattern: 'warning',
+        },
+      ],
+    },
+    exampleTranscriptAdapter,
+  );
   assert.equal(audit.passed, true);
   assert.equal(audit.classification, 'adjusted');
   assert.equal(audit.adjustedFindings.length, 1);
 
-  const failed = auditTranscript('', '', {
-    rules: [
-      {
-        label: 'initialization receipt',
-        source: 'stdout',
-        kind: 'required',
-        class: 'strict',
-        pattern: 'ready',
-      },
-    ],
-  });
+  const failed = auditTranscript(
+    '',
+    '',
+    {
+      rules: [
+        {
+          label: 'initialization receipt',
+          source: 'stdout',
+          kind: 'required',
+          class: 'strict',
+          pattern: 'ready',
+        },
+      ],
+    },
+    exampleTranscriptAdapter,
+  );
   assert.equal(failed.passed, false);
   assert.equal(failed.classification, 'strict-failure');
 });
 
-test('CLI lookup and usage parsing support common JSONL receipts', () => {
+test('profile adapter controls generic JSONL tool and usage parsing', () => {
   const commands = [
     'npx astryx component Button',
     'pnpm exec astryx docs principles',
@@ -277,21 +351,29 @@ test('CLI lookup and usage parsing support common JSONL receipts', () => {
     ),
     3,
   );
-  const transcript = commands
-    .map(command =>
-      JSON.stringify({
-        type: 'assistant',
-        message: {content: [{type: 'tool_use', input: {command}}]},
-      }),
-    )
-    .join('\n');
-  assert.equal(countCliLookups(transcript), 3);
-  assert.deepEqual(
-    parseUsage(
-      `${JSON.stringify({usage: {input_tokens: 10, output_tokens: 2}})}\n${JSON.stringify({usage: {input_tokens: 20, output_tokens: 4}})}`,
+  const transcript = [
+    ...commands.map(command =>
+      JSON.stringify({kind: 'tool-call', payload: {command}}),
     ),
-    {inputTokens: 20, outputTokens: 4},
+    JSON.stringify({
+      kind: 'usage',
+      payload: {inputTokens: 10, outputTokens: 2},
+    }),
+    JSON.stringify({
+      kind: 'usage',
+      payload: {inputTokens: 20, outputTokens: 4},
+    }),
+  ].join('\n');
+  assert.equal(countToolCalls(transcript, exampleTranscriptAdapter), 3);
+  assert.deepEqual(
+    extractToolCommands(transcript, exampleTranscriptAdapter),
+    commands,
   );
+  assert.equal(countCliLookups(transcript, exampleTranscriptAdapter), 3);
+  assert.deepEqual(parseUsage(transcript, exampleTranscriptAdapter), {
+    inputTokens: 20,
+    outputTokens: 4,
+  });
 });
 
 test('source scanner separates comments and theme definitions', async () => {
@@ -328,6 +410,27 @@ test('failed judge audits retry once and discard unsafe scores', () => {
   assert.equal(resolved.visualQuality, null);
 });
 
+test('judge crashes retry once and report recovery', () => {
+  const crashed = {
+    failureKind: 'process',
+    error: 'judge process exited unexpectedly',
+  };
+  const accepted = {
+    promptFulfillment: 75,
+    visualQuality: 80,
+    success: true,
+    notes: 'Complete.',
+    failureReasons: [],
+    contextAudit: {passed: true},
+  };
+  assert.equal(resolveJudgeAttempts([crashed], false), null);
+  const resolved = resolveJudgeAttempts([crashed, accepted], false);
+  assert.equal(resolved.judgeUnavailable, undefined);
+  assert.equal(resolved.rejudged, true);
+  assert.equal(resolved.attempts.length, 2);
+  assert.equal(resolved.attempts[0].error, crashed.error);
+});
+
 test('private run roots use mode 0700', async () => {
   const privateRun = await createPrivateRunRoot('test-');
   temporaryDirectories.push(privateRun.root);
@@ -349,6 +452,81 @@ test('summary includes failure zeros in medians and sample counts', () => {
   assert.equal(summary.passed, 1);
   assert.equal(summary.medianVisualQuality, 40);
   assert.equal(summary.samples.visual, 2);
+});
+
+test('infrastructure failures are unscored and resumable', () => {
+  const scored = makeResult({passed: true, value: 80});
+  scored.finishedAt = '2026-10-06T00:00:00.000Z';
+  scored.completed = true;
+  const infrastructureFailure = {
+    config: 'react-build',
+    agent: 'sample',
+    finishedAt: '2026-10-06T00:00:01.000Z',
+    completed: false,
+    infrastructureFailure: {
+      phase: 'setup',
+      retryable: true,
+      message: 'package registry unavailable',
+    },
+  };
+  const [summary] = summarize([scored, infrastructureFailure]);
+  assert.equal(summary.attempts, 2);
+  assert.equal(summary.runs, 1);
+  assert.equal(summary.infrastructureFailures, 1);
+  assert.equal(summary.passRate, 1);
+  assert.equal(summary.medianVisualQuality, 80);
+  assert.equal(checkpointIsComplete(scored), true);
+  assert.equal(checkpointIsComplete(infrastructureFailure), false);
+});
+
+test('reports expose infrastructure and judge attempt failures', async () => {
+  const outputDir = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-report-'),
+  );
+  temporaryDirectories.push(outputDir);
+  const scored = makeResult({passed: true, value: 80});
+  Object.assign(scored, {
+    id: 'prompt-react-build-sample',
+    promptId: 'prompt',
+    outputDir,
+    screenshotPath: null,
+  });
+  scored.evaluation.judge = {
+    configBlind: true,
+    promptFulfillment: null,
+    visualQuality: null,
+    success: null,
+    judgeUnavailable: true,
+    attempts: [
+      {attempt: 1, failureKind: 'process', error: 'judge crashed'},
+      {attempt: 2, failureKind: 'process', error: 'judge crashed again'},
+    ],
+  };
+  const infrastructureFailure = {
+    id: 'prompt-react-build-sample-infra',
+    promptId: 'prompt',
+    config: 'react-build',
+    agent: 'sample',
+    outputDir,
+    screenshotPath: null,
+    infrastructureFailure: {
+      phase: 'setup',
+      retryable: true,
+      message: 'registry unavailable',
+    },
+  };
+  const report = await buildReports({
+    outputDir,
+    iterationId: 'test',
+    results: [scored, infrastructureFailure],
+  });
+  const markdown = await fs.promises.readFile(report.markdownPath, 'utf8');
+  assert.equal(report.summary[0].judgeUnavailable, 1);
+  assert.equal(report.summary[0].infrastructureFailures, 1);
+  assert.match(markdown, /Infrastructure failures/);
+  assert.match(markdown, /registry unavailable \(unscored; retryable\)/);
+  assert.match(markdown, /Judge retries and failures/);
+  assert.match(markdown, /attempt 1: process — judge crashed/);
 });
 
 test('--dry-run needs neither a runner profile nor an agent CLI', () => {

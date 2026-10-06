@@ -5,6 +5,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {checkpointIsComplete} from './checkpoint.mjs';
 import {
   CONFIG_NAMES,
   DEFAULT_CONFIG_NAMES,
@@ -113,6 +114,20 @@ async function main() {
         },
       ]),
     ),
+    transcriptAdapterHashes: Object.fromEntries(
+      runners.map(name => [
+        name,
+        stableId(JSON.stringify(profile.runners[name].transcript)),
+      ]),
+    ),
+    judgeAdapterHash: profile.judge
+      ? stableId(
+          JSON.stringify({
+            transcript: profile.judge.transcript,
+            resultPath: profile.judge.resultPath ?? null,
+          }),
+        )
+      : null,
     isolation: isolationReceipt,
     runnerVersions: await runnerVersions(profile, runners),
   };
@@ -176,9 +191,10 @@ async function main() {
     );
   });
   results.sort((a, b) => a.id.localeCompare(b.id));
-  manifest.completedJobs = results.length;
+  const completedJobs = results.filter(checkpointIsComplete).length;
+  manifest.completedJobs = completedJobs;
   manifest.totalJobs = jobs.length;
-  if (results.length === jobs.length) {
+  if (completedJobs === jobs.length) {
     manifest.completedAt = new Date().toISOString();
   }
   await fsp.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -214,6 +230,8 @@ function assertCompatibleManifest(prior, current) {
     'runnerProfileSchemaVersion',
     'runnerLimits',
     'transcriptAudit',
+    'transcriptAdapterHashes',
+    'judgeAdapterHash',
   ];
   for (const key of keys) {
     if (JSON.stringify(prior[key]) !== JSON.stringify(current[key])) {
@@ -253,12 +271,14 @@ async function loadCheckpointResults({
       result.promptId !== job.prompt.id ||
       result.config !== job.config ||
       result.agent !== job.agent ||
-      result.taskPromptHash !== stableId(expectedTaskPrompt) ||
-      !result.finishedAt
+      result.taskPromptHash !== stableId(expectedTaskPrompt)
     ) {
       throw new Error(
         `Cannot resume from mismatched checkpoint: ${checkpointPath}`,
       );
+    }
+    if (!checkpointIsComplete(result)) {
+      continue;
     }
     results.push(result);
   }
@@ -333,6 +353,7 @@ async function runOne({
     taskPromptHash: stableId(taskPrompt),
     startedAt: new Date().toISOString(),
   };
+  let phase = 'setup';
 
   try {
     await prepareProject(spec, privateRun.projectDir);
@@ -341,6 +362,8 @@ async function runOne({
       path.join(privateRun.projectDir, 'TASK.md'),
       `${taskPrompt}\n`,
     );
+
+    phase = 'runner-launch';
     result.runner = await runAgent({
       name: agent,
       profile,
@@ -348,6 +371,8 @@ async function runOne({
       taskPrompt,
       timeoutMs: options.timeoutMinutes * 60 * 1000,
     });
+
+    phase = 'evaluation';
     result.evaluation = await evaluateRun({
       config,
       projectDir: privateRun.projectDir,
@@ -374,17 +399,25 @@ async function runOne({
           : 'Agent runner failed or timed out',
       );
     }
+    result.completed = true;
   } catch (error) {
-    result.error =
+    const message =
       error instanceof Error ? (error.stack ?? error.message) : String(error);
-    result.evaluation = failedRunEvaluation(result.error);
+    result.infrastructureFailure = {
+      phase,
+      retryable: true,
+      message,
+    };
+    result.completed = false;
   }
   result.finishedAt = new Date().toISOString();
 
+  await fsp.rm(sharedRunDir, {recursive: true, force: true});
   await fsp.mkdir(sharedRunDir, {recursive: true});
   if (fs.existsSync(privateScreenshot)) {
     await fsp.copyFile(privateScreenshot, sharedScreenshot);
   } else {
+    await fsp.rm(sharedScreenshot, {force: true});
     result.screenshotPath = null;
   }
   await copyProjectEvidence(
@@ -414,12 +447,13 @@ async function runAgent({name, profile, privateRun, taskPrompt, timeoutMs}) {
     {prompt: taskPrompt},
     {timeoutMs, transcriptPath: privateRun.transcriptPath},
   );
-  const usage = parseUsage(execution.stdout);
+  const usage = parseUsage(execution.stdout, entry.transcript);
   const combined = `${execution.stdout}\n${execution.stderr}`;
   const transcriptAudit = auditTranscript(
     execution.stdout,
     execution.stderr,
     entry.audit,
+    entry.transcript,
   );
   return {
     command: name,
@@ -436,8 +470,8 @@ async function runAgent({name, profile, privateRun, taskPrompt, timeoutMs}) {
         combined,
       ),
     usage,
-    toolCalls: countToolCalls(execution.stdout),
-    cliLookups: countCliLookups(execution.stdout),
+    toolCalls: countToolCalls(execution.stdout, entry.transcript),
+    cliLookups: countCliLookups(execution.stdout, entry.transcript),
     transcriptAudit,
     limits: entry.limits ?? {},
     stderr: execution.stderr,
@@ -457,42 +491,6 @@ function forceFailedScores(evaluation, reason) {
     notes: reason,
     failureReasons: [reason],
     automaticFailure: true,
-  };
-}
-
-function failedRunEvaluation(reason) {
-  return {
-    build: {passed: false, code: null, timedOut: false, durationMs: 0},
-    typecheck: null,
-    render: {
-      passed: false,
-      nonBlank: false,
-      adoptionShare: 0,
-      adoptedElementCount: 0,
-      eligibleElementCount: 0,
-      visibleElementCount: 0,
-      textLength: 0,
-      error: reason,
-    },
-    source: {
-      authoredFileCount: 0,
-      inlineStyleAttributes: 0,
-      customPropertyOnlyStyles: 0,
-      themeDefinitionCount: 0,
-      rawHexValues: 0,
-      rawPixelValues: 0,
-      hardCodedStyleCount: 0,
-    },
-    accessibility: {violationCount: null, violations: []},
-    judge: {
-      configBlind: true,
-      promptFulfillment: 0,
-      visualQuality: 0,
-      success: false,
-      notes: reason,
-      failureReasons: [reason],
-      automaticFailure: true,
-    },
   };
 }
 

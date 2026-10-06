@@ -38,10 +38,13 @@ export function summarize(results) {
   return [...groups.entries()]
     .map(([key, runs]) => {
       const [config, agent] = key.split('::');
-      const passed = runs.filter(run => run.evaluation?.render?.passed).length;
-      const wall = metric(runs.map(run => run.runner?.durationMs));
+      const scoredRuns = runs.filter(run => !run.infrastructureFailure);
+      const passed = scoredRuns.filter(
+        run => run.evaluation?.render?.passed,
+      ).length;
+      const wall = metric(scoredRuns.map(run => run.runner?.durationMs));
       const tokens = metric(
-        runs.map(run => {
+        scoredRuns.map(run => {
           const input = run.runner?.usage?.inputTokens;
           const output = run.runner?.usage?.outputTokens;
           return input == null && output == null
@@ -49,49 +52,56 @@ export function summarize(results) {
             : (input ?? 0) + (output ?? 0);
         }),
       );
-      const cli = metric(runs.map(run => run.runner?.cliLookups));
+      const cli = metric(scoredRuns.map(run => run.runner?.cliLookups));
       const adoption = metric(
-        runs.map(run => run.evaluation?.render?.adoptionShare),
+        scoredRuns.map(run => run.evaluation?.render?.adoptionShare),
       );
       const hardCoded = metric(
-        runs.map(run => run.evaluation?.source?.hardCodedStyleCount),
+        scoredRuns.map(run => run.evaluation?.source?.hardCodedStyleCount),
       );
       const themeDefinitions = metric(
-        runs.map(run => run.evaluation?.source?.themeDefinitionCount),
+        scoredRuns.map(run => run.evaluation?.source?.themeDefinitionCount),
       );
       const axe = metric(
-        runs.map(run => run.evaluation?.accessibility?.violationCount),
+        scoredRuns.map(run => run.evaluation?.accessibility?.violationCount),
       );
       const prompt = metric(
-        runs.map(run => run.evaluation?.judge?.promptFulfillment),
+        scoredRuns.map(run => run.evaluation?.judge?.promptFulfillment),
       );
       const visual = metric(
-        runs.map(run => run.evaluation?.judge?.visualQuality),
+        scoredRuns.map(run => run.evaluation?.judge?.visualQuality),
       );
       const typeErrors = metric(
-        runs.map(run => run.evaluation?.typecheck?.errorCount),
+        scoredRuns.map(run => run.evaluation?.typecheck?.errorCount),
       );
       const bestBeforeTimeoutPrompt = metric(
-        runs.map(run => run.evaluation?.bestBeforeTimeout?.promptFulfillment),
+        scoredRuns.map(
+          run => run.evaluation?.bestBeforeTimeout?.promptFulfillment,
+        ),
       );
       const bestBeforeTimeoutVisual = metric(
-        runs.map(run => run.evaluation?.bestBeforeTimeout?.visualQuality),
+        scoredRuns.map(run => run.evaluation?.bestBeforeTimeout?.visualQuality),
       );
       return {
         config,
         agent,
-        runs: runs.length,
+        attempts: runs.length,
+        runs: scoredRuns.length,
+        infrastructureFailures: runs.length - scoredRuns.length,
+        judgeUnavailable: scoredRuns.filter(
+          run => run.evaluation?.judge?.judgeUnavailable,
+        ).length,
         passed,
-        passRate: runs.length === 0 ? 0 : passed / runs.length,
-        timeouts: runs.filter(run => run.runner?.timedOut).length,
-        contextFailures: runs.filter(
+        passRate: scoredRuns.length === 0 ? null : passed / scoredRuns.length,
+        timeouts: scoredRuns.filter(run => run.runner?.timedOut).length,
+        contextFailures: scoredRuns.filter(
           run => run.runner?.transcriptAudit?.passed === false,
         ).length,
-        transcriptFlaggedRuns: runs.filter(
+        transcriptFlaggedRuns: scoredRuns.filter(
           run =>
             (run.runner?.transcriptAudit?.adjustedFindings?.length ?? 0) > 0,
         ).length,
-        buildFailures: runs.filter(
+        buildFailures: scoredRuns.filter(
           run => run.evaluation?.build?.passed === false,
         ).length,
         medianWallTimeMs: wall.value,
@@ -131,20 +141,20 @@ function markdownReport(iterationId, summary, results) {
   const lines = [
     `# Delivery-mode vibe test — ${iterationId}`,
     '',
-    'The same prompt battery and evaluator were used for every configuration. A build failure, runtime page error, or blank render contributes adoption, prompt-fulfillment, and visual-quality scores of 0 and remains in every median and pass-rate denominator.',
+    'The same prompt battery and evaluator were used for every configuration. A build failure, runtime page error, or blank render contributes adoption, prompt-fulfillment, and visual-quality scores of 0 and remains in every scored median and pass-rate denominator. Infrastructure failures are classified separately, unscored, and retryable.',
     '',
     'TypeScript errors are reported for `react-build` as a non-gating quality metric; only `vite build` gates its render. Hard-coded values exclude comments and token/theme definitions, which have their own column. A timed-out run keeps primary scores at 0 and separately reports the last complete on-disk state as best-before-timeout. The visual judge receives one anonymized default-state screenshot and the task prompt in its own filesystem namespace, so multi-step flows are judged from their default state equally across configs.',
     '',
-    'Runner and launcher details come from the local profile and are identical across delivery configs. Strict transcript-audit findings fail a cell; adjusted findings remain visible without changing its score. A failed judge audit is retried once, and two failures leave judge scores null.',
+    'Runner and launcher details come from the local profile and are identical across delivery configs. Strict transcript-audit findings fail a cell; adjusted findings remain visible without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave judge scores null and are reported. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.',
     '',
     '**Adoption is coarse.** Ancestor credit can include hand-rolled controls placed inside Astryx content slots. Use render, blind-judge, axe, hard-coded-style, theme-definition, and efficiency metrics as the primary comparison.',
     '',
-    '| Config | Runner | Runs | Pass | Timeouts | Strict audit | Adjusted audit | Wall | Tokens | CLI | Adoption (coarse) | Hard-coded | Theme defs | axe | Type errors | Prompt | Visual | Best-before timeout P/V |',
-    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+    '| Config | Runner | Attempts | Scored | Infra | Judge unavailable | Pass | Timeouts | Strict audit | Adjusted audit | Wall | Tokens | CLI | Adoption (coarse) | Hard-coded | Theme defs | axe | Type errors | Prompt | Visual | Best-before timeout P/V |',
+    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
   ];
   for (const row of summary) {
     lines.push(
-      `| ${row.config} | ${row.agent} | ${row.runs} | ${percent(row.passRate)} | ${row.timeouts} | ${row.contextFailures} | ${row.transcriptFlaggedRuns} | ${metricText(seconds(row.medianWallTimeMs), row.samples.wall)} | ${metricText(formatNumber(row.medianTokens), row.samples.tokens)} | ${metricText(formatNumber(row.medianCliLookups), row.samples.cli)} | ${metricText(percent(row.medianAdoptionShare), row.samples.adoption)} | ${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)} | ${metricText(formatNumber(row.medianThemeDefinitions), row.samples.themeDefinitions)} | ${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)} | ${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)} | ${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)} | ${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)} | ${formatBestBefore(row)} |`,
+      `| ${row.config} | ${row.agent} | ${row.attempts} | ${row.runs} | ${row.infrastructureFailures} | ${row.judgeUnavailable} | ${percent(row.passRate)} | ${row.timeouts} | ${row.contextFailures} | ${row.transcriptFlaggedRuns} | ${metricText(seconds(row.medianWallTimeMs), row.samples.wall)} | ${metricText(formatNumber(row.medianTokens), row.samples.tokens)} | ${metricText(formatNumber(row.medianCliLookups), row.samples.cli)} | ${metricText(percent(row.medianAdoptionShare), row.samples.adoption)} | ${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)} | ${metricText(formatNumber(row.medianThemeDefinitions), row.samples.themeDefinitions)} | ${metricText(formatNumber(row.medianAxeViolations), row.samples.axe)} | ${metricText(formatNumber(row.medianTypeErrors), row.samples.typeErrors)} | ${metricText(formatNumber(row.medianPromptFulfillment), row.samples.prompt)} | ${metricText(formatNumber(row.medianVisualQuality), row.samples.visual)} | ${formatBestBefore(row)} |`,
     );
   }
   lines.push('', '## Transcript audit flags', '');
@@ -161,6 +171,42 @@ function markdownReport(iterationId, summary, results) {
       lines.push(`- **${result.id}** — ${audit.classification}`);
       for (const finding of audit.findings) {
         lines.push(`  - ${finding.class}: ${finding.label}`);
+      }
+    }
+    lines.push('');
+  }
+  lines.push('## Infrastructure failures', '');
+  const infrastructureFailures = results.filter(
+    result => result.infrastructureFailure,
+  );
+  if (infrastructureFailures.length === 0) {
+    lines.push('None.', '');
+  } else {
+    for (const result of infrastructureFailures) {
+      lines.push(
+        `- **${result.id}** — ${result.infrastructureFailure.phase}: ${firstLine(result.infrastructureFailure.message)} (unscored; retryable)`,
+      );
+    }
+    lines.push('');
+  }
+  lines.push('## Judge retries and failures', '');
+  const retriedJudgments = results.filter(
+    result =>
+      (result.evaluation?.judge?.attempts?.length ?? 0) > 1 ||
+      result.evaluation?.judge?.judgeUnavailable,
+  );
+  if (retriedJudgments.length === 0) {
+    lines.push('None.', '');
+  } else {
+    for (const result of retriedJudgments) {
+      const judgment = result.evaluation.judge;
+      lines.push(
+        `- **${result.id}** — ${judgment.judgeUnavailable ? 'unavailable' : 'recovered'} after ${judgment.attempts.length} attempts`,
+      );
+      for (const attempt of judgment.attempts) {
+        lines.push(
+          `  - attempt ${attempt.attempt}: ${attempt.error ? `${attempt.failureKind ?? 'failure'} — ${firstLine(attempt.error)}` : 'accepted'}`,
+        );
       }
     }
     lines.push('');
@@ -187,7 +233,7 @@ async function htmlReport(iterationId, summary, results) {
   const rows = summary
     .map(
       row => `<tr>
-<td>${escapeHtml(row.config)}</td><td>${escapeHtml(row.agent)}</td><td>${row.runs}</td><td>${percent(row.passRate)}</td>
+<td>${escapeHtml(row.config)}</td><td>${escapeHtml(row.agent)}</td><td>${row.attempts}</td><td>${row.runs}</td><td>${row.infrastructureFailures}</td><td>${row.judgeUnavailable}</td><td>${percent(row.passRate)}</td>
 <td>${row.timeouts}</td><td>${row.contextFailures}</td><td>${row.transcriptFlaggedRuns}</td><td>${metricText(seconds(row.medianWallTimeMs), row.samples.wall)}</td>
 <td>${metricText(formatNumber(row.medianTokens), row.samples.tokens)}</td><td>${metricText(formatNumber(row.medianCliLookups), row.samples.cli)}</td>
 <td>${metricText(percent(row.medianAdoptionShare), row.samples.adoption)}</td><td>${metricText(formatNumber(row.medianHardCodedStyles), row.samples.hardCoded)}</td>
@@ -206,7 +252,7 @@ async function htmlReport(iterationId, summary, results) {
         image = `<img loading="lazy" src="data:image/png;base64,${bytes.toString('base64')}" alt="${escapeHtml(promptId)} ${escapeHtml(result.config)} ${escapeHtml(result.agent)}" />`;
       }
       cards.push(`<article><h3>${escapeHtml(result.config)} · ${escapeHtml(result.agent)}</h3>${image}<dl>
-<dt>Render</dt><dd>${result.evaluation?.render?.passed ? 'pass' : 'fail'}</dd>
+<dt>Status</dt><dd>${result.infrastructureFailure ? 'infrastructure failure' : result.evaluation?.render?.passed ? 'render pass' : 'render fail'}</dd>
 <dt>Adoption (coarse)</dt><dd>${percent(result.evaluation?.render?.adoptionShare)}</dd>
 <dt>axe</dt><dd>${formatNumber(result.evaluation?.accessibility?.violationCount)}</dd>
 <dt>Type errors</dt><dd>${formatNumber(result.evaluation?.typecheck?.errorCount)}</dd>
@@ -240,6 +286,39 @@ async function htmlReport(iterationId, summary, results) {
             return `<li><strong>${escapeHtml(result.id)}</strong> — ${escapeHtml(audit.classification)}<ul>${findings}</ul></li>`;
           })
           .join('')}</ul>`;
+  const infrastructureHtml = results.some(
+    result => result.infrastructureFailure,
+  )
+    ? `<ul>${results
+        .filter(result => result.infrastructureFailure)
+        .map(
+          result =>
+            `<li><strong>${escapeHtml(result.id)}</strong> — ${escapeHtml(result.infrastructureFailure.phase)}: ${escapeHtml(firstLine(result.infrastructureFailure.message))} (unscored; retryable)</li>`,
+        )
+        .join('')}</ul>`
+    : '<p>None.</p>';
+  const judgeRetryHtml = results.some(
+    result =>
+      (result.evaluation?.judge?.attempts?.length ?? 0) > 1 ||
+      result.evaluation?.judge?.judgeUnavailable,
+  )
+    ? `<ul>${results
+        .filter(
+          result =>
+            (result.evaluation?.judge?.attempts?.length ?? 0) > 1 ||
+            result.evaluation?.judge?.judgeUnavailable,
+        )
+        .map(result => {
+          const judgment = result.evaluation.judge;
+          return `<li><strong>${escapeHtml(result.id)}</strong> — ${judgment.judgeUnavailable ? 'unavailable' : 'recovered'} after ${judgment.attempts.length} attempts<ul>${judgment.attempts
+            .map(
+              attempt =>
+                `<li>attempt ${attempt.attempt}: ${escapeHtml(attempt.error ? `${attempt.failureKind ?? 'failure'} — ${firstLine(attempt.error)}` : 'accepted')}</li>`,
+            )
+            .join('')}</ul></li>`;
+        })
+        .join('')}</ul>`
+    : '<p>None.</p>';
 
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -248,11 +327,13 @@ async function htmlReport(iterationId, summary, results) {
 :root{color-scheme:light dark;font-family:Inter,system-ui,sans-serif}body{max-width:1800px;margin:auto;padding:24px;background:#f4f6f8;color:#18202a}h1,h2{letter-spacing:-.02em}p{max-width:90ch}table{border-collapse:collapse;width:100%;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px #0002}th,td{padding:10px;border-bottom:1px solid #d9dee5;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}th:first-child,th:nth-child(2),td:first-child,td:nth-child(2){text-align:left}.table-wrap{overflow:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}article{background:white;border:1px solid #d9dee5;border-radius:12px;padding:12px;box-shadow:0 1px 4px #0001}article h3{margin:0 0 10px}img{width:100%;max-height:420px;object-fit:contain;object-position:top;background:#eef1f4;border-radius:8px}.missing{height:180px;display:grid;place-items:center;background:#eef1f4;border-radius:8px}dl{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:0}dt{font-weight:600}dd{margin:0;text-align:right}@media(prefers-color-scheme:dark){body{background:#111820;color:#e8edf2}table,article{background:#1b2530;border-color:#34404d}th,td{border-color:#34404d}.missing,img{background:#10161d}}
 </style></head><body>
 <h1>Delivery-mode vibe test</h1>
-<p>Iteration <code>${escapeHtml(iterationId)}</code>. Every config uses the same evaluator. Failed builds, runtime errors, and blank renders contribute 0 to adoption, prompt, and visual metrics and stay in every denominator. Parenthetical <code>n</code> is the sample count for each median.</p>
-<p>TypeScript diagnostics are non-gating. Comments are excluded from hard-coded scanning, and token/theme definitions are reported separately. Timed-out runs keep zero primary scores and expose their last complete screenshot under best-before-timeout. The blind judge sees only an anonymized default-state screenshot and prompt in a private filesystem namespace. Runner and launcher details come from the local profile and remain identical across delivery configs. Strict audit findings fail a cell; adjusted findings are reported without changing its score. A failed judge audit is retried once and two failures leave scores null.</p>
+<p>Iteration <code>${escapeHtml(iterationId)}</code>. Every config uses the same evaluator. Failed builds, runtime errors, and blank renders contribute 0 to adoption, prompt, and visual metrics and stay in every scored denominator. Infrastructure failures are unscored and retryable. Parenthetical <code>n</code> is the sample count for each median.</p>
+<p>TypeScript diagnostics are non-gating. Comments are excluded from hard-coded scanning, and token/theme definitions are reported separately. Timed-out runs keep zero primary scores and expose their last complete screenshot under best-before-timeout. The blind judge sees only an anonymized default-state screenshot and prompt in a private filesystem namespace. Runner and launcher details come from the local profile and remain identical across delivery configs. Strict audit findings fail a cell; adjusted findings are reported without changing its score. Any judge crash, invalid result, or failed audit is retried once; exhausted attempts leave scores null. Runner and judge processes use the profile launcher, while project preparation and evaluation run host-side inside a mode-0700 private root.</p>
 <p><strong>Adoption is coarse.</strong> Ancestor credit can include hand-rolled controls inside Astryx content slots. Render, blind-judge, axe, hard-coded-style, theme-definition, and efficiency metrics lead the comparison.</p>
-<div class="table-wrap"><table><thead><tr><th>Config</th><th>Runner</th><th>Runs</th><th>Pass</th><th>Timeouts</th><th>Strict audit</th><th>Adjusted audit</th><th>Wall</th><th>Tokens</th><th>CLI</th><th>Adoption (coarse)</th><th>Hard-coded</th><th>Theme defs</th><th>axe</th><th>Type errors</th><th>Prompt</th><th>Visual</th><th>Best-before P/V</th></tr></thead><tbody>${rows}</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Config</th><th>Runner</th><th>Attempts</th><th>Scored</th><th>Infra</th><th>Judge unavailable</th><th>Pass</th><th>Timeouts</th><th>Strict audit</th><th>Adjusted audit</th><th>Wall</th><th>Tokens</th><th>CLI</th><th>Adoption (coarse)</th><th>Hard-coded</th><th>Theme defs</th><th>axe</th><th>Type errors</th><th>Prompt</th><th>Visual</th><th>Best-before P/V</th></tr></thead><tbody>${rows}</tbody></table></div>
 <section><h2>Transcript audit flags</h2>${transcriptAuditHtml}</section>
+<section><h2>Infrastructure failures</h2>${infrastructureHtml}</section>
+<section><h2>Judge retries and failures</h2>${judgeRetryHtml}</section>
 ${grids.join('\n')}
 </body></html>\n`;
 }
@@ -272,6 +353,10 @@ function metric(values) {
         : numbers[middle],
     count: numbers.length,
   };
+}
+
+function firstLine(value) {
+  return String(value).split('\n')[0];
 }
 
 function formatBestBefore(row) {

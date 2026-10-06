@@ -675,7 +675,7 @@ async function runBlindJudge({prompt, screenshotPath, profile}) {
     ],
     additionalProperties: false,
   };
-  const judgePrompt = `You are a blind UI evaluator. Use the Read tool to inspect screenshot.png. You are not told which component system or delivery configuration produced it.
+  const judgePrompt = `You are a blind UI evaluator. Inspect screenshot.png in the working directory. You are not told which component system or delivery configuration produced it.
 
 Original task:
 ${prompt.prompt}
@@ -709,7 +709,7 @@ export function resolveJudgeAttempts(attempts, exhausted = false) {
   if (!last) {
     throw new Error('Judge resolution requires at least one attempt');
   }
-  if (!last.contextAudit || last.contextAudit.passed) {
+  if (judgeAttemptSucceeded(last)) {
     return {
       ...last,
       rejudged: attempts.length > 1,
@@ -727,12 +727,24 @@ export function resolveJudgeAttempts(attempts, exhausted = false) {
     success: null,
     notes: null,
     failureReasons: [],
-    error: 'Judge context audit failed on both attempts',
+    error: 'Judge unavailable after two failed attempts',
     judgeUnavailable: true,
-    contextAudit: last.contextAudit,
+    contextAudit: last.contextAudit ?? null,
     rejudged: true,
     attempts: attempts.map(judgeAttemptReceipt),
   };
+}
+
+function judgeAttemptSucceeded(attempt) {
+  return (
+    !attempt.error &&
+    attempt.contextAudit?.passed !== false &&
+    Number.isFinite(attempt.promptFulfillment) &&
+    Number.isFinite(attempt.visualQuality) &&
+    typeof attempt.success === 'boolean' &&
+    typeof attempt.notes === 'string' &&
+    Array.isArray(attempt.failureReasons)
+  );
 }
 
 async function runBlindJudgeAttempt({
@@ -766,18 +778,39 @@ async function runBlindJudgeAttempt({
       result.stdout,
       result.stderr,
       profile.judge.audit,
+      profile.judge.transcript,
     );
-    if (result.code !== 0 || !contextAudit.passed) {
+    if (result.code !== 0 || result.timedOut) {
       return {
         configBlind: true,
         contextAudit,
+        failureKind: result.timedOut ? 'timeout' : 'process',
         error:
           result.stderr ||
           result.stdout ||
           `Judge exited ${result.code ?? 'without a code'}`,
       };
     }
-    const parsed = parseStructuredOutput(result.stdout);
+    if (!contextAudit.passed) {
+      return {
+        configBlind: true,
+        contextAudit,
+        failureKind: 'context-audit',
+        error: 'Judge context audit failed',
+      };
+    }
+    let parsed;
+    try {
+      parsed = parseStructuredOutput(result.stdout, profile.judge.resultPath);
+      assertValidJudgment(parsed);
+    } catch (error) {
+      return {
+        configBlind: true,
+        contextAudit,
+        failureKind: 'invalid-output',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
     return {
       configBlind: true,
       fileAccessRoot: profile.sandbox.projectDir,
@@ -788,6 +821,7 @@ async function runBlindJudgeAttempt({
   } catch (error) {
     return {
       configBlind: true,
+      failureKind: 'process',
       error: error instanceof Error ? error.message : String(error),
     };
   } finally {
@@ -803,11 +837,12 @@ function judgeAttemptReceipt(judgment, index) {
     visualQuality: judgment.visualQuality ?? null,
     success: judgment.success ?? null,
     durationMs: judgment.durationMs ?? null,
+    failureKind: judgment.failureKind ?? null,
     error: judgment.error ?? null,
   };
 }
 
-function parseStructuredOutput(text) {
+function parseStructuredOutput(text, resultPath) {
   let outer;
   try {
     outer = JSON.parse(text);
@@ -823,18 +858,40 @@ function parseStructuredOutput(text) {
         }
       })
       .filter(Boolean);
-    outer =
-      records.findLast(record => record.type === 'result') ?? records.at(-1);
+    outer = records.at(-1);
   }
-  const candidate = outer?.structured_output ?? outer?.result ?? outer;
-  if (candidate && typeof candidate === 'object') {
+  const candidate = resultPath ? readResultPath(outer, resultPath) : outer;
+  if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
     return candidate;
   }
-  const match = String(candidate).match(/\{[\s\S]*\}/);
-  if (!match) {
-    throw new Error('Judge returned no JSON object');
+  throw new Error('Judge returned no structured result object');
+}
+
+function readResultPath(value, dottedPath) {
+  return dottedPath
+    .split('.')
+    .reduce(
+      (current, part) =>
+        current && typeof current === 'object' ? current[part] : undefined,
+      value,
+    );
+}
+
+function assertValidJudgment(value) {
+  if (
+    !Number.isFinite(value.promptFulfillment) ||
+    value.promptFulfillment < 0 ||
+    value.promptFulfillment > 100 ||
+    !Number.isFinite(value.visualQuality) ||
+    value.visualQuality < 0 ||
+    value.visualQuality > 100 ||
+    typeof value.success !== 'boolean' ||
+    typeof value.notes !== 'string' ||
+    !Array.isArray(value.failureReasons) ||
+    !value.failureReasons.every(reason => typeof reason === 'string')
+  ) {
+    throw new Error('Judge result did not match the required score schema');
   }
-  return JSON.parse(match[0]);
 }
 
 function commandReceipt(command) {
