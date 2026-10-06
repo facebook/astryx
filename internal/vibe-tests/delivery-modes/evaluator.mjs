@@ -25,6 +25,7 @@ export async function evaluateRun({
   skipJudge = false,
   verifyStarterTyping = false,
   judgeProfile,
+  browserType = chromium,
 }) {
   const typecheck =
     config === 'react-build'
@@ -40,26 +41,43 @@ export async function evaluateRun({
           timeoutMs: 5 * 60 * 1000,
         })
       : {code: 0, stdout: '', stderr: '', durationMs: 0, timedOut: false};
-  const source = await scanAuthoredSource(projectDir, baselineSources);
 
-  if (build.code !== 0) {
+  await fsp.mkdir(path.dirname(screenshotPath), {recursive: true});
+  let source = emptySourceMetrics();
+  let server;
+  try {
+    source = await scanAuthoredSource(projectDir, baselineSources);
+    if (build.code !== 0) {
+      return failedEvaluation({
+        build,
+        typecheck,
+        source,
+        reason: build.stderr || build.stdout || 'Build failed',
+      });
+    }
+    server =
+      config === 'react-build'
+        ? await startVitePreview(projectDir)
+        : await startStaticServer(projectDir);
+  } catch (error) {
     return failedEvaluation({
       build,
       typecheck,
       source,
-      reason: build.stderr || build.stdout || 'Build failed',
+      reason:
+        error instanceof Error ? (error.stack ?? error.message) : String(error),
     });
   }
 
-  await fsp.mkdir(path.dirname(screenshotPath), {recursive: true});
-  const server =
-    config === 'react-build'
-      ? await startVitePreview(projectDir)
-      : await startStaticServer(projectDir);
-
   let browser;
   try {
-    browser = await chromium.launch({headless: true});
+    browser = await browserType.launch({headless: true});
+  } catch (error) {
+    await server.stop();
+    throw error;
+  }
+
+  try {
     const context = await browser.newContext({
       viewport: {width: 1440, height: 900},
     });
@@ -145,9 +163,21 @@ export async function evaluateRun({
         error instanceof Error ? (error.stack ?? error.message) : String(error),
     });
   } finally {
-    await browser?.close();
+    await browser.close();
     await server.stop();
   }
+}
+
+function emptySourceMetrics() {
+  return {
+    authoredFileCount: 0,
+    inlineStyleAttributes: 0,
+    customPropertyOnlyStyles: 0,
+    themeDefinitionCount: 0,
+    rawHexValues: 0,
+    rawPixelValues: 0,
+    hardCodedStyleCount: 0,
+  };
 }
 
 function failedEvaluation({build, typecheck, source, reason}) {
