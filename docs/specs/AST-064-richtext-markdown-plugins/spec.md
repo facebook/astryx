@@ -143,14 +143,13 @@ Syntax a surface does not adopt stays as the author wrote it.
   document imported without the plugin keeps the syntax as literal text and
   exports it unchanged.
 - **FR11 — Stored state is re-derived from source.** Stored editor state
-  keeps each extension node's exact source, its plugin's name, `parseKey`,
-  and protocol version, and the data derived for rendering. When a surface
+  keeps each extension node's exact source, its plugin's name and protocol
+  version (`apiVersion`), and the data derived for rendering. When a surface
   loads stored state, it derives each node again from its source with the
   adopted plugin and never renders stored data on its own. A node whose
   source the adopted plugin no longer recognizes as that node — the plugin's
-  syntax, `parseKey`, or protocol version changed without a migration, or the
-  plugin is absent — loads as its source, literal text that exports
-  unchanged.
+  syntax or protocol version changed without a migration, or the plugin is
+  absent — loads as its source, literal text that exports unchanged.
 - **FR12 — Headless use is server-safe.** Recognition, import, export, and
   `createRichTextExtension`, imported from `@astryxdesign/richtext/markdown`,
   run in Node and in server code with no DOM. RichText's surfaces are client
@@ -202,7 +201,7 @@ the client-only `@astryxdesign/core/Markdown/plugin-renderer` subpath with
 | FR8      | The exact same node rendered by `Markdown`, by `MarkdownPluginNodeRenderer`, and in both RichText surfaces, compared below `Markdown`'s block wrapper | A renderer that returns content; one that returns nothing; one that throws when called; one whose component throws; one that suspends; a node with no source; a surface without the extension                                                                                    | Any difference in the node's DOM, accessibility tree, theme targets, fallback, or failure report; or an element or theme target the renderer adds, fails                                                                  |
 | FR9      | Failure reporting from both surfaces                                                                                                                  | A syntax failure; a render failure, repeated                                                                                                                                                                                                                                     | A report that differs from core's message or frequency, or a RichText-only diagnostic, fails                                                                                                                              |
 | FR10     | `spec:AST-062`'s conformance corpus with plugin syntax added                                                                                          | Unchanged documents; an edit beside a node; a node moved; import without the plugin                                                                                                                                                                                              | Any byte of a node's source changing, or source lost without the plugin, fails                                                                                                                                            |
-| FR11     | Stored state loaded under changed plugins                                                                                                             | The same plugin; a changed `parseKey`; a changed protocol version; changed syntax that no longer matches; stored data edited to disagree with the source; no plugin                                                                                                              | Rendering stale stored data, or a lost or changed source byte, fails                                                                                                                                                      |
+| FR11     | Stored state loaded under changed plugins                                                                                                             | The same plugin; a changed protocol version; changed syntax that no longer matches; stored data edited to disagree with the source; no plugin                                                                                                                                    | Rendering stale stored data, or a lost or changed source byte, fails                                                                                                                                                      |
 | FR12     | Headless runs and hydration                                                                                                                           | Node import and export with extensions from the subpath; `createRichTextExtension` without a DOM; a server-rendered page hydrating a `RichTextView` with inline and block nodes                                                                                                  | Browser-only work during creation, import, or export, or a hydration mismatch, fails                                                                                                                                      |
 
 ## Decision log
@@ -262,9 +261,11 @@ document because base syntax appears inside plugin source.
 Core's protocol reads syntax into nodes and renders them; it has no way to
 write a changed node back to Markdown. An atomic node keeps its authored
 source, exports exactly that, and is derived again from it whenever it
-loads, so stored data can never drift from the document. Rejected: editable
-extension content, which would need a serializer per plugin, and trusting
-stored data across plugin versions.
+loads, so stored data can never drift from the document. Stored state names
+the plugin only by what its entry exposes, its name and protocol version:
+re-derivation, not a stored identity, decides what a node is. Rejected:
+editable extension content, which would need a serializer per plugin, and
+trusting stored data across plugin versions.
 
 ### DEC-6 — Core exposes only the facts RichText needs
 
