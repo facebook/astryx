@@ -62,6 +62,15 @@ const CASES = [
   '&#12345678;',
   'a&nbsp;b',
   '\\&copy; is escaped',
+  // Backslashes inside a code span are literal and close nothing early.
+  'Paths like `C:\\` &amp; `D:\\` work',
+  'Path `C:\\` then &#12345678; and &copy;',
+  // An escaped opener, and spans of one, two, and three backticks.
+  '\\`&amp;` stays text',
+  '``a ` &amp; b`` and &amp;',
+  'Then ```a `` &amp; b``` and &copy;',
+  // An unclosed run is literal.
+  '`unclosed &amp; text',
   '\\&#169; is escaped too',
   '\\\\&copy; follows an escaped backslash',
   'code `&copy;` stays',
@@ -141,6 +150,16 @@ describe('character references (spec:AST-061 FR7, DEC-5)', () => {
       );
       expect(elapsed, String(count)).toBeLessThan(5000);
     }
+  });
+
+  it('find code spans the CommonMark way: only a run of the same length closes one', () => {
+    // A double run inside a single-backtick span neither closes it nor opens
+    // one, so the whole is code and the reference stays as written.
+    expect(richTextText('`one`` &amp; two`\n')).toBe('one`` &amp; two');
+    // Fenced code and CRLF: the reference after the fence decodes.
+    expect(richTextText('```\r\n&copy;\r\n```\r\n\r\n&copy;\r\n')).toBe(
+      '&copy;©',
+    );
   });
 
   it('stay literal in fenced code, as core Markdown keeps them', () => {

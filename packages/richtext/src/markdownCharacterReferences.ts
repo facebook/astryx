@@ -65,8 +65,9 @@ function* absentCharacters(text: string): Generator<string> {
 
 /**
  * The ranges of `text` that are code: fenced code blocks, and code spans,
- * where a backtick run opens a span only if a run of the same length closes it
- * (CommonMark 0.31). Runs are indexed by length, so the scan is linear.
+ * where a backtick run opens a span only if a later run of the same length
+ * closes it (CommonMark 0.31). One scan collects the runs; runs of each length
+ * are searched by position, so the whole is O(n log n).
  */
 function codeRanges(text: string): Array<readonly [number, number]> {
   const ranges: Array<readonly [number, number]> = [];
@@ -98,24 +99,22 @@ function codeRanges(text: string): Array<readonly [number, number]> {
   if (fence != null) {
     ranges.push([fence.start, text.length]);
   }
-  // Code spans, outside fenced code.
+  // Code spans, outside fenced code. A backtick run is a string of backticks
+  // with no backtick on either side. Backslashes are literal inside a code
+  // span, so they never hide a closing run; an odd number of backslashes
+  // before a run only makes its first backtick literal, so the rest of the
+  // run (if any) may still open a span.
   const runs: Array<{readonly start: number; readonly length: number}> = [];
   let index = 0;
   let fenceIndex = 0;
-  const fences = [...ranges];
   while (index < text.length) {
-    const current = fences[fenceIndex];
+    const current = ranges[fenceIndex];
     if (current != null && index >= current[0]) {
       index = current[1];
       fenceIndex++;
       continue;
     }
-    const character = text[index];
-    if (character === '\\') {
-      index += 2;
-      continue;
-    }
-    if (character === '`') {
+    if (text[index] === '`') {
       let end = index;
       while (text[end] === '`') {
         end++;
@@ -126,30 +125,52 @@ function codeRanges(text: string): Array<readonly [number, number]> {
     }
     index++;
   }
-  // For each run length, the positions of later runs of that length.
+  // Each run's position in the list of runs of its length, for finding the
+  // next run of a given length after a point by binary search.
   const byLength = new Map<number, Array<number>>();
-  runs.forEach((run, position) => {
-    const positions = byLength.get(run.length) ?? [];
-    positions.push(position);
-    byLength.set(run.length, positions);
-  });
-  const nextOfLength = new Map<number, number>();
-  let position = 0;
-  while (position < runs.length) {
-    const run = runs[position];
-    const positions = byLength.get(run.length) ?? [];
-    let cursor = nextOfLength.get(run.length) ?? 0;
-    while (cursor < positions.length && positions[cursor] <= position) {
-      cursor++;
+  for (const run of runs) {
+    const starts = byLength.get(run.length) ?? [];
+    starts.push(run.start);
+    byLength.set(run.length, starts);
+  }
+  const nextRunAfter = (length: number, after: number): number | null => {
+    const starts = byLength.get(length);
+    if (starts == null) {
+      return null;
     }
-    nextOfLength.set(run.length, cursor);
-    const closer = positions[cursor];
-    if (closer == null) {
-      position++;
+    let low = 0;
+    let high = starts.length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      if (starts[middle] < after) {
+        low = middle + 1;
+      } else {
+        high = middle;
+      }
+    }
+    return starts[low] ?? null;
+  };
+  let resumeAt = 0;
+  for (const run of runs) {
+    if (run.start < resumeAt) {
       continue;
     }
-    ranges.push([run.start, runs[closer].start + run.length]);
-    position = closer + 1;
+    let backslashes = 0;
+    while (text[run.start - 1 - backslashes] === '\\') {
+      backslashes++;
+    }
+    const isEscaped = backslashes % 2 === 1;
+    const openStart = isEscaped ? run.start + 1 : run.start;
+    const openLength = isEscaped ? run.length - 1 : run.length;
+    if (openLength === 0) {
+      continue;
+    }
+    const closer = nextRunAfter(openLength, run.start + run.length);
+    if (closer == null) {
+      continue;
+    }
+    ranges.push([openStart, closer + openLength]);
+    resumeAt = closer + openLength;
   }
   return ranges.sort((a, b) => a[0] - b[0]);
 }
