@@ -31,6 +31,7 @@ import type {BaseProps} from '../BaseProps';
 import {ListContext} from './ListContext';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
+import type {ItemSwipeActions, ItemSwipeBehavior} from '../Item';
 import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
@@ -114,6 +115,20 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
    * @default false
    */
   isSelected?: boolean;
+
+  /**
+   * Swipe actions for touch, passed through to `Item` unchanged: the verbs a
+   * sideways drag uncovers on each side. See `Item.swipeActions`; `List`
+   * clips the rows in the inline axis for them.
+   */
+  swipeActions?: ItemSwipeActions;
+
+  /**
+   * What a swipe does, passed through to `Item` unchanged. See
+   * `Item.swipeBehavior`.
+   * @default 'reveal'
+   */
+  swipeBehavior?: ItemSwipeBehavior;
 }
 
 // =============================================================================
