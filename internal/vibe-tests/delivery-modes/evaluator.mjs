@@ -16,6 +16,8 @@ import {
 
 const fsp = fs.promises;
 
+const WORKER_RECEIPT_PREFIX = 'ASTRYX_EVALUATOR_RECEIPT:';
+
 export async function evaluateRun({
   config,
   privateRun,
@@ -26,30 +28,79 @@ export async function evaluateRun({
   verifyStarterTyping = false,
   profile,
 }) {
+  const buildPhase = await runEvaluatorWorker({
+    profile,
+    privateRun,
+    input: {
+      mode: 'build',
+      config,
+      projectDir: profile.sandbox.projectDir,
+      baselineSources,
+    },
+  });
+  if (buildPhase.failureReason) {
+    return failedEvaluationFromReceipts(buildPhase, buildPhase.failureReason);
+  }
+
+  const evaluationRun = await createPrivateRunRoot('evaluation-');
+  const trustedScreenshot = path.join(evaluationRun.root, 'screenshot.png');
+  try {
+    try {
+      await copyEvaluationProject(
+        config,
+        privateRun.projectDir,
+        evaluationRun.projectDir,
+      );
+      await makeTreeReadOnly(evaluationRun.projectDir);
+    } catch (error) {
+      return failedEvaluationFromReceipts(
+        buildPhase,
+        error instanceof Error ? (error.stack ?? error.message) : String(error),
+      );
+    }
+
+    const evaluation = await runEvaluatorWorker({
+      profile,
+      privateRun: evaluationRun,
+      input: {
+        mode: 'evaluate',
+        config,
+        projectDir: profile.sandbox.projectDir,
+        screenshotPath: path.join(profile.sandbox.root, 'screenshot.png'),
+        verifyStarterTyping,
+        buildPhase,
+      },
+    });
+    if (evaluation.render.passed) {
+      if (!fs.existsSync(trustedScreenshot)) {
+        throw new Error(
+          'Sandboxed evaluator returned success without a screenshot.',
+        );
+      }
+      evaluation.judge = skipJudge
+        ? {skipped: true}
+        : await runBlindJudge({
+            prompt,
+            screenshotPath: trustedScreenshot,
+            profile,
+          });
+      await fsp.mkdir(path.dirname(screenshotPath), {recursive: true});
+      await fsp.copyFile(trustedScreenshot, screenshotPath);
+    }
+    return evaluation;
+  } finally {
+    await makeTreeWritable(evaluationRun.projectDir).catch(() => {});
+    await fsp.rm(evaluationRun.root, {recursive: true, force: true});
+  }
+}
+
+async function runEvaluatorWorker({profile, privateRun, input}) {
   const inputPath = path.join(privateRun.root, '.evaluation-input.json');
-  const outputPath = path.join(privateRun.root, '.evaluation-output.json');
   const sandboxInputPath = path.join(
     profile.sandbox.root,
     path.relative(privateRun.root, inputPath),
   );
-  const sandboxOutputPath = path.join(
-    profile.sandbox.root,
-    path.relative(privateRun.root, outputPath),
-  );
-  const sandboxScreenshotPath = path.join(
-    profile.sandbox.root,
-    path.relative(privateRun.root, screenshotPath),
-  );
-  await fsp.writeFile(
-    inputPath,
-    `${JSON.stringify({
-      config,
-      projectDir: profile.sandbox.projectDir,
-      screenshotPath: sandboxScreenshotPath,
-      baselineSources,
-      verifyStarterTyping,
-    })}\n`,
-  );
+  await fsp.writeFile(inputPath, `${JSON.stringify(input)}\n`);
   const worker = await runProfileCommand(
     profile,
     profile.evaluator,
@@ -57,64 +108,90 @@ export async function evaluateRun({
     {
       evaluatorFile: fileURLToPath(import.meta.url),
       evaluationInput: sandboxInputPath,
-      evaluationOutput: sandboxOutputPath,
+      evaluationOutput: path.join(
+        profile.sandbox.root,
+        '.evaluation-output.json',
+      ),
     },
     {timeoutMs: 10 * 60 * 1000},
   );
-  if (worker.code !== 0 || worker.timedOut || !fs.existsSync(outputPath)) {
+  const receiptLine = worker.stdout
+    .split('\n')
+    .findLast(line => line.startsWith(WORKER_RECEIPT_PREFIX));
+  if (worker.code !== 0 || worker.timedOut || !receiptLine) {
     throw new Error(
-      `Sandboxed evaluation failed: ${worker.stderr || worker.stdout || `exit ${worker.code}`}`,
+      `Sandboxed evaluator failed: ${worker.stderr || worker.stdout || `exit ${worker.code}`}`,
     );
   }
-  const evaluation = JSON.parse(await fsp.readFile(outputPath, 'utf8'));
-  if (evaluation.render.passed) {
-    evaluation.judge = skipJudge
-      ? {skipped: true}
-      : await runBlindJudge({prompt, screenshotPath, profile});
+  return JSON.parse(receiptLine.slice(WORKER_RECEIPT_PREFIX.length));
+}
+
+async function buildProject({config, projectDir, baselineSources}) {
+  let typecheck = null;
+  let build = {
+    code: 0,
+    stdout: '',
+    stderr: '',
+    durationMs: 0,
+    timedOut: false,
+  };
+  let source = emptySourceReceipt();
+  try {
+    if (config === 'react-build') {
+      typecheck = await runCommand('npm', ['run', 'typecheck'], {
+        cwd: projectDir,
+        timeoutMs: 5 * 60 * 1000,
+      });
+      build = await runCommand('npm', ['run', 'build'], {
+        cwd: projectDir,
+        timeoutMs: 5 * 60 * 1000,
+      });
+    }
+    source = await scanAuthoredSource(projectDir, baselineSources);
+    return {
+      build: commandReceipt(build),
+      typecheck: typecheckReceipt(typecheck),
+      source,
+      failureReason:
+        build.code === 0
+          ? null
+          : build.stderr || build.stdout || 'Build failed',
+    };
+  } catch (error) {
+    const reason =
+      error instanceof Error ? (error.stack ?? error.message) : String(error);
+    return {
+      build:
+        build.code === 0 ? failedCommandReceipt(reason) : commandReceipt(build),
+      typecheck: typecheckReceipt(typecheck),
+      source,
+      failureReason: reason,
+    };
   }
-  return evaluation;
 }
 
 async function evaluateProject({
   config,
   projectDir,
   screenshotPath,
-  baselineSources,
   verifyStarterTyping = false,
+  buildPhase,
 }) {
-  const typecheck =
-    config === 'react-build'
-      ? await runCommand('npm', ['run', 'typecheck'], {
-          cwd: projectDir,
-          timeoutMs: 5 * 60 * 1000,
-        })
-      : null;
-  const build =
-    config === 'react-build'
-      ? await runCommand('npm', ['run', 'build'], {
-          cwd: projectDir,
-          timeoutMs: 5 * 60 * 1000,
-        })
-      : {code: 0, stdout: '', stderr: '', durationMs: 0, timedOut: false};
-  const source = await scanAuthoredSource(projectDir, baselineSources);
-
-  if (build.code !== 0) {
-    return failedEvaluation({
-      build,
-      typecheck,
-      source,
-      reason: build.stderr || build.stdout || 'Build failed',
-    });
-  }
-
   await fsp.mkdir(path.dirname(screenshotPath), {recursive: true});
-  const documentRoot =
-    config === 'react-build' ? path.join(projectDir, 'dist') : projectDir;
-  const server = await startStaticServer(documentRoot);
-
   let browser;
   try {
     browser = await chromium.launch({headless: true});
+  } catch (error) {
+    throw new Error(
+      `Browser launch failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  let server;
+  try {
+    const documentRoot =
+      config === 'react-build' ? path.join(projectDir, 'dist') : projectDir;
+    server = await startStaticServer(documentRoot);
     const context = await browser.newContext({
       viewport: {width: 1440, height: 900},
     });
@@ -170,10 +247,10 @@ async function evaluateProject({
       : null;
 
     return {
-      build: commandReceipt(build),
-      typecheck: typecheckReceipt(typecheck),
+      build: buildPhase.build,
+      typecheck: buildPhase.typecheck,
       render,
-      source,
+      source: buildPhase.source,
       accessibility: {
         violationCount: axe.violations.length,
         violations: axe.violations.map(violation => ({
@@ -186,23 +263,71 @@ async function evaluateProject({
       judge,
     };
   } catch (error) {
-    return failedEvaluation({
-      build,
-      typecheck,
-      source,
-      reason:
-        error instanceof Error ? (error.stack ?? error.message) : String(error),
-    });
+    return failedEvaluationFromReceipts(
+      buildPhase,
+      error instanceof Error ? (error.stack ?? error.message) : String(error),
+    );
   } finally {
-    await browser?.close();
-    await server.stop();
+    await browser.close();
+    await server?.stop();
   }
 }
 
-function failedEvaluation({build, typecheck, source, reason}) {
+async function copyEvaluationProject(config, source, destination) {
+  if (config === 'react-build') {
+    const dist = path.join(source, 'dist');
+    if (!(await fsp.stat(dist)).isDirectory()) {
+      throw new Error('Build completed without a dist directory.');
+    }
+    await fsp.cp(dist, path.join(destination, 'dist'), {recursive: true});
+    return;
+  }
+  await fsp.cp(source, destination, {
+    recursive: true,
+    filter: entry => {
+      const relative = path.relative(source, entry);
+      return !relative
+        .split(path.sep)
+        .some(
+          part =>
+            ['node_modules', '.cache', 'dist'].includes(part) ||
+            part.startsWith('.evaluation-'),
+        );
+    },
+  });
+}
+
+async function makeTreeReadOnly(entryPath) {
+  const stat = await fsp.lstat(entryPath);
+  if (stat.isSymbolicLink()) {
+    throw new Error(`Evaluation output contains a symbolic link: ${entryPath}`);
+  }
+  if (stat.isDirectory()) {
+    for (const entry of await fsp.readdir(entryPath)) {
+      await makeTreeReadOnly(path.join(entryPath, entry));
+    }
+    await fsp.chmod(entryPath, 0o555);
+  } else {
+    await fsp.chmod(entryPath, 0o444);
+  }
+}
+
+async function makeTreeWritable(entryPath) {
+  const stat = await fsp.lstat(entryPath);
+  if (stat.isDirectory()) {
+    await fsp.chmod(entryPath, 0o700);
+    for (const entry of await fsp.readdir(entryPath)) {
+      await makeTreeWritable(path.join(entryPath, entry));
+    }
+  } else if (!stat.isSymbolicLink()) {
+    await fsp.chmod(entryPath, 0o600);
+  }
+}
+
+function failedEvaluationFromReceipts(buildPhase, reason) {
   return {
-    build: commandReceipt(build),
-    typecheck: typecheckReceipt(typecheck),
+    build: buildPhase.build,
+    typecheck: buildPhase.typecheck,
     render: {
       passed: false,
       nonBlank: false,
@@ -215,9 +340,32 @@ function failedEvaluation({build, typecheck, source, reason}) {
       pageErrors: [],
       error: reason,
     },
-    source,
+    source: buildPhase.source,
     accessibility: {violations: [], violationCount: null},
     judge: zeroJudgment(reason),
+  };
+}
+
+function emptySourceReceipt() {
+  return {
+    authoredFileCount: 0,
+    inlineStyleAttributes: 0,
+    customPropertyOnlyStyles: 0,
+    themeDefinitionCount: 0,
+    rawHexValues: 0,
+    rawPixelValues: 0,
+    hardCodedStyleCount: 0,
+  };
+}
+
+function failedCommandReceipt(reason) {
+  return {
+    passed: false,
+    code: null,
+    timedOut: false,
+    durationMs: 0,
+    stdout: '',
+    stderr: reason,
   };
 }
 
@@ -909,13 +1057,20 @@ function mimeType(filePath) {
 
 async function workerMain() {
   const inputPath = process.argv[3];
-  const outputPath = process.argv[4];
-  if (!inputPath || !outputPath) {
-    throw new Error('Usage: evaluator.mjs --worker <input.json> <output.json>');
+  if (!inputPath) {
+    throw new Error('Usage: evaluator.mjs --worker <input.json>');
   }
   const input = JSON.parse(await fsp.readFile(inputPath, 'utf8'));
-  const evaluation = await evaluateProject(input);
-  await fsp.writeFile(outputPath, `${JSON.stringify(evaluation)}\n`);
+  const receipt =
+    input.mode === 'build'
+      ? await buildProject(input)
+      : input.mode === 'evaluate'
+        ? await evaluateProject(input)
+        : null;
+  if (!receipt) {
+    throw new Error(`Unknown evaluator worker mode: ${input.mode}`);
+  }
+  console.log(`${WORKER_RECEIPT_PREFIX}${JSON.stringify(receipt)}`);
 }
 
 if (

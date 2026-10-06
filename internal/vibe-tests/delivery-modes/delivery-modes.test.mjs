@@ -20,6 +20,7 @@ import {
   scanAuthoredSource,
   startStaticServer,
 } from './evaluator.mjs';
+import {scanVisibleProcesses} from './isolation-probe-core.mjs';
 import {
   auditTranscript,
   countAstryxInvocations,
@@ -40,7 +41,7 @@ import {
   validateStaticConfig,
 } from './projects.mjs';
 import {buildReports, summarize} from './report.mjs';
-import {resolveConcurrency, runInPhases} from './scheduler.mjs';
+import {resolveConcurrency, runInBatches, runInPhases} from './scheduler.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const temporaryDirectories = [];
@@ -530,6 +531,46 @@ test('runner phases finish before any cell is scored', async () => {
   assert.ok(events.indexOf('score-2') > events.indexOf('runner-1'));
 });
 
+test('completed batches checkpoint before later runner work can fail', async () => {
+  const prepared = [];
+  const checkpointed = [];
+  await assert.rejects(
+    () =>
+      runInBatches([1, 2, 3, 4], 2, {
+        prepare: async value => {
+          prepared.push(value);
+          return value;
+        },
+        evaluate: async value => {
+          if (value === 3) {
+            throw new Error('interrupted between batches');
+          }
+          return value;
+        },
+        onBatchComplete: async batch => {
+          checkpointed.push(...batch.results);
+        },
+      }),
+    /interrupted between batches/,
+  );
+  assert.deepEqual(checkpointed, [1, 2]);
+
+  const resumedPrepared = [];
+  await runInBatches(
+    [1, 2, 3, 4].filter(value => !checkpointed.includes(value)),
+    2,
+    {
+      prepare: async value => {
+        resumedPrepared.push(value);
+        return value;
+      },
+      evaluate: async value => value,
+    },
+  );
+  assert.deepEqual(resumedPrepared, [3, 4]);
+  assert.ok(prepared.includes(3));
+});
+
 test('parallel concurrency requires a passing isolation probe', () => {
   assert.deepEqual(resolveConcurrency(4, {}), {
     requested: 4,
@@ -626,6 +667,108 @@ fs.writeFileSync('dist/index.html', '<!doctype html><main><h1>Sandbox evaluator 
     JSON.stringify(evaluation.render),
   );
   assert.equal(evaluation.judge.skipped, true);
+});
+
+test('agent build processes cannot forge evaluator receipts', async () => {
+  const launcherRoot = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-forgery-launcher-'),
+  );
+  temporaryDirectories.push(launcherRoot);
+  const launcherPath = await writePassthroughLauncher(launcherRoot);
+  const privateRun = await createPrivateRunRoot('forgery-test-');
+  temporaryDirectories.push(privateRun.root);
+  await fs.promises.writeFile(
+    path.join(privateRun.projectDir, 'package.json'),
+    `${JSON.stringify({
+      type: 'module',
+      scripts: {typecheck: 'node -e ""', build: 'node build.mjs'},
+    })}\n`,
+  );
+  await fs.promises.writeFile(
+    path.join(privateRun.projectDir, 'build.mjs'),
+    `import {spawn} from 'node:child_process';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+fs.mkdirSync('dist', {recursive: true});
+fs.writeFileSync('dist/index.html', '<!doctype html><body></body>');
+spawn(process.execPath, ['forger.mjs', path.dirname(process.cwd())], {
+  cwd: process.cwd(),
+  detached: true,
+  stdio: 'ignore',
+}).unref();
+`,
+  );
+  await fs.promises.writeFile(
+    path.join(privateRun.projectDir, 'forger.mjs'),
+    `import * as fs from 'node:fs';
+import * as path from 'node:path';
+const root = process.argv[2];
+for (let attempt = 0; attempt < 100; attempt += 1) {
+  const output = path.join(root, '.evaluation-output.json');
+  if (fs.existsSync(output)) {
+    fs.writeFileSync(output, JSON.stringify({render: {passed: true, adoptionShare: 1, forged: true}}));
+  }
+  await new Promise(resolve => setTimeout(resolve, 20));
+}
+`,
+  );
+  const baselineSources = await captureAuthoredSources(privateRun.projectDir);
+  const profile = exampleProfile();
+  usePassthroughLauncher(profile, launcherPath);
+  profile.evaluator = {
+    command: process.execPath,
+    args: [
+      path.join(here, 'evaluator.mjs'),
+      '--worker',
+      '{evaluationInput}',
+      '{evaluationOutput}',
+    ],
+    cwd: '{sandboxProject}',
+  };
+  const evaluation = await evaluateRun({
+    config: 'react-build',
+    privateRun,
+    prompt: {prompt: 'Render a complete page.'},
+    screenshotPath: path.join(privateRun.root, 'screenshot.png'),
+    baselineSources,
+    skipJudge: true,
+    profile,
+  });
+  assert.equal(evaluation.build.passed, true);
+  assert.equal(evaluation.render.passed, false);
+  assert.equal(evaluation.render.adoptionShare, 0);
+  assert.equal(evaluation.render.forged, undefined);
+});
+
+test('process visibility scans every numeric proc entry', async () => {
+  const procRoot = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-proc-'),
+  );
+  temporaryDirectories.push(procRoot);
+  const victimRoot = path.join(procRoot, '731', 'root', 'isolated', 'project');
+  await fs.promises.mkdir(victimRoot, {recursive: true});
+  await fs.promises.writeFile(
+    path.join(procRoot, '731', 'cmdline'),
+    'node\0vibe-probe-visible-token\0',
+  );
+  await fs.promises.writeFile(
+    path.join(victimRoot, '.isolation-probe-marker'),
+    'vibe-probe-visible-token',
+  );
+  await fs.promises.mkdir(path.join(procRoot, '2'), {recursive: true});
+  await fs.promises.writeFile(
+    path.join(procRoot, '2', 'cmdline'),
+    'attacker\0',
+  );
+
+  const visibility = await scanVisibleProcesses({
+    procRoot,
+    token: 'vibe-probe-visible-token',
+    projectDir: '/isolated/project',
+  });
+  assert.equal(visibility.visibleProcessCount, 2);
+  assert.equal(visibility.siblingCmdlineVisible, true);
+  assert.equal(visibility.siblingRootReadable, true);
 });
 
 test('isolation probe rejects a shared PID, network, and proc namespace', async () => {

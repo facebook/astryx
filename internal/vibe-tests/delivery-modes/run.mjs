@@ -29,7 +29,7 @@ import {
 import {loadRunnerProfile} from './profile.mjs';
 import {prepareProject, validateStaticConfig} from './projects.mjs';
 import {buildReports} from './report.mjs';
-import {resolveConcurrency, runInPhases} from './scheduler.mjs';
+import {resolveConcurrency, runInBatches} from './scheduler.mjs';
 
 const fsp = fs.promises;
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -138,6 +138,7 @@ async function main() {
       : null,
     isolation: isolationReceipt,
     runnerVersions: await runnerVersions(profile, runners),
+    runnerBatches: priorManifest?.runnerBatches ?? [],
   };
   if (priorManifest) {
     assertCompatibleManifest(priorManifest, manifest);
@@ -145,16 +146,14 @@ async function main() {
   }
   await fsp.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
-  if (
-    options.configs.includes('react-nobuild') &&
-    !(
-      options.resume &&
-      fs.existsSync(path.join(outputDir, 'starter-verification.json'))
-    )
-  ) {
-    console.log('Verifying the React no-build starter with hooks and icons…');
-    await verifyStarter(specs['react-nobuild'], outputDir, profile);
-  }
+  console.log(`Verifying evaluator access for ${options.configs.join(', ')}…`);
+  manifest.configPreflights = await verifySelectedConfigs({
+    configs: options.configs,
+    specs,
+    outputDir,
+    profile,
+  });
+  await fsp.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
   const jobs = [];
   for (const prompt of prompts) {
@@ -185,9 +184,9 @@ async function main() {
   );
   let preparedCount = 0;
   let scoredCount = results.length;
-  let runnerBatchCompletedAt = null;
+  manifest.runnerBatches ??= [];
   if (scheduledJobs.length > 0) {
-    const batch = await runInPhases(scheduledJobs, concurrency.effective, {
+    await runInBatches(scheduledJobs, concurrency.effective, {
       prepare: async job => {
         const prepared = await prepareOne({
           ...job,
@@ -210,12 +209,24 @@ async function main() {
         );
         return result;
       },
+      onBatchComplete: async batch => {
+        results.push(...batch.results);
+        manifest.runnerBatchCompletedAt = batch.barrierAt;
+        manifest.runnerBatches.push({
+          index: manifest.runnerBatches.length,
+          completedAt: batch.barrierAt,
+          cells: batch.results.map(result => result.id),
+        });
+        manifest.completedJobs = results.filter(checkpointIsComplete).length;
+        manifest.totalJobs = jobs.length;
+        await fsp.writeFile(
+          manifestPath,
+          `${JSON.stringify(manifest, null, 2)}\n`,
+        );
+      },
     });
-    runnerBatchCompletedAt = batch.barrierAt;
-    results.push(...batch.results);
   }
   results.sort((a, b) => a.id.localeCompare(b.id));
-  manifest.runnerBatchCompletedAt = runnerBatchCompletedAt;
   const completedJobs = results.filter(checkpointIsComplete).length;
   manifest.completedJobs = completedJobs;
   manifest.totalJobs = jobs.length;
@@ -315,38 +326,55 @@ function jobId(promptId, config, runner) {
   return `${promptId}-${config}-${runner}`;
 }
 
-async function verifyStarter(spec, outputDir, profile) {
-  const privateRun = await createPrivateRunRoot('starter-');
-  const privateScreenshot = path.join(privateRun.root, 'starter.png');
-  try {
-    await prepareProject(spec, privateRun.projectDir);
-    const baselineSources = await captureAuthoredSources(privateRun.projectDir);
-    const verification = await evaluateRun({
-      config: 'react-nobuild',
-      privateRun,
-      prompt: {prompt: 'Render the supplied starter.'},
-      screenshotPath: privateScreenshot,
-      baselineSources,
-      skipJudge: true,
-      verifyStarterTyping: true,
-      profile,
-    });
-    if (!verification.render.passed) {
-      throw new Error(
-        `React no-build starter failed verification: ${JSON.stringify(verification.render)}`,
+async function verifySelectedConfigs({configs, specs, outputDir, profile}) {
+  const receipts = {};
+  for (const config of configs) {
+    const privateRun = await createPrivateRunRoot(`preflight-${config}-`);
+    const privateScreenshot = path.join(privateRun.root, 'starter.png');
+    try {
+      await prepareProject(specs[config], privateRun.projectDir);
+      const baselineSources = await captureAuthoredSources(
+        privateRun.projectDir,
       );
+      const verification = await evaluateRun({
+        config,
+        privateRun,
+        prompt: {prompt: `Render the supplied ${config} starter.`},
+        screenshotPath: privateScreenshot,
+        baselineSources,
+        skipJudge: true,
+        verifyStarterTyping: config === 'react-nobuild',
+        profile,
+      });
+      if (!verification.render.passed) {
+        const detail =
+          verification.render.error ||
+          verification.render.consoleErrors?.join('; ') ||
+          verification.render.pageErrors?.join('; ') ||
+          'starter did not render';
+        throw new Error(
+          `Evaluator preflight failed for ${config}: ${detail}. Ensure runner and evaluator namespaces can reach every configured public asset.`,
+        );
+      }
+      await fsp.copyFile(
+        privateScreenshot,
+        path.join(outputDir, 'screenshots', `${config}-starter.png`),
+      );
+      receipts[config] = {
+        passed: true,
+        build: verification.build,
+        typecheck: verification.typecheck,
+        render: verification.render,
+      };
+    } finally {
+      await fsp.rm(privateRun.root, {recursive: true, force: true});
     }
-    await fsp.copyFile(
-      privateScreenshot,
-      path.join(outputDir, 'screenshots', 'react-nobuild-starter.png'),
-    );
-    await fsp.writeFile(
-      path.join(outputDir, 'starter-verification.json'),
-      `${JSON.stringify(verification, null, 2)}\n`,
-    );
-  } finally {
-    await fsp.rm(privateRun.root, {recursive: true, force: true});
   }
+  await fsp.writeFile(
+    path.join(outputDir, 'config-preflights.json'),
+    `${JSON.stringify(receipts, null, 2)}\n`,
+  );
+  return receipts;
 }
 
 async function prepareOne({

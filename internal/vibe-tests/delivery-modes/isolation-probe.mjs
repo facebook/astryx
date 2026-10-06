@@ -5,6 +5,7 @@ import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
+import {scanVisibleProcesses} from './isolation-probe-core.mjs';
 
 const fsp = fs.promises;
 const input = JSON.parse(
@@ -49,16 +50,10 @@ async function runVictim({token}) {
 }
 
 async function runAttacker({target, token}) {
-  let siblingProcReadable = false;
-  try {
-    const marker = await fsp.readFile(
-      `/proc/${target.pid}/root${target.projectDir}/.isolation-probe-marker`,
-      'utf8',
-    );
-    siblingProcReadable = marker === token;
-  } catch {
-    siblingProcReadable = false;
-  }
+  const processVisibility = await scanVisibleProcesses({
+    token,
+    projectDir: target.projectDir,
+  });
 
   const server = http.createServer((_request, response) => {
     response.writeHead(200).end('probe');
@@ -79,7 +74,7 @@ async function runAttacker({target, token}) {
   console.log(
     JSON.stringify({
       type: 'isolation-probe-attack',
-      siblingProcReadable,
+      ...processVisibility,
       samePortAvailable,
       pkillAvailable: !pkill.error,
       pkillCode: pkill.status,

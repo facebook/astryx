@@ -15,6 +15,33 @@ export async function runInPhases(
   return {barrierAt, results};
 }
 
+export async function runInBatches(
+  items,
+  batchSize,
+  {prepare, evaluate, onBatchComplete, now},
+) {
+  const results = [];
+  const barriers = [];
+  for (let offset = 0; offset < items.length; offset += batchSize) {
+    const batchIndex = offset / batchSize;
+    const batchItems = items.slice(offset, offset + batchSize);
+    const batch = await runInPhases(batchItems, batchItems.length, {
+      prepare,
+      evaluate,
+      now,
+    });
+    results.push(...batch.results);
+    barriers.push(batch.barrierAt);
+    await onBatchComplete?.({
+      batchIndex,
+      barrierAt: batch.barrierAt,
+      items: batchItems,
+      results: batch.results,
+    });
+  }
+  return {barriers, results};
+}
+
 export async function mapWithConcurrency(items, concurrency, worker) {
   const results = new Array(items.length);
   let index = 0;

@@ -31,12 +31,7 @@
   },
   "evaluator": {
     "command": "node",
-    "args": [
-      "/path/to/exposed/delivery-modes/evaluator.mjs",
-      "--worker",
-      "{evaluationInput}",
-      "{evaluationOutput}"
-    ],
+    "args": ["{evaluatorFile}", "--worker", "{evaluationInput}"],
     "cwd": "{sandboxProject}"
   },
   "runners": {

@@ -40,7 +40,7 @@ Schema version 1 defines:
 - `launcher`: the local isolation wrapper. Its argument list may use `{privateRoot}`, `{sandboxRoot}`, `{runnerCommand}`, `{runnerCwd}`, and the whole-argument `{runnerArgs}` expansion.
 - `preflight`: a command that must succeed through the launcher before any cell runs.
 - `isolationProbe`: a runtime command for the harness-owned PID, network, port, process-kill, and sibling-`/proc` probe. The harness copies its probe script into the private project and provides `{probeFile}`.
-- `evaluator`: a runtime command that executes the harness evaluator worker with `{evaluationInput}` and `{evaluationOutput}` inside the launcher namespace. The configured evaluator script must be exposed read-only to that namespace.
+- `evaluator`: a runtime command that executes `{evaluatorFile} --worker {evaluationInput}` inside the launcher namespace. The launcher must expose the harness evaluator runtime, Playwright, and browser read-only; trusted receipts return over the worker's stdout rather than an agent-writable file.
 - `runners`: named command entries. Arguments may use `{sandboxProject}` and `{taskFile}`; `stdin: "prompt"` sends the shared task prompt.
 - `transcript`: a declarative adapter for each runner and judge. The shipped public adapter format is JSONL: `toolCalls` selects records with field-path matchers and extracts a command path, while optional `usage` paths select input and output token counts. The harness has no built-in knowledge of any agent CLI event schema.
 - `judge`: the blind screenshot evaluator. Its arguments may use `{sandboxProject}` and `{schema}`; the prompt is available through stdin. Optional `resultPath` selects the score object from the judge's JSON or last JSONL record.
@@ -54,9 +54,9 @@ Every audit rule is classified as:
 
 Runner commands, executable paths, launcher flags, environment variables, transcript adapters, context expectations, limits, audit patterns, and version probes belong in the local profile. None are hard-coded in the harness. The profile path and inline profile variables are removed from every launcher, runner, judge, and version-probe child environment; agents receive only the task prompt, project, and configured browser-helper syntax.
 
-The launcher owns OS-level isolation for runner, evaluator, and judge processes. It should expose only the private run root and required runtime assets, map the host project to `sandbox.projectDir`, keep sibling and host-user data inaccessible, and provide the browser helper named by `browserCommand`. The harness creates each host-side private root with mode `0700` and runs a live capability probe through two launcher instances. Parallel agents are enabled only when that probe proves distinct PID and network namespaces, an agent-side process-group kill cannot reach the sibling, the sibling's `/proc/<pid>/root` is unreadable, and both runs can bind the same loopback port. A missing or failed probe safely reduces requested concurrency to 1.
+The launcher owns OS-level isolation for runner, build, evaluator, and judge processes. It should expose only the private run root and required runtime assets, map the host project to `sandbox.projectDir`, keep sibling and host-user data inaccessible, and provide the browser helper named by `browserCommand`. Runner and evaluator namespaces also need egress when a selected delivery mode loads published CDN assets. The harness creates each host-side private root with mode `0700` and runs a live capability probe through two launcher instances. Parallel agents are enabled only when that probe proves distinct PID and network namespaces, an agent-side process-group kill cannot reach the sibling, an all-process `/proc/[0-9]*` scan cannot find the sibling's command marker or root marker, and both runs can bind the same loopback port. A missing or failed probe safely reduces requested concurrency to 1.
 
-Runner processes complete as a batch before scoring starts. Builds, typechecks, the evaluator-owned static server, and browser capture then run through `evaluator` in a fresh launcher namespace for that private run. The static server binds port `0`, so the operating system assigns an unused ephemeral port without a reserve-then-bind race. Shared evidence copies happen only after sandboxed evaluation finishes, and the manifest records the probe receipt, requested/effective concurrency, and runner-batch barrier.
+Each batch contains at most the effective concurrency. All runners in that batch exit before any scoring starts, then every result is checkpointed before the next batch starts. For each cell, build and typecheck commands run in one launcher invocation. After it exits, the harness creates a new evaluator root, copies only served artifacts into it, makes the project read-only, and starts a second launcher invocation for static serving and browser capture. Agent build code therefore cannot write evaluator receipts, screenshots, or the project used for scoring. The evaluator-owned static server binds port `0`, so the operating system assigns an unused ephemeral port without a reserve-then-bind race. The manifest records every batch barrier and checkpoint set.
 
 ## Static HTML
 
@@ -90,23 +90,24 @@ VIBE_RUNNER_PROFILE=/absolute/path/to/runner-profile.json \
   --resume
 ```
 
-Concurrency defaults to 1. A higher requested value is honored only when the live launcher capability probe proves private PID and network namespaces plus contained process kills, loopback ports, and sibling `/proc`; otherwise the harness records the reason and falls back to 1. Every runner in a scheduled batch exits before any cell is scored. Every attempted cell writes `runs/<id>/run.json`; successfully scored cells are reusable checkpoints. Setup, runner-launch, and evaluator crashes are classified as retryable infrastructure failures, excluded from score denominators, and rerun by the same command with `--resume`; `--max-new-jobs <n>` can stop after a checkpoint batch.
+Concurrency defaults to 1. A higher requested value is honored only when the live launcher capability probe proves private PID and network namespaces plus contained process kills, loopback ports, and sibling `/proc`; otherwise the harness records the reason and falls back to 1. Before scheduling agents, the harness prepares and renders a starter through the evaluator for every selected configuration, including `react-build`, `react-nobuild`, and `static-html`; a missing runtime dependency or blocked public asset fails fast. Every attempted cell writes `runs/<id>/run.json`; successfully scored cells are reusable checkpoints. Setup failures before the agent runs, launcher-spawn failures, and harness-owned failures such as browser launch errors are retryable infrastructure failures excluded from score denominators. Failures caused by agent-authored output after the runner completes are scored as failed cells and reused by `--resume`; `--max-new-jobs <n>` can stop after a checkpoint batch.
 
 ## React no-build starter
 
-The no-build starter exercises an icon-bearing Banner, component hooks, theme context, and a controlled TextInput. Both the core and theme ESM imports include `?external=react,react-dom`, so the CDN modules reuse the import-mapped React runtime instead of creating a second instance. A real run renders and types into this starter before scheduling matrix cells.
+The no-build starter exercises an icon-bearing Banner, component hooks, theme context, and a controlled TextInput. Both the core and theme ESM imports include `?external=react,react-dom`, so the CDN modules reuse the import-mapped React runtime instead of creating a second instance. A real run renders every selected starter before scheduling matrix cells and also types into the React no-build starter.
 
 ## Evaluation and reporting
 
 The shared evaluator:
 
-1. runs `vite build` and `tsc --noEmit` for `react-build` inside the run's evaluator sandbox;
-2. serves every delivery mode with the same evaluator-owned static server on an OS-assigned ephemeral port, then checks for a non-blank render, browser console errors, and page errors;
-3. captures a full-page screenshot;
-4. measures visible semantic targets from Astryx React and static class taxonomies;
-5. scans only runner-authored changes after removing comments, separating hard-coded values from custom-property and theme definitions;
-6. runs axe-core;
-7. asks the profile's blind judge to score prompt fulfillment and visual quality from an anonymized screenshot and the task prompt only.
+1. runs `vite build` and `tsc --noEmit` for `react-build` in a build-only launcher invocation;
+2. copies only the built or served artifacts into a fresh, read-only evaluator project;
+3. serves every delivery mode with the same evaluator-owned static server on an OS-assigned ephemeral port, then checks for a non-blank render, browser console errors, and page errors;
+4. captures a full-page screenshot;
+5. measures visible semantic targets from Astryx React and static class taxonomies;
+6. scans only runner-authored changes after removing comments, separating hard-coded values from custom-property and theme definitions;
+7. runs axe-core;
+8. asks the profile's blind judge to score prompt fulfillment and visual quality from an anonymized screenshot and the task prompt only.
 
 A build failure, page error, blank render, runner failure, timeout, or strict audit failure receives adoption, prompt-fulfillment, and visual-quality scores of 0. Those scored rows remain in every median and pass-rate denominator. A timeout separately records the last complete on-disk state as **best before timeout** without changing the primary score. Infrastructure failures are reported separately, contribute no score, and remain retryable checkpoints.
 

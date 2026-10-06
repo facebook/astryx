@@ -174,17 +174,19 @@ async function probeParallelIsolation(profile) {
   const victim = await createPrivateRunRoot('probe-victim-');
   const attacker = await createPrivateRunRoot('probe-attacker-');
   const token = `vibe-probe-${randomUUID().slice(0, 8)}`;
-  const probeSource = path.join(
-    path.dirname(fileURLToPath(import.meta.url)),
-    'isolation-probe.mjs',
-  );
+  const probeDirectory = path.dirname(fileURLToPath(import.meta.url));
+  const probeSources = ['isolation-probe.mjs', 'isolation-probe-core.mjs'];
   let victimSettled = false;
 
   try {
     for (const privateRun of [victim, attacker]) {
-      await fs.promises.copyFile(
-        probeSource,
-        path.join(privateRun.projectDir, 'isolation-probe.mjs'),
+      await Promise.all(
+        probeSources.map(fileName =>
+          fs.promises.copyFile(
+            path.join(probeDirectory, fileName),
+            path.join(privateRun.projectDir, fileName),
+          ),
+        ),
       );
     }
     await writeProbeInput(victim, {mode: 'victim', token});
@@ -255,7 +257,8 @@ async function probeParallelIsolation(profile) {
     const pidNamespacePrivate = ready.pidNamespace !== attack.pidNamespace;
     const networkNamespacePrivate =
       ready.networkNamespace !== attack.networkNamespace;
-    const siblingProcUnreadable = !attack.siblingProcReadable;
+    const siblingProcUnreadable =
+      !attack.siblingCmdlineVisible && !attack.siblingRootReadable;
     const portCollisionContained = attack.samePortAvailable;
     const passed =
       pidNamespacePrivate &&
@@ -278,6 +281,9 @@ async function probeParallelIsolation(profile) {
       pidNamespacePrivate,
       networkNamespacePrivate,
       siblingProcUnreadable,
+      siblingCmdlineVisible: attack.siblingCmdlineVisible,
+      siblingRootReadable: attack.siblingRootReadable,
+      visibleProcessCount: attack.visibleProcessCount,
       processKillContained,
       portCollisionContained,
       reason: passed ? null : `missing ${missing.join(', ')}`,
