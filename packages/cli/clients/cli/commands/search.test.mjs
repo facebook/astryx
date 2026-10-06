@@ -118,6 +118,15 @@ describe('search() API — filters', () => {
     }
   });
 
+  it('--type theme returns only themes, each with the command that adds it', async () => {
+    const {data} = await search('warm', {...OPTS, type: 'theme'});
+    expect(data.results.map(r => r.name)).toContain('neutral');
+    for (const r of data.results) {
+      expect(r.domain).toBe('theme');
+      expect(r.command).toBe(`astryx theme add ${r.name}`);
+    }
+  });
+
   it('respects --limit', async () => {
     const {data} = await search('button', {...OPTS, limit: 3});
     expect(data.results.length).toBeLessThanOrEqual(3);
@@ -279,7 +288,7 @@ describe('search CLI — exit codes + JSON contract', () => {
   });
 
   it('prints every result field under its JSON key (score and reason with --verbose)', async () => {
-    // One query that reaches all four domains, so every per-domain field shows.
+    // One query that reaches every domain, so every per-domain field shows.
     const args = ['search', 'theme', '--limit', '60'];
     const env = JSON.parse((await runCli(['--json', ...args], REPO_ROOT)).stdout);
     expect(new Set(env.data.results.map(r => r.domain))).toEqual(new Set(SEARCH_DOMAINS));
@@ -311,16 +320,29 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.stdout).toContain('reason:');
   });
 
-  it('searches the docs when no @astryxdesign/core is reachable, and exits 1 for --type component', async () => {
+  it('searches the docs and themes when no @astryxdesign/core is reachable, and exits 1 for --type component', async () => {
     const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-cli-no-core-'));
     try {
       const open = await runCli(['--json', 'search', 'make', 'an', 'integration'], empty);
       expect(open.status).toBe(0);
       expect(JSON.parse(open.stdout).data.results[0]).toMatchObject({domain: 'doc'});
-      // The text says the search covered the docs alone.
+      // Bundled themes need no project, so an open search finds them too.
+      const theme = await runCli(['--json', 'search', 'neutral'], empty);
+      expect(theme.status).toBe(0);
+      expect(JSON.parse(theme.stdout).data.results[0]).toMatchObject({
+        domain: 'theme',
+        name: 'neutral',
+      });
+      // The text says the search covered the docs and themes alone.
       const text = await runCli(['search', 'button'], empty);
       expect(text.status).toBe(0);
-      expect(text.stdout).toContain('only the docs were searched');
+      expect(text.stdout).toContain('only the docs and themes were searched');
+      // A themes-only search needs no core, like a docs-only one.
+      const themes = await runCli(['--json', 'search', 'warm', '--type', 'theme'], empty);
+      expect(themes.status).toBe(0);
+      const found = JSON.parse(themes.stdout).data.results;
+      expect(found.map(r => r.name)).toContain('neutral');
+      expect(found.every(r => r.domain === 'theme')).toBe(true);
       const json = await runCli(['--json', 'search', 'button', '--type', 'component'], empty);
       expect(json.status).toBe(1);
       expect(JSON.parse(json.stdout)).toMatchObject({code: 'ERR_CORE_NOT_FOUND'});

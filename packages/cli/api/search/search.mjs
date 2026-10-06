@@ -7,10 +7,10 @@
  * outputs. The CLI command handler is a thin wrapper around this function.
  *
  * `search(query)` is the single "I'm looking for X" entry point across ALL
- * content domains — components, hooks, docs topics, and templates (page +
- * block). Today, finding the right thing requires four separate list calls
- * (`component --list`, `hook --list`, `docs`, `template --list`) plus manual
- * scanning; this collapses them into one ranked, typed result set.
+ * content domains — components, hooks, docs topics, templates (page + block),
+ * and themes. Finding the right thing otherwise takes separate list calls
+ * (`component --list`, `hook --list`, `docs`, `template --list`, `theme list`)
+ * plus manual scanning; this collapses them into one ranked, typed result set.
  *
  * Scoring is keyword + fuzzy ranking (NOT semantic / embeddings — that is a
  * deliberate future follow-up). It reuses the same signal weighting as the
@@ -293,6 +293,12 @@ const isTypo = (a, b, dist) =>
 
 /** Valid domain filters for `--type`. */
 export const SEARCH_DOMAINS = ['component', 'hook', 'doc', 'template', 'theme'];
+
+/**
+ * The domains a search reads without @astryxdesign/core. An open search outside
+ * an app covers these alone.
+ */
+const CORELESS_DOMAINS = ['doc', 'theme'];
 
 /**
  * Filler words stripped from multi-word queries so natural-language phrasing
@@ -1575,7 +1581,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
 }
 
 /**
- * Unified ranked search across components, hooks, docs, and templates.
+ * Unified ranked search across components, hooks, docs, templates, and themes.
  *
  * @param {string} query - Free-text search term.
  * @param {object} [options]
@@ -1617,12 +1623,14 @@ export async function search(query, options = {}) {
   const term = String(query).trim().toLowerCase();
   const tokens = tokenizeQuery(term);
 
-  // `astryx docs` reads docs without @astryxdesign/core, so a docs-only
-  // search must too. Every other domain reads core: asked for by name, it is
-  // an error without core; an open search then covers the docs alone.
-  const docsOnly = type === 'doc';
-  const coreDir = docsOnly ? null : findCoreDir(cwd);
-  if (type && !docsOnly && !coreDir) {
+  // `astryx docs` reads docs without @astryxdesign/core, and `astryx theme
+  // list` reads themes without it (bundled themes need no project), so a
+  // search of either must too. Every other domain reads core: asked for by
+  // name, it is an error without core; an open search then covers the docs
+  // and themes alone.
+  const needsCore = !type || !CORELESS_DOMAINS.includes(type);
+  const coreDir = needsCore ? findCoreDir(cwd) : null;
+  if (type && needsCore && !coreDir) {
     throw new AstryxError(
       'Could not find @astryxdesign/core package',
       undefined,
@@ -1632,7 +1640,8 @@ export async function search(query, options = {}) {
 
   // Gather candidates from each requested domain in parallel.
   /** @param {string} d */
-  const wants = d => (!type && (coreDir != null || d === 'doc')) || type === d;
+  const wants = d =>
+    (!type && (coreDir != null || CORELESS_DOMAINS.includes(d))) || type === d;
   const [components, hooks, docTopics, templates, themes] = await Promise.all([
     wants('component')
       ? gatherComponents(/** @type {string} */ (coreDir), cwd)

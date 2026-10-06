@@ -4,9 +4,9 @@
  * @file search command — unified ranked search with a stable result summary.
  *
  * One "I'm looking for X" entry point spanning components, hooks, docs topics,
- * and templates (page + block). Results are ranked by relevance and tagged
- * with their domain, with a follow-up command so the user knows what to run
- * next.
+ * templates (page + block), and themes. Results are ranked by relevance and
+ * tagged with their domain, with a follow-up command so the user knows what to
+ * run next.
  *
  * The command surface (description, args, flags) is sourced from the colocated
  * `search.doc.mjs` CommandDoc via `defineCommand`; this file supplies only the
@@ -104,13 +104,13 @@ export function registerSearch(program) {
       // ── Text output ──────────────────────────────────────────────
       const run = getCliInvocation();
       const {query: q, matchCount, results} = result.data;
-      // Outside an app an open search covers the docs alone. Say so, so a
-      // docs-only list does not read as "Astryx has no such component".
+      // Outside an app an open search covers the docs and themes alone. Say
+      // so, so that list does not read as "Astryx has no such component".
       const note =
         !options.type && !findCoreDir(process.cwd())
           ? [
               text(
-                '@astryxdesign/core is not installed here, so only the docs were searched.',
+                '@astryxdesign/core is not installed here, so only the docs and themes were searched.',
               ),
             ]
           : [];
