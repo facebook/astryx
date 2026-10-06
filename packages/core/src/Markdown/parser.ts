@@ -806,7 +806,11 @@ function matchLinkDefinition(
   if (label === '' || destination == null) {
     return null;
   }
-  return {label, destination, hasTitle: match[4] != null};
+  return {
+    label,
+    destination: decodeLinkDestination(destination),
+    hasTitle: match[4] != null,
+  };
 }
 
 /**
@@ -959,14 +963,14 @@ function matchReferenceLink(
   node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
   end: number;
 } | null {
-  const textClose = text.indexOf(']', start + 1);
+  const textClose = closingBracket(text, start + 1);
   if (textClose === -1) {
     return null;
   }
   const linkText = text.slice(start + 1, textClose);
   // Full `[text][label]` / collapsed `[text][]` — a matching definition wins.
   if (text[textClose + 1] === '[') {
-    const labelClose = text.indexOf(']', textClose + 2);
+    const labelClose = closingBracket(text, textClose + 2);
     if (labelClose !== -1) {
       const rawLabel = text.slice(textClose + 2, labelClose);
       // Only truly-empty brackets are the collapsed form; a whitespace-only
@@ -1023,13 +1027,13 @@ function matchReferenceImage(
   node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
   end: number;
 } | null {
-  const altClose = text.indexOf(']', start + 2);
+  const altClose = closingBracket(text, start + 2);
   if (altClose === -1) {
     return null;
   }
   const alt = text.slice(start + 2, altClose);
   if (text[altClose + 1] === '[') {
-    const labelClose = text.indexOf(']', altClose + 2);
+    const labelClose = closingBracket(text, altClose + 2);
     if (labelClose !== -1) {
       const rawLabel = text.slice(altClose + 2, labelClose);
       const label = rawLabel === '' ? alt : rawLabel;
@@ -1076,9 +1080,65 @@ function inlineDestination(content: string): string {
   return match == null ? content : (match[1] ?? match[2] ?? content);
 }
 
+/**
+ * A link or image destination with its backslash escapes and character
+ * references decoded, as CommonMark 0.31 §6.3 reads it: `\)` is `)`,
+ * `&amp;` is `&`, and an escaped `\&` stays literal. Every URL safety check
+ * runs on this decoded value, so an encoded scheme such as `&#106;avascript:`
+ * is refused like the plain one.
+ */
+function decodeLinkDestination(raw: string): string {
+  if (!raw.includes('\\') && !raw.includes('&')) {
+    return raw;
+  }
+  let decoded = '';
+  let index = 0;
+  while (index < raw.length) {
+    const character = raw[index];
+    if (character === '\\' && isAsciiPunctuation(raw[index + 1])) {
+      decoded += raw[index + 1];
+      index += 2;
+      continue;
+    }
+    if (character === '&') {
+      const reference = matchCharacterReference(raw, index);
+      if (reference != null) {
+        decoded += reference.value;
+        index = reference.end;
+        continue;
+      }
+    }
+    decoded += character;
+    index++;
+  }
+  return decoded;
+}
+
+/**
+ * The `]` that closes link text, an image's alternative text, or a reference
+ * label opened before `from`; an escaped `\]` does not close it.
+ */
+function closingBracket(text: string, from: number): number {
+  for (let index = from; index < text.length; index++) {
+    if (text[index] === '\\') {
+      index++;
+      continue;
+    }
+    if (text[index] === ']') {
+      return index;
+    }
+  }
+  return -1;
+}
+
 function findClosingParen(text: string, start: number): number {
   let depth = 1;
   for (let index = start; index < text.length; index++) {
+    // An escaped parenthesis is part of the destination, not its end.
+    if (text[index] === '\\') {
+      index++;
+      continue;
+    }
     if (text[index] === '(') {
       depth++;
     } else if (text[index] === ')') {
@@ -1558,11 +1618,13 @@ function parseInlineImpl(
 
     // --- Image ![alt](src) ---
     if (text[i] === '!' && text[i + 1] === '[') {
-      const altClose = text.indexOf(']', i + 2);
+      const altClose = closingBracket(text, i + 2);
       if (altClose !== -1 && text[altClose + 1] === '(') {
         const srcClose = findClosingParen(text, altClose + 2);
         if (srcClose !== -1) {
-          const src = inlineDestination(text.slice(altClose + 2, srcClose));
+          const src = decodeLinkDestination(
+            inlineDestination(text.slice(altClose + 2, srcClose)),
+          );
           if (!isSafeMarkdownParserUrl(src)) {
             // Dangerous scheme — emit as plain text.
             nodes.push({type: 'text', value: text.slice(i, srcClose + 1)});
@@ -1601,11 +1663,13 @@ function parseInlineImpl(
 
     // --- Link [text](url) ---
     if (text[i] === '[') {
-      const textClose = text.indexOf(']', i + 1);
+      const textClose = closingBracket(text, i + 1);
       if (textClose !== -1 && text[textClose + 1] === '(') {
         const urlClose = findClosingParen(text, textClose + 2);
         if (urlClose !== -1) {
-          const href = inlineDestination(text.slice(textClose + 2, urlClose));
+          const href = decodeLinkDestination(
+            inlineDestination(text.slice(textClose + 2, urlClose)),
+          );
           if (!isSafeMarkdownParserUrl(href)) {
             // Dangerous scheme — emit as plain text instead of a link.
             nodes.push({type: 'text', value: text.slice(i, urlClose + 1)});
@@ -2785,7 +2849,9 @@ function parseMarkdownImpl(
     // An unsafe src falls through to the paragraph path and renders as
     // literal text, the same rule the inline image path applies.
     const imageMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
-    const imageSrc = imageMatch ? inlineDestination(imageMatch[2]) : '';
+    const imageSrc = imageMatch
+      ? decodeLinkDestination(inlineDestination(imageMatch[2]))
+      : '';
     if (
       imageMatch &&
       line.trim() === imageMatch[0] &&
