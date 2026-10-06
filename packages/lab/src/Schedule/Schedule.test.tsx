@@ -161,6 +161,29 @@ describe('Schedule', () => {
     ).toBeInTheDocument();
   });
 
+  it('leads each month chip with the title and gives an all-day chip no time', () => {
+    // component:Schedule FR18: whether the time fits is layout, which jsdom
+    // cannot measure; the order of title and time is checkable here.
+    render(
+      <Schedule
+        view={createScheduleMonthlyView()}
+        events={events}
+        categories={categories}
+        date={Date.UTC(2026, 4, 13)}
+        focusDate={Date.UTC(2026, 4, 13)}
+        timezoneID="UTC"
+      />,
+    );
+    const chipText = (title: string) =>
+      Array.from(document.querySelectorAll('[aria-hidden="true"] span')).find(
+        chip =>
+          chip.parentElement?.closest('span') == null &&
+          chip.textContent?.includes(title),
+      )?.textContent ?? null;
+    expect(chipText('Visible sync')).toBe('Visible sync4:00 PM');
+    expect(chipText('Design review')).toBe('Design review');
+  });
+
   it('renders monthly weekday headings at the configured headingLevel (default 3)', async () => {
     render(
       <Schedule

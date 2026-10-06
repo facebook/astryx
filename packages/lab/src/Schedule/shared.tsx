@@ -259,6 +259,8 @@ export function MonthEventPill({
   const timeLabel = isDayEvent(event)
     ? null
     : formatEventStartTime(event, timezoneID, locale);
+  // The title leads; the start time follows only when both fit on the
+  // chip's one line (component:Schedule FR18).
   return (
     <span
       {...stylex.props(
@@ -267,18 +269,20 @@ export function MonthEventPill({
           ? eventPastSurfaceColorStyle(category.color)
           : eventSurfaceColorStyle(category.color),
       )}>
-      {timeLabel != null && (
-        <Text type="supporting" color="inherit" xstyle={styles.eventTime}>
-          <ScheduleTime>{timeLabel}</ScheduleTime>
+      <span {...stylex.props(styles.monthChipLine)}>
+        <Text
+          type="supporting"
+          color="inherit"
+          weight="bold"
+          xstyle={styles.monthChipTitle}>
+          {event.title}
         </Text>
-      )}
-      <Text
-        type="supporting"
-        color="inherit"
-        weight="bold"
-        xstyle={styles.eventTitle}>
-        {event.title}
-      </Text>
+        {timeLabel != null && (
+          <Text type="supporting" color="inherit" xstyle={styles.monthChipTime}>
+            <ScheduleTime>{timeLabel}</ScheduleTime>
+          </Text>
+        )}
+      </span>
     </span>
   );
 }
@@ -904,6 +908,33 @@ export const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     flexShrink: 0,
+    opacity: 0.8,
+  },
+  // A month chip is one line tall. Its title and time wrap as a flex row, so
+  // the time drops to a second, clipped line whenever the whole title and the
+  // time do not fit side by side: layout, not script, decides whether the
+  // time shows (component:Schedule FR18, PR5).
+  monthChipLine: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    columnGap: spacingVars['--spacing-1'],
+    flexGrow: 1,
+    minWidth: 0,
+    blockSize: `calc(${typeScaleVars['--text-supporting-size']} * ${typeScaleVars['--text-supporting-leading']})`,
+    overflow: 'hidden',
+  },
+  // Alone on the line, a long title shrinks and ellipsizes.
+  monthChipTitle: {
+    minWidth: 0,
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  monthChipTime: {
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
     opacity: 0.8,
   },
   moreEvents: {
