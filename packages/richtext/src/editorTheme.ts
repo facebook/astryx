@@ -48,6 +48,15 @@ const NESTED_LIST_SPACE = `calc(${spacingVars['--spacing-2']})`;
 const RULE_SPACE = `calc(${spacingVars['--spacing-6']})`;
 
 const editorTheme = stylex.create({
+  // Lexical marks every top-level block `dir="auto"`, which picks each
+  // block's direction from its first strong character: a Hebrew paragraph in
+  // an English document flips to the right, an English one in an Arabic
+  // document to the left. Blocks take the direction of the surface around
+  // them instead, as core Markdown's do, and bidi inside a block still
+  // follows the Unicode algorithm (spec:AST-061 FR6).
+  providerDirection: {
+    direction: 'inherit',
+  },
   paragraph: {
     // The first block's leading margin would stack with the input inset, so
     // the first line aligns with TextArea and the empty-editor placeholder.
@@ -364,35 +373,46 @@ const editorTheme = stylex.create({
  * class-name strings, which `stylex.props(...).className` yields.
  */
 export function sharedEditorTheme(): EditorThemeClasses {
-  const ulClass = stylex.props(editorTheme.ul).className ?? '';
-  const olClass = stylex.props(editorTheme.ol).className ?? '';
-  const ulDepth2Class =
-    stylex.props(editorTheme.ul, editorTheme.ulNested, editorTheme.ulDepth2)
-      .className ?? '';
-  const ulDepth3Class =
-    stylex.props(editorTheme.ul, editorTheme.ulNested, editorTheme.ulDepth3)
-      .className ?? '';
-  const olDepth2Class =
-    stylex.props(editorTheme.ol, editorTheme.olNested, editorTheme.olDepth2)
-      .className ?? '';
-  const olDepth3Class =
-    stylex.props(editorTheme.ol, editorTheme.olNested, editorTheme.olDepth3)
-      .className ?? '';
+  // A class for a block Lexical may mark `dir="auto"`.
+  const block = (...styles: Array<stylex.StyleXStyles>): string =>
+    stylex.props(...styles, editorTheme.providerDirection).className ?? '';
+  const ulClass = block(editorTheme.ul);
+  const olClass = block(editorTheme.ol);
+  const ulDepth2Class = block(
+    editorTheme.ul,
+    editorTheme.ulNested,
+    editorTheme.ulDepth2,
+  );
+  const ulDepth3Class = block(
+    editorTheme.ul,
+    editorTheme.ulNested,
+    editorTheme.ulDepth3,
+  );
+  const olDepth2Class = block(
+    editorTheme.ol,
+    editorTheme.olNested,
+    editorTheme.olDepth2,
+  );
+  const olDepth3Class = block(
+    editorTheme.ol,
+    editorTheme.olNested,
+    editorTheme.olDepth3,
+  );
   return {
-    paragraph: stylex.props(editorTheme.paragraph).className,
+    paragraph: block(editorTheme.paragraph),
     heading: {
-      h1: stylex.props(editorTheme.h1).className,
-      h2: stylex.props(editorTheme.h2).className,
-      h3: stylex.props(editorTheme.h3).className,
-      h4: stylex.props(editorTheme.h4).className,
-      h5: stylex.props(editorTheme.h5).className,
-      h6: stylex.props(editorTheme.h6).className,
+      h1: block(editorTheme.h1),
+      h2: block(editorTheme.h2),
+      h3: block(editorTheme.h3),
+      h4: block(editorTheme.h4),
+      h5: block(editorTheme.h5),
+      h6: block(editorTheme.h6),
     },
-    quote: stylex.props(editorTheme.quote).className,
+    quote: block(editorTheme.quote),
     list: {
       ul: ulClass,
       ol: olClass,
-      checklist: stylex.props(editorTheme.ul, editorTheme.checklist).className,
+      checklist: block(editorTheme.ul, editorTheme.checklist),
       listitem: stylex.props(editorTheme.listItem).className,
       nested: {
         listitem: stylex.props(editorTheme.listItem).className,
@@ -410,14 +430,13 @@ export function sharedEditorTheme(): EditorThemeClasses {
       strikethrough: stylex.props(editorTheme.textStrikethrough).className,
       code: stylex.props(editorTheme.textCode).className,
     },
-    code: stylex.props(editorTheme.code).className,
+    code: block(editorTheme.code),
     hr: stylex.props(editorTheme.hr).className,
     hrSelected: stylex.props(editorTheme.hrSelected).className,
-    table: stylex.props(editorTheme.table).className,
+    table: block(editorTheme.table),
     tableRow: stylex.props(editorTheme.tableRow).className,
     tableCell: stylex.props(editorTheme.tableCell).className,
     tableCellHeader: stylex.props(editorTheme.tableCellHeader).className,
-    tableScrollableWrapper: stylex.props(editorTheme.tableScrollableWrapper)
-      .className,
+    tableScrollableWrapper: block(editorTheme.tableScrollableWrapper),
   };
 }

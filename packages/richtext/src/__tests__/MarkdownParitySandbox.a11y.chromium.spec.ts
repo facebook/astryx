@@ -732,6 +732,29 @@ for (const [viewport, colorMode] of [
   });
 }
 
+// spec:AST-061 FR6: every block takes the direction of the surface around
+// it, whatever its first strong character, on both surfaces.
+for (const direction of ['ltr', 'rtl'] as const) {
+  test(`blocks take the provider direction (${direction})`, async ({page}) => {
+    const errors = await openStory(
+      page,
+      STORY.sideBySide,
+      DESKTOP,
+      `colorMode:light;direction:${direction}`,
+    );
+    await waitForDocument(page, MARKDOWN);
+    await waitForDocument(page, RICH_TEXT);
+    for (const surface of [MARKDOWN, RICH_TEXT]) {
+      const geometry = await surfaceGeometry(page, surface);
+      const otherDirection = geometry.blocks
+        .filter(block => block.direction !== direction)
+        .map(block => block.key);
+      expect(otherDirection, surface).toEqual([]);
+    }
+    expect(errors).toEqual([]);
+  });
+}
+
 test('overlay: both layers start together and the drawn editor is inert', async ({
   page,
 }) => {
