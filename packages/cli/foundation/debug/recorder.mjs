@@ -65,6 +65,16 @@ const SIGNAL_EXIT_CODES = {SIGINT: 130, SIGTERM: 143, SIGHUP: 129};
 export const MAX_CAPTURED_OUTPUT = 32 * 1024;
 
 /**
+ * Raw text the tee holds per stream, in UTF-16 code units, before `finish`
+ * scrubs it and cuts it at MAX_CAPTURED_OUTPUT bytes. A unit is at least one
+ * byte, so the window always reaches well past the cap: a secret that
+ * straddles the cut is held whole for the scrubber, and redaction can shrink
+ * the text without pulling the window's edge into what is kept. A secret that
+ * runs past the window's edge is still cut there.
+ */
+export const CAPTURE_WINDOW = 4 * MAX_CAPTURED_OUTPUT;
+
+/**
  * The leading `maxBytes` bytes of `text`, never splitting a character.
  *
  * The cap counts bytes but `String.slice` counts UTF-16 units, so slicing by
@@ -110,21 +120,20 @@ let _startedAt = 0;
 let _cliVersion;
 
 /**
- * A captured stream: the kept chunks, the true byte total the command wrote,
- * and how much of the cap the kept chunks have spent. A write cut at the cap
- * spends all of it, so nothing written later is kept and the capture stays a
- * prefix of the output.
+ * A captured stream: the raw text held so far (at most CAPTURE_WINDOW units),
+ * how many units that is, whether anything written was left out, and the true
+ * byte total the command wrote.
  *
- * @typedef {{chunks: string[], bytes: number, captured: number}} OutputSink
+ * @typedef {{chunks: string[], held: number, overflow: boolean, bytes: number}} OutputSink
  */
 
 /**
  * Captured stdout/stderr, and the originals to restore.
  * @type {OutputSink}
  */
-const _stdout = {chunks: [], bytes: 0, captured: 0};
+const _stdout = {chunks: [], held: 0, overflow: false, bytes: 0};
 /** @type {OutputSink} */
-const _stderr = {chunks: [], bytes: 0, captured: 0};
+const _stderr = {chunks: [], held: 0, overflow: false, bytes: 0};
 /** @type {null | {out: typeof process.stdout.write, err: typeof process.stderr.write}} */
 let _originalWrites = null;
 
@@ -156,32 +165,18 @@ function captureOutput() {
       function (/** @type {any} */ chunk, /** @type {any[]} */ ...rest) {
         try {
           const text = typeof chunk === 'string' ? chunk : String(chunk);
-          const len = Buffer.byteLength(text);
-          sink.bytes += len;
-          // Keep the part that still fits. Testing a running total that already
-          // counts this write would drop an oversized write whole, leaving
-          // nothing for the commands whose output is most worth reading.
-          const room = MAX_CAPTURED_OUTPUT - sink.captured;
-          if (room > 0) {
-            if (len <= room) {
-              sink.chunks.push(text);
-              sink.captured += len;
-            } else {
-              // The capture ends here, even if scrubbing throws. A character
-              // boundary can leave a byte or two of room: spend it anyway, or a
-              // later write would land after the cut.
-              sink.captured = MAX_CAPTURED_OUTPUT;
-              // Scrub before cutting. The patterns need a whole token, or a
-              // private key's END line, and a cut can leave a fragment none of
-              // them match. The kept chunks join in, so a token an earlier
-              // write started is whole too.
-              const whole = scrubText(
-                sink.chunks.join('') + text,
-                outputRedactor(),
-              );
-              sink.chunks.length = 0;
-              sink.chunks.push(sliceToBytes(whole, MAX_CAPTURED_OUTPUT));
-            }
+          sink.bytes += Buffer.byteLength(text);
+          // Hold raw text up to the window and do nothing more here. Scrubbing,
+          // and the cut at the cap, wait for `finish`, which runs them only
+          // when a handler exists.
+          const room = CAPTURE_WINDOW - sink.held;
+          if (text.length <= room) {
+            sink.chunks.push(text);
+            sink.held += text.length;
+          } else {
+            if (room > 0) sink.chunks.push(text.slice(0, room));
+            sink.held = CAPTURE_WINDOW;
+            sink.overflow = true;
           }
         } catch {
           /* a chunk we cannot stringify is simply not captured */
@@ -203,14 +198,27 @@ function releaseOutput() {
 }
 
 /**
+ * A stream as its event carries it: the held text scrubbed, then cut at the
+ * cap. Scrubbing comes first because the patterns need a whole token, or a
+ * private key's END line, and a cut can leave a piece none of them match.
+ *
  * @param {OutputSink} sink
+ * @param {import('./redact.mjs').Redactor} redact
  * @returns {string}
  */
-function collected(sink) {
-  const text = sink.chunks.join('');
-  return sink.bytes > MAX_CAPTURED_OUTPUT
-    ? `${text}\n…[truncated, ${sink.bytes} bytes total]`
-    : text;
+function collected(sink, redact) {
+  const text = scrubText(sink.chunks.join(''), redact);
+  if (sink.bytes <= MAX_CAPTURED_OUTPUT) return text;
+  let kept = sliceToBytes(text, MAX_CAPTURED_OUTPUT);
+  // Redaction can shrink the held text below the cap. Then the window's raw
+  // edge is inside what is kept, and the word there may be part of a secret
+  // the scrubber never saw whole.
+  if (sink.overflow && kept.length === text.length) {
+    let end = kept.length;
+    while (end > 0 && !/\s/.test(kept[end - 1])) end -= 1;
+    kept = kept.slice(0, end);
+  }
+  return `${kept}\n…[truncated, ${sink.bytes} bytes total]`;
 }
 
 /**
@@ -669,15 +677,6 @@ function scrubText(text, redact) {
 }
 
 /**
- * The redactor for captured output: every content rule, no per-value length
- * clamp. The tee uses it on a write it cuts, and `finish` on the whole capture.
- * @returns {import('./redact.mjs').Redactor}
- */
-function outputRedactor() {
-  return createRedactor({maxLength: Number.MAX_SAFE_INTEGER});
-}
-
-/**
  * Seal the event and deliver it. Idempotent.
  *
  * @param {{exitCode?: number}} [options]
@@ -698,8 +697,14 @@ export function finish({exitCode} = {}) {
     if (handlers.length === 0) return;
 
     _event.env = captureEnv({cliVersion: _cliVersion});
-    _event.output.stdout = collected(_stdout);
-    _event.output.stderr = collected(_stderr);
+    // Captured output echoes back paths and argument values, so it gets the
+    // same rules as everything else, applied by collected() before the cut.
+    // The per-value length clamp does not apply here — MAX_CAPTURED_OUTPUT
+    // already bounds it, and clipping an answer at 2KB would defeat the point
+    // of keeping it.
+    const outputRedact = createRedactor({maxLength: Number.MAX_SAFE_INTEGER});
+    _event.output.stdout = collected(_stdout, outputRedact);
+    _event.output.stderr = collected(_stderr, outputRedact);
     _event.output.stdoutBytes = _stdout.bytes;
     _event.output.stderrBytes = _stderr.bytes;
     _event.output.truncated =
@@ -733,8 +738,6 @@ export function finish({exitCode} = {}) {
     }
 
     const redact = createRedactor();
-    // Same rules, but no length clamp — see the output note below.
-    const settingsRedact = outputRedactor();
     /** @type {import('./event.mjs').DebugEvent} */
     const sealed = {
       ..._event,
@@ -756,15 +759,8 @@ export function finish({exitCode} = {}) {
       globalOptions: /** @type {Record<string, unknown>} */ (
         redact(_event.globalOptions)
       ),
-      // Captured output echoes back paths and argument values, so it gets the
-      // same treatment. The per-value length clamp does not apply here —
-      // MAX_CAPTURED_OUTPUT already bounds it, and clipping an answer at 2KB
-      // would defeat the point of keeping it.
-      output: {
-        ..._event.output,
-        stdout: scrubText(_event.output.stdout, settingsRedact),
-        stderr: scrubText(_event.output.stderr, settingsRedact),
-      },
+      // Scrubbed by collected(), before the cut.
+      output: {..._event.output},
       error: _event.error
         ? {
             ..._event.error,
@@ -860,11 +856,13 @@ export function resetRecorder() {
   }
   releaseOutput();
   _stdout.chunks.length = 0;
+  _stdout.held = 0;
+  _stdout.overflow = false;
   _stdout.bytes = 0;
-  _stdout.captured = 0;
   _stderr.chunks.length = 0;
+  _stderr.held = 0;
+  _stderr.overflow = false;
   _stderr.bytes = 0;
-  _stderr.captured = 0;
   _event = null;
   _projectHandler = null;
   _integrationHandlers = [];

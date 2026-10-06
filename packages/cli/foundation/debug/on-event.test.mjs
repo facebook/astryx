@@ -30,6 +30,7 @@ import {
   recordEnvelope,
   recordHelp,
   resetRecorder,
+  CAPTURE_WINDOW,
   MAX_CAPTURED_OUTPUT,
 } from './recorder.mjs';
 import {parseDebugEvent} from '../../authoring/debug/parse.mjs';
@@ -533,6 +534,17 @@ describe('captured output — what the CLI answered', () => {
     ).toBe(MAX_CAPTURED_OUTPUT);
   });
 
+  it('keeps the prefix of a single write larger than the whole window', () => {
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write('A'.repeat(CAPTURE_WINDOW + 5000));
+    finish({exitCode: 0});
+
+    const {output} = seen[0];
+    expect(output.stdoutBytes).toBe(CAPTURE_WINDOW + 5000);
+    expect(output.stdout.split('\n')[0]).toBe('A'.repeat(MAX_CAPTURED_OUTPUT));
+  });
+
   it('fills the cap exactly when one write straddles it', () => {
     const seen = collect();
     begin({argv: []});
@@ -558,8 +570,7 @@ describe('captured output — what the CLI answered', () => {
 
     const kept = seen[0].output.stdout.split('\n')[0];
     expect(kept).not.toContain('\uFFFD');
-    expect(Buffer.byteLength(kept)).toBeLessThanOrEqual(MAX_CAPTURED_OUTPUT);
-    expect(kept.endsWith('e')).toBe(true);
+    expect(kept).toBe('e'.repeat(MAX_CAPTURED_OUTPUT - 1));
   });
 
   it('keeps nothing written after a cut, so the capture stays a prefix', () => {
@@ -621,7 +632,59 @@ describe('captured output — what the CLI answered', () => {
       `${'a'.repeat(MAX_CAPTURED_OUTPUT - 17)} ghp_${'B'.repeat(36)} tail`,
     );
     finish({exitCode: 0});
-    expect(seen[0].output.stdout).not.toContain('ghp_');
+
+    const kept = seen[0].output.stdout;
+    expect(kept.startsWith('a'.repeat(1000))).toBe(true);
+    expect(kept).not.toContain('ghp_');
+    // Nothing past the token was left out, so the last word is kept.
+    expect(kept.split('\n')[0].endsWith(' tail')).toBe(true);
+  });
+
+  it('scrubs a token that continues into a later write', () => {
+    const seen = collect();
+    begin({argv: []});
+    // The first write crosses the cap partway through the token. The token's
+    // other 32 characters come in the next write.
+    process.stdout.write(
+      `${'a'.repeat(MAX_CAPTURED_OUTPUT - 6)} ghp_${'B'.repeat(4)}`,
+    );
+    process.stdout.write(`${'B'.repeat(32)} tail`);
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout;
+    expect(kept.startsWith('a'.repeat(1000))).toBe(true);
+    expect(kept).not.toContain('ghp_');
+  });
+
+  it('scrubs a token whose first part exactly fills the cap', () => {
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write(`${'a'.repeat(MAX_CAPTURED_OUTPUT - 9)} ghp_BBBB`);
+    process.stdout.write(`${'B'.repeat(32)} tail`);
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout;
+    expect(kept.startsWith('a'.repeat(1000))).toBe(true);
+    expect(kept).not.toContain('ghp_');
+  });
+
+  it('drops a partial word where redaction pulls the window edge into the capture', () => {
+    // Each token is 101 characters and redacts to 11, so the held window
+    // scrubs down to well under the cap. Its raw edge lands 8 characters into
+    // a final token, too few for the token pattern to match.
+    const token = `ghp_${'A'.repeat(96)} `;
+    const count = Math.floor((CAPTURE_WINDOW - 8) / token.length);
+    const pad = ' '.repeat(CAPTURE_WINDOW - 8 - count * token.length);
+    const seen = collect();
+    begin({argv: []});
+    process.stdout.write(
+      `${token.repeat(count)}${pad}ghp_${'B'.repeat(36)} tail`,
+    );
+    finish({exitCode: 0});
+
+    const kept = seen[0].output.stdout;
+    expect(kept).toContain('[redacted]');
+    expect(kept).not.toContain('ghp_');
   });
 
   it('scrubs a token that an earlier write started', () => {
@@ -650,6 +713,7 @@ describe('captured output — what the CLI answered', () => {
     finish({exitCode: 0});
 
     const kept = seen[0].output.stdout;
+    expect(kept.startsWith('a'.repeat(1000))).toBe(true);
     expect(kept).not.toContain('BEGIN');
     expect(kept).not.toContain('MIIE');
   });
@@ -660,6 +724,14 @@ describe('captured output — what the CLI answered', () => {
     say('wrote ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA to disk');
     finish({exitCode: 0});
     expect(seen[0].output.stdout).not.toContain('ghp_AAAA');
+  });
+
+  it('scrubs captured output once', () => {
+    const seen = collect();
+    begin({argv: []});
+    say('token=hunter2');
+    finish({exitCode: 0});
+    expect(seen[0].output.stdout).toBe('token=[redacted]\n');
   });
 
   it('keeps a long answer intact below the cap, unlike other fields', () => {
