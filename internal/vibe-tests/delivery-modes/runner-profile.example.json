@@ -53,8 +53,9 @@
         "format": "jsonl",
         "toolCalls": [
           {
+            "recordsPath": "message.content",
             "matches": [{"path": "kind", "equals": "tool-call"}],
-            "commandPath": "payload.command"
+            "commandPath": "input.command"
           }
         ],
         "usage": {

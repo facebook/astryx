@@ -275,7 +275,17 @@ function usePassthroughLauncher(profile, launcherPath, env = {}) {
 }
 
 test('runner profile validates generic commands and audit classes', () => {
-  assert.equal(validateRunnerProfile(exampleProfile()).schemaVersion, 1);
+  const profile = exampleProfile();
+  profile.runners.sample.transcript.toolCalls[0].recordsPath =
+    'message.content';
+  assert.equal(validateRunnerProfile(profile).schemaVersion, 1);
+  const invalidPath = exampleProfile();
+  invalidPath.runners.sample.transcript.toolCalls[0].recordsPath =
+    'message.content[]';
+  assert.throws(
+    () => validateRunnerProfile(invalidPath),
+    /recordsPath must be a dotted JSON field path/,
+  );
   const invalid = exampleProfile();
   invalid.runners.sample.audit.rules = [
     {
@@ -443,6 +453,62 @@ test('profile adapter controls generic JSONL tool and usage parsing', () => {
   });
 });
 
+test('profile adapter iterates arrays for tool counts and command audits', () => {
+  const adapter = {
+    format: 'jsonl',
+    toolCalls: [
+      {
+        recordsPath: 'message.content',
+        matches: [{path: 'kind', equals: 'tool-call'}],
+        commandPath: 'input.command',
+      },
+    ],
+  };
+  const transcript = JSON.stringify({
+    message: {
+      content: [
+        {
+          kind: 'tool-call',
+          input: {command: 'npx astryx component Button'},
+        },
+        {kind: 'text', text: 'Checking the docs.'},
+        {
+          kind: 'tool-call',
+          input: {command: 'pnpm exec astryx docs principles'},
+        },
+      ],
+    },
+  });
+  assert.equal(countToolCalls(transcript, adapter), 2);
+  assert.deepEqual(extractToolCommands(transcript, adapter), [
+    'npx astryx component Button',
+    'pnpm exec astryx docs principles',
+  ]);
+  assert.equal(countCliLookups(transcript, adapter), 2);
+  const audit = auditTranscript(
+    transcript,
+    '',
+    {
+      rules: [
+        {
+          label: 'no docs command',
+          source: 'command',
+          kind: 'forbidden',
+          class: 'strict',
+          pattern: '\\bdocs\\b',
+        },
+      ],
+    },
+    adapter,
+  );
+  assert.equal(audit.commandCount, 2);
+  assert.equal(audit.passed, false);
+  assert.deepEqual(
+    audit.strictFindings.map(finding => finding.label),
+    ['no docs command'],
+  );
+});
+
 test('source scanner separates comments and theme definitions', async () => {
   const directory = await fs.promises.mkdtemp(
     path.join(os.tmpdir(), 'delivery-source-'),
@@ -496,6 +562,80 @@ test('judge crashes retry once and report recovery', () => {
   assert.equal(resolved.rejudged, true);
   assert.equal(resolved.attempts.length, 2);
   assert.equal(resolved.attempts[0].error, crashed.error);
+});
+
+test('agent build failures are scored instead of retryable infrastructure', async () => {
+  const launcherRoot = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-build-failure-launcher-'),
+  );
+  temporaryDirectories.push(launcherRoot);
+  const launcherPath = await writePassthroughLauncher(launcherRoot);
+  const privateRun = await createPrivateRunRoot('build-failure-');
+  temporaryDirectories.push(privateRun.root);
+  await fs.promises.writeFile(
+    path.join(privateRun.projectDir, 'package.json'),
+    JSON.stringify({
+      scripts: {
+        typecheck: 'node -e "process.exit(0)"',
+        build: 'node -e "process.exit(3)"',
+      },
+    }),
+  );
+  const profile = exampleProfile();
+  usePassthroughLauncher(profile, launcherPath);
+  profile.evaluator = {
+    command: process.execPath,
+    args: [path.join(here, 'evaluator.mjs'), '--worker', '{evaluationInput}'],
+    cwd: '{sandboxProject}',
+  };
+  const evaluation = await evaluateRun({
+    config: 'react-build',
+    privateRun,
+    prompt: {prompt: 'Render the fixture.'},
+    screenshotPath: path.join(privateRun.root, 'screenshot.png'),
+    baselineSources: {},
+    skipJudge: true,
+    profile,
+  });
+  assert.equal(evaluation.build.passed, false);
+  assert.equal(evaluation.render.passed, false);
+  assert.equal(evaluation.render.adoptionShare, 0);
+  assert.equal(evaluation.judge.visualQuality, 0);
+});
+
+test('harness-owned browser launch failures remain retryable', async () => {
+  const launcherRoot = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), 'delivery-browser-failure-launcher-'),
+  );
+  temporaryDirectories.push(launcherRoot);
+  const launcherPath = await writePassthroughLauncher(launcherRoot);
+  const privateRun = await createPrivateRunRoot('browser-failure-');
+  temporaryDirectories.push(privateRun.root);
+  await fs.promises.writeFile(
+    path.join(privateRun.projectDir, 'index.html'),
+    '<main><h1>Static browser fixture</h1><p>Enough visible text.</p></main>',
+  );
+  const profile = exampleProfile();
+  usePassthroughLauncher(profile, launcherPath, {
+    PLAYWRIGHT_BROWSERS_PATH: path.join(launcherRoot, 'missing-browsers'),
+  });
+  profile.evaluator = {
+    command: process.execPath,
+    args: [path.join(here, 'evaluator.mjs'), '--worker', '{evaluationInput}'],
+    cwd: '{sandboxProject}',
+  };
+  await assert.rejects(
+    evaluateRun({
+      config: 'static-html',
+      privateRun,
+      prompt: {prompt: 'Render the fixture.'},
+      screenshotPath: path.join(privateRun.root, 'screenshot.png'),
+      baselineSources: {},
+      skipJudge: true,
+      profile,
+    }),
+    /Sandboxed evaluator failed:.*Browser launch failed/s,
+  );
 });
 
 test('private run roots use mode 0700', async () => {
