@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useState, useSyncExternalStore} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Text} from '@astryxdesign/core';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
@@ -735,24 +735,44 @@ const busyMonthEvents: CalendarEvent[] = [
  * shows two and a "+N more" button that opens a popover listing every event
  * of that day.
  */
+// Test seam for the month-overflow browser contract: removes an event the way
+// a data refresh would, while a day's popover stays open. The events live in
+// one module-level store so the removal reaches every rendered copy of the
+// story.
+let monthOverflowEvents: ReadonlyArray<CalendarEvent> = busyMonthEvents;
+const monthOverflowListeners = new Set<() => void>();
+
+function subscribeToMonthOverflowEvents(listener: () => void): () => void {
+  monthOverflowListeners.add(listener);
+  return () => {
+    monthOverflowListeners.delete(listener);
+  };
+}
+
+function getMonthOverflowEvents(): ReadonlyArray<CalendarEvent> {
+  return monthOverflowEvents;
+}
+
+function removeMonthOverflowEvent(id: string): void {
+  monthOverflowEvents = monthOverflowEvents.filter(event => event.id !== id);
+  monthOverflowListeners.forEach(listener => listener());
+}
+
 export const MonthOverflow: Story = {
   render: () => {
     const [date, setDate] = useState<Instant>(FIXTURE_DATE);
-    const [monthEvents, setMonthEvents] = useState(busyMonthEvents);
+    const monthEvents = useSyncExternalStore(
+      subscribeToMonthOverflowEvents,
+      getMonthOverflowEvents,
+      getMonthOverflowEvents,
+    );
     const view = useMemo(() => createScheduleMonthlyView(), []);
-    // Test seam for the month-overflow browser contract: removes an event the
-    // way a data refresh would, while a day's popover stays open.
     useEffect(() => {
-      const seam = window as unknown as {
-        scheduleMonthOverflowStory?: {removeEvent: (id: string) => void};
-      };
-      seam.scheduleMonthOverflowStory = {
-        removeEvent: id =>
-          setMonthEvents(current => current.filter(event => event.id !== id)),
-      };
-      return () => {
-        delete seam.scheduleMonthOverflowStory;
-      };
+      (
+        window as unknown as {
+          scheduleMonthOverflowStory?: {removeEvent: (id: string) => void};
+        }
+      ).scheduleMonthOverflowStory = {removeEvent: removeMonthOverflowEvent};
     }, []);
 
     return (
