@@ -4,7 +4,8 @@
 
 /**
  * @file useScheduleViewPopover.ts
- * @input The dialog name for the open trigger's key, or for no open trigger
+ * @input The dialog name for the open trigger's key, or for no open trigger,
+ *   and where focus goes when the open trigger stops being painted
  * @output One view-owned Popover with its open key, trigger props, the press
  *   model that lets one gesture switch triggers, and a close when the open
  *   trigger is no longer painted
@@ -57,6 +58,7 @@ export interface ScheduleViewPopover {
  */
 export function useScheduleViewPopover(
   dialogLabelFor: (key: string | null) => string,
+  onTriggerLost?: (key: string) => void,
 ): ScheduleViewPopover {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const openKeyRef = useRef(openKey);
@@ -116,12 +118,23 @@ export function useScheduleViewPopover(
   };
 
   // Triggers painted this render; the popover may stay open only for one of
-  // them.
+  // them. When its trigger is gone, focus — inside the popover, or dropped
+  // to the page with the trigger — has nowhere to return to, so the view
+  // decides where it lands.
   const paintedKeys = new Set<string>();
   useEffect(() => {
     if (openKey != null && !paintedKeys.has(openKey)) {
+      const content = popoverRef.current.contentRef.current;
+      const active = document.activeElement;
+      const hadFocus =
+        active == null ||
+        active === document.body ||
+        (content?.contains(active) ?? false);
       popoverRef.current.hide();
       setOpenKey(null);
+      if (hadFocus) {
+        onTriggerLost?.(openKey);
+      }
     }
   });
 

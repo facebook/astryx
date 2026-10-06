@@ -482,6 +482,25 @@ export function formatFullDate(
   );
 }
 
+/** A week row's dates, such as "May 10 – 16, 2026", for its row header. */
+export function formatWeekRange(
+  start: PlainDate,
+  end: PlainDate,
+  timezoneID: string,
+  locale: Locale,
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: timezoneID,
+    calendar: 'gregory',
+  }).formatRange(
+    new Date(plainDateToInstant(start, timezoneID, 12)),
+    new Date(plainDateToInstant(end, timezoneID, 12)),
+  );
+}
+
 export function formatWeekday(
   date: PlainDate,
   timezoneID: string,

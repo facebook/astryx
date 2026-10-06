@@ -3,15 +3,17 @@
 /**
  * @file ScheduleMonthOverflow.a11y.chromium.spec.ts
  * @input The built Lab/Schedule month-overflow story in real Chromium
- * @output Receipted evidence that a month week row keeps every chip inside it,
- *   that each busy day paints or counts every one of its events, and that a
- *   day's "+N more" is a named button opening one view-owned popover that
- *   lists the whole day: by keyboard and pointer, switching days in one
- *   gesture, closing on Escape, light dismiss and paging, with a full focus
- *   ring; in LTR and RTL, light and dark, wide and narrow
+ * @output Receipted evidence that the month is a table with weekday column
+ *   headers, week row headers and date-named cells; that a week row keeps
+ *   every chip inside it; that each busy day paints or counts every one of
+ *   its events; and that a day's "+N more" is a named Tab stop opening one
+ *   view-owned popover that lists the whole day: by keyboard and pointer,
+ *   switching days in one gesture, closing on Escape, light dismiss and
+ *   paging, with a full focus ring; in LTR and RTL, light and dark, wide and
+ *   narrow
  * @position Browser binding for `component:Schedule` FR15–FR17 and AR7. jsdom
- *   has no layout, cannot show a native popover, return focus through it, or
- *   paint a focus ring.
+ *   has no layout or Tab order, cannot show a native popover, return focus
+ *   through it, or paint a focus ring.
  */
 
 import {expect, test, type Page} from '@playwright/test';
@@ -64,21 +66,23 @@ interface MonthReading {
 }
 
 /**
- * Reads the month grid by what it is: cells are the grid's date-named cells,
- * chips are the painted children of the grid's hidden event overlay, and a
+ * Reads the month by what it is: cells are the table's date-named cells,
+ * chips are the painted children of the table's hidden event overlay, and a
  * day's "+N more" is the named button inside its cell.
  */
 function readMonth(page: Page): Promise<MonthReading> {
   return page.evaluate(
     ([dayNames]) => {
       const grid = document.querySelector<HTMLElement>(
-        '.astryx-schedule [role="grid"]',
+        '.astryx-schedule [role="table"], .astryx-schedule [role="grid"]',
       );
       if (grid == null) {
-        throw new Error('no month grid');
+        throw new Error('no month table');
       }
       const cells = [
-        ...grid.querySelectorAll<HTMLElement>('[role="gridcell"]'),
+        ...grid.querySelectorAll<HTMLElement>(
+          '[role="cell"], [role="gridcell"]',
+        ),
       ].map(cell => ({
         label: cell.getAttribute('aria-label') ?? '',
         rect: cell.getBoundingClientRect(),
@@ -224,6 +228,92 @@ function expectNothingLost(reading: MonthReading) {
     expect(moreInsideCell, `${day}: "+N more" inside its cell`).toBe(true);
   }
 }
+
+test('the month is a table: weekday and week headers, date-named cells, and "+N more" in the Tab order after the table', async ({
+  page,
+}) => {
+  await openStory(evidence, page, STORY, WIDE);
+  const table = page.getByRole('table', {name: 'May 2026'});
+  await expect(table).toBeVisible();
+  const tree = await table.ariaSnapshot();
+  const reading = await page.evaluate(() => {
+    const table = document.querySelector('.astryx-schedule [role="table"]');
+    const rows = [...(table?.querySelectorAll('[role="row"]') ?? [])];
+    return {
+      gridRoles: document.querySelectorAll(
+        '.astryx-schedule [role="grid"], .astryx-schedule [role="gridcell"]',
+      ).length,
+      readonly: table?.getAttribute('aria-readonly') ?? null,
+      columnHeaders: [
+        ...(table?.querySelectorAll('[role="columnheader"]') ?? []),
+      ].map(header => header.getAttribute('aria-label') ?? header.textContent),
+      rowHeaders: rows
+        .slice(1)
+        .map(
+          row => row.querySelector('[role="rowheader"]')?.textContent ?? null,
+        ),
+      cellsPerRow: rows
+        .slice(1)
+        .map(row => row.querySelectorAll('[role="cell"]').length),
+      wednesdayCell:
+        table
+          ?.querySelector('[role="cell"][aria-current="date"]')
+          ?.getAttribute('aria-label') ?? null,
+      moreButtons: [...(table?.querySelectorAll('button') ?? [])].map(
+        button => ({
+          name: button.getAttribute('aria-label'),
+          cell: button.closest('[role="cell"]')?.getAttribute('aria-label'),
+          tabIndex: button.tabIndex,
+        }),
+      ),
+    };
+  });
+  const stops: string[] = [];
+  for (let press = 0; press < 7; press += 1) {
+    await page.keyboard.press('Tab');
+    stops.push(
+      await page.evaluate(
+        () =>
+          `${document.activeElement?.getAttribute('role') ?? document.activeElement?.tagName.toLowerCase()}:${document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.textContent ?? ''}`,
+      ),
+    );
+  }
+  await record(evidence, page, 'month-table-structure', STORY, 'ltr', {
+    reading,
+    stops,
+    tree,
+  });
+  expect(reading.gridRoles).toBe(0);
+  expect(reading.readonly).toBeNull();
+  expect(reading.columnHeaders).toEqual([
+    'Week',
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  ]);
+  expect(reading.rowHeaders).toHaveLength(6);
+  for (const header of reading.rowHeaders) {
+    expect(header).toMatch(/\d+\s*–\s*.*\d{4}$/);
+  }
+  expect(reading.cellsPerRow).toEqual([7, 7, 7, 7, 7, 7]);
+  expect(reading.wednesdayCell).toBe(WEDNESDAY);
+  expect(reading.moreButtons).toEqual([
+    {name: `3 more events, ${WEDNESDAY}`, cell: WEDNESDAY, tabIndex: 0},
+    {name: `2 more events, ${FRIDAY}`, cell: FRIDAY, tabIndex: 0},
+  ]);
+  // Tab: the pager, the table itself (it scrolls), then each "+N more" in
+  // reading order.
+  const tableStop = stops.indexOf('table:May 2026');
+  expect(tableStop, stops.join(' → ')).toBeGreaterThan(0);
+  expect(stops.slice(tableStop + 1, tableStop + 3)).toEqual([
+    `button:3 more events, ${WEDNESDAY}`,
+    `button:2 more events, ${FRIDAY}`,
+  ]);
+});
 
 test('every chip stays in its week row and each busy day paints or counts all of its events', async ({
   page,

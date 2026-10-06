@@ -11,6 +11,7 @@
  * @position Concrete schedule view; exported as createScheduleMonthlyView
  */
 
+import {useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {layerAnimations} from '@astryxdesign/core/Layer';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
@@ -41,6 +42,7 @@ import {
   formatFullDate,
   formatMonthTitle,
   formatWeekday,
+  formatWeekRange,
   isEventInPast,
   ListEventRow,
   MonthEventPill,
@@ -91,35 +93,55 @@ function ScheduleMonthlyView(
     days.map(day => [plainDateToISO(day), day]),
   );
   const monthTitle = formatMonthTitle(rangeDate, timezoneID, locale);
-  const dayPopover = useScheduleViewPopover(key => {
-    const day = key == null ? undefined : dayByKey.get(key);
-    return day == null ? monthTitle : formatFullDate(day, timezoneID, locale);
-  });
+  const tableRef = useRef<HTMLDivElement>(null);
+  const dayPopover = useScheduleViewPopover(
+    key => {
+      const day = key == null ? undefined : dayByKey.get(key);
+      return day == null ? monthTitle : formatFullDate(day, timezoneID, locale);
+    },
+    // A day that stops being busy takes its "+N more" with it; focus lands
+    // on that day's cell instead of the page.
+    key => {
+      tableRef.current
+        ?.querySelector<HTMLElement>(`[data-schedule-day="${key}"]`)
+        ?.focus();
+    },
+  );
   const openDay =
     dayPopover.openKey == null ? null : dayByKey.get(dayPopover.openKey);
 
   return (
     <ScheduleFrame
       title={<ScheduleMonthTitle date={rangeDate} timezoneID={timezoneID} />}
-      titleLabel={formatMonthTitle(rangeDate, timezoneID, locale)}
+      titleLabel={monthTitle}
       isLoading={isLoading}>
+      {/* A table, not an interactive grid (component:Schedule AR7): weekday
+          column headers, week row headers, cells named by their full date,
+          and no arrow-key promise, so a busy day's "+N more" is an ordinary
+          Tab stop. The table scrolls horizontally at narrow viewports and a
+          month without a busy day has no focusable descendants, so it is
+          focusable itself for keyboard scrolling (axe:
+          scrollable-region-focusable). */}
       <div
-        role="grid"
-        aria-label={formatMonthTitle(rangeDate, timezoneID, locale)}
-        aria-readonly
-        // The grid scrolls horizontally at narrow viewports and a month
-        // without a busy day has no focusable descendants, so it is focusable
-        // itself for keyboard scrolling (axe: scrollable-region-focusable).
+        ref={tableRef}
+        role="table"
+        aria-label={monthTitle}
         tabIndex={0}
         {...dayPopover.containerProps}
         {...stylex.props(styles.monthGrid)}>
         <div role="row" {...stylex.props(styles.weekHeader)}>
+          <div
+            role="columnheader"
+            aria-colindex={1}
+            {...stylex.props(styles.visuallyHidden)}>
+            Week
+          </div>
           {days.slice(0, 7).map((day, index) => (
             <div
               key={plainDateToISO(day)}
               role="columnheader"
               aria-label={formatWeekday(day, timezoneID, 'long', locale)}
-              aria-colindex={index + 1}
+              aria-colindex={index + 2}
               {...stylex.props(styles.weekdayLabel)}>
               <Heading
                 level={headingLevel}
@@ -138,6 +160,17 @@ function ScheduleMonthlyView(
                 key={plainDateToISO(week[0])}
                 role="row"
                 {...stylex.props(styles.monthGridRow)}>
+                <div
+                  role="rowheader"
+                  aria-colindex={1}
+                  {...stylex.props(styles.visuallyHidden)}>
+                  {formatWeekRange(
+                    week[0],
+                    week[week.length - 1],
+                    timezoneID,
+                    locale,
+                  )}
+                </div>
                 {week.map((day, dayIndex) => {
                   const index = weekIndex * 7 + dayIndex;
                   const isOutsideMonth = day.month !== rangeDate.month;
@@ -147,9 +180,12 @@ function ScheduleMonthlyView(
                   return (
                     <div
                       key={plainDateToISO(day)}
-                      role="gridcell"
+                      role="cell"
                       aria-label={formatFullDate(day, timezoneID, locale)}
-                      aria-colindex={dayIndex + 1}
+                      aria-colindex={dayIndex + 2}
+                      // Focus lands here when the day's "+N more" goes away.
+                      tabIndex={-1}
+                      data-schedule-day={dayISO}
                       aria-current={
                         plainDateIsEqual(day, highlightedDate)
                           ? 'date'
