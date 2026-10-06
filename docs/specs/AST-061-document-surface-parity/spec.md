@@ -84,7 +84,8 @@ reflows no line; only editing affordances appear or disappear.
   destination never contains its title; a title is exposed as the link's
   title. Named and numeric character references in text, such as `&copy;`
   and `&#169;`, render as the characters they name on every surface; inside
-  inline code and fenced code they stay literal.
+  inline code and fenced code they stay literal. Every surface decodes them
+  with the one decoder `Markdown` exports (DEC-5).
 - **FR8 — Same code block frame.** A fenced code block shows the same header,
   its language label and copy action, at the same height in read and edit
   mode, so the switch does not move the code. In edit mode the header sits
@@ -117,17 +118,20 @@ reflows no line; only editing affordances appear or disappear.
 a link title and FR7 names character references. `RichTextEditor` and
 `RichTextView` adopt FR2–FR10 for the
 constructs they render, and their default editor theme follows FR2 and FR3.
+`@astryxdesign/core/Markdown` exports `decodeMarkdownCharacterReferences`, the
+DEC-5 decoder the RichText surfaces import with.
 
 ## Verification
 
-| Contract | Verification                                                                                    | Representative states                                                                                    | Mutation or failure expectation                                                                                     |
-| -------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| FR2–FR4  | Real-browser computed style and block geometry of the parity fixture on `Markdown` and RichText | 390px and 1440px; light and dark; default density                                                        | Restoring a hard-coded heading size or a different block margin moves a block past 2 px and fails                   |
-| FR5      | Real-browser structure and line counts of the parity fixture                                    | Nested lists at 2- and 3-space indentation; soft breaks; blockquote continuation                         | Flattening a nested list or turning a soft break into a line break fails                                            |
-| FR6      | Real-browser computed direction per block                                                       | Right-to-left provider with left-to-right text, and the reverse                                          | Per-block automatic direction fails                                                                                 |
-| FR7      | Semantic DOM of inline marks, links, and character references on every surface                  | Titled link, bare link, strong, emphasis, strikethrough; `&amp;`, `&copy;`, `&#169;` in text and in code | A title inside a destination, a styled span in place of a semantic element, or an undecoded reference in text fails |
-| FR8      | Real-browser code block header geometry in both modes                                           | Fenced code with an info string                                                                          | A header missing from one mode moves the code and fails                                                             |
-| FR9–FR10 | Real-browser read/edit switch of the parity fixture and a long document                         | Short document at the top; long document halfway down                                                    | A per-block shift beyond the constant offset, or an anchor block leaving the top of the view, fails                 |
+| Contract   | Verification                                                                                    | Representative states                                                                                    | Mutation or failure expectation                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| FR2–FR4    | Real-browser computed style and block geometry of the parity fixture on `Markdown` and RichText | 390px and 1440px; light and dark; default density                                                        | Restoring a hard-coded heading size or a different block margin moves a block past 2 px and fails                   |
+| FR5        | Real-browser structure and line counts of the parity fixture                                    | Nested lists at 2- and 3-space indentation; soft breaks; blockquote continuation                         | Flattening a nested list or turning a soft break into a line break fails                                            |
+| FR6        | Real-browser computed direction per block                                                       | Right-to-left provider with left-to-right text, and the reverse                                          | Per-block automatic direction fails                                                                                 |
+| FR7        | Semantic DOM of inline marks, links, and character references on every surface                  | Titled link, bare link, strong, emphasis, strikethrough; `&amp;`, `&copy;`, `&#169;` in text and in code | A title inside a destination, a styled span in place of a semantic element, or an undecoded reference in text fails |
+| FR7, DEC-5 | Shared conformance cases through `Markdown` rendering and RichText import                       | Named, decimal, and hexadecimal references; an unknown name; a missing semicolon; an invalid code point  | A second reference table, or a decoder that changes an unknown name or an unterminated reference, fails             |
+| FR8        | Real-browser code block header geometry in both modes                                           | Fenced code with an info string                                                                          | A header missing from one mode moves the code and fails                                                             |
+| FR9–FR10   | Real-browser read/edit switch of the parity fixture and a long document                         | Short document at the top; long document halfway down                                                    | A per-block shift beyond the constant offset, or an anchor block leaving the top of the view, fails                 |
 
 ## Decision log
 
@@ -173,6 +177,22 @@ The language label tells a reader what the code is in both modes, and a
 header present in only one mode moves every line of code on the switch. The
 header is a frame around the document, not document content, so editing never
 reaches it.
+
+### DEC-5 — One decoder for character references
+
+**Reference:** `spec:AST-061/DEC-5`
+**Decider:** cixzhang, 2026-10-06
+
+`decodeMarkdownCharacterReferences(text)`, exported from
+`@astryxdesign/core/Markdown`, returns `text` with every valid named or
+numeric character reference replaced by the characters it names, and a
+numeric reference to NUL, a surrogate, or a code point past U+10FFFF replaced
+by U+FFFD, as CommonMark specifies; an unknown name, a reference without its
+semicolon, and all other text stay as written.
+It works on plain text and knows nothing of Markdown: each caller decides
+where it applies, so backslash escapes and code stay literal. The named
+reference table and its parser stay private to `Markdown`, so the surfaces
+cannot drift apart; no general HTML entity utility is exported.
 
 ## Open questions
 
