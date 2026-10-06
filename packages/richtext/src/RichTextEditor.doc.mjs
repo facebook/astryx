@@ -57,13 +57,15 @@ export const docs = {
     {
       name: 'isReadOnly',
       type: 'boolean',
-      description: 'Whether the editor is read-only (non-editable).',
+      description:
+        'Whether the editor is read-only (non-editable). Content stays at full opacity, in the tab order, and announced as read-only. Takes effect when changed after mount.',
       default: 'false',
     },
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Whether the editor is disabled (non-editable, dimmed).',
+      description:
+        'Whether the editor is disabled: non-editable, dimmed, out of the tab order, and announced as disabled. Wins when isReadOnly is also set. Takes effect when changed after mount.',
       default: 'false',
     },
     {

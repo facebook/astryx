@@ -8,7 +8,8 @@
  *   LexicalExtensionComposer), Field, VisuallyHidden, useInputStatusIcon,
  *   mergeProps, design tokens
  * @output Exports an accessibly labelled RichTextEditor component with a flush
- *   top toolbar slot and configurable editable-surface minimum height, RichTextEditorProps,
+ *   top toolbar slot, configurable editable-surface minimum height, and distinct
+ *   read-only and disabled states that follow prop changes, RichTextEditorProps,
  *   RichTextEditorStatus, RichTextEditorStatusType, RichTextEditorSize
  * @position Experimental (richtext) implementation; consumed by the package index.ts and
  *   re-exported from @astryxdesign/richtext. Tested by RichTextEditor.test.tsx.
@@ -330,12 +331,16 @@ export interface RichTextEditorProps extends Omit<
   /** Placeholder text shown when the editor is empty. */
   placeholder?: string;
   /**
-   * Whether the editor is read-only (non-editable).
+   * Whether the editor is read-only (non-editable). The content stays at full
+   * opacity, in the tab order, and announced as read-only, so people can still
+   * reach, read, and copy it. Takes effect when changed after mount.
    * @default false
    */
   isReadOnly?: boolean;
   /**
-   * Whether the editor is disabled (non-editable, dimmed).
+   * Whether the editor is disabled: non-editable, dimmed, out of the tab
+   * order, and announced as disabled. Wins when `isReadOnly` is also set.
+   * Takes effect when changed after mount.
    * @default false
    */
   isDisabled?: boolean;
@@ -616,7 +621,9 @@ export const RichTextEditor = forwardRef<
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
-            (isDisabled || isReadOnly) && inputWrapperStyles.disabled,
+            // Only disabled is dimmed, matching TextArea: a read-only editor
+            // keeps full-opacity text and stays keyboard-reachable.
+            isDisabled && inputWrapperStyles.disabled,
             isDisabled && styles.disabled,
             status && inputStatusBorderStyles[status.type],
             status &&
@@ -650,6 +657,8 @@ export const RichTextEditor = forwardRef<
                     ariaDescribedBy={ariaDescribedBy}
                     ariaRequired={isRequired && !isOptional}
                     ariaInvalid={status?.type === 'error'}
+                    isReadOnly={isReadOnly}
+                    isDisabled={isDisabled}
                     placeholderText={placeholder}
                     placeholderID={placeholderID}
                     minHeight={minHeight}
@@ -835,6 +844,23 @@ function EditorRefBridge({
   transformers: Array<Transformer>;
 }): null {
   const [editor] = useLexicalComposerContext();
+
+  // The extension applies `editable` once, when the composer builds the
+  // editor, so a later isReadOnly/isDisabled change would leave
+  // contenteditable at its mount value while the wrapper styling and ARIA
+  // follow the props. Sync the editor on a prop change only: the mount value
+  // is already applied, and this bridge renders after `plugins`, so
+  // re-asserting it on mount would undo a plugin that set editability during
+  // its own mount.
+  const syncedEditableRef = useRef(editable);
+  useEffect(() => {
+    if (syncedEditableRef.current === editable) {
+      return;
+    }
+    syncedEditableRef.current = editable;
+    editor.setEditable(editable);
+  }, [editor, editable]);
+
   useImperativeHandle(
     editorRef,
     () => ({
@@ -918,6 +944,8 @@ function EditorContentEditable({
   ariaDescribedBy,
   ariaRequired,
   ariaInvalid,
+  isReadOnly,
+  isDisabled,
   placeholderText,
   placeholderID,
   minHeight,
@@ -929,6 +957,8 @@ function EditorContentEditable({
   ariaDescribedBy?: string;
   ariaRequired: boolean;
   ariaInvalid: boolean;
+  isReadOnly: boolean;
+  isDisabled: boolean;
   placeholderText?: string;
   placeholderID: string;
   minHeight: SizeValue;
@@ -943,6 +973,18 @@ function EditorContentEditable({
     'aria-describedby': ariaDescribedBy,
     'aria-required': ariaRequired ? ('true' as const) : undefined,
     'aria-invalid': ariaInvalid ? ('true' as const) : undefined,
+    // Lexical announces every non-editable surface as aria-readonly and
+    // leaves it out of the tab order. Split the two states: read-only stays
+    // reachable and is announced read-only; disabled is announced disabled
+    // instead. These keys land after Lexical's computed attributes, so the
+    // disabled branch's explicit `undefined` removes the wrong read-only
+    // announcement. With neither prop set no keys are passed, so a plugin
+    // that drives editor.setEditable keeps Lexical's own aria-readonly.
+    ...(isDisabled
+      ? {'aria-disabled': 'true' as const, 'aria-readonly': undefined}
+      : isReadOnly
+        ? {tabIndex: 0, 'aria-readonly': 'true' as const}
+        : null),
     ...stylex.props(
       styles.contentEditable,
       dynamicStyles.contentEditableMinHeight(minHeight),
