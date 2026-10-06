@@ -33,7 +33,7 @@ export const docs = {
     {
       name: 'width',
       type: 'SizeValue',
-      description: 'Width of the card (number = pixels, string = used as-is). In a flex row or grid track this is the preferred width: the card shrinks below it when the row is narrower. Wrap it in StackItem (static by default) to hold the width and let the row wrap or scroll instead.',
+      description: 'Width of the card (number = pixels, string = used as-is). In a flex row or grid track this is the preferred width: the card shrinks below it when the row is narrower. To hold the width in a flex row, wrap the card in StackItem (static by default) and let the row wrap or scroll. In Grid, set a consumer minWidth on the Card and size the track accordingly.',
     },
     {
       name: 'height',

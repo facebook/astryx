@@ -10,6 +10,7 @@ side-by-side cards past a phone screen. Cards that fit are unchanged. Content
 that cannot wrap is clipped at the card edge, as it already was for cards with
 an explicit `width`; truncate such values with `Text maxLines={1}` and give wide
 content its own scroll region. An explicit `width` is now the card's preferred
-width in a row rather than a floor; wrap the card in `StackItem` to hold it.
+width in a row rather than a floor. To hold it, wrap the card in `StackItem` in
+a flex row, or set a consumer `minWidth` on the Card in Grid.
 
 @thedjpetersen
