@@ -39,6 +39,10 @@ const MINOR_HEADING_BEFORE = `calc(${spacingVars['--spacing-4']})`;
 const MINOR_HEADING_AFTER = `calc(${spacingVars['--spacing-2']})`;
 const TEXT_BLOCK_SPACE = `calc(${spacingVars['--spacing-3']})`;
 const WIDE_BLOCK_SPACE = `calc(${spacingVars['--spacing-4']})`;
+const LIST_ITEM_SPACE = `calc(${spacingVars['--spacing-1']})`;
+const LIST_ROW_GAP = `calc(${spacingVars['--spacing-0-5']})`;
+const LIST_ROW_FLUSH = `calc(${spacingVars['--spacing-0']})`;
+const NESTED_LIST_SPACE = `calc(${spacingVars['--spacing-2']})`;
 
 const editorTheme = stylex.create({
   paragraph: {
@@ -223,10 +227,33 @@ const editorTheme = stylex.create({
     listStyleType: 'none',
     paddingInlineStart: spacingVars['--spacing-2'],
   },
+  // List items space like core Markdown's compact list rows: 4px padding and
+  // a 2px gap between rows. Lexical puts a nested list in an item of its own
+  // after its parent item; that wrapper adds no top padding and no marker,
+  // and its 8px top margin plus the parent row's padding give the 12px
+  // Markdown leaves between an item's text and its nested list.
   listItem: {
-    marginBlock: spacingVars['--spacing-0-5'],
+    paddingBlockStart: {
+      default: LIST_ITEM_SPACE,
+      ':has(ul)': spacingVars['--spacing-0'],
+      ':has(ol)': spacingVars['--spacing-0'],
+    },
+    paddingBlockEnd: LIST_ITEM_SPACE,
+    marginBlockStart: {
+      default: LIST_ROW_FLUSH,
+      ':has(ul)': NESTED_LIST_SPACE,
+      ':has(ol)': NESTED_LIST_SPACE,
+    },
+    marginBlockEnd: {
+      default: LIST_ROW_GAP,
+      ':last-child': spacingVars['--spacing-0'],
+    },
     // Ensure the marker is shown (some CSS resets set list-style: none on li).
-    listStyleType: 'inherit',
+    listStyleType: {
+      default: 'inherit',
+      ':has(ul)': 'none',
+      ':has(ol)': 'none',
+    },
   },
   link: {
     color: colorVars['--color-text-accent'],
