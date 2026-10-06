@@ -172,7 +172,9 @@
  * @property {string} summary
  * @property {DocsNodeLink[]} breadcrumb the namespaces above it, top first
  * @property {DocsNodeSlot[]} slots a namespace's slots that hold children, in
- *   order; empty for a typed doc
+ *   order; empty for a typed doc, and for a depth read of 0
+ * @property {number} [childCount] with a depth read of 0, how many docs sit
+ *   right below the namespace
  * @property {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} content
  *   a typed doc's content; empty for a namespace
  * @property {DocsLinks} links the moves from the node: up to its parent (the
@@ -201,6 +203,15 @@
  * @property {string} kind
  * @property {string} title
  * @property {string} summary
+ * @property {DocsNodeSlot[]} [slots] with a depth read, its own slots, while
+ *   the read goes deeper
+ * @property {number} [childCount] with a depth read, how many docs sit right
+ *   below it where the read stops
+ * @property {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} [content]
+ *   with a depth read at compact or full detail: a namespace's intro or a typed
+ *   doc's content
+ * @property {DocsReadSection[]} [sections] with a depth read at compact or full
+ *   detail: a guide's sections
  */
 
 /**
@@ -211,6 +222,12 @@
  * @property {boolean} [dense]
  * @property {boolean} [index] return a topic's section index instead of its
  *   whole doc
+ * @property {number | 'all'} [depth] how many levels below a docs-tree
+ *   namespace to read: 0 for the namespace alone, 1 for its children (the
+ *   default), 'all' for every level
+ * @property {'brief' | 'compact' | 'full'} [detail] how much of each doc below
+ *   the named one a depth read returns: brief (the default) is its identity,
+ *   compact and full add its text
  * @property {string} [cwd] project directory whose configured integrations
  *   contribute topics; defaults to process.cwd()
  */

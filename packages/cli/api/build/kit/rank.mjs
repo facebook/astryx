@@ -544,6 +544,20 @@ function asksNewPage(phrases, familyWords) {
 }
 
 /**
+ * Whether an idea asks for a new page (see `asksNewPage`), from the idea and
+ * the project's page templates.
+ * @param {string} query
+ * @param {PageTemplate[]} pages
+ * @returns {boolean}
+ */
+export function asksForNewPage(query, pages) {
+  return asksNewPage(
+    String(query).toLowerCase().split(PHRASE_END),
+    familyWordsOf(pages),
+  );
+}
+
+/**
  * The words of a component's name: "DateRangeInput" is date, range, input.
  * @param {ComponentWords} component
  * @returns {string[]}

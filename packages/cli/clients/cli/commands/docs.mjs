@@ -4,9 +4,10 @@
  * @file docs command — Print Astryx reference docs
  *
  * In text, every read is one level: a topic lists its sections, so a reader can
- * open one section by its key, and `--full` prints the whole topic. `--json`
- * keeps the docs() contract: a topic returns its whole doc, and `--index` its
- * sections.
+ * open one section by its key, and `--full` prints the whole topic. `--depth`
+ * reads a docs-tree namespace as many levels down as asked, each doc below it
+ * at --detail (brief by default: one line each). `--json` keeps the docs()
+ * contract: a topic returns its whole doc, and `--index` its sections.
  * Supports --detail (full|compact|brief) and --lang (en|zh|dense). A code
  * block's label prints above its fence, and table cells escape their pipes.
  *
@@ -18,6 +19,7 @@
  *   astryx docs <topic> --full           Print the whole topic
  *   astryx docs <route>                  Open a node of the docs tree, such as
  *                                        cli, cli/api, or cli/api/functions/search
+ *   astryx docs <route> --depth <n|all>  Read that many levels below it
  */
 
 import {
@@ -183,6 +185,214 @@ function formatReferenceFull(docs, detail) {
 }
 
 /**
+ * @param {string} title
+ * @param {number} level
+ * @returns {string}
+ */
+function treeHeading(title, level) {
+  return `${'#'.repeat(Math.max(1, Math.min(6, level)))} ${title}`;
+}
+
+/**
+ * A doc's blocks at one depth: its headings move down with it.
+ * @param {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} blocks
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @param {number} headingOffset
+ * @returns {string[]}
+ */
+function formatTreeBlocks(blocks, detail, headingOffset) {
+  /** @type {string[]} */
+  const formatted = [];
+  for (const block of blocks) {
+    const value =
+      block.type === 'heading'
+        ? treeHeading(block.text, (block.level || 3) + headingOffset)
+        : formatBlock(block, detail);
+    if (value) formatted.push(value);
+  }
+  return formatted;
+}
+
+/**
+ * @param {import('../../../api/docs/docs.type.mjs').DocsReadSection} docSection
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @param {number} headingLevel
+ * @returns {string}
+ */
+function formatTreeSection(docSection, detail, headingLevel) {
+  const heading = treeHeading(docSection.title, headingLevel);
+  const blocks = formatTreeBlocks(docSection.content, detail, headingLevel - 2);
+  return blocks.length > 0 ? `${heading}\n\n${blocks.join('\n\n')}` : heading;
+}
+
+/**
+ * Where a route sits below the namespace a read names.
+ * @param {string} route
+ * @param {string} root
+ * @returns {string}
+ */
+function belowRoot(route, root) {
+  return route.startsWith(`${root}/`) ? route.slice(root.length + 1) : route;
+}
+
+/**
+ * @param {number} count
+ * @returns {string}
+ */
+function docsBelow(count) {
+  return `${count} ${count === 1 ? 'doc' : 'docs'} below`;
+}
+
+/**
+ * Every child of a depth read, one row each in reading order, named by where
+ * it sits below the read's namespace.
+ * @param {import('../../../api/docs/docs.type.mjs').DocsNodeChild[]} children
+ * @param {string} root
+ * @param {string} owner the package that owns the read's namespace
+ * @returns {{name: string, summary: string}[]}
+ */
+function treeRows(children, root, owner) {
+  return children.flatMap(child => [
+    {
+      // A child another package owns says which one.
+      name:
+        child.package === owner
+          ? belowRoot(child.route, root)
+          : `${belowRoot(child.route, root)} (${child.package})`,
+      summary: child.childCount
+        ? `${childRow(child, owner).summary} (${docsBelow(child.childCount)})`
+        : childRow(child, owner).summary,
+    },
+    ...(child.slots ?? []).flatMap(slot => treeRows(slot.children, root, owner)),
+  ]);
+}
+
+/**
+ * One child of a depth read with its text, under a heading for its level, and
+ * its own children below it.
+ * @param {import('../../../api/docs/docs.type.mjs').DocsNodeChild} child
+ * @param {'full' | 'compact'} detail
+ * @param {number} level
+ * @param {string} root
+ * @param {string} run
+ * @param {string} owner the package that owns the read's namespace
+ * @returns {string}
+ */
+function formatTreeChild(child, detail, level, root, run, owner) {
+  // A child another package owns says which one.
+  const place =
+    child.package === owner
+      ? belowRoot(child.route, root)
+      : `${belowRoot(child.route, root)}, ${child.package}`;
+  const parts = [`${treeHeading(child.title, level)} (${place})`];
+  if (
+    child.summary &&
+    (child.kind === 'namespace' || child.kind === 'generic')
+  ) {
+    parts.push(child.summary);
+  }
+  const content = formatTreeBlocks(child.content ?? [], detail, level - 2);
+  if (content.length > 0) parts.push(content.join('\n\n'));
+  parts.push(
+    ...(child.sections ?? []).map(docSection =>
+      formatTreeSection(docSection, detail, level + 1),
+    ),
+  );
+  if (child.childCount) {
+    parts.push(
+      `${docsBelow(child.childCount)}: ${run} docs ${child.route} --depth 1`,
+    );
+  }
+  for (const slot of child.slots ?? []) {
+    parts.push(
+      ...slot.children.map(each =>
+        formatTreeChild(each, detail, level + 1, root, run, owner),
+      ),
+    );
+  }
+  return parts.join('\n\n');
+}
+
+/**
+ * A depth read of a namespace: its intro, then each slot's docs as deep as
+ * asked, one line each (brief) or with their text (compact, full). A typed doc
+ * has nothing below it, so it reads as it always does.
+ * @param {import('../../../api/docs/docs.type.mjs').DocsNode} node
+ * @param {'full' | 'compact' | 'brief'} detail how the named node reads
+ * @param {'full' | 'compact' | 'brief'} childDetail how each doc below reads
+ * @param {string} run
+ */
+function emitTree(node, detail, childDetail, run) {
+  if (node.kind !== 'namespace') {
+    emitNode(node, detail, run);
+    return;
+  }
+  /**
+   * @param {import('../../../api/docs/docs.type.mjs').DocsNodeChild[]} children
+   * @returns {string[]}
+   */
+  const routes = children =>
+    children.flatMap(child => [
+      child.route,
+      ...(child.slots ?? []).flatMap(slot => routes(slot.children)),
+    ]);
+  const allBelow = node.slots
+    .flatMap(slot => routes(slot.children))
+    .every(route => route.startsWith(`${node.route}/`));
+  const root = allBelow ? node.route : '';
+  emit(
+    section(node.title, wrapText(node.summary)),
+    record({package: node.package}),
+    ...(node.content?.length
+      ? [
+          text(
+            node.content
+              .map(b => formatBlock(b, detail))
+              .filter(Boolean)
+              .join('\n\n'),
+          ),
+        ]
+      : []),
+    ...(node.childCount
+      ? [
+          text(
+            `${docsBelow(node.childCount)}. Read them: ${run} docs ${node.route} --depth 1`,
+          ),
+        ]
+      : []),
+    ...node.slots.flatMap(slot => [
+      ...(node.slots.length === 1 && slot.title === node.title
+        ? []
+        : [section(slot.title)]),
+      childDetail === 'brief'
+        ? records(treeRows(slot.children, root, node.package), {
+            fields: ['name', 'summary'],
+            layout: 'inline',
+          })
+        : code(
+            slot.children
+              .map(child =>
+                formatTreeChild(child, childDetail, 2, root, run, node.package),
+              )
+              .join('\n\n'),
+          ),
+    ]),
+    text(
+      [
+        ...(node.slots.length > 0
+          ? [
+              allBelow
+                ? `Open one: ${run} docs ${node.route}/<name>`
+                : `Open one: ${run} docs <name>`,
+            ]
+          : []),
+        ...linkLines(node.links),
+      ].join('\n'),
+    ),
+  );
+}
+
+/**
  * The moves a read offers (spec:AST-047), one runnable command per line: up to
  * the level it sits in, the item before and after it, and the docs it names.
  * @param {import('../../../api/docs/docs.type.mjs').DocsLinks | undefined} links
@@ -343,7 +553,7 @@ export function registerDocs(program) {
     action: async (
       /** @type {string | undefined} */ topic,
       /** @type {string | undefined} */ sectionName,
-      /** @type {{index?: boolean, full?: boolean}} */ options = {},
+      /** @type {{index?: boolean, full?: boolean, depth?: string}} */ options = {},
     ) => {
       const run = getCliInvocation();
       const lang = program.opts().lang || null;
@@ -358,6 +568,22 @@ export function registerDocs(program) {
           {code: ERROR_CODES.ERR_INVALID_ARGUMENT},
         );
       }
+      /** @type {number | 'all' | undefined} */
+      let depth;
+      if (options.depth != null) {
+        if (options.depth === 'all') depth = 'all';
+        else if (/^\d+$/.test(options.depth)) depth = Number(options.depth);
+        else {
+          return cliError(
+            `--depth takes a number of levels (0, 1, 2, ...) or all, not "${options.depth}".`,
+            {code: ERROR_CODES.ERR_INVALID_ARGUMENT},
+          );
+        }
+      }
+      // With --depth, --detail is how much of each doc below shows; left at
+      // its default, each is one line.
+      const childDetail =
+        program.getOptionValueSource('detail') === 'default' ? 'brief' : detail;
       // Text reads one level: a topic lists its sections (one with a single
       // section prints whole). JSON keeps docs(): the whole topic unless
       // --index. The dense variant is written to be read whole.
@@ -375,6 +601,7 @@ export function registerDocs(program) {
           zh,
           dense,
           index: listSections,
+          ...(depth != null ? {depth, detail: childDetail} : {}),
         });
         if (
           !options.index &&
@@ -429,6 +656,7 @@ export function registerDocs(program) {
                 `       ${run} docs <topic> <section>        read one section`,
                 `       ${run} docs <topic> --full           read the whole topic`,
                 `       ${run} docs cli/api                  go down the docs tree one level at a time`,
+                `       ${run} docs cli --depth all          every doc below cli, one line each`,
                 `With --json, a topic returns its whole doc; add --index for its section list.`,
               ].join('\n'),
             ),
@@ -490,7 +718,8 @@ export function registerDocs(program) {
         }
 
         case 'docs.node': {
-          emitNode(result.data, detail, run);
+          if (depth != null) emitTree(result.data, detail, childDetail, run);
+          else emitNode(result.data, detail, run);
           break;
         }
       }
