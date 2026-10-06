@@ -266,8 +266,9 @@ and remains available through explicit Core package selection.
   author. Two lists of plain names, `hook --list` and `swizzle --list`, hold
   only Core's artifacts and name `package` once, in the envelope; `build`'s
   `frame` and `foundation` are fixed lists of Core component names. Text
-  output names the same package, except verbatim source output (`--source`,
-  `--showcase`, and a template's source), which prints only the source.
+  output names the same package. Verbatim source output (`--source`,
+  `--showcase`, and a template's source) keeps stdout to the source alone, so
+  it pipes byte for byte, and names the package on stderr.
 
 Some modules predate INV20–INV23 and do not meet them yet; `spec:AST-042` lists
 the known gaps.
