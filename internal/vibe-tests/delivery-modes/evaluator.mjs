@@ -7,6 +7,7 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 import {AxeBuilder} from '@axe-core/playwright';
 import {chromium} from 'playwright';
+import {REACT_INTERACTIVE_ROOT_CLASSES} from './react-interactive-roots.mjs';
 import {
   auditTranscript,
   createPrivateRunRoot,
@@ -87,7 +88,9 @@ export async function evaluateRun({
       starterTyping.passed = starterTyping.actual === starterTyping.expected;
     }
 
-    const renderMetrics = await page.evaluate(measureAdoptionInDocument);
+    const renderMetrics = await page.evaluate(measureAdoptionInDocument, {
+      reactInteractiveRootClasses: REACT_INTERACTIVE_ROOT_CLASSES,
+    });
     const axe = await new AxeBuilder({page}).analyze();
     await page.screenshot({path: screenshotPath, fullPage: true});
 
@@ -189,7 +192,13 @@ function zeroJudgment(reason) {
   };
 }
 
-export function measureAdoptionInDocument(assumeVisible = false) {
+export function measureAdoptionInDocument(options = false) {
+  const assumeVisible =
+    typeof options === 'boolean' ? options : (options.assumeVisible ?? false);
+  const reactInteractiveRootClasses =
+    typeof options === 'boolean'
+      ? REACT_INTERACTIVE_ROOT_CLASSES
+      : (options.reactInteractiveRootClasses ?? []);
   const doc = document;
   const view = doc.defaultView ?? window;
   // These layout-only families come from the stable classes emitted by the
@@ -218,27 +227,11 @@ export function measureAdoptionInDocument(assumeVisible = false) {
     'ax-stepper-frame',
     'ax-collapsible__content',
   ];
-  // These components own a nested native form control. Most interactive
-  // components put their stable class directly on the target; wrappers are
-  // listed explicitly so an arbitrary control in Card, Table, Dialog, or any
-  // other content slot never inherits adoption from its container.
+  // React control roots are derived from the real packages/core DOM and
+  // verified by DeliveryModesInteractiveRoots.test.tsx. Vanilla roots remain
+  // explicit because the static delivery package does not have React fixtures.
   const interactiveWrapperRoots = new Set([
-    'astryx-text-input',
-    'astryx-search-input',
-    'astryx-text-area',
-    'astryx-number-input',
-    'astryx-date-input',
-    'astryx-date-range-input',
-    'astryx-time-input',
-    'astryx-file-input',
-    'astryx-select',
-    'astryx-multi-selector',
-    'astryx-checkbox',
-    'astryx-radio',
-    'astryx-radio-list',
-    'astryx-switch',
-    'astryx-slider',
-    'astryx-combobox',
+    ...reactInteractiveRootClasses,
     'ax-input',
     'ax-text-input',
     'ax-search-input',
@@ -272,6 +265,11 @@ export function measureAdoptionInDocument(assumeVisible = false) {
     '[role="checkbox"]',
     '[role="radio"]',
     '[role="switch"]',
+    '[role="slider"]',
+    '[role="spinbutton"]',
+    '[role="searchbox"]',
+    '[role="option"]',
+    '[role="treeitem"]',
     '[role="menu"]',
     '[role="menuitem"]',
     '[role="menuitemcheckbox"]',

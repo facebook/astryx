@@ -37,7 +37,7 @@
     "fixtures:contrast": "node scripts/fixture-browser.mjs contrast",
     "fixtures:screenshots": "node scripts/fixture-browser.mjs screenshots",
     "delivery:run": "node delivery-modes/run.mjs",
-    "delivery:test": "vitest run --root ../.. internal/vibe-tests/delivery-modes/delivery-modes.test.mjs --project node"
+    "delivery:test": "vitest run --root ../.. internal/vibe-tests/delivery-modes/delivery-modes.test.mjs --project node && vitest run --root ../.. packages/core/src/DeliveryModesInteractiveRoots.test.tsx --project ui"
   },
   "dependencies": {
     "@astryxdesign/cli": "*",

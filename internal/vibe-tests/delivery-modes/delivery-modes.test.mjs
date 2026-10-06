@@ -482,6 +482,31 @@ test('interactive adoption credits owned form-control wrappers and widget roots'
   assert.equal(result.interactiveAdoptionTargets[1].adopted, false);
 });
 
+test('interactive adoption recognizes ARIA widget targets', () => {
+  const result = measureFixture(`
+    <div class="astryx-slider-thumb" role="slider" aria-label="Volume"></div>
+    <div class="astryx-number-input">
+      <div role="spinbutton" aria-label="Quantity"></div>
+    </div>
+    <div class="astryx-selector-option-row" role="option">Apple</div>
+    <div class="astryx-tree-list-item" role="treeitem">Documents</div>
+    <div class="astryx-search-input" role="searchbox" aria-label="Search"></div>
+    <section class="astryx-card">
+      <div role="slider" aria-label="Raw slider"></div>
+    </section>
+  `);
+
+  assert.equal(result.interactiveEligibleElementCount, 6);
+  assert.equal(result.interactiveAdoptedElementCount, 5);
+  assert.equal(result.interactiveAdoptionShare, 5 / 6);
+  assert.equal(
+    result.interactiveAdoptionTargets.find(
+      target => target.text === '' && !target.adopted,
+    )?.componentRootClasses[0],
+    'astryx-card',
+  );
+});
+
 test('failed judge audits retry once and discard unsafe scores', () => {
   const failed = {
     promptFulfillment: 99,
