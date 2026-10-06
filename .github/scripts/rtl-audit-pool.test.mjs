@@ -3,8 +3,10 @@
 import {describe, expect, it} from 'vitest';
 import {
   closePageQuietly,
+  createCuratedPages,
   createPagePool,
   mapPool,
+  runSteps,
 } from '../../apps/storybook/rtl-audit/rtl-audit-pool.mjs';
 
 const TIMEOUT = 'TimeoutError: page.goto: Timeout 30000ms exceeded.';
@@ -138,5 +140,174 @@ describe('RTL audit worker pages', () => {
         10,
       ),
     ).resolves.toBeUndefined();
+  });
+
+  describe('curated pass', () => {
+    /** Runs curated targets the way the audit does: one target at a time. */
+    async function scoreTargets(targets, pages, poison) {
+      const results = [];
+      for (const target of targets) {
+        const dims = {};
+        await runSteps(target.dims, pages, {
+          pageFor: dim => (dim === 'D7' ? 'coarse' : 'main'),
+          run: async (dim, page) => {
+            await new Promise(resolve => setTimeout(resolve, 1));
+            if (page.poisoned) throw new Error(TIMEOUT);
+            if (poison === `${target.storyId}:${dim}`) {
+              page.poisoned = true;
+              throw new Error(TIMEOUT);
+            }
+            dims[dim] = `pass on page ${page.id}`;
+          },
+          onError: dim => {
+            dims[dim] = 'ERROR';
+          },
+          describe: dim => ({phase: 'curated', storyId: target.storyId, dim}),
+        });
+        results.push({storyId: target.storyId, dims});
+      }
+      return results;
+    }
+
+    const TARGETS = [
+      {storyId: 'core-a--default', dims: ['D2', 'D8']},
+      {storyId: 'core-b--default', dims: ['D2']},
+      {storyId: 'core-c--default', dims: ['D7', 'D2']},
+    ];
+
+    async function curatedPages() {
+      const browser = fakeBrowser();
+      const coarseBrowser = fakeBrowser();
+      const pool = await createPagePool({size: 1, openPage: browser.openPage});
+      const pages = createCuratedPages({
+        pool,
+        coarsePage: await coarseBrowser.openPage(),
+        openCoarsePage: coarseBrowser.openPage,
+      });
+      return {browser, coarseBrowser, pool, pages};
+    }
+
+    it('fails only the step that broke the page; later steps and targets run on a fresh page', async () => {
+      const {browser, coarseBrowser, pool, pages} = await curatedPages();
+      const results = await scoreTargets(TARGETS, pages, 'core-a--default:D2');
+
+      expect(results).toEqual([
+        {storyId: 'core-a--default', dims: {D2: 'ERROR', D8: 'pass on page 1'}},
+        {storyId: 'core-b--default', dims: {D2: 'pass on page 1'}},
+        {
+          storyId: 'core-c--default',
+          dims: {D7: 'pass on page 0', D2: 'pass on page 1'},
+        },
+      ]);
+      expect(pool.recoveries).toEqual([
+        {
+          worker: 0,
+          phase: 'curated',
+          storyId: 'core-a--default',
+          dim: 'D2',
+          error: `Error: ${TIMEOUT}`,
+        },
+      ]);
+      expect(browser.opened[0].closed).toBe(true);
+      expect(coarseBrowser.opened).toHaveLength(1);
+    });
+
+    it('replaces only the coarse-pointer page when a coarse step breaks it', async () => {
+      const {browser, coarseBrowser, pool, pages} = await curatedPages();
+      const results = await scoreTargets(
+        [...TARGETS, {storyId: 'core-d--default', dims: ['D7']}],
+        pages,
+        'core-c--default:D7',
+      );
+
+      expect(results.at(-2)).toEqual({
+        storyId: 'core-c--default',
+        dims: {D7: 'ERROR', D2: 'pass on page 0'},
+      });
+      expect(results.at(-1)).toEqual({
+        storyId: 'core-d--default',
+        dims: {D7: 'pass on page 1'},
+      });
+      expect(pool.recoveries.map(recovery => recovery.worker)).toEqual([
+        'coarse',
+      ]);
+      expect(coarseBrowser.opened[0].closed).toBe(true);
+      expect(browser.opened).toHaveLength(1);
+    });
+  });
+
+  it('ends the run, naming both failures, when a page cannot be replaced', async () => {
+    const browser = fakeBrowser();
+    let opens = 0;
+    const pool = await createPagePool({
+      size: 1,
+      openPage: async () => {
+        opens += 1;
+        if (opens > 1)
+          throw new Error('Target page, context or browser has been closed');
+        return browser.openPage();
+      },
+    });
+    await expect(
+      mapPool(stories(5, [2]), pool, {
+        ...phase(new Map()),
+        describe: story => ({phase: 'D5', storyId: story.storyId}),
+      }),
+    ).rejects.toThrow(
+      `cannot replace the page after D5 core-story--2 failed (Error: ${TIMEOUT}): Error: Target page, context or browser has been closed`,
+    );
+    expect(pool.recoveries).toEqual([]);
+
+    const coarseBrowser = fakeBrowser();
+    const pages = createCuratedPages({
+      pool: await createPagePool({size: 1, openPage: browser.openPage}),
+      coarsePage: await coarseBrowser.openPage(),
+      openCoarsePage: async () => {
+        throw new Error('Target page, context or browser has been closed');
+      },
+    });
+    await expect(
+      runSteps(['D7', 'D2'], pages, {
+        pageFor: () => 'coarse',
+        run: async () => {
+          throw new Error(TIMEOUT);
+        },
+        onError: () => {},
+        describe: dim => ({phase: 'curated', storyId: 'core-a--default', dim}),
+      }),
+    ).rejects.toThrow(
+      `cannot replace the page after curated core-a--default D7 failed (Error: ${TIMEOUT})`,
+    );
+  });
+
+  it('does not wait on a curated page that never acknowledges its close', async () => {
+    const browser = fakeBrowser({hangOnClose: true});
+    const coarseBrowser = fakeBrowser({hangOnClose: true});
+    const quickClose = page => closePageQuietly(page, 10);
+    const pool = await createPagePool({
+      size: 1,
+      openPage: browser.openPage,
+      closePage: quickClose,
+    });
+    const pages = createCuratedPages({
+      pool,
+      coarsePage: await coarseBrowser.openPage(),
+      openCoarsePage: coarseBrowser.openPage,
+      closePage: quickClose,
+    });
+    const failed = [];
+    await runSteps(['D2', 'D7', 'D8'], pages, {
+      pageFor: dim => (dim === 'D7' ? 'coarse' : 'main'),
+      run: async dim => {
+        if (dim !== 'D8') throw new Error(TIMEOUT);
+      },
+      onError: dim => failed.push(dim),
+    });
+
+    expect(failed).toEqual(['D2', 'D7']);
+    expect(pool.recoveries.map(recovery => recovery.worker)).toEqual([
+      0,
+      'coarse',
+    ]);
   });
 });

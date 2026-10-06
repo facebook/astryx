@@ -62,7 +62,12 @@ import {
   evaluateDirectionalDecorations,
   filterStoryRoutesByPackages,
 } from './rtl-audit-coverage.mjs';
-import {closePageQuietly, createPagePool, mapPool} from './rtl-audit-pool.mjs';
+import {
+  createCuratedPages,
+  createPagePool,
+  mapPool,
+  runSteps,
+} from './rtl-audit-pool.mjs';
 
 const {
   componentPackage,
@@ -957,22 +962,27 @@ async function checkD9GroupedCorners(page, port, t, card) {
   card.groupedCorners = results;
 }
 
-async function scoreCurated(page, coarsePage, port, t) {
+// `pages` is the curated page pair (rtl-audit-pool.mjs). A dim that throws is
+// recorded as an ERROR, and the page it ran on is replaced before the next dim.
+async function scoreCurated(pages, port, t) {
   const card = {component: t.component, storyId: t.storyId, dims: {}, notes: []};
-  for (const dim of t.dims) {
-    try {
+  await runSteps(t.dims, pages, {
+    pageFor: dim => (dim === 'D7' ? 'coarse' : 'main'),
+    run: async (dim, page) => {
       if (dim === 'D2') await checkD2(page, port, t, card);
       else if (dim === 'D3') await checkD3Scroll(page, port, t, card);
       else if (dim === 'D4') await checkD4(page, port, t, card);
-      else if (dim === 'D7') await checkD7CoarseHit(coarsePage, port, t, card);
+      else if (dim === 'D7') await checkD7CoarseHit(page, port, t, card);
       else if (dim === 'D8') await checkD8LogicalInline(page, port, t, card);
       else if (dim === 'D9') await checkD9GroupedCorners(page, port, t, card);
       // D1 is handled by auto-discovery; ignore any stray D1 in curated entries.
-    } catch (e) {
+    },
+    onError: (dim, e) => {
       card.dims[dim] = 'ERROR';
       card.notes.push(`${dim} threw: ${String(e).slice(0, 160)}`);
-    }
-  }
+    },
+    describe: dim => ({phase: 'curated', storyId: t.storyId, dim}),
+  });
   const vals = Object.entries(card.dims).filter(([, v]) => v !== 'N-A');
   const anyFail = vals.some(([, v]) => v === 'fail' || v === 'ERROR');
   const allPass = vals.length > 0 && vals.every(([, v]) => v === 'pass');
@@ -1090,7 +1100,11 @@ async function cleanupRuntime() {
     isMobile: true,
   });
   runtime.coarseContext = coarseContext;
-  let coarsePage = await coarseContext.newPage();
+  const curatedPages = createCuratedPages({
+    pool,
+    coarsePage: await coarseContext.newPage(),
+    openCoarsePage: () => coarseContext.newPage(),
+  });
 
   // ---- (A) auto-discovery over every audited-package story ----
   const autoResults = []; // D1 icon-mirror
@@ -1182,21 +1196,11 @@ async function cleanupRuntime() {
       // skip if the entry only had D1 (now covered by auto-discovery)
       const dims = (t.dims || []).filter(d => d !== 'D1');
       if (dims.length === 0) continue;
-      try {
-        const card = await scoreCurated(pool.first(), coarsePage, port, {...t, component, dims});
-        curatedResults.push(card);
-        console.error(`CUR  ${card.rollup.padEnd(10)} ${component.padEnd(20)} ${JSON.stringify(card.dims)}`);
-      } catch (e) {
-        curatedResults.push({component, storyId: t.storyId, rollup: 'ERROR', dims: {}, notes: [String(e).slice(0, 200)]});
-        // Either page may have been the one that failed; neither runs another
-        // target.
-        const error = String(e).split('\n')[0].slice(0, 160);
-        await pool.replace(pool.slots[0], {phase: 'curated', storyId: t.storyId, error});
-        const discardedCoarsePage = coarsePage;
-        coarsePage = await coarseContext.newPage();
-        pool.recoveries.push({worker: 'coarse', phase: 'curated', storyId: t.storyId, error});
-        await closePageQuietly(discardedCoarsePage);
-      }
+      // scoreCurated records each dim's failure itself; what escapes it is a
+      // page that could not be replaced, which ends the run.
+      const card = await scoreCurated(curatedPages, port, {...t, component, dims});
+      curatedResults.push(card);
+      console.error(`CUR  ${card.rollup.padEnd(10)} ${component.padEnd(20)} ${JSON.stringify(card.dims)}`);
     }
   }
 
