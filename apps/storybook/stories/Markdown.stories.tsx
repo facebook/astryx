@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Markdown.stories.tsx
+ * @input Markdown component states, layout constraints, and extension examples
+ * @output Interactive and browser-verifiable stories for Markdown behavior
+ * @position Storybook fixtures for the Core Markdown component
+ */
+
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Markdown} from '@astryxdesign/core/Markdown';
@@ -184,6 +191,52 @@ export const Compact: Story = {
     children: SAMPLE_MD,
     density: 'compact',
   },
+};
+
+const LIST_LAYOUT_CASES = [
+  {
+    kind: 'unordered',
+    source: '- First unordered item\n- Second unordered item',
+  },
+  {
+    kind: 'ordered',
+    source: '1. First ordered item\n2. Second ordered item',
+  },
+  {
+    kind: 'task',
+    source: '- [x] Finished task\n- [ ] Pending task',
+  },
+] as const;
+
+const LIST_LAYOUT_ALIGNS = ['start', 'center'] as const;
+
+/** Browser fixture: every list kind receives one identical prose constraint. */
+export const ListContentAlignment: Story = {
+  name: 'List content alignment',
+  render: () => (
+    <div
+      style={{
+        display: 'grid',
+        gap: 24,
+        maxWidth: '100%',
+        width: 720,
+      }}>
+      {LIST_LAYOUT_ALIGNS.map(align => (
+        <div
+          key={align}
+          data-list-layout-group={align}
+          style={{display: 'grid', gap: 12}}>
+          {LIST_LAYOUT_CASES.map(({kind, source}) => (
+            <div key={kind} data-list-layout-case={kind}>
+              <Markdown contentWidth={360} contentAlign={align}>
+                {source}
+              </Markdown>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  ),
 };
 
 export const AIResponse: Story = {

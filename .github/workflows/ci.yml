@@ -959,6 +959,39 @@ jobs:
       - name: Run story play guard
         run: node .github/scripts/story-play-guard.js --storybook-dir apps/storybook/dist
 
+      # Task-list layout parity depends on real layout geometry: jsdom cannot
+      # prove content width or inline position. Keep this browser contract
+      # scoped to Markdown changes and bind its receipt to the verified head.
+      - name: Run Markdown list-layout browser evidence
+        id: markdown-list-layout-evidence
+        if: github.event_name == 'pull_request'
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,core/Markdown,*)
+              echo 'should_run=true' >> "$GITHUB_OUTPUT"
+              pnpm exec playwright test \
+                packages/core/src/Markdown/MarkdownListLayout.a11y.chromium.spec.ts \
+                --project chromium \
+                --output markdown-list-layout-output
+              ;;
+            *)
+              echo 'should_run=false' >> "$GITHUB_OUTPUT"
+              echo "Markdown not in PR scope; skipping list-layout evidence."
+              ;;
+          esac
+
+      - name: Upload Markdown list-layout browser evidence
+        if: always() && github.event_name == 'pull_request' && steps.markdown-list-layout-evidence.outputs.should_run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: markdown-list-layout-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: test-results/markdown-list-layout/
+          retention-days: 30
+          if-no-files-found: error
+
       # ChatMessageBubble is nested under the shared Chat source directory, so
       # the generic stable-visual owner cannot select its dedicated fixture.
       # Run the component's bounded evidence matrix only when the PR scope names

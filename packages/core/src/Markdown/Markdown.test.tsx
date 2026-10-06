@@ -543,6 +543,26 @@ describe('Markdown', () => {
     expect((checkboxes[1] as HTMLInputElement).checked).toBe(false);
   });
 
+  it('applies prose width and alignment consistently to task lists', () => {
+    const {container, rerender} = render(
+      <Markdown contentWidth={640} contentAlign="center">
+        {'- regular'}
+      </Markdown>,
+    );
+    const ordinaryListClasses = container.querySelector(
+      '.astryx-markdown-list',
+    )?.className;
+
+    rerender(
+      <Markdown contentWidth={640} contentAlign="center">
+        {'- [ ] task'}
+      </Markdown>,
+    );
+    expect(container.querySelector('.astryx-markdown-list')?.className).toBe(
+      ordinaryListClasses,
+    );
+  });
+
   it('renders tables', () => {
     render(<Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>);
     expect(document.querySelector('table')).toBeInTheDocument();
