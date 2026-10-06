@@ -4614,3 +4614,38 @@ describe('Selector press model', () => {
     );
   });
 });
+
+describe('Selector and option actions (not adopted)', () => {
+  it('renders the option without the control and warns in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[
+            {
+              value: 'apple',
+              label: 'Apple',
+              action: <button type="button">Edit Apple</button>,
+            },
+          ]}
+          value={undefined}
+          onChange={() => {}}
+        />,
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+      expect(
+        screen.queryByRole('button', {name: 'Edit Apple', hidden: true}),
+      ).toBeNull();
+      expect(
+        screen.getByRole('option', {name: 'Apple', hidden: true}),
+      ).toBeInTheDocument();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(/Selector[\s\S]*action/),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});

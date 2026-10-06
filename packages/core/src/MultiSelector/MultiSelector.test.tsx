@@ -3499,3 +3499,376 @@ describe('MultiSelector renderTrigger — focus return', () => {
     );
   });
 });
+
+describe('MultiSelector option actions (grid)', () => {
+  const edit = vi.fn();
+  const OPTIONS = [
+    {
+      value: 'bug',
+      label: 'Bug',
+      action: (
+        <button type="button" onClick={() => edit('bug')}>
+          Edit Bug
+        </button>
+      ),
+    },
+    {value: 'feature', label: 'Feature'},
+    {
+      value: 'docs',
+      label: 'Docs',
+      disabled: true,
+      action: (
+        <button type="button" onClick={() => edit('docs')}>
+          Edit Docs
+        </button>
+      ),
+    },
+  ];
+  beforeEach(() => {
+    edit.mockClear();
+  });
+
+  it('stays a listbox when no option carries an action, and action: null is none', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={[
+          {value: 'bug', label: 'Bug', action: null},
+          {value: 'feature', label: 'Feature'},
+        ]}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    await user.click(trigger);
+    expect(screen.getByRole('listbox', h)).toBeInTheDocument();
+    expect(screen.queryByRole('grid', h)).toBeNull();
+    expect(screen.getAllByRole('option', h)).toHaveLength(2);
+  });
+
+  it('is a grid of rows with exactly two gridcells once an option carries an action', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={['bug']}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'grid');
+    await user.click(trigger);
+
+    const grid = screen.getByRole('grid', h);
+    expect(screen.queryByRole('listbox', h)).toBeNull();
+    expect(screen.queryByRole('option', h)).toBeNull();
+    expect(grid).toHaveAttribute('aria-multiselectable', 'true');
+    expect(trigger.getAttribute('aria-controls')).toBe(grid.id);
+
+    const rows = screen.getAllByRole('row', h);
+    // select-all + 3 options
+    expect(rows).toHaveLength(4);
+    for (const row of rows) {
+      const cells = Array.from(row.children);
+      expect(cells).toHaveLength(2);
+      expect(cells[0]).toHaveAttribute('role', 'gridcell');
+      expect(cells[1]).toHaveAttribute('role', 'gridcell');
+    }
+    // Every exposed child of the grid is a row.
+    expect(
+      Array.from(grid.children).every(c => c.getAttribute('role') === 'row'),
+    ).toBe(true);
+
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    expect(bug).toHaveAttribute('aria-selected', 'true');
+    expect(bug.children[1]).toContainElement(
+      screen.getByRole('button', {name: 'Edit Bug', ...h}),
+    );
+    // Rows without an action, and the select-all row, have an empty cell.
+    expect(
+      screen.getByRole('row', {name: 'Feature', ...h}).children[1],
+    ).toBeEmptyDOMElement();
+    expect(rows[0].children[1]).toBeEmptyDOMElement();
+    // The row's name is the option; the control keeps its own.
+    expect(bug).toHaveAccessibleName('Bug');
+  });
+
+  it('latches: a query that filters the actioned option out keeps the grid', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    expect(screen.getByRole('grid', h)).toBeInTheDocument();
+    await user.type(screen.getByRole('combobox', h), 'Feat');
+    expect(screen.getAllByRole('row', h).map(r => r.textContent)).toEqual([
+      'Feature',
+    ]);
+    expect(screen.getByRole('grid', h)).toBeInTheDocument();
+    // The action removed on a later render: still a grid.
+    rerender(
+      <MultiSelector
+        label="Labels"
+        options={[{value: 'feature', label: 'Feature'}]}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    expect(screen.getByRole('grid', h)).toBeInTheDocument();
+  });
+
+  it('becomes a grid when options arrive after loading, inside a section too', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(
+      <MultiSelector
+        label="Labels"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+    expect(screen.getByRole('combobox', {name: 'Labels'})).toHaveAttribute(
+      'aria-haspopup',
+      'listbox',
+    );
+    rerender(
+      <MultiSelector
+        label="Labels"
+        options={[
+          {
+            type: 'section',
+            title: 'Type',
+            options: OPTIONS,
+          },
+        ]}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'grid');
+    await user.click(trigger);
+    const group = screen.getByRole('rowgroup', {name: 'Type', ...h});
+    expect(screen.queryByRole('group', h)).toBeNull();
+    expect(group.querySelectorAll('[role="row"]')).toHaveLength(3);
+  });
+
+  it('pressing the option cell toggles; pressing the action fires only the action', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+      />,
+    );
+    await user.click(screen.getByRole('combobox', {name: 'Labels'}));
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    await user.click(bug.children[0]);
+    expect(onChange).toHaveBeenCalledWith(['bug']);
+
+    onChange.mockClear();
+    await user.click(screen.getByRole('button', {name: 'Edit Bug', ...h}));
+    expect(edit).toHaveBeenCalledWith('bug');
+    expect(onChange).not.toHaveBeenCalled();
+    // The panel stays open.
+    expect(screen.getByRole('grid', h)).toBeInTheDocument();
+
+    // A disabled option's action is the caller's control, still live.
+    await user.click(screen.getByRole('button', {name: 'Edit Docs', ...h}));
+    expect(edit).toHaveBeenCalledWith('docs');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('the inline-end arrow reaches the action cell, Enter fires it, inline-start returns', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    // Click-open highlights the first row, on its option cell.
+    expect(trigger).toHaveAttribute('aria-activedescendant', bug.id);
+
+    fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+    expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      bug.children[1].id,
+    );
+    fireEvent.keyDown(trigger, {key: 'Enter'});
+    expect(edit).toHaveBeenCalledWith('bug');
+    expect(onChange).not.toHaveBeenCalled();
+    // The highlight stays where it was.
+    expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      bug.children[1].id,
+    );
+
+    fireEvent.keyDown(trigger, {key: 'ArrowLeft'});
+    expect(trigger).toHaveAttribute('aria-activedescendant', bug.id);
+    fireEvent.keyDown(trigger, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(['bug']);
+
+    // A row without an action: the inline-end arrow is a no-op there, and
+    // Down from the action cell lands on the next row's option cell.
+    fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+    fireEvent.keyDown(trigger, {key: 'ArrowDown'});
+    const feature = screen.getByRole('row', {name: 'Feature', ...h});
+    expect(trigger).toHaveAttribute('aria-activedescendant', feature.id);
+    fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+    expect(trigger).toHaveAttribute('aria-activedescendant', feature.id);
+  });
+
+  it('follows visual direction under RTL', async () => {
+    const user = userEvent.setup();
+    const original = window.getComputedStyle;
+    const spy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        const style = original.call(window, el, pseudo);
+        Object.defineProperty(style, 'direction', {value: 'rtl'});
+        return style;
+      });
+    try {
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      const trigger = screen.getByRole('combobox', {name: 'Labels'});
+      await user.click(trigger);
+      const bug = screen.getByRole('row', {name: 'Bug', ...h});
+      fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+      expect(trigger).toHaveAttribute('aria-activedescendant', bug.id);
+      fireEvent.keyDown(trigger, {key: 'ArrowLeft'});
+      expect(trigger).toHaveAttribute(
+        'aria-activedescendant',
+        bug.children[1].id,
+      );
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('with search, Left/Right move the caret until a row is highlighted', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Bu');
+    // No row highlighted: the arrow is the input's.
+    const right = fireEvent.keyDown(search, {key: 'ArrowRight'});
+    expect(right).toBe(true);
+    expect(search).not.toHaveAttribute('aria-activedescendant');
+
+    fireEvent.keyDown(search, {key: 'ArrowDown'});
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    expect(search).toHaveAttribute('aria-activedescendant', bug.id);
+    const moved = fireEvent.keyDown(search, {key: 'ArrowRight'});
+    expect(moved).toBe(false);
+    expect(search).toHaveAttribute('aria-activedescendant', bug.children[1].id);
+    fireEvent.keyDown(search, {key: 'Enter'});
+    expect(edit).toHaveBeenCalledWith('bug');
+    expect(search).toHaveValue('Bu');
+  });
+
+  it('hovering the action cell highlights that row on its action cell', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    const feature = screen.getByRole('row', {name: 'Feature', ...h});
+    fireEvent.mouseEnter(feature.children[0]);
+    expect(trigger).toHaveAttribute('aria-activedescendant', feature.id);
+    fireEvent.mouseEnter(bug.children[1]);
+    expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      bug.children[1].id,
+    );
+    fireEvent.mouseEnter(bug.children[0]);
+    expect(trigger).toHaveAttribute('aria-activedescendant', bug.id);
+  });
+
+  it('Tab closes the panel as before: no action control is a stop inside it', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(trigger, {key: 'Tab'});
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('warns in development about an action control with no accessible name', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Labels"
+          options={[
+            {value: 'bug', label: 'Bug', action: <button type="button" />},
+          ]}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Labels'}));
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(/MultiSelector[\s\S]*accessible name/),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});

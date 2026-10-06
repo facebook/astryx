@@ -72,6 +72,8 @@ import {
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
+import {warnOnce} from '../utils/devWarning';
+import {FOCUS_OUTLINE_PARTS} from '../utils/focusOutline.stylex';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
@@ -359,6 +361,38 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
   },
 
+  // Grid rows (spec:AST-058): the row carries today's option chrome (padding,
+  // radius, highlight); its two cells split it into the option's click
+  // target and the action's slot. The action cell is a real cell for the
+  // active-descendant ring, drawn with the shared focus-outline parts because
+  // no element inside the popup has DOM focus.
+  gridRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+  },
+  optionCell: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    alignSelf: 'stretch',
+  },
+  actionCell: {
+    display: 'flex',
+    alignItems: 'center',
+    flexShrink: 0,
+    borderRadius: radiusVars['--radius-element'],
+  },
+  actionCellActive: {
+    outlineWidth: FOCUS_OUTLINE_PARTS.outlineWidth,
+    outlineStyle: FOCUS_OUTLINE_PARTS.outlineStyle,
+    outlineColor: FOCUS_OUTLINE_PARTS.outlineColor,
+    outlineOffset: FOCUS_OUTLINE_PARTS.outlineOffset,
+  },
+
   // Empty state
   emptyState: {
     padding: spacingVars['--spacing-3'],
@@ -464,7 +498,7 @@ export interface MultiSelectorRenderTriggerProps {
    * `aria-haspopup` and `aria-controls` are absent and `aria-expanded` is
    * `false` (`spec:AST-011` FR4).
    */
-  'aria-haspopup'?: 'listbox' | 'dialog';
+  'aria-haspopup'?: 'listbox' | 'grid' | 'dialog';
   'aria-expanded': boolean;
   'aria-controls'?: string;
   'aria-busy': boolean | undefined;
@@ -816,6 +850,30 @@ export interface MultiSelectorProps<
   'data-testid'?: string;
 }
 
+// Whether any declared option — at any depth of sections, before any query
+// filters it — carries an action. Presence only: the node is never read
+// (spec:AST-058 FR2, DEC-5).
+function hasDeclaredAction(options: MultiSelectorOptionType[]): boolean {
+  for (const option of options) {
+    if (isSection(option)) {
+      if (
+        option.options.some(
+          opt => typeof opt !== 'string' && opt.action != null,
+        )
+      ) {
+        return true;
+      }
+    } else if (
+      typeof option !== 'string' &&
+      isOptionData(option) &&
+      option.action != null
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Case-insensitive substring match for a single option. The one predicate used
 // by both the flat filter (count + keyboard nav) and the grouped renderer, so
 // what is shown while searching stays in lockstep with the announced count.
@@ -994,6 +1052,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     [options],
   );
 
+  // Grid mode (spec:AST-058 FR2, DEC-5): decided from the declared options,
+  // and latched — once a grid, a grid for the life of the instance, so a
+  // query that filters the actioned option out, or options that arrive after
+  // a loading state, never flip the role under a screen reader.
+  const hasActions = useMemo(() => hasDeclaredAction(options), [options]);
+  const [isGrid, setIsGrid] = useState(hasActions);
+  if (hasActions && !isGrid) {
+    setIsGrid(true);
+  }
+
   // Announce selection-count changes politely (comboboxes-7 announce path).
   // Toggling options / select-all previously produced no audible feedback.
   const announce = useAnnounce();
@@ -1138,6 +1206,43 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const {popover} = surface;
   const hideSurface = surface.hide;
   const isSurfaceOpen = surface.isOpen;
+
+  // AR2: the caller's control must carry its own name. Checked against the
+  // rendered DOM in development, never by reading the node.
+  useEffect(() => {
+    if (!isGrid || !isSurfaceOpen) {
+      return;
+    }
+    const panel = listboxRef.current;
+    if (panel == null) {
+      return;
+    }
+    for (const cell of Array.from(
+      panel.querySelectorAll<HTMLElement>('[data-multi-selector-action-cell]'),
+    )) {
+      const control = cell.querySelector<HTMLElement>(
+        'button, a, input, [role="button"], [tabindex]',
+      );
+      if (control == null) {
+        continue;
+      }
+      const named =
+        (control.getAttribute('aria-label') ?? '').trim() !== '' ||
+        control.hasAttribute('aria-labelledby') ||
+        (control.textContent ?? '').trim() !== '' ||
+        (control.getAttribute('title') ?? '').trim() !== '';
+      if (!named) {
+        warnOnce(
+          'multi-selector:unnamed-action',
+          'MultiSelector',
+          'An option `action` renders a control with no accessible name. Give ' +
+            'it a label: a screen reader reaches it through the action cell ' +
+            'and has nothing to read.',
+        );
+        break;
+      }
+    }
+  });
   const keepOpenProps = useKeepLayerOpenProps(popover.id, popover.isOpen);
 
   // Open dropdown on mount when isDefaultOpen is true and interaction is allowed.
@@ -1363,9 +1468,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
   // Multi-select combobox behavior — index-based, matching useCombobox pattern.
   // sortedItems is the single source of truth for item order.
+  const getActionCellIdForActivate = useCallback(
+    (index: number) => `${listboxId}-item-${index}-action`,
+    [listboxId],
+  );
   const {
     highlightedIndex,
+    highlightedCell,
     getItemId,
+    getActionCellId,
+    activeDescendantId,
     onTriggerClick,
     onKeyDown,
     onItemMouseEnter,
@@ -1380,6 +1492,23 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onClear: hasClear ? clearValues : undefined,
     hasValue,
     listboxId,
+    isGrid,
+    rowHasAction: useCallback(
+      (index: number) => sortedItems[index]?.action != null,
+      [sortedItems],
+    ),
+    onActivateAction: useCallback(
+      (index: number) => {
+        // Fire the caller's control as a press would: the first focusable
+        // thing in the action cell. Reading the rendered DOM, not the node.
+        const cell = document.getElementById(getActionCellIdForActivate(index));
+        const control = cell?.querySelector<HTMLElement>(
+          'button, a, input, [role="button"], [tabindex]',
+        );
+        control?.click();
+      },
+      [getActionCellIdForActivate],
+    ),
   });
 
   // Highlight scrolling (and its hover/keyboard split) lives in useMultiCombobox.
@@ -1480,11 +1609,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         aria-expanded={surface.isOpen}
         aria-controls={listboxId}
         aria-autocomplete="list"
-        aria-activedescendant={
-          surface.isOpen && highlightedIndex >= 0
-            ? getItemId(highlightedIndex)
-            : undefined
-        }
+        aria-activedescendant={activeDescendantId}
         value={searchQuery}
         onValueChange={handleSearchChange}
         onContainerKeyDown={e => {
@@ -1525,6 +1650,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             onKeyDown(e);
             return;
           }
+          // In a grid with a row highlighted, Left/Right move between the
+          // row's cells (APG combobox with grid popup); with no row
+          // highlighted they keep moving the caret.
+          if (
+            isGrid &&
+            highlightedIndex >= 0 &&
+            (e.key === 'ArrowLeft' || e.key === 'ArrowRight')
+          ) {
+            onKeyDown(e);
+            return;
+          }
           // Tab: when a query is showing the clear (✕) button, forward-tab
           // moves focus to it (keeping the popup open) so the affordance is
           // keyboard-reachable. Every other Tab dismisses the popup as usual.
@@ -1546,7 +1682,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onKeyDown,
     surface.isOpen,
     highlightedIndex,
-    getItemId,
+    activeDescendantId,
+    isGrid,
     t,
   ]);
 
@@ -1583,11 +1720,30 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         </div>
       );
 
+      const content = (
+        <>
+          {indicatorPosition === 'start' && checkbox}
+          {renderOption && !isSelectAll ? (
+            renderOption(item)
+          ) : (
+            <span {...stylex.props(styles.itemLabel)}>
+              {item.label ?? item.value}
+            </span>
+          )}
+          {indicatorPosition === 'end' && checkbox}
+        </>
+      );
+      const toggle = () => {
+        if (!item.disabled) {
+          handleNavigableToggle(item.value);
+        }
+      };
+
       return (
         <div
           key={item.value}
           id={getItemId(flatIndex)}
-          role="option"
+          role={isGrid ? 'row' : 'option'}
           aria-selected={isSelected}
           aria-label={
             isPartiallySelected
@@ -1596,13 +1752,21 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
                 })
               : undefined
           }
+          // In a grid the row is named by its option cell alone, so the
+          // caller's control is never folded into the row's name
+          // (spec:AST-058 AR2).
+          aria-labelledby={
+            isGrid && !isPartiallySelected
+              ? `${getItemId(flatIndex)}-option`
+              : undefined
+          }
           aria-disabled={item.disabled}
-          onClick={() => {
-            if (!item.disabled) {
-              handleNavigableToggle(item.value);
-            }
-          }}
-          onMouseEnter={() => onItemMouseEnter(item, flatIndex)}
+          // In a grid the option cell is the click target, so a press on the
+          // action cell never toggles (spec:AST-058 FR4).
+          onClick={isGrid ? undefined : toggle}
+          onMouseEnter={
+            isGrid ? undefined : () => onItemMouseEnter(item, flatIndex)
+          }
           {...mergeProps(
             // One target for every dropdown row, carrying the row's size and
             // runtime state so a theme can express "selected option at large"
@@ -1620,21 +1784,47 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               isSelectAll && styles.selectAllWrapper,
               isHighlighted && styles.itemHighlighted,
               item.disabled && styles.itemDisabled,
+              isGrid && styles.gridRow,
             ),
           )}>
-          {indicatorPosition === 'start' && checkbox}
-          {renderOption && !isSelectAll ? (
-            renderOption(item)
+          {isGrid ? (
+            <>
+              <div
+                role="gridcell"
+                id={`${getItemId(flatIndex)}-option`}
+                onClick={toggle}
+                onMouseEnter={() => onItemMouseEnter(item, flatIndex, 'option')}
+                {...stylex.props(styles.optionCell)}>
+                {content}
+              </div>
+              <div
+                role="gridcell"
+                id={getActionCellId(flatIndex)}
+                data-multi-selector-action-cell=""
+                onMouseEnter={
+                  item.action != null
+                    ? () => onItemMouseEnter(item, flatIndex, 'action')
+                    : undefined
+                }
+                {...stylex.props(
+                  styles.actionCell,
+                  isHighlighted &&
+                    highlightedCell === 'action' &&
+                    styles.actionCellActive,
+                )}>
+                {isSelectAll ? null : item.action}
+              </div>
+            </>
           ) : (
-            <span {...stylex.props(styles.itemLabel)}>
-              {item.label ?? item.value}
-            </span>
+            content
           )}
-          {indicatorPosition === 'end' && checkbox}
         </div>
       );
     },
     [
+      isGrid,
+      highlightedCell,
+      getActionCellId,
       renderOption,
       indicatorPosition,
       highlightedIndex,
@@ -1749,7 +1939,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         // children to option/group only — the old labeled Divider sat in the
         // listbox as a stray role="separator".
         elements.push(
-          <div key={`section-${i}`} role="group" aria-label={option.title}>
+          <div
+            key={`section-${i}`}
+            role={isGrid ? 'rowgroup' : 'group'}
+            aria-label={option.title}>
             {option.title && (
               <div
                 aria-hidden="true"
@@ -1785,6 +1978,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     isLoading,
     emptyText,
     emptySearchText,
+    isGrid,
   ]);
 
   // The detached message box renders its own leading status icon, so the
@@ -1812,7 +2006,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         <div
           ref={listboxRef}
           id={listboxId}
-          role="listbox"
+          role={isGrid ? 'grid' : 'listbox'}
           aria-multiselectable="true"
           {...listboxLabelProps}
           {...stylex.props(styles.listbox)}>
@@ -1825,14 +2019,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       <div
         ref={listboxRef}
         id={listboxId}
-        role="listbox"
+        role={isGrid ? 'grid' : 'listbox'}
         aria-multiselectable="true"
         {...listboxLabelProps}
-        aria-activedescendant={
-          surface.isOpen && highlightedIndex >= 0
-            ? getItemId(highlightedIndex)
-            : undefined
-        }
+        aria-activedescendant={activeDescendantId}
         tabIndex={listboxOwnsKeyboard ? 0 : undefined}
         onKeyDown={listboxOwnsKeyboard ? onKeyDown : undefined}
         {...stylex.props(styles.listbox)}>
@@ -1919,7 +2109,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         ? undefined
         : surface.activePresentation === 'bottom-sheet'
           ? 'dialog'
-          : 'listbox',
+          : isGrid
+            ? 'grid'
+            : 'listbox',
       'aria-expanded': isEffectivelyReadOnly ? false : surface.isOpen,
       'aria-controls': isEffectivelyReadOnly ? undefined : listboxId,
       'aria-busy': isBusy || undefined,
@@ -2020,17 +2212,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               ? undefined
               : surface.activePresentation === 'bottom-sheet'
                 ? 'dialog'
-                : 'listbox'
+                : isGrid
+                  ? 'grid'
+                  : 'listbox'
           }
           aria-expanded={isEffectivelyReadOnly ? false : surface.isOpen}
           aria-controls={isEffectivelyReadOnly ? undefined : listboxId}
           aria-readonly={isEffectivelyReadOnly || undefined}
           aria-activedescendant={
-            !isEffectivelyReadOnly &&
-            !hasSearch &&
-            surface.isOpen &&
-            highlightedIndex >= 0
-              ? getItemId(highlightedIndex)
+            !isEffectivelyReadOnly && !hasSearch
+              ? activeDescendantId
               : undefined
           }
           // With a disabledMessage the trigger keeps focusability via

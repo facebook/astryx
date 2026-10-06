@@ -79,6 +79,7 @@ import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {SelectorOption} from './SelectorOption';
 import {SelectorRowLayoutContext} from './SelectorRowLayoutContext';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
+import {warnOnce} from '../utils/devWarning';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -984,6 +985,21 @@ export function Selector<T extends SelectorOptionType>(
     () => getSelectableOptions(options),
     [options],
   );
+
+  // `action` is declared on the shared option type for `MultiSelector`;
+  // this listbox has not adopted it, so it renders the option without the
+  // control and says so (spec:AST-058 FR9) rather than nesting a control in
+  // an option.
+  useEffect(() => {
+    if (selectableItems.some(item => item.action != null)) {
+      warnOnce(
+        'selector:option-action',
+        'Selector',
+        'An option carries `action`, which Selector does not render yet; the ' +
+          'option is shown without it. MultiSelector renders option actions.',
+      );
+    }
+  }, [selectableItems]);
 
   // Filter items by search query
   const filteredItems = useMemo(

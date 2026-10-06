@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {expect} from 'storybook/test';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
@@ -748,6 +749,93 @@ export const EndIndicatorPosition: Story = {
         indicatorPosition="end"
         isDefaultOpen
       />
+    );
+  },
+};
+
+export const RowActions: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['feature']);
+    const [lastEdited, setLastEdited] = useState<string | null>(null);
+    const action = (label: string) => (
+      <IconButton
+        label={`Edit ${label}`}
+        icon="moreHorizontal"
+        variant="ghost"
+        size="sm"
+        tooltip={`Edit ${label}`}
+        onClick={() => setLastEdited(label)}
+      />
+    );
+    return (
+      <>
+        <MultiSelector
+          label="Labels"
+          options={[
+            {
+              type: 'section',
+              title: 'Type',
+              options: [
+                {value: 'feature', label: 'Feature'},
+                {value: 'bug', label: 'Bug', action: action('Bug')},
+                {value: 'docs', label: 'Docs'},
+                {
+                  value: 'review',
+                  label: 'Design review',
+                  action: action('Design review'),
+                },
+              ],
+            },
+            {
+              type: 'section',
+              title: 'Priority',
+              options: [
+                {value: 'p0', label: 'P0', action: action('P0')},
+                {value: 'p1', label: 'P1', action: action('P1')},
+              ],
+            },
+          ]}
+          value={value}
+          onChange={setValue}
+          hasSearch
+          hasSelectAll
+          hasClear
+          triggerDisplay="badges"
+          isDefaultOpen
+        />
+        <output data-testid="last-edited">{lastEdited ?? ''}</output>
+      </>
+    );
+  },
+};
+
+export const RowActionsRtl: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <div dir="rtl">
+        <MultiSelector
+          label="Labels"
+          options={[
+            {
+              value: 'bug',
+              label: 'Bug',
+              action: (
+                <IconButton
+                  label="Edit Bug"
+                  icon="moreHorizontal"
+                  variant="ghost"
+                  size="sm"
+                />
+              ),
+            },
+            {value: 'feature', label: 'Feature'},
+          ]}
+          value={value}
+          onChange={setValue}
+          isDefaultOpen
+        />
+      </div>
     );
   },
 };
