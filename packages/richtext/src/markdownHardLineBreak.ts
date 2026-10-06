@@ -13,10 +13,13 @@
  *   writes the breaks it imported as hard with their own marker (two spaces
  *   or a backslash); a break typed in the editor has none and would be
  *   written as a plain line ending, which reads back as a soft break and
- *   loses the line (spec:AST-062 FR3).
+ *   loses the line (spec:AST-062 FR3). Headings are one line in Markdown, so
+ *   a break typed in one keeps Lexical's plain line ending.
  */
 
 import type {TextMatchTransformer} from '@lexical/markdown';
+import {$isHeadingNode} from '@lexical/rich-text';
+import {$findMatchingParent} from '@lexical/utils';
 import {$isLineBreakNode, LineBreakNode} from 'lexical';
 
 /** Whether Lexical's Markdown import marked this line break as a hard one. */
@@ -31,7 +34,13 @@ export function isMarkedHardLineBreak(node: LineBreakNode): boolean {
 export const HARD_LINE_BREAK: TextMatchTransformer = {
   dependencies: [LineBreakNode],
   export: node =>
-    $isLineBreakNode(node) && !isMarkedHardLineBreak(node) ? '\\\n' : null,
+    $isLineBreakNode(node) &&
+    !isMarkedHardLineBreak(node) &&
+    // A heading is one line in Markdown; a break inside one has no hard-break
+    // form, so it keeps Lexical's plain line ending.
+    $findMatchingParent(node, $isHeadingNode) == null
+      ? '\\\n'
+      : null,
   // Export only: Lexical's own import recognizes hard breaks.
   regExp: /(?!)/,
   type: 'text-match',

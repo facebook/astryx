@@ -465,6 +465,37 @@ describe('Markdown source preservation (spec:AST-062)', () => {
     await waitFor(() => expect(ref.current?.getMarkdown()).toBe(edited));
   });
 
+  it('leaves a line break typed in a heading as Lexical writes it', async () => {
+    const ref = createRef<RichTextEditorRef>();
+    render(
+      <RichTextEditor
+        label="Notes"
+        ref={ref}
+        defaultValue={markdownToEditorStateJSON('## Release title\n\nBody\n')}
+      />,
+    );
+    await waitFor(() => expect(ref.current).not.toBeNull());
+    const editor = ref.current?.getEditor();
+    editor?.update(
+      () => {
+        const node = $getRoot()
+          .getAllTextNodes()
+          .find(candidate => candidate.getTextContent() === 'Release title');
+        node?.select(7, 7);
+      },
+      {discrete: true},
+    );
+    editor?.dispatchCommand(INSERT_LINE_BREAK_COMMAND, false);
+    const markdown = ref.current?.getMarkdown() ?? '';
+    // No backslash: a heading has no hard-break form.
+    expect(markdown).not.toContain('\\');
+    const {root} = JSON.parse(markdownToEditorStateJSON(markdown)) as {
+      root: SerializedShapeNode;
+    };
+    expect(root.children?.[0]?.type).toBe('heading');
+    expect(JSON.stringify(root)).not.toContain('\\\\');
+  });
+
   it('keeps document facts at the document when blocks move, repeat, or go (FR4)', () => {
     const source = '\uFEFF\n\nAlpha\n\n\\# Beta\n\nGamma\n\n';
     // Moving the first block to the end keeps the envelope at the edges.
