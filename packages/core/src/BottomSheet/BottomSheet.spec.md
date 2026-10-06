@@ -43,7 +43,7 @@ scrolling, theming reachability, and the Content area's container padding.
 ## Compatibility and migration
 
 - Released default preserved: `no` — with no `padding` prop and no theme
-  padding, the Content area insets by `--spacing-4`
+  padding, the Content area insets by `--spacing-4` on every logical edge
 - Compatibility class: breaking default, scheduled for a minor release. Content
   whose only child is a padded Section keeps its geometry because that Section
   escapes the inset; content that supplies its own inset is padded twice until
@@ -104,7 +104,7 @@ in `BottomSheet.doc.mjs`.
 ### Transformation and precedence order
 
 - Content area inset: the `padding` prop, then the theme's `padding` properties
-  on `bottom-sheet`, then `--spacing-4`.
+  on `bottom-sheet`, then `--spacing-4` on every logical edge.
 - No new height, gesture, or motion precedence rule is introduced.
 
 ### Performance and resources
