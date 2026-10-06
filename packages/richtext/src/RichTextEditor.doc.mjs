@@ -113,6 +113,12 @@ export const docs = {
       default: 'true',
     },
     {
+      name: 'markdownExtensions',
+      type: 'ReadonlyArray<RichTextMarkdownExtension>',
+      description:
+        'Markdown plugins whose nodes the editor draws, each adopted with createRichTextExtension. A plugin node renders exactly as core Markdown renders it and edits as one unit; a node whose plugin is not given here shows its source. Pass the extensions the content was converted with, and create them in a client module. RichTextView takes the same prop.',
+    },
+    {
       name: 'transformers',
       type: 'ReadonlyArray<Transformer>',
       description:
@@ -212,7 +218,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "To recognize a Markdown plugin made with createMarkdownPlugin, adopt it with createRichTextExtension(plugin) and pass the result in the extensions option of markdownToEditorStateJSON. Core's parser finds the plugin's syntax, and each node keeps its exact source, which is what it exports; base Markdown inside plugin source stays part of the node. A plugin that declares a transform is refused with a RichTextExtensionError, and so is a configuration that adopts one plugin twice. Without the extension, plugin syntax stays text. createRichTextExtension and the serializers are also exported from @astryxdesign/richtext/markdown for server code.",
+          "To recognize a Markdown plugin made with createMarkdownPlugin, adopt it with createRichTextExtension(plugin) and pass the result in the extensions option of markdownToEditorStateJSON. Core's parser finds the plugin's syntax, and each node keeps its exact source, which is what it exports; base Markdown inside plugin source stays part of the node. A plugin that declares a transform is refused with a RichTextExtensionError, and so is a configuration that adopts one plugin twice. Without the extension, plugin syntax stays text. createRichTextExtension and the serializers are also exported from @astryxdesign/richtext/markdown for server code. Pass the same extensions to the markdownExtensions prop of RichTextEditor and RichTextView to draw the nodes: each renders as core Markdown renders it, edits as one unit (the caret steps over it; Backspace, cut, copy, and paste take it whole), and exports its exact source.",
       },
       {
         guidance: true,

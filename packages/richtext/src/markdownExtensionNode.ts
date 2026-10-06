@@ -13,13 +13,18 @@
  *   FR10). Stored state keeps that source, the plugin's name and protocol
  *   version, the data the plugin derived for rendering (FR11), and the text
  *   formats the node sits inside, so a node inside emphasis, strong, or
- *   strikethrough stays inside it. Imports no React.
+ *   strikethrough stays inside it. Imports no React: the client surfaces
+ *   register how an editor draws plugin nodes.
  */
 
 import {
   DecoratorNode,
   TEXT_TYPE_TO_FORMAT,
+  type DOMConversionMap,
+  type DOMConversionOutput,
+  type DOMExportOutput,
   type EditorConfig,
+  type LexicalEditor,
   type LexicalNode,
   type NodeKey,
   type SerializedLexicalNode,
@@ -61,6 +66,71 @@ export function factsFrom(
   };
 }
 
+/**
+ * Draws a plugin node's content in one editor, inside the text formats the
+ * node sits in. The client surfaces register one (MarkdownExtensionsPlugin);
+ * without one, a node shows its source.
+ */
+export type RichTextExtensionNodeDecorator = (
+  facts: RichTextExtensionNodeFacts,
+  format: number,
+) => unknown;
+
+const decorators = new WeakMap<LexicalEditor, RichTextExtensionNodeDecorator>();
+
+/** Sets how `editor` draws plugin nodes; returns a function that unsets it. */
+export function setRichTextExtensionNodeDecorator(
+  editor: LexicalEditor,
+  decorator: RichTextExtensionNodeDecorator,
+): () => void {
+  decorators.set(editor, decorator);
+  return () => {
+    if (decorators.get(editor) === decorator) {
+      decorators.delete(editor);
+    }
+  };
+}
+
+/**
+ * The attribute that carries a node's facts and formats in its element, so
+ * copying it as HTML — the browser's own copy, or the editor's HTML export —
+ * and pasting it into any RichText editor brings back the same node with the
+ * same source and marks.
+ */
+const FACTS_ATTRIBUTE = 'data-markdown-extension';
+
+function factsAttribute(node: RichTextExtensionNode): string {
+  return JSON.stringify({...node.__facts, format: node.__format});
+}
+
+function convertExtensionElement(element: HTMLElement): DOMConversionOutput {
+  let node: RichTextExtensionNode | null = null;
+  try {
+    const parsed: unknown = JSON.parse(
+      element.getAttribute(FACTS_ATTRIBUTE) ?? '',
+    );
+    if (parsed != null && typeof parsed === 'object') {
+      const value = parsed as Record<string, unknown>;
+      node = $createRichTextExtensionNode(
+        factsFrom(value),
+        typeof value.format === 'number' ? value.format : 0,
+      );
+    }
+  } catch {
+    node = null;
+  }
+  return {
+    node,
+    // The element's content is the node's rendering, not more document.
+    forChild: () => null,
+  };
+}
+
+const importExtensionElement = (element: HTMLElement) =>
+  element.hasAttribute(FACTS_ATTRIBUTE)
+    ? {conversion: convertExtensionElement, priority: 4 as const}
+    : null;
+
 export class RichTextExtensionNode extends DecoratorNode<unknown> {
   __facts: RichTextExtensionNodeFacts;
   /**
@@ -86,6 +156,10 @@ export class RichTextExtensionNode extends DecoratorNode<unknown> {
       factsFrom(serialized),
       typeof format === 'number' ? format : 0,
     ).updateFromJSON(serialized);
+  }
+
+  static importDOM(): DOMConversionMap {
+    return {span: importExtensionElement, div: importExtensionElement};
   }
 
   constructor(facts: RichTextExtensionNodeFacts, format = 0, key?: NodeKey) {
@@ -132,13 +206,35 @@ export class RichTextExtensionNode extends DecoratorNode<unknown> {
     return writable;
   }
 
-  createDOM(_config: EditorConfig): HTMLElement {
-    return document.createElement(
-      this.__facts.display === 'block' ? 'div' : 'span',
+  createDOM(config: EditorConfig): HTMLElement {
+    const element = document.createElement(
+      this.__facts.display === 'inline' ? 'span' : 'div',
     );
+    element.setAttribute(FACTS_ATTRIBUTE, factsAttribute(this));
+    if (this.__facts.display === 'block') {
+      // A block node is spaced and measured as Markdown spaces its block.
+      const className: unknown = config.theme.markdownExtensionBlock;
+      if (typeof className === 'string' && className !== '') {
+        element.className = className;
+      }
+    }
+    return element;
   }
 
-  updateDOM(): false {
+  exportDOM(): DOMExportOutput {
+    const element = document.createElement(
+      this.__facts.display === 'inline' ? 'span' : 'div',
+    );
+    element.setAttribute(FACTS_ATTRIBUTE, factsAttribute(this));
+    element.textContent = this.__facts.source;
+    return {element};
+  }
+
+  updateDOM(prevNode: RichTextExtensionNode, dom: HTMLElement): false {
+    // A mark toggled on the node changes what its element carries.
+    if (prevNode.__format !== this.__format) {
+      dom.setAttribute(FACTS_ATTRIBUTE, factsAttribute(this));
+    }
     return false;
   }
 
@@ -151,9 +247,11 @@ export class RichTextExtensionNode extends DecoratorNode<unknown> {
     return this.getLatest().__facts.source;
   }
 
-  /** Until a surface draws plugin nodes, a node shows its source. */
-  decorate(): unknown {
-    return this.__facts.source;
+  decorate(editor: LexicalEditor): unknown {
+    return (
+      decorators.get(editor)?.(this.__facts, this.__format) ??
+      this.__facts.source
+    );
   }
 }
 

@@ -5,7 +5,8 @@ import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
 import {createHeadlessEditor} from '@lexical/headless';
-import {$getRoot, $isTextNode} from 'lexical';
+import {$generateHtmlFromNodes, $generateNodesFromDOM} from '@lexical/html';
+import {$getRoot, $insertNodes, $isTextNode} from 'lexical';
 import {
   createMarkdownPlugin,
   type MarkdownExtensionNode,
@@ -19,7 +20,10 @@ import {
   RichTextExtensionError,
 } from './markdown';
 import {DEFAULT_NODES} from './editorNodes';
-import {RichTextExtensionNode} from './markdownExtensionNode';
+import {
+  $isRichTextExtensionNode,
+  RichTextExtensionNode,
+} from './markdownExtensionNode';
 import {
   $exportMarkdownKeepingSource,
   importMarkdownKeepingSource,
@@ -615,6 +619,59 @@ describe('placement cost', () => {
     expect(editorStateJSONToMarkdown(paragraphJson)).toBe(paragraph);
     // Every occurrence is a node, so no occurrence needs core to confirm it.
     expect(elapsed).toBeLessThan(5000);
+  });
+});
+
+describe('plugin nodes as HTML (spec:AST-064 FR7)', () => {
+  it('come back as the same nodes, with the same source, from the HTML they copy as', () => {
+    const editorWith = () =>
+      createHeadlessEditor({
+        nodes: [...DEFAULT_NODES],
+        onError(error) {
+          throw error;
+        },
+      });
+    const source = editorWith();
+    importMarkdownKeepingSource(
+      source,
+      'Hi @{ada}.\n\n:::note\nBody **bold**\n:::\n',
+      [...DEFAULT_TRANSFORMERS],
+      PLUGINS,
+    );
+    const html = source
+      .getEditorState()
+      .read(() => $generateHtmlFromNodes(source, null));
+    const target = editorWith();
+    target.update(
+      () => {
+        const dom = new DOMParser().parseFromString(html, 'text/html');
+        $getRoot().clear().select();
+        $insertNodes($generateNodesFromDOM(target, dom));
+      },
+      {discrete: true},
+    );
+    const facts = (editor: typeof source) =>
+      editor
+        .getEditorState()
+        .read(() =>
+          [...$getRoot().getChildren()]
+            .flatMap(node =>
+              $isRichTextExtensionNode(node)
+                ? [node]
+                : 'getChildren' in node &&
+                    typeof node.getChildren === 'function'
+                  ? (node.getChildren() as Array<unknown>).filter(
+                      $isRichTextExtensionNode as (value: unknown) => boolean,
+                    )
+                  : [],
+            )
+            .map(node => (node as RichTextExtensionNode).getFacts()),
+        );
+    expect(facts(target)).toEqual(facts(source));
+    expect(facts(source).map(({source: text}) => text)).toEqual([
+      '@{ada}',
+      ':::note\nBody **bold**\n:::',
+    ]);
   });
 });
 

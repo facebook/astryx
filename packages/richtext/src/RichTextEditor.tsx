@@ -77,6 +77,8 @@ import {TextSemanticsExtension} from './textSemantics';
 import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
 import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
 import {CodeSyntaxPlugin} from './CodeSyntaxPlugin';
+import {MarkdownExtensionsPlugin} from './MarkdownExtensionsPlugin';
+import type {RichTextMarkdownExtension} from './markdownExtensions';
 import {TaskCheckboxPlugin} from './TaskCheckboxPlugin';
 import {type Transformer} from '@lexical/markdown';
 export type {Transformer} from '@lexical/markdown';
@@ -429,6 +431,15 @@ export interface RichTextEditorProps extends Omit<
    * the serialization APIs added in later phases.
    */
   transformers?: ReadonlyArray<Transformer>;
+  /**
+   * Markdown plugins whose nodes this surface draws, each adopted with
+   * `createRichTextExtension` (spec:AST-064). A plugin node renders exactly as
+   * core `Markdown` renders it, and one whose plugin is not given here shows
+   * its source. Pass the extensions the content was converted with. Create
+   * them in a client module: they hold the plugins' functions, so they are not
+   * serializable props.
+   */
+  markdownExtensions?: ReadonlyArray<RichTextMarkdownExtension>;
   /** Whether to automatically focus the editor on mount. @default false */
   hasAutoFocus?: boolean;
   /**
@@ -506,6 +517,7 @@ export const RichTextEditor = forwardRef<
     plugins,
     hasMarkdownShortcuts = true,
     transformers = DEFAULT_TRANSFORMERS,
+    markdownExtensions,
     hasAutoFocus = false,
     tabEscapeHint = DEFAULT_TAB_ESCAPE_HINT,
     maxLength,
@@ -696,6 +708,12 @@ export const RichTextEditor = forwardRef<
               <TableColumnFloorPlugin />
               <CodeBlockHeaderPlugin />
               <CodeSyntaxPlugin />
+              {markdownExtensions != null && markdownExtensions.length > 0 ? (
+                <MarkdownExtensionsPlugin
+                  extensions={markdownExtensions}
+                  transformers={markdownTransformers}
+                />
+              ) : null}
               <TabIndentationPlugin />
               <TabFocusEscapePlugin />
               {hasMarkdownShortcuts && (

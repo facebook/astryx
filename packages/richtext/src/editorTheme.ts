@@ -411,6 +411,9 @@ export function sharedEditorTheme(): EditorThemeClasses {
     stylex.props(style).className ?? '';
   return {
     paragraph: block(editorTheme.paragraph),
+    // A Markdown plugin's block node is spaced and measured as a paragraph,
+    // as core Markdown spaces its block (RichTextExtensionNode reads it).
+    markdownExtensionBlock: block(editorTheme.paragraph),
     heading: {
       h1: block(editorTheme.h1),
       h2: block(editorTheme.h2),

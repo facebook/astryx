@@ -6,8 +6,8 @@
  *   editor, and plugin adapter.
  * @output Exports MarkdownPluginsImportExport: Markdown with plugin syntax in,
  *   the plugin nodes RichText recognized, and the Markdown it exports beside
- *   the input, byte for byte; an editor to change the text around the nodes;
- *   and a refused plugin's error.
+ *   the input, byte for byte; an editor, given the same extensions, to change
+ *   the text around the nodes; and a refused plugin's error.
  * @position Lab story for spec:AST-064's import and export. How plugin nodes
  *   look in the editor and the view is the "Markdown plugins" story.
  */
@@ -302,14 +302,15 @@ export function MarkdownPluginsImportExport() {
       </section>
       <section {...stylex.props(styles.stack)}>
         <Text type="label">
-          Edit the text around the nodes, then export. Here a node shows its
-          source; the &quot;Markdown plugins&quot; story shows it rendered.
+          Edit the text around the nodes, then export. The editor is given the
+          same extensions, so each node renders as Markdown renders it.
         </Text>
         <RichTextEditor
           key={json}
           label="Editor"
           ref={editor}
           defaultValue={json}
+          markdownExtensions={EXTENSIONS}
         />
         <div>
           <Button
