@@ -4,10 +4,11 @@
  * @file markdownCharacterReferences.ts
  * @input Uses lexical, @lexical/link, @lexical/code, and core Markdown's
  *   decodeMarkdownCharacterReferences.
- * @output Exports protectCharacterReferences, which swaps every character
- *   reference in Markdown source for a private-use stand-in before Lexical
- *   imports it, and $restoreCharacterReferences, which puts the decoded text
- *   in place of the stand-ins afterwards.
+ * @output Exports protectBackslashEscapes and protectCharacterReferences,
+ *   which swap every backslash escape and every character reference in
+ *   Markdown source for a private-use stand-in before Lexical imports it, and
+ *   $restoreCharacterReferences, which puts the literal or decoded text in
+ *   place of the stand-ins afterwards.
  * @position Used by importMarkdownKeepingSource (markdownSource.ts), so every
  *   block — paragraphs, headings, lists, quotes, table cells, link text and
  *   destinations — decodes references with the one decoder core Markdown
@@ -16,6 +17,10 @@
  *   Markdown import, so a decoded `*` never starts emphasis, and no `&#digits;`
  *   reaches Lexical's own decoding, which ignores escapes and throws on a
  *   number past Unicode. Code keeps references as written.
+ *   Backslash escapes go through the same way, so an escaped character is
+ *   literal text wherever it is — `\[x](y)` is text, not a link, as in core
+ *   Markdown (spec:AST-061 FR7, spec:AST-062 FR3) — and code keeps its
+ *   backslashes.
  */
 
 import {$isCodeNode} from '@lexical/code';
@@ -28,10 +33,15 @@ import {
 } from 'lexical';
 import {decodeMarkdownCharacterReferences} from '@astryxdesign/core/Markdown/parser';
 
-/** What a stand-in replaced: a reference as written, or an escaped `&`. */
+/**
+ * What a stand-in replaced: a reference as written, an escaped `&`, or a
+ * backslash-escaped character.
+ */
 type StandIn =
   | {readonly kind: 'reference'; readonly source: string}
-  | {readonly kind: 'ampersand'};
+  | {readonly kind: 'ampersand'}
+  | {readonly kind: 'escape'; readonly character: string}
+  | {readonly kind: 'backslash'};
 
 export interface ProtectedMarkdown {
   /** The source with stand-ins in place of references. */
@@ -175,6 +185,78 @@ function codeRanges(text: string): Array<readonly [number, number]> {
   return ranges.sort((a, b) => a[0] - b[0]);
 }
 
+/** The characters a backslash escapes (CommonMark 0.31 §2.4). */
+const ESCAPABLE = new Set('!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~');
+
+/**
+ * Returns `markdown` with every backslash escape outside code — a backslash
+ * before ASCII punctuation — replaced by a private-use stand-in for the
+ * escaped character, and every backslash in code by a stand-in for itself,
+ * which Lexical would otherwise drop from a code span — except before `|`,
+ * which a table reads before its code. A backslash before anything else
+ * outside code stays as written. One pass over the source.
+ */
+export function protectBackslashEscapes(markdown: string): ProtectedMarkdown {
+  const standIns = new Map<string, StandIn>();
+  if (!markdown.includes('\\')) {
+    return {markdown, standIns};
+  }
+  const available = absentCharacters(markdown);
+  const byKey = new Map<string, string>();
+  const standInFor = (key: string, value: StandIn): string | null => {
+    const existing = byKey.get(key);
+    if (existing != null) {
+      return existing;
+    }
+    const next = available.next();
+    if (next.done === true) {
+      // Every private-use character is in the text: leave the rest as
+      // written.
+      return null;
+    }
+    byKey.set(key, next.value);
+    standIns.set(next.value, value);
+    return next.value;
+  };
+  const code = codeRanges(markdown);
+  let output = '';
+  let copied = 0;
+  let codeIndex = 0;
+  let index = markdown.indexOf('\\');
+  while (index !== -1) {
+    while (code[codeIndex] != null && code[codeIndex][1] <= index) {
+      codeIndex++;
+    }
+    const range = code[codeIndex];
+    const character = markdown[index + 1];
+    const inCode = range != null && range[0] <= index;
+    // A table splits its cells before it reads code, so `\|` in code is the
+    // table's to read.
+    if (inCode && character === '|') {
+      index = markdown.indexOf('\\', index + 2);
+      continue;
+    }
+    const isEscape = !inCode && character != null && ESCAPABLE.has(character);
+    if (inCode || isEscape) {
+      const standIn = inCode
+        ? standInFor('code', {kind: 'backslash'})
+        : standInFor(`escape:${character}`, {
+            kind: 'escape',
+            character: character ?? '',
+          });
+      if (standIn == null) {
+        break;
+      }
+      output += markdown.slice(copied, index) + standIn;
+      copied = index + (inCode ? 1 : 2);
+      index = markdown.indexOf('\\', copied);
+      continue;
+    }
+    index = markdown.indexOf('\\', index + 1);
+  }
+  return {markdown: output + markdown.slice(copied), standIns};
+}
+
 /**
  * Returns `markdown` with every character reference outside code replaced by
  * a private-use stand-in that occurs nowhere else in it, and the escaped `&`
@@ -283,17 +365,36 @@ function restored(
   return changed ? output : text;
 }
 
-const decoded = (standIn: StandIn): string =>
-  standIn.kind === 'ampersand'
-    ? '&'
-    : decodeMarkdownCharacterReferences(standIn.source);
-const asWritten = (standIn: StandIn): string =>
-  standIn.kind === 'ampersand' ? '&' : standIn.source;
+const decoded = (standIn: StandIn): string => {
+  switch (standIn.kind) {
+    case 'ampersand':
+      return '&';
+    case 'backslash':
+      return '\\';
+    case 'escape':
+      return standIn.character;
+    case 'reference':
+      return decodeMarkdownCharacterReferences(standIn.source);
+  }
+};
+const asWritten = (standIn: StandIn): string => {
+  switch (standIn.kind) {
+    case 'ampersand':
+      return '&';
+    case 'backslash':
+      return '\\';
+    case 'escape':
+      return `\\${standIn.character}`;
+    case 'reference':
+      return standIn.source;
+  }
+};
 
 /**
  * Replaces the stand-ins under `node` with the characters their references
- * name — or, in code Lexical read as code, with the references as written —
- * in text, link destinations, and link titles. One pass over the text.
+ * name or their escapes stand for — or, in code Lexical read as code, with
+ * the references and escapes as written — in text, link destinations, and
+ * link titles. One pass over the text.
  */
 export function $restoreCharacterReferences(
   node: ElementNode,
