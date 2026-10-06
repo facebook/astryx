@@ -194,8 +194,9 @@ export const docs = {
         },
         {
           name: 'onChange',
-          type: '(value: string[]) => void',
-          description: 'Callback fired when the selection changes.',
+          type: '(value: string[], change?: MultiSelectorChange) => void',
+          description:
+            'Called when the selection changes. A creation (hasCreate) arrives with `{type: "create", query}` as the second argument and the query appended to value; the caller adds the matching option in that same update. Every other change passes no descriptor, so a one-argument handler keeps working.',
           required: true,
         },
         {
@@ -277,6 +278,13 @@ export const docs = {
           description:
             'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time. The announcement is the text this content renders, read from the DOM, so an element is announced as written and aria-hidden parts are left out of both.',
           default: "'No results found'",
+        },
+        {
+          name: 'hasCreate',
+          type: 'boolean',
+          description:
+            'With hasSearch, offers a `Create "<query>"` row first in the list when the typed text equals no option label under the search’s case-insensitive matching. Picking it, or Enter with nothing highlighted, calls onChange with the query appended to value and a `{type: "create", query}` descriptor, then clears the search; the caller must add an option for the new value in that update. Nothing is offered while isLoading. Without hasSearch it warns in development and offers nothing.',
+          default: 'false',
         },
         {
           name: 'isDisabled',
@@ -494,6 +502,8 @@ export const docsZh = {
         searchPlaceholder: '搜索输入的占位文本。',
         emptyText: '没有可显示的选项时，下拉面板中显示的内容。',
         emptySearchText: '搜索查询未匹配到任何选项时，下拉面板中显示的内容。',
+        hasCreate:
+          '配合 hasSearch：当输入的文本与任何选项标签都不匹配时，在列表首行提供“创建 "<query>"”行；选中后通过 onChange 以 {type: "create", query} 描述符报告，调用方需在同一次更新中添加该选项。',
         isDisabled: '禁用选择器。',
         isReadOnly:
           '将选择器设为只读：保留当前值、焦点顺序和表单提交，但移除选择面板、清除操作和展开指示器。与 isDisabled 不同，只读控件不会变暗；两者同时设置时 isDisabled 优先。',
@@ -641,6 +651,8 @@ export const docsDense = {
         searchPlaceholder: 'search placeholder',
         emptyText: 'panel content when there are no options',
         emptySearchText: 'panel content when the query matches nothing',
+        hasCreate:
+          'with hasSearch: first row is Create "<query>" when no option label matches; reported through onChange with a {type: "create", query} descriptor; caller adds the option',
         isDisabled: 'disables selector',
         isReadOnly:
           'read-only: preserves values, focus + form submission; removes menu, clear + disclosure',

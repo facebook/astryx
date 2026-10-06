@@ -751,3 +751,34 @@ export const EndIndicatorPosition: Story = {
     );
   },
 };
+
+export const CreateFromQuery: Story = {
+  render: () => {
+    const [options, setOptions] = useState([
+      {value: 'bug', label: 'Bug'},
+      {value: 'feature', label: 'Feature'},
+      {value: 'docs', label: 'Docs'},
+    ]);
+    const [value, setValue] = useState<string[]>(['bug']);
+    return (
+      <MultiSelector
+        label="Labels"
+        options={options}
+        value={value}
+        onChange={(next, change) => {
+          if (change?.type === 'create') {
+            setOptions(current => [
+              ...current,
+              {value: change.query, label: change.query},
+            ]);
+          }
+          setValue(next);
+        }}
+        hasSearch
+        hasCreate
+        triggerDisplay="badges"
+        isDefaultOpen
+      />
+    );
+  },
+};
