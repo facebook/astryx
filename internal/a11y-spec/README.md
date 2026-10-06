@@ -62,6 +62,7 @@ src/
 | `checkbox`       | [APG checkbox](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/)                                    | CheckboxInput, CheckboxListItem, DropdownMenuCheckboxItem, SelectableCard        |
 | `switch`         | [APG switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)                                        | Switch                                                                           |
 | `button`         | [APG button](https://www.w3.org/WAI/ARIA/apg/patterns/button/)                                        | Button, IconButton, ClickableCard, SideNavCollapseButton, ChatSendButton         |
+| `toggle-button`  | Toggle-button semantics in the [APG button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) | ToggleButton, including standalone and grouped states                            |
 | `text-input`     | Native HTML controls and [WAI-ARIA textbox](https://www.w3.org/TR/wai-aria-1.2/#textbox)              | TextInput, TextArea                                                              |
 | `modal-dialog`   | [APG dialog (modal)](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)                          | Dialog                                                                           |
 | `status-message` | [WCAG 2.2 Status Messages](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html)          | Toast, FieldStatus, Spinner, ChatSystemMessage, ChatTypingIndicator, ProgressBar |
@@ -70,6 +71,15 @@ src/
 | `spinbutton`     | WCAG 2.2 semantics and [APG Spinbutton](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/)         | NumberInput                                                                      |
 | `disclosure`     | [APG Disclosure](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/)                                | Standalone Collapsible triggers and their controlled content                     |
 | `breadcrumb`     | WCAG 2.2 semantics; [APG Breadcrumb](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/) as context | Breadcrumbs landmarks, list trails, current-page state, and separators           |
+
+The toggle-button contract owns the persistent-action extension of button
+semantics: the pressed state must be exposed, reversible by pointer, Enter, and
+Space, stable under an aborted press, and inert when unavailable. It also checks
+that changing state keeps focus and reports APG label stability as advisory
+because current Astryx authority does not make that APG-only detail a gate.
+ToggleButtonGroup naming, selection coordination, Action ordering, pending
+feedback, and rendered appearance keep their existing component, family, and
+visual owners.
 
 The `spinbutton` contract owns NumberInput's required role, persistent name,
 committed numeric value, optional bounds and formatted value text, disabled and

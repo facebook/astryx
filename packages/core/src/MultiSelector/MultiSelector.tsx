@@ -20,6 +20,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useImperativeHandle,
   useMemo,
   useOptimistic,
   useRef,
@@ -72,6 +73,7 @@ import {
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import type {BaseProps} from '../BaseProps';
@@ -438,6 +440,59 @@ export type MultiSelectorStatusType = 'warning' | 'error' | 'success';
 
 export type {MultiSelectorStatus};
 
+/**
+ * Props the `renderTrigger` render prop hands to the control the caller
+ * renders.
+ * Spread them onto that control: it becomes the panel's anchor, the element
+ * focus returns to, and the control that announces the panel's state.
+ */
+export interface MultiSelectorRenderTriggerProps {
+  /** Attaches the control as the panel's anchor and focus-return target. */
+  ref: (element: HTMLElement | null) => void;
+  /** The id the field would have given its own button. */
+  id: string;
+  /**
+   * Opening handlers, present only when there is a panel to open. A
+   * read-only selector withholds them, so spreading these props onto a
+   * control gives it no opener rather than a dead one.
+   */
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLElement>) => void;
+  onFocus: (event: React.FocusEvent<HTMLElement>) => void;
+  /**
+   * Disclosure state. A read-only selector has no surface to disclose, so
+   * `aria-haspopup` and `aria-controls` are absent and `aria-expanded` is
+   * `false` (`spec:AST-011` FR4).
+   */
+  'aria-haspopup'?: 'listbox' | 'dialog';
+  'aria-expanded': boolean;
+  'aria-controls'?: string;
+  'aria-busy': boolean | undefined;
+  /**
+   * `true` when the selector is read-only, so the caller's control can show
+   * that state the way its own design calls for.
+   */
+  'aria-readonly'?: boolean;
+}
+
+/**
+ * Imperative control surface for MultiSelector, accessed via the `handleRef`
+ * prop. Methods drive the same popover machinery as the built-in trigger, so
+ * they respect focus restoration, light dismiss, and Escape. Pair with
+ * `onOpenChange` to observe every open and close, including the ones the
+ * selector performs itself. Same shape as `ComplexSelectorHandle`.
+ */
+export interface MultiSelectorHandle {
+  /** Open the panel. No-op when disabled, read-only, or already open. */
+  open(): void;
+  /** Close the panel. Restores focus to the trigger. */
+  close(): void;
+  /** Toggle the panel open or closed. */
+  toggle(): void;
+  /** Whether the panel is currently open. Reads live state. */
+  isOpen(): boolean;
+}
+
 export interface MultiSelectorSelectedItem {
   value: string;
   label: string;
@@ -706,6 +761,56 @@ export interface MultiSelectorProps<
   isDefaultOpen?: boolean;
 
   /**
+   * Render the control the panel hangs off — a glyph in a list row, a chip,
+   * an icon button — instead of the selector's own field and button. Spread
+   * the given props onto it; the listbox is then anchored to and labelled by
+   * that control, and `label` names the listbox for assistive technology.
+   * The field chrome (`Field`, status, clear button, spinner) is not
+   * rendered; the caller owns the opener. Pair with `handleRef` to open the
+   * panel from a keystroke elsewhere.
+   *
+   * Hover and pressed paint stay yours. The open state reaches your control
+   * as `aria-expanded` on the given props, so style it from the rendered
+   * attribute. A pressed look keyed to `:active` is not a substitute:
+   * `:active` does not behave the same under a coarse pointer, which is why
+   * menu rows drop coarse-pointer `:active` paint entirely.
+   *
+   * A read-only selector has no panel to open, so the disclosure attributes
+   * and the opening handlers are withheld: your control reports
+   * `aria-expanded="false"` and points at nothing.
+   *
+   * @example
+   * ```
+   * <MultiSelector
+   *   label="Labels"
+   *   renderTrigger={props => <IconButton icon="tag" label="Labels" {...props} />}
+   *   …
+   * />
+   * ```
+   *
+   * @example
+   * ```
+   * // Styling the open state from the rendered attribute:
+   * // .my-trigger[aria-expanded='true'] { background: var(--color-overlay-pressed); }
+   * ```
+   */
+  renderTrigger?: (props: MultiSelectorRenderTriggerProps) => ReactNode;
+
+  /**
+   * Imperative handle for opening and closing the panel. Prefer `handleRef`
+   * over mirroring open state in the parent — the selector owns its
+   * visibility, and imperative calls avoid the focus-management pitfalls of
+   * syncing an external `isOpen` prop.
+   */
+  handleRef?: React.Ref<MultiSelectorHandle>;
+
+  /**
+   * Called whenever the panel opens or closes, however it happened — the
+   * trigger, the keyboard, a light dismiss, Escape, or the imperative handle.
+   */
+  onOpenChange?: (isOpen: boolean) => void;
+
+  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -790,6 +895,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   indicatorPosition = 'start',
   presentation = 'popover',
   isDefaultOpen = false,
+  renderTrigger,
+  handleRef,
+  onOpenChange,
   'data-testid': testId,
   htmlName,
   width,
@@ -966,24 +1074,49 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }, [searchQuery, options, selectedAtOpen, hasSelectAll, selectAllLabel]);
 
   // Layer for dropdown positioning
+  const hasExternalTrigger = renderTrigger != null;
+
+  // The open handlers defer their focus move by a frame, so a panel closed
+  // inside that frame would otherwise be focused after it has gone — the
+  // person loses focus to a surface that is no longer there. The pending
+  // frame is cancelled on hide.
+  const openFocusFrameRef = useRef<number | null>(null);
+  const cancelOpenFocus = useCallback(() => {
+    if (openFocusFrameRef.current != null) {
+      cancelAnimationFrame(openFocusFrameRef.current);
+      openFocusFrameRef.current = null;
+    }
+  }, []);
+
   const handleLayerHide = useCallback(() => {
+    cancelOpenFocus();
     setSearchQuery('');
     setSelectedAtOpen(null);
     // Clear any lingering result count when the popover closes so stale status
     // text does not linger in the a11y tree.
     announce('');
-  }, [announce]);
+    onOpenChange?.(false);
+  }, [announce, onOpenChange, cancelOpenFocus]);
 
   const handleLayerShow = useCallback(() => {
     // Snapshot selection only after the surface actually opens; a same-gesture
     // rejection must not prepare state for an opening that never happened.
     setSelectedAtOpen(new Set(optimisticValue));
     if (hasSearch) {
-      requestAnimationFrame(() => {
+      openFocusFrameRef.current = requestAnimationFrame(() => {
+        openFocusFrameRef.current = null;
         searchRef.current?.focus();
       });
+    } else if (hasExternalTrigger) {
+      // The caller's anchor may not take focus (a glyph in a link row), so
+      // the listbox owns the keyboard while the panel is open.
+      openFocusFrameRef.current = requestAnimationFrame(() => {
+        openFocusFrameRef.current = null;
+        listboxRef.current?.focus();
+      });
     }
-  }, [hasSearch, optimisticValue]);
+    onOpenChange?.(true);
+  }, [hasSearch, hasExternalTrigger, optimisticValue, onOpenChange]);
 
   const surface = useSelectorPresentation({
     presentation,
@@ -1023,6 +1156,28 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       hideSurface();
     }
   }, [isEffectivelyReadOnly, isSurfaceOpen, hideSurface]);
+
+  const canOpen = !isDisabled && !isEffectivelyReadOnly;
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      open: () => {
+        if (canOpen && !surface.isOpen) {
+          surface.show();
+        }
+      },
+      close: () => surface.hide(),
+      toggle: () => {
+        if (surface.isOpen) {
+          surface.hide();
+        } else if (canOpen) {
+          surface.show();
+        }
+      },
+      isOpen: () => surface.isOpen,
+    }),
+    [canOpen, surface],
+  );
 
   // Announce the filtered result count from the query-change handler (matching
   // BaseTypeahead) rather than a reactive effect: computing the count for the
@@ -1639,6 +1794,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const showStatusTooltip =
     status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
 
+  // With the caller's own trigger, `label` names the listbox directly: the
+  // anchor may carry no text of its own (a glyph in a link row).
+  const listboxLabelProps = hasExternalTrigger
+    ? {'aria-label': label}
+    : {'aria-labelledby': triggerId};
+  // In a bottom sheet, or hung off a caller's anchor that may not take focus,
+  // the listbox itself owns the keyboard.
+  const listboxOwnsKeyboard =
+    surface.activePresentation === 'bottom-sheet' || hasExternalTrigger;
+
   const panelContent = hasSearch ? (
     <div>
       {renderSearch()}
@@ -1649,7 +1814,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           id={listboxId}
           role="listbox"
           aria-multiselectable="true"
-          aria-labelledby={triggerId}
+          {...listboxLabelProps}
           {...stylex.props(styles.listbox)}>
           {renderOptions()}
         </div>
@@ -1662,16 +1827,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         id={listboxId}
         role="listbox"
         aria-multiselectable="true"
-        aria-labelledby={triggerId}
+        {...listboxLabelProps}
         aria-activedescendant={
           surface.isOpen && highlightedIndex >= 0
             ? getItemId(highlightedIndex)
             : undefined
         }
-        tabIndex={surface.activePresentation === 'bottom-sheet' ? 0 : undefined}
-        onKeyDown={
-          surface.activePresentation === 'bottom-sheet' ? onKeyDown : undefined
-        }
+        tabIndex={listboxOwnsKeyboard ? 0 : undefined}
+        onKeyDown={listboxOwnsKeyboard ? onKeyDown : undefined}
         {...stylex.props(styles.listbox)}>
         {renderOptions()}
       </div>
@@ -1719,6 +1882,70 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       isEffectivelyReadOnly && styles.triggerReadOnly,
     ),
   };
+
+  if (renderTrigger != null) {
+    // Anchor-only mode: the caller renders the opener and spreads these props
+    // on it. No Field, no status, no clear button — the caller owns the
+    // control; the selector owns the panel, its anchor, and focus return.
+    const triggerProps: MultiSelectorRenderTriggerProps = {
+      ref: el => {
+        popover.triggerRef(el);
+        triggerRef.current = el;
+        // A control that takes no focus has nowhere for focus to return to
+        // when the panel closes, and focus would land on the body — the
+        // person loses their place in the page. Making it programmatically
+        // focusable repairs the return without putting it in the tab order,
+        // which is the caller's decision to make. It does not make the
+        // control openable from the keyboard: only a real control does
+        // that, which is what the warning below is for.
+        if (el != null && !el.matches(FOCUSABLE_SELECTOR)) {
+          el.tabIndex = -1;
+        }
+      },
+      id: triggerId,
+      onClick: isEffectivelyReadOnly ? undefined : onTriggerClick,
+      onKeyDown: isEffectivelyReadOnly ? undefined : onKeyDown,
+      onFocus: event => {
+        onFocus?.(event);
+        surface.onTriggerFocus(event);
+      },
+      // A read-only selector has no selection surface to open, so it must
+      // not advertise one: `spec:AST-011` FR4. Telling a screen-reader user
+      // "collapsed, has popup" on a control that cannot open leaves them
+      // pressing Enter with nothing happening and no way to tell the value
+      // is read-only rather than the control broken. The field path below
+      // already respects this; the anchor-only path must not regress it.
+      'aria-haspopup': isEffectivelyReadOnly
+        ? undefined
+        : surface.activePresentation === 'bottom-sheet'
+          ? 'dialog'
+          : 'listbox',
+      'aria-expanded': isEffectivelyReadOnly ? false : surface.isOpen,
+      'aria-controls': isEffectivelyReadOnly ? undefined : listboxId,
+      'aria-busy': isBusy || undefined,
+      // Withholding the disclosure attributes stops the control lying about
+      // a panel, but leaves it silent about WHY it does not open. The field
+      // path says so through its own chrome; the caller's control has none,
+      // so the state is handed over for it to present.
+      'aria-readonly': isEffectivelyReadOnly || undefined,
+    };
+    return (
+      <>
+        {renderTrigger(triggerProps)}
+        {htmlName != null &&
+          value.map(v => (
+            <input
+              key={v}
+              type="hidden"
+              name={htmlName}
+              value={v}
+              disabled={isDisabled}
+            />
+          ))}
+        {selectionSurface}
+      </>
+    );
+  }
 
   const multiSelectorContent = (
     <>

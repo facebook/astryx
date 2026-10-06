@@ -53,7 +53,12 @@ import {Spinner} from '../Spinner';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
-import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
+import {
+  composeEventHandlers,
+  getInputARIA,
+  isImeKeyEvent,
+  mergeProps,
+} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
@@ -391,11 +396,14 @@ export function Typeahead<T extends SearchableItem>({
   debounceMs,
   onChangeQuery,
   onOpenChange,
+  onClick,
+  onBlur,
   width,
   xstyle,
   className,
   style,
   'data-testid': testId,
+  ...rest
 }: TypeaheadProps<T>) {
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
@@ -570,14 +578,21 @@ export function Typeahead<T extends SearchableItem>({
   const typeaheadContent = (
     <>
       <div
+        {...(inputGroup ? rest : undefined)}
         ref={useMergedRefs(
           wrapperRef,
           disabledMessageTooltip.ref,
           inputGroup ? ref : undefined,
         )}
         data-testid={testId}
-        onClick={handleWrapperClick}
-        onBlur={handleBlur}
+        onClick={composeEventHandlers(
+          handleWrapperClick,
+          inputGroup ? onClick : undefined,
+        )}
+        onBlur={composeEventHandlers(
+          handleBlur,
+          inputGroup ? onBlur : undefined,
+        )}
         {...mergeProps(
           themeProps('typeahead', {size, status: status?.type}),
           stylex.props(
@@ -674,6 +689,9 @@ export function Typeahead<T extends SearchableItem>({
 
   return (
     <Field
+      {...rest}
+      onClick={onClick}
+      onBlur={onBlur}
       ref={ref}
       label={label}
       isLabelHidden={isLabelHidden}

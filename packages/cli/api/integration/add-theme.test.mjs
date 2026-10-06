@@ -310,3 +310,216 @@ describe('integrationAddTheme', () => {
     );
   });
 });
+
+describe('integrationAddTheme --from', () => {
+  it('forks a bundled theme into the integration package', async () => {
+    setup();
+    const result = await integrationAddTheme('ocean', {
+      cwd: tmpDir,
+      from: 'neutral',
+    });
+
+    expect(result.type).toBe('integration.add');
+    expect(result.data.kind).toBe('theme');
+    expect(result.data.name).toBe('ocean');
+    expect(result.data.from).toBe('neutral');
+    expect(result.data.written).toBe(true);
+    expect(result.data.dryRun).toBe(false);
+    expect(result.data.root).toEqual({path: './themes', created: true});
+
+    // The entry file must exist with the new export name.
+    const entry = fs.readFileSync(
+      path.join(tmpDir, 'themes/ocean/oceanTheme.ts'),
+      'utf-8',
+    );
+    expect(entry).toContain('oceanTheme');
+    expect(entry).toContain("name: 'ocean'");
+    // It must NOT contain the original theme identifier as a prefix.
+    expect(entry).not.toMatch(/\bneutralTheme\b/);
+    expect(entry).not.toMatch(/\bneutralPalettes\b/);
+    expect(entry).not.toMatch(/\bneutralSyntax\b/);
+    expect(entry).toContain('defineTheme');
+
+    // A fresh descriptor, not copied from the base.
+    const descriptor = fs.readFileSync(
+      path.join(tmpDir, 'themes/ocean/oceanTheme.doc.mjs'),
+      'utf-8',
+    );
+    expect(descriptor).toContain("name: 'ocean'");
+    expect(descriptor).toContain("@astryxdesign/cli/authoring').ThemeDoc");
+    expect(descriptor).toContain('maintained: true');
+
+    // The theme must validate.
+    expect((await validateLocalIntegration(tmpDir)).issues).toEqual([]);
+  });
+
+  it('renames palette and support files from the base theme', async () => {
+    setup();
+    await integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'});
+
+    const themeDir = path.join(tmpDir, 'themes/ocean');
+    const files = fs.readdirSync(themeDir).sort();
+    // neutralPalettes.ts → oceanPalettes.ts, etc.
+    expect(files).toContain('oceanTheme.ts');
+    expect(files).toContain('oceanTheme.doc.mjs');
+    expect(files).toContain('oceanPalettes.ts');
+    expect(files).toContain('oceanPaletteRefs.generated.ts');
+    expect(files).toContain('icons.tsx');
+    // Must not contain any file starting with 'neutral'.
+    expect(files.filter(f => f.startsWith('neutral'))).toEqual([]);
+  });
+
+  it('rewrites import paths inside forked files', async () => {
+    setup();
+    await integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'});
+
+    const entry = fs.readFileSync(
+      path.join(tmpDir, 'themes/ocean/oceanTheme.ts'),
+      'utf-8',
+    );
+    // Import references must use the new identifier.
+    expect(entry).toContain('./oceanPaletteRefs.generated');
+    expect(entry).not.toContain('./neutralPaletteRefs.generated');
+    // The icon registry import must also be renamed.
+    expect(entry).toContain('oceanIconRegistry');
+    expect(entry).not.toContain('neutralIconRegistry');
+  });
+
+  it('rewrites CSS custom properties scoped to the base theme', async () => {
+    setup();
+    await integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'});
+
+    const entry = fs.readFileSync(
+      path.join(tmpDir, 'themes/ocean/oceanTheme.ts'),
+      'utf-8',
+    );
+    expect(entry).toContain('--astryx-theme-ocean-');
+    expect(entry).not.toContain('--astryx-theme-neutral-');
+  });
+
+  it('rewrites the syntax theme name', async () => {
+    setup();
+    await integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'});
+
+    const entry = fs.readFileSync(
+      path.join(tmpDir, 'themes/ocean/oceanTheme.ts'),
+      'utf-8',
+    );
+    expect(entry).toContain("'astryx-ocean'");
+    expect(entry).not.toContain("'astryx-neutral'");
+  });
+
+  it('strips the copyright header from forked files', async () => {
+    setup();
+    await integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'});
+
+    const entry = fs.readFileSync(
+      path.join(tmpDir, 'themes/ocean/oceanTheme.ts'),
+      'utf-8',
+    );
+    expect(entry).not.toContain('Copyright (c) Meta Platforms');
+  });
+
+  it('includes data.from in the receipt only when --from is used', async () => {
+    setup();
+    const blank = await integrationAddTheme('plain', {cwd: tmpDir});
+    expect(blank.data).not.toHaveProperty('from');
+
+    const forked = await integrationAddTheme('ocean', {
+      cwd: tmpDir,
+      from: 'neutral',
+    });
+    expect(forked.data.from).toBe('neutral');
+  });
+
+  it('refuses to fork a theme into itself', async () => {
+    setup();
+    await expect(
+      integrationAddTheme('neutral', {cwd: tmpDir, from: 'neutral'}),
+    ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
+  });
+
+  it('refuses an unknown base theme with a helpful suggestion list', async () => {
+    setup();
+    await expect(
+      integrationAddTheme('ocean', {cwd: tmpDir, from: 'nonexistent'}),
+    ).rejects.toMatchObject({
+      code: 'ERR_UNKNOWN_THEME',
+      message: expect.stringContaining('nonexistent'),
+    });
+  });
+
+  it('dry-runs with --from without writing anything', async () => {
+    setup();
+    const result = await integrationAddTheme('ocean', {
+      cwd: tmpDir,
+      from: 'neutral',
+      dryRun: true,
+    });
+
+    expect(result.data.written).toBe(false);
+    expect(result.data.dryRun).toBe(true);
+    expect(result.data.from).toBe('neutral');
+    expect(result.data.files).toContain('themes/ocean/oceanTheme.ts');
+    expect(result.data.files).toContain('themes/ocean/oceanTheme.doc.mjs');
+    expect(fs.existsSync(path.join(tmpDir, 'themes'))).toBe(false);
+  });
+
+  it('refuses to overwrite when the target already exists', async () => {
+    setup();
+    await integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'});
+    await expect(
+      integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'}),
+    ).rejects.toMatchObject({code: 'ERR_FILE_EXISTS'});
+  });
+
+  it('works with different bundled themes', async () => {
+    setup();
+    const result = await integrationAddTheme('dusk', {
+      cwd: tmpDir,
+      from: 'gothic',
+    });
+
+    expect(result.data.from).toBe('gothic');
+    const entry = fs.readFileSync(
+      path.join(tmpDir, 'themes/dusk/duskTheme.ts'),
+      'utf-8',
+    );
+    expect(entry).toContain('duskTheme');
+    expect(entry).toContain("name: 'dusk'");
+    expect(entry).not.toMatch(/\bgothicTheme\b/);
+    expect((await validateLocalIntegration(tmpDir)).issues).toEqual([]);
+  });
+
+  it('forks from a theme the package already owns', async () => {
+    setup();
+    // First, add a blank theme.
+    await integrationAddTheme('base', {cwd: tmpDir});
+    // Then fork it.
+    const result = await integrationAddTheme('variant', {
+      cwd: tmpDir,
+      from: 'base',
+    });
+
+    expect(result.data.from).toBe('base');
+    const entry = fs.readFileSync(
+      path.join(tmpDir, 'themes/variant/variantTheme.ts'),
+      'utf-8',
+    );
+    expect(entry).toContain('variantTheme');
+    expect(entry).toContain("name: 'variant'");
+    expect((await validateLocalIntegration(tmpDir)).issues).toEqual([]);
+  });
+
+  it('declares the optional CLI peer that reads typed theme descriptors', async () => {
+    setup({includeFiles: false});
+    await integrationAddTheme('ocean', {cwd: tmpDir, from: 'neutral'});
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'),
+    );
+    expect(pkg.peerDependencies).toEqual({'@astryxdesign/cli': '>=0.6.4'});
+    expect(pkg.peerDependenciesMeta).toEqual({
+      '@astryxdesign/cli': {optional: true},
+    });
+  });
+});

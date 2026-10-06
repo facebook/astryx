@@ -23,6 +23,7 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import {useTooltip, type TooltipOptions} from './useTooltip';
+import {useLayer} from '../Layer/useLayer';
 
 // jsdom implements neither the Popover API nor `:popover-open`; mirror
 // Tooltip.test.tsx's shims so the layer can open.
@@ -314,5 +315,133 @@ describe('useTooltip — teardown', () => {
     unmount();
 
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('useTooltip — focus returning from a popover the keyboard closed', () => {
+  const shimmedShowPopover = HTMLElement.prototype.showPopover;
+  const shimmedHidePopover = HTMLElement.prototype.hidePopover;
+
+  afterEach(() => {
+    HTMLElement.prototype.showPopover = shimmedShowPopover;
+    HTMLElement.prototype.hidePopover = shimmedHidePopover;
+  });
+
+  /**
+   * The Popover API's re-entrancy rule, which the file-level shims leave out:
+   * hiding hands focus back to the previously focused element while the
+   * document still counts the popover as hiding, and `showPopover()` throws
+   * while any popover in the document is being shown or hidden.
+   */
+  function installReentrantPopoverApi() {
+    let operationsInFlight = 0;
+    const previouslyFocused = new WeakMap<HTMLElement, Element | null>();
+    const showSpy = vi.fn(function (this: HTMLElement) {
+      if (operationsInFlight > 0) {
+        throw new DOMException(
+          "Failed to execute 'showPopover' on 'HTMLElement': Invalid to show a popover during another show operation",
+          'InvalidStateError',
+        );
+      }
+      operationsInFlight += 1;
+      try {
+        previouslyFocused.set(this, this.ownerDocument.activeElement);
+        popoverOpenState.set(this, true);
+      } finally {
+        operationsInFlight -= 1;
+      }
+    });
+    HTMLElement.prototype.showPopover = showSpy;
+    HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+      operationsInFlight += 1;
+      try {
+        popoverOpenState.set(this, false);
+        const target = previouslyFocused.get(this);
+        previouslyFocused.delete(this);
+        if (
+          target instanceof HTMLElement &&
+          this.contains(document.activeElement)
+        ) {
+          target.focus();
+        }
+      } finally {
+        operationsInFlight -= 1;
+      }
+    });
+    return showSpy;
+  }
+
+  /** A popover whose trigger also carries a tooltip. */
+  function PopoverWithTooltipTrigger({onShow}: {onShow: () => void}) {
+    const popover = useLayer({mode: 'context'});
+    const tooltip = useTooltip({onShow});
+    return (
+      <div>
+        <button
+          type="button"
+          ref={el => {
+            popover.ref(el);
+            tooltip.ref(el);
+          }}
+          aria-describedby={tooltip.describedBy}
+          onClick={popover.show}>
+          Trigger
+        </button>
+        {popover.render(
+          <button
+            type="button"
+            onKeyDown={event => {
+              if (event.key === 'Escape') {
+                popover.hide();
+              }
+            }}>
+            Inside
+          </button>,
+          {role: 'dialog'},
+        )}
+        {tooltip.renderTooltip('Helpful text')}
+      </div>
+    );
+  }
+
+  it('shows the tooltip after the hide returns instead of nesting a show inside it', async () => {
+    const showSpy = installReentrantPopoverApi();
+    const errors: unknown[] = [];
+    const onError = (event: ErrorEvent) => {
+      errors.push(event.error);
+      event.preventDefault();
+    };
+    window.addEventListener('error', onError);
+    const onShow = vi.fn();
+    render(<PopoverWithTooltipTrigger onShow={onShow} />);
+    const inside = screen.getByRole('button', {name: 'Inside', hidden: true});
+    // Keyboard focus: jsdom does not model `:focus-visible`.
+    const realMatches = trigger().matches.bind(trigger());
+    vi.spyOn(trigger(), 'matches').mockImplementation((selector: string) =>
+      selector === ':focus-visible' ? true : realMatches(selector),
+    );
+
+    // Tab to the trigger (tooltip shows), open the popover, move inside.
+    act(() => trigger().focus());
+    fireEvent.click(trigger());
+    act(() => inside.focus());
+    tick(100);
+    expect(onShow).toHaveBeenCalledTimes(1);
+    expect(tooltipElement().matches(':popover-open')).toBe(false);
+
+    // Escape closes the popover; the browser returns focus to the trigger
+    // inside that hide, and the tooltip's focus-in asks to show.
+    fireEvent.keyDown(inside, {key: 'Escape'});
+    window.removeEventListener('error', onError);
+
+    expect(errors).toEqual([]);
+    expect(document.activeElement).toBe(trigger());
+    // The press that closed the popover is not also the tooltip's to take:
+    // the show waits until the dispatch has unwound, then runs once.
+    expect(onShow).toHaveBeenCalledTimes(1);
+    await act(async () => {});
+    expect(showSpy.mock.results.every(r => r.type === 'return')).toBe(true);
+    expect(onShow).toHaveBeenCalledTimes(2);
+    expect(tooltipElement().matches(':popover-open')).toBe(true);
   });
 });

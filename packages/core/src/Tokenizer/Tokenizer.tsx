@@ -586,6 +586,7 @@ export function Tokenizer<T extends SearchableItem>({
   'data-testid': testId,
   ref,
   handleRef,
+  ...rest
 }: TokenizerProps<T>) {
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
@@ -1122,6 +1123,7 @@ export function Tokenizer<T extends SearchableItem>({
 
   return (
     <Field
+      {...rest}
       ref={ref}
       label={label}
       isLabelHidden={isLabelHidden}
