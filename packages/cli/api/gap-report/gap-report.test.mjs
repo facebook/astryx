@@ -163,104 +163,6 @@ describe('gapReport categories and validation', () => {
       }),
     ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
   });
-
-  it('normalizes structured context and omits it when empty', async () => {
-    fs.writeFileSync(
-      path.join(projectDir, 'astryx.config.mjs'),
-      `export default {
-  gapReport: {
-    audience: 'internal',
-    handle(report) {
-      return {status: 'filed', message: JSON.stringify({hasContext: Object.hasOwn(report, 'context'), context: report.context})};
-    },
-  },
-};\n`,
-    );
-
-    const result = await gapReport('Button', {
-      ...reportOptions,
-      cwd: projectDir,
-      context: {
-        product: '  Admin dashboard  ',
-        task: ' Edit a saved filter ',
-        attemptedApproach: ' Keep the selected IDs in local state ',
-        observedBehavior: ' Selection resets ',
-        expectedBehavior: ' Selection remains ',
-        workaround: {
-          type: ' custom_code ',
-          cost: ' high ',
-          description: ' Mirror state outside the component ',
-        },
-        affectedVersions: [' 0.6.5 ', '0.6.5', '', 'app@2'],
-        reproduction: ' Open, select, close, and reopen ',
-        codeLocation: ' src/filters/EditFilter.tsx ',
-        impact: {
-          releaseBlocking: false,
-          description: ' Delays the filter launch ',
-        },
-      },
-    });
-    expect(JSON.parse(result.data.deliveries[0].message ?? '')).toEqual({
-      hasContext: true,
-      context: {
-        product: 'Admin dashboard',
-        task: 'Edit a saved filter',
-        attemptedApproach: 'Keep the selected IDs in local state',
-        observedBehavior: 'Selection resets',
-        expectedBehavior: 'Selection remains',
-        workaround: {
-          type: 'custom_code',
-          cost: 'high',
-          description: 'Mirror state outside the component',
-        },
-        affectedVersions: ['0.6.5', 'app@2'],
-        reproduction: 'Open, select, close, and reopen',
-        codeLocation: 'src/filters/EditFilter.tsx',
-        impact: {
-          releaseBlocking: false,
-          description: 'Delays the filter launch',
-        },
-      },
-    });
-
-    const withoutContext = await gapReport('Button', {
-      ...reportOptions,
-      cwd: projectDir,
-      context: {
-        product: '   ',
-        attemptedApproach: '   ',
-        workaround: {},
-        affectedVersions: [],
-        impact: {},
-      },
-    });
-    expect(JSON.parse(withoutContext.data.deliveries[0].message ?? '')).toEqual(
-      {hasContext: false},
-    );
-  });
-
-  it('rejects malformed structured context', async () => {
-    const invalid = [
-      'not-an-object',
-      {unknown: 'field'},
-      {attemptedApproach: 42},
-      {attemptedApproach: 'x'.repeat(8001)},
-      {workaround: 'manual'},
-      {impact: {releaseBlocking: 'yes'}},
-      {affectedVersions: '0.6.5'},
-      {affectedVersions: Array.from({length: 21}, (_, index) => `v${index}`)},
-      {product: 'x'.repeat(8001)},
-    ];
-    for (const context of invalid) {
-      await expect(
-        gapReport('Button', {
-          ...reportOptions,
-          cwd: projectDir,
-          context: /** @type {any} */ (context),
-        }),
-      ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
-    }
-  });
 });
 
 describe('gapReport fan-out composition', () => {
@@ -967,62 +869,11 @@ console.log('https://github.com/acme/widgets/issues/42');
     // With consent
     const filed = await gapReport('Button', {
       ...reportOptions,
-      context: {
-        product: 'Admin dashboard',
-        task: 'Edit a saved filter',
-        attemptedApproach: 'Keep the selected IDs in local state',
-        observedBehavior: 'Selection resets',
-        expectedBehavior: 'Selection remains',
-        workaround: {
-          type: 'custom_code',
-          cost: 'high',
-          description: 'Mirror state outside the component',
-        },
-        affectedVersions: ['0.6.5', 'app@2'],
-        reproduction: 'Open, select, close, and reopen',
-        codeLocation: 'src/filters/EditFilter.tsx',
-        impact: {
-          releaseBlocking: true,
-          description: 'Blocks the next dashboard release',
-        },
-      },
       confirmPublic: true,
       cwd: projectDir,
     });
     expect(filed.data.deliveries[0].status).toBe('filed');
     expect(filed.data.status).toBe('filed');
-    const ghArgs = JSON.parse(fs.readFileSync(argsFile, 'utf8'));
-    const body = ghArgs[ghArgs.indexOf('--body') + 1];
-    for (const expected of [
-      'Package: @astryxdesign/core',
-      'Package version: unknown',
-      '## Product context',
-      'Admin dashboard',
-      '## Task context',
-      'Edit a saved filter',
-      '## Attempted approach',
-      'Keep the selected IDs in local state',
-      '## Observed behavior',
-      'Selection resets',
-      '## Expected behavior',
-      'Selection remains',
-      '## Workaround',
-      'Type: custom_code',
-      'Cost: high',
-      'Mirror state outside the component',
-      '## Affected versions',
-      '- 0.6.5',
-      '- app@2',
-      '## Reproduction',
-      'Open, select, close, and reopen',
-      '## Code location',
-      'src/filters/EditFilter.tsx',
-      '## Release impact',
-      'Release blocking: yes',
-      'Blocks the next dashboard release',
-    ]) {
-      expect(body).toContain(expected);
-    }
   });
 
   it('no-handler non-GitHub route returns routed_only', async () => {

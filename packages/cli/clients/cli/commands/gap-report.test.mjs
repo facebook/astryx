@@ -82,100 +82,6 @@ describe('gap-report CLI and API parity', () => {
     }
   });
 
-  it('maps structured context flags into the handler payload', async () => {
-    const cwd = fs.mkdtempSync(
-      path.join(os.tmpdir(), 'astryx-gap-structured-'),
-    );
-    try {
-      fs.writeFileSync(
-        path.join(cwd, 'package.json'),
-        JSON.stringify({name: 'fixture-app'}),
-      );
-      fs.writeFileSync(
-        path.join(cwd, 'astryx.config.mjs'),
-        `export default {
-  gapReport: {
-    audience: 'internal',
-    handle(report) {
-      return {status: 'filed', message: JSON.stringify({context: report.context, target: report.target})};
-    },
-  },
-};\n`,
-      );
-
-      const cli = await runCli(
-        [
-          'gap-report',
-          'Button',
-          '--category',
-          'api_friction',
-          '--reason',
-          'Selection state is hard to preserve',
-          '--product-context',
-          'Admin dashboard',
-          '--task-context',
-          'Edit a saved filter',
-          '--attempted-approach',
-          'Keep the selected IDs in local state',
-          '--observed-behavior',
-          'Selection resets',
-          '--expected-behavior',
-          'Selection remains',
-          '--workaround-type',
-          'custom_code',
-          '--workaround-cost',
-          'high',
-          '--workaround-description',
-          'Mirror state outside the component',
-          '--affected-version',
-          '0.6.5',
-          'app@2',
-          '--reproduction',
-          'Open, select, close, and reopen',
-          '--code-location',
-          'src/filters/EditFilter.tsx',
-          '--release-blocking',
-          '--impact',
-          'Blocks the next dashboard release',
-          '--json',
-        ],
-        {cwd},
-      );
-
-      expect(cli.status).toBe(0);
-      const envelope = JSON.parse(cli.stdout);
-      const payload = JSON.parse(envelope.data.deliveries[0].message);
-      expect(payload).toEqual({
-        context: {
-          product: 'Admin dashboard',
-          task: 'Edit a saved filter',
-          attemptedApproach: 'Keep the selected IDs in local state',
-          observedBehavior: 'Selection resets',
-          expectedBehavior: 'Selection remains',
-          workaround: {
-            type: 'custom_code',
-            cost: 'high',
-            description: 'Mirror state outside the component',
-          },
-          affectedVersions: ['0.6.5', 'app@2'],
-          reproduction: 'Open, select, close, and reopen',
-          codeLocation: 'src/filters/EditFilter.tsx',
-          impact: {
-            releaseBlocking: true,
-            description: 'Blocks the next dashboard release',
-          },
-        },
-        target: {
-          package: '@astryxdesign/core',
-          version: null,
-          issuesUrl: expect.any(String),
-        },
-      });
-    } finally {
-      fs.rmSync(cwd, {recursive: true, force: true});
-    }
-  });
-
   it('returns the same consent-required Core receipt without writing', async () => {
     const options = {
       category: 'docs_gap',
@@ -304,8 +210,7 @@ describe('gap-report control docs', () => {
     /** @param {string} flag @returns {string} */
     const option = flag =>
       entry.options.find(
-        (/** @type {{flag: string}} */ item) =>
-          item.flag.split(' ')[0] === flag,
+        (/** @type {{flag: string}} */ item) => item.flag.split(' ')[0] === flag,
       )?.description ?? '';
     const component = entry.arguments[0].description;
 
@@ -316,28 +221,6 @@ describe('gap-report control docs', () => {
     expect(option('--list-categories')).toContain(
       'the component and the other gap-report options are ignored',
     );
-    for (const flag of [
-      '--product-context',
-      '--task-context',
-      '--attempted-approach',
-      '--observed-behavior',
-      '--expected-behavior',
-      '--workaround-type',
-      '--workaround-cost',
-      '--workaround-description',
-      '--affected-version',
-      '--reproduction',
-      '--code-location',
-      '--release-blocking',
-      '--impact',
-    ]) {
-      expect(option(flag), flag).not.toBe('');
-      expect(help.stdout).toContain(option(flag));
-    }
-    expect(option('--affected-version')).toContain('up to 20 values');
-    expect(option('--affected-version')).toContain(
-      'target package version is still detected automatically',
-    );
 
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-gap-limits-'));
     try {
@@ -345,33 +228,14 @@ describe('gap-report control docs', () => {
         path.join(cwd, 'package.json'),
         JSON.stringify({name: 'fixture-app'}),
       );
-      const base = {
-        cwd,
-        category: /** @type {const} */ ('docs_gap'),
-        reason: 'x',
-      };
+      const base = {cwd, category: /** @type {const} */ ('docs_gap'), reason: 'x'};
       /** @type {Array<[string, (value: string) => Promise<unknown>]>} */
       const limits = [
         [component, value => gapReport(value, base)],
-        [
-          option('--reason'),
-          value => gapReport('Button', {...base, reason: value}),
-        ],
+        [option('--reason'), value => gapReport('Button', {...base, reason: value})],
         [
           option('--additional-context'),
           value => gapReport('Button', {...base, detail: value}),
-        ],
-        [
-          option('--product-context'),
-          value => gapReport('Button', {...base, context: {product: value}}),
-        ],
-        [
-          option('--attempted-approach'),
-          value =>
-            gapReport('Button', {
-              ...base,
-              context: {attemptedApproach: value},
-            }),
         ],
       ];
       for (const [text, call] of limits) {
@@ -400,11 +264,7 @@ describe('gap-report control docs', () => {
       });
     }
     await expect(
-      gapReport(undefined, {
-        listCategories: true,
-        category: 'not_real',
-        package: 'nope',
-      }),
+      gapReport(undefined, {listCategories: true, category: 'not_real', package: 'nope'}),
     ).resolves.toMatchObject({type: 'gap-report.categories'});
   });
 });

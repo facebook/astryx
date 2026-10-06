@@ -1,8 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx gap-report` CLI adapter. Maps optional structured triage flags
- * into the programmatic API's `context` object.
+ * @file `astryx gap-report` CLI adapter.
  */
 
 import {gapReport as gapReportApi} from '../../../api/gap-report/gap-report.mjs';
@@ -20,7 +19,7 @@ export function registerGapReport(program) {
     fn: gapReportFn,
     action: async (
       /** @type {string|undefined} */ component,
-      /** @type {{category?: string, reason?: string, additionalContext?: string, productContext?: string, taskContext?: string, attemptedApproach?: string, observedBehavior?: string, expectedBehavior?: string, workaroundType?: string, workaroundCost?: string, workaroundDescription?: string, affectedVersion?: string[], reproduction?: string, codeLocation?: string, releaseBlocking?: boolean, impact?: string, package?: string, confirmPublic?: boolean, listCategories?: boolean}} */ options,
+      /** @type {{category?: string, reason?: string, additionalContext?: string, package?: string, confirmPublic?: boolean, listCategories?: boolean}} */ options,
     ) => {
       /** @type {Awaited<ReturnType<typeof gapReportApi>>} */
       let result;
@@ -33,26 +32,6 @@ export function registerGapReport(program) {
             ),
           reason: options.reason,
           detail: options.additionalContext,
-          context: {
-            product: options.productContext,
-            task: options.taskContext,
-            attemptedApproach: options.attemptedApproach,
-            observedBehavior: options.observedBehavior,
-            expectedBehavior: options.expectedBehavior,
-            workaround: {
-              type: options.workaroundType,
-              cost: options.workaroundCost,
-              description: options.workaroundDescription,
-            },
-            affectedVersions: options.affectedVersion,
-            reproduction: options.reproduction,
-            codeLocation: options.codeLocation,
-            impact: {
-              releaseBlocking:
-                options.releaseBlocking === true ? true : undefined,
-              description: options.impact,
-            },
-          },
           package: options.package,
           confirmPublic: options.confirmPublic,
           listCategories: options.listCategories,

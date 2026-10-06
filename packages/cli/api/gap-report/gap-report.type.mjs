@@ -1,8 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Colocated public types for `gapReport()` and `astryx gap-report`, including
- * the optional structured triage context accepted by the API.
+ * Colocated public types for `gapReport()` and `astryx gap-report`.
  */
 
 /**
@@ -21,7 +20,6 @@
  * @property {GapReportCategory} [category] Fixed report category.
  * @property {string} [reason] What capability was missing or difficult.
  * @property {string} [detail] Optional additional context.
- * @property {import('../../authoring/gap-report/type').GapReportContext} [context] Optional structured triage context.
  * @property {string} [package] Explicit owner package for ambiguous routes.
  * @property {boolean} [confirmPublic] Explicit consent for public handlers or GitHub issue creation.
  * @property {boolean} [listCategories] Return the category vocabulary without routing or writing.
