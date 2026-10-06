@@ -43,6 +43,7 @@ const MINOR_HEADING_AFTER = `calc(${spacingVars['--spacing-2']})`;
 const TEXT_BLOCK_SPACE = `calc(${spacingVars['--spacing-3']})`;
 const WIDE_BLOCK_SPACE = `calc(${spacingVars['--spacing-4']})`;
 const LIST_ITEM_SPACE = `calc(${spacingVars['--spacing-1']})`;
+const TASK_BOX_SIZE = '20px';
 const LIST_ROW_GAP = `calc(${spacingVars['--spacing-0-5']})`;
 const LIST_ROW_FLUSH = `calc(${spacingVars['--spacing-0']})`;
 const NESTED_LIST_SPACE = `calc(${spacingVars['--spacing-2']})`;
@@ -238,11 +239,10 @@ const editorTheme = stylex.create({
   olDepth3: {
     listStyleType: 'lower-roman',
   },
-  // Checklists render as a <ul listtype="check">; Lexical draws checkbox
-  // affordances on the list items, so suppress the disc marker here.
+  // Lexical's own checkbox lists (`<ul __lexicallisttype="check">`): every
+  // item is a task, laid out like the task items of a bulleted list below.
   checklist: {
     listStyleType: 'none',
-    paddingInlineStart: spacingVars['--spacing-2'],
   },
   // List items space like core Markdown's compact list rows: 4px padding and
   // a 2px gap between rows. Lexical puts a nested list in an item of its own
@@ -266,10 +266,23 @@ const editorTheme = stylex.create({
       ':last-child': spacingVars['--spacing-0'],
     },
     // Ensure the marker is shown (some CSS resets set list-style: none on li).
+    // A task item (TaskCheckboxPlugin marks it) shows a checkbox instead.
     listStyleType: {
       default: 'inherit',
       ':has(ul)': 'none',
       ':has(ol)': 'none',
+      ':is([data-richtext-task])': 'none',
+    },
+    // A task item's text starts 28px in from the list's edge, after core's
+    // small checkbox (20px) and its 8px gap, like core Markdown's task lists:
+    // the item cancels the list's bullet indent and pads for the checkbox.
+    marginInlineStart: {
+      default: LIST_ROW_FLUSH,
+      ':is([data-richtext-task])': `calc(-1 * ${spacingVars['--spacing-6']})`,
+    },
+    paddingInlineStart: {
+      default: LIST_ROW_FLUSH,
+      ':is([data-richtext-task])': `calc(${TASK_BOX_SIZE} + ${spacingVars['--spacing-2']})`,
     },
   },
   link: {

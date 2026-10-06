@@ -342,6 +342,217 @@ test('a rule at either edge of the document adds no outer margin', async ({
   ]);
 });
 
+// spec:AST-061 FR5: each task item has one real checkbox where core
+// Markdown's is, the item stays a list item, and every list row has one
+// marker.
+test('side by side: task items have one checkbox each, and list rows one marker each', async ({
+  page,
+}) => {
+  const errors = await openStory(page, STORY.sideBySide, DESKTOP);
+  await waitForDocument(page, MARKDOWN);
+  await waitForDocument(page, RICH_TEXT);
+  await expect(
+    page.locator(`${RICH_TEXT} [data-richtext-task-checkbox] input`),
+  ).toHaveCount(2);
+  const layout = (selector: string) =>
+    page.evaluate(surface => {
+      const block = document.querySelector(
+        `${surface} [data-parity-block="list-task"]`,
+      );
+      const origin = block?.getBoundingClientRect();
+      const boxes = [
+        ...document.querySelectorAll<HTMLInputElement>(
+          `${surface} input[type="checkbox"]`,
+        ),
+      ].filter(
+        box =>
+          box.closest('[data-parity-block="list-task"]') != null ||
+          box.closest('[data-richtext-task-checkbox]') != null,
+      );
+      const label = [...(block?.querySelectorAll('li span') ?? [])].find(span =>
+        span.textContent?.startsWith('Open task'),
+      );
+      const rows = [
+        ...(document
+          .querySelector(`${surface} [data-parity-block="list-unordered"]`)
+          ?.querySelectorAll('li') ?? []),
+      ];
+      return {
+        checked: boxes.map(box => box.checked),
+        box: boxes[0]
+          ? Math.round(
+              (boxes[0].parentElement?.getBoundingClientRect().left ?? 0) -
+                (origin?.left ?? 0),
+            )
+          : null,
+        textStart: Math.round(
+          (label?.getBoundingClientRect().left ?? 0) - (origin?.left ?? 0),
+        ),
+        checkboxItems: block?.querySelectorAll('li[role="checkbox"]').length,
+        rowMarkers: rows.filter(
+          row => getComputedStyle(row).listStyleType !== 'none',
+        ).length,
+        rowsWithText: rows.filter(row => row.querySelector('ul, ol') == null)
+          .length,
+      };
+    }, selector);
+  const markdown = await layout(MARKDOWN);
+  const richText = await layout(RICH_TEXT);
+  expect(richText.checked).toEqual([false, true]);
+  expect(richText.checked).toEqual(markdown.checked);
+  // The checkbox and the text sit where core Markdown's do.
+  expect(
+    Math.abs((richText.box ?? 0) - (markdown.box ?? 0)),
+  ).toBeLessThanOrEqual(1);
+  expect(Math.abs(richText.textStart - markdown.textStart)).toBeLessThanOrEqual(
+    1,
+  );
+  // The item is a list item, not a checkbox of its own.
+  expect(richText.checkboxItems).toBe(0);
+  // One marker per row with text; a wrapper around a nested list has none.
+  expect(richText.rowMarkers).toBe(richText.rowsWithText);
+  // The editor's checkbox checks its item.
+  const first = page
+    .locator(`${RICH_TEXT} [data-richtext-task-checkbox] input`)
+    .first();
+  await first.click();
+  await expect(first).toBeChecked();
+  expect(errors).toEqual([]);
+});
+
+// spec:AST-061 FR5: each task item exposes its checkbox and state inside
+// the item in the accessibility tree, the read-only checkboxes take no tab
+// stop between the view's links, and the editor checks an item by keyboard
+// (Mod+Enter) and undoes it.
+test('task items own their checkboxes, keep link tab order, and toggle by keyboard', async ({
+  page,
+}) => {
+  await page.setViewportSize(DESKTOP);
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    {waitUntil: 'load'},
+  );
+  await page
+    .locator('textarea')
+    .fill(
+      '[before](https://example.com/before)\n\n- [ ] Open task\n- [x] Done task\n    - [ ] Nested task\n\n[after](https://example.com/after)',
+    );
+  await expect(page.locator('[data-richtext-task-checkbox] input')).toHaveCount(
+    6,
+  );
+  // Chrome's accessibility tree: each task item holds one checkbox with the
+  // item's state, in document order, in the editor and the view.
+  const client = await page.context().newCDPSession(page);
+  const {nodes} = (await client.send('Accessibility.getFullAXTree')) as {
+    nodes: Array<{
+      nodeId: string;
+      role?: {value?: string};
+      childIds?: Array<string>;
+      properties?: Array<{name: string; value: {value?: unknown}}>;
+    }>;
+  };
+  const byId = new Map(nodes.map(node => [node.nodeId, node]));
+  const checkedOf = (node: (typeof nodes)[number]) =>
+    node.properties?.find(property => property.name === 'checked')?.value.value;
+  // The checkboxes inside one item, not inside the items nested in it.
+  const checkboxesIn = (id: string): Array<unknown> => {
+    const node = byId.get(id);
+    if (node == null || node.role?.value === 'listitem') {
+      return [];
+    }
+    if (node.role?.value === 'checkbox') {
+      return [checkedOf(node)];
+    }
+    return (node.childIds ?? []).flatMap(checkboxesIn);
+  };
+  const itemStates = nodes
+    .filter(node => node.role?.value === 'listitem')
+    .map(node => (node.childIds ?? []).flatMap(checkboxesIn))
+    .filter(states => states.length > 0);
+  // Six task items (three per surface), each holding exactly one checkbox;
+  // two are checked. Which item owns which checkbox is unit-tested.
+  expect(itemStates.map(states => states.length)).toEqual([1, 1, 1, 1, 1, 1]);
+  expect(itemStates.flat().map(String).sort()).toEqual([
+    'false',
+    'false',
+    'false',
+    'false',
+    'true',
+    'true',
+  ]);
+  // In the view, Tab goes from the link before the list to the link after it.
+  const view = page.locator('[contenteditable="false"]').filter({
+    has: page.locator('a'),
+  });
+  await view.getByRole('link', {name: 'before'}).focus();
+  await page.keyboard.press('Tab');
+  await expect(view.getByRole('link', {name: 'after'})).toBeFocused();
+  // In the editor, Mod+Enter checks the item holding the caret; undo reverts.
+  const editor = page.locator('[contenteditable="true"]').first();
+  await editor.getByText('Open task').click();
+  await page.keyboard.press('ControlOrMeta+Enter');
+  const editorBoxes = page
+    .locator('[data-richtext-task-checkbox] input')
+    .first();
+  await expect(editorBoxes).toBeChecked();
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(editorBoxes).not.toBeChecked();
+  // Task and plain items written together are one list: one marker for each
+  // plain item, one checkbox for each task, and no gap between them.
+  await page
+    .locator('textarea')
+    .fill('- [ ] Task one\n- Plain item\n- [x] Task two');
+  await expect(page.locator('[data-richtext-task-checkbox] input')).toHaveCount(
+    4,
+  );
+  const mixed = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-lexical-editor]')].map(root => {
+      const lists = root.querySelectorAll(':scope > ul');
+      const rows = [...root.querySelectorAll(':scope > ul > li')];
+      return {
+        lists: lists.length,
+        markers: rows.map(row => getComputedStyle(row).listStyleType),
+        owned: rows.map(row => row.hasAttribute('aria-owns')),
+        pitch: rows
+          .slice(1)
+          .map(
+            (row, index) =>
+              row.getBoundingClientRect().top -
+              rows[index].getBoundingClientRect().top,
+          ),
+      };
+    }),
+  );
+  for (const surface of mixed) {
+    expect(surface.lists).toBe(1);
+    expect(surface.markers).toEqual(['none', 'disc', 'none']);
+    expect(surface.owned).toEqual([true, false, true]);
+    // Every row the same pitch: no block gap splits the list.
+    expect(new Set(surface.pitch.map(Math.round)).size).toBe(1);
+  }
+  // Enter at the end of a checked task makes a new, unchecked task the list
+  // owns; undo removes it and redo brings it back unchecked.
+  const boxes = page.locator('[data-richtext-task-checkbox] input');
+  await editor.getByText('Task two').click();
+  await page.keyboard.press('End');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('Task three');
+  await expect(boxes).toHaveCount(5);
+  await expect(boxes.nth(1)).toBeChecked();
+  await expect(boxes.nth(2)).not.toBeChecked();
+  await expect(editor.locator('li[aria-owns]')).toHaveCount(3);
+  for (let undo = 0; undo < 3 && (await boxes.count()) > 4; undo++) {
+    await page.keyboard.press('ControlOrMeta+z');
+  }
+  await expect(boxes).toHaveCount(4);
+  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await expect(boxes).toHaveCount(5);
+  await expect(boxes.nth(2)).not.toBeChecked();
+  // The view's checkboxes are read-only.
+  const viewBox = page.locator('[data-richtext-task-checkbox] input').nth(3);
+  await expect(viewBox).toHaveAttribute('aria-readonly', 'true');
+});
+
 // spec:AST-061 FR8: a fenced code block has the same frame and header on
 // both surfaces, so the code sits at the same place; the header is not part
 // of the editable text.

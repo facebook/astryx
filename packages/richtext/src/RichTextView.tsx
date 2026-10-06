@@ -33,6 +33,7 @@ import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
 import {TableScrollRegionPlugin} from './TableScrollRegionPlugin';
 import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
 import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
+import {TaskCheckboxPlugin} from './TaskCheckboxPlugin';
 import type {
   AnyLexicalExtension,
   Klass,
@@ -46,7 +47,8 @@ import {DEFAULT_NODES} from './editorNodes';
 const styles = stylex.create({
   root: {
     width: '100%',
-    // Holds the code block headers drawn over the content.
+    // Holds the code block headers and task checkboxes drawn over the
+    // content.
     position: 'relative',
   },
 });
@@ -288,8 +290,10 @@ export function RichTextView({
           placeholder={null}
           ErrorBoundary={LexicalErrorBoundary}
         />
-        {/* After the content, so the copy buttons follow it in tab order. */}
+        {/* After the content, so the copy buttons and checkboxes follow it
+            in tab order. */}
         <CodeBlockHeaderPlugin />
+        <TaskCheckboxPlugin isReadOnly />
         {plugins}
       </LexicalExtensionComposer>
     </div>
