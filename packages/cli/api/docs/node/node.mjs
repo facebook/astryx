@@ -58,6 +58,7 @@ export async function nodeView(catalog, tree, node) {
             kind: child.kind,
             title: child.title,
             summary: child.summary,
+            package: child.provider,
           };
         }),
       })),

@@ -115,6 +115,7 @@ const asTemplate = t => ({
   name: t.name,
   displayName: t.displayName,
   description: t.description,
+  package: t.package ?? '@astryxdesign/core',
   command: `${t.command} <path>`,
 });
 

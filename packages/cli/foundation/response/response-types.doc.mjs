@@ -50,21 +50,21 @@ export const doc = {
     },
     {
       value: 'component.detail.props',
-      description: "Just one component's props table (ComponentPropDoc[]).",
+      description: "Just one component's props table (ComponentPropDoc[]); meta.package names the owning npm package.",
     },
     {
       value: 'component.detail.source',
-      description: "One component's source file, as {component, source}.",
+      description: "One component's source file, as {component, package, source}.",
     },
     {
       value: 'component.detail.showcase',
       description:
-        "One component's showcase example, as {component, aspectRatio, source}.",
+        "One component's showcase example, as {component, package, aspectRatio, source}.",
     },
     {
       value: 'component.detail.blocks',
       description:
-        "One component's example blocks, as {component, showcase, examples, related} of BlockEntry.",
+        "One component's example blocks, as {component, package, showcase, examples, related} of BlockEntry.",
     },
 
     // docs
@@ -76,17 +76,17 @@ export const doc = {
     {
       value: 'docs.detail',
       description:
-        "One topic's full ReferenceDoc (the JSON read of a topic, --full, --dense, or a topic with one section), with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open the level it sits in and its neighbors there).",
+        "One topic's full ReferenceDoc (the JSON read of a topic, --full, --dense, or a topic with one section), with token-ref blocks inlined, plus package (the npm package that owns the topic) and links ({up, previous, next}: the commands that open the level it sits in and its neighbors there).",
     },
     {
       value: 'docs.index',
       description:
-        "One topic's section index, the text read of a topic with more than one section (and --index): the topic's name, title, and description, plus sections, each {id, title, summary} (pass the id as the section argument; summary is the section's one-line summary), and links ({up, previous, next}: the commands that open the level it sits in and its neighbors there).",
+        "One topic's section index, the text read of a topic with more than one section (and --index): the topic's name, title, description, and package (owning npm package), plus sections, each {id, title, summary} (pass the id as the section argument; summary is the section's one-line summary), and links ({up, previous, next}: the commands that open the level it sits in and its neighbors there).",
     },
     {
       value: 'docs.detail.section',
       description:
-        'One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open its topic index and the sections before and after it).',
+        'One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined, plus package (owning npm package) and links ({up, previous, next}: the commands that open its topic index and the sections before and after it).',
     },
     {
       value: 'docs.node',
@@ -261,7 +261,7 @@ export const doc = {
     {
       value: 'upgrade.list',
       description:
-        'Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.',
+        'Every available codemod, oldest→newest, as {name, title, version, optional, package}; returned for --list without running anything.',
     },
     {
       value: 'upgrade.registry',

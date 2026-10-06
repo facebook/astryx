@@ -19,7 +19,7 @@ import {findRelatedBlocks} from '../../../template/template.mjs';
  * @param {string} cwd - project to discover blocks from; never the process cwd
  * @returns {Promise<import('../../component.type.mjs').ComponentDetailBlocksResponse>}
  */
-export async function componentDetailBlocks(componentName, cwd) {
+export async function componentDetailBlocks(componentName, cwd, ownerPackage) {
   const allBlocks = await findRelatedBlocks(componentName, cwd);
   const toEntry = (/** @type {any} */ b) => ({
     name: b.dirName,
@@ -48,6 +48,7 @@ export async function componentDetailBlocks(componentName, cwd) {
     type: 'component.detail.blocks',
     data: {
       component: componentName,
+      ...(ownerPackage ? {package: ownerPackage} : {}),
       showcase: showcaseBlock ? toEntry(showcaseBlock) : null,
       examples: examples.filter(b => b !== showcaseBlock).map(toEntry),
       related: related.map(toEntry),
