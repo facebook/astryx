@@ -568,13 +568,32 @@ type ResolvedOptions = {
    * render.
    */
   readonly blockDepth: number;
+  /**
+   * The blocks each nested parse inside a lazy-continuation probe produced,
+   * keyed by depth and input, shared by the whole document. Internal only:
+   * a probe asks whether nested content ends in a paragraph, and finds the
+   * answer here when an earlier probe already read the same content one
+   * level up, so probes at every nesting level cost no more than one parse.
+   * Parses outside a probe record nothing.
+   */
+  readonly nestedParses?: {
+    map: Map<string, MarkdownAstBlockContent<RuntimeExtensionNode>[]> | null;
+  };
+  /** Whether this parse runs inside a lazy-continuation probe. */
+  readonly probing?: boolean;
 };
 
 /**
  * The deepest lists and blockquotes may nest, as emphasis is capped
- * (MAX_EMPHASIS_DEPTH). Content nested deeper is one paragraph of text.
+ * (MAX_EMPHASIS_DEPTH): at most 100 levels. Content nested deeper is one
+ * paragraph of text.
  */
 const MAX_BLOCK_NESTING = 100;
+
+/** The key a nested parse of `input` at `depth` is remembered under. */
+function nestedParseKey(depth: number, input: string): string {
+  return `${depth}\u0000${input}`;
+}
 
 /**
  * Every resolved options object is built here, so all of them share one key
@@ -599,6 +618,8 @@ function makeResolvedOptions(
     baseOffset: fields.baseOffset,
     linkDefs: fields.linkDefs,
     blockDepth: fields.blockDepth ?? 0,
+    nestedParses: fields.nestedParses,
+    probing: fields.probing,
   };
 }
 
@@ -2579,23 +2600,28 @@ function getIndent(line: string): number {
 /** HR: 3+ identical markers (-, *, _) optionally separated by spaces. */
 function isHorizontalRule(line: string): boolean {
   const trimmed = line.trim();
-  if (trimmed.length < 3) {
+  const ch = trimmed[0];
+  if (
+    trimmed.length < 3 ||
+    (ch !== '-' && ch !== '*' && ch !== '_') ||
+    !trimmed.endsWith(ch)
+  ) {
     return false;
   }
-  const stripped = trimmed.replace(/ /g, '');
-  if (stripped.length < 3) {
-    return false;
-  }
-  const ch = stripped[0];
-  if (ch !== '-' && ch !== '*' && ch !== '_') {
-    return false;
-  }
-  for (let idx = 1; idx < stripped.length; idx++) {
-    if (stripped[idx] !== ch) {
+  // Three or more of one marker, spaces between allowed. Both ends are
+  // checked first and the scan stops at the first other character, so a long
+  // line that is not a rule costs next to nothing — this runs on every line
+  // at every nesting level.
+  let count = 0;
+  for (let idx = 0; idx < trimmed.length; idx++) {
+    const character = trimmed[idx];
+    if (character === ch) {
+      count++;
+    } else if (character !== ' ') {
       return false;
     }
   }
-  return true;
+  return count >= 3;
 }
 
 /**
@@ -2734,7 +2760,17 @@ function endsInParagraph(
 }
 
 function sourceEndsInParagraph(source: string, opts: ResolvedOptions): boolean {
-  return endsInParagraph(parseMarkdownImpl(source, nested(opts)));
+  // A parse at the next depth may already have read this content: the probe
+  // at each nesting level then costs a lookup, not another parse of every
+  // level below it.
+  const record = opts.nestedParses;
+  if (record != null) {
+    record.map ??= new Map();
+  }
+  const known = record?.map?.get(nestedParseKey(opts.blockDepth + 1, source));
+  return endsInParagraph(
+    known ?? parseMarkdownImpl(source, {...nested(opts), probing: true}),
+  );
 }
 
 function splitTableRow(line: string): string[] {
@@ -3069,15 +3105,21 @@ export function parseMarkdownAstInternal(
 
 function parseMarkdownImpl(
   input: string,
-  baseOpts: ResolvedOptions,
+  callerOpts: ResolvedOptions,
 ): MarkdownAstBlockContent<RuntimeExtensionNode>[] {
-  if (baseOpts.blockDepth > MAX_BLOCK_NESTING) {
+  // Content at depth 100 sits inside 100 lists or blockquotes: the cap.
+  if (callerOpts.blockDepth >= MAX_BLOCK_NESTING) {
     // Nested deeper than the cap: the content is one paragraph of text.
     const text = input.trim();
     return text === ''
       ? []
-      : [{type: 'paragraph', children: parseInlineEntry(text, baseOpts)}];
+      : [{type: 'paragraph', children: parseInlineEntry(text, callerOpts)}];
   }
+  // One document's nested parses share one record of what they produced.
+  const baseOpts: ResolvedOptions =
+    callerOpts.nestedParses == null
+      ? {...callerOpts, nestedParses: {map: null}}
+      : callerOpts;
   // Collect this input's link reference definitions and strip their lines,
   // then merge them with any definitions inherited from an enclosing parse
   // (the incremental parser passes the whole document's definitions in; a
@@ -3418,6 +3460,10 @@ function parseMarkdownImpl(
       input,
       opts,
     );
+  }
+  const nestedParses = baseOpts.nestedParses?.map;
+  if (baseOpts.probing === true && nestedParses != null) {
+    nestedParses.set(nestedParseKey(baseOpts.blockDepth, input), blocks);
   }
   return blocks;
 }

@@ -56,12 +56,13 @@ function parseTime(markdown: string): number {
 }
 
 describe('lists and blockquotes nest at most 100 deep', () => {
-  it('nests a list 100 deep exactly, and reads deeper items as text', () => {
+  it('nests a list at most 100 deep, and reads deeper items as text', () => {
     const at = (levels: number) =>
       blockDepth(parseMarkdownAst(indentedList(levels)).children as never);
     expect(at(50)).toBe(50);
-    expect(at(101)).toBe(101);
-    expect(at(150)).toBe(101);
+    expect(at(100)).toBe(100);
+    expect(at(101)).toBe(100);
+    expect(at(150)).toBe(100);
   });
 
   it.each([
@@ -76,7 +77,7 @@ describe('lists and blockquotes nest at most 100 deep', () => {
     expect(() => parseMarkdownAst(markdown)).not.toThrow();
     const depth = blockDepth(parseMarkdownAst(markdown).children as never);
     expect(depth).toBeGreaterThan(50);
-    expect(depth).toBeLessThanOrEqual(101);
+    expect(depth).toBeLessThanOrEqual(100);
     // The budget leaves room for a loaded test machine.
     expect(parseTime(markdown)).toBeLessThan(5000);
   });
@@ -92,4 +93,34 @@ describe('lists and blockquotes nest at most 100 deep', () => {
       expect(container.textContent).toContain('a');
     },
   );
+});
+
+describe('lazy continuation lines in deeply nested input', () => {
+  it.each([
+    ['blockquotes', `${'> '.repeat(20_000)}a\nlazy`],
+    ['lists', `${'- '.repeat(20_000)}a\nlazy`],
+    [
+      'lists and blockquotes',
+      `${Array.from({length: 20_000}, (_, level) => (level % 2 === 0 ? '> ' : '- ')).join('')}a\nlazy`,
+    ],
+    ['blockquotes, with two lazy lines', `${'> '.repeat(20_000)}a\nlazy\nmore`],
+  ])('parse %s 20,000 deep (40 KB) within 100 ms', (_, markdown) => {
+    parseMarkdownAst(markdown);
+    let fastest = Number.POSITIVE_INFINITY;
+    for (let round = 0; round < 5; round++) {
+      const started = performance.now();
+      parseMarkdownAst(markdown);
+      fastest = Math.min(fastest, performance.now() - started);
+    }
+    expect(fastest).toBeLessThan(100);
+  });
+
+  it('still continue the innermost paragraph', () => {
+    const [quote] = parseMarkdownAst('> > a\nlazy').children as never as Json[];
+    expect(quote.type).toBe('blockquote');
+    const [inner] = quote.children ?? [];
+    expect(inner.type).toBe('blockquote');
+    expect(inner.children?.[0]?.type).toBe('paragraph');
+    expect(JSON.stringify(inner.children)).toContain('lazy');
+  });
 });
