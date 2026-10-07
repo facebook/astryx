@@ -269,8 +269,8 @@ function TableInner<T extends Record<string, unknown>>({
  * Text (formatted values), Avatar (user cells), and HStack/VStack
  * (multi-element cell layouts). Without renderCell, cells render as plain text.
  * Columns without width remain equally flexible with a compact 60px readability
- * floor. Use proportional() for weighted or larger flexible columns and pixel()
- * for fixed widths.
+ * floor. Set one column's floor with proportional(1, { minWidth }), weight
+ * columns with proportional(n), and fix widths with pixel().
  *
  * @example
  * ```

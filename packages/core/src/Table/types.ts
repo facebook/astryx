@@ -117,13 +117,16 @@ export interface TableColumn<T extends Record<string, unknown>> {
    * - `pixel(200)` — fixed 200px width.
    * - Omitted — treated as `proportional(1)` for distribution with a compact
    *   60px readability floor. It stays flexible and expands to fill available
-   *   space; use `proportional()` when a larger or weighted minimum is intended.
+   *   space.
+   * - `proportional(1, { minWidth: 80 })` — sets this column's own floor; its
+   *   `minWidth` replaces the 60px omitted-width floor and the 120px default.
    *
    * @example
    * ```
    * { key: 'name', header: 'Name', width: proportional(1) }
    * { key: 'bio', header: 'Bio', width: proportional(2) }
    * { key: 'age', header: 'Age', width: pixel(80) }
+   * { key: 'id', header: 'ID', width: proportional(1, { minWidth: 80 }) }
    * ```
    */
   width?: ColumnWidth;

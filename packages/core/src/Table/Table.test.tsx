@@ -773,6 +773,26 @@ describe('BaseTable', () => {
       });
     });
 
+    it('lets one column set its own floor with proportional minWidth', () => {
+      const cols: TableColumn<User>[] = [
+        {key: 'name', header: 'Name', width: proportional(1, {minWidth: 96})},
+        {key: 'age', header: 'Age', width: proportional(1, {minWidth: 40})},
+        {key: 'email', header: 'Email'},
+      ];
+      render(<BaseTable data={users} columns={cols} />);
+      const headers = screen.getAllByRole('columnheader');
+      // A larger and a smaller authored floor both replace the 60px default
+      // for their own column; the width-less column keeps the compact floor.
+      expect(headers[0]).toHaveStyle({minWidth: '96px'});
+      expect(headers[1]).toHaveStyle({minWidth: '40px'});
+      expect(headers[2]).toHaveStyle({
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH}px`,
+      });
+      expect(screen.getByRole('table')).toHaveStyle({
+        minWidth: `${Math.max(96, 40, DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH) * 3}px`,
+      });
+    });
+
     it('keeps the width-less floor stable when row content changes', () => {
       const cols: TableColumn<User>[] = [
         {key: 'name', header: 'Name'},

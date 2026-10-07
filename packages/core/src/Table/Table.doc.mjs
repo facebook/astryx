@@ -160,7 +160,7 @@ export const docs = {
       name: 'columns',
       type: 'TableColumn<T>[]',
       description:
-        'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys. The `width` field is typed as `ColumnWidth` (not a number); use `proportional(n)` or `pixel(n)` helpers imported from `@astryxdesign/core/Table`. Omitting `width` keeps an equal flexible share with a compact 60px readability floor. Example: `width: pixel(120)` for 120px fixed, `width: proportional(1)` for a flexible column with a 120px default minimum.',
+        'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys. The `width` field is typed as `ColumnWidth` (not a number); use `proportional(n)` or `pixel(n)` helpers imported from `@astryxdesign/core/Table`. Omitting `width` keeps an equal flexible share with a compact 60px readability floor. To give one column a different floor, set `width: proportional(1, {minWidth: 80})`; its `minWidth` replaces the 60px floor for that column. Example: `width: pixel(120)` for 120px fixed, `width: proportional(1)` for a flexible column with a 120px default minimum.',
     },
     {
       name: 'idKey',
@@ -279,7 +279,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Omit width for equal flexible columns with a compact 60px readability floor. Use proportional() for weighted or larger flexible columns, and pixel() for fixed widths; the Table scroll region activates when their combined floors no longer fit.',
+          'Omit width for equal flexible columns with a compact 60px readability floor. Give one column its own floor with proportional(1, {minWidth}), weight columns with proportional(n), and fix widths with pixel(); the Table scroll region activates when the combined floors no longer fit.',
       },
       {
         guidance: true,
@@ -299,7 +299,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Rely on the compact omitted-width floor when a text-heavy column needs more room; use proportional() with an intentional minimum instead.',
+          'Rely on the 60px omitted-width floor when a text-heavy column needs more room; set proportional(1, {minWidth}) on that column instead.',
       },
     ],
     anatomy,
@@ -363,7 +363,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Omitted width = equal flex w/ compact 60px readability floor. Use proportional() for weighted/larger flex columns and pixel() for fixed widths; Table scrolls when combined floors do not fit.',
+          'Omitted width = equal flex w/ compact 60px readability floor. Per-column floor: proportional(1, {minWidth}). Weighted: proportional(n). Fixed: pixel(). Table scrolls when combined floors do not fit.',
       },
       {
         guidance: true,
@@ -383,7 +383,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Use the compact omitted-width floor for a text-heavy column that needs a larger intentional minimum; use proportional() instead.',
+          'Rely on the 60px omitted-width floor for a text-heavy column that needs more room; set proportional(1, {minWidth}) on it instead.',
       },
     ],
     anatomy,
