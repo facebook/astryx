@@ -635,8 +635,12 @@ function linkTargetRanges(
     index !== -1;
     index = markdown.indexOf('](', index + 1)
   ) {
-    if (pair[index] !== -1 && pair[index + 1] !== -1) {
-      ranges.push([index + 1, pair[index + 1] + 1]);
+    // An angle-bracket destination ends where core ends it: a parenthesis
+    // inside the brackets pairs with nothing.
+    const angleClose = angleDestinationEnd(markdown, index + 1);
+    const close = typeof angleClose === 'number' ? angleClose : pair[index + 1];
+    if (pair[index] !== -1 && close !== -1) {
+      ranges.push([index + 1, close + 1]);
     }
   }
   return ranges;
