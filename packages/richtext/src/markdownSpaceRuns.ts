@@ -43,12 +43,16 @@ export function $convertToMarkdownKeepingTimeLinear(
   transformers: Array<Transformer>,
   root: ElementNode,
 ): string {
-  const texts: string[] = [];
+  // Every string the export can write — texts, and the properties nodes
+  // serialize, such as a link's address and title — so a stand-in occurs
+  // nowhere else in the output.
+  const written: string[] = [];
   const spaces = new Set<string>();
   const visit = (node: LexicalNode) => {
+    written.push(JSON.stringify(node.exportJSON()));
     if ($isTextNode(node)) {
       const text = node.getTextContent();
-      texts.push(text);
+      written.push(text);
       if (!isLiteralText(node)) {
         for (const run of text.match(INNER_SPACE_RUN) ?? []) {
           for (const space of run) {
@@ -56,7 +60,7 @@ export function $convertToMarkdownKeepingTimeLinear(
           }
         }
       }
-    } else if ($isElementNode(node) && !$isCodeNode(node)) {
+    } else if ($isElementNode(node)) {
       node.getChildren().forEach(visit);
     }
   };
@@ -64,7 +68,7 @@ export function $convertToMarkdownKeepingTimeLinear(
   if (spaces.size === 0) {
     return $convertToMarkdownString(transformers, root);
   }
-  const free = absentCharacters(texts.join(''));
+  const free = absentCharacters(written.join(''));
   const standIns = new Map<string, string>();
   for (const space of spaces) {
     const standIn = free.next().value;
@@ -73,10 +77,20 @@ export function $convertToMarkdownKeepingTimeLinear(
     }
     standIns.set(space, standIn);
   }
-  const children = viewsOf(root.getChildren(), standIns);
+  const placed = {count: 0};
+  const children = viewsOf(root.getChildren(), standIns, placed);
   const view = Object.create(root) as typeof root;
   view.getChildren = <T extends LexicalNode>() => children as Array<T>;
   let markdown = $convertToMarkdownString(transformers, view);
+  // Every stand-in in the output must be one this export placed; otherwise
+  // the plain export, slower but exact, is the answer.
+  let found = 0;
+  for (const standIn of standIns.values()) {
+    found += markdown.split(standIn).length - 1;
+  }
+  if (found !== placed.count) {
+    return $convertToMarkdownString(transformers, root);
+  }
   for (const [space, standIn] of standIns) {
     markdown = markdown.split(standIn).join(space);
   }
@@ -91,8 +105,9 @@ export function $convertToMarkdownKeepingTimeLinear(
 function viewsOf(
   nodes: ReadonlyArray<LexicalNode>,
   standIns: ReadonlyMap<string, string>,
+  placed: {count: number},
 ): LexicalNode[] {
-  const views = nodes.map(node => viewOf(node, standIns));
+  const views = nodes.map(node => viewOf(node, standIns, placed));
   views.forEach((view, index) => {
     if (view !== nodes[index]) {
       view.getPreviousSibling = <T extends LexicalNode>() =>
@@ -107,15 +122,17 @@ function viewsOf(
 function viewOf(
   node: LexicalNode,
   standIns: ReadonlyMap<string, string>,
+  placed: {count: number},
 ): LexicalNode {
   if ($isTextNode(node)) {
     if (isLiteralText(node)) {
       return node;
     }
     const text = node.getTextContent();
-    const stood = text.replace(INNER_SPACE_RUN, run =>
-      Array.from(run, space => standIns.get(space) ?? space).join(''),
-    );
+    const stood = text.replace(INNER_SPACE_RUN, run => {
+      placed.count += run.length;
+      return Array.from(run, space => standIns.get(space) ?? space).join('');
+    });
     if (stood === text) {
       return node;
     }
@@ -125,7 +142,7 @@ function viewOf(
   }
   if ($isElementNode(node) && !$isCodeNode(node)) {
     const original = node.getChildren();
-    const children = viewsOf(original, standIns);
+    const children = viewsOf(original, standIns, placed);
     if (children.every((child, index) => child === original[index])) {
       return node;
     }
