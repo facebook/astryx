@@ -424,58 +424,57 @@ export function generateCompressedIndex(
 
   // Required setup — components ship precompiled CSS; without these imports
   // everything renders unstyled. Theme is optional (a default ships in astryx.css).
-  lines.push('SETUP (once, in your app entry e.g. main.tsx) — without these, components render unstyled:');
+  lines.push('SETUP (once, in app entry e.g. main.tsx) — without these, components render unstyled:');
   lines.push('  import "@astryxdesign/core/reset.css";');
   lines.push('  import "@astryxdesign/core/astryx.css";');
   lines.push('');
 
   // Workflow — `build` is the front door, and every page starts from the
-  // template it names.
-  lines.push('WORKFLOW — start every page from a template. Never lay out a page from scratch:');
-  lines.push('1. `astryx build "<idea>"` — START HERE: names the [page] template to start from (always one: the closest match, or the app shell), two other templates, and the [block]s + [component]s for parts it lacks. No args = full playbook.');
-  lines.push('2. `astryx template <name> <path>` — scaffold that template into your project. Keep its frame, gap and padding; replace its data, copy and sections; delete sections you do not need.');
-  lines.push('3. `astryx template <Block>` for a part the template lacks; `astryx component <Name>` for props + examples before you use or change a component.');
-  lines.push('Changing a page you already have? Keep it: skip step 2 and add blocks and components inside its sections.');
+  // template it names. build/template/component are covered here, so they are
+  // intentionally omitted from the command reference below.
+  lines.push('WORKFLOW — start every page from a template, never from scratch:');
+  lines.push('1. `astryx build "<idea>"` — names the template to scaffold from and the parts it lacks.');
+  lines.push('2. `astryx template <name> <path>` — scaffold it; keep its frame, gap and padding; replace the content.');
+  lines.push('3. `astryx template <Block>` for parts it lacks; `astryx component <Name>` to read props before using one.');
+  lines.push('Changing an existing page? Keep it: skip step 2 and add blocks/components inside its sections.');
   lines.push('');
 
   // Rules — the top error-preventers.
   lines.push('RULES:');
-  lines.push('- No <div> — components do all layout/spacing, page frame included.');
-  lines.push('- Frame first: the template you scaffold sets the page frame. Read `astryx docs layout` for the principles — region widths, breakpoint behavior.');
-  lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
+  lines.push('- No <div> — components handle all layout and spacing.');
+  lines.push('- Read `astryx docs layout` before changing a template\'s frame.');
+  lines.push('- Dense data = rows (Table, List/Item), not Card-wrapped lists. Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
   // utilities need Tailwind). Tokens are always the source of truth.
   if (stylingSystem === 'stylex') {
-    lines.push('- Custom styling: component props first; else the xstyle prop / StyleX tokens (@astryxdesign/core/theme/tokens.stylex). No raw hex/px.');
+    lines.push('- Style with component props first, then the xstyle prop / StyleX tokens. No raw hex/px.');
   } else if (stylingSystem === 'tailwind') {
-    lines.push('- Custom styling: component props first; else Tailwind utilities backed by tokens (bg-surface, text-primary, rounded-lg) via tailwind-theme.css. No raw hex/px.');
+    lines.push('- Style with component props first, then Tailwind utilities backed by tokens. No raw hex/px.');
   } else {
-    lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
+    lines.push("- Style with component props first, then tokens (var(--color-*|--spacing-*|--radius-*)). No raw hex/px. No StyleX/Tailwind compiler here — don't use xstyle/utility classes.");
   }
-  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme. Run `astryx theme list`, install a package, and `theme add <slug> --import` to import its built theme through the generated app module. Extend that theme to customize it. Use `theme eject <slug>` only to fork source and `astryx theme template` for a new theme — never override --color-* in :root.');
+  lines.push('- Palettes and custom colors go through the theme, never :root overrides. See `astryx docs theme`.');
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.
-  // The fix names the sanctioned escape hatch for the configured system.
   const selfCheckFix = {
     stylex:
-      'replace any className=, style={{…}}, raw <div>/<span> layout, imported .css/@apply, or hardcoded #hex/px with the component or the xstyle prop + a token',
+      'replace any className=, style={{…}}, raw <div>/<span>, imported .css/@apply, or hardcoded #hex/px with the component or the xstyle prop + a token',
     tailwind:
-      'replace any style={{…}}, raw <div>/<span> layout, imported .css/@apply, or hardcoded/arbitrary value (e.g. bg-[#fff], p-[13px]) with the component or a token-backed utility',
-    css: 'replace any raw <div>/<span> layout, imported .css/@apply, or hardcoded value (#hex, 16px) with the component or a token (var(--color-*|--spacing-*|…))',
+      'replace any style={{…}}, raw <div>/<span>, imported .css/@apply, or hardcoded/arbitrary value (bg-[#fff], p-[13px]) with the component or a token-backed utility',
+    css: 'replace any raw <div>/<span>, imported .css/@apply, or hardcoded #hex/px with the component or a token',
   };
   lines.push(
-    `- SELF-CHECK before you finish: re-read the file and ${selfCheckFix[stylingSystem] ?? selfCheckFix.css}. Confirm the page kept its template's frame, gap and padding. If unsure a component/prop exists, run \`astryx component <Name>\` / \`astryx search "<thing>"\`; don't hand-roll CSS.`,
+    `- SELF-CHECK: re-read the file; ${selfCheckFix[stylingSystem] ?? selfCheckFix.css}.`,
   );
   lines.push('');
 
-  // Command reference — build/template/component are covered in WORKFLOW above.
-  lines.push('MORE CLI:');
-  lines.push('  search "<query>"   find any component / hook / doc / template / block / theme');
-  lines.push('  discover <words>   integrations you could add, and the ones you have');
-  lines.push(`  component --list   ${componentCount} components by category`);
-  lines.push('  template --list    page + block recipes');
+  // build/template/component are covered in WORKFLOW above and intentionally
+  // omitted here. `astryx help` is the full reference.
+  lines.push('`astryx help` lists every command. Key ones beyond the workflow:');
+  lines.push('  search "<query>"   find any component / hook / doc / template');
+  lines.push('  discover <words>   integrations you could add');
   const docsDir = path.join(CLI_ROOT, 'assets', 'docs');
   const resolvedTopics =
     topics ??
@@ -488,11 +487,14 @@ export function generateCompressedIndex(
           .sort()
       : []);
   if (resolvedTopics.length > 0) {
-    lines.push(`  docs <topic>       ${resolvedTopics.join(', ')}`);
+    // Show key topics inline, point at `astryx docs` for the full list.
+    const keyTopics = ['getting-started', 'principles', 'tokens', 'theme'];
+    const shown = keyTopics.filter(t => resolvedTopics.includes(t));
+    const suffix = resolvedTopics.length > shown.length ? ' …' : '';
+    lines.push(`  docs <topic>       ${shown.join(', ')}${suffix} (\`astryx docs\` lists all)`);
   }
-  lines.push('  docs cli           commands, API reference, integration authoring (one level at a time)');
-  lines.push('  swizzle <Name>     eject component source for deep customization');
-  lines.push('  upgrade --from <old version> --apply   run after any Astryx or integration dependency bump');
+  lines.push('  docs cli           commands, API reference, integration authoring');
+  lines.push('  upgrade --from <old version> --apply   run after a dependency bump');
   const appendCount = agentDocs.reduce(
     (count, contribution) => count + contribution.append.length,
     0,

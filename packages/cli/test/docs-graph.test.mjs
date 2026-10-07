@@ -562,14 +562,17 @@ describe('the docs graph', () => {
     for (const each of shownCommands(block)) {
       if (!shown.has(each)) shown.set(each, 'the agent prompt in AGENTS.md');
     }
-    // The block `astryx init` writes into an app's AGENTS.md. Its MORE CLI
+    // The block `astryx init` writes into an app's AGENTS.md. Its key-commands
     // lines are bare subcommands, each followed by its description.
     const appBlock = generateCompressedIndex('0.0.0', {invocation: 'npx astryx'});
     for (const each of shownCommands(appBlock)) {
       if (!shown.has(each)) shown.set(each, 'the agent block astryx init writes');
     }
-    const more = (appBlock.split('MORE CLI:')[1] ?? '').split(/\n\s*\n/)[0];
-    const bare = [...more.matchAll(/^ {2}(\S.*?)(?: {3,}|$)/gm)].map(m => `astryx ${m[1]}`);
+    // The compact block lists key commands after a prose lead-in, indented by
+    // two spaces. build/template/component are intentionally omitted because
+    // they are covered in the WORKFLOW section above the command list.
+    const keySection = (appBlock.split('Key ones beyond the workflow:')[1] ?? '').split(/\n\s*\n/)[0];
+    const bare = [...keySection.matchAll(/^ {2}(\S.*?)(?: {3,}|$)/gm)].map(m => `astryx ${m[1]}`);
     expect(bare.length).toBeGreaterThan(3);
     for (const each of bare) {
       if (!shown.has(each)) shown.set(each, 'the agent block astryx init writes');
