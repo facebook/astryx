@@ -2314,8 +2314,15 @@ function parseInlineImpl(
     // line ending, not to the spaces before it.
     if (end < text.length && text[end] === '\n') {
       const line = content.endsWith('\r') ? content.slice(0, -1) : content;
-      const trimmed = line.replace(/ +$/, '');
-      if (line.length - trimmed.length >= 2) {
+      // Counted from the end: a pattern such as / +$/ retries from every
+      // space in a long run that does not end the line, so its time grows
+      // with the square of the run.
+      let spaces = 0;
+      while (line[line.length - 1 - spaces] === ' ') {
+        spaces++;
+      }
+      const trimmed = line.slice(0, line.length - spaces);
+      if (spaces >= 2) {
         if (trimmed.length > 0) {
           appendInlineText(nodes, delimiterNodes, trimmed);
         }
