@@ -4,10 +4,11 @@
  * @file markdownCharacterReferences.ts
  * @input Uses lexical, @lexical/link, @lexical/code, and core Markdown's
  *   decodeMarkdownCharacterReferences.
- * @output Exports protectBackslashEscapes, protectLinkDestinationParentheses,
- *   and protectCharacterReferences, which swap every backslash escape, every
- *   parenthesis inside a link destination, and every character reference in
- *   Markdown source for a private-use stand-in before Lexical imports it, and
+ * @output Exports protectRefusedLinks, protectBackslashEscapes,
+ *   protectLinkDestinationParentheses, and protectCharacterReferences, which
+ *   swap every link core refuses, every backslash escape, every parenthesis
+ *   inside a link destination, and every character reference in Markdown
+ *   source for a private-use stand-in before Lexical imports it, and
  *   $restoreCharacterReferences, which puts the literal or decoded text in
  *   place of the stand-ins afterwards.
  * @position Used by importMarkdownKeepingSource (markdownSource.ts), so every
@@ -34,7 +35,10 @@ import {
   type ElementNode,
   type LexicalNode,
 } from 'lexical';
-import {decodeMarkdownCharacterReferences} from '@astryxdesign/core/Markdown/parser';
+import {
+  decodeMarkdownCharacterReferences,
+  parseInlineAst,
+} from '@astryxdesign/core/Markdown/parser';
 
 /**
  * What a stand-in replaced: a reference as written, an escaped `&`, or a
@@ -44,7 +48,8 @@ type StandIn =
   | {readonly kind: 'reference'; readonly source: string}
   | {readonly kind: 'ampersand'}
   | {readonly kind: 'escape'; readonly character: string}
-  | {readonly kind: 'backslash'};
+  | {readonly kind: 'backslash'}
+  | {readonly kind: 'literal'; readonly text: string};
 
 export interface ProtectedMarkdown {
   /** The source with stand-ins in place of references. */
@@ -260,6 +265,98 @@ export function protectBackslashEscapes(markdown: string): ProtectedMarkdown {
   return {markdown: output + markdown.slice(copied), standIns};
 }
 
+/** Whether `text[index]` is escaped by an odd run of backslashes before it. */
+function isEscapedAt(text: string, index: number): boolean {
+  let backslashes = 0;
+  while (text[index - 1 - backslashes] === '\\') {
+    backslashes++;
+  }
+  return backslashes % 2 === 1;
+}
+
+/**
+ * Returns `markdown` with each inline link that core Markdown refuses — its
+ * destination is unsafe, such as `javascript:` — replaced by one stand-in for
+ * the link's source. Core shows a refused link as its source text, exactly
+ * as written, so the stand-in comes back as that text and never as a link
+ * (spec:AST-061 FR7). Core's own parser decides, so both surfaces refuse the
+ * same destinations. Run first, on the source as written.
+ */
+export function protectRefusedLinks(markdown: string): ProtectedMarkdown {
+  const standIns = new Map<string, StandIn>();
+  if (!markdown.includes('](')) {
+    return {markdown, standIns};
+  }
+  const code = codeRanges(markdown);
+  const inCode = (position: number): boolean =>
+    code.some(([start, end]) => start <= position && position < end);
+  const refused: Array<readonly [number, number]> = [];
+  let index = markdown.indexOf('](');
+  while (index !== -1) {
+    let next = index + 2;
+    if (!inCode(index) && !isEscapedAt(markdown, index)) {
+      // The link text opens at the nearest unescaped `[` with no unescaped
+      // `]` after it, as core reads link text.
+      let open = index - 1;
+      while (
+        open >= 0 &&
+        !(
+          (markdown[open] === '[' || markdown[open] === ']') &&
+          !isEscapedAt(markdown, open)
+        )
+      ) {
+        open--;
+      }
+      // The destination closes at the balancing `)`, skipping escapes.
+      let close = -1;
+      let depth = 1;
+      for (let position = index + 2; position < markdown.length; position++) {
+        const character = markdown[position];
+        if (character === '\\') {
+          position++;
+        } else if (character === '(') {
+          depth++;
+        } else if (character === ')' && --depth === 0) {
+          close = position;
+          break;
+        }
+      }
+      if (open >= 0 && markdown[open] === '[' && close !== -1) {
+        const source = markdown.slice(open, close + 1);
+        const [only, ...rest] = parseInlineAst(source);
+        if (
+          rest.length === 0 &&
+          only?.type === 'text' &&
+          only.value === source
+        ) {
+          refused.push([open, close + 1]);
+          next = close + 1;
+        }
+      }
+    }
+    index = markdown.indexOf('](', next);
+  }
+  if (refused.length === 0) {
+    return {markdown, standIns};
+  }
+  const available = absentCharacters(markdown);
+  let output = '';
+  let copied = 0;
+  for (const [start, end] of refused) {
+    const next = available.next();
+    if (next.done === true) {
+      break;
+    }
+    standIns.set(next.value, {
+      kind: 'literal',
+      text: markdown.slice(start, end),
+    });
+    output += markdown.slice(copied, start) + next.value;
+    copied = end;
+  }
+  return {markdown: output + markdown.slice(copied), standIns};
+}
+
 /**
  * Returns `markdown` with every parenthesis inside an inline link
  * destination — between the destination's own parentheses, balanced, as core
@@ -457,6 +554,8 @@ function restored(
 
 const decoded = (standIn: StandIn): string => {
   switch (standIn.kind) {
+    case 'literal':
+      return standIn.text;
     case 'ampersand':
       return '&';
     case 'backslash':
@@ -469,6 +568,8 @@ const decoded = (standIn: StandIn): string => {
 };
 const asWritten = (standIn: StandIn): string => {
   switch (standIn.kind) {
+    case 'literal':
+      return standIn.text;
     case 'ampersand':
       return '&';
     case 'backslash':

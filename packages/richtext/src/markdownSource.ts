@@ -56,6 +56,7 @@ import {
   protectBackslashEscapes,
   protectCharacterReferences,
   protectLinkDestinationParentheses,
+  protectRefusedLinks,
 } from './markdownCharacterReferences';
 import {
   $restoreExtensionSources,
@@ -363,7 +364,8 @@ export function importMarkdownKeepingSource(
         const holder = $createParagraphNode();
         root.append(holder);
         // Lexical imports LF lines; the record keeps the authored endings.
-        // Adopted plugins' nodes, then backslash escapes and parentheses in
+        // Adopted plugins' nodes, links core refuses (as their source text),
+        // then backslash escapes and parentheses in
         // link destinations, then character references go through as
         // stand-ins: plugin nodes come back as extension nodes holding their
         // source, escapes and parentheses as the literal characters,
@@ -372,7 +374,8 @@ export function importMarkdownKeepingSource(
           withoutCarriageReturns(importChunks[index]?.content ?? chunk.content),
           plugins,
         );
-        const escaped = protectBackslashEscapes(shielded.markdown);
+        const refused = protectRefusedLinks(shielded.markdown);
+        const escaped = protectBackslashEscapes(refused.markdown);
         const destinations = protectLinkDestinationParentheses(
           escaped.markdown,
         );
@@ -381,6 +384,7 @@ export function importMarkdownKeepingSource(
         $restoreCharacterReferences(
           holder,
           new Map([
+            ...refused.standIns,
             ...escaped.standIns,
             ...destinations.standIns,
             ...referenced.standIns,
