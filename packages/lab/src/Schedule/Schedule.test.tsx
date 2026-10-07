@@ -1337,6 +1337,31 @@ describe('Schedule month event popover', () => {
     );
   });
 
+  it('names a chip as static text on each later day it covers, so no covered day reads as free', () => {
+    render(<MonthAt />);
+    const monday = cell('Monday, May 11, 2026');
+    const mention = within(monday).getByText(
+      /^Conference, all day, Launch, since Sunday, May 10, 2026$/u,
+    );
+    expect(mention.closest('button')).toBeNull();
+    expect(mention).not.toHaveAttribute('tabindex');
+    expect(
+      within(monday).queryByRole('button', {name: /^Conference,/}),
+    ).toBeNull();
+    // Tuesday is covered by three spans, two from Sunday and one from Monday.
+    const tuesday = cell('Tuesday, May 12, 2026');
+    expect(tuesday).toHaveTextContent(
+      'Hack week, all day, Launch, since Sunday, May 10, 2026',
+    );
+    expect(tuesday).toHaveTextContent(
+      'Offsite, all day, Company, since Monday, May 11, 2026',
+    );
+    // On busy Wednesday the cut Offsite is counted, not mentioned.
+    const wednesday = cell('Wednesday, May 13, 2026');
+    expect(wednesday).toHaveTextContent(/Conference, all day, Launch, since/);
+    expect(wednesday).not.toHaveTextContent(/Offsite, all day, Company, since/);
+  });
+
   it('opens one popover named by the event with its content, switches events, and closes on Escape', () => {
     render(<MonthAt />);
     const conference = screen.getByRole('button', {name: /^Conference,/});

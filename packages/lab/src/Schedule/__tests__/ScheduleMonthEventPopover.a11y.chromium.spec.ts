@@ -139,6 +139,14 @@ for (const [variant, globals] of [
     const standup = chips.find(reading => reading.name.startsWith('Standup,'));
     expect(standup?.isButton).toBe(true);
     expect(standup?.cell).toBe(WEDNESDAY);
+    // A day the conference covers after Sunday names it as static text.
+    const tuesday = page.getByRole('cell', {name: 'Tuesday, May 12, 2026'});
+    await expect(tuesday).toContainText(
+      /Design conference, all day, Design, since Sunday, May 10, 2026/u,
+    );
+    await expect(
+      tuesday.getByRole('button', {name: /^Design conference,/}),
+    ).toHaveCount(0);
     // The holiday has no content: static text with its name, never a button.
     const holiday = chips.find(reading =>
       reading.name.startsWith('Company holiday'),

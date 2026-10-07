@@ -86,15 +86,16 @@ export interface ScheduleMonthlyViewOptions {
 // id is always the key's last part.
 type MonthPopoverKey =
   | {kind: 'day'; dayISO: string}
-  | {kind: 'chip'; week: number; eventID: string}
+  | {kind: 'chip'; segment: string; eventID: string}
   | {kind: 'row'; dayISO: string; eventID: string};
 
 function dayKey(dayISO: string): string {
   return `day/${dayISO}`;
 }
 
-function chipKey(week: number, eventID: string): string {
-  return `chip/${week}/${eventID}`;
+/** One painted chip: a span cut around a busy day paints as two chips. */
+function chipKey(chip: MonthChipPlacement): string {
+  return `chip/${chip.week}:${chip.columnStart}/${chip.event.id}`;
 }
 
 function rowKey(dayISO: string, eventID: string): string {
@@ -114,7 +115,7 @@ function parseKey(key: string | null): MonthPopoverKey | null {
   const head = rest.slice(0, second);
   const eventID = rest.slice(second + 1);
   if (kind === 'chip') {
-    return {kind, week: Number(head), eventID};
+    return {kind, segment: head, eventID};
   }
   return kind === 'row' ? {kind, dayISO: head, eventID} : null;
 }
@@ -145,16 +146,19 @@ function ScheduleMonthlyView({
     layout.overflow.map(day => [day.dayIndex, day.count]),
   );
   const eventsByDay = getMonthEventsByDay(events, days, timezoneID);
-  const chipsByStartDay = new Map<number, MonthChipPlacement[]>();
+  // Every chip that covers each day, in level order: a chip renders in the
+  // cell where it starts, and with renderPopover each later day it covers
+  // names it as static text (component:Schedule FR19, AR8).
+  const chipsByDay = new Map<number, MonthChipPlacement[]>();
   for (const chip of layout.chips) {
-    const index = chip.week * 7 + chip.columnStart;
-    const cellChips = chipsByStartDay.get(index) ?? [];
-    cellChips.push(chip);
-    chipsByStartDay.set(index, cellChips);
+    for (let column = chip.columnStart; column <= chip.columnEnd; column += 1) {
+      const index = chip.week * 7 + column;
+      const cellChips = chipsByDay.get(index) ?? [];
+      cellChips.push(chip);
+      chipsByDay.set(index, cellChips);
+    }
   }
-  chipsByStartDay.forEach(cellChips =>
-    cellChips.sort((a, b) => a.level - b.level),
-  );
+  chipsByDay.forEach(cellChips => cellChips.sort((a, b) => a.level - b.level));
   const eventByID = new Map(events.map(event => [event.id, event]));
   // The view's one popover (component:Schedule FR17, FR20, AR7): a busy
   // day's list named by its full date, or one event's content named by its
@@ -352,8 +356,25 @@ function ScheduleMonthlyView({
                           {formatDayNumber(day, timezoneID, locale)}
                         </Text>
                       </div>
-                      {(chipsByStartDay.get(index) ?? EMPTY_CHIPS).map(chip => {
-                        const key = chipKey(chip.week, chip.event.id);
+                      {(chipsByDay.get(index) ?? EMPTY_CHIPS).map(chip => {
+                        const key = chipKey(chip);
+                        if (chip.columnStart !== dayIndex) {
+                          const startDay =
+                            days[chip.week * 7 + chip.columnStart];
+                          return hasPopover && startDay != null ? (
+                            <span
+                              key={key}
+                              {...stylex.props(styles.visuallyHidden)}>
+                              {formatMonthEventName(
+                                chip.event,
+                                `since ${formatFullDate(startDay, timezoneID, locale)}`,
+                                timezoneID,
+                                categories,
+                                locale,
+                              )}
+                            </span>
+                          ) : null;
+                        }
                         chipStartDay.set(key, dayISO);
                         return (
                           <MonthChip
