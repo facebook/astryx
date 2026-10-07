@@ -49,9 +49,9 @@ interface ChipReading {
 }
 
 /**
- * Reads each chip by its text: the chip is the painted child of the month's
- * hidden event overlay that holds the title, the title and time are text
- * runs inside it, and the visible line is the chip's own content box.
+ * Reads each chip by its text: the chip is the marked chip (or a build's
+ * hidden overlay child) that holds the title, the title and time are text
+ * runs inside it, and the visible line is the box the title sits in.
  */
 function readChips(
   page: Page,
@@ -61,6 +61,12 @@ function readChips(
     const table = document.querySelector<HTMLElement>(
       '.astryx-schedule [role="table"], .astryx-schedule [role="grid"]',
     );
+    // Chips carry a marker; a build without it paints them as the children of
+    // one hidden overlay.
+    const marked = [
+      ...(table?.querySelectorAll<HTMLElement>('[data-schedule-month-chip]') ??
+        []),
+    ];
     const overlay = [
       ...(table?.querySelectorAll<HTMLElement>('[aria-hidden="true"]') ?? []),
     ].find(
@@ -68,6 +74,8 @@ function readChips(
         getComputedStyle(element).position === 'absolute' &&
         element.children.length > 0,
     );
+    const chips: Element[] =
+      marked.length > 0 ? marked : [...(overlay?.children ?? [])];
     const isRtl = getComputedStyle(table ?? document.body).direction === 'rtl';
     const textNodes = (root: Node): Text[] => {
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -87,7 +95,7 @@ function readChips(
       return range.getBoundingClientRect();
     };
     return wanted.map(title => {
-      const chip = [...(overlay?.children ?? [])].find(element =>
+      const chip = chips.find(element =>
         textNodes(element).some(node => node.textContent === title),
       );
       if (chip == null) {

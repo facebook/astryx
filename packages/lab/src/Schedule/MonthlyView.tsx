@@ -6,12 +6,14 @@
  * @file MonthlyView.tsx
  * @input Schedule context and monthly view options
  * @output Month grid schedule view factory: chips on at most three levels per
- *   week row, and a "+N more" button on a busy day that opens the view's one
- *   popover listing that day's events
+ *   week row, each in the cell where it starts; a "+N more" button on a busy
+ *   day that opens the view's one popover listing that day's events; and,
+ *   with renderPopover, chips and list rows that open an event's content in
+ *   that same popover
  * @position Concrete schedule view; exported as createScheduleMonthlyView
  */
 
-import {useRef} from 'react';
+import {useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {layerAnimations} from '@astryxdesign/core/Layer';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
@@ -29,20 +31,27 @@ import {
   type PlainDate,
 } from '@astryxdesign/core/utils';
 import {Heading, Text} from '@astryxdesign/core/Text';
-import {enumerateDates, getScheduleRangeFromDates} from './dateMath';
+import {
+  enumerateDates,
+  getScheduleRangeFromDates,
+  isDayEvent,
+} from './dateMath';
 import {useScheduleContext} from './context';
 import {
   getEventDateSpan,
   layoutMonthEvents,
   MONTH_VISIBLE_LEVELS,
+  type MonthChipPlacement,
 } from './monthLayout';
 import {
   formatDayNumber,
   formatEventAccessibilityLabel,
+  formatEventTimeRange,
   formatFullDate,
   formatMonthTitle,
   formatWeekday,
   formatWeekRange,
+  getEventCategory,
   isEventInPast,
   ListEventRow,
   MonthEventPill,
@@ -54,19 +63,67 @@ import {
 import {useCurrentTime} from './useCurrentTime';
 import {useScheduleViewPopover} from './useScheduleViewPopover';
 import {scheduleRangeToZonedDateTimeRange} from './zonedDateTime';
+import type {Locale} from '@astryxdesign/core/i18n';
 import type {
   CalendarEvent,
+  ScheduleCategory,
   ScheduleView,
   ScheduleViewComponentProps,
 } from './types';
 
 export interface ScheduleMonthlyViewOptions {
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  /**
+   * Content of the view-owned event popover. A chip whose content is not
+   * null or undefined is a button that opens it; absent, the month is
+   * read-only (component:Schedule FR19–FR20).
+   */
+  renderPopover?: (event: CalendarEvent) => ReactNode;
 }
 
-function ScheduleMonthlyView(
-  _props: ScheduleViewComponentProps<ScheduleMonthlyViewOptions>,
-) {
+// The view's one popover shows a busy day's list, a chip's event, or an event
+// handed over from a day's list. Event ids may contain any character, so the
+// id is always the key's last part.
+type MonthPopoverKey =
+  | {kind: 'day'; dayISO: string}
+  | {kind: 'chip'; week: number; eventID: string}
+  | {kind: 'row'; dayISO: string; eventID: string};
+
+function dayKey(dayISO: string): string {
+  return `day/${dayISO}`;
+}
+
+function chipKey(week: number, eventID: string): string {
+  return `chip/${week}/${eventID}`;
+}
+
+function rowKey(dayISO: string, eventID: string): string {
+  return `row/${dayISO}/${eventID}`;
+}
+
+function parseKey(key: string | null): MonthPopoverKey | null {
+  if (key == null) {
+    return null;
+  }
+  const kind = key.slice(0, key.indexOf('/'));
+  const rest = key.slice(kind.length + 1);
+  if (kind === 'day') {
+    return {kind, dayISO: rest};
+  }
+  const second = rest.indexOf('/');
+  const head = rest.slice(0, second);
+  const eventID = rest.slice(second + 1);
+  if (kind === 'chip') {
+    return {kind, week: Number(head), eventID};
+  }
+  return kind === 'row' ? {kind, dayISO: head, eventID} : null;
+}
+
+function ScheduleMonthlyView({
+  options,
+}: ScheduleViewComponentProps<ScheduleMonthlyViewOptions>) {
+  const {renderPopover} = options;
+  const hasPopover = renderPopover != null;
   const {
     events,
     categories,
@@ -88,28 +145,109 @@ function ScheduleMonthlyView(
     layout.overflow.map(day => [day.dayIndex, day.count]),
   );
   const eventsByDay = getMonthEventsByDay(events, days, timezoneID);
-  // Day popover (component:Schedule FR17, AR7): one popover for the grid,
-  // opened from a busy day's "+N more" and named by that day's full date.
-  const dayByKey = new Map<string, PlainDate>(
+  const chipsByStartDay = new Map<number, MonthChipPlacement[]>();
+  for (const chip of layout.chips) {
+    const index = chip.week * 7 + chip.columnStart;
+    const cellChips = chipsByStartDay.get(index) ?? [];
+    cellChips.push(chip);
+    chipsByStartDay.set(index, cellChips);
+  }
+  chipsByStartDay.forEach(cellChips =>
+    cellChips.sort((a, b) => a.level - b.level),
+  );
+  const eventByID = new Map(events.map(event => [event.id, event]));
+  // The view's one popover (component:Schedule FR17, FR20, AR7): a busy
+  // day's list named by its full date, or one event's content named by its
+  // title.
+  const dayByISO = new Map<string, PlainDate>(
     days.map(day => [plainDateToISO(day), day]),
   );
   const monthTitle = formatMonthTitle(rangeDate, timezoneID, locale);
   const tableRef = useRef<HTMLDivElement>(null);
-  const dayPopover = useScheduleViewPopover(
-    key => {
-      const day = key == null ? undefined : dayByKey.get(key);
-      return day == null ? monthTitle : formatFullDate(day, timezoneID, locale);
-    },
-    // A day that stops being busy takes its "+N more" with it; focus lands
-    // on that day's cell instead of the page.
-    key => {
+  // Where each chip painted so far starts, so focus can land on that cell if
+  // the chip goes away while its popover is open.
+  const chipStartDayRef = useRef(new Map<string, string>());
+  const chipStartDay = chipStartDayRef.current;
+  const focusCell = (dayISO: string | undefined) => {
+    if (dayISO != null) {
       tableRef.current
-        ?.querySelector<HTMLElement>(`[data-schedule-day="${key}"]`)
+        ?.querySelector<HTMLElement>(`[data-schedule-day="${dayISO}"]`)
         ?.focus();
+    }
+  };
+  const monthPopover = useScheduleViewPopover(
+    key => {
+      const parsed = parseKey(key);
+      if (parsed == null) {
+        return monthTitle;
+      }
+      if (parsed.kind === 'day') {
+        const day = dayByISO.get(parsed.dayISO);
+        return day == null
+          ? monthTitle
+          : formatFullDate(day, timezoneID, locale);
+      }
+      return eventByID.get(parsed.eventID)?.title ?? monthTitle;
+    },
+    // What opened the popover is gone: focus lands on the day it belonged
+    // to, or on the day's "+N more" when an event leaves a day that is
+    // still busy.
+    key => {
+      const parsed = parseKey(key);
+      if (parsed == null) {
+        return;
+      }
+      if (parsed.kind === 'chip') {
+        focusCell(chipStartDayRef.current.get(key));
+        return;
+      }
+      const more =
+        parsed.kind === 'row'
+          ? tableRef.current?.querySelector<HTMLElement>(
+              `[data-schedule-popover-trigger="${dayKey(parsed.dayISO)}"]`,
+            )
+          : null;
+      if (more != null) {
+        more.focus();
+        return;
+      }
+      focusCell(parsed.dayISO);
     },
   );
+  const openParsed = parseKey(monthPopover.openKey);
   const openDay =
-    dayPopover.openKey == null ? null : dayByKey.get(dayPopover.openKey);
+    openParsed?.kind === 'day' ? dayByISO.get(openParsed.dayISO) : undefined;
+  const openEvent =
+    openParsed != null && openParsed.kind !== 'day'
+      ? eventByID.get(openParsed.eventID)
+      : undefined;
+  // The popover's content scrolls inside its surface, never the layer
+  // (SchedulePopoverBody): a day's list, or one event's content.
+  let openContent: ReactNode = null;
+  if (openDay != null) {
+    const openDayISO = plainDateToISO(openDay);
+    openContent = (
+      <SchedulePopoverBody
+        label={`${formatFullDate(openDay, timezoneID, locale)} events`}>
+        <MonthDayEvents
+          day={openDay}
+          events={eventsByDay.get(openDayISO) ?? EMPTY_EVENTS}
+          renderPopover={renderPopover}
+          onOpenEvent={event =>
+            monthPopover.switchTo(rowKey(openDayISO, event.id))
+          }
+        />
+      </SchedulePopoverBody>
+    );
+  } else if (openEvent != null) {
+    const content = renderPopover?.(openEvent) ?? null;
+    openContent =
+      content == null ? null : (
+        <SchedulePopoverBody label={`${openEvent.title} details`}>
+          {content}
+        </SchedulePopoverBody>
+      );
+  }
 
   return (
     <ScheduleFrame
@@ -128,7 +266,7 @@ function ScheduleMonthlyView(
         role="table"
         aria-label={monthTitle}
         tabIndex={0}
-        {...dayPopover.containerProps}
+        {...monthPopover.containerProps}
         {...stylex.props(styles.monthGrid)}>
         <div role="row" {...stylex.props(styles.weekHeader)}>
           <div
@@ -214,7 +352,29 @@ function ScheduleMonthlyView(
                           {formatDayNumber(day, timezoneID, locale)}
                         </Text>
                       </div>
-                      {dayEvents.length > 0 && (
+                      {(chipsByStartDay.get(index) ?? EMPTY_CHIPS).map(chip => {
+                        const key = chipKey(chip.week, chip.event.id);
+                        chipStartDay.set(key, dayISO);
+                        return (
+                          <MonthChip
+                            key={key}
+                            chip={chip}
+                            isLastColumn={dayIndex === 6}
+                            popoverKey={key}
+                            popover={monthPopover}
+                            renderPopover={renderPopover}
+                            isPast={isEventInPast(
+                              chip.event,
+                              currentTime,
+                              timezoneID,
+                            )}
+                          />
+                        );
+                      })}
+                      {/* With renderPopover the chips are the cell's
+                          accessible events, so the hidden list would repeat
+                          them (component:Schedule FR19). */}
+                      {!hasPopover && dayEvents.length > 0 && (
                         <ul {...stylex.props(styles.visuallyHidden)}>
                           {dayEvents.map(event => (
                             <li key={event.id}>
@@ -235,7 +395,22 @@ function ScheduleMonthlyView(
                           aria-label={`${hiddenCount} more ${
                             hiddenCount === 1 ? 'event' : 'events'
                           }, ${formatFullDate(day, timezoneID, locale)}`}
-                          {...dayPopover.getTriggerProps(dayISO)}
+                          {...monthPopover.getTriggerProps(
+                            dayKey(dayISO),
+                            // An event handed over from this day's list
+                            // keeps "+N more" as its trigger while the
+                            // event is still on this day.
+                            openKey => {
+                              const parsed = parseKey(openKey);
+                              return (
+                                parsed?.kind === 'row' &&
+                                parsed.dayISO === dayISO &&
+                                dayEvents.some(
+                                  event => event.id === parsed.eventID,
+                                )
+                              );
+                            },
+                          )}
                           {...stylex.props(
                             styles.eventButtonReset,
                             styles.monthMoreButton,
@@ -255,77 +430,180 @@ function ScheduleMonthlyView(
               </div>
             ))}
           </div>
-          <div aria-hidden {...stylex.props(styles.monthEventOverlay)}>
-            {layout.chips.map(segment => (
-              <div
-                key={`${segment.event.id}:${segment.week}:${segment.columnStart}`}
-                {...stylex.props(
-                  styles.monthEventSpan(
-                    segment.week,
-                    segment.columnStart,
-                    segment.columnEnd,
-                    segment.level,
-                  ),
-                )}>
-                <MonthEventPill
-                  event={segment.event}
-                  timezoneID={timezoneID}
-                  isPast={isEventInPast(segment.event, currentTime, timezoneID)}
-                />
-              </div>
-            ))}
-          </div>
         </div>
       </div>
-      {dayPopover.popover.render(
-        openDay == null ? null : (
-          <SchedulePopoverBody
-            label={`${formatFullDate(openDay, timezoneID, locale)} events`}>
-            <MonthDayEvents
-              day={openDay}
-              events={eventsByDay.get(plainDateToISO(openDay)) ?? EMPTY_EVENTS}
-            />
-          </SchedulePopoverBody>
-        ),
-        {
-          placement: 'below',
-          alignment: 'start',
-          offset: spacingVars['--spacing-1'],
-          xstyle: layerAnimations.below,
-        },
-      )}
+      {monthPopover.popover.render(openContent, {
+        placement: 'below',
+        alignment: 'start',
+        offset: spacingVars['--spacing-1'],
+        xstyle: layerAnimations.below,
+      })}
     </ScheduleFrame>
   );
 }
 
-/** The day popover's content: every event of one day, in start order. */
+/**
+ * One chip, in the cell where it starts. Read-only it is painted
+ * decoration; with renderPopover it is the button that opens its event, or
+ * static text when the event has no content (component:Schedule FR19, AR8).
+ */
+function MonthChip({
+  chip,
+  isLastColumn,
+  popoverKey,
+  popover,
+  renderPopover,
+  isPast,
+}: {
+  chip: MonthChipPlacement;
+  isLastColumn: boolean;
+  popoverKey: string;
+  popover: ReturnType<typeof useScheduleViewPopover>;
+  renderPopover: ScheduleMonthlyViewOptions['renderPopover'];
+  isPast: boolean;
+}) {
+  const {categories, timezoneID, locale} = useScheduleContext();
+  const placement = [
+    styles.monthChip(chip.columnEnd - chip.columnStart + 1, chip.level),
+    isLastColumn && styles.monthChipInLastColumn,
+  ];
+  const pill = (
+    <MonthEventPill
+      event={chip.event}
+      timezoneID={timezoneID}
+      isPast={isPast}
+    />
+  );
+  if (renderPopover == null) {
+    return (
+      <div aria-hidden data-schedule-month-chip="" {...stylex.props(placement)}>
+        {pill}
+      </div>
+    );
+  }
+  const name = formatMonthEventName(
+    chip.event,
+    formatEventDays(chip.event, timezoneID, locale),
+    timezoneID,
+    categories,
+    locale,
+  );
+  if (renderPopover(chip.event) == null) {
+    return (
+      <div data-schedule-month-chip="" {...stylex.props(placement)}>
+        <span {...stylex.props(styles.visuallyHidden)}>{name}</span>
+        <span aria-hidden>{pill}</span>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      aria-label={name}
+      data-schedule-month-chip=""
+      {...popover.getTriggerProps(popoverKey)}
+      {...stylex.props(
+        styles.eventButtonReset,
+        placement,
+        styles.monthChipFocus,
+        focusOutlineStyles.focusVisible,
+      )}>
+      {pill}
+    </button>
+  );
+}
+
+/**
+ * A busy day's list: every event of the day, in start order. With
+ * renderPopover, a row whose event has content is a button that hands the
+ * event to the view's popover (component:Schedule FR20).
+ */
 function MonthDayEvents({
   day,
   events,
+  renderPopover,
+  onOpenEvent,
 }: {
   day: PlainDate;
   events: ReadonlyArray<CalendarEvent>;
+  renderPopover: ScheduleMonthlyViewOptions['renderPopover'];
+  onOpenEvent: (event: CalendarEvent) => void;
 }) {
-  const {timezoneID, locale} = useScheduleContext();
+  const {categories, timezoneID, locale} = useScheduleContext();
   const currentTime = useCurrentTime();
+  const fullDate = formatFullDate(day, timezoneID, locale);
   return (
     <div {...stylex.props(styles.monthDayEvents)}>
       <Text type="supporting" weight="bold" color="secondary">
-        {formatFullDate(day, timezoneID, locale)}
+        {fullDate}
       </Text>
       <ul {...stylex.props(styles.monthDayEventList)}>
-        {events.map(event => (
-          <li key={event.id}>
+        {events.map(event => {
+          const row = (
             <ListEventRow
               event={event}
               timezoneID={timezoneID}
               isPast={isEventInPast(event, currentTime, timezoneID)}
             />
-          </li>
-        ))}
+          );
+          return (
+            <li key={event.id}>
+              {renderPopover?.(event) == null ? (
+                row
+              ) : (
+                <button
+                  type="button"
+                  aria-label={formatMonthEventName(
+                    event,
+                    fullDate,
+                    timezoneID,
+                    categories,
+                    locale,
+                  )}
+                  onClick={() => onOpenEvent(event)}
+                  {...stylex.props(
+                    styles.eventButtonReset,
+                    styles.monthDayEventButton,
+                    focusOutlineStyles.focusVisible,
+                  )}>
+                  {row}
+                </button>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
+}
+
+/**
+ * A month event button's name: the title, the time range or "all day", the
+ * category, and the day (component:Schedule AR8).
+ */
+function formatMonthEventName(
+  event: CalendarEvent,
+  dayLabel: string,
+  timezoneID: string,
+  categories: ReadonlyArray<ScheduleCategory>,
+  locale: Locale,
+): string {
+  const time = isDayEvent(event)
+    ? 'all day'
+    : formatEventTimeRange(event, timezoneID, locale);
+  return `${event.title}, ${time}, ${getEventCategory(event, categories).label}, ${dayLabel}`;
+}
+
+/** The event's day, or its date range when it covers several days. */
+function formatEventDays(
+  event: CalendarEvent,
+  timezoneID: string,
+  locale: Locale,
+): string {
+  const [first, last] = getEventDateSpan(event, timezoneID);
+  return plainDateIsEqual(first, last)
+    ? formatFullDate(first, timezoneID, locale)
+    : formatWeekRange(first, last, timezoneID, locale);
 }
 
 function getWeeks(days: ReadonlyArray<PlainDate>): PlainDate[][] {
@@ -337,6 +615,7 @@ function getWeeks(days: ReadonlyArray<PlainDate>): PlainDate[][] {
 }
 
 const EMPTY_EVENTS: ReadonlyArray<CalendarEvent> = [];
+const EMPTY_CHIPS: ReadonlyArray<MonthChipPlacement> = [];
 
 function getMonthEventsByDay(
   events: ReadonlyArray<CalendarEvent>,
@@ -377,10 +656,11 @@ function getMonthEventsByDay(
 
 export function createScheduleMonthlyView({
   weekStartsOn = 0,
+  renderPopover,
 }: ScheduleMonthlyViewOptions = {}): ScheduleView<ScheduleMonthlyViewOptions> {
   return {
     component: ScheduleMonthlyView,
-    options: {weekStartsOn},
+    options: {weekStartsOn, renderPopover},
     getDateRange: date => {
       const range = getMonthDateRange({
         date: date.toPlainDate(),

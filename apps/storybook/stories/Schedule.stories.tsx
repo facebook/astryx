@@ -789,6 +789,59 @@ export const MonthOverflow: Story = {
   },
 };
 
+// The month-overflow fixture with renderPopover (component:Schedule FR19–
+// FR20): chips with content open the month's one popover, the company
+// holiday has none and stays static text, and a busy day's list hands an
+// event to the same popover.
+export const MonthEventPopover: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const monthEvents = useSyncExternalStore(
+      subscribeToMonthOverflowEvents,
+      getMonthOverflowEvents,
+      getMonthOverflowEvents,
+    );
+    const view = useMemo(
+      () =>
+        createScheduleMonthlyView({
+          renderPopover: event =>
+            event.id === 'holiday' ? null : (
+              <div
+                data-event-details={event.id}
+                style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+                <Text type="label" weight="bold">
+                  {event.title}
+                </Text>
+                <Text type="supporting" color="secondary">
+                  {event.category ?? 'No category'} · {event.id}
+                </Text>
+              </div>
+            ),
+        }),
+      [],
+    );
+    useEffect(() => {
+      (
+        window as unknown as {
+          scheduleMonthOverflowStory?: {removeEvent: (id: string) => void};
+        }
+      ).scheduleMonthOverflowStory = {removeEvent: removeMonthOverflowEvent};
+    }, []);
+
+    return (
+      <Schedule
+        view={view}
+        events={monthEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
 export const ViewSelectorPlugin: Story = {
   render: () => {
     const views = useMemo(

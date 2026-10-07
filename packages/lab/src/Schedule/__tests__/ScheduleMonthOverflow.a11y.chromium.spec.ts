@@ -69,7 +69,7 @@ interface MonthReading {
 
 /**
  * Reads the month by what it is: cells are the table's date-named cells,
- * chips are the painted children of the table's hidden event overlay, and a
+ * chips are the marked chips (or a build's hidden overlay children), and a
  * day's "+N more" is the named button inside its cell.
  */
 function readMonth(page: Page): Promise<MonthReading> {
@@ -109,6 +109,11 @@ function readMonth(page: Page): Promise<MonthReading> {
         rect: cell.getBoundingClientRect(),
         cell,
       }));
+      // Chips carry a marker; a build without it paints them as the children
+      // of one hidden overlay.
+      const marked = [
+        ...grid.querySelectorAll<HTMLElement>('[data-schedule-month-chip]'),
+      ];
       const overlay = [
         ...grid.querySelectorAll<HTMLElement>('[aria-hidden="true"]'),
       ].find(
@@ -116,7 +121,21 @@ function readMonth(page: Page): Promise<MonthReading> {
           getComputedStyle(element).position === 'absolute' &&
           element.children.length > 0,
       );
-      const chips = overlay == null ? [] : [...overlay.children];
+      const chips =
+        marked.length > 0
+          ? marked
+          : overlay == null
+            ? []
+            : [...overlay.children];
+      // The month surface is the cells' nearest isolating ancestor.
+      let surface: HTMLElement | null = cells[0]?.cell.parentElement ?? null;
+      while (
+        surface != null &&
+        surface !== grid &&
+        getComputedStyle(surface).isolation !== 'isolate'
+      ) {
+        surface = surface.parentElement;
+      }
       const chipsOutsideRow = chips.flatMap(chip => {
         const rect = chip.getBoundingClientRect();
         const start = cells.find(
@@ -198,9 +217,9 @@ function readMonth(page: Page): Promise<MonthReading> {
         countReadsInOrder,
         days,
         surfaceIsolation:
-          overlay?.parentElement == null
-            ? 'none'
-            : getComputedStyle(overlay.parentElement).isolation,
+          surface == null || surface === grid
+            ? 'auto'
+            : getComputedStyle(surface).isolation,
       };
     },
     [[WEDNESDAY, FRIDAY]] as const,
