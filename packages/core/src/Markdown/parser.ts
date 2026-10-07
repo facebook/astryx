@@ -3197,8 +3197,12 @@ function sourceEndsInParagraph(source: string, opts: ResolvedOptions): boolean {
 function splitTableRow(line: string): string[] {
   let start = 0;
   let end = line.length;
-  if (line.startsWith('|')) {
-    start = 1;
+  // A row's indentation, and its leading pipe, open no cell.
+  while (start < end && (line[start] === ' ' || line[start] === '\t')) {
+    start++;
+  }
+  if (line[start] === '|') {
+    start++;
     while (start < end && line[start] === ' ') {
       start++;
     }
