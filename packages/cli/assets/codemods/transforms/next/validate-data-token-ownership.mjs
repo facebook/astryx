@@ -6,7 +6,7 @@
  * @input Consumer JavaScript/TypeScript source and generated theme CSS
  * @output No rewritten source; actionable upgrade errors for ambiguous direct
  *   `var(--color-data-*)` values and stale generated root-default artifacts
- * @position Next-release upgrade validation for spec:AST-051
+ * @position Next-release upgrade validation for spec:AST-066
  */
 
 import * as path from 'node:path';

@@ -4,7 +4,7 @@
  * @file Verifies `astryx theme build` emits sparse data overrides and no
  * canonical root defaults while preserving explicit cascade-layer order.
  * @input Temporary standalone theme modules compiled through the public CLI
- * @output Structural assertions for AST-051 data-token ownership
+ * @output Structural assertions for AST-066 data-token ownership
  * @position Regression suite for theme-build CSS ownership
  */
 
