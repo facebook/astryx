@@ -245,12 +245,12 @@ intentional decision.
 - **ORD3 — Pinning.** Sticky header cells paint above the columns, the gutter
   above the columns, and the corner above both, all as local order inside the
   isolated viewport.
-- **ORD4 — Month layout.** Order events (first day, all-day and multi-day
-  first, longer first, title, `id`) → in that order, give each event in each
-  week it covers the lowest level free on all its days there → for each day
-  with an event on level four or higher, give its third level to "+N more" and
-  count that day's events on level three or higher → paint the remaining
-  chips, cutting a span around the days where it is counted.
+- **ORD4 — Month layout.** Order events (first day, all-day and multi-day first,
+  covering more days first, earlier start, title, `id`) → in that order, give
+  each event in each week it covers the lowest level free on all its days there
+  → for each day with an event on level four or higher, give its third level to
+  "+N more" and count that day's events on level three or higher → paint the
+  remaining chips, cutting a span around the days where it is counted.
 
 ### Performance and resources
 
