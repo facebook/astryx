@@ -35,6 +35,8 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {mergeProps} from '../utils/mergeProps';
 import {themeProps} from '../utils/themeProps';
+import {paddingStyles} from '../Layout/padding.stylex';
+import type {SpacingStep} from '../utils/types';
 import {stableClassName} from '../naming';
 
 const FALLBACK_CLOSE_SELECTOR = '[data-astryx-popover-fallback-close]';
@@ -230,6 +232,22 @@ export interface UsePopoverOptions {
   hasSurface?: boolean;
 
   /**
+   * Inner padding of the painted surface, using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * `0` paints a flush surface for content that owns its own edges (a list of
+   * rows, a header with a rule). Matches the `padding` prop on `Card`,
+   * `Stack` and `Popover`.
+   *
+   * Applied to the surface itself — the box that paints background, radius
+   * and elevation — so a theme's `padding` on the `popover` target replaces
+   * it instead of nesting inside it. `xstyle` merges after it.
+   *
+   * Omit it and the surface paints no padding of its own (the hook's
+   * historical behavior; `Popover` passes its own default).
+   */
+  padding?: SpacingStep;
+
+  /**
    * Theme-target name stamped on the popup SURFACE — the element that paints
    * the background, radius and elevation — without the `astryx-` prefix
    * (e.g. `'complex-selector-popup'`).
@@ -240,8 +258,9 @@ export interface UsePopoverOptions {
    * or radius rule paints the wrong box. Name the surface through this option
    * and document the class in the component's `theming.targets`.
    *
-   * The shared `astryx-popover-surface` class is always present alongside it,
-   * so a theme can style every popup surface at once.
+   * The canonical `astryx-popover` target and deprecated
+   * `astryx-popover-surface` compatibility alias are always present alongside
+   * any component-owned refinement target.
    */
   surfaceTarget?: string;
 }
@@ -373,6 +392,7 @@ function usePopoverImplementation(
     hasEscapeDismiss = true,
     hasAutoFocus = true,
     hasSurface = true,
+    padding,
     surfaceTarget,
     hasCloseButton = true,
     closeButtonLabel: closeButtonLabelFromProps,
@@ -485,9 +505,11 @@ function usePopoverImplementation(
       // `mergeProps` is positional — a third OBJECT argument is read as
       // `style`, not as more props — so the surface's classes are composed
       // into one props object before merging with the StyleX result.
-      const surfaceProps = themeProps('popover-surface');
+      const surfaceProps = themeProps('popover', undefined, {
+        legacyNames: ['popover-surface'],
+      });
       const surfaceClassName =
-        surfaceTarget != null
+        surfaceTarget != null && surfaceTarget !== 'popover'
           ? `${surfaceProps.className} ${stableClassName(surfaceTarget)}`
           : surfaceProps.className;
 
@@ -504,6 +526,7 @@ function usePopoverImplementation(
               focusOutlineProps.focusVisible(
                 styles.contentWrapper,
                 hasSurface && styles.surface,
+                padding != null && paddingStyles[padding],
                 xstyle,
               ),
               className,
@@ -533,6 +556,7 @@ function usePopoverImplementation(
       layer,
       hasCloseButton,
       hasSurface,
+      padding,
       surfaceTarget,
       className,
       style,

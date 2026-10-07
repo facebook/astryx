@@ -101,7 +101,7 @@ export const docs = {
           name: 'items',
           type: 'TreeListItemData[]',
           description:
-            'Recursive tree item data. Each item has id, label, optional children array, and optional isExpanded boolean for initial state.',
+            'Recursive tree item data with id, label, optional children and isExpanded, plus optional xstyle, className, and style applied to that item row.',
           required: true,
         },
         {
@@ -244,7 +244,7 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
+    items: 'Recursive tree item data w/ id, label, optional children + isExpanded, plus optional xstyle/className/style on its row.',
     density: 'Spacing density for items.',
     variant: 'Guide-line treatment: lineGuides shows connectors, noGuides hides them (indent kept). Orthogonal to density.',
     header: 'Header content, linked to tree via aria-labelledby.',
@@ -256,7 +256,7 @@ export const docsDense = {
       displayName: 'Tree List',
       description: 'Tree list container. Accepts items data + rendering config. Expansion managed internally.',
       propDescriptions: {
-        items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
+        items: 'Recursive tree item data w/ id, label, optional children + isExpanded, plus optional xstyle/className/style on its row.',
         density: 'Spacing density for items.',
         variant: 'Guide-line treatment: lineGuides shows connectors, noGuides hides them (indent kept). Orthogonal to density.',
         header: 'Header content, linked to tree via aria-labelledby.',

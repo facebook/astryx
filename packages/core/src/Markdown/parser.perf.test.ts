@@ -9,6 +9,8 @@ import {
 } from './parser';
 import type {BlockNode, ParseOptions} from './parser';
 
+type PerfParseOptions = ParseOptions;
+
 function generateAIResponse(paragraphs: number): string {
   const sections: string[] = [];
   for (let i = 0; i < paragraphs; i++) {
@@ -81,7 +83,7 @@ function simulateStreamingIncremental(
 function blocksBuiltPerChunk(
   fullText: string,
   chunkSize: number,
-  options?: ParseOptions,
+  options?: PerfParseOptions,
 ): number[] {
   const state = createIncrementalState();
   let previous: ReadonlySet<BlockNode> = new Set();
@@ -336,8 +338,10 @@ describe('parseMarkdownIncremental cache', () => {
     console.log(
       `  tracked whole-prefix work (20/200 sections): ${JSON.stringify(short)} / ${JSON.stringify(long)}`,
     );
-    expect(short).toEqual({prefixCharacters: 13072, copiedEntries: 210});
-    expect(long).toEqual({prefixCharacters: 1372702, copiedEntries: 20100});
+    // A blank line settles what precedes it once the next line shows it
+    // starts at the margin, so the last section settles one call later.
+    expect(short).toEqual({prefixCharacters: 11763, copiedEntries: 210});
+    expect(long).toEqual({prefixCharacters: 1358973, copiedEntries: 20100});
   });
 
   it('builds a bounded number of blocks per chunk however long the document is', () => {

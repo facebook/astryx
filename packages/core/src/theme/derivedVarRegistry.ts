@@ -45,6 +45,7 @@ export interface DerivedVarEntry {
 export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
   avatar: [{property: 'borderRadius', vars: ['--_avatar-radius']}],
   banner: [{property: 'borderRadius', vars: ['--_banner-radius']}],
+  'bottom-sheet': [{property: 'padding', expand: 'container'}],
   button: [{property: 'borderRadius', vars: ['--_button-radius']}],
   card: [
     {property: 'borderRadius', vars: ['--_card-radius']},
@@ -68,6 +69,7 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
   ],
   field: [{property: 'borderRadius', vars: ['--_field-radius']}],
   'hover-card': [{property: 'borderRadius', vars: ['--_hovercard-radius']}],
+  item: [{property: 'paddingInline', vars: ['--_item-inset-inline']}],
   'number-input': [
     {property: 'padding', expand: 'container'},
     {property: 'borderRadius', vars: ['--_field-radius']},
@@ -98,7 +100,7 @@ export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
  * the old key still selects the element. Without this the rule would land but
  * its derived vars would not expand, and the half that travels through a var
  * (a hover card's radius, a text area's inline padding) would silently do
- * nothing. Drop these with the classes, in the next major.
+ * nothing. Keep these aliases aligned with the emitted compatibility classes.
  */
 const DEPRECATED_REGISTRY_KEYS: Record<string, string> = {
   hovercard: 'hover-card',

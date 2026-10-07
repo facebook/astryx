@@ -14,7 +14,8 @@
  * feature branch off the branch point that touches exactly one component.
  * A shallow single-branch clone of the feature (depth 5) has no merge base
  * with origin/main, reproducing the CI failure; running analyze-pr.js against
- * it must exit 0 and report exactly the component the branch touched.
+ * it must exit 0 and report the Core, Rich Text, and Vega components the branch
+ * touched.
  */
 
 import {execFileSync} from 'node:child_process';
@@ -45,7 +46,7 @@ function gitTry(dir, args) {
 /**
  * Build the synthetic repo and return the shallow clone dir:
  *   upstream/: branch point, 60 churn commits on main, feature off the point
- *             touching only packages/core/src/Card/.
+ *             touching Core, Rich Text, and Vega components.
  *   clone/   : --depth=5 --single-branch of feature (no merge base with main).
  */
 function buildFixture() {
@@ -56,6 +57,10 @@ function buildFixture() {
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Card'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Button'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/core/src/Line'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/core/src/InteractiveRoleContext'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/lab/src/Sankey'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/richtext/src'), {recursive: true});
+  fs.mkdirSync(path.join(upstream, 'packages/vega/src'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/themes/neutral/src'), {recursive: true});
   fs.mkdirSync(path.join(upstream, 'packages/themes/probe/src'), {recursive: true});
 
@@ -63,9 +68,40 @@ function buildFixture() {
   git(upstream, ['config', 'user.email', 'test@test.co']);
   git(upstream, ['config', 'user.name', 'Test']);
   fs.writeFileSync(path.join(upstream, 'package.json'), '{}');
-  fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export {}\n');
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/index.ts'), "export {Card} from './Card';\n");
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/Card.tsx'), 'export function Card() {}\n');
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/Card.doc.mjs'), "export default {name: 'Card'};\n");
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), "export {Card} from './Card';\n");
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Button/index.ts'), 'export {}\n');
   fs.writeFileSync(path.join(upstream, 'packages/core/src/Line/index.ts'), 'export {}\n');
+  fs.writeFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextEditor.tsx'),
+    'export function RichTextEditor() {}\n',
+  );
+  fs.writeFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextEditorAutoLinkPlugin.tsx'),
+    'export function RichTextEditorAutoLinkPlugin() {}\n',
+  );
+  fs.writeFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextView.tsx'),
+    'export function RichTextView() {}\n',
+  );
+  fs.writeFileSync(
+    path.join(upstream, 'packages/richtext/src/index.ts'),
+    [
+      "export {RichTextEditor} from './RichTextEditor';",
+      "export {RichTextEditorAutoLinkPlugin} from './RichTextEditorAutoLinkPlugin';",
+      "export {RichTextView} from './RichTextView';",
+      '',
+    ].join('\n'),
+  );
+  fs.writeFileSync(
+    path.join(upstream, 'packages/vega/src/VegaChart.tsx'),
+    'export function VegaChart() {}\n',
+  );
+  fs.writeFileSync(path.join(upstream, 'packages/vega/src/index.ts'), "export {VegaChart} from './VegaChart';\n");
+  fs.writeFileSync(path.join(upstream, 'packages/core/src/InteractiveRoleContext/internal.ts'), 'export const shared = true;\n');
+  fs.writeFileSync(path.join(upstream, 'packages/lab/src/Sankey/internal.ts'), 'export const family = true;\n');
   fs.writeFileSync(
     path.join(upstream, 'packages/themes/neutral/package.json'),
     JSON.stringify({name: '@astryxdesign/theme-neutral', private: false}),
@@ -88,14 +124,32 @@ function buildFixture() {
     git(upstream, ['commit', '-qm', `churn ${i}`]);
   }
 
-  // Feature branch off the branch point, touching only Card.
+  // Feature branch off the branch point, touching Core, Rich Text, and Vega.
   git(upstream, ['branch', 'feature', branchPoint]);
   git(upstream, ['checkout', '-q', 'feature']);
   fs.appendFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export const Card = {}\n');
+  fs.appendFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextEditor.tsx'),
+    'export const richTextChanged = true\n',
+  );
+  fs.appendFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextEditorAutoLinkPlugin.tsx'),
+    'export const autoLinkChanged = true\n',
+  );
+  fs.appendFileSync(
+    path.join(upstream, 'packages/richtext/src/RichTextView.tsx'),
+    'export const viewChanged = true\n',
+  );
+  fs.appendFileSync(
+    path.join(upstream, 'packages/vega/src/VegaChart.tsx'),
+    'export const vegaChanged = true\n',
+  );
+  fs.appendFileSync(path.join(upstream, 'packages/core/src/InteractiveRoleContext/internal.ts'), 'export const sharedChanged = true\n');
+  fs.appendFileSync(path.join(upstream, 'packages/lab/src/Sankey/internal.ts'), 'export const familyChanged = true\n');
   fs.appendFileSync(path.join(upstream, 'packages/themes/neutral/src/theme.ts'), 'export const changed = true\n');
   fs.appendFileSync(path.join(upstream, 'packages/themes/probe/src/theme.ts'), 'export const changed = true\n');
   git(upstream, ['add', '-A']);
-  git(upstream, ['commit', '-qm', 'touch Card only']);
+  git(upstream, ['commit', '-qm', 'touch three component packages']);
 
   // Shallow single-branch clone of the feature branch.
   git(null, [
@@ -107,7 +161,7 @@ function buildFixture() {
 }
 
 describe('analyze-pr shallow-clone recovery', () => {
-  it('recovers the three-dot diff by deepening and reports the exact component', () => {
+  it('recovers the three-dot diff and reports Core, Rich Text, and Vega owners', () => {
     const {base, clone} = buildFixture();
     try {
       // Precondition: the clone really has no merge base (the CI failure).
@@ -126,8 +180,32 @@ describe('analyze-pr shallow-clone recovery', () => {
       // Reaching the assertions proves exit 0 (execFileSync throws otherwise).
       expect(stdout).toContain('diff mode: three-dot');
       expect(analysis.diffMode).toBe('three-dot');
-      expect(analysis.modifiedComponents).toEqual(['Card']);
-      expect(analysis.changedPackages).toEqual(['@astryxdesign/core']);
+      expect(analysis.modifiedComponents).toEqual([
+        'Card',
+        'RichTextEditor',
+        'RichTextEditorAutoLinkPlugin',
+        'RichTextView',
+        'VegaChart',
+      ]);
+      expect(analysis.modifiedComponentOwners).toEqual([
+        'core/Card',
+        'richtext/RichTextEditor',
+        'richtext/RichTextEditorAutoLinkPlugin',
+        'richtext/RichTextView',
+        'vega/VegaChart',
+      ]);
+      expect(analysis.modifiedComponentOwners).not.toContain('core/InteractiveRoleContext');
+      expect(analysis.modifiedComponentOwners).not.toContain('lab/Sankey');
+      expect(analysis.forceFullComponentAudits).toBe(true);
+      expect(analysis.unresolvedComponentSources).toEqual(
+        expect.arrayContaining(['core/InteractiveRoleContext', 'lab/Sankey']),
+      );
+      expect(analysis.changedPackages).toEqual([
+        '@astryxdesign/core',
+        '@astryxdesign/lab',
+        '@astryxdesign/richtext',
+        '@astryxdesign/vega',
+      ]);
       expect(analysis.changedStableThemes).toEqual(['neutral']);
     } finally {
       fs.rmSync(base, {recursive: true, force: true});

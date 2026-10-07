@@ -23,7 +23,7 @@ import type {
   BodyCellRenderProps,
   ScrollWrapperRenderProps,
 } from '../../types';
-import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
+import {resolveColumnFloorWidths} from '../../columnUtils';
 
 // =============================================================================
 // Config
@@ -56,23 +56,10 @@ export interface UseTableStickyColumnsConfig {
 // Width helpers
 // =============================================================================
 
-/**
- * Resolve a column's pixel width for cumulative offset math. Mirrors the
- * resize plugin's fallback so offsets line up with rendered widths:
- * pixel columns use their value; proportional columns use their declared
- * minWidth (or the default); unknown widths use the default.
- */
-function getColumnWidth(col: TableColumn<Record<string, unknown>>): number {
-  const w = col.width;
-  if (!w) {
-    return DEFAULT_MIN_COLUMN_WIDTH;
-  }
-  if (w.type === 'pixel') {
-    return w.value;
-  }
-  // proportional
-  return w.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;
-}
+// Pinned offsets only matter while the table overflows, and an overflowing
+// table renders at its minimum width. Offsets therefore accumulate the widths
+// Table layout gives each column at that width (resolveColumnFloorWidths), so a
+// pinned block stays contiguous for pixel, proportional, and width-less mixes.
 
 /**
  * Columns pinned to the START edge → cumulative inline offset (px). The pinned
@@ -95,11 +82,12 @@ function computeStartOffsets(
   if (lastStickyIndex === -1) {
     return null;
   }
+  const widths = resolveColumnFloorWidths(columns);
   const offsets = new Map<string, number>();
   let cumulative = 0;
   for (let i = 0; i <= lastStickyIndex; i++) {
     offsets.set(columns[i].key, cumulative);
-    cumulative += getColumnWidth(columns[i]);
+    cumulative += widths.get(columns[i].key) ?? 0;
   }
   return offsets;
 }
@@ -126,11 +114,12 @@ function computeEndOffsets(
   if (firstStickyIndex === -1) {
     return null;
   }
+  const widths = resolveColumnFloorWidths(columns);
   const offsets = new Map<string, number>();
   let cumulative = 0;
   for (let i = columns.length - 1; i >= firstStickyIndex; i--) {
     offsets.set(columns[i].key, cumulative);
-    cumulative += getColumnWidth(columns[i]);
+    cumulative += widths.get(columns[i].key) ?? 0;
   }
   return offsets;
 }

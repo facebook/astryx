@@ -19,7 +19,7 @@
  * @property {string} label - Human-readable check name.
  * @property {DoctorStatus} status
  * @property {string} message - One-line result summary.
- * @property {string} [fix] - Actionable remediation, present when status is not 'pass'.
+ * @property {string} [fix] - Actionable remediation: always present on 'warn' and 'fail'; some 'info' checks carry one too.
  */
 
 /**
@@ -32,7 +32,7 @@
  */
 
 /**
- * xds --json doctor
+ * `astryx --json doctor`
  * @typedef {object} DoctorResponse
  * @property {'doctor'} type
  * @property {object} data

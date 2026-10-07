@@ -6,12 +6,14 @@ export const docs = {
   name: 'theme',
   title: 'Theme System',
   category: 'guide',
+  keywords: ['use', 'apply', 'setup'],
   description:
-    'Theme provider, custom themes, theme build for production/SSR, light/dark mode, and component style overrides.',
+    'How to use and apply themes in your app: providers, custom themes, light/dark mode, production builds, and component style overrides.',
 
   sections: [
     {
-      title: 'Quick Start',
+      id: 'quick-start',
+      title: 'Wrap your app in a theme',
       category: 'guide',
       content: [
         {
@@ -76,7 +78,7 @@ function App() {
             [
               'Neutral',
               "import {neutralTheme} from '@astryxdesign/theme-neutral'",
-              'Muted, minimal aesthetic with system fonts. A good starting point.',
+              'Muted, minimal aesthetic with Figtree typography. A good starting point.',
             ],
             [
               'Butter',
@@ -96,7 +98,7 @@ function App() {
             [
               'Matcha',
               "import {matchaTheme} from '@astryxdesign/theme-matcha'",
-              'Earthy green theme with Figtree typography.',
+              'Earthy greens; DM Sans + Playwrite US Trad type.',
             ],
             [
               'Stone',
@@ -121,34 +123,46 @@ function App() {
       category: 'guide',
       content: [
         {
-          type: 'table',
-          headers: ['Prop', 'Type', 'Default', 'Description'],
-          rows: [
-            ['theme', 'DefinedTheme', '-', 'Theme object (required)'],
-            [
-              'mode',
-              "'system' | 'light' | 'dark'",
-              "'system'",
-              'Color mode. system follows OS preference.',
-            ],
-            ['children', 'ReactNode', '-', 'App content'],
-          ],
+          type: 'prose',
+          text: "`<Theme>` takes `theme` (required), `mode` (`'system'` by default, or `'light'`/`'dark'`), and `children`. For every prop, run `astryx component Theme`.",
         },
       ],
     },
     {
-      title: 'Creating a Custom Theme',
+      id: 'integration-themes',
+      title: 'Using a Theme from an Integration',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Start from a theme we ship, or write one from scratch with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
+          text: 'Install the integration as a direct dependency and Astryx discovers its source themes and guide topics without an `astryx.config` file. Install Core too because the copied source imports `defineTheme` from `@astryxdesign/core/theme`.',
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Install, inspect, copy, and build',
+          code: 'npm install @astryxdesign/core @acme/brand-integration\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx theme add ocean --package @acme/brand-integration\nastryx theme build src/themes/ocean/oceanTheme.ts',
+        },
+        {
+          type: 'prose',
+          text: 'The copy is editable project source, not a reference back into node_modules. The complete theme directory comes with it, including its typed `.doc.mjs`, nested token and palette modules, and receipts. A second add refuses to overwrite those files unless you pass `--overwrite`.',
+        },
+      ],
+    },
+    {
+      id: 'creating-a-custom-theme',
+      title: 'Custom themes',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Start from a bundled theme or one contributed by an installed integration, or write one from scratch with defineTheme. `theme list` names each owner; when packages share a slug, pass `--package`. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Browse, then copy a theme in as editable source',
-          code: 'astryx theme list\nastryx theme add stone',
+          code: 'astryx theme list\nastryx theme add stone\nastryx theme add ocean --package @acme/themes',
         },
         {
           type: 'prose',
@@ -162,7 +176,7 @@ function App() {
       content: [
         {
           type: 'prose',
-          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. Theme maintainers may declare reusable, non-portable roles through localTokens using complete --astryx-theme-<name>-* custom-property names; these roles remain inside that enrolled theme family and do not expand the shared token vocabulary. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
+          text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values, token by token. localTokens accepts any valid CSS custom-property name; prefixes do not establish ownership. One caveat for the accent: overriding --color-accent in tokens re-points the reference tokens (--color-accent-muted, --color-text-accent, --color-icon-accent) but NOT --color-on-accent, which stays baked from the color.accent seed. To give each scheme its own accent with a consistent derived palette, pass a [light, dark] tuple to color.accent instead of overriding the token.',
         },
         {
           type: 'code',
@@ -183,16 +197,6 @@ const myTheme = defineTheme({
   tokens: {
     // Explicit overrides take precedence over scale-generated values
     '--color-background-body': ['#FFFFFF', '#0A0A0A'],
-  },
-  localTokens: {
-    '--astryx-theme-my-theme-color-status-fill-accent': ['#0077B6', '#48CAE4'],
-  },
-  components: {
-    badge: {
-      'variant:info': {
-        backgroundColor: 'var(--astryx-theme-my-theme-color-status-fill-accent)',
-      },
-    },
   },
 });`,
         },
@@ -355,11 +359,18 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: '`widthBreakpoints` are fixed named start points. Defaults are 640 / 768 / 1024 / 1280 / 1536 CSS pixels. `from` includes its point; `below` excludes it. Breakpoint configuration alone emits no CSS.',
+          text: '`widthBreakpoints` are fixed named start points. Defaults are 640 / 768 / 1024 / 1280 / 1536 CSS pixels. `from` includes its point; `below` excludes it. Breakpoint configuration alone emits no CSS. For how matching rules combine and what a rule may write, see Adaptation order and validation.',
         },
+      ],
+    },
+    {
+      id: 'adaptation-rules',
+      title: 'Adaptation order and validation',
+      category: 'guide',
+      content: [
         {
           type: 'prose',
-          text: '**Precedence follows rule order.** Root theme values apply first, then every matching rule in declaration order. A later rule may deliberately restore a root value. `onDark` and `onLight` media-surface overrides apply after adaptations and win on the same leaf.',
+          text: 'Precedence follows rule order. Root theme values apply first, then every matching rule in declaration order. A later rule may deliberately restore a root value. `onDark` and `onLight` media-surface overrides apply after adaptations and win on the same leaf.',
         },
         {
           type: 'prose',
@@ -381,7 +392,7 @@ const brandTheme = defineTheme({
       content: [
         {
           type: 'prose',
-          text: 'The `components` field in defineTheme uses semantic component keys and style keys, not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in `astryx docs styling`.',
+          text: 'The `components` field in defineTheme uses semantic component keys and style keys, not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in {@link generic:styling}.',
         },
         {
           type: 'code',
@@ -390,7 +401,7 @@ const brandTheme = defineTheme({
           code: `components: {
   // Standard CSS properties are expanded automatically.
   // borderRadius also sets the internal radius var for concentric math.
-  // padding on container components (card, section, dialog) expands to layout tokens.
+  // padding on container components (card, section, dialog, bottom-sheet) expands to layout tokens.
   card: {
     base: { borderRadius: '20px', padding: '24px' },
   },
@@ -454,7 +465,7 @@ const brandTheme = defineTheme({
   banner: {
     // Any extensible prop axis works — not just variant
     'status:neutral': {
-      backgroundColor: 'var(--color-muted)',
+      backgroundColor: 'var(--color-background-muted)',
       color: 'var(--color-text-secondary)',
     },
   },
@@ -479,7 +490,8 @@ const brandTheme = defineTheme({
       ],
     },
     {
-      title: 'Building Themes for Production',
+      id: 'building-themes-for-production',
+      title: 'Build a theme',
       category: 'guide',
       content: [
         {
@@ -506,7 +518,7 @@ const brandTheme = defineTheme({
             ],
             [
               'ocean.js',
-              'ES module exporting the theme object with `__built: true` and pre-resolved token values. Also imports and re-exports an icon registry when the build detects its named import in the source theme (see the limitations below).',
+              'ES module exporting the theme object with `__built: true` and pre-resolved token values. Also imports and re-exports an icon registry when the build detects its named import in the source theme (see Built themes with an icon registry).',
             ],
             [
               'ocean.d.ts',
@@ -518,6 +530,36 @@ const brandTheme = defineTheme({
             ],
           ],
         },
+        {
+          type: 'prose',
+          text: 'The `__built: true` flag tells Theme to skip runtime `<style>` injection; the CSS file handles it.',
+        },
+        {
+          type: 'prose',
+          text: 'After upgrading Astryx across a selector-contract change, rerun `astryx theme build <theme-file>` for every custom prebuilt theme. Deploy the regenerated `.css`, `.js`, `.d.ts`, and optional `.variants.d.ts` together. The runtime intentionally trusts `__built: true` and will not repair stale CSS from an older build.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Using a custom built theme',
+          code: `import {oceanTheme} from './themes/ocean';
+import './themes/ocean.css';
+
+<Theme theme={oceanTheme}>
+  <App />
+</Theme>`,
+        },
+        {
+          type: 'prose',
+          text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See {@link generic:typography} for the full recipe.",
+        },
+      ],
+    },
+    {
+      id: 'icon-registry',
+      title: 'Built themes with an icon registry',
+      category: 'guide',
+      content: [
         {
           type: 'prose',
           text: "The current `theme build` implementation emits an icon import when it detects a named import used by the theme’s `icons:` field, such as `import {oceanIcons} from './icons'` with `icons: oceanIcons`. It does not compile that registry module. Inline registries, including local constants, are currently omitted from the generated theme even though `defineTheme` accepts them at runtime. Move the registry to a separate module and use a named import for this build flow. For a registry that uses React and lucide-react, the following example compiles it alongside the generated theme:",
@@ -541,28 +583,42 @@ esbuild src/themes/icons.tsx --bundle --format=esm --outfile=dist/icons.mjs \\
           type: 'prose',
           text: 'Without `--icons-specifier`, the detected source import specifier is emitted unchanged. In the default no-`--out` flow, a bundler can resolve an extensionless `./icons` to the neighboring `icons.tsx` source. Node ESM does not perform that lookup and reports `ERR_MODULE_NOT_FOUND`. Moving the output with `--out` also changes where relative imports resolve; the generated module cannot find the original source merely because a bundler is used.',
         },
+      ],
+    },
+    {
+      title: 'Building a Theme Family',
+      category: 'guide',
+      content: [
         {
           type: 'prose',
-          text: 'The `__built: true` flag tells Theme to skip runtime `<style>` injection; the CSS file handles it.',
-        },
-        {
-          type: 'prose',
-          text: 'After upgrading Astryx across a selector-contract change, rerun `astryx theme build <theme-file>` for every custom prebuilt theme. Deploy the regenerated `.css`, `.js`, `.d.ts`, and optional `.variants.d.ts` together. The runtime intentionally trusts `__built: true` and will not repair stale CSS from an older build.',
+          text: 'Use family mode when an app switches among one base theme and its selected descendants. The build writes one keyed CSS file containing every member, plus one keyed JavaScript module and one declaration file beside the root source.',
         },
         {
           type: 'code',
-          lang: 'tsx',
-          label: 'Using a custom built theme',
-          code: `import {oceanTheme} from './themes/ocean';
-import './themes/ocean.css';
-
-<Theme theme={oceanTheme}>
-  <App />
-</Theme>`,
+          lang: 'bash',
+          label: 'Build one family',
+          code: `astryx theme build --family \\
+  ./src/themes/ocean.mjs \\
+  ./src/themes/ocean-calm.mjs \\
+  ./src/themes/ocean-calm-deep.mjs \\
+  --family-key ocean-family`,
+        },
+        {
+          type: 'code',
+          lang: 'html',
+          label: 'Load native CSS and ESM independently',
+          code: `<link rel="stylesheet" href="./src/themes/ocean-family.css" />
+<script type="module">
+  import {oceanCalmTheme} from './src/themes/ocean-family.js';
+</script>`,
         },
         {
           type: 'prose',
-          text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See `astryx docs typography` for the full recipe.",
+          text: 'The family stylesheet eagerly downloads every selected member so first paint is complete. Switching members changes only the theme identity; it does not add, remove, or reorder stylesheets. A bundler such as Vite consumes the same CSS and ESM files.',
+        },
+        {
+          type: 'prose',
+          text: 'The family key is only the filename stem (`ocean-family.css`, `.js`, and `.d.ts`) and must differ from every selected member name. Use the ordinary standalone build when an app needs only one complete theme. Add `--check` to compare the exact keyed trio without writing.',
         },
       ],
     },
@@ -630,7 +686,8 @@ import './themes/ocean.css';
       ],
     },
     {
-      title: 'Light/Dark Mode',
+      id: 'light-dark-mode',
+      title: 'Dark mode',
       category: 'guide',
       content: [
         {
@@ -659,12 +716,13 @@ import './themes/ocean.css';
       ],
     },
     {
-      title: 'Nesting Themes',
+      id: 'nesting-themes',
+      title: 'Nested themes',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Wrap different sections in separate [`<Theme>`](/components/Theme) providers.',
+          text: 'Wrap different sections in separate `<Theme>` providers.',
         },
         {
           type: 'code',
@@ -764,7 +822,7 @@ function ChartConfig() {
         },
         {
           type: 'prose',
-          text: 'See `astryx docs styling-libraries` for styling-library interop and `astryx docs tokens` for the full token reference.',
+          text: 'See {@link generic:styling-libraries} for styling-library interop and {@link generic:tokens} for the full token reference.',
         },
       ],
     },

@@ -13,8 +13,9 @@
  *      rest so versions stay aligned without polluting their changelogs.
  *   2. semver for 0.x — derives the bump from the category. A [breaking]
  *      change bumps the minor (0.x.y -> 0.(x+1).0, the breaking tier under
- *      caret ranges); everything else bumps the patch. No way to declare a
- *      mismatched bump by hand — check-changesets.mjs enforces the coupling.
+ *      caret ranges); every other category, including [experimental], bumps
+ *      the patch. No way to declare a mismatched bump by hand —
+ *      check-changesets.mjs enforces the coupling.
  *   3. Contributor encapsulation — captures the human contributor(s) at
  *      authoring time (defaulting to your `gh` / git identity) and writes them
  *      into the changeset body, where the custom changelog module reads them.
@@ -24,7 +25,7 @@
  * scripts/check-changesets.mjs.
  *
  * Flags (all optional; missing values are prompted):
- *   --category <key>     breaking|component|feat|fix|perf|docs|chore
+ *   --category <key>     breaking|experimental|component|feat|fix|perf|docs|chore
  *   --summary  <text>    one-line headline
  *   --contributor <h>    repeatable; defaults to detected identity
  *   --pr <number>        PR number (appended as (#n) if not already in summary)

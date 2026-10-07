@@ -5,7 +5,7 @@
  * @input Uses a Playwright `Page`, the semantic subject `Locator`, optional
  *   binding-owned pointer-target and visible-label `Locator`s, and the Chrome
  *   DevTools Protocol accessibility domain behind them
- * @output `createChromiumHarness` — a harness that observes the DOM,
+ * @output `createChromiumHarness` — a clipping-aware harness that observes the DOM,
  *   accessibility-tree, and real-browser layers of a page rendered by a real
  *   shipping engine — plus `holdMotionStill`, the page setup its specs share.
  * @position The high-fidelity lane. Imported only from the Playwright specs, so
@@ -31,6 +31,7 @@
 import {errors as playwrightErrors} from '@playwright/test';
 import type {CDPSession, Locator, Page} from '@playwright/test';
 import {
+  MissingHarnessRelation,
   type ComputedNode,
   type EvidenceLayer,
   type Harness,
@@ -64,10 +65,26 @@ function isTimeout(error: unknown): boolean {
   return error instanceof playwrightErrors.TimeoutError;
 }
 
+async function canReceivePointer(locator: Locator): Promise<boolean> {
+  try {
+    await locator.click({trial: true, timeout: POINTER_REACH_BUDGET_MS});
+    return true;
+  } catch (error) {
+    if (isTimeout(error)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 const KEYS: Record<Key, string> = {
   Space: ' ',
   Enter: 'Enter',
   Tab: 'Tab',
+  ArrowLeft: 'ArrowLeft',
+  ArrowRight: 'ArrowRight',
+  ArrowUp: 'ArrowUp',
+  ArrowDown: 'ArrowDown',
 };
 
 interface AxValue {
@@ -80,6 +97,8 @@ interface AxProperty {
 }
 
 interface AxNode {
+  readonly nodeId?: string;
+  readonly childIds?: readonly string[];
   readonly ignored?: boolean;
   readonly role?: AxValue;
   readonly name?: AxValue;
@@ -96,6 +115,24 @@ function text(value: AxValue | undefined): string {
 function property(node: AxNode, name: string): unknown {
   return node.properties?.find(candidate => candidate.name === name)?.value
     ?.value;
+}
+
+function accessibleText(nodes: readonly AxNode[], root: AxNode): string {
+  const byId = new Map(
+    nodes.flatMap(node =>
+      node.nodeId == null ? [] : [[node.nodeId, node] as const],
+    ),
+  );
+  const visit = (node: AxNode): string => {
+    if (node.ignored !== true && text(node.role) === 'StaticText') {
+      return text(node.name);
+    }
+    return (node.childIds ?? [])
+      .map(id => byId.get(id))
+      .flatMap(child => (child == null ? [] : [visit(child)]))
+      .join(' ');
+  };
+  return visit(root).replace(/\s+/g, ' ').trim();
 }
 
 function flag(node: AxNode, name: string): boolean {
@@ -156,7 +193,7 @@ async function computedNode(
 
     const {nodes} = (await cdp.send('Accessibility.getPartialAXTree', {
       nodeId,
-      fetchRelatives: false,
+      fetchRelatives: true,
     })) as unknown as {nodes: readonly AxNode[]};
 
     const node = nodes[0];
@@ -166,18 +203,48 @@ async function computedNode(
         role: null,
         name: '',
         description: '',
+        accessibleText: '',
+        live: null,
+        atomic: null,
         value: null,
+        rangeValue: null,
+        rangeMin: null,
+        rangeMax: null,
+        valueText: null,
+        modal: null,
         multiline: null,
         readOnly: null,
         required: null,
+        pressed: null,
         checked: null,
+        selected: null,
         disabled: false,
         invalid: false,
       };
     }
 
     const role = text(node.role);
+    let textNodes = nodes;
+    let textRoot = node;
+    if (
+      (role === 'status' || role === 'alert') &&
+      node.backendDOMNodeId != null
+    ) {
+      const full = (await cdp.send(
+        'Accessibility.getFullAXTree',
+      )) as unknown as {nodes: readonly AxNode[]};
+      const fullRoot = full.nodes.find(
+        candidate => candidate.backendDOMNodeId === node.backendDOMNodeId,
+      );
+      if (fullRoot != null) {
+        textNodes = full.nodes;
+        textRoot = fullRoot;
+      }
+    }
+    const live = property(node, 'live');
+    const pressed = property(node, 'pressed');
     const checked = property(node, 'checked');
+    const selected = optionalFlag(node, 'selected');
     const invalid = property(node, 'invalid');
     const exposedValue = node.value?.value;
 
@@ -185,15 +252,43 @@ async function computedNode(
       role: role === '' ? null : role,
       name: text(node.name),
       description: text(node.description),
+      accessibleText: accessibleText(textNodes, textRoot),
+      live:
+        live === 'off' || live === 'polite' || live === 'assertive'
+          ? live
+          : null,
+      atomic: optionalFlag(node, 'atomic'),
       value:
         typeof exposedValue === 'string'
           ? exposedValue
           : role === 'textbox'
             ? ''
             : null,
+      rangeValue: typeof exposedValue === 'number' ? exposedValue : null,
+      rangeMin:
+        typeof property(node, 'valuemin') === 'number'
+          ? (property(node, 'valuemin') as number)
+          : null,
+      rangeMax:
+        typeof property(node, 'valuemax') === 'number'
+          ? (property(node, 'valuemax') as number)
+          : null,
+      valueText:
+        typeof property(node, 'valuetext') === 'string'
+          ? (property(node, 'valuetext') as string)
+          : null,
+      modal: optionalFlag(node, 'modal'),
       multiline: optionalFlag(node, 'multiline'),
       readOnly: optionalFlag(node, 'readonly'),
       required: optionalFlag(node, 'required'),
+      pressed:
+        pressed === 'true' || pressed === true
+          ? 'true'
+          : pressed === 'false' || pressed === false
+            ? 'false'
+            : pressed === 'mixed'
+              ? 'mixed'
+              : null,
       checked:
         checked === 'true' || checked === true
           ? 'true'
@@ -202,6 +297,7 @@ async function computedNode(
             : checked === 'mixed'
               ? 'mixed'
               : null,
+      selected,
       disabled: flag(node, 'disabled'),
       invalid: invalid != null && invalid !== 'false' && invalid !== false,
     };
@@ -221,11 +317,30 @@ async function computedNode(
  * `use: {reducedMotion: 'reduce'}` and Chromium's own
  * `--force-prefers-reduced-motion` flag both leave
  * `matchMedia('(prefers-reduced-motion: reduce)')` FALSE in this version —
- * measured, not assumed — so either one would read like a safeguard while doing
- * nothing. `emulateMedia` takes effect immediately and can be checked.
+ * measured, not assumed. `emulateMedia` sets the preference, while the injected
+ * override also collapses components that intentionally retain a non-zero
+ * reduced-motion duration. Two animation frames apply both changes before an
+ * expectation can observe the page.
  */
 export async function holdMotionStill(page: Page): Promise<void> {
   await page.emulateMedia({reducedMotion: 'reduce'});
+  await page.addStyleTag({
+    content: `
+      *, *::before, *::after {
+        animation-delay: 0s !important;
+        animation-duration: 0s !important;
+        scroll-behavior: auto !important;
+        transition-delay: 0s !important;
+        transition-duration: 0s !important;
+      }
+    `,
+  });
+  await page.evaluate(
+    () =>
+      new Promise<void>(resolve => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
 }
 
 export interface ChromiumHarnessOptions {
@@ -239,10 +354,137 @@ export interface ChromiumHarnessOptions {
   readonly subject: Locator;
   /** The surface that receives pointer input when it differs from the semantic node. */
   readonly pointerTarget?: Locator;
-  /** A binding-owned visible label when it is not the subject's DOM label. */
-  readonly visibleLabel?: Locator;
+  /** A binding-owned visible label when it is not the subject's DOM label. Null means this state deliberately has no visible label. */
+  readonly visibleLabel?: Locator | null;
   /** A CDP session on `page`, reused across expectations. */
   readonly cdp: CDPSession;
+  /** Public-semantic elements participating in relationship expectations. */
+  readonly related?: Readonly<Record<string, Locator>>;
+}
+
+async function renderedVisible(locator: Locator): Promise<boolean> {
+  return locator.evaluate(element => {
+    if (
+      !element.checkVisibility({
+        visibilityProperty: true,
+        opacityProperty: true,
+        contentVisibilityAuto: true,
+      })
+    ) {
+      return false;
+    }
+    const box = element.getBoundingClientRect();
+    if (box.width <= 0 || box.height <= 0) {
+      return false;
+    }
+    const rootMargin = [
+      Math.max(0, -box.top),
+      Math.max(0, box.right - window.innerWidth),
+      Math.max(0, box.bottom - window.innerHeight),
+      Math.max(0, -box.left),
+    ]
+      .map(value => `${value}px`)
+      .join(' ');
+    return new Promise<boolean>(resolve => {
+      const observer = new IntersectionObserver(
+        entries => {
+          observer.disconnect();
+          resolve((entries[0]?.intersectionRatio ?? 0) > 0);
+        },
+        {rootMargin},
+      );
+      observer.observe(element);
+    });
+  });
+}
+
+const AX_OWNERSHIP_TARGET_ATTRIBUTE = 'data-a11y-spec-ownership-target';
+
+async function backendNodeId(
+  cdp: CDPSession,
+  locator: Locator,
+): Promise<number | null> {
+  const previous = await locator.getAttribute(AX_OWNERSHIP_TARGET_ATTRIBUTE);
+  await locator.evaluate(
+    (element, attribute) => element.setAttribute(attribute, ''),
+    AX_OWNERSHIP_TARGET_ATTRIBUTE,
+  );
+  try {
+    const {root} = (await cdp.send('DOM.getDocument', {
+      depth: 0,
+    })) as unknown as {
+      root: {nodeId: number};
+    };
+    const {nodeId} = (await cdp.send('DOM.querySelector', {
+      nodeId: root.nodeId,
+      selector: `[${AX_OWNERSHIP_TARGET_ATTRIBUTE}]`,
+    })) as unknown as {nodeId: number};
+    if (nodeId === 0) {
+      return null;
+    }
+    const {node} = (await cdp.send('DOM.describeNode', {
+      nodeId,
+    })) as unknown as {
+      node: {backendNodeId?: number};
+    };
+    return node.backendNodeId ?? null;
+  } finally {
+    await locator.evaluate(
+      (element, [attribute, oldValue]) => {
+        if (oldValue == null) {
+          element.removeAttribute(attribute);
+        } else {
+          element.setAttribute(attribute, oldValue);
+        }
+      },
+      [AX_OWNERSHIP_TARGET_ATTRIBUTE, previous] as const,
+    );
+  }
+}
+
+async function containsSemantically(
+  cdp: CDPSession,
+  container: Locator,
+  candidate: Locator,
+): Promise<boolean> {
+  const containerBackendId = await backendNodeId(cdp, container);
+  const candidateBackendId = await backendNodeId(cdp, candidate);
+  if (containerBackendId == null || candidateBackendId == null) {
+    return false;
+  }
+  const {nodes} = (await cdp.send(
+    'Accessibility.getFullAXTree',
+  )) as unknown as {nodes: readonly AxNode[]};
+  const byId = new Map(
+    nodes.flatMap(node =>
+      node.nodeId == null ? [] : [[node.nodeId, node] as const],
+    ),
+  );
+  const containerNode = nodes.find(
+    node =>
+      node.backendDOMNodeId === containerBackendId && node.ignored !== true,
+  );
+  const candidateNode = nodes.find(
+    node =>
+      node.backendDOMNodeId === candidateBackendId && node.ignored !== true,
+  );
+  if (containerNode?.nodeId == null || candidateNode?.nodeId == null) {
+    return false;
+  }
+  const pending = [...(containerNode.childIds ?? [])];
+  const visited = new Set<string>();
+  while (pending.length > 0) {
+    const nodeId = pending.pop();
+    if (nodeId == null || visited.has(nodeId)) {
+      continue;
+    }
+    if (nodeId === candidateNode.nodeId) {
+      return true;
+    }
+    visited.add(nodeId);
+    pending.push(...(byId.get(nodeId)?.childIds ?? []));
+  }
+  return false;
 }
 
 export function createChromiumHarness(
@@ -250,6 +492,13 @@ export function createChromiumHarness(
 ): Harness {
   const {page, subject: locator, pointerTarget, cdp, visibleLabel} = options;
   const pointerLocator = pointerTarget ?? locator;
+  let initialElement: ReturnType<Locator['elementHandle']> | undefined;
+  const capturedElement = () => {
+    initialElement ??= locator.elementHandle();
+    return initialElement;
+  };
+  const pointerTargets = new WeakMap<Subject, Locator>();
+  const semanticTargets = new WeakMap<Subject, Locator>();
 
   const subject: Subject = {
     attribute: name => locator.getAttribute(name),
@@ -403,10 +652,22 @@ export function createChromiumHarness(
         }
         return null;
       }),
+    textContent: () =>
+      locator.evaluate(node =>
+        (node.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      ),
+    currentExists: async () => (await locator.count()) > 0,
+    isConnected: async () => {
+      const element = await capturedElement();
+      return element != null && element.evaluate(node => node.isConnected);
+    },
     computed: () => computedNode(cdp, locator),
     visibleLabelText: async () => {
+      if (visibleLabel === null) {
+        return null;
+      }
       const explicitLabel =
-        visibleLabel == null ? null : await visibleLabel.elementHandle();
+        visibleLabel === undefined ? null : await visibleLabel.elementHandle();
       try {
         return await locator.evaluate((element, explicitLabel) => {
           // Whether a person can actually read this text. Two questions, because
@@ -600,18 +861,210 @@ export function createChromiumHarness(
         await explicitLabel?.dispose();
       }
     },
+    isVisible: () => renderedVisible(locator),
     isFocused: () =>
       locator.evaluate(
         element => element.ownerDocument.activeElement === element,
       ),
+    containsFocus: () =>
+      locator.evaluate(element => {
+        const active = element.ownerDocument.activeElement;
+        return (
+          active != null && (active === element || element.contains(active))
+        );
+      }),
+    isModal: () => locator.evaluate(element => element.matches(':modal')),
+    canReceivePointer: () => canReceivePointer(locator),
     focus: () => locator.focus(),
+  };
+  pointerTargets.set(subject, pointerLocator);
+  semanticTargets.set(subject, locator);
+
+  const relatedSubject = (name: string): Subject => {
+    const related = options.related?.[name];
+    if (related == null) {
+      throw new MissingHarnessRelation('chromium', name);
+    }
+    const result: Subject = {
+      attribute: attribute => related.getAttribute(attribute),
+      idReferences: attribute =>
+        related.evaluate(
+          (element, relation) =>
+            (element.getAttribute(relation) ?? '')
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(id => {
+                const target = element.ownerDocument.getElementById(id);
+                return target == null
+                  ? null
+                  : (target.textContent ?? '').trim();
+              }),
+          attribute,
+        ),
+      visibleIdReferences: attribute =>
+        related.evaluate(
+          (element, relation) =>
+            (element.getAttribute(relation) ?? '')
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(id => {
+                const target = element.ownerDocument.getElementById(id);
+                if (target == null || !target.checkVisibility()) {
+                  return null;
+                }
+                const text = (target.textContent ?? '')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                return text === '' ? null : text;
+              }),
+          attribute,
+        ),
+      labelText: () =>
+        related.evaluate(element => {
+          const labelledBy = element.getAttribute('aria-labelledby');
+          if (labelledBy != null && labelledBy.trim() !== '') {
+            const text = labelledBy
+              .split(/\s+/)
+              .filter(Boolean)
+              .map(
+                id =>
+                  element.ownerDocument.getElementById(id)?.textContent ?? '',
+              )
+              .join(' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            return text === '' ? null : text;
+          }
+          const ariaLabel = element.getAttribute('aria-label')?.trim();
+          if (ariaLabel != null && ariaLabel !== '') {
+            return ariaLabel;
+          }
+          if (
+            element instanceof HTMLInputElement ||
+            element instanceof HTMLTextAreaElement
+          ) {
+            const text = Array.from(element.labels ?? [])
+              .map(label => label.textContent ?? '')
+              .join(' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            return text === '' ? null : text;
+          }
+          return null;
+        }),
+      textValue: () =>
+        related.evaluate(element => {
+          if (
+            element instanceof HTMLInputElement ||
+            element instanceof HTMLTextAreaElement
+          ) {
+            return element.value;
+          }
+          return null;
+        }),
+      textContent: () =>
+        related.evaluate(node =>
+          (node.textContent ?? '').replace(/\s+/g, ' ').trim(),
+        ),
+      currentExists: async () => (await related.count()) > 0,
+      isConnected: () => related.evaluate(node => node.isConnected),
+      computed: () => computedNode(cdp, related),
+      visibleLabelText: async () => {
+        const value = (await related.innerText()).trim();
+        return value === '' ? null : value;
+      },
+      isVisible: () => renderedVisible(related),
+      isFocused: () =>
+        related.evaluate(
+          element => element.ownerDocument.activeElement === element,
+        ),
+      containsFocus: () =>
+        related.evaluate(element => {
+          const active = element.ownerDocument.activeElement;
+          return (
+            active != null && (active === element || element.contains(active))
+          );
+        }),
+      isModal: () => related.evaluate(element => element.matches(':modal')),
+      canReceivePointer: () => canReceivePointer(related),
+      focus: () => related.focus(),
+    };
+    pointerTargets.set(result, related);
+    semanticTargets.set(result, related);
+    return result;
   };
 
   return {
     name: 'chromium',
     observes: CHROMIUM_OBSERVES,
     subject: async () => subject,
-    click: async (_subject, options) => {
+    related: async name => relatedSubject(name),
+    contains: async (container, candidate) => {
+      const containerLocator = semanticTargets.get(container);
+      const candidateLocator = semanticTargets.get(candidate);
+      if (containerLocator == null || candidateLocator == null) {
+        throw new Error(
+          'the Chromium harness was asked to compare a subject it did not create',
+        );
+      }
+      const candidateHandle = await candidateLocator.elementHandle();
+      if (candidateHandle == null) {
+        return false;
+      }
+      try {
+        return await containerLocator.evaluate(
+          (element, candidateElement) => element.contains(candidateElement),
+          candidateHandle,
+        );
+      } finally {
+        await candidateHandle.dispose();
+      }
+    },
+    containsSemantically: async (container, candidate) => {
+      const containerLocator = semanticTargets.get(container);
+      const candidateLocator = semanticTargets.get(candidate);
+      if (containerLocator == null || candidateLocator == null) {
+        throw new Error(
+          'the Chromium harness was asked to compare a subject it did not create',
+        );
+      }
+      return containsSemantically(cdp, containerLocator, candidateLocator);
+    },
+    references: async (source, attribute, target) => {
+      const sourceLocator = semanticTargets.get(source);
+      const targetLocator = semanticTargets.get(target);
+      if (sourceLocator == null || targetLocator == null) {
+        throw new Error(
+          'the Chromium harness was asked to compare a subject it did not create',
+        );
+      }
+      const targetHandle = await targetLocator.elementHandle();
+      if (targetHandle == null) {
+        return false;
+      }
+      try {
+        return await sourceLocator.evaluate(
+          (element, [name, targetElement]) =>
+            (element.getAttribute(name) ?? '')
+              .split(/\s+/)
+              .filter(Boolean)
+              .some(
+                id =>
+                  element.ownerDocument.getElementById(id) === targetElement,
+              ),
+          [attribute, targetHandle] as const,
+        );
+      } finally {
+        await targetHandle.dispose();
+      }
+    },
+    click: async (targetSubject, options) => {
+      const target = pointerTargets.get(targetSubject);
+      if (target == null) {
+        throw new Error(
+          'the Chromium harness was asked to click a subject it did not create',
+        );
+      }
       // Without `force`, Playwright first satisfies itself that the control is
       // visible, stable, enabled, and actually receives pointer events — so an
       // ordinary click here also proves a pointer could reach the control.
@@ -619,7 +1072,7 @@ export function createChromiumHarness(
       // a control the browser calls unavailable what it does when clicked
       // anyway.
       try {
-        await pointerLocator.click({
+        await target.click({
           force: options?.ignoreAvailability === true,
           // Bounded, and short. A control a pointer cannot reach — one covered
           // by something else, or clipped to nothing — otherwise sits here

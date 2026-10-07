@@ -30,6 +30,11 @@ export const docs = {
     container: true,
     targets: [
       {className: 'astryx-dialog', visualProps: ['variant']},
+      {className: 'astryx-dialog-header'},
+      {className: 'astryx-dialog-header-start-content'},
+      {className: 'astryx-dialog-header-title-block'},
+      {className: 'astryx-dialog-header-end-content'},
+      {className: 'astryx-dialog-header-close-icon'},
     ],
     vars: [
       {name: '--_dialog-radius', description: 'Border radius of the dialog', default: 'var(--radius-container)', private: true},
@@ -39,7 +44,8 @@ export const docs = {
       {property: 'padding', expand: 'container'},
     ],
   },
-  description: 'Modal dialog using the native <dialog> element.',
+  description:
+    'Modal dialog using the native <dialog> element. Modal and inline content starts with theme body text defaults. Ancestor surface/group membership ends as a whole, including group-owned state. Explicit props and unrelated contexts remain unchanged. Place intentional groups and complete required providers inside the dialog.',
   props: [
     {
       name: 'isOpen',
@@ -152,7 +158,8 @@ export const docsZh = {
 export const docsDense = {
   description: 'modal overlay that blocks page interaction until the user responds',
   usage: {
-    description: 'Dialog displays a modal overlay that blocks page interaction. Use for delete confirmations, edit forms, terms acceptance.',
+    description:
+      'Dialog displays a modal overlay that blocks page interaction. Use for delete confirmations, edit forms, terms acceptance. Modal and inline content uses theme body defaults and exits ancestor surface/group membership as a whole; explicit props and unrelated contexts remain unchanged. Provide intentional groups and complete required providers inside the dialog.',
     bestPractices: [
       { guidance: true, description: 'Choose the right purpose: info for dismissable content, form to prevent accidental backdrop dismissal, required when user must respond.' },
       { guidance: true, description: 'Include a clear title in the header so users immediately understand what the dialog is asking.' },

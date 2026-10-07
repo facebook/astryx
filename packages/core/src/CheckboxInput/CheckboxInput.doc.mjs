@@ -112,8 +112,9 @@ export const docs = {
     },
     {
       name: 'labelIcon',
-      type: 'IconType',
-      description: 'Icon to display before the label text. See `astryx docs icons` for valid semantic names.',
+      type: 'ReactNode | IconType',
+      description:
+        'Semantic icon name or custom content displayed before the label text. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'status',
@@ -137,6 +138,17 @@ export const docs = {
     ],
   },
   usage: {
+    accessibility: [
+      {
+        name: 'Checkbox box',
+        category: 'Color contrast',
+        criterion: '1.4.11 Non-text Contrast',
+        requirement: '3:1',
+        states: ['Rest', 'Hover', 'Pointer down', 'Checked'],
+        description:
+          'The box edge (unchecked) and fill (checked) must have at least 3:1 contrast with the surface behind them. For Hover and Pointer down, measure the final colors after the tint and the pressed overlay are applied.',
+      },
+    ],
     description: 'CheckboxInput toggles a single on/off value. Use it for settings like "Enable notifications", terms acceptance, or opt-in choices. For multiple checkboxes in a group, use CheckboxList instead.',
     bestPractices: [
       { guidance: true, description: 'Always provide a visible label so the user knows what they are toggling. Use isLabelHidden only when surrounding context makes it obvious.' },
@@ -193,7 +205,7 @@ export const docsZh = {
     {name: 'size', type: "'sm' | 'md'", description: '复选框尺寸。sm 用于紧凑布局，md 为默认。', default: "'md'"},
     {name: 'onFocus', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框获得焦点时触发的回调。'},
     {name: 'onBlur', type: '(e: FocusEvent<HTMLInputElement>) => void', description: '复选框失去焦点时触发的回调。'},
-    {name: 'labelIcon', type: 'IconType', description: '标签文本前显示的图标。'},
+    {name: 'labelIcon', type: 'ReactNode | IconType', description: '标签文本前显示的语义图标名称或自定义内容。'},
     {
       name: 'status',
       type: "{ type: 'error' | 'warning' | 'success', message: string }",
@@ -245,7 +257,7 @@ export const docsDense = {
     size: 'sm (compact) or md (default)',
     onFocus: 'callback on focus',
     onBlur: 'callback on blur',
-    labelIcon: 'icon before label text',
+    labelIcon: 'semantic icon name or custom content before label text',
     status: 'error/warning/success with message; sets aria-invalid on error',
   },
 };

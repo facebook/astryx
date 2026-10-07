@@ -24,7 +24,10 @@ import type {
   ColumnWidth,
   ScrollWrapperRenderProps,
 } from '../../types';
-import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
+import {
+  DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH,
+  DEFAULT_MIN_COLUMN_WIDTH,
+} from '../../columnUtils';
 import {observeResize} from '../../../utils/sharedResizeObserver';
 
 // =============================================================================
@@ -105,7 +108,8 @@ const SCROLL_SETTLE_MS = 120;
  * Derive the effective minimum width for a column based on its width config.
  * - Proportional columns: use their declared minWidth (default 120px)
  * - Pixel columns: use their declared value (you set 200px, min is 200px)
- * - No width / unknown: use DEFAULT_MIN_COLUMN_WIDTH
+ * - No width: use the compact flexible-column floor (60px)
+ * - Unknown: use the legacy 50px fallback
  *
  * A global override (from config.minWidth) takes precedence when set.
  */
@@ -117,7 +121,7 @@ function resolveColumnMinWidth(
     return globalOverride;
   }
   if (!colWidth) {
-    return DEFAULT_MIN_COLUMN_WIDTH;
+    return DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH;
   }
   if (colWidth.type === 'proportional') {
     return colWidth.minWidth ?? DEFAULT_MIN_COLUMN_WIDTH;

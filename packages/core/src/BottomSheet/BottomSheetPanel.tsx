@@ -4,14 +4,15 @@
 
 /**
  * @file BottomSheetPanel.tsx
- * @input Uses React, StyleX, theme tokens, useSheetGestures
- * @output Internal BottomSheetPanel surface and motion-state types
+ * @input Uses React, StyleX, theme tokens, text/provider boundaries, container padding, sheet gestures, shared scroll behavior, and the host label
+ * @output Internal BottomSheetPanel with a keyboard-reachable scrolling body and motion-state types
  * @position Shared presentation layer for standalone and switcher BottomSheets
  *
  * This component owns everything intrinsic to a sheet surface: height budgets,
- * drag and snap gestures, the handle and scrolling body, motion styles, and
- * transition completion. It deliberately does not own a dialog, focus, inert
- * state, or switcher registration; those belong to the hosting controller.
+ * drag and snap gestures, the handle and scrolling body, the content box's
+ * container padding, motion styles, and transition completion. It owns the
+ * body's keyboard access; dialog focus entry/return, inert state, and switcher
+ * registration belong to the host.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
@@ -19,6 +20,7 @@
  * - /packages/core/src/BottomSheet/snapOffsets.ts
  * - /packages/core/src/BottomSheet/useMobileKeyboard.ts
  * - /packages/core/src/BottomSheet/useSheetGestures.ts
+ * - /packages/core/src/Layout/container.stylex.ts (bottom-sheet padding chain)
  */
 
 import {
@@ -33,18 +35,33 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {useDevWarning} from '../hooks';
+import {useScrollableArea} from '../hooks/useScrollableArea';
 import {
   borderVars,
   colorVars,
   durationVars,
   easeVars,
+  focusVars,
   radiusVars,
   shadowVars,
   sizeVars,
   spacingVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
-import {overlayPaddingReset} from '../Layout/padding.stylex';
+import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {LayerContentBoundary} from '../Layer/layerScopedContext';
+import {container} from '../Layout/container.stylex';
+import type {SpacingToken} from '../Layout/container.stylex';
+import {
+  containerPaddingBlockEndVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingInlineVarStyles,
+  overlayPaddingReset,
+  paddingStyles,
+  spacingStepToToken,
+} from '../Layout/padding.stylex';
+import type {SpacingStep} from '../utils/types';
 import {
   isValidSnapPoint,
   resolveSnapPoints,
@@ -211,9 +228,11 @@ const styles = stylex.create({
     flexGrow: 1,
     minHeight: 0,
     boxSizing: 'border-box',
-    overflowY: 'auto',
-    overscrollBehavior: 'none',
     touchAction: 'pan-y',
+    outlineOffset: {
+      default: 0,
+      ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,
+    },
     // The scrolling area paints the surface itself, covering the sheet's whole
     // inner box. Without it the sheet's edge is not uniform: a theme that packs
     // an inset ring into --shadow-high (the bundled themes all add one in dark
@@ -228,6 +247,18 @@ const styles = stylex.create({
     // in a 24px band, so it occupies only 10-14px from the edge -- inside the
     // space a content wrapper's own top padding already provides.
     paddingBlockEnd: 0,
+  },
+  content: {
+    // Preserve the body's block formatting (including margin/float isolation)
+    // and its definite percentage-height basis. min-content lets this real
+    // observed box grow with async content beyond a fixed-height viewport.
+    // This box is also the sheet's container: it carries the padding and
+    // publishes it, so a lone Section child escapes it exactly as in Dialog.
+    // Unpadded unless the prop or the theme sets padding.
+    display: 'flow-root',
+    boxSizing: 'border-box',
+    height: '100%',
+    minHeight: 'min-content',
   },
   tallKeyboardBody: {
     scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
@@ -265,7 +296,14 @@ interface BottomSheetPanelProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   state: BottomSheetPanelState;
   height: BottomSheetHeight | number | string;
+  /** Existing host name, reused for the keyboard scrolling group. */
+  label: string;
   children: ReactNode;
+  /**
+   * Content padding on the spacing scale. Omitted, the content box reads the
+   * theme's bottom-sheet padding, else none (the released default).
+   */
+  padding?: SpacingStep;
   snapPoints?: ReadonlyArray<BottomSheetSnapPoint>;
   isSwipeDismissAllowed?: boolean;
   /** Whether the host has locked page scrolling (a modal, scrim-backed sheet). */
@@ -391,7 +429,9 @@ export function BottomSheetPanel({
   ref,
   state,
   height,
+  label,
   children,
+  padding,
   snapPoints,
   className,
   style,
@@ -490,6 +530,17 @@ export function BottomSheetPanel({
     onScrimOpacity,
   });
 
+  const {getViewportProps, getContentProps} = useScrollableArea({
+    // The previous overflow-y:auto also computed overflow-x:auto. Keep wide
+    // content reachable instead of clipping that existing inline scroll path.
+    axis: 'both',
+    keyboardAccess: {owner: 'contentOrViewport', label},
+    overscroll: 'contain',
+    // The sheet body deliberately remains the boundary for sheet-local sticky
+    // content while fitting, as it was before shared scroll adoption.
+    stickyContainment: 'always',
+  });
+
   const setElement = useCallback(
     (element: HTMLDivElement | null) => {
       sheetRef(element);
@@ -572,6 +623,13 @@ export function BottomSheetPanel({
     };
   }, [motion]);
 
+  // Same lowering as Dialog: with no padding prop the content box reads the
+  // theme's --astryx-bottom-sheet-padding chain (no padding when unset), else
+  // the explicit step.
+  const usesThemePadding = padding == null;
+  const effectivePadding = padding ?? 4;
+  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
+
   const isNamedHeight = typeof height === 'string' && height in HEIGHT_BUDGETS;
   const budget = isNamedHeight
     ? HEIGHT_BUDGETS[height as BottomSheetHeight]
@@ -628,6 +686,7 @@ export function BottomSheetPanel({
       {...mergeProps(
         themeProps('bottom-sheet'),
         stylex.props(
+          layerTextReset.reset,
           styles.sheet,
           overlayPaddingReset.reset,
           height === 'hug' ? styles.hugHeight : styles.budget,
@@ -656,17 +715,49 @@ export function BottomSheetPanel({
         <div {...stylex.props(styles.handlePill)} />
       </div>
       <div
-        {...mergeProps(
-          stylex.props(
-            styles.body,
-            height === 'tall' && styles.tallKeyboardBody,
+        {...getViewportProps<HTMLDivElement>({
+          ...bodyProps,
+          ...mergeProps(
+            stylex.props(
+              focusOutlineStyles.focusVisible,
+              styles.body,
+              height === 'tall' && styles.tallKeyboardBody,
+            ),
+            scrollPreservationInset > 0
+              ? {style: {paddingBlockEnd: `${scrollPreservationInset}px`}}
+              : {},
           ),
-          scrollPreservationInset > 0
-            ? {style: {paddingBlockEnd: `${scrollPreservationInset}px`}}
-            : {},
-        )}
-        {...bodyProps}>
-        {children}
+        })}>
+        <div
+          {...getContentProps<HTMLDivElement>(
+            stylex.props(
+              styles.content,
+              ...container(
+                usesThemePadding
+                  ? {useThemeDefault: 'bottom-sheet'}
+                  : {
+                      paddingInnerX: paddingToken,
+                      paddingInnerY: paddingToken,
+                      paddingOuterX: paddingToken,
+                      paddingOuterY: paddingToken,
+                    },
+              ),
+              !usesThemePadding &&
+                effectivePadding !== 4 &&
+                paddingStyles[effectivePadding],
+              !usesThemePadding &&
+                effectivePadding !== 4 &&
+                containerPaddingInlineVarStyles[effectivePadding],
+              !usesThemePadding &&
+                effectivePadding !== 4 &&
+                containerPaddingBlockStartVarStyles[effectivePadding],
+              !usesThemePadding &&
+                effectivePadding !== 4 &&
+                containerPaddingBlockEndVarStyles[effectivePadding],
+            ),
+          )}>
+          <LayerContentBoundary>{children}</LayerContentBoundary>
+        </div>
       </div>
     </div>
   );

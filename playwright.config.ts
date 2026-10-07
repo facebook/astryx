@@ -3,7 +3,7 @@
 /**
  * @file playwright.config.ts
  * @input Uses @playwright/test
- * @output The real-Chromium lane for the accessibility spec-test contracts.
+ * @output Chromium accessibility contracts and Chromium/WebKit keyboard proofs.
  * @position Run with `pnpm test:a11y-contract`. Deliberately separate from
  *   `pnpm test`: the Vitest projects must stay runnable from a cold clone with
  *   no browser installed, and the accessibility-tree and real-browser evidence
@@ -18,8 +18,12 @@
  * artifact every other Chromium check in this repository uses. Build it first:
  *
  *   pnpm storybook:build
- *   npx playwright install chromium
+ *   pnpm exec playwright install chromium webkit
  *   pnpm test:a11y-contract
+ *   pnpm exec playwright test BottomSheetKeyboard.a11y.browser.spec.ts
+ *
+ * Cross-browser specs use `.a11y.browser.spec.ts`; Chromium-only contracts keep
+ * `.a11y.chromium.spec.ts`. The WebKit project runs only the former.
  *
  * SYNC: When a package gains an accessibility binding, add its spec glob here.
  */
@@ -37,6 +41,7 @@ export default defineConfig({
     'internal/a11y-spec/src/**/*.chromium.spec.ts',
     // Component bindings.
     'packages/*/src/**/*.a11y.chromium.spec.ts',
+    'packages/*/src/**/*.a11y.browser.spec.ts',
   ],
   // The contract mounts, focuses, and types into one page at a time; parallel
   // workers would race over real keyboard focus.
@@ -48,5 +53,12 @@ export default defineConfig({
   // `use.reducedMotion` nor Chromium's `--force-prefers-reduced-motion` reaches
   // `matchMedia` in this Playwright version — both were measured returning
   // false. The specs call `holdMotionStill(page)` instead, which does work.
-  projects: [{name: 'chromium', use: {...devices['Desktop Chrome']}}],
+  projects: [
+    {name: 'chromium', use: {...devices['Desktop Chrome']}},
+    {
+      name: 'webkit',
+      testMatch: ['packages/*/src/**/*.a11y.browser.spec.ts'],
+      use: {...devices['Desktop Safari']},
+    },
+  ],
 });

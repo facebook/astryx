@@ -522,9 +522,9 @@ function MobileNavAloneExample() {
 export const MobileNavAlone: Story = {render: () => <MobileNavAloneExample />};
 
 /**
- * A hover tip inside a non-modal bottom sheet. `BottomSheet` handles Escape
- * itself rather than through the shared stack, so one press closes the sheet
- * and the tip goes with it. A tip being up does not stop the sheet closing.
+ * A hover tip inside a non-modal bottom sheet. Both surfaces participate in
+ * the shared dismissal stack, so the first Escape closes only the tip and the
+ * next Escape closes the sheet.
  */
 function SheetWithHoverTipExample() {
   const [activeSheet, setActiveSheet] = useState<string | null>(null);
@@ -543,9 +543,8 @@ function SheetWithHoverTipExample() {
         <BottomSheet sheetId="details" label="Details" height="hug">
           <VStack gap={3} xstyle={sheetStyles.body}>
             <Text type="body">
-              Hover the button to show the tip, then press Escape. BottomSheet
-              handles Escape itself, so one press closes the sheet and the tip
-              goes with it.
+              Hover the button to show the tip, then press Escape. The first
+              press closes only the tip; the next press closes the sheet.
             </Text>
             <Tooltip content="A hover tip, showing">
               <Button label="Hover me" variant="secondary" />

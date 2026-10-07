@@ -178,6 +178,12 @@ export const docs = {
           default: "'start'",
         },
         {
+          name: 'renderTrigger',
+          type: '(props: ComplexSelectorRenderTriggerProps) => ReactNode',
+          description:
+            "Render the control the popup hangs off — a glyph in a list row, a chip, an icon button — instead of the selector's own field and button. Spread the given props ({ref, id, onClick, onKeyDown, aria-haspopup, aria-expanded, aria-controls, aria-busy}) onto it; the popup is anchored to that control and still labelled by `label`. The field chrome is not rendered. Pair with handleRef to open from a keystroke elsewhere.",
+        },
+        {
           name: 'handleRef',
           type: 'React.Ref<ComplexSelectorHandle>',
           description:
@@ -321,6 +327,8 @@ export const docsDense = {
     startIcon: 'Leading trigger icon.',
     placement: 'Popup placement.',
     alignment: 'Popup alignment.',
+    renderTrigger:
+      'Caller-rendered opener replacing the field+button; spread the given props; popup anchored to it, labelled by label.',
     handleRef: 'Imperative open/close/toggle handle.',
     onOpenChange: 'Notified on every open and close, whatever caused it.',
     accessibility:

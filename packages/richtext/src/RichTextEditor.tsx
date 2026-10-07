@@ -4,10 +4,12 @@
 
 /**
  * @file RichTextEditor.tsx
- * @input Uses React, useId, Lexical (lexical + @lexical/react), Field,
- *   VisuallyHidden, useInputStatusIcon, mergeProps, design tokens
+ * @input Uses React, useId, Lexical (lexical + @lexical/react, composed through
+ *   LexicalExtensionComposer), Field, VisuallyHidden, useInputStatusIcon,
+ *   mergeProps, design tokens
  * @output Exports an accessibly labelled RichTextEditor component with a flush
- *   top toolbar slot and configurable editable-surface minimum height, RichTextEditorProps,
+ *   top toolbar slot, configurable editable-surface minimum height, and distinct
+ *   read-only and disabled states that follow prop changes, RichTextEditorProps,
  *   RichTextEditorStatus, RichTextEditorStatusType, RichTextEditorSize
  * @position Experimental (richtext) implementation; consumed by the package index.ts and
  *   re-exported from @astryxdesign/richtext. Tested by RichTextEditor.test.tsx.
@@ -58,10 +60,7 @@ import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {mergeProps, themeProps, type SizeValue} from '@astryxdesign/core/utils';
 import {useSize} from '@astryxdesign/core/SizeContext';
 
-import {
-  LexicalComposer,
-  type InitialConfigType,
-} from '@lexical/react/LexicalComposer';
+import {LexicalExtensionComposer} from '@lexical/react/LexicalExtensionComposer';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {ContentEditable} from '@lexical/react/LexicalContentEditable';
@@ -72,21 +71,30 @@ import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 import {TabIndentationPlugin} from '@lexical/react/LexicalTabIndentationPlugin';
 import {MarkdownShortcutPlugin} from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
-import {
-  TRANSFORMERS,
-  $convertToMarkdownString,
-  type Transformer,
-} from '@lexical/markdown';
+import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
+import {HorizontalRuleExtension} from '@lexical/extension';
+import {TextSemanticsExtension} from './textSemantics';
+import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
+import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
+import {CodeSyntaxPlugin} from './CodeSyntaxPlugin';
+import {MarkdownExtensionsPlugin} from './MarkdownExtensionsPlugin';
+import type {RichTextMarkdownExtension} from './markdownExtensions';
+import {TaskCheckboxPlugin} from './TaskCheckboxPlugin';
+import {type Transformer} from '@lexical/markdown';
 export type {Transformer} from '@lexical/markdown';
 import {$generateHtmlFromNodes} from '@lexical/html';
 import {DEFAULT_NODES} from './editorNodes';
+import {$exportMarkdownKeepingSource} from './markdownSource';
+import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import {
   BLUR_COMMAND,
   COMMAND_PRIORITY_LOW,
+  defineExtension,
   KEY_DOWN_COMMAND,
   KEY_ESCAPE_COMMAND,
   KEY_TAB_COMMAND,
   mergeRegister,
+  type AnyLexicalExtension,
   type EditorState,
   type Klass,
   type LexicalEditor,
@@ -182,11 +190,16 @@ const styles = stylex.create({
     width: '100%',
     // ContentEditable and Lexical's sibling placeholder inherit one shared
     // text style. This keeps their leading and coarse-pointer sizing identical
-    // to TextInput/TextArea without duplicating placeholder typography.
+    // to TextInput/TextArea without duplicating placeholder typography. The
+    // 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontFamily: typographyVars['--font-family-body'],
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
   },
@@ -199,7 +212,14 @@ const styles = stylex.create({
     alignItems: 'center',
   },
   disabled: {
-    cursor: 'not-allowed',
+    // Per #5335: `default`, not `not-allowed`. A disabled control already
+    // carries its own visual treatment, and `not-allowed` is unpaintable on
+    // the part of the library sealed behind `pointer-events: none`, so the
+    // library cannot promise it consistently.
+    cursor: {
+      default: 'default',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   counter: {
     display: 'flex',
@@ -270,8 +290,10 @@ export interface RichTextEditorRef {
   /**
    * Serialize the current content to a Markdown string, using the same
    * `transformers` the editor is configured with (so custom transformers
-   * layered in via the `transformers` prop are honored). Equivalent to
-   * `$convertToMarkdownString` run in a read context.
+   * layered in via the `transformers` prop are honored). Content imported
+   * with `markdownToEditorStateJSON` comes back as written: blocks nobody
+   * changed byte for byte, and only edited or added blocks in canonical
+   * Markdown.
    */
   getMarkdown: () => string;
   /**
@@ -325,12 +347,16 @@ export interface RichTextEditorProps extends Omit<
   /** Placeholder text shown when the editor is empty. */
   placeholder?: string;
   /**
-   * Whether the editor is read-only (non-editable).
+   * Whether the editor is read-only (non-editable). The content stays at full
+   * opacity, in the tab order, and announced as read-only, so people can still
+   * reach, read, and copy it. Takes effect when changed after mount.
    * @default false
    */
   isReadOnly?: boolean;
   /**
-   * Whether the editor is disabled (non-editable, dimmed).
+   * Whether the editor is disabled: non-editable, dimmed, out of the tab
+   * order, and announced as disabled. Wins when `isReadOnly` is also set.
+   * Takes effect when changed after mount.
    * @default false
    */
   isDisabled?: boolean;
@@ -389,13 +415,14 @@ export interface RichTextEditorProps extends Omit<
   /**
    * Whether to enable Markdown shortcut typing (e.g. `# ` for a heading,
    * `- ` for a list). Uses the `transformers` prop (defaults to the standard
-   * `@lexical/markdown` transformers).
+   * `@lexical/markdown` transformers plus GFM tables).
    * @default true
    */
   hasMarkdownShortcuts?: boolean;
   /**
    * Markdown transformers — the single source of truth for markdown behaviour.
-   * Defaults to the standard `@lexical/markdown` `TRANSFORMERS`.
+   * Defaults to the standard `@lexical/markdown` `TRANSFORMERS` plus GFM
+   * tables. A custom array replaces the default, tables included.
    *
    * The same array drives all three markdown operations in Lexical (see the
    * lexical-playground reference, where one `PLAYGROUND_TRANSFORMERS` array
@@ -411,6 +438,15 @@ export interface RichTextEditorProps extends Omit<
    * the serialization APIs added in later phases.
    */
   transformers?: ReadonlyArray<Transformer>;
+  /**
+   * Markdown plugins whose nodes this surface draws, each adopted with
+   * `createRichTextExtension` (spec:AST-064). A plugin node renders exactly as
+   * core `Markdown` renders it, and one whose plugin is not given here shows
+   * its source. Pass the extensions the content was converted with. Create
+   * them in a client module: they hold the plugins' functions, so they are not
+   * serializable props.
+   */
+  markdownExtensions?: ReadonlyArray<RichTextMarkdownExtension>;
   /** Whether to automatically focus the editor on mount. @default false */
   hasAutoFocus?: boolean;
   /**
@@ -487,7 +523,8 @@ export const RichTextEditor = forwardRef<
     toolbar,
     plugins,
     hasMarkdownShortcuts = true,
-    transformers = TRANSFORMERS,
+    transformers = DEFAULT_TRANSFORMERS,
+    markdownExtensions,
     hasAutoFocus = false,
     tabEscapeHint = DEFAULT_TAB_ESCAPE_HINT,
     maxLength,
@@ -526,17 +563,38 @@ export const RichTextEditor = forwardRef<
   // isn't running the transform in this repo, so this isn't auto-memoized.)
   const markdownTransformers = useMemo(() => [...transformers], [transformers]);
 
-  const initialConfig: InitialConfigType = {
-    namespace,
-    theme: themeRef.current,
-    editable,
-    editorState: defaultValue ?? undefined,
-    nodes: nodes ? [...DEFAULT_NODES, ...nodes] : [...DEFAULT_NODES],
-    onError(error: Error) {
-      // Surface errors to the host app rather than swallowing them.
-      throw error;
-    },
-  };
+  // The extension replaces LexicalComposer's `initialConfig`: it carries the
+  // same editor configuration (namespace, theme, nodes, editability, initial
+  // state) in the shape LexicalBuilder consumes.
+  //
+  // LexicalExtensionComposer re-creates the editor whenever the extension's
+  // identity changes, whereas LexicalComposer read `initialConfig` exactly once
+  // on mount. Build it on first render and keep it, so the editor's lifetime —
+  // and the content it holds — is unaffected by later renders (a consumer
+  // passing an inline `nodes={[...]}` array would otherwise blow away the
+  // editor's content on every render).
+  const extensionRef = useRef<AnyLexicalExtension | null>(null);
+  if (extensionRef.current === null) {
+    extensionRef.current = defineExtension({
+      name: '@astryxdesign/richtext/RichTextEditor',
+      namespace,
+      theme: themeRef.current,
+      editable,
+      nodes: nodes ? [...DEFAULT_NODES, ...nodes] : [...DEFAULT_NODES],
+      // Horizontal rules select on click and show their selection; struck
+      // text is a deletion.
+      dependencies: [HorizontalRuleExtension, TextSemanticsExtension],
+      // `undefined` (not `null`) leaves Lexical's default initializer in place,
+      // which seeds the empty document with one paragraph — what
+      // LexicalComposer did when no `editorState` was given. `null` would mean
+      // "start from a genuinely empty root".
+      $initialEditorState: defaultValue ?? undefined,
+      onError(error: Error) {
+        // Surface errors to the host app rather than swallowing them.
+        throw error;
+      },
+    });
+  }
 
   const hasTabEscapeHint = editable && tabEscapeHint !== '';
   const hasToolbar = toolbar != null && typeof toolbar !== 'boolean';
@@ -593,7 +651,9 @@ export const RichTextEditor = forwardRef<
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
-            (isDisabled || isReadOnly) && inputWrapperStyles.disabled,
+            // Only disabled is dimmed, matching TextArea: a read-only editor
+            // keeps full-opacity text and stays keyboard-reachable.
+            isDisabled && inputWrapperStyles.disabled,
             isDisabled && styles.disabled,
             status && inputStatusBorderStyles[status.type],
             status &&
@@ -606,7 +666,9 @@ export const RichTextEditor = forwardRef<
           className,
           style,
         )}>
-        <LexicalComposer initialConfig={initialConfig}>
+        <LexicalExtensionComposer
+          extension={extensionRef.current}
+          contentEditable={null}>
           {hasToolbar ? toolbar : null}
           <div
             {...stylex.props(
@@ -625,6 +687,8 @@ export const RichTextEditor = forwardRef<
                     ariaDescribedBy={ariaDescribedBy}
                     ariaRequired={isRequired && !isOptional}
                     ariaInvalid={status?.type === 'error'}
+                    isReadOnly={isReadOnly}
+                    isDisabled={isDisabled}
                     placeholderText={placeholder}
                     placeholderID={placeholderID}
                     minHeight={minHeight}
@@ -636,7 +700,27 @@ export const RichTextEditor = forwardRef<
               />
               <HistoryPlugin />
               <ListPlugin />
+              <TaskCheckboxPlugin isReadOnly={isReadOnly || isDisabled} />
               <LinkPlugin />
+              {/* Tab keeps its editor meaning inside a table (indent, and
+                  Escape then Tab to leave the editor); arrow keys move
+                  between cells. GFM tables have no merged cells or cell
+                  colors, and a wide table scrolls inside its own wrapper. */}
+              <TablePlugin
+                hasCellMerge={false}
+                hasCellBackgroundColor={false}
+                hasTabHandler={false}
+                hasHorizontalScroll
+              />
+              <TableColumnFloorPlugin />
+              <CodeBlockHeaderPlugin />
+              <CodeSyntaxPlugin />
+              {markdownExtensions != null && markdownExtensions.length > 0 ? (
+                <MarkdownExtensionsPlugin
+                  extensions={markdownExtensions}
+                  transformers={markdownTransformers}
+                />
+              ) : null}
               <TabIndentationPlugin />
               <TabFocusEscapePlugin />
               {hasMarkdownShortcuts && (
@@ -664,7 +748,7 @@ export const RichTextEditor = forwardRef<
               <div {...stylex.props(styles.statusIcon)}>{statusIcon}</div>
             )}
           </div>
-        </LexicalComposer>
+        </LexicalExtensionComposer>
         {hasTabEscapeHint && (
           <VisuallyHidden id={tabEscapeHintID}>{tabEscapeHint}</VisuallyHidden>
         )}
@@ -810,6 +894,23 @@ function EditorRefBridge({
   transformers: Array<Transformer>;
 }): null {
   const [editor] = useLexicalComposerContext();
+
+  // The extension applies `editable` once, when the composer builds the
+  // editor, so a later isReadOnly/isDisabled change would leave
+  // contenteditable at its mount value while the wrapper styling and ARIA
+  // follow the props. Sync the editor on a prop change only: the mount value
+  // is already applied, and this bridge renders after `plugins`, so
+  // re-asserting it on mount would undo a plugin that set editability during
+  // its own mount.
+  const syncedEditableRef = useRef(editable);
+  useEffect(() => {
+    if (syncedEditableRef.current === editable) {
+      return;
+    }
+    syncedEditableRef.current = editable;
+    editor.setEditable(editable);
+  }, [editor, editable]);
+
   useImperativeHandle(
     editorRef,
     () => ({
@@ -831,13 +932,13 @@ function EditorRefBridge({
       },
       getEditorState: () => editor.getEditorState(),
       getMarkdown: () =>
-        // $convertToMarkdownString must run inside a read context. Honors the
-        // same transformers the editor uses for shortcuts, so custom
-        // transformers round-trip to Markdown. `@lexical/markdown` is a
-        // subpackage (built dist) — safe, unlike a top-level `lexical` import.
+        // Untouched blocks export exactly as imported and changed blocks in
+        // canonical form (spec:AST-062). Honors the same transformers the
+        // editor uses for shortcuts, so custom transformers round-trip. Reads
+        // the state without changing it.
         editor
           .getEditorState()
-          .read(() => $convertToMarkdownString(transformers)),
+          .read(() => $exportMarkdownKeepingSource(transformers)),
       getHTML: () =>
         // $generateHtmlFromNodes serializes the whole document (null selection)
         // to HTML; must run in a read context and requires a DOM.
@@ -893,6 +994,8 @@ function EditorContentEditable({
   ariaDescribedBy,
   ariaRequired,
   ariaInvalid,
+  isReadOnly,
+  isDisabled,
   placeholderText,
   placeholderID,
   minHeight,
@@ -904,6 +1007,8 @@ function EditorContentEditable({
   ariaDescribedBy?: string;
   ariaRequired: boolean;
   ariaInvalid: boolean;
+  isReadOnly: boolean;
+  isDisabled: boolean;
   placeholderText?: string;
   placeholderID: string;
   minHeight: SizeValue;
@@ -918,6 +1023,18 @@ function EditorContentEditable({
     'aria-describedby': ariaDescribedBy,
     'aria-required': ariaRequired ? ('true' as const) : undefined,
     'aria-invalid': ariaInvalid ? ('true' as const) : undefined,
+    // Lexical announces every non-editable surface as aria-readonly and
+    // leaves it out of the tab order. Split the two states: read-only stays
+    // reachable and is announced read-only; disabled is announced disabled
+    // instead. These keys land after Lexical's computed attributes, so the
+    // disabled branch's explicit `undefined` removes the wrong read-only
+    // announcement. With neither prop set no keys are passed, so a plugin
+    // that drives editor.setEditable keeps Lexical's own aria-readonly.
+    ...(isDisabled
+      ? {'aria-disabled': 'true' as const, 'aria-readonly': undefined}
+      : isReadOnly
+        ? {tabIndex: 0, 'aria-readonly': 'true' as const}
+        : null),
     ...stylex.props(
       styles.contentEditable,
       dynamicStyles.contentEditableMinHeight(minHeight),

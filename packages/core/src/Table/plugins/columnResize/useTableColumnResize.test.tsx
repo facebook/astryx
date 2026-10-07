@@ -14,7 +14,11 @@ import userEvent from '@testing-library/user-event';
 import {Table} from '../../Table';
 import {useTableColumnResize} from './useTableColumnResize';
 import {useTableSelection} from '../selection/useTableSelection';
-import {proportional, pixel} from '../../columnUtils';
+import {
+  DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH,
+  proportional,
+  pixel,
+} from '../../columnUtils';
 import type {TableColumn} from '../../types';
 
 // JSDOM doesn't implement pointer capture
@@ -701,6 +705,15 @@ describe('useTableColumnResize', () => {
       const handle = getResizeHandles()[0];
       // Global override wins
       expect(handle).toHaveAttribute('aria-valuemin', '60');
+    });
+
+    it('uses the compact flexible floor for a width-less column', () => {
+      render(<ResizeTable />);
+      const handle = getResizeHandles()[0];
+      expect(handle).toHaveAttribute(
+        'aria-valuemin',
+        String(DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH),
+      );
     });
 
     it('defaults to DEFAULT_MIN_COLUMN_WIDTH (120) for proportional without explicit minWidth', () => {

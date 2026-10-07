@@ -347,6 +347,22 @@
     "defaultMessage": "Slide {current, number} of {total, number}",
     "description": "Screen-reader accessible name for one slide in a Carousel, giving its position. `current` is the 1-based slide number; `total` is the slide count."
   },
+  "@astryx.chart.label": {
+    "defaultMessage": "Chart",
+    "description": "Generic screen-reader name for a Chart with no primary series and no consumer-supplied title. Noun (a data visualization), not a verb."
+  },
+  "@astryx.chart.labelWithSeries": {
+    "defaultMessage": "Chart of {series} by {xKey}",
+    "description": "Generated screen-reader name for a Chart without a consumer-supplied title. `{series}` is a locale-formatted list of series labels; `{xKey}` is the consumer's horizontal data-field name."
+  },
+  "@astryx.chart.dataTableCaption": {
+    "defaultMessage": "{label} data",
+    "description": "Screen-reader-only caption for the small-data table that mirrors a Chart. `{label}` is the Chart's resolved accessible name."
+  },
+  "@astryx.chartLegend.label": {
+    "defaultMessage": "Chart legend",
+    "description": "Screen-reader-only accessible name for the list of series labels and swatches rendered by ChartLegend."
+  },
   "@astryx.chat.status.sending": {
     "defaultMessage": "Sending",
     "description": "Chat send-status caption under an outgoing message while it is being transmitted. Part of the set sending → sent → delivered → read (or failed) — keep tense/aspect consistent."
@@ -419,6 +435,10 @@
     "defaultMessage": "Back",
     "description": "Button label that returns from a nested action list to its parent inside a DropdownMenu bottom sheet. Imperative navigation action."
   },
+  "@astryx.dropdownMenu.backTo": {
+    "defaultMessage": "Back to {parent}",
+    "description": "Menu row that returns from a drilled-in sub-menu to the menu it came from. {parent} is that menu's name (e.g. \"Back to Actions\"). Imperative navigation action."
+  },
   "@astryx.lightbox.close": {
     "defaultMessage": "Close",
     "description": "\"Close\" = shut/dismiss (not \"nearby\"). Screen-reader-only label on the X button that dismisses a Lightbox."
@@ -430,6 +450,18 @@
   "@astryx.lightbox.next": {
     "defaultMessage": "Next",
     "description": "Screen-reader-only label on the right-arrow button in a Lightbox (navigates to next media item). Pairs with `lightbox.previous`."
+  },
+  "@astryx.chatTypingIndicator.one": {
+    "defaultMessage": "{name} is typing…",
+    "description": "Politely announced status naming the single person currently typing in a chat. `name` is a display name supplied by the app. Present-progressive form; the trailing ellipsis is the single … character."
+  },
+  "@astryx.chatTypingIndicator.many": {
+    "defaultMessage": "{names} are typing…",
+    "description": "Politely announced status when more than one person is typing in a chat. `names` is already joined for the locale by Intl.ListFormat, so translations must not add their own conjunction — place `{names}` where the joined list belongs."
+  },
+  "@astryx.chatTypingIndicator.others": {
+    "defaultMessage": "{count, number} {count, plural, one {other} other {others}}",
+    "description": "Overflow element for the chat typing status when three or more people type: the first name is shown and the rest collapse into this phrase, which is then joined to the name by Intl.ListFormat. Renders as the last list item, e.g. \"Ana and 2 others\"."
   },
   "@astryx.listInput.emptyTitle": {
     "defaultMessage": "No {itemName}s yet",
@@ -494,6 +526,14 @@
   "@astryx.listInput.announceAlreadyAtBoundary": {
     "defaultMessage": "This {itemName} is already {boundary, select, first {first} last {last} other {}}.",
     "description": "Screen-reader-only live announcement when an arrow-key reorder attempt has no effect because the record is already at that end of the list. `{itemName}` is the consumer's singular noun for one record; `{boundary}` is always exactly \"first\" or \"last\"."
+  },
+  "@astryx.markdownHeadingLinks.copied": {
+    "defaultMessage": "Link copied",
+    "description": "Accessible name on the Markdown heading copy button and text announced to a polite live region for ~1.5s after a successful copy. Sentence meaning \"Link copied\"; pairs with `markdownHeadingLinks.copy`."
+  },
+  "@astryx.markdownHeadingLinks.copy": {
+    "defaultMessage": "Copy link to {heading}",
+    "description": "Accessible name on the Markdown heading copy button in its default state. `{heading}` is the heading's plain text, or its generated id when the text is empty; pairs with `markdownHeadingLinks.copied`."
   },
   "@astryx.markdown.taskList": {
     "defaultMessage": "Task list",
@@ -582,6 +622,18 @@
   "@astryx.table.rowStatus.columnHeader": {
     "defaultMessage": "Row status",
     "description": "Screen-reader-only column header for the narrow status-indicator gutter a Table gains from useTableRowStatus. Sighted users see a blank gutter; assistive tech announces this as the column name."
+  },
+  "@astryx.table.selection.bulkActionsLabel": {
+    "defaultMessage": "Bulk actions",
+    "description": "Accessible name for the contextual Toolbar shown while Table rows are selected."
+  },
+  "@astryx.table.selection.clearAll": {
+    "defaultMessage": "Unselect All",
+    "description": "Visible button label that clears the complete controlled Table row selection, including keys outside the current view."
+  },
+  "@astryx.table.selection.selectedCount": {
+    "defaultMessage": "{count, number} selected",
+    "description": "Visible status in TableSelectionToolbar showing the number of selected rows."
   },
   "@astryx.table.selection.selectAllRows": {
     "defaultMessage": "Select all rows",
@@ -919,6 +971,10 @@
     "defaultMessage": "Loading",
     "description": "Screen-reader-only live-region announcement while a Button is in its loading state (spinner shown, action in flight). Progressive sense (\"work in progress\"), not a noun. Kept separate from `typeahead.loading` — translations may diverge."
   },
+  "@astryx.spinner.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only default name for a standalone Spinner's role=\"status\" element, used when the consumer supplies neither `aria-label` nor a visible string label. Present-progressive form. Kept separate from `button.loading` and `typeahead.loading` — translations may diverge."
+  },
   "@astryx.chatComposerDrawer.expand": {
     "defaultMessage": "Expand {label}",
     "description": "Screen-reader-only label on the ChatComposerDrawer toggle when the drawer is collapsed. `{label}` is the drawer's visible name — example: `Expand Attachments`. Pairs with `collapse`."
@@ -1207,6 +1263,10 @@
     "defaultMessage": "error",
     "description": "Screen-reader-only status word rendered next to a Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
   },
+  "@astryx.switch.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only live-region announcement while a Switch is in its busy state (spinner shown, action in flight)."
+  },
   "@astryx.tableTree.collapseRow": {
     "defaultMessage": "Collapse row",
     "description": "Aria label for the Table tree-data expander chevron when the row is currently expanded."
@@ -1294,6 +1354,14 @@
   "@astryx.multiSelector.selectionCount": {
     "defaultMessage": "{count, number} of {total, number} selected",
     "description": "Polite screen-reader announcement of how many MultiSelector options are selected out of the total, spoken after each toggle. Live-region text, never shown on screen; example: `3 of 12 selected`."
+  },
+  "@astryx.multiSelector.createOption": {
+    "defaultMessage": "Create \"{query}\"",
+    "description": "Label of the first row in a MultiSelector's search panel when `hasCreate` is set and the typed text matches no option. Picking it reports a creation to the caller. `{query}` is the trimmed text the person typed, shown in quotes."
+  },
+  "@astryx.multiSelector.optionCreated": {
+    "defaultMessage": "{label} created",
+    "description": "Polite screen-reader announcement after the create row of a MultiSelector is picked. Live-region text, never shown on screen; `{label}` is the text the person typed."
   },
   "@astryx.multiSelector.emptySearchResults": {
     "defaultMessage": "No results found",

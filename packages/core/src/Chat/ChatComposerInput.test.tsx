@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ChatComposer} from './ChatComposer';
 import {useChatComposerContext} from './ChatContext';
@@ -570,6 +570,33 @@ describe('ChatComposerInput', () => {
       });
       expect(onFiles).toHaveBeenCalledWith([file]);
     });
+
+    it('calls onFiles when files are dropped onto the editor', () => {
+      const onFiles = vi.fn();
+      render(<ChatComposerInput onFiles={onFiles} />);
+      const textbox = screen.getByRole('textbox');
+      const file = new File(['content'], 'dropped.txt', {type: 'text/plain'});
+
+      const allowed = fireEvent.drop(textbox, {
+        dataTransfer: {files: [file], types: ['Files']},
+      });
+      expect(allowed).toBe(false);
+      expect(onFiles).toHaveBeenCalledWith([file]);
+    });
+
+    it('does not emit dropped files while disabled', () => {
+      const onFiles = vi.fn();
+      render(<ChatComposerInput isDisabled onFiles={onFiles} />);
+      const textbox = screen.getByRole('textbox');
+      const file = new File(['content'], 'blocked.txt', {type: 'text/plain'});
+
+      const allowed = fireEvent.drop(textbox, {
+        dataTransfer: {files: [file], types: ['Files']},
+      });
+
+      expect(allowed).toBe(false);
+      expect(onFiles).not.toHaveBeenCalled();
+    });
   });
 
   // Paste / insert paths used to bail silently when the contenteditable
@@ -651,10 +678,13 @@ describe('ChatComposerInput', () => {
       expect(textbox.querySelector('[data-astryx-token]')).toBeInTheDocument();
     });
 
-    it('imperative insertText works after a focus() with no selection range', () => {
+    it('imperative insertText updates the observable draft after a focus() with no selection range', () => {
       let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
       render(
         <ChatComposerInput
+          placeholder="Write a message"
+          onChange={onChange}
           handleRef={h => {
             handle = h;
           }}
@@ -665,8 +695,12 @@ describe('ChatComposerInput', () => {
       textbox.focus();
       clearSelection();
 
-      handle!.insertText('hello');
+      act(() => handle!.insertText('hello'));
+
       expect(textbox.textContent).toContain('hello');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenLastCalledWith('hello');
+      expect(screen.queryByText('Write a message')).not.toBeInTheDocument();
     });
 
     // History recall reads where the caret sits, so where a programmatic
@@ -976,6 +1010,60 @@ describe('ChatComposerInput', () => {
       });
     });
 
+    it('lets onPaste intercept long text before default token conversion', () => {
+      const onPaste = vi.fn(() => true);
+      render(<ChatComposerInput onPaste={onPaste} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      clearSelection();
+      const long = 'c'.repeat(250);
+
+      fireEvent.paste(textbox, {
+        clipboardData: {
+          files: [],
+          getData: (type: string) => (type === 'text/plain' ? long : ''),
+        },
+      });
+
+      expect(onPaste).toHaveBeenCalledWith(expect.anything(), long);
+      expect(
+        textbox.querySelector('[data-astryx-token]'),
+      ).not.toBeInTheDocument();
+      expect(textbox.textContent).toBe('');
+    });
+
+    it('emits once when onPaste inserts through the imperative handle', () => {
+      let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      const onPaste = vi.fn((_event: unknown, text: string) => {
+        handle!.insertText(text);
+        return true;
+      });
+      render(
+        <ChatComposerInput
+          handleRef={next => {
+            handle = next;
+          }}
+          onChange={onChange}
+          onPaste={onPaste}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      clearSelection();
+
+      fireEvent.paste(textbox, {
+        clipboardData: {
+          files: [],
+          getData: (type: string) => (type === 'text/plain' ? 'hello' : ''),
+        },
+      });
+
+      expect(textbox.textContent).toBe('hello');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith('hello');
+    });
+
     it('paste falls through to plain-text path when pasteAsToken={false}', () => {
       const onChange = vi.fn();
       render(<ChatComposerInput pasteAsToken={false} onChange={onChange} />);
@@ -1054,6 +1142,98 @@ describe('ChatComposerInput', () => {
       });
       const {container} = render(<ChatComposerInput triggers={[trigger]} />);
       expect(container).toBeTruthy();
+    });
+
+    // A trigger's `emptySearchResultsText` was renamed to `emptySearchText`
+    // and widened from `string` to `ReactNode` (`spec:AST-056` FR1). The
+    // released key keeps working through the overlap (`spec:AST-017` FR28).
+    it('renders an element emptySearchText when the query matched nothing', async () => {
+      const user = userEvent.setup();
+      const trigger = createMentionTrigger({
+        emptySearchText: (
+          <span>
+            Nobody by that name. <a href="/invite">Invite them</a>
+          </span>
+        ),
+      });
+      render(<ChatComposerInput triggers={[trigger]} />);
+
+      await user.click(screen.getByRole('combobox'));
+      await user.keyboard('@zzzzz');
+
+      await waitFor(() => {
+        expect(screen.getByText('Invite them')).toBeInTheDocument();
+      });
+    });
+
+    it('keeps the deprecated key working, and says it is deprecated', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const user = userEvent.setup();
+      const trigger = createMentionTrigger({
+        emptySearchResultsText: 'Nobody found',
+      });
+      render(<ChatComposerInput triggers={[trigger]} />);
+
+      await user.click(screen.getByRole('combobox'));
+      await user.keyboard('@zzzzz');
+
+      await waitFor(() => {
+        expect(screen.getByText('Nobody found')).toBeInTheDocument();
+      });
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'ChatComposerInput: A trigger sets `emptySearchResultsText`, which is deprecated',
+        ),
+      );
+      warn.mockRestore();
+    });
+
+    it('treats an explicit null key as not given, falling through to the old one', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const user = userEvent.setup();
+      const trigger = createMentionTrigger({
+        emptySearchResultsText: 'Nobody found',
+        emptySearchText: null,
+      });
+      render(<ChatComposerInput triggers={[trigger]} />);
+
+      await user.click(screen.getByRole('combobox'));
+      await user.keyboard('@zzzzz');
+
+      // The same meaning the typeahead family gives `null`: not given, so
+      // the released key still supplies the message and no warning claims a
+      // winner the menu did not pick.
+      await waitFor(() => {
+        expect(screen.getByText('Nobody found')).toBeInTheDocument();
+      });
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('sets both'),
+      );
+      warn.mockRestore();
+    });
+
+    it('lets the new key win when a trigger sets both, and warns', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const user = userEvent.setup();
+      const trigger = createMentionTrigger({
+        emptySearchResultsText: 'Old copy',
+        emptySearchText: 'New copy',
+      });
+      render(<ChatComposerInput triggers={[trigger]} />);
+
+      await user.click(screen.getByRole('combobox'));
+      await user.keyboard('@zzzzz');
+
+      await waitFor(() => {
+        expect(screen.getByText('New copy')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Old copy')).not.toBeInTheDocument();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'ChatComposerInput: A trigger sets both `emptySearchResultsText` and `emptySearchText`',
+        ),
+      );
+      warn.mockRestore();
     });
   });
 
@@ -1393,6 +1573,101 @@ describe('ChatComposerInput', () => {
       fireEvent.input(textbox);
 
       expect(textbox.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('emits once when a string trigger result is selected', async () => {
+      const {textbox, onChange} = setupTriggerInput([createCommandTrigger()]);
+
+      setCursorAfterText(textbox, '/');
+      fireEvent.input(textbox);
+      await waitFor(() => {
+        const menu = document.getElementById(
+          textbox.getAttribute('aria-controls')!,
+        );
+        expect(
+          menu?.querySelectorAll('[role="option"]').length ?? 0,
+        ).toBeGreaterThan(0);
+      });
+      onChange.mockClear();
+
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+
+      expect(textbox.textContent).toBe('/summarize ');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith('/summarize ');
+    });
+  });
+
+  describe('trigger menu hover scrolling', () => {
+    // Regression: the scroll-highlighted-item-into-view effect ran for
+    // mouse-hover highlights too. A pointer resting near the bottom of the
+    // menu kept scrolling: each scrollIntoView moved a new option under the
+    // stationary cursor, whose mouseenter re-highlighted and scrolled again.
+    // Hover must highlight only; keyboard navigation keeps its scrolling.
+    function openMenu() {
+      // jsdom does not implement scrollIntoView — install a spy directly.
+      const original = Element.prototype.scrollIntoView;
+      const spy = vi.fn();
+      Element.prototype.scrollIntoView = spy;
+      cleanupFns.push(() => {
+        Element.prototype.scrollIntoView = original;
+      });
+      render(<ChatComposerInput triggers={[createMentionTrigger()]} />);
+      const textbox = screen.getByRole('combobox');
+      textbox.focus();
+      const textNode = document.createTextNode('@');
+      textbox.appendChild(textNode);
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(textNode, 1);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      fireEvent.input(textbox);
+      expect(textbox.getAttribute('aria-expanded')).toBe('true');
+      return {textbox, spy};
+    }
+
+    // The menu layer is a `[popover]` element; jsdom has no popover semantics
+    // so testing-library's role queries see it as hidden. Query via
+    // aria-controls instead.
+    async function getMenuOptions(textbox: HTMLElement) {
+      const listbox = await waitFor(() => {
+        const el = document.getElementById(
+          textbox.getAttribute('aria-controls')!,
+        );
+        const options = el?.querySelectorAll<HTMLElement>('[role="option"]');
+        expect(options?.length ?? 0).toBeGreaterThan(1);
+        return options!;
+      });
+      return Array.from(listbox);
+    }
+
+    const cleanupFns: (() => void)[] = [];
+
+    afterEach(() => {
+      cleanupFns.splice(0).forEach(fn => fn());
+    });
+
+    it('does not scroll when hover highlights an option', async () => {
+      const {textbox, spy} = openMenu();
+      const callsAfterOpen = spy.mock.calls.length;
+
+      const options = await getMenuOptions(textbox);
+      fireEvent.mouseEnter(options[1]);
+
+      expect(options[1]).toHaveAttribute('aria-selected', 'true');
+      expect(spy.mock.calls.length).toBe(callsAfterOpen);
+    });
+
+    it('still scrolls on keyboard navigation', async () => {
+      const {textbox, spy} = openMenu();
+      const callsAfterOpen = spy.mock.calls.length;
+
+      await getMenuOptions(textbox);
+      fireEvent.keyDown(textbox, {key: 'ArrowDown'});
+
+      expect(spy.mock.calls.length).toBeGreaterThan(callsAfterOpen);
     });
   });
 });

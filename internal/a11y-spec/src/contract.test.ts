@@ -95,6 +95,15 @@ describe('definePattern', () => {
     ).not.toThrow();
   });
 
+  it('accepts a hyphenated adopted-pattern slug in an expectation id', () => {
+    expect(
+      pattern({
+        pattern: 'modal-dialog',
+        expectations: [expectation({id: 'modal-dialog.name.exposed'})],
+      }),
+    ).not.toThrow();
+  });
+
   it('refuses an expectation with no user outcome', () => {
     expect(pattern({expectations: [expectation({outcome: '  '})]})).toThrow(
       /states no user outcome/,

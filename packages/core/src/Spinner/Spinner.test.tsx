@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Spinner} from './Spinner';
+import {InternationalizationProvider} from '../i18n';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
@@ -72,22 +73,32 @@ describe('Spinner', () => {
     expect(spinner).toHaveAttribute('data-shade', 'inherit');
   });
 
-  it('has role="status"', () => {
-    render(<Spinner data-testid="spinner" />);
-    expect(screen.getByRole('status')).toBeInTheDocument();
-  });
-
-  it('has aria-label="Loading" by default', () => {
-    render(<Spinner data-testid="spinner" />);
+  it('localizes the default assistive label through the i18n catalog', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.spinner.loading': 'Chargement'}}}>
+        <Spinner data-testid="spinner" />
+      </InternationalizationProvider>,
+    );
     expect(screen.getByTestId('spinner')).toHaveAttribute(
       'aria-label',
-      'Loading',
+      'Chargement',
     );
   });
 
-  it('names the status element from the visible string label', () => {
-    render(<Spinner label="Fetching data" data-testid="spinner" />);
-    expect(screen.getByRole('status')).toHaveAccessibleName('Fetching data');
+  it('keeps an explicit aria-label over the localized default', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{fr: {'@astryx.spinner.loading': 'Chargement'}}}>
+        <Spinner aria-label="Veuillez patienter" data-testid="spinner" />
+      </InternationalizationProvider>,
+    );
+    expect(screen.getByTestId('spinner')).toHaveAttribute(
+      'aria-label',
+      'Veuillez patienter',
+    );
   });
 
   it('does not duplicate a visible string label as aria-label', () => {
@@ -220,6 +231,14 @@ describe('Spinner', () => {
         cssFor({spinner: {base: {'--spinner-color': 'var(--color-brand)'}}}),
       ).toContain(
         '.astryx-spinner {\n    --spinner-color: var(--color-brand);',
+      );
+    });
+
+    it('scopes a themed arc fraction to that size variant (#5819)', () => {
+      expect(
+        cssFor({spinner: {'size:xl': {'--spinner-arc-fraction': '0.75'}}}),
+      ).toContain(
+        '.astryx-spinner[data-size="xl"] {\n    --spinner-arc-fraction: 0.75;',
       );
     });
   });
@@ -385,6 +404,10 @@ describe('Spinner ring', () => {
       frames.forEach(cb => cb(0));
       expect(animations).toHaveLength(5);
       expect(animations.every(a => a.startTime === 0)).toBe(true);
+      // The dash animation lives on the arc <circle>, a descendant of the
+      // <svg> this ref sits on, not the <svg> itself (#6253) — subtree:true
+      // is what lets getAnimations() find it from here.
+      expect(getAnimations).toHaveBeenCalledWith({subtree: true});
       // The pin runs on the branch the other shade cases cannot reach, so the
       // no-read assertion is made here too.
       expect(

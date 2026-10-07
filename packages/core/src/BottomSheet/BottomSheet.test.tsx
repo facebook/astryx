@@ -3,7 +3,7 @@
 /**
  * @file BottomSheet.test.tsx
  * @input Uses vitest, @testing-library/react, BottomSheet component
- * @output Unit tests for BottomSheet component behavior
+ * @output Unit tests for BottomSheet behavior and observed content anatomy
  * @position Core testing; validates BottomSheet.tsx implementation
  *
  * SYNC: When BottomSheet.tsx changes, update tests to match new behavior
@@ -290,7 +290,7 @@ describe('BottomSheet', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps consumer content as the last scroll-body child', () => {
+  it('keeps consumer content first and last inside the observed content box', () => {
     render(
       <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
         <div data-testid="consumer-content">Sheet content</div>
@@ -300,7 +300,10 @@ describe('BottomSheet', () => {
     const consumer = screen.getByTestId('consumer-content');
 
     expect(body.children).toHaveLength(1);
-    expect(body.lastElementChild).toBe(consumer);
+    const content = body.lastElementChild;
+    expect(content).toHaveAttribute('data-scroll-content');
+    expect(content?.lastElementChild).toBe(consumer);
+    expect(consumer.matches(':first-child')).toBe(true);
     expect(consumer.matches(':last-child')).toBe(true);
   });
 
@@ -2436,6 +2439,41 @@ describe('BottomSheet', () => {
       expect(computed.getPropertyValue('--container-padding-block-end')).toBe(
         '0px',
       );
+    });
+  });
+
+  describe('container padding', () => {
+    it('passes padding to the content box of a standalone sheet', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Filters" padding={0}>
+          <span data-testid="sheet-child">Content</span>
+        </BottomSheet>,
+      );
+      const box = screen.getByTestId('sheet-child').parentElement!;
+      expect(
+        getComputedStyle(box).getPropertyValue(
+          '--container-padding-inline-start',
+        ),
+      ).toBe('var(--spacing-0)');
+      expect(getSheet().hasAttribute('padding')).toBe(false);
+    });
+
+    it('passes padding to the content box of a switcher sheet', () => {
+      render(
+        <BottomSheetSwitcher
+          activeSheet="details"
+          onActiveSheetChange={() => {}}>
+          <BottomSheet sheetId="details" label="Details" padding={2}>
+            <span data-testid="switcher-child">Content</span>
+          </BottomSheet>
+        </BottomSheetSwitcher>,
+      );
+      const box = screen.getByTestId('switcher-child').parentElement!;
+      expect(
+        getComputedStyle(box).getPropertyValue(
+          '--container-padding-inline-start',
+        ),
+      ).toBe('var(--spacing-2)');
     });
   });
 });

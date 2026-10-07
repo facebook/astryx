@@ -111,6 +111,7 @@ import {
   type ISODateString,
 } from '../utils';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {MonthScroller, type MonthScrollerHandle} from './MonthScroller';
 import {MonthYearWheels} from './MonthYearWheels';
@@ -194,10 +195,14 @@ const styles = stylex.create({
     padding: 0,
     fontFamily: typographyVars['--font-family-body'],
     // Below 16px iOS zooms the page on focus. The field is focusable even
-    // though it is not typable, so it needs the same floor DateInput has.
+    // though it is not typable, so it needs the same floor DateInput has —
+    // keyed to iOS alone, since only iOS WebKit implements
+    // -webkit-touch-callout.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     color: colorVars['--color-text-primary'],
@@ -573,6 +578,7 @@ export function TouchDateField({
   ref,
   ...rest
 }: DateInputProps) {
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -950,6 +956,7 @@ export function TouchDateField({
           // restyle the header button. Adding a target later is additive;
           // withdrawing one is not.
           data-title="month-year"
+          {...pressable}
           {...stylex.props(
             styles.title,
             interactionOverlayStyles.backgroundColor,

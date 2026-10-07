@@ -12,19 +12,20 @@ export const doc = {
   type: 'schema',
   name: 'output',
   displayName: 'Output Envelope',
-  namespace: 'cli',
+  namespace: 'cli/api',
   description:
     'The single JSON envelope every command emits under --json. Success is ' +
-    '{ apiVersion, type, data, meta? }; failure is { apiVersion, error, code, ' +
+    '{ apiVersion, type, package?, data, meta? }; failure is { apiVersion, error, code, ' +
     'suggestions? }. Discriminate by checking whether `error` is present.',
   appliesTo: 'astryx --json',
   fields: [
     {
       name: 'Success envelope',
-      type: '{ apiVersion: number; type: string; data: unknown; meta?: Record<string, unknown> }',
+      type: '{ apiVersion: number; type: string; package?: string; data: unknown; meta?: Record<string, unknown> }',
       description:
         'Emitted for every successful command in --json mode: a type ' +
-        'discriminator, its data payload, and an optional meta sidecar.',
+        'discriminator, the package that owns what the response is about, ' +
+        'its data payload, and an optional meta sidecar.',
       fields: [
         {
           name: 'apiVersion',
@@ -39,16 +40,25 @@ export const doc = {
           name: 'type',
           type: 'string',
           description:
-            'Discriminator naming the payload shape. Each command guarantees ' +
-            'its own `type` at its return; there is no central union.',
+            'Names the payload shape. Every value is listed in the response-types enum.',
           required: true,
+        },
+        {
+          name: 'package',
+          type: 'string',
+          description:
+            'The npm package that owns the one thing the response is about: ' +
+            '`@astryxdesign/core` for a Core component, hook, or template, ' +
+            '`@astryxdesign/cli` for a doc the CLI ships, or the integration ' +
+            'package that contributed it. Absent when the response lists ' +
+            'things from more than one package; each listed item then names ' +
+            'its own `package`.',
+          example: "'@astryxdesign/core'",
         },
         {
           name: 'data',
           type: 'unknown',
-          description:
-            "The command's payload. Structural by design, narrowed by the " +
-            'per-command return type, not by a map in the serializer.',
+          description: "The command's payload; its shape depends on `type`.",
           required: true,
         },
         {
@@ -64,7 +74,7 @@ export const doc = {
       type: '{ apiVersion: number; error: string; code: ErrorCode; suggestions?: Suggestion[] }',
       description:
         'Emitted for every failure in --json mode, including uncaught throws ' +
-        'and Commander parse errors, which are converted to this shape.',
+        'and command-line parse errors, which are converted to this shape.',
       fields: [
         {
           name: 'apiVersion',
@@ -121,7 +131,8 @@ export const doc = {
       label: 'Success',
       code: `{
   "apiVersion": 1,
-  "type": "component",
+  "type": "component.detail",
+  "package": "@astryxdesign/core",
   "data": { "name": "Button" }
 }`,
     },
@@ -153,9 +164,13 @@ export const doc = {
     {
       type: 'prose',
       text:
-        'The process exit code is part of the contract too: successful commands ' +
-        'exit 0, and a JSON error envelope is accompanied by a non-zero exit ' +
-        '(jsonError exits 1).',
+        'The process exit code is part of the contract too. Exit 0 means success, ' +
+        'and every error envelope exits 1. Some commands also exit 1 with a success ' +
+        'envelope when what they report failed: a failed check (layout check, doctor ' +
+        'and its integration subcommands, integration verify, theme build ' +
+        '--check), a gap report that was not delivered, an upgrade left incomplete, ' +
+        'or init agent docs refused for a path outside the project. Read the ' +
+        'envelope, not the exit code, to tell them apart.',
     },
   ],
 };

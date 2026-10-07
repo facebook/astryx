@@ -1,12 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Breadcrumbs} from './Breadcrumbs';
 import {BreadcrumbItem} from './BreadcrumbItem';
 import {
   BreadcrumbMenuItem,
+  BreadcrumbMenuGroup,
   BreadcrumbMenuCheckboxItem,
   BreadcrumbMenuRadioGroup,
   BreadcrumbMenuRadioItem,
@@ -97,18 +98,6 @@ describe('Breadcrumbs', () => {
     // Custom separator content is nested inside the aria-hidden span
     // First item's separator is hidden via CSS, but still in the DOM
     expect(separators[1].textContent).toBe('›');
-  });
-
-  it('separators are aria-hidden', () => {
-    const {container} = render(
-      <Breadcrumbs>
-        <BreadcrumbItem href="/">Home</BreadcrumbItem>
-        <BreadcrumbItem isCurrent>Page</BreadcrumbItem>
-      </Breadcrumbs>,
-    );
-    const separators = container.querySelectorAll('span[aria-hidden="true"]');
-    expect(separators.length).toBeGreaterThan(0);
-    expect(separators[0]).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('forwards ref to the nav element', () => {
@@ -427,6 +416,24 @@ describe('BreadcrumbItem menu', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('labels the menu from non-string trigger content', async () => {
+    const user = userEvent.setup();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem menu={items}>
+          <span>Teams</span>
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Teams'}));
+
+    expect(screen.getByRole('menu', {hidden: true})).toHaveAccessibleName(
+      'Teams',
+    );
+  });
+
   it('portability: a DropdownMenuOption[] renders its items on open', async () => {
     const user = userEvent.setup();
     render(
@@ -437,7 +444,7 @@ describe('BreadcrumbItem menu', () => {
     );
     await user.click(screen.getByRole('button', {name: 'Teams'}));
     const menu = screen.getByRole('menu', {hidden: true});
-    expect(menu).toHaveAttribute('aria-label', 'Teams');
+    expect(menu).toHaveAccessibleName('Teams');
     expect(
       screen.getByRole('menuitem', {name: 'Design', hidden: true}),
     ).toBeInTheDocument();
@@ -576,6 +583,35 @@ describe('BreadcrumbItem menu', () => {
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
     await waitFor(() => {
       expect(trigger).toHaveFocus();
+    });
+  });
+
+  it('preserves outside focus after a browser light dismiss', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <Breadcrumbs>
+          <BreadcrumbItem menu={items}>Teams</BreadcrumbItem>
+          <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+        </Breadcrumbs>
+        <button type="button">Outside action</button>
+      </>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Teams'});
+    await user.click(trigger);
+    const menu = screen.getByRole('menu', {hidden: true});
+    const outside = screen.getByRole('button', {name: 'Outside action'});
+
+    outside.focus();
+    expect(outside).toHaveFocus();
+    const popover = menu.closest('[popover]');
+    expect(popover).not.toBeNull();
+    await act(async () => {
+      (popover as HTMLElement).hidePopover();
+    });
+
+    await waitFor(() => {
+      expect(outside).toHaveFocus();
     });
   });
 
@@ -733,5 +769,34 @@ describe('BreadcrumbItem menu', () => {
       'ol > li > span[aria-hidden="true"]',
     );
     expect(separators).toHaveLength(3);
+  });
+
+  it('carries the group semantics through the BreadcrumbMenuGroup alias', async () => {
+    // The alias must bring the semantics, not just the component: a group
+    // that renders but is not named leaves a screen reader with a run of
+    // loose rows where a sighted user sees a cluster.
+    const user = userEvent.setup();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem
+          menu={
+            <BreadcrumbMenuGroup title="Recent">
+              <BreadcrumbMenuItem label="Overview" onClick={() => {}} />
+              <BreadcrumbMenuItem label="Settings" onClick={() => {}} />
+            </BreadcrumbMenuGroup>
+          }>
+          Project
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Current</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Project'}));
+
+    const group = screen.getByRole('group', {name: 'Recent', hidden: true});
+    const heading = screen.getByText('Recent');
+    expect(group).toHaveAttribute('aria-labelledby', heading.id);
+    expect(group).toContainElement(
+      screen.getByRole('menuitem', {name: 'Overview', hidden: true}),
+    );
   });
 });

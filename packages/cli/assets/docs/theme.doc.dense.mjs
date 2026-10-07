@@ -3,11 +3,12 @@
 /** @type {import('@astryxdesign/cli/authoring').ReferenceTranslationDoc} */
 
 export const docsDense = {
-  description: 'Theme provider, custom themes, light/dark, component overrides',
+  description:
+    'Theme provider, custom themes, theme build (prod/SSR), light/dark, component overrides',
   sections: [
     {
-      section: 'Quick Start',
-      title: 'Quick Start',
+      section: 'Wrap your app in a theme',
+      title: 'Wrap your app',
       content: [
         null,
         null,
@@ -31,14 +32,23 @@ export const docsDense = {
         },
       ],
     },
-    {section: 'Theme Props', title: 'Props', content: [null]},
     {
-      section: 'Creating a Custom Theme',
+      section: 'Theme Props',
+      title: 'Props',
+      content: [
+        {
+          type: 'prose',
+          text: "<Theme> props: theme (required), mode ('system' default, or 'light'/'dark'), children. every prop: astryx component Theme.",
+        },
+      ],
+    },
+    {
+      section: 'Custom themes',
       title: 'Custom Theme',
       content: [
         {
           type: 'prose',
-          text: '`theme list` + `theme add <slug>` to start from a shipped theme, or defineTheme from scratch. only override tokens that differ.',
+          text: '`theme list` + `theme add <slug>` to start from a bundled or installed integration theme; use `--package` for a shared slug. Or defineTheme from scratch. only override tokens that differ.',
         },
         null,
         {
@@ -53,7 +63,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: 'scale configs (color, typography, radius, motion) + explicit token overrides + component overrides. color derives full palette from accent via HCT; accent = hex or [light, dark] tuple (per-scheme palettes). tokens overrides win token-by-token; --color-on-accent stays baked from color.accent, so prefer a tuple accent over overriding --color-accent.',
+          text: 'scale configs (color, typography, radius, motion) + explicit token overrides + component overrides. color derives full palette from accent via HCT; accent = hex or [light, dark] tuple (per-scheme palettes). tokens overrides win token-by-token; --color-on-accent stays baked from color.accent, so prefer a tuple accent over overriding --color-accent. localTokens accepts any valid CSS custom-property name; prefixes do not establish ownership.',
         },
         null,
         null,
@@ -65,10 +75,36 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: 'adaptations = ordered {when,value} rules over width/pointer/contrast/motion. widthBreakpoints fixed sm|md|lg|xl|2xl defaults 640|768|1024|1280|1536; map alone emits no CSS. width.from inclusive, width.below exclusive; condition fields AND. root first, then matching rules in authored order (later writes win), then onDark/onLight. rules can write typography/color/radius/motion/tokens/localTokens/components; local names belong on root. Component writes validate exactly like root components (same targets/axes/domains); only difference: a rule cannot be the sole enroller of a custom value (type augmentation is unconditional) — declare it on root, then restyle. Built-ins need no root declaration. Co-matching token/localToken writes are validated together; any reachable var() cycle fails. extends inherits breakpoints + ordered rules, appends child rules, re-resolves against child axes. CSS-only; use built themes for SSR first paint.',
+          text: 'adaptations = ordered {when,value} rules over width/pointer/contrast/motion. condition fields AND. rules can write typography/color/radius/motion/tokens/localTokens/components.',
         },
         null,
         null,
+        {
+          type: 'prose',
+          text: 'widthBreakpoints fixed sm|md|lg|xl|2xl defaults 640|768|1024|1280|1536; map alone emits no CSS. width.from inclusive, width.below exclusive. order + validation: see Adaptation Rules.',
+        },
+      ],
+    },
+    {
+      section: 'Adaptation order and validation',
+      title: 'Adaptation Rules',
+      content: [
+        {
+          type: 'prose',
+          text: 'root first, then matching rules in authored order (later writes win), then onDark/onLight on the same leaf.',
+        },
+        {
+          type: 'prose',
+          text: 'extends inherits breakpoints + ordered rules, appends child rules, re-resolves against child axes. an empty child rule is a no-op, not a removal.',
+        },
+        {
+          type: 'prose',
+          text: 'local names belong on root. Component writes validate exactly like root components (same targets/axes/domains); only difference: a rule cannot be the sole enroller of a custom value (type augmentation is unconditional) — declare it on root, then restyle. Built-ins need no root declaration. Co-matching token/localToken writes are validated together; any reachable var() cycle fails.',
+        },
+        {
+          type: 'prose',
+          text: 'CSS-only (media queries, no resize listener); use built themes for SSR first paint.',
+        },
       ],
     },
     {
@@ -77,7 +113,7 @@ export const docsDense = {
       content: [
         {
           type: 'prose',
-          text: 'components field uses semantic component keys + style keys (base, variant:value, stateName), not raw selectors. for external CSS, prefer data-* selectors from `astryx docs styling`. write standard CSS (borderRadius, padding) — pipeline expands to internal vars. public vars (--button-focus-offset etc) set directly. private vars (--_*) cannot be set — use CSS properties. run `astryx theme targets [Name]` to enumerate every themeable key (--json for lint), `astryx component <Name>` for one component.',
+          text: 'components field uses semantic component keys + style keys (base, variant:value, stateName), not raw selectors. for external CSS, prefer data-* selectors ({@link generic:styling}). write standard CSS (borderRadius, padding) — pipeline expands to internal vars. public vars (--button-focus-offset etc) set directly. private vars (--_*) cannot be set — use CSS properties. run `astryx theme targets [Name]` to enumerate every themeable key (--json for lint), `astryx component <Name>` for one component.',
         },
         null,
         null,
@@ -100,16 +136,19 @@ export const docsDense = {
       ],
     },
     {
-      section: 'Building Themes for Production',
+      section: 'Build a theme',
       title: 'Build for Production',
       content: [
         {
           type: 'prose',
           text: 'astryx theme build compiles defineTheme to static CSS. outputs .css + .js (__built:true) + .d.ts.',
         },
-        null,
-        null,
-        null,
+      ],
+    },
+    {
+      section: 'Built themes with an icon registry',
+      title: 'Icon Registry',
+      content: [
         {
           type: 'prose',
           text: 'current build detects named imports used by icons:. registry module is not compiled. inline/local registries accepted by defineTheme are omitted from built output; move them to a separate module and import by name.',
@@ -123,7 +162,16 @@ export const docsDense = {
           type: 'prose',
           text: 'without --icons-specifier, source import is copied unchanged. default flow without --out: bundlers can resolve ./icons to neighboring icons.tsx; Node ESM fails with ERR_MODULE_NOT_FOUND. moving output changes relative import resolution.',
         },
-        null,
+      ],
+    },
+    {
+      section: 'Building a Theme Family',
+      title: 'Family Build',
+      content: [
+        {
+          type: 'prose',
+          text: 'theme build --family <base> <descendants...> --family-key <key> emits one keyed .css + .js + .d.ts beside the root; key must differ from every member name. load CSS once; import ESM separately; switch by theme identity only. all members download eagerly. --check compares the trio. use standalone build for one theme.',
+        },
         null,
         null,
       ],
@@ -142,8 +190,8 @@ export const docsDense = {
       ],
     },
     {
-      section: 'Light/Dark Mode',
-      title: 'Light/Dark',
+      section: 'Dark mode',
+      title: 'Dark mode',
       content: [
         {
           type: 'prose',
@@ -154,7 +202,7 @@ export const docsDense = {
       ],
     },
     {
-      section: 'Nesting Themes',
+      section: 'Nested themes',
       title: 'Nesting',
       content: [
         {type: 'prose', text: 'wrap sections in separate <Theme> providers'},
@@ -166,7 +214,11 @@ export const docsDense = {
       title: 'useTheme',
       content: [
         null,
-        {type: 'prose', text: 'read-only. manage state at app level.'},
+        null,
+        {
+          type: 'prose',
+          text: 'read-only. ordinary styling: CSS vars, StyleX tokens, xstyle, className. to change theme/mode, manage state at app level and pass it to <Theme>.',
+        },
       ],
     },
   ],

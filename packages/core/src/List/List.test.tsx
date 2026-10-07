@@ -3,7 +3,7 @@
 /**
  * @file List.test.tsx
  * @input Uses vitest, @testing-library/react, List, ListItem
- * @output Unit tests for List and ListItem components
+ * @output Unit tests for List and ListItem, including bounded inline edge compensation
  * @position Testing; validates List.tsx and ListItem.tsx implementation
  *
  * SYNC: When modified, update this header
@@ -14,6 +14,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {List} from './List';
 import {ListItem} from './ListItem';
+import {ListMarkerScope} from './ListContext';
 
 describe('List', () => {
   // ===========================================================================
@@ -253,6 +254,122 @@ describe('List', () => {
     const item = container.querySelector('li');
     expect(item).toBeInTheDocument();
     expect(item).toHaveAttribute('data-density', 'spacious');
+  });
+
+  // ===========================================================================
+  // Inline edge compensation
+  // ===========================================================================
+
+  it('does not apply inline edge compensation styles by default', () => {
+    const {container} = render(
+      <List>
+        <ListItem label="Item" />
+      </List>,
+    );
+    const item = container.querySelector('li')!;
+    expect(item.className).not.toContain('inlineEdgeCompensation');
+  });
+
+  it('applies the clamped cancelling margin to each item when edgeCompensation is inline', () => {
+    // The margin lives on the row element itself — the only place that can
+    // read --_item-inset-inline, which Item sets on the same element (custom
+    // properties cascade downward, so the <ul> cannot read it).
+    const {container} = render(
+      <List edgeCompensation="inline">
+        <ListItem label="Item 1" />
+        <ListItem label="Item 2" />
+      </List>,
+    );
+    const items = container.querySelectorAll('li');
+    expect(items).toHaveLength(2);
+    for (const item of items) {
+      expect(item.className).toContain('inlineEdgeCompensation');
+    }
+    expect(container.querySelector('ul')!.className).not.toContain(
+      'inlineEdgeCompensation',
+    );
+  });
+
+  it('uses the same var-derived cancel for every density', () => {
+    // The cancelling margin reads --_item-inset-inline instead of hardcoding
+    // per-density values, so all densities (and theme paddingInline
+    // overrides on `item`) share one style.
+    for (const density of ['compact', 'balanced', 'spacious'] as const) {
+      const {container, unmount} = render(
+        <List edgeCompensation="inline" density={density}>
+          <ListItem label="Item" />
+        </List>,
+      );
+      expect(container.querySelector('li')!.className).toContain(
+        'inlineEdgeCompensation',
+      );
+      unmount();
+    }
+  });
+
+  it('does not pull the header when edgeCompensation is inline', () => {
+    // The negative margin lives on the row elements, so the header keeps its
+    // position and the row text aligns up to it.
+    const {container} = render(
+      <List edgeCompensation="inline" header={<span>Items</span>}>
+        <ListItem label="Item" />
+      </List>,
+    );
+    expect(container.querySelector('li')!.className).toContain(
+      'inlineEdgeCompensation',
+    );
+    const ul = container.querySelector('ul')!;
+    expect(ul.className).not.toContain('inlineEdgeCompensation');
+    expect(ul.parentElement?.className).not.toContain('inlineEdgeCompensation');
+  });
+
+  it('clamps each inline edge against its own container padding var', () => {
+    // Regression for asymmetric container padding (16px start / 4px end):
+    // clamping BOTH margins against --container-padding-inline-start
+    // over-cancels the end edge by the difference, and the selected row
+    // paints past the outer border (RTL mirrors the spill). Each edge must
+    // clamp against its matching var; logical properties keep RTL correct.
+    // jsdom does no real layout, so assert on the injected StyleX CSS
+    // (runtimeInjection is on in the test config).
+    const {container} = render(
+      <List edgeCompensation="inline">
+        <ListItem label="Item" />
+      </List>,
+    );
+    expect(container.querySelector('li')!.className).toContain(
+      'inlineEdgeCompensation',
+    );
+    let out = '';
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        for (const rule of Array.from(sheet.cssRules)) {
+          out += rule.cssText + '\n';
+        }
+      } catch {
+        // ignore cross-origin sheets
+      }
+    }
+    out += Array.from(document.querySelectorAll('style'))
+      .map(s => s.textContent || '')
+      .join('\n');
+    const css = out.replace(/\s+/g, '');
+    expect(css).toContain(
+      'margin-inline-start:calc(-1*min(var(--_item-inset-inline),var(--container-padding-inline-start,0px)))',
+    );
+    expect(css).toContain(
+      'margin-inline-end:calc(-1*min(var(--_item-inset-inline),var(--container-padding-inline-end,0px)))',
+    );
+    // The end edge must not clamp against the start var (the over-cancel).
+    expect(css).not.toContain(
+      'margin-inline-end:calc(-1*min(var(--_item-inset-inline),var(--container-padding-inline-start,0px)))',
+    );
+  });
+
+  it('does not apply the cancelling margin to a ListItem outside a List', () => {
+    const {container} = render(<ListItem label="Standalone" />);
+    expect(container.querySelector('li')!.className).not.toContain(
+      'inlineEdgeCompensation',
+    );
   });
 
   // ===========================================================================
@@ -726,5 +843,101 @@ describe('List', () => {
       </List>,
     );
     expect(screen.getByText('42')).toBeInTheDocument();
+  });
+
+  describe('ListMarkerScope (internal, for Markdown nested lists)', () => {
+    /** The shape inside the item's marker box. */
+    const markerShape = (container: HTMLElement) => {
+      // The dot, ring, or square: an empty element in the marker box.
+      const shape = container.querySelector('li > span > span:empty');
+      return shape == null ? null : getComputedStyle(shape);
+    };
+
+    it('draws the list style marker without a scope', () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListItem label="Item" />
+        </List>,
+      );
+      expect(markerShape(container)?.borderRadius).toBe('50%');
+    });
+
+    it('draws the scope marker in place of the list style', () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListMarkerScope marker="square">
+            <ListItem label="Item" />
+          </ListMarkerScope>
+        </List>,
+      );
+      const shape = markerShape(container);
+      expect(shape).not.toBeNull();
+      expect(shape?.borderRadius).not.toBe('50%');
+      expect(container.querySelector('ul')).not.toBeNull();
+    });
+
+    it("draws a task item's read-only checkbox in place of its marker", () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListMarkerScope
+            marker="disc"
+            task={{isChecked: true, label: 'Done'}}>
+            <ListItem label="Done" />
+          </ListMarkerScope>
+          <ListItem label="Plain" />
+        </List>,
+      );
+      const checkbox = screen.getByRole('checkbox', {name: 'Done'});
+      expect(checkbox).toBeChecked();
+      expect(checkbox).toHaveAttribute('aria-readonly', 'true');
+      const [task, plain] = container.querySelectorAll('li');
+      expect(task?.contains(checkbox)).toBe(true);
+      // The task item has no dot in its marker box; the plain item keeps it.
+      expect(task?.querySelector(':scope > span > span:empty')).toBeNull();
+      expect(plain?.querySelector(':scope > span > span:empty')).not.toBeNull();
+    });
+
+    it('draws no task checkbox in a list without markers', () => {
+      render(
+        <List>
+          <ListMarkerScope
+            marker="disc"
+            task={{isChecked: true, label: 'Done'}}>
+            <ListItem label="Done" />
+          </ListMarkerScope>
+        </List>,
+      );
+      expect(screen.queryByRole('checkbox')).toBeNull();
+    });
+
+    it('keeps a numbered list ordered with a letter marker', () => {
+      render(
+        <List listStyle="decimal" start={3}>
+          <ListMarkerScope marker="lower-alpha">
+            <ListItem label="Item" />
+          </ListMarkerScope>
+        </List>,
+      );
+      const list = screen.getByRole('list');
+      expect(list.tagName).toBe('OL');
+      expect(list).toHaveAttribute('start', '3');
+    });
+
+    it('draws no marker in a list without markers, or outside a list', () => {
+      const {container} = render(
+        <>
+          <List>
+            <ListMarkerScope marker="square">
+              <ListItem label="In a plain list" />
+            </ListMarkerScope>
+          </List>
+          <ListMarkerScope marker="square">
+            <span>Outside a list</span>
+          </ListMarkerScope>
+        </>,
+      );
+      expect(markerShape(container)).toBeNull();
+      expect(screen.getByText('Outside a list')).toBeInTheDocument();
+    });
   });
 });

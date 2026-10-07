@@ -83,33 +83,4 @@ export const BUTTON_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     userImpact: 'The same, from an icon button.',
     reason: 'Inherited from Button, as above.',
   },
-
-  // ---- ClickableCard's role-bearing element cannot be clicked -------------
-  {
-    expectation: 'button.action.survives-an-aborted-press',
-    binding: 'ClickableCard',
-    state: 'clickable-card',
-    evidenceLayer: 'real-browser',
-    failureEquals:
-      'a pointer press cannot land on this control: something else is on top of it at its own centre, so there is no press here to abort',
-    standardsReference: 'WCAG 2.2 2.5.2 Pointer Cancellation (Level A)',
-    userImpact:
-      'The same defect seen from the other side: pointer cancellation cannot be demonstrated on a control no pointer press can land on. Recorded rather than reported green — a serene pass here would claim an outcome nobody observed.',
-    reason:
-      'Same cause as the record above. It is a second record rather than a wider one because a known failure names exactly one outcome, and these two would be fixed and verified separately.',
-  },
-  {
-    expectation: 'button.action.runs-on-pointer',
-    binding: 'ClickableCard',
-    state: 'clickable-card',
-    evidenceLayer: 'real-browser',
-    failureEquals:
-      'a pointer could not reach this control within 2000ms: the browser never found it visible, stable, and able to receive a pointer event. Something is covering it, or it is clipped to nothing.',
-    standardsReference:
-      'Current Astryx buttons family FR2 and WAI-ARIA APG Button operability requirement; supports WCAG 2.2 4.1.2 Name, Role, Value (Level A)',
-    userImpact:
-      "Anyone whose tooling acts on the accessible object rather than on pixels — a speech-input user saying the card's name, or assistive technology dispatching a click at the element it is told is the button — aims at a 1×1 control the card's own content paints over. A sighted mouse user is unaffected: they click the card surface, which handles it.",
-    reason:
-      'ClickableCard deliberately splits the surface that takes the click from the hidden button that carries the role and name. Reconciling the two is a design-system decision, not a change this contract should make.',
-  },
 ];

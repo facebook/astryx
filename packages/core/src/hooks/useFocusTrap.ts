@@ -5,8 +5,8 @@
 /**
  * @file useFocusTrap.ts
  * @input Uses React useCallback, useEffect, useRef
- * @output Exports useFocusTrap hook for trapping focus within a container and
- *   restoring focus to the previously-focused element on deactivation
+ * @output Exports useFocusTrap, the deprecated Escape-state shim, and an
+ *   internal compatibility-signal hook
  * @position Core hook; used by dialogs, modals, date pickers
  *
  * Based on WAI-ARIA dialog pattern:
@@ -39,6 +39,25 @@ let activeEscapeTrapCount = 0;
  */
 export function hasActiveFocusTrapEscape(): boolean {
   return activeEscapeTrapCount > 0;
+}
+
+/**
+ * Keep the deprecated `hasActiveFocusTrapEscape` signal accurate for a focus
+ * trap whose Escape is coordinated by another registration in the shared
+ * stack. This hook is intentionally internal (not re-exported from `hooks`): it
+ * preserves the released read-only compatibility signal without creating a
+ * second dismissal owner.
+ */
+export function useFocusTrapEscapeCompatibilitySignal(isActive: boolean): void {
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+    activeEscapeTrapCount += 1;
+    return () => {
+      activeEscapeTrapCount -= 1;
+    };
+  }, [isActive]);
 }
 
 /**
@@ -213,15 +232,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
     getContainer: () => containerRef.current,
   });
 
-  useEffect(() => {
-    if (!isEscapeTrap) {
-      return;
-    }
-    activeEscapeTrapCount += 1;
-    return () => {
-      activeEscapeTrapCount -= 1;
-    };
-  }, [isEscapeTrap]);
+  useFocusTrapEscapeCompatibilitySignal(isEscapeTrap);
 
   /**
    * Focus the first focusable element.

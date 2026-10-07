@@ -11,15 +11,20 @@
  * `astryx-base` they lose to one. Only the built artifact shows it, so this
  * builds one.
  *
- * Two shapes, because StyleX emits through two different paths:
+ * Three shapes, because StyleX emits through two different paths and merges
+ * all entries into one stylesheet:
  *
- *   `layer-split`        the app imports a stylesheet, so the bundle has a CSS
- *                        asset and StyleX appends to it in `generateBundle`
- *   `layer-split-nocss`  the app imports none, so StyleX writes its own file in
- *                        `writeBundle`, outside Rollup's graph
+ *   `layer-split`           the app imports a stylesheet, so the bundle has a
+ *                           CSS asset and StyleX appends in `generateBundle`
+ *   `layer-split-nocss`     the app imports none, so StyleX writes its own file
+ *                           in `writeBundle`, outside Rollup's graph
+ *   `layer-split-multipage` two entries own distinct authored CSS, while both
+ *                           must load the one shared StyleX result
  *
- * The second is the one that was missing, and it hid two defects: the split did
- * not run there at all, and the file StyleX writes is not linked by any page.
+ * The no-CSS shape was originally missing, which hid two defects: the split did
+ * not run there at all, and the file StyleX writes was not linked by any page.
+ * The multi-page shape protects against linking StyleX from only one entry or
+ * cross-loading that entry's authored CSS into every page.
  *
  * What none of this can prove is which declaration actually paints — that is a
  * cascade fact, and it lives in .github/scripts/theme-layer-cascade.js.
@@ -28,7 +33,16 @@
 import {describe, it, expect, beforeAll, afterAll} from 'vitest';
 import {build} from 'vite';
 import react from '@vitejs/plugin-react';
-import {mkdtempSync, readdirSync, readFileSync, rmSync} from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import {tmpdir} from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -38,44 +52,89 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../..');
 const FIXTURES = path.resolve(__dirname, '../__fixtures__');
 const CORE_SRC = path.join(REPO_ROOT, 'packages/core/src');
+const CORE_PACKAGE = path.join(REPO_ROOT, 'packages/core');
 
 /** The class prefixes @astryxdesign/build/babel assigns per origin. */
 const LIBRARY_CLASS = /\.astryx[a-z0-9]{5,}/g;
 const PRODUCT_CLASS = /\.x[a-z0-9]{5,}/g;
 
-type Built = {css: string; cssName: string; html: string; outDir: string};
+type Built = {
+  css: string;
+  cssName: string;
+  cssByName: Record<string, string>;
+  html: string;
+  htmlByName: Record<string, string>;
+  outDir: string;
+};
 
-async function buildFixture(name: string): Promise<Built> {
+async function buildFixture(
+  name: string,
+  htmlNames: string[] = ['index.html'],
+): Promise<Built> {
   const root = path.join(FIXTURES, name);
   const outDir = mkdtempSync(path.join(tmpdir(), `astryx-${name}-`));
-  await build({
-    root,
-    logLevel: 'error',
-    build: {outDir, emptyOutDir: true},
-    resolve: {alias: {'@astryxdesign/core': CORE_SRC}},
-    plugins: [
-      react(),
-      ...astryxStylex({
-        stylexOptions: {
-          dev: false,
-          unstable_moduleResolution: {type: 'commonJS', rootDir: REPO_ROOT},
-          aliases: {
-            '@astryxdesign/core/*': [path.join(CORE_SRC, '*')],
-            '@astryxdesign/core': [CORE_SRC],
+  try {
+    await build({
+      root,
+      logLevel: 'error',
+      build: {
+        outDir,
+        emptyOutDir: true,
+        ...(htmlNames.length > 1 && {
+          rollupOptions: {
+            input: Object.fromEntries(
+              htmlNames.map(file => [
+                path.basename(file, '.html'),
+                path.join(root, file),
+              ]),
+            ),
           },
-        },
-        libraryPattern: 'packages/core/',
-      }),
-    ],
-  });
+        }),
+      },
+      resolve: {alias: {'@astryxdesign/core': CORE_SRC}},
+      plugins: [
+        react(),
+        ...astryxStylex({
+          stylexOptions: {
+            dev: false,
+            unstable_moduleResolution: {type: 'commonJS', rootDir: REPO_ROOT},
+            aliases: {
+              '@astryxdesign/core/*': [path.join(CORE_SRC, '*')],
+              '@astryxdesign/core': [CORE_SRC],
+            },
+          },
+          libraryPattern: 'packages/core/',
+        }),
+      ],
+    });
+  } catch (error) {
+    rmSync(outDir, {recursive: true, force: true});
+    throw error;
+  }
 
   const assets = path.join(outDir, 'assets');
-  const cssName = readdirSync(assets).find(f => f.endsWith('.css'));
-  if (!cssName) throw new Error(`no stylesheet emitted into ${assets}`);
+  const cssNames = readdirSync(assets).filter(f => f.endsWith('.css'));
+  const cssByName = Object.fromEntries(
+    cssNames.map(file => [
+      file,
+      readFileSync(path.join(assets, file), 'utf-8'),
+    ]),
+  );
+  const cssName = cssNames.find(f => f.startsWith('astryx-stylex-'));
+  if (!cssName)
+    throw new Error(`no shared StyleX stylesheet emitted into ${assets}`);
+  const htmlByName = Object.fromEntries(
+    htmlNames.map(file => [
+      file,
+      readFileSync(path.join(outDir, file), 'utf-8'),
+    ]),
+  );
   return {
-    css: readFileSync(path.join(assets, cssName), 'utf-8'),
+    css: cssByName[cssName],
     cssName,
-    html: readFileSync(path.join(outDir, 'index.html'), 'utf-8'),
+    cssByName,
+    html: htmlByName['index.html'],
+    htmlByName,
     outDir,
   };
 }
@@ -126,6 +185,14 @@ function itSplitsCorrectly(get: () => Built) {
     expect(library.match(PRODUCT_CLASS)).toBeNull();
   });
 
+  it('keeps nested pseudo-elements and keyframes in the product layer', () => {
+    const product = layerBlock(get().css, 'product');
+    expect(product).toContain(':after');
+    expect(product).toContain('#010203');
+    expect(product).toContain('@keyframes');
+    expect(product).toContain('.717s');
+  });
+
   it('leaves no StyleX rule outside the two layers', () => {
     const {css} = get();
     const outside = css
@@ -138,7 +205,9 @@ function itSplitsCorrectly(get: () => Built) {
   // output means running the same pass, or the build quietly loses the prefixes
   // the original had.
   it('keeps the vendor prefixing StyleX applies', () => {
-    expect(get().css).toContain('-webkit-');
+    // `-webkit-box-orient` is authored in source, so only a prefix the pass
+    // adds shows that it ran.
+    expect(get().css).toContain('-webkit-user-select');
   });
 
   it('links the stylesheet from the page', () => {
@@ -147,6 +216,43 @@ function itSplitsCorrectly(get: () => Built) {
     expect(html.split(cssName).length - 1, 'linked more than once').toBe(1);
   });
 }
+
+describe('a production build resolves generated locale modules', () => {
+  it('loads a generated string map through the standard Astryx Vite aliases', async () => {
+    const root = realpathSync(
+      mkdtempSync(path.join(tmpdir(), 'astryx-locale-import-')),
+    );
+    const packageDir = path.join(root, 'node_modules/@astryxdesign');
+    const outDir = path.join(root, 'dist');
+    mkdirSync(packageDir, {recursive: true});
+    symlinkSync(CORE_PACKAGE, path.join(packageDir, 'core'), 'dir');
+    writeFileSync(
+      path.join(root, 'index.html'),
+      '<script type="module" src="/main.ts"></script>',
+    );
+    writeFileSync(
+      path.join(root, 'main.ts'),
+      `import frFR from '@astryxdesign/core/locales/fr-FR.generated.js';\ndocument.body.textContent = frFR['@astryx.pagination.next'];\n`,
+    );
+
+    try {
+      await build({
+        root,
+        logLevel: 'error',
+        build: {outDir, emptyOutDir: true, minify: false},
+        plugins: [...astryxStylex({rootDir: root})],
+      });
+      const assets = path.join(outDir, 'assets');
+      const jsName = readdirSync(assets).find(file => file.endsWith('.js'));
+      expect(jsName).toBeTruthy();
+      expect(readFileSync(path.join(assets, jsName!), 'utf8')).toContain(
+        'Aller à la page suivante',
+      );
+    } finally {
+      rmSync(root, {recursive: true, force: true});
+    }
+  }, 180_000);
+});
 
 describe('a production build separates Astryx and product styles by layer', () => {
   describe('when the app imports a stylesheet of its own', () => {
@@ -176,4 +282,55 @@ describe('a production build separates Astryx and product styles by layer', () =
 
     itSplitsCorrectly(() => built);
   });
+
+  describe('when the app has multiple HTML entries', () => {
+    let built: Built;
+    beforeAll(async () => {
+      built = await buildFixture('layer-split-multipage', [
+        'index.html',
+        'setup.html',
+      ]);
+    }, 180_000);
+    afterAll(
+      () => built && rmSync(built.outDir, {recursive: true, force: true}),
+    );
+
+    it('links the shared StyleX stylesheet from every page exactly once', () => {
+      for (const html of Object.values(built.htmlByName)) {
+        expect(html).toContain(built.cssName);
+        expect(
+          html.split(built.cssName).length - 1,
+          'stylesheet is not linked exactly once',
+        ).toBe(1);
+      }
+    });
+
+    it('keeps entry-owned CSS on its own page', () => {
+      const mainCss = Object.entries(built.cssByName).find(([, css]) =>
+        css.includes('--multipage-main-only'),
+      );
+      const setupCss = Object.entries(built.cssByName).find(([, css]) =>
+        css.includes('--multipage-setup-only'),
+      );
+      expect(mainCss).toBeDefined();
+      expect(setupCss).toBeDefined();
+
+      const [mainCssName] = mainCss!;
+      const [setupCssName] = setupCss!;
+      expect(built.htmlByName['index.html']).toContain(mainCssName);
+      expect(built.htmlByName['index.html']).not.toContain(setupCssName);
+      expect(built.htmlByName['setup.html']).toContain(setupCssName);
+      expect(built.htmlByName['setup.html']).not.toContain(mainCssName);
+      expect(built.css).not.toContain('--multipage-main-only');
+      expect(built.css).not.toContain('--multipage-setup-only');
+    });
+  });
+});
+
+describe('a production build validates StyleX declarations', () => {
+  it('fails with longhand guidance instead of dropping a border shorthand', async () => {
+    await expect(buildFixture('invalid-border')).rejects.toThrow(
+      /borderTop is not supported.*borderTopWidth.*borderTopStyle.*borderTopColor/s,
+    );
+  }, 180_000);
 });

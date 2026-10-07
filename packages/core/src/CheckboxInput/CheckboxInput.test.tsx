@@ -15,6 +15,11 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {
+  hasPressedArm,
+  hasReleaseFade,
+  readsPressStrength,
+} from '../__tests__/pressState';
 import {CheckboxInput} from './CheckboxInput';
 import {Theme} from '../theme/Theme';
 import {defineTheme} from '../theme/defineTheme';
@@ -109,6 +114,25 @@ describe('CheckboxInput', () => {
     const checkbox = screen.getByRole('checkbox');
     await user.click(checkbox);
     expect(handleChange).toHaveBeenCalledWith(false, expect.any(Object));
+  });
+
+  it('keeps a changeAction-only checkbox editable', async () => {
+    const user = userEvent.setup();
+    const changeAction = vi.fn();
+    render(
+      <CheckboxInput
+        label="Accept terms"
+        value={false}
+        changeAction={changeAction}
+      />,
+    );
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).not.toHaveAttribute('aria-readonly');
+    await user.click(checkbox);
+    await waitFor(() =>
+      expect(changeAction).toHaveBeenCalledWith(true, expect.any(Object)),
+    );
   });
 
   it('works when clicking on the label', async () => {
@@ -268,6 +292,27 @@ describe('CheckboxInput', () => {
     expect(checkbox.getAttribute('aria-describedby')).toContain(description.id);
   });
 
+  it('merges a consumer aria-describedby with its own description id', () => {
+    render(
+      <>
+        <span id="row-hint">Hint from the row</span>
+        <CheckboxInput
+          label="Select row"
+          isLabelHidden
+          description="Selects this row for bulk actions"
+          aria-describedby="row-hint"
+          value={false}
+          onChange={() => {}}
+        />
+      </>,
+    );
+    const checkbox = screen.getByRole('checkbox');
+    const description = screen.getByText('Selects this row for bulk actions');
+    const ids = checkbox.getAttribute('aria-describedby')!.split(' ');
+    expect(ids).toContain('row-hint');
+    expect(ids).toContain(description.id);
+  });
+
   it('shows label visually by default', () => {
     render(
       <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
@@ -319,6 +364,19 @@ describe('CheckboxInput', () => {
 
     expect(container.textContent).toBe('Accept terms');
     expect(container.querySelector('.astryx-icon')).toBeInTheDocument();
+  });
+
+  it('renders custom labelIcon content', () => {
+    render(
+      <CheckboxInput
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+        labelIcon={<span data-testid="custom-label-icon">Custom</span>}
+      />,
+    );
+
+    expect(screen.getByTestId('custom-label-icon')).toHaveTextContent('Custom');
   });
 
   it('renders the status message for an error', () => {
@@ -413,6 +471,27 @@ describe('CheckboxInput', () => {
         />,
       );
       expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps a consumer aria-describedby alongside the reason tooltip', () => {
+      render(
+        <>
+          <span id="terms-hint">Required before checkout</span>
+          <CheckboxInput
+            label="Accept terms"
+            value={false}
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="Terms are managed by your administrator"
+            aria-describedby="terms-hint"
+          />
+        </>,
+      );
+      const checkbox = screen.getByRole('checkbox');
+      const tooltip = screen.getByRole('tooltip', h);
+      const ids = checkbox.getAttribute('aria-describedby')!.split(' ');
+      expect(ids).toContain('terms-hint');
+      expect(ids).toContain(tooltip.id);
     });
 
     it('does not render a tooltip when disabled without a reason', () => {
@@ -719,5 +798,56 @@ describe('label theme target', () => {
     const label = screen.getByText('Notify me').closest('label');
     expect(label).toHaveClass('astryx-field-label');
     expect(label).toHaveClass('astryx-checkbox-label');
+  });
+});
+
+describe('pressed state', () => {
+  it('paints the pressed overlay over the indicator while the row is pressed', () => {
+    const {container} = render(
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
+    );
+    const box = container.querySelector('.astryx-checkbox-indicator');
+    const wrapper = box?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the checkbox has no indicator wrapper to press');
+    }
+    // The owner paints over the resolved indicator, so the treatment survives a
+    // theme replacement that does not forward style props.
+    expect(hasPressedArm(wrapper)).toBe(true);
+  });
+
+  it('does not expose a pressed arm on a disabled checkbox', () => {
+    const {container} = render(
+      <CheckboxInput
+        label="Unavailable"
+        value={false}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const box = container.querySelector('.astryx-checkbox-indicator');
+    const wrapper = box?.parentElement?.parentElement;
+    if (wrapper == null) {
+      throw new Error('the checkbox has no indicator wrapper');
+    }
+    expect(hasPressedArm(wrapper)).toBe(false);
+  });
+
+  it('fades the touch press out from the row, with the overlay reading its strength', () => {
+    const {container} = render(
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
+    );
+    const box = container.querySelector('.astryx-checkbox-indicator');
+    const wrapper = box?.parentElement?.parentElement;
+    const row = box?.closest('[data-astryx-pressable]');
+    if (wrapper == null || row == null) {
+      throw new Error('the checkbox has no pressable row or indicator wrapper');
+    }
+    // The controller writes the row; the row owns the strength and its
+    // release, and the owner-drawn layer over the indicator paints the pressed
+    // token at that strength on both touch arms.
+    expect(hasReleaseFade(row)).toBe(true);
+    expect(readsPressStrength(wrapper, '[data-astryx-press="on"]')).toBe(true);
+    expect(readsPressStrength(wrapper)).toBe(true);
   });
 });

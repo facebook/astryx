@@ -34,9 +34,40 @@ export const docs = {
       ],
     },
     {
+      id: 'scaffold',
       title: 'Scaffold',
       content: [
-        {type: 'heading', level: 3, text: 'Shell'},
+        {
+          type: 'prose',
+          text: 'Pick the shell, budget each region, and choose navigation, before any content exists. Shell and Navigation cover each step; these rules hold for both.',
+        },
+        {
+          type: 'list',
+          style: 'do',
+          items: [
+            'Decide the frame, region width budgets, and fill or capped before any content exists',
+            'State the reason for the navigation choice, or inherit the template pairing',
+            'Reserve raw px for structural widths; interior spacing uses tokens',
+          ],
+        },
+        {
+          type: 'list',
+          style: 'dont',
+          items: [
+            'Build content-first and wrap each section in a Card, producing a padded scroll column',
+            'Stretch prose, forms, or lists across a wide region instead of capping with contentWidth',
+            'SideNav when the nav is really filters or controls, or must hold wide elements like breadcrumbs',
+            'TopNav when top-slot ownership is unclear, or the hierarchy is deep or still growing',
+            'Both bars when the ecosystem layer is thin, so the second only wastes space',
+            'Deviate from the template navigation pairing without a stated reason',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'shell',
+      title: 'Shell',
+      content: [
         {
           type: 'prose',
           text: 'Pick the shell and budget its regions before any content exists. Structural widths are the one place raw px belongs; everything inside them uses the spacing scale.',
@@ -75,8 +106,12 @@ export const docs = {
           type: 'prose',
           text: 'Verify: every region has a width budget, a fill-or-capped decision, and a container policy written down before any content exists.',
         },
-
-        {type: 'heading', level: 3, text: 'Navigation'},
+      ],
+    },
+    {
+      id: 'navigation',
+      title: 'Navigation',
+      content: [
         {
           type: 'prose',
           text: 'When the frame leaves navigation open, default to SideNav: it absorbs destinations you have not planned yet. App type and destination count are guiding indicators, not determining rules.',
@@ -106,37 +141,49 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Verify: you can state the reason in one sentence, and the choice still holds if the nav doubles in size. `npx astryx build "<idea>"` names the closest template, and its `--skeleton` shows the pairing already wired up.',
+          text: 'Verify: you can state the reason in one sentence, and the choice still holds if the nav doubles in size. `npx astryx build "<idea>"` names the template to start from; scaffold it and the pairing is already wired up.',
         },
-
-        {type: 'heading', level: 3, text: 'Best practices'},
+      ],
+    },
+    {
+      id: 'structure',
+      title: 'Structure',
+      content: [
+        {
+          type: 'prose',
+          text: 'Rank the content in each region, then pick the weakest container that groups it. Type hierarchy, Card or rows, Headers and footers, and Side panels cover each step; these rules hold for all of them.',
+        },
         {
           type: 'list',
           style: 'do',
           items: [
-            'Decide the frame, region width budgets, and fill or capped before any content exists',
-            'State the reason for the navigation choice, or inherit the template pairing',
-            'Reserve raw px for structural widths; interior spacing uses tokens',
+            'One lead per region; rank with weight and color; one primary action',
+            'Leave body copy at its defaults; demote by weight and color, not size',
+            'Default to Section; use the weakest container that reads as a group',
+            'Render collections as rows (Table or List), edge-to-edge with dividers',
+            'Open a fixed-width side panel on select; let it yield width at narrow sizes',
           ],
         },
         {
           type: 'list',
           style: 'dont',
           items: [
-            'Build content-first and wrap each section in a Card, producing a padded scroll column',
-            'Stretch prose, forms, or lists across a wide region instead of capping with contentWidth',
-            'SideNav when the nav is really filters or controls, or must hold wide elements like breadcrumbs',
-            'TopNav when top-slot ownership is unclear, or the hierarchy is deep or still growing',
-            'Both bars when the ecosystem layer is thin, so the second only wastes space',
-            'Deviate from the template navigation pairing without a stated reason',
+            'Grey and shrink body copy, so a whole region reads as secondary metadata',
+            'The disabled color for content; it fails contrast and is for disabled controls',
+            'Card soup: each record wrapped in its own Card instead of rendered as rows',
+            'Cards inside Cards, or full-width Cards stacked as page structure',
+            'A header or footer rebuilt inside the body, where it scrolls away with the rows',
+            'Flexbox soup: nested ad-hoc flexboxes instead of Grid, Layout, Section, or FormLayout',
+            'Two competing primary actions in one region',
+            'Badge as decoration; use StatusDot or Token for status and metadata',
           ],
         },
       ],
     },
     {
-      title: 'Structure',
+      id: 'type-hierarchy',
+      title: 'Type hierarchy',
       content: [
-        {type: 'heading', level: 3, text: 'Type hierarchy'},
         {
           type: 'prose',
           text: 'Give every region one lead, then rank the rest with weight and color rather than size. Content uses two text colors, primary and secondary, and nothing dimmer: body copy needs no props at all.',
@@ -170,8 +217,12 @@ export const docs = {
           type: 'prose',
           text: 'Squint test: blurred, you read lead, then support, then groups, in that order. If everything reads at once, raise contrast with weight and color, not borders and not smaller text.',
         },
-
-        {type: 'heading', level: 3, text: 'Containers'},
+      ],
+    },
+    {
+      id: 'containers',
+      title: 'Card or rows',
+      content: [
         {
           type: 'prose',
           text: 'Reach for the weakest container that reads as a group, and escalate only when it fails. Weakest to strongest:',
@@ -202,8 +253,12 @@ export const docs = {
           type: 'prose',
           text: 'Decision test: records render as rows, Table for columnar and List for single-line; a self-contained widget or hard boundary is a Card; everything else is a Section.',
         },
-
-        {type: 'heading', level: 3, text: 'Headers and footers'},
+      ],
+    },
+    {
+      id: 'headers-and-footers',
+      title: 'Headers and footers',
+      content: [
         {
           type: 'prose',
           text: 'A region can pin a header or footer while its body scrolls. Both are Layout slots, and padding set once on Layout reaches all three, so header, body, and footer share one content line.',
@@ -235,8 +290,12 @@ export const docs = {
           type: 'prose',
           text: 'Verify: scroll the body. The header and footer stay put, their dividers run full-bleed, and all three still share one left content line.',
         },
-
-        {type: 'heading', level: 3, text: 'Side panels'},
+      ],
+    },
+    {
+      id: 'side-panels',
+      title: 'Side panels',
+      content: [
         {
           type: 'prose',
           text: 'Master-detail: selecting a row opens a fixed-width side panel instead of navigating away.',
@@ -278,41 +337,45 @@ end={
         },
         {
           type: 'prose',
-          text: 'Verify: at narrow widths the panel yields width instead of squeezing content (see Breakpoints), and only one element between the regions draws a border.',
+          text: 'Verify: at narrow widths the panel yields width instead of squeezing content (see Responsive contract), and only one element between the regions draws a border.',
         },
-
-        {type: 'heading', level: 3, text: 'Best practices'},
+      ],
+    },
+    {
+      id: 'spacing',
+      title: 'Spacing',
+      content: [
+        {
+          type: 'prose',
+          text: 'Hold one content line per region, then tune gaps and density. Alignment, Rhythm, and Density and size cover each step; these rules hold for all of them.',
+        },
         {
           type: 'list',
           style: 'do',
           items: [
-            'One lead per region; rank with weight and color; one primary action',
-            'Leave body copy at its defaults; demote by weight and color, not size',
-            'Default to Section; use the weakest container that reads as a group',
-            'Render collections as rows (Table or List), edge-to-edge with dividers',
-            'Open a fixed-width side panel on select; let it yield width at narrow sizes',
+            'Let the container own padding; children zero their own margins',
+            'Hold one content line per region: text on the line, hover backgrounds bleed to the edge',
+            'Hold one padding token across a region header, body, and footer',
+            'Contrast tight and generous gaps so grouping reads without borders',
+            'One control size per row; match density to use frequency',
           ],
         },
         {
           type: 'list',
           style: 'dont',
           items: [
-            'Grey and shrink body copy, so a whole region reads as secondary metadata',
-            'The disabled color for content; it fails contrast and is for disabled controls',
-            'Card soup: each record wrapped in its own Card instead of rendered as rows',
-            'Cards inside Cards, or full-width Cards stacked as page structure',
-            'A header or footer rebuilt inside the body, where it scrolls away with the rows',
-            'Flexbox soup: nested ad-hoc flexboxes instead of Grid, Layout, Section, or FormLayout',
-            'Two competing primary actions in one region',
-            'Badge as decoration; use StatusDot or Token for status and metadata',
+            'Double padding: a component indented past its Section heading (keep one inset owner)',
+            'Raw px for interior spacing; tokens only, px is for structural widths',
+            'One repeated gap everywhere, which flattens grouping',
+            'Mixed control sizes in a single row',
           ],
         },
       ],
     },
     {
-      title: 'Spacing',
+      id: 'alignment',
+      title: 'Alignment',
       content: [
-        {type: 'heading', level: 3, text: 'Alignment'},
         {
           type: 'prose',
           text: 'The container owns padding and child gaps; children zero their margins, and interior spacing is always a token. Pick one content line per region and hold it constant, not the padding: `container_inset = content_line - component_intrinsic_inset`.',
@@ -342,8 +405,12 @@ end={
           type: 'prose',
           text: 'Verify: draw one vertical line down the left of the region. Every label touches it; only hover and selected backgrounds cross it.',
         },
-
-        {type: 'heading', level: 3, text: 'Rhythm'},
+      ],
+    },
+    {
+      id: 'rhythm',
+      title: 'Rhythm',
+      content: [
         {
           type: 'prose',
           text: 'Grouping comes from contrast between tight and generous gaps, not one repeated value. If every gap is the same step, proximity does no work.',
@@ -375,8 +442,12 @@ end={
           type: 'prose',
           text: 'Verify: with every border removed, you can still name the groups from spacing alone. If you cannot, the intervals are too uniform. Form fields are the exception: FormLayout owns their spacing.',
         },
-
-        {type: 'heading', level: 3, text: 'Density and size'},
+      ],
+    },
+    {
+      id: 'density',
+      title: 'Density and size',
+      content: [
         {
           type: 'prose',
           text: 'Match density to how often a region is used, and give every control in a row the same size so heights share a baseline.',
@@ -403,35 +474,40 @@ end={
           type: 'prose',
           text: 'Verify: every interactive element in a row shares one size, and that size is paired with the density of the region it sits in.',
         },
-
-        {type: 'heading', level: 3, text: 'Best practices'},
+      ],
+    },
+    {
+      id: 'breakpoints',
+      title: 'Breakpoints',
+      content: [
+        {
+          type: 'prose',
+          text: 'Decide what each region does as width changes. Responsive contract covers it; these rules hold for every region.',
+        },
         {
           type: 'list',
           style: 'do',
           items: [
-            'Let the container own padding; children zero their own margins',
-            'Hold one content line per region: text on the line, hover backgrounds bleed to the edge',
-            'Hold one padding token across a region header, body, and footer',
-            'Contrast tight and generous gaps so grouping reads without borders',
-            'One control size per row; match density to use frequency',
+            'Write the contract down for every region before you call the layout done',
+            'Decide per region whether it is revealed, resized, or swapped at each width',
+            'Drop a region rather than let it compete for width it does not have',
           ],
         },
         {
           type: 'list',
           style: 'dont',
           items: [
-            'Double padding: a component indented past its Section heading (keep one inset owner)',
-            'Raw px for interior spacing; tokens only, px is for structural widths',
-            'One repeated gap everywhere, which flattens grouping',
-            'Mixed control sizes in a single row',
+            'Hold three regions at a width where none of them has usable space',
+            'Shrink every region uniformly instead of swapping or dropping one',
+            'Wire a breakpoint in CSS that the contract comment never mentions',
           ],
         },
       ],
     },
     {
-      title: 'Breakpoints',
+      id: 'responsive-contract',
+      title: 'Responsive contract',
       content: [
-        {type: 'heading', level: 3, text: 'Responsive contract'},
         {
           type: 'prose',
           text: 'Lock what each region does as width changes, and pair every line of the contract with the prop or hook that enforces it.',
@@ -467,26 +543,6 @@ const isNarrow = useMediaQuery('(max-width: 1024px)');
         {
           type: 'prose',
           text: 'Verify: every contract line names a mechanism, so the comment cannot drift from the behavior.',
-        },
-
-        {type: 'heading', level: 3, text: 'Best practices'},
-        {
-          type: 'list',
-          style: 'do',
-          items: [
-            'Write the contract down for every region before you call the layout done',
-            'Decide per region whether it is revealed, resized, or swapped at each width',
-            'Drop a region rather than let it compete for width it does not have',
-          ],
-        },
-        {
-          type: 'list',
-          style: 'dont',
-          items: [
-            'Hold three regions at a width where none of them has usable space',
-            'Shrink every region uniformly instead of swapping or dropping one',
-            'Wire a breakpoint in CSS that the contract comment never mentions',
-          ],
         },
       ],
     },

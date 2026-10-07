@@ -74,7 +74,8 @@ export const docs = {
     {
       name: 'onEnter',
       type: '() => void',
-      description: 'Callback fired when the user presses the Enter key.',
+      description:
+        'Callback fired when the user presses the Enter key. IME-safe: Enter used to commit a Japanese/Chinese/Korean conversion does not fire it.',
     },
     {
       name: 'onKeyDown',
@@ -161,7 +162,7 @@ export const docs = {
       name: 'width',
       type: 'SizeValue',
       description:
-        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned. Without a width the field can shrink with its row, so a filter bar never overflows; use `<HStack wrap="wrap">` when the controls should move to a second line instead.',
     },
     {
       name: 'autoComplete',

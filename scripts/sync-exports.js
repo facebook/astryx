@@ -82,6 +82,11 @@ const STATIC_EXPORTS = {
     types: './dist/theme/tokens.stylex.d.ts',
     default: './dist/theme/tokens.stylex.js',
   },
+  './theme/dataTokens.stylex': {
+    source: './src/theme/dataTokens.stylex.ts',
+    types: './dist/theme/dataTokens.stylex.d.ts',
+    default: './dist/theme/dataTokens.stylex.js',
+  },
   './theme/syntax': {
     source: './src/theme/syntax/index.ts',
     types: './dist/theme/syntax/index.d.ts',
@@ -89,24 +94,28 @@ const STATIC_EXPORTS = {
   },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',
-  // i18n message catalogs. Consumers pass these to
-  // <InternationalizationProvider messages={{fr, ...}}> or use them for
-  // custom overrides / pseudoloc smoke-tests. Wildcard export exposes every
-  // JSON file under packages/core/locales/, which ships thanks to the
-  // `locales` entry in the `files` array.
+  // Rich authoring catalogs keep their existing JSON paths. Generated string
+  // maps are additive runtime imports for applications that want no translator
+  // metadata in their bundles.
   './locales/*.json': './locales/*.json',
+  './locales/*.generated.js': {
+    source: './src/i18n/generated-locales/*.generated.ts',
+    types: './dist/i18n/generated-locales/*.generated.d.ts',
+    default: './dist/i18n/generated-locales/*.generated.js',
+  },
 };
 
 /**
- * Server-safe utility subpath exports.
- *
- * These re-export pure functions from component directories without
- * the `'use client'` directive, making them importable from React
- * Server Components. Each entry points to a `utils.ts` file that
- * re-exports only the server-safe subset of a component's utilities.
- *
- * See: https://github.com/facebook/astryx/issues/1977
+ * Nested modules backed by an index.ts entry point. `Markdown/plugin-renderer`
+ * is client-only (its entry starts with 'use client'); the plugin protocol and
+ * parser entries stay server-safe (spec:AST-064 DEC-6).
  */
+const DIRECTORY_MODULE_SUBPATH_EXPORTS = [
+  'Markdown/plugins',
+  'Markdown/plugin-renderer',
+  'Markdown/parser',
+];
+
 const UTIL_SUBPATH_DIRS = [
   'Calendar',
   'Markdown',
@@ -116,6 +125,19 @@ const UTIL_SUBPATH_DIRS = [
   'Table',
   'Typeahead',
 ];
+
+/**
+ * Optional module subpath exports.
+ *
+ * Separately imported modules that deliberately stay out of their component's
+ * own entry point, so a bundle that never imports the subpath never pulls the
+ * module in. Unlike `UTIL_SUBPATH_DIRS` these are not server-safe re-exports
+ * of an existing component — each one is its own opt-in module.
+ *
+ * `Markdown/remark` is the limited Remark compatibility adapter
+ * (`module:Markdown/remark`, `spec:AST-036` FR24).
+ */
+const FILE_MODULE_SUBPATH_EXPORTS = ['Markdown/remark'];
 
 /**
  * Discover all exportable directories under src/.
@@ -177,12 +199,30 @@ function buildExports() {
     exports[key] = makeExportEntry(dir);
   }
 
+  // Explicit nested module entry points.
+  for (const modulePath of DIRECTORY_MODULE_SUBPATH_EXPORTS) {
+    exports[`./${modulePath}`] = {
+      source: `./src/${modulePath}/index.ts`,
+      types: `./dist/${modulePath}/index.d.ts`,
+      default: `./dist/${modulePath}/index.js`,
+    };
+  }
+
   // Server-safe utility subpath exports
   for (const dir of UTIL_SUBPATH_DIRS) {
     exports[`./${dir}/utils`] = {
       source: `./src/${dir}/utils.ts`,
       types: `./dist/${dir}/utils.d.ts`,
       default: `./dist/${dir}/utils.js`,
+    };
+  }
+
+  // Optional, separately imported module subpaths
+  for (const subpath of FILE_MODULE_SUBPATH_EXPORTS) {
+    exports[`./${subpath}`] = {
+      source: `./src/${subpath}.ts`,
+      types: `./dist/${subpath}.d.ts`,
+      default: `./dist/${subpath}.js`,
     };
   }
 

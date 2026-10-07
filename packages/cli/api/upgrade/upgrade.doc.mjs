@@ -11,28 +11,35 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'upgrade',
+  namespace: 'cli/api',
   displayName: 'upgrade()',
   summary:
-    'Run version-migration codemods and refresh the managed agent-docs block.',
+    'After bumping @astryxdesign/core, migrate project source with codemods and update copied compositions.',
   description:
-    'Migrates project source from a previous Astryx version to the currently ' +
-    'installed one by running the registered codemods, and compares the fully ' +
-    'rendered managed agent-docs block on every path, including same-Core ' +
-    'integration guidance changes. Dry-run previews without writing; `apply` ' +
-    'writes the prepared block only after selected codemods and hooks succeed. ' +
-    'Core codemods run before ' +
-    'the config is loaded so a config codemod can repair an otherwise-invalid ' +
-    'astryx.config.',
+    'Runs the codemods between `from` and the installed Core version, then refreshes the ' +
+    'managed agent-docs block. Dry-run by default; `apply` writes changes only after the ' +
+    'selected codemods and hooks succeed. Config codemods run before astryx.config is ' +
+    'loaded, so they can repair an invalid config. Also updates copied compositions from ' +
+    'their install receipts: unchanged files are updated, non-overlapping edits are merged, ' +
+    'and conflicts are left untouched. `list` only lists codemods; `registry` only updates ' +
+    'copied compositions.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'upgrade(options?: UpgradeOptions, ctx?: {cwd?: string}): Promise<UpgradeListResponse | UpgradeStatusResponse | UpgradeRunResponse>',
-  keywords: ['upgrade', 'migrate', 'codemod', 'migration', 'version'],
+    'upgrade(options?: UpgradeOptions, ctx?: {cwd?: string}): Promise<UpgradeListResponse | UpgradeRegistryResponse | UpgradeStatusResponse | UpgradeRunResponse>',
+  keywords: [
+    'upgrade',
+    'migrate',
+    'codemod',
+    'migration',
+    'version',
+    'registry',
+  ],
   params: [
     {
       name: 'options.from',
       type: 'string',
       description:
-        'Version before the dependency bump. Required unless `list` is set.',
+        'Version before the dependency bump; the target is the installed @astryxdesign/core (or legacy @xds/core). Required unless `list` or `registry` is set.',
     },
     {
       name: 'options.apply',
@@ -45,11 +52,13 @@ export const doc = {
       type: 'boolean',
       description:
         'Run codemods even when `from` is at/after the installed version.',
+      default: 'false',
     },
     {
       name: 'options.codemod',
       type: 'string',
-      description: 'Run a single named transform instead of the full set.',
+      description:
+        'Run only this codemod. Optional codemods run only when named here. Setting it also skips copied-composition reconciliation.',
     },
     {
       name: 'options.skipCodemod',
@@ -60,7 +69,7 @@ export const doc = {
       name: 'options.integration',
       type: 'string[]',
       description:
-        'Explicit integration package names / file paths to process.',
+        'Explicit integration specifiers to process. Resolved beneath node_modules; absolute paths and `.` or `..` segments are rejected.',
     },
     {
       name: 'options.path',
@@ -71,17 +80,28 @@ export const doc = {
     {
       name: 'options.installDeps',
       type: 'boolean',
-      description: 'Auto-install jscodeshift without prompting.',
+      description:
+        'Install jscodeshift when it is missing; otherwise a missing jscodeshift throws ERR_DEP_MISSING.',
+      default: 'false',
+    },
+    {
+      name: 'options.registry',
+      type: 'boolean',
+      description:
+        'Only reconcile copied compositions from their install receipts; `from` is not required. Cannot be combined with `list`, `from`, `force`, `codemod`, `skipCodemod`, `integration` or `installDeps`.',
+      default: 'false',
     },
     {
       name: 'options.list',
       type: 'boolean',
       description: 'Return the available codemods instead of running any.',
+      default: 'false',
     },
     {
       name: 'ctx.cwd',
       type: 'string',
       description: 'Directory to run the upgrade in.',
+      default: 'process.cwd()',
     },
   ],
   returns: [
@@ -91,38 +111,47 @@ export const doc = {
         'Every available codemod, oldest→newest, as {name, title, version, optional}, returned when `list` is set; nothing is run.',
     },
     {
+      type: 'upgrade.registry',
+      description:
+        'A dry-run or apply receipt for copied compositions, including safe updates, clean merges, conflicts, missing files, and invalid receipts.',
+    },
+    {
       type: 'upgrade.status',
       description:
-        'A short-circuit outcome (no codemods executed): `up_to_date` (`from` is at/after the installed target and no `force`), `no_codemods` (none apply to the range), or `config_fixable` (dry-run preview that a pending config codemod would repair an invalid astryx.config). Each carries the agent-docs summary.',
+        'A short-circuit outcome (no codemods executed): `up_to_date` (`from` is at/after the installed target and no `force`), `no_codemods` (none apply to the range), or `config_fixable` (dry-run preview that a pending config codemod would repair an invalid astryx.config). up_to_date and no_codemods carry the agent-docs summary and, when receipts are found, the copied-composition summary; config_fixable carries configError, configCodemods, suggestedCommand, message, note, and the agent-docs summary.',
     },
     {
       type: 'upgrade.run',
       description:
-        'The terminal run receipt: from/to versions, the codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and any per-codemod errors.',
+        'The terminal run receipt: from, to, codemods (count), integrations, agentDocs, agentDocsRefreshed, registryCompositions (when receipts are found), sourcePathFound (false when the resolved `path` does not exist, so nothing was scanned), filesChanged, transformsApplied, modifiedFiles, protectedFiles, declinedCandidates, errors, and complete. When a protected file still requires a change, complete is false and errorCode is ERR_CODEMOD_PROTECTED; the CLI exits nonzero while preserving the structured receipt.',
     },
   ],
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: '`from` is missing (and `list` is not set), or the project config fails strict validation and no pending config codemod can repair it',
+      when: '`from` is missing (and neither `list` nor `registry` is set); `list` and `registry` are both set; `registry` is combined with `from`, `force`, `codemod`, `skipCodemod`, `integration` or `installDeps`; an `integration` specifier is invalid or not installed; or astryx.config fails to load or validate and no pending config codemod repairs it',
     },
     {code: 'ERR_INVALID_VERSION', when: '`from` is not a valid semver string'},
     {code: 'ERR_PATH_TRAVERSAL', when: '`path` resolves outside cwd'},
     {
       code: 'ERR_VERSION_DETECT',
-      when: 'the installed @astryxdesign/core version cannot be detected',
+      when: 'neither @astryxdesign/core nor legacy @xds/core is installed in cwd; with `registry`, only when copied-composition receipts exist and @astryxdesign/core is not installed',
     },
     {
       code: 'ERR_DEP_MISSING',
-      when: 'jscodeshift is required but could not be installed',
+      when: 'jscodeshift is missing and `installDeps` is not set, or installing it failed',
     },
     {
       code: 'ERR_UNKNOWN_CODEMOD',
-      when: 'a `codemod` name matches no registered codemod',
+      when: 'the version range has codemods but none remain selected: `codemod` names no codemod in the range, or `skipCodemod` excludes all of them',
     },
     {
       code: 'ERR_CODEMOD_FAILED',
-      when: 'one or more codemods failed, or a post-codemod hook failed',
+      when: 'one or more codemods failed, or a post-codemod hook failed, and no protected file still needs a change (otherwise an upgrade.run receipt with complete: false is returned)',
+    },
+    {
+      code: 'ERR_CODEMOD_PROTECTION_SOURCE',
+      when: 'a working-tree protection declaration cannot be read or parsed before writes begin',
     },
   ],
   examples: [
@@ -131,6 +160,10 @@ export const doc = {
       code: 'const r = await upgrade({list: true});',
     },
     {label: 'Preview (dry-run)', code: "await upgrade({from: '0.0.5'});"},
+    {
+      label: 'Update copied compositions',
+      code: 'await upgrade({registry: true, apply: true});',
+    },
     {
       label: 'Apply changes',
       code: "await upgrade({from: '0.0.5', apply: true});",

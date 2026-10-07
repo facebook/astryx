@@ -1,9 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 // AUTO-GENERATED — do not edit manually.
-// Source: packages/core/src/theme/tokens.stylex.ts
+// Source: packages/core/src/theme/tokens.stylex.ts,
+//   dataTokens.stylex.ts, and syntax/tokens.ts
 // Run: node scripts/generate-token-docs.mjs
-// Total: 188 tokens across 13 categories.
+// Total: 258 tokens across 15 categories.
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
@@ -11,7 +12,12 @@ export const docs = {
   "name": "tokens",
   "title": "All Tokens",
   "category": "foundations",
-  "description": "Complete reference for spacing, color, radius, typography, shadow, motion, and size tokens.",
+  "description": "Complete reference for color, data visualization, syntax, spacing, size, border, focus, radius, shadow, motion, and typography tokens.",
+  "keywords": [
+    "design tokens",
+    "css variables",
+    "custom properties"
+  ],
   "sections": [
     {
       "title": "Color Tokens",
@@ -45,8 +51,8 @@ export const docs = {
             ],
             [
               "--color-neutral",
-              "light-dark(rgba(5, 54, 89, 0.1), rgba(223, 226, 229, 0.2))",
-              "light-dark(rgba(5, 54, 89, 0.1), rgba(223, 226, 229, 0.2))"
+              "rgba(5, 54, 89, 0.1)",
+              "rgba(223, 226, 229, 0.2)"
             ],
             [
               "--color-background-surface",
@@ -215,8 +221,8 @@ export const docs = {
             ],
             [
               "--color-shadow",
-              "light-dark(rgba(5, 54, 89, 0.1), rgba(0, 0, 0, 0.3))",
-              "light-dark(rgba(5, 54, 89, 0.1), rgba(0, 0, 0, 0.3))"
+              "rgba(5, 54, 89, 0.1)",
+              "rgba(0, 0, 0, 0.3)"
             ],
             [
               "--color-tint-hover",
@@ -422,6 +428,381 @@ export const docs = {
               "--color-text-yellow",
               "#753F07",
               "#FBCE03"
+            ]
+          ]
+        }
+      ],
+      "previewType": "swatch"
+    },
+    {
+      "title": "Data Visualization Tokens",
+      "content": [
+        {
+          "type": "prose",
+          "text": "Colors for charts and graphs: one categorical accent per series, a neutral for labels and reference lines, and sequential ramps from 5 (darkest) to 1 (lightest) for ordered scales and heatmaps. Import their public StyleX variables from @astryxdesign/core/theme/dataTokens.stylex."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Token",
+            "Light",
+            "Dark"
+          ],
+          "rows": [
+            [
+              "--color-data-categorical-blue",
+              "#0171E3",
+              "#0171E3"
+            ],
+            [
+              "--color-data-categorical-orange",
+              "#EB6E00",
+              "#EB6E00"
+            ],
+            [
+              "--color-data-categorical-purple",
+              "#6B1EFD",
+              "#6B1EFD"
+            ],
+            [
+              "--color-data-categorical-green",
+              "#0B991F",
+              "#0B991F"
+            ],
+            [
+              "--color-data-categorical-pink",
+              "#F351C0",
+              "#F351C0"
+            ],
+            [
+              "--color-data-categorical-cyan",
+              "#0171A4",
+              "#0171A4"
+            ],
+            [
+              "--color-data-categorical-red",
+              "#F5394F",
+              "#F5394F"
+            ],
+            [
+              "--color-data-categorical-teal",
+              "#08A3A3",
+              "#08A3A3"
+            ],
+            [
+              "--color-data-categorical-brown",
+              "#965E03",
+              "#965E03"
+            ],
+            [
+              "--color-data-categorical-indigo",
+              "#6F8AFF",
+              "#6F8AFF"
+            ],
+            [
+              "--color-data-neutral",
+              "#8494A3",
+              "#8C939B"
+            ],
+            [
+              "--color-data-blue-5",
+              "#02165E",
+              "#02165E"
+            ],
+            [
+              "--color-data-blue-4",
+              "#004CBC",
+              "#004CBC"
+            ],
+            [
+              "--color-data-blue-3",
+              "#2694FE",
+              "#2694FE"
+            ],
+            [
+              "--color-data-blue-2",
+              "#78BEFF",
+              "#78BEFF"
+            ],
+            [
+              "--color-data-blue-1",
+              "#DBECFF",
+              "#DBECFF"
+            ],
+            [
+              "--color-data-shamrock-5",
+              "#0B603D",
+              "#0B603D"
+            ],
+            [
+              "--color-data-shamrock-4",
+              "#138546",
+              "#138546"
+            ],
+            [
+              "--color-data-shamrock-3",
+              "#24BB5E",
+              "#24BB5E"
+            ],
+            [
+              "--color-data-shamrock-2",
+              "#8EF7AA",
+              "#8EF7AA"
+            ],
+            [
+              "--color-data-shamrock-1",
+              "#D6FEE4",
+              "#D6FEE4"
+            ],
+            [
+              "--color-data-orange-5",
+              "#A13F04",
+              "#A13F04"
+            ],
+            [
+              "--color-data-orange-4",
+              "#D66100",
+              "#D66100"
+            ],
+            [
+              "--color-data-orange-3",
+              "#FD9537",
+              "#FD9537"
+            ],
+            [
+              "--color-data-orange-2",
+              "#FDB876",
+              "#FDB876"
+            ],
+            [
+              "--color-data-orange-1",
+              "#FFE6CF",
+              "#FFE6CF"
+            ],
+            [
+              "--color-data-pink-5",
+              "#8E1073",
+              "#8E1073"
+            ],
+            [
+              "--color-data-pink-4",
+              "#D123A1",
+              "#D123A1"
+            ],
+            [
+              "--color-data-pink-3",
+              "#F989D3",
+              "#F989D3"
+            ],
+            [
+              "--color-data-pink-2",
+              "#FEADE3",
+              "#FEADE3"
+            ],
+            [
+              "--color-data-pink-1",
+              "#FCE3F4",
+              "#FCE3F4"
+            ],
+            [
+              "--color-data-purple-5",
+              "#3E0697",
+              "#3E0697"
+            ],
+            [
+              "--color-data-purple-4",
+              "#6B1EFD",
+              "#6B1EFD"
+            ],
+            [
+              "--color-data-purple-3",
+              "#9081FF",
+              "#9081FF"
+            ],
+            [
+              "--color-data-purple-2",
+              "#B3B0FE",
+              "#B3B0FE"
+            ],
+            [
+              "--color-data-purple-1",
+              "#E8E8FB",
+              "#E8E8FB"
+            ],
+            [
+              "--color-data-red-5",
+              "#9D0519",
+              "#9D0519"
+            ],
+            [
+              "--color-data-red-4",
+              "#D31130",
+              "#D31130"
+            ],
+            [
+              "--color-data-red-3",
+              "#FB7D87",
+              "#FB7D87"
+            ],
+            [
+              "--color-data-red-2",
+              "#FFB2B8",
+              "#FFB2B8"
+            ],
+            [
+              "--color-data-red-1",
+              "#FEE4E6",
+              "#FEE4E6"
+            ],
+            [
+              "--color-data-teal-5",
+              "#08767D",
+              "#08767D"
+            ],
+            [
+              "--color-data-teal-4",
+              "#0C9293",
+              "#0C9293"
+            ],
+            [
+              "--color-data-teal-3",
+              "#0DB7AF",
+              "#0DB7AF"
+            ],
+            [
+              "--color-data-teal-2",
+              "#6CE6D8",
+              "#6CE6D8"
+            ],
+            [
+              "--color-data-teal-1",
+              "#D7FCF8",
+              "#D7FCF8"
+            ],
+            [
+              "--color-data-yellow-5",
+              "#8A5001",
+              "#8A5001"
+            ],
+            [
+              "--color-data-yellow-4",
+              "#D69804",
+              "#D69804"
+            ],
+            [
+              "--color-data-yellow-3",
+              "#FBCE03",
+              "#FBCE03"
+            ],
+            [
+              "--color-data-yellow-2",
+              "#FCEC85",
+              "#FCEC85"
+            ],
+            [
+              "--color-data-yellow-1",
+              "#FDF6BA",
+              "#FDF6BA"
+            ],
+            [
+              "--color-data-gray-5",
+              "#25363F",
+              "#333338"
+            ],
+            [
+              "--color-data-gray-4",
+              "#5D6C7B",
+              "#666A72"
+            ],
+            [
+              "--color-data-gray-3",
+              "#AFB9C4",
+              "#B2B8BE"
+            ],
+            [
+              "--color-data-gray-2",
+              "#CCD3DB",
+              "#D0D3D6"
+            ],
+            [
+              "--color-data-gray-1",
+              "#F1F4F7",
+              "#F2F4F6"
+            ]
+          ]
+        }
+      ],
+      "previewType": "swatch"
+    },
+    {
+      "title": "Syntax Tokens",
+      "content": [
+        {
+          "type": "prose",
+          "text": "Code highlighting colors used by CodeBlock. Each defaults to a palette token, so syntax colors follow the theme; defineTheme({syntax}) sets a syntax theme instead."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Token",
+            "Value"
+          ],
+          "rows": [
+            [
+              "--color-syntax-keyword",
+              "var(--color-text-accent)"
+            ],
+            [
+              "--color-syntax-string",
+              "var(--color-text-green)"
+            ],
+            [
+              "--color-syntax-comment",
+              "var(--color-text-secondary)"
+            ],
+            [
+              "--color-syntax-number",
+              "var(--color-text-orange)"
+            ],
+            [
+              "--color-syntax-function",
+              "var(--color-text-blue)"
+            ],
+            [
+              "--color-syntax-type",
+              "var(--color-text-purple)"
+            ],
+            [
+              "--color-syntax-variable",
+              "var(--color-text-primary)"
+            ],
+            [
+              "--color-syntax-operator",
+              "var(--color-text-cyan)"
+            ],
+            [
+              "--color-syntax-constant",
+              "var(--color-text-orange)"
+            ],
+            [
+              "--color-syntax-tag",
+              "var(--color-text-red)"
+            ],
+            [
+              "--color-syntax-attribute",
+              "var(--color-text-teal)"
+            ],
+            [
+              "--color-syntax-property",
+              "var(--color-text-cyan)"
+            ],
+            [
+              "--color-syntax-punctuation",
+              "var(--color-text-secondary)"
+            ],
+            [
+              "--color-syntax-background",
+              "var(--color-background-muted)"
             ]
           ]
         }
@@ -1098,11 +1479,11 @@ export const docs = {
           "type": "code",
           "lang": "tsx",
           "label": "Using token imports",
-          "code": "import * as stylex from '@stylexjs/stylex';\nimport {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core';\n\nconst styles = stylex.create({\n  card: {\n    padding: spacingVars['--spacing-4'],\n    backgroundColor: colorVars['--color-background-surface'],\n    borderRadius: radiusVars['--radius-container'],\n  },\n  button: {\n    height: sizeVars['--size-element-md'],\n  },\n});"
+          "code": "import * as stylex from '@stylexjs/stylex';\nimport {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';\nimport {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';\n\nconst styles = stylex.create({\n  card: {\n    padding: spacingVars['--spacing-4'],\n    backgroundColor: colorVars['--color-background-surface'],\n    borderRadius: radiusVars['--radius-container'],\n  },\n  series: {\n    color: dataVars['--color-data-categorical-blue'],\n  },\n  button: {\n    height: sizeVars['--size-element-md'],\n  },\n});"
         },
         {
           "type": "prose",
-          "text": "See `astryx docs styling` for how to apply tokens via xstyle, className, and compound component patterns. See `astryx docs theme` for overriding tokens with defineTheme."
+          "text": "See {@link generic:styling} for how to apply tokens via xstyle, className, and compound component patterns. See {@link generic:theme} for overriding tokens with defineTheme."
         }
       ]
     }

@@ -1,13 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Drift checks for the colocated CLI docs. Keeps the hand-authored docs
- * honest against their sources of truth:
- *   - every `*.doc.mjs` under the doc roots parses via `parseDoc`;
+ * @file Drift checks for every production AuthoredDoc in the repository. Keeps
+ * the hand-authored docs honest against their sources of truth:
+ *   - every `*.doc.mjs` under a production doc root parses via `parseDoc`;
  *   - each CommandDoc's `fn` resolves to a FunctionDoc, its arg/option `param`s
  *     exist on that function, and its `name` is a real manifest command;
  *   - the error-codes EnumDoc == ERROR_CODES exactly;
- *   - the response-types EnumDoc == the manifest's response discriminants.
+ *   - the response-types EnumDoc == the manifest's response discriminants plus
+ *     the root types (help, version) no single command owns.
  *
  * @position packages/cli/test/drift — colocated-docs drift harness
  */
@@ -18,16 +19,25 @@ import * as path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {parseDoc} from '../../authoring/index.mjs';
 import {allErrorCodes} from '../../foundation/response/error-codes.mjs';
+import {ROOT_RESPONSE_TYPES} from '../../clients/cli/lib/manifest.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CLI_ROOT = path.resolve(HERE, '../..');
+const REPO_ROOT = path.resolve(CLI_ROOT, '../..');
 const BIN = path.join(CLI_ROOT, 'clients/cli/bin/astryx.mjs');
 const DOC_ROOTS = [
-  'authoring',
-  'api',
-  'clients/cli/commands',
-  'foundation/response',
-].map(r => path.join(CLI_ROOT, r));
+  'packages/cli/authoring',
+  'packages/cli/api',
+  'packages/cli/clients/cli/commands',
+  'packages/cli/foundation',
+  'packages/cli/assets',
+  'packages/cli/test/authoring-types',
+  'packages/core/src',
+  'packages/lab/src',
+  'packages/charts/src',
+  'packages/richtext/src',
+  'packages/vega/src',
+].map(root => path.join(REPO_ROOT, root));
 
 /** @param {string} dir @returns {string[]} */
 function walk(dir) {
@@ -45,7 +55,10 @@ export async function collectDocs() {
   const out = [];
   for (const f of files) {
     const mod = await import(pathToFileURL(f).href);
-    out.push({file: path.relative(CLI_ROOT, f), doc: mod.doc ?? mod.docs});
+    out.push({
+      file: path.relative(REPO_ROOT, f),
+      doc: mod.doc ?? mod.docs ?? mod.default,
+    });
   }
   return out;
 }
@@ -77,8 +90,13 @@ export async function runDrift() {
     }
   }
 
+  // The typed examples under test/authoring-types must parse, but they
+  // document nothing real, so they take no part in the cross-reference checks.
+  const production = docs.filter(
+    d => !d.file.startsWith('packages/cli/test/authoring-types/'),
+  );
   const of = (/** @type {string} */ t) =>
-    docs.filter(d => d.doc && d.doc.type === t);
+    production.filter(d => d.doc && d.doc.type === t);
   const fnByName = new Map(of('function').map(d => [d.doc.name, d.doc]));
 
   // Command drift: fn resolves, params resolve, name is real.
@@ -161,13 +179,14 @@ export async function runDrift() {
         errors.push(`${file}: subcommand "${s}" is in the doc but not the CLI`);
   }
 
-  // Enum drift: error-codes == ERROR_CODES; response-types == manifest set.
+  // Enum drift: error-codes == ERROR_CODES; response-types == the manifest's
+  // per-command set plus the root types (help, version) no command owns.
   checkEnumSet(errors, docs, 'error-codes', new Set(allErrorCodes()));
   checkEnumSet(
     errors,
     docs,
     'response-types',
-    new Set(Object.values(manifest.responseTypes).flat()),
+    new Set([...Object.values(manifest.responseTypes).flat(), ...ROOT_RESPONSE_TYPES]),
   );
 
   return {count: docs.length, errors};

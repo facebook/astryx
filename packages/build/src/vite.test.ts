@@ -2,7 +2,7 @@
 
 /**
  * @file vite.test.ts
- * @description Verifies CSS layer-order injection in the XDS Vite plugin.
+ * @description Verifies CSS layer-order injection in the Astryx Vite plugin.
  *   The library layer name is configurable (default `astryx-base`); the
  *   theme layer name is fixed at `astryx-theme`.
  */
@@ -15,6 +15,26 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {astryxStylex} from './vite';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+function getInjectedConfig(rootDir: string): any {
+  const plugins = astryxStylex({rootDir});
+  const configPlugin = plugins.find(p => p.name === 'astryx-config');
+  expect(configPlugin, 'astryx-config plugin should exist').toBeTruthy();
+  const config = (configPlugin as any).config;
+  return typeof config === 'function' ? config() : config.handler();
+}
+
+function applyAlias(aliases: any[], id: string): string {
+  for (const alias of aliases) {
+    if (
+      (typeof alias.find === 'string' && id.startsWith(alias.find)) ||
+      (alias.find instanceof RegExp && alias.find.test(id))
+    ) {
+      return id.replace(alias.find, alias.replacement);
+    }
+  }
+  return id;
+}
 
 /** Pull the injected `@layer ...;` order statement out of the plugin set. */
 function getLayerOrder(plugins: ReturnType<typeof astryxStylex>): string {
@@ -96,6 +116,26 @@ describe('astryxStylex build-time layer split', () => {
       ),
     ).not.toThrow();
     expect(error).not.toHaveBeenCalled();
+  });
+});
+
+describe('astryxStylex locale aliases', () => {
+  it('routes generated and rich locale imports to their real package files', () => {
+    const rootDir = path.join(tmpdir(), 'astryx-vite-alias');
+    const aliases = getInjectedConfig(rootDir).resolve.alias;
+    const corePackage = path.join(rootDir, 'node_modules/@astryxdesign/core');
+
+    expect(
+      applyAlias(aliases, '@astryxdesign/core/locales/fr-FR.generated.js'),
+    ).toBe(
+      path.join(corePackage, 'src/i18n/generated-locales/fr-FR.generated.ts'),
+    );
+    expect(applyAlias(aliases, '@astryxdesign/core/locales/fr-FR.json')).toBe(
+      path.join(corePackage, 'locales/fr-FR.json'),
+    );
+    expect(applyAlias(aliases, '@astryxdesign/core/Button')).toBe(
+      path.join(corePackage, 'src/Button'),
+    );
   });
 });
 

@@ -3,7 +3,8 @@
 /**
  * @file BottomSheetPanel.test.tsx
  * @input Uses vitest, Testing Library, BottomSheetPanel
- * @output Tests the shared sheet surface motion contract
+ * @output Tests the shared sheet surface motion, keyboard scroll, and container
+ *   padding contracts
  * @position Internal presentation tests shared by standalone and switcher modes
  */
 
@@ -50,6 +51,7 @@ function renderPanel(
 ) {
   return render(
     <BottomSheetPanel
+      label="Sheet details"
       state={state}
       height="hug"
       style={panelTransitionStyle}
@@ -92,6 +94,7 @@ describe('BottomSheetPanel', () => {
     const onMotionComplete = vi.fn();
     const {rerender} = render(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'retained', motion: 'covered', alignmentOffset: 0}}
         height="hug"
         style={panelTransitionStyle}
@@ -104,6 +107,7 @@ describe('BottomSheetPanel', () => {
 
     rerender(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'open', entering: true}}
         height="hug"
         style={panelTransitionStyle}
@@ -139,6 +143,7 @@ describe('BottomSheetPanel', () => {
 
     rerender(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'exiting'}}
         height="hug"
         style={panelTransitionStyle}
@@ -166,6 +171,7 @@ describe('BottomSheetPanel', () => {
     const onMotionComplete = vi.fn();
     render(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'open', entering: true}}
         height="hug"
         onDismiss={() => {}}
@@ -184,6 +190,7 @@ describe('BottomSheetPanel', () => {
       const onMotionComplete = vi.fn();
       render(
         <BottomSheetPanel
+          label="Sheet details"
           state={{kind: 'open', entering: true}}
           height="hug"
           style={{
@@ -211,6 +218,7 @@ describe('BottomSheetPanel', () => {
     const panelRef = vi.fn();
     const {rerender, unmount} = render(
       <BottomSheetPanel
+        label="Sheet details"
         ref={panelRef}
         state={{kind: 'open', entering: false}}
         height="hug"
@@ -223,6 +231,7 @@ describe('BottomSheetPanel', () => {
     expect(panelRef).toHaveBeenCalledTimes(1);
     rerender(
       <BottomSheetPanel
+        label="Sheet details"
         ref={panelRef}
         state={{kind: 'open', entering: false}}
         height="hug"
@@ -361,6 +370,7 @@ describe('BottomSheetPanel', () => {
 
     const {container: closing} = render(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'exiting'}}
         height="hug"
         onDismiss={() => {}}
@@ -379,6 +389,7 @@ describe('BottomSheetPanel', () => {
 
     const {container: resting} = render(
       <BottomSheetPanel
+        label="Sheet details"
         state={{kind: 'open', entering: false}}
         height="hug"
         onDismiss={() => {}}
@@ -393,5 +404,95 @@ describe('BottomSheetPanel', () => {
       'transition-timing-function: var(--ease-standard)',
     );
     expect(restingRules).not.toContain('cubic-bezier(.3,0,.6,.6)');
+  });
+
+  describe('container padding', () => {
+    // StyleX lowers the block edges to their physical properties.
+    const EDGES = [
+      ['inline-start', 'padding-inline-start'],
+      ['inline-end', 'padding-inline-end'],
+      ['block-start', 'padding-top'],
+      ['block-end', 'padding-bottom'],
+    ] as const;
+
+    function renderWithPadding(padding?: 0 | 2) {
+      render(
+        <BottomSheetPanel
+          label="Sheet details"
+          state={{kind: 'open', entering: false}}
+          height="hug"
+          padding={padding}
+          onDismiss={() => {}}
+          onScrimOpacity={() => {}}>
+          <span data-testid="sheet-child">Panel content</span>
+        </BottomSheetPanel>,
+      );
+      // The content box is the child's parent: the observed box inside the
+      // scrolling body, not the body itself.
+      return getComputedStyle(screen.getByTestId('sheet-child').parentElement!);
+    }
+
+    it('keeps the released unpadded default and publishes the theme chain', () => {
+      const computed = renderWithPadding();
+      for (const [edge, property] of EDGES) {
+        const published = computed
+          .getPropertyValue(`--container-padding-${edge}`)
+          .replace(/\s+/g, '');
+        expect(published, edge).toContain(
+          `var(--astryx-bottom-sheet-padding-${edge}`,
+        );
+        // No theme padding resolves to no inset, as before the sheet was a
+        // container.
+        expect(published, edge).toContain(
+          'var(--astryx-bottom-sheet-padding,0px)',
+        );
+        // Applied padding reads the published value, so bleed children
+        // subtract exactly the inset they sit in.
+        expect(computed.getPropertyValue(property), edge).toBe(
+          `var(--container-padding-${edge})`,
+        );
+      }
+      // The Layout insets have no terminal value: unthemed, they stay invalid
+      // and a Layout inside the sheet keeps its own default padding.
+      for (const name of [
+        '--layout-padding-outer-x',
+        '--layout-padding-outer-y',
+        '--layout-padding-inner-x',
+        '--layout-padding-inner-y',
+      ]) {
+        const value = computed.getPropertyValue(name).replace(/\s+/g, '');
+        expect(value, name).toContain('var(--astryx-bottom-sheet-padding)');
+        expect(value, name).not.toMatch(/0px|--spacing-/);
+      }
+    });
+
+    it.each([0, 2] as const)(
+      'applies and publishes an explicit padding step (%s)',
+      padding => {
+        const computed = renderWithPadding(padding);
+        const expected = `var(--spacing-${padding})`;
+        for (const [edge, property] of EDGES) {
+          expect(
+            computed.getPropertyValue(`--container-padding-${edge}`),
+            edge,
+          ).toBe(expected);
+          expect(computed.getPropertyValue(property), edge).toBe(expected);
+        }
+        expect(computed.getPropertyValue('--layout-padding-inner-x')).toBe(
+          expected,
+        );
+      },
+    );
+
+    it('keeps the panel itself unpadded and free of a padding attribute', () => {
+      renderWithPadding(2);
+      const panel = getPanel();
+      expect(panel.hasAttribute('padding')).toBe(false);
+      expect(
+        getComputedStyle(panel).getPropertyValue(
+          '--container-padding-inline-start',
+        ),
+      ).toBe('0px');
+    });
   });
 });

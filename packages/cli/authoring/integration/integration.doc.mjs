@@ -11,46 +11,61 @@ export const doc = {
   type: 'schema',
   name: 'integration',
   displayName: 'Astryx Integration',
-  namespace: 'cli',
+  namespace: 'authoring',
   description:
     'The astryx.integration.* manifest that sits beside an integration ' +
-    "package's package.json. Points the CLI at the package's components, " +
-    'templates, codemods, doc topics, and managed agent guidance, and where to ' +
-    'file issues. Every field is optional.',
+    "package's package.json. It can preserve a stable provider identity across a package rename, " +
+    "and points the CLI at the package's components, templates, codemods, doc topics, " +
+    'source themes, managed agent guidance, and issue tracker. Every field is optional.',
   appliesTo: 'astryx.integration.{ts,mjs,js}',
   fields: [
+    {
+      name: 'providerId',
+      type: 'string',
+      description:
+        'The name that marks this package as the source of everything it contributes. Leave it out to use the package name from package.json. Set it to the old name only during a rename, so the IDs of what the package already contributed stay the same. If two packages use the same name here, the one you are working on wins; otherwise the one the CLI reads first wins, and the CLI warns about the other.',
+      example: "'@acme/widgets'",
+    },
     {
       name: 'components',
       type: 'string',
       description:
-        'Relative path to the components/docs root (resolved to absolute).',
+        'The folder that holds your components and their docs, relative to package.json.',
       example: "'./src/components'",
     },
     {
       name: 'templates',
       type: 'string',
       description:
-        'Relative path to the templates root (resolved to absolute).',
+        'The folder that holds your templates, relative to package.json.',
       example: "'./src/templates'",
     },
     {
       name: 'codemods',
       type: 'string',
-      description: 'Relative path to the codemods root (resolved to absolute).',
+      description:
+        'The folder that holds your codemods, relative to package.json.',
       example: "'./codemods'",
     },
     {
       name: 'docs',
       type: 'string',
       description:
-        'Relative path to the reference-docs (topics) root (resolved to absolute). Every {topic}.doc.{ts,mjs,js} under it is served by `astryx docs` beside the built-in topics; a topic may also declare `replaces` or `extends` to take the place of a built-in one or merge onto it.',
+        'The folder that holds your doc topics, relative to package.json. Every {topic}.doc.{ts,mjs,js} in it shows up in `astryx docs` next to the built-in topics; a topic can also set `replaces` or `extends` to take over a built-in topic or add to it.',
       example: "'./docs'",
+    },
+    {
+      name: 'themes',
+      type: 'string',
+      description:
+        'The folder that holds your themes, relative to package.json, with one folder per theme. Each theme folder has the theme source and a matching .doc.mjs file with the same name. Installed themes show up in `astryx theme list` and can be copied with `astryx theme add`.',
+      example: "'./themes'",
     },
     {
       name: 'agentDocs',
       type: '{ append?: readonly string[] }',
       description:
-        'Static package guidance appended to the end of the managed agent block. The CLI owns the section heading, package labels, bullets, target files, and writes.',
+        'Lines of guidance your package adds to the end of the agent instructions the CLI manages. The CLI owns the heading, labels, bullets, and which files it writes.',
       example: "{ append: ['Run acme verify.'] }",
     },
     {
@@ -68,6 +83,7 @@ export const doc = {
   templates: './src/templates',
   codemods: './codemods',
   docs: './docs',
+  themes: './themes',
   agentDocs: {
     append: ['Run acme verify before finishing.'],
   },
@@ -79,9 +95,10 @@ export const doc = {
     {
       type: 'prose',
       text:
-        "Identity, the integration's name and version, comes from the " +
-        "package's package.json, not from this manifest. The manifest only " +
-        'declares where the CLI finds each kind of artifact.',
+        'The provider name defaults to the package name in package.json. ' +
+        'During a rename, set `providerId` to the old package name so the IDs ' +
+        'of what the package already contributed stay the same. The package ' +
+        'version always comes from package.json.',
     },
     {
       type: 'prose',
@@ -94,13 +111,18 @@ export const doc = {
     },
     {
       type: 'prose',
+      text: 'A themes root is forward-compatible but version-gated: a CLI released before this field ignores it with a warning and continues loading every contribution kind it understands. That older CLI cannot list or add the contributed themes.',
+    },
+    {
+      type: 'prose',
       text:
-        'Validate a manifest with `astryx validate-integration`. It is checked ' +
-        'at the load boundary (parseIntegration): a known field of the wrong ' +
-        'type is an error, and issuesUrl must be a valid URL. A field this CLI ' +
-        'does not know is ignored with a warning rather than rejected, so a ' +
-        'manifest written against a newer CLI still contributes everything ' +
-        'this one understands.',
+        'Validate the manifest with `astryx doctor integration validate`. At the ' +
+        'load boundary, a known field of the wrong type is an error, issuesUrl ' +
+        'must be a valid URL, and unknown fields become warnings so an older CLI ' +
+        'can still load the fields it understands. Before publishing, also run ' +
+        '`templates`, `components`, and `docs` under the same `doctor integration` ' +
+        'group. Those leaves compare authored identities with Core and explain ' +
+        'whether an overlap is intentional or needs a rename.',
     },
   ],
 };

@@ -68,14 +68,20 @@ const styles = stylex.create({
   input: {
     flex: 1,
     minWidth: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     outline: 'none',
     backgroundColor: 'transparent',
     color: colorVars['--color-text-primary'],
     fontFamily: typographyVars['--font-family-body'],
+    // The 16px floor is iOS-only: iOS Safari zooms the page when a focused
+    // control sits under 16px, and only iOS WebKit implements
+    // -webkit-touch-callout to key the coarse-pointer floor to it.
     fontSize: {
       default: typeScaleVars['--text-body-size'],
-      '@media (pointer: coarse)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      '@media (pointer: coarse)': {
+        '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-body-size']})`,
+      },
     },
     lineHeight: typeScaleVars['--text-body-leading'],
     padding: 0,

@@ -24,7 +24,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'For available token names and values, run `astryx docs tokens`. Focused references are also available with `astryx docs color`, `astryx docs spacing`, `astryx docs shape`, `astryx docs typography`, `astryx docs elevation`, and `astryx docs motion`.',
+          text: 'For available token names and values, run {@link generic:tokens}. Focused references are also available with {@link generic:color}, {@link generic:spacing}, {@link generic:shape}, {@link generic:typography}, {@link generic:elevation}, and {@link generic:motion}.',
         },
       ],
     },
@@ -150,7 +150,7 @@ const styles = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'The Tailwind v4 bridge at `@astryxdesign/core/tailwind-theme.css` maps Tailwind theme variables to system CSS variables with `@theme inline`, so utility classes like `text-primary`, `bg-surface`, `border-border`, `rounded-lg`, and `shadow-md` stay in sync with the active theme.',
+          text: 'The Tailwind v4 bridge at `@astryxdesign/core/tailwind-theme.css` maps Tailwind theme variables to system CSS variables with `@theme reference inline`, so utility classes like `text-primary`, `bg-surface`, `border-border`, `rounded-lg`, and `shadow-md` stay in sync with the active theme without emitting competing runtime declarations.',
         },
         {
           type: 'code',
@@ -185,6 +185,7 @@ const styles = stylex.create({
       ],
     },
     {
+      id: 'semantic-token-systems',
       title: 'Panda, Chakra, and Other Semantic Token Systems',
       category: 'guide',
       content: [
@@ -246,7 +247,7 @@ tokens: {
       content: [
         {
           type: 'prose',
-          text: 'MUI expects palette slots such as primary, background, text, and divider. Map those slots to system variables for ordinary component styling. Use raw values only when MUI or your code needs to parse colors for contrast, alpha, lighten, or darken calculations.',
+          text: '`MUI` expects palette slots such as primary, background, text, and divider. Map those slots to system variables for ordinary component styling. Use raw values only when MUI or your code needs to parse colors for contrast, alpha, lighten, or darken calculations.',
         },
         {
           type: 'code',
@@ -293,12 +294,13 @@ tokens: {
       ],
     },
     {
+      id: 'css-in-js',
       title: 'Emotion, styled-components, Theme UI, and Styled System',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Runtime CSS-in-JS libraries usually accept arbitrary theme objects. Keep those objects semantic, but store system CSS variable references as the values. This keeps generated classes stable while the system updates values through the CSS cascade.',
+          text: 'Runtime CSS-in-JS libraries such as `Emotion` and `styled-components` usually accept arbitrary theme objects. Keep those objects semantic, but store system CSS variable references as the values. This keeps generated classes stable while the system updates values through the CSS cascade.',
         },
         {
           type: 'code',
@@ -327,6 +329,7 @@ tokens: {
       ],
     },
     {
+      id: 'unocss',
       title: 'UnoCSS and Custom Utility Systems',
       category: 'guide',
       content: [
@@ -351,7 +354,7 @@ tokens: {
     },
   },
   shortcuts: {
-    'xds-card': 'bg-surface text-primary border border-border rounded-lg p-4',
+    'astryx-card': 'bg-surface text-primary border border-border rounded-lg p-4',
   },
 });`,
         },
@@ -422,6 +425,7 @@ function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
       ],
     },
     {
+      id: 'non-css-best-practices',
       title: 'Non-CSS Processing Best Practices',
       category: 'guide',
       content: [
@@ -455,7 +459,7 @@ function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
             'Import the reset/base CSS and a theme CSS file early enough for first paint. For production SSR, prefer built themes from `astryx theme build` or published `/built` theme imports plus `theme.css`.',
             'Choose one owner for color mode. Theme uses `data-theme="light|dark"` and `color-scheme` to resolve `light-dark()` tokens.',
             'Map the external library\'s semantic layer to system variables by intent, not by exact naming. For example, MUI `background.paper` maps to `--color-background-surface`.',
-            'Use `astryx docs tokens` and focused token docs when building mappings. Keep mappings small at first: text, surface/body/card/popover, border, accent, status, spacing, radius, typography, shadow.',
+            'Use {@link generic:tokens} and focused token docs when building mappings. Keep mappings small at first: text, surface/body/card/popover, border, accent, status, spacing, radius, typography, shadow.',
             'Use token resolver APIs only for non-CSS APIs that need resolved values.',
           ],
         },

@@ -11,7 +11,7 @@ import {describe, it, expect} from 'vitest';
 import {components} from '../generated/componentRegistry';
 import {packages} from '../generated/packageRegistry';
 import {docTopics} from '../generated/docsRegistry';
-import {templates} from '../generated/templateRegistry';
+import {templateMetadata as templates} from '../generated/templateMetadataRegistry';
 import {
   flattenComponentSidebarEntries,
   getComponentSidebarData,

@@ -170,8 +170,8 @@ export function RadioIndicator({
             checked: isChecked ? 'checked' : null,
             disabled: isDisabled ? 'disabled' : null,
           },
-          // `radio` was the target before indicators existed; themes styling
-          // it keep working until the next major.
+          // `radio` was the target before indicators existed; keep it emitted
+          // so existing themes continue to work.
           {legacyNames: ['radio']},
         ),
         stylex.props(

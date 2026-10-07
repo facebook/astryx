@@ -1387,6 +1387,47 @@ describe('DateTimeInput', () => {
       expect(listbox).toHaveAttribute('aria-label');
     });
 
+    it('highlights on hover without scrolling, keyboard still scrolls (#6077)', () => {
+      // Hover must highlight only: scrollIntoView under a stationary pointer
+      // moves the next option under it, re-highlighting and scrolling again —
+      // a runaway auto-scroll loop with no user input.
+      const scrollIntoView = vi.fn();
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: scrollIntoView,
+      });
+      try {
+        const {container} = render(
+          <DateTimeInput
+            label="Meeting"
+            value={'2026-03-15T14:00' as ISODateTimeString}
+            timeOptionInterval={60}
+            onChange={() => {}}
+          />,
+        );
+
+        const timeInput = screen.getByLabelText('Meeting time');
+        fireEvent.click(timeInput);
+        scrollIntoView.mockClear();
+
+        const options = container
+          .querySelector('[role="listbox"]')!
+          .querySelectorAll('[role="option"]');
+        fireEvent.mouseEnter(options[5]);
+
+        expect(timeInput.getAttribute('aria-activedescendant')).toBe(
+          options[5].id,
+        );
+        expect(scrollIntoView).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(timeInput, {key: 'ArrowDown'});
+        expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+      } finally {
+        delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+          .scrollIntoView;
+      }
+    });
+
     it('does not open the list when disabled', () => {
       render(
         <DateTimeInput
@@ -2305,10 +2346,11 @@ describe('DateTimeInput', () => {
     });
 
     it('leaves both leading glyphs byte-identical to a plain secondary/sm icon by default', () => {
-      // The targets are purely additive: the stable target class and its
-      // reflected state add nothing to the render until a theme targets them.
-      // Guard that by diffing each glyph's StyleX classes against a standalone
-      // secondary/sm icon, excluding only the additive target/state classes.
+      // The targets are purely additive: the stable target class, reflected
+      // state, and released bare-state compatibility class add nothing to the
+      // render until a theme or consumer stylesheet targets them. Guard that by
+      // diffing each glyph's StyleX classes against a standalone secondary/sm
+      // icon, excluding only those additive theme metadata classes.
       const {container} = render(
         <DateTimeInput label="Meeting" onChange={() => {}} />,
       );
@@ -2327,6 +2369,7 @@ describe('DateTimeInput', () => {
       const themeTargetClasses = new Set([
         'astryx-date-time-input-toggle-icon',
         'astryx-date-time-input-clock-icon',
+        'collapsed',
         'expanded',
       ]);
       const styleClasses = (el: HTMLElement) =>

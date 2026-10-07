@@ -63,26 +63,46 @@ const styles = stylex.create({
   },
   // When no start panel: outer-x on left edge
   noStart: {
-    paddingInlineStart: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
-    '--container-padding-inline-start': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
-    '--container-padding-inline-end': `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
+    paddingInlineStart: `var(--layout-padding-own-outer-x, var(--layout-padding-outer-x, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-inline-start': `var(--layout-padding-own-outer-x, var(--layout-padding-outer-x, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-inline-end': `var(--layout-padding-own-outer-x, var(--layout-padding-outer-x, ${spacingVars['--spacing-4']}))`,
   },
   // When no end panel: outer-x on right edge
   noEnd: {
-    paddingInlineEnd: `var(--layout-padding-outer-x, ${spacingVars['--spacing-4']})`,
+    paddingInlineEnd: `var(--layout-padding-own-outer-x, var(--layout-padding-outer-x, ${spacingVars['--spacing-4']}))`,
   },
   // When no header: outer-y on top
   noHeader: {
-    paddingBlockStart: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
-    '--container-padding-block-start': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
+    paddingBlockStart: `var(--layout-padding-own-outer-y, var(--layout-padding-outer-y, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-block-start': `var(--layout-padding-own-outer-y, var(--layout-padding-outer-y, ${spacingVars['--spacing-4']}))`,
   },
   // When no footer: outer-y on bottom
   noFooter: {
-    paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
-    '--container-padding-block-end': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
+    paddingBlockEnd: `var(--layout-padding-own-outer-y, var(--layout-padding-outer-y, ${spacingVars['--spacing-4']}))`,
+    '--container-padding-block-end': `var(--layout-padding-own-outer-y, var(--layout-padding-outer-y, ${spacingVars['--spacing-4']}))`,
   },
   scrollable: {
     overflow: 'auto',
+  },
+  // Keep LayoutContent as the scroll and padding owner. These styles only add
+  // the gutter needed to align its direct children to contentWidth.
+  constrainedNoPanelsStart: {
+    paddingInlineStart:
+      'max(var(--container-padding-inline-start, 0px), calc((100cqi - var(--layout-alignment-width)) / 2 + var(--container-padding-inline-start, 0px)))',
+  },
+  constrainedNoPanelsEnd: {
+    paddingInlineEnd:
+      'max(var(--container-padding-inline-end, 0px), calc((100cqi - var(--layout-alignment-width)) / 2 + var(--container-padding-inline-end, 0px)))',
+  },
+  // A one-panel middle query box excludes the panel-side centered gutter, so
+  // its full difference from contentWidth is the missing opposite-side gutter.
+  constrainedSingleStartPanel: {
+    paddingInlineEnd:
+      'max(var(--container-padding-inline-end, 0px), calc(100cqi - var(--layout-alignment-width) + var(--container-padding-inline-end, 0px)))',
+  },
+  constrainedSingleEndPanel: {
+    paddingInlineStart:
+      'max(var(--container-padding-inline-start, 0px), calc(100cqi - var(--layout-alignment-width) + var(--container-padding-inline-start, 0px)))',
   },
   fullBleed: {
     paddingInlineStart: 0,
@@ -135,8 +155,8 @@ export interface LayoutContentProps extends BaseProps<HTMLDivElement> {
  * Scrollable main content area for Layout. Wraps the primary body content
  * with automatic scroll containment and context-aware padding.
  *
- * Already provides its own padding and scroll — don't add padding or
- * overflow to children. Use `padding={0}` if you need edge-to-edge content.
+ * Already provides its own padding and scroll — don't add padding or overflow
+ * to children. Use `padding={0}` if you need edge-to-edge content.
  *
  * @example
  * ```
@@ -202,6 +222,22 @@ export function LayoutContent({
           padding != null && containerPaddingInlineVarStyles[padding],
           padding != null && containerPaddingBlockStartVarStyles[padding],
           padding != null && containerPaddingBlockEndVarStyles[padding],
+          !hasStart &&
+            !hasEnd &&
+            !isZeroPadding &&
+            styles.constrainedNoPanelsStart,
+          !hasStart &&
+            !hasEnd &&
+            !isZeroPadding &&
+            styles.constrainedNoPanelsEnd,
+          hasStart &&
+            !hasEnd &&
+            !isZeroPadding &&
+            styles.constrainedSingleStartPanel,
+          !hasStart &&
+            hasEnd &&
+            !isZeroPadding &&
+            styles.constrainedSingleEndPanel,
           xstyle,
         ),
         className,

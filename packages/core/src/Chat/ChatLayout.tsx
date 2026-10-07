@@ -268,6 +268,25 @@ function hasVisibleContent(children: ReactNode): boolean {
 // Component
 // =============================================================================
 
+/**
+ * Layout shell for a full chat interface: messages in page flow, composer
+ * docked to the bottom behind a frosted glass layer, with auto-scroll and a
+ * scroll-to-bottom button wired in.
+ *
+ * @example
+ * ```
+ * <ChatLayout
+ *   density="spacious"
+ *   composer={<ChatComposer onSubmit={send} />}
+ *   emptyState={<EmptyState title="No messages yet" />}>
+ *   <ChatMessageList>
+ *     <ChatMessage sender="assistant">
+ *       <ChatMessageBubble>How can I help?</ChatMessageBubble>
+ *     </ChatMessage>
+ *   </ChatMessageList>
+ * </ChatLayout>
+ * ```
+ */
 export function ChatLayout({
   children,
   composer,

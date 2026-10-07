@@ -4,6 +4,7 @@ For the full contribution process — what we accept, how to propose new compone
 
 Key pages:
 
+- **[Pull request intents](docs/contributing/pull-requests.md)** — choose one primary intent, its evidence bar, and the matching PR template
 - **[API conventions guide](docs/contributing/api-conventions.md)** — practical naming, composition, styling, proposal, and review guidance linked to current owner records
 - **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** — the design-side bar: tokens, spacing, radius, elevation, type, color, motion, and state representations
 - **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
@@ -42,7 +43,7 @@ Download and install from https://nodejs.org
 ### pnpm
 
 Astryx uses [pnpm](https://pnpm.io/) as its package manager (declared in
-the `packageManager` and `devEngines.packageManager` fields of
+the `packageManager` field of
 `package.json`). You can install pnpm directly:
 
 ```bash
@@ -78,15 +79,15 @@ corepack enable
 Verify installation:
 
 ```bash
-node --version   # v22.x.x or v24.x.x
+node --version   # v24.x.x
 pnpm --version   # 11.x.x
 ```
 
 ## Getting Started
 
 ```bash
-# Clone the repo
-git clone https://github.com/facebook/astryx.git
+# Clone without downloading historical file contents up front
+git clone --filter=blob:none https://github.com/facebook/astryx.git
 cd astryx
 
 # Install dependencies
@@ -114,13 +115,15 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@astryxdesign/core`:** nothing extra. The dev server
-serves the edited source, so the story updates on save — no rebuild, no restart.
+**If you make changes to `@astryxdesign/core`:** source changes update without a
+rebuild or restart. Storybook and the docsite also watch
+`packages/core/locales/*.json`, regenerate the compact runtime catalogs, and
+reload imported messages after a locale edit.
 
 ### Running the Doc Site
 
 The doc site (`apps/docsite/`) is a Next.js app that renders the component
-documentation at https://astryx.dev. To run it locally:
+documentation at https://astryx.atmeta.com. To run it locally:
 
 ```bash
 # First time only — build the workspace packages it depends on
@@ -286,6 +289,83 @@ export * from './MyComponent';
 > committed automatically when changes land on `main`. If you need to verify your
 > component will be included, run `pnpm sync:exports:check`.
 
+### User-facing strings and text direction
+
+Components read user-facing strings with `useTranslator()` rather than
+hardcoding them:
+
+```tsx
+import {useTranslator} from '@astryxdesign/core/i18n';
+
+function SaveButton() {
+  const t = useTranslator();
+  return <button>{t('@astryx.actions.save')}</button>;
+}
+```
+
+Astryx's own strings live in `packages/core/locales/en.json`. The
+`@astryx/no-hardcoded-i18n-string` ESLint rule rejects a hardcoded one. For a
+prop whose default is a translated string, alias the prop and resolve it in the
+body: destructure `label: labelFromProps`, then
+`const label = labelFromProps ?? t('@astryx.<component>.<key>')`.
+
+A component that responds to text direction resolves it from the DOM, not from
+a render-time JavaScript read. Reach for the lightest tool that works, in this
+order:
+
+1. **CSS logical properties.** Use `insetInlineStart`, `paddingInlineEnd`,
+   `marginInline`, and friends instead of physical `left`/`right`. Most
+   mirroring needs nothing more: the browser flips it from the ambient `dir`.
+   The `@astryx/no-physical-properties` ESLint rule enforces this.
+2. **Directional icons: mirror with CSS, not a name swap.** Render one fixed
+   glyph and wrap it in the shared `rtlStyles.mirror` (a `scaleX(-1)` that only
+   applies under `[dir="rtl"]`). It flips from the ancestor `dir` through the
+   cascade, so it works on the server with no hydration flash. Do not pick
+   `chevronLeft` or `chevronRight` in JavaScript. Pagination, Calendar, and
+   Carousel handle their chevrons this way.
+
+   ```tsx
+   import * as stylex from '@stylexjs/stylex';
+   import {rtlStyles} from '@astryxdesign/core';
+
+   function NextButton() {
+     // One glyph; CSS flips it under RTL. No direction read.
+     return (
+       <span {...stylex.props(rtlStyles.mirror)}>
+         <Icon icon="chevronRight" />
+       </span>
+     );
+   }
+   ```
+
+3. **Behavior: read the DOM lazily, on the event.** For what CSS can't express
+   (arrow-key mapping, drag and scroll math), read direction at interaction
+   time with `isRtlElement(el)` (a `getComputedStyle().direction` check), never
+   during render. The focus hooks (`useListFocus`, `useGridFocus`,
+   `useTreeFocus`) already detect direction from their container, so arrow keys
+   flip for free; don't pass them a direction flag.
+4. **`useDirection()` context, as a last resort.** Use it only when you need
+   the direction value during render and nothing above fits. It is SSR-safe
+   and returns `'ltr'` outside a provider (like `useTranslator`'s silent
+   fallback), but it is the one path that can mismatch on hydration when the
+   provider's direction disagrees with `<html dir>`. No Astryx component reads
+   direction from context at render time.
+
+### Adding a semantic icon
+
+Add a semantic icon name only for a glyph the whole system shares:
+
+1. Add the name to the `IconName` type in
+   `packages/core/src/Icon/globalIconRegistry.tsx`.
+2. Add the default SVG to `packages/core/src/Icon/defaultIcons.tsx`.
+3. Add a row to the Available Names table in
+   `packages/cli/assets/docs/icons.doc.mjs`.
+
+A glyph that belongs to one component takes a namespaced key instead
+(`numberInput:stepperDown`), so the shared `IconName` list does not grow. Ship
+its fallback in `defaultIcons` under the same key so the glyph still renders
+with no theme.
+
 ## Accessibility Checklist
 
 Every new component — and any change to an interactive one — must clear the
@@ -338,14 +418,19 @@ These are not free-form. `parseDoc` validates each at load, and a **drift harnes
 
 Most of the conventions above are mechanical, so they're checked rather than reviewed:
 
-| Rule                                                                                                                                              | Enforced by                      |
-| ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| the layer directions hold: `authoring/` imports no other layer, `foundation/` never imports `api/` or `clients/`, `api/` never imports `clients/` | ESLint (`no-restricted-imports`) |
-| zod stays sealed behind the `authoring/` parsers                                                                                                  | ESLint (`no-restricted-imports`) |
-| commands register via `defineCommand`, never straight onto Commander                                                                              | ESLint (`no-restricted-syntax`)  |
-| each doc-type ships `type.ts` + `parse.mjs` + `<kind>.doc.mjs`, re-exports its parser, and appears in `parseDoc`'s `@returns`                     | `pnpm check:cli-structure`       |
-| each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                                                                | `pnpm check:cli-structure`       |
-| every `CommandDoc`/`EnumDoc` matches the live CLI                                                                                                 | the drift harness                |
+| Rule                                                                                                                                              | Enforced by                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| the layer directions hold: `authoring/` imports no other layer, `foundation/` never imports `api/` or `clients/`, `api/` never imports `clients/` | ESLint (`no-restricted-imports`)                             |
+| zod stays sealed behind the `authoring/` parsers                                                                                                  | ESLint (`no-restricted-imports`)                             |
+| commands register via `defineCommand`, never straight onto Commander                                                                              | ESLint (`no-restricted-syntax`)                              |
+| a command handler must not access the environment: no filesystem, network, subprocess, Project, or discovery imports (INV22)                      | `pnpm check:cli-structure`                                   |
+| an API module (other than an adapter or helper imported only by adapters) must not access the environment (INV21)                                 | `pnpm check:cli-structure`                                   |
+| a command handler must not build text with `.padEnd()`, `.padStart()`, `.repeat()`, or `new Block()` (INV23, FR3)                                 | ESLint (`no-restricted-syntax`) + `pnpm check:cli-structure` |
+| every executable `CommandDoc` `fn` must name a function exported from `api/index.mjs` (FR1)                                                       | `pnpm check:cli-structure`                                   |
+| every function exported from `api/index.mjs` must have a `FunctionDoc` whose `name` matches (FR2)                                                 | `pnpm check:cli-structure`                                   |
+| each doc-type ships `type.ts` + `parse.mjs` + `<kind>.doc.mjs`, re-exports its parser, and appears in `parseDoc`'s `@returns`                     | `pnpm check:cli-structure`                                   |
+| each `api/<name>/` ships its typedefs, a `FunctionDoc`, and a test                                                                                | `pnpm check:cli-structure`                                   |
+| every `CommandDoc`/`EnumDoc` matches the live CLI                                                                                                 | the drift harness                                            |
 
 You never hand-write the `.d.mts` declarations. `packages/cli/scripts/sync-api-types.mjs` emits them for both `api/` and `authoring/` from the `.mjs` JSDoc — gitignored, regenerated at `prepack`, and stamped `@generated`. Edit the JSDoc and run `pnpm -F @astryxdesign/cli sync:api-types`.
 
@@ -356,7 +441,7 @@ That matters because a hand-written declaration _shadows_ the JSDoc in its `.mjs
 Author the docs _before_ the handler: `defineCommand` builds the Commander command from the `CommandDoc`, so the handler needs it to exist.
 
 1. Add the behavior under `api/<name>/`, with a colocated `<name>.type.mjs` (the `Options` + `{ type, data }` response typedefs — the shape source of truth) and a test.
-2. Author the docs — a `FunctionDoc` at `api/<name>/<fn>.doc.mjs` and a `CommandDoc` at `clients/cli/commands/<name>.doc.mjs`. Copy the `search` pair as a template.
+2. Author the docs — a `FunctionDoc` at `api/<name>/<fn>.doc.mjs` and a `CommandDoc` at `clients/cli/commands/<name>.doc.mjs`. Copy the `blog` pair as a template.
 3. Write the thin handler in `clients/cli/commands/<name>.mjs`, registering it with `defineCommand(program, <name>Command, {fn: <name>Fn, action})` so `--help` and the manifest come from the doc. Call its `register<Name>` from `clients/cli/index.mjs`.
 4. Run the checks below. The drift harness catches a doc that disagrees with the live command, and `check:cli-structure` catches a missing typedef, doc, or test.
 
@@ -526,6 +611,26 @@ enforces it at author time; `pnpm guard:disabled-cursor --storybook-dir
 apps/storybook/dist` hit-tests every disabled element in a built Storybook in
 Chromium and fails on any other cursor.
 
+### Playground preview isolation
+
+The docsite playground runs user-authored code in a sandboxed iframe with an
+opaque origin, tied to the page only by a nonce-attested MessagePort handshake
+(`apps/docsite/src/app/playground/previewChannel.ts`). The `docsite-browser`
+job feeds the existing required `docsite-test` check and proves that boundary
+in Chromium against a production build: a reloaded
+preview document recovers with the current code and theme, and a document that
+previewed code navigated the frame to receives nothing. The sandbox only exists
+in production builds (`next dev` cannot serve its assets to an opaque origin),
+so the specs need a build first:
+
+```bash
+pnpm build                                   # workspace packages the docsite imports
+pnpm -F @astryxdesign/docsite build
+npx playwright install chromium
+
+pnpm test:docsite-browser
+```
+
 ## Versioning & Releases
 
 We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin Astryx layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.
@@ -541,9 +646,9 @@ pnpm changeset:new
 This wrapper:
 
 1. **Detects which packages you changed** from your git diff and pre-selects them — no hand-enumerating the frontmatter.
-2. **Asks for a category** (`breaking`, `component`, `feat`, `fix`, `perf`, `docs`, `chore`) — this drives changelog grouping, _not_ the semver bump.
+2. **Asks for a category** (`breaking`, `experimental`, `component`, `feat`, `fix`, `perf`, `docs`, `chore`) — this drives changelog grouping and the pre-1.0 semver bump.
 3. **Captures the contributor(s)** — defaults to your `gh`/git identity, so credit is recorded at authoring time (not reconstructed from the release bot's commit).
-4. **Derives the semver bump from the category** — a `[breaking]` change bumps the minor; everything else bumps the patch (see below).
+4. **Derives the semver bump from the category** — a `[breaking]` change bumps the minor; `[experimental]` and every other category bump the patch (see below).
 
 It writes a normal `.changeset/<id>.md` — commit it with your PR. The body looks like:
 
@@ -566,12 +671,18 @@ pnpm changeset:new --category fix --summary "…" --pr 2717 --contributor yourha
 > convention by hand (`[category]` first line + `@handle` line). CI
 > (`pnpm check:changesets`) rejects changesets missing a category or
 > contributor, or whose bump doesn't match the category (`[breaking]` must be
-> `minor`, everything else `patch`), or declaring a `major` bump while 0.x.
+> `minor`; `[experimental]` and every other category must be `patch`), or
+> declaring a `major` bump while 0.x.
 
 ### Version Bumps
 
-- **0.x (current): bump follows the category.** We track standard semver for the `0.x.y` range, where a minor bump is the breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`, so `0.1.x → 0.2.0` is what signals "may break you"). A `[breaking]` change bumps the **minor** (`0.x.y → 0.(x+1).0`); every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) bumps the **patch**. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` is the CI backstop that enforces the coupling both ways.
+- **0.x (current): bump follows the category.** We track standard semver for the `0.x.y` range, where a minor bump is the stable breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`). A `[breaking]` change bumps the **minor** (`0.x.y → 0.(x+1).0`). A change confined to a surface that was explicitly marked experimental before its first stable publication uses `[experimental]` and bumps the **patch**, even when that experimental API changes incompatibly. Every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) also bumps the patch. If stable defaults, behavior, props, imports, CLI commands, or machine schemas break, the change remains `[breaking]`. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` enforces the coupling both ways.
 - All publishable packages are a `fixed` group, so a single change co-bumps them to the same version. Only genuinely-affected packages get a changelog entry — the rest get a clean version-only bump.
+- **Main targets a patch by default, and `[breaking]` waits for a scheduled minor.** Because the packages are a fixed group, one `[breaking]` entry moves every package to a new minor — so `pnpm check:changesets` refuses one while main is on its patch default. There are two ways forward, and the refusal prints both:
+  - **Keep the release patch-compatible** (the usual answer): leave the released surface working and deprecate it instead. Ship the replacement, keep the old usage equivalent, and take the patch bump; the removal lands once a minor is scheduled.
+  - **Wait for the scheduled minor**: minors are scheduled for a specific day. A release owner adds `.release/target.json` with the target version and that day, and from then until the release your `[breaking]` changeset can land. Removing that file afterwards is part of normal post-release setup, and an expired date stops admitting breaking changes on its own.
+
+  As a contributor you never author that file or decide the schedule — say what you intend in the PR and a maintainer handles it. The rule is `spec:AST-017` FR46–FR50.
 
 ### How a release is cut
 
@@ -788,7 +899,8 @@ and doesn't need network to use.
 Astryx accepts community translations via Crowdin. To help translate astryx
 into your language, visit <https://crowdin.com/project/astryx>. New locales are
 picked up automatically after a maintainer reviews the auto-generated
-translations PR.
+translations PR. Direct PRs against `packages/core/locales/*.json` also work if
+you prefer that flow.
 
 Calendar’s compact weekday labels, such as `Su` and `Mo`, are generated from
 Unicode CLDR data because browsers do not provide that format.

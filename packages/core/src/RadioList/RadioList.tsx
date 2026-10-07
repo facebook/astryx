@@ -4,7 +4,7 @@
 
 /**
  * @file RadioList.tsx
- * @input Uses React useId, useCallback, useRef, createContext, ReactNode, Field, InputStatus
+ * @input Uses React useId, useCallback, useRef, layer-scoped context, ReactNode, Field, InputStatus
  * @output Exports RadioList component, RadioListProps, RadioListContext
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -16,8 +16,8 @@
  * - /packages/cli/assets/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
+import {createLayerScopedContext as createContext} from '../Layer/layerScopedContext';
 import React, {
-  createContext,
   useCallback,
   useId,
   useMemo,

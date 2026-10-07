@@ -9,8 +9,10 @@
  * Adaptations are deliberately closed and ordered. Width points are fixed names,
  * sparse rules and reserved token routing are rejected during normalization,
  * condition fields are ANDed, and rule order is the precedence model: every
- * matching rule writes after the root theme and later matching writes win. Token
- * cycles are judged only after each reachable ordered cascade is complete.
+ * matching rule writes after the root theme and later matching writes win.
+ * Invariant type-scale component defaults already declared at root are omitted;
+ * authored rule leaves and generated token writes retain their cascade order.
+ * Token cycles are judged after each reachable ordered cascade is complete.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/defineTheme.ts (`DefineThemeInput.adaptations`)
@@ -27,11 +29,7 @@ import type {MotionScaleConfig} from './expandMotionScale';
 import type {RadiusScaleConfig} from './expandRadiusScale';
 import type {ColorScaleConfig} from './expandColorScale';
 import {resolveThemeValues, type ThemeValuesInput} from './resolveThemeValues';
-import {
-  assertNoTokenCycles,
-  isReservedThemeLocalTokenName,
-  resolveAdaptationLocalTokens,
-} from './localTokens';
+import {assertNoTokenCycles, resolveAdaptationLocalTokens} from './localTokens';
 
 // =============================================================================
 // Public authoring vocabulary
@@ -892,6 +890,42 @@ export function resolveThemeGenerativeAxes(
   };
 }
 
+/**
+ * Type-scale component generation is invariant var() wiring, not scale values.
+ * Keep root declarations (including authored pins) in the root cascade instead
+ * of resetting them in a rule that only changes tokens. Fill missing root paths
+ * for rule-only scales, and retain every authored rule leaf, even when it equals
+ * the root: that write may intentionally undo an earlier matching rule.
+ *
+ * SYNC: expandTypeScale.ts (generateTypeScaleComponents)
+ */
+function omitRootTypeScaleDefaults(
+  resolved: ComponentStyleMap | undefined,
+  root: ComponentStyleMap | undefined,
+  authored: ComponentStyleMap | undefined,
+): ComponentStyleMap | undefined {
+  if (!resolved || !root) {
+    return resolved;
+  }
+
+  const components: ComponentStyleMap = {};
+  for (const [component, rules] of Object.entries(resolved)) {
+    for (const [key, styles] of Object.entries(rules)) {
+      const writes = Object.fromEntries(
+        Object.entries(styles).filter(
+          ([property]) =>
+            root[component]?.[key]?.[property] === undefined ||
+            Object.hasOwn(authored?.[component]?.[key] ?? {}, property),
+        ),
+      );
+      if (Object.keys(writes).length > 0) {
+        (components[component] ??= {})[key] = writes;
+      }
+    }
+  }
+  return Object.keys(components).length > 0 ? components : undefined;
+}
+
 /** Lower ordered normalized rules to concrete CSS writes. */
 export function resolveThemeAdaptationRules(
   themeName: string,
@@ -899,14 +933,16 @@ export function resolveThemeAdaptationRules(
   axes: ThemeGenerativeAxes,
   rootTokens: Record<string, string>,
   rootLocalTokens: Record<string, string> | undefined,
+  rootComponents?: ComponentStyleMap,
 ): ResolvedThemeAdaptationRule[] | undefined {
   if (adaptations.rules.length === 0) {
     return undefined;
   }
 
   const resolvedRules = adaptations.rules.map((rule, index) => {
+    const input = valueToThemeInput(themeName, index, rule.value, axes);
     const resolved = resolveThemeValues(
-      valueToThemeInput(themeName, index, rule.value, axes),
+      input,
       undefined,
       // Authored adaptation values are a new surface with no legacy
       // acceptance to preserve, so a malformed token is rejected here rather
@@ -928,9 +964,12 @@ export function resolveThemeAdaptationRules(
     }
 
     for (const name of Object.keys(rule.value.tokens ?? {})) {
-      if (isReservedThemeLocalTokenName(name)) {
+      if (
+        rootLocalTokens &&
+        Object.prototype.hasOwnProperty.call(rootLocalTokens, name)
+      ) {
         throw new Error(
-          `defineTheme("${themeName}").adaptations.rules[${index}].value.tokens["${name}"] uses the reserved --astryx-theme-* namespace; write it through value.localTokens instead.`,
+          `defineTheme("${themeName}").adaptations.rules[${index}].value.tokens["${name}"] matches an enrolled theme-local declaration; write it through value.localTokens instead.`,
         );
       }
     }
@@ -940,8 +979,6 @@ export function resolveThemeAdaptationRules(
       index,
       rule.value.localTokens,
       rootLocalTokens,
-      resolved.tokens,
-      resolved.components,
     );
 
     return {
@@ -954,7 +991,13 @@ export function resolveThemeAdaptationRules(
       ),
       tokens: resolved.tokens,
       localTokens,
-      components: resolved.components,
+      components: input.typography?.scale
+        ? omitRootTypeScaleDefaults(
+            resolved.components,
+            rootComponents,
+            rule.value.components,
+          )
+        : resolved.components,
     };
   });
 

@@ -9,6 +9,7 @@
  * @position Core implementation; consumed by index.ts, tested by CheckboxList.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
+ * - /packages/core/src/CheckboxList/CheckboxListItem.doc.mjs
  * - /packages/core/src/CheckboxList/CheckboxList.doc.mjs
  * - /packages/core/src/CheckboxList/CheckboxList.test.tsx
  * - /packages/core/src/CheckboxList/index.ts
@@ -22,10 +23,12 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
+import type {CheckboxInputProps} from '../CheckboxInput/CheckboxInput';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
 import {CheckboxListContext} from './CheckboxListContext';
 import {useTranslator} from '../i18n';
+import {ItemDescriptionContext} from '../Item/ItemDescriptionContext';
 
 // =============================================================================
 // Styles
@@ -79,12 +82,16 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    */
   'aria-label'?: string;
   /**
-   * Identity key for collection mode (REQUIRED inside CheckboxList).
-   * Throws a runtime error if missing when used inside CheckboxList.
+   * Identity key for collection mode. Required when the parent CheckboxList
+   * has a `value` array: the item throws without it there. An item inside
+   * List, or inside a CheckboxList without `value`, may omit it.
    */
   value?: string;
   /**
    * Secondary content below the label. Accepts a plain string or a ReactNode.
+   * Exposed as the checkbox's accessible description through
+   * `aria-describedby`, so assistive technology can tell it is the explanation
+   * for this choice rather than unrelated row text.
    */
   description?: ReactNode;
   /**
@@ -107,13 +114,16 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    */
   isLoading?: boolean;
   /**
-   * Direct checked state (standalone mode only).
-   * Ignored when inside CheckboxList.
+   * Direct checked state for standalone mode: an item inside List, or inside
+   * a CheckboxList without `value` (for example, a select-all item). Ignored
+   * when the parent CheckboxList has a `value` array, which then owns the
+   * checked state.
    */
   isChecked?: boolean | 'indeterminate';
   /**
-   * Direct check handler (standalone mode only).
-   * Ignored when inside CheckboxList.
+   * Direct check handler for standalone mode: an item inside List, or inside a
+   * CheckboxList without `value`. Ignored when the parent CheckboxList has a
+   * `value` array; that list's `onChange` receives the change instead.
    */
   onCheck?: (checked: boolean) => void;
   /** Ref forwarded to the root element */
@@ -125,8 +135,31 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
 // =============================================================================
 
 /**
- * A checkbox item for use within CheckboxList (collection mode)
- * or List (standalone mode).
+ * The row's visible description is the checkbox's accessible description. Item
+ * renders that element and owns its id, and publishes the id through
+ * ItemDescriptionContext; this reads it from inside the slot Item renders. The
+ * row cannot wrap the description in an id'd element instead — that turns a
+ * plain string into a ReactNode and drops the single-line truncation ListItem
+ * documents — and a public `descriptionId` prop would fail
+ * `spec:AST-002/DEC-1`, since the caller decides nothing Item cannot derive.
+ *
+ * This component owns `aria-describedby`, so the prop is omitted rather than
+ * accepted and overwritten: a caller passing one would otherwise lose the id
+ * silently.
+ */
+function DescribedCheckboxInput(
+  props: Omit<CheckboxInputProps, 'aria-describedby'>,
+) {
+  const describedBy = use(ItemDescriptionContext);
+  return (
+    <CheckboxInput {...props} aria-describedby={describedBy ?? undefined} />
+  );
+}
+
+/**
+ * A checkbox item for use within CheckboxList (collection mode, when the list
+ * has a `value` array) or standalone (inside List, or inside a CheckboxList
+ * without `value`).
  *
  * In collection mode, checked state is derived from the parent's value array.
  * In standalone mode, uses isChecked/onCheck props directly.
@@ -180,6 +213,7 @@ export function CheckboxListItem({
   const isRichLabel = typeof label !== 'string';
   const labelID = useId();
   const namesFromVisibleLabel = isRichLabel && ariaLabel == null;
+
   const checkboxLabel =
     ariaLabel ??
     (isRichLabel ? t('@astryx.checkboxList.item.checkbox') : label);
@@ -192,13 +226,11 @@ export function CheckboxListItem({
   // Disabled: parent-level OR item-level
   const effectiveDisabled = (ctx?.isDisabled ?? false) || isItemDisabled;
   const effectiveReadOnly = ctx?.isReadOnly ?? false;
-  // Loading is per-item: explicit item prop OR (collection mode) the item
+  // Loading is per-item: explicit item prop OR (collection mode) an item
   // whose `changeAction` is currently pending in the parent.
   const isBusy =
     isItemLoading ||
-    (ctx?.loadingValue != null && value !== undefined
-      ? ctx.loadingValue === value
-      : false);
+    (value !== undefined && (ctx?.loadingValues?.includes(value) ?? false));
 
   // Resolve checked state:
   // 1. Collection mode (inside CheckboxList with value[])
@@ -221,6 +253,18 @@ export function CheckboxListItem({
   // a toggleable item, or one carrying a consumer `onClick`.
   const checkboxRef = useRef<HTMLInputElement | null>(null);
   const hasRowInteraction = isInteractive || onClickProp != null;
+
+  // A read-only checkbox carries aria-readonly, which the row's clickable
+  // container treats as a non-interactive target, so a click on it would be
+  // delegated straight back to the checkbox without end. Stop that click at
+  // the checkbox; the consumer onClick still fires once per click.
+  const handleCheckboxClick: typeof onClickProp =
+    effectiveReadOnly && onClickProp != null
+      ? event => {
+          onClickProp(event);
+          event.stopPropagation();
+        }
+      : onClickProp;
 
   const handleToggle = () => {
     if (effectiveDisabled || effectiveReadOnly || isBusy) {
@@ -273,14 +317,14 @@ export function CheckboxListItem({
       className={className}
       style={style}
       startContent={
-        <CheckboxInput
+        <DescribedCheckboxInput
           ref={checkboxRef}
           label={checkboxLabel}
           aria-labelledby={namesFromVisibleLabel ? labelID : undefined}
           isLabelHidden
           value={resolvedChecked}
           onChange={() => handleToggle()}
-          onClick={onClickProp}
+          onClick={handleCheckboxClick}
           isDisabled={effectiveDisabled}
           isReadOnly={effectiveReadOnly}
           isLoading={isBusy}

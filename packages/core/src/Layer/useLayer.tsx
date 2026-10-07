@@ -4,7 +4,7 @@
 
 /**
  * @file useLayer.tsx
- * @input Uses React hooks, Popover API, CSS anchor positioning, typography tokens
+ * @input Uses React hooks, Popover API, CSS anchor positioning, shared text/provider boundaries
  * @output Exports the public useLayer hook plus internal trigger helpers.
  * @position Core layer utility; used by useHoverCard, useTooltip, etc.
  *
@@ -27,10 +27,20 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {createPortal} from 'react-dom';
+import {LayerContentBoundary} from './layerScopedContext';
 import {addAnchorName, removeAnchorName} from './anchorName';
 import {currentGesture, currentGestureHasClicked} from './gestureCounter';
 import {resolveLayerPortalTarget} from './layerHost';
-import {typeScaleVars, typographyVars} from '../theme/tokens.stylex';
+import {layerTextReset} from './layerTextReset.stylex';
+import {layerViewportInset} from './layerViewportInset.stylex';
+import {layerInsetProperties} from './layerInset';
+import {
+  LAYER_CLEARANCE_PROPERTY,
+  ensureSlideRules,
+  slideRuleName,
+} from './layerSlideRules';
+import {useLayerContext} from './LayerContext';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 
 const styles = stylex.create({
@@ -47,12 +57,6 @@ const styles = stylex.create({
     borderWidth: 0,
     borderStyle: 'none',
     overflow: 'visible',
-    // A layer is hosted wherever its trigger happens to sit, so type that is
-    // inherited rather than declared makes the same component render at a
-    // different size in different callers.
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: typeScaleVars['--text-body-leading'],
     // Override browser default [popover] background (canvas color)
     backgroundColor: 'transparent',
   },
@@ -60,18 +64,83 @@ const styles = stylex.create({
   fixed: {
     position: 'fixed',
   },
-  // Clearance from the anchor. Set on BOTH edges of the placement axis, not
-  // just the one facing the anchor: `position-try-fallbacks` can flip the
-  // layer to the opposite side at paint time, and a single-edge margin then
-  // lands on the far side and the gap vanishes (#4803).
-  offsetBlock: (offset: string) => ({
+  // Margins on the placement axis: the anchor clearance on the edge facing
+  // the anchor, the viewport gutter on the far edge (spec:AST-059 FR1, FR6).
+  // The margin box is what must fit a position option and what the browser's
+  // overflow shift keeps inside the viewport, so a layer that would end
+  // inside the gutter — or under a declared bar — does not fit there and the
+  // next option is tried. A flip tactic swaps the two values with the area,
+  // so the clearance stays on the anchor side and the gutter on the far side
+  // (#4803); for the same reason the gutter is one value for both edges, the
+  // larger of the two block gutters.
+  placementBelow: (offset: string) => ({
     marginBlockStart: offset,
+    marginBlockEnd: layerViewportInset.gutterBlock,
+  }),
+  placementAbove: (offset: string) => ({
+    marginBlockStart: layerViewportInset.gutterBlock,
     marginBlockEnd: offset,
   }),
-  offsetInline: (offset: string) => ({
+  placementEnd: (offset: string) => ({
     marginInlineStart: offset,
+    marginInlineEnd: layerViewportInset.gutterInline,
+  }),
+  placementStart: (offset: string) => ({
+    marginInlineStart: layerViewportInset.gutterInline,
     marginInlineEnd: offset,
   }),
+  // Flush against the anchor (no offset): only the far-edge gutter.
+  farBelow: {marginBlockEnd: layerViewportInset.gutterBlock},
+  farAbove: {marginBlockStart: layerViewportInset.gutterBlock},
+  farEnd: {marginInlineEnd: layerViewportInset.gutterInline},
+  farStart: {marginInlineStart: layerViewportInset.gutterInline},
+  // The viewport inset (spec:AST-059 FR1–FR3). Every anchor-mode layer is
+  // capped to the viewport minus both gutters on both axes and keeps the
+  // runtime's gutter from the far viewport edge of its alignment axis as a
+  // margin (the placement-axis gutter rides the placement margins above).
+  // The cap is on the layer box itself: content wider than the viewport
+  // overflows inside the layer, where the composing component decides
+  // whether it scrolls or clips; the box never leaves the viewport.
+  viewportFit: {
+    boxSizing: 'border-box',
+    maxInlineSize: stylex.firstThatWorks(
+      layerViewportInset.maxInlineSize,
+      layerViewportInset.maxInlineSizeFallback,
+    ),
+    maxBlockSize: stylex.firstThatWorks(
+      layerViewportInset.maxBlockSize,
+      layerViewportInset.maxBlockSizeFallback,
+    ),
+  },
+  // Alignment-axis gutter (spec:AST-059 FR1): a margin on the far viewport
+  // edge of the alignment axis — one on the anchor-facing edge would push an
+  // aligned layer off its anchor — or both edges for a centered layer. The
+  // flip tactic mirrors it with the area. The slide options carry both
+  // (see layerSlideRules.ts).
+  gutterInlineEnd: {
+    marginInlineEnd: stylex.firstThatWorks(
+      layerViewportInset.gutterInline,
+      layerViewportInset.gutterInlineFallback,
+    ),
+  },
+  gutterInlineStart: {
+    marginInlineStart: stylex.firstThatWorks(
+      layerViewportInset.gutterInline,
+      layerViewportInset.gutterInlineFallback,
+    ),
+  },
+  gutterBlockEnd: {
+    marginBlockEnd: stylex.firstThatWorks(
+      layerViewportInset.gutterBlock,
+      layerViewportInset.gutterBlockFallback,
+    ),
+  },
+  gutterBlockStart: {
+    marginBlockStart: stylex.firstThatWorks(
+      layerViewportInset.gutterBlock,
+      layerViewportInset.gutterBlockFallback,
+    ),
+  },
 });
 
 /**
@@ -351,6 +420,43 @@ function toCssLength(value: number | string): string {
   return typeof value === 'number' ? `${value}px` : value;
 }
 
+/**
+ * Popover operations in flight, per document.
+ *
+ * The Popover API refuses to show a popover while the document is in the
+ * middle of showing or hiding ANY popover: `showPopover()` throws an
+ * `InvalidStateError` ("Invalid to show a popover during another show
+ * operation"); an engine still rolling the rule out instead refuses silently
+ * with a console warning, which would leave this hook open with nothing
+ * shown. Hiding a popover restores focus to the element that had it —
+ * synchronously, inside that window — so a focus-driven layer on the element
+ * receiving focus (a tooltip on the trigger that just closed a popover) asks
+ * to show while the hide is still running. Every layer's show and hide passes
+ * through here, so the window is observable: a `show()` that arrives inside
+ * it is replayed in a microtask, which runs once the script that started the
+ * operation — and the event dispatch it answered — has unwound.
+ */
+const popoverOperationsByDocument = new WeakMap<Document, number>();
+
+function runPopoverOperation(doc: Document, operation: () => void): void {
+  popoverOperationsByDocument.set(
+    doc,
+    (popoverOperationsByDocument.get(doc) ?? 0) + 1,
+  );
+  try {
+    operation();
+  } finally {
+    popoverOperationsByDocument.set(
+      doc,
+      (popoverOperationsByDocument.get(doc) ?? 1) - 1,
+    );
+  }
+}
+
+function isPopoverOperationInFlight(doc: Document): boolean {
+  return (popoverOperationsByDocument.get(doc) ?? 0) > 0;
+}
+
 interface ContextLayerMount {
   /** Null means the marker's parent is safe and the layer stays inline. */
   portalTarget: HTMLElement | null;
@@ -429,33 +535,97 @@ function getPositionArea(
 }
 
 /**
- * Compute the `position-try-fallbacks` list for a placement/alignment pair.
+ * Compute the `position-try-fallbacks` list for a placement/alignment pair
+ * (spec:AST-059 FR4).
  *
- * Flips alone cannot rescue a centered layer — flipping along the alignment
- * axis maps center → center, so overflow on that axis renders clipped
- * (#3671). Centered alignments therefore append span-based fallbacks letting
- * the browser slide the layer along the alignment axis as a last resort
- * (same-side spans first). Flips already resolve non-centered alignments.
+ * Flips first; they mirror the placement-axis margins (clearance and gutter)
+ * and the alignment-axis gutter with the area. Then the slide: named
+ * `@position-try` options whose area spans the whole alignment axis
+ * (`layerSlideRules.ts`), same side of the trigger first, opposite side
+ * second. Flips alone cannot rescue a layer wider than the room on either
+ * side of its trigger — every flipped option overflows the alignment axis
+ * too, and the browser keeps the base option, so the layer never moves to the
+ * side of the trigger that has room on the placement axis (#3671 for centered
+ * layers, where a flip maps center → center). A slide option fits wherever
+ * the layer fits the viewport; its anchor-center alignment plus the browser's
+ * overflow shift keep the layer's margin box — and so the gutter on both
+ * edges — inside the viewport. Centered layers keep their one-sided spans
+ * ahead of the full span so they slide the least distance first.
  */
 export function getPositionTryFallbacks(
   placement: LayerPlacement = 'above',
   alignment: LayerAlignment = 'center',
 ): string {
   const flips = 'flip-block, flip-inline, flip-block flip-inline';
+  const slides = `${slideRuleName(placement, alignment, 'same')}, ${slideRuleName(placement, alignment, 'opposite')}`;
 
   if (alignment !== 'center') {
-    return flips;
+    return `${flips}, ${slides}`;
   }
 
   if (placement === 'above' || placement === 'below') {
     const [same, opposite] =
       placement === 'above' ? ['top', 'bottom'] : ['bottom', 'top'];
-    return `${flips}, ${same} span-left, ${same} span-right, ${opposite} span-left, ${opposite} span-right`;
+    return `${flips}, ${same} span-left, ${same} span-right, ${opposite} span-left, ${opposite} span-right, ${slides}`;
   }
 
   const [same, opposite] =
     placement === 'start' ? ['left', 'right'] : ['right', 'left'];
-  return `${flips}, ${same} span-top, ${same} span-bottom, ${opposite} span-top, ${opposite} span-bottom`;
+  return `${flips}, ${same} span-top, ${same} span-bottom, ${opposite} span-top, ${opposite} span-bottom, ${slides}`;
+}
+
+/**
+ * The self-alignment an aligned layer uses while its anchor is out of view
+ * (spec:AST-059 FR5). A position-area box that overflows the room beside its
+ * anchor is shifted by default to stay inside the viewport — the slide an
+ * aligned layer relies on when it fits on neither side (FR4). Once the anchor
+ * has left the viewport that shift would pin the layer into the narrowest
+ * strip at the edge, so the alignment is pinned `unsafe` toward the anchor
+ * instead and the layer holds the position its flips give it. `self-*`
+ * keywords resolve against the layer's own direction, matching the `self-*`
+ * position-area family; the flip tactics swap start/end with the area.
+ *
+ * Centered layers already slide through their span fallbacks and are
+ * unchanged; a visible anchor keeps the browser's default alignment.
+ */
+export function getSelfAlignment(
+  placement: LayerPlacement,
+  alignment: LayerAlignment,
+  isAnchorInView: boolean,
+): React.CSSProperties {
+  if (isAnchorInView || alignment === 'center') {
+    return {};
+  }
+  const edge = alignment === 'start' ? 'unsafe self-start' : 'unsafe self-end';
+  return placement === 'above' || placement === 'below'
+    ? {justifySelf: edge}
+    : {alignSelf: edge};
+}
+
+/**
+ * The gutter styles for a placement/alignment pair: the far viewport edge of
+ * the alignment axis, or both edges when centered (spec:AST-059 FR1).
+ */
+function getGutterStyles(
+  placement: LayerPlacement,
+  alignment: LayerAlignment,
+): ReadonlyArray<StyleXStyles> {
+  if (placement === 'above' || placement === 'below') {
+    if (alignment === 'start') {
+      return [styles.gutterInlineEnd];
+    }
+    if (alignment === 'end') {
+      return [styles.gutterInlineStart];
+    }
+    return [styles.gutterInlineStart, styles.gutterInlineEnd];
+  }
+  if (alignment === 'start') {
+    return [styles.gutterBlockEnd];
+  }
+  if (alignment === 'end') {
+    return [styles.gutterBlockStart];
+  }
+  return [styles.gutterBlockStart, styles.gutterBlockEnd];
 }
 
 /**
@@ -526,6 +696,23 @@ function useLayerImplementation(
   const anchorId = `--astryx-layer-${id.replace(/:/g, '')}`;
 
   const [isOpen, setIsOpen] = useState(false);
+  // Whether the anchor is inside the viewport (spec:AST-059 FR5). The slide
+  // fallback is withdrawn while it is not, so an aligned layer holds its
+  // position and size instead of chasing an anchor nobody can see.
+  const [isAnchorInView, setIsAnchorInView] = useState(true);
+  // Mirror so the pre-paint read commits nothing when the answer is unchanged.
+  const isAnchorInViewRef = useRef(true);
+  const updateAnchorInView = useCallback((inView: boolean) => {
+    if (isAnchorInViewRef.current !== inView) {
+      isAnchorInViewRef.current = inView;
+      setIsAnchorInView(inView);
+    }
+  }, []);
+  // The inset the app declared on LayerProvider (FR6). Read through context
+  // and written inline on the layer, so a corrective portal cannot escape it
+  // and no measurement is needed to apply it.
+  const layerContext = useLayerContext();
+  const declaredInset = layerContext?.inset;
   const popoverRef = useRef<HTMLElement | null>(null);
   // The DOM element on which the current logical open state was applied.
   // A portal target change replaces the popover element; retaining the old
@@ -540,8 +727,10 @@ function useLayerImplementation(
   const [contextMount, setContextMount] = useState<ContextLayerMount | null>(
     null,
   );
-  // A show() that arrives before the final layer mounts is replayed when its
-  // popover ref attaches.
+  // A show() that cannot run yet is remembered here and replayed: one that
+  // arrives before the final layer mounts runs when its popover ref attaches;
+  // one that arrives while another popover is mid show/hide runs once that
+  // operation has unwound. hide() forgets it either way.
   const pendingShowRef = useRef(false);
 
   // Ref mirrors isOpen for synchronous reads inside show/hide.
@@ -565,11 +754,13 @@ function useLayerImplementation(
     // Firefox <125. On those browsers `showPopover` does not exist, so fall
     // back to plain visibility instead of throwing.
     if (typeof popover.showPopover === 'function') {
-      // The trigger is passed as the popover's invoker `source`: a layer
-      // hosted away from its trigger then still takes its sequential focus
-      // order (and its popover nesting) from the trigger rather than from its
-      // own DOM position. Browsers without the option ignore it.
-      popover.showPopover({source: triggerRef.current ?? undefined});
+      runPopoverOperation(popover.ownerDocument, () => {
+        // The trigger is passed as the popover's invoker `source`: a layer
+        // hosted away from its trigger then still takes its sequential focus
+        // order (and its popover nesting) from the trigger rather than from
+        // its own DOM position. Browsers without the option ignore it.
+        popover.showPopover({source: triggerRef.current ?? undefined});
+      });
     } else {
       popover.style.display = 'block';
     }
@@ -639,6 +830,19 @@ function useLayerImplementation(
       return;
     }
     if (!isOpenRef.current) {
+      // Another popover is mid show/hide (typically one whose hide is handing
+      // focus back to this layer's trigger): the browser would refuse the
+      // show, so replay this call once that operation has returned.
+      if (isPopoverOperationInFlight(popover.ownerDocument)) {
+        pendingShowRef.current = true;
+        queueMicrotask(() => {
+          if (pendingShowRef.current) {
+            pendingShowRef.current = false;
+            showRef.current();
+          }
+        });
+        return;
+      }
       showPopoverElement(popover);
       isOpenRef.current = true;
       setIsOpen(true);
@@ -665,7 +869,13 @@ function useLayerImplementation(
       // unsupported browsers degrade gracefully instead of throwing.
       if (el) {
         if (typeof el.hidePopover === 'function') {
-          el.hidePopover();
+          // Hiding hands focus back to the previously focused element while
+          // the browser still counts this popover as hiding; a layer that
+          // focus wakes (a tooltip on that element) defers its show until
+          // this returns.
+          runPopoverOperation(el.ownerDocument, () => {
+            el.hidePopover();
+          });
         } else {
           el.style.display = 'none';
         }
@@ -675,6 +885,11 @@ function useLayerImplementation(
     }
     clearContextMount();
   }, [onHide, clearContextMount]);
+
+  // A deferred show() replays through a ref so the queued closure reaches the
+  // current callback rather than the one captured when it was queued.
+  const showRef = useRef(show);
+  showRef.current = show;
 
   // Stable ref for the trigger element (context mode only).
   const contextRef = useCallback(
@@ -855,6 +1070,58 @@ function useLayerImplementation(
     };
   }, [handleToggle, bindToggleListener]);
 
+  // The slide options' `@position-try` rules (FR4) are installed in the
+  // layer's document before its first paint; one sheet serves every layer.
+  useIsomorphicLayoutEffect(() => {
+    if (mode !== 'context') {
+      return;
+    }
+    const doc =
+      popoverRef.current?.ownerDocument ?? sentinelRef.current?.ownerDocument;
+    if (doc) {
+      ensureSlideRules(doc);
+    }
+  }, [mode, contextMount]);
+
+  // Anchor visibility (FR5). The first frame must already be right (FR8), so
+  // the opening read is synchronous — a layout effect runs before paint, and a
+  // state change inside it re-renders before paint — against the visual
+  // viewport. IntersectionObserver then tracks changes while open; with no
+  // root it reports against the viewport and through every ancestor clip, so
+  // an anchor scrolled out of a panel reads as out of view too.
+  useIsomorphicLayoutEffect(() => {
+    if (!isOpen || mode !== 'context') {
+      return;
+    }
+    const anchor = triggerRef.current;
+    if (!anchor) {
+      return;
+    }
+    const view = anchor.ownerDocument.defaultView;
+    if (view) {
+      // Edge-adjacent counts as in view, as IntersectionObserver reports it;
+      // an engine with no layout (a zero rect) therefore reads as in view too.
+      const rect = anchor.getBoundingClientRect();
+      const inView =
+        rect.bottom >= 0 &&
+        rect.right >= 0 &&
+        rect.top <= view.innerHeight &&
+        rect.left <= view.innerWidth;
+      updateAnchorInView(inView);
+    }
+    if (typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+    const observer = new IntersectionObserver(entries => {
+      const latest = entries[entries.length - 1];
+      if (latest) {
+        updateAnchorInView(latest.isIntersecting);
+      }
+    });
+    observer.observe(anchor);
+    return () => observer.disconnect();
+  }, [isOpen, mode, updateAnchorInView]);
+
   // Render function for context mode
   const renderContext = useCallback(
     (children: ReactNode, props?: ContextRenderProps) => {
@@ -895,18 +1162,43 @@ function useLayerImplementation(
                 placement,
                 alignment,
               ),
+              ...getSelfAlignment(placement, alignment, isAnchorInView),
             };
 
+      const clearance = offset ? toCssLength(offset) : null;
+      const clearanceProperty: Record<string, string> =
+        positioning === 'anchor' && clearance != null
+          ? {[LAYER_CLEARANCE_PROPERTY]: clearance}
+          : {};
       const offsetStyle =
-        positioning === 'anchor' && offset
-          ? placement === 'above' || placement === 'below'
-            ? styles.offsetBlock(toCssLength(offset))
-            : styles.offsetInline(toCssLength(offset))
+        positioning !== 'anchor'
+          ? null
+          : clearance == null
+            ? placement === 'above'
+              ? styles.farAbove
+              : placement === 'below'
+                ? styles.farBelow
+                : placement === 'start'
+                  ? styles.farStart
+                  : styles.farEnd
+            : placement === 'above'
+              ? styles.placementAbove(clearance)
+              : placement === 'below'
+                ? styles.placementBelow(clearance)
+                : placement === 'start'
+                  ? styles.placementStart(clearance)
+                  : styles.placementEnd(clearance);
+
+      const viewportStyles =
+        positioning === 'anchor'
+          ? [styles.viewportFit, ...getGutterStyles(placement, alignment)]
           : null;
 
       const stylexResult = stylex.props(
+        layerTextReset.reset,
         styles.base,
         overlayPaddingReset.reset,
+        viewportStyles,
         offsetStyle,
         xstyle,
       );
@@ -928,12 +1220,14 @@ function useLayerImplementation(
           style={{
             ...stylexResult.style,
             ...anchorStyle,
+            ...clearanceProperty,
+            ...layerInsetProperties(declaredInset),
             ...contextMount.portalStyle,
             ...extraStyle,
           }}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}>
-          {children}
+          <LayerContentBoundary>{children}</LayerContentBoundary>
         </Container>
       );
 
@@ -949,7 +1243,9 @@ function useLayerImplementation(
     [
       anchorId,
       contextMount,
+      declaredInset,
       id,
+      isAnchorInView,
       lightDismiss,
       popoverRefCallback,
       sentinelRefCallback,
@@ -974,6 +1270,7 @@ function useLayerImplementation(
       };
 
       const stylexResult = stylex.props(
+        layerTextReset.reset,
         styles.base,
         overlayPaddingReset.reset,
         styles.fixed,
@@ -990,7 +1287,7 @@ function useLayerImplementation(
           popover={lightDismiss ? 'auto' : 'manual'}
           className={combinedClassName}
           style={{...stylexResult.style, ...positionStyle, ...extraStyle}}>
-          {children}
+          <LayerContentBoundary>{children}</LayerContentBoundary>
         </div>
       );
     },

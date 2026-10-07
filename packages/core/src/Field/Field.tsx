@@ -35,6 +35,17 @@ const styles = stylex.create({
   container: {
     display: 'flex',
     flexDirection: 'column',
+    // The Field root owns the local stacking boundary (AST-027): the input
+    // wrapper's z-index (1, above the attached status box) and the attached
+    // status layer (-1) order parts inside this surface only. Without this,
+    // detached/tooltip fields — whose input wrapper renders outside the
+    // attached-status wrapper — compete with page-level stacking (#5689).
+    isolation: 'isolate',
+    // The Field root is the flex/grid item a row actually sizes. With the
+    // automatic minimum it held a filter bar at its controls' intrinsic
+    // widths (a native input's ~20ch, a Selector's full value), so the row
+    // overflowed on phones; the reset lets the row shrink the whole field.
+    minWidth: 0,
   },
   containerGap: {
     gap: spacingVars['--spacing-1'],

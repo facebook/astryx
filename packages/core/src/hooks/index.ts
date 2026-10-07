@@ -38,6 +38,21 @@ export type {Hotkey} from './useHotkeys';
 
 export {useTypeahead} from './useTypeahead';
 
+export {
+  useMenuPress,
+  MENU_PRESS_MARKER,
+  isMenuPressActivation,
+} from './useMenuPress';
+export type {UseMenuPressOptions, UseMenuPressReturn} from './useMenuPress';
+export {menuPressStep, MENU_PRESS_SETTLE_MS} from './menuPressGesture';
+export type {
+  MenuPressEffect,
+  MenuPressEvent,
+  MenuPressGesture,
+  MenuPressPointerType,
+  MenuPressStep,
+} from './menuPressGesture';
+
 export {useKeyboardHint} from './useKeyboardHint';
 export type {
   UseKeyboardHintOptions,
@@ -55,6 +70,19 @@ export type {UseOverflowOptions, UseOverflowReturn} from './useOverflow';
 
 export {useScrollOverflow} from './useScrollOverflow';
 export type {ScrollOverflowState} from './useScrollOverflow';
+
+export {useScrollableArea} from './useScrollableArea';
+export type {
+  ScrollAxis,
+  ScrollAxisState,
+  ScrollOverscroll,
+  ScrollStickyContainment,
+  ScrollKeyboardAccess,
+  ScrollableAreaState,
+  ScrollableElementProps,
+  UseScrollableAreaOptions,
+  UseScrollableAreaResult,
+} from './useScrollableArea';
 
 export {useScrollLock} from './useScrollLock';
 
@@ -95,6 +123,8 @@ export type {
 
 export {useLongPress} from './useLongPress';
 export type {UseLongPressOptions, UseLongPressHandlers} from './useLongPress';
+
+export {usePressFeedback} from './usePressFeedback';
 
 export {useDevWarning} from './useDevWarning';
 export {useIndicatorFocusRing} from './useIndicatorFocusRing';

@@ -667,16 +667,15 @@ describe('Selector', () => {
       const popover = screen
         .getByRole('listbox', {hidden: true})
         .closest('[popover]') as HTMLElement;
-      // Both block edges, so the gap survives a position-try-fallbacks flip
-      // to the opposite side (#4803).
+      // The clearance rides the edge facing the trigger — the block end for
+      // placement="above" — and a position-try flip carries it to the other
+      // side with the area, so the gap survives the flip (#4803).
       await waitFor(() => {
-        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+        expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
           spacingVars['--spacing-1'],
         );
       });
-      expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
-        spacingVars['--spacing-1'],
-      );
+      expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe('');
     });
 
     it('clears the trigger in search mode', async () => {
@@ -1140,6 +1139,124 @@ describe('Selector', () => {
 
       // The panel message is role="presentation", so the live region is the
       // only thing a screen reader gets — it has to say the same words.
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+      );
+    });
+
+    // `emptySearchText` is typed ReactNode, which invites an element — a
+    // "no results, create one" row is exactly what a dead end is for. The
+    // announcement used to take the prop only when it was a string and
+    // announce the catalog default otherwise, so a screen-reader user was
+    // told something the sighted user was not reading (`spec:AST-056` AR1).
+    it('announces the text of an element emptySearchText', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText={
+            <span>
+              Nothing like that here. <a href="/new">Add a fruit</a>
+            </span>
+          }
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe(
+          'Nothing like that here. Add a fruit',
+        ),
+      );
+    });
+
+    it('announces the text of an element emptyText', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[]}
+          onChange={() => {}}
+          emptyText={
+            <span>
+              Add a fruit first<span aria-hidden="true"> →</span>
+            </span>
+          }
+        />,
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+      // The decorative arrow is hidden from the accessibility tree on screen,
+      // so it stays out of the announcement too.
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Add a fruit first'),
+      );
+    });
+
+    it('announces text a child component renders, which is only in the DOM', async () => {
+      const user = userEvent.setup();
+      // The words exist nowhere in the node the caller passed — they are
+      // produced inside this component's own render. Reading the DOM after
+      // render is what makes them announceable.
+      function Message() {
+        return <span>Nothing like that here</span>;
+      }
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+          emptySearchText={<Message />}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      await waitFor(() =>
+        expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+      );
+    });
+
+    it('announces an empty result that arrives after the keystroke', async () => {
+      const user = userEvent.setup();
+      // The query is typed while the options are still loading, so the
+      // keystroke-time announcement cannot know the outcome. When the load
+      // lands with nothing that matches, the message appears on screen and
+      // the region has to say so too.
+      //
+      // The load lands through a rerender rather than a click on something
+      // outside the panel: a real browser light-dismisses the panel on any
+      // outside click, and a closed panel is a different scenario. jsdom
+      // implements no light dismiss, so a button would pass here while
+      // modelling something that cannot happen.
+      function Deferred({loaded}: {loaded: boolean}) {
+        return (
+          <Selector
+            label="Fruit"
+            options={loaded ? OPTIONS : []}
+            onChange={() => {}}
+            hasSearch
+            isLoading={!loaded}
+            isDefaultOpen
+            emptySearchText="Nothing like that here"
+          />
+        );
+      }
+      const {rerender} = render(<Deferred loaded={false} />);
+
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+      // Loading: the panel shows nothing, so the region claims nothing.
+      expect(politeRegion()?.textContent ?? '').toBe('');
+
+      rerender(<Deferred loaded />);
+
       await waitFor(() =>
         expect(politeRegion()?.textContent).toBe('Nothing like that here'),
       );
@@ -1722,6 +1839,44 @@ describe('Selector', () => {
         await user.keyboard('{ArrowDown}'); // move highlight
         await user.keyboard('{ArrowDown}');
 
+        expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+      } finally {
+        delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+          .scrollIntoView;
+      }
+    });
+
+    it('highlights on hover without scrolling, keyboard still scrolls (#6077)', async () => {
+      // Hover must highlight only: scrollIntoView under a stationary pointer
+      // moves the next option under it, re-highlighting and scrolling again —
+      // a runaway auto-scroll loop with no user input.
+      const scrollIntoView = vi.fn();
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: scrollIntoView,
+      });
+      try {
+        const user = userEvent.setup();
+        const longOptions = Array.from(
+          {length: 20},
+          (_, i) => `Option ${i + 1}`,
+        );
+        render(<Selector label="Fruit" options={longOptions} />);
+
+        await user.tab();
+        await user.keyboard('{Enter}'); // open
+        scrollIntoView.mockClear();
+
+        const options = screen.getAllByRole('option', {hidden: true});
+        fireEvent.mouseEnter(options[3]);
+
+        const trigger = screen.getByRole('combobox');
+        expect(trigger.getAttribute('aria-activedescendant')).toBe(
+          options[3].id,
+        );
+        expect(scrollIntoView).not.toHaveBeenCalled();
+
+        await user.keyboard('{ArrowDown}');
         expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
       } finally {
         delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
@@ -2994,8 +3149,8 @@ describe('Selector clear icon theme target', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // `defineTheme` — a button-level target could not reach the icon's own
-    // color/size. The original per-component name rides along for a
-    // deprecation window.
+    // color/size. The original per-component name remains as a compatibility
+    // alias.
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
     expect(icon).toHaveClass('astryx-selector-clear-icon');
@@ -3022,8 +3177,8 @@ describe('Selector clear icon theme target', () => {
   it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
     // The clear affordance now composes the shared InputClearButton (a ghost
     // Button with a secondary/sm glyph), so the icon carries the canonical
-    // `astryx-input-clear-icon` target and — for a deprecation window — the
-    // original `astryx-selector-clear-icon`. Aside from those target classes
+    // `astryx-input-clear-icon` target plus the supported compatibility alias
+    // `astryx-selector-clear-icon`. Aside from those target classes
     // it matches the shared button's own `close`/`sm`/`secondary` glyph
     // exactly, so the default look is defined in one place.
     render(
@@ -3690,67 +3845,73 @@ describe('Selector indicatorPosition', () => {
     ).toBeTruthy();
   });
 
-  it('reserves the mark column on every row, at either position', () => {
-    // The default check draws nothing when unchecked, so without a reserved
-    // column the chosen row would be laid out differently from the rest —
-    // indented at the start, truncating earlier at the end. Every row is two
-    // children wide either way, so a row's geometry does not depend on whether
-    // it happens to be the chosen one.
-    const {unmount} = render(
-      <Selector
-        label="Fruit"
-        options={OPTIONS}
-        value="Banana"
-        onChange={() => {}}
-        indicatorPosition="start"
-        isDefaultOpen
-      />,
-    );
-    for (const row of openRows()) {
-      expect(row.children).toHaveLength(2);
-    }
-    unmount();
-
-    render(
-      <Selector
-        label="Fruit"
-        options={OPTIONS}
-        value="Banana"
-        onChange={() => {}}
-        isDefaultOpen
-      />,
-    );
-    for (const row of openRows()) {
-      expect(row.children).toHaveLength(2);
-    }
-  });
-
-  it('positions a themed replacement indicator the same way', () => {
-    const theme = defineTheme({
-      name: 'selector-start-radio-mark-test',
-      indicators: {check: RadioIndicator},
-    });
-    render(
-      <Theme theme={theme}>
+  it.each(['start', 'end'] as const)(
+    'collapses an empty default mark at the logical %s edge',
+    indicatorPosition => {
+      render(
         <Selector
           label="Fruit"
           options={OPTIONS}
           value="Banana"
           onChange={() => {}}
-          indicatorPosition="start"
+          indicatorPosition={indicatorPosition}
           isDefaultOpen
-        />
-      </Theme>,
-    );
-    for (const row of openRows()) {
-      const radio = row.querySelector('.astryx-radio')!;
-      const content = row.querySelector('.astryx-selector-option')!;
-      expect(
-        content.compareDocumentPosition(radio) &
-          Node.DOCUMENT_POSITION_PRECEDING,
-      ).toBeTruthy();
-    }
-  });
+        />,
+      );
+
+      for (const row of openRows()) {
+        const isSelected = row.getAttribute('aria-selected') === 'true';
+        const markColumn =
+          indicatorPosition === 'start'
+            ? row.firstElementChild
+            : row.lastElementChild;
+        expect(markColumn).not.toBeNull();
+        expect(markColumn).toHaveStyle({
+          display: isSelected ? 'inline-flex' : 'none',
+        });
+      }
+    },
+  );
+
+  it.each(['start', 'end'] as const)(
+    'keeps a themed indicator in layout at the logical %s edge',
+    indicatorPosition => {
+      const theme = defineTheme({
+        name: `selector-${indicatorPosition}-radio-mark-test`,
+        indicators: {check: RadioIndicator},
+      });
+      render(
+        <Theme theme={theme}>
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Banana"
+            onChange={() => {}}
+            indicatorPosition={indicatorPosition}
+            isDefaultOpen
+          />
+        </Theme>,
+      );
+
+      for (const row of openRows()) {
+        const markColumn =
+          indicatorPosition === 'start'
+            ? row.firstElementChild
+            : row.lastElementChild;
+        const radio = row.querySelector('.astryx-radio');
+        const content = row.querySelector('.astryx-selector-option');
+        expect(markColumn).toHaveStyle({display: 'inline-flex'});
+        expect(radio).not.toBeNull();
+        expect(content).not.toBeNull();
+        expect(
+          content!.compareDocumentPosition(radio!) &
+            (indicatorPosition === 'start'
+              ? Node.DOCUMENT_POSITION_PRECEDING
+              : Node.DOCUMENT_POSITION_FOLLOWING),
+        ).toBeTruthy();
+      }
+    },
+  );
 });
 
 describe('Selector popup theme target', () => {
@@ -4350,5 +4511,136 @@ describe('Selector option descriptions and trigger value', () => {
     type('pu', trigger);
     expect(trigger).toHaveTextContent('Public');
     expect(trigger).not.toHaveTextContent('Anyone at the company can join.');
+  });
+});
+
+describe('Selector press model', () => {
+  const touch = {pointerType: 'touch', pointerId: 1};
+  const h = {hidden: true};
+
+  it('a finger release over an option selects it, not the option the press began on', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+
+    const apple = screen.getByRole('option', {name: /Apple/, ...h});
+    const cherry = screen.getByRole('option', {name: /Cherry/, ...h});
+    fireEvent.pointerDown(apple, touch);
+    fireEvent.pointerMove(cherry, touch);
+    // The highlight moves through aria-activedescendant; focus stays put.
+    expect(trigger).toHaveAttribute('aria-activedescendant', cherry.id);
+    expect(cherry).not.toHaveFocus();
+    fireEvent.pointerUp(cherry, touch);
+    // The WebKit tail: a click aimed at the option the touch began on.
+    fireEvent.click(apple, {detail: 1});
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('Cherry');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('a finger released outside acts on nothing and leaves the list open; a mouse closes it', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    const apple = screen.getByRole('option', {name: /Apple/, ...h});
+
+    fireEvent.pointerDown(apple, touch);
+    fireEvent.pointerUp(document.body, touch);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.pointerDown(apple, {
+      pointerType: 'mouse',
+      pointerId: 2,
+      button: 0,
+    });
+    fireEvent.pointerUp(document.body, {pointerType: 'mouse', pointerId: 2});
+    expect(onChange).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('a pointer-driven highlight never scrolls the option into view (the rows would move under the finger)', async () => {
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+      await user.click(screen.getByRole('combobox'));
+      scrollIntoView.mockClear();
+      const apple = screen.getByRole('option', {name: /Apple/, ...h});
+      const cherry = screen.getByRole('option', {name: /Cherry/, ...h});
+      fireEvent.pointerDown(apple, touch);
+      fireEvent.pointerMove(cherry, touch);
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-activedescendant',
+        cherry.id,
+      );
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
+  it('the listbox owns touch scrolling: touch-action none while the options fit', async () => {
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    await user.click(screen.getByRole('combobox'));
+    const listbox = screen.getByRole('listbox', h);
+    // jsdom does not compute `touch-action`; StyleX class names hash the
+    // declaration, so the same declaration yields the same class (the dev
+    // build prefixes a debug name; the hash is the last token).
+    const touchStyles = stylex.create({
+      none: {touchAction: 'none'},
+      panY: {touchAction: 'pan-y'},
+    });
+    const hash = (style: stylex.StyleXStyles) =>
+      stylex.props(style).className!.split(' ').pop()!;
+    expect(listbox).toHaveClass(hash(touchStyles.none));
+    expect(listbox).not.toHaveClass(hash(touchStyles.panY));
+  });
+
+  it('marks the listbox as carrying the press model', async () => {
+    const user = userEvent.setup();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    await user.click(screen.getByRole('combobox'));
+    expect(screen.getByRole('listbox', h)).toHaveAttribute(
+      'data-astryx-menu-press',
+    );
+  });
+});
+
+describe('Selector in a narrow row', () => {
+  it('lets a row shrink a standalone selector instead of overflowing', () => {
+    const {container} = render(
+      <Selector
+        label="Status"
+        options={['Awaiting fulfillment', 'Shipped']}
+        value="Awaiting fulfillment"
+        onChange={() => {}}
+      />,
+    );
+    const root = container.querySelector('.astryx-field')!;
+    expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+
+  it('keeps an explicit width alongside the reset', () => {
+    const {container} = render(
+      <Selector
+        label="Qty"
+        options={['1', '2']}
+        value="1"
+        onChange={() => {}}
+        width={80}
+      />,
+    );
+    const root = container.querySelector('.astryx-field')!;
+    expect(root.getAttribute('style')).toContain('80');
+    expect(getComputedStyle(root).minWidth).toBe('0');
   });
 });

@@ -49,7 +49,7 @@ export const doc = {
       name: 'namespace',
       type: 'string',
       description:
-        "Docs namespace path. Defaults to 'cli' when applied by the docs index.",
+        "Optional in the type, but every doc the CLI ships declares it. The group that reads this doc. The CLI's enums use 'cli/api', which the docs tree adopts by kind: each is the leaf `cli/api/enums/<name>`. Every enum doc the CLI ships declares one, and `astryx doctor` fails on one that is missing or that nothing reads.",
     },
     {
       name: 'aliases',

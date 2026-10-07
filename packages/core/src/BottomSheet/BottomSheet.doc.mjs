@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file BottomSheet.doc.mjs
+ * @input BottomSheet props, sheet anatomy, and focus-time keyboard scrolling behavior
+ * @output Consumer documentation and examples for BottomSheet
+ * @position CLI and rendered component documentation
+ */
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
 const anatomy = [
   {
@@ -12,7 +19,7 @@ const anatomy = [
     name: 'Content area',
     required: true,
     description:
-      'Scrollable area that presents the caller-provided sheet content.',
+      'Scrollable container that presents the caller-provided sheet content, padded when padding or a theme sets it.',
   },
   {
     name: 'Handle',
@@ -83,10 +90,12 @@ export const docs = {
     },
   },
   theming: {
+    container: true,
     targets: [{className: 'astryx-bottom-sheet', visualProps: []}],
+    derived: [{property: 'padding', expand: 'container'}],
   },
   description:
-    "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, optional drag-to-resize snap points, and purpose-controlled dismissal. A standalone sheet owns a native <dialog>; inside BottomSheetSwitcher it renders a panel in the switcher's shared dialog. In both modes, ref and shared DOM props target the visual panel <div>.",
+    "A mobile touch sheet that rises from the bottom edge, with animated entrance and exit, a grab handle, optional drag-to-resize snap points, and purpose-controlled dismissal. Like Dialog, it is a container: set padding (or a theme's bottom-sheet padding) and a lone Section child or bleed children such as Table and Divider align against that inset. By default the content area has no padding. A standalone sheet owns a native <dialog>; inside BottomSheetSwitcher it renders a panel in the switcher's shared dialog. In both modes, ref and shared DOM props target the visual panel <div>.",
   props: [
     {
       name: 'isOpen',
@@ -130,8 +139,14 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        "Sheet content, rendered below the grab handle in a scrollable area. If it includes a text-entry control that can bring up the mobile keyboard, use height='tall' and keep the sheet fully expanded while editing.",
+        "Sheet content in a scrollable area. The named body is keyboard reachable while overflowing. Forward Tab entry may move directly to the first native link or button; input controls, composite widgets, and nested scroll areas retain the body stop. Shift+Tab from a delegated first child skips the body. Fitting content adds no body stop. The internal observed content box preserves block flow and percentage heights. If it includes a text-entry control that can bring up the mobile keyboard, use height='tall' and keep the sheet fully expanded while editing.",
       required: true,
+    },
+    {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        'Internal padding of the sheet content using the spacing scale, matching Dialog. When omitted, uses the theme default for bottom sheets: no padding unless the theme sets padding on bottom-sheet. A lone Section child escapes the padding, and bleed children such as Table and Divider compensate against it.',
     },
     {
       name: 'height',
@@ -305,7 +320,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, opt-in transform-based drag-to-resize snap points (snapPoints: viewport fraction, percent or px length), scrolling area resizes to the snapped visible height on release (a peek stop, a quarter of the sheet or less, keeps the full height and slides instead), Dialog-aligned dismissal purpose (info/form/required), purpose-gated swipe-to-dismiss, fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
+    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, opt-in transform-based drag-to-resize snap points (snapPoints: viewport fraction, percent or px length), scrolling area resizes to the snapped visible height on release (a peek stop, a quarter of the sheet or less, keeps the full height and slides instead), Dialog-aligned dismissal purpose (info/form/required), purpose-gated swipe-to-dismiss, fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, Dialog-like container padding (padding prop or theme bottom-sheet padding; none by default), modal (default) or non-modal (hasScrim={false}) presentation',
   usage: {
     anatomy,
     description:

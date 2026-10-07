@@ -4,7 +4,9 @@
 
 /**
  * @file ListItem.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, List edge compensation,
+ *   CheckboxInput, and the marker or task checkbox a ListMarkerScope sets
+ *   (Markdown's nested lists and the task items of mixed lists)
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -28,7 +30,8 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {ListContext} from './ListContext';
+import {ListContext, type ListMarker} from './ListContext';
+import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
 import {themeProps} from '../utils/themeProps';
@@ -124,12 +127,34 @@ const styles = stylex.create({
   withCounter: {
     counterIncrement: 'astryx-list',
   },
+  // List's inline edge compensation cancels as much of the row's built-in
+  // inline inset as the container padding allows (e.g. under a heading).
+  // The margins read --_item-inset-inline — the same variable Item derives
+  // its paddingInline from — on the row element itself (custom properties
+  // only cascade downward, so the <ul> could not read it). Density changes
+  // and theme paddingInline overrides on `item` move both values together.
+  // Each edge clamps against ITS OWN container padding var: a single
+  // start-var clamp on both margins over-cancels the end edge under
+  // asymmetric container padding (16px start / 4px end) and the selected
+  // row paints past the outer border. Logical properties keep RTL correct,
+  // and a zero-padding/full-bleed surface (min(inset, 0px) = 0px) leaves
+  // the row in place instead of pulling it outside its content edge.
+  inlineEdgeCompensation: {
+    marginInlineStart:
+      'calc(-1 * min(var(--_item-inset-inline), var(--container-padding-inline-start, 0px)))',
+    marginInlineEnd:
+      'calc(-1 * min(var(--_item-inset-inline), var(--container-padding-inline-end, 0px)))',
+  },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
     borderBlockEndStyle: 'solid',
     borderBlockEndColor: colorVars['--color-border'],
+    // A longhand, not the `borderBlockEnd` shorthand: StyleX's default
+    // property-specificity mode drops border shorthands silently, so the
+    // shorthand never reached the shipped CSS and the last item kept its
+    // divider.
     ':last-child': {
-      borderBlockEnd: 'none',
+      borderBlockEndWidth: 0,
     },
   },
 });
@@ -167,6 +192,11 @@ const markerStyles = stylex.create({
     borderColor: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
   },
+  square: {
+    width: MARKER_DOT_SIZE,
+    height: MARKER_DOT_SIZE,
+    backgroundColor: colorVars['--color-text-primary'],
+  },
   number: {
     alignSelf: 'baseline',
     flexShrink: 0,
@@ -174,11 +204,46 @@ const markerStyles = stylex.create({
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
     width: spacingVars['--spacing-4'],
+  },
+  // A number outside a counter style's range (zero or below, or past 3999
+  // in roman) is written in decimal, as CSS counter styles fall back.
+  decimal: {
     '::before': {
       content: 'counter(astryx-list) "."',
     },
   },
+  lowerAlpha: {
+    '::before': {
+      content: 'counter(astryx-list, lower-alpha) "."',
+    },
+  },
+  lowerRoman: {
+    '::before': {
+      content: 'counter(astryx-list, lower-roman) "."',
+    },
+  },
 });
+
+/** The width and height of CheckboxInput's small control. */
+const TASK_CHECKBOX_SIZE = 20;
+
+const taskMarkerStyles = stylex.create({
+  // A task item's checkbox stands where the marker would, centered on the
+  // item's first line, as a task list's checkboxes are.
+  container: {
+    alignSelf: 'flex-start',
+    display: 'flex',
+    flexShrink: 0,
+    marginTop: `calc((1em * ${typeScaleVars['--text-body-leading']} - ${TASK_CHECKBOX_SIZE}px) / 2)`,
+  },
+});
+
+/** The number styles, by marker. */
+const NUMBER_STYLES = {
+  decimal: markerStyles.decimal,
+  'lower-alpha': markerStyles.lowerAlpha,
+  'lower-roman': markerStyles.lowerRoman,
+} as const;
 
 const embeddedStyles = stylex.create({
   noRadius: {
@@ -226,19 +291,42 @@ export function ListItem({
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
   const listStyle = ctx?.listStyle ?? 'none';
+  const edgeCompensation = ctx?.edgeCompensation;
   const hasMarkers = listStyle !== 'none';
+  // ListMarkerScope may name another marker for this item.
+  const markerKind: ListMarker | null =
+    listStyle === 'none' ? null : (ctx?.marker ?? listStyle);
+
+  // A task item in a list with markers shows its checkbox instead.
+  const task = markerKind == null ? undefined : ctx?.task;
 
   const marker =
-    listStyle === 'disc' ? (
-      <span {...stylex.props(markerStyles.container)}>
-        <span {...stylex.props(markerStyles.dot)} />
+    task != null ? (
+      <span {...stylex.props(taskMarkerStyles.container)}>
+        <CheckboxInput
+          size="sm"
+          value={task.isChecked}
+          label={task.label}
+          isLabelHidden
+          isReadOnly
+        />
       </span>
-    ) : listStyle === 'circle' ? (
+    ) : markerKind === 'disc' ||
+      markerKind === 'circle' ||
+      markerKind === 'square' ? (
       <span {...stylex.props(markerStyles.container)}>
-        <span {...stylex.props(markerStyles.circle)} />
+        <span
+          {...stylex.props(
+            markerKind === 'disc'
+              ? markerStyles.dot
+              : markerKind === 'circle'
+                ? markerStyles.circle
+                : markerStyles.square,
+          )}
+        />
       </span>
-    ) : listStyle === 'decimal' ? (
-      <span {...stylex.props(markerStyles.number)} />
+    ) : markerKind != null ? (
+      <span {...stylex.props(markerStyles.number, NUMBER_STYLES[markerKind])} />
     ) : null;
 
   return (
@@ -262,6 +350,7 @@ export function ListItem({
         hasMarkers && styles.withCounter,
         hasDividers && styles.withDivider,
         hasDividers && embeddedStyles.noRadius,
+        edgeCompensation === 'inline' && styles.inlineEdgeCompensation,
         xstyle,
       ]}
       {...mergeProps(themeProps('list-item'), {className, style})}

@@ -8,6 +8,7 @@ export const docs = {
   category: 'guide',
   description:
     'Add the design system to your project and start building.',
+  keywords: ['quick start', 'setup', 'install'],
 
   sections: [
     {
@@ -31,7 +32,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Give it a look',
-          code: "Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` and start from the closest shipped theme with `theme add <slug>`, which copies it in as editable source; if none of them fit, run `npx @astryxdesign/cli theme template` and fill in the annotated template it writes. Default to neutral if I have no preference, and show me the result before moving on.",
+          code: "Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` and start from the closest available theme with `theme add <slug>`; the list includes bundled themes and themes from installed integrations, with each owner shown. Use `--package` if owners share a slug. The command copies the theme in as editable source. If none fit, run `npx @astryxdesign/cli theme template` and fill in the annotated template it writes. Default to neutral if I have no preference, and show me the result before moving on.",
         },
       ],
     },
@@ -81,28 +82,15 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Available themes:',
-        },
-        {
-          type: 'list',
-          style: 'unordered',
-          items: [
-            '`@astryxdesign/theme-neutral`: muted and minimal; a good starting point',
-            '`@astryxdesign/theme-butter`: warm, golden tones with blue accents',
-            '`@astryxdesign/theme-chocolate`: rich chocolate and caramel tones',
-            '`@astryxdesign/theme-gothic`: dark-only theme with ink and noir influences',
-            '`@astryxdesign/theme-matcha`: earthy greens and botanical tones',
-            '`@astryxdesign/theme-stone`: warm neutrals inspired by sandstone',
-            '`@astryxdesign/theme-y2k`: playful early-2000s pop aesthetic',
-          ],
+          text: 'Run `astryx theme list` to see every theme.',
         },
         {
           type: 'prose',
-          text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. See the Cascade Layer Safety section in `astryx docs migration` before building screens.',
+          text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. Before building screens, read the two cascade layer sections of {@link generic:migration}.',
         },
         {
           type: 'prose',
-          text: 'Run `astryx docs theme` for the full theming guide.',
+          text: 'Run {@link generic:theme} for the full theming guide.',
         },
       ],
     },
@@ -135,7 +123,7 @@ export default function Page() {
       content: [
         {
           type: 'prose',
-          text: 'Astryx components support various styling solutions, from plain CSS and `className` to Tailwind and CSS-in-JS. See the [styling docs](/docs/styling) for the full guide. Astryx also has a deep integration with [StyleX](https://stylexjs.com/), an atomic CSS-in-JS library: create styles with `stylex.create()` and pass them to components with the `xstyle` prop.',
+          text: 'Astryx components support various styling solutions, from plain CSS and `className` to Tailwind and CSS-in-JS. See {@link generic:styling} for the full guide. Astryx also has a deep integration with [StyleX](https://stylexjs.com/), an atomic CSS-in-JS library: create styles with `stylex.create()` and pass them to components with the `xstyle` prop.',
         },
         {
           type: 'code',
@@ -167,6 +155,7 @@ const overrides = stylex.create({
             ['Next.js + Tailwind', 'Next.js + Tailwind bridge', '[apps/example-nextjs-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-tailwind)'],
             ['Next.js Source', 'Next.js importing from source', '[apps/example-nextjs-source](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-source)'],
             ['Vite', 'Vite', '[apps/example-vite](https://github.com/facebook/astryx/tree/main/apps/example-vite)'],
+            ['Vite + Tailwind', 'Vite + Tailwind bridge', '[apps/example-vite-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-vite-tailwind)'],
           ],
         },
         {

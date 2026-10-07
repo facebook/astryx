@@ -1,4 +1,51 @@
-# @xds/build
+# @astryxdesign/build
+
+# 0.6.5
+
+---
+
+# 0.6.4
+
+#### Fixes
+
+- Keep PostCSS and Vite processing inside `@astryxdesign/build`'s declared dependency boundary (#6605)
+  Packed consumers no longer depend on workspace hoisting to find PostCSS helpers or CSS compatibility processors. The package now owns Autoprefixer, Browserslist, and Lightning CSS, and a clean isolated-install test exercises the published tarball's PostCSS helper and Vite output.
+- Make source builds fail on unsupported StyleX declarations and load shared StyleX output from every Vite HTML entry.
+  Nested pseudo-elements and `stylex.keyframes()` now have production-build regression coverage, and the maintained capability registry tracks the installed StyleX version.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
+# 0.6.3
+
+---
+
+# 0.6.2
+
+---
+
+# 0.6.1
+
+---
+
+# 0.6.0
+
+#### Fixes
+
+- `withAstryx()` refuses a Turbopack config instead of building an unstyled app. Every alias the helper installs lives in `nextConfig.webpack`, which Turbopack never calls, so the app resolved `@astryxdesign/*` to dist while PostCSS compiled the library from source — disjoint class names, an exit code of 0, and an unstyled page. It now throws, naming both ways out: `--webpack`, or drop the helper and consume the pre-built package. Also warns when the merged alias map claims none of the packages, which reaches the same unstyled state by another route. (#6109)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @joaodotwork
+
+---
 
 # 0.5.4
 

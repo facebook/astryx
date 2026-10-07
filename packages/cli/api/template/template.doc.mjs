@@ -11,20 +11,33 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'template',
+  namespace: 'cli/api',
   displayName: 'template()',
   summary: 'List, inspect, or scaffold page and block templates.',
   description:
     'One entry point for the template family: with no name it lists the discovered ' +
     "templates; with a name it returns that template's source, a layout skeleton, or " +
-    'scaffolds it into the project. Templates are discovered across core, external ' +
-    'packages, and integrations, so the same id can appear in more than one place; ' +
-    'narrow an ambiguous name with type and/or package. The cdn option writes the ' +
-    'annotated no-build-step CDN starter page, which ships as an asset rather than as ' +
+    'scaffolds it into the project. A configured integration may replace a Core ' +
+    'template id for unqualified discovery and lookup; package selection still ' +
+    'addresses the Core original. Other duplicate ids remain ambiguous and can be ' +
+    'narrowed by type and/or package. The cdn option writes the annotated ' +
+    'no-build-step CDN starter page, which ships as an asset rather than as ' +
     'a discovered template.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'template(name?: string, options?: TemplateOptions): Promise<TemplateListResponse | TemplateShowResponse | TemplateSkeletonResponse | TemplateCopyResponse | TemplateCdnResponse>',
-  keywords: ['template', 'scaffold', 'page', 'block', 'skeleton', 'starter', 'cdn', 'esm', 'importmap', 'no-build'],
+  keywords: [
+    'template',
+    'scaffold',
+    'page',
+    'block',
+    'skeleton',
+    'starter',
+    'cdn',
+    'esm',
+    'importmap',
+    'no-build',
+  ],
   params: [
     {
       name: 'name',
@@ -69,13 +82,14 @@ export const doc = {
       name: 'options.package',
       type: 'string',
       description:
-        'Narrow lookups to templates from a specific owning package (core templates report @astryxdesign/core).',
+        'Narrow lookups to templates from a specific owning package. Without it, a valid integration replacement is selected for the Core id; use @astryxdesign/core to select the original.',
     },
     {
       name: 'options.targetPath',
       type: 'string',
       description:
-        'Destination (relative to cwd) to scaffold the template into. Its presence switches a named lookup into a copy.',
+        'Destination (relative to cwd) to scaffold the template into. Its presence switches a named lookup into a copy. ' +
+        'A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; any other path is a directory, which receives page.tsx for a page template or the block\'s own file name for a block.',
     },
     {
       name: 'options.overwrite',
@@ -88,18 +102,19 @@ export const doc = {
       type: 'string',
       description:
         'Directory to discover templates and resolve the target path from.',
+      default: 'process.cwd()',
     },
   ],
   returns: [
     {
       type: 'template.list',
       description:
-        'Every discovered template (page + block); each entry carries id, name, description, kind, owning package, optional category and componentsUsed, and readiness flags. Filtered by type/package when provided.',
+        'The effective templates (page + block); a valid integration replacement takes the place of its Core target and carries `replaces`. Pass `package` to list one package, including replaced Core originals.',
     },
     {
       type: 'template.show',
       description:
-        "The resolved template's raw source plus its description, kind, and the component names it composes.",
+        "The resolved template's source, exactly as a copy writes it, plus its description, kind, the component names it composes, and `demoMediaReplaced` — how many Astryx demo media references (images, posters, videos) in the source were replaced with placeholders for you to swap for your own media.",
     },
     {
       type: 'template.skeleton',
@@ -109,7 +124,7 @@ export const doc = {
     {
       type: 'template.copy',
       description:
-        'A receipt after scaffolding the template into the project: the template id, output directory, written file name, and file count.',
+        'A receipt after scaffolding the template into the project: the template id, output directory, written file name, file count, and `demoMediaReplaced` — how many Astryx demo media references (images, posters, videos) in the written file were replaced with placeholders for you to swap for your own media.',
     },
     {
       type: 'template.cdn',
@@ -120,7 +135,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_UNKNOWN_TEMPLATE',
-      when: 'the named template does not exist, or --skeleton is run without a name',
+      when: 'the named template does not exist, or options.skeleton is set without a name',
     },
     {
       code: 'ERR_AMBIGUOUS_TEMPLATE',
@@ -138,10 +153,22 @@ export const doc = {
       code: 'ERR_FILE_EXISTS',
       when: 'the copy target already exists and overwrite is not set',
     },
+    {
+      code: 'ERR_WRITE_FAILED',
+      when: 'the copy target could not be written (no permission, read-only mount, full disk); nothing is written',
+    },
   ],
   examples: [
     {label: 'List templates', code: 'const {data} = await template();'},
+    {
+      label: 'List exact Core ids',
+      code: "await template(undefined, {list: true, package: '@astryxdesign/core'});",
+    },
     {label: 'Show source', code: "await template('dashboard');"},
+    {
+      label: 'Select a replaced Core original',
+      code: "await template('shell-side-nav', {package: '@astryxdesign/core'});",
+    },
     {
       label: 'Layout skeleton',
       code: "await template('dashboard', {skeleton: true});",

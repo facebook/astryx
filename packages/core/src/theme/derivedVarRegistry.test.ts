@@ -72,6 +72,8 @@ const STRUCTURAL_VARS = new Set([
   '--layout-padding-inner-y',
   '--layout-padding-outer-x',
   '--layout-padding-outer-y',
+  '--layout-padding-own-outer-x',
+  '--layout-padding-own-outer-y',
   '--layout-content-width',
   '--appshell-header-height',
   '--dialog-dir-x',
@@ -216,6 +218,7 @@ function discoverComponents(): ComponentInfo[] {
 const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   Avatar: 'avatar',
   Banner: 'banner',
+  BottomSheet: 'bottom-sheet',
   Button: 'button',
   Card: 'card',
   Chat: 'chat',
@@ -224,6 +227,7 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
   DropdownMenu: 'dropdown-menu',
   Field: 'field',
   HoverCard: 'hover-card',
+  Item: 'item',
   NumberInput: 'number-input',
   Popover: 'popover',
   ProgressBar: 'progress-bar-mark',
@@ -281,6 +285,17 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   // properties a theme author sets on the component.
   '--_thumbnail-hit-inset',
   '--_input-clear-hit-inset',
+  // The interaction overlay's fill and its transition on the ::after layer of
+  // the cards: written by the component's own hover / pressed arms (mouse
+  // `:active`, touch `data-astryx-press`), never a value a theme author sets; the
+  // overlay colours themselves are the shared interaction tokens.
+  '--_press-overlay',
+  '--_press-overlay-transition',
+  // The touch press's paint at its current strength, declared once by the
+  // shared overlay styles on the element the controller writes to and read
+  // by whatever paints it. A theme sets `--color-overlay-pressed`, not this.
+  '--_press-paint',
+  '--_press-paint-image',
   '--_input-clear-hit-content',
   // Placement and swipe lifecycle values are private Toast behavior. A theme
   // author controls the surface transform/opacity as a whole, not these values.
@@ -311,15 +326,23 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   // It is one component of one shadow in the list, so no standard property
   // maps onto it either — a theme sets it beside the fill it has to contrast.
   '--selectable-card-ring-color',
-  // The spinner's ring is drawn as an SVG circle, so none of its four vars is
+  // The spinner's ring is drawn as an SVG circle, so none of its five vars is
   // a CSS property of the element carrying the theme target: `width` and
-  // `borderWidth` would name a box the ring is not, and a `color` mapping
-  // would take the label's text color with it. They are public vars a theme
-  // sets directly under a size- or shade-variant key.
+  // `borderWidth` would name a box the ring is not, a `color` mapping would
+  // take the label's text color with it, and the arc fraction is a pure
+  // dash-length multiplier with no standard property to attach to. They are
+  // public vars a theme sets directly under a size- or shade-variant key.
   '--spinner-diameter',
   '--spinner-stroke-width',
   '--spinner-color',
   '--spinner-track-color',
+  '--spinner-arc-fraction',
+  // Set by a PARENT component (e.g. the destructive dropdown/context menu
+  // item) to recolor the two text lines it renders. A single standard `color`
+  // property cannot map onto both lines, and the root color is not what they
+  // control — a theme reaches them by setting the vars directly.
+  '--_item-label-color',
+  '--_item-description-color',
 ]);
 
 // ---------------------------------------------------------------------------

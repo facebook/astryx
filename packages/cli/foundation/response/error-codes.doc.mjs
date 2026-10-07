@@ -12,7 +12,7 @@ export const doc = {
   type: 'enum',
   name: 'error-codes',
   displayName: 'Error Codes',
-  namespace: 'cli',
+  namespace: 'cli/api',
   description:
     'Stable, append-only machine-readable error codes on the --json error envelope (envelope.code). Codes never change or get removed; branch on these, not on prose.',
   members: [
@@ -36,17 +36,16 @@ export const doc = {
     {
       value: 'ERR_INVALID_OPTION',
       description:
-        'An unknown flag/option was passed (Commander `unknownOption`).',
+        'An unknown option was passed, --json was given to a command without JSON output, or layout --form got a value other than compact, outline, or auto.',
     },
     {
       value: 'ERR_INVALID_ARGUMENT',
       description:
-        "An option/argument had a value Commander's parser rejected.",
+        'An argument or option value is invalid: wrong type, out of range, an unknown choice, an extra argument, or a conflicting combination.',
     },
     {
       value: 'ERR_MISSING_ARGUMENT',
-      description:
-        'A required positional argument was omitted (Commander `missingArgument`).',
+      description: 'A required argument or option value was omitted.',
     },
     {
       value: 'ERR_INVALID_LANG',
@@ -114,17 +113,31 @@ export const doc = {
         'A component name is owned by more than one package (narrow with --package).',
     },
     {
+      value: 'ERR_AMBIGUOUS_THEME',
+      description:
+        'A theme slug is owned by more than one package (narrow with --package).',
+    },
+    {
       value: 'ERR_UNKNOWN_THEME',
       description: 'No theme matched the requested slug (theme add).',
     },
     {
+      value: 'ERR_INTEGRATION_ROOT_CONFLICT',
+      description:
+        'An integration manifest already declares a different path for the requested contribution root.',
+    },
+    {
+      value: 'ERR_INTEGRATION_EXPORT_CONFLICT',
+      description:
+        'A package export already maps a generated contribution subpath to a different target.',
+    },
+    {
       value: 'ERR_UNKNOWN_PACKAGE',
-      description: 'No package matched the requested name (discover).',
+      description: 'No package matched the requested name.',
     },
     {
       value: 'ERR_UNKNOWN_AGENT',
-      description:
-        'An unrecognized `--agent` value was passed to agent-docs/init.',
+      description: 'An unrecognized `--agent` value was passed to init.',
     },
     {
       value: 'ERR_UNKNOWN_FEATURE',
@@ -138,6 +151,16 @@ export const doc = {
     {
       value: 'ERR_CODEMOD_FAILED',
       description: 'One or more codemods failed during an upgrade run.',
+    },
+    {
+      value: 'ERR_CODEMOD_PROTECTED',
+      description:
+        'A required codemod change remains blocked by a protected consumer file.',
+    },
+    {
+      value: 'ERR_CODEMOD_PROTECTION_SOURCE',
+      description:
+        'A working-tree protection declaration could not be read or parsed.',
     },
     {
       value: 'ERR_NOT_FOUND',
@@ -172,8 +195,7 @@ export const doc = {
     },
     {
       value: 'ERR_FILE_EXISTS',
-      description:
-        'Refused to overwrite an existing file in non-interactive mode.',
+      description: 'Refused to overwrite an existing file.',
     },
     {
       value: 'ERR_PATH_TRAVERSAL',
@@ -189,7 +211,7 @@ export const doc = {
     {
       value: 'ERR_THEME_INVALID',
       description:
-        'A theme definition was missing a required property (e.g. `name`).',
+        'A theme definition or contributed theme descriptor is invalid.',
     },
     {
       value: 'ERR_THEME_LOAD',
@@ -248,7 +270,7 @@ export const doc = {
     {
       value: 'ERR_UNCLASSIFIED_EXIT',
       description:
-        'Recorded in the debug log, never printed: a command exited non-zero without going through cliError/jsonError, so no stable code was available.',
+        'Recorded in the debug log, never printed: a command exited non-zero without reporting an error code.',
     },
     {
       value: 'ERR_SIGNAL_TERMINATED',

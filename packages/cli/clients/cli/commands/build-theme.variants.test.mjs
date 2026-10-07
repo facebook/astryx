@@ -143,22 +143,25 @@ describe('theme build custom-variant augmentations', () => {
       path.join(tmpDir, 'variants-theme.css'),
       'utf-8',
     );
-    const mainTypeIndex = css.indexOf(
-      '.astryx-heading[data-type="hero"]',
-    );
+    const mainTypeIndex = css.indexOf('.astryx-heading[data-type="hero"]');
     const mainTypeWeightIndex = css.indexOf('font-weight: 300;', mainTypeIndex);
-    const mainWeightIndex = css.indexOf(
-      '.astryx-heading[data-weight="bold"]',
+    const mainWeightIndex = css.indexOf('.astryx-heading[data-weight="bold"]');
+    const mainWeightValueIndex = css.indexOf(
+      'font-weight: 900;',
+      mainWeightIndex,
     );
-    const mainWeightValueIndex = css.indexOf('font-weight: 900;', mainWeightIndex);
-    const mediaTypeIndex = css.lastIndexOf(
-      '.astryx-heading[data-type="hero"]',
+    const mediaTypeIndex = css.lastIndexOf('.astryx-heading[data-type="hero"]');
+    const mediaTypeWeightIndex = css.indexOf(
+      'font-weight: 350;',
+      mediaTypeIndex,
     );
-    const mediaTypeWeightIndex = css.indexOf('font-weight: 350;', mediaTypeIndex);
     const mediaWeightIndex = css.lastIndexOf(
       '.astryx-heading[data-weight="bold"]',
     );
-    const mediaWeightValueIndex = css.indexOf('font-weight: 800;', mediaWeightIndex);
+    const mediaWeightValueIndex = css.indexOf(
+      'font-weight: 800;',
+      mediaWeightIndex,
+    );
     expect(mainTypeWeightIndex).toBeGreaterThan(mainTypeIndex);
     expect(mainWeightValueIndex).toBeGreaterThan(mainWeightIndex);
     expect(mediaTypeWeightIndex).toBeGreaterThan(mediaTypeIndex);
@@ -321,6 +324,82 @@ describe('theme build custom-variant augmentations', () => {
     );
   });
 
+  it('rejects a custom Heading type whose only declaration is blank', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: { heading: { 'type:hero': { fontSize: '' } } },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'Custom Heading type "hero" needs a non-empty standalone',
+    );
+    expect(fs.existsSync(path.join(tmpDir, 'variants-theme.css'))).toBe(false);
+  });
+
+  it('rejects a custom Heading type whose every declaration the compiler drops', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          heading: { 'type:hero': { color: 'red; } body { color: blue' } },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['--json', 'theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+
+    expect(result.code).toBe(1);
+    const envelope = JSON.parse(result.stdout);
+    expect(envelope.code).toBe('ERR_THEME_INVALID');
+    expect(envelope.error).toContain('Custom Heading type "hero"');
+    expect(fs.existsSync(path.join(tmpDir, 'variants-theme.css'))).toBe(false);
+    expect(
+      fs.existsSync(path.join(tmpDir, 'variants-theme.variants.d.ts')),
+    ).toBe(false);
+  });
+
+  it('builds a custom Heading type that keeps one valid declaration', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          heading: {
+            'type:hero': { fontSize: '80px', color: 'red; } body { color: blue' },
+          },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['--json', 'theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+
+    expect(result.code).toBe(0);
+    const envelope = JSON.parse(result.stdout);
+    expect(envelope.data.outputs.variantsDts).toBe(
+      'variants-theme.variants.d.ts',
+    );
+    expect(envelope.data.warnings.join('\n')).toContain('Declaration dropped');
+  });
+
   it('makes generated custom component prop values type-check through public subpaths', async () => {
     const themeFile = writeTheme(
       tmpDir,
@@ -342,9 +421,9 @@ describe('theme build custom-variant augmentations', () => {
           divider: { 'variant:customDivider': { borderColor: 'currentColor' } },
           'field-status': { 'variant:customFieldStatus': { color: 'currentColor' } },
           pagination: { 'variant:customPagination': { color: 'currentColor' } },
-          progressbar: { 'variant:customProgressBar': { backgroundColor: 'transparent' } },
+          'progress-bar': { 'variant:customProgressBar': { backgroundColor: 'transparent' } },
           section: { 'variant:customSection': { backgroundColor: 'transparent' } },
-          statusdot: { 'variant:customStatusDot': { backgroundColor: 'transparent' } },
+          'status-dot': { 'variant:customStatusDot': { backgroundColor: 'transparent' } },
           heading: { 'type:customHeading': { fontSize: '3rem' } },
           text: { 'color:customTextColor': { color: 'currentColor' } },
           token: { 'color:customTokenColor': { backgroundColor: 'transparent' } },

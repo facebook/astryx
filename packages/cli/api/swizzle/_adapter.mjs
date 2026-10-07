@@ -15,6 +15,9 @@ import {findCoreDir, listComponents} from '../../foundation/fs/paths.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../error.mjs';
 
+/** The package that owns Core's components, hooks, and codemods. */
+export {CORE_PROVIDER_ID as CORE_PACKAGE} from '../../foundation/identity/providers.mjs';
+
 /**
  * Locate @astryxdesign/core for `cwd` and list its swizzlable components.
  * @param {string} cwd

@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect} from 'storybook/test';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
@@ -433,6 +434,16 @@ export const Status: Story = {
 };
 
 // Size variants
+const compactSizingTheme = defineTheme({
+  name: 'multi-selector-compact-sizing',
+  tokens: {
+    '--spacing-5': '10px',
+    '--size-element-sm': '24px',
+    '--size-element-md': '28px',
+    '--size-element-lg': '32px',
+  },
+});
+
 export const Sizes: Story = {
   render: () => {
     const [value1, setValue1] = useState<string[]>([]);
@@ -465,10 +476,71 @@ export const Sizes: Story = {
           onChange={setValue3}
           placeholder="Large (36px)"
         />
+        <Theme theme={compactSizingTheme}>
+          {(['sm', 'md', 'lg'] as const).map(size => (
+            <div key={size} style={{display: 'grid', gap: 8}}>
+              {(
+                [
+                  'plain',
+                  'start',
+                  'option',
+                  'status',
+                  'tooltip',
+                  'clear',
+                  'loading',
+                  'readonly',
+                ] as const
+              ).map(state => (
+                <MultiSelector
+                  key={state}
+                  label={`Compact ${size} ${state}`}
+                  size={size}
+                  options={[
+                    {
+                      value: 'name',
+                      label: 'Name',
+                      icon: state === 'option' ? 'search' : undefined,
+                    },
+                  ]}
+                  value={['name']}
+                  onChange={() => {}}
+                  startIcon={state === 'start' ? 'search' : undefined}
+                  status={
+                    state === 'status' || state === 'tooltip'
+                      ? {type: 'warning', message: 'Check selection'}
+                      : undefined
+                  }
+                  statusVariant={state === 'tooltip' ? 'tooltip' : 'attached'}
+                  hasClear={state === 'clear'}
+                  isLoading={state === 'loading'}
+                  isReadOnly={state === 'readonly'}
+                />
+              ))}
+            </div>
+          ))}
+        </Theme>
       </div>
     );
   },
   decorators: [Story => <Story />],
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    const triggers = canvasElement.querySelectorAll<HTMLElement>(
+      '.astryx-multi-selector',
+    );
+    expect(triggers).toHaveLength(27);
+    for (const trigger of triggers) {
+      const size = Number.parseFloat(
+        getComputedStyle(trigger).getPropertyValue(
+          `--size-element-${trigger.dataset.size}`,
+        ),
+      );
+      expect(
+        trigger.getBoundingClientRect().height,
+        trigger.textContent ?? '',
+      ).toBeCloseTo(size, 1);
+    }
+  },
 };
 
 // Form composition
@@ -603,8 +675,8 @@ export const StatusVariantComparison: Story = {
 /**
  * Theme the clear and chevron glyphs precisely via `defineTheme`.
  *
- * - `components['multi-selector-clear-icon'].base` scopes overrides to the
- *   clear icon itself (via the `astryx-multi-selector-clear-icon` target), so a
+ * - `components['input-clear-icon'].base` scopes overrides to the
+ *   clear icon itself (via the `astryx-input-clear-icon` target), so a
  *   theme can recolor it, morph its color on hover, and resize it — without a
  *   fragile descendant selector or raw CSS.
  * - `components['multi-selector-indicator-icon']` scopes overrides to the
@@ -617,7 +689,7 @@ export const StatusVariantComparison: Story = {
 const iconTheme = defineTheme({
   name: 'multi-selector-icon-demo',
   components: {
-    'multi-selector-clear-icon': {
+    'input-clear-icon': {
       base: {
         width: '12px',
         height: '12px',
@@ -674,6 +746,37 @@ export const EndIndicatorPosition: Story = {
         value={value}
         onChange={setValue}
         indicatorPosition="end"
+        isDefaultOpen
+      />
+    );
+  },
+};
+
+export const CreateFromQuery: Story = {
+  render: () => {
+    const [options, setOptions] = useState([
+      {value: 'bug', label: 'Bug'},
+      {value: 'feature', label: 'Feature'},
+      {value: 'docs', label: 'Docs'},
+    ]);
+    const [value, setValue] = useState<string[]>(['bug']);
+    return (
+      <MultiSelector
+        label="Labels"
+        options={options}
+        value={value}
+        onChange={(next, change) => {
+          if (change?.type === 'create') {
+            setOptions(current => [
+              ...current,
+              {value: change.query, label: change.query},
+            ]);
+          }
+          setValue(next);
+        }}
+        hasSearch
+        hasCreate
+        triggerDisplay="badges"
         isDefaultOpen
       />
     );

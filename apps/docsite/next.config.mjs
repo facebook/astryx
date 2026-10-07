@@ -1,24 +1,83 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {readdirSync} from 'node:fs';
+/**
+ * @file Configure the docsite's routes, response headers, and theme resolution.
+ * @input Next.js build configuration, the early playground cookie guard, and
+ *   staged preview-only static exports.
+ * @output Docsite routes plus Storybook and Sandbox at /storybook/ and /sandbox/.
+ *   Client main-app chunks start with the preview's cookie compatibility guard.
+ * @position Next.js configuration for the existing Vercel docsite deployment.
+ */
+
+import {readFileSync, readdirSync} from 'node:fs';
 import {resolve} from 'node:path';
+
+const playgroundCookieCompatibility = readFileSync(
+  resolve(
+    import.meta.dirname,
+    'src/app/playground/preview/cookieCompatibility.js',
+  ),
+  'utf8',
+);
+
+const stagesStaticApps =
+  process.env.VERCEL_ENV === 'preview' ||
+  process.env.VERCEL_ENV === 'production';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
+  // Sandbox exports trailing-slash directories; Next's automatic slash
+  // redirect runs before rewrites. Vercel deployments preserve those URLs;
+  // local builds keep the docsite's existing canonical redirects.
+  skipTrailingSlashRedirect: stagesStaticApps,
   // A dynamic route segment can't carry a static extension, so the public
   // plaintext URL /blog/<slug>.txt is served by the /blog/txt/[slug] handler.
+  // Static files (including Storybook's iframe and Sandbox's JS/CSS, embeds
+  // and template assets) take precedence over afterFiles rewrites. A missing
+  // Sandbox path maps only to its own absent index.html, never to the root.
   async rewrites() {
-    return [{source: '/blog/:slug.txt', destination: '/blog/txt/:slug'}];
+    return {
+      afterFiles: [
+        {source: '/blog/:slug.txt', destination: '/blog/txt/:slug'},
+        {source: '/storybook', destination: '/storybook/index.html'},
+        ...(stagesStaticApps
+          ? [
+              {source: '/sandbox', destination: '/sandbox/index.html'},
+              {
+                source: '/sandbox/:path+',
+                destination: '/sandbox/:path+/index.html',
+              },
+            ]
+          : []),
+      ],
+    };
+  },
+  // The CLI's integration guide became short guides under cli/integrations,
+  // each with its own page (/docs/cli-integrations-<name>). The old guide
+  // pages redirect to where their content now starts.
+  async redirects() {
+    return [
+      {
+        source: '/docs/cli-integrations',
+        destination: '/docs/cli-integrations-overview',
+        permanent: true,
+      },
+      {
+        source: '/docs/cli-writing-docs',
+        destination: '/docs/cli-integrations-docs-add-a-topic',
+        permanent: true,
+      },
+    ];
   },
   // The playground preview evaluates user-authored code, so it is the one
   // route that must never be embeddable by another site and never a loader of
-  // third-party script. The origin check on its postMessage channel is the
-  // actual guard (playground/previewChannel.ts); these headers are the layer
-  // underneath it. 'unsafe-eval' is inherent — the route's whole job is
-  // compiling and running TSX in the browser. img/connect stay open so demo
-  // code can still fetch and show remote data; the allowed hosts are the ones
-  // the site itself loads (Google Fonts, Vercel analytics).
+  // third-party script. The nonce-attested port handshake on its message
+  // channel is the actual guard (playground/previewChannel.ts); these headers
+  // are the layer underneath it. 'unsafe-eval' is inherent — the route's whole
+  // job is compiling and running TSX in the browser. img/connect stay open so
+  // demo code can still fetch and show remote data; the allowed hosts are the
+  // ones the site itself loads (Google Fonts, Vercel analytics).
   async headers() {
     return [
       {
@@ -52,7 +111,7 @@ const nextConfig = {
       },
     ];
   },
-  webpack: config => {
+  webpack: (config, {isServer, webpack}) => {
     // Webpack's CSS @import resolver doesn't follow package.json "exports".
     // Map each theme's /theme.css subpath to the actual dist file.
     const themesDir = resolve(import.meta.dirname, '../../packages/themes');
@@ -64,6 +123,21 @@ const nextConfig = {
         themesDir,
         t,
         'dist/theme.css',
+      );
+    }
+
+    // Vercel can add Toolbar instrumentation to Next's shared main-app entry.
+    // Its cookie probe throws before React starts in the playground's opaque
+    // frame, so prepend our route-scoped guard to the final client asset. A
+    // layout Script is too late: Next emits the async main-app tag first.
+    if (!isServer) {
+      config.plugins.push(
+        new webpack.BannerPlugin({
+          banner: playgroundCookieCompatibility,
+          entryOnly: true,
+          include: /main-app-/,
+          raw: true,
+        }),
       );
     }
 

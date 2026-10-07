@@ -531,7 +531,9 @@ describe('Banner', () => {
           );
           const frame = container.firstElementChild;
           expect(frame).toHaveClass('astryx-banner-frame');
-          expect(frame).not.toHaveClass(containerType, elevation);
+          // The data attributes are canonical; the released bare values remain
+          // same-element compatibility classes through the 0.7.0 window.
+          expect(frame).toHaveClass(containerType, elevation);
           expect(frame).toHaveAttribute('data-container', containerType);
           expect(frame).toHaveAttribute('data-elevation', elevation);
           expect(frame?.firstElementChild).toHaveClass('astryx-banner');

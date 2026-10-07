@@ -1,6 +1,6 @@
 # @astryxdesign/build
 
-Build plugins for XDS source builds. Provides babel, PostCSS, and Vite integrations that compile XDS library and product code with separate class name prefixes, which enables independent CSS layers:
+Build plugins for Astryx source builds. Provides babel, PostCSS, and Vite integrations that compile Astryx library and product code with separate class name prefixes, which enables independent CSS layers:
 
 ```
 reset < astryx-base (library, astryx prefix) < astryx-theme < product (app, x prefix)
@@ -12,9 +12,10 @@ StyleX generates atomic CSS: same declaration = same class name. Without separat
 
 `@astryxdesign/build` solves this by:
 
-1. Compiling XDS library code with `astryx` prefix (`.astryx78zum5`)
+1. Compiling Astryx library code with `astryx` prefix (`.astryx78zum5`)
 2. Compiling product code with default `x` prefix (`.x78zum5`)
 3. Placing each group in its own CSS `@layer`
+4. Rejecting unsupported StyleX declarations instead of silently omitting them
 
 ## Packages
 
@@ -74,6 +75,7 @@ module.exports = {
       {
         dev: process.env.NODE_ENV !== 'production',
         runtimeInjection: false,
+        propertyValidationMode: 'throw',
         treeshakeCompensation: true,
         enableInlinedConditionalMerge: true,
         aliases: {
@@ -186,6 +188,7 @@ export default defineConfig({
       stylexOptions: {
         dev: process.env.NODE_ENV === 'development',
         runtimeInjection: false,
+        propertyValidationMode: 'throw',
         treeshakeCompensation: true,
         unstable_moduleResolution: {
           type: 'commonJS',
@@ -232,7 +235,9 @@ Compiles StyleX from both library and product source files in two separate passe
 
 ### Vite plugin (`@astryxdesign/build/vite`)
 
-Wraps `@stylexjs/unplugin` and intercepts the dev CSS endpoint (`/virtual:stylex.css`). Partitions the collected rules by file path and serves split-layer CSS.
+Wraps `@stylexjs/unplugin` and intercepts the dev CSS endpoint (`/virtual:stylex.css`). Partitions the collected rules by file path and serves split-layer CSS. Production builds write those rules to one cache-safe shared stylesheet and link it from every emitted HTML entry, without cross-loading entry-owned CSS.
+
+Unsupported declarations fail the build by default with StyleX's replacement guidance. Set `propertyValidationMode` explicitly in `stylexOverrides` (modern API) or `stylexOptions` (legacy API) only when a migration needs the upstream `warn` or `silent` behavior.
 
 ---
 

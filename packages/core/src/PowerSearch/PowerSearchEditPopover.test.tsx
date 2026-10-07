@@ -10,10 +10,17 @@ import {
   afterAll,
   afterEach,
 } from 'vitest';
-import {render, screen, fireEvent, act} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import React, {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
+import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import {PowerSearch} from './PowerSearch';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {useInternalConfig} from './useInternalConfig';
@@ -168,6 +175,148 @@ describe('PowerSearch', () => {
     const popoverText = getEditPopoverText(container);
     expect(popoverText).toContain('Priority');
     expect(popoverText).toContain('equals');
+  });
+
+  describe('value editor identity follows the field and operator', () => {
+    // Two fields with the same value type, so an unkeyed editor would be
+    // reused across the switch and keep the first field's menu contents.
+    const sameTypeConfig: PowerSearchConfig = {
+      name: 'test-same-type',
+      fields: [
+        {
+          key: 'creator',
+          label: 'Creator',
+          operators: [
+            {
+              key: 'is_any_of',
+              label: 'is any of',
+              value: {
+                type: 'enum_list',
+                values: [{value: 'creator-1', label: 'Creator Person'}],
+              },
+            },
+          ],
+        },
+        {
+          key: 'owner',
+          label: 'Owner',
+          operators: [
+            {
+              key: 'is_any_of',
+              label: 'is any of',
+              value: {
+                type: 'enum_list',
+                values: [{value: 'owner-1', label: 'Owner Person'}],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const creatorOption = () =>
+      screen.queryByRole('option', {name: 'Creator Person', hidden: true});
+    const ownerOption = () =>
+      screen.queryByRole('option', {name: 'Owner Person', hidden: true});
+
+    it('replaces an open value menu when the field changes', async () => {
+      function Harness() {
+        const internalConfig = useInternalConfig(sameTypeConfig);
+        return (
+          <PowerSearchEditPopover
+            config={internalConfig}
+            filter={{
+              field: 'creator',
+              operator: 'is_any_of',
+              value: {type: 'enum_list', value: []},
+            }}
+            mode="edit"
+            onSave={() => {}}
+            onCancel={() => {}}
+          />
+        );
+      }
+
+      render(<Harness />);
+
+      // Open the Creator value menu and leave it open.
+      fireEvent.focus(screen.getByRole('combobox', {name: 'Values'}));
+      await waitFor(() => expect(creatorOption()).toBeInTheDocument());
+
+      // Switch the field underneath the open menu.
+      fireEvent.click(screen.getByRole('combobox', {name: 'Field'}));
+      fireEvent.click(
+        screen.getByRole('option', {name: 'Owner', hidden: true}),
+      );
+      act(() => flushRAF());
+
+      // The old field's options are gone, the new field's are shown.
+      expect(creatorOption()).not.toBeInTheDocument();
+      await waitFor(() => expect(ownerOption()).toBeInTheDocument());
+    });
+
+    it('replaces an open value menu on a nested sub-filter row', async () => {
+      const nestedConfig: PowerSearchConfig = {
+        name: 'test-nested-same-type',
+        fields: [
+          {
+            key: 'group',
+            label: 'Group',
+            operators: [
+              {key: 'all_of', label: 'all of', value: {type: 'nested'}},
+            ],
+          },
+          ...sameTypeConfig.fields,
+        ],
+      };
+
+      function Harness() {
+        const internalConfig = useInternalConfig(nestedConfig);
+        return (
+          <PowerSearchEditPopover
+            config={internalConfig}
+            filter={{
+              field: 'group',
+              operator: 'all_of',
+              value: {
+                type: 'nested',
+                value: [
+                  {
+                    field: 'creator',
+                    operator: 'is_any_of',
+                    value: {type: 'enum_list', value: []},
+                  },
+                ],
+              },
+            }}
+            mode="edit"
+            onSave={() => {}}
+            onCancel={() => {}}
+          />
+        );
+      }
+
+      render(<Harness />);
+
+      fireEvent.focus(screen.getByRole('combobox', {name: 'Values'}));
+      await waitFor(() => expect(creatorOption()).toBeInTheDocument());
+
+      // The nested row's own field selector is the one currently on
+      // "Creator"; the root selector stays on "Group".
+      const rowField = screen
+        .getAllByRole('combobox', {name: 'Field'})
+        .find(el => el.textContent === 'Creator');
+      expect(rowField).toBeDefined();
+      fireEvent.click(rowField!);
+      const rowListbox = document.getElementById(
+        rowField!.getAttribute('aria-controls')!,
+      )!;
+      fireEvent.click(
+        within(rowListbox).getByRole('option', {name: 'Owner', hidden: true}),
+      );
+
+      expect(creatorOption()).not.toBeInTheDocument();
+    });
   });
 
   it('edit popover shows correct filter after removing a preceding filter', () => {
@@ -430,7 +579,10 @@ const CHIP_ROW_COLLAPSE = '@container (max-width: 399px)';
 
 const probe = stylex.create({
   responsiveLayerMinWidth: {
-    minWidth: `min(400px, calc(100% - ${spacingVars['--spacing-4']}))`,
+    minWidth: stylex.firstThatWorks(
+      `min(400px, ${layerViewportInset.maxInlineSize})`,
+      `min(400px, ${layerViewportInset.maxInlineSizeFallback})`,
+    ),
   },
   fixedLayerMinWidth: {minWidth: 400},
   queryContainer: {containerType: 'inline-size'},
@@ -606,8 +758,8 @@ describe('narrow-width layout (#4761)', () => {
       .closest('[popover]') as HTMLElement;
     expect(layer).not.toBeNull();
 
-    // The fixed 400px floor is replaced by one clamped to the available
-    // inline space, so the popover never opens wider than the screen.
+    // The fixed 400px floor is clamped by the layer runtime's viewport cap
+    // (spec:AST-059 FR7), so the popover never opens wider than the screen.
     expectProbeClasses(layer, probe.responsiveLayerMinWidth);
     for (const cls of atomicClasses(probe.fixedLayerMinWidth)) {
       expect(layer).not.toHaveClass(cls);

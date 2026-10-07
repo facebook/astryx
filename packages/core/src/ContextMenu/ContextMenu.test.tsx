@@ -13,6 +13,7 @@ import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {readFileSync} from 'node:fs';
 import {ContextMenu} from './ContextMenu';
+import {ContextMenuGroup} from './index';
 import {
   ContextMenuItem,
   ContextMenuDivider,
@@ -1030,5 +1031,125 @@ describe('ContextMenu keyboard access for menuitemradio/menuitemcheckbox (#3829)
     expect(
       screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
     ).toHaveFocus();
+  });
+});
+
+describe('ContextMenu press model', () => {
+  const touch = {pointerType: 'touch', pointerId: 1};
+  const item = (name: string) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+  it('acts on the row under a finger release, once, and swallows the stray click', () => {
+    const onCut = vi.fn();
+    const onPaste = vi.fn();
+    render(
+      <ContextMenu
+        items={[
+          {label: 'Cut', onClick: onCut},
+          {label: 'Copy'},
+          {label: 'Paste', onClick: onPaste},
+        ]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(screen.getByRole('menu', {hidden: true})).toHaveAttribute(
+      'data-astryx-menu-press',
+    );
+    fireEvent.pointerDown(item('Cut'), touch);
+    fireEvent.pointerMove(item('Paste'), touch);
+    expect(item('Paste')).toHaveFocus();
+    fireEvent.pointerUp(item('Paste'), touch);
+    fireEvent.click(item('Cut'), {detail: 1});
+    expect(onPaste).toHaveBeenCalledTimes(1);
+    expect(onCut).not.toHaveBeenCalled();
+  });
+});
+
+describe('ContextMenuGroup', () => {
+  it('carries the group semantics through the alias, not just the component', async () => {
+    // Three public surfaces alias this component at once. An alias that
+    // re-exports without the semantics would pass a render test and fail a
+    // screen reader.
+    const user = userEvent.setup();
+    render(
+      <ContextMenu
+        menuContent={
+          <ContextMenuGroup title="Version history">
+            <DropdownMenuItem label="Restore" onClick={() => {}} />
+            <DropdownMenuItem label="Compare" onClick={() => {}} />
+          </ContextMenuGroup>
+        }>
+        <div data-testid="target">Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByTestId('target'));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Restore', hidden: true}),
+      ).toBeInTheDocument(),
+    );
+
+    const group = screen.getByRole('group', {
+      name: 'Version history',
+      hidden: true,
+    });
+    const heading = screen.getByText('Version history');
+    expect(group).toHaveAttribute('aria-labelledby', heading.id);
+    expect(group).toContainElement(
+      screen.getByRole('menuitem', {name: 'Restore', hidden: true}),
+    );
+  });
+});
+
+describe('ContextMenu keyboard', () => {
+  const item = (name: string) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+
+  it('wraps arrow navigation at the ends', () => {
+    render(
+      <ContextMenu items={[{label: 'Cut'}, {label: 'Copy'}, {label: 'Paste'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const menu = screen.getByRole('menu', {hidden: true});
+    item('Paste').focus();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(item('Cut')).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'ArrowUp'});
+    expect(item('Paste')).toHaveFocus();
+  });
+});
+
+describe('ContextMenu inline trigger (triggerAs)', () => {
+  it('an inline trigger keeps its flow', () => {
+    render(
+      <p>
+        Filed under{' '}
+        <ContextMenu
+          triggerAs="span"
+          data-testid="ref"
+          items={[{label: 'Open', onClick: () => {}}]}>
+          T123
+        </ContextMenu>{' '}
+        yesterday.
+      </p>,
+    );
+    const trigger = screen.getByTestId('ref');
+    expect(trigger.tagName).toBe('SPAN');
+    expect(trigger.parentElement?.tagName).toBe('P');
+    expect(trigger).not.toHaveStyle({display: 'block'});
+    fireEvent.contextMenu(trigger, {clientX: 20, clientY: 10, detail: 1});
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('defaults to a block trigger', () => {
+    render(
+      <ContextMenu data-testid="area" items={[{label: 'Open'}]}>
+        Area
+      </ContextMenu>,
+    );
+    expect(screen.getByTestId('area').tagName).toBe('DIV');
   });
 });

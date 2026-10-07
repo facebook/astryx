@@ -10,6 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {createRef} from 'react';
 import {
   render,
   screen,
@@ -386,6 +387,57 @@ describe('CheckboxList', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('exposes a string description to the checkbox via aria-describedby', () => {
+    render(
+      <List>
+        <CheckboxListItem
+          label="Email"
+          description="Receive notifications by email"
+        />
+      </List>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Email'});
+    const ids = checkbox.getAttribute('aria-describedby');
+    expect(ids).not.toBeNull();
+    const target = document.getElementById(ids!);
+    expect(target).toHaveTextContent('Receive notifications by email');
+  });
+
+  it('exposes a ReactNode description to the checkbox via aria-describedby', () => {
+    render(
+      <List>
+        <CheckboxListItem
+          label="Pro plan"
+          description={
+            <span>
+              See the <a href="#pricing">pricing page</a>
+            </span>
+          }
+        />
+      </List>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Pro plan'});
+    const target = document.getElementById(
+      checkbox.getAttribute('aria-describedby')!,
+    );
+    expect(target).toHaveTextContent('See the pricing page');
+  });
+
+  it('adds no aria-describedby when the description is absent or empty', () => {
+    render(
+      <List>
+        <CheckboxListItem label="Plain" />
+        <CheckboxListItem label="Empty" description="" />
+        <CheckboxListItem label="False" description={false} />
+      </List>,
+    );
+    for (const name of ['Plain', 'Empty', 'False']) {
+      expect(screen.getByRole('checkbox', {name})).not.toHaveAttribute(
+        'aria-describedby',
+      );
+    }
+  });
+
   it('renders description on the checkbox list group', () => {
     render(
       <CheckboxList
@@ -397,6 +449,58 @@ describe('CheckboxList', () => {
       </CheckboxList>,
     );
     expect(screen.getByText('Choose your preferences')).toBeInTheDocument();
+  });
+
+  it('describes the group with its description and status message', () => {
+    render(
+      <CheckboxList
+        label="Preferences"
+        description="Choose your preferences"
+        status={{type: 'error', message: 'Select at least one'}}
+        value={[]}
+        onChange={() => {}}>
+        <CheckboxListItem label="Option A" value="a" />
+      </CheckboxList>,
+    );
+    expect(
+      screen.getByRole('group', {name: 'Preferences'}),
+    ).toHaveAccessibleDescription(
+      'Choose your preferences Select at least one',
+    );
+  });
+
+  it('forwards ref, className, and style to the field root and the item row', () => {
+    const listRef = createRef<HTMLDivElement>();
+    const itemRef = createRef<HTMLLIElement>();
+    render(
+      <CheckboxList
+        ref={listRef}
+        label="Preferences"
+        className="consumer-list"
+        style={{marginTop: 12}}
+        value={[]}
+        onChange={() => {}}>
+        <CheckboxListItem
+          ref={itemRef}
+          label="Option A"
+          value="a"
+          className="consumer-item"
+          style={{marginTop: 4}}
+        />
+      </CheckboxList>,
+    );
+    expect(listRef.current).toContainElement(
+      screen.getByRole('group', {name: 'Preferences'}),
+    );
+    expect(listRef.current).toHaveClass(
+      'consumer-list',
+      'astryx-checkbox-list',
+    );
+    expect(listRef.current).toHaveStyle({marginTop: '12px'});
+    const row = screen.getByRole('listitem');
+    expect(itemRef.current).toBe(row);
+    expect(row).toHaveClass('consumer-item', 'astryx-list-item');
+    expect(row).toHaveStyle({marginTop: '4px'});
   });
 
   it('supports data-testid on CheckboxList', () => {
@@ -506,6 +610,54 @@ describe('CheckboxList', () => {
 });
 
 describe('CheckboxListItem standalone mode', () => {
+  it('ignores isChecked and onCheck when the parent CheckboxList has a value array', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onCheck = vi.fn();
+    render(
+      <CheckboxList label="Preferences" value={[]} onChange={onChange}>
+        <CheckboxListItem
+          label="Option A"
+          value="a"
+          isChecked
+          onCheck={onCheck}
+        />
+      </CheckboxList>,
+    );
+    const checkbox = screen.getByRole('checkbox', {name: 'Option A'});
+    // The list's value array owns checked state in collection mode.
+    expect(checkbox).not.toBeChecked();
+    await user.click(checkbox);
+    expect(onChange).toHaveBeenCalledWith(['a']);
+    expect(onCheck).not.toHaveBeenCalled();
+  });
+
+  it('renders the sm checkbox at compact density and md otherwise', () => {
+    const {unmount} = render(
+      <CheckboxList
+        label="Preferences"
+        density="compact"
+        value={[]}
+        onChange={() => {}}>
+        <CheckboxListItem label="Option A" value="a" />
+      </CheckboxList>,
+    );
+    const compactField = screen
+      .getByRole('checkbox')
+      .closest('.astryx-checkbox-input');
+    expect(compactField).toHaveAttribute('data-size', 'sm');
+    unmount();
+    render(
+      <List>
+        <CheckboxListItem label="Option A" />
+      </List>,
+    );
+    const balancedField = screen
+      .getByRole('checkbox')
+      .closest('.astryx-checkbox-input');
+    expect(balancedField).toHaveAttribute('data-size', 'md');
+  });
+
   it('uses isChecked/onCheck for standalone control', async () => {
     const user = userEvent.setup();
     const handleCheck = vi.fn();
@@ -781,6 +933,80 @@ describe('CheckboxListItem ARIA props', () => {
       within(itemB).queryByRole('status', {hidden: true}),
     ).not.toBeInTheDocument();
     expect(changeAction).toHaveBeenCalledWith(['a']);
+  });
+
+  it('keeps a read-only item onClick while refusing every toggle', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onItemClick = vi.fn();
+    render(
+      <CheckboxList label="Prefs" value={[]} onChange={onChange} isReadOnly>
+        <CheckboxListItem label="Option A" value="a" onClick={onItemClick} />
+        <CheckboxListItem label="Option B" value="b" />
+      </CheckboxList>,
+    );
+    const [itemA, itemB] = screen.getAllByRole('listitem');
+    const checkboxA = within(itemA).getByRole('checkbox');
+    const checkboxB = within(itemB).getByRole('checkbox');
+
+    // With an onClick, a row-surface click still delegates to the checkbox.
+    // The text also exists in the checkbox's visually hidden <label>; target
+    // the row's label <span> to click the row surface.
+    fireEvent.click(within(itemA).getByText('Option A', {selector: 'span'}));
+    expect(onItemClick).toHaveBeenCalledTimes(1);
+    fireEvent.click(checkboxA);
+    expect(onItemClick).toHaveBeenCalledTimes(2);
+    checkboxA.focus();
+    await user.keyboard(' ');
+    expect(onItemClick).toHaveBeenCalledTimes(3);
+    expect(checkboxA).toHaveAttribute('aria-readonly', 'true');
+    expect(checkboxA).not.toBeChecked();
+
+    // Without one, the read-only row does not delegate at all.
+    const delegated = vi.fn();
+    checkboxB.addEventListener('click', delegated);
+    fireEvent.click(within(itemB).getByText('Option B', {selector: 'span'}));
+    expect(delegated).not.toHaveBeenCalled();
+    fireEvent.click(checkboxB);
+    expect(checkboxB).not.toBeChecked();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps an earlier toggled item busy and locked while its changeAction is still pending', async () => {
+    // Never-resolving actions keep both toggles pending for the assertions.
+    const changeAction = vi.fn(async () => {
+      await new Promise<void>(() => {});
+    });
+    const onChange = vi.fn();
+    render(
+      <CheckboxList
+        label="Prefs"
+        value={[]}
+        onChange={onChange}
+        changeAction={changeAction}>
+        <CheckboxListItem label="Option A" value="a" />
+        <CheckboxListItem label="Option B" value="b" />
+      </CheckboxList>,
+    );
+
+    const [itemA, itemB] = screen.getAllByRole('listitem');
+    fireEvent.click(within(itemA).getByRole('checkbox'));
+    await waitFor(() => expect(itemA).toHaveAttribute('aria-busy', 'true'));
+
+    // Other items stay interactive, and toggling one must not clear the
+    // pending state of the item that is still saving.
+    fireEvent.click(within(itemB).getByRole('checkbox'));
+    await waitFor(() => expect(itemB).toHaveAttribute('aria-busy', 'true'));
+    expect(itemA).toHaveAttribute('aria-busy', 'true');
+    expect(
+      within(itemA).getByRole('status', {hidden: true}),
+    ).toBeInTheDocument();
+
+    // Re-toggling the still-pending item stays blocked.
+    fireEvent.click(within(itemA).getByRole('checkbox'));
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(changeAction).toHaveBeenCalledTimes(2);
+    expect(changeAction).toHaveBeenLastCalledWith(['a', 'b']);
   });
 
   it('forwards arbitrary aria attributes to the list item, but aria-label names the checkbox', () => {
