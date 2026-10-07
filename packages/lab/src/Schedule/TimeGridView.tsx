@@ -51,6 +51,7 @@ import {
   formatDayNumber,
   formatEventDateTimeRange,
   formatEventTime,
+  formatEventTimeRange,
   formatFullDate,
   formatHour,
   formatTimezoneAbbreviation,
@@ -61,6 +62,7 @@ import {
   SchedulePopoverBody,
   ScheduleTime,
   styles,
+  TitleFirstPill,
 } from './shared';
 import {layoutTimedEvents, type TimedEventPlacement} from './timeGridLayout';
 import {
@@ -414,14 +416,25 @@ export function TimeGridView({
                 const day = days[segment.columnStart] ?? focusDate;
                 const dayISO = plainDateToISO(day);
                 const key = `${segment.event.id}:${segment.columnStart}`;
-                const pill = (
-                  <EventPill
+                const isSegmentPast = isEventInPast(
+                  segment.event,
+                  currentTime,
+                  timezoneID,
+                );
+                // A timed span of a day or more leads with its title and
+                // shows its start and end times when both fit
+                // (component:Schedule FR21).
+                const pill = isDayEvent(segment.event) ? (
+                  <EventPill event={segment.event} isPast={isSegmentPast} />
+                ) : (
+                  <TitleFirstPill
                     event={segment.event}
-                    isPast={isEventInPast(
+                    timeLabel={formatEventTimeRange(
                       segment.event,
-                      currentTime,
                       timezoneID,
+                      locale,
                     )}
+                    isPast={isSegmentPast}
                   />
                 );
                 const placement = styles.allDayEventSpan(

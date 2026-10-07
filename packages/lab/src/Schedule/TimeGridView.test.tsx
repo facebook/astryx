@@ -83,10 +83,12 @@ function Harness({
   initialDate,
   eventSource = events,
   view = createScheduleWeeklyView(),
+  timezoneID = 'UTC',
 }: {
   initialDate: Instant;
   eventSource?: ScheduleEventSource;
   view?: ReturnType<typeof createScheduleWeeklyView>;
+  timezoneID?: string;
 }) {
   const [date, setDate] = useState<Instant>(initialDate);
   return (
@@ -95,7 +97,7 @@ function Harness({
       events={eventSource}
       date={date}
       onChangeDate={setDate}
-      timezoneID="UTC"
+      timezoneID={timezoneID}
     />
   );
 }
@@ -356,6 +358,62 @@ describe('time grid long spans', () => {
     expect(
       buttonsIn(day('Wednesday, May 13, 2026'), 'Late deploy'),
     ).toHaveLength(1);
+  });
+
+  it('leads a span pill with its title and follows it with its start and end times', () => {
+    render(
+      <Harness
+        initialDate={date}
+        eventSource={spanEvents}
+        view={popoverView}
+      />,
+    );
+    const offsite = buttonsIn(allDay(), 'Offsite')[0];
+    // Whether the times fit is layout; their order in the pill is not.
+    expect(offsite.textContent).toMatch(/^Offsite9:00\sAM - 9:00\sAM$/u);
+  });
+
+  it('measures the threshold on the event\u2019s own instants across daylight-saving days', () => {
+    // America/Los_Angeles: March 8, 2026 lasts 23 hours and November 1,
+    // 2026 lasts 25. Midnight to midnight is a block on the first and a span
+    // on the second.
+    const dstEvents: CalendarEvent[] = [
+      createEventFromISO({
+        id: 'spring',
+        title: 'Spring day',
+        start: '2026-03-08T08:00:00.000Z',
+        end: '2026-03-09T07:00:00.000Z',
+      }),
+      createEventFromISO({
+        id: 'fall',
+        title: 'Fall day',
+        start: '2026-11-01T07:00:00.000Z',
+        end: '2026-11-02T08:00:00.000Z',
+      }),
+    ];
+    const {unmount} = render(
+      <Harness
+        initialDate={Date.UTC(2026, 2, 10, 20) as Instant}
+        eventSource={dstEvents}
+        view={popoverView}
+        timezoneID="America/Los_Angeles"
+      />,
+    );
+    expect(buttonsIn(allDay(), 'Spring day')).toEqual([]);
+    expect(buttonsIn(day('Sunday, March 8, 2026'), 'Spring day')).toHaveLength(
+      1,
+    );
+    unmount();
+    render(
+      <Harness
+        initialDate={Date.UTC(2026, 10, 3, 20) as Instant}
+        eventSource={dstEvents}
+        view={popoverView}
+        timezoneID="America/Los_Angeles"
+      />,
+    );
+    expect(buttonsIn(allDay(), 'Fall day')).toHaveLength(1);
+    expect(buttonsIn(day('Sunday, November 1, 2026'), 'Fall day')).toEqual([]);
   });
 
   it('lists a long timed event in the hidden grid’s all-day cells and in no hour cell', () => {
