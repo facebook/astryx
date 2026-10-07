@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Exact-release-branch dispatch contracts.
+ * @file Exact-main and release-branch dispatch contracts.
  * @input CI workflow and independent event, dependency, scope, and API fixtures
  * @output Fail-closed release routing and unchanged maintenance/PR assertions
  * @position Node contracts for AST-030 FR12 and DEC-5
@@ -59,6 +59,7 @@ function runs(
   {
     event = 'workflow_dispatch',
     operation = 'release-check',
+    branch = releaseBranch,
     needs = dependencies(job),
     cancelled = false,
   } = {},
@@ -81,7 +82,7 @@ function runs(
     `return Boolean(${expression});`,
   )(
     {event_name: event},
-    {operation},
+    {operation, 'release-branch': branch},
     needs,
     () => true,
     () => cancelled,
@@ -101,9 +102,12 @@ const planDigest = 'b'.repeat(64);
 async function githubScript(
   script,
   {
-    ref = `refs/heads/${releaseBranch}`,
+    branch = releaseBranch,
+    ref = `refs/heads/${branch}`,
     remoteSha = sha,
     expectedHead = sha,
+    checkedHead = expectedHead,
+    plan = planDigest,
     needs,
     apiFails = false,
   } = {},
@@ -130,7 +134,7 @@ async function githubScript(
       rest: {
         git: {
           async getRef(request) {
-            expect(request.ref).toBe(`heads/${releaseBranch}`);
+            expect(request.ref).toBe(`heads/${branch}`);
             if (apiFails) throw new Error('API unavailable');
             return {data: {object: {sha: remoteSha}}};
           },
@@ -141,9 +145,10 @@ async function githubScript(
     {
       env: {
         RELEASE_NEEDS: JSON.stringify(needs),
-        RELEASE_BRANCH: releaseBranch,
+        RELEASE_BRANCH: branch,
         EXPECTED_HEAD: expectedHead,
-        PLAN_DIGEST: planDigest,
+        CHECKED_HEAD: checkedHead,
+        PLAN_DIGEST: plan,
       },
     },
   );
@@ -232,17 +237,88 @@ describe('explicit release routing', () => {
   });
 });
 
-describe('exact release branch completion', () => {
+describe('exact main pre-cut authority', () => {
+  const authority = step(
+    'check-scope',
+    'Validate exact main pre-cut authority',
+  );
+
+  it('runs only for an exact-main release-check request', () => {
+    expect(runs(authority, {branch: 'main'})).toBe(true);
+    expect(runs(authority)).toBe(false);
+    expect(runs(authority, {branch: 'main', operation: 'capture'})).toBe(false);
+    expect(jobs['check-scope'].outputs.release_head).toContain(
+      'steps.main-authority.outputs.head',
+    );
+  });
+
+  it('binds the run and remote main to the requested SHA', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-main-check-'));
+    const output = path.join(dir, 'output');
+    try {
+      const result = shell(
+        authority.run,
+        {
+          EXPECTED_HEAD: sha,
+          GITHUB_REF: 'refs/heads/main',
+          GITHUB_SHA: sha,
+          GITHUB_OUTPUT: output,
+        },
+        `git() { printf '%s\\n' '${sha}\trefs/heads/main'; }`,
+      );
+      expect(result.status, result.stderr).toBe(0);
+      expect(fs.readFileSync(output, 'utf8')).toBe(
+        `branch=main\nhead=${sha}\n`,
+      );
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  });
+
+  it.each([
+    ['wrong ref', {GITHUB_REF: 'refs/heads/candidate', GITHUB_SHA: sha}],
+    [
+      'wrong checkout',
+      {GITHUB_REF: 'refs/heads/main', GITHUB_SHA: 'b'.repeat(40)},
+    ],
+  ])('rejects %s', (_name, values) => {
+    const result = shell(
+      authority.run,
+      {...values, EXPECTED_HEAD: sha, GITHUB_OUTPUT: '/dev/null'},
+      `git() { printf '%s\\n' '${sha}\trefs/heads/main'; }`,
+    );
+    expect(result.status).not.toBe(0);
+  });
+
+  it('rejects remote main drift', () => {
+    const result = shell(
+      authority.run,
+      {
+        EXPECTED_HEAD: sha,
+        GITHUB_REF: 'refs/heads/main',
+        GITHUB_SHA: sha,
+        GITHUB_OUTPUT: '/dev/null',
+      },
+      `git() { printf '%s\\n' '${'b'.repeat(40)}\trefs/heads/main'; }`,
+    );
+    expect(result.status).not.toBe(0);
+    expect(result.stdout).toContain('Main moved before checks began');
+  });
+});
+
+describe('exact main and release branch completion', () => {
   const join = step(
     'release-check',
-    'Require complete exact-head release branch checks',
+    'Require complete exact-head canonical checks',
   ).with.script;
   const complete = Object.fromEntries(
     jobs['release-check'].needs.map(name => [name, {result: 'success'}]),
   );
 
-  it('accepts only complete exact-branch evidence', async () => {
-    await expect(githubScript(join, {needs: complete})).resolves.toBeUndefined();
+  it('accepts complete exact release-branch evidence', async () => {
+    await expect(
+      githubScript(join, {needs: complete}),
+    ).resolves.toBeUndefined();
     expect(jobs['release-check'].needs).toEqual([
       'check-scope',
       'check-components',
@@ -253,12 +329,29 @@ describe('exact release branch completion', () => {
     ]);
   });
 
+  it('accepts complete exact-main evidence before a cut', async () => {
+    await expect(
+      githubScript(join, {branch: 'main', plan: '', needs: complete}),
+    ).resolves.toBeUndefined();
+  });
+
+  it('requires the successful main authority step to bind the expected head', async () => {
+    await expect(
+      githubScript(join, {
+        branch: 'main',
+        checkedHead: 'b'.repeat(40),
+        plan: '',
+        needs: complete,
+      }),
+    ).rejects.toThrow('Main authority check did not bind the expected head');
+  });
+
   it.each(['refs/heads/main', 'refs/tags/v0.6.5', ''])(
-    'rejects ref %s',
+    'rejects a release-branch request from ref %s',
     async ref => {
-      await expect(
-        githubScript(join, {ref, needs: complete}),
-      ).rejects.toThrow('marked release branch');
+      await expect(githubScript(join, {ref, needs: complete})).rejects.toThrow(
+        'requested branch',
+      );
     },
   );
 
@@ -269,15 +362,31 @@ describe('exact release branch completion', () => {
   });
 
   it.each(['b'.repeat(40), undefined])(
-    'rejects release-branch drift or a missing remote SHA %s',
+    'rejects branch drift or a missing remote SHA %s',
     async remoteSha => {
       await expect(
         githubScript(join, {remoteSha: remoteSha ?? '', needs: complete}),
-      ).rejects.toThrow('Release branch moved');
+      ).rejects.toThrow('moved during checks');
     },
   );
 
-  it('fails closed when the release branch cannot be read', async () => {
+  it('rejects an unmarked post-bump branch', async () => {
+    await expect(
+      githubScript(join, {
+        branch: 'candidate',
+        ref: 'refs/heads/candidate',
+        needs: complete,
+      }),
+    ).rejects.toThrow('marked release branch');
+  });
+
+  it('requires a plan digest after the bump', async () => {
+    await expect(
+      githubScript(join, {plan: '', needs: complete}),
+    ).rejects.toThrow('active plan digest');
+  });
+
+  it('fails closed when the requested branch cannot be read', async () => {
     await expect(
       githubScript(join, {apiFails: true, needs: complete}),
     ).rejects.toThrow('API unavailable');

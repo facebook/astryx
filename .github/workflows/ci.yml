@@ -16,25 +16,25 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: 'Check the marked release branch or capture a main baseline candidate'
+        description: 'Run the canonical check on exact main or a marked release branch, or capture a main baseline candidate'
         type: choice
         options: [capture, release-check]
         default: capture
         required: true
       release-branch:
-        description: 'Marked release/vX.Y.Z branch; required for release-check'
+        description: 'Exact branch to check: main before a cut, or marked release/vX.Y.Z after the bump'
         type: string
         required: false
       release-version:
-        description: 'Exact X.Y.Z version recorded by the active marker; required for release-check'
+        description: 'Exact X.Y.Z version recorded by the active marker; required only for a marked release branch'
         type: string
         required: false
       expected-head:
-        description: 'Exact full release branch SHA; required for release-check'
+        description: 'Exact full main or release branch SHA; required for release-check'
         type: string
         required: false
       plan-digest:
-        description: 'Exact SHA-256 digest recorded by the active marker; required for release-check'
+        description: 'Exact SHA-256 digest recorded by the active marker; required only for a marked release branch'
         type: string
         required: false
 
@@ -68,8 +68,8 @@ jobs:
       spec_only: ${{ steps.scope.outputs.spec_only }}
       tooling_only: ${{ steps.scope.outputs.tooling_only }}
       release_bump: ${{ steps.scope.outputs.release_bump }}
-      release_branch: ${{ steps.release-authority.outputs.branch }}
-      release_head: ${{ steps.release-authority.outputs.head }}
+      release_branch: ${{ steps.release-authority.outputs.branch || steps.main-authority.outputs.branch }}
+      release_head: ${{ steps.release-authority.outputs.head || steps.main-authority.outputs.head }}
       release_plan_digest: ${{ steps.release-authority.outputs.planDigest }}
     steps:
       - uses: actions/checkout@v7
@@ -79,14 +79,14 @@ jobs:
 
       - name: Fetch active release refs
         if: >-
-          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check') ||
+          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && inputs['release-branch'] != 'main') ||
           (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v'))
         run: git fetch origin '+refs/heads/release/v*:refs/remotes/origin/release/v*'
 
       - name: Validate active release authority
         id: release-authority
         if: >-
-          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check') ||
+          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && inputs['release-branch'] != 'main') ||
           (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v'))
         env:
           RELEASE_BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs['release-branch'] || github.base_ref }}
@@ -122,6 +122,35 @@ jobs:
             ARGS+=(--remote-head "$REMOTE_HEAD")
           fi
           node "$VALIDATOR" "${ARGS[@]}"
+
+      - name: Validate exact main pre-cut authority
+        id: main-authority
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          inputs.operation == 'release-check' &&
+          inputs['release-branch'] == 'main'
+        env:
+          EXPECTED_HEAD: ${{ inputs['expected-head'] }}
+        run: |
+          set -eu
+          if [ "$GITHUB_REF" != 'refs/heads/main' ]; then
+            echo 'Main pre-cut checks must be dispatched from main.'
+            exit 1
+          fi
+          if ! [[ "$EXPECTED_HEAD" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'Main pre-cut checks require an exact full expected head.'
+            exit 1
+          fi
+          if [ "$GITHUB_SHA" != "$EXPECTED_HEAD" ]; then
+            echo 'Checked-out main commit does not match expected head.'
+            exit 1
+          fi
+          REMOTE_HEAD=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+          if [ -z "$REMOTE_HEAD" ] || [ "$REMOTE_HEAD" != "$EXPECTED_HEAD" ]; then
+            echo 'Main moved before checks began; dispatch again for its new head.'
+            exit 1
+          fi
+          printf 'branch=main\nhead=%s\n' "$EXPECTED_HEAD" >> "$GITHUB_OUTPUT"
 
       - name: Fetch base branch
         if: github.event_name == 'pull_request'
@@ -2256,12 +2285,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Require complete exact-head release branch checks
+      - name: Require complete exact-head canonical checks
         uses: actions/github-script@v9
         env:
           RELEASE_NEEDS: ${{ toJSON(needs) }}
           RELEASE_BRANCH: ${{ inputs['release-branch'] }}
           EXPECTED_HEAD: ${{ inputs['expected-head'] }}
+          CHECKED_HEAD: ${{ needs.check-scope.outputs.release_head }}
           PLAN_DIGEST: ${{ needs.check-scope.outputs.release_plan_digest }}
         with:
           script: |
@@ -2274,19 +2304,36 @@ jobs:
             const branch = process.env.RELEASE_BRANCH;
             const expectedHead = process.env.EXPECTED_HEAD;
             if (context.ref !== `refs/heads/${branch}`) {
-              throw new Error('Release checks must run from the marked release branch.');
+              throw new Error('Canonical release checks must run from the requested branch.');
             }
             if (context.sha !== expectedHead) {
-              throw new Error('Checked-out release commit does not match expected head.');
+              throw new Error('Checked-out commit does not match expected head.');
             }
             const {data} = await github.rest.git.getRef({...context.repo, ref: `heads/${branch}`});
             if (data.object.sha !== expectedHead) {
-              throw new Error('Release branch moved during checks; dispatch release-check again for its new head.');
+              throw new Error(`${branch} moved during checks; dispatch release-check again for its new head.`);
+            }
+            if (branch === 'main') {
+              if (process.env.CHECKED_HEAD !== expectedHead) {
+                throw new Error('Main authority check did not bind the expected head.');
+              }
+              await core.summary
+                .addHeading('Main pre-cut checks complete')
+                .addRaw(`Exact head: ${expectedHead}\n\n`)
+                .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. A release may cut only while main still points to this exact head.')
+                .write();
+              return;
+            }
+            if (!branch.startsWith('release/v')) {
+              throw new Error('Post-bump release checks require a marked release branch.');
+            }
+            if (!/^[0-9a-f]{64}$/.test(process.env.PLAN_DIGEST)) {
+              throw new Error('Post-bump release checks require the active plan digest.');
             }
             await core.summary
               .addHeading('Release checks complete')
               .addRaw(`Branch: ${branch}\n\n`)
               .addRaw(`Exact head: ${expectedHead}\n\n`)
               .addRaw(`Plan digest: ${process.env.PLAN_DIGEST}\n\n`)
-              .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. Main movement is not release input. This receipt is reusable only for this exact branch, head, and plan digest; any cherry-pick requires a new run.')
+              .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. Main movement is not release input. This receipt is reusable only for this exact branch, head, and plan digest; any branch revision requires a new run.')
               .write();
