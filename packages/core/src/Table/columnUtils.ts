@@ -149,6 +149,54 @@ export function resolveColumnFloorWidths<T extends Record<string, unknown>>(
   return widths;
 }
 
+// A min-width CSS `max()` accepts: a dimension with a known length unit, a
+// percentage, or a math/var() expression. Intrinsic-size and global keywords
+// (auto, max-content, min-content, fit-content, inherit, ...) and unitless
+// non-zero numbers are not lengths and would invalidate the whole declaration.
+const MAX_COMPATIBLE_LENGTH =
+  /^[+-]?(?:\d+\.?\d*|\.\d+)(?:px|r?em|r?lh|r?ex|r?ch|r?cap|r?ic|vw|vh|vi|vb|vmin|vmax|[sld]v(?:w|h|i|b|min|max)|cq(?:w|h|i|b|min|max)|cm|mm|q|in|pt|pc|%)$/i;
+const MAX_COMPATIBLE_FUNCTION = /^(?:calc|min|max|clamp|var)\(/i;
+const ZERO_LENGTH = /^[+-]?(?:0+\.?0*|\.0+)(?:[a-z]+|%)?$/i;
+const PX_LENGTH = /^(\d+(?:\.\d+)?)px$/i;
+
+/**
+ * Inline min-width for a data-driven table: the larger of the column-floor
+ * minimum and a min-width the consumer (or a plugin) set.
+ *
+ * - Numbers, zero, and px lengths compare directly and yield a px value.
+ * - Other lengths, percentages, and calc()/var() expressions defer to CSS
+ *   `max()` so the browser resolves the larger one.
+ * - Keywords (auto, max-content, inherit, ...) cannot appear inside `max()`;
+ *   the column floors win, which keeps every column at its readable minimum.
+ */
+export function resolveTableMinWidth(
+  consumer: CSSProperties['minWidth'],
+  floorPx: number,
+): string {
+  const floor = `${floorPx}px`;
+  if (consumer == null) {
+    return floor;
+  }
+  if (typeof consumer === 'number') {
+    return `${Math.max(consumer, floorPx)}px`;
+  }
+  const value = consumer.trim();
+  if (value === '' || ZERO_LENGTH.test(value)) {
+    return floor;
+  }
+  const px = PX_LENGTH.exec(value);
+  if (px) {
+    return `${Math.max(Number(px[1]), floorPx)}px`;
+  }
+  if (
+    MAX_COMPATIBLE_LENGTH.test(value) ||
+    MAX_COMPATIBLE_FUNCTION.test(value)
+  ) {
+    return `max(${value}, ${floor})`;
+  }
+  return floor;
+}
+
 export function resolveColumnWidths<T extends Record<string, unknown>>(
   columns: TableColumn<T>[],
 ): ResolvedColumnWidths {

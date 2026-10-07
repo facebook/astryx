@@ -35,6 +35,7 @@ import {
   generateColumns,
   defaultCellRenderer,
   resolveColumnWidths,
+  resolveTableMinWidth,
 } from './columnUtils';
 import {TableRow} from './TableRow';
 import {TableCell} from './TableCell';
@@ -105,29 +106,6 @@ function applyPlugins<TPlugin, TProps, TArgs extends unknown[]>(
 
 // Stable empty array to avoid creating new reference on each render
 const EMPTY_PLUGINS: TablePlugin<Record<string, unknown>>[] = [];
-
-/**
- * The larger of a consumer-supplied min-width and the column-floor minimum.
- * Numbers and plain px lengths compare directly; any other CSS length (rem,
- * %, calc) defers to CSS `max()` so the browser resolves it.
- */
-function largerMinWidth(
-  consumer: React.CSSProperties['minWidth'],
-  floorPx: number,
-): string {
-  const floor = `${floorPx}px`;
-  if (consumer == null || consumer === '') {
-    return floor;
-  }
-  if (typeof consumer === 'number') {
-    return `${Math.max(consumer, floorPx)}px`;
-  }
-  const px = /^(\d+(?:\.\d+)?)px$/.exec(consumer.trim());
-  if (px) {
-    return `${Math.max(Number(px[1]), floorPx)}px`;
-  }
-  return `max(${consumer}, ${floor})`;
-}
 
 /**
  * Shallow-compare two arrays by element identity.
@@ -545,7 +523,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
     resolvedWidths.tableMinWidth > 0
       ? {
           ...mergedStyle,
-          minWidth: largerMinWidth(
+          minWidth: resolveTableMinWidth(
             mergedStyle.minWidth,
             resolvedWidths.tableMinWidth,
           ),

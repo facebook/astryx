@@ -24,6 +24,7 @@ import {
   pixel,
   generateColumns,
   resolveColumnWidths,
+  resolveTableMinWidth,
   capitalize,
   DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH,
   DEFAULT_MIN_COLUMN_WIDTH,
@@ -476,6 +477,33 @@ describe('BaseTable', () => {
       render(<Table data={users} columns={plain} style={{minWidth: 900}} />);
       expect(screen.getByRole('table').style.minWidth).toBe('900px');
     });
+
+    it.each([
+      [undefined, '240px'],
+      [900, '900px'],
+      [100, '240px'],
+      [0, '240px'],
+      ['900px', '900px'],
+      ['10px', '240px'],
+      ['0', '240px'],
+      ['0rem', '240px'],
+      ['', '240px'],
+      ['60rem', 'max(60rem, 240px)'],
+      ['50%', 'max(50%, 240px)'],
+      ['calc(100% - 2rem)', 'max(calc(100% - 2rem), 240px)'],
+      ['var(--table-min)', 'max(var(--table-min), 240px)'],
+      ['auto', '240px'],
+      ['max-content', '240px'],
+      ['min-content', '240px'],
+      ['fit-content', '240px'],
+      ['inherit', '240px'],
+      ['12', '240px'],
+    ] as const)(
+      'resolves a consumer minWidth of %j beside a 240px floor to %s',
+      (consumer, expected) => {
+        expect(resolveTableMinWidth(consumer, 240)).toBe(expected);
+      },
+    );
 
     it('raises a smaller consumer style.minWidth to the column floors', () => {
       const plain: TableColumn<User>[] = [{key: 'name'}, {key: 'age'}];

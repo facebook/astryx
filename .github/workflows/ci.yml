@@ -1187,6 +1187,16 @@ jobs:
             --project chromium \
             --output empty-state-announcement-output
 
+      # Table merges a consumer min-width with its column floors through CSS
+      # max(). jsdom keeps any string, so only a real engine shows whether the
+      # emitted declaration parses; an invalid one drops the floors entirely.
+      - name: Run Table min-width contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Table/__tests__/TableMinWidth.a11y.chromium.spec.ts \
+            --project chromium \
+            --output table-min-width-output
+
       # The RichTextEditor "Markdown parity" stories render one Markdown
       # document with core Markdown and RichTextEditor and measure where each
       # block lands; geometry, the read/edit switch and the scroll anchor only
