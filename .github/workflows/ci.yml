@@ -146,8 +146,13 @@ jobs:
             exit 1
           fi
           REMOTE_HEAD=$(git ls-remote origin refs/heads/main | awk '{print $1}')
-          if [ -z "$REMOTE_HEAD" ] || [ "$REMOTE_HEAD" != "$EXPECTED_HEAD" ]; then
-            echo 'Main moved before checks began; dispatch again for its new head.'
+          if [ -z "$REMOTE_HEAD" ]; then
+            echo 'Current main head is unavailable.'
+            exit 1
+          fi
+          git fetch --no-tags origin "$REMOTE_HEAD"
+          if ! git merge-base --is-ancestor "$EXPECTED_HEAD" "$REMOTE_HEAD"; then
+            echo 'Checked main commit is not an ancestor of current main.'
             exit 1
           fi
           printf 'branch=main\nhead=%s\n' "$EXPECTED_HEAD" >> "$GITHUB_OUTPUT"
@@ -2393,19 +2398,26 @@ jobs:
               throw new Error('Checked-out commit does not match expected head.');
             }
             const {data} = await github.rest.git.getRef({...context.repo, ref: `heads/${branch}`});
-            if (data.object.sha !== expectedHead) {
-              throw new Error(`${branch} moved during checks; dispatch release-check again for its new head.`);
-            }
             if (branch === 'main') {
               if (process.env.CHECKED_HEAD !== expectedHead) {
                 throw new Error('Main authority check did not bind the expected head.');
               }
+              const comparison = await github.rest.repos.compareCommitsWithBasehead({
+                ...context.repo,
+                basehead: `${expectedHead}...${data.object.sha}`,
+              });
+              if (!['identical', 'ahead'].includes(comparison.data.status)) {
+                throw new Error('Checked main commit is not an ancestor of current main.');
+              }
               await core.summary
                 .addHeading('Main pre-cut checks complete')
                 .addRaw(`Exact head: ${expectedHead}\n\n`)
-                .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. A release may cut only while main still points to this exact head.')
+                .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. This exact checked commit may be used as the cut SHA while it remains in current main history; later main commits are next-release input.')
                 .write();
               return;
+            }
+            if (data.object.sha !== expectedHead) {
+              throw new Error(`${branch} moved during checks; dispatch release-check again for its new head.`);
             }
             if (!branch.startsWith('release/v')) {
               throw new Error('Post-bump release checks require a marked release branch.');

@@ -99,6 +99,22 @@ function shell(script, env = {}, prefix = '') {
 const sha = 'a'.repeat(40);
 const releaseBranch = 'release/v0.6.5';
 const planDigest = 'b'.repeat(64);
+
+function mainAuthorityGit(remoteSha = sha, ancestor = true) {
+  return `MAIN_FETCHED=false
+  git() {
+    case "$1" in
+      ls-remote) printf '%s\\n' '${remoteSha}\\trefs/heads/main' ;;
+      fetch) MAIN_FETCHED=true ;;
+      merge-base)
+        [ "$MAIN_FETCHED" = true ] || return 98
+        return ${ancestor ? 0 : 1}
+        ;;
+      *) return 99 ;;
+    esac
+  }`;
+}
+
 async function githubScript(
   script,
   {
@@ -110,6 +126,7 @@ async function githubScript(
     plan = planDigest,
     needs,
     apiFails = false,
+    compareStatus = 'identical',
   } = {},
 ) {
   const summary = {
@@ -137,6 +154,12 @@ async function githubScript(
             expect(request.ref).toBe(`heads/${branch}`);
             if (apiFails) throw new Error('API unavailable');
             return {data: {object: {sha: remoteSha}}};
+          },
+        },
+        repos: {
+          async compareCommitsWithBasehead(request) {
+            expect(request.basehead).toBe(`${expectedHead}...${remoteSha}`);
+            return {data: {status: compareStatus}};
           },
         },
       },
@@ -252,7 +275,7 @@ describe('exact main pre-cut authority', () => {
     );
   });
 
-  it('binds the run and remote main to the requested SHA', () => {
+  it('binds the run to the requested SHA in current main history', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-main-check-'));
     const output = path.join(dir, 'output');
     try {
@@ -264,7 +287,7 @@ describe('exact main pre-cut authority', () => {
           GITHUB_SHA: sha,
           GITHUB_OUTPUT: output,
         },
-        `git() { printf '%s\\n' '${sha}\trefs/heads/main'; }`,
+        mainAuthorityGit(),
       );
       expect(result.status, result.stderr).toBe(0);
       expect(fs.readFileSync(output, 'utf8')).toBe(
@@ -273,6 +296,20 @@ describe('exact main pre-cut authority', () => {
     } finally {
       fs.rmSync(dir, {recursive: true, force: true});
     }
+  });
+
+  it('accepts a checked SHA that remains an ancestor after main advances', () => {
+    const result = shell(
+      authority.run,
+      {
+        EXPECTED_HEAD: sha,
+        GITHUB_REF: 'refs/heads/main',
+        GITHUB_SHA: sha,
+        GITHUB_OUTPUT: '/dev/null',
+      },
+      mainAuthorityGit('b'.repeat(40)),
+    );
+    expect(result.status, result.stderr).toBe(0);
   });
 
   it.each([
@@ -285,12 +322,12 @@ describe('exact main pre-cut authority', () => {
     const result = shell(
       authority.run,
       {...values, EXPECTED_HEAD: sha, GITHUB_OUTPUT: '/dev/null'},
-      `git() { printf '%s\\n' '${sha}\trefs/heads/main'; }`,
+      mainAuthorityGit(),
     );
     expect(result.status).not.toBe(0);
   });
 
-  it('rejects remote main drift', () => {
+  it('rejects a checked SHA removed from current main history', () => {
     const result = shell(
       authority.run,
       {
@@ -299,10 +336,12 @@ describe('exact main pre-cut authority', () => {
         GITHUB_SHA: sha,
         GITHUB_OUTPUT: '/dev/null',
       },
-      `git() { printf '%s\\n' '${'b'.repeat(40)}\trefs/heads/main'; }`,
+      mainAuthorityGit('b'.repeat(40), false),
     );
     expect(result.status).not.toBe(0);
-    expect(result.stdout).toContain('Main moved before checks began');
+    expect(result.stdout).toContain(
+      'Checked main commit is not an ancestor of current main',
+    );
   });
 });
 
@@ -333,6 +372,30 @@ describe('exact main and release branch completion', () => {
     await expect(
       githubScript(join, {branch: 'main', plan: '', needs: complete}),
     ).resolves.toBeUndefined();
+  });
+
+  it('accepts complete exact-main evidence after main advances', async () => {
+    await expect(
+      githubScript(join, {
+        branch: 'main',
+        remoteSha: 'b'.repeat(40),
+        compareStatus: 'ahead',
+        plan: '',
+        needs: complete,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rejects exact-main evidence removed from current main history', async () => {
+    await expect(
+      githubScript(join, {
+        branch: 'main',
+        remoteSha: 'b'.repeat(40),
+        compareStatus: 'diverged',
+        plan: '',
+        needs: complete,
+      }),
+    ).rejects.toThrow('not an ancestor of current main');
   });
 
   it('requires the successful main authority step to bind the expected head', async () => {
