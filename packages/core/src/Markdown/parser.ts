@@ -3089,9 +3089,12 @@ function parseList(
     : null;
   const delim = orderedStart ? orderedStart[2] : '.';
   const escDelim = `\\${delim}`;
+  // Bullet lists likewise keep the bullet they start with — `-`, `*`, or
+  // `+` — and another bullet starts a new list (CommonMark 0.31 §5.3).
+  const bullet = ordered ? null : lines[startIndex].trimStart()[0];
   const itemPattern = ordered
     ? new RegExp(`^ {${baseIndent}}\\d+${escDelim} `)
-    : new RegExp(`^ {${baseIndent}}[-*+] `);
+    : new RegExp(`^ {${baseIndent}}\\${bullet} `);
 
   const start = orderedStart ? parseInt(orderedStart[1], 10) : undefined;
 
