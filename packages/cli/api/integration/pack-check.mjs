@@ -28,6 +28,7 @@ import jscodeshift from 'jscodeshift';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs';
 import {
+  componentReplacesCliProblem,
   docsTreeCliProblem,
   keywordsCliProblem,
   replacesCliProblem,
@@ -50,6 +51,7 @@ import {
 } from '../theme/build/build.mjs';
 import {
   discoverIntegrationComponents,
+  discoverValidIntegrationComponents,
   resolveIntegrationImportPath,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {loadComponentDoc} from '../../foundation/discovery/component-loader.mjs';
@@ -1148,6 +1150,23 @@ export async function integrationPackCheck(options = {}) {
     const keywordsProblem = setsKeywords ? keywordsCliProblem(pkg) : null;
     if (keywordsProblem != null) {
       issues.push(error('keywords_needs_cli', keywordsProblem));
+    }
+  }
+  // A component that sets `replaces` (spec:AST-035 FR10) is applied only when
+  // the package's CLI range starts at the release that applies it. Without
+  // that range the component keeps its own name and Core stays selected, so
+  // this warns and never fails the check.
+  if (loaded.components) {
+    const found = await discoverValidIntegrationComponents(loaded).catch(
+      () => ({components: []}),
+    );
+    const setsReplaces = found.components.some(
+      (/** @type {{replaces?: unknown}} */ component) =>
+        component.replaces !== undefined,
+    );
+    const problem = setsReplaces ? componentReplacesCliProblem(pkg) : null;
+    if (problem != null) {
+      issues.push(warning('component_replaces_needs_cli', problem));
     }
   }
   // A theme needs a CLI that reads typed theme descriptors: an older CLI

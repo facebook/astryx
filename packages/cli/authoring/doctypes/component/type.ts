@@ -53,8 +53,10 @@ export interface ComponentBaseDoc extends AuthoredDocGraphFields {
    *  the integration gets this component from component detail, lists, search,
    *  swizzle, and issue routing. The Core original stays reachable with
    *  `--package @astryxdesign/core`. Set it only to intentionally own a Core
-   *  identity; give an alternative or variant its own name instead. Older CLIs
-   *  that do not read `replaces` keep the component under its own name. */
+   *  identity; give an alternative or variant its own name instead. It takes
+   *  effect only when the package declares `"@astryxdesign/cli": ">=0.6.7"`
+   *  in peerDependencies; without that range, and on older CLIs that do not
+   *  read `replaces`, the component keeps its own name. */
   replaces?: string;
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common

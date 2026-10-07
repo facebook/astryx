@@ -56,7 +56,7 @@ export const doc = {
       name: 'replaces',
       type: 'string',
       description:
-        "Integration components only: the exact `name` of the Core ComponentDoc this component takes over for unqualified lookup, so every app that loads the integration gets it from component detail, lists, search, swizzle, and issue routing. The Core original stays reachable with `--package @astryxdesign/core`. Set it only to intentionally own a Core identity; give an alternative or variant its own name instead.",
+        "Integration components only: the exact `name` of the Core ComponentDoc this component takes over for unqualified lookup, so every app that loads the integration gets it from component detail, lists, search, swizzle, and issue routing. The Core original stays reachable with `--package @astryxdesign/core`. It takes effect only when the package declares `\"@astryxdesign/cli\": \">=0.6.7\"` in peerDependencies; without that range the component keeps its own name and Doctor warns. Set it only to intentionally own a Core identity; give an alternative or variant its own name instead.",
     },
     {
       name: 'keywords',

@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: josephfarina
-approved_at: 2026-09-29
+approved_at: 2026-10-07
 phase: accepted
 owners: [josephfarina, cixzhang]
 affects_architecture: [architecture:cli-surface]
@@ -16,20 +16,20 @@ affects_contributing: [contributing:templates, contributing:api-conventions]
 affects_consumer_docs: [cli/integrations]
 ---
 
-# Integration template replacement system spec
+# Integration template and component replacement system spec
 
 ## Intent
 
 Let an installed integration provide the project-specific implementation of a Core
-template without making the common lookup ambiguous or removing access to the Core
-original.
+template or a Core component without making the common lookup ambiguous or removing
+access to the Core original.
 
 ## Non-goals
 
-- Replacing integration components or reference-doc topics. Those surfaces own their
-  own contracts.
-- Rewriting template source that a consumer already copied into an app.
-- Making an integration template available when its source or metadata is invalid.
+- Replacing reference-doc topics. That surface owns its own contract.
+- Rewriting template or component source that a consumer already copied into an app.
+- Making an integration template or component available when its source or metadata
+  is invalid.
 - Selecting an integration that the project neither configures nor autolinks.
 
 ## Requirements
@@ -87,6 +87,43 @@ original.
   MUST NOT remove valid siblings. Other kinds keep their existing per-kind atomicity. A
   manifest load failure still withdraws the integration because no contribution roots
   are trustworthy. This rule applies whether or not any template declares `replaces`.
+- **FR10 — A component declares its own replacement, and the CLI floor turns it on.**
+  An integration component MAY set `replaces` in its own ComponentDoc to the exact
+  `name` of a component in the Core component catalog. The replacement applies only
+  when the component's package declares a `@astryxdesign/cli` peer range whose lowest
+  admitted version is at least the first stable CLI release that applies component
+  replacement (`COMPONENT_REPLACES_CLI`). That range is the package's opt-in. Stable
+  CLIs before that release accept the field and keep the component under its own name.
+- **FR11 — An applied component replacement owns unqualified component lookup.** The
+  replacing component answers to the Core component's name in component detail and
+  batch selectors, takes the Core component's slot at every component-list detail
+  level, is the component search result for that name, is the component an unqualified
+  swizzle copies, and is where gap-report routing sends a report for that name. It
+  remains addressable by its own name. Every one of those results names the replacing
+  component's own package (`architecture:cli-surface` INV28).
+- **FR12 — Explicit Core selection preserves the original component.** Selecting
+  `@astryxdesign/core` in component detail, batch selectors, and swizzle MUST address
+  the original Core component.
+- **FR13 — Invalid component declarations fail closed for packages that opt in.** For a
+  package with the FR10 range, a `replaces` that names no Core catalog component, a
+  value that is not a non-empty string, a component whose own name is a different Core
+  component, and more than one declaration for one target inside the package MUST each
+  be an error in `astryx doctor integration components`, which then exits 1. An invalid
+  set MUST NOT replace Core. Valid components remain available by their own names
+  (FR9).
+- **FR14 — Component precedence is deterministic.** When several packages with the
+  FR10 range validly replace one Core component, the FR5 order decides the winner: an
+  explicitly configured package wins over an autolinked one, the package configured
+  later wins among configured packages, and the dependency listed later wins among
+  autolinked packages. Doctor warns whenever more than one package contends. An invalid
+  autolinked declaration MUST NOT disable a valid explicit replacement. An integration
+  component from another package whose own name is the replaced Core name is shadowed
+  for unqualified lookup, stays addressable through its package, and Doctor warns.
+- **FR15 — A package without the floor keeps its released behavior.** Its component
+  `replaces` declarations never apply. Every finding about them, including the one
+  that names the FR10 range, is a warning, so no command's result or exit code changes
+  because of them. `integration pack --check` warns, and never fails, when a component
+  sets `replaces` and the package's range admits an earlier stable CLI.
 
 ### Platform support
 
@@ -99,15 +136,18 @@ original.
   field. Stable 0.6.x conflict responses retain their warning-only shape. The
   replacement-specific conflict schema becomes eligible for an explicit, complete
   projection update at 0.7.0; version alone does not activate it.
+- Component replacement: `@astryxdesign/cli >=0.6.7` is both the minimum supported CLI
+  and the opt-in (FR10). Earlier stable CLIs accept a component's `replaces` and keep
+  the component under its own name, with the Core component still selected.
 - Browser evidence: not applicable to catalog selection. A generated consumer app
   MUST still build or run when its selected template renders integration-owned
   navigation.
 
 ## Current-state impact
 
-The template metadata type and parser gain one optional field, `replaces`. Shared template
-resolution becomes the owner for replacement validation, precedence, aliases, and the
-default discovery view. Template commands, search/build, Project, layout, Doctor,
+The template metadata type and parser accept one optional field, `replaces`. Shared
+template resolution owns replacement validation, precedence, aliases, and the default
+discovery view. Template commands, search/build, Project, layout, Doctor,
 response documentation, and the integration-authoring guide project that result.
 Project reports invalid contributions while retaining other valid contribution kinds
 and valid template or component siblings.
@@ -127,16 +167,30 @@ become supported. A package-version bump alone leaves the warning-only projectio
 place. Under `spec:AST-017/FR1`, FR2, FR5, FR7, and FR9–FR13, this pre-publication
 capability plus the compatibility gate is a `[feat]` patch, not a breaking minor.
 
+Component discovery reads `replaces` from each valid component doc, and one resolver
+decides component replacement, precedence, and findings. Component detail, batch
+selectors, every list detail level, search, swizzle copy, gap-report routing, Project
+issues, and `astryx doctor integration components` read its result. Stable CLI
+releases before `COMPONENT_REPLACES_CLI` accept a component `replaces` and ignore it,
+and an integration package published for them declares no range that reaches it. Its
+components keep their names, the Core components stay selected, and the only addition
+it sees is warnings. Under `spec:AST-017/FR1` and FR5, component
+replacement is a `[feat]` patch.
+
 ## Verification
 
-| Contract | Verification                                                            | Representative states                                                                                       | Mutation or failure expectation                                                                           |
-| -------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| FR1, FR6 | Template parser and discovery tests plus a released-CLI consumer run    | field present, field absent, 0.6.3 CLI                                                                      | a replacement is honored from anywhere but the template's own metadata                                    |
-| FR2, FR3 | Template API/CLI and real consumer-app tests                            | target id, own id, Core package, integration package                                                        | lookup becomes ambiguous or the Core original is unreachable                                              |
-| FR4, FR7 | Doctor and discovery tests plus a 0.6.x response-shape fixture          | missing local/source, missing target, wrong kind, duplicate, same-id rejection, pre-publication replacement | invalid metadata activates a replacement, Doctor reports success, or a 0.6.x conflict gains staged fields |
-| FR5      | Multi-integration and autolink tests                                    | configured order, explicit versus autolinked, invalid loser                                                 | file/display order chooses the winner or invalid autolinking disables explicit intent                     |
-| FR2, FR8 | List, search/build, Project, layout, response, and generated-doc checks | alias plus undeclared exact-id collision, page and block, explicit 0.7 schema projection                    | two projections disagree, a public field is undocumented, or version alone expands the conflict schema    |
-| FR9      | Project discovery and issue-order tests                                 | invalid component/template siblings, valid contribution kinds and siblings                                  | one bad contribution removes unrelated valid output                                                       |
+| Contract   | Verification                                                                             | Representative states                                                                                                 | Mutation or failure expectation                                                                                     |
+| ---------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| FR1, FR6   | Template parser and discovery tests plus a released-CLI consumer run                     | field present, field absent, 0.6.3 CLI                                                                                | a replacement is honored from anywhere but the template's own metadata                                              |
+| FR2, FR3   | Template API/CLI and real consumer-app tests                                             | target id, own id, Core package, integration package                                                                  | lookup becomes ambiguous or the Core original is unreachable                                                        |
+| FR4, FR7   | Doctor and discovery tests plus a 0.6.x response-shape fixture                           | missing local/source, missing target, wrong kind, duplicate, same-id rejection, pre-publication replacement           | invalid metadata activates a replacement, Doctor reports success, or a 0.6.x conflict gains staged fields           |
+| FR5        | Multi-integration and autolink tests                                                     | configured order, explicit versus autolinked, invalid loser                                                           | file/display order chooses the winner or invalid autolinking disables explicit intent                               |
+| FR2, FR8   | List, search/build, Project, layout, response, and generated-doc checks                  | alias plus undeclared exact-id collision, page and block, explicit 0.7 schema projection                              | two projections disagree, a public field is undocumented, or version alone expands the conflict schema              |
+| FR9        | Project discovery and issue-order tests                                                  | invalid component/template siblings, valid contribution kinds and siblings                                            | one bad contribution removes unrelated valid output                                                                 |
+| FR10, FR15 | Floor-table test, resolver tests, and a published-CLI consumer run                       | range at the floor, no range, lower range; latest stable CLI with the field                                           | a package without the range gets a replacement, an error, or a changed exit code                                    |
+| FR11, FR12 | Component, batch, list, search, swizzle, and gap-report tests plus a packed consumer run | target name, own name, Core package selector, every list detail level                                                 | a surface selects a different owner than component detail, a result omits the owner package, or Core is unreachable |
+| FR13       | Resolver and `doctor integration components` tests                                       | missing target, invalid value, own name is another Core component, two declarations in one package                    | invalid metadata replaces Core, or Doctor exits 0 with an error finding                                             |
+| FR14       | Multi-integration resolver tests                                                         | configured order, explicit versus autolinked, autolinked only, invalid autolinked loser, shadowed same-name component | file or display order chooses the winner, or an invalid autolinked declaration disables explicit intent             |
 
 ## Decision log
 
@@ -211,7 +265,34 @@ future schema differs; exposing the expanded conflict schema in 0.6.x; or gating
 replacement implementation when the supported package boundary and stable-schema
 adapter already protect released consumers.
 
+### DEC-5 — A component declares its own replacement, and the CLI floor is the opt-in
+
+**Reference:** `spec:AST-035/DEC-5`
+**Decider:** `josephfarina`, `2026-10-07`
+
+A component's `replaces` lives in its own ComponentDoc, as a template's does (DEC-3).
+Stable releases before the floor accept the field and document replacement without
+applying it, so applying every declaration at once would change selection for packages
+published for those releases. The CLI applies a package's component replacements only
+when its `@astryxdesign/cli` peer range starts at the first release that applies them,
+which keeps every published package's behavior and gives new packages one documented
+switch they already manage for other features.
+
+Rejected: applying every declared `replaces` immediately — it changes released selection without the package asking.
+Rejected: an app configuration key — the package already states its intent, and `spec:AST-017/FR19` admits configuration only on evidence.
+
+### DEC-6 — Component replacement uses template replacement's precedence and failure rules
+
+**Reference:** `spec:AST-035/DEC-6`
+**Decider:** `josephfarina`, `2026-10-07`
+
+One resolver applies FR4, FR5, and FR9 to components with the component-specific
+checks of FR13, and every component surface reads its result. An integration author
+learns one set of rules for both kinds, and no two component surfaces can disagree
+about the winner.
+
+Rejected: per-surface resolution — component, search, and swizzle would drift apart.
+
 ## Open questions
 
-None. The CLI owner accepted the contract on 2026-09-23 and moved FR1 to
-per-template `replaces` on 2026-09-24 (DEC-3).
+None.

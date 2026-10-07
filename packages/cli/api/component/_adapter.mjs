@@ -38,6 +38,7 @@ import {
 } from '../../foundation/discovery/component-discovery.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {loadComponentDoc as loadValidatedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
+import {resolveComponentReplacements} from '../../foundation/discovery/component-replacement.mjs';
 import {searchComponents} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
 
@@ -136,6 +137,37 @@ export async function loadIntegrationsSafely(cwd) {
   } catch {
     return [];
   }
+}
+
+/**
+ * Every component replacement the loaded integrations declare
+ * (spec:AST-035 FR10–FR15): the active one for each replaced Core component,
+ * and the findings Doctor reports.
+ * @param {string} coreDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @returns {Promise<import('../../foundation/discovery/component-replacement.mjs').ComponentReplacements>}
+ */
+export function loadComponentReplacements(coreDir, loadedIntegrations) {
+  return resolveComponentReplacements(coreDir, loadedIntegrations);
+}
+
+/**
+ * The integration component that answers to the Core component name
+ * `dirName` for unqualified lookup, or undefined when none replaces it.
+ * @param {string} coreDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @param {string} dirName
+ * @returns {Promise<import('../../foundation/discovery/component-replacement.mjs').ActiveComponentReplacement | undefined>}
+ */
+export async function resolveComponentReplacement(
+  coreDir,
+  loadedIntegrations,
+  dirName,
+) {
+  if (loadedIntegrations.length === 0) return undefined;
+  return (
+    await resolveComponentReplacements(coreDir, loadedIntegrations)
+  ).forTarget(dirName);
 }
 
 /**

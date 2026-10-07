@@ -28,6 +28,7 @@ import {
   scopeSubComponent,
   ComponentAmbiguityError,
   installedComponentPackageVersion,
+  resolveComponentReplacement,
 } from './_adapter.mjs';
 import {componentList} from './list/list.mjs';
 import {componentDetail} from './detail/detail.mjs';
@@ -447,6 +448,22 @@ export async function component(name, options = {}) {
       undefined,
       ERROR_CODES.ERR_UNKNOWN_COMPONENT,
     );
+  }
+
+  // ── Replaced Core component (spec:AST-035 FR11) ────────────────
+  // An active integration replacement answers to the Core name it replaces
+  // exactly as it answers to its own name in its package. The original stays
+  // reachable with `--package @astryxdesign/core`, handled above.
+  const replacement = await resolveComponentReplacement(
+    coreDir,
+    loadedIntegrations,
+    dirName,
+  );
+  if (replacement) {
+    return component(replacement.name, {
+      ...options,
+      package: replacement.package,
+    });
   }
 
   // Invalid integration metadata does not create ambiguity against a valid

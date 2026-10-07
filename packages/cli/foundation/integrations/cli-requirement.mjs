@@ -33,6 +33,20 @@ export const NAMESPACE_DOCS_CLI = '0.6.4';
 export const REPLACES_CLI = '0.7.0';
 
 /**
+ * The first stable CLI release that applies a component's `replaces`
+ * (spec:AST-035 FR10). It is also the opt-in: a CLI applies a package's
+ * component replacements only when the package's `@astryxdesign/cli` peer
+ * range starts here, so a package published for an earlier CLI keeps the
+ * behavior it shipped with. Earlier stable CLIs accept the field and keep the
+ * component under its own name.
+ *
+ * Tied to the next patch slot: it must equal the first stable release that
+ * ships component replacement. If that slot moves, change this constant and
+ * its row in the floor table test together.
+ */
+export const COMPONENT_REPLACES_CLI = '0.6.7';
+
+/**
  * The first stable CLI release that reads typed theme descriptors, the theme
  * folder `integration add theme` writes. Published 0.6.3 rejects a themes root
  * with no `manifest.json` catalog and withholds the package's themes and doc
@@ -164,6 +178,23 @@ export function replacesCliProblem(pkg) {
     'has a template that sets `replaces`',
     "rejects the field, drops that template, and hides the package's doc topics",
     REPLACES_CLI,
+  );
+}
+
+/**
+ * Why a package with a component that sets `replaces` would not get the
+ * replacement (spec:AST-035 FR10), or null when its declared CLI range starts
+ * at the release that applies it. That range is the package's opt-in: without
+ * it the component keeps its own name and the Core component stays selected.
+ * @param {any} pkg package.json
+ * @returns {string | null}
+ */
+export function componentReplacesCliProblem(pkg) {
+  return cliRangeProblem(
+    pkg,
+    'has a component that sets `replaces`',
+    'ignores the field and keeps the component under its own name, and a later CLI applies the replacement only for a package whose range starts at that release',
+    COMPONENT_REPLACES_CLI,
   );
 }
 

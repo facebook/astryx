@@ -71,9 +71,23 @@ export default {
           presentation: 'full',
         },
         {
+          type: 'prose',
+          text: 'The replacement turns on only when your package declares the first CLI release that applies it. Add this to its `package.json`:',
+        },
+        {
+          type: 'code',
+          lang: 'json',
+          label: 'package.json',
+          code: `{
+  "peerDependencies": {"@astryxdesign/cli": ">=0.6.7"},
+  "peerDependenciesMeta": {"@astryxdesign/cli": {"optional": true}}
+}`,
+        },
+        {
           type: 'list',
           style: 'unordered',
           items: [
+            'Without that range, the component keeps its own name, the Core component stays selected, and Doctor warns with the range to add. A package published before the range existed keeps working exactly as it did.',
             '`replaces` names the Core `ComponentDoc` identity, not its display label, import path, or a standalone hook.',
             'Your component may keep a distinct name or use the same name as the target. A distinct name remains directly addressable on older CLIs that ignore `replaces`.',
             '`--package @astryxdesign/core` always selects the original Core component.',
@@ -94,8 +108,8 @@ export default {
           type: 'list',
           style: 'unordered',
           items: [
-            'A missing target, invalid value, second replacement for one target in the same package, or a replacement named after a different Core component is an error.',
-            'When several integrations replace one target, explicit configuration beats the automatic pick. Among explicitly configured integrations, the later package wins and Doctor warns.',
+            'Once the package declares the range, a missing target, invalid value, second replacement for one target in the same package, or a replacement named after a different Core component is an error. Without the range, Doctor reports each of these as a warning.',
+            'When several integrations replace one target, explicit configuration beats the automatic pick. Among explicitly configured integrations, the later package wins and Doctor warns. Among autolinked integrations alone, the dependency listed later in `package.json` wins and Doctor warns.',
           ],
         },
       ],

@@ -86,7 +86,10 @@ import {
   discoverHooks,
   findHookDoc,
 } from '../../foundation/discovery/hook-discovery.mjs';
-import {loadIntegrationsSafely} from '../component/_adapter.mjs';
+import {
+  loadComponentReplacements,
+  loadIntegrationsSafely,
+} from '../component/_adapter.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
 import {templateLookupIds} from '../../foundation/discovery/template-adapter.mjs';
@@ -982,11 +985,10 @@ async function gatherCoreComponents(coreDir) {
  * this, an integration component is invisible to `search`/`build` even
  * though `component --list`/`component <Name>` already resolve it — the two
  * discovery paths silently disagreed.
- * @param {string} cwd
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
  * @returns {Promise<Candidate[]>}
  */
-async function gatherIntegrationComponents(cwd) {
-  const loadedIntegrations = await loadIntegrationsSafely(cwd);
+async function gatherIntegrationComponents(loadedIntegrations) {
   /** @type {Candidate[]} */
   const candidates = [];
   for (const integration of loadedIntegrations) {
@@ -1031,11 +1033,31 @@ async function gatherIntegrationComponents(cwd) {
  * @returns {Promise<Candidate[]>}
  */
 async function gatherComponents(coreDir, cwd) {
-  const [core, integrations] = await Promise.all([
+  const loadedIntegrations = await loadIntegrationsSafely(cwd);
+  const [core, integrations, replacements] = await Promise.all([
     gatherCoreComponents(coreDir),
-    gatherIntegrationComponents(cwd),
+    gatherIntegrationComponents(loadedIntegrations),
+    loadComponentReplacements(coreDir, loadedIntegrations),
   ]);
-  return [...core, ...integrations];
+  // An active replacement answers to the Core name it replaces, so a search
+  // for that name finds the replacement and not the Core original
+  // (spec:AST-035 FR11).
+  /** @type {Map<string, string>} */
+  const targetOf = new Map(
+    replacements.active.map(active => [
+      `${active.package}\0${active.name}`,
+      active.target,
+    ]),
+  );
+  return [
+    ...core.filter(candidate => !replacements.forTarget(candidate.name)),
+    ...integrations.map(candidate => {
+      const target = targetOf.get(`${candidate._package}\0${candidate.name}`);
+      return target == null
+        ? candidate
+        : {...candidate, aliases: [...(candidate.aliases ?? []), target]};
+    }),
+  ];
 }
 
 /**
@@ -1079,7 +1101,12 @@ export async function componentKeywords(coreDir, cwd) {
           : null;
       return {name, keywords: keywordsOf(doc)};
     });
-  const integrations = (await loadIntegrationsSafely(cwd)).map(
+  const loadedIntegrations = await loadIntegrationsSafely(cwd);
+  const replacements = await loadComponentReplacements(
+    coreDir,
+    loadedIntegrations,
+  );
+  const integrations = loadedIntegrations.map(
     async integration => {
       const {components} = await discoverValidIntegrationComponents(integration);
       return Promise.all(
@@ -1091,7 +1118,9 @@ export async function componentKeywords(coreDir, cwd) {
     },
   );
   return [
-    ...(await Promise.all(core)),
+    ...(await Promise.all(core)).filter(
+      component => !replacements.forTarget(component.name),
+    ),
     ...(await Promise.all(integrations)).flat(),
   ];
 }

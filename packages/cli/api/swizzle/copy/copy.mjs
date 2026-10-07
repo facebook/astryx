@@ -24,6 +24,7 @@ import {
   findIntegrationComponentDoc,
   findIntegrationComponentSource,
 } from '../../../foundation/discovery/component-discovery.mjs';
+import {resolveComponentReplacements} from '../../../foundation/discovery/component-replacement.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {AstryxError, writeFailed} from '../../error.mjs';
 
@@ -221,6 +222,21 @@ export async function swizzleCopy(component, options = {}) {
   const coreIssuesUrl = project
     ? project.issuesUrl({package: CORE_PACKAGE})
     : undefined;
+  // An active integration replacement answers to the Core name it replaces
+  // (spec:AST-035 FR11): copy it under its own name, from its own package.
+  // `--package @astryxdesign/core` still copies the Core original.
+  if (!pkg && loadedIntegrations.length > 0) {
+    const replacement = (
+      await resolveComponentReplacements(coreDir, loadedIntegrations)
+    ).forTarget(dirName);
+    if (replacement) {
+      return swizzleCopy(replacement.name, {
+        ...options,
+        package: replacement.package,
+      });
+    }
+  }
+
   const allOwners = resolveOwners(coreDir, loadedIntegrations, dirName, coreIssuesUrl);
 
   if (allOwners.length === 0) {

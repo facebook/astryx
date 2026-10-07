@@ -164,6 +164,12 @@ async function selectTarget(project, component, packageName) {
   const bareComponent = component.startsWith('XDS')
     ? component.slice(3)
     : component;
+  // A replaced Core component routes to the package that replaces it
+  // (spec:AST-035 FR11), as `component <Name>` resolves it.
+  const replacement = (await project.componentReplacements()).forTarget(
+    bareComponent,
+  );
+  if (replacement) return targetForPackage(project, replacement.package);
   const owners = [
     ...new Set(
       (await project.components())
