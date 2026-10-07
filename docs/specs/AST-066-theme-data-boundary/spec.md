@@ -2,7 +2,7 @@
 schema_version: 4
 template_version: 1
 kind: system-spec
-id: spec:AST-051
+id: spec:AST-066
 authority: current
 archive_reason: null
 superseded_by: null
@@ -428,7 +428,7 @@ proves:
 
 ### DEC-1 — Public StyleX variables own canonical CSS defaults
 
-**Reference:** `spec:AST-051/DEC-1`
+**Reference:** `spec:AST-066/DEC-1`
 **Decider:** `cixzhang`, `2026-10-01`
 
 The data palette joins the canonical StyleX token system. The checked-in
@@ -443,7 +443,7 @@ to disagree.
 
 ### DEC-2 — Tree-shake one semantic 56-variable group
 
-**Reference:** `spec:AST-051/DEC-2`
+**Reference:** `spec:AST-066/DEC-2`
 **Decider:** `cixzhang`, `2026-10-01`
 
 StyleX 0.19 emits a complete `defineVars` group when its module is retained and
@@ -459,7 +459,7 @@ the demonstrated compiler capability.
 
 ### DEC-3 — Theme output contains authored deltas only
 
-**Reference:** `spec:AST-051/DEC-3`
+**Reference:** `spec:AST-066/DEC-3`
 **Decider:** `cixzhang`, `2026-10-01`
 
 Theme build owns customization, not canonical availability. It serializes only
@@ -473,7 +473,7 @@ not actual StyleX use, own the palette.
 
 ### DEC-4 — Nested omission inherits
 
-**Reference:** `spec:AST-051/DEC-4`
+**Reference:** `spec:AST-066/DEC-4`
 **Decider:** `cixzhang`, `2026-10-01`
 
 Same and different nested themes inherit every unspecified custom property and
@@ -484,7 +484,7 @@ default.
 
 ### DEC-5 — Accept standard StyleX root emission when the group is retained
 
-**Reference:** `spec:AST-051/DEC-5`
+**Reference:** `spec:AST-066/DEC-5`
 **Decider:** `cixzhang`, `2026-10-01`
 
 `stylex.defineVars(defaults)` emits its group on `:root` plus a variable-group
@@ -499,7 +499,7 @@ source-of-truth and tree-shaking model.
 
 ### DEC-6 — Keep JavaScript resolution compatibility
 
-**Reference:** `spec:AST-051/DEC-6`
+**Reference:** `spec:AST-066/DEC-6`
 **Decider:** `cixzhang`, `2026-10-01`
 
 Existing resolver names, shapes, and mode behavior remain available from a
@@ -511,7 +511,7 @@ reader. Neither is required to fix CSS ownership.
 
 ### DEC-7 — Keep one compatible global color-scheme policy
 
-**Reference:** `spec:AST-051/DEC-7`
+**Reference:** `spec:AST-066/DEC-7`
 **Decider:** `cixzhang`, `2026-10-01`
 
 The three root/html rules intentionally configure browser-wide `light-dark()`
@@ -522,7 +522,7 @@ Rejected: scoping or splitting color-scheme packaging in this change.
 
 ### DEC-8 — Migrate through an atomic stack and breaking minor
 
-**Reference:** `spec:AST-051/DEC-8`
+**Reference:** `spec:AST-066/DEC-8`
 **Decider:** `cixzhang`, `2026-10-01`
 
 The implementation separates canonical public StyleX ownership, consumer

@@ -70,7 +70,7 @@ replacement uses one aggregate output trio so consumers never assemble the famil
 - **FR3 — One stylesheet is complete for every member.** `<key>.css` MUST contain all
   theme-authored CSS needed by every selected member. For each member, every generated
   declaration and resulting computed style MUST match that member's complete standalone
-  build across every supported theme surface. Completeness follows `spec:AST-051`: a
+  build across every supported theme surface. Completeness follows `spec:AST-066`: a
   member contributes only its explicitly authored `--color-data-*` overrides; canonical
   defaults come from the consuming StyleX data-variable group, outside theme build. A
   consumer MUST NOT load, order, or discover another family stylesheet.
@@ -78,7 +78,7 @@ replacement uses one aggregate output trio so consumers never assemble the famil
   selecting or switching a member requires only changing the theme identity. A
   descendant's differing values MUST win over inherited values without consumer
   specificity work or stylesheet-order requirements. Nested roots follow
-  `spec:AST-051`: same and different identities inherit every unspecified data value,
+  `spec:AST-066`: same and different identities inherit every unspecified data value,
   while a child replaces only the subset it explicitly authors. Sibling roots stay
   isolated, and unrelated same-layer stylesheets produce the same winners in either
   physical order.
@@ -107,7 +107,7 @@ replacement uses one aggregate output trio so consumers never assemble the famil
   extra files.
 - **FR9 — Existing command and artifact paths remain compatible.** Standalone and
   ordinary multi-file commands, output names, generated JavaScript/types, theme names,
-  inheritance, and consumer import paths keep their meaning. `spec:AST-051` intentionally
+  inheritance, and consumer import paths keep their meaning. `spec:AST-066` intentionally
   removes canonical data defaults from every theme-build mode and leaves only authored
   scoped data overrides; family mode MUST NOT preserve the superseded raw global-data
   block. Family selection itself remains opt-in.
@@ -124,7 +124,7 @@ replacement uses one aggregate output trio so consumers never assemble the famil
 
 Current `main` builds one complete CSS, JavaScript, and declaration set per theme.
 Implementing this accepted amendment adds the opt-in family command behavior above.
-`spec:AST-051` separately removes canonical data defaults from standalone and family
+`spec:AST-066` separately removes canonical data defaults from standalone and family
 theme CSS, leaves only each member's authored scoped data overrides, and assigns
 canonical default emission to the public StyleX consumer graph. It does not change the
 keyed trio, member exports, declarations, or selection command.
@@ -139,7 +139,7 @@ itself and adds no Changeset.
 | FR1–FR2  | graph and CLI composition tests                                         | a missing ancestor or cycle builds; the key changes identity; family mode emits anything other than the keyed trio                                                                            |
 | FR3–FR5  | standalone-equivalence fixtures plus real Chromium                      | a component, prose, adaptation, on-media, authored data subset, nested same/different identity, sibling-root, reversed-order, or zero-delta state differs; argument order changes bytes       |
 | FR6      | ESM parse/import, TypeScript, and binding-collision fixtures            | an export is incomplete or absent; reused local names break parsing; declarations disagree with exports                                                                                       |
-| FR7–FR9  | invalid-input, write-failure, check, and standalone regression fixtures | invalid input reports success; a successful build exposes mixed, missing, or stale bytes; check falsely passes them; standalone output changes beyond the `spec:AST-051` data-default removal |
+| FR7–FR9  | invalid-input, write-failure, check, and standalone regression fixtures | invalid input reports success; a successful build exposes mixed, missing, or stale bytes; check falsely passes them; standalone output changes beyond the `spec:AST-066` data-default removal |
 
 Real-browser verification MUST load only `<key>.css` in addition to the ordinary
 consumer StyleX output and exercise every selected identity, representative components
@@ -148,7 +148,7 @@ override across nested same and different identities, sibling roots, a zero-delt
 and an unrelated same-layer stylesheet in both orders.
 Structural tests MUST prove deterministic bytes, zero canonical data defaults in family
 CSS, complete ESM exports, matching types, and collision-safe imports. Existing
-standalone fixtures MUST retain every behavior outside `spec:AST-051`.
+standalone fixtures MUST retain every behavior outside `spec:AST-066`.
 
 ### Completion criteria
 
@@ -156,13 +156,13 @@ This specification remains `accepted` until one replacement implementation prove
 
 - one deterministic keyed CSS/JS/d.ts trio for direct and nested descendants;
 - complete standalone-equivalent theme behavior from that single stylesheet, including
-  `spec:AST-051` authored sparse data overrides, zero canonical defaults, and nested
+  `spec:AST-066` authored sparse data overrides, zero canonical defaults, and nested
   inheritance;
 - selectable zero-delta members and collision-safe aggregate JavaScript/types;
 - build and `--check` cannot report success for mixed, missing, or stale expected
   keyed files; and
 - real Chromium behavior plus standalone builds unchanged outside the
-  `spec:AST-051` canonical-data-default removal.
+  `spec:AST-066` canonical-data-default removal.
 
 ## Decision log
 
@@ -170,7 +170,7 @@ This specification remains `accepted` until one replacement implementation prove
 
 **Decider:** `cixzhang`, `2026-10-01`
 
-`spec:AST-051` changes the standalone behavior against which family members are
+`spec:AST-066` changes the standalone behavior against which family members are
 measured: canonical data defaults come from a retained public StyleX variable group,
 while every theme identity emits only its authored data subset. This amendment updates
 FR3, FR4, FR9, verification, and DEC-2 without changing the family command, keyed output
@@ -208,7 +208,7 @@ work to the consumer.
 Every selected identity produces the same observable theme CSS behavior as its complete
 standalone build. Descendant differences win without a consumer-managed load order or
 specificity escalation, including for components, prose, adaptations, and on-media
-behavior. Under `spec:AST-051`, canonical data defaults come from the retained public
+behavior. Under `spec:AST-066`, canonical data defaults come from the retained public
 StyleX group; same and different nested identities inherit every unspecified value and
 override only their authored subset. Family CSS contains no canonical data defaults.
 
