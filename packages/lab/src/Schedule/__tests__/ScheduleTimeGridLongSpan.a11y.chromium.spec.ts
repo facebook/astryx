@@ -14,6 +14,7 @@
 import {expect, test, type Page} from '@playwright/test';
 import {
   finishEvidence,
+  NARROW,
   openStory,
   readTimeGrid,
   record,
@@ -70,6 +71,88 @@ async function boxOf(page: Page, group: string, title: string): Promise<Box> {
     width: box.width,
     height: box.height,
   };
+}
+
+interface PillReading {
+  readonly title: string;
+  readonly timeVisible: boolean;
+  readonly titleBeforeTime: boolean | null;
+  readonly titleTruncated: boolean;
+}
+
+/**
+ * How each span pill in the all-day row lays out its title and times: the
+ * times count as shown only while they sit on the pill's one line.
+ */
+function readSpanPills(
+  page: Page,
+  titles: ReadonlyArray<string>,
+): Promise<PillReading[]> {
+  return page.evaluate(wanted => {
+    const group = [...document.querySelectorAll('[role="group"]')].find(
+      element => element.getAttribute('aria-label') === 'All-day events',
+    );
+    const isRtl = getComputedStyle(group ?? document.body).direction === 'rtl';
+    const textNodes = (root: Node): Text[] => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes: Text[] = [];
+      for (
+        let node = walker.nextNode();
+        node != null;
+        node = walker.nextNode()
+      ) {
+        nodes.push(node as Text);
+      }
+      return nodes;
+    };
+    const rectOf = (node: Text) => {
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      return range.getBoundingClientRect();
+    };
+    return wanted.map(title => {
+      const button = [...(group?.querySelectorAll('button') ?? [])].find(
+        element => element.getAttribute('aria-label')?.startsWith(`${title},`),
+      );
+      if (button == null) {
+        throw new Error(`no span pill titled ${title}`);
+      }
+      const nodes = textNodes(button);
+      const titleNode = nodes.find(node => node.textContent === title);
+      const timeNode = nodes.find(node =>
+        /\d{1,2}:\d{2}/.test(node.textContent ?? ''),
+      );
+      const pill = (button.firstElementChild ?? button) as HTMLElement;
+      const pillRect = pill.getBoundingClientRect();
+      const pillStyle = getComputedStyle(pill);
+      const lineTop =
+        pillRect.top + Number.parseFloat(pillStyle.borderTopWidth);
+      const lineBottom =
+        pillRect.bottom - Number.parseFloat(pillStyle.borderBottomWidth);
+      const titleRect = titleNode == null ? null : rectOf(titleNode);
+      const timeRect = timeNode == null ? null : rectOf(timeNode);
+      const timeVisible =
+        timeRect != null &&
+        timeRect.top >= lineTop - 1 &&
+        timeRect.bottom <= lineBottom + 1 &&
+        timeRect.width > 0;
+      const titleElement = titleNode?.parentElement;
+      return {
+        title,
+        timeVisible,
+        titleBeforeTime:
+          titleRect == null || timeRect == null || !timeVisible
+            ? null
+            : isRtl
+              ? titleRect.left >= timeRect.right - 1
+              : titleRect.right <= timeRect.left + 1,
+        titleTruncated:
+          titleElement == null
+            ? false
+            : titleElement.scrollWidth > titleElement.clientWidth + 1,
+      };
+    });
+  }, titles);
 }
 
 function union(columns: ReadonlyArray<Box>): {left: number; right: number} {
@@ -157,5 +240,50 @@ for (const [direction, globals] of [
     expect(name).toMatch(
       /^Offsite, May 11(,| at) 9:00\sAM\s–\sMay 13(,| at) 9:00\sAM, Company, Monday, May 11, 2026$/u,
     );
+  });
+
+  test(`a span pill leads with its title and shows its times only when both fit (${direction})`, async ({
+    page,
+  }) => {
+    const readings: Record<string, PillReading[]> = {};
+    for (const [name, viewport] of [
+      ['wide', WIDE],
+      ['narrow', NARROW],
+    ] as const) {
+      await openStory(evidence, page, STORY, viewport, globals);
+      readings[name] = await readSpanPills(page, [
+        'Offsite',
+        'On-call handoff',
+        'Leadership planning retreat',
+      ]);
+    }
+    await record(
+      evidence,
+      page,
+      `long-span-pills-${direction}`,
+      STORY,
+      direction,
+      {
+        readings,
+      },
+    );
+    // Wide, three columns leave room: the times follow the title.
+    const offsite = readings.wide[0];
+    expect(offsite.timeVisible, 'Offsite times show when they fit').toBe(true);
+    expect(offsite.titleBeforeTime, 'Offsite: title before times').toBe(true);
+    // A title too long for one column keeps the line: the times give way.
+    const retreat = readings.wide[2];
+    expect(retreat.timeVisible, 'a long title hides the times').toBe(false);
+    for (const pill of [...readings.wide, ...readings.narrow]) {
+      if (pill.timeVisible) {
+        expect(pill.titleBeforeTime, `${pill.title}: title before times`).toBe(
+          true,
+        );
+        expect(
+          pill.titleTruncated,
+          `${pill.title}: shown times never cut the title`,
+        ).toBe(false);
+      }
+    }
   });
 }

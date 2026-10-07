@@ -894,7 +894,8 @@ export const ViewSelectorPlugin: Story = {
 // A fixed UTC week for the long-span contract (component:Schedule FR21): a
 // 48-hour offsite and an exactly-24-hour handoff are all-day spans; a
 // 23-hour-59-minute shift and an overnight deploy stay in the day columns;
-// Tuesday's standup and review keep their full column width.
+// Tuesday's standup and review keep their full column width; Saturday's
+// retreat has too long a title for its times to fit.
 const longSpanEvents: CalendarEvent[] = [
   createEventFromISO({
     id: 'offsite',
@@ -909,6 +910,13 @@ const longSpanEvents: CalendarEvent[] = [
     category: 'Incident',
     start: '2026-05-14T08:00:00.000Z',
     end: '2026-05-15T08:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'retreat',
+    title: 'Leadership planning retreat',
+    category: 'Company',
+    start: '2026-05-16T06:00:00.000Z',
+    end: '2026-05-17T06:00:00.000Z',
   }),
   createEventFromISO({
     id: 'shift',

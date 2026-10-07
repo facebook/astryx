@@ -428,5 +428,12 @@ describe('time grid long spans', () => {
       'Tuesday, May 12, 2026 all day',
       'Wednesday, May 13, 2026 all day',
     ]);
+    // Each entry names the span by its title, its category, and its start and
+    // end with their dates (component:Schedule AR2).
+    for (const label of offsiteCells) {
+      expect(label.split('. ')[1]).toMatch(
+        /^Offsite, Event, May 11(,| at) 9:00\sAM\s–\sMay 13(,| at) 9:00\sAM$/u,
+      );
+    }
   });
 });
