@@ -57,10 +57,8 @@ not provide.
 - Changing scoped prose defaults, non-data token declarations, component
   overrides, adaptations, MediaTheme rules, icon output, or type augmentation.
 - Defining the separate `@astryxdesign/build` source-build composition contract.
-- Implementing the token, compiler, consumer, CLI, or migration changes in this
-  specification pull request.
-- Cutting or merging a release. Release work follows after the implementation
-  stack is independently accepted.
+- Release scheduling and versioning beyond the breaking-minor requirement in
+  FR17.
 - Equivalent internal implementations remain valid when they satisfy this
   public contract.
 
@@ -146,8 +144,8 @@ not provide.
   directly to an SVG presentation attribute or DOM style MUST compile to the
   stable `var(--color-data-*)` reference and retain the variable-definition
   module in the build graph. Default and theme-overridden values MUST paint the
-  expected fill and stroke; the pre-#5562 black-body/invisible-stroke failure
-  MUST not return.
+  expected fill and stroke. An undeclared data variable paints a candlestick
+  body black and drops its wick stroke; that state MUST NOT recur.
 
 ### Sparse theme output
 
@@ -326,21 +324,13 @@ not provide.
 
 ## Current-state impact
 
-Before [PR #5562](https://github.com/facebook/astryx/pull/5562), the canonical
-56 defaults were a plain `dataTokenDefaults` JavaScript object merged into token
-resolution, not a StyleX `defineVars` group. Core StyleX CSS contained zero data
-custom-property declarations. `ChartCandlestick` imported neither a StyleX token
-object nor a token resolver: it constructed literal green/red
-`var(--color-data-*)` strings and passed them directly to SVG `fill` and
-`stroke`. React preserved those literal presentation values. With no CSS
-custom-property declaration, the body fell back to black and the wick stroke to
-none.
-
-#5562 correctly made the custom properties available. Its final implementation
-created one unconditional `@layer astryx-base { :root { ...56 defaults... } }`
-block from the parallel JavaScript metadata and injected or bundled that block
-through Theme compilation. Concrete authored data values already remained sparse
-inside the theme donut.
+Theme compilation currently owns the canonical data defaults. Runtime `<Theme>`
+injection and every `theme build` mode emit one unconditional
+`@layer astryx-base { :root { ...56 defaults... } }` block generated from the
+plain `dataTokenDefaults` JavaScript object, while authored data values already
+stay sparse inside the theme donut. Core StyleX CSS declares no data custom
+property, and Astryx components that need a data color construct literal
+`var(--color-data-*)` strings.
 
 When this contract ships:
 
@@ -364,9 +354,6 @@ style lifetime. `architecture:theme-tokens` owns the shared token vocabulary and
 derived compatibility views; the public StyleX data-token module owns canonical
 CSS defaults. This record does not govern `@astryxdesign/build`.
 
-This specification changes no runtime, compiler, component, CLI, generated
-artifact, or package by itself and adds no Changeset.
-
 ## Verification
 
 | Contract  | Verification                                                                | Representative states                                                                                                                           | Mutation or failure expectation                                                                                                                                          |
@@ -379,7 +366,7 @@ artifact, or package by itself and adds no Changeset.
 | FR17–FR20 | Changeset, codemod, CLI check, docs, and regeneration fixtures              | literal component/fixture use; raw CSS with/without fallback; old root artifact; ordinary/family build                                          | no breaking note; unsafe auto-rewrite; stale artifact passes; docs claim theme CSS supplies defaults or token-granular pruning                                           |
 
 Real-browser verification MUST independently assert canonical and authored values,
-not reuse generator output as the oracle. It MUST reproduce the historical
+not reuse generator output as the oracle. It MUST reproduce the
 black-body/invisible-wick state with the variable declaration removed, then prove
 correct SVG fill and stroke after the public StyleX import. It MUST cover default,
 explicit prop, parent override, child subset override, same/different nested
@@ -420,7 +407,7 @@ proves:
 - sparse donut overrides and zero theme-build raw defaults across runtime,
   standalone, multi-file, and family modes;
 - JS token API and theme-input compatibility;
-- real Chromium SVG/cascade evidence, including the historical failure red arm;
+- real Chromium SVG/cascade evidence, including the undeclared-variable red arm;
 - regeneration and migration evidence for downstream theme artifacts; and
 - independent architecture review plus green CI.
 
@@ -518,7 +505,7 @@ The three root/html rules intentionally configure browser-wide `light-dark()`
 and UA behavior. Complete theme bundles may repeat them when identical, or omit
 the complete set. Tests prevent specialization or partial emission.
 
-Rejected: scoping or splitting color-scheme packaging in this change.
+Rejected: scoping or splitting color-scheme packaging.
 
 ### DEC-8 — Migrate through an atomic stack and breaking minor
 
