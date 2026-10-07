@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {act, render, screen} from '@testing-library/react';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {BaseTable} from './BaseTable';
 import {Table} from './Table';
@@ -547,6 +547,123 @@ describe('BaseTable', () => {
       };
       render(<BaseTable data={users} columns={columns} plugins={[plugin]} />);
       expect(screen.getByTestId('plugin-table')).toBeInTheDocument();
+    });
+
+    it('lets transformTable attach a ref to the <table> without displacing the consumer ref', () => {
+      const pluginRef = vi.fn();
+      const consumerRef = {current: null as HTMLTableElement | null};
+      const plugin: TablePlugin<User> = {
+        transformTable: props => ({...props, ref: pluginRef}),
+      };
+      render(
+        <BaseTable
+          ref={consumerRef}
+          data={users}
+          columns={columns}
+          plugins={[plugin]}
+        />,
+      );
+      const table = screen.getByRole('table');
+      expect(pluginRef).toHaveBeenCalledWith(table);
+      expect(consumerRef.current).toBe(table);
+    });
+
+    it('composes a caller <table> handler with the plugin handler for the same event, caller first', () => {
+      const calls: string[] = [];
+      const plugin: TablePlugin<User> = {
+        transformTable: props => ({
+          ...props,
+          htmlProps: {
+            ...props.htmlProps,
+            onKeyDown: () => calls.push('plugin'),
+          },
+        }),
+      };
+      render(
+        <BaseTable
+          data={users}
+          columns={columns}
+          plugins={[plugin]}
+          onKeyDown={() => calls.push('caller')}
+        />,
+      );
+
+      fireEvent.keyDown(screen.getByRole('table'), {key: 'ArrowDown'});
+
+      expect(calls).toEqual(['caller', 'plugin']);
+    });
+
+    it('lets a caller handler opt out of the plugin handler with preventDefault', () => {
+      const pluginKeyDown = vi.fn();
+      const plugin: TablePlugin<User> = {
+        transformTable: props => ({
+          ...props,
+          htmlProps: {...props.htmlProps, onKeyDown: pluginKeyDown},
+        }),
+      };
+      render(
+        <BaseTable
+          data={users}
+          columns={columns}
+          plugins={[plugin]}
+          onKeyDown={event => event.preventDefault()}
+        />,
+      );
+
+      fireEvent.keyDown(screen.getByRole('table'), {key: 'ArrowDown'});
+
+      expect(pluginKeyDown).not.toHaveBeenCalled();
+    });
+
+    it('keeps the plugin handler when the caller forwards an unset one', () => {
+      const pluginKeyDown = vi.fn();
+      const plugin: TablePlugin<User> = {
+        transformTable: props => ({
+          ...props,
+          htmlProps: {...props.htmlProps, onKeyDown: pluginKeyDown},
+        }),
+      };
+      render(
+        <BaseTable
+          data={users}
+          columns={columns}
+          plugins={[plugin]}
+          onKeyDown={undefined}
+        />,
+      );
+
+      fireEvent.keyDown(screen.getByRole('table'), {key: 'ArrowDown'});
+
+      expect(pluginKeyDown).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps a plugin's structural role over the caller's and warns in development", () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const plugin: TablePlugin<User> = {
+        transformTable: props => ({
+          ...props,
+          htmlProps: {...props.htmlProps, role: 'treegrid'},
+        }),
+      };
+      render(
+        <BaseTable
+          data={users}
+          columns={columns}
+          plugins={[plugin]}
+          role="grid"
+        />,
+      );
+
+      expect(screen.getByRole('treegrid')).toBeInTheDocument();
+      expect(screen.queryByRole('grid')).toBeNull();
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toContain('role="grid"');
+      warnSpy.mockRestore();
+    });
+
+    it("keeps the caller's role when no plugin sets one", () => {
+      render(<BaseTable data={users} columns={columns} role="grid" />);
+      expect(screen.getByRole('grid')).toBeInTheDocument();
     });
 
     it('applies transformHeaderRow plugin', () => {

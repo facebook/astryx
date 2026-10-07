@@ -159,7 +159,9 @@ export function useTableTreeState<T extends Record<string, unknown>>(
   );
 
   // Flatten: depth-first walk emitting only visible rows, collecting per-row
-  // meta ({level, hasChildren, isExpanded}) in the same pass. Children mount
+  // meta ({level, hasChildren, isExpanded, posInSet, setSize}) in the same
+  // pass — posInSet/setSize describe the sibling group as rendered (after
+  // sortSiblings), which is what aria-posinset/aria-setsize announce. Children mount
   // only when their parent is expanded, so collapsed subtrees stay unmounted.
   // `path` holds the ids on the current ancestor chain: an edge pointing back
   // at an ancestor is skipped instead of recursing forever. Sibling arrays
@@ -170,22 +172,29 @@ export function useTableTreeState<T extends Record<string, unknown>>(
     const meta = new Map<string, TableTreeRowMeta>();
     const path = new Set<string>();
     const walk = (items: T[], level: number) => {
-      const siblings = sortSiblings ? sortSiblings([...items]) : items;
-      for (const item of siblings) {
+      const sorted = sortSiblings ? sortSiblings([...items]) : items;
+      // A cyclic edge (a row that is its own ancestor) is dropped, not
+      // rendered, so it does not count toward the sibling set either.
+      const siblings = sorted.filter(item => !path.has(getId(item)));
+      siblings.forEach((item, index) => {
         const id = getId(item);
-        if (path.has(id)) {
-          continue; // cyclic edge — this row is its own ancestor
-        }
         const hasChildren = getIsExpandable(item);
         const isExpanded = hasChildren && expandedIds.has(id);
         rows.push(item);
-        meta.set(id, {id, level, hasChildren, isExpanded});
+        meta.set(id, {
+          id,
+          level,
+          hasChildren,
+          isExpanded,
+          posInSet: index + 1,
+          setSize: siblings.length,
+        });
         if (isExpanded) {
           path.add(id);
           walk(getChildren(item), level + 1);
           path.delete(id);
         }
-      }
+      });
     };
     walk(data, 0);
     return {visibleData: rows, metaMap: meta};
