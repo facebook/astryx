@@ -1207,13 +1207,15 @@ export const styles = stylex.create({
     },
   },
   // The event popover keeps to the viewport the way the Popover component
-  // does: it never grows past the visible block size, and scrolls inside
-  // when its content is taller.
-  eventPopover: {
-    boxSizing: 'border-box',
+  // does: it never grows past the visible block size, and its content scrolls
+  // inside the surface when taller. Only the content scrolls: the popover's
+  // hidden fallback close sits one pixel below the surface, so a scroller
+  // around the whole popover counts that pixel as overflow and shows a
+  // scrollbar on a popover whose content fits.
+  eventPopoverBody: {
     maxBlockSize: stylex.firstThatWorks(
-      `calc(100dvb - 2 * ${spacingVars['--spacing-4']})`,
-      `calc(100vh - 2 * ${spacingVars['--spacing-4']})`,
+      `calc(100dvb - 2 * ${spacingVars['--spacing-4']} - 2 * ${spacingVars['--spacing-3']})`,
+      `calc(100vh - 2 * ${spacingVars['--spacing-4']} - 2 * ${spacingVars['--spacing-3']})`,
     ),
     overflowY: 'auto',
   },

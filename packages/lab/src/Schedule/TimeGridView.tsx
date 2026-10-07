@@ -656,12 +656,17 @@ export function TimeGridView({
         <div aria-hidden {...stylex.props(styles.timeGridFocusRing)} />
       </div>
       {hasPopover &&
-        popover.render(openContent, {
-          placement: 'below',
-          alignment: 'start',
-          offset: spacingVars['--spacing-1'],
-          xstyle: [styles.eventPopover, layerAnimations.below],
-        })}
+        popover.render(
+          openContent == null ? null : (
+            <div {...stylex.props(styles.eventPopoverBody)}>{openContent}</div>
+          ),
+          {
+            placement: 'below',
+            alignment: 'start',
+            offset: spacingVars['--spacing-1'],
+            xstyle: layerAnimations.below,
+          },
+        )}
     </>
   );
 }

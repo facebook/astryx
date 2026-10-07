@@ -7,7 +7,8 @@
  *   reachable buttons whose popup attributes track one view-owned popover:
  *   open on Enter, Space, click, and tap; close on Escape and light dismiss
  *   with focus returned to the event; switch between events in one gesture;
- *   leave a null event read-only; and keep the read-only story unchanged
+ *   leave a null event read-only; keep the read-only story unchanged; and
+ *   show no scrollbar on a popover whose content fits
  * @position Browser binding for `component:Schedule` FR11–FR14 and AR2–AR5.
  *   jsdom cannot show a native popover, return focus through it, paint a
  *   focus ring, or produce a touch tap.
@@ -362,4 +363,47 @@ test('without the option the grid stays read-only', async ({page}) => {
   expect(reading.eventButtons).toBe(0);
   expect(reading.hiddenGrid).toBe(true);
   expect(reading.dialogs).toBe(0);
+});
+
+test('an open popover whose content fits has no scroll overflow and shows no scrollbar', async ({
+  page,
+}) => {
+  await openStory(evidence, page, POPOVER_STORY, WIDE);
+  await page.getByRole('button', {name: /^Workshop,/}).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  // Every box from the popover layer down to its content: none may scroll
+  // when the content fits, so classic scrollbars never paint.
+  const overflow = await dialog.evaluate(element => {
+    const boxes: HTMLElement[] = [];
+    for (
+      let box: HTMLElement | null = element;
+      box != null && box !== document.body;
+      box = box.parentElement
+    ) {
+      boxes.push(box);
+    }
+    boxes.push(...element.querySelectorAll<HTMLElement>('*'));
+    return boxes
+      .filter(box => {
+        const style = getComputedStyle(box);
+        return /auto|scroll/.test(style.overflowY + style.overflowX);
+      })
+      .map(box => ({
+        role: box.getAttribute('role'),
+        block: box.scrollHeight - box.clientHeight,
+        inline: box.scrollWidth - box.clientWidth,
+      }));
+  });
+  await record(evidence, page, 'popover-no-overflow', POPOVER_STORY, 'ltr', {
+    overflow,
+  });
+  expect(overflow.length).toBeGreaterThan(0);
+  for (const box of overflow) {
+    expect(box, 'a scroller around fitting popover content').toEqual({
+      ...box,
+      block: 0,
+      inline: 0,
+    });
+  }
 });
