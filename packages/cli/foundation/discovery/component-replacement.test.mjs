@@ -95,8 +95,8 @@ describe('resolveComponentReplacements', () => {
       name: 'AcmeSideNav',
       package: '@acme/nav',
     });
-    // The bare name matches without case, as component lookup does.
-    expect(result.forTarget('sidenav')?.name).toBe('AcmeSideNav');
+    // The name matches exactly, as Core component lookups do.
+    expect(result.forTarget('sidenav')).toBeUndefined();
     expect(result.forTarget('TopNav')).toBeUndefined();
   });
 
@@ -150,6 +150,35 @@ describe('resolveComponentReplacements', () => {
         'warning:invalid_component_replacement:Button',
       ]),
     );
+  });
+
+  it('reports duplicate declarations in a package without the floor as warnings', async () => {
+    const old = integration('@acme/old', [
+      {name: 'NavA', replaces: 'SideNav'},
+      {name: 'NavB', replaces: 'SideNav'},
+    ]);
+    const result = await resolveComponentReplacements(CORE_DIR, [old]);
+    expect(result.active).toEqual([]);
+    expect(codes(result)).toEqual(
+      expect.arrayContaining([
+        'warning:ambiguous_component_replacement:NavA',
+        'warning:ambiguous_component_replacement:NavB',
+      ]),
+    );
+  });
+
+  it('says a same-name declaration without the floor leaves the bare name ambiguous', async () => {
+    const old = integration('@acme/old', [
+      {name: 'SideNav', replaces: 'SideNav'},
+    ]);
+    const result = await resolveComponentReplacements(CORE_DIR, [old]);
+    expect(codes(result)).toEqual([
+      'warning:inactive_component_replacement:SideNav',
+    ]);
+    expect(result.findings[0].message).toContain(
+      'the bare name "SideNav" stays ambiguous',
+    );
+    expect(result.findings[0].message).not.toContain('stays Core');
   });
 
   it('fails closed on invalid declarations from a package with the floor', async () => {

@@ -10,9 +10,10 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {component} from './component.mjs';
-import {search} from '../search/search.mjs';
+import {componentKeywords, search} from '../search/search.mjs';
 import {swizzleCopy} from '../swizzle/copy/copy.mjs';
 import {integrationComponentConflicts} from '../integration/authoring-checks.mjs';
+import {GAP_REPORT_CATEGORIES, gapReport} from '../gap-report/gap-report.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {COMPONENT_REPLACES_CLI} from '../../foundation/integrations/cli-requirement.mjs';
 
@@ -262,6 +263,183 @@ describe('a package that declares the CLI floor', () => {
       });
       expect(checked.data.issues).toEqual([]);
       expect(checked.data.conflicts).toEqual([]);
+    },
+    SLOW,
+  );
+});
+
+describe('every surface reads the same replacement', () => {
+  beforeEach(() => {
+    writeIntegration(
+      '@acme/nav',
+      [{name: 'AcmeSideNav', replaces: 'SideNav'}],
+      FLOOR,
+    );
+    writeConsumer(['@acme/nav']);
+  });
+
+  it(
+    'routes a gap report to the replacing package, and to Core when asked',
+    async () => {
+      fs.writeFileSync(
+        path.join(
+          tmpDir,
+          'node_modules',
+          '@acme',
+          'nav',
+          'astryx.integration.mjs',
+        ),
+        "export default {components: './components', issuesUrl: 'https://example.com/acme/nav/issues'};\n",
+      );
+      const category = GAP_REPORT_CATEGORIES[0].value;
+      const routed = await gapReport('SideNav', {
+        cwd: tmpDir,
+        category,
+        reason: 'Needs a compact variant',
+      });
+      expect(routed.data.package).toBe('@acme/nav');
+      const core = await gapReport('SideNav', {
+        cwd: tmpDir,
+        category,
+        reason: 'Needs a compact variant',
+        package: '@astryxdesign/core',
+      });
+      expect(core.data.package).toBe('@astryxdesign/core');
+    },
+    SLOW,
+  );
+
+  it.each(/** @type {const} */ (['compact', 'full']))(
+    'takes the Core slot in a category list at %s detail',
+    async detail => {
+      const listed = await component(undefined, {
+        cwd: tmpDir,
+        category: 'Navigation',
+        detail,
+      });
+      const entries = listed.data.components.Navigation;
+      expect(entries).toContainEqual(
+        expect.objectContaining({name: 'AcmeSideNav', package: '@acme/nav'}),
+      );
+      expect(entries.map(entry => entry.name)).not.toContain('SideNav');
+    },
+    SLOW,
+  );
+
+  it(
+    'gives build the replacement keywords, not the Core original',
+    async () => {
+      const coreDir = path.resolve(
+        import.meta.dirname,
+        '..',
+        '..',
+        '..',
+        'core',
+      );
+      const names = (await componentKeywords(coreDir, tmpDir)).map(
+        entry => entry.name,
+      );
+      expect(names).toContain('AcmeSideNav');
+      expect(names).not.toContain('SideNav');
+    },
+    SLOW,
+  );
+
+  it(
+    'answers to the Core name qualified by its own package',
+    async () => {
+      const scoped = await component('SideNav', {
+        cwd: tmpDir,
+        package: '@acme/nav',
+      });
+      expect(scoped.package).toBe('@acme/nav');
+      expect(scoped.data.name).toBe('AcmeSideNav');
+      const copied = await swizzleCopy('SideNav', {
+        cwd: tmpDir,
+        output: './scoped',
+        package: '@acme/nav',
+      });
+      expect(copied.data).toMatchObject({
+        component: 'AcmeSideNav',
+        package: '@acme/nav',
+      });
+    },
+    SLOW,
+  );
+
+  it(
+    'matches the Core name exactly, as Core lookups do',
+    async () => {
+      await expect(component('sidenav', {cwd: tmpDir})).rejects.toMatchObject({
+        code: 'ERR_UNKNOWN_COMPONENT',
+      });
+    },
+    SLOW,
+  );
+});
+
+describe('a replacement that keeps the Core name', () => {
+  it(
+    'is intentional, so it is not a conflict, and it wins the bare name',
+    async () => {
+      writeIntegration(
+        '@acme/nav',
+        [{name: 'SideNav', replaces: 'SideNav'}],
+        FLOOR,
+      );
+      writeConsumer(['@acme/nav']);
+      const checked = await integrationComponentConflicts('@acme/nav', {
+        cwd: tmpDir,
+      });
+      expect(checked.data.conflicts).toEqual([]);
+      expect(checked.data.issues).toEqual([]);
+      const detail = await component('SideNav', {cwd: tmpDir});
+      expect(detail.package).toBe('@acme/nav');
+    },
+    SLOW,
+  );
+
+  it(
+    'stays a conflict when the package has not opted in',
+    async () => {
+      writeIntegration('@acme/nav', [{name: 'SideNav', replaces: 'SideNav'}]);
+      writeConsumer(['@acme/nav']);
+      const checked = await integrationComponentConflicts('@acme/nav', {
+        cwd: tmpDir,
+      });
+      expect(checked.data.conflicts.map(conflict => conflict.name)).toEqual([
+        'SideNav',
+      ]);
+    },
+    SLOW,
+  );
+});
+
+describe('a component the replacement shadows', () => {
+  it(
+    'keeps a search hit whose command names its own package',
+    async () => {
+      writeIntegration('@acme/native', [{name: 'SideNav'}]);
+      writeIntegration(
+        '@acme/nav',
+        [{name: 'AcmeSideNav', replaces: 'SideNav'}],
+        FLOOR,
+      );
+      writeConsumer(['@acme/native', '@acme/nav']);
+      const found = await search('SideNav', {cwd: tmpDir, type: 'component'});
+      const results = found.data.results ?? Object.values(found.data).flat();
+      const shadowed = results.find(
+        result =>
+          result.name === 'SideNav' && result.package === '@acme/native',
+      );
+      expect(shadowed?.command).toBe(
+        'astryx component SideNav --package @acme/native',
+      );
+      const native = await component('SideNav', {
+        cwd: tmpDir,
+        package: '@acme/native',
+      });
+      expect(native.package).toBe('@acme/native');
     },
     SLOW,
   );

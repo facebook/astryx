@@ -67,7 +67,8 @@ import {
  * @property {ActiveComponentReplacement[]} active in Core catalog order
  * @property {ComponentReplacementFinding[]} findings
  * @property {(name: unknown) => ActiveComponentReplacement | undefined} forTarget
- *   the active replacement for a Core component name, matched without case
+ *   the active replacement for a Core component name, matched exactly, as
+ *   Core component lookups are
  */
 
 /**
@@ -135,9 +136,13 @@ export function componentReplacementsEnabled(pkg) {
  * @returns {string}
  */
 function inactiveTail(name, target) {
+  const until =
+    name === target
+      ? `Until then the bare name "${name}" stays ambiguous between Core and this package; select either one with --package.`
+      : `Until then "${name}" keeps its own name and "${target}" stays Core.`;
   return (
     `This CLI applies the replacement only when the package declares "${CLI_PACKAGE}": ">=${COMPONENT_REPLACES_CLI}" ` +
-    `in peerDependencies (optional in peerDependenciesMeta). Until then "${name}" keeps its own name and "${target}" stays Core.`
+    `in peerDependencies (optional in peerDependenciesMeta). ${until}`
   );
 }
 
@@ -171,7 +176,7 @@ export async function resolveComponentReplacements(
     findings,
     /** @param {unknown} name */
     forTarget: name =>
-      typeof name === 'string' ? byTarget.get(keyOf(name)) : undefined,
+      typeof name === 'string' ? byTarget.get(name) : undefined,
   };
 
   /** @type {Declaration[]} */
@@ -327,13 +332,13 @@ export async function resolveComponentReplacements(
       }
       continue;
     }
-    if (!declaration.optedIn) continue;
     const valid = validByTarget.get(replaces) ?? [];
     valid.push(declaration);
     validByTarget.set(replaces, valid);
   }
 
-  // Two components in one package replacing one target: neither applies.
+  // Two components in one package replacing one target: neither applies. A
+  // package without the floor gets the same finding, as a warning.
   for (const [target, valid] of validByTarget) {
     /** @type {Map<string, Declaration[]>} */
     const byPackage = new Map();
@@ -354,9 +359,11 @@ export async function resolveComponentReplacements(
           `${pkg} declares ${group.length} components as replacements for Core component "${target}" (${names}). One package declares at most one replacement for a Core component.`,
         );
       }
-      const failed = failedByTarget.get(target) ?? [];
-      failed.push(...group);
-      failedByTarget.set(target, failed);
+      if (group[0].optedIn) {
+        const failed = failedByTarget.get(target) ?? [];
+        failed.push(...group);
+        failedByTarget.set(target, failed);
+      }
       validByTarget.set(
         target,
         (validByTarget.get(target) ?? []).filter(d => d.package !== pkg),
@@ -364,8 +371,15 @@ export async function resolveComponentReplacements(
     }
   }
 
+  // Only declarations from packages with the floor contend for a target.
+  /** @param {string} target */
+  const contendersFor = target =>
+    (validByTarget.get(target) ?? []).filter(
+      declaration => declaration.optedIn,
+    );
+
   for (const [target, failed] of failedByTarget) {
-    const valid = validByTarget.get(target) ?? [];
+    const valid = contendersFor(target);
     const hasExplicitIntent =
       valid.some(declaration => !declaration.autolinked) ||
       failed.some(declaration => !declaration.autolinked);
@@ -378,10 +392,8 @@ export async function resolveComponentReplacements(
   }
 
   for (const target of coreNames) {
-    const valid = validByTarget.get(target);
-    if (valid == null || valid.length === 0 || invalidTargets.has(target)) {
-      continue;
-    }
+    const valid = contendersFor(target);
+    if (valid.length === 0 || invalidTargets.has(target)) continue;
     const hasExplicitIntent = valid.some(
       declaration => !declaration.autolinked,
     );
@@ -415,16 +427,13 @@ export async function resolveComponentReplacements(
       issuesUrl: winner.issuesUrl,
       integration: winner.integration,
     };
-    byTarget.set(keyOf(target), active);
+    byTarget.set(target, active);
     result.active.push(active);
 
     // An integration component named after the target, from another
     // package, is no longer what the bare name selects.
     for (const native of nativeComponents) {
-      if (
-        native.package === winner.package ||
-        keyOf(native.name) !== keyOf(target)
-      ) {
+      if (native.package === winner.package || native.name !== target) {
         continue;
       }
       findings.push({

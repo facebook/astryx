@@ -1053,9 +1053,18 @@ async function gatherComponents(coreDir, cwd) {
     ...core.filter(candidate => !replacements.forTarget(candidate.name)),
     ...integrations.map(candidate => {
       const target = targetOf.get(`${candidate._package}\0${candidate.name}`);
-      return target == null
-        ? candidate
-        : {...candidate, aliases: [...(candidate.aliases ?? []), target]};
+      if (target != null) {
+        return {...candidate, aliases: [...(candidate.aliases ?? []), target]};
+      }
+      // Another package's component named after a replaced Core component is
+      // shadowed for the bare name (FR14): its command names its package.
+      const shadowedBy = replacements.forTarget(candidate.name);
+      return shadowedBy && shadowedBy.package !== candidate._package
+        ? {
+            ...candidate,
+            _command: `astryx component ${candidate.name} --package ${candidate._package}`,
+          }
+        : candidate;
     }),
   ];
 }
@@ -1581,7 +1590,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
       result = {
         ...base,
         import: c._import,
-        command: `astryx component ${c.name}`,
+        command: c._command ?? `astryx component ${c.name}`,
       };
       break;
     case 'hook':

@@ -50,13 +50,15 @@ export interface ComponentBaseDoc extends AuthoredDocGraphFields {
   import?: string;
   /** Integration components only: the exact `name` of the Core ComponentDoc
    *  this component takes over for unqualified lookup, so every app that loads
-   *  the integration gets this component from component detail, lists, search,
-   *  swizzle, and issue routing. The Core original stays reachable with
+   *  the integration gets this component from component detail, component
+   *  lists, search, `swizzle <Name>`, and issue routing; `swizzle --list` keeps
+   *  listing Core names. The Core original stays reachable with
    *  `--package @astryxdesign/core`. Set it only to intentionally own a Core
    *  identity; give an alternative or variant its own name instead. It takes
-   *  effect only when the package declares `"@astryxdesign/cli": ">=0.6.7"`
-   *  in peerDependencies; without that range, and on older CLIs that do not
-   *  read `replaces`, the component keeps its own name. */
+   *  effect only when the package's peer range starts at the release that
+   *  applies it, `"@astryxdesign/cli": ">=0.6.7"` or later; without such a
+   *  range, and on older CLIs that do not read `replaces`, the component keeps
+   *  its own name. */
   replaces?: string;
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common

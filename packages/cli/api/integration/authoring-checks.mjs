@@ -24,7 +24,7 @@ import {
   discoverIntegrationComponents,
   discoverOwnedComponents,
 } from '../../foundation/discovery/component-discovery.mjs';
-import {resolveComponentReplacements} from '../../foundation/discovery/component-replacement.mjs';
+import {loadComponentReplacements} from '../component/_adapter.mjs';
 import {
   discoverBuiltinTopics,
   discoverIntegrationDocs,
@@ -265,7 +265,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
   // CLI floor gets only warnings, so its exit code is what it was before the
   // floor existed. An active replacement named after its own target is
   // intentional, not a conflict.
-  const replacements = await resolveComponentReplacements(coreDir, [
+  const replacements = await loadComponentReplacements(coreDir, [
     resolved.integration,
   ]);
   addErrors(issues, replacements.findings, 'invalid_component_replacement');

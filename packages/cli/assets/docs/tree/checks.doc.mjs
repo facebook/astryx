@@ -38,7 +38,7 @@ export const docs = {
               '`npx astryx doctor integration components`',
               'No component name clashes with a Core component, and each `replaces` names one Core component',
               'Core is not installed (`core_not_found`). In a package that declares the CLI range that turns replacement on, a `replaces` target is missing (`missing_component_replacement_target`) or invalid (`invalid_component_replacement`), or two components replace one Core component (`ambiguous_component_replacement`)',
-              'A name clashes with Core, or a component sets `replaces` and the package does not declare that range (`inactive_component_replacement`)',
+              'A name clashes with Core, or a component sets `replaces` in a package without that range (`inactive_component_replacement`, plus any missing, invalid, or duplicate `replaces` reported as a warning)',
             ],
             [
               '`npx astryx doctor integration templates`',

@@ -165,6 +165,10 @@ describe('componentReplacesCliProblem', () => {
       .split('],')
       .find(part => part.includes('`component_replaces_needs_cli`'));
     expect(row).toContain(`@astryxdesign/cli=>=${COMPONENT_REPLACES_CLI}'`);
+    // Every version that row names is the floor.
+    expect(new Set(row?.match(/\d+\.\d+\.\d+/g))).toEqual(
+      new Set([COMPONENT_REPLACES_CLI]),
+    );
   });
 });
 

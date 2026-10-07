@@ -112,7 +112,12 @@ async function replacementEntry(replacement, detail, {zh, dense, lang}) {
     return {name: replacement.name, package: replacement.package, description: ''};
   }
   const {package: _owner, ...doc} = docs;
-  return {name: doc.name ?? replacement.name, package: replacement.package, ...doc};
+  return {
+    name: doc.name ?? replacement.name,
+    package: replacement.package,
+    ...doc,
+    import: importPath,
+  };
 }
 
 /**

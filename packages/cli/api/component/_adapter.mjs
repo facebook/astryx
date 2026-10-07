@@ -142,8 +142,9 @@ export async function loadIntegrationsSafely(cwd) {
 /**
  * Every component replacement the loaded integrations declare
  * (spec:AST-035 FR10–FR15): the active one for each replaced Core component,
- * and the findings Doctor reports.
- * @param {string} coreDir
+ * and the findings Doctor reports. With no Core directory, only the opt-in
+ * and value findings are computed.
+ * @param {string|null} coreDir
  * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
  * @returns {Promise<import('../../foundation/discovery/component-replacement.mjs').ComponentReplacements>}
  */

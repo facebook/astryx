@@ -174,10 +174,13 @@ Component discovery reads `replaces` from each valid component doc, and one reso
 decides component replacement, precedence, and findings. Component detail, batch
 selectors, every list detail level, search, swizzle copy, gap-report routing, Project
 issues, and `astryx doctor integration components` read its result. Stable CLI
-releases before `COMPONENT_REPLACES_CLI` accept a component `replaces` and ignore it,
-and an integration package published for them declares no range that reaches it. Its
-components keep their names, the Core components stay selected, an app that loads it
-sees no new output, and its author sees warnings in the package checks. Under `spec:AST-017/FR1` and FR5, component
+releases before `COMPONENT_REPLACES_CLI` accept a component `replaces` and ignore it. A
+package whose range admits one of them keeps its components' names, the Core
+components stay selected, an app that loads it sees no new output, and its author sees
+warnings in the package checks. A package whose range already starts later, such as
+the `>=0.7.0` that earlier `integration add theme` and `integration add doc --parent`
+wrote, opts in unchanged; its range excludes every CLI that ignores the field, so no
+supported combination changes. Under `spec:AST-017/FR1`, FR5, and FR12, component
 replacement is a `[feat]` patch.
 
 ## Verification
@@ -276,10 +279,12 @@ adapter already protect released consumers.
 A component's `replaces` lives in its own ComponentDoc, as a template's does (DEC-3).
 Stable releases before the floor accept the field and document replacement without
 applying it, so applying every declaration at once would change selection for packages
-published for those releases. The CLI applies a package's component replacements only
-when its `@astryxdesign/cli` peer range starts at the first release that applies them,
-which keeps every published package's behavior and gives new packages one documented
-switch they already manage for other features.
+whose range admits those releases. The CLI applies a package's component replacements
+only when its `@astryxdesign/cli` peer range starts at the first release that applies
+them. A package whose range admits an earlier CLI keeps its behavior; a range that
+already starts later, such as `>=0.7.0`, excludes every CLI that ignores the field, so
+no supported combination changes. New packages get one documented switch they already
+manage for other features.
 
 Rejected: applying every declared `replaces` immediately — it changes released selection without the package asking.
 Rejected: an app configuration key — the package already states its intent, and `spec:AST-017/FR19` admits configuration only on evidence.
