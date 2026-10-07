@@ -27,7 +27,6 @@ import {$dfs} from '@lexical/utils';
 import {
   $getSelection,
   $isRangeSelection,
-  $isTextNode,
   COMMAND_PRIORITY_LOW,
   FORMAT_TEXT_COMMAND,
   HISTORY_MERGE_TAG,
@@ -35,7 +34,6 @@ import {
   type LexicalEditor,
   type RangeSelection,
   type TextFormatType,
-  type TextNode,
 } from 'lexical';
 import {MarkdownPluginNodeRenderer} from '@astryxdesign/core/Markdown/plugin-renderer';
 import {
@@ -48,6 +46,7 @@ import type {
 } from '@astryxdesign/core/Markdown/plugins';
 import {pluginsOf, type RichTextMarkdownExtension} from './markdownExtensions';
 import {
+  $firstSelectedText,
   $isRichTextExtensionNode,
   setRichTextExtensionNodeDecorator,
   type RichTextExtensionNode,
@@ -155,33 +154,10 @@ function $nextTextFormat(
   selection: RangeSelection,
   format: TextFormatType,
 ): boolean | null {
-  const texts = selection.getNodes().filter($isTextNode);
-  const isBackward = selection.isBackward();
-  const start = isBackward ? selection.focus : selection.anchor;
-  const end = isBackward ? selection.anchor : selection.focus;
-  let first: TextNode | undefined = texts[0];
-  let startOffset = start.type === 'element' ? 0 : start.offset;
-  // A range that starts at the end of a text node starts in the next one.
-  if (
-    first != null &&
-    start.type === 'text' &&
-    startOffset === first.getTextContentSize()
-  ) {
-    first = texts[1];
-    startOffset = 0;
-  }
-  const last = texts[texts.length - 1];
-  if (first == null || last == null) {
-    return null;
-  }
-  const endOffset =
-    end.type === 'text' ? end.offset : last.getTextContentSize();
-  if (first.is(last) && startOffset === endOffset) {
-    return null;
-  }
-  return (
-    (first.getFormatFlags(format, null) & TEXT_TYPE_TO_FORMAT[format]) !== 0
-  );
+  const first = $firstSelectedText(selection);
+  return first == null
+    ? null
+    : (first.getFormatFlags(format, null) & TEXT_TYPE_TO_FORMAT[format]) !== 0;
 }
 
 export interface MarkdownExtensionsPluginProps {

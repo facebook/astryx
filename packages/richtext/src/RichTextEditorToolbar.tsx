@@ -95,6 +95,7 @@ import {
   type RangeSelection,
 } from 'lexical';
 import {sanitizeUrl} from './linkUtils';
+import {$selectedExtensionNodesOnly} from './markdownExtensionNode';
 
 /** Block types exposed by the toolbar's format selector. */
 type BlockType =
@@ -512,6 +513,8 @@ export function RichTextEditorToolbar({
       return;
     }
     const formats = new Set<string>();
+    // A selection of Markdown plugin nodes alone shows their formats.
+    const nodesOnly = $selectedExtensionNodesOnly(selection);
     for (const fmt of [
       'bold',
       'italic',
@@ -519,7 +522,11 @@ export function RichTextEditorToolbar({
       'strikethrough',
       'code',
     ] as const) {
-      if (selection.hasFormat(fmt)) {
+      if (
+        nodesOnly != null
+          ? nodesOnly.every(node => node.hasFormat(fmt))
+          : selection.hasFormat(fmt)
+      ) {
         formats.add(fmt);
       }
     }

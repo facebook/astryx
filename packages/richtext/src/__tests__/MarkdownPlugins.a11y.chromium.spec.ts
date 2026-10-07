@@ -226,6 +226,28 @@ test('bold toggled with only a plugin node selected toggles that node', async ({
   expect(errors).toEqual([]);
 });
 
+test('the toolbar shows the format of a plugin node selected alone', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  const bold = surface(page, 'editor').getByRole('button', {name: 'Bold'});
+  // From just after the node, one step back selects the node alone.
+  await caretAt(page, 6);
+  await page.keyboard.press('Shift+ArrowLeft');
+  await expectEditorSelection(page, '@{ada}');
+  await expect(bold).toHaveAttribute('aria-pressed', 'false');
+  await bold.click();
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+  // The text around the node is not bold, and the node still is.
+  await caretAt(page, 2);
+  await expect(bold).toHaveAttribute('aria-pressed', 'false');
+  await caretAt(page, 6);
+  await page.keyboard.press('Shift+ArrowLeft');
+  await expectEditorSelection(page, '@{ada}');
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+  expect(errors).toEqual([]);
+});
+
 test('a copied plugin node pastes whole, drawn where the plugin is given and as source where it is not', async ({
   page,
 }) => {

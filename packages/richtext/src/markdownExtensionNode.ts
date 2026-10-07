@@ -18,6 +18,7 @@
  */
 
 import {
+  $isTextNode,
   DecoratorNode,
   TEXT_TYPE_TO_FORMAT,
   type DOMConversionMap,
@@ -27,6 +28,8 @@ import {
   type LexicalEditor,
   type LexicalNode,
   type NodeKey,
+  type RangeSelection,
+  type TextNode,
   type SerializedLexicalNode,
   type Spread,
   type TextFormatType,
@@ -266,4 +269,51 @@ export function $isRichTextExtensionNode(
   node: LexicalNode | null | undefined,
 ): node is RichTextExtensionNode {
   return node instanceof RichTextExtensionNode;
+}
+
+/**
+ * The first text node a range selects characters of, as Lexical's formatText
+ * reads it: a range that starts at the end of a text node starts in the next.
+ * Null when the range selects no text, only nodes.
+ */
+export function $firstSelectedText(selection: RangeSelection): TextNode | null {
+  const texts = selection.getNodes().filter($isTextNode);
+  const isBackward = selection.isBackward();
+  const start = isBackward ? selection.focus : selection.anchor;
+  const end = isBackward ? selection.anchor : selection.focus;
+  let first: TextNode | undefined = texts[0];
+  let startOffset = start.type === 'element' ? 0 : start.offset;
+  if (
+    first != null &&
+    start.type === 'text' &&
+    startOffset === first.getTextContentSize()
+  ) {
+    first = texts[1];
+    startOffset = 0;
+  }
+  const last = texts[texts.length - 1];
+  if (first == null || last == null) {
+    return null;
+  }
+  const endOffset =
+    end.type === 'text' ? end.offset : last.getTextContentSize();
+  return first.is(last) && startOffset === endOffset ? null : first;
+}
+
+/**
+ * The inline plugin nodes a range selects when it selects no text, only
+ * nodes; null otherwise. A format shown or toggled then belongs to them.
+ */
+export function $selectedExtensionNodesOnly(
+  selection: RangeSelection,
+): RichTextExtensionNode[] | null {
+  const nodes = selection
+    .getNodes()
+    .filter(
+      (node): node is RichTextExtensionNode =>
+        $isRichTextExtensionNode(node) && node.isInline(),
+    );
+  return nodes.length > 0 && $firstSelectedText(selection) == null
+    ? nodes
+    : null;
 }
