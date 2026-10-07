@@ -2859,6 +2859,17 @@ function blockExtensionColumn(line: string): number | null {
 }
 
 /**
+ * A block quote marker: up to three spaces of indentation, then `>`
+ * (CommonMark 0.31 §5.1). Text may follow the `>` directly.
+ */
+const QUOTE_MARKER = /^ {0,3}>/;
+
+/** A quoted line's content: the marker and the one space or tab after it. */
+function quotedContent(line: string): string {
+  return line.replace(/^ {0,3}>[ \t]?/, '');
+}
+
+/**
  * Returns true when a line could start a new block — used to stop paragraph
  * continuation.  Every regex here uses bounded or single-class quantifiers
  * to avoid ReDoS.
@@ -2873,7 +2884,7 @@ function isBlockStart(line: string): boolean {
   if (isHorizontalRule(line)) {
     return true;
   }
-  if (line.startsWith('> ') || line === '>') {
+  if (QUOTE_MARKER.test(line)) {
     return true;
   }
   if (/^ {0,9}[-*+] /.test(line)) {
@@ -2906,8 +2917,7 @@ function canContinueParagraphLazily(
     /^#{1,6} /.test(line) ||
     /^(`{3,}|~{3,})/.test(line) ||
     isHorizontalRule(line) ||
-    line.startsWith('> ') ||
-    line === '>' ||
+    QUOTE_MARKER.test(line) ||
     /^ {0,9}[-*+] /.test(line) ||
     (insideList ? /^ {0,9}\d+[.)] /.test(line) : /^ {0,9}0*1[.)] /.test(line))
   ) {
@@ -3531,13 +3541,13 @@ function parseMarkdownImpl(
     }
 
     // --- Blockquote ---
-    if (line.startsWith('> ') || line === '>') {
+    if (QUOTE_MARKER.test(line)) {
       const quoteLines: string[] = [];
       let lazyParagraphOpen: boolean | undefined;
       while (index < lines.length) {
         const quoteLine = lines[index];
-        if (quoteLine.startsWith('> ') || quoteLine === '>') {
-          const content = quoteLine.replace(/^> ?/, '');
+        if (QUOTE_MARKER.test(quoteLine)) {
+          const content = quotedContent(quoteLine);
           quoteLines.push(content);
           if (content.trim() === '') {
             lazyParagraphOpen = false;

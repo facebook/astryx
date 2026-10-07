@@ -22,6 +22,7 @@ import {
   TEXT_MATCH_TRANSFORMERS,
   LINK,
   ORDERED_LIST,
+  QUOTE,
   TRANSFORMERS,
   type MultilineElementTransformer,
   type Transformer,
@@ -41,6 +42,7 @@ import {
 import type {ElementFormatType} from 'lexical';
 import {HARD_LINE_BREAK} from './markdownHardLineBreak';
 import {THEMATIC_BREAK} from './markdownThematicBreak';
+import {QUOTE_MARKERS} from './markdownQuote';
 import {LIST_EXPORT} from './markdownListExport';
 import {TASK_LIST} from './markdownTaskList';
 import {ORDERED_LIST_KEEPING_START} from './markdownOrderedList';
@@ -290,7 +292,9 @@ export const DEFAULT_TRANSFORMERS: ReadonlyArray<Transformer> = [
         ? LINK_KEEPING_DESTINATIONS
         : transformer === CODE
           ? BACKTICK_CODE
-          : transformer,
+          : transformer === QUOTE
+            ? QUOTE_MARKERS
+            : transformer,
   ),
   HARD_LINE_BREAK,
   TABLE,
