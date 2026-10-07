@@ -1890,6 +1890,13 @@ function parseInlineImpl(
   // resolveEmphasis pairs it. Created only when a run appears.
   let delimiters: DelimiterRun[] | null = null;
   let delimiterNodes: Set<object> | null = null;
+  // Where each backtick string of `text` starts, by length, with how far the
+  // search for a closer of that length has come: built when the first one
+  // appears, so finding every code span's closer is linear.
+  let backtickStrings: Map<
+    number,
+    {readonly starts: number[]; searched: number}
+  > | null = null;
   // Only a plugin that actually contributes INLINE syntax may cost anything
   // per source position. A transform-only list contributes none, so it takes
   // the same path as an omitted or empty one: no candidate probe per
@@ -1918,22 +1925,58 @@ function parseInlineImpl(
       }
     }
 
-    // --- Inline code ---
+    // --- Inline code: a backtick string closes at the next backtick string
+    // of the same length, never part of a longer one; with none, it is text
+    // (CommonMark 0.31 §6.1).
     if (text[i] === '`') {
-      const tickCount = text[i + 1] === '`' ? (text[i + 2] === '`' ? 3 : 2) : 1;
-      const openIndex = i + tickCount;
-      const closeIndex = text.indexOf('`'.repeat(tickCount), openIndex);
-      if (closeIndex !== -1) {
-        nodes.push({
-          type: 'inlineCode',
-          value:
-            context === 'tableCell'
-              ? text.slice(openIndex, closeIndex).replace(/\\\|/g, '|')
-              : text.slice(openIndex, closeIndex),
-        });
-        i = closeIndex + tickCount;
+      let openIndex = i;
+      while (text[openIndex] === '`') {
+        openIndex++;
+      }
+      const tickCount = openIndex - i;
+      if (backtickStrings == null) {
+        backtickStrings = new Map();
+        for (let start = i; start !== -1;) {
+          let end = start;
+          while (text[end] === '`') {
+            end++;
+          }
+          const sameLength = backtickStrings.get(end - start);
+          if (sameLength == null) {
+            backtickStrings.set(end - start, {starts: [start], searched: 0});
+          } else {
+            sameLength.starts.push(start);
+          }
+          start = text.indexOf('`', end);
+        }
+      }
+      const sameLength = backtickStrings.get(tickCount);
+      if (sameLength != null) {
+        while (
+          sameLength.searched < sameLength.starts.length &&
+          sameLength.starts[sameLength.searched] < openIndex
+        ) {
+          sameLength.searched++;
+        }
+      }
+      const closeIndex =
+        sameLength != null && sameLength.searched < sameLength.starts.length
+          ? sameLength.starts[sameLength.searched]
+          : -1;
+      if (closeIndex === -1) {
+        appendInlineText(nodes, delimiterNodes, text.slice(i, openIndex));
+        i = openIndex;
         continue;
       }
+      nodes.push({
+        type: 'inlineCode',
+        value:
+          context === 'tableCell'
+            ? text.slice(openIndex, closeIndex).replace(/\\\|/g, '|')
+            : text.slice(openIndex, closeIndex),
+      });
+      i = closeIndex + tickCount;
+      continue;
     }
 
     // --- Inline math (opt-in; code takes precedence) ---
