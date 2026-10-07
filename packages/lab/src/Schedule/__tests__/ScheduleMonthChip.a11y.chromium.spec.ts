@@ -24,12 +24,9 @@ import {
 const STORY = 'lab-schedule--month-overflow';
 const NARROW_MONTH = {width: 800, height: 900};
 // Titles the story paints as chips; the time is any "h:mm" run in a chip.
-const TIMED_TITLES = [
-  '1:1',
-  'Incident review',
-  'Design critique',
-  'Focus block',
-] as const;
+// A busy day paints its earliest events (FR15), so these are the timed chips
+// the story paints.
+const TIMED_TITLES = ['1:1', 'Standup', 'Planning', 'Design critique'] as const;
 const ALL_DAY_TITLE = 'Design conference';
 
 let evidence: Evidence;
@@ -187,7 +184,7 @@ for (const [direction, globals] of [
       true,
     );
     expect(
-      readings.narrow.find(chip => chip.title === 'Incident review')
+      readings.narrow.find(chip => chip.title === 'Design critique')
         ?.timeVisible,
     ).toBe(false);
   });
