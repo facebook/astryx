@@ -1413,6 +1413,34 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # CommandPaletteEmpty's dedicated route retains exact-head semantics,
+      # responsive geometry, theme reach, contrast, and screenshot receipts.
+      - name: Run CommandPaletteEmpty audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteEmpty:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output command-palette-empty-a11y-report.json \
+            --components CommandPaletteEmpty \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/CommandPalette/__tests__/CommandPaletteEmpty.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload CommandPaletteEmpty audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteEmpty:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: command-palette-empty-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            command-palette-empty-a11y-report.json
+            test-results/command-palette-empty-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # CollapsibleGroup's shared Collapsible story previously left the audit
       # owner with no routable browser fixture. Its dedicated matrix now emits
       # semantic-state, geometry, direction, theme, and viewport receipts.
