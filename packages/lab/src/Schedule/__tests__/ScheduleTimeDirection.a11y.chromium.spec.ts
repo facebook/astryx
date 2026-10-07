@@ -5,7 +5,8 @@
  * @input The built Lab/Schedule week, month, and list stories in real Chromium
  * @output Receipted evidence that every painted time — hour labels, event
  *   times, month chip times, and list rows — reads in order in both
- *   directions: its number paints before its AM or PM
+ *   directions: a number paints before its AM or PM, and a range reads start
+ *   first in its locale's direction (en-US in either layout, he-IL)
  * @position Browser binding for the Schedule's direction support
  *   (`component:Schedule` AR6). jsdom does not run the bidirectional
  *   algorithm, so only a browser shows the painted order.
@@ -22,11 +23,14 @@ import {
   type Evidence,
 } from './timeGridProbe';
 
+/** Each view, and whether it paints time ranges (month chips show starts). */
 const STORIES = [
-  ['week', WEEKLY],
-  ['month', 'lab-schedule--monthly'],
-  ['list', 'lab-schedule--list'],
+  ['week', WEEKLY, true],
+  ['month', 'lab-schedule--monthly', false],
+  ['list', 'lab-schedule--list', true],
 ] as const;
+/** The list under a right-to-left locale with 24-hour times. */
+const RTL_LOCALE = 'lab-schedule--right-to-left-locale';
 
 let evidence: Evidence;
 test.beforeAll(async () => {
@@ -38,14 +42,16 @@ test.afterAll(async () => {
 
 interface TimeReading {
   readonly text: string;
-  /** The time's number paints before its AM or PM. */
-  readonly inOrder: boolean;
+  /** Every number paints before its AM or PM. */
+  readonly meridiemInOrder: boolean;
+  /** For a range, which side its start paints on. */
+  readonly startSide: 'left' | 'right' | null;
 }
 
 /**
- * Every visible time in the schedule: text nodes with a number followed by
- * AM or PM, skipping visually hidden text (read by assistive technology in
- * logical order, never painted).
+ * Every visible time in the schedule: text nodes holding a time, skipping
+ * visually hidden text (read by assistive technology in logical order, never
+ * painted).
  */
 function readTimes(page: Page): Promise<TimeReading[]> {
   return page.evaluate(() => {
@@ -67,62 +73,123 @@ function readTimes(page: Page): Promise<TimeReading[]> {
       }
       return false;
     };
-    const readings: Array<{text: string; inOrder: boolean}> = [];
+    const rectOf = (node: Node, from: number, to: number) => {
+      const range = document.createRange();
+      range.setStart(node, from);
+      range.setEnd(node, to);
+      return range.getBoundingClientRect();
+    };
+    const readings: Array<{
+      text: string;
+      meridiemInOrder: boolean;
+      startSide: 'left' | 'right' | null;
+    }> = [];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node != null; node = walker.nextNode()) {
       const text = node.textContent ?? '';
-      const match = /(\d{1,2}(?::\d{2})?)\s?([AP]M)/.exec(text);
-      if (match == null || isHidden(node.parentElement)) {
+      const times = [
+        ...text.matchAll(/(\d{1,2}(?::\d{2})?)(?:\s?([AP]M))?/gu),
+      ].filter(match => match[2] != null || match[1].includes(':'));
+      if (times.length === 0 || isHidden(node.parentElement)) {
         continue;
       }
-      const range = document.createRange();
-      range.setStart(node, match.index);
-      range.setEnd(node, match.index + match[1].length);
-      const digits = range.getBoundingClientRect();
-      const meridiemAt = text.indexOf(match[2], match.index + match[1].length);
-      range.setStart(node, meridiemAt);
-      range.setEnd(node, meridiemAt + match[2].length);
-      const meridiem = range.getBoundingClientRect();
-      if (digits.width < 1 || meridiem.width < 1) {
+      const boxes = times.map(match => {
+        const at = match.index ?? 0;
+        const number = rectOf(node, at, at + match[1].length);
+        const meridiemAt =
+          match[2] == null ? -1 : text.indexOf(match[2], at + match[1].length);
+        return {
+          number,
+          meridiem:
+            meridiemAt < 0 ? null : rectOf(node, meridiemAt, meridiemAt + 2),
+        };
+      });
+      if (boxes.some(box => box.number.width < 1)) {
         continue;
       }
+      const [start, end] = boxes;
       readings.push({
         text: text.trim(),
-        inOrder: digits.right <= meridiem.left + 1,
+        meridiemInOrder: boxes.every(
+          box =>
+            box.meridiem == null || box.number.right <= box.meridiem.left + 1,
+        ),
+        startSide:
+          end == null
+            ? null
+            : start.number.left < end.number.left
+              ? 'left'
+              : 'right',
       });
     }
     return readings;
   });
 }
 
-for (const [view, story] of STORIES) {
+async function expectTimesInOrder(
+  page: Page,
+  name: string,
+  story: string,
+  direction: 'ltr' | 'rtl',
+  localeDirection: 'ltr' | 'rtl',
+  paintsRanges: boolean,
+) {
+  const times = await readTimes(page);
+  const ranges = times.filter(time => time.startSide != null);
+  // A range reads start first in its locale's direction: on the left for a
+  // left-to-right locale, on the right for a right-to-left one, whatever the
+  // layout direction.
+  const startSide = localeDirection === 'ltr' ? 'left' : 'right';
+  const outOfOrder = times
+    .filter(
+      time =>
+        !time.meridiemInOrder ||
+        (time.startSide != null && time.startSide !== startSide),
+    )
+    .map(time => time.text);
+  await record(evidence, page, name, story, direction, {
+    count: times.length,
+    ranges: ranges.length,
+    outOfOrder,
+  });
+  expect(times.length, `${name} paints times`).toBeGreaterThan(0);
+  if (paintsRanges) {
+    expect(ranges.length, `${name} paints ranges`).toBeGreaterThan(0);
+  }
+  expect(outOfOrder, `${name} times painted out of order`).toEqual([]);
+}
+
+for (const [view, story, paintsRanges] of STORIES) {
   for (const [direction, globals] of [
     ['ltr', undefined],
     ['rtl', 'direction:rtl'],
   ] as const) {
-    test(`every painted ${view} time reads in order (${direction})`, async ({
+    test(`every painted ${view} time reads in order (en-US, ${direction})`, async ({
       page,
     }) => {
       await openStory(evidence, page, story, WIDE, globals);
-      const times = await readTimes(page);
-      await record(
-        evidence,
+      await expectTimesInOrder(
         page,
         `time-direction-${view}-${direction}`,
         story,
         direction,
-        {
-          count: times.length,
-          outOfOrder: times
-            .filter(time => !time.inOrder)
-            .map(time => time.text),
-        },
+        'ltr',
+        paintsRanges,
       );
-      expect(times.length, `${view} paints times`).toBeGreaterThan(0);
-      expect(
-        times.filter(time => !time.inOrder).map(time => time.text),
-        `${view} times painted out of order`,
-      ).toEqual([]);
     });
   }
 }
+
+test('a right-to-left locale reads its 24-hour ranges start first (he-IL)', async ({
+  page,
+}) => {
+  await openStory(evidence, page, RTL_LOCALE, WIDE);
+  await expectTimesInOrder(
+    page,
+    'time-direction-list-he-IL',
+    RTL_LOCALE,
+    'rtl',
+    'rtl',
+    true,
+  );
+});

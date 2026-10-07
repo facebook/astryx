@@ -3,6 +3,7 @@
 import {useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Text} from '@astryxdesign/core';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {
   Schedule,
   createScheduleDayView,
@@ -311,6 +312,33 @@ export const List: Story = {
         onChangeDate={setDate}
         timezoneID="America/Los_Angeles"
       />
+    );
+  },
+};
+
+/**
+ * The list in a right-to-left locale: its 24-hour time ranges read start
+ * first, right to left.
+ */
+export const RightToLeftLocale: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(focusDate);
+    const view = useMemo(() => createScheduleListView(), []);
+
+    return (
+      <InternationalizationProvider locale="he-IL">
+        <div dir="rtl">
+          <Schedule
+            view={view}
+            events={events}
+            categories={categories}
+            date={date}
+            focusDate={focusDate}
+            onChangeDate={setDate}
+            timezoneID="America/Los_Angeles"
+          />
+        </div>
+      </InternationalizationProvider>
     );
   },
 };

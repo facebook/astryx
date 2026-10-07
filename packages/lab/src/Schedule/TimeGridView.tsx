@@ -58,6 +58,7 @@ import {
   getEventCategory,
   getMinutesSinceStartOfDay,
   isEventInPast,
+  ScheduleTime,
   styles,
 } from './shared';
 import {layoutTimedEvents, type TimedEventPlacement} from './timeGridLayout';
@@ -492,9 +493,7 @@ export function TimeGridView({
                     styles.timeLabel,
                     styles.timeLabelPosition(index + 1, hourHeight),
                   )}>
-                  {/* Isolated, so a time reads in order in either
-                      direction. */}
-                  <bdi>{formatHour(hour, locale)}</bdi>
+                  <ScheduleTime>{formatHour(hour, locale)}</ScheduleTime>
                 </div>
               ))}
             </div>
@@ -580,7 +579,7 @@ export function TimeGridView({
                             type="supporting"
                             color="inherit"
                             xstyle={styles.eventTime}>
-                            <bdi>{timeLabel}</bdi>
+                            <ScheduleTime>{timeLabel}</ScheduleTime>
                           </Text>
                         </>
                       );

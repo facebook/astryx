@@ -263,6 +263,45 @@ describe('Schedule', () => {
     expect(screen.getAllByText('11:00 PM - 2:00 AM')).toHaveLength(2);
   });
 
+  it('isolates each painted time in the locale direction, whatever the layout direction', async () => {
+    const renderList = (locale: string) =>
+      render(
+        <InternationalizationProvider locale={locale} dir="rtl">
+          <div dir="rtl">
+            <Schedule
+              view={createScheduleListView({days: 7})}
+              events={events}
+              categories={categories}
+              date={Date.UTC(2026, 4, 13)}
+              timezoneID="UTC"
+            />
+          </div>
+        </InternationalizationProvider>,
+      );
+    const timesOf = async () => {
+      await waitFor(() => {
+        expect(screen.getByText('Visible sync')).toBeInTheDocument();
+      });
+      return Array.from(document.querySelectorAll('bdi')).map(time => [
+        time.textContent,
+        time.getAttribute('dir'),
+      ]);
+    };
+
+    const english = renderList('en-US');
+    expect(await timesOf()).toEqual([
+      ['All day', 'ltr'],
+      ['4:00 PM - 4:30 PM', 'ltr'],
+    ]);
+    english.unmount();
+
+    // A right-to-left locale keeps its 24-hour range start first.
+    renderList('he-IL');
+    const hebrew = await timesOf();
+    expect(hebrew.map(([, dir]) => dir)).toEqual(['rtl', 'rtl']);
+    expect(hebrew[1][0]).toMatch(/^16:00\s?-\s?16:30$/u);
+  });
+
   it('renders weekly view with the same month title as monthly view', () => {
     render(
       <Schedule
