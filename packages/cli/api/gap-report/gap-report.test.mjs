@@ -1195,7 +1195,7 @@ describe('gapReport aggregate status and CLI exit', () => {
       `,
     });
     configure(['@test/inspector']);
-    vi.stubEnv('ASTRYX_AGENT_ID', 'secret-agent');
+    vi.stubEnv('AGENT', 'secret-agent');
 
     const result = await gapReport('Button', {
       ...reportOptions,

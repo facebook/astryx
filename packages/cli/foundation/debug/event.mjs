@@ -123,9 +123,14 @@ function nonEmptyString(value) {
 }
 
 /**
- * ASTRYX_AGENT_METADATA accepts both JSON and comma-separated key=value
+ * Agent metadata accepts both JSON and comma-separated key=value
  * forms. Unknown or malformed entries are ignored so a producer cannot break
  * command recording.
+ *
+ * Note: ASTRYX_AGENT_METADATA was removed — the CLI must not define or read
+ * an Astryx-owned environment variable (spec:AST-017 FR14). No replacement
+ * metadata env var is introduced; attribution falls back to the generic
+ * AGENT, AGENT_SESSION_ID, and the AGENT_SIGNALS list.
  *
  * @param {unknown} value
  * @returns {Record<string, string>}
@@ -170,9 +175,6 @@ function parseCodingAgentMetadata(value) {
 
 /** @param {Record<string, string>} metadata @returns {string | null} */
 function detectAgentIdentity(metadata) {
-  const astryxAgent = nonEmptyString(process.env.ASTRYX_AGENT_ID);
-  if (astryxAgent) return astryxAgent.toLowerCase();
-
   const genericAgent = nonEmptyString(process.env.AGENT);
   if (genericAgent) return genericAgent.toLowerCase();
 
@@ -205,15 +207,14 @@ function detectAgent(identity) {
 function detectAgentSession(metadata) {
   /** @type {Array<[unknown, string]>} */
   const candidates = [
-    [process.env.ASTRYX_AGENT_SESSION_ID, 'ASTRYX_AGENT_SESSION_ID'],
     [process.env.AGENT_SESSION_ID, 'AGENT_SESSION_ID'],
     [
       metadata.session_id ?? metadata.sessionId,
-      'ASTRYX_AGENT_METADATA.session_id',
+      'metadata.session_id',
     ],
     [
       metadata.invocation_id ?? metadata.invocationId,
-      'ASTRYX_AGENT_METADATA.invocation_id',
+      'metadata.invocation_id',
     ],
   ];
 
@@ -255,7 +256,10 @@ function detectInvocationSource({agentIdentity, agentSessionId, ci}) {
 export function captureEnv({cliVersion} = {}) {
   const {ci, ciName} = detectCi();
   const agentMetadata = parseCodingAgentMetadata(
-    process.env.ASTRYX_AGENT_METADATA,
+    // ASTRYX_AGENT_METADATA was removed (spec:AST-017 FR14). Attribution
+    // falls back to the generic AGENT and AGENT_SESSION_ID env vars and the
+    // AGENT_SIGNALS list; no replacement metadata env var is introduced.
+    undefined,
   );
   const agentIdentity = detectAgentIdentity(agentMetadata);
   const agentSession = detectAgentSession(agentMetadata);
