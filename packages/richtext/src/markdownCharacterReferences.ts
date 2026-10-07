@@ -339,10 +339,14 @@ function coreRefusesDestination(destination: string): boolean {
  * A URL that cannot be written back is refused.
  */
 export function coreRefusesUrl(url: string): boolean {
-  if (/[<>\n\r]/.test(url) && /\s/.test(url)) {
+  if (/[\n\r]/.test(url)) {
     return true;
   }
-  const escaped = url.replace(/[\\()<>&[\]"']/g, character => `\\${character}`);
+  // Angle brackets never decide a scheme, so the probe percent-encodes them:
+  // the URL then fits one angle-bracket destination even with spaces in it.
+  const escaped = url
+    .replace(/[<>]/g, character => (character === '<' ? '%3C' : '%3E'))
+    .replace(/[\\()&[\]"']/g, character => `\\${character}`);
   return coreRefusesDestination(/\s/.test(url) ? `<${escaped}>` : escaped);
 }
 

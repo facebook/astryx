@@ -132,3 +132,43 @@ describe('angle-bracket link destinations (CommonMark 0.31 §6.3)', () => {
     expect(richLinks('[x](<data: text/html,hi>)')).toEqual([]);
   });
 });
+
+describe('angle-bracket destination edges', () => {
+  it('reads `<b>c>` as a destination as it stands, as core does', () => {
+    const markdown = '[a](<b>c>)';
+    expect(richLinks(markdown).map(({url}) => url)).toEqual(coreUrls(markdown));
+  });
+
+  it('reads an escaped bracket inside the angle brackets as part of the address', () => {
+    expect(richLinks('[a](<a \\<b>)')).toEqual([{url: 'a <b', title: null}]);
+  });
+
+  it('writes an address holding a space and brackets so it reads back', () => {
+    const editor = newEditor();
+    editor.update(
+      () => {
+        $getRoot()
+          .clear()
+          .append(
+            $createParagraphNode().append(
+              $createLinkNode('a <b c>').append($createTextNode('x')),
+            ),
+          );
+      },
+      {discrete: true},
+    );
+    const exported = editor
+      .getEditorState()
+      .read(() => $exportMarkdownKeepingSource([...DEFAULT_TRANSFORMERS]));
+    expect(exported).toBe('[x](<a \\<b c\\>>)');
+    expect(richLinks(exported)).toEqual([{url: 'a <b c>', title: null}]);
+  });
+
+  it.each([
+    '[x](<javascript:x \\<y>)',
+    '[x](<data: text/html \\<b\\>>)',
+    '[x](<JavaScript:a b>)',
+  ])('still refuses the unsafe address in %j', markdown => {
+    expect(richLinks(markdown)).toEqual([]);
+  });
+});

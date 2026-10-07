@@ -57,7 +57,9 @@ export const LINK_KEEPING_DESTINATIONS: TextMatchTransformer = {
   importRegExp: LINK_WITH_ANGLE_DESTINATION,
   replace: (textNode, match) => {
     const destination = match[2];
-    if (destination?.startsWith('<') !== true) {
+    // Only a whole angle-bracket destination drops its brackets; `<b>c>`
+    // is a destination as it stands, as core reads it.
+    if (destination == null || !/^<[^<>\n]*>$/.test(destination)) {
       return LINK.replace?.(textNode, match);
     }
     // The link's address is what the angle brackets hold.
