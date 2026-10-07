@@ -30,13 +30,16 @@ describe('a hard line break from trailing spaces (CommonMark 0.31 §6.7)', () =>
     ['many lines with runs of spaces', `a${' '.repeat(1_000)}b\n`.repeat(40)],
     ['a long run of spaces ending the line', `a${' '.repeat(40_000)}\nb`],
   ])('reads %s (40 KB) within 100 ms', (_, markdown) => {
+    // CPU time, not elapsed time: on a loaded test machine, other work
+    // stretches elapsed time but not the time this parse spends computing.
     parseInlineAst(markdown);
-    let fastest = Number.POSITIVE_INFINITY;
+    let least = Number.POSITIVE_INFINITY;
     for (let round = 0; round < 5; round++) {
-      const started = performance.now();
+      const started = process.cpuUsage();
       parseInlineAst(markdown);
-      fastest = Math.min(fastest, performance.now() - started);
+      const used = process.cpuUsage(started);
+      least = Math.min(least, (used.user + used.system) / 1000);
     }
-    expect(fastest).toBeLessThan(100);
+    expect(least).toBeLessThan(100);
   });
 });
