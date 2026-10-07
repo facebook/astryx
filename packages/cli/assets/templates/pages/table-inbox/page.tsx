@@ -1773,7 +1773,9 @@ function ComposeWindow({
       // cheaper answer to the same problem: there is not much to drag out of
       // the way in the first place.
       height="hug"
-      hasScrim={false}>
+      hasScrim={false}
+      // The Layout below owns the inset; the sheet adds none of its own.
+      padding={0}>
       {/* The grab handle floats over the top edge, out of flow, about 12px
           down. The Layout's own padding is not quite enough to clear it — the
           heading came up level with the pill, four pixels under it — so the
