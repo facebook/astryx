@@ -210,8 +210,9 @@ export function ScheduleTime({children}: {children: ReactNode}) {
  * the surface: the popover's hidden fallback close sits one pixel below the
  * surface, so a scroller around the whole popover would count that pixel as
  * overflow and paint a scrollbar on content that fits, and would clip the
- * surface's shadow. Taller content scrolls in a named region that joins the
- * tab order only while it overflows, so the keyboard reaches all of it.
+ * surface's shadow. Taller content scrolls in a named group that joins the
+ * tab order only while it overflows, so the keyboard reaches all of it; a
+ * group, not a region, so no popover adds a landmark.
  */
 export function SchedulePopoverBody({
   label,
@@ -222,7 +223,7 @@ export function SchedulePopoverBody({
 }) {
   const {getViewportProps, getContentProps} = useScrollableArea({
     axis: 'block',
-    keyboardAccess: {owner: 'viewport', label, role: 'region'},
+    keyboardAccess: {owner: 'viewport', label},
   });
   return (
     <div

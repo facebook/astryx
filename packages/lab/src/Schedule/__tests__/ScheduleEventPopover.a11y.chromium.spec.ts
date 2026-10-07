@@ -408,7 +408,7 @@ test('an open popover whose content fits has no scroll overflow and shows no scr
   }
 });
 
-test('long popover content scrolls from the keyboard: Tab reaches its region, and PageDown and ArrowDown reach the end', async ({
+test('long popover content scrolls from the keyboard: Tab reaches its named group, and PageDown and ArrowDown reach the end', async ({
   page,
 }) => {
   await openStory(evidence, page, POPOVER_STORY, WIDE);
@@ -424,9 +424,9 @@ test('long popover content scrolls from the keyboard: Tab reaches its region, an
       details?.append(paragraph);
     }
   });
-  const region = dialog.getByRole('region', {name: 'Workshop details'});
+  const region = dialog.getByRole('group', {name: 'Workshop details'});
   await expect(region).toHaveAttribute('tabindex', '0');
-  // Focus is in the dialog; Tab reaches the scroll region before the
+  // Focus is in the dialog; Tab reaches the scrolling group before the
   // hidden close.
   for (let presses = 0; presses < 3; presses += 1) {
     const inRegion = await region.evaluate(

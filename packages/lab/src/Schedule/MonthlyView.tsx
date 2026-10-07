@@ -48,6 +48,7 @@ import {
   MonthEventPill,
   ScheduleFrame,
   ScheduleMonthTitle,
+  SchedulePopoverBody,
   styles,
 } from './shared';
 import {useCurrentTime} from './useCurrentTime';
@@ -278,16 +279,19 @@ function ScheduleMonthlyView(
       </div>
       {dayPopover.popover.render(
         openDay == null ? null : (
-          <MonthDayEvents
-            day={openDay}
-            events={eventsByDay.get(plainDateToISO(openDay)) ?? EMPTY_EVENTS}
-          />
+          <SchedulePopoverBody
+            label={`${formatFullDate(openDay, timezoneID, locale)} events`}>
+            <MonthDayEvents
+              day={openDay}
+              events={eventsByDay.get(plainDateToISO(openDay)) ?? EMPTY_EVENTS}
+            />
+          </SchedulePopoverBody>
         ),
         {
           placement: 'below',
           alignment: 'start',
           offset: spacingVars['--spacing-1'],
-          xstyle: [styles.eventPopover, layerAnimations.below],
+          xstyle: layerAnimations.below,
         },
       )}
     </ScheduleFrame>
