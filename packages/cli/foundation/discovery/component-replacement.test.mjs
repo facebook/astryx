@@ -78,6 +78,34 @@ const codes = result =>
     finding => `${finding.severity}:${finding.code}:${finding.component}`,
   );
 
+/**
+ * An opted-in integration whose one component doc is the given module source,
+ * with shared modules beside the components root under `lib/`.
+ * @param {string} name
+ * @param {string} component
+ * @param {string} docSource
+ * @param {Record<string, string>} [lib]
+ */
+function integrationWithDocSource(name, component, docSource, lib = {}) {
+  const loaded = integration(name, [], {peers: FLOOR});
+  const libDir = path.join(loaded.__packageDir, 'lib');
+  fs.mkdirSync(libDir, {recursive: true});
+  for (const [file, source] of Object.entries(lib)) {
+    fs.writeFileSync(path.join(libDir, file), source);
+  }
+  fs.writeFileSync(
+    path.join(loaded.components, `${component}.doc.mjs`),
+    docSource,
+  );
+  fs.writeFileSync(
+    path.join(loaded.components, `${component}.tsx`),
+    `export function ${component}() { return null; }\n`,
+  );
+  return loaded;
+}
+
+const BASE_DOC = `export default {type: 'component', name: 'AcmeNav', displayName: 'Acme Nav', replaces: 'SideNav', usage: {description: 'Acme nav.'}, props: []};\n`;
+
 describe('resolveComponentReplacements', () => {
   it('applies a replacement from a package that declares the CLI floor', async () => {
     const acme = integration(
@@ -370,6 +398,76 @@ describe('resolveComponentReplacements', () => {
     expect(result.forTarget('SideNav')?.package).toBe('@acme/nav');
     expect(codes(result)).toEqual(['warning:shadowed_component_name:SideNav']);
     expect(result.findings[0].message).toContain('--package @acme/native');
+  });
+
+  it.each([
+    [
+      'a re-exported doc',
+      "export {default} from '../lib/base.mjs';\n",
+      {'base.mjs': BASE_DOC},
+    ],
+    [
+      'an imported default',
+      "import base from '../lib/base.mjs';\nexport default base;\n",
+      {'base.mjs': BASE_DOC},
+    ],
+    [
+      'a factory call',
+      "import {navDoc} from '../lib/factory.mjs';\nexport default navDoc('AcmeNav', 'SideNav');\n",
+      {
+        'factory.mjs':
+          "export const navDoc = (name, target) => ({type: 'component', name, displayName: name, replaces: target, usage: {description: name}, props: []});\n",
+      },
+    ],
+    [
+      'Object.assign over a shared base',
+      "import {shared} from '../lib/shared.mjs';\nexport default Object.assign({}, shared, {name: 'AcmeNav', displayName: 'Acme Nav'});\n",
+      {
+        'shared.mjs':
+          "export const shared = {type: 'component', replaces: 'SideNav', usage: {description: 'Acme nav.'}, props: []};\n",
+      },
+    ],
+    [
+      'a computed key',
+      "const key = 'rep' + 'laces';\nexport default {type: 'component', name: 'AcmeNav', displayName: 'Acme Nav', [key]: 'SideNav', usage: {description: 'Acme nav.'}, props: []};\n",
+      {},
+    ],
+  ])(
+    'reads a replacement declared through %s',
+    async (_form, docSource, lib) => {
+      const acme = integrationWithDocSource(
+        '@acme/nav',
+        'AcmeNav',
+        docSource,
+        lib,
+      );
+      const result = await resolveComponentReplacements(CORE_DIR, [acme]);
+      expect(result.findings).toEqual([]);
+      expect(result.forTarget('SideNav')).toMatchObject({
+        name: 'AcmeNav',
+        package: '@acme/nav',
+      });
+    },
+  );
+
+  it('never reports an invalid component as shadowed', async () => {
+    const broken = integration('@acme/broken', []);
+    fs.writeFileSync(
+      path.join(broken.components, 'SideNav.doc.mjs'),
+      "export default {type: 'component', name: 'SideNav', props: 'not a list'};\n",
+    );
+    fs.writeFileSync(
+      path.join(broken.components, 'SideNav.tsx'),
+      'export function SideNav() { return null; }\n',
+    );
+    const acme = integration(
+      '@acme/nav',
+      [{name: 'AcmeSideNav', replaces: 'SideNav'}],
+      {peers: FLOOR},
+    );
+    const result = await resolveComponentReplacements(CORE_DIR, [broken, acme]);
+    expect(result.forTarget('SideNav')?.package).toBe('@acme/nav');
+    expect(result.findings).toEqual([]);
   });
 
   it('decides nothing when no component declares a replacement', async () => {
