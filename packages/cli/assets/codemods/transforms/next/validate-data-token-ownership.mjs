@@ -70,9 +70,11 @@ export default function validateDataTokenOwnership(file, api) {
     }
   };
 
-  root.find(j.StringLiteral).forEach(path => inspect(path.node));
-  root.find(j.Literal).forEach(path => inspect(path.node));
-  root.find(j.TemplateLiteral).forEach(path => inspect(path.node));
+  /** @param {any} nodePath */
+  const inspectPath = nodePath => inspect(nodePath.node);
+  root.find(j.StringLiteral).forEach(inspectPath);
+  root.find(j.Literal).forEach(inspectPath);
+  root.find(j.TemplateLiteral).forEach(inspectPath);
 
   if (found) {
     const {token, line} = found;
