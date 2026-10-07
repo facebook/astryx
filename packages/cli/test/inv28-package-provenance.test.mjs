@@ -45,6 +45,9 @@ vi.mock('../foundation/config/project.mjs', async importOriginal => {
 });
 const {component} = await import('../api/component/component.mjs');
 const {search} = await import('../api/search/search.mjs');
+const {themeAdd} = await import('../api/theme/add/add.mjs');
+const {themeEject} = await import('../api/theme/eject/eject.mjs');
+const {themeBuild} = await import('../api/theme/build/build.mjs');
 
 // Each case scans the whole Core library; size the budget to the work.
 vi.setConfig({testTimeout: 60_000, hookTimeout: 60_000});
@@ -214,6 +217,131 @@ describe('INV28: text names the same package', () => {
   });
 });
 
+describe('INV28: theme add --import names the package that owns the added theme', () => {
+  const THEMES = '@acme/themes';
+  /** @type {string[]} */
+  const dirs = [];
+
+  /**
+   * An app with one installed theme package that exports a built theme. It
+   * lives under the working directory so the real Project.load can import the
+   * package's integration entry.
+   */
+  function appWithThemePackage() {
+    const dir = fs.mkdtempSync(
+      path.join(process.cwd(), '.astryx-inv28-theme-'),
+    );
+    dirs.push(dir);
+    /** @param {string} rel @param {string} content */
+    const write = (rel, content) => {
+      fs.mkdirSync(path.dirname(path.join(dir, rel)), {recursive: true});
+      fs.writeFileSync(path.join(dir, rel), content);
+    };
+    write('tsconfig.json', '{}\n');
+    write(
+      'package.json',
+      JSON.stringify({
+        name: 'inv28-app',
+        private: true,
+        dependencies: {[THEMES]: '1.0.0', [CORE]: '1.0.0'},
+      }),
+    );
+    write(
+      'node_modules/@astryxdesign/core/package.json',
+      JSON.stringify({name: CORE, version: '1.0.0'}),
+    );
+    const pkg = 'node_modules/@acme/themes';
+    write(
+      `${pkg}/package.json`,
+      JSON.stringify({
+        name: THEMES,
+        version: '1.0.0',
+        type: 'module',
+        peerDependencies: {[CORE]: '^1.0.0'},
+        exports: {
+          './themes/ocean': './dist/ocean.js',
+          './themes/ocean.css': './dist/ocean.css',
+        },
+      }),
+    );
+    write(
+      `${pkg}/astryx.integration.mjs`,
+      "export default {themes: './themes'};\n",
+    );
+    write(
+      `${pkg}/themes/ocean/oceanTheme.doc.mjs`,
+      "/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */\n" +
+        "export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Ocean theme.', maintained: true};\n",
+    );
+    write(
+      `${pkg}/themes/ocean/oceanTheme.ts`,
+      "export const oceanTheme = {name: 'ocean', tokens: {}};\n",
+    );
+    write(
+      `${pkg}/dist/ocean.js`,
+      "export const oceanTheme = {name: 'ocean', tokens: {}};\n",
+    );
+    write(
+      `${pkg}/dist/ocean.css`,
+      '[data-astryx-theme="ocean"] { --color-text: black; }\n',
+    );
+    return dir;
+  }
+
+  afterEach(() => {
+    while (dirs.length > 0) {
+      fs.rmSync(/** @type {string} */ (dirs.pop()), {
+        recursive: true,
+        force: true,
+      });
+    }
+  });
+
+  it('theme.app names the package directly after type, and text names it', async () => {
+    const dir = appWithThemePackage();
+    const {status, stdout, stderr} = await runCli(
+      ['--json', 'theme', 'add', 'ocean', '--import', '--package', THEMES],
+      dir,
+    );
+    expect(status, stderr).toBe(0);
+    const res = JSON.parse(stdout);
+    expect(res.type).toBe('theme.app');
+    expect(res.package).toBe(THEMES);
+    expect(Object.keys(res).slice(0, 4)).toEqual([
+      'apiVersion',
+      'type',
+      'package',
+      'data',
+    ]);
+
+    const textRun = await runCli(
+      ['theme', 'add', 'ocean', '--import', '--package', THEMES],
+      appWithThemePackage(),
+    );
+    expect(textRun.status, textRun.stderr).toBe(0);
+    expect(textRun.stdout).toContain(`package: ${THEMES}`);
+  });
+
+  it('a local theme has no package to name, and use reports the record without one', async () => {
+    const dir = appWithThemePackage();
+    await themeEject('ocean', {cwd: dir, package: THEMES});
+    const sourceFile = path.join(dir, 'src/themes/ocean/oceanTheme.ts');
+    await themeBuild(sourceFile, {}, {cwd: dir});
+    const local = /** @type {any} */ (
+      await themeAdd('ocean', {cwd: dir, import: true})
+    );
+    expect(local.type).toBe('theme.app');
+    expect(local.data.themes).toContainEqual(
+      expect.objectContaining({slug: 'ocean', source: 'local'}),
+    );
+    expect(local).not.toHaveProperty('package');
+
+    const use = await runCli(['--json', 'theme', 'use', 'ocean'], dir);
+    expect(use.status, use.stderr).toBe(0);
+    expect(JSON.parse(use.stdout)).not.toHaveProperty('package');
+  });
+});
+
 describe('INV28: an integration names its own package, with nothing written for it', () => {
   /** @type {string} */
   let tmp;
@@ -258,6 +386,8 @@ describe('INV28: an integration names its own package, with nothing written for 
 
   afterEach(() => {
     fs.rmSync(tmp, {recursive: true, force: true});
+    // A case added after this block must not inherit the mocked project.
+    projectLoadMock.mockReset();
   });
 
   it('component detail, props, and source name the integration', async () => {

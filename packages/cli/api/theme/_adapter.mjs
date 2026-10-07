@@ -633,8 +633,16 @@ async function writeThemeApp(
       ERROR_CODES.ERR_WRITE_FAILED,
     );
   }
+  // A result about the one theme `theme add` just added names the npm package
+  // that owns it (cli-surface INV28). A local theme has no package to name, and
+  // remove and use report the whole record rather than one added theme.
+  const added =
+    action === 'add'
+      ? prepared.entries.find(theme => theme.slug === slug)
+      : undefined;
   return {
     type: 'theme.app',
+    ...(added && added.source !== 'local' ? {package: added.owner} : {}),
     data: {
       themes: prepared.entries.map(theme => ({
         slug: theme.slug,

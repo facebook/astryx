@@ -1,0 +1,32 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Star re-exports in the CLI's public API entry.
+ *
+ * `packages/cli/api/index.mjs` names every runtime export, so the structure
+ * guard can check each one against its CommandDoc and FunctionDoc and keep
+ * internal helpers out of the public API. A star re-export of a runtime module
+ * would publish everything that module exports past both checks, so only type
+ * modules (`*.type.mjs`) may be star re-exported.
+ */
+
+/**
+ * The module specifiers of every `export * from` and `export * as name from`
+ * in `source` whose target is not a `*.type.mjs` module, in source order.
+ * Comments are ignored.
+ * @param {string} source contents of packages/cli/api/index.mjs
+ * @returns {string[]}
+ */
+export function runtimeStarExports(source) {
+  const code = source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  /** @type {string[]} */
+  const offenders = [];
+  for (const match of code.matchAll(
+    /export\s*\*\s*(?:as\s+[\w$]+\s+)?from\s*['"]([^'"]+)['"]/g,
+  )) {
+    if (!match[1].endsWith('.type.mjs')) offenders.push(match[1]);
+  }
+  return offenders;
+}

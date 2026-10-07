@@ -66,7 +66,7 @@ export const doc = {
     {
       type: 'theme.app',
       description:
-        'The complete generated-module state and add change when import is true.',
+        'The complete generated-module state and add change when import is true. Its envelope package names the npm package that owns the added theme, except for a local theme.',
     },
   ],
   throws: [

@@ -37,6 +37,7 @@ import {
   emit,
   section,
   text,
+  record,
   records,
   code,
   list,
@@ -222,7 +223,8 @@ async function warnOnThemeIntegrationIssues(json) {
 }
 
 /**
- * Preserve the released human projection of `theme add --list`.
+ * Print `theme add --list`. Its JSON stays the released `theme.list`; its text
+ * names the commands of the current lifecycle stage (AST-050 FR12).
  * @param {import('../../../api/theme/theme.type.mjs').ThemeListEntry[]} themes
  */
 function printThemeAddList(themes) {
@@ -246,7 +248,8 @@ function printThemeAddList(themes) {
       }),
     ),
     text(
-      `Usage:\n  ${run} theme add <slug> [target-path]   Scaffold a theme file you own`,
+      `Import one: ${run} theme add <slug> --import [--package <package>]\n` +
+        `Fork source: ${run} theme eject <slug> [target-path]`,
     ),
     more,
   );
@@ -315,6 +318,7 @@ function printThemeList(themes, unmigratedCopies = []) {
  */
 function printThemeApp(result) {
   const {themes, default: defaultSlug, modulePath, change} = result.data;
+  if (result.package !== undefined) emit(record({package: result.package}));
   emit(
     section('App themes', `${themes.length} added`),
     records(themes, {

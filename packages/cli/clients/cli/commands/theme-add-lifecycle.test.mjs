@@ -68,7 +68,7 @@ describe('theme add compatibility lifecycle', () => {
     });
   });
 
-  it('keeps the list path unchanged and warning-free', async () => {
+  it('keeps the list JSON unchanged and names the stage commands in text', async () => {
     fs.mkdirSync(path.join(tmpDir, 'src/themes/broken'), {recursive: true});
     fs.writeFileSync(
       path.join(tmpDir, 'src/themes/broken/brokenTheme.ts'),
@@ -78,9 +78,12 @@ describe('theme add compatibility lifecycle', () => {
     const textResult = await runCli(['theme', 'add', '--list'], tmpDir);
     expect(textResult.status, textResult.stderr).toBe(0);
     expect(textResult.stdout).toContain(
-      'theme add <slug> [target-path]   Scaffold a theme file you own',
+      'Import one: pnpm exec astryx theme add <slug> --import [--package <package>]',
     );
-    expect(textResult.stdout).not.toContain('theme add <slug> --import');
+    expect(textResult.stdout).toContain(
+      'Fork source: pnpm exec astryx theme eject <slug> [target-path]',
+    );
+    expect(textResult.stdout).not.toContain('theme add <slug> [target-path]');
     expect(textResult.stderr).not.toContain('deprecated');
 
     const result = await runCli(['theme', 'add', '--list', '--json'], tmpDir);

@@ -456,6 +456,49 @@ describe('app-theme doctor checks', () => {
     ]);
   });
 
+  it('reads astryx.theme from the app package when node_modules is hoisted to a workspace root', async () => {
+    const root = fs.mkdtempSync(
+      path.join(process.cwd(), '.astryx-doctor-monorepo-'),
+    );
+    dirs.push(root);
+    write(
+      path.join(root, 'package.json'),
+      JSON.stringify({name: 'mono', private: true, workspaces: ['packages/*']}),
+    );
+    for (const name of ['@astryxdesign/core', '@astryxdesign/theme-neutral']) {
+      write(
+        path.join(root, 'node_modules', name, 'package.json'),
+        JSON.stringify({name, version: '1.0.0'}),
+      );
+    }
+    const app = path.join(root, 'packages/app');
+    write(
+      path.join(app, 'package.json'),
+      JSON.stringify({
+        name: 'app',
+        private: true,
+        dependencies: {
+          '@astryxdesign/core': '1.0.0',
+          '@astryxdesign/theme-neutral': '1.0.0',
+        },
+        astryx: {theme: '@astryxdesign/theme-neutral'},
+      }),
+    );
+
+    expect(await checkAppThemes(app)).toEqual([
+      expect.objectContaining({
+        id: 'theme-management',
+        status: 'info',
+        message: expect.stringContaining(
+          'astryx.theme value "@astryxdesign/theme-neutral" remains active',
+        ),
+      }),
+    ]);
+    const doctor = runDoctor(app);
+    expect(doctor.stdout).toContain('remains active');
+    expect(doctor.stdout).not.toContain('no theme appears wired');
+  });
+
   it('names an unmigrated copy without failing a project that has no module', async () => {
     const dir = fs.mkdtempSync(
       path.join(process.cwd(), '.astryx-doctor-unmigrated-'),

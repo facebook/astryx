@@ -106,6 +106,8 @@
  * astryx --json theme add <slug> --import / remove / use
  * @typedef {object} ThemeAppResponse
  * @property {'theme.app'} type
+ * @property {string} [package] npm package that owns the theme `theme add`
+ *   added. Omitted for a local theme, and for remove and use.
  * @property {{themes: ThemeAppEntry[], default: string, modulePath: string, change: {action: 'add'|'remove'|'use', slug: string, changed: boolean, firstAdd: boolean}}} data
  */
 
