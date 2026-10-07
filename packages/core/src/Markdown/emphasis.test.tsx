@@ -3,7 +3,7 @@
 import {describe, expect, it} from 'vitest';
 import {render} from '@testing-library/react';
 import {Markdown} from './Markdown';
-import {parseInlineAst} from './parser';
+import {parseInlineAst, parseMarkdownAst} from './parser';
 
 type Json = {
   readonly type: string;
@@ -144,5 +144,71 @@ describe('strong inside emphasis, as RichText writes it (spec:AST-061 FR7)', () 
     expect(emphasis?.textContent).toBe('see bold more');
     expect(emphasis?.querySelector('strong')?.textContent).toBe('bold');
     expect(container.textContent).not.toContain('*');
+  });
+});
+
+/**
+ * The fastest of three parses of `markdown`, in milliseconds, after one
+ * warm-up parse: the minimum is the least disturbed by other work running on
+ * the same machine.
+ */
+function parseTime(markdown: string): number {
+  parseMarkdownAst(markdown);
+  let fastest = Number.POSITIVE_INFINITY;
+  for (let round = 0; round < 3; round++) {
+    const started = performance.now();
+    parseMarkdownAst(markdown);
+    fastest = Math.min(fastest, performance.now() - started);
+  }
+  return fastest;
+}
+
+describe('pathological emphasis', () => {
+  const nestedStrongEmph = (levels: number): string =>
+    `${'*a **a '.repeat(levels)}b${' a** a*'.repeat(levels)}`;
+
+  it('nests up to 100 levels exactly', () => {
+    expect(html(nestedStrongEmph(50))).toBe(
+      `${'<em>a <strong>a '.repeat(50)}b${' a</strong> a</em>'.repeat(50)}`,
+    );
+  });
+
+  it('keeps runs past 100 levels as text, around the nesting it allows', () => {
+    expect(html(nestedStrongEmph(51))).toBe(
+      `*a **a ${'<em>a <strong>a '.repeat(50)}b${' a</strong> a</em>'.repeat(50)} a** a*`,
+    );
+  });
+
+  it.each([
+    ['nested strong emph', nestedStrongEmph, 5_000],
+    ['openers with no closers', (n: number) => '*a **a '.repeat(n), 7_000],
+    [
+      'openers, then as many closers',
+      (n: number) => `${'*a '.repeat(n)}${'b* '.repeat(n)}`,
+      4_000,
+    ],
+    ['closers with no openers', (n: number) => ' a*'.repeat(n), 15_000],
+    [
+      'runs whose lengths sum to a multiple of three',
+      (n: number) => `${'a**b'.repeat(n)}${'c* '.repeat(n)}`,
+      7_000,
+    ],
+  ] as const)(
+    'parses %s without throwing, within a time budget',
+    (_, input, size) => {
+      const large = input(size * 2);
+      expect(() => parseMarkdownAst(large)).not.toThrow();
+      // Alone, the largest of these parses in about 0.1 s. The budget leaves
+      // room for a loaded test machine running other suites in parallel; the
+      // quadratic pass took 20 to 200 seconds on the nested inputs.
+      expect(parseTime(large)).toBeLessThan(5000);
+    },
+    60_000,
+  );
+
+  it('renders 10,000 levels of nesting without exhausting the stack', () => {
+    const {container} = render(<Markdown>{nestedStrongEmph(10_000)}</Markdown>);
+    expect(container.querySelectorAll('em').length).toBe(50);
+    expect(container.querySelectorAll('strong').length).toBe(50);
   });
 });

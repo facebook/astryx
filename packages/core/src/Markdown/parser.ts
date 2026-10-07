@@ -1193,6 +1193,13 @@ function delimiterRun(
   };
 }
 
+/**
+ * The deepest emphasis and strong may nest. Pairs that would nest deeper stay
+ * text, as other CommonMark parsers cap nesting, so a hostile input cannot
+ * build a tree that overflows the stack of a recursive walk or render.
+ */
+const MAX_EMPHASIS_DEPTH = 100;
+
 interface Entry {
   node: PhrasingNode;
   previous: Entry | null;
@@ -1206,7 +1213,9 @@ interface Entry {
  * delimiters for strong when both have two, else one for emphasis, and the
  * nodes between them become its children. A run left unpaired stays text,
  * joined to the text beside it. `***x***` keeps strong outside emphasis, as
- * Markdown has always drawn it.
+ * Markdown has always drawn it. Runs are taken off a linked stack as they
+ * are used or passed, so the pass is linear in the number of runs, and
+ * nesting stops at MAX_EMPHASIS_DEPTH.
  */
 function resolveEmphasis(
   nodes: ReadonlyArray<PhrasingNode>,
@@ -1233,9 +1242,45 @@ function resolveEmphasis(
       entry.next.previous = entry.previous;
     }
   };
-  // Delimiters no longer on the stack: used up, or skipped past.
-  const removed = new Set<DelimiterRun>();
-  // Where the search for an opener can stop, for closers of each kind.
+  // The delimiter stack, as a doubly linked list in source order: a run
+  // leaves it once used up, paired across, or unable to pair, so every
+  // search below visits only runs still on it, and the whole pass is linear.
+  interface StackRun {
+    readonly run: DelimiterRun;
+    readonly index: number;
+    previous: StackRun | null;
+    next: StackRun | null;
+    /** The deepest emphasis among the nodes after this run, up to the next. */
+    depthAfter: number;
+    canClose: boolean;
+  }
+  const stack: StackRun[] = delimiters.map((run, index) => ({
+    run,
+    index,
+    previous: null,
+    next: null,
+    depthAfter: 0,
+    canClose: run.canClose,
+  }));
+  stack.forEach((item, index) => {
+    item.previous = stack[index - 1] ?? null;
+    item.next = stack[index + 1] ?? null;
+  });
+  // Takes a run off the stack; what followed it now follows the one before.
+  const leave = (item: StackRun): void => {
+    if (item.previous != null) {
+      item.previous.next = item.next;
+      item.previous.depthAfter = Math.max(
+        item.previous.depthAfter,
+        item.depthAfter,
+      );
+    }
+    if (item.next != null) {
+      item.next.previous = item.previous;
+    }
+  };
+  // Where the search for an opener stops, by source index, for closers of
+  // each kind: no opener at or before it can match them.
   const openersBottom = new Map<string, number>();
   // The strong a pair of runs made last, to keep `***x***` strong outside.
   let lastStrong: {
@@ -1243,27 +1288,18 @@ function resolveEmphasis(
     readonly opener: DelimiterRun;
     readonly closer: DelimiterRun;
   } | null = null;
-  let closerIndex = 0;
-  while (closerIndex < delimiters.length) {
-    const closer = delimiters[closerIndex];
-    if (removed.has(closer) || !closer.canClose || closer.length === 0) {
-      closerIndex++;
+  let closerItem: StackRun | null = stack[0] ?? null;
+  while (closerItem != null) {
+    const closer = closerItem.run;
+    if (!closerItem.canClose || closer.length === 0) {
+      closerItem = closerItem.next;
       continue;
     }
     const key = `${closer.character}${closer.canOpen ? 1 : 0}${closer.originalLength % 3}`;
     const bottom = openersBottom.get(key) ?? -1;
-    let openerIndex = closerIndex - 1;
-    let opener: DelimiterRun | null = null;
-    for (; openerIndex > bottom; openerIndex--) {
-      const candidate = delimiters[openerIndex];
-      if (
-        removed.has(candidate) ||
-        candidate.length === 0 ||
-        candidate.character !== closer.character ||
-        !candidate.canOpen
-      ) {
-        continue;
-      }
+    let openerItem: StackRun | null = closerItem.previous;
+    for (; openerItem != null && openerItem.index > bottom;) {
+      const candidate = openerItem.run;
       // The rule of three: a run that can both open and close does not pair
       // with one whose lengths sum to a multiple of three, unless both are.
       const isOddMatch =
@@ -1272,17 +1308,49 @@ function resolveEmphasis(
         !(
           candidate.originalLength % 3 === 0 && closer.originalLength % 3 === 0
         );
-      if (!isOddMatch) {
-        opener = candidate;
+      if (
+        candidate.character === closer.character &&
+        candidate.canOpen &&
+        candidate.length > 0 &&
+        !isOddMatch
+      ) {
         break;
       }
+      openerItem = openerItem.previous;
     }
-    if (opener == null) {
-      openersBottom.set(key, closerIndex - 1);
+    if (openerItem == null || openerItem.index <= bottom) {
+      openersBottom.set(key, closerItem.index - 1);
+      const next: StackRun | null = closerItem.next;
       if (!closer.canOpen) {
-        removed.add(closer);
+        leave(closerItem);
       }
-      closerIndex++;
+      closerItem = next;
+      continue;
+    }
+    const opener = openerItem.run;
+    // Runs between the pair can no longer pair: take them off the stack, and
+    // note the deepest emphasis among the nodes between.
+    let innerDepth = openerItem.depthAfter;
+    for (
+      let between = openerItem.next;
+      between != null && between !== closerItem;
+      between = between.next
+    ) {
+      innerDepth = Math.max(innerDepth, between.depthAfter);
+    }
+    openerItem.next = closerItem;
+    closerItem.previous = openerItem;
+    openerItem.depthAfter = innerDepth;
+    if (innerDepth >= MAX_EMPHASIS_DEPTH) {
+      // Nesting deeper than the cap: both runs stay text, so no input can
+      // build a tree deep enough to exhaust the stack of whatever walks it.
+      const next: StackRun | null = closerItem.next;
+      leave(openerItem);
+      closerItem.canClose = false;
+      if (!closer.canOpen) {
+        leave(closerItem);
+      }
+      closerItem = next;
       continue;
     }
     const openerEntry = entryOf.get(opener.node);
@@ -1298,9 +1366,6 @@ function resolveEmphasis(
       entry = entry.next
     ) {
       children.push(entry.node);
-    }
-    for (let index = openerIndex + 1; index < closerIndex; index++) {
-      removed.add(delimiters[index]);
     }
     let wrapper: PhrasingNode;
     if (use === 2) {
@@ -1327,18 +1392,20 @@ function resolveEmphasis(
     };
     openerEntry.next = wrapperEntry;
     closerEntry.previous = wrapperEntry;
+    openerItem.depthAfter = innerDepth + 1;
     opener.length -= use;
     closer.length -= use;
     opener.node.value = opener.character.repeat(opener.length);
     closer.node.value = closer.character.repeat(closer.length);
     if (opener.length === 0) {
       unlink(openerEntry);
-      removed.add(opener);
+      leave(openerItem);
     }
     if (closer.length === 0) {
       unlink(closerEntry);
-      removed.add(closer);
-      closerIndex++;
+      const next: StackRun | null = closerItem.next;
+      leave(closerItem);
+      closerItem = next;
     }
   }
   // An unpaired run is text, joined to the text beside it.

@@ -250,6 +250,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Emphasis and strong pair as CommonMark specifies, so *see **bold** more* puts the bold inside the emphasis. ***text*** renders as strong around emphasis, the order RichText draws, and is announced as both. Emphasis nested more than 100 levels deep stays as written text.',
+      },
+      {
+        guidance: true,
+        description:
           'Use plugins created by createMarkdownPlugin for reusable syntax, immutable AST transforms, and typed extension rendering. Keep the ordered list stable while its syntax configuration is unchanged.',
       },
       {
@@ -765,6 +770,11 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Emphasis and strong pair as CommonMark specifies, so *see **bold** more* puts the bold inside the emphasis. ***text*** renders as strong around emphasis, the order RichText draws, and is announced as both. Emphasis nested more than 100 levels deep stays as written text.',
+      },
+      {
+        guidance: true,
+        description:
           'Use plugins created by createMarkdownPlugin for reusable syntax, immutable AST transforms, and typed extension rendering. Keep the ordered list stable while its syntax configuration is unchanged.',
       },
       {
@@ -858,6 +868,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Use contentWidth to keep prose at a readable line length in wide layouts.',
+      },
+      {
+        guidance: true,
+        description:
+          'Emphasis and strong pair as CommonMark specifies, so *see **bold** more* puts the bold inside the emphasis. ***text*** renders as strong around emphasis, the order RichText draws, and is announced as both. Emphasis nested more than 100 levels deep stays as written text.',
       },
       {
         guidance: true,
