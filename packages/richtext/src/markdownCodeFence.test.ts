@@ -116,6 +116,44 @@ describe.each(['~~~', '```'])('%s fences (CommonMark 0.31 §4.5)', fence => {
   });
 });
 
+describe.each(['~~~', '```'])('%s fenced code lines', fence => {
+  it.each([
+    `${fence}python\n    indented = 1\nx = 2\n${fence}\n`,
+    `${fence}\n single\nnext\n${fence}\n`,
+    `${fence}\n\nafter a blank line\n${fence}\n`,
+    `${fence}\nbefore a blank line\n\n${fence}\n`,
+    `${fence}\n  only line\n${fence}\n`,
+  ])(
+    'keeps every line of %j as core reads it, and round-trips it',
+    markdown => {
+      expect(blocks(markdown)).toEqual(coreBlocks(markdown));
+      expect(
+        editorStateJSONToMarkdown(markdownToEditorStateJSON(markdown)),
+      ).toBe(markdown);
+    },
+  );
+
+  it('keeps the first line indented through an edit', () => {
+    const edited = editAndExport(
+      `${fence}python\n    indented = 1\nx = 2\n${fence}\n`,
+      code => {
+        const text = code.getFirstChild();
+        if (!$isTextNode(text)) {
+          throw new Error('No code text');
+        }
+        text.setTextContent(text.getTextContent().replace('x = 2', 'x = 3'));
+      },
+    );
+    expect(edited).toBe(`${fence}python\n    indented = 1\nx = 3\n${fence}\n`);
+  });
+
+  it('keeps a longer fence through an edit', () => {
+    const long = fence[0].repeat(5);
+    const edited = editAndExport(`${long}\nx\n${long}\n`, setCode('y'));
+    expect(edited).toBe(`${long}\ny\n${long}\n`);
+  });
+});
+
 describe('tilde code fences', () => {
   it.each([
     '~~~~\n~~~\ninner\n~~~\n~~~~\n',
@@ -128,11 +166,12 @@ describe('tilde code fences', () => {
     );
   });
 
-  it('runs an unclosed tilde block to the end of the document', () => {
-    expect(blocks('~~~\nopen\ncode\n')).toEqual([
-      {language: null, code: 'open\ncode'},
-    ]);
-  });
+  it.each(['~~~\nopen\ncode\n', '~~~\nopen\ncode'])(
+    'runs the unclosed tilde block %j to the end of the document, as core does',
+    markdown => {
+      expect(blocks(markdown)).toEqual(coreBlocks(markdown));
+    },
+  );
 
   it('exports an edited tilde block with tildes, longer than any tilde fence in its code', () => {
     const edited = editAndExport('~~~ts\nconst a = 1;\n~~~\n', setCode('~~~'));

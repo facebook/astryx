@@ -13,19 +13,27 @@
  *   up to the first space (so `c++` stays `c++`), and a block whose info
  *   string starts with a space has none, as core reads it. A block closes at
  *   a fence of its own character at least as long, or at the end of the
- *   document. Each keeps its fence and info string (spec:AST-062): an edited
- *   block exports them as written, with its language first when that was
- *   changed, and a tilde fence lengthened when its code holds one that long.
+ *   document, and its code is exactly the lines between, indentation and
+ *   blank lines included, as core reads it. Each keeps its fence and info
+ *   string (spec:AST-062): an edited block exports them as written, with its
+ *   language first when that was changed, and its fence lengthened when its
+ *   code holds a run of the fence's character that long.
  *   A one-line backtick block (```` ```code``` ````) stays Lexical's.
  */
 
-import {$isCodeNode} from '@lexical/code';
+import {$createCodeNode, $isCodeNode} from '@lexical/code';
 import {
   CODE,
   type ElementTransformer,
   type MultilineElementTransformer,
 } from '@lexical/markdown';
-import {$getState, $setState, createState, type ElementNode} from 'lexical';
+import {
+  $createTextNode,
+  $getState,
+  $setState,
+  createState,
+  type ElementNode,
+} from 'lexical';
 
 /**
  * The tilde fence a code block was opened with; null for a backtick block.
@@ -34,6 +42,16 @@ import {$getState, $setState, createState, type ElementNode} from 'lexical';
 const tildeFence = createState('astryxTildeFence', {
   parse: (value: unknown): string | null =>
     typeof value === 'string' && /^~{3,}$/.test(value) ? value : null,
+});
+
+/**
+ * The backtick fence a code block was opened with, when longer than three:
+ * Lexical's own fence state is set only by its transformer, which this file
+ * does not use to build blocks.
+ */
+const backtickFence = createState('astryxBacktickFence', {
+  parse: (value: unknown): string | null =>
+    typeof value === 'string' && /^`{4,}$/.test(value) ? value : null,
 });
 
 /** The info string a code block's opening fence carried, as written. */
@@ -60,9 +78,14 @@ function readOpening(
   return fence.startsWith('`') && info.includes('`') ? null : {fence, info};
 }
 
-/** The longest run of three or more tildes in `text`, or 0. */
-function longestTildeRun(text: string): number {
-  return Math.max(0, ...(text.match(/~{3,}/g) ?? []).map(run => run.length));
+/** The longest run of three or more of `character` in `text`, or 0. */
+function longestFenceRun(text: string, character: '`' | '~'): number {
+  return Math.max(
+    0,
+    ...(text.match(character === '`' ? /`{3,}/g : /~{3,}/g) ?? []).map(
+      run => run.length,
+    ),
+  );
 }
 
 /**
@@ -83,41 +106,32 @@ function $importFencedCode(
   while (end < lines.length && !closing.test(lines[end])) {
     end++;
   }
-  const language = languageOf(info);
-  const startMatch = Object.assign(
-    [lines[startLineIndex], fence, language ?? undefined],
-    {index: 0, input: lines[startLineIndex]},
-  ) as unknown as RegExpMatchArray;
-  const endMatch = end < lines.length ? lines[end].match(closing) : null;
-  CODE.replace(
-    rootNode,
-    null,
-    startMatch,
-    endMatch,
-    lines.slice(startLineIndex + 1, end),
-    true,
+  // The code is the lines between the fences, exactly: Lexical's own
+  // transformer trims a space from the first line and drops blank first and
+  // last lines, adjustments meant for its own reading of the opening line.
+  const block = $createCodeNode(languageOf(info) ?? undefined);
+  block.append(
+    $createTextNode(lines.slice(startLineIndex + 1, end).join('\n')),
   );
-  const block = rootNode.getLastChild();
-  if ($isCodeNode(block)) {
-    if (fence.startsWith('~')) {
-      $setState(block, tildeFence, fence);
-    }
-    $setState(block, fenceInfo, info.trimEnd());
+  rootNode.append(block);
+  if (fence.startsWith('~')) {
+    $setState(block, tildeFence, fence);
+  } else if (fence.length > 3) {
+    $setState(block, backtickFence, fence);
   }
+  $setState(block, fenceInfo, info.trimEnd());
   return Math.min(end, lines.length - 1);
 }
 
 /** Writes a code block that keeps its fence or info string; null otherwise. */
-const exportFencedCode: ElementTransformer['export'] = (
-  node,
-  exportChildren,
-) => {
+const exportFencedCode: ElementTransformer['export'] = node => {
   if (!$isCodeNode(node)) {
     return null;
   }
   const tilde = $getState(node, tildeFence);
+  const backticks = $getState(node, backtickFence);
   const info = $getState(node, fenceInfo);
-  if (tilde == null && info == null) {
+  if (tilde == null && backticks == null && info == null) {
     return null;
   }
   const text = node.getTextContent();
@@ -131,10 +145,13 @@ const exportFencedCode: ElementTransformer['export'] = (
         : written.slice(languageOf(written)?.length).trim();
     written = rest === '' ? language : `${language} ${rest}`;
   }
+  // A fence outlasts any run of its character in the code.
   const fence =
     tilde != null
-      ? '~'.repeat(Math.max(tilde.length, longestTildeRun(text) + 1))
-      : (/^`+/.exec(CODE.export?.(node, exportChildren) ?? '')?.[0] ?? '```');
+      ? '~'.repeat(Math.max(tilde.length, longestFenceRun(text, '~') + 1))
+      : '`'.repeat(
+          Math.max((backticks ?? '```').length, longestFenceRun(text, '`') + 1),
+        );
   return `${fence}${written}${text === '' ? '' : `\n${text}`}\n${fence}`;
 };
 
