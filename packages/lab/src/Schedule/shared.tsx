@@ -216,7 +216,7 @@ export function EventPill({
       )}>
       {timeLabel != null && (
         <Text type="supporting" color="inherit" xstyle={styles.eventTime}>
-          {timeLabel}
+          <bdi>{timeLabel}</bdi>
         </Text>
       )}
       <Text
@@ -254,7 +254,7 @@ export function MonthEventPill({
       )}>
       {timeLabel != null && (
         <Text type="supporting" color="inherit" xstyle={styles.eventTime}>
-          {timeLabel}
+          <bdi>{timeLabel}</bdi>
         </Text>
       )}
       <Text
@@ -289,10 +289,13 @@ export function ListEventRow({
           isPast && styles.listEventDotPast,
         )}
       />
+      {/* Times are isolated, so they read in order in either direction. */}
       <span {...stylex.props(styles.listEventTime)}>
-        {isDayEvent(event)
-          ? 'All day'
-          : formatEventTimeRange(event, timezoneID, locale)}
+        <bdi>
+          {isDayEvent(event)
+            ? 'All day'
+            : formatEventTimeRange(event, timezoneID, locale)}
+        </bdi>
       </span>
       <span
         {...stylex.props(

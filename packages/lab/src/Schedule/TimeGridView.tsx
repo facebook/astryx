@@ -492,7 +492,9 @@ export function TimeGridView({
                     styles.timeLabel,
                     styles.timeLabelPosition(index + 1, hourHeight),
                   )}>
-                  {formatHour(hour, locale)}
+                  {/* Isolated, so a time reads in order in either
+                      direction. */}
+                  <bdi>{formatHour(hour, locale)}</bdi>
                 </div>
               ))}
             </div>
@@ -578,7 +580,7 @@ export function TimeGridView({
                             type="supporting"
                             color="inherit"
                             xstyle={styles.eventTime}>
-                            {timeLabel}
+                            <bdi>{timeLabel}</bdi>
                           </Text>
                         </>
                       );
