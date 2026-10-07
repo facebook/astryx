@@ -1852,7 +1852,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     highlightedIndex,
     activeDescendantId,
     isGrid,
-    getItemId,
     createQuery,
     commitCreate,
     t,
