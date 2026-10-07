@@ -85,6 +85,9 @@ import {checkAppThemes} from './theme-checks.mjs';
  *   Combined project-level integration issues, including cross-package template replacement warnings.
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
+ * @property {string|null} [projectError] - Why the CLI could not load the
+ *   project from its config, when it could not. Checks that need the loaded
+ *   project quote it when they skip, so a skip says what was found.
  */
 
 /* ── helpers ──────────────────────────────────────────────────────────── */
@@ -111,6 +114,45 @@ function pkgVersion(dir) {
   if (!dir) return null;
   const pkg = readPkg(path.join(dir, 'package.json'));
   return pkg?.version ?? null;
+}
+
+/**
+ * The first line of an error message, bounded for a one-line check message.
+ * @param {string} message
+ * @returns {string}
+ */
+function firstLine(message) {
+  return String(message).split('\n')[0].slice(0, 300);
+}
+
+/**
+ * The message of a check that needs the loaded project and could not have it.
+ * It carries the reason the CLI gave, so the line says what Doctor found
+ * instead of only that it did not look.
+ * @param {DoctorContext} ctx
+ * @param {string} what
+ * @returns {string}
+ */
+function skippedBecause(ctx, what) {
+  return ctx.projectError
+    ? `Skipped — ${what}: ${firstLine(ctx.projectError)}`
+    : `Skipped — ${what}.`;
+}
+
+/** Integrations one message names before it counts the rest. */
+const NAMED_INTEGRATIONS = 10;
+
+/**
+ * @param {Array<{name?: string, __spec?: string}>} integrations
+ * @returns {string}
+ */
+function nameIntegrations(integrations) {
+  const names = integrations.map(
+    integration => integration.name ?? integration.__spec ?? '(integration)',
+  );
+  return names.length <= NAMED_INTEGRATIONS
+    ? names.join(', ')
+    : `${names.slice(0, NAMED_INTEGRATIONS).join(', ')} and ${names.length - NAMED_INTEGRATIONS} more`;
 }
 
 /* ── individual checks ────────────────────────────────────────────────── */
@@ -255,6 +297,18 @@ export async function checkConfig(ctx) {
         fix: 'Export a default object from astryx.config.mjs, e.g. `export default { integrations: [] };`.',
       };
     }
+    // Importing is not the whole test: the CLI also validates the config, and
+    // a config it rejects leaves every project-aware command without the
+    // project. That config is not clean, so this warns (exit code unchanged).
+    if (ctx.projectError) {
+      return {
+        id: 'config',
+        label: 'astryx.config.mjs',
+        status: 'warn',
+        message: `astryx.config.mjs loads, but the CLI could not load the project from it: ${firstLine(ctx.projectError)}`,
+        fix: 'Fix what the message names. `astryx docs authoring config` lists every field astryx.config accepts.',
+      };
+    }
     return {
       id: 'config',
       label: 'astryx.config.mjs',
@@ -304,7 +358,7 @@ export function checkImplicitIntegrations(ctx) {
       id,
       label,
       status: 'info',
-      message: 'Skipped — the project configuration could not be read.',
+      message: skippedBecause(ctx, 'the project configuration could not be read'),
     };
   }
 
@@ -546,15 +600,31 @@ export function checkIntegrationIssues(ctx) {
       id: 'integration-issues',
       label: 'Integration contributions',
       status: 'info',
-      message: 'Skipped — the project integration graph could not be loaded.',
+      message: skippedBecause(
+        ctx,
+        'the project integration graph could not be loaded',
+      ),
     };
   }
   if (issues.length === 0) {
+    // "No problems" is a finding only when something was looked at.
+    const checked = (ctx.integrations ?? []).filter(
+      integration => integration.__loadError == null,
+    );
+    if (checked.length === 0) {
+      return {
+        id: 'integration-issues',
+        label: 'Integration contributions',
+        status: 'info',
+        message:
+          'No integration is loaded, so there are no integration contributions to check.',
+      };
+    }
     return {
       id: 'integration-issues',
       label: 'Integration contributions',
       status: 'pass',
-      message: 'Integration contributions and cross-package relationships are valid.',
+      message: `${checked.length} loaded integration${checked.length === 1 ? '' : 's'} checked (${nameIntegrations(checked)}): contributions and cross-package relationships are valid.`,
     };
   }
   const errors = issues.filter(issue => issue.severity === 'error').length;
@@ -651,7 +721,7 @@ export function checkProviderIdentity(ctx) {
       id,
       label,
       status: 'info',
-      message: 'Skipped — the project configuration could not be read.',
+      message: skippedBecause(ctx, 'the project configuration could not be read'),
     };
   }
 
@@ -1151,6 +1221,8 @@ export async function runChecks(options = {}) {
   let integrationIssues = null;
   /** @type {Array<{spec: string, error: string}>|null} */
   let autolinkFailures = null;
+  /** @type {string|null} */
+  let projectError = null;
   try {
     const project = await Project.load(cwd);
     integrations = project.loadedIntegrations;
@@ -1176,8 +1248,11 @@ export async function runChecks(options = {}) {
       docsCatalogError = err instanceof Error ? err.message : String(err);
     }
     integrationIssues = await project.issues();
-  } catch {
-    // Best-effort: a missing or invalid config leaves integrations unavailable.
+  } catch (err) {
+    // A project the CLI cannot load leaves the checks that need it
+    // skipped. The reason is kept: those checks and the config
+    // check quote it, so a skip is never silent.
+    projectError = err instanceof Error ? err.message : String(err);
   }
 
   /** @type {DoctorContext} */
@@ -1193,6 +1268,7 @@ export async function runChecks(options = {}) {
     integrationIssues,
     autolinkFailures,
     configError,
+    projectError,
   };
 
   /** @type {DoctorCheck[]} */

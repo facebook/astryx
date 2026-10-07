@@ -57,6 +57,7 @@ import {
   validateLoadedIntegration,
   issueError as error,
   issueWarning as warning,
+  rootProblem,
 } from '../../foundation/integrations/validate-contributions.mjs';
 
 export {validateLoadedIntegration};
@@ -161,9 +162,24 @@ async function findUnreachableContributionIssues(packageDir, loaded) {
   /** @param {string} dir */
   async function walk(dir) {
     if (roots.some(root => pathIsInside(dir, root))) return;
-    const entries = fs
-      .readdirSync(dir, {withFileTypes: true})
-      .sort((a, b) => a.name.localeCompare(b.name));
+    let entries;
+    try {
+      entries = fs
+        .readdirSync(dir, {withFileTypes: true})
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (err) {
+      // One folder the user running astryx cannot read must not end the whole
+      // validation: name it and keep checking the rest of the package.
+      const shown = `${path.relative(packageDir, dir).split(path.sep).join('/') || '.'}/`;
+      const reason = /** @type {any} */ (err)?.code ?? String(err);
+      issues.push(
+        warning(
+          'unreadable_folder',
+          `Could not read "${shown}" (${reason}), so it was not checked for contributions outside a declared root. Fix: make it readable by the user running astryx, or remove it if it does not belong in the package.`,
+        ),
+      );
+      return;
+    }
     for (const entry of entries) {
       if (truncated) return;
       if (UNREACHABLE_SKIP_DIRS.has(entry.name)) continue;
@@ -312,7 +328,7 @@ async function validateAtPackageDir(
   // Roots + contribution checks are shared with validateLoadedIntegration so
   // the everyday-command nudge runs the exact same validators.
   issues.push(...(await validateLoadedIntegration(loaded)));
-  if (loaded.themes)
+  if (loaded.themes && !rootProblem(loaded.themes))
     issues.push(...unreadThemeFolderIssues(packageDir, loaded));
   if (scanUnreachable) {
     issues.push(
