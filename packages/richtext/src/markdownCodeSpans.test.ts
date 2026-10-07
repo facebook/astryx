@@ -317,3 +317,83 @@ describe('a code span holding `|` outside a table', () => {
     expect(richText(markdown)).toEqual(core(markdown));
   });
 });
+
+/** Each link's URL and title in a document, as RichText imports it. */
+function allTargets(json: string): Array<{url: string; title: string | null}> {
+  const targets: Array<{url: string; title: string | null}> = [];
+  const visit = (node: Json) => {
+    if (node.type === 'link') {
+      targets.push({
+        url: node.url as string,
+        title: (node.title as string | null | undefined) ?? null,
+      });
+    }
+    ((node.children as Json[]) ?? []).forEach(visit);
+  };
+  visit((JSON.parse(json) as {root: Json}).root);
+  return targets;
+}
+
+describe('a link with backticks in its destination or title after a code-text link', () => {
+  it.each([
+    [
+      '[`a`](u) [b](`x`)',
+      [
+        {url: 'u', title: null},
+        {url: '`x`', title: null},
+      ],
+    ],
+    [
+      '[`a`](u) [b](https://e.com/`x`)',
+      [
+        {url: 'u', title: null},
+        {url: 'https://e.com/`x`', title: null},
+      ],
+    ],
+    [
+      '[`a`](u) [b](c "`t`")',
+      [
+        {url: 'u', title: null},
+        {url: 'c', title: '`t`'},
+      ],
+    ],
+  ])('keeps both links in %j, through an edit', (markdown, expected) => {
+    expect(richTargets(markdown)).toEqual(expected);
+    expect(richTargets(markdown).map(({url}) => url)).toEqual(
+      coreTargets(markdown).map(({url}) => url),
+    );
+    const {exported, targets} = editedTargets(markdown);
+    expect(PRIVATE_USE.test(exported)).toBe(false);
+    expect(targets).toEqual(expected);
+  });
+
+  it('loses no link and leaves no stand-in, for random code-text links before backtick targets', () => {
+    let state = 23;
+    const random = () => {
+      state = (state * 1103515245 + 12345) % 2147483648;
+      return state / 2147483648;
+    };
+    const pick = <T>(items: ReadonlyArray<T>): T =>
+      items[Math.floor(random() * items.length)];
+    for (let round = 0; round < 200; round++) {
+      const before = pick([
+        '[`a`](u)',
+        '`c` [`a`](u)',
+        '[**`a`**](u)',
+        '[x](u)',
+      ]);
+      const destination = pick(['`x`', 'p`y`q', 'https://e.com/``z``', 'p']);
+      const title = pick(['', ' "`t`"', ' "a `b` c"']);
+      const markdown = `${before} and [b](${destination}${title})${pick(['', ' `w`'])}`;
+      const json = markdownToEditorStateJSON(markdown);
+      expect(PRIVATE_USE.test(json), markdown).toBe(false);
+      expect(
+        allTargets(json).map(({url}) => url),
+        markdown,
+      ).toEqual(coreTargets(markdown).map(({url}) => url));
+      const {exported, targets} = editedTargets(markdown);
+      expect(PRIVATE_USE.test(exported), markdown).toBe(false);
+      expect(targets, markdown).toEqual(allTargets(json));
+    }
+  });
+});

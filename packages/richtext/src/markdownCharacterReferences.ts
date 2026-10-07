@@ -526,6 +526,8 @@ export function protectLinkDestinationParentheses(
 export interface ProtectedCodeSpans {
   readonly markdown: string;
   readonly spans: ReadonlyMap<string, string>;
+  /** Stand-ins for backticks in link destinations and titles. */
+  readonly standIns: ReadonlyMap<string, StandIn>;
 }
 
 /** Whether `text` holds a `|` with no backslash before it. */
@@ -609,14 +611,16 @@ function tableRowRanges(markdown: string): Array<readonly [number, number]> {
  * the same line, which breaks every mark around code that follows another
  * (`~~a~~ ~~`c`~~`); with the code out of the way, the marks pair first and
  * the code comes back inside them. Backticks in a link's destination or
- * title are the link's, never a code span. In a table row, a span holding an
- * unescaped `|` is left alone, so the row still splits its cells there, as
- * GFM does.
+ * title are the link's, never a code span: they become stand-ins too, put
+ * back into the link's address and title after import, so Lexical cannot
+ * pair them into code either. In a table row, a span holding an unescaped
+ * `|` is left alone, so the row still splits its cells there, as GFM does.
  */
 export function protectCodeSpans(markdown: string): ProtectedCodeSpans {
   const spans = new Map<string, string>();
+  const standIns = new Map<string, StandIn>();
   if (!markdown.includes('`')) {
-    return {markdown, spans};
+    return {markdown, spans, standIns};
   }
   const code = codeRangesByKind(markdown);
   const targets = linkTargetRanges(markdown, [...code.fenced, ...code.spans]);
@@ -636,9 +640,12 @@ export function protectCodeSpans(markdown: string): ProtectedCodeSpans {
   };
   const inTarget = cursor(targets);
   const inRow = cursor(rows);
-  const available = absentCharacters(markdown);
-  let output = '';
-  let copied = 0;
+  // Replacements in source order: code spans, and backticks in targets.
+  const replacements: Array<{
+    readonly start: number;
+    readonly end: number;
+    readonly code: string | null;
+  }> = [];
   for (const [start, end] of code.spans) {
     const source = markdown.slice(start, end);
     const isInRow = inRow(start);
@@ -649,15 +656,38 @@ export function protectCodeSpans(markdown: string): ProtectedCodeSpans {
     if (rest.length > 0 || only?.type !== 'inlineCode') {
       continue;
     }
+    replacements.push({start, end, code: only.value});
+  }
+  for (const [from, to] of targets) {
+    for (
+      let index = markdown.indexOf('`', from);
+      index !== -1 && index < to;
+      index = markdown.indexOf('`', index + 1)
+    ) {
+      replacements.push({start: index, end: index + 1, code: null});
+    }
+  }
+  replacements.sort((a, b) => a.start - b.start);
+  const available = absentCharacters(markdown);
+  let output = '';
+  let copied = 0;
+  for (const {start, end, code: content} of replacements) {
+    if (start < copied) {
+      continue;
+    }
     const next = available.next();
     if (next.done === true) {
       break;
     }
-    spans.set(next.value, only.value);
+    if (content == null) {
+      standIns.set(next.value, {kind: 'literal', text: '`'});
+    } else {
+      spans.set(next.value, content);
+    }
     output += markdown.slice(copied, start) + next.value;
     copied = end;
   }
-  return {markdown: output + markdown.slice(copied), spans};
+  return {markdown: output + markdown.slice(copied), spans, standIns};
 }
 
 /**

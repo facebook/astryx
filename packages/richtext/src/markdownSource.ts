@@ -392,6 +392,7 @@ export function importMarkdownKeepingSource(
           holder,
           new Map([
             ...refused.standIns,
+            ...code.standIns,
             ...escaped.standIns,
             ...destinations.standIns,
             ...referenced.standIns,
