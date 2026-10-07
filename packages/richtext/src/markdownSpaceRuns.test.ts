@@ -34,16 +34,21 @@ function editAndExport(markdown: string): string {
     .read(() => $exportMarkdownKeepingSource([...DEFAULT_TRANSFORMERS]));
 }
 
-/** The fastest of five runs of `run`, in milliseconds. */
-function fastest(run: () => void): number {
+/**
+ * The least CPU time of five runs of `run`, in milliseconds. CPU time, not
+ * elapsed time: on a loaded test machine, other work stretches elapsed time
+ * but not the time the editor spends computing.
+ */
+function leastCpuTime(run: () => void): number {
   run();
-  let best = Number.POSITIVE_INFINITY;
+  let least = Number.POSITIVE_INFINITY;
   for (let round = 0; round < 5; round++) {
-    const started = performance.now();
+    const started = process.cpuUsage();
     run();
-    best = Math.min(best, performance.now() - started);
+    const used = process.cpuUsage(started);
+    least = Math.min(least, (used.user + used.system) / 1000);
   }
-  return best;
+  return least;
 }
 
 const RUN = ' '.repeat(40_000);
@@ -72,7 +77,7 @@ describe('runs of spaces inside text', () => {
   ])(
     'imports, edits, and exports %s with a 40 KB run within 100 ms',
     (_, markdown) => {
-      expect(fastest(() => editAndExport(markdown))).toBeLessThan(100);
+      expect(leastCpuTime(() => editAndExport(markdown))).toBeLessThan(100);
     },
   );
 });
