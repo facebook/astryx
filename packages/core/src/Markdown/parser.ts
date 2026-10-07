@@ -3096,6 +3096,12 @@ function parseList(
     const content = ordered
       ? lines[index].replace(new RegExp(`^ *\\d+${escDelim} `), '')
       : lines[index].replace(/^ *[-*+] /, '');
+    // Where the item's content starts: past the marker and the spaces after
+    // it (one to four; more makes the content indented by one space).
+    const markerEnd = lines[index].length - content.length;
+    const spacesAfter = getIndent(content);
+    const contentColumn =
+      spacesAfter >= 4 ? markerEnd : markerEnd + spacesAfter;
 
     const taskMatch = content.match(/^\[([ xX])\] (.*)/);
     let checked: boolean | undefined;
@@ -3153,6 +3159,35 @@ function parseList(
       lazyLineIndexes.add(subLines.length);
       subLines.push(lines[index]);
       index++;
+    }
+
+    // After blank lines, lines indented to the item's content still belong
+    // to it (CommonMark 0.31 §5.2): a nested list, a code block, or another
+    // paragraph. Lazy continuation stops at a blank line.
+    for (;;) {
+      let next = index;
+      while (next < lines.length && lines[next].trim() === '') {
+        next++;
+      }
+      if (
+        next === index ||
+        next >= lines.length ||
+        getIndent(lines[next]) < contentColumn
+      ) {
+        break;
+      }
+      for (; index < next; index++) {
+        subLines.push('');
+      }
+      while (
+        index < lines.length &&
+        lines[index].trim() !== '' &&
+        getIndent(lines[index]) >= contentColumn
+      ) {
+        subLines.push(lines[index]);
+        index++;
+      }
+      loose = true;
     }
 
     const source = listItemSource(itemText, subLines, lazyLineIndexes);
@@ -3926,7 +3961,13 @@ function findSettledBoundary(
 
     if (line.trim() === '') {
       suppressMathUntilBoundary = false;
-      if (lineIndex > 0 && lineIndex < lines.length - 1) {
+      // A blank line settles only what precedes it when the next line starts
+      // at the margin: an indented line may continue a list item across it.
+      if (
+        lineIndex > 0 &&
+        lineIndex < lines.length - 1 &&
+        /^\S/.test(lines[lineIndex + 1])
+      ) {
         lastBoundary = lineIndex;
       }
     }
