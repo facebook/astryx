@@ -98,12 +98,13 @@ access to the Core original.
   replacing component answers to the Core component's name in component detail and
   batch selectors, takes the Core component's slot at every component-list detail
   level, is the component search result for that name, is the component an unqualified
-  swizzle copies, and is where gap-report routing sends a report for that name. It
+  `swizzle <Name>` copies, and is where gap-report routing sends a report for that name. It
   remains addressable by its own name. Every one of those results names the replacing
   component's own package (`architecture:cli-surface` INV28).
 - **FR12 — Explicit Core selection preserves the original component.** Selecting
   `@astryxdesign/core` in component detail, batch selectors, and swizzle MUST address
-  the original Core component.
+  the original Core component. `swizzle --list` lists Core's components, a replaced one
+  included.
 - **FR13 — Invalid component declarations fail closed for packages that opt in.** For a
   package with the FR10 range, a `replaces` that names no Core catalog component, a
   value that is not a non-empty string, a component whose own name is a different Core

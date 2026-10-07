@@ -29,7 +29,7 @@ export const docs = {
           style: 'unordered',
           items: [
             'Your component intentionally serves the same role as one specific Core component.',
-            'Every app that loads the integration should get your component from unqualified component detail, lists, search, swizzle, and issue routing.',
+            'Every app that loads the integration should get your component from unqualified component detail, `component --list`, search, `swizzle <Name>`, and issue routing.',
             'You have tested both the replacement and explicit access to the original Core component.',
           ],
         },
@@ -91,6 +91,7 @@ export default {
             '`replaces` names the Core `ComponentDoc` identity, not its display label, import path, or a standalone hook.',
             'Your component may keep a distinct name or use the same name as the target. A distinct name remains directly addressable on older CLIs that ignore `replaces`.',
             '`--package @astryxdesign/core` always selects the original Core component.',
+            '`swizzle --list` lists Core components, including the one you replace. `swizzle SideNav` copies your component, and `swizzle SideNav --package @astryxdesign/core` copies the original.',
           ],
         },
       ],
