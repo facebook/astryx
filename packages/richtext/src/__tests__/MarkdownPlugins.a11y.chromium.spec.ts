@@ -107,22 +107,129 @@ test('a plugin node renders the same DOM and accessibility in Markdown, the view
 });
 
 /**
+ * The editor's own selection, as text that changes whenever it moves: its
+ * anchor and focus, or the nodes it holds. `atLineStart` says whether it is a
+ * caret at the start of the editor's first line.
+ */
+async function editorSelection(
+  page: Page,
+): Promise<{position: string; atLineStart: boolean}> {
+  return surface(page, 'editor')
+    .locator('[contenteditable="true"]')
+    .evaluate(root => {
+      type Point = {key: string; offset: number};
+      type LexicalNode = {__key: string; __first?: string | null};
+      const editor = (
+        root as HTMLElement & {
+          __lexicalEditor?: {
+            getEditorState(): {
+              _nodeMap: Map<string, LexicalNode>;
+              _selection: {
+                anchor?: Point;
+                focus?: Point;
+                _nodes?: Set<string>;
+              } | null;
+            };
+          };
+        }
+      ).__lexicalEditor;
+      const state = editor?.getEditorState();
+      const selection = state?._selection;
+      if (state == null || selection == null) {
+        return {position: 'none', atLineStart: false};
+      }
+      const {anchor, focus} = selection;
+      if (anchor == null || focus == null) {
+        return {
+          position: `nodes ${[...(selection._nodes ?? [])].join(',')}`,
+          atLineStart: false,
+        };
+      }
+      // The first line and its first text, from the root down.
+      const lineStart = new Set<string>();
+      let node = state._nodeMap.get('root');
+      while (node?.__first != null) {
+        node = state._nodeMap.get(node.__first);
+        if (node != null) {
+          lineStart.add(node.__key);
+        }
+      }
+      return {
+        position: `${anchor.key}:${anchor.offset} ${focus.key}:${focus.offset}`,
+        atLineStart:
+          anchor.key === focus.key &&
+          anchor.offset === 0 &&
+          focus.offset === 0 &&
+          lineStart.has(anchor.key),
+      };
+    });
+}
+
+/**
+ * How many `selectionchange` events the page has delivered. The counter is a
+ * listener added after the editor's own, so once it counts an event the editor
+ * has handled that event too.
+ */
+function selectionChanges(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const counted = window as Window & {selectionChanges?: number};
+    if (counted.selectionChanges == null) {
+      counted.selectionChanges = 0;
+      document.addEventListener('selectionchange', () => {
+        counted.selectionChanges = (counted.selectionChanges ?? 0) + 1;
+      });
+    }
+    return counted.selectionChanges;
+  });
+}
+
+/**
+ * Presses `key` and waits until the editor has taken the move: its selection
+ * has changed, and the page has delivered the move's `selectionchange`. The
+ * editor ignores the `selectionchange` its own selection update causes; a key
+ * pressed before that event arrives merges into it and is ignored with it, so
+ * the next press must not come until the event has arrived.
+ */
+async function pressAndSettle(page: Page, key: string): Promise<void> {
+  const changes = await selectionChanges(page);
+  const before = (await editorSelection(page)).position;
+  await page.keyboard.press(key);
+  await expect
+    .poll(
+      async () =>
+        (await selectionChanges(page)) > changes &&
+        (await editorSelection(page)).position !== before,
+    )
+    .toBe(true);
+}
+
+/**
  * Puts the caret `steps` arrow presses from the start of the editor's first
- * line, extending the selection when `extend` is set.
+ * line, extending the selection when `extend` is set. Each press waits until
+ * the editor has taken the one before (see `pressAndSettle`).
  */
 async function caretAt(
   page: Page,
   steps: number,
   extend = false,
 ): Promise<void> {
+  await selectionChanges(page);
   await surface(page, 'editor')
     .locator('[contenteditable="true"]')
     .getByText('Ping', {exact: false})
     .first()
     .click();
+  const changes = await selectionChanges(page);
   await page.keyboard.press('Home');
+  await expect
+    .poll(
+      async () =>
+        (await selectionChanges(page)) > changes &&
+        (await editorSelection(page)).atLineStart,
+    )
+    .toBe(true);
   for (let index = 0; index < steps; index++) {
-    await page.keyboard.press(extend ? 'Shift+ArrowRight' : 'ArrowRight');
+    await pressAndSettle(page, extend ? 'Shift+ArrowRight' : 'ArrowRight');
   }
 }
 
@@ -158,11 +265,14 @@ test('the editor moves over, deletes, and restores a plugin node as one unit', a
 }) => {
   const errors = await openStory(page);
   const mention = surface(page, 'editor').locator('[data-mention="ada"]');
-  // "Ping " is five steps; one more crosses the whole node.
+  // "Ping " is five steps. The next press selects the node alone, and one
+  // more moves past it.
   await caretAt(page, 6);
+  await expect.poll(() => editorNodeSelectionSize(page)).toBe(1);
+  await caretAt(page, 7);
   await page.keyboard.type('X');
   expect(await markdownOutput(page)).toContain('Ping @{ada}X about');
-  await caretAt(page, 7);
+  await caretAt(page, 8);
   // Backspace removes the X, then the whole node in one press.
   await page.keyboard.press('Backspace');
   await expect(mention).toHaveCount(1);
@@ -211,13 +321,13 @@ test('bold toggled with only a plugin node selected toggles that node', async ({
     'strong [data-mention="ada"]',
   );
   // From just after the node, one step back selects the node alone.
-  await caretAt(page, 6);
+  await caretAt(page, 7);
   await page.keyboard.press('Shift+ArrowLeft');
   await expectEditorSelection(page, '@{ada}');
   await bold.click();
   await expect(strongMention).toHaveCount(1);
   expect(await markdownOutput(page)).toContain('Ping **@{ada}** about');
-  await caretAt(page, 6);
+  await caretAt(page, 7);
   await page.keyboard.press('Shift+ArrowLeft');
   await expectEditorSelection(page, '@{ada}');
   await bold.click();
@@ -232,7 +342,7 @@ test('the toolbar shows the format of a plugin node selected alone', async ({
   const errors = await openStory(page);
   const bold = surface(page, 'editor').getByRole('button', {name: 'Bold'});
   // From just after the node, one step back selects the node alone.
-  await caretAt(page, 6);
+  await caretAt(page, 7);
   await page.keyboard.press('Shift+ArrowLeft');
   await expectEditorSelection(page, '@{ada}');
   await expect(bold).toHaveAttribute('aria-pressed', 'false');
@@ -241,7 +351,7 @@ test('the toolbar shows the format of a plugin node selected alone', async ({
   // The text around the node is not bold, and the node still is.
   await caretAt(page, 2);
   await expect(bold).toHaveAttribute('aria-pressed', 'false');
-  await caretAt(page, 6);
+  await caretAt(page, 7);
   await page.keyboard.press('Shift+ArrowLeft');
   await expectEditorSelection(page, '@{ada}');
   await expect(bold).toHaveAttribute('aria-pressed', 'true');
