@@ -1246,36 +1246,46 @@ export async function runChecks(options = {}) {
   let autolinkFailures = null;
   /** @type {string|null} */
   let projectError = null;
+  /** @type {import('../../foundation/config/project.mjs').Project | null} */
+  let project = null;
   try {
-    const project = await Project.load(cwd);
-    integrations = project.loadedIntegrations;
-    // An installed dependency whose manifest cannot be loaded is kept out of
-    // loadedIntegrations on purpose. The provider ledger still records it.
-    autolinkFailures = [...providerLedgerOf(project).values()]
-      .filter(
-        entry =>
-          entry.outcome === 'load-failed' &&
-          entry.candidate.source === 'autolinked',
-      )
-      .map(entry => ({
-        spec: entry.candidate.spec ?? entry.label,
-        error: entry.error ?? 'its manifest could not be loaded',
-      }));
-    try {
-      docsCatalog = await project.docs();
-      docsCatalogIssues = (await project.issues()).filter(
-        issue => issue.code === 'invalid_doc',
-      );
-    } catch (err) {
-      docsCatalog = null;
-      docsCatalogError = err instanceof Error ? err.message : String(err);
-    }
-    integrationIssues = await project.issues();
+    project = await Project.load(cwd);
   } catch (err) {
     // A project the CLI cannot load leaves the checks that need it
     // skipped. The reason is kept: those checks and the config
     // check quote it, so a skip is never silent.
     projectError = err instanceof Error ? err.message : String(err);
+  }
+  if (project) {
+    try {
+      integrations = project.loadedIntegrations;
+      // An installed dependency whose manifest cannot be loaded is kept out of
+      // loadedIntegrations on purpose. The provider ledger still records it.
+      autolinkFailures = [...providerLedgerOf(project).values()]
+        .filter(
+          entry =>
+            entry.outcome === 'load-failed' &&
+            entry.candidate.source === 'autolinked',
+        )
+        .map(entry => ({
+          spec: entry.candidate.spec ?? entry.label,
+          error: entry.error ?? 'its manifest could not be loaded',
+        }));
+      try {
+        docsCatalog = await project.docs();
+        docsCatalogIssues = (await project.issues()).filter(
+          issue => issue.code === 'invalid_doc',
+        );
+      } catch (err) {
+        docsCatalog = null;
+        docsCatalogError = err instanceof Error ? err.message : String(err);
+      }
+      integrationIssues = await project.issues();
+    } catch {
+      // Best-effort: once the project has loaded, a later read that throws
+      // leaves the remaining fields at their defaults. It is no reason to
+      // blame the config, so it never becomes projectError.
+    }
   }
 
   /** @type {DoctorContext} */
