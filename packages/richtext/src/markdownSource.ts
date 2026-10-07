@@ -677,8 +677,7 @@ function $canonicalMarkdown(
 
 /** Line starts that would turn literal text into a block structure. */
 const LINE_START_SYNTAX: ReadonlyArray<RegExp> = [
-  // ATX heading, bullet list item.
-  /^#{1,6}(?=[ \t]|$)/,
+  // Bullet list item.
   /^[-+](?=[ \t]|$)/,
   // Setext underline or thematic break made of `=` or `-`.
   /^[=-](?=[=\- \t]*$)/,
@@ -687,10 +686,10 @@ const LINE_START_SYNTAX: ReadonlyArray<RegExp> = [
 ];
 // An ordered list item escapes its delimiter, not its first character.
 const ORDERED_LIST_START = /^(\d{1,9})([.)])(?=[ \t]|$)/;
-// A block quote marker may follow up to three spaces (CommonMark 0.31 §5.1),
-// and a list item's continuation line adds its own indentation, so the escape
-// goes before a `>` after any spaces.
-const QUOTE_START = /^( *)>/;
+// A block quote marker or an ATX heading marker may follow up to three spaces
+// (CommonMark 0.31 §5.1, §4.2), and a list item's continuation line adds its
+// own indentation, so the escape goes before the marker after any spaces.
+const SPACED_MARKER_START = /^( *)(?=>|#{1,6}(?:[ \t]|$))/;
 
 // Inline syntax Lexical's export leaves unescaped: link and image brackets and
 // character references.
@@ -760,11 +759,11 @@ function markedView(
     const previous = node.getPreviousSibling();
     if (previous == null || $isLineBreakNode(previous)) {
       const ordered = ORDERED_LIST_START.exec(text);
-      const quote = QUOTE_START.exec(text);
+      const marker = SPACED_MARKER_START.exec(text);
       if (ordered != null) {
         text = ordered[1] + token + text.slice(ordered[1].length);
-      } else if (quote != null) {
-        text = quote[1] + token + text.slice(quote[1].length);
+      } else if (marker != null) {
+        text = marker[1] + token + text.slice(marker[1].length);
       } else if (LINE_START_SYNTAX.some(pattern => pattern.test(text))) {
         text = token + text;
       }

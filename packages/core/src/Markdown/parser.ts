@@ -2949,7 +2949,7 @@ function quotedContent(line: string): string {
  * to avoid ReDoS.
  */
 function isBlockStart(line: string): boolean {
-  if (/^#{1,6} /.test(line)) {
+  if (/^ {0,3}#{1,6} /.test(line)) {
     return true;
   }
   if (/^(`{3,}|~{3,})/.test(line)) {
@@ -2988,7 +2988,7 @@ function canContinueParagraphLazily(
     return false;
   }
   if (
-    /^#{1,6} /.test(line) ||
+    /^ {0,3}#{1,6} /.test(line) ||
     /^(`{3,}|~{3,})/.test(line) ||
     isHorizontalRule(line) ||
     QUOTE_MARKER.test(line) ||
@@ -3563,7 +3563,8 @@ function parseMarkdownImpl(
     }
 
     // --- Heading ---
-    const headingMatch = line.match(/^(#{1,6}) +(.*)/);
+    // An ATX heading may be indented up to three spaces (CommonMark 0.31 §4.2).
+    const headingMatch = line.match(/^ {0,3}(#{1,6}) +(.*)/);
     if (headingMatch) {
       pushBlock({
         type: 'heading',

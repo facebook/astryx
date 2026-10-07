@@ -18,6 +18,7 @@
 import {
   $convertFromMarkdownString,
   CODE,
+  HEADING,
   TEXT_FORMAT_TRANSFORMERS,
   TEXT_MATCH_TRANSFORMERS,
   LINK,
@@ -42,6 +43,7 @@ import {
 import type {ElementFormatType} from 'lexical';
 import {HARD_LINE_BREAK} from './markdownHardLineBreak';
 import {THEMATIC_BREAK} from './markdownThematicBreak';
+import {HEADING_MARKERS} from './markdownHeading';
 import {QUOTE_MARKERS} from './markdownQuote';
 import {LIST_EXPORT} from './markdownListExport';
 import {TASK_LIST} from './markdownTaskList';
@@ -294,7 +296,9 @@ export const DEFAULT_TRANSFORMERS: ReadonlyArray<Transformer> = [
           ? BACKTICK_CODE
           : transformer === QUOTE
             ? QUOTE_MARKERS
-            : transformer,
+            : transformer === HEADING
+              ? HEADING_MARKERS
+              : transformer,
   ),
   HARD_LINE_BREAK,
   TABLE,
