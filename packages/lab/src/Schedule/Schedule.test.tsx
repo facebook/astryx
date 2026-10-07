@@ -555,6 +555,69 @@ describe('Schedule', () => {
   });
 });
 
+describe('Schedule across a midnight that daylight saving skips', () => {
+  // Both zones spring forward at local midnight: the day starts at 01:00.
+  const cases = [
+    {
+      timezoneID: 'America/Santiago',
+      date: Date.UTC(2026, 8, 8, 15),
+      week: [
+        'Sunday, September 6, 2026',
+        'Monday, September 7, 2026',
+        'Tuesday, September 8, 2026',
+        'Wednesday, September 9, 2026',
+        'Thursday, September 10, 2026',
+        'Friday, September 11, 2026',
+        'Saturday, September 12, 2026',
+      ],
+    },
+    {
+      timezoneID: 'America/Havana',
+      date: Date.UTC(2026, 2, 10, 15),
+      week: [
+        'Sunday, March 8, 2026',
+        'Monday, March 9, 2026',
+        'Tuesday, March 10, 2026',
+        'Wednesday, March 11, 2026',
+        'Thursday, March 12, 2026',
+        'Friday, March 13, 2026',
+        'Saturday, March 14, 2026',
+      ],
+    },
+  ];
+  const renderPopover = () => null;
+  const dayGroups = () =>
+    screen
+      .getAllByRole('group')
+      .map(group => group.getAttribute('aria-label') ?? '')
+      .filter(name => /, \d{4}$/u.test(name));
+
+  it.each(cases)(
+    'keeps seven days in the week and one in the day view in $timezoneID',
+    ({timezoneID, date, week}) => {
+      const {unmount} = render(
+        <Schedule
+          view={createScheduleWeeklyView({renderPopover})}
+          events={[]}
+          date={date}
+          timezoneID={timezoneID}
+        />,
+      );
+      expect(dayGroups()).toEqual(week);
+      unmount();
+      render(
+        <Schedule
+          view={createScheduleDayView({renderPopover})}
+          events={[]}
+          date={date - 2 * 24 * 60 * 60 * 1000}
+          timezoneID={timezoneID}
+        />,
+      );
+      expect(dayGroups()).toEqual([week[0]]);
+    },
+  );
+});
+
 describe('sortEvents', () => {
   it('sorts mixed all-day and instant events by start time', () => {
     const sortedEvents = sortEvents(
