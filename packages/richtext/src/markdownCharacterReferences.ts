@@ -29,7 +29,8 @@
 
 import {$isCodeNode} from '@lexical/code';
 import {$isLinkNode} from '@lexical/link';
-import {$dfs} from '@lexical/utils';
+import {$isTableCellNode} from '@lexical/table';
+import {$dfs, $findMatchingParent} from '@lexical/utils';
 import {
   $isElementNode,
   $isTextNode,
@@ -89,6 +90,15 @@ function* absentCharacters(text: string): Generator<string> {
  * are searched by position, so the whole is O(n log n).
  */
 function codeRanges(text: string): Array<readonly [number, number]> {
+  const {fenced, spans} = codeRangesByKind(text);
+  return [...fenced, ...spans].sort((a, b) => a[0] - b[0]);
+}
+
+/** The fenced code blocks of `text`, and its code spans, each in order. */
+function codeRangesByKind(text: string): {
+  fenced: Array<readonly [number, number]>;
+  spans: Array<readonly [number, number]>;
+} {
   const ranges: Array<readonly [number, number]> = [];
   // Fenced code blocks, line by line.
   let lineStart = 0;
@@ -118,6 +128,7 @@ function codeRanges(text: string): Array<readonly [number, number]> {
   if (fence != null) {
     ranges.push([fence.start, text.length]);
   }
+  const fencedCount = ranges.length;
   // Code spans, outside fenced code. A backtick run is a string of backticks
   // with no backtick on either side. Backslashes are literal inside a code
   // span, so they never hide a closing run; an odd number of backslashes
@@ -191,7 +202,10 @@ function codeRanges(text: string): Array<readonly [number, number]> {
     ranges.push([openStart, closer + openLength]);
     resumeAt = closer + openLength;
   }
-  return ranges.sort((a, b) => a[0] - b[0]);
+  return {
+    fenced: ranges.slice(0, fencedCount),
+    spans: ranges.slice(fencedCount).sort((a, b) => a[0] - b[0]),
+  };
 }
 
 /** The characters a backslash escapes (CommonMark 0.31 §2.4). */
@@ -506,6 +520,107 @@ export function protectLinkDestinationParentheses(
     copied = position + 1;
   }
   return {markdown: output + markdown.slice(copied), standIns};
+}
+
+/** The code spans a stand-in pass replaced: each stand-in's code. */
+export interface ProtectedCodeSpans {
+  readonly markdown: string;
+  readonly spans: ReadonlyMap<string, string>;
+}
+
+/** Whether `text` holds a `|` with no backslash before it. */
+function hasUnescapedPipe(text: string): boolean {
+  for (let index = text.indexOf('|'); index !== -1;) {
+    let backslashes = 0;
+    while (text[index - 1 - backslashes] === '\\') {
+      backslashes++;
+    }
+    if (backslashes % 2 === 0) {
+      return true;
+    }
+    index = text.indexOf('|', index + 1);
+  }
+  return false;
+}
+
+/**
+ * Returns `markdown` with each code span outside fenced code replaced by a
+ * private-use stand-in, and the code each stands for, as core Markdown reads
+ * it. Code spans bind tighter than emphasis and links (CommonMark 0.31
+ * §6.1), but Lexical's import applies a code span before an earlier mark on
+ * the same line, which breaks every mark around code that follows another
+ * (`~~a~~ ~~`c`~~`); with the code out of the way, the marks pair first and
+ * the code comes back inside them. A span holding an unescaped `|` is left
+ * alone, so a table row still splits its cells there, as GFM does.
+ */
+export function protectCodeSpans(markdown: string): ProtectedCodeSpans {
+  const spans = new Map<string, string>();
+  if (!markdown.includes('`')) {
+    return {markdown, spans};
+  }
+  const available = absentCharacters(markdown);
+  let output = '';
+  let copied = 0;
+  for (const [start, end] of codeRangesByKind(markdown).spans) {
+    const source = markdown.slice(start, end);
+    if (hasUnescapedPipe(source)) {
+      continue;
+    }
+    const [only, ...rest] = parseInlineAst(source);
+    if (rest.length > 0 || only?.type !== 'inlineCode') {
+      continue;
+    }
+    const next = available.next();
+    if (next.done === true) {
+      break;
+    }
+    spans.set(next.value, only.value);
+    output += markdown.slice(copied, start) + next.value;
+    copied = end;
+  }
+  return {markdown: output + markdown.slice(copied), spans};
+}
+
+/**
+ * Puts each code span back where its stand-in sits under `node`: the code as
+ * text with the code format, inside whatever marks the stand-in took. In a
+ * table cell an escaped `\|` in code is a `|`, as GFM reads cells.
+ */
+export function $restoreCodeSpans(
+  node: ElementNode,
+  spans: ReadonlyMap<string, string>,
+): void {
+  if (spans.size === 0) {
+    return;
+  }
+  for (const text of node.getAllTextNodes()) {
+    const content = text.getTextContent();
+    const offsets: number[] = [];
+    let offset = 0;
+    for (const character of content) {
+      if (spans.has(character)) {
+        offsets.push(offset, offset + character.length);
+      }
+      offset += character.length;
+    }
+    if (offsets.length === 0) {
+      continue;
+    }
+    const pieces = text.splitText(
+      ...offsets.filter(point => point > 0 && point < content.length),
+    );
+    for (const piece of pieces) {
+      const code = spans.get(piece.getTextContent());
+      if (code == null) {
+        continue;
+      }
+      const inCell = $findMatchingParent(piece, $isTableCellNode) != null;
+      piece.setTextContent(inCell ? code.replace(/\\\|/g, '|') : code);
+      if (!piece.hasFormat('code')) {
+        piece.toggleFormat('code');
+      }
+    }
+  }
 }
 
 /**

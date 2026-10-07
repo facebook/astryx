@@ -53,8 +53,10 @@ import {isMarkedHardLineBreak} from './markdownHardLineBreak';
 import {normalizeListIndentation} from './markdownListIndentation';
 import {
   $restoreCharacterReferences,
+  $restoreCodeSpans,
   protectBackslashEscapes,
   protectCharacterReferences,
+  protectCodeSpans,
   protectLinkDestinationParentheses,
   protectRefusedLinks,
   $unwrapRefusedLinks,
@@ -366,7 +368,7 @@ export function importMarkdownKeepingSource(
         root.append(holder);
         // Lexical imports LF lines; the record keeps the authored endings.
         // Adopted plugins' nodes, links core refuses (as their source text),
-        // then backslash escapes and parentheses in
+        // then code spans, then backslash escapes and parentheses in
         // link destinations, then character references go through as
         // stand-ins: plugin nodes come back as extension nodes holding their
         // source, escapes and parentheses as the literal characters,
@@ -375,8 +377,12 @@ export function importMarkdownKeepingSource(
           withoutCarriageReturns(importChunks[index]?.content ?? chunk.content),
           plugins,
         );
+        // Links core refuses go first, on the source as written, so one whose
+        // text holds code (`[`x`](javascript:y)`) shows whole as core shows
+        // it; code spans next, so a safe link's code still reads as code.
         const refused = protectRefusedLinks(shielded.markdown);
-        const escaped = protectBackslashEscapes(refused.markdown);
+        const code = protectCodeSpans(refused.markdown);
+        const escaped = protectBackslashEscapes(code.markdown);
         const destinations = protectLinkDestinationParentheses(
           escaped.markdown,
         );
@@ -391,6 +397,7 @@ export function importMarkdownKeepingSource(
             ...referenced.standIns,
           ]),
         );
+        $restoreCodeSpans(holder, code.spans);
         $unwrapRefusedLinks(holder);
         $restoreExtensionSources(holder, shielded.standIns);
         $joinSoftLineBreaks(holder);
