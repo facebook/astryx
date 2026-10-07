@@ -19,9 +19,11 @@ describe('runtimeStarExports', () => {
     expect(runtimeStarExports(fs.readFileSync(API_INDEX, 'utf8'))).toEqual([]);
   });
 
-  it('accepts star re-exports of type modules', () => {
+  it('accepts star re-exports and namespace imports of type modules', () => {
     expect(
-      runtimeStarExports(`${NAMED}export * from './theme/theme.type.mjs';\n`),
+      runtimeStarExports(
+        `${NAMED}export * from './theme/theme.type.mjs';\nimport * as types from './theme/theme.type.mjs';\n`,
+      ),
     ).toEqual([]);
   });
 
@@ -29,6 +31,14 @@ describe('runtimeStarExports', () => {
     ["export * from './theme/theme.mjs';", './theme/theme.mjs'],
     ['export * as theme from "./theme/theme.mjs";', './theme/theme.mjs'],
     ["export*from'./theme/_adapter.mjs'", './theme/_adapter.mjs'],
+    [
+      "import * as theme from './theme/theme.mjs';\nexport {theme};",
+      './theme/theme.mjs',
+    ],
+    [
+      "export * from './theme/theme.mjs?x.type.mjs';",
+      './theme/theme.mjs?x.type.mjs',
+    ],
   ])('rejects %s', (line, specifier) => {
     expect(runtimeStarExports(`${NAMED}${line}\n`)).toEqual([specifier]);
   });

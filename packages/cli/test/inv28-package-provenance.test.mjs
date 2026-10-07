@@ -223,7 +223,7 @@ describe('INV28: theme add --import names the package that owns the added theme'
   const dirs = [];
 
   /**
-   * An app with one installed theme package that exports a built theme. It
+   * An app with one installed theme package that exports two built themes. It
    * lives under the working directory so the real Project.load can import the
    * package's integration entry.
    */
@@ -261,6 +261,8 @@ describe('INV28: theme add --import names the package that owns the added theme'
         exports: {
           './themes/ocean': './dist/ocean.js',
           './themes/ocean.css': './dist/ocean.css',
+          './themes/reef': './dist/reef.js',
+          './themes/reef.css': './dist/reef.css',
         },
       }),
     );
@@ -268,23 +270,20 @@ describe('INV28: theme add --import names the package that owns the added theme'
       `${pkg}/astryx.integration.mjs`,
       "export default {themes: './themes'};\n",
     );
-    write(
-      `${pkg}/themes/ocean/oceanTheme.doc.mjs`,
-      "/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */\n" +
-        "export default {type: 'theme', name: 'ocean', displayName: 'Ocean', description: 'Ocean theme.', maintained: true};\n",
-    );
-    write(
-      `${pkg}/themes/ocean/oceanTheme.ts`,
-      "export const oceanTheme = {name: 'ocean', tokens: {}};\n",
-    );
-    write(
-      `${pkg}/dist/ocean.js`,
-      "export const oceanTheme = {name: 'ocean', tokens: {}};\n",
-    );
-    write(
-      `${pkg}/dist/ocean.css`,
-      '[data-astryx-theme="ocean"] { --color-text: black; }\n',
-    );
+    for (const slug of ['ocean', 'reef']) {
+      const source = `export const ${slug}Theme = {name: '${slug}', tokens: {}};\n`;
+      write(
+        `${pkg}/themes/${slug}/${slug}Theme.doc.mjs`,
+        "/** @type {import('@astryxdesign/cli/authoring').ThemeDoc} */\n" +
+          `export default {type: 'theme', name: '${slug}', displayName: '${slug}', description: '${slug} theme.', maintained: true};\n`,
+      );
+      write(`${pkg}/themes/${slug}/${slug}Theme.ts`, source);
+      write(`${pkg}/dist/${slug}.js`, source);
+      write(
+        `${pkg}/dist/${slug}.css`,
+        `[data-astryx-theme="${slug}"] { --color-text: black; }\n`,
+      );
+    }
     return dir;
   }
 
@@ -322,7 +321,27 @@ describe('INV28: theme add --import names the package that owns the added theme'
     expect(textRun.stdout).toContain(`package: ${THEMES}`);
   });
 
-  it('a local theme has no package to name, and use reports the record without one', async () => {
+  it('use and remove report the record without a package', async () => {
+    const dir = appWithThemePackage();
+    await themeAdd('ocean', {cwd: dir, import: true, package: THEMES});
+    const reef = /** @type {any} */ (
+      await themeAdd('reef', {cwd: dir, import: true, package: THEMES})
+    );
+    expect(reef.package).toBe(THEMES);
+    for (const args of [
+      ['theme', 'use', 'reef'],
+      ['theme', 'use', 'ocean'],
+      ['theme', 'remove', 'reef'],
+    ]) {
+      const run = await runCli(['--json', ...args], dir);
+      expect(run.status, run.stderr).toBe(0);
+      const res = JSON.parse(run.stdout);
+      expect(res.type, args.join(' ')).toBe('theme.app');
+      expect(res, args.join(' ')).not.toHaveProperty('package');
+    }
+  });
+
+  it('a local theme has no package to name', async () => {
     const dir = appWithThemePackage();
     await themeEject('ocean', {cwd: dir, package: THEMES});
     const sourceFile = path.join(dir, 'src/themes/ocean/oceanTheme.ts');
@@ -335,10 +354,6 @@ describe('INV28: theme add --import names the package that owns the added theme'
       expect.objectContaining({slug: 'ocean', source: 'local'}),
     );
     expect(local).not.toHaveProperty('package');
-
-    const use = await runCli(['--json', 'theme', 'use', 'ocean'], dir);
-    expect(use.status, use.stderr).toBe(0);
-    expect(JSON.parse(use.stdout)).not.toHaveProperty('package');
   });
 });
 

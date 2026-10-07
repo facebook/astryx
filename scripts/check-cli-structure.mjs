@@ -580,7 +580,7 @@ if (/\bresolveRecordedTheme\b/u.test(apiIndexSrc)) {
 }
 for (const specifier of runtimeStarExports(apiIndexSrc)) {
   errors.push(
-    `api boundary: api/index.mjs star re-exports ${specifier} — export each runtime function by name so FR1 and FR2 check it and internal helpers such as resolveRecordedTheme stay out of the public API`,
+    `api boundary: api/index.mjs star exports or namespace imports ${specifier} — export each runtime function by name so FR1 and FR2 check it and internal helpers such as resolveRecordedTheme stay out of the public API`,
   );
 }
 
