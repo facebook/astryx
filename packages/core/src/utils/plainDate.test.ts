@@ -393,6 +393,51 @@ describe('plainDateToInstant / plainDateFromInstant', () => {
       ),
     ).toBe(Date.UTC(2026, 4, 13, 16, 30));
   });
+
+  it.each([
+    // Both spring forward from a negative offset at local midnight.
+    [
+      'America/Santiago',
+      {year: 2026, month: 9, day: 6},
+      Date.UTC(2026, 8, 6, 4),
+    ],
+    ['America/Havana', {year: 2026, month: 3, day: 8}, Date.UTC(2026, 2, 8, 5)],
+    // A positive offset already resolved forward; it must not move.
+    ['Asia/Beirut', {year: 2026, month: 3, day: 29}, Date.UTC(2026, 2, 28, 22)],
+  ] as const)(
+    'starts a day whose midnight daylight saving skips at its first instant (%s)',
+    (timezoneID, date, firstInstant) => {
+      const instant = plainDateToInstant(date, timezoneID);
+      expect(instant).toBe(firstInstant);
+      expect(plainDateFromInstant(instant, timezoneID)).toEqual(date);
+      expect(plainDateFromInstant(instant - 1, timezoneID)).not.toEqual(date);
+    },
+  );
+
+  it('resolves any wall time inside a daylight-saving gap forward', () => {
+    // 2:30 AM does not happen on March 8, 2026 in Los Angeles: 3:30 AM PDT.
+    expect(
+      plainDateToInstant(
+        {year: 2026, month: 3, day: 8},
+        'America/Los_Angeles',
+        2,
+        30,
+      ),
+    ).toBe(Date.UTC(2026, 2, 8, 10, 30));
+  });
+
+  it('keeps the earlier instant of a wall time that happens twice', () => {
+    // Havana falls back at 1:00 AM on November 1, 2026: midnight once, then
+    // 12:00–1:00 AM twice; the first 12:30 AM is still daylight time.
+    expect(
+      plainDateToInstant(
+        {year: 2026, month: 11, day: 1},
+        'America/Havana',
+        0,
+        30,
+      ),
+    ).toBe(Date.UTC(2026, 10, 1, 4, 30));
+  });
 });
 
 describe('plainDateIsBefore / plainDateIsAfter', () => {

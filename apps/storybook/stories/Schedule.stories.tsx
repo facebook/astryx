@@ -592,6 +592,92 @@ export const EventPopover: Story = {
   },
 };
 
+// Two zones that spring forward from a negative offset at local midnight, so
+// the first day of each week starts at 1:00 AM.
+const SKIPPED_MIDNIGHT_ZONES = [
+  {
+    timezoneID: 'America/Santiago',
+    date: Date.UTC(2026, 8, 6, 15) as Instant,
+    firstHour: '2026-09-06T04:30:00.000Z',
+  },
+  {
+    timezoneID: 'America/Havana',
+    date: Date.UTC(2026, 2, 8, 15) as Instant,
+    firstHour: '2026-03-08T05:30:00.000Z',
+  },
+];
+
+function SkippedMidnightZone({
+  timezoneID,
+  date: initialDate,
+  firstHour,
+}: (typeof SKIPPED_MIDNIGHT_ZONES)[number]) {
+  const [weekDate, setWeekDate] = useState<Instant>(initialDate);
+  const [dayDate, setDayDate] = useState<Instant>(initialDate);
+  const weekView = useMemo(
+    () => createScheduleWeeklyView({minHour: 0, maxHour: 4}),
+    [],
+  );
+  const dayView = useMemo(
+    () => createScheduleDayView({minHour: 0, maxHour: 4}),
+    [],
+  );
+  const zoneEvents = useMemo(
+    () => [
+      createEventFromISO({
+        id: `${timezoneID}-first-hour`,
+        title: 'First hour',
+        category: 'Focus',
+        start: firstHour,
+        end: new Date(Date.parse(firstHour) + 60 * 60 * 1000).toISOString(),
+      }),
+    ],
+    [timezoneID, firstHour],
+  );
+  return (
+    <section
+      aria-label={timezoneID}
+      data-zone={timezoneID}
+      style={{display: 'grid', gap: 8}}>
+      <Text type="label" weight="bold">
+        {timezoneID}
+      </Text>
+      <Schedule
+        view={weekView}
+        events={zoneEvents}
+        categories={categories}
+        date={weekDate}
+        focusDate={initialDate}
+        onChangeDate={setWeekDate}
+        timezoneID={timezoneID}
+      />
+      <Schedule
+        view={dayView}
+        events={zoneEvents}
+        categories={categories}
+        date={dayDate}
+        focusDate={initialDate}
+        onChangeDate={setDayDate}
+        timezoneID={timezoneID}
+      />
+    </section>
+  );
+}
+
+/**
+ * Weeks and days whose midnight daylight saving skips keep their own dates:
+ * seven columns in the week, one in the day view.
+ */
+export const SkippedMidnight: Story = {
+  render: () => (
+    <div style={{display: 'grid', gap: 24}}>
+      {SKIPPED_MIDNIGHT_ZONES.map(zone => (
+        <SkippedMidnightZone key={zone.timezoneID} {...zone} />
+      ))}
+    </div>
+  ),
+};
+
 export const ViewSelectorPlugin: Story = {
   render: () => {
     const views = useMemo(

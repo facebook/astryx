@@ -171,9 +171,19 @@ export function plainDateToInstant(
 ): number {
   const utcGuess = Date.UTC(date.year, date.month - 1, date.day, hour, minute);
   const firstOffset = getTimezoneOffsetMS(timezoneID, utcGuess);
-  const firstInstant = utcGuess - firstOffset;
-  const secondOffset = getTimezoneOffsetMS(timezoneID, firstInstant);
-  return utcGuess - secondOffset;
+  const secondOffset = getTimezoneOffsetMS(timezoneID, utcGuess - firstOffset);
+  const instant = utcGuess - secondOffset;
+  if (
+    firstOffset === secondOffset ||
+    getTimezoneOffsetMS(timezoneID, instant) === secondOffset
+  ) {
+    return instant;
+  }
+  // The wall time falls in a daylight-saving gap and never happens. Resolve it
+  // forward, as Temporal's "compatible" disambiguation does, by reading it in
+  // the offset in effect before the transition: the start of a day whose
+  // midnight is skipped is that day's first instant, not an hour before it.
+  return utcGuess - Math.min(firstOffset, secondOffset);
 }
 
 export function plainDateFromInstant(
