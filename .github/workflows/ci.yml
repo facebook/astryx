@@ -1413,6 +1413,35 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # CommandPaletteFooter's default and replacement branches live inside the
+      # parent dialog. Its owned stories keep those branches routable so exact-
+      # head Chromium can measure semantics, theme reach, RTL order, and reflow.
+      - name: Run CommandPaletteFooter audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteFooter:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output command-palette-footer-a11y-report.json \
+            --components CommandPaletteFooter \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/CommandPalette/__tests__/CommandPaletteFooter.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload CommandPaletteFooter audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteFooter:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: command-palette-footer-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            command-palette-footer-a11y-report.json
+            test-results/command-palette-footer-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
       # CollapsibleGroup's shared Collapsible story previously left the audit
       # owner with no routable browser fixture. Its dedicated matrix now emits
       # semantic-state, geometry, direction, theme, and viewport receipts.

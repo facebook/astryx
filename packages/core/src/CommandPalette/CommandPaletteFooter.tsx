@@ -72,10 +72,13 @@ export interface CommandPaletteFooterProps extends BaseProps<HTMLDivElement> {
  * <CommandPalette
  *   isOpen={isOpen}
  *   onOpenChange={setIsOpen}
- *   input={<CommandPaletteInput />}
- *   footer={<CommandPaletteFooter />}>
- *   <CommandPaletteList>...</CommandPaletteList>
- * </CommandPalette>
+ *   searchSource={source}
+ *   footer={
+ *     <CommandPaletteFooter>
+ *       Type to filter available commands.
+ *     </CommandPaletteFooter>
+ *   }
+ * />
  * ```
  */
 export function CommandPaletteFooter({
