@@ -208,6 +208,28 @@ const BLOCK_START =
  * instead, and stays with them. Joining every chunk's leading, content, and
  * trailing text gives back the input exactly.
  */
+/**
+ * The chunks of `markdown` that cover the same lines as `like`, the chunks of
+ * text with the same line count. Rewriting indentation can move a line across
+ * a chunk boundary rule — a thematic break indented into a list item becomes
+ * a break of its own — so the chunks follow the authored text, not the rule.
+ */
+function sameLines(
+  markdown: string,
+  like: ReadonlyArray<MarkdownChunk>,
+): Array<MarkdownChunk> {
+  const lines = markdown.split('\n');
+  const lineEndings = (text: string) => text.split('\n').length - 1;
+  let line = 0;
+  return like.map(chunk => {
+    line += lineEndings(chunk.leading);
+    const count = lineEndings(chunk.content) + 1;
+    const content = lines.slice(line, line + count).join('\n');
+    line += count - 1 + lineEndings(chunk.trailing);
+    return {...chunk, content};
+  });
+}
+
 export function splitMarkdownChunks(markdown: string): Array<MarkdownChunk> {
   const lines = markdown.split('\n');
   const chunks: Array<MarkdownChunk> = [];
@@ -348,9 +370,9 @@ export function importMarkdownKeepingSource(
   const body = byteOrderMark ? markdown.slice(1) : markdown;
   const chunks = splitMarkdownChunks(body);
   // Lexical reads the same chunks with list nesting spelled its way; the
-  // records keep the authored bytes. Only list item indentation changes, so
-  // the chunks line up one for one.
-  const importChunks = splitMarkdownChunks(normalizeListIndentation(body));
+  // records keep the authored bytes. Only indentation changes, so each chunk
+  // is the same lines of the rewritten text.
+  const importChunks = sameLines(normalizeListIndentation(body), chunks);
   const lineEnding = lineEndingOf(body, '\n');
   editor.update(
     () => {
