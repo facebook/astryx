@@ -43,16 +43,21 @@ function blockDepth(nodes: ReadonlyArray<Json>): number {
   return deepest;
 }
 
-/** The fastest of three parses of `markdown`, in milliseconds. */
-function parseTime(markdown: string): number {
-  parseMarkdownAst(markdown);
-  let fastest = Number.POSITIVE_INFINITY;
-  for (let round = 0; round < 3; round++) {
-    const started = performance.now();
-    parseMarkdownAst(markdown);
-    fastest = Math.min(fastest, performance.now() - started);
+/**
+ * The least CPU time of five runs of `run`, in milliseconds. CPU time, not
+ * elapsed time: on a loaded test machine, other work stretches elapsed time
+ * but not the time this parse spends computing.
+ */
+function leastCpuTime(run: () => void): number {
+  run();
+  let least = Number.POSITIVE_INFINITY;
+  for (let round = 0; round < 5; round++) {
+    const started = process.cpuUsage();
+    run();
+    const used = process.cpuUsage(started);
+    least = Math.min(least, (used.user + used.system) / 1000);
   }
-  return fastest;
+  return least;
 }
 
 describe('lists and blockquotes nest at most 100 deep', () => {
@@ -79,7 +84,7 @@ describe('lists and blockquotes nest at most 100 deep', () => {
     expect(depth).toBeGreaterThan(50);
     expect(depth).toBeLessThanOrEqual(100);
     // The budget leaves room for a loaded test machine.
-    expect(parseTime(markdown)).toBeLessThan(5000);
+    expect(leastCpuTime(() => parseMarkdownAst(markdown))).toBeLessThan(5000);
   });
 
   it.each([
@@ -105,14 +110,7 @@ describe('lazy continuation lines in deeply nested input', () => {
     ],
     ['blockquotes, with two lazy lines', `${'> '.repeat(20_000)}a\nlazy\nmore`],
   ])('parse %s 20,000 deep (40 KB) within 100 ms', (_, markdown) => {
-    parseMarkdownAst(markdown);
-    let fastest = Number.POSITIVE_INFINITY;
-    for (let round = 0; round < 5; round++) {
-      const started = performance.now();
-      parseMarkdownAst(markdown);
-      fastest = Math.min(fastest, performance.now() - started);
-    }
-    expect(fastest).toBeLessThan(100);
+    expect(leastCpuTime(() => parseMarkdownAst(markdown))).toBeLessThan(100);
   });
 
   it('still continue the innermost paragraph', () => {
