@@ -3696,10 +3696,17 @@ function parseMarkdownImpl(
         index++;
       }
       const closed = index < lines.length;
-      // A fence left open runs to the end of the input, whose final line
+      // A fence left open in the document runs to its end, whose final line
       // ending starts no line of code (CommonMark 0.31 §4.5) — as a closed
-      // fence's code ends before its closing line.
-      if (!closed && codeLines.length > 0 && lines[lines.length - 1] === '') {
+      // fence's code ends before its closing line. A container's content is
+      // rebuilt from its lines, so its last line is a real one: a quoted
+      // blank line stays code.
+      if (
+        opts.blockDepth === 0 &&
+        !closed &&
+        codeLines.length > 0 &&
+        lines[lines.length - 1] === ''
+      ) {
         codeLines.pop();
       }
       index++; // skip closing fence

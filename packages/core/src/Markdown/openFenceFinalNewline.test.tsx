@@ -61,3 +61,25 @@ describe('a fence left open at the end keeps its code, not the final line ending
     },
   );
 });
+
+describe('a fence left open inside a quote keeps its quoted blank lines', () => {
+  const quoted = (markdown: string) =>
+    (parseMarkdownAst(markdown).children as unknown as Json[])
+      .filter(node => node.type === 'blockquote')
+      .flatMap(node => node.children ?? [])
+      .filter(node => node.type === 'code')
+      .map(node => node.value);
+
+  it.each([
+    ['a quoted blank line', '> ```\n> code\n>\n', 'code\n'],
+    ['the document’s final newline only', '> ```\n> code\n', 'code'],
+  ])('reads %s as CommonMark does', (_, markdown, value) => {
+    expect(quoted(markdown)).toEqual([value]);
+    const state = createIncrementalState();
+    let streamed = parseMarkdownIncremental('', state);
+    for (let end = 1; end <= markdown.length; end++) {
+      streamed = parseMarkdownIncremental(markdown.slice(0, end), state);
+    }
+    expect(streamed).toEqual(parseMarkdown(markdown));
+  });
+});
