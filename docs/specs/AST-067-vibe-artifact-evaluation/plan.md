@@ -52,8 +52,10 @@ remains operational until the final cutover.
 
 - [ ] Move TSX canonicalization, wrapper generation, typechecking, and repair
       receipts behind the component producer adapter.
-- [ ] Add the evaluator-owned theme hook and dual-emit the existing preview plus
-      `VibeArtifactV2` until cutover.
+- [ ] Add the evaluator-owned `?__vibe_theme=light|dark`,
+      `prefers-color-scheme`, and root `data-theme` hook; reject wrong-theme
+      captures; and dual-emit the existing preview plus `VibeArtifactV2` until
+      cutover.
 
 ### PR 5 — Consolidate materialization, isolation, and network ownership
 
@@ -70,6 +72,11 @@ remains operational until the final cutover.
       evaluator-derived files and rendered DOM roots.
 - [ ] Dual-write coarse and precise adoption plus original and
       fallback-adjusted literal series under explicit metric versions.
+- [ ] Evaluate the runtime-axe grounding in
+      [#4229](https://github.com/facebook/astryx/pull/4229) with its contributor:
+      maintainers decide whether to merge that work into this phase or supersede
+      it, but any adopted accessibility-score meaning MUST run through the shared
+      evaluator and start a new metric version under FR16, FR18, and FR23.
 - [ ] Preserve compatibility for experiments that import the existing pure
       scoring API.
 
@@ -90,26 +97,32 @@ remains operational until the final cutover.
 
 ### PR 9 — Calibrate and cut over commands
 
-- [ ] Rebuild a stratified historical sample through the compatibility producer,
-      capture each cell once, and run incumbent test-retest plus candidate calibration
-      against the identical screenshots.
+- [ ] Rebuild at least 30 historical cells stratified across `astryx`,
+      `astryx-tailwind`, `baseline`, and `html`, prompt categories, capture states,
+      and at least three nightly dates through the compatibility producer; exclude
+      legacy light-only captures, capture each valid cell once, and run incumbent
+      test-retest plus candidate calibration against the identical screenshots.
+- [ ] Publish per-target and per-category deltas with bootstrap intervals, and
+      establish separate forward baselines for project, static, and hosted
+      producers.
 - [ ] Dual-write one transition iteration, publish per-producer and per-category
       deltas, and start a new headline series only if `spec:AST-067/FR21–FR23` pass.
 - [ ] Cut interactive, nightly, degradation, history, and report commands to the
       artifact track; remove duplicate orchestration only after compatibility evidence
       passes.
 
-## Open draft mapping
+## Open work mapping
 
-| Open draft                                            | Destination in this plan                                                                   |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| [#7006](https://github.com/facebook/astryx/pull/7006) | project producer in PR 2; evaluator/failure logic in PR 5; aggregate/report pieces in PR 8 |
-| [#7012](https://github.com/facebook/astryx/pull/7012) | rendered-DOM and source-bundle metrics in PR 6                                             |
-| [#7014](https://github.com/facebook/astryx/pull/7014) | runner adapters in PR 3, after the project producer exists                                 |
-| [#7015](https://github.com/facebook/astryx/pull/7015) | states, capture matrix, and judge evidence in PR 7                                         |
-| [#7016](https://github.com/facebook/astryx/pull/7016) | evaluator isolation and lifecycle in PR 5                                                  |
-| [#7035](https://github.com/facebook/astryx/pull/7035) | prerequisite build fix in PR 0                                                             |
-| [#7076](https://github.com/facebook/astryx/pull/7076) | separate delivery-mode guidance; its evaluation claims delegate to AST-067 when approved   |
+| Open work                                             | Destination in this plan                                                                                                    |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [#4229](https://github.com/facebook/astryx/pull/4229) | contributor-owned runtime-axe grounding evaluated for merge or supersession in PR 6; any adopted meaning gets a new version |
+| [#7006](https://github.com/facebook/astryx/pull/7006) | project producer in PR 2; evaluator/failure logic in PR 5; aggregate/report pieces in PR 8                                  |
+| [#7012](https://github.com/facebook/astryx/pull/7012) | rendered-DOM and source-bundle metrics in PR 6                                                                              |
+| [#7014](https://github.com/facebook/astryx/pull/7014) | runner adapters in PR 3, after the project producer exists                                                                  |
+| [#7015](https://github.com/facebook/astryx/pull/7015) | states, capture matrix, and judge evidence in PR 7                                                                          |
+| [#7016](https://github.com/facebook/astryx/pull/7016) | evaluator isolation and lifecycle in PR 5                                                                                   |
+| [#7035](https://github.com/facebook/astryx/pull/7035) | prerequisite build fix in PR 0                                                                                              |
+| [#7076](https://github.com/facebook/astryx/pull/7076) | separate delivery-mode guidance; its evaluation claims delegate to AST-067 when approved                                    |
 
 ## Verification
 

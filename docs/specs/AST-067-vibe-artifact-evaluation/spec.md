@@ -29,8 +29,10 @@ writes a producer-neutral receipt.
 
 The artifact boundary lets the existing component workflow and delivery-mode
 experiments share scoring without forcing either producer to imitate the
-other's project shape. It also makes historical results comparable without
-rewriting them when a producer, evaluator, metric, or judge changes.
+other's project shape. Producers, runners, and the evaluator interoperate
+through `VibeArtifactV2`, so its fields are an intentionally public protocol.
+The boundary also makes historical results comparable without rewriting them
+when a producer, evaluator, capture policy, metric, or judge changes.
 
 ## Non-goals
 
@@ -60,8 +62,8 @@ rewriting them when a producer, evaluator, metric, or judge changes.
 - **FR2 — Identity and versions travel with the artifact.** The record MUST carry
   the artifact identity; prompt identity and digest; producer kind, runner, and
   delivery mode; and a version tuple containing the producer contract,
-  evaluator, metric set, and judge prompt. A receipt MUST repeat the complete
-  tuple used for that result.
+  evaluator, capture policy, metric set, and judge prompt. A receipt MUST repeat
+  the complete tuple used for that result.
 - **FR3 — Source points to a verifiable authored tree.** The record MUST identify
   a source root and a digest-pinned baseline whose kind is `empty`,
   `bundle-tree`, or `git-tree`. Entry hints MAY help a reviewer navigate, but
@@ -82,8 +84,11 @@ rewriting them when a producer, evaluator, metric, or judge changes.
   | `serve`  | a relative working directory, argv command, and optional readiness path                                         |
   | `url`    | an HTTPS URL evaluated under the same browser-network policy                                                    |
 
-  Commands MUST be argv arrays rather than shell strings. An install, when
-  present, MUST name a bundled lockfile and require frozen resolution.
+  Commands MUST represent the executable and each argument directly as an argv
+  array rather than a shell string. The evaluator MUST reject an argv form that
+  invokes a shell or command parser only to reinterpret authored command text.
+  An install, when present, MUST name a bundled lockfile and require frozen
+  resolution.
 
 - **FR6 — States are bounded and delivery-neutral.** A record MAY declare up to
   four named same-page states using query or fragment navigation. Each state
@@ -101,7 +106,7 @@ The logical `VibeArtifactV2` fields are:
 | ---------- | ------------------------------------------------------------------------------------------ |
 | identity   | schema name and version, artifact ID, prompt ID and digest                                 |
 | producer   | producer kind (`component-adapter`, `project`, or `hosted`), runner, delivery mode         |
-| versions   | producer-contract, evaluator, metric-set, and judge-prompt versions                        |
+| versions   | producer-contract, evaluator, capture-policy, metric-set, and judge-prompt versions        |
 | source     | root, baseline kind/root/digest, optional entry hints                                      |
 | view       | one `static`, `build`, `serve`, or `url` recipe                                            |
 | integrity  | source-tree and view-input digests                                                         |
@@ -118,7 +123,10 @@ The logical `VibeArtifactV2` fields are:
 - **FR9 — The legacy component flow is an adapter.** The single-TSX workflow
   MUST remain supported through a producer adapter that owns TSX
   canonicalization, framework wrapping, typechecking, and any repair receipt.
-  It MUST emit the same artifact contract as project and static producers.
+  It MUST emit the same artifact contract as project and static producers, with
+  a self-contained view that resolves no workspace dependency outside the
+  bundle. Its provenance MUST identify the repository commit and lockfile digest
+  used to build the view.
 - **FR10 — Delivery-mode projects are ordinary producers.** A project producer
   MAY emit build, static, serve, or hosted views and runner provenance. It MUST
   NOT introduce a second evaluator, metric definition, judge, aggregate, or
@@ -147,21 +155,29 @@ The logical `VibeArtifactV2` fields are:
   of CDN-backed pages MUST replay a pinned response set; an unrecorded origin,
   replay miss, digest mismatch, credentialed URL, or unapproved redirect MUST
   fail as infrastructure rather than change the score.
-- **FR15 — Capture uses one pinned matrix.** The initial capture policy MUST use
-  desktop `1280×800` and mobile `375×812`, each in light and dark mode, at device
-  pixel ratio 1, for the default state and every declared state. Every cell MUST
-  use a fresh context, fixed locale and timezone, reduced motion, evaluator-owned
-  fonts and network policy, and one versioned readiness rule. A standard theme
-  hook MUST let producer adapters honor the evaluator-selected mode.
+- **FR15 — Capture uses one pinned matrix and theme hook.** The initial capture
+  policy MUST use desktop `1280×800` and mobile `375×812`, each in light and dark
+  mode, at device pixel ratio 1, for the default state and every declared state.
+  Every cell MUST use a fresh context, fixed locale and timezone, reduced motion,
+  evaluator-owned fonts and network policy, and one versioned readiness rule.
+  Before application code runs, the evaluator MUST select the mode through all
+  three parts of the public hook: `?__vibe_theme=light|dark`, browser
+  `prefers-color-scheme` emulation, and the same `data-theme` value on the root
+  element. After readiness, capture validation MUST fail the cell when the root
+  `data-theme` differs from the requested mode or the emulated
+  `prefers-color-scheme` media query reports the opposite mode. Producer adapters
+  MUST preserve the hook instead of overriding it.
 - **FR16 — Evidence is shared across producers.** For every successful cell, the
   evaluator MUST record render status, console/page/request failures, rendered
   DOM, an accessibility scan, and a screenshot. Multi-state failures remain
   attached to their state and remain in aggregate denominators.
 - **FR17 — One blind judge owns the headline visual series.** A metric version
-  MUST name exactly one canonical judge tuple: transport, model, API version,
-  prompt digest, rubric, weights, pass count, and response schema. The judge MUST
-  receive anonymized evidence without producer or delivery labels. Missing judge
-  credentials or service availability MUST yield `unavailable`, never zero.
+  MUST name exactly one canonical judge tuple: direct model API transport, model,
+  API version, prompt digest, rubric, weights, pass count, and response schema.
+  Automated judging MUST use that direct API rather than a coding-agent runner.
+  The judge MUST receive anonymized evidence without producer or delivery labels.
+  Missing judge credentials or service availability MUST yield `unavailable`,
+  never zero.
 - **FR18 — Metrics name their evidence and versions.** Common measurements MUST
   consume rendered DOM and evaluator-derived source files. Rendered adoption,
   accessibility, render correctness, source-bundle literals, and producer
@@ -179,12 +195,17 @@ The logical `VibeArtifactV2` fields are:
 - **FR20 — Historical source is rematerialized honestly.** Calibration MAY
   rebuild source from versioned nightly history through the compatibility
   producer. It MUST label the result as a new materialization and MUST NOT claim
-  that newly captured screenshots are original historical bytes.
-- **FR21 — Judge stability is measured before replacement.** A calibration set
-  MUST contain at least 30 prompt-and-producer cells across the supported
-  producer kinds, prompt categories, capture states, and at least three nightly
-  dates. The incumbent judge MUST run twice over the exact same anonymized
-  screenshot bytes before a candidate judge is compared.
+  that newly captured screenshots are original historical bytes. Legacy captures
+  made before the component adapter honors the FR15 theme hook, including
+  light-only output labeled as dark, MUST be excluded from calibration.
+- **FR21 — Judge stability is measured before replacement.** The historical
+  calibration set MUST contain at least 30 prompt-and-target cells stratified
+  across the four component targets (`astryx`, `astryx-tailwind`, `baseline`, and
+  `html`), prompt categories, capture states, and at least three nightly dates.
+  The incumbent judge MUST run twice over the exact same anonymized screenshot
+  bytes before a candidate judge is compared. Project, static, and hosted
+  producers MUST establish separate forward baselines from newly produced cells;
+  they do not satisfy the historical nightly-date strata.
 - **FR22 — Headline changes pass fixed gates.** Incumbent self-agreement MUST
   reach Spearman `ρ ≥ 0.85` with absolute mean bias `≤ 5` on the 0–100 scale. A
   candidate compared with the incumbent median MUST also reach `ρ ≥ 0.85`,
@@ -217,12 +238,13 @@ static outputs and therefore needs a different producer shape. Without a shared
 artifact boundary, the two paths duplicate evaluator, metric, judge, aggregate,
 and report behavior.
 
-This record owns that missing producer-to-evaluator seam and the single shared
-evaluation contract. The existing execution-provenance sidecar remains valid
-and becomes artifact provenance. The component flow remains available through
-an adapter. Delivery-mode work becomes a producer rather than a parallel
-harness. Specialized experiments remain independent unless they later adopt the
-artifact boundary without changing their own question.
+The affected surfaces are the `/vibe-test` guidance in `AGENTS.md`, the
+`internal/vibe-tests` producer, preview, evaluator, aggregate, report, and
+automation paths, and the execution-provenance contract. The provenance sidecar
+remains valid as artifact provenance. The component flow is supported through
+an adapter, and delivery-mode projects use the same producer-to-evaluator seam.
+Specialized experiments remain independent unless they adopt the artifact
+boundary without changing their own question.
 
 Delivery-mode guidance owns which delivery mode agent-facing instructions
 recommend and the limits of delivery-mode evidence. `spec:AST-030` owns
@@ -232,13 +254,13 @@ continuity rules owned here.
 
 ## Verification
 
-| Contract  | Verification                                                                  | Representative states                                                                      | Mutation or failure expectation                                                                                   |
-| --------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| FR1–FR7   | schema/parser fixtures, digest tests, and portable-bundle tests               | empty/bundle/git baseline; static/build/serve/url; valid/escaped paths; zero/four states   | a producer-specific path bypasses the record, an escaped file is read, or a changed byte retains the same receipt |
-| FR8–FR11  | component-adapter and project-producer contract tests                         | raw TSX; repaired TSX; multi-file project; static page; hosted page                        | a producer writes scores, hides authored files, or repaired bytes replace raw output                              |
-| FR12–FR14 | isolated materialization and network-replay tests                             | successful build; missing entry; timeout; 404; denied origin; record/replay hit/miss       | an error page is scored, producer output mutates, or unrecorded browser bytes affect a result                     |
-| FR15–FR19 | capture-matrix, axe, console, screenshot, judge, metric, and receipt fixtures | desktop/mobile; light/dark; default/four states; judge available/unavailable               | producers receive different scoring, failed states disappear, or an unavailable metric becomes zero               |
-| FR20–FR23 | historical rebuild and judge test-retest calibration                          | old/new adapter; stable/unstable incumbent; passing/failing candidate; dual-written series | rebuilt pixels are called original, an unstable judge switches, or history is rewritten under a new version       |
+| Contract  | Verification                                                                              | Representative states                                                                                                                                                           | Mutation or failure expectation                                                                                                                      |
+| --------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR7   | schema/parser fixtures, digest tests, and portable-bundle tests                           | empty/bundle/git baseline; static/build/serve/url; valid/escaped paths; zero/four states                                                                                        | a producer-specific path bypasses the record, an escaped file is read, or a changed byte retains the same receipt                                    |
+| FR8–FR11  | component-adapter and project-producer contract tests                                     | raw TSX; repaired TSX; multi-file project; static page; hosted page                                                                                                             | a producer writes scores, hides authored files, or repaired bytes replace raw output                                                                 |
+| FR12–FR14 | isolated materialization and network-replay tests                                         | successful build; missing entry; timeout; 404; denied origin; record/replay hit/miss                                                                                            | an error page is scored, producer output mutates, or unrecorded browser bytes affect a result                                                        |
+| FR15–FR19 | capture-matrix, theme-hook, axe, console, screenshot, judge, metric, and receipt fixtures | desktop/mobile; light/dark; wrong-theme rejection; default/four states; judge available/unavailable                                                                             | a mode mismatch is captured, producers receive different scoring, failed states disappear, or an unavailable metric becomes zero                     |
+| FR20–FR23 | historical rebuild and judge test-retest calibration                                      | four component targets; three nightly dates; legacy light-only exclusion; stable/unstable incumbent; passing/failing candidate; forward producer baselines; dual-written series | rebuilt pixels are called original, invalid dark captures enter calibration, an unstable judge switches, or history is rewritten under a new version |
 
 ## Risks
 
