@@ -69,6 +69,11 @@ const baseStyles = stylex.create({
     paddingInlineEnd: 'var(--container-padding-inline-end)',
     paddingBlockStart: 'var(--container-padding-block-start)',
     paddingBlockEnd: 'var(--container-padding-block-end)',
+    // This container's --layout-padding-outer-* below now describe the inset
+    // for Layouts inside it; clear any enclosing Layout's own padding, which
+    // its regions would otherwise read first.
+    '--layout-padding-own-outer-x': 'initial',
+    '--layout-padding-own-outer-y': 'initial',
   },
 });
 

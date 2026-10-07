@@ -35,6 +35,17 @@ import {runCli} from '../../../test-utils/run-cli.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../../../../..');
 
+/**
+ * Response types whose text output is the artifact's source, printed byte for
+ * byte so it can be piped (spec cli-surface INV28). Their JSON still names the
+ * package; their text does not.
+ */
+const VERBATIM_TYPES = new Set([
+  'component.detail.source',
+  'component.detail.showcase',
+  'template.show',
+]);
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
@@ -561,6 +572,15 @@ describe('text-json-parity', () => {
         expect(run.textStatus).toBe(run.jsonStatus);
       });
 
+      // spec cli-surface INV28: text names the package the envelope names.
+      // Verbatim source output prints only the source, so a pipe gets the
+      // file byte for byte.
+      it('text names the package the JSON envelope names', () => {
+        if (run.json?.package === undefined) return;
+        if (VERBATIM_TYPES.has(run.json.type)) return;
+        expect(run.text).toContain(run.json.package);
+      });
+
       if (!tc.skipFieldChecks && !tc.errorExpected) {
         it('every text record key exists in the JSON data', () => {
           if (!run.json?.data) return;
@@ -569,6 +589,8 @@ describe('text-json-parity', () => {
           if (run.json.meta) {
             for (const k of jsonLeafKeys(run.json.meta)) jsonKeys.add(k);
           }
+          // The envelope's own `package` (spec cli-surface INV28) is JSON too.
+          if (run.json.package !== undefined) jsonKeys.add('package');
           const violations = [];
           for (const key of textKeys.keys()) {
             if (!jsonKeys.has(key)) {

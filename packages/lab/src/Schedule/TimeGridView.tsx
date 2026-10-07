@@ -41,16 +41,17 @@ import {
 import {useScrollableArea} from '@astryxdesign/core/hooks';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {useScheduleContext} from './context';
-import {eventOccursOnDate, isDayEvent} from './dateMath';
+import {eventOccursOnDate, isAllDaySpan, isDayEvent} from './dateMath';
 import {timeGridViewportScope} from './schedule.stylex';
 import {
   clamp,
   EventPill,
   eventPastSurfaceColorStyle,
   eventSurfaceColorStyle,
-  formatEventAccessibilityLabel,
   formatDayNumber,
+  formatEventDateTimeRange,
   formatEventTime,
+  formatEventTimeRange,
   formatFullDate,
   formatHour,
   formatTimezoneAbbreviation,
@@ -58,8 +59,10 @@ import {
   getEventCategory,
   getMinutesSinceStartOfDay,
   isEventInPast,
+  SchedulePopoverBody,
   ScheduleTime,
   styles,
+  TitleFirstPill,
 } from './shared';
 import {layoutTimedEvents, type TimedEventPlacement} from './timeGridLayout';
 import {
@@ -70,7 +73,6 @@ import {
 } from './timeGridScrollMemory';
 import {useCurrentTime} from './useCurrentTime';
 import type {
-  CalendarDayEvent,
   CalendarEvent,
   CalendarInstantEvent,
   ScheduleCategory,
@@ -110,14 +112,17 @@ export function TimeGridView({
     {length: normalizedMaxHour - normalizedMinHour},
     (_, index) => normalizedMinHour + index,
   );
-  const allDayEvents = events.filter(isDayEvent);
-  const allDaySegments = getAllDayEventSegments(allDayEvents, days);
+  // Date-only events and timed events of a day or more are spans in the
+  // all-day row; every other timed event is a block in its day columns
+  // (component:Schedule FR21).
+  const allDayEvents = events.filter(isAllDaySpan);
+  const allDaySegments = getAllDayEventSegments(allDayEvents, days, timezoneID);
   const allDayLevelCount = allDaySegments.reduce(
     (levelCount, segment) => Math.max(levelCount, segment.level + 1),
     0,
   );
   const instantEvents = events.filter(
-    (event): event is CalendarInstantEvent => !isDayEvent(event),
+    (event): event is CalendarInstantEvent => !isAllDaySpan(event),
   );
   const currentTime = useCurrentTime();
   const currentDate = plainDateFromInstant(currentTime, timezoneID);
@@ -411,14 +416,25 @@ export function TimeGridView({
                 const day = days[segment.columnStart] ?? focusDate;
                 const dayISO = plainDateToISO(day);
                 const key = `${segment.event.id}:${segment.columnStart}`;
-                const pill = (
-                  <EventPill
+                const isSegmentPast = isEventInPast(
+                  segment.event,
+                  currentTime,
+                  timezoneID,
+                );
+                // A timed span of a day or more leads with its title and
+                // shows its start and end times when both fit
+                // (component:Schedule FR21).
+                const pill = isDayEvent(segment.event) ? (
+                  <EventPill event={segment.event} isPast={isSegmentPast} />
+                ) : (
+                  <TitleFirstPill
                     event={segment.event}
-                    isPast={isEventInPast(
+                    timeLabel={formatEventTimeRange(
                       segment.event,
-                      currentTime,
                       timezoneID,
+                      locale,
                     )}
+                    isPast={isSegmentPast}
                   />
                 );
                 const placement = styles.allDayEventSpan(
@@ -656,12 +672,19 @@ export function TimeGridView({
         <div aria-hidden {...stylex.props(styles.timeGridFocusRing)} />
       </div>
       {hasPopover &&
-        popover.render(openContent, {
-          placement: 'below',
-          alignment: 'start',
-          offset: spacingVars['--spacing-1'],
-          xstyle: [styles.eventPopover, layerAnimations.below],
-        })}
+        popover.render(
+          openContent == null || openEvent == null ? null : (
+            <SchedulePopoverBody label={`${openEvent.title} details`}>
+              {openContent}
+            </SchedulePopoverBody>
+          ),
+          {
+            placement: 'below',
+            alignment: 'start',
+            offset: spacingVars['--spacing-1'],
+            xstyle: layerAnimations.below,
+          },
+        )}
     </>
   );
 }
@@ -677,7 +700,7 @@ function TimeGridAccessibilityGrid({
   timezoneID,
   timezoneLabel,
 }: {
-  allDayEvents: ReadonlyArray<CalendarDayEvent>;
+  allDayEvents: ReadonlyArray<CalendarEvent>;
   categories: ReadonlyArray<ScheduleCategory>;
   days: ReadonlyArray<PlainDate>;
   events: ReadonlyArray<CalendarInstantEvent>;
@@ -786,8 +809,14 @@ function formatTimeGridAccessibilityCellLabel({
   if (events.length === 0) {
     return label;
   }
-  const eventLabels = events.map(event =>
-    formatEventAccessibilityLabel(event, day, timezoneID, categories, locale),
+  const eventLabels = events.map(
+    event =>
+      `${event.title}, ${getEventCategory(event, categories).label}, ${formatTimeGridEventTime(
+        event,
+        day,
+        timezoneID,
+        locale,
+      )}`,
   );
   return `${label}. ${eventLabels.join('. ')}`;
 }
@@ -810,14 +839,31 @@ function formatEventButtonLabel(
   locale: Locale,
 ): string {
   const category = getEventCategory(event, categories);
-  const timeLabel = isDayEvent(event)
-    ? 'all day'
-    : formatEventTime(event, day, timezoneID, locale);
+  const timeLabel = formatTimeGridEventTime(event, day, timezoneID, locale);
   return `${event.title}, ${timeLabel}, ${category.label}, ${formatFullDate(
     day,
     timezoneID,
     locale,
   )}`;
+}
+
+/**
+ * "all day" for a date-only event; the start and end with their dates for a
+ * timed span of a day or more, which no single day frames; otherwise the
+ * start and end times (component:Schedule AR2).
+ */
+function formatTimeGridEventTime(
+  event: CalendarEvent,
+  day: PlainDate,
+  timezoneID: string,
+  locale: Locale,
+): string {
+  if (isDayEvent(event)) {
+    return 'all day';
+  }
+  return isAllDaySpan(event)
+    ? formatEventDateTimeRange(event, timezoneID, locale)
+    : formatEventTime(event, day, timezoneID, locale);
 }
 
 function eventOverlapsHour(
@@ -838,36 +884,42 @@ function eventOverlapsHour(
 }
 
 interface AllDayEventSegment {
-  event: CalendarDayEvent;
+  event: CalendarEvent;
   columnStart: number;
   columnEnd: number;
   level: number;
 }
 
 function getAllDayEventSegments(
-  events: ReadonlyArray<CalendarDayEvent>,
+  events: ReadonlyArray<CalendarEvent>,
   days: ReadonlyArray<PlainDate>,
+  timezoneID: string,
 ): AllDayEventSegment[] {
   const levels: number[] = [];
   return events
     .map(event => {
-      const startIndex = days.findIndex(
-        day => !plainDateIsBefore(day, event.start),
+      // The days the event touches in the schedule's timezone; a timed span
+      // ending at midnight does not touch the next day.
+      const startIndex = days.findIndex(day =>
+        eventOccursOnDate(event, day, timezoneID),
       );
-      const endIndexFromRight = [...days]
-        .reverse()
-        .findIndex(day => !plainDateIsBefore(event.end, day));
-      if (startIndex < 0 || endIndexFromRight < 0) {
+      if (startIndex < 0) {
         return null;
       }
-      const endIndex = days.length - 1 - endIndexFromRight;
+      let endIndex = startIndex;
+      while (
+        endIndex + 1 < days.length &&
+        eventOccursOnDate(event, days[endIndex + 1], timezoneID)
+      ) {
+        endIndex += 1;
+      }
       return {event, startIndex, endIndex};
     })
     .filter(
       (
         segment,
       ): segment is {
-        event: CalendarDayEvent;
+        event: CalendarEvent;
         startIndex: number;
         endIndex: number;
       } => segment != null,

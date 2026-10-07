@@ -26,6 +26,11 @@ const execute = new Function(
   `return (async () => {\n${script}\n})();`,
 );
 
+// The workflow's own commit (the default branch's head), and a PR base older
+// than the decision helper.
+const trustedSha = 'cccccccccccccccccccccccccccccccccccccccc';
+const oldBaseSha = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const helperPath = '.github/scripts/review-signal-decision.cjs';
 const head1 = '1111111111111111111111111111111111111111';
 const head2 = '2222222222222222222222222222222222222222';
 const head3 = '3333333333333333333333333333333333333333';
@@ -50,6 +55,7 @@ const ungatedSuccess = gateStatus('success', 'No code review required.');
 function harness(
   reviews,
   {
+    helperAt = [trustedSha],
     labels = ['needs:code-review'],
     moveAfterFirstRead = false,
     statusFailure = false,
@@ -61,7 +67,7 @@ function harness(
   const full = {
     number: 17,
     head: {sha: head2},
-    base: {sha: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'},
+    base: {sha: oldBaseSha},
     labels: labels.map(name => ({name})),
   };
   const methods = {
@@ -87,6 +93,9 @@ function harness(
       repos: {
         getContent: async ({ref, path: filePath}) => {
           calls.push(`read:${ref}:${filePath}`);
+          if (!helperAt.includes(ref)) {
+            throw Object.assign(new Error('Not Found'), {status: 404});
+          }
           return {
             data: {
               type: 'file',
@@ -113,6 +122,7 @@ function harness(
   };
   const context = {
     repo: {owner: 'facebook', repo: 'astryx'},
+    sha: trustedSha,
     payload: {
       workflow_run: {
         pull_requests: [{number: 17}],
@@ -121,6 +131,7 @@ function harness(
   };
   const core = {
     info: message => calls.push(`info:${message}`),
+    setFailed: message => calls.push(`failed:${message}`),
     warning: message => calls.push(`warning:${message}`),
   };
   const processValue = {env: {ENG_OWNERS: '@engineer'}};
@@ -144,8 +155,38 @@ describe('review-clear exact-head workflow', () => {
     await run(h);
 
     expect(mutations(h.calls)).toEqual([]);
+    expect(h.calls).toContain(`read:${trustedSha}:${helperPath}`);
+  });
+
+  it('resolves the gate when the PR base predates the decision helper', async () => {
+    // The helper exists only at the workflow's own commit, as for a PR
+    // whose base is older than the helper.
+    const h = harness([review('APPROVED')], {helperAt: [trustedSha]});
+
+    await run(h);
+
+    expect(h.calls).not.toContain(`read:${oldBaseSha}:${helperPath}`);
+    expect(h.calls).toContainEqual(
+      expect.objectContaining({type: 'remove-label'}),
+    );
+    expect(h.calls).toContainEqual({
+      type: 'status',
+      input: expect.objectContaining({
+        sha: head2,
+        state: 'success',
+        description: 'Cleared by code-owner approval.',
+      }),
+    });
+  });
+
+  it('fails clearly, without touching the gate, when the decision helper is missing', async () => {
+    const h = harness([review('APPROVED')], {helperAt: []});
+
+    await run(h);
+
+    expect(mutations(h.calls)).toEqual([]);
     expect(h.calls).toContain(
-      'read:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa:.github/scripts/review-signal-decision.cjs',
+      `failed:Cannot resolve the code gate for PR #17: ${helperPath} could not be loaded at ${trustedSha} (not found).`,
     );
   });
 

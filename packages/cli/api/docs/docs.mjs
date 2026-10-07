@@ -120,6 +120,8 @@ export async function docs(topic, section, options = {}) {
     }
     return {
       type: 'docs.node',
+      // The docs tree names each node's npm package as its provider.
+      package: found.node.provider,
       data: await nodeView(found.catalog, found.tree, found.node, read),
     };
   }

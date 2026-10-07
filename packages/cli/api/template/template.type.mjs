@@ -47,6 +47,7 @@
  * astryx --json template <name>
  * @typedef {object} TemplateShowResponse
  * @property {'template.show'} type
+ * @property {string} package The npm package that owns the template.
  * @property {object} data
  * @property {string} data.template
  * @property {string} data.description
@@ -60,6 +61,7 @@
  * astryx --json template <name> --skeleton
  * @typedef {object} TemplateSkeletonResponse
  * @property {'template.skeleton'} type
+ * @property {string} package The npm package that owns the template.
  * @property {object} data
  * @property {string} data.template
  * @property {string} data.description
@@ -71,6 +73,7 @@
  * astryx --json template <name> [path]
  * @typedef {object} TemplateCopyResponse
  * @property {'template.copy'} type
+ * @property {string} package The npm package that owns the template.
  * @property {object} data
  * @property {string} data.template
  * @property {string} data.outputDir

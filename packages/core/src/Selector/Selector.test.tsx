@@ -4615,6 +4615,36 @@ describe('Selector press model', () => {
   });
 });
 
+describe('Selector in a narrow row', () => {
+  it('lets a row shrink a standalone selector instead of overflowing', () => {
+    const {container} = render(
+      <Selector
+        label="Status"
+        options={['Awaiting fulfillment', 'Shipped']}
+        value="Awaiting fulfillment"
+        onChange={() => {}}
+      />,
+    );
+    const root = container.querySelector('.astryx-field')!;
+    expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+
+  it('keeps an explicit width alongside the reset', () => {
+    const {container} = render(
+      <Selector
+        label="Qty"
+        options={['1', '2']}
+        value="1"
+        onChange={() => {}}
+        width={80}
+      />,
+    );
+    const root = container.querySelector('.astryx-field')!;
+    expect(root.getAttribute('style')).toContain('80');
+    expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+});
+
 describe('Selector and option actions (not adopted)', () => {
   it('renders the option without the control and warns in development', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

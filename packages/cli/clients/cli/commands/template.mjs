@@ -5,7 +5,7 @@
  */
 
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, text, records, code} from '../formatters/index.mjs';
+import {emit, section, text, records, code, record} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {template as templateApi} from '../../../api/template/template.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
@@ -146,6 +146,7 @@ export function registerTemplate(program) {
         case 'template.skeleton': {
           const {template: tName, description, components, skeleton} = result.data;
           emit(
+            record({package: result.package}),
             text(
               `# ${tName}${description ? ' — ' + description : ''}\n` +
                 `# Components: ${components.join(', ')}`,
@@ -156,10 +157,12 @@ export function registerTemplate(program) {
         }
 
         case 'template.show': {
-          // Source must survive piping byte-for-byte, so the note about
-          // replaced demo media goes to stderr, in the copy receipt's words.
-          // (Text mode only: --json returned above with the count in data.)
+          // Source must survive piping byte-for-byte, so the package it comes
+          // from (cli-surface INV28) and the note about replaced demo media go
+          // to stderr, the note in the copy receipt's words. (Text mode only:
+          // --json returned above with both in the envelope.)
           const {source, demoMediaReplaced} = result.data;
+          console.error(`package: ${result.package}`);
           emit(code(source));
           if (demoMediaReplaced > 0) {
             console.error(
@@ -175,6 +178,7 @@ export function registerTemplate(program) {
           const file = `${outputDir}/${fileName}`;
           emit(
             text(`Copied template to ${file}`),
+            record({package: result.package}),
             demoMediaReplaced > 0 &&
               text(
                 `Replaced ${demoMediaReplaced} Astryx demo media reference${demoMediaReplaced === 1 ? '' : 's'} in ${file}: ` +

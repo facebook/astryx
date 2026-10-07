@@ -212,7 +212,14 @@ const styles = stylex.create({
     alignItems: 'center',
   },
   disabled: {
-    cursor: 'not-allowed',
+    // Per #5335: `default`, not `not-allowed`. A disabled control already
+    // carries its own visual treatment, and `not-allowed` is unpaintable on
+    // the part of the library sealed behind `pointer-events: none`, so the
+    // library cannot promise it consistently.
+    cursor: {
+      default: 'default',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   counter: {
     display: 'flex',

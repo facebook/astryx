@@ -18,10 +18,12 @@
 import {
   $convertFromMarkdownString,
   CODE,
+  HEADING,
   TEXT_FORMAT_TRANSFORMERS,
   TEXT_MATCH_TRANSFORMERS,
   LINK,
   ORDERED_LIST,
+  QUOTE,
   TRANSFORMERS,
   type MultilineElementTransformer,
   type Transformer,
@@ -41,6 +43,8 @@ import {
 import type {ElementFormatType} from 'lexical';
 import {HARD_LINE_BREAK} from './markdownHardLineBreak';
 import {THEMATIC_BREAK} from './markdownThematicBreak';
+import {HEADING_MARKERS} from './markdownHeading';
+import {QUOTE_MARKERS} from './markdownQuote';
 import {LIST_EXPORT} from './markdownListExport';
 import {TASK_LIST} from './markdownTaskList';
 import {ORDERED_LIST_KEEPING_START} from './markdownOrderedList';
@@ -62,15 +66,19 @@ const CELL_TRANSFORMERS: Array<Transformer> = [
 type ColumnAlignment = 'left' | 'center' | 'right' | null;
 
 /**
- * Splits a row into trimmed cell sources: one leading pipe, trailing spaces,
- * and one trailing pipe are dropped, and the rest splits on unescaped pipes.
- * An escaped pipe stays escaped for the cell's inline import.
+ * Splits a row into trimmed cell sources: the row's indentation, one leading
+ * pipe, trailing spaces, and one trailing pipe are dropped, and the rest
+ * splits on unescaped pipes. An escaped pipe stays escaped for the cell's
+ * inline import.
  */
 function splitTableRow(line: string): Array<string> {
   let start = 0;
   let end = line.length;
-  if (line.startsWith('|')) {
-    start = 1;
+  while (start < end && (line[start] === ' ' || line[start] === '\t')) {
+    start++;
+  }
+  if (line[start] === '|') {
+    start++;
     while (start < end && line[start] === ' ') {
       start++;
     }
@@ -290,7 +298,11 @@ export const DEFAULT_TRANSFORMERS: ReadonlyArray<Transformer> = [
         ? LINK_KEEPING_DESTINATIONS
         : transformer === CODE
           ? BACKTICK_CODE
-          : transformer,
+          : transformer === QUOTE
+            ? QUOTE_MARKERS
+            : transformer === HEADING
+              ? HEADING_MARKERS
+              : transformer,
   ),
   HARD_LINE_BREAK,
   TABLE,

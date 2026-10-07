@@ -5,7 +5,7 @@
 /**
  * @file BaseTypeahead.tsx
  * @input Uses React, StyleX, usePopover, TypeaheadItem
- * @output Exports BaseTypeahead combobox engine component
+ * @output Exports BaseTypeahead with focused-input menu reactivation
  * @position Core implementation; used by Typeahead and Tokenizer
  *
  * Pure combobox engine: input, search, keyboard navigation, dropdown.
@@ -946,8 +946,22 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     if (!wasAlreadyFocusedRef.current || popover.isOpen) {
       return;
     }
+    if (
+      hasEntriesOnFocus &&
+      query.length === 0 &&
+      resultsGenRef.current !== searchGenRef.current
+    ) {
+      void performBootstrap();
+      return;
+    }
     openIfEligible();
-  }, [popover.isOpen, openIfEligible]);
+  }, [
+    popover.isOpen,
+    hasEntriesOnFocus,
+    query.length,
+    performBootstrap,
+    openIfEligible,
+  ]);
 
   // Handle blur — close the dropdown when focus leaves the input for an
   // element that is neither inside the field wrapper (anchor) nor inside the

@@ -15,7 +15,8 @@ describe('docs.index leaf', () => {
     const keys = res.data.sections.map(s => s.id);
     expect(new Set(keys).size).toBe(keys.length);
     for (const entry of res.data.sections) {
-      expect(Object.keys(entry)).toEqual(['id', 'title', 'summary']);
+      expect(Object.keys(entry)).toEqual(['id', 'title', 'package', 'summary']);
+      expect(entry.package).toBe(res.package);
       expect(entry.summary.length).toBeLessThanOrEqual(240);
     }
   }, SLOW);

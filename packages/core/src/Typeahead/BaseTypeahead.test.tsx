@@ -3,12 +3,13 @@
 /**
  * @file BaseTypeahead.test.tsx
  * @input BaseTypeahead public props and a synchronous SearchSource
- * @output Focused contract tests for the public combobox engine
+ * @output Combobox contract tests, including stale source refresh on reopen
  * @position Colocated verification for BaseTypeahead
  */
 
 import {afterAll, beforeAll, describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {BaseTypeahead} from './BaseTypeahead';
 import type {SearchSource, SearchableItem} from './types';
@@ -149,6 +150,63 @@ describe('BaseTypeahead', () => {
     expect(input).toHaveAttribute('aria-describedby', 'legacy-description');
     expect(input).toHaveAttribute('aria-labelledby', 'legacy-label');
     expect(input).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('refreshes nonempty cached results after source replacement on a focused-input click', async () => {
+    const user = userEvent.setup();
+    const originalSource: SearchSource<SearchableItem> = {
+      search: () => [],
+      bootstrap: () => [resultItem],
+    };
+    const updatedSource: SearchSource<SearchableItem> = {
+      search: () => [],
+      bootstrap: () => [{id: '2', label: 'Updated result'}],
+    };
+    const {rerender} = render(
+      <BaseTypeahead
+        searchSource={originalSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    expect(
+      screen.getByRole('option', {name: 'Result', hidden: true}),
+    ).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    rerender(
+      <BaseTypeahead
+        searchSource={updatedSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+      />,
+    );
+    expect(input).toHaveFocus();
+    expect(input).toHaveValue('');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.getByRole('option', {name: 'Result', hidden: true}),
+    ).toBeInTheDocument();
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(
+        screen.getByRole('option', {name: 'Updated result', hidden: true}),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole('option', {name: 'Result', hidden: true}),
+    ).not.toBeInTheDocument();
+    expect(input).toHaveFocus();
   });
 
   it('counts grapheme clusters when enforcing minQueryLength', async () => {

@@ -14,7 +14,7 @@ import {
 } from '../../lib/hook-format.mjs';
 import {getCliInvocation} from '../../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../../foundation/response/json.mjs';
-import {emit, section, text, list, records, code} from '../../formatters/index.mjs';
+import {emit, section, text, list, records, code, record} from '../../formatters/index.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {defineCommand} from '../../lib/define-command.mjs';
 import {resultSet} from '../../../../foundation/debug/index.mjs';
@@ -103,6 +103,7 @@ export function registerHook(program) {
       // ── Text output ────────────────────────────────────────────
       switch (result.type) {
         case 'hook.list': {
+          emit(record({package: result.package}));
           // One list type across all three detail levels; the depth is carried
           // in result.data.detail and the grouped map in result.data.components.
           if (result.data.detail === 'full') {
@@ -172,6 +173,7 @@ export function registerHook(program) {
           // under `component <name> --blocks`.
           const related = result.data.relatedComponents ?? [];
           emit(
+            record({package: result.package}),
             code(doc),
             related.length > 0 &&
               text(
@@ -182,7 +184,10 @@ export function registerHook(program) {
         }
 
         case 'hook.detail.params': {
-          emit(code(formatHookParams({params: result.data, name})));
+          emit(
+            record({package: result.package}),
+            code(formatHookParams({params: result.data, name})),
+          );
           break;
         }
       }

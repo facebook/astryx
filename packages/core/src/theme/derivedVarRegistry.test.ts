@@ -72,6 +72,8 @@ const STRUCTURAL_VARS = new Set([
   '--layout-padding-inner-y',
   '--layout-padding-outer-x',
   '--layout-padding-outer-y',
+  '--layout-padding-own-outer-x',
+  '--layout-padding-own-outer-y',
   '--layout-content-width',
   '--appshell-header-height',
   '--dialog-dir-x',

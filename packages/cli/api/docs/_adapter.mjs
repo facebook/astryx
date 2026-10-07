@@ -151,6 +151,31 @@ function providerOf(entry) {
 }
 
 /**
+ * The npm package that wrote each section of a lowered topic: the topic's own
+ * package, or the package of the extension that contributed the section
+ * (spec cli-surface INV28).
+ * @param {DocsTopicEntry} entry
+ * @param {{sectionProviders?: Record<string, string>}} node the lowered topic
+ * @returns {(sectionId: string | undefined) => string}
+ */
+export function sectionPackageOf(entry, node) {
+  /** @type {Map<string, string>} */
+  const byProvider = new Map([[providerOf(entry), entry.package]]);
+  for (const extension of entry.extensions ?? []) {
+    byProvider.set(providerOf(extension), extension.package);
+  }
+  return sectionId => {
+    const provider =
+      sectionId == null ? undefined : node.sectionProviders?.[sectionId];
+    return (
+      (provider == null
+        ? undefined
+        : byProvider.get(normalizeProviderId(provider))) ?? entry.package
+    );
+  };
+}
+
+/**
  * One topic, lowered for `lang` with every link between docs resolved
  * (spec:AST-047 FR9): an inline `{@link <target>}` reads as the command that
  * opens its doc, and a `reference` block carries the doc it names and the

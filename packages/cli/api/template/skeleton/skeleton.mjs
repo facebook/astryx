@@ -11,7 +11,7 @@
 import * as fs from 'node:fs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {extractComponents} from '../../../foundation/discovery/template-adapter.mjs';
+import {extractComponents, pkgOf} from '../../../foundation/discovery/template-adapter.mjs';
 
 const STRUCTURAL = new Set([
   'AppShell',
@@ -245,6 +245,7 @@ export function templateSkeleton(match, templates) {
   const src = fs.readFileSync(match.filePath, 'utf-8');
   return {
     type: 'template.skeleton',
+    package: pkgOf(match),
     data: {
       template: match.dirName,
       description: match.description,

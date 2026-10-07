@@ -36,7 +36,7 @@ export const doc = {
     {
       value: 'component.list',
       description:
-        "The component catalog grouped by component group (each component's group field): `detail` (the level: names | compact | full) and `components`, the grouped map of names entries ({name, package, and optional canonical import for integrations}), brief entries, or a full ComponentDoc per entry.",
+        "The component catalog grouped by component group (each component's group field): `detail` (the level: names | compact | full) and `components`, the grouped map of names entries ({name, package, and optional canonical import for integrations}), brief entries ({name, package, description, import}), or a full ComponentDoc per entry with its package.",
     },
     {
       value: 'component.batch',
@@ -46,25 +46,25 @@ export const doc = {
     {
       value: 'component.detail',
       description:
-        "One component's authored ComponentDoc plus ownership fields (package, the owner; import, the specifier; sourceAvailable, whether source exists) and parentDoc (present when the component is documented inside another component's doc, naming that doc).",
+        "One component's authored ComponentDoc plus ownership fields (package, the owner; import, the specifier; sourceAvailable, whether source exists) and parentDoc (present when the component is documented inside another component's doc, naming that doc). The envelope's package names the same owner.",
     },
     {
       value: 'component.detail.props',
-      description: "Just one component's props table (ComponentPropDoc[]).",
+      description: "Just one component's props table (ComponentPropDoc[]). The envelope's package names the npm package that owns the component.",
     },
     {
       value: 'component.detail.source',
-      description: "One component's source file, as {component, source}.",
+      description: "One component's source file, as {component, source}. The envelope's package names the npm package that owns the component.",
     },
     {
       value: 'component.detail.showcase',
       description:
-        "One component's showcase example, as {component, aspectRatio, source}.",
+        "One component's showcase example, as {component, aspectRatio, source}. The envelope's package names the npm package that owns the component.",
     },
     {
       value: 'component.detail.blocks',
       description:
-        "One component's example blocks, as {component, showcase, examples, related} of BlockEntry.",
+        "One component's example blocks, as {component, showcase, examples, related} of BlockEntry ({name, package, displayName, description, isShowcase, category}); each block names the package that owns it, and the envelope's package names the component's owner.",
     },
 
     // docs
@@ -76,22 +76,22 @@ export const doc = {
     {
       value: 'docs.detail',
       description:
-        "One topic's full ReferenceDoc (the JSON read of a topic, --full, --dense, or a topic with one section), with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open the level it sits in and its neighbors there).",
+        "One topic's full ReferenceDoc (the JSON read of a topic, --full, --dense, or a topic with one section), with token-ref blocks inlined and each section naming the package that wrote it, plus links ({up, previous, next}: the commands that open the level it sits in and its neighbors there).",
     },
     {
       value: 'docs.index',
       description:
-        "One topic's section index, the text read of a topic with more than one section (and --index): the topic's name, title, and description, plus sections, each {id, title, summary} (pass the id as the section argument; summary is the section's one-line summary), and links ({up, previous, next}: the commands that open the level it sits in and its neighbors there).",
+        "One topic's section index, the text read of a topic with more than one section (and --index): the topic's name, title, and description, plus sections, each {id, title, package, summary} (pass the id as the section argument; package is the npm package that wrote the section; summary is the section's one-line summary), and links ({up, previous, next}: the commands that open the level it sits in and its neighbors there).",
     },
     {
       value: 'docs.detail.section',
       description:
-        'One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open its topic index and the sections before and after it).',
+        'One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open its topic index and the sections before and after it). The envelope\'s package names the npm package that wrote the section.',
     },
     {
       value: 'docs.node',
       description:
-        "One node of the docs tree, read by its route: its id, kind, package, title, summary, and breadcrumb, plus a namespace's slots with their children (one level down) or a typed doc's content, and links ({up, previous, next, related}: the commands that open its parent, its neighbors, and the docs it names).",
+        "One node of the docs tree, read by its route: its id, kind, package, title, summary, and breadcrumb, plus a namespace's slots with their children (one level down, each naming its package) or a typed doc's content, and links ({up, previous, next, related}: the commands that open its parent, its neighbors, and the docs it names).",
     },
 
     // blog (read from the published RSS feed)
@@ -137,7 +137,7 @@ export const doc = {
     {
       value: 'search',
       description:
-        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, score, reason, description, command}, plus import (components, hooks), title, parent (the command that opens the level above), package (for a docs-tree hit), and, for a hit on one section, section (docs), or displayName and kind (templates).',
+        'The echoed query, `matchCount` (total matches, before `limit`), and results, a ranked SearchResultEntry[] bounded by `limit`: each {domain, name, package, score, reason, description, command} (package is the npm package that owns the result), plus import (components, hooks), title, parent (the command that opens the level above), and, for a hit on one section, section (docs), or displayName and kind (templates).',
     },
 
     // build
@@ -149,19 +149,19 @@ export const doc = {
     {
       value: 'build.kit',
       description:
-        "The template to start from and its kit: query, hasResults, matchCount (never a cap), directMatch, start {name, command, basis, reason, alternatives, ...}, pages (search's closest templates), blocks and domain as SearchResultEntry[], frame, foundation, and hint {reason, commands} when thin.",
+        "The template to start from and its kit: query, hasResults, matchCount (never a cap), directMatch, start {name, package, command, basis, reason, alternatives, ...} (the start and each alternative name the package that owns the template), pages (search's closest templates), blocks and domain as SearchResultEntry[] (each naming its package), frame and foundation (Core component names), and hint {reason, commands} when thin.",
     },
 
     // swizzle
     {
       value: 'swizzle.list',
       description:
-        "The names of swizzlable components discoverable from cwd's @astryxdesign/core.",
+        "The names of swizzlable components discoverable from cwd's @astryxdesign/core. The envelope's package is @astryxdesign/core.",
     },
     {
       value: 'swizzle.copy',
       description:
-        'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling.',
+        'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling. The envelope\'s package names the same owning package.',
     },
 
     // gap reports
@@ -189,12 +189,12 @@ export const doc = {
     {
       value: 'template.skeleton',
       description:
-        "A layout skeleton (structural tags with spatial annotations) plus the template's description and the components it composes.",
+        "A layout skeleton (structural tags with spatial annotations) plus the template's description and the components it composes. The envelope's package names the npm package that owns the template.",
     },
     {
       value: 'template.copy',
       description:
-        'A scaffold receipt: template id, output directory, written file name, file count, and demoMediaReplaced (how many Astryx demo media references were replaced with placeholders for you to swap for your own media).',
+        'A scaffold receipt: template id, output directory, written file name, file count, and demoMediaReplaced (how many Astryx demo media references were replaced with placeholders for you to swap for your own media). The envelope\'s package names the npm package that owns the template.',
     },
 
     {
@@ -207,12 +207,17 @@ export const doc = {
     {
       value: 'hook.list',
       description:
-        'The hook catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry.',
+        'The hook catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry. The envelope\'s package is @astryxdesign/core, the only package that ships hooks.',
     },
-    {value: 'hook.detail', description: "One hook's full authored HookDoc."},
+    {
+      value: 'hook.detail',
+      description:
+        "One hook's full authored HookDoc. The envelope's package is @astryxdesign/core.",
+    },
     {
       value: 'hook.detail.params',
-      description: "Just one hook's parameters table (HookParamDoc[]).",
+      description:
+        "Just one hook's parameters table (HookParamDoc[]). The envelope's package is @astryxdesign/core.",
     },
 
     // theme
@@ -261,7 +266,7 @@ export const doc = {
     {
       value: 'upgrade.list',
       description:
-        'Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.',
+        'Every available codemod, oldest→newest, as {name, package, title, version, optional}; returned for --list without running anything.',
     },
     {
       value: 'upgrade.registry',

@@ -24,7 +24,7 @@
  * @property {string} [import] - Import path — present for component and hook results.
  * @property {string} [title] - Doc title — present for doc results.
  * @property {string} [section] - Section key — present when a doc result is one section of a topic; `command` reads only that section.
- * @property {string} [package] - The npm package that authored a doc result (for a section, the package whose file the section came from), or that ships a theme result.
+ * @property {string} package - The npm package that owns the result: `@astryxdesign/core` for a Core component, hook, or template, `@astryxdesign/cli` for a doc the CLI ships, or the integration package that contributed it. For a doc section, the package whose file the section came from.
  * @property {string} [parent] - Command that opens the level above a doc result — its topic's section list for a section, the docs-tree namespace it sits in for a tree node — so a reader can see the siblings and open another.
  * @property {string} [displayName] - Friendly display name — present for template and theme results.
  * @property {'page' | 'block'} [kind] - Template kind (`page` | `block`) — present for template results.

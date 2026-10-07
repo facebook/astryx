@@ -41,6 +41,7 @@ describe('docs() depth', () => {
         expect(Object.keys(child).sort()).toEqual([
           'kind',
           'name',
+          'package',
           'route',
           'summary',
           'title',
@@ -60,6 +61,7 @@ describe('docs() depth', () => {
       expect(findRoute(result.data, 'cli/api/functions/search')).toEqual({
         route: 'cli/api/functions/search',
         name: 'search',
+        package: '@astryxdesign/cli',
         kind: 'function',
         title: 'search()',
         summary: expect.any(String),

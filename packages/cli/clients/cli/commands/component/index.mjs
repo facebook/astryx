@@ -104,7 +104,7 @@ function componentDetailBlocks(result, requestedName, detail, themeData) {
   switch (result.type) {
     case 'component.detail': {
       /** @type {import('../../formatters/index.mjs').Block[]} */
-      const out = [];
+      const out = [record({package: result.package})];
       if (result.data.parentDoc) {
         out.push(record(result.data, {fields: ['parentDoc']}));
       }
@@ -129,24 +129,37 @@ function componentDetailBlocks(result, requestedName, detail, themeData) {
       return out;
     }
     case 'component.detail.props':
-      return [code(formatProps({props: result.data}, resolvedName))];
+      return [
+        record({package: result.package}),
+        code(formatProps({props: result.data}, resolvedName)),
+      ];
     case 'component.detail.source':
     case 'component.detail.showcase':
       return [code(result.data.source)];
     case 'component.detail.blocks': {
       const {showcase, examples, related} = result.data;
+      // A block another package owns says which one.
+      /** @param {{package: string}} block @param {string} label */
+      const owned = (block, label) =>
+        block.package === result.package ? label : `${label} (${block.package})`;
       /** @type {import('../../formatters/index.mjs').Block[]} */
-      const out = [];
+      const out = [record({package: result.package})];
       if (showcase) {
         out.push(
           section('Showcase'),
-          record(showcase, {fields: ['displayName', 'description']}),
+          record(
+            {...showcase, displayName: owned(showcase, showcase.displayName)},
+            {fields: ['displayName', 'description']},
+          ),
         );
       }
       if (examples.length > 0) {
         out.push(
           section('Examples'),
-          records(examples, {fields: ['name', 'description']}),
+          records(
+            examples.map(block => ({...block, name: owned(block, block.name)})),
+            {fields: ['name', 'description']},
+          ),
         );
       }
       if (related.length > 0) {
@@ -154,7 +167,7 @@ function componentDetailBlocks(result, requestedName, detail, themeData) {
           section(
             `Related: ${related.length} blocks that use ${result.data.component}`,
           ),
-          list(related.map(block => block.name)),
+          list(related.map(block => owned(block, block.name))),
         );
       }
       if (!showcase && examples.length === 0 && related.length === 0) {
@@ -340,6 +353,12 @@ export function registerComponent(program) {
               out.push(
                 record(row, {fields: ['selector', 'status']}),
                 section('Result'),
+                // A batch is not piped as one file, so a source row names its
+                // package here; the other rows name it themselves.
+                ...(row.result.type === 'component.detail.source' ||
+                row.result.type === 'component.detail.showcase'
+                  ? [record({package: row.result.package})]
+                  : []),
                 ...componentDetailBlocks(
                   row.result,
                   row.selector,
@@ -377,6 +396,15 @@ export function registerComponent(program) {
         case 'component.detail.source':
         case 'component.detail.showcase':
         case 'component.detail.blocks':
+          // Source and showcase print the file alone so it pipes byte for
+          // byte; the package they come from goes to stderr (cli-surface
+          // INV28).
+          if (
+            result.type === 'component.detail.source' ||
+            result.type === 'component.detail.showcase'
+          ) {
+            console.error(`package: ${result.package}`);
+          }
           emit(
             ...componentDetailBlocks(
               result,

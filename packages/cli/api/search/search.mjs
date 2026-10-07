@@ -80,6 +80,7 @@ import {
   findComponentReadme,
   resolveImportPath,
   resolveIntegrationImportPath,
+  CORE_PACKAGE,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {
   discoverHooks,
@@ -130,9 +131,9 @@ import {setResultCoverage} from './coverage.mjs';
  * @property {string} [_command] - The command that reads exactly this doc part.
  * @property {string} [_parent] - The command that opens the level above a doc
  *   part: its topic's section list, or the docs-tree namespace it sits in.
- * @property {string} [_package] - The npm package that authored a docs-tree
- *   doc part. Flat topics carry none: an extension's sections can come from
- *   another package.
+ * @property {string} [_package] - The npm package that owns the candidate:
+ *   Core's package for its components, hooks, and templates, the integration's
+ *   for what it contributed, and for a doc part the package that wrote it.
  * @property {string} [_displayName]
  * @property {'page'|'block'} [_kind]
  * @property {string} [_resultName]
@@ -967,6 +968,7 @@ async function gatherCoreComponents(coreDir) {
       keywords,
       description,
       guidance,
+      _package: CORE_PACKAGE,
       _import: resolveImportPath(coreDir, comp),
     });
   }
@@ -997,6 +999,7 @@ async function gatherIntegrationComponents(cwd) {
         keywords: doc && Array.isArray(doc.keywords) ? doc.keywords : [],
         description: doc ? doc.usage?.description || doc.description || '' : '',
         guidance: guidanceFrom(doc),
+        _package: rec.package ?? integration.name,
         // Exactly what `component` reports: a doc may state its own specifier
         // (one entry point exporting several components), and only when it
         // does not do we resolve the subpath against the owning package's
@@ -1123,6 +1126,7 @@ async function gatherHooks(coreDir) {
       name: hookName,
       keywords,
       description,
+      _package: CORE_PACKAGE,
       _import: importPath,
     });
   }
@@ -1484,6 +1488,7 @@ async function gatherTemplates(cwd) {
       // short idea is not a direct match.
       prose: t.keywords ?? [],
       _displayName: t.name,
+      _package: t.package ?? CORE_PACKAGE,
       _kind: t.type, // 'page' | 'block'
       _resultName: t.dirName,
       _commandName: commandName,
@@ -1536,6 +1541,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
   const base = {
     domain: c.domain,
     name: c._resultName ?? c.name,
+    package: c._package,
     score,
     reason,
     description: c.description || '',
@@ -1566,7 +1572,6 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
         title: c._title,
         command: c._command ?? `astryx docs ${c.name}`,
         ...(c._parent ? {parent: c._parent} : {}),
-        ...(c._package ? {package: c._package} : {}),
       };
       break;
     case 'template':
@@ -1582,7 +1587,6 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
         ...base,
         displayName: c._displayName,
         command: `astryx theme add ${c.name}`,
-        ...(c._package ? {package: c._package} : {}),
       };
       break;
     default:
