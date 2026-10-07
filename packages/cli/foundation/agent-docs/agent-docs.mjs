@@ -441,7 +441,7 @@ export function generateCompressedIndex(
   // Rules — the top error-preventers.
   lines.push('RULES:');
   lines.push('- No <div> — components do all layout/spacing, page frame included.');
-  lines.push('- Frame first: the template you scaffold sets the page frame. Read `astryx docs layout` before you change it — region widths, breakpoint behavior.');
+  lines.push('- Frame first: the template you scaffold sets the page frame. Read `astryx docs layout` for the principles — region widths, breakpoint behavior.');
   lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
