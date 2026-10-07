@@ -82,6 +82,11 @@ const STATIC_EXPORTS = {
     types: './dist/theme/tokens.stylex.d.ts',
     default: './dist/theme/tokens.stylex.js',
   },
+  './theme/dataTokens.stylex': {
+    source: './src/theme/dataTokens.stylex.ts',
+    types: './dist/theme/dataTokens.stylex.d.ts',
+    default: './dist/theme/dataTokens.stylex.js',
+  },
   './theme/syntax': {
     source: './src/theme/syntax/index.ts',
     types: './dist/theme/syntax/index.d.ts',
