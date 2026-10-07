@@ -119,6 +119,12 @@ function $importFencedCode(
   while (end < lines.length && !closing.test(lines[end])) {
     end++;
   }
+  // A fence left open runs to the end of the document, whose final line
+  // ending starts no line of code (CommonMark 0.31 §4.5), as core reads it.
+  const codeEnd =
+    end === lines.length && end > startLineIndex + 1 && lines[end - 1] === ''
+      ? end - 1
+      : end;
   // The code is the lines between the fences, exactly: Lexical's own
   // transformer trims a space from the first line and drops blank first and
   // last lines, adjustments meant for its own reading of the opening line.
@@ -126,7 +132,7 @@ function $importFencedCode(
   block.append(
     $createTextNode(
       lines
-        .slice(startLineIndex + 1, end)
+        .slice(startLineIndex + 1, codeEnd)
         .map(line => line.replace(fenceIndentation, ''))
         .join('\n'),
     ),

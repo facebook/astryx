@@ -3689,6 +3689,13 @@ function parseMarkdownImpl(
         codeLines.push(lines[index].replace(fenceIndentation, ''));
         index++;
       }
+      const closed = index < lines.length;
+      // A fence left open runs to the end of the input, whose final line
+      // ending starts no line of code (CommonMark 0.31 §4.5) — as a closed
+      // fence's code ends before its closing line.
+      if (!closed && codeLines.length > 0 && lines[lines.length - 1] === '') {
+        codeLines.pop();
+      }
       index++; // skip closing fence
       // A fence owns its blank lines, and an unterminated one (mid-stream)
       // can end on them, so it states its own end rather than letting the
@@ -4957,9 +4964,10 @@ function parseMarkdownIncrementalAstBlocks(
       : trimmedUnsettledInput;
   // Structural trimming holds back lines that look like an incomplete list or
   // table, which inside a fence is ordinary code: a TypeScript union or a `- `
-  // would disappear from the code block as it streams.
+  // would disappear from the code block as it streams. And an open fence's
+  // trailing blank lines are code, as in a full parse of the same text.
   const unsettledText = openFence
-    ? unsettledRaw
+    ? unsettledInput.replace(/^(?:[ \t]*\r?\n)+/, '')
     : openMath
       ? trimOpenDisplayMath(unsettledRaw)
       : trimUnsettledStructural(unsettledRaw);
