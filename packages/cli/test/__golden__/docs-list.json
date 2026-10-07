@@ -16,6 +16,11 @@
         "package": "@astryxdesign/cli"
       },
       {
+        "topic": "layout",
+        "description": "Build an app layout outside-in: scaffold the regions, structure the content, tune the spacing, then adapt across widths.",
+        "package": "@astryxdesign/cli"
+      },
+      {
         "topic": "unorganized",
         "description": "Every topic that no section places yet. Each keeps its own name; open one by it.",
         "package": "@astryxdesign/cli"

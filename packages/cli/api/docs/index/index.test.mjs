@@ -3,7 +3,7 @@
 import {describe, expect, it} from 'vitest';
 import {docs} from '../docs.mjs';
 import {index} from './index.mjs';
-import {loadDocsCatalog} from '../_adapter.mjs';
+import {loadDocsCatalog, holdsOwnName, projectTree} from '../_adapter.mjs';
 
 const SLOW = 60_000;
 
@@ -39,7 +39,11 @@ describe('docs.index leaf', () => {
 
   it('lists keys every section can be read by', async () => {
     const catalog = await loadDocsCatalog();
+    const tree = await projectTree(catalog);
     for (const entry of catalog.entries()) {
+      // A flat topic whose name is now owned by a namespace (e.g. layout)
+      // cannot be read as a topic — skip it.
+      if (!holdsOwnName(tree, catalog, entry)) continue;
       const {data} = await index(entry.name);
       for (const {id, title} of data.sections) {
         const read = await docs(entry.name, id);

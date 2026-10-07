@@ -495,7 +495,7 @@ describe("the CLI's own docs tree", () => {
     async () => {
       const tree = await loadDocsTree({fresh: true});
       expect(tree.diagnostics).toEqual([]);
-      expect(tree.roots().map(node => node.route)).toEqual(['cli']);
+      expect(tree.roots().map(node => node.route)).toEqual(['cli', 'layout']);
       // Every slot child is a node one level below the namespace that places
       // it, and every node but the root is placed. Read from the tree, so a
       // restructure of the guides does not need this test edited.
@@ -521,7 +521,7 @@ describe("the CLI's own docs tree", () => {
       expect(
         nodes
           .map(node => node.route)
-          .filter(route => route !== 'cli' && !placed.has(route)),
+          .filter(route => route !== 'cli' && route !== 'layout' && !placed.has(route)),
       ).toEqual([]);
       // The reference groups the CLI generates from its own typed docs.
       expect(

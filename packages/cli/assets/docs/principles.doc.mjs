@@ -43,7 +43,7 @@ export const docs = {
           style: 'ordered',
           items: [
             'Use components for everything they cover',
-            'Page layout is frame-first: pick the shell and budget regions before writing content (see {@link generic:layout})',
+            'Page layout is frame-first: pick the shell and budget regions before writing content (see {@link namespace:layout})',
             'Dense data renders as rows (Table, List/Item), edge-to-edge with dividers; Card is for widgets, galleries, and settings groups',
             'StyleX or Tailwind for custom styling; both are first-class (see {@link generic:styling})',
             'Semantic tokens, not hardcoded values (see {@link generic:tokens})',
@@ -84,7 +84,7 @@ export const docs = {
             'Hardcoded colors (#fff). Use var(--color-*) or Tailwind semantic classes (text-primary, bg-surface)',
             'Hardcoded spacing (16px). Use spacing tokens or Tailwind spacing utilities',
             'Hardcoded <a> elements. Use useLinkComponent() so consumers can swap in their framework router via LinkProvider',
-            'Wrapping every list item or page section in a Card. Decide the frame first; dense data renders as rows (see {@link generic:layout})',
+            'Wrapping every list item or page section in a Card. Decide the frame first; dense data renders as rows (see {@link namespace:layout})',
             'Badge as decoration. Reserve Badge for counts and enumerated states; use StatusDot or Token for status',
             'Inventing props. Read component docs first',
           ],
