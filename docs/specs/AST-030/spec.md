@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-29
+approved_at: 2026-10-07
 phase: accepted
 owners: [cixzhang]
 affects_architecture: []
@@ -175,8 +175,13 @@ they are separately named.
   sweeps, whole-repository spec-test contracts, their evidence uploads, and Probe
   reach MUST run only for `release-check` in this workflow. Missing,
   failed, cancelled, or skipped required work MUST block the release-check join.
-  The request and join MUST verify that the checked SHA is still current `main`;
-  release callers MUST recheck it before mutation and dispatch again after drift.
+  The request and join MUST verify that the checked SHA is the dispatch event SHA
+  and remains an ancestor of current remote `main` at the start and completion of
+  the run. Release callers MUST fetch and recheck that same ancestry immediately
+  before creating the release branch. Later fast-forward movement of `main` does
+  not invalidate that receipt: the release MUST cut from the exact checked SHA, and
+  later commits remain next-release input. A rewrite or divergence that removes
+  the checked SHA from current `main` history invalidates the receipt.
   This replaces constituent-PR-only release gating, not the canonical checks'
   existing finding policies. Release checks MUST NOT run on every push, capture
   baseline candidates, publish baselines, or use a separate daily workflow or
@@ -293,17 +298,18 @@ PR visual owners; counting internal jobs or required status projections as
 lanes; and implicit expansion under an undefined “additional specialized
 surface” exception.
 
-### DEC-5 — Release checks reuse the canonical owners on exact main
+### DEC-5 — Release checks reuse the canonical owners on an exact main commit
 
 **Reference:** `spec:AST-030/DEC-5`
-**Decider:** `cixzhang`, `2026-09-23`
+**Decider:** `cixzhang`, `2026-09-23`; clarified `2026-10-07`
 
-Run release evidence against exact current `main`, not only constituent PR heads.
-Use an explicit release-time dispatch in `ci.yml` so full visual, accessibility,
-and RTL checks do not run on every main push. Reuse existing test/build owners,
-keep their finding policies, and fail closed on incomplete scope, missing work,
-or main drift. Baseline capture and the reviewed pull request that versions an
-accepted candidate remain separate operations.
+Run release evidence against an exact commit in current `main` history, not only
+constituent PR heads. Use an explicit release-time dispatch in `ci.yml` so full
+visual, accessibility, and RTL checks do not run on every main push. Reuse
+existing test/build owners, keep their finding policies, and fail closed on
+incomplete scope, missing work, or when the checked commit is no longer in
+current `main` history. Baseline capture and the reviewed pull request that
+versions an accepted candidate remain separate operations.
 
 PR accessibility remains a scoped, fast check: audit only explicitly resolved
 changed component owners and retain the fast modal-close, theme-var, and story-play
@@ -317,7 +323,8 @@ uploads, and Probe reach sweep run only on `release-check` in this workflow.
 The release path retains the complete suite and cannot substitute a scoped result.
 
 Rejected: a separate workflow, per-push full audits, and treating a maintenance
-capture, skipped check, old main SHA, or retroactive status as release evidence.
+capture, skipped check, a checked SHA no longer in current `main` history, or
+retroactive status as release evidence.
 
 ## Open questions
 
