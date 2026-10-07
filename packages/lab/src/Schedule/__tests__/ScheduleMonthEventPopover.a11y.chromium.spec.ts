@@ -139,6 +139,27 @@ for (const [variant, globals] of [
     const standup = chips.find(reading => reading.name.startsWith('Standup,'));
     expect(standup?.isButton).toBe(true);
     expect(standup?.cell).toBe(WEDNESDAY);
+    // Every chip paints, and takes the pointer, across all of its days: no
+    // later cell covers the part of a span that crosses it.
+    const covered = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('[data-schedule-month-chip]')]
+        .filter(chip => chip.tagName === 'BUTTON')
+        .flatMap(chip => {
+          const rect = chip.getBoundingClientRect();
+          return [0.1, 0.5, 0.9]
+            .map(share => {
+              const top = document.elementFromPoint(
+                rect.left + rect.width * share,
+                rect.top + rect.height / 2,
+              );
+              return top != null && chip.contains(top)
+                ? null
+                : `${chip.getAttribute('aria-label')} at ${share}`;
+            })
+            .filter(miss => miss != null);
+        }),
+    );
+    expect(covered, 'chips covered by a later cell').toEqual([]);
     // A day the conference covers after Sunday names it as static text.
     const tuesday = page.getByRole('cell', {name: 'Tuesday, May 12, 2026'});
     await expect(tuesday).toContainText(

@@ -876,10 +876,11 @@ export const styles = stylex.create({
   monthChipInLastColumn: {
     inlineSize: `calc(100% - 2 * ${spacingVars['--spacing-0-5']} - ${borderVars['--border-width']})`,
   },
-  // A focused chip button keeps its whole ring above the chips around it.
+  // A chip button stays above the cells it crosses, like any chip, and a
+  // focused one keeps its whole ring above the chips around it.
   monthChipFocus: {
     zIndex: {
-      default: null,
+      default: 1,
       ':focus-visible': 2,
     },
   },
