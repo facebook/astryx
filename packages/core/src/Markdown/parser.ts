@@ -4762,8 +4762,13 @@ function parseMarkdownIncrementalAstBlocks(
     cache.settledEnd = nextSettledEnd;
   }
 
-  const trimmedUnsettledInput = unsettledInput.trim();
-  // String#trim removes the CR that belongs to the final content line of a
+  // Blank lines before the tail and whitespace after it carry nothing, but the
+  // first line's indentation does: it decides a list's indent and whether a
+  // line is a heading, as in a full parse of the same text.
+  const trimmedUnsettledInput = unsettledInput
+    .replace(/^(?:[ \t]*\r?\n)+/, '')
+    .trimEnd();
+  // Trimming the end removes the CR that belongs to the final content line of a
   // CRLF snapshot along with trailing blank lines. Keep that one byte so
   // source ranges and delimiter content remain identical to a full parse.
   const unsettledRaw =
