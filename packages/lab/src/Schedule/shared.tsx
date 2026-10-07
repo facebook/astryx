@@ -631,6 +631,25 @@ export function formatEventTimeRange(
   )}`;
 }
 
+/**
+ * An event's start and end with their dates, such as "May 11 at 9:00 AM – May
+ * 13 at 9:00 AM" in en-US, for a timed span of a day or more
+ * (component:Schedule AR2).
+ */
+export function formatEventDateTimeRange(
+  event: CalendarInstantEvent,
+  timezoneID: string,
+  locale: Locale,
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: timezoneID,
+  }).formatRange(new Date(event.start), new Date(event.end));
+}
+
 export function formatEventStartTime(
   event: CalendarInstantEvent,
   timezoneID: string,

@@ -1,7 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import {useState} from 'react';
 import {createEventFromISO} from './CalendarEvent';
 import {Schedule} from './Schedule';
@@ -264,5 +271,104 @@ describe('time grid initial position', () => {
     const loadedViewport = viewport();
     expect(loadedViewport).not.toBe(fallbackViewport);
     expect(loadedViewport.scrollTop).toBe(700);
+  });
+});
+
+describe('time grid long spans', () => {
+  // component:Schedule FR21: a timed event of 24 hours or more is a span in
+  // the all-day row; a shorter one stays a block in each day it touches.
+  const spanEvents: CalendarEvent[] = [
+    createEventFromISO({
+      id: 'offsite',
+      title: 'Offsite',
+      start: '2026-05-11T09:00:00.000Z',
+      end: '2026-05-13T09:00:00.000Z',
+    }),
+    createEventFromISO({
+      id: 'handoff',
+      title: 'On-call handoff',
+      start: '2026-05-14T08:00:00.000Z',
+      end: '2026-05-15T08:00:00.000Z',
+    }),
+    createEventFromISO({
+      id: 'shift',
+      title: 'Long shift',
+      start: '2026-05-15T00:00:00.000Z',
+      end: '2026-05-15T23:59:00.000Z',
+    }),
+    createEventFromISO({
+      id: 'deploy',
+      title: 'Late deploy',
+      start: '2026-05-12T22:00:00.000Z',
+      end: '2026-05-13T02:00:00.000Z',
+    }),
+  ];
+  const date = Date.UTC(2026, 4, 13, 12) as Instant;
+  const popoverView = createScheduleWeeklyView({
+    renderPopover: event => <p>{event.title} details</p>,
+  });
+  const allDay = () => screen.getByRole('group', {name: 'All-day events'});
+  const day = (name: string) => screen.getByRole('group', {name});
+  const buttonsIn = (group: HTMLElement, title: string) =>
+    within(group).queryAllByRole('button', {
+      name: new RegExp(`^${title},`),
+    });
+
+  it('paints a timed event of 24 hours or more as one all-day span named with its dates', () => {
+    render(
+      <Harness
+        initialDate={date}
+        eventSource={spanEvents}
+        view={popoverView}
+      />,
+    );
+    const [offsite, ...others] = buttonsIn(allDay(), 'Offsite');
+    expect(others).toEqual([]);
+    expect(offsite.getAttribute('aria-label')).toMatch(
+      /^Offsite, May 11(,| at) 9:00\sAM\s–\sMay 13(,| at) 9:00\sAM, .+, Monday, May 11, 2026$/u,
+    );
+    for (const name of [
+      'Monday, May 11, 2026',
+      'Tuesday, May 12, 2026',
+      'Wednesday, May 13, 2026',
+    ]) {
+      expect(buttonsIn(day(name), 'Offsite')).toEqual([]);
+    }
+    expect(buttonsIn(allDay(), 'On-call handoff')).toHaveLength(1);
+  });
+
+  it('keeps a timed event shorter than 24 hours in the day columns', () => {
+    render(
+      <Harness
+        initialDate={date}
+        eventSource={spanEvents}
+        view={popoverView}
+      />,
+    );
+    expect(buttonsIn(allDay(), 'Long shift')).toEqual([]);
+    expect(buttonsIn(day('Friday, May 15, 2026'), 'Long shift')).toHaveLength(
+      1,
+    );
+    expect(buttonsIn(allDay(), 'Late deploy')).toEqual([]);
+    expect(buttonsIn(day('Tuesday, May 12, 2026'), 'Late deploy')).toHaveLength(
+      1,
+    );
+    expect(
+      buttonsIn(day('Wednesday, May 13, 2026'), 'Late deploy'),
+    ).toHaveLength(1);
+  });
+
+  it('lists a long timed event in the hidden grid’s all-day cells and in no hour cell', () => {
+    render(<Harness initialDate={date} eventSource={spanEvents} />);
+    const grid = screen.getByRole('grid', {name: 'Schedule time grid'});
+    const offsiteCells = within(grid)
+      .getAllByRole('gridcell')
+      .map(cell => cell.getAttribute('aria-label') ?? '')
+      .filter(label => label.includes('Offsite'));
+    expect(offsiteCells.map(label => label.split('.')[0])).toEqual([
+      'Monday, May 11, 2026 all day',
+      'Tuesday, May 12, 2026 all day',
+      'Wednesday, May 13, 2026 all day',
+    ]);
   });
 });

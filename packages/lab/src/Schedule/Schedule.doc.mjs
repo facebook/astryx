@@ -82,7 +82,7 @@ export const docs = {
         name: 'View body',
         required: true,
         description:
-          'Whatever the view renders: a month grid, a day/week time grid with an hour gutter and an all-day row, or a list grouped under day headings. Grid views expose ARIA grid, columnheader, and gridcell roles and are marked aria-readonly. The day/week time grid scrolls inside one keyboard-reachable region named after the range; its day header, all-day row, and hour gutter stay pinned while the columns scroll.',
+          'Whatever the view renders: a month grid, a day/week time grid with an hour gutter and an all-day row, or a list grouped under day headings. Grid views expose ARIA grid, columnheader, and gridcell roles and are marked aria-readonly. The day/week time grid scrolls inside one keyboard-reachable region named after the range; its day header, all-day row, and hour gutter stay pinned while the columns scroll. The all-day row also holds timed events that last 24 hours or more, as one span across their days.',
       },
       {
         name: 'Event',
