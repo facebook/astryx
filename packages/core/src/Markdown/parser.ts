@@ -1084,11 +1084,40 @@ function imageAlt(
   imageAltDepth++;
   try {
     return markdownAstText(
-      parseInlineImpl(description, protectedInlineOptions(opts), context),
+      breaksAsLineEndings(
+        parseInlineImpl(description, protectedInlineOptions(opts), context),
+      ),
     );
   } finally {
     imageAltDepth--;
   }
+}
+
+/**
+ * `nodes` with each hard line break as the line ending it stands for, so an
+ * alt text keeps the words on either side apart, as commonmark.js writes it.
+ */
+function breaksAsLineEndings(
+  nodes: ReadonlyArray<MarkdownAstPhrasingContent<RuntimeExtensionNode>>,
+): MarkdownAstPhrasingContent<RuntimeExtensionNode>[] {
+  return nodes.map(node => {
+    switch (node.type) {
+      case 'break':
+        return {type: 'text', value: '\n'};
+      case 'strong':
+      case 'emphasis':
+      case 'delete':
+      case 'link':
+        return {...node, children: breaksAsLineEndings(node.children)};
+      case 'text':
+      case 'inlineCode':
+      case 'inlineMath':
+      case 'image':
+      case 'citation':
+      case 'extension':
+        return node;
+    }
+  });
 }
 
 function matchReferenceImage(

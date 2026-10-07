@@ -33,6 +33,22 @@ describe("an image's alt text is its description as plain text (CommonMark 0.31 
     ['an image', '![a ![b](u) c](v)', ['a b c']],
     ['escapes and character references', '![&amp; \\* x](u)', ['& * x']],
     ['plain text, unchanged', '![a photo](u)', ['a photo']],
+    [
+      'a hard break as a line ending',
+      '![first  \nsecond](u)',
+      ['first\nsecond'],
+    ],
+    [
+      'a backslash hard break as a line ending',
+      '![first\\\nsecond](u)',
+      ['first\nsecond'],
+    ],
+    ['a soft break as a line ending', '![first\nsecond](u)', ['first\nsecond']],
+    [
+      'a hard break inside emphasis',
+      '![*first  \nsecond*](u)',
+      ['first\nsecond'],
+    ],
   ])('reads %s: %j', (_, markdown, expected) => {
     expect(inlineAlts(markdown)).toEqual(expected);
   });
