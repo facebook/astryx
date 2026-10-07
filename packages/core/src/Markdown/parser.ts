@@ -1088,12 +1088,15 @@ const INLINE_DESTINATION_WITH_TITLE =
   /^\s*(?:<((?:[^<>\n\\]|\\.)*)>|([^\s<]\S*?))(?:\s+(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\((?:[^()\\]|\\.)*\)))?\s*$/s;
 
 /**
- * Where an inline link's or image's destination ends when it is written in
- * angle brackets — the index of the `)` that closes the link — or null when
- * the content after `open` (the `(`) is not an angle-bracket destination.
- * Inside the brackets parentheses are plain characters, so `<b(c>` is the
- * destination `b(c`; a line ending or unescaped `<` there makes it no
- * destination at all, so the link is text (CommonMark 0.31 §6.3).
+ * Where an inline link's or image's destination ends when it opens with `<`
+ * — the index of the `)` that closes the link — `'refused'` when it opens
+ * with `<` but is no angle-bracket destination, or null when the content
+ * after `open` (the `(`) does not open with `<`. Inside the brackets
+ * parentheses are plain characters, so `<b(c>` is the destination `b(c`. A
+ * destination that opens with `<` must be one whole angle-bracket
+ * destination — no line ending, even escaped, and no unescaped `<` inside;
+ * then only spaces, an optional title, and the `)` — or the link is text:
+ * `[a](<b>c>)` and `[a](<b)` are no links (CommonMark 0.31 §6.3).
  */
 function angleDestinationClose(
   text: string,
@@ -1108,18 +1111,20 @@ function angleDestinationClose(
   }
   for (index++; index < text.length; index++) {
     const character = text[index];
-    if (character === '\\') {
+    if (
+      character === '\\' &&
+      text[index + 1] !== '\n' &&
+      text[index + 1] !== '\r'
+    ) {
       index++;
-    } else if (character === '\n' || character === '\r') {
+    } else if (character === '\n' || character === '\r' || character === '<') {
       return 'refused';
-    } else if (character === '<') {
-      return null;
     } else if (character === '>') {
       break;
     }
   }
   if (index >= text.length) {
-    return null;
+    return 'refused';
   }
   // After the brackets: spaces, an optional title, spaces, and the `)`.
   index++;
@@ -1135,7 +1140,7 @@ function angleDestinationClose(
       } else if (quote === '(' && text[index] === '(') {
         // A title in parentheses holds no unescaped `(`; stopping here
         // also keeps every search short.
-        return null;
+        return 'refused';
       }
     }
     index++;
@@ -1143,7 +1148,7 @@ function angleDestinationClose(
       index++;
     }
   }
-  return text[index] === ')' ? index : null;
+  return text[index] === ')' ? index : 'refused';
 }
 
 /**

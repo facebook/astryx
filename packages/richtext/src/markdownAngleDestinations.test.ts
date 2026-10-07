@@ -11,6 +11,7 @@ import {
 } from 'lexical';
 import {parseInlineAst} from '@astryxdesign/core/Markdown/parser';
 import {DEFAULT_NODES} from './editorNodes';
+import {coreRefusesUrl} from './markdownCharacterReferences';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import {
   $exportMarkdownKeepingSource,
@@ -134,9 +135,61 @@ describe('angle-bracket link destinations (CommonMark 0.31 §6.3)', () => {
 });
 
 describe('angle-bracket destination edges', () => {
-  it('reads `<b>c>` as a destination as it stands, as core does', () => {
-    const markdown = '[a](<b>c>)';
-    expect(richLinks(markdown).map(({url}) => url)).toEqual(coreUrls(markdown));
+  it.each(['[a](<b>c>)', '[link](<foo\\>)', '[a](<b)', '[a](<b<c>)'])(
+    'does not link %j, which is no angle-bracket destination, as core does',
+    markdown => {
+      expect(richLinks(markdown)).toEqual([]);
+      expect(coreUrls(markdown)).toEqual([]);
+    },
+  );
+
+  it('writes a link made in the editor whose address opens with `<` so it reads back', () => {
+    const editor = newEditor();
+    editor.update(
+      () => {
+        $getRoot()
+          .clear()
+          .append(
+            $createParagraphNode().append(
+              $createLinkNode('<b').append($createTextNode('x')),
+            ),
+          );
+      },
+      {discrete: true},
+    );
+    const exported = editor
+      .getEditorState()
+      .read(() => $exportMarkdownKeepingSource([...DEFAULT_TRANSFORMERS]));
+    expect(exported).toBe('[x](<\\<b>)');
+    expect(richLinks(exported)).toEqual([{url: '<b', title: null}]);
+  });
+
+  it('stores no unsafe address, however an angle destination is written', () => {
+    let state = 40;
+    const random = () => {
+      state = (state * 1103515245 + 12345) % 2147483648;
+      return state / 2147483648;
+    };
+    const pick = <T>(items: ReadonlyArray<T>): T =>
+      items[Math.floor(random() * items.length)];
+    const schemes = [
+      'javascript:',
+      'JaVaScRiPt:',
+      '&#106;avascript:',
+      '&#x6A;avascript:',
+      'java\\script:',
+      'vbscript:',
+      'data:text/html,',
+      'data: text/html,',
+    ];
+    for (let round = 0; round < 300; round++) {
+      const body = pick(['x', 'a(b)', 'a\\>b', 'a>b', 'a<b', ' x ', 'a\\', '']);
+      const title = pick(['', ' "t"']);
+      const markdown = `[a](<${pick(schemes)}${body}>${title})`;
+      for (const {url} of richLinks(markdown)) {
+        expect(coreRefusesUrl(url), markdown).toBe(false);
+      }
+    }
   });
 
   it('reads an escaped bracket inside the angle brackets as part of the address', () => {

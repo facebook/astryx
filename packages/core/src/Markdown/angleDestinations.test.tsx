@@ -29,7 +29,13 @@ describe('angle-bracket destinations (CommonMark 0.31 §6.3)', () => {
     ['[a](<b\\<c>)', ['link(b<c)']],
     ['[a](<>)', ['link()']],
     ['[a](<b\nc>)', []],
-    ['[a](<b>c>)', ['link(<b>c>)']],
+    ['[a](<b>c>)', []],
+    ['![i](<b>c>)', []],
+    ['[a](<b)', []],
+    ['[a](<b c)', []],
+    ['[link](<foo\\>)', []],
+    ['[a](<b<c>)', []],
+    ['[a](<b\\\nc>)', []],
     ['[a](b c)', ['link(b c)']],
     ['[a](<b(c>) and [d](e)', ['link(b(c)', 'link(e)']],
   ])('reads %j', (markdown, expected) => {
@@ -56,7 +62,19 @@ describe('angle-bracket destinations (CommonMark 0.31 §6.3)', () => {
       'data:&#32;text/html,',
     ];
     for (let round = 0; round < 500; round++) {
-      const body = pick(['x', 'a(b)', 'a(b', 'a\\>b', 'a\\<b', ' x ', '']);
+      const body = pick([
+        'x',
+        'a(b)',
+        'a(b',
+        'a\\>b',
+        'a\\<b',
+        ' x ',
+        '',
+        'a>b',
+        'a<b',
+        'a\\',
+        'a\\\nb',
+      ]);
       const title = pick(['', ' "t"', " 't'", ' (t)']);
       const markdown = `${pick(['[a]', '![a]'])}(${pick(['', ' '])}<${pick(schemes)}${body}>${title})`;
       for (const target of targets(markdown)) {
