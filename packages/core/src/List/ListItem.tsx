@@ -4,7 +4,9 @@
 
 /**
  * @file ListItem.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens, List edge compensation
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, List edge compensation,
+ *   CheckboxInput, and the marker or task checkbox a ListMarkerScope sets
+ *   (Markdown's nested lists and the task items of mixed lists)
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -28,7 +30,8 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
-import {ListContext} from './ListContext';
+import {ListContext, type ListMarker} from './ListContext';
+import {CheckboxInput} from '../CheckboxInput';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
 import type {ItemSwipeActions, ItemSwipeBehavior} from '../Item';
@@ -204,6 +207,11 @@ const markerStyles = stylex.create({
     borderColor: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
   },
+  square: {
+    width: MARKER_DOT_SIZE,
+    height: MARKER_DOT_SIZE,
+    backgroundColor: colorVars['--color-text-primary'],
+  },
   number: {
     alignSelf: 'baseline',
     flexShrink: 0,
@@ -211,11 +219,46 @@ const markerStyles = stylex.create({
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
     width: spacingVars['--spacing-4'],
+  },
+  // A number outside a counter style's range (zero or below, or past 3999
+  // in roman) is written in decimal, as CSS counter styles fall back.
+  decimal: {
     '::before': {
       content: 'counter(astryx-list) "."',
     },
   },
+  lowerAlpha: {
+    '::before': {
+      content: 'counter(astryx-list, lower-alpha) "."',
+    },
+  },
+  lowerRoman: {
+    '::before': {
+      content: 'counter(astryx-list, lower-roman) "."',
+    },
+  },
 });
+
+/** The width and height of CheckboxInput's small control. */
+const TASK_CHECKBOX_SIZE = 20;
+
+const taskMarkerStyles = stylex.create({
+  // A task item's checkbox stands where the marker would, centered on the
+  // item's first line, as a task list's checkboxes are.
+  container: {
+    alignSelf: 'flex-start',
+    display: 'flex',
+    flexShrink: 0,
+    marginTop: `calc((1em * ${typeScaleVars['--text-body-leading']} - ${TASK_CHECKBOX_SIZE}px) / 2)`,
+  },
+});
+
+/** The number styles, by marker. */
+const NUMBER_STYLES = {
+  decimal: markerStyles.decimal,
+  'lower-alpha': markerStyles.lowerAlpha,
+  'lower-roman': markerStyles.lowerRoman,
+} as const;
 
 const embeddedStyles = stylex.create({
   noRadius: {
@@ -265,18 +308,40 @@ export function ListItem({
   const listStyle = ctx?.listStyle ?? 'none';
   const edgeCompensation = ctx?.edgeCompensation;
   const hasMarkers = listStyle !== 'none';
+  // ListMarkerScope may name another marker for this item.
+  const markerKind: ListMarker | null =
+    listStyle === 'none' ? null : (ctx?.marker ?? listStyle);
+
+  // A task item in a list with markers shows its checkbox instead.
+  const task = markerKind == null ? undefined : ctx?.task;
 
   const marker =
-    listStyle === 'disc' ? (
-      <span {...stylex.props(markerStyles.container)}>
-        <span {...stylex.props(markerStyles.dot)} />
+    task != null ? (
+      <span {...stylex.props(taskMarkerStyles.container)}>
+        <CheckboxInput
+          size="sm"
+          value={task.isChecked}
+          label={task.label}
+          isLabelHidden
+          isReadOnly
+        />
       </span>
-    ) : listStyle === 'circle' ? (
+    ) : markerKind === 'disc' ||
+      markerKind === 'circle' ||
+      markerKind === 'square' ? (
       <span {...stylex.props(markerStyles.container)}>
-        <span {...stylex.props(markerStyles.circle)} />
+        <span
+          {...stylex.props(
+            markerKind === 'disc'
+              ? markerStyles.dot
+              : markerKind === 'circle'
+                ? markerStyles.circle
+                : markerStyles.square,
+          )}
+        />
       </span>
-    ) : listStyle === 'decimal' ? (
-      <span {...stylex.props(markerStyles.number)} />
+    ) : markerKind != null ? (
+      <span {...stylex.props(markerStyles.number, NUMBER_STYLES[markerKind])} />
     ) : null;
 
   return (

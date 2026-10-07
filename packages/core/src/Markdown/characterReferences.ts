@@ -7,9 +7,13 @@
  *   `&#xH;` reference names, and where the reference ends. decodeLiteralText:
  *   text with backslash escapes and character references resolved, for text
  *   that is not parsed as Markdown, such as an image's alt text.
+ *   decodeMarkdownCharacterReferences: the public decoder, exported from
+ *   `@astryxdesign/core/Markdown/parser` and `@astryxdesign/core/Markdown`.
  * @position Used by parser.ts while it parses inline text, so references
  *   render as the characters they name (spec:AST-061 FR7, DEC-3). Code spans
- *   and code blocks never reach it and keep references literal.
+ *   and code blocks never reach it and keep references literal. The RichText
+ *   surfaces decode with the same function, so every surface reads references
+ *   from this one table (spec:AST-061 DEC-5).
  */
 
 /**
@@ -115,4 +119,38 @@ export function decodeLiteralText(text: string): string {
     index++;
   }
   return output;
+}
+
+/**
+ * Returns `text` with every valid named or numeric character reference
+ * replaced by the characters it names, as Markdown renders it: `&copy;`,
+ * `&#169;`, and `&#xA9;` all become `©`, and a numeric reference to NUL, a
+ * surrogate, or a code point past U+10FFFF becomes U+FFFD. An unknown name, a
+ * reference without its `;`, and all other text stay as written.
+ *
+ * It works on plain text and knows nothing of Markdown, so the caller decides
+ * where it applies: keep backslash-escaped references and code literal by not
+ * passing them in (spec:AST-061 DEC-5).
+ *
+ * @example
+ * ```
+ * decodeMarkdownCharacterReferences('Fish &amp; chips &copy; 2026'); // 'Fish & chips © 2026'
+ * decodeMarkdownCharacterReferences('&unknown; &copy'); // '&unknown; &copy'
+ * ```
+ */
+export function decodeMarkdownCharacterReferences(text: string): string {
+  let output = '';
+  let index = 0;
+  let ampersand = text.indexOf('&');
+  while (ampersand !== -1) {
+    const reference = matchCharacterReference(text, ampersand);
+    if (reference == null) {
+      ampersand = text.indexOf('&', ampersand + 1);
+      continue;
+    }
+    output += text.slice(index, ampersand) + reference.value;
+    index = reference.end;
+    ampersand = text.indexOf('&', index);
+  }
+  return index === 0 ? text : output + text.slice(index);
 }

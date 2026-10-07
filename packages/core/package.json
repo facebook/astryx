@@ -71,6 +71,11 @@
       "types": "./dist/theme/tokens.stylex.d.ts",
       "default": "./dist/theme/tokens.stylex.js"
     },
+    "./theme/dataTokens.stylex": {
+      "source": "./src/theme/dataTokens.stylex.ts",
+      "types": "./dist/theme/dataTokens.stylex.d.ts",
+      "default": "./dist/theme/dataTokens.stylex.js"
+    },
     "./theme/syntax": {
       "source": "./src/theme/syntax/index.ts",
       "types": "./dist/theme/syntax/index.d.ts",
@@ -633,6 +638,11 @@
       "source": "./src/Markdown/plugins/index.ts",
       "types": "./dist/Markdown/plugins/index.d.ts",
       "default": "./dist/Markdown/plugins/index.js"
+    },
+    "./Markdown/plugin-renderer": {
+      "source": "./src/Markdown/plugin-renderer/index.ts",
+      "types": "./dist/Markdown/plugin-renderer/index.d.ts",
+      "default": "./dist/Markdown/plugin-renderer/index.js"
     },
     "./Markdown/parser": {
       "source": "./src/Markdown/parser/index.ts",

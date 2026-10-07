@@ -6,7 +6,8 @@
  *   (ElementTransformer).
  * @output Exports LIST_EXPORT, which writes lists the way Lexical's list
  *   transformers do except for nesting: a nested list is indented to its
- *   parent item's content column instead of four spaces per level.
+ *   parent item's content column instead of four spaces per level, and each
+ *   task item writes `[ ]` or `[x]` (markdownTaskList.ts).
  * @position Part of DEFAULT_TRANSFORMERS (markdownTable.ts), ahead of
  *   Lexical's list transformers, which still import. Import reads nesting the
  *   CommonMark way (markdownListIndentation.ts), so a child written four
@@ -23,6 +24,7 @@ import {
 } from '@lexical/list';
 import type {ElementTransformer} from '@lexical/markdown';
 import type {ElementNode} from 'lexical';
+import {$getTaskState} from './markdownTaskList';
 
 /** The bullet Lexical recorded for a list on import (`-`, `*`, or `+`). */
 function bulletOf(list: ListNode): string {
@@ -52,8 +54,9 @@ function exportList(
     }
     const marker =
       type === 'number' ? `${list.getStart() + index}. ` : `${bulletOf(list)} `;
-    const checkbox =
-      type === 'check' ? `[${item.getChecked() === true ? 'x' : ' '}] ` : '';
+    // A task item, in any bulleted list, writes its box.
+    const task = type === 'number' ? null : $getTaskState(item);
+    const checkbox = task == null ? '' : `[${task === 'checked' ? 'x' : ' '}] `;
     let text = exportChildren(item);
     if (type !== 'number') {
       // As Lexical does: keep `1. ` at the start of a bullet item literal.

@@ -250,6 +250,46 @@ function rectsIntersect(a: RectGeometry, b: RectGeometry): boolean {
   );
 }
 
+interface NamedHeadingGeometry {
+  readonly name: string;
+  readonly level: number;
+  readonly geometry: HeadingGeometry;
+}
+
+/**
+ * Every heading in `root`, in document order, with its measured row. Each
+ * row is aligned, and no copy button overlaps the button of the heading
+ * after it; a failure names the pair.
+ */
+async function expectCompactHeadingsApart(
+  root: Locator,
+): Promise<ReadonlyArray<NamedHeadingGeometry>> {
+  const headings = root.getByRole('heading');
+  const count = await headings.count();
+  const measured: NamedHeadingGeometry[] = [];
+  for (let index = 0; index < count; index++) {
+    const heading = headings.nth(index);
+    const [name, level] = await heading.evaluate(
+      (element): [string, number] => [
+        element.textContent?.trim() ?? '',
+        Number(element.tagName.slice(1)),
+      ],
+    );
+    const geometry = await measureHeading(heading);
+    expectAlignedGeometry(geometry);
+    measured.push({name, level, geometry});
+  }
+  for (let index = 1; index < measured.length; index++) {
+    const before = measured[index - 1];
+    const after = measured[index];
+    expect(
+      rectsIntersect(before.geometry.button, after.geometry.button),
+      `h${before.level} "${before.name}" button overlaps h${after.level} "${after.name}" button`,
+    ).toBe(false);
+  }
+  return measured;
+}
+
 test('heading copy buttons are honest, aligned, discoverable, and stable in every required state', async ({
   browser,
   page,
@@ -337,23 +377,18 @@ test('heading copy buttons are honest, aligned, discoverable, and stable in ever
   }
   evidence.headingGeometry = headingGeometry;
 
-  const compactRoot = page.locator('#heading-links-compact');
-  const compactH1Geometry = await measureHeading(
-    compactRoot.getByRole('heading', {name: 'Compact first-level heading'}),
+  // The compact sample steps h1 through h6 and repeats h6: every heading's
+  // row is aligned and no copy button overlaps the next heading's.
+  const compactHeadings = await expectCompactHeadingsApart(
+    page.locator('#heading-links-compact'),
   );
-  const compactH6Geometry = await measureHeading(
-    compactRoot
-      .getByRole('heading', {name: 'Compact sixth-level heading'})
-      .first(),
-  );
-  expectAlignedGeometry(compactH1Geometry);
-  expectAlignedGeometry(compactH6Geometry);
-  expect(
-    rectsIntersect(compactH1Geometry.button, compactH6Geometry.button),
-  ).toBe(false);
+  expect(compactHeadings.map(heading => heading.level)).toEqual([
+    1, 2, 3, 4, 5, 6, 6,
+  ]);
   evidence.compactGeometry = {
-    h1: compactH1Geometry,
-    h6: compactH6Geometry,
+    h1: compactHeadings[0].geometry,
+    h6: compactHeadings[5].geometry,
+    headings: compactHeadings,
   };
 
   const authoredHeading = root.getByRole('heading', {name: 'Read the guide'});
@@ -713,30 +748,17 @@ test('heading copy buttons are honest, aligned, discoverable, and stable in ever
   ).toBeLessThanOrEqual(GEOMETRY_TOLERANCE_PX);
   evidence.touchGeometry = touchGeometry;
 
-  const touchCompactRoot = touchPage.locator('#heading-links-compact');
-  const touchCompactH1 = await measureHeading(
-    touchCompactRoot.getByRole('heading', {
-      name: 'Compact first-level heading',
-    }),
-  );
-  const touchCompactH6Headings = touchCompactRoot.getByRole('heading', {
-    name: 'Compact sixth-level heading',
-  });
-  const touchCompactH6 = await measureHeading(touchCompactH6Headings.first());
-  const touchCompactH6Sibling = await measureHeading(
-    touchCompactH6Headings.nth(1),
+  // At touch size the 24px targets are taller than compact headings' lines:
+  // still no copy button overlaps the next heading's.
+  const touchCompactHeadings = await expectCompactHeadingsApart(
+    touchPage.locator('#heading-links-compact'),
   );
   evidence.touchCompactGeometry = {
-    h1: touchCompactH1,
-    h6: touchCompactH6,
-    h6Sibling: touchCompactH6Sibling,
+    h1: touchCompactHeadings[0].geometry,
+    h6: touchCompactHeadings[5].geometry,
+    h6Sibling: touchCompactHeadings[6].geometry,
+    headings: touchCompactHeadings,
   };
-  expect(rectsIntersect(touchCompactH1.button, touchCompactH6.button)).toBe(
-    false,
-  );
-  expect(
-    rectsIntersect(touchCompactH6.button, touchCompactH6Sibling.button),
-  ).toBe(false);
   await touchRoot.screenshot({path: path.join(OUTPUT, 'touch-rest.png')});
 
   const touchCanonicalUrl = new URL(

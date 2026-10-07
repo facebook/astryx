@@ -40,6 +40,7 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {
   useSwipeAction,
   type SwipeBehavior,
@@ -627,6 +628,7 @@ export function Item({
   role,
   ...restProps
 }: ItemProps) {
+  const pressable = usePressFeedback();
   const LinkComponent = useLinkComponent();
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
@@ -997,6 +999,7 @@ export function Item({
         (isSelected && !allowsAriaSelected ? true : undefined)
       }
       aria-disabled={isDisabled || undefined}
+      {...(isInteractive ? pressable : undefined)}
       {...mergeProps(
         themeProps('item', {density, align}),
         focusOutlineProps.focusWithin(

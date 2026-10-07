@@ -7,10 +7,10 @@
  * outputs. The CLI command handler is a thin wrapper around this function.
  *
  * `search(query)` is the single "I'm looking for X" entry point across ALL
- * content domains — components, hooks, docs topics, and templates (page +
- * block). Today, finding the right thing requires four separate list calls
- * (`component --list`, `hook --list`, `docs`, `template --list`) plus manual
- * scanning; this collapses them into one ranked, typed result set.
+ * content domains — components, hooks, docs topics, templates (page + block),
+ * and themes. Finding the right thing otherwise takes separate list calls
+ * (`component --list`, `hook --list`, `docs`, `template --list`, `theme list`)
+ * plus manual scanning; this collapses them into one ranked, typed result set.
  *
  * Scoring is keyword + fuzzy ranking (NOT semantic / embeddings — that is a
  * deliberate future follow-up). It reuses the same signal weighting as the
@@ -89,6 +89,7 @@ import {loadIntegrationsSafely} from '../component/_adapter.mjs';
 import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {discoverTemplates, extractComponents} from '../template/template.mjs';
 import {templateLookupIds} from '../../foundation/discovery/template-adapter.mjs';
+import {listAvailableThemes} from '../theme/_adapter.mjs';
 import {
   guideEntry,
   loadDocsCatalog,
@@ -110,8 +111,10 @@ import {setResultCoverage} from './coverage.mjs';
  * A search candidate gathered from one content domain. Extra underscore-
  * prefixed fields carry domain-specific payload used only by {@link toResult}.
  * @typedef {object} Candidate
- * @property {'component'|'hook'|'doc'|'template'} domain
+ * @property {'component'|'hook'|'doc'|'template'|'theme'} domain
  * @property {string} name
+ * @property {string[]} [aliases] - Other names the candidate answers to, scored
+ *   with the same name signals: a theme's display name.
  * @property {string[]} [keywords]
  * @property {string[]} [weakKeywords]
  * @property {string} [description]
@@ -291,7 +294,13 @@ const isTypo = (a, b, dist) =>
     TYPO_MIN_LENGTH[/** @type {1 | 2 | 3} */ (dist)];
 
 /** Valid domain filters for `--type`. */
-export const SEARCH_DOMAINS = ['component', 'hook', 'doc', 'template'];
+export const SEARCH_DOMAINS = ['component', 'hook', 'doc', 'template', 'theme'];
+
+/**
+ * The domains a search reads without @astryxdesign/core. An open search outside
+ * an app covers these alone.
+ */
+const CORELESS_DOMAINS = ['doc', 'theme'];
 
 /**
  * Filler words stripped from multi-word queries so natural-language phrasing
@@ -618,6 +627,7 @@ export function scoreQuery(term, tokens, candidate) {
   // strong hits, then reward coverage so candidates matching more terms win.
   let strongest = 0;
   let matched = 0;
+  let tokenSum = 0;
   /** @type {string[]} */
   const hitTerms = [];
   for (const tok of tokens) {
@@ -626,6 +636,7 @@ export function scoreQuery(term, tokens, candidate) {
       if (h.score > strongest) strongest = h.score;
       matched++;
       hitTerms.push(tok);
+      tokenSum += h.score;
     }
   }
   // The reverse of the title tier, a step lower: the query holds a whole title
@@ -650,14 +661,25 @@ export function scoreQuery(term, tokens, candidate) {
   // (50 + bonus + coverage = 77) lost to thirty docs that each match
   // `integration` alone, by name or in a code tick (98-108). The reader asked for
   // both; a candidate that has both comes first, ordered among its peers by
-  // how strong its strongest match is. It needs one keyword-strength hit:
+  // how strong its matches are. It needs one keyword-strength hit:
   // every word mentioned in prose, or rendered by a page, is breadth, and
   // stays on the token sum below an exact hit on one word.
+  //
+  // The TOTAL quality of matches orders candidates within this tier, not
+  // just the strongest single hit. A doc matching both words by keyword
+  // (90 + 90 = 180) outranks one matching keyword + prose (90 + 50 = 140).
+  // Before this, every all-word match whose strongest hit was a keyword (90)
+  // scored 157, burying the better match among dozens of ties.
   if (matched === tokens.length && strongest >= STRONG_TOKEN_SCORE) {
     return {
       score:
         FULL_COVERAGE_SCORE +
-        Math.floor((strongest - MIN_TOKEN_SCORE) / 6.25),
+        Math.min(
+          Math.floor(
+            (tokenSum - matched * MIN_TOKEN_SCORE) / (matched * 5),
+          ),
+          8,
+        ),
       reason,
       matched,
       total,
@@ -697,6 +719,7 @@ export function scoreQuery(term, tokens, candidate) {
  * @param {string} term - Lowercased search term.
  * @param {object} candidate
  * @param {string} candidate.name - Primary identifier (component/hook name, topic, template name).
+ * @param {string[]} [candidate.aliases] - Other names, scored like the name (a theme's display name).
  * @param {string} [candidate.domain] - A component, hook, or template name
  *   also matches typed as words: `command palette` is CommandPalette.
  * @param {string[]} [candidate.keywords] - Authored intent (componentsUsed, category words).
@@ -711,6 +734,7 @@ export function scoreCandidate(
   term,
   {
     name,
+    aliases = [],
     domain,
     keywords = [],
     weakKeywords = [],
@@ -733,40 +757,44 @@ export function scoreCandidate(
     }
   };
 
-  const nameLower = name.toLowerCase();
-  // A placed guide's name is its route, and the route's last segment is its
-  // name too, as a flat topic's is: `codemods` is cli/integrations/codemods.
-  const leafLower = nameLower.slice(nameLower.lastIndexOf('/') + 1);
-
   // ── Name signals ────────────────────────────────────────────────
-  // A plural of the name is the name: `integration` is the `integrations`
-  // guides, `tab` the `tabs` doc.
-  // A component, hook, or template name typed as words is its name:
-  // `command palette` is CommandPalette. A doc's name is a route or key,
-  // matched as written.
-  const spelled =
-    domain !== 'doc' &&
-    !/[\s_-]/.test(nameLower) &&
-    nameLower === term.replace(/\s+/g, '');
-  if (nameLower === term || leafLower === term || spelled) {
-    consider(100, 'exact name');
-  } else if (pluralOf(nameLower, term) || pluralOf(term, nameLower)) {
-    // One point under the exact spelling, so the doc named `tokens` still
-    // outranks the Token component for `tokens`.
-    consider(99, 'plural of the name');
-  } else {
-    if (sameWord(term, nameLower)) consider(95, `name "${name}"`);
-    // The term is a word of the name, or starts one: "input" in TextInput.
-    else if (startsAWordOf(term, name)) {
-      consider(60, `name contains "${term}"`);
-    }
-    if (fuzzy) {
-      const dist = levenshteinDistance(term, nameLower);
-      if (isTypo(term, nameLower, dist)) {
-        consider(
-          dist === 1 ? 80 : dist === 2 ? 40 : 20,
-          `similar name (distance ${dist})`,
-        );
+  // An alias is a name too: a theme answers to its display name as well as
+  // its slug.
+  for (const candidateName of [name, ...aliases.filter(Boolean)]) {
+    const nameLower = candidateName.toLowerCase();
+    // A placed guide's name is its route, and the route's last segment is its
+    // name too, as a flat topic's is: `codemods` is cli/integrations/codemods.
+    const leafLower = nameLower.slice(nameLower.lastIndexOf('/') + 1);
+
+    // A plural of the name is the name: `integration` is the `integrations`
+    // guides, `tab` the `tabs` doc.
+    // A component, hook, or template name typed as words is its name:
+    // `command palette` is CommandPalette. A doc's name is a route or key,
+    // matched as written.
+    const spelled =
+      domain !== 'doc' &&
+      !/[\s_-]/.test(nameLower) &&
+      nameLower === term.replace(/\s+/g, '');
+    if (nameLower === term || leafLower === term || spelled) {
+      consider(100, 'exact name');
+    } else if (pluralOf(nameLower, term) || pluralOf(term, nameLower)) {
+      // One point under the exact spelling, so the doc named `tokens` still
+      // outranks the Token component for `tokens`.
+      consider(99, 'plural of the name');
+    } else {
+      if (sameWord(term, nameLower)) consider(95, `name "${candidateName}"`);
+      // The term is a word of the name, or starts one: "input" in TextInput.
+      else if (startsAWordOf(term, candidateName)) {
+        consider(60, `name contains "${term}"`);
+      }
+      if (fuzzy) {
+        const dist = levenshteinDistance(term, nameLower);
+        if (isTypo(term, nameLower, dist)) {
+          consider(
+            dist === 1 ? 80 : dist === 2 ? 40 : 20,
+            `similar name (distance ${dist})`,
+          );
+        }
       }
     }
   }
@@ -1464,6 +1492,36 @@ async function gatherTemplates(cwd) {
 }
 
 /**
+ * Build theme candidates from bundled and integration-provided themes. Without
+ * this, an integration's themes are invisible to `search` even though
+ * `theme list` and `discover` already resolve them.
+ *
+ * A theme's slug and display name are its names, and its description is prose
+ * (`spec:AST-050/FR14`). A theme declares no keywords, so a word it shares with
+ * the query only through its description is a description mention: read as a
+ * keyword, every word of the description would outrank the components and docs
+ * that declare that word.
+ * @param {string} cwd
+ * @returns {Promise<Candidate[]>}
+ */
+async function gatherThemes(cwd) {
+  let themes;
+  try {
+    themes = await listAvailableThemes(cwd);
+  } catch {
+    return [];
+  }
+  return themes.map(t => ({
+    domain: 'theme',
+    name: t.slug,
+    aliases: t.displayName ? [t.displayName] : [],
+    description: t.description || '',
+    _displayName: t.displayName,
+    _package: t.package,
+  }));
+}
+
+/**
  * Map a scored candidate to its public, actionable result shape. Each result
  * carries enough to act on it: the domain, name, a one-line description, and
  * the follow-up command (and import path where relevant).
@@ -1519,6 +1577,14 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
         command: `astryx template ${c._commandName ?? c.name} --type ${c._kind}`,
       };
       break;
+    case 'theme':
+      result = {
+        ...base,
+        displayName: c._displayName,
+        command: `astryx theme add ${c.name}`,
+        ...(c._package ? {package: c._package} : {}),
+      };
+      break;
     default:
       result = base;
   }
@@ -1526,12 +1592,12 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
 }
 
 /**
- * Unified ranked search across components, hooks, docs, and templates.
+ * Unified ranked search across components, hooks, docs, templates, and themes.
  *
  * @param {string} query - Free-text search term.
  * @param {object} [options]
  * @param {string} [options.cwd]
- * @param {'component'|'hook'|'doc'|'template'} [options.type] - Restrict to one domain.
+ * @param {'component'|'hook'|'doc'|'template'|'theme'} [options.type] - Restrict to one domain.
  * @param {number} [options.limit] - Max results (default 20).
  * @returns {Promise<import('./search.type.mjs').SearchResponse>}
  */
@@ -1568,12 +1634,14 @@ export async function search(query, options = {}) {
   const term = String(query).trim().toLowerCase();
   const tokens = tokenizeQuery(term);
 
-  // `astryx docs` reads docs without @astryxdesign/core, so a docs-only
-  // search must too. Every other domain reads core: asked for by name, it is
-  // an error without core; an open search then covers the docs alone.
-  const docsOnly = type === 'doc';
-  const coreDir = docsOnly ? null : findCoreDir(cwd);
-  if (type && !docsOnly && !coreDir) {
+  // `astryx docs` reads docs without @astryxdesign/core, and `astryx theme
+  // list` reads themes without it (bundled themes need no project), so a
+  // search of either must too. Every other domain reads core: asked for by
+  // name, it is an error without core; an open search then covers the docs
+  // and themes alone.
+  const needsCore = !type || !CORELESS_DOMAINS.includes(type);
+  const coreDir = needsCore ? findCoreDir(cwd) : null;
+  if (type && needsCore && !coreDir) {
     throw new AstryxError(
       'Could not find @astryxdesign/core package',
       undefined,
@@ -1583,17 +1651,19 @@ export async function search(query, options = {}) {
 
   // Gather candidates from each requested domain in parallel.
   /** @param {string} d */
-  const wants = d => (!type && (coreDir != null || d === 'doc')) || type === d;
-  const [components, hooks, docTopics, templates] = await Promise.all([
+  const wants = d =>
+    (!type && (coreDir != null || CORELESS_DOMAINS.includes(d))) || type === d;
+  const [components, hooks, docTopics, templates, themes] = await Promise.all([
     wants('component')
       ? gatherComponents(/** @type {string} */ (coreDir), cwd)
       : [],
     wants('hook') ? gatherHooks(/** @type {string} */ (coreDir)) : [],
     wants('doc') ? gatherDocs(cwd) : [],
     wants('template') ? gatherTemplates(cwd) : [],
+    wants('theme') ? gatherThemes(cwd) : [],
   ]);
 
-  const all = [...components, ...hooks, ...docTopics, ...templates];
+  const all = [...components, ...hooks, ...docTopics, ...templates, ...themes];
 
   // Score every candidate on its own merits. The consumer groups results by
   // role (page / block / component) and takes the top of each, so there's no
@@ -1610,7 +1680,7 @@ export async function search(query, options = {}) {
 
   // Sort by score desc, then domain (stable order), then name.
   /** @type {Record<string, number>} */
-  const domainOrder = {component: 0, hook: 1, doc: 2, template: 3};
+  const domainOrder = {component: 0, hook: 1, doc: 2, template: 3, theme: 4};
   scored.sort(
     (a, b) =>
       b.score - a.score ||

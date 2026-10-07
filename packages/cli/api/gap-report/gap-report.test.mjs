@@ -105,6 +105,45 @@ function addIntegration({
   return {dir};
 }
 
+/**
+ * Add an integration whose module throws on import, so it never loads.
+ * @param {string} name
+ */
+function addBrokenIntegration(name) {
+  const dir = packageDir(name);
+  fs.mkdirSync(dir, {recursive: true});
+  fs.writeFileSync(
+    path.join(dir, 'package.json'),
+    JSON.stringify({name, version: '1.0.0', type: 'module'}),
+  );
+  fs.writeFileSync(
+    path.join(dir, 'astryx.integration.mjs'),
+    "throw new Error('intentional integration load failure');\n",
+  );
+}
+
+/**
+ * Put a fake `gh` first on PATH that records its arguments if it is called.
+ * @returns {string} the file the fake writes when invoked
+ */
+function stubGh() {
+  const binDir = path.join(projectDir, 'bin');
+  const argsFile = path.join(projectDir, 'gh-args.json');
+  fs.mkdirSync(binDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(binDir, 'gh'),
+    `#!/usr/bin/env node
+import fs from 'node:fs';
+fs.writeFileSync(${JSON.stringify(argsFile)}, JSON.stringify(process.argv.slice(2)));
+console.log('https://github.com/acme/core/issues/42');
+`,
+    {mode: 0o755},
+  );
+  fs.chmodSync(path.join(binDir, 'gh'), 0o755);
+  vi.stubEnv('PATH', `${binDir}${path.delimiter}${process.env.PATH ?? ''}`);
+  return argsFile;
+}
+
 const reportOptions = {
   category: 'missing_variant',
   reason: 'Need a compact size',
@@ -679,6 +718,73 @@ describe('gapReport handler isolation', () => {
       status: 'filed',
       message: 'ok',
     });
+  });
+
+  it('an integration that fails to load is a failed delivery, not a missing handler', async () => {
+    addBrokenIntegration('@test/broken');
+    configure(['@test/broken'], {
+      issuesUrl: 'https://github.com/acme/core/issues/new',
+    });
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      cwd: projectDir,
+    });
+
+    expect(result.data.status).toBe('failed');
+    expect(result.data.deliveries).toEqual([
+      {
+        handlerType: 'integration',
+        handler: '@test/broken',
+        audience: null,
+        status: 'failed',
+        url: null,
+        message: expect.stringContaining(
+          'intentional integration load failure',
+        ),
+      },
+    ]);
+  });
+
+  it('an integration that fails to load keeps the public fallback off, even with consent', async () => {
+    addBrokenIntegration('@test/broken');
+    configure(['@test/broken'], {
+      issuesUrl: 'https://github.com/acme/core/issues/new',
+    });
+    const argsFile = stubGh();
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      confirmPublic: true,
+      cwd: projectDir,
+    });
+
+    expect(result.data.status).toBe('failed');
+    expect(result.data.deliveries.map(d => d.handlerType)).toEqual([
+      'integration',
+    ]);
+    expect(fs.existsSync(argsFile)).toBe(false);
+  });
+
+  it('an integration that fails to load keeps its place beside working handlers', async () => {
+    addBrokenIntegration('@test/broken');
+    addIntegration({
+      name: '@test/valid',
+      audience: 'internal',
+      handleBody: "return {status: 'filed', message: 'ok'};",
+    });
+    configure(['@test/broken', '@test/valid']);
+
+    const result = await gapReport('General', {
+      ...reportOptions,
+      cwd: projectDir,
+    });
+
+    expect(result.data.status).toBe('partial');
+    expect(result.data.deliveries.map(d => [d.handler, d.status])).toEqual([
+      ['@test/broken', 'failed'],
+      ['@test/valid', 'filed'],
+    ]);
   });
 
   it('invalid handler receipt is recorded as failed delivery', async () => {

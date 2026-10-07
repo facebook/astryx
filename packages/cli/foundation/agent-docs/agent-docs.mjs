@@ -472,7 +472,8 @@ export function generateCompressedIndex(
 
   // Command reference — build/template/component are covered in WORKFLOW above.
   lines.push('MORE CLI:');
-  lines.push('  search "<query>"   find any component / hook / doc / template / block');
+  lines.push('  search "<query>"   find any component / hook / doc / template / block / theme');
+  lines.push('  discover <words>   integrations you could add, and the ones you have');
   lines.push(`  component --list   ${componentCount} components by category`);
   lines.push('  template --list    page + block recipes');
   const docsDir = path.join(CLI_ROOT, 'assets', 'docs');

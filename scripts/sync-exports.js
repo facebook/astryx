@@ -82,6 +82,11 @@ const STATIC_EXPORTS = {
     types: './dist/theme/tokens.stylex.d.ts',
     default: './dist/theme/tokens.stylex.js',
   },
+  './theme/dataTokens.stylex': {
+    source: './src/theme/dataTokens.stylex.ts',
+    types: './dist/theme/dataTokens.stylex.d.ts',
+    default: './dist/theme/dataTokens.stylex.js',
+  },
   './theme/syntax': {
     source: './src/theme/syntax/index.ts',
     types: './dist/theme/syntax/index.d.ts',
@@ -100,9 +105,14 @@ const STATIC_EXPORTS = {
   },
 };
 
-/** Nested modules backed by an index.ts entry point. */
+/**
+ * Nested modules backed by an index.ts entry point. `Markdown/plugin-renderer`
+ * is client-only (its entry starts with 'use client'); the plugin protocol and
+ * parser entries stay server-safe (spec:AST-064 DEC-6).
+ */
 const DIRECTORY_MODULE_SUBPATH_EXPORTS = [
   'Markdown/plugins',
+  'Markdown/plugin-renderer',
   'Markdown/parser',
 ];
 

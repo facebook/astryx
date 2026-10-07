@@ -2,7 +2,7 @@
 
 /**
  * @file The build subject's environment access: the page templates a project
- * can scaffold, and the components it can use.
+ * can scaffold, the components it can use, and the checked-in matcher weights.
  *
  * @input Template and component discovery for `cwd` — the CLI's own templates
  *   and Core's components, plus any that the project's configured integrations
@@ -15,6 +15,8 @@
  *   only environment access. This adds no discovery of its own: templates come
  *   from the template subject's, components from search's.
  */
+
+import fs from 'node:fs';
 
 import {discoverTemplates} from '../template/template.mjs';
 import {componentKeywords} from '../search/search.mjs';
@@ -88,4 +90,59 @@ export async function loadComponents(cwd) {
   } catch {
     return [];
   }
+}
+
+/** @type {import('./kit/weights.mjs').WeightsFile | null | undefined} */
+let weights;
+
+/**
+ * The matcher weights checked in beside the kit (`kit/weights.json`), read
+ * once; null when the file is absent or unreadable.
+ * @returns {import('./kit/weights.mjs').WeightsFile | null}
+ */
+export function loadWeights() {
+  if (weights === undefined) {
+    try {
+      const file = JSON.parse(
+        fs.readFileSync(new URL('./kit/weights.json', import.meta.url), 'utf8'),
+      );
+      weights = isWeightsFile(file) ? file : null;
+    } catch {
+      weights = null;
+    }
+  }
+  return weights ?? null;
+}
+
+/**
+ * Whether a parsed weights file has the shape the kit reads: every row has a
+ * weight per candidate, every bias a number per candidate, and three blend
+ * numbers per member (the tables plus the ranker) and one for the shell.
+ * @param {any} file
+ * @returns {file is import('./kit/weights.mjs').WeightsFile}
+ */
+export function isWeightsFile(file) {
+  const n = Array.isArray(file?.candidates) ? file.candidates.length : 0;
+  return (
+    n > 0 &&
+    Array.isArray(file.tables) &&
+    file.tables.length > 0 &&
+    file.tables.every(
+      (/** @type {any} */ t) =>
+        Array.isArray(t?.words) &&
+        Array.isArray(t.rows) &&
+        t.rows.length === t.words.length &&
+        t.rows.every(
+          (/** @type {any} */ r) => typeof r === 'string' && r.length === n,
+        ) &&
+        Array.isArray(t.bias) &&
+        t.bias.length === n &&
+        t.bias.every((/** @type {any} */ b) => Number.isFinite(b)) &&
+        Number.isFinite(t.clip) &&
+        Number.isFinite(t.step),
+    ) &&
+    Array.isArray(file.blend) &&
+    file.blend.length === 3 * (file.tables.length + 1) + 1 &&
+    file.blend.every((/** @type {any} */ x) => Number.isFinite(x))
+  );
 }

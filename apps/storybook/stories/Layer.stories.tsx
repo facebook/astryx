@@ -1233,6 +1233,44 @@ export const GutterAtTheEdge: Story = {
   },
 };
 
+export const SidePlacementWithAWidth: Story = {
+  name: 'Viewport inset: side placement with a width',
+  parameters: viewportParameters,
+  render: () => (
+    <ViewportLayer
+      at={{top: 200, right: 24}}
+      placement="end"
+      width={320}
+      caption="FR2, FR4 — A 320px layer placed to the inline END of a trigger 24px from that edge. The room on that side is 24px, so the layer flips to the trigger's other side rather than shrinking. A slide cannot rescue a side placement: the alignment axis is the block axis, so sliding along it moves the layer up or down and does nothing for an inline overflow.">
+      Placed to the side
+    </ViewportLayer>
+  ),
+  play: async ({canvasElement}) => {
+    const r = await open(canvasElement);
+    assertWidth(r, 320, 'side placement with a width');
+    assertOnScreen(r, 'side placement with a width');
+  },
+};
+
+export const SidePlacementNeitherSideFits: Story = {
+  name: 'Viewport inset: side placement, neither side fits',
+  parameters: viewportParameters,
+  render: () => (
+    <ViewportLayer
+      at={{top: 200, left: 'calc(50% - 20px)'}}
+      placement="start"
+      width={900}
+      caption="FR2 — A 900px layer placed to the inline start of a centred trigger. Neither side of the trigger has 900px, and on a phone the viewport itself does not, so the cap is what keeps it on screen: flipping cannot help when both sides are too small, and a block-axis slide cannot change an inline overflow.">
+      Too wide for either side of the trigger
+    </ViewportLayer>
+  ),
+  play: async ({canvasElement}) => {
+    const r = await open(canvasElement);
+    assertWidth(r, 900, 'side placement, neither side fits');
+    assertOnScreen(r, 'side placement, neither side fits');
+  },
+};
+
 // -----------------------------------------------------------------------------
 // Playground — an exploration instrument, not a claim. Drag the trigger
 // anywhere (touch or mouse); the layer stays open and follows. Adjust width,

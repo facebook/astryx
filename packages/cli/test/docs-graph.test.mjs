@@ -52,10 +52,36 @@ function open(command) {
     throw new Error(`not a docs command: ${command}`);
   }
   const rest = words.slice(2);
-  const [topic, section] = rest.filter(w => !w.startsWith('--'));
+  /** @type {string[]} */
+  const positional = [];
+  /** @type {Record<string, string>} */
+  const valued = {};
+  for (let i = 0; i < rest.length; i++) {
+    const word = rest[i];
+    if (word === '--depth' || word === '--detail' || word === '--lang') {
+      valued[word.slice(2)] = rest[++i];
+    } else if (!word.startsWith('--')) {
+      positional.push(word);
+    }
+  }
+  const [topic, section] = positional;
+  const depth =
+    valued.depth == null
+      ? undefined
+      : valued.depth === 'all'
+        ? 'all'
+        : Number(valued.depth);
   return docs(topic, section, {
     index: rest.includes('--index'),
     full: rest.includes('--full'),
+    ...(depth == null
+      ? {}
+      : {
+          depth,
+          ...(valued.detail
+            ? {detail: /** @type {any} */ (valued.detail)}
+            : {}),
+        }),
   });
 }
 

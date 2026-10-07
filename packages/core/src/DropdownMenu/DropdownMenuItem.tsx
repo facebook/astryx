@@ -46,6 +46,7 @@ import {useDropdownMenuContext} from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
 import {isModifiedClick} from './menuItemRoles';
 import {themeProps} from '../utils/themeProps';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 const menuItemStyles = stylex.create({
   root: {
@@ -194,6 +195,10 @@ export function DropdownMenuItem({
 }: DropdownMenuItemProps) {
   const ctx = useDropdownMenuContext();
   const menuSize = ctx?.menuSize ?? 'md';
+  // Item marks itself as a pressable surface too; naming the row here as well
+  // keeps this file's own press arms (above) verifiably reachable by the
+  // touch press controller (pressableCoverage.test.ts).
+  const pressable = usePressFeedback();
 
   const handleClick = useCallback(
     (event: MouseEvent) => {
@@ -258,6 +263,7 @@ export function DropdownMenuItem({
       role="menuitem"
       tabIndex={isDisabled ? undefined : -1}
       onPointerMove={handlePointerMove}
+      {...pressable}
       startContent={
         icon
           ? renderIconSlot(icon, {

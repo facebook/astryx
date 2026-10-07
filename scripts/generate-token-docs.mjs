@@ -24,7 +24,7 @@ const ROOT = resolve(__dirname, '..');
 const TOKENS_SRC = resolve(ROOT, 'packages/core/src/theme/tokens.stylex.ts');
 const DATA_TOKENS_SRC = resolve(
   ROOT,
-  'packages/core/src/theme/domainTokens/dataTokens.ts',
+  'packages/core/src/theme/dataTokens.stylex.ts',
 );
 const SYNTAX_TOKENS_SRC = resolve(
   ROOT,
@@ -53,9 +53,9 @@ function sourceText(file) {
  */
 function extractDefaults(name, file = TOKENS_SRC) {
   const src = sourceText(file);
-  // Match: `export const <name> = {` ... `} as const;`
+  // Match: `[export] const <name> = {` ... `} as const;`
   const re = new RegExp(
-    `export const ${name}\\s*=\\s*\\{([^}]+(?:\\{[^}]*\\}[^}]*)*)\\}\\s*as const`,
+    `(?:export\\s+)?const ${name}\\s*=\\s*\\{([^}]+(?:\\{[^}]*\\}[^}]*)*)\\}\\s*as const`,
     's',
   );
   const m = src.match(re);
@@ -113,7 +113,7 @@ const groups = [
     file: DATA_TOKENS_SRC,
     title: 'Data Visualization Tokens',
     description:
-      'Colors for charts and graphs: one categorical accent per series, a neutral for labels and reference lines, and sequential ramps from 5 (darkest) to 1 (lightest) for ordered scales and heatmaps.',
+      'Colors for charts and graphs: one categorical accent per series, a neutral for labels and reference lines, and sequential ramps from 5 (darkest) to 1 (lightest) for ordered scales and heatmaps. Import their public StyleX variables from @astryxdesign/core/theme/dataTokens.stylex.',
     headers: ['Token', 'Light', 'Dark'],
     formatRow: lightDarkRow,
   },
@@ -278,12 +278,16 @@ sections.push({
       label: 'Using token imports',
       code: `import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 
 const styles = stylex.create({
   card: {
     padding: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-background-surface'],
     borderRadius: radiusVars['--radius-container'],
+  },
+  series: {
+    color: dataVars['--color-data-categorical-blue'],
   },
   button: {
     height: sizeVars['--size-element-md'],
@@ -314,7 +318,7 @@ const output = `\
 
 // AUTO-GENERATED — do not edit manually.
 // Source: packages/core/src/theme/tokens.stylex.ts,
-//   domainTokens/dataTokens.ts, and syntax/tokens.ts
+//   dataTokens.stylex.ts, and syntax/tokens.ts
 // Run: node scripts/generate-token-docs.mjs
 // Total: ${totalTokens} tokens across ${groups.length} categories.
 

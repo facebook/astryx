@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as Astryx components
  */
 
-import {Component, Suspense, useMemo, useRef} from 'react';
+import {Suspense, useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -32,6 +32,7 @@ import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
 import {Blockquote} from '../Blockquote/Blockquote';
 import {List} from '../List/List';
 import {ListItem} from '../List/ListItem';
+import {ListMarkerScope, type ListMarker} from '../List/ListContext';
 import {Table} from '../Table/Table';
 import {TableRow} from '../Table/TableRow';
 import {TableCell} from '../Table/TableCell';
@@ -55,7 +56,7 @@ import {
   trimStreamingArtifacts,
 } from './parser';
 import type {IncrementalState, MathParseOptions, ParseOptions} from './parser';
-import {getMarkdownAstLegacyCodeLanguage} from './ast';
+import {getMarkdownAstLegacyCodeLanguage, markdownAstText} from './ast';
 import type {
   MarkdownAstBlockContent,
   MarkdownAstPhrasingContent,
@@ -69,6 +70,10 @@ import {
   reportMarkdownPluginFailure,
 } from './plugins/protocol';
 import {getMarkdownFenceProposal} from './plugins/semanticFence';
+import {
+  MarkdownPluginBoundary,
+  renderMarkdownPluginNode,
+} from './plugin-renderer/MarkdownPluginNodeRenderer';
 import type {
   MarkdownExtensionNode,
   MarkdownPluginEntry,
@@ -90,6 +95,19 @@ type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
 type RenderExtensionNode = MarkdownExtensionNode;
 type RenderInlineNode = MarkdownAstPhrasingContent<RenderExtensionNode>;
 type RenderBlockNode = MarkdownAstBlockContent<RenderExtensionNode>;
+
+// spec:AST-061 DEC-6: a list nested inside n lists, of either kind, draws the
+// marker at n modulo 3.
+const BULLET_MARKERS: readonly [ListMarker, ListMarker, ListMarker] = [
+  'disc',
+  'circle',
+  'square',
+];
+const NUMBER_MARKERS: readonly [ListMarker, ListMarker, ListMarker] = [
+  'decimal',
+  'lower-alpha',
+  'lower-roman',
+];
 type RenderTable = MarkdownAstTable<RenderExtensionNode>;
 
 // ---------------------------------------------------------------------------
@@ -773,57 +791,6 @@ function applyInlinePlugins(
   return segments;
 }
 
-interface MarkdownPluginBoundaryProps {
-  children: React.ReactNode;
-  fallback: React.ReactNode;
-  pluginName: string;
-  resetKey: unknown;
-  resetRenderer: unknown;
-}
-
-interface MarkdownPluginBoundaryState {
-  failed: boolean;
-  resetKey: unknown;
-  resetRenderer: unknown;
-}
-
-class MarkdownPluginBoundary extends Component<
-  MarkdownPluginBoundaryProps,
-  MarkdownPluginBoundaryState
-> {
-  state: MarkdownPluginBoundaryState = {
-    failed: false,
-    resetKey: this.props.resetKey,
-    resetRenderer: this.props.resetRenderer,
-  };
-
-  static getDerivedStateFromError(): Partial<MarkdownPluginBoundaryState> {
-    return {failed: true};
-  }
-
-  static getDerivedStateFromProps(
-    props: MarkdownPluginBoundaryProps,
-    state: MarkdownPluginBoundaryState,
-  ): Partial<MarkdownPluginBoundaryState> | null {
-    return props.resetKey === state.resetKey &&
-      props.resetRenderer === state.resetRenderer
-      ? null
-      : {
-          failed: false,
-          resetKey: props.resetKey,
-          resetRenderer: props.resetRenderer,
-        };
-  }
-
-  componentDidCatch(error: unknown): void {
-    reportMarkdownPluginFailure(this.props.pluginName, 'render', error);
-  }
-
-  render(): React.ReactNode {
-    return this.state.failed ? this.props.fallback : this.props.children;
-  }
-}
-
 function useStableMarkdownSyntaxEntries(
   plugins: PreparedMarkdownPlugins | undefined,
 ): ReadonlyArray<MarkdownPluginEntry> | undefined {
@@ -1125,34 +1092,17 @@ function renderInline(
         />
       );
     }
-    case 'extension': {
-      const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
-      const fallback = wrapTextWithFade(
-        node.source ?? markdownExtensionText(preparedPlugins, node),
-        cursor,
+    case 'extension':
+      return renderMarkdownPluginNode(
+        preparedPlugins,
+        node,
+        wrapTextWithFade(
+          node.source ?? markdownExtensionText(preparedPlugins, node),
+          cursor,
+          index,
+        ),
         index,
       );
-      if (renderer == null) {
-        return fallback;
-      }
-      let rendered: React.ReactNode;
-      try {
-        rendered = renderer.render({node});
-      } catch (error) {
-        reportMarkdownPluginFailure(node.plugin, 'render', error);
-        return fallback;
-      }
-      return (
-        <MarkdownPluginBoundary
-          key={index}
-          pluginName={node.plugin}
-          resetKey={node}
-          resetRenderer={renderer.render}
-          fallback={fallback}>
-          <Suspense fallback={fallback}>{rendered}</Suspense>
-        </MarkdownPluginBoundary>
-      );
-    }
     case 'break':
       cursor.offset += 1;
       return <br key={index} />;
@@ -1310,6 +1260,8 @@ function renderBlock(
   preparedPlugins: PreparedMarkdownPlugins | undefined,
   t: TranslatorFn,
   headingProjection?: MarkdownHeadingProjection,
+  // How many lists enclose this block (spec:AST-061 DEC-6).
+  listDepth = 0,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1551,6 +1503,7 @@ function renderBlock(
             preparedPlugins,
             t,
             headingProjection,
+            listDepth,
           ),
         );
         return <BlockquoteComp key={index}>{bqC}</BlockquoteComp>;
@@ -1588,6 +1541,7 @@ function renderBlock(
               preparedPlugins,
               t,
               headingProjection,
+              listDepth,
             ),
           )}
         </Blockquote>
@@ -1666,6 +1620,7 @@ function renderBlock(
                         preparedPlugins,
                         t,
                         headingProjection,
+                        listDepth + 1,
                       ),
                     )}
                   </>
@@ -1751,17 +1706,48 @@ function renderBlock(
                       preparedPlugins,
                       t,
                       headingProjection,
+                      listDepth + 1,
                     ),
                   )}
                 </>
               );
 
+              // A task item beside plain items keeps its own checked state
+              // (FR23): it shows a read-only checkbox where its marker
+              // would be, named by its text.
+              const firstParagraph = item.children.find(
+                block => block.type === 'paragraph',
+              );
+              const task =
+                item.checked == null
+                  ? undefined
+                  : {
+                      isChecked: item.checked,
+                      label:
+                        firstParagraph?.type === 'paragraph'
+                          ? markdownAstText(
+                              firstParagraph.children,
+                              extension =>
+                                markdownExtensionText(
+                                  preparedPlugins,
+                                  extension,
+                                ),
+                            )
+                          : t('@astryx.markdown.taskList'),
+                    };
+
               return (
-                <ListItem
+                <ListMarkerScope
                   // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown list items are rendered from positional AST nodes
                   key={i}
-                  label={label}
-                />
+                  marker={
+                    (node.ordered ? NUMBER_MARKERS : BULLET_MARKERS)[
+                      listDepth % 3
+                    ]
+                  }
+                  task={task}>
+                  <ListItem label={label} />
+                </ListMarkerScope>
               );
             })}
           </List>
@@ -1871,27 +1857,15 @@ function renderBlock(
       );
     }
     case 'extension': {
-      const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
-      const fallbackText =
-        node.source ?? markdownExtensionText(preparedPlugins, node);
-      const fallback = wrapTextWithFade(fallbackText, cursor, index);
-      let content: React.ReactNode = fallback;
-      if (renderer != null) {
-        try {
-          const rendered = renderer.render({node});
-          content = (
-            <MarkdownPluginBoundary
-              pluginName={node.plugin}
-              resetKey={node}
-              resetRenderer={renderer.render}
-              fallback={fallback}>
-              <Suspense fallback={fallback}>{rendered}</Suspense>
-            </MarkdownPluginBoundary>
-          );
-        } catch (error) {
-          reportMarkdownPluginFailure(node.plugin, 'render', error);
-        }
-      }
+      const content = renderMarkdownPluginNode(
+        preparedPlugins,
+        node,
+        wrapTextWithFade(
+          node.source ?? markdownExtensionText(preparedPlugins, node),
+          cursor,
+          index,
+        ),
+      );
       return (
         <div
           key={index}
