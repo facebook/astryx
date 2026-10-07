@@ -67,6 +67,12 @@ describe('CommandPaletteFooter', () => {
     expect(screen.queryByRole('separator')).not.toBeInTheDocument();
   });
 
+  it('allows translated guidance groups to wrap on narrow surfaces', () => {
+    const root = renderRoot(<CommandPaletteFooter />);
+
+    expect(declaredValue(root, 'flex-wrap')).toBe('wrap');
+  });
+
   it('appends a consumer className after generated classes', () => {
     const base = renderRoot(<CommandPaletteFooter />).className.split(' ');
     const withCustom = renderRoot(

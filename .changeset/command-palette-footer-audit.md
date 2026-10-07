@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[docs] Correct the CommandPaletteFooter composition example and add owned audit coverage.
+[fix] Let CommandPaletteFooter wrap translated guidance on narrow screens, correct its composition example, and add owned audit coverage.
 
 @cixzhang

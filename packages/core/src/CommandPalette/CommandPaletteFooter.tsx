@@ -29,6 +29,7 @@ import {useTranslator} from '../i18n';
 const styles = stylex.create({
   footer: {
     display: 'flex',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacingVars['--spacing-4'],
     paddingInline: spacingVars['--spacing-4'],
