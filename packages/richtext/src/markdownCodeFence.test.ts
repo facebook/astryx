@@ -154,6 +154,20 @@ describe.each(['~~~', '```'])('%s fenced code lines', fence => {
   });
 });
 
+describe.each(['~~~', '```'])('%s fence info after a space', fence => {
+  it('reads the language after the space, and keeps the info as written through an edit', () => {
+    const markdown = `${fence} js\nx = 1\n${fence}\n`;
+    expect(blocks(markdown)).toEqual([{language: 'js', code: 'x = 1'}]);
+    expect(blocks(markdown)).toEqual(coreBlocks(markdown));
+    expect(editAndExport(markdown, setCode('x = 2'))).toBe(
+      `${fence} js\nx = 2\n${fence}\n`,
+    );
+    expect(editAndExport(markdown, code => code.setLanguage('ruby'))).toBe(
+      `${fence}ruby\nx = 1\n${fence}\n`,
+    );
+  });
+});
+
 describe('tilde code fences', () => {
   it.each([
     '~~~~\n~~~\ninner\n~~~\n~~~~\n',

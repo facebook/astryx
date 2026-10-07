@@ -9,9 +9,9 @@
  *   stands in for Lexical's CODE, and TILDE_CODE reads the `~~~` fences CODE
  *   does not (CommonMark 0.31 §4.5, spec:AST-061 FR5). Both read the opening
  *   line as core Markdown does: the rest of the line after the fence is the
- *   info string, never code; the language is the text right after the fence
- *   up to the first space (so `c++` stays `c++`), and a block whose info
- *   string starts with a space has none, as core reads it. A block closes at
+ *   info string, never code; the language is its first word, after any
+ *   spaces (so `~~~ c++` reads `c++`), as core and CommonMark read it. A
+ *   block closes at
  *   a fence of its own character at least as long, or at the end of the
  *   document, and its code is exactly the lines between, indentation and
  *   blank lines included, as core reads it. Each keeps its fence and info
@@ -62,7 +62,7 @@ const fenceInfo = createState('astryxFenceInfo', {
 
 /** The language core Markdown reads from an info string, or null. */
 function languageOf(info: string): string | null {
-  return /^\S+/.exec(info)?.[0] ?? null;
+  return /^\S+/.exec(info.trimStart())?.[0] ?? null;
 }
 
 /** An opening fence line: its fence and the info string after it. */
@@ -139,10 +139,9 @@ const exportFencedCode: ElementTransformer['export'] = node => {
   let written = info ?? '';
   if ((languageOf(written) ?? '') !== language) {
     // The language changed: it leads, before the rest of the info string.
+    const previous = languageOf(written);
     const rest =
-      languageOf(written) == null
-        ? ''
-        : written.slice(languageOf(written)?.length).trim();
+      previous == null ? '' : written.trimStart().slice(previous.length).trim();
     written = rest === '' ? language : `${language} ${rest}`;
   }
   // A fence outlasts any run of its character in the code.

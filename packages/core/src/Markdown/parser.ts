@@ -3083,7 +3083,9 @@ function parseMarkdownImpl(
     const fenceMatch = line.match(/^(`{3,}|~{3,})/);
     if (fenceMatch) {
       const fence = fenceMatch[1];
-      const info = line.slice(fence.length);
+      // The rest of the line is the info string; its first word, after any
+      // spaces, is the language (CommonMark 0.31 §4.5).
+      const info = line.slice(fence.length).trim();
       const language = info.match(/^(\S+)/)?.[1] ?? null;
       const legacyLanguage = info.match(/^(\w*)/)?.[1] || null;
       const meta =
