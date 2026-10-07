@@ -210,6 +210,17 @@ function itSplitsCorrectly(get: () => Built) {
     expect(get().css).toContain('-webkit-user-select');
   });
 
+  // Source-built tokens must stay native at the same browser floor Astryx
+  // documents. Lowering `light-dark()` here rewrites root variables through
+  // mode helpers that exist only on Theme wrappers, so inherited data colors
+  // become invalid before a theme can use them.
+  it('preserves native light-dark() token values', () => {
+    const {css} = get();
+    expect(css).toContain('light-dark(');
+    expect(css).not.toContain('--lightningcss-light');
+    expect(css).not.toContain('--lightningcss-dark');
+  });
+
   it('links the stylesheet from the page', () => {
     const {html, cssName} = get();
     expect(html).toContain(cssName);
