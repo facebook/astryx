@@ -466,6 +466,25 @@ describe('BaseTable', () => {
       expect(screen.getByRole('table').style.minWidth).toBe('10px');
     });
 
+    it('keeps a larger consumer style.minWidth beside width-less column floors', () => {
+      const plain: TableColumn<User>[] = [
+        {key: 'name'},
+        {key: 'age'},
+        {key: 'email'},
+        {key: 'role'},
+      ];
+      render(<Table data={users} columns={plain} style={{minWidth: 900}} />);
+      expect(screen.getByRole('table').style.minWidth).toBe('900px');
+    });
+
+    it('raises a smaller consumer style.minWidth to the column floors', () => {
+      const plain: TableColumn<User>[] = [{key: 'name'}, {key: 'age'}];
+      render(<Table data={users} columns={plain} style={{minWidth: '10px'}} />);
+      expect(screen.getByRole('table').style.minWidth).toBe(
+        `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH * 2}px`,
+      );
+    });
+
     it('keeps the astryx theme classes alongside a consumer className', () => {
       render(<Table data={users} columns={columns} className="custom-table" />);
       const table = screen.getByRole('table');

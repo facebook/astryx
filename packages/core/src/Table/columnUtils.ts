@@ -75,17 +75,24 @@ export interface ResolvedColumnWidths {
  * @param columns - Resolved column definitions (after auto-generation)
  * @returns Pre-computed widths for each column and the table minimum width
  */
-export function resolveColumnWidths<T extends Record<string, unknown>>(
-  columns: TableColumn<T>[],
-): ResolvedColumnWidths {
-  // --- Pass 1: Categorize columns and compute totals ---
+/**
+ * Space accounting shared by layout and by plugins that need rendered widths.
+ * Flexible columns (width-less or proportional) split `maxProportionalSpace`
+ * by proportion; it is the smallest space in which every flexible column
+ * still meets its own floor.
+ */
+interface ColumnSpacePlan {
+  totalProportion: number;
+  pixelTotal: number;
+  maxProportionalSpace: number;
+}
+
+function planColumnSpace<T extends Record<string, unknown>>(
+  columns: ReadonlyArray<TableColumn<T>>,
+): ColumnSpacePlan {
   let totalProportion = 0;
   let pixelTotal = 0;
-  const proportionalCols: {
-    key: string;
-    proportion: number;
-    minWidth: number;
-  }[] = [];
+  const flexibleCols: {proportion: number; minWidth: number}[] = [];
 
   for (const col of columns) {
     const w = col.width;
@@ -93,22 +100,60 @@ export function resolveColumnWidths<T extends Record<string, unknown>>(
       pixelTotal += w.value;
     } else {
       const proportion = w?.value ?? 1;
-      const minW = resolveFlexibleColumnMinWidth(w);
       totalProportion += proportion;
-      proportionalCols.push({key: col.key, proportion, minWidth: minW});
+      flexibleCols.push({
+        proportion,
+        minWidth: resolveFlexibleColumnMinWidth(w),
+      });
     }
   }
 
-  // --- Pass 2: Compute table min-width ---
   let maxProportionalSpace = 0;
   if (totalProportion > 0) {
-    for (const col of proportionalCols) {
+    for (const col of flexibleCols) {
       const required = (col.minWidth * totalProportion) / col.proportion;
       if (required > maxProportionalSpace) {
         maxProportionalSpace = required;
       }
     }
   }
+  return {totalProportion, pixelTotal, maxProportionalSpace};
+}
+
+/**
+ * Inline width (px) of each column while the table sits at its minimum width,
+ * which is the width a horizontally overflowing table renders at. Pixel
+ * columns keep their value; a flexible column takes its proportional share of
+ * the space that satisfies every flexible floor, so a width-less column beside
+ * a `proportional()` column can render wider than its own 60px floor.
+ */
+export function resolveColumnFloorWidths<T extends Record<string, unknown>>(
+  columns: ReadonlyArray<TableColumn<T>>,
+): Map<string, number> {
+  const {totalProportion, maxProportionalSpace} = planColumnSpace(columns);
+  const widths = new Map<string, number>();
+  for (const col of columns) {
+    const w = col.width;
+    if (w?.type === 'pixel') {
+      widths.set(col.key, w.value);
+    } else {
+      const proportion = w?.value ?? 1;
+      widths.set(
+        col.key,
+        totalProportion > 0
+          ? (maxProportionalSpace * proportion) / totalProportion
+          : 0,
+      );
+    }
+  }
+  return widths;
+}
+
+export function resolveColumnWidths<T extends Record<string, unknown>>(
+  columns: TableColumn<T>[],
+): ResolvedColumnWidths {
+  const {totalProportion, pixelTotal, maxProportionalSpace} =
+    planColumnSpace(columns);
   const tableMinWidth = pixelTotal + maxProportionalSpace;
 
   // --- Pass 3: Build per-column styles ---

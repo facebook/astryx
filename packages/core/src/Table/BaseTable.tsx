@@ -107,6 +107,29 @@ function applyPlugins<TPlugin, TProps, TArgs extends unknown[]>(
 const EMPTY_PLUGINS: TablePlugin<Record<string, unknown>>[] = [];
 
 /**
+ * The larger of a consumer-supplied min-width and the column-floor minimum.
+ * Numbers and plain px lengths compare directly; any other CSS length (rem,
+ * %, calc) defers to CSS `max()` so the browser resolves it.
+ */
+function largerMinWidth(
+  consumer: React.CSSProperties['minWidth'],
+  floorPx: number,
+): string {
+  const floor = `${floorPx}px`;
+  if (consumer == null || consumer === '') {
+    return floor;
+  }
+  if (typeof consumer === 'number') {
+    return `${Math.max(consumer, floorPx)}px`;
+  }
+  const px = /^(\d+(?:\.\d+)?)px$/.exec(consumer.trim());
+  if (px) {
+    return `${Math.max(Number(px[1]), floorPx)}px`;
+  }
+  return `max(${consumer}, ${floor})`;
+}
+
+/**
  * Shallow-compare two arrays by element identity.
  * Used to stabilize the resolved columns array across renders.
  */
@@ -511,16 +534,23 @@ function BaseTableInner<T extends Record<string, unknown>>({
   const hasData = data != null && data.length > 0;
   const hasColumns = resolvedColumns.length > 0;
 
-  // Style precedence: consumer style < the computed column min-width
-  // (structural — derived from column defs, so it
-  // must win when present; when absent, a consumer minWidth survives).
-  const tableStyle: React.CSSProperties = {
+  // The table is at least as wide as the column floors require and at least
+  // as wide as any minWidth the consumer (or a plugin) set: whichever is
+  // larger wins, so column floors never shrink a consumer's minimum.
+  const mergedStyle: React.CSSProperties = {
     ...tableRenderProps.htmlProps.style,
     ...style,
-    ...(resolvedWidths.tableMinWidth > 0
-      ? {minWidth: `${resolvedWidths.tableMinWidth}px`}
-      : null),
   };
+  const tableStyle: React.CSSProperties =
+    resolvedWidths.tableMinWidth > 0
+      ? {
+          ...mergedStyle,
+          minWidth: largerMinWidth(
+            mergedStyle.minWidth,
+            resolvedWidths.tableMinWidth,
+          ),
+        }
+      : mergedStyle;
 
   let tableElement: ReactNode = (
     <table
