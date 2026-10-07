@@ -543,6 +543,64 @@ function hasUnescapedPipe(text: string): boolean {
   return false;
 }
 
+/** A GFM table's delimiter row: cells of hyphens with optional colons. */
+const TABLE_DELIMITER_ROW = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
+
+/**
+ * The ranges of `markdown` a code span must not start in: inline link
+ * destinations and titles, from the `(` after a `]` to its paired `)`. The
+ * link reads its destination before any code span there, as core and
+ * CommonMark read it.
+ */
+function linkTargetRanges(
+  markdown: string,
+  code: ReadonlyArray<readonly [number, number]>,
+): Array<readonly [number, number]> {
+  const ranges: Array<readonly [number, number]> = [];
+  if (!markdown.includes('](')) {
+    return ranges;
+  }
+  const pair = pairedDelimiters(markdown, code);
+  for (
+    let index = markdown.indexOf('](');
+    index !== -1;
+    index = markdown.indexOf('](', index + 1)
+  ) {
+    if (pair[index] !== -1 && pair[index + 1] !== -1) {
+      ranges.push([index + 1, pair[index + 1] + 1]);
+    }
+  }
+  return ranges;
+}
+
+/** The ranges of `markdown` that are GFM table rows, header row included. */
+function tableRowRanges(markdown: string): Array<readonly [number, number]> {
+  const ranges: Array<readonly [number, number]> = [];
+  const lines = markdown.split('\n');
+  const starts: number[] = [];
+  let offset = 0;
+  for (const line of lines) {
+    starts.push(offset);
+    offset += line.length + 1;
+  }
+  for (let index = 1; index < lines.length; index++) {
+    const line = lines[index];
+    if (
+      line.includes('|') &&
+      TABLE_DELIMITER_ROW.test(line) &&
+      lines[index - 1].includes('|')
+    ) {
+      let end = index + 1;
+      while (end < lines.length && lines[end].trim() !== '') {
+        end++;
+      }
+      ranges.push([starts[index - 1], starts[end - 1] + lines[end - 1].length]);
+      index = end;
+    }
+  }
+  return ranges;
+}
+
 /**
  * Returns `markdown` with each code span outside fenced code replaced by a
  * private-use stand-in, and the code each stands for, as core Markdown reads
@@ -550,20 +608,41 @@ function hasUnescapedPipe(text: string): boolean {
  * §6.1), but Lexical's import applies a code span before an earlier mark on
  * the same line, which breaks every mark around code that follows another
  * (`~~a~~ ~~`c`~~`); with the code out of the way, the marks pair first and
- * the code comes back inside them. A span holding an unescaped `|` is left
- * alone, so a table row still splits its cells there, as GFM does.
+ * the code comes back inside them. Backticks in a link's destination or
+ * title are the link's, never a code span. In a table row, a span holding an
+ * unescaped `|` is left alone, so the row still splits its cells there, as
+ * GFM does.
  */
 export function protectCodeSpans(markdown: string): ProtectedCodeSpans {
   const spans = new Map<string, string>();
   if (!markdown.includes('`')) {
     return {markdown, spans};
   }
+  const code = codeRangesByKind(markdown);
+  const targets = linkTargetRanges(markdown, [...code.fenced, ...code.spans]);
+  const rows = tableRowRanges(markdown);
+  // Whether a position lies in one of ranges sorted by start, for positions
+  // asked in order: one pass over the ranges in all.
+  const cursor = (ranges: ReadonlyArray<readonly [number, number]>) => {
+    let next = 0;
+    let coveredTo = -1;
+    return (position: number): boolean => {
+      while (next < ranges.length && ranges[next][0] <= position) {
+        coveredTo = Math.max(coveredTo, ranges[next][1]);
+        next++;
+      }
+      return position < coveredTo;
+    };
+  };
+  const inTarget = cursor(targets);
+  const inRow = cursor(rows);
   const available = absentCharacters(markdown);
   let output = '';
   let copied = 0;
-  for (const [start, end] of codeRangesByKind(markdown).spans) {
+  for (const [start, end] of code.spans) {
     const source = markdown.slice(start, end);
-    if (hasUnescapedPipe(source)) {
+    const isInRow = inRow(start);
+    if (inTarget(start) || (isInRow && hasUnescapedPipe(source))) {
       continue;
     }
     const [only, ...rest] = parseInlineAst(source);
