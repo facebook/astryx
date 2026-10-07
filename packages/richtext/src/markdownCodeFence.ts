@@ -13,8 +13,9 @@
  *   spaces (so `~~~ c++` reads `c++`), as core and CommonMark read it. A
  *   block closes at
  *   a fence of its own character at least as long, or at the end of the
- *   document, and its code is exactly the lines between, indentation and
- *   blank lines included, as core reads it. Each keeps its fence and info
+ *   document, and its code is exactly the lines between, blank lines
+ *   included, each less as much indentation as the opening fence has (up to
+ *   three spaces), as core reads it. Each keeps its fence and info
  *   string (spec:AST-062): an edited block exports them as written, with its
  *   language first when that was changed, and its fence lengthened when its
  *   code holds a run of the fence's character that long.
@@ -65,17 +66,27 @@ function languageOf(info: string): string | null {
   return /^\S+/.exec(info.trimStart())?.[0] ?? null;
 }
 
-/** An opening fence line: its fence and the info string after it. */
-function readOpening(
-  line: string,
-): {readonly fence: string; readonly info: string} | null {
-  const match = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(line);
+/** An opening fence line: its indentation, its fence, and the info string. */
+interface Opening {
+  readonly indentation: number;
+  readonly fence: string;
+  readonly info: string;
+}
+
+/**
+ * Reads an opening fence line: up to three spaces of indentation, then the
+ * fence (CommonMark 0.31 §4.5), as core Markdown reads it.
+ */
+function readOpening(line: string): Opening | null {
+  const match = /^( {0,3})(`{3,}|~{3,})(.*)$/.exec(line);
   if (match == null) {
     return null;
   }
-  const [, fence, info] = match;
+  const [, indentation, fence, info] = match;
   // A backtick fence's info string holds no backtick.
-  return fence.startsWith('`') && info.includes('`') ? null : {fence, info};
+  return fence.startsWith('`') && info.includes('`')
+    ? null
+    : {indentation: indentation.length, fence, info};
 }
 
 /** The longest run of three or more of `character` in `text`, or 0. */
@@ -96,12 +107,14 @@ function $importFencedCode(
   rootNode: ElementNode,
   lines: ReadonlyArray<string>,
   startLineIndex: number,
-  opening: {readonly fence: string; readonly info: string},
+  opening: Opening,
 ): number {
-  const {fence, info} = opening;
+  const {indentation, fence, info} = opening;
   const closing = new RegExp(
-    `^[ \\t]*${fence[0] === '`' ? '`' : '~'}{${fence.length},}[ \\t]*$`,
+    `^ {0,3}${fence[0] === '`' ? '`' : '~'}{${fence.length},}[ \\t]*$`,
   );
+  // Each code line loses as much indentation as the opening fence has.
+  const fenceIndentation = new RegExp(`^ {0,${indentation}}`);
   let end = startLineIndex + 1;
   while (end < lines.length && !closing.test(lines[end])) {
     end++;
@@ -111,7 +124,12 @@ function $importFencedCode(
   // last lines, adjustments meant for its own reading of the opening line.
   const block = $createCodeNode(languageOf(info) ?? undefined);
   block.append(
-    $createTextNode(lines.slice(startLineIndex + 1, end).join('\n')),
+    $createTextNode(
+      lines
+        .slice(startLineIndex + 1, end)
+        .map(line => line.replace(fenceIndentation, ''))
+        .join('\n'),
+    ),
   );
   rootNode.append(block);
   if (fence.startsWith('~')) {
@@ -179,8 +197,8 @@ export const BACKTICK_CODE: MultilineElementTransformer = {
 
 export const TILDE_CODE: MultilineElementTransformer = {
   ...CODE,
-  regExpStart: /^([ \t]*~{3,})(.*)$/,
-  regExpEnd: {optional: true, regExp: /^[ \t]*~{3,}[ \t]*$/},
+  regExpStart: /^( {0,3}~{3,})(.*)$/,
+  regExpEnd: {optional: true, regExp: /^ {0,3}~{3,}[ \t]*$/},
   handleImportAfterStartMatch: ({lines, rootNode, startLineIndex}) => {
     const opening = readOpening(lines[startLineIndex]);
     return opening == null

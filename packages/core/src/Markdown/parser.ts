@@ -850,6 +850,26 @@ function matchLinkDefinition(
 }
 
 /**
+ * A code fence line: up to three spaces of indentation, then three or more
+ * backticks or tildes (CommonMark 0.31 §4.5). Group 1 is the indentation and
+ * group 2 the fence.
+ */
+const FENCE_LINE = /^( {0,3})(`{3,}|~{3,})/;
+
+/**
+ * Whether `line` closes a code block opened with `fence`: a fence of the same
+ * character, at least as long, after up to three spaces of indentation.
+ */
+function closesFence(line: string, fence: string): boolean {
+  const match = FENCE_LINE.exec(line);
+  return (
+    match != null &&
+    match[2].startsWith(fence[0]) &&
+    match[2].length >= fence.length
+  );
+}
+
+/**
  * Collect link reference definitions from the whole document and return the
  * input with the definition lines removed. A definition is recognized at a
  * block boundary — document start, after a blank line, after another
@@ -889,7 +909,7 @@ function extractLinkDefinitions(
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
     if (inFence) {
-      if (line.startsWith(fenceMarker)) {
+      if (closesFence(line, fenceMarker)) {
         inFence = false;
         fenceMarker = '';
         // The line after a closed fence begins a new block.
@@ -909,10 +929,10 @@ function extractLinkDefinitions(
         continue;
       }
     }
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+    const fenceMatch = FENCE_LINE.exec(line);
     if (fenceMatch) {
       inFence = true;
-      fenceMarker = fenceMatch[1];
+      fenceMarker = fenceMatch[2];
       atBoundary = false;
       continue;
     }
@@ -2952,7 +2972,7 @@ function isBlockStart(line: string): boolean {
   if (/^ {0,3}#{1,6} /.test(line)) {
     return true;
   }
-  if (/^(`{3,}|~{3,})/.test(line)) {
+  if (FENCE_LINE.test(line)) {
     return true;
   }
   if (isHorizontalRule(line)) {
@@ -2989,7 +3009,7 @@ function canContinueParagraphLazily(
   }
   if (
     /^ {0,3}#{1,6} /.test(line) ||
-    /^(`{3,}|~{3,})/.test(line) ||
+    FENCE_LINE.test(line) ||
     isHorizontalRule(line) ||
     QUOTE_MARKER.test(line) ||
     /^ {0,9}[-*+] /.test(line) ||
@@ -3512,12 +3532,12 @@ function parseMarkdownImpl(
     }
 
     // --- Fenced code block ---
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+    const fenceMatch = FENCE_LINE.exec(line);
     if (fenceMatch) {
-      const fence = fenceMatch[1];
+      const [opening, indentation, fence] = fenceMatch;
       // The rest of the line is the info string; its first word, after any
       // spaces, is the language (CommonMark 0.31 §4.5).
-      const info = line.slice(fence.length).trim();
+      const info = line.slice(opening.length).trim();
       const language = info.match(/^(\S+)/)?.[1] ?? null;
       const legacyLanguage = info.match(/^(\w*)/)?.[1] || null;
       const meta =
@@ -3525,9 +3545,11 @@ function parseMarkdownImpl(
           ? undefined
           : info.slice(language.length).trim() || undefined;
       const codeLines: string[] = [];
+      // Each code line loses as much indentation as the opening fence has.
+      const fenceIndentation = new RegExp(`^ {0,${indentation.length}}`);
       index++;
-      while (index < lines.length && !lines[index].startsWith(fence)) {
-        codeLines.push(lines[index]);
+      while (index < lines.length && !closesFence(lines[index], fence)) {
+        codeLines.push(lines[index].replace(fenceIndentation, ''));
         index++;
       }
       index++; // skip closing fence
@@ -4007,12 +4029,7 @@ function findSettledBoundary(
     const line = lines[lineIndex];
 
     if (inFence) {
-      const fenceMatch = line.match(/^(`{3,}|~{3,})/);
-      if (
-        fenceMatch &&
-        fenceMatch[1].startsWith(fenceMarker[0]) &&
-        fenceMatch[1].length >= fenceMarker.length
-      ) {
+      if (closesFence(line, fenceMarker)) {
         inFence = false;
         fenceMarker = '';
       }
@@ -4048,10 +4065,10 @@ function findSettledBoundary(
       }
     }
 
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+    const fenceMatch = FENCE_LINE.exec(line);
     if (fenceMatch) {
       inFence = true;
-      fenceMarker = fenceMatch[1];
+      fenceMarker = fenceMatch[2];
       boundaryBeforeFence = lastBoundary;
       continue;
     }
@@ -4309,12 +4326,7 @@ function trimOpenDisplayMath(text: string): string {
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
     if (inFence) {
-      const fence = line.match(/^(`{3,}|~{3,})/);
-      if (
-        fence != null &&
-        fence[1].startsWith(fenceMarker[0]) &&
-        fence[1].length >= fenceMarker.length
-      ) {
+      if (closesFence(line, fenceMarker)) {
         inFence = false;
         fenceMarker = '';
       }
@@ -4339,10 +4351,10 @@ function trimOpenDisplayMath(text: string): string {
       suppressMathUntilBoundary = false;
     }
 
-    const fence = line.match(/^(`{3,}|~{3,})/);
+    const fence = FENCE_LINE.exec(line);
     if (fence != null) {
       inFence = true;
-      fenceMarker = fence[1];
+      fenceMarker = fence[2];
       continue;
     }
     const container = suppressMathUntilBoundary
