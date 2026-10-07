@@ -99,7 +99,7 @@ describe('search leaf — per-domain result fields', () => {
         expect(['page', 'block']).toContain(res.kind);
       } else if (res.domain === 'theme') {
         expect(res.displayName).toMatch(/\S/);
-        expect(res.command).toMatch(/^astryx theme add /);
+        expect(res.command).toBe(`astryx theme add --import ${res.name}`);
       }
     }
   }, SLOW);

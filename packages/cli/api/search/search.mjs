@@ -1586,7 +1586,7 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
       result = {
         ...base,
         displayName: c._displayName,
-        command: `astryx theme add ${c.name}`,
+        command: `astryx theme add --import ${c.name}`,
       };
       break;
     default:

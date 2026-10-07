@@ -15,9 +15,10 @@ keyword + prose. The `theme` doc also gains consumer-facing keywords so it
 surfaces for questions like "how to use a theme" and "how to apply a theme".
 
 Themes are now a search domain: bundled and integration-provided themes appear
-in results with their slug, displayName, package, and the `astryx theme add`
-command. `--type theme` filters to them. Like `--type doc`, it works outside an
-app, where an open search now covers the docs and themes. Search help, the
-manifest, and the API reference list the new domain and its result fields.
+in results with their slug, displayName, package, and the command
+`astryx theme add --import <slug>`. `--type theme` filters to them. Like
+`--type doc`, it works outside an app, where an open search now covers the docs
+and themes. Search help, the manifest, and the API reference list the new domain
+and its result fields.
 
 @josephfarina

@@ -450,6 +450,24 @@ const CASES = [
     skipFieldChecks: true,
   },
   {
+    name: 'theme remove',
+    args: ['theme', 'remove', 'does-not-exist'],
+    errorExpected: true,
+    skipFieldChecks: true,
+  },
+  {
+    name: 'theme use',
+    args: ['theme', 'use', 'does-not-exist'],
+    errorExpected: true,
+    skipFieldChecks: true,
+  },
+  {
+    name: 'theme eject',
+    args: ['theme', 'eject', 'does-not-exist'],
+    errorExpected: true,
+    skipFieldChecks: true,
+  },
+  {
     name: 'theme build',
     args: ['theme', 'build', 'nonexistent.ts'],
     errorExpected: true,

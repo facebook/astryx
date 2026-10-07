@@ -35,11 +35,9 @@ const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'];
 /**
  * Build the "Next steps" lines printed at the end of `astryx init`.
  *
- * Theme guidance must match the runtime recommendation emitted by core's
- * <Theme> component (packages/core/src/theme/Theme.tsx): the pre-built theme
- * path (`/built` import + `theme.css`) plus the base CSS import, so users
- * don't end up with an unstyled app or the slower runtime style-injection
- * path. See https://github.com/facebook/astryx/issues/3080.
+ * Theme guidance follows the generated app-module workflow. `theme add --import` records
+ * installed built themes and imports their production and font stylesheets. The
+ * app imports that module once and passes its default to <Theme>.
  *
  * @param {string} invocation install-aware CLI invocation stem (e.g. `npx astryx`, `pnpm exec astryx`, or `npx @astryxdesign/cli` for one-off runs)
  * @returns {string[]} ordered list of human-facing lines
@@ -53,11 +51,12 @@ export function getNextSteps(invocation) {
     "    2. Import base styles: import '@astryxdesign/core/reset.css'",
     "       and import '@astryxdesign/core/astryx.css'",
     "    3. Import components: import { Button } from '@astryxdesign/core'",
-    '    4. Optionally add a theme (use the pre-built path for performance):',
-    "       import { neutralTheme } from '@astryxdesign/theme-neutral/built'",
-    "       import '@astryxdesign/theme-neutral/theme.css'",
-    '       <Theme theme={neutralTheme}>...</Theme>',
-    `       For custom themes, run \`${invocation} theme build <file>\` to generate the built artifacts.`,
+    '    4. Add and wire a theme:',
+    '       npm install @astryxdesign/theme-neutral',
+    `       ${invocation} theme add neutral --import`,
+    "       import { themes, defaultThemeSlug } from './astryx-themes'",
+    '       <Theme theme={themes[defaultThemeSlug]}>...</Theme>',
+    `       Extend an imported theme to customize it. Run \`${invocation} theme eject <slug>\` only to fork source.`,
     `    5. ${invocation} --help for all commands`,
     '',
   ];
@@ -141,7 +140,7 @@ function applyTheme(cwd, invocation, data) {
     logger.error('Could not write the theme template.');
   }
   logger.log(
-    `  Copy it to your theme file and edit, or run \`${invocation} theme add <slug>\` to start from a shipped theme (\`${invocation} theme list\` to browse).`,
+    `  Edit the blank template for a new theme, or run \`${invocation} theme add <slug> --import\` to import an installed built theme (\`${invocation} theme list\` to browse). Extend an imported theme for ordinary customization; use \`${invocation} theme eject <slug>\` only to fork source.`,
   );
 }
 

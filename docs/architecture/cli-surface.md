@@ -173,19 +173,29 @@ and remains available through explicit Core package selection.
   Invalid template and component files do not hide valid siblings. A
   package-scoped theme lookup still surfaces that package's blocking catalog
   error instead of misreporting the theme as unknown.
-- **INV19 — Integration themes are packaged editable source.** The manifest's
-  `themes` root contains one directory per slug. Every theme source has a mandatory
-  same-stem, strongly typed `ThemeDoc`; there is no root item catalog. Discovery
-  derives the source entry and required named runtime export from the shared stem,
-  parses source without executing it, and rejects escaped local imports and missing
-  or type-only runtime exports. The theme directory is the recursive copy and pack
-  boundary; dot entries and files npm never publishes belong to no theme. A
-  dot-folder, or a folder holding neither a descriptor nor a `<name>Theme`
-  source, is not a theme and is neither read nor packed, and doctor warns about
-  one that looks like a theme; a folder with a theme source and no descriptor
-  fails. `theme list` retains package
-  ownership, and `theme add --package` copies the complete directory before
-  `theme build` compiles the consumer-owned copy.
+- **INV19 — Integration themes are importable packages; editable source is an
+  explicit eject.** The manifest's `themes` root contains one directory per slug.
+  Every theme source has a mandatory same-stem, strongly typed `ThemeDoc`; there
+  is no root item catalog. Discovery derives the source entry and required named
+  export from the shared stem, parses source without executing it, and rejects
+  escaped local imports and missing or type-only exports. The theme directory is
+  the recursive copy and pack boundary; dot entries and files npm never publishes
+  belong to no theme. A dot-folder, or a folder holding neither a descriptor nor
+  a `<name>Theme` source, is not a theme and is neither read nor packed, and doctor
+  warns about one that looks like a theme; a folder with a theme source and no
+  descriptor fails. The one exception is the project's local `src/themes` root:
+  a source copy made by the released `theme add` without its descriptor is
+  reported as unmigrated, skipped without failing theme commands, and remains
+  unmanaged until upgrade adds its missing descriptor. `integration add theme`
+  creates public built-module and stylesheet exports and keeps CSS side effectful.
+  A package may also export a font stylesheet. `integration verify` rebuilds
+  source, compares the local built module and stylesheet, and proves every
+  declared theme export resolves from the packed package. `theme list` retains
+  package ownership, and `theme add --import` records that owner and imports only built
+  outputs. The deprecated plain `theme add` keeps copying source until its scheduled
+  cleanup. `theme eject` is the explicit source fork; it copies the complete
+  theme directory and same-stem descriptor, with the local descriptor marked as
+  not maintained by the package owner.
 - **INV20 — A command's API subject has one layout.** A command's behavior lives
   in `api/<subject>/`. `<subject>.mjs` is the subject's entry, and `api/index.mjs`
   re-exports what it exports. A subject with more than one operation puts each in

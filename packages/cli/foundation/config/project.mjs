@@ -68,6 +68,7 @@ import {
 import {
   discoverBundledThemes,
   discoverIntegrationThemes,
+  discoverLocalThemes,
 } from '../discovery/theme-discovery.mjs';
 import {getTransformsBetween} from '../../assets/codemods/registry.mjs';
 import {
@@ -757,16 +758,20 @@ export class Project {
   }
 
   /**
-   * Bundled source themes plus themes contributed by installed integrations.
-   * Each record keeps its package owner and source directory so callers can
-   * both list and copy it without reconstructing paths. A broken theme
-   * contribution is reported without hiding the package's other valid kinds.
+   * Bundled source themes, themes contributed by installed integrations, and
+   * source themes under this app's conventional local authoring root. Each
+   * record keeps its owner and source directory so app imports and explicit
+   * ejects share one discovery seam. A broken integration theme contribution is
+   * reported without hiding the package's other valid kinds.
    *
+   * @param {{includeLocal?: boolean}} [options]
    * @returns {Promise<import('../discovery/theme-discovery.mjs').DiscoveredTheme[]>}
    */
-  async themes() {
-    return this.#memo('themes', async () => {
+  async themes({includeLocal = true} = {}) {
+    return this.#memo(includeLocal ? 'themes' : 'themes:external', async () => {
       const themes = discoverBundledThemes();
+      const projectDir = findPackageRoot(this.#cwd) ?? this.#cwd;
+      if (includeLocal) themes.push(...discoverLocalThemes(projectDir));
 
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);

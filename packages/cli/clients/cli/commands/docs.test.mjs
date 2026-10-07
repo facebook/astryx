@@ -198,8 +198,8 @@ describe('blocks as text', () => {
   it('prints the labels of a real section above their fences', async () => {
     const {status, stdout} = await runCli(['docs', 'theme', 'quick-start']);
     expect(status).toBe(0);
-    expect(stdout).toContain('Install a theme package:\n```bash\nnpm install');
-    expect(stdout).not.toContain('// Install a theme package');
+    expect(stdout).toContain('Install and add a theme:\n```bash\nnpm install');
+    expect(stdout).not.toContain('// Install and add a theme');
   }, SLOW);
 });
 

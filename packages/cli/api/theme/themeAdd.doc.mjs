@@ -1,8 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * @file FunctionDoc for `themeAdd()` / `astryx theme add`.
- */
+/** @file FunctionDoc for `themeAdd()` / `astryx theme add`. */
 
 /** @type {import('@astryxdesign/cli/authoring').FunctionDoc} */
 export const doc = {
@@ -11,39 +9,46 @@ export const doc = {
   name: 'themeAdd',
   namespace: 'cli/api',
   displayName: 'themeAdd()',
-  summary: 'Copy an available theme into a project as editable source.',
+  summary: 'Copy theme source, or import its built output into the app.',
   description:
-    "Resolves a theme from the CLI bundle or an installed integration and copies it into the consumer project: a bundled theme's source files, or an integration theme's complete directory with its descriptor. Writes are staged and existing files require explicit overwrite. Duplicate slugs fail closed until the caller selects an owner package.",
+    'Copies a bundled or package theme into the project by default, preserving the released theme.add response while that path is deprecated. With options.import, records a package or built local theme and regenerates the app theme module with its built module and stylesheets. Import refuses targetPath and overwrite before writing.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'themeAdd(slug: string, options?: {targetPath?: string, overwrite?: boolean, cwd?: string, package?: string}): Promise<ThemeAddResponse>',
-  keywords: ['theme', 'add', 'integration', 'scaffold', 'copy', 'eject'],
+    'themeAdd(slug: string, options?: {targetPath?: string, overwrite?: boolean, import?: boolean, cwd?: string, package?: string}): Promise<ThemeAddResponse | ThemeAppResponse>',
+  keywords: ['theme', 'add', 'import', 'copy', 'app', 'default', 'local'],
   params: [
     {
       name: 'slug',
       type: 'string',
-      description:
-        'Slug of the available theme to copy (matched case-insensitively).',
+      description: 'Slug of the available theme.',
       required: true,
     },
     {
       name: 'options.targetPath',
       type: 'string',
       description:
-        'Destination directory for copied files. Must resolve within cwd.',
+        'Destination for the deprecated source-copy path. Cannot be combined with import.',
       default: "'src/themes/<slug>'",
     },
     {
       name: 'options.overwrite',
       type: 'boolean',
-      description: 'Replace existing files instead of refusing.',
+      description:
+        'Replace copied files instead of refusing. Cannot be combined with import.',
+      default: 'false',
+    },
+    {
+      name: 'options.import',
+      type: 'boolean',
+      description:
+        'Import the built theme through the generated app module instead of copying source.',
       default: 'false',
     },
     {
       name: 'options.cwd',
       type: 'string',
       description:
-        'Project directory used for integration discovery and target paths.',
+        'Project directory used for discovery, state, and target paths.',
       default: 'process.cwd()',
     },
     {
@@ -56,7 +61,12 @@ export const doc = {
     {
       type: 'theme.add',
       description:
-        'Copy receipt with slug, displayName, maintained flag, owner package, outputDir, entry, exportName, and files.',
+        'The released copy receipt plus additive meta.deprecations with DEP-0005 and its replacement commands when import is false.',
+    },
+    {
+      type: 'theme.app',
+      description:
+        'The complete generated-module state and add change when import is true.',
     },
   ],
   throws: [
@@ -67,26 +77,29 @@ export const doc = {
     {code: 'ERR_AMBIGUOUS_THEME', when: 'more than one package owns the slug'},
     {
       code: 'ERR_THEME_INVALID',
-      when: 'the selected installed package has a blocking integration or theme-descriptor error',
+      when: 'the selected theme is invalid, or import is combined with a copy option',
     },
-    {code: 'ERR_PATH_TRAVERSAL', when: 'the target path escapes cwd'},
+    {code: 'ERR_PATH_TRAVERSAL', when: 'a copy target escapes cwd'},
     {
       code: 'ERR_NO_SOURCE',
-      when: 'the bundled theme descriptors cannot be read, or a theme file to copy is missing',
+      when: 'a copied source file is missing',
     },
     {
       code: 'ERR_FILE_EXISTS',
-      when: 'a destination exists and overwrite is not set',
+      when: 'a destination or generated module path conflicts',
     },
-    {code: 'ERR_WRITE_FAILED', when: 'writing files fails'},
+    {code: 'ERR_WRITE_FAILED', when: 'copying or module generation fails'},
   ],
   examples: [
-    {label: 'Copy a bundled theme', code: "await themeAdd('butter');"},
     {
-      label: 'Name the owner package and the destination',
-      code: "await themeAdd('butter', {package: '@astryxdesign/cli', targetPath: 'src/brand-theme'});",
+      label: 'Import a built theme',
+      code: "await themeAdd('butter', {import: true});",
+    },
+    {
+      label: 'Select a package theme over a local theme',
+      code: "await themeAdd('ocean', {import: true, package: '@acme/themes'});",
     },
   ],
   command: 'theme add',
-  related: ['themeListAvailable', 'themeTemplate', 'listThemes'],
+  related: ['themeRemove', 'themeUse', 'themeEject', 'themeListAvailable'],
 };

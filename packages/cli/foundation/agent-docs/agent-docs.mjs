@@ -453,7 +453,7 @@ export function generateCompressedIndex(
   } else {
     lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
   }
-  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme (`astryx theme list` / `theme add <slug>`, or `astryx theme template` for a custom one) — never override --color-* in :root.');
+  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent belongs in the theme. Run `astryx theme list`, install a package, and `theme add <slug> --import` to import its built theme through the generated app module. Extend that theme to customize it. Use `theme eject <slug>` only to fork source and `astryx theme template` for a new theme — never override --color-* in :root.');
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.

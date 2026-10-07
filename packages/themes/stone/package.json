@@ -22,7 +22,9 @@
     "lucide",
     "design-tokens"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "main": "./dist/source.js",
   "types": "./dist/source.d.ts",
   "exports": {
@@ -39,11 +41,17 @@
     "./theme.css": {
       "types": "./theme.css.d.ts",
       "default": "./dist/theme.css"
+    },
+    "./fonts.css": {
+      "types": "./fonts.css.d.ts",
+      "default": "./fonts.css"
     }
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "fonts.css",
+    "fonts.css.d.ts"
   ],
   "scripts": {
     "build": "node ../../../scripts/clean-dist.mjs && astryx theme build src/stoneTheme.ts -o dist/theme.css --icons-specifier ./icons.mjs && tsup && tsc --project tsconfig.build.json && node ../../../scripts/check-fully-specified.mjs"

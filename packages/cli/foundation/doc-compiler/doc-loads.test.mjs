@@ -53,12 +53,16 @@ const RUNNERS = {
     sites: ['import(node:child_process)', 'worker_threads.Worker'],
   },
   'api/integration/pack-check.mjs': {
-    runs: '`npm pack`, `tar`, and a Node script that resolves the packed specifiers, to check a package as published, and the package\'s doc modules, to see which need a newer CLI',
+    runs: "`npm pack`, `tar`, and a Node script that resolves the packed specifiers, to check a package as published, and the package's doc modules, to see which need a newer CLI",
     sites: ['child_process.spawnSync ×3', 'loadTopicModule'],
   },
   'api/swizzle/_github.mjs': {
     runs: '`gh auth status`, to check the GitHub CLI is signed in',
     sites: ['child_process.execFileSync'],
+  },
+  'api/theme/_adapter.mjs': {
+    runs: 'recorded built theme modules through the shared app-theme loader',
+    sites: ['importThemeArtifact'],
   },
   'api/theme/build/build.mjs': {
     runs: "theme source modules, through jiti; eval for legacy theme object literals; the project's installed Core",
@@ -104,17 +108,23 @@ const RUNNERS = {
       'child_process.spawn',
       'import ../../../api/theme/themeAdd.doc.mjs',
       'import ../../../api/theme/themeBuild.doc.mjs',
+      'import ../../../api/theme/themeEject.doc.mjs',
       'import ../../../api/theme/themeListAvailable.doc.mjs',
       'import ../../../api/theme/themePaletteGenerate.doc.mjs',
+      'import ../../../api/theme/themeRemove.doc.mjs',
       'import ../../../api/theme/themeTargets.doc.mjs',
       'import ../../../api/theme/themeTemplate.doc.mjs',
+      'import ../../../api/theme/themeUse.doc.mjs',
       'import ./theme-add.doc.mjs',
       'import ./theme-build.doc.mjs',
+      'import ./theme-eject.doc.mjs',
       'import ./theme-list.doc.mjs',
       'import ./theme-palette-generate.doc.mjs',
       'import ./theme-palette.doc.mjs',
+      'import ./theme-remove.doc.mjs',
       'import ./theme-targets.doc.mjs',
       'import ./theme-template.doc.mjs',
+      'import ./theme-use.doc.mjs',
       'import ./theme.doc.mjs',
     ],
   },
@@ -241,8 +251,8 @@ const RUNNERS = {
     sites: ['import ../commands/manifest.doc.mjs'],
   },
   'clients/cli/lib/resolve-theme.mjs': {
-    runs: 'the configured theme (ASTRYX_THEME or package.json), by path or package name',
-    sites: ['require(<computed>) ×2'],
+    runs: 'the generated record default theme, or the released package.json astryx.theme value when no record exists',
+    sites: ['require(<computed>)'],
   },
   'foundation/config/project.mjs': {
     runs: 'astryx.config, through the config parser',
@@ -276,8 +286,8 @@ const RUNNERS = {
   'foundation/fs/module-loader.mjs': {
     runs: 'user modules (config, manifests, handlers, codemods): natively, through jiti, or by require for a fresh CommonJS read',
     sites: [
-      '.import() ×2',
-      'createJiti ×2',
+      '.import() ×3',
+      'createJiti ×3',
       'import(<computed>)',
       'require(<computed>)',
       'require.cache',

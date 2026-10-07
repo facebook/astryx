@@ -28,12 +28,21 @@ const ACME = '@acme/widgets';
 // The API reads integrations through Project.load(). Vitest cannot import an
 // astryx.config.mjs from a temporary root, so the project is mocked the way
 // component-ownership.test.mjs mocks it, with the integration's files on disk.
-// The CLI cases run in a child process and are not affected.
+// The CLI cases fall through to the real Project.load; the integration cases
+// install the temporary project mock in their scoped beforeEach.
 const projectLoadMock = vi.fn();
-vi.mock('../foundation/config/project.mjs', async importOriginal => ({
-  ...(await importOriginal()),
-  Project: {load: (/** @type {unknown[]} */ ...args) => projectLoadMock(...args)},
-}));
+vi.mock('../foundation/config/project.mjs', async importOriginal => {
+  const original = await importOriginal();
+  return {
+    ...original,
+    Project: {
+      load: (/** @type {unknown[]} */ ...args) =>
+        projectLoadMock.getMockImplementation()
+          ? projectLoadMock(...args)
+          : original.Project.load(...args),
+    },
+  };
+});
 const {component} = await import('../api/component/component.mjs');
 const {search} = await import('../api/search/search.mjs');
 

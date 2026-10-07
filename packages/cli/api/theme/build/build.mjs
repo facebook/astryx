@@ -11,6 +11,7 @@
  * @astryxdesign/core's shared generator (the SINGLE source of truth so the
  * build emits the exact CSS the `<Theme>` runtime does), writes:
  * - A CSS file with token overrides and component styles
+ * - A CSS declaration module for strict side-effect imports
  * - A JS module that re-exports the built theme (+ icon registry)
  * - A .d.ts (plus an optional .variants.d.ts for custom prop values)
  *
@@ -41,7 +42,9 @@
  * `theme.build.check` receipt listing any stale or missing outputs. This is
  * the CI guard for committed, generated theme CSS: the source of truth is
  * `<theme>.ts`, and `theme build --check` fails when the committed
- * `<theme>.css`/`.js`/`.d.ts` no longer match it.
+ * `<theme>.css`/`.js`/`.d.ts` no longer match it. Builds also write a
+ * `<theme>.css.d.ts` import stub; check mode tolerates that one file being absent
+ * so output sets from the released CLI stay valid after an upgrade.
  */
 
 import * as fs from 'node:fs';
@@ -62,6 +65,7 @@ import {
   PathSafetyError,
 } from '../../../foundation/fs/path-safety.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
+import {validatePrivateVars} from '../../../foundation/config/theme-private-vars.mjs';
 import {AstryxError} from '../../error.mjs';
 import {applyWrites} from '../../integration/add-helpers.mjs';
 import {logger} from '../../logger.mjs';
@@ -431,7 +435,7 @@ function generatedHeader(sourceFile, lang = 'js', command, versions) {
  * @param {string} content
  * @returns {string}
  */
-function normalizeForCompare(content) {
+export function normalizeThemeBuildForCompare(content) {
   return content
     .split('\n')
     .filter(line => {
@@ -441,22 +445,34 @@ function normalizeForCompare(content) {
     .join('\n');
 }
 
-/** @param {Array<{dest: string, content: string}>} writes @param {string} cwd @returns {Array<{path: string, reason: 'missing' | 'outdated'}>} */
+/** @param {Array<{dest: string, content: string, allowMissingInCheck?: boolean}>} writes @param {string} cwd @returns {Array<{path: string, reason: 'missing' | 'outdated'}>} */
 function staleBuildOutputs(writes, cwd) {
   /** @type {Array<{path: string, reason: 'missing' | 'outdated'}>} */
   const stale = [];
   for (const write of writes) {
     const rel = path.relative(cwd, write.dest);
     if (!fs.existsSync(write.dest)) {
-      stale.push({path: rel, reason: 'missing'});
+      if (!write.allowMissingInCheck) {
+        stale.push({path: rel, reason: 'missing'});
+      }
       continue;
     }
     const onDisk = fs.readFileSync(write.dest, 'utf8');
-    if (normalizeForCompare(onDisk) !== normalizeForCompare(write.content)) {
+    if (
+      normalizeThemeBuildForCompare(onDisk) !==
+      normalizeThemeBuildForCompare(write.content)
+    ) {
       stale.push({path: rel, reason: 'outdated'});
     }
   }
   return stale;
+}
+
+/** @param {Array<{dest: string, allowMissingInCheck?: boolean}>} writes @param {string} cwd */
+function checkedBuildOutputs(writes, cwd) {
+  return writes
+    .filter(write => !write.allowMissingInCheck || fs.existsSync(write.dest))
+    .map(write => path.relative(cwd, write.dest));
 }
 
 /** @param {Array<{dest: string, content: string}>} writes */
@@ -515,8 +531,6 @@ function toIdentifier(name) {
  * from the cwd-relative dir (most consumers import from a file under src/) but
  * keeps the rest of the path (e.g. `themes/gothic`). Callers note the path is
  * relative to the consumer's file.
- * Exported (not just used by `themeBuild`'s install instructions) because the
- * thin CLI's `theme add` action reuses it for its own scaffold instructions.
  * @param {string} relDir
  * @param {string} base
  * @returns {string}
@@ -1107,30 +1121,6 @@ function assertAdaptationCapability(
 }
 
 /**
- * Every `[component, rules]` pair a theme may emit, including ordered
- * adaptation rules. Validators, private-variable checks, and notices must see
- * rule-only values even though variant augmentation is root-owned.
- *
- * @param {Record<string, any>} themeDef
- * @returns {[string, Record<string, any>][]}
- */
-function themedComponentEntries(themeDef) {
-  const maps = [
-    themeDef.components,
-    ...adaptationRuleValues(themeDef).map(
-      (/** @type {any} */ value) => value.components,
-    ),
-  ];
-
-  /** @type {[string, Record<string, any>][]} */
-  const entries = [];
-  for (const map of maps) {
-    if (map) entries.push(...Object.entries(map));
-  }
-  return entries;
-}
-
-/**
  * Root component entries are the only surface allowed to introduce variants.
  * @param {Record<string, any>} themeDef
  * @returns {[string, Record<string, any>][]}
@@ -1687,6 +1677,46 @@ async function extractThemeDefinition(filePath, interception, /** @type {any} */
 }
 
 /**
+ * Load one theme through the build's real module loader and validate the raw
+ * input captured from its defineTheme lineage. Used by doctor so it applies the
+ * same direct-input rule as theme build without mistaking compiler output for
+ * authored input.
+ *
+ * @param {string} file
+ * @param {{cwd?: string}} [ctx]
+ * @returns {Promise<string[]>}
+ */
+export async function validateThemePrivateInputs(
+  file,
+  {cwd = process.cwd()} = {},
+) {
+  const filePath = path.resolve(cwd, file);
+  if (!fs.existsSync(filePath)) {
+    throw new AstryxError(
+      `File not found: ${filePath}`,
+      undefined,
+      ERROR_CODES.ERR_FILE_NOT_FOUND,
+    );
+  }
+
+  const interception = interceptCore(_coreThemeModule, _coreRootModule);
+  let theme;
+  try {
+    theme = (await extractThemeDefinition(filePath, interception)).theme;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_LOAD);
+  }
+
+  const inputs = interception.lineageOf(theme);
+  try {
+    return [...new Set(inputs.flatMap(input => validatePrivateVars(input)))];
+  } finally {
+    interception.strip(theme);
+  }
+}
+
+/**
  * Fallback extraction via regex + eval.
  * Only works for plain object literals — can't follow imports or variables.
  * Never erase icon references: an unresolved registry must preserve the loader
@@ -2092,48 +2122,6 @@ async function validateComponentOverrides(themeDef) {
     : validateComponentOverridesAgainstRegistry(themeDef, knownComponents);
 }
 
-/**
- * Validate that themes don't set private (--_*) CSS custom properties directly.
- * Private vars are internal implementation details managed by the derived var
- * expansion pipeline. Theme authors should write standard CSS properties
- * (e.g. borderRadius, padding) instead.
- *
- * Returns array of error strings.
- * @param {{components?: Record<string, Record<string, Record<string, unknown>>>}} themeDef
- * @returns {string[]}
- */
-function validatePrivateVars(themeDef) {
-  /** @type {string[]} */
-  const errors = [];
-
-  for (const [component, rules] of themedComponentEntries(themeDef)) {
-    for (const [key, styles] of Object.entries(rules)) {
-      /**
-       * @param {unknown} value
-       * @param {string[]} [path]
-       */
-      const visit = (value, path = []) => {
-        if (!value || typeof value !== 'object' || Array.isArray(value)) return;
-        for (const [prop, nested] of Object.entries(value)) {
-          if (prop.startsWith('--_')) {
-            errors.push(
-              `Component "${component}" (${[key, ...path].join(' ')}) sets private var "${prop}". ` +
-                `Private vars (--_*) are internal; use standard CSS properties ` +
-                `(e.g. borderRadius, padding) instead. The pipeline expands them automatically.`,
-            );
-          }
-          visit(nested, [...path, prop]);
-        }
-      };
-      visit(styles);
-    }
-  }
-
-  // One entry per distinct message: a component declared both at the root and
-  // in one or more adaptations would otherwise report the same problem twice.
-  return [...new Set(errors)];
-}
-
 const BUILTIN_HEADING_TYPES = new Set(['display-1', 'display-2', 'display-3']);
 
 /**
@@ -2332,8 +2320,8 @@ function validateHeadingTypeAugmentationSupport(themeDef) {
 }
 
 /**
- * Compile a defineTheme file to CSS + JS + .d.ts (and an optional
- * `.variants.d.ts`). Performs the writes and returns a `theme.build` receipt,
+ * Compile a defineTheme file to CSS + CSS .d.ts + JS + JS .d.ts (and an
+ * optional `.variants.d.ts`). Performs the writes and returns a `theme.build` receipt,
  * or `null` when the theme produced no CSS (nothing to build). Throws
  * AstryxError (stable code) on failure. Progress is emitted through the shared
  * `logger` (silent by default).
@@ -2836,6 +2824,7 @@ async function themeBuildInternal(
   // was left as orphaned half-built output. Stage-then-commit avoids
   // that.
   const outDir = path.dirname(outPath);
+  const cssDtsPath = `${outPath}.d.ts`;
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
@@ -2859,6 +2848,9 @@ async function themeBuildInternal(
   // importing the theme also loads the custom-variant augmentations.
   const cssContent =
     generatedHeader(sourceRelative, 'css', buildCommand, versions) + css;
+  const cssDtsContent =
+    generatedHeader(sourceRelative, 'ts', buildCommand, versions) +
+    'export {};\n';
   const jsContent =
     generatedHeader(sourceRelative, 'js', buildCommand, versions) +
     generateBuiltModule(
@@ -2900,6 +2892,7 @@ async function themeBuildInternal(
 
   const writes = [
     {dest: outPath, content: cssContent},
+    {dest: cssDtsPath, content: cssDtsContent, allowMissingInCheck: true},
     {dest: jsPath, content: jsContent},
     {dest: dtsPath, content: dtsContent},
   ];
@@ -2933,7 +2926,7 @@ async function themeBuildInternal(
         name: themeDef.name,
         upToDate,
         stale,
-        checked: writes.map(w => path.relative(cwd, w.dest)),
+        checked: checkedBuildOutputs(writes, cwd),
       },
     };
   }
@@ -2941,6 +2934,7 @@ async function themeBuildInternal(
   writeBuildOutputs(writes);
 
   logger.log(`\n[ok] ${path.relative(cwd, outPath)}`);
+  logger.log(`[ok] ${path.relative(cwd, cssDtsPath)}`);
   logger.log(
     `  ${tokenCount} token overrides, ${componentCount} component overrides`,
   );
@@ -3009,6 +3003,7 @@ Or with a <link> tag:
       sizeKB: parseFloat(size),
       outputs: {
         css: path.relative(cwd, outPath),
+        cssDts: path.relative(cwd, cssDtsPath),
         js: path.relative(cwd, jsPath),
         dts: path.relative(cwd, dtsPath),
         ...(variantDecl && variantDtsPath
@@ -3174,6 +3169,7 @@ export async function themeBuildFamily(
   const root = members[0];
   const outDir = path.dirname(root.filePath);
   const outPath = path.join(outDir, `${baseName}.css`);
+  const cssDtsPath = `${outPath}.d.ts`;
   const jsPath = path.join(outDir, `${baseName}.js`);
   const dtsPath = path.join(outDir, `${baseName}.d.ts`);
   const sources = new Set(
@@ -3183,7 +3179,7 @@ export async function themeBuildFamily(
       ),
     ),
   );
-  const collision = [outPath, jsPath, dtsPath].find(output => {
+  const collision = [outPath, cssDtsPath, jsPath, dtsPath].find(output => {
     const candidates = [path.resolve(output)];
     if (fs.existsSync(output)) candidates.push(fs.realpathSync(output));
     return candidates.some(value => sources.has(value.toLowerCase()));
@@ -3268,6 +3264,13 @@ export async function themeBuildFamily(
         css,
     },
     {
+      dest: cssDtsPath,
+      allowMissingInCheck: true,
+      content:
+        generatedHeader(sourceRelative, 'ts', buildCommand, root.versions) +
+        'export {};\n',
+    },
+    {
       dest: jsPath,
       content:
         generatedHeader(sourceRelative, 'js', buildCommand, root.versions) + js,
@@ -3282,6 +3285,7 @@ export async function themeBuildFamily(
   ];
   const outputs = {
     css: path.relative(cwd, outPath),
+    cssDts: path.relative(cwd, cssDtsPath),
     js: path.relative(cwd, jsPath),
     dts: path.relative(cwd, dtsPath),
   };
@@ -3309,7 +3313,7 @@ export async function themeBuildFamily(
         name: root.theme.name,
         upToDate,
         stale,
-        checked: writes.map(write => path.relative(cwd, write.dest)),
+        checked: checkedBuildOutputs(writes, cwd),
       },
     };
   }
