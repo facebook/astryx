@@ -51,6 +51,9 @@ const TARGETS = {
       '@astryxdesign/core/*': [path.join(ROOT, 'packages/core/src/*')],
       '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],
     },
+    // astryx.css always loads with this stylesheet, so a Core variable group
+    // it already declares is not repeated here.
+    provider: 'core',
   },
   charts: {
     src: path.resolve(ROOT, 'packages/charts/src'),
@@ -64,6 +67,9 @@ const TARGETS = {
       '@astryxdesign/core/*': [path.join(ROOT, 'packages/core/src/*')],
       '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],
     },
+    // astryx.css always loads with this stylesheet, so a Core variable group
+    // it already declares is not repeated here.
+    provider: 'core',
   },
   richtext: {
     src: path.resolve(ROOT, 'packages/richtext/src'),
@@ -77,6 +83,9 @@ const TARGETS = {
       '@astryxdesign/core/*': [path.join(ROOT, 'packages/core/src/*')],
       '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],
     },
+    // astryx.css always loads with this stylesheet, so a Core variable group
+    // it already declares is not repeated here.
+    provider: 'core',
   },
 };
 
@@ -90,7 +99,11 @@ function parseTarget() {
     );
     process.exit(1);
   }
-  return {name, ...target};
+  return {
+    name,
+    ...target,
+    provider: target.provider ? TARGETS[target.provider] : undefined,
+  };
 }
 
 function staticStyleXImports(source) {
@@ -173,30 +186,33 @@ async function resolveStyleXImport(specifier, importer, aliases) {
   return null;
 }
 
-export async function collectStyleXCSS(target) {
+const STYLEX_MODULE = /\.stylex\.[cm]?[jt]sx?$/;
+
+/**
+ * Walks a package from its all-component entry set through static `.stylex`
+ * imports. Non-StyleX source files are the entries; a variable module joins
+ * only when a reachable file imports it, so a public defineVars module stays
+ * absent from packages that never consume it. Modules in `provided` are left
+ * to the stylesheet that already emits them.
+ */
+async function reachableSourceFiles(target, provided = new Set()) {
   const files = await glob('**/*.{ts,tsx}', {
     cwd: target.src,
     absolute: true,
     ignore: ['**/*.test.*', '**/*.d.ts', '**/node_modules/**'],
   });
 
-  // Non-StyleX source files are the package's all-component entry set. Variable
-  // modules are compiled only when one of those files imports them, so a public
-  // defineVars module can remain absent from packages that never consume it.
-  const queue = files.filter(file => !/\.stylex\.[cm]?[jt]sx?$/.test(file));
-  const visited = new Set();
-  const allRules = [];
-
-  console.log(`Processing ${queue.length} source entries...`);
+  const queue = files.filter(file => !STYLEX_MODULE.test(file));
+  const reachable = new Map();
 
   while (queue.length > 0) {
     const file = queue.shift();
-    if (visited.has(file)) {
+    if (reachable.has(file)) {
       continue;
     }
-    visited.add(file);
 
     const code = await fs.readFile(file, 'utf8');
+    reachable.set(file, code);
     for (const specifier of staticStyleXImports(code)) {
       const dependency = await resolveStyleXImport(
         specifier,
@@ -208,9 +224,37 @@ export async function collectStyleXCSS(target) {
           `Could not resolve StyleX dependency "${specifier}" from ${path.relative(ROOT, file)}`,
         );
       }
-      queue.push(dependency);
+      if (!provided.has(dependency)) {
+        queue.push(dependency);
+      }
     }
+  }
+  return reachable;
+}
 
+/**
+ * The variable modules a provider package's own stylesheet emits. A satellite
+ * package that imports one of them relies on that stylesheet instead of
+ * declaring the same group a second time.
+ */
+async function providedStyleXModules(provider) {
+  if (!provider) {
+    return new Set();
+  }
+  const reachable = await reachableSourceFiles(provider);
+  return new Set(
+    [...reachable.keys()].filter(file => STYLEX_MODULE.test(file)),
+  );
+}
+
+export async function collectStyleXCSS(target) {
+  const provided = await providedStyleXModules(target.provider);
+  const reachable = await reachableSourceFiles(target, provided);
+  const allRules = [];
+
+  console.log(`Processing ${reachable.size} reachable source files...`);
+
+  for (const [file, code] of reachable) {
     if (!code.includes('@stylexjs/stylex')) {
       continue;
     }
@@ -253,7 +297,7 @@ export async function collectStyleXCSS(target) {
   }
 
   console.log(
-    `Collected ${allRules.length} StyleX rules from ${visited.size} reachable files`,
+    `Collected ${allRules.length} StyleX rules from ${reachable.size} reachable files`,
   );
   return allRules;
 }

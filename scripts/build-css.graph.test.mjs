@@ -95,4 +95,36 @@ describe('build-css dependency extraction', () => {
 
     expect(rules).toEqual([]);
   });
+
+  it('leaves a variable group to the provider stylesheet that already emits it', async () => {
+    const {root, src, external} = await fixture();
+    const provider = path.join(root, 'provider');
+    await fs.mkdir(provider, {recursive: true});
+    await fs.writeFile(
+      path.join(provider, 'Component.ts'),
+      `import {sharedVars} from '../external/shared.stylex';\nexport const color = sharedVars['--probe-shared'];\n`,
+    );
+    await fs.writeFile(
+      path.join(src, 'Consumer.ts'),
+      `import {sharedVars} from '@probe/shared.stylex';\nimport {dataVars} from '@probe/data.stylex';\nexport const colors = [sharedVars['--probe-shared'], dataVars['--probe-data']];\n`,
+    );
+    await fs.writeFile(
+      path.join(external, 'shared.stylex.ts'),
+      `import * as stylex from '@stylexjs/stylex';\nexport const sharedVars = stylex.defineVars({'--probe-shared': 'red'});\n`,
+    );
+    await fs.writeFile(
+      path.join(external, 'data.stylex.ts'),
+      `import * as stylex from '@stylexjs/stylex';\nexport const dataVars = stylex.defineVars({'--probe-data': 'blue'});\n`,
+    );
+
+    const rules = await collectStyleXCSS({
+      src,
+      aliases: {'@probe/*': [path.join(external, '*')]},
+      provider: {src: provider, aliases: {}},
+    });
+    const css = stylexBabelPlugin.processStylexRules(rules, false);
+
+    expect(css).toContain('--probe-data:blue');
+    expect(css).not.toContain('--probe-shared');
+  });
 });
