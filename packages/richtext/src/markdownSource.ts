@@ -675,21 +675,24 @@ function $canonicalMarkdown(
   return entry;
 }
 
-/** Line starts that would turn literal text into a block structure. */
+/**
+ * Line starts that would turn literal text into a block structure. Each match
+ * is the spaces before the marker, where the escape goes: block markers may
+ * follow up to three spaces (CommonMark 0.31), and a list item's continuation
+ * line adds its own indentation, so any spaces count.
+ */
 const LINE_START_SYNTAX: ReadonlyArray<RegExp> = [
+  // Block quote or ATX heading marker.
+  /^ *(?=>|#{1,6}(?:[ \t]|$))/,
   // Bullet list item.
-  /^[-+](?=[ \t]|$)/,
+  /^ *(?=[-+](?:[ \t]|$))/,
   // Setext underline or thematic break made of `=` or `-`.
-  /^[=-](?=[=\- \t]*$)/,
+  /^ *(?=[=-][=\- \t]*$)/,
   // Table delimiter row.
-  /^[|:](?=[|:\- \t]*-[|:\- \t]*$)/,
+  /^ *(?=[|:][|:\- \t]*-[|:\- \t]*$)/,
 ];
 // An ordered list item escapes its delimiter, not its first character.
-const ORDERED_LIST_START = /^(\d{1,9})([.)])(?=[ \t]|$)/;
-// A block quote marker or an ATX heading marker may follow up to three spaces
-// (CommonMark 0.31 §5.1, §4.2), and a list item's continuation line adds its
-// own indentation, so the escape goes before the marker after any spaces.
-const SPACED_MARKER_START = /^( *)(?=>|#{1,6}(?:[ \t]|$))/;
+const ORDERED_LIST_START = /^( *\d{1,9})(?=[.)](?:[ \t]|$))/;
 
 // Inline syntax Lexical's export leaves unescaped: link and image brackets and
 // character references.
@@ -759,13 +762,12 @@ function markedView(
     const previous = node.getPreviousSibling();
     if (previous == null || $isLineBreakNode(previous)) {
       const ordered = ORDERED_LIST_START.exec(text);
-      const marker = SPACED_MARKER_START.exec(text);
-      if (ordered != null) {
-        text = ordered[1] + token + text.slice(ordered[1].length);
-      } else if (marker != null) {
-        text = marker[1] + token + text.slice(marker[1].length);
-      } else if (LINE_START_SYNTAX.some(pattern => pattern.test(text))) {
-        text = token + text;
+      const start = LINE_START_SYNTAX.map(pattern => pattern.exec(text)).find(
+        match => match != null,
+      );
+      const before = ordered?.[1] ?? start?.[0];
+      if (before != null) {
+        text = before + token + text.slice(before.length);
       }
     }
     const view = Object.create(node) as typeof node;
