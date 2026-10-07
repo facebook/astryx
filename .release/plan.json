@@ -1,0 +1,372 @@
+{
+  "schemaVersion": 1,
+  "version": "0.6.6",
+  "branch": "release/v0.6.6",
+  "cutSha": "3a16495ea014b84dd596fbbea408e13fa54156f0",
+  "changesets": [
+    {
+      "path": ".changeset/add-upload-semantic-icon.md",
+      "sha256": "b55502b51621094b58793a9ab6edbd6d340670c42601e8a8bc896174f374d9fb"
+    },
+    {
+      "path": ".changeset/announce-the-empty-state-shown.md",
+      "sha256": "fa0682de4f0e88a1a09bfe33d0422642c5c2fae6ef48e0a1f31d6f2f13a6dc9c"
+    },
+    {
+      "path": ".changeset/base-typeahead-reopen-on-click.md",
+      "sha256": "f32bbc9ae2b26e6a4258814ce8c06785a3bce9889d3f4272985b30cd9d20cf4f"
+    },
+    {
+      "path": ".changeset/bottom-sheet-container-padding.md",
+      "sha256": "9656728bd65cfcc40bd0976d879c9e70e59cefbf6afa749d7f38aa0591ac0465"
+    },
+    {
+      "path": ".changeset/build-template-keywords.md",
+      "sha256": "e6537ba65d7cb84a1fb3c82a0091eaf76404bd92a49143501b69f14a07385e6f"
+    },
+    {
+      "path": ".changeset/build-word-weights.md",
+      "sha256": "623da21c534f97ab2d51fbdab82d1b18e178d8d4bc39af5163021ef5cd1311aa"
+    },
+    {
+      "path": ".changeset/card-yields-to-track.md",
+      "sha256": "7e4716ed9403fbc8534e9018b06bcb403d0f858efc8044e23b66aadf1dde106f"
+    },
+    {
+      "path": ".changeset/chat-token-line-alignment.md",
+      "sha256": "d157fa9f7a09a7565f689e0c20705fab3778bc922f528f5e32029af3277b9304"
+    },
+    {
+      "path": ".changeset/cli-docs-depth.md",
+      "sha256": "10f1986452112f9cc26d2edfd631fa0dc190b480b0d96c9d2217cda320cbbeb9"
+    },
+    {
+      "path": ".changeset/cli-report-when-nothing-was-checked.md",
+      "sha256": "86fdff6c893d2b3a96e334b7acaa7d44971d17a6e514a1dc2ad07ecffc9e0364"
+    },
+    {
+      "path": ".changeset/cli-spec-manifest-from-docs.md",
+      "sha256": "1784e9552b318f9c5ea43b11d12b6bb2e36edaa7794a431d1a5fdd276afbaf73"
+    },
+    {
+      "path": ".changeset/cli-spec-template-copy-media-receipt.md",
+      "sha256": "4be0d60c3dcf0d23eae1476b6bc61643cde97b6d80133b55894414cfff2cecfd"
+    },
+    {
+      "path": ".changeset/cli-template-show-matches-copy.md",
+      "sha256": "c8058dd6772c044e1578a7feb358bda60aa7cb713255be78660b4e9110cb18ef"
+    },
+    {
+      "path": ".changeset/cli-write-failed-error-code.md",
+      "sha256": "b12f7e6ebc2b923a837b27226df76d4ba62527e9f9b098beeec864de4189320e"
+    },
+    {
+      "path": ".changeset/clickable-card-disabled-link.md",
+      "sha256": "1af3c1068ffc3548fe743f3972cedb68cee874d1d228b9659cee49018d31b1e8"
+    },
+    {
+      "path": ".changeset/code-api-discovery.md",
+      "sha256": "65e81c9cf5c985b9b602daa22c8ef8a4af71b2d993b88e19b8a93b5c4e7fb14f"
+    },
+    {
+      "path": ".changeset/codeblock-audit-contract.md",
+      "sha256": "ad6f6eb87ed9092ee370ba4e871cfd54d3ec2bedb866cf6d57e8ae4d6816fbef"
+    },
+    {
+      "path": ".changeset/collapsible-audit-theming.md",
+      "sha256": "a02cd967c3bc0cc8e6b20b938b39ac463de98e025453d85e7b9151cf47873513"
+    },
+    {
+      "path": ".changeset/collapsible-group-stable-context.md",
+      "sha256": "93a1e1dd224d53034f82468d4e7f4315c5946ff59991d49dc1815c4fffc9cd6a"
+    },
+    {
+      "path": ".changeset/command-palette-footer-audit.md",
+      "sha256": "5260ed412fc652721bb49d67e682c70a060edc70bbb3badeb621d34f8de97303"
+    },
+    {
+      "path": ".changeset/complex-selector-trigger.md",
+      "sha256": "08b998a06f678d0289e2ed5e5e3bf6522d354c1e35eaa9786bb55e887c3a0029"
+    },
+    {
+      "path": ".changeset/context-menu-trigger-as.md",
+      "sha256": "2e9536928141ddf321e3cbbe81e141c9a3b098e43d104285f89621e28d1a5a7b"
+    },
+    {
+      "path": ".changeset/data-vars-stylex-source.md",
+      "sha256": "466bfc191a78280ebeece21748f980d13a12187d06858cebcb4a43a09ab6b42d"
+    },
+    {
+      "path": ".changeset/decode-markdown-character-references.md",
+      "sha256": "ee7b37bbb48e8358e96d24e3b467c44a17a6a6a3d88c2e92c3f6539767f8244e"
+    },
+    {
+      "path": ".changeset/discover-no-source-message.md",
+      "sha256": "341a3c4cb189f7e4c7e1913535b3575837aff5697246aa93d4a3d417d49c34b1"
+    },
+    {
+      "path": ".changeset/discover-pointers.md",
+      "sha256": "2fc0efcb509f3bca241084dca38bd16d7096684dd23908d78255626feb6f10bd"
+    },
+    {
+      "path": ".changeset/docs-tree-cli-floor.md",
+      "sha256": "ed6464067ac28f191f1866976ddf8957214275f481629874ae8f7761522d75b0"
+    },
+    {
+      "path": ".changeset/dropdown-menu-group.md",
+      "sha256": "2de9e3e03fbc3ca962bb7d003a35718994477c035144a936b3231b0dae5583f7"
+    },
+    {
+      "path": ".changeset/empty-search-text-one-name.md",
+      "sha256": "caa24b795f90850ae44b973e6d30829dae3243eb31223f4005f6abcc49ef705f"
+    },
+    {
+      "path": ".changeset/field-shrinks-in-rows.md",
+      "sha256": "f565156d870a977bd9326cc3c379a6ca67a0c65eda2f571026368742c15bc427"
+    },
+    {
+      "path": ".changeset/gap-report-unloadable-integration.md",
+      "sha256": "7f6fd715a3fa30efbc0ab0ecebd492018ad509b1f04566d41f8b03ab538ffced"
+    },
+    {
+      "path": ".changeset/integration-add-theme-from-dependencies.md",
+      "sha256": "1abe968d6b41c4aeb62ec582e59fb825a43b87357b417488c9a003d1db3b5b8e"
+    },
+    {
+      "path": ".changeset/integration-add-theme-from.md",
+      "sha256": "9bc4c84efc1909c0a01d5ab9fe54bf8841776ec48b1b1011bac7f779f1470c12"
+    },
+    {
+      "path": ".changeset/integration-pack-points-at-verify.md",
+      "sha256": "fb885caab56f716816d04594cfd21e78d5144eb9f37487f183ffbab122eff7f4"
+    },
+    {
+      "path": ".changeset/layer-owns-the-viewport-inset.md",
+      "sha256": "b8c73d81621415cb9a10762f05c2147a3434deb9ce68220115ff442adc9e6cfc"
+    },
+    {
+      "path": ".changeset/layer-show-during-popover-operation.md",
+      "sha256": "39e3fa0c2acecf581acaee54baf4f7ed2f8fa14600a65f0037bef4c6226d2361"
+    },
+    {
+      "path": ".changeset/markdown-angle-destination-edges.md",
+      "sha256": "412ad150898b3358d554cc1a20cf16beb5e52f3013e8c45d7da6142d32ba0a72"
+    },
+    {
+      "path": ".changeset/markdown-backslash-escapes.md",
+      "sha256": "2476538d75257813e32b31e5002fb0a89da3c8dfcec39674d7d3d04cf9bba431"
+    },
+    {
+      "path": ".changeset/markdown-block-nesting-cap.md",
+      "sha256": "0df28efa249fed0a755a04153bf16dc353fd6fcf0339392a99be9b3fd2afe002"
+    },
+    {
+      "path": ".changeset/markdown-blockquote-markers.md",
+      "sha256": "b24e918b53fb148f7a1adb8e9ad4739b5cd42e26011c71c8c2c5a52cb68ee77d"
+    },
+    {
+      "path": ".changeset/markdown-bullet-change-new-list.md",
+      "sha256": "18b27dfbf2e0c209643037e27e9251518889aef19cb8f56c4dcef1f015d89a89"
+    },
+    {
+      "path": ".changeset/markdown-character-references.md",
+      "sha256": "c5eba3360e6b983e0d94faaf1cda1779b9fa3a44ae7dbf7792dc4a994fa42e22"
+    },
+    {
+      "path": ".changeset/markdown-code-span-runs.md",
+      "sha256": "1bd22ad671b4bf7a49a650fd4b6e7a54d5fc73eb96c5223258ffdc39086daa46"
+    },
+    {
+      "path": ".changeset/markdown-crlf-hard-breaks.md",
+      "sha256": "ec140ede5cc3aac836420026a71eeeadd1bb6ecbd1590b83702500c9c5d7a3fb"
+    },
+    {
+      "path": ".changeset/markdown-fence-info-leading-space.md",
+      "sha256": "0eb4e6851524f5cf06686a62ab614fd129eb5acfda18196e1f70e804ebe3035c"
+    },
+    {
+      "path": ".changeset/markdown-heading-permalinks.md",
+      "sha256": "eb9705dc3c840bdc02571668913e273708fded90ac566905cf069fcda665dfe6"
+    },
+    {
+      "path": ".changeset/markdown-image-alt-plain-text.md",
+      "sha256": "6f2ec1ebc43700b53eb2cfc05618dde1130185c81f099de77b6922cfdc23b59e"
+    },
+    {
+      "path": ".changeset/markdown-image-alt-references.md",
+      "sha256": "3b98ceda682097f6049a84d513133318dd29f3a26f05123aebde8314cf6338ce"
+    },
+    {
+      "path": ".changeset/markdown-indented-atx-headings.md",
+      "sha256": "1f0a9123f345dd88b21e9362e06a9d3dc88307ad636b07fdde1bdf61d5b7e00e"
+    },
+    {
+      "path": ".changeset/markdown-indented-fences.md",
+      "sha256": "10dfe78c99386151aea810f3b5dd4a56ae6d453160b4584f715c54e2c0c06ccf"
+    },
+    {
+      "path": ".changeset/markdown-invalid-angle-destinations.md",
+      "sha256": "ae9897453e43bc05c4cf043fbba8cd1b27b72d44755ca35e47201093b42b1445"
+    },
+    {
+      "path": ".changeset/markdown-lazy-continuation-linear.md",
+      "sha256": "7af6fd158e26736285a3986e1c03d4bfd285fda5a683d53417f2bc2944e9e518"
+    },
+    {
+      "path": ".changeset/markdown-link-destination-linear.md",
+      "sha256": "283ad740bc867813f0b9b25ed04f0372a79a8023c7d231b9de0ce46e33d2991b"
+    },
+    {
+      "path": ".changeset/markdown-link-destinations.md",
+      "sha256": "aec8d8015a6659a183b8cceb5806aac06da471a1a0a90d677a6eb928850abb77"
+    },
+    {
+      "path": ".changeset/markdown-link-text-brackets.md",
+      "sha256": "bff316a55f4f8018686166016071f789c624ba0da8ed4d9a810c6a7ec5de9e9c"
+    },
+    {
+      "path": ".changeset/markdown-link-text-code-spans.md",
+      "sha256": "207781e03b0fa10005b1c38f7323d7fc8b0a63b66665ff683b9e04db81c949f6"
+    },
+    {
+      "path": ".changeset/markdown-link-title-destination.md",
+      "sha256": "a15067d1c487b57df4a884c43884850b8309db85bc32cf306b4cb2e94d9339cb"
+    },
+    {
+      "path": ".changeset/markdown-list-item-blank-line-continuation.md",
+      "sha256": "ec4b7615c77cc938fe9eb2e0256629c524eb43ed7d7bbd90144d619a5d18ea24"
+    },
+    {
+      "path": ".changeset/markdown-list-marker-cycle.md",
+      "sha256": "2a951f899d26a630d53eb016b12f6125c66337ad85e9a87f460d167d872d412f"
+    },
+    {
+      "path": ".changeset/markdown-mixed-task-list.md",
+      "sha256": "f6f2c752d78b28a3c2104c1dff0f77e568c3969c35f7f4706d8244f177c4d0b5"
+    },
+    {
+      "path": ".changeset/markdown-nested-emphasis.md",
+      "sha256": "b61dfcc600df6a034b153f3be242ddc06d4a0308f3d5b5ceb37654fd6bc293a8"
+    },
+    {
+      "path": ".changeset/markdown-plugin-node-renderer.md",
+      "sha256": "40c4654f490ec424316a90da53cc96be24e7446c0b12d7b6f07afba04b8af1d7"
+    },
+    {
+      "path": ".changeset/markdown-streaming-first-line-indent.md",
+      "sha256": "88554ae14a6eee5203928a5701f1cf7ef1d4d1101ccad9ab085f0bf6325fd41b"
+    },
+    {
+      "path": ".changeset/markdown-thematic-break-ends-list.md",
+      "sha256": "00acbd6ac69644f09c972b2367b6d4a74fadf9c5afd3a7cfee855386d267950f"
+    },
+    {
+      "path": ".changeset/markdown-trailing-spaces-linear.md",
+      "sha256": "db325b7040f4caf0d85b10b7bbea06eb6d43530d8b1669f60e22ff188ee9329a"
+    },
+    {
+      "path": ".changeset/menu-close-focus.md",
+      "sha256": "b4db4abee703c5d5d37e1639b1af267a70c6bedc3b0a13412798970c76a573ee"
+    },
+    {
+      "path": ".changeset/menu-custom-trigger.md",
+      "sha256": "5376578ec785a8cbc55193817af58c949a6f7b9343227cf23087124df01f4db8"
+    },
+    {
+      "path": ".changeset/menu-hover-disabled-midhover.md",
+      "sha256": "0e05eabe9891fb72099c024edea7ee26eee47baaaa2e90f9251111f3db34abfe"
+    },
+    {
+      "path": ".changeset/menu-keyboard.md",
+      "sha256": "f8ae696babbcffc227825f30d9067933d0f94ba1e9899dc0c4c8be65f5e3512b"
+    },
+    {
+      "path": ".changeset/menu-link-rows.md",
+      "sha256": "569cfe6d70ba9089249f4099c3e3f8fdb440baf8a3cf8d7210389bcde796c9fd"
+    },
+    {
+      "path": ".changeset/menu-max-height.md",
+      "sha256": "9494f8257d6db6cba451b5fe02728f5702a3b3b5f33edb51c831b722e0474b8a"
+    },
+    {
+      "path": ".changeset/menu-press-model.md",
+      "sha256": "8339287ecc61d9052b6ca3483adfdff6eb369f177a0f0cfc3d18a388a65d5269"
+    },
+    {
+      "path": ".changeset/menu-press-trigger.md",
+      "sha256": "9c5a12a1898d6151ff4fb805de51492555db908527b64ec5e3e500697e5ae54f"
+    },
+    {
+      "path": ".changeset/menu-submenu-drill-in.md",
+      "sha256": "849eaadb365cf51a4c2b8eb4d666bc3ab963282709ab6308295448d2d18b760a"
+    },
+    {
+      "path": ".changeset/multi-selector-create-row.md",
+      "sha256": "d76ba60d6ef36d7b124dae85701ed5f8fc62fd6141a2059272cd474be136ca05"
+    },
+    {
+      "path": ".changeset/multi-selector-trigger.md",
+      "sha256": "400401dfc3a62a7c1e9903f8fec092517126891941705cdbf45b4ad46732b714"
+    },
+    {
+      "path": ".changeset/nested-layout-outer-padding.md",
+      "sha256": "a88bd42fa6eb3db530d6546fc3d0fbc28bba4bf47de9d83d54aa86a6ef07932e"
+    },
+    {
+      "path": ".changeset/outline-visible-focus.md",
+      "sha256": "138956c1570dcbaeb51ce3fe01d0844ae967bfd1248824a96632996ead190b33"
+    },
+    {
+      "path": ".changeset/powersearch-reopen-focused-input.md",
+      "sha256": "02c162c2dc4615979eadd18752444a015082666723977e50ae23a6f665a01119"
+    },
+    {
+      "path": ".changeset/preserve-consumer-classname-on-togglebutton-whil-rmtl.md",
+      "sha256": "f54f90dc96c770327d2fe941424fa1c5bb94e5cfd44df461772d2899e4d9929c"
+    },
+    {
+      "path": ".changeset/safe-url-scheme-spaces.md",
+      "sha256": "208ffa04ed26aa4126306754ad8492b34375372d4a43562d6a6e9fadef5e5fdc"
+    },
+    {
+      "path": ".changeset/search-quality-scoring-tie.md",
+      "sha256": "bd674069808dcb4e7dd13089593c9b76ae587697bbff6e8f2b83cf908192525b"
+    },
+    {
+      "path": ".changeset/search-theme-description-prose.md",
+      "sha256": "d2ae2afc44828e3ffbe57b7aaaeafc1b0494eec32bb42ad969ad1d30fe35011c"
+    },
+    {
+      "path": ".changeset/steady-chat-follow.md",
+      "sha256": "3762fdc1566d59ed169453aff08a9443f1f48457a0c4e6788a1127a5626acb71"
+    },
+    {
+      "path": ".changeset/submenu-safe-triangle.md",
+      "sha256": "420b96a0e41122bb9ed3393f8c39b12a1eea45312892a92e2bb682bfee173d19"
+    },
+    {
+      "path": ".changeset/theme-and-section-id-cli-floor.md",
+      "sha256": "0b271bbec8289e2b1414a3d68c831bc2299f95824a7df6e26bf6aa7781a9dac7"
+    },
+    {
+      "path": ".changeset/theme-build-icon-detection-no-longer-reads-comme-knch.md",
+      "sha256": "de3e8e6f90bde943600f65a974664cebd1366a58940d3c1abe91dee0a21aebbc"
+    },
+    {
+      "path": ".changeset/theme-build-uses-the-app-core.md",
+      "sha256": "6f9b2006288f624a37cb4ead115a57f0ee06564d94efab1b7a3662ae2be726cf"
+    },
+    {
+      "path": ".changeset/toolbar-center-slot-unclipped.md",
+      "sha256": "c30b1d73a84ae4785f1426c5e6e006c8b1855e603043d8af28bf91d6b1ba3ab2"
+    },
+    {
+      "path": ".changeset/touch-press-controller.md",
+      "sha256": "9aff4fc005d6e33ea26cef10e54afb8887718bded881c07df4727a1b306dfcaa"
+    },
+    {
+      "path": ".changeset/typeahead-tokenizer-dom-props.md",
+      "sha256": "00e4da0e7d5244c4ba76f878829fc5b14b750416116240d91731ae7e6606675d"
+    }
+  ]
+}
