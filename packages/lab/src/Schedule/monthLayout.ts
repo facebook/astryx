@@ -13,6 +13,7 @@ import {
   plainDateFromInstant,
   plainDateIsAfter,
   plainDateIsBefore,
+  plainDateToInstant,
   type PlainDate,
 } from '@astryxdesign/core/utils';
 import {isDayEvent} from './dateMath';
@@ -51,6 +52,8 @@ interface RangedEvent {
   readonly startIndex: number;
   readonly endIndex: number;
   readonly isPriority: boolean;
+  /** The event's start instant; a date-only event starts at its first midnight. */
+  readonly start: number;
 }
 
 /**
@@ -97,6 +100,9 @@ export function layoutMonthEvents(
           startIndex,
           endIndex,
           isPriority: isDayEvent(event) || endIndex > startIndex,
+          start: isDayEvent(event)
+            ? plainDateToInstant(event.start, timezoneID)
+            : event.start,
         },
       ];
     })
@@ -186,8 +192,9 @@ export function layoutMonthEvents(
 
 /**
  * First day, then all-day and multi-day events before single-day timed ones,
- * then longer events, then title, then id, so the layout depends on the data
- * alone and never on input order.
+ * then events covering more days, then earlier starts, then title, then id.
+ * The layout depends on the data alone, never on input order, and a busy day
+ * paints its earliest events.
  */
 function compareRangedEvents(a: RangedEvent, b: RangedEvent): number {
   if (a.startIndex !== b.startIndex) {
@@ -200,6 +207,9 @@ function compareRangedEvents(a: RangedEvent, b: RangedEvent): number {
     b.endIndex - b.startIndex - (a.endIndex - a.startIndex);
   if (durationDifference !== 0) {
     return durationDifference;
+  }
+  if (a.start !== b.start) {
+    return a.start - b.start;
   }
   const titleOrder = a.event.title.localeCompare(b.event.title);
   if (titleOrder !== 0) {

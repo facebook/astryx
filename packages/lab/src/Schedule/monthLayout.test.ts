@@ -159,6 +159,116 @@ describe('layoutMonthEvents', () => {
     }
   });
 
+  it('paints the earliest events of a busy day, whatever their titles', () => {
+    // Title order and start order disagree: Zulu is first by start time.
+    const events = [
+      ...BUSY_WEDNESDAY.slice(0, 3),
+      timed('zulu', '2026-05-13', 8, 'Zulu standup'),
+      timed('alpha-late', '2026-05-13', 16, 'Alpha retro'),
+      timed('mike', '2026-05-13', 12, 'Mike lunch'),
+    ];
+    const layout = layoutMonthEvents(events, WEEK, TIMEZONE);
+    expect(
+      layout.chips
+        .filter(chip => chip.week === 0 && chip.columnStart === 3)
+        .map(chip => chip.event.id),
+    ).toEqual(['zulu']);
+    expect(overflowKeys(layout)).toEqual(['3+3']);
+  });
+
+  it('never hides a timed event that starts before a painted one on the same day', () => {
+    // A seeded walk through many busy fortnights: on every day, each
+    // single-day timed event behind "+N more" starts no earlier than every
+    // single-day timed chip painted that day.
+    let seed = 7;
+    const random = () => {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return seed / 2147483648;
+    };
+    for (let run = 0; run < 200; run += 1) {
+      const events: CalendarEvent[] = [];
+      const count = 4 + Math.floor(random() * 14);
+      for (let index = 0; index < count; index += 1) {
+        const startDay = 10 + Math.floor(random() * 14);
+        const day = `2026-05-${String(startDay).padStart(2, '0')}`;
+        if (random() < 0.3) {
+          const endDay = Math.min(23, startDay + Math.floor(random() * 4));
+          events.push(
+            allDay(
+              `span-${index}`,
+              day,
+              `2026-05-${String(endDay).padStart(2, '0')}`,
+            ),
+          );
+        } else {
+          events.push(
+            timed(
+              `timed-${index}`,
+              day,
+              Math.floor(random() * 23),
+              `${String.fromCharCode(90 - index)} meeting`,
+            ),
+          );
+        }
+      }
+      const layout = layoutMonthEvents(events, TWO_WEEKS, TIMEZONE);
+      // The days each event covers, from its layout alone.
+      const covered = new Map(
+        events.map(event => [
+          event.id,
+          new Set(
+            layoutMonthEvents([event], TWO_WEEKS, TIMEZONE).chips.flatMap(
+              chip =>
+                Array.from(
+                  {length: chip.columnEnd - chip.columnStart + 1},
+                  (_, offset) => chip.week * 7 + chip.columnStart + offset,
+                ),
+            ),
+          ),
+        ]),
+      );
+      TWO_WEEKS.forEach((_, dayIndex) => {
+        const week = Math.floor(dayIndex / 7);
+        const column = dayIndex % 7;
+        const timedOnDay = events.filter(
+          event =>
+            typeof event.start === 'number' &&
+            new Date(event.start).getUTCDate() === 10 + dayIndex,
+        );
+        const paintedIDs = new Set(
+          layout.chips
+            .filter(
+              chip =>
+                chip.week === week &&
+                chip.columnStart <= column &&
+                column <= chip.columnEnd,
+            )
+            .map(chip => chip.event.id),
+        );
+        // Every event of the day is painted or counted (FR16).
+        const onDay = events.filter(event =>
+          covered.get(event.id)?.has(dayIndex),
+        ).length;
+        const counted =
+          layout.overflow.find(day => day.dayIndex === dayIndex)?.count ?? 0;
+        expect(paintedIDs.size + counted, `run ${run}, day ${dayIndex}`).toBe(
+          onDay,
+        );
+        const painted = timedOnDay.filter(event => paintedIDs.has(event.id));
+        const hidden = timedOnDay.filter(event => !paintedIDs.has(event.id));
+        const latestPainted = Math.max(
+          ...painted.map(event => Number(event.start)),
+        );
+        for (const event of hidden) {
+          expect(
+            Number(event.start),
+            `run ${run}, day ${dayIndex}: ${event.id} is hidden behind a later chip`,
+          ).toBeGreaterThanOrEqual(latestPainted);
+        }
+      });
+    }
+  });
+
   it('orders identical events by id', () => {
     const events = [
       timed('pair-b', '2026-05-12', 9, 'Pair review'),
