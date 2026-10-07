@@ -22,16 +22,23 @@
 
 import {useEffect, useMemo, type ReactNode} from 'react';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
+import {useLexicalNodeSelection} from '@lexical/react/useLexicalNodeSelection';
 import type {Transformer} from '@lexical/markdown';
-import {$dfs} from '@lexical/utils';
+import {
+  $dfs,
+  addClassNamesToElement,
+  removeClassNamesFromElement,
+} from '@lexical/utils';
 import {
   $getSelection,
   $isRangeSelection,
+  CLICK_COMMAND,
   COMMAND_PRIORITY_LOW,
   FORMAT_TEXT_COMMAND,
   HISTORY_MERGE_TAG,
   TEXT_TYPE_TO_FORMAT,
   type LexicalEditor,
+  type NodeKey,
   type RangeSelection,
   type TextFormatType,
 } from 'lexical';
@@ -102,12 +109,54 @@ const NODE_FORMATS: ReadonlySet<TextFormatType> = new Set(
 function ExtensionNodeView({
   facts,
   format,
+  nodeKey,
   plugins,
 }: {
   facts: RichTextExtensionNodeFacts;
   format: number;
+  nodeKey: NodeKey;
   plugins: ReadonlyArray<MarkdownPluginEntry>;
 }): ReactNode {
+  const [editor] = useLexicalComposerContext();
+  const [isSelected, setSelected, clearSelection] =
+    useLexicalNodeSelection(nodeKey);
+  // A click on the node selects it whole, as a click on a rule does, so a
+  // pointer user can format or delete it like a keyboard user.
+  useEffect(
+    () =>
+      editor.registerCommand(
+        CLICK_COMMAND,
+        event => {
+          const element = editor.getElementByKey(nodeKey);
+          if (
+            !editor.isEditable() ||
+            element == null ||
+            !(event.target instanceof Node) ||
+            !element.contains(event.target)
+          ) {
+            return false;
+          }
+          clearSelection();
+          setSelected(true);
+          return true;
+        },
+        COMMAND_PRIORITY_LOW,
+      ),
+    [clearSelection, editor, nodeKey, setSelected],
+  );
+  // A selected node shows the focus ring a selected rule shows.
+  useEffect(() => {
+    const element = editor.getElementByKey(nodeKey);
+    const className: unknown = editor._config.theme.markdownExtensionSelected;
+    if (element == null || typeof className !== 'string' || className === '') {
+      return;
+    }
+    if (isSelected) {
+      addClassNamesToElement(element, className);
+    } else {
+      removeClassNamesFromElement(element, className);
+    }
+  }, [editor, isSelected, nodeKey]);
   const node = useMemo(
     () => deriveExtensionNode(facts, plugins),
     [facts, plugins],
@@ -177,9 +226,17 @@ export function MarkdownExtensionsPlugin({
   );
 
   useEffect(() => {
-    const unset = setRichTextExtensionNodeDecorator(editor, (facts, format) => (
-      <ExtensionNodeView facts={facts} format={format} plugins={plugins} />
-    ));
+    const unset = setRichTextExtensionNodeDecorator(
+      editor,
+      (facts, format, nodeKey) => (
+        <ExtensionNodeView
+          facts={facts}
+          format={format}
+          nodeKey={nodeKey}
+          plugins={plugins}
+        />
+      ),
+    );
     redrawExtensionNodes(editor);
     return () => {
       unset();

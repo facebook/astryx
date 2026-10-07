@@ -88,6 +88,7 @@ import {
   IS_APPLE,
   isExactShortcutMatch,
   $getSelection,
+  $isNodeSelection,
   $isRangeSelection,
   $setSelection,
   $createParagraphNode,
@@ -509,11 +510,13 @@ export function RichTextEditorToolbar({
 
   const $syncToolbar = useCallback(() => {
     const selection = $getSelection();
-    if (!$isRangeSelection(selection)) {
+    if (!$isRangeSelection(selection) && !$isNodeSelection(selection)) {
       return;
     }
     const formats = new Set<string>();
-    // A selection of Markdown plugin nodes alone shows their formats.
+    // A selection of Markdown plugin nodes alone — a range around them, or
+    // a node selection from a click — shows their formats. Any other node
+    // selection, such as a rule, has none.
     const nodesOnly = $selectedExtensionNodesOnly(selection);
     for (const fmt of [
       'bold',
@@ -525,12 +528,15 @@ export function RichTextEditorToolbar({
       if (
         nodesOnly != null
           ? nodesOnly.every(node => node.hasFormat(fmt))
-          : selection.hasFormat(fmt)
+          : $isRangeSelection(selection) && selection.hasFormat(fmt)
       ) {
         formats.add(fmt);
       }
     }
     setActiveFormats(formats);
+    if (!$isRangeSelection(selection)) {
+      return;
+    }
 
     // Link active state — a link is "active" when the caret/selection anchor
     // sits inside a LinkNode (or its immediate parent is one):

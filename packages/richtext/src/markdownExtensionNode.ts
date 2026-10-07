@@ -18,6 +18,7 @@
  */
 
 import {
+  $isNodeSelection,
   $isTextNode,
   DecoratorNode,
   TEXT_TYPE_TO_FORMAT,
@@ -28,6 +29,7 @@ import {
   type LexicalEditor,
   type LexicalNode,
   type NodeKey,
+  type NodeSelection,
   type RangeSelection,
   type TextNode,
   type SerializedLexicalNode,
@@ -71,12 +73,14 @@ export function factsFrom(
 
 /**
  * Draws a plugin node's content in one editor, inside the text formats the
- * node sits in. The client surfaces register one (MarkdownExtensionsPlugin);
- * without one, a node shows its source.
+ * node sits in; `nodeKey` lets it select the node. The client surfaces
+ * register one (MarkdownExtensionsPlugin); without one, a node shows its
+ * source.
  */
 export type RichTextExtensionNodeDecorator = (
   facts: RichTextExtensionNodeFacts,
   format: number,
+  nodeKey: NodeKey,
 ) => unknown;
 
 const decorators = new WeakMap<LexicalEditor, RichTextExtensionNodeDecorator>();
@@ -252,7 +256,7 @@ export class RichTextExtensionNode extends DecoratorNode<unknown> {
 
   decorate(editor: LexicalEditor): unknown {
     return (
-      decorators.get(editor)?.(this.__facts, this.__format) ??
+      decorators.get(editor)?.(this.__facts, this.__format, this.__key) ??
       this.__facts.source
     );
   }
@@ -301,12 +305,21 @@ export function $firstSelectedText(selection: RangeSelection): TextNode | null {
 }
 
 /**
- * The inline plugin nodes a range selects when it selects no text, only
- * nodes; null otherwise. A format shown or toggled then belongs to them.
+ * The inline plugin nodes a selection holds when it holds nothing else: a
+ * range that selects no text, only nodes, or a node selection of plugin
+ * nodes alone. Null otherwise. A format shown or toggled then belongs to
+ * them.
  */
 export function $selectedExtensionNodesOnly(
-  selection: RangeSelection,
+  selection: RangeSelection | NodeSelection,
 ): RichTextExtensionNode[] | null {
+  if ($isNodeSelection(selection)) {
+    const selected = selection.getNodes();
+    return selected.length > 0 &&
+      selected.every(node => $isRichTextExtensionNode(node) && node.isInline())
+      ? (selected as RichTextExtensionNode[])
+      : null;
+  }
   const nodes = selection
     .getNodes()
     .filter(

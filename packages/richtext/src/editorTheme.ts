@@ -345,8 +345,8 @@ const editorTheme = stylex.create({
       ':last-child': spacingVars['--spacing-0'],
     },
   },
-  // A selected rule (click, or arrow onto it) shows the focus ring, so
-  // keyboard users can see what Backspace will delete.
+  // A selected rule (click, or arrow onto it) or Markdown plugin node (click)
+  // shows the focus ring, so users can see what Backspace will delete.
   hrSelected: {
     outlineWidth: focusVars['--focus-outline-width'],
     outlineStyle: focusVars['--focus-outline-style'],
@@ -454,6 +454,8 @@ export function sharedEditorTheme(): EditorThemeClasses {
     code: `${block(editorTheme.code)} ${CODE_SYNTAX_CLASS}`,
     hr: stylex.props(editorTheme.hr).className,
     hrSelected: stylex.props(editorTheme.hrSelected).className,
+    // MarkdownExtensionsPlugin puts it on a selected plugin node.
+    markdownExtensionSelected: stylex.props(editorTheme.hrSelected).className,
     table: block(editorTheme.table),
     // Lexical stamps rows and cells `dir="auto"` too, which would set a cell
     // of English text left-to-right inside a right-to-left document.

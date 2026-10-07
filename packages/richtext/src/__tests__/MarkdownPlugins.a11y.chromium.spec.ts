@@ -248,6 +248,77 @@ test('the toolbar shows the format of a plugin node selected alone', async ({
   expect(errors).toEqual([]);
 });
 
+/** How many nodes the editor's selection holds as a node selection; 0 else. */
+function editorNodeSelectionSize(page: Page): Promise<number> {
+  return surface(page, 'editor')
+    .locator('[contenteditable="true"]')
+    .evaluate(root => {
+      const editor = (
+        root as HTMLElement & {
+          __lexicalEditor?: {
+            getEditorState(): {_selection: {_nodes?: Set<string>} | null};
+          };
+        }
+      ).__lexicalEditor;
+      return editor?.getEditorState()._selection?._nodes?.size ?? 0;
+    });
+}
+
+test('a click selects a plugin node whole, with the focus ring, to format or delete it', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  const mention = surface(page, 'editor')
+    .locator('[contenteditable="true"] [data-markdown-extension]')
+    .first();
+  await expect(mention).toHaveCSS('outline-style', 'none');
+  await mention.click();
+  await expect.poll(() => editorNodeSelectionSize(page)).toBe(1);
+  await expectEditorSelection(page, '@{ada}');
+  await expect(mention).not.toHaveCSS('outline-style', 'none');
+  await page.keyboard.press('ControlOrMeta+b');
+  expect(await markdownOutput(page)).toContain('Ping **@{ada}** about');
+  // A click in the text takes the selection, and the ring, off the node.
+  await caretAt(page, 2);
+  await expect.poll(() => editorNodeSelectionSize(page)).toBe(0);
+  await expect(mention).toHaveCSS('outline-style', 'none');
+  await mention.click();
+  await expect.poll(() => editorNodeSelectionSize(page)).toBe(1);
+  await page.keyboard.press('Backspace');
+  expect(await markdownOutput(page)).toContain('Ping  about');
+  expect(errors).toEqual([]);
+});
+
+test('the toolbar shows the format of a plugin node selected with a click', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  const bold = surface(page, 'editor').getByRole('button', {name: 'Bold'});
+  const mention = surface(page, 'editor')
+    .locator('[contenteditable="true"] [data-markdown-extension]')
+    .first();
+  // Bold text, with the caret in it.
+  await surface(page, 'editor')
+    .locator('[contenteditable="true"]')
+    .getByText('Ping', {exact: false})
+    .first()
+    .click();
+  await page.keyboard.press('ControlOrMeta+b');
+  await page.keyboard.type('Z');
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+  // A click on the plain node shows the node's own format.
+  await mention.click();
+  await expect.poll(() => editorNodeSelectionSize(page)).toBe(1);
+  await expect(bold).toHaveAttribute('aria-pressed', 'false');
+  // Bold then makes the node bold, and shows it.
+  await bold.click();
+  await expect(
+    surface(page, 'editor').locator('strong [data-mention="ada"]'),
+  ).toHaveCount(1);
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+  expect(errors).toEqual([]);
+});
+
 test('a copied plugin node pastes whole, drawn where the plugin is given and as source where it is not', async ({
   page,
 }) => {
