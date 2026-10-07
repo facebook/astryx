@@ -684,10 +684,11 @@ export class Project {
 
   /**
    * Integration component replacements (spec:AST-035 FR10–FR15): the active
-   * replacement for each replaced Core component. Each finding joins the
-   * project's integration issues under the package that declares it; a
-   * package without the CLI floor only ever gets warnings. Memoized per
-   * instance.
+   * replacement for each replaced Core component. A finding about a package
+   * that declares the CLI floor joins the project's integration issues under
+   * that package. A package without the floor adds nothing to an app's
+   * output (FR15); its author sees the findings in `doctor integration
+   * components`. Memoized per instance.
    *
    * @returns {Promise<import('../discovery/component-replacement.mjs').ComponentReplacements>}
    */
@@ -698,6 +699,7 @@ export class Project {
         this.#loadedIntegrations,
       );
       for (const finding of replacements.findings) {
+        if (!finding.optedIn) continue;
         this.#pushIssue(finding.package, {
           code: finding.code,
           severity: finding.severity,

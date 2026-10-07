@@ -121,6 +121,7 @@ describe('resolveComponentReplacements', () => {
       expect(codes(result)).toEqual([
         'warning:inactive_component_replacement:OldTopNav',
       ]);
+      expect(result.findings[0].optedIn).toBe(false);
       expect(result.findings[0].message).toContain(
         `">=${COMPONENT_REPLACES_CLI}"`,
       );
@@ -140,6 +141,9 @@ describe('resolveComponentReplacements', () => {
     expect(
       result.findings.every(finding => finding.severity === 'warning'),
     ).toBe(true);
+    expect(result.findings.every(finding => finding.optedIn === false)).toBe(
+      true,
+    );
     expect(codes(result)).toEqual(
       expect.arrayContaining([
         'warning:missing_component_replacement_target:Missing',
@@ -173,6 +177,9 @@ describe('resolveComponentReplacements', () => {
     expect(
       result.findings.find(f => f.component === 'WrongCase')?.message,
     ).toContain('Core names it "SideNav"');
+    expect(result.findings.every(finding => finding.optedIn === true)).toBe(
+      true,
+    );
     // Nothing replaces Core: neither the duplicated target nor the target of a
     // component named after another Core component.
     expect(result.active).toEqual([]);

@@ -121,8 +121,10 @@ access to the Core original.
   component from another package whose own name is the replaced Core name is shadowed
   for unqualified lookup, stays addressable through its package, and Doctor warns.
 - **FR15 — A package without the floor keeps its released behavior.** Its component
-  `replaces` declarations never apply. Every finding about them, including the one
-  that names the FR10 range, is a warning, so no command's result or exit code changes
+  `replaces` declarations never apply, and an app that loads the package sees no new
+  output from them. Every finding about them, including the one that names the FR10
+  range, is a warning reported to the package's author by
+  `astryx doctor integration components`, so no command's result or exit code changes
   because of them. `integration pack --check` warns, and never fails, when a component
   sets `replaces` and the package's range admits an earlier stable CLI.
 
@@ -174,8 +176,8 @@ selectors, every list detail level, search, swizzle copy, gap-report routing, Pr
 issues, and `astryx doctor integration components` read its result. Stable CLI
 releases before `COMPONENT_REPLACES_CLI` accept a component `replaces` and ignore it,
 and an integration package published for them declares no range that reaches it. Its
-components keep their names, the Core components stay selected, and the only addition
-it sees is warnings. Under `spec:AST-017/FR1` and FR5, component
+components keep their names, the Core components stay selected, an app that loads it
+sees no new output, and its author sees warnings in the package checks. Under `spec:AST-017/FR1` and FR5, component
 replacement is a `[feat]` patch.
 
 ## Verification

@@ -87,7 +87,7 @@ export default {
           type: 'list',
           style: 'unordered',
           items: [
-            'Without that range, the component keeps its own name, the Core component stays selected, and Doctor warns with the range to add. A package published before the range existed keeps working exactly as it did.',
+            'Without that range, the component keeps its own name, the Core component stays selected, and `doctor integration components` warns with the range to add. Apps that load a package published before the range existed see no change.',
             '`replaces` names the Core `ComponentDoc` identity, not its display label, import path, or a standalone hook.',
             'Your component may keep a distinct name or use the same name as the target. A distinct name remains directly addressable on older CLIs that ignore `replaces`.',
             '`--package @astryxdesign/core` always selects the original Core component.',
@@ -109,7 +109,7 @@ export default {
           type: 'list',
           style: 'unordered',
           items: [
-            'Once the package declares the range, a missing target, invalid value, second replacement for one target in the same package, or a replacement named after a different Core component is an error. Without the range, Doctor reports each of these as a warning.',
+            'Once the package declares the range, a missing target, invalid value, second replacement for one target in the same package, or a replacement named after a different Core component is an error. Without the range, `doctor integration components` reports each of these as a warning.',
             'When several integrations replace one target, explicit configuration beats the automatic pick. Among explicitly configured integrations, the later package wins and Doctor warns. Among autolinked integrations alone, the dependency listed later in `package.json` wins and Doctor warns.',
           ],
         },

@@ -308,7 +308,7 @@ describe('a package published without the CLI floor', () => {
   );
 
   it(
-    'reports every finding as a warning',
+    'reports every finding to its author as a warning, and nothing to the app',
     async () => {
       const checked = await integrationComponentConflicts('@acme/old', {
         cwd: tmpDir,
@@ -324,12 +324,14 @@ describe('a package published without the CLI floor', () => {
           'warning:missing_component_replacement_target',
         ].sort(),
       );
+      // Project issues feed project Doctor and the everyday-command nudge: an
+      // app that loads a package without the floor sees nothing new.
       const project = await Project.load(tmpDir);
-      const issues = (await project.issues()).filter(issue =>
-        /component/.test(issue.code),
-      );
-      expect(issues.length).toBeGreaterThan(0);
-      expect(issues.every(issue => issue.severity === 'warning')).toBe(true);
+      expect(
+        (await project.issues()).filter(issue =>
+          /replacement/.test(issue.code),
+        ),
+      ).toEqual([]);
     },
     SLOW,
   );

@@ -44,6 +44,10 @@ import {
  * @property {'missing_component_replacement_target' | 'invalid_component_replacement' | 'ambiguous_component_replacement' | 'inactive_component_replacement' | 'shadowed_component_name'} code
  * @property {'warning' | 'error'} severity
  * @property {string} message
+ * @property {boolean} optedIn whether the finding is about a package that
+ *   declares the CLI floor. Project issues and the everyday-command nudge
+ *   carry only these; a package without the floor is reported to its author
+ *   through `doctor integration components` and the pack check alone.
  */
 
 /**
@@ -257,6 +261,7 @@ export async function resolveComponentReplacements(
       code,
       severity: declaration.optedIn ? 'error' : 'warning',
       message,
+      optedIn: declaration.optedIn,
     });
   };
 
@@ -280,6 +285,7 @@ export async function resolveComponentReplacements(
         code: 'inactive_component_replacement',
         severity: 'warning',
         message: `Component "${name}" sets \`replaces: ${JSON.stringify(shown)}\`. ${inactiveTail(name, shown)}`,
+        optedIn: false,
       });
     }
     if (typeof replaces !== 'string' || replaces.trim() === '') {
@@ -397,6 +403,7 @@ export async function resolveComponentReplacements(
         code: 'ambiguous_component_replacement',
         severity: 'warning',
         message: `Core component "${target}" is replaced by ${packages}. ${reason}`,
+        optedIn: true,
       });
     }
     const active = {
@@ -426,6 +433,7 @@ export async function resolveComponentReplacements(
         code: 'shadowed_component_name',
         severity: 'warning',
         message: `Component "${native.name}" from ${native.package} is shadowed by "${winner.name}" from ${winner.package}, which replaces Core "${target}". Select it with --package ${native.package}.`,
+        optedIn: true,
       });
     }
   }
