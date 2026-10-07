@@ -674,6 +674,9 @@ function resolveOptions(
 const LINK_DEFINITION_RE =
   /^ {0,3}\[([^\]^](?:\\.|[^\]\\])*)\]:[ \t]*(?:<([^<>\n]*)>|(\S+))([ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^()\n]*\)))?[ \t]*$/;
 
+/** The most characters a link label may hold (CommonMark 0.31 §4.7). */
+const MAX_LINK_LABEL_LENGTH = 999;
+
 // A line that is nothing but a title — the continuation form allowed when a
 // definition's destination is followed by its title on the next line.
 const LINK_TITLE_ONLY_RE = /^ {0,3}(?:"[^"\n]*"|'[^'\n]*'|\([^()\n]*\))[ \t]*$/;
@@ -831,7 +834,9 @@ function matchLinkDefinition(
   line: string,
 ): {label: string; destination: string; hasTitle: boolean} | null {
   const match = LINK_DEFINITION_RE.exec(line);
-  if (match == null) {
+  // A longer label defines nothing, so the line stays text, as a reference
+  // with that label does.
+  if (match == null || match[1].length > MAX_LINK_LABEL_LENGTH) {
     return null;
   }
   const label = normalizeLinkLabel(match[1]);
@@ -1476,9 +1481,6 @@ interface InlineIndex {
    */
   openerClose(open: number): number;
 }
-
-/** The most characters a link label may hold (CommonMark 0.31 §4.7). */
-const MAX_LINK_LABEL_LENGTH = 999;
 
 function inlineIndexOf(
   text: string,
