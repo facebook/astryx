@@ -58,6 +58,7 @@ import {
   getEventCategory,
   getMinutesSinceStartOfDay,
   isEventInPast,
+  SchedulePopoverBody,
   ScheduleTime,
   styles,
 } from './shared';
@@ -657,8 +658,10 @@ export function TimeGridView({
       </div>
       {hasPopover &&
         popover.render(
-          openContent == null ? null : (
-            <div {...stylex.props(styles.eventPopoverBody)}>{openContent}</div>
+          openContent == null || openEvent == null ? null : (
+            <SchedulePopoverBody label={`${openEvent.title} details`}>
+              {openContent}
+            </SchedulePopoverBody>
           ),
           {
             placement: 'below',

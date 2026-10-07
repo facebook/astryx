@@ -11,6 +11,7 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {useScrollableArea} from '@astryxdesign/core/hooks';
 import {getLocaleDirection, type Locale} from '@astryxdesign/core/i18n';
 import {
   borderVars,
@@ -202,6 +203,33 @@ export function ScheduleRangeMonthTitle({
 export function ScheduleTime({children}: {children: ReactNode}) {
   const {locale} = useScheduleContext();
   return <bdi dir={getLocaleDirection(locale)}>{children}</bdi>;
+}
+
+/**
+ * The content of a Schedule view's popover. Only the content scrolls, inside
+ * the surface: the popover's hidden fallback close sits one pixel below the
+ * surface, so a scroller around the whole popover would count that pixel as
+ * overflow and paint a scrollbar on content that fits, and would clip the
+ * surface's shadow. Taller content scrolls in a named region that joins the
+ * tab order only while it overflows, so the keyboard reaches all of it.
+ */
+export function SchedulePopoverBody({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  const {getViewportProps, getContentProps} = useScrollableArea({
+    axis: 'block',
+    keyboardAccess: {owner: 'viewport', label, role: 'region'},
+  });
+  return (
+    <div
+      {...getViewportProps<HTMLDivElement>({xstyle: styles.eventPopoverBody})}>
+      <div {...getContentProps<HTMLDivElement>()}>{children}</div>
+    </div>
+  );
 }
 
 export function EventPill({
@@ -1206,18 +1234,13 @@ export const styles = stylex.create({
       ':focus-visible': 1,
     },
   },
-  // The event popover keeps to the viewport the way the Popover component
-  // does: it never grows past the visible block size, and its content scrolls
-  // inside the surface when taller. Only the content scrolls: the popover's
-  // hidden fallback close sits one pixel below the surface, so a scroller
-  // around the whole popover counts that pixel as overflow and shows a
-  // scrollbar on a popover whose content fits.
+  // The popover keeps to the viewport the way the Popover component does: it
+  // never grows past the visible block size, minus the surface padding.
   eventPopoverBody: {
     maxBlockSize: stylex.firstThatWorks(
       `calc(100dvb - 2 * ${spacingVars['--spacing-4']} - 2 * ${spacingVars['--spacing-3']})`,
       `calc(100vh - 2 * ${spacingVars['--spacing-4']} - 2 * ${spacingVars['--spacing-3']})`,
     ),
-    overflowY: 'auto',
   },
   // Blocks in one overlap cluster split the column into equal tracks and never
   // overlap, so they carry no z-index of their own; the 2px insets keep the

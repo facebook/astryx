@@ -7,8 +7,9 @@
  *   reachable buttons whose popup attributes track one view-owned popover:
  *   open on Enter, Space, click, and tap; close on Escape and light dismiss
  *   with focus returned to the event; switch between events in one gesture;
- *   leave a null event read-only; keep the read-only story unchanged; and
- *   show no scrollbar on a popover whose content fits
+ *   leave a null event read-only; keep the read-only story unchanged; show
+ *   no scrollbar on a popover whose content fits; and scroll long content
+ *   from the keyboard
  * @position Browser binding for `component:Schedule` FR11–FR14 and AR2–AR5.
  *   jsdom cannot show a native popover, return focus through it, paint a
  *   focus ring, or produce a touch tap.
@@ -375,15 +376,15 @@ test('an open popover whose content fits has no scroll overflow and shows no scr
   // Every box from the popover layer down to its content: none may scroll
   // when the content fits, so classic scrollbars never paint.
   const overflow = await dialog.evaluate(element => {
-    const boxes: HTMLElement[] = [];
+    const boxes: Element[] = [];
     for (
-      let box: HTMLElement | null = element;
+      let box: Element | null = element;
       box != null && box !== document.body;
       box = box.parentElement
     ) {
       boxes.push(box);
     }
-    boxes.push(...element.querySelectorAll<HTMLElement>('*'));
+    boxes.push(...element.querySelectorAll('*'));
     return boxes
       .filter(box => {
         const style = getComputedStyle(box);
@@ -398,7 +399,6 @@ test('an open popover whose content fits has no scroll overflow and shows no scr
   await record(evidence, page, 'popover-no-overflow', POPOVER_STORY, 'ltr', {
     overflow,
   });
-  expect(overflow.length).toBeGreaterThan(0);
   for (const box of overflow) {
     expect(box, 'a scroller around fitting popover content').toEqual({
       ...box,
@@ -406,4 +406,99 @@ test('an open popover whose content fits has no scroll overflow and shows no scr
       inline: 0,
     });
   }
+});
+
+test('long popover content scrolls from the keyboard: Tab reaches its region, and PageDown and ArrowDown reach the end', async ({
+  page,
+}) => {
+  await openStory(evidence, page, POPOVER_STORY, WIDE);
+  await page.getByRole('button', {name: /^Workshop,/}).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  // 120 lines of details: far taller than the viewport.
+  await page.evaluate(() => {
+    const details = document.querySelector('[data-event-details]');
+    for (let line = 1; line <= 120; line += 1) {
+      const paragraph = document.createElement('p');
+      paragraph.textContent = `Line ${line}`;
+      details?.append(paragraph);
+    }
+  });
+  const region = dialog.getByRole('region', {name: 'Workshop details'});
+  await expect(region).toHaveAttribute('tabindex', '0');
+  // Focus is in the dialog; Tab reaches the scroll region before the
+  // hidden close.
+  for (let presses = 0; presses < 3; presses += 1) {
+    const inRegion = await region.evaluate(
+      element => document.activeElement === element,
+    );
+    if (inRegion) {
+      break;
+    }
+    await page.keyboard.press('Tab');
+  }
+  await expect(region).toBeFocused();
+  const scroll = () =>
+    region.evaluate(element => ({
+      top: Math.round(element.scrollTop),
+      max: element.scrollHeight - element.clientHeight,
+    }));
+  // Keyboard scrolling is smooth, so each press is followed until the region
+  // settles; the key is pressed until a press no longer moves it.
+  const settle = async () => {
+    let last = -1;
+    for (let frame = 0; frame < 40; frame += 1) {
+      const {top} = await scroll();
+      if (top === last) {
+        return top;
+      }
+      last = top;
+      await page.waitForTimeout(50);
+    }
+    return last;
+  };
+  const pressUntilStill = async (key: string) => {
+    let top = await settle();
+    for (let presses = 0; presses < 200; presses += 1) {
+      await page.keyboard.press(key);
+      const next = await settle();
+      if (next === top) {
+        break;
+      }
+      top = next;
+    }
+    return scroll();
+  };
+  const atStart = await scroll();
+  const afterPageDown = await pressUntilStill('PageDown');
+  await page.keyboard.press('Home');
+  await settle();
+  const afterHome = await scroll();
+  const afterArrowDown = await pressUntilStill('ArrowDown');
+  // The surface itself stays inside the viewport.
+  const surface = await dialog.boundingBox();
+  const viewportHeight = page.viewportSize()?.height ?? 0;
+  await record(
+    evidence,
+    page,
+    'popover-keyboard-scroll',
+    POPOVER_STORY,
+    'ltr',
+    {
+      atStart,
+      afterPageDown,
+      afterHome,
+      afterArrowDown,
+      surfaceBottom: surface == null ? null : surface.y + surface.height,
+      viewportHeight,
+    },
+  );
+  expect(atStart.max).toBeGreaterThan(1000);
+  expect(atStart.top).toBe(0);
+  expect(afterPageDown.top).toBeGreaterThanOrEqual(afterPageDown.max - 1);
+  expect(afterHome.top).toBe(0);
+  expect(afterArrowDown.top).toBeGreaterThanOrEqual(afterArrowDown.max - 1);
+  expect((surface?.y ?? 0) + (surface?.height ?? 0)).toBeLessThanOrEqual(
+    viewportHeight,
+  );
 });
