@@ -11,6 +11,7 @@
 
 import {
   getMarkdownAstLegacyCodeLanguage,
+  markdownAstText,
   markMarkdownAstLegacyCodeLanguage,
 } from './ast';
 import type {
@@ -1055,11 +1056,48 @@ function matchReferenceLink(
 }
 
 /** Reference-image equivalent of {@link matchReferenceLink} (`![alt][label]`). */
+/** How many image descriptions enclose the one being read. */
+let imageAltDepth = 0;
+
+/**
+ * The deepest image descriptions are read as inline content. Reading one
+ * reads every image nested in it again, so the cost grows with the depth
+ * times the text; ten levels keep any input fast, and no real image nests
+ * that deep.
+ */
+const MAX_IMAGE_ALT_DEPTH = 10;
+
+/**
+ * An image's alt text: its description read as inline content and taken as
+ * plain text (CommonMark 0.31 §6.4), so `` ![`a]b` *c*](u) `` has the alt
+ * `a]b c`. Descriptions nested deeper than MAX_IMAGE_ALT_DEPTH keep their
+ * decoded source.
+ */
+function imageAlt(
+  description: string,
+  opts: ResolvedOptions,
+  context: 'default' | 'tableCell',
+): string {
+  if (imageAltDepth >= MAX_IMAGE_ALT_DEPTH) {
+    return decodeLiteralText(description);
+  }
+  imageAltDepth++;
+  try {
+    return markdownAstText(
+      parseInlineImpl(description, protectedInlineOptions(opts), context),
+    );
+  } finally {
+    imageAltDepth--;
+  }
+}
+
 function matchReferenceImage(
   text: string,
   start: number,
   linkDefs: ReadonlyMap<string, string>,
   inlineIndex: InlineIndex,
+  opts: ResolvedOptions,
+  context: 'default' | 'tableCell',
 ): {
   node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
   end: number;
@@ -1077,7 +1115,7 @@ function matchReferenceImage(
       const src = linkDefs.get(normalizeLinkLabel(label));
       if (src != null && isSafeMarkdownParserUrl(src)) {
         return {
-          node: {type: 'image', url: src, alt: decodeLiteralText(alt)},
+          node: {type: 'image', url: src, alt: imageAlt(alt, opts, context)},
           end: labelClose + 1,
         };
       }
@@ -1092,7 +1130,7 @@ function matchReferenceImage(
     return null;
   }
   return {
-    node: {type: 'image', url: src, alt: decodeLiteralText(alt)},
+    node: {type: 'image', url: src, alt: imageAlt(alt, opts, context)},
     end: altClose + 1,
   };
 }
@@ -2276,7 +2314,7 @@ function parseInlineImpl(
             nodes.push({
               type: 'image',
               url: src,
-              alt: decodeLiteralText(text.slice(i + 2, altClose)),
+              alt: imageAlt(text.slice(i + 2, altClose), opts, context),
             });
           }
           i = srcClose + 1;
@@ -2287,7 +2325,14 @@ function parseInlineImpl(
 
     // --- Reference image ![alt][label] / ![alt][] / ![alt] ---
     if (opts.linkDefs != null && text[i] === '!' && text[i + 1] === '[') {
-      const ref = matchReferenceImage(text, i, opts.linkDefs, inlineIndex);
+      const ref = matchReferenceImage(
+        text,
+        i,
+        opts.linkDefs,
+        inlineIndex,
+        opts,
+        context,
+      );
       if (ref) {
         nodes.push(ref.node);
         i = ref.end;
@@ -3508,7 +3553,7 @@ function parseMarkdownImpl(
     ) {
       pushBlock({
         type: 'image',
-        alt: decodeLiteralText(imageMatch[1]),
+        alt: imageAlt(imageMatch[1], opts, 'default'),
         url: imageSrc,
       });
       index++;
