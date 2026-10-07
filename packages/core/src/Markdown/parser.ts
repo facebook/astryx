@@ -561,7 +561,20 @@ type ResolvedOptions = {
    * to resolve full/collapsed/shortcut reference links and images.
    */
   readonly linkDefs?: ReadonlyMap<string, string>;
+  /**
+   * How many lists and blockquotes enclose this parse. Internal only: past
+   * MAX_BLOCK_NESTING, content is read as text, so no input nests blocks
+   * deep enough to exhaust the stack of the parser, a projection, or a
+   * render.
+   */
+  readonly blockDepth: number;
 };
+
+/**
+ * The deepest lists and blockquotes may nest, as emphasis is capped
+ * (MAX_EMPHASIS_DEPTH). Content nested deeper is one paragraph of text.
+ */
+const MAX_BLOCK_NESTING = 100;
 
 /**
  * Every resolved options object is built here, so all of them share one key
@@ -585,6 +598,7 @@ function makeResolvedOptions(
     allowBlockSyntax: fields.allowBlockSyntax ?? true,
     baseOffset: fields.baseOffset,
     linkDefs: fields.linkDefs,
+    blockDepth: fields.blockDepth ?? 0,
   };
 }
 
@@ -2614,11 +2628,13 @@ function isTableSeparator(line: string): boolean {
  * offset into it would not address the document.
  */
 function nested(opts: ResolvedOptions): ResolvedOptions {
-  const nestedOptions =
-    opts.allowBlockSyntax === false ? opts : {...opts, allowBlockSyntax: false};
-  return nestedOptions.sourceRanges || nestedOptions.astPositions
-    ? {...nestedOptions, sourceRanges: false, astPositions: false}
-    : nestedOptions;
+  return {
+    ...opts,
+    allowBlockSyntax: false,
+    sourceRanges: false,
+    astPositions: false,
+    blockDepth: opts.blockDepth + 1,
+  };
 }
 
 function blockExtensionColumn(line: string): number | null {
@@ -3046,6 +3062,13 @@ function parseMarkdownImpl(
   input: string,
   baseOpts: ResolvedOptions,
 ): MarkdownAstBlockContent<RuntimeExtensionNode>[] {
+  if (baseOpts.blockDepth > MAX_BLOCK_NESTING) {
+    // Nested deeper than the cap: the content is one paragraph of text.
+    const text = input.trim();
+    return text === ''
+      ? []
+      : [{type: 'paragraph', children: parseInlineEntry(text, baseOpts)}];
+  }
   // Collect this input's link reference definitions and strip their lines,
   // then merge them with any definitions inherited from an enclosing parse
   // (the incremental parser passes the whole document's definitions in; a
