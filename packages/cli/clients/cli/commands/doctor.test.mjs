@@ -387,3 +387,36 @@ describe('doctor — text output mirrors the JSON', () => {
     }
   }, 60_000);
 });
+
+describe('doctor — a configured integration that cannot load', () => {
+  it('sets exit code 1 and reports it in the JSON', async () => {
+    const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-exit-'));
+    const prevCwd = process.cwd();
+    const prevExit = process.exitCode;
+    process.exitCode = undefined;
+    try {
+      fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"app"}');
+      fs.writeFileSync(
+        path.join(dir, 'astryx.config.mjs'),
+        "export default { integrations: ['@acme/missing'] };\n",
+      );
+      const coreDir = path.join(dir, 'node_modules', '@astryxdesign', 'core');
+      fs.mkdirSync(coreDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(coreDir, 'package.json'),
+        JSON.stringify({name: '@astryxdesign/core', version: '0.6.3'}),
+      );
+      process.chdir(dir);
+      await createProgram().parseAsync(['node', 'astryx', '--json', 'doctor']);
+      expect(process.exitCode).toBe(1);
+      const {data} = JSON.parse(logCalls.join('\n'));
+      expect(
+        data.checks.find(c => c.id === 'configured-integrations'),
+      ).toMatchObject({status: 'fail'});
+    } finally {
+      process.chdir(prevCwd);
+      process.exitCode = prevExit;
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
+  }, 60_000);
+});

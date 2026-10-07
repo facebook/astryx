@@ -319,12 +319,12 @@ export async function checkConfig(ctx) {
     }
     // Importing is not the whole test: the CLI also validates the config, and
     // a config it rejects leaves every project-aware command without the
-    // project. That config is not clean, so this warns (exit code unchanged).
+    // project. Doctor is the CI gate, so that fails.
     if (ctx.projectError) {
       return {
         id: 'config',
         label: 'astryx.config.mjs',
-        status: 'warn',
+        status: 'fail',
         message: `astryx.config.mjs loads, but the CLI could not load the project from it: ${firstLine(ctx.projectError)}`,
         fix: 'Fix what the message names. `astryx docs authoring config` lists every field astryx.config accepts.',
       };
@@ -473,6 +473,81 @@ function describeUnreadableManifests(failures) {
     `an astryx.integration.* manifest that could not be loaded, so ${one ? 'it contributes' : 'they contribute'} ` +
     `nothing: ${listed}. Run \`astryx doctor integration validate <package>\` for details.`
   );
+}
+
+/**
+ * Every integration named in astryx.config loads.
+ *
+ * A configured integration that cannot be loaded (not installed, no
+ * manifest, or a manifest that throws or fails its schema) is withdrawn
+ * whole, because none of its contribution roots is trustworthy
+ * (spec:AST-035 FR9). The project then runs without something it asked
+ * for, so this fails the CI gate.
+ *
+ * Two neighbours stay as they were. A problem inside one contribution kind
+ * leaves the rest of the integration working, so `integration-issues` keeps
+ * warning about it (spec:AST-035 FR9). An autolinked dependency that cannot
+ * be loaded stays informational in `implicit-integrations`: the project did
+ * not ask for it.
+ *
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkConfiguredIntegrations(ctx) {
+  const id = 'configured-integrations';
+  const label = 'Configured integrations';
+  if (ctx.integrations == null) {
+    // The config check reports a config the CLI cannot load.
+    return {
+      id,
+      label,
+      status: 'info',
+      message: skippedBecause(ctx, 'the project configuration could not be read'),
+    };
+  }
+  const configured = ctx.integrations.filter(
+    integration =>
+      !integration.__autolinked &&
+      !integration.__local &&
+      !integration.__providerConflict,
+  );
+  if (configured.length === 0) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message: 'No integration is named in astryx.config.',
+    };
+  }
+  const plural = configured.length === 1 ? '' : 's';
+  const withdrawn = configured.filter(
+    integration => integration.__loadError != null,
+  );
+  if (withdrawn.length > 0) {
+    const listed = withdrawn
+      .map(
+        integration =>
+          `${integration.name ?? integration.__spec} (${firstLine(String(integration.__loadError)).slice(0, 160)})`,
+      )
+      .join('; ');
+    return {
+      id,
+      label,
+      status: 'fail',
+      message:
+        `${withdrawn.length} of ${configured.length} integration${plural} named in astryx.config could not be loaded, ` +
+        `so ${withdrawn.length === 1 ? 'it contributes' : 'they contribute'} nothing: ${listed}.`,
+      fix:
+        'Install each one, fix its astryx.integration.* manifest (`astryx doctor integration validate <package>` says what is wrong), ' +
+        'or remove it from `integrations` in astryx.config.',
+    };
+  }
+  return {
+    id,
+    label,
+    status: 'pass',
+    message: `${configured.length} integration${plural} named in astryx.config loaded: ${nameIntegrations(configured)}.`,
+  };
 }
 
 /**
@@ -1201,6 +1276,7 @@ export const SYNC_CHECKS = [
   checkCoreInstalled,
   checkVersionAlignment,
   checkImplicitIntegrations,
+  checkConfiguredIntegrations,
   checkProviderIdentity,
   checkIntegrationIssues,
   checkAgentDocs,
