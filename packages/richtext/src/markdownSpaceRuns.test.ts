@@ -2,7 +2,9 @@
 
 import {describe, expect, it} from 'vitest';
 import {createHeadlessEditor} from '@lexical/headless';
+import {$convertToMarkdownString} from '@lexical/markdown';
 import {$getRoot, $isTextNode} from 'lexical';
+import {$convertToMarkdownKeepingTimeLinear} from './markdownSpaceRuns';
 import {markdownToEditorStateJSON} from './markdownSerializers';
 import {DEFAULT_NODES} from './editorNodes';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
@@ -53,10 +55,15 @@ function leastCpuTime(run: () => void): number {
 }
 
 const RUN = ' '.repeat(40_000);
+/** A run long enough to take the stand-in path. */
+const LONG = ' '.repeat(70);
 
 describe('runs of spaces inside text', () => {
   it.each([
     ['plain text', 'a     b\n', 'a     bx\n'],
+    ['plain text with a long run', `a${LONG}b\n`, `a${LONG}bx\n`],
+    ['bold text with a long run', `**a${LONG}b** c\n`, `**a${LONG}b** cx\n`],
+    ['link text with a long run', `[a${LONG}b](u) c\n`, `[a${LONG}b](u) cx\n`],
     ['bold text', '**a     b** c\n', '**a     b** cx\n'],
     ['link text', '[a     b](u) c\n', '[a     b](u) cx\n'],
     ['tabs and spaces', 'a\t\t b\n', 'a\t\t bx\n'],
@@ -106,11 +113,11 @@ function links(markdown: string): Array<[string, string | null]> {
 
 describe('stand-ins never touch what the export writes besides text', () => {
   it.each([
-    ['an address', 'a     b [x](https://e.com/\uE000) c\n'],
-    ['a title', 'a     b [x](https://e.com "t\uE000") c\n'],
+    ['an address', `a${LONG}b [x](https://e.com/\uE000) c\n`],
+    ['a title', `a${LONG}b [x](https://e.com "t\uE000") c\n`],
     [
       'a table cell link address',
-      '| h |\n| - |\n| a     b [x](https://e.com/\uE000) |\n',
+      `| h |\n| - |\n| a${LONG}b [x](https://e.com/\uE000) |\n`,
     ],
   ])('keeps a private-use character in %s through an edit', (_, markdown) => {
     const before = links(markdown);
@@ -129,10 +136,40 @@ describe('stand-ins never touch what the export writes besides text', () => {
     for (let round = 0; round < 60; round++) {
       const url = `https://e.com/${privateUse()}${privateUse()}`;
       const title = `t${privateUse()}`;
-      const markdown = `a${' '.repeat(2 + Math.floor(random() * 4))}b [x](${url} "${title}") c${' '.repeat(3)}d\n`;
+      const markdown = `a${' '.repeat(64 + Math.floor(random() * 8))}b [x](${url} "${title}") c${LONG}d\n`;
       const before = links(markdown);
       expect(before).toEqual([[url, title]]);
       expect(links(editAndExport(markdown)), markdown).toEqual(before);
     }
+  });
+});
+
+describe('ordinary text exports as directly as before', () => {
+  it('exports 3,000 paragraphs with double spaces at the direct export time', () => {
+    const editor = createHeadlessEditor({
+      nodes: [...DEFAULT_NODES],
+      onError(error) {
+        throw error;
+      },
+    });
+    importMarkdownKeepingSource(
+      editor,
+      Array.from(
+        {length: 3000},
+        (_, index) => `Word  ${index}  more  words.`,
+      ).join('\n\n'),
+      [...DEFAULT_TRANSFORMERS],
+    );
+    editor.getEditorState().read(() => {
+      const root = $getRoot();
+      const transformers = [...DEFAULT_TRANSFORMERS];
+      const direct = leastCpuTime(() =>
+        $convertToMarkdownString(transformers, root),
+      );
+      const linear = leastCpuTime(() =>
+        $convertToMarkdownKeepingTimeLinear(transformers, root),
+      );
+      expect(linear).toBeLessThan(direct * 1.25 + 5);
+    });
   });
 });
