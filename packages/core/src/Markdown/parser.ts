@@ -2947,7 +2947,11 @@ function parseList(
 
   let loose = false;
   let index = startIndex;
-  while (index < lines.length && itemPattern.test(lines[index])) {
+  // A line that is a thematic break is one, not an item, even where an item
+  // could start (CommonMark 0.31 §4.1): `* * *` after `- item` ends the list.
+  const startsItem = (line: string) =>
+    itemPattern.test(line) && !isHorizontalRule(line);
+  while (index < lines.length && startsItem(lines[index])) {
     const content = ordered
       ? lines[index].replace(new RegExp(`^ *\\d+${escDelim} `), '')
       : lines[index].replace(/^ *[-*+] /, '');
@@ -3028,7 +3032,7 @@ function parseList(
     if (
       lookahead > index &&
       lookahead < lines.length &&
-      itemPattern.test(lines[lookahead])
+      startsItem(lines[lookahead])
     ) {
       loose = true;
       index = lookahead;
