@@ -51,9 +51,9 @@ import {
 } from '../theme/build/build.mjs';
 import {
   discoverIntegrationComponents,
-  discoverValidIntegrationComponents,
   resolveIntegrationImportPath,
 } from '../../foundation/discovery/component-discovery.mjs';
+import {resolveComponentReplacements} from '../../foundation/discovery/component-replacement.mjs';
 import {loadComponentDoc} from '../../foundation/discovery/component-loader.mjs';
 import {discoverIntegrationTemplatesForOne} from '../../foundation/discovery/template-adapter.mjs';
 import {
@@ -1157,12 +1157,13 @@ export async function integrationPackCheck(options = {}) {
   // that range the component keeps its own name and Core stays selected, so
   // this warns and never fails the check.
   if (loaded.components) {
-    const found = await discoverValidIntegrationComponents(loaded).catch(
-      () => ({components: []}),
+    const found = await resolveComponentReplacements(null, [loaded]).catch(
+      () => ({findings: []}),
     );
-    const setsReplaces = found.components.some(
-      (/** @type {{replaces?: unknown}} */ component) =>
-        component.replaces !== undefined,
+    // Every declaration from a package without the range is reported as
+    // inactive, whatever else is wrong with it.
+    const setsReplaces = found.findings.some(
+      finding => finding.code === 'inactive_component_replacement',
     );
     const problem = setsReplaces ? componentReplacesCliProblem(pkg) : null;
     if (problem != null) {

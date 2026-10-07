@@ -23,8 +23,9 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
   discoverComponents,
-  discoverValidIntegrationComponents,
+  discoverIntegrationComponents,
 } from './component-discovery.mjs';
+import {loadComponentDoc} from './component-loader.mjs';
 import {
   CLI_PACKAGE,
   COMPONENT_REPLACES_CLI,
@@ -80,6 +81,23 @@ import {
 
 /** @param {string} value @returns {string} */
 const keyOf = value => value.toLowerCase();
+
+/**
+ * Whether a doc file can declare `replaces`: it names the field, or spreads
+ * another object that could carry it. Every other doc keeps its own identity
+ * without being loaded, so a lookup does not import every component doc an
+ * integration ships.
+ * @param {string} docPath
+ * @returns {boolean}
+ */
+function mayDeclareReplaces(docPath) {
+  try {
+    const text = fs.readFileSync(docPath, 'utf8');
+    return text.includes('replaces') || text.includes('...');
+  } catch {
+    return false;
+  }
+}
 
 /**
  * The package.json beside an integration, or an empty object when it cannot
@@ -164,18 +182,37 @@ export async function resolveComponentReplacements(
     ) {
       continue;
     }
-    /** @type {Awaited<ReturnType<typeof discoverValidIntegrationComponents>>['components']} */
-    let components;
+    /** @type {ReturnType<typeof discoverIntegrationComponents>} */
+    let discovered;
     try {
-      ({components} = await discoverValidIntegrationComponents(integration));
+      discovered = discoverIntegrationComponents(integration);
     } catch {
       // Project and Doctor report a component root that cannot be read.
       continue;
     }
     /** @type {boolean | null} */
     let optedIn = null;
-    for (const record of components) {
-      if (record.replaces === undefined) {
+    for (const record of discovered) {
+      // A component without its same-stem source is not a valid component;
+      // discovery reports it, and it can neither replace nor be shadowed.
+      if (record.sourcePath == null) continue;
+      if (!mayDeclareReplaces(record.docPath)) {
+        nativeComponents.push({name: record.name, package: record.package});
+        continue;
+      }
+      /** @type {any} */
+      let doc;
+      try {
+        doc = await loadComponentDoc(record.docPath);
+      } catch {
+        // Invalid metadata: discovery reports it and withdraws the component.
+        continue;
+      }
+      if (
+        doc == null ||
+        typeof doc !== 'object' ||
+        doc.replaces === undefined
+      ) {
         nativeComponents.push({name: record.name, package: record.package});
         continue;
       }
@@ -186,7 +223,7 @@ export async function resolveComponentReplacements(
         docPath: record.docPath,
         sourcePath: record.sourcePath,
         issuesUrl: record.issuesUrl,
-        replaces: record.replaces,
+        replaces: doc.replaces,
         integration,
         autolinked: integration.__autolinked === true,
         optedIn,
