@@ -225,3 +225,66 @@ describe('angle-bracket destination edges', () => {
     expect(richLinks(markdown)).toEqual([]);
   });
 });
+
+/** A link made in the editor to `url`, exported. */
+function exportLinkTo(url: string): string {
+  const editor = newEditor();
+  editor.update(
+    () => {
+      $getRoot()
+        .clear()
+        .append(
+          $createParagraphNode().append(
+            $createLinkNode(url).append($createTextNode('x')),
+          ),
+        );
+    },
+    {discrete: true},
+  );
+  return editor
+    .getEditorState()
+    .read(() => $exportMarkdownKeepingSource([...DEFAULT_TRANSFORMERS]));
+}
+
+describe('angle-bracket destinations holding parentheses and backslashes', () => {
+  it('links `[a](<b)c>)` to `b)c`, as core does', () => {
+    const markdown = '[a](<b)c>)';
+    expect(richLinks(markdown)).toEqual([{url: 'b)c', title: null}]);
+    expect(coreUrls(markdown)).toEqual(['b)c']);
+  });
+
+  it.each([
+    'https://example.com/a b)',
+    'https://example.com/a (b',
+    'https://e.com/a\\b c',
+    'https://e.com/a\\> b',
+    'https://e.com/a b\\',
+  ])('writes a link made in the editor to %j so it reads back', url => {
+    expect(richLinks(exportLinkTo(url))).toEqual([{url, title: null}]);
+  });
+
+  it('reads back every link made in the editor across 4,000 addresses', () => {
+    let state = 4000;
+    const random = () => {
+      state = (state * 1103515245 + 12345) % 2147483648;
+      return state / 2147483648;
+    };
+    // Backslashes outside angle brackets and backticks are left out: they
+    // are an older, separate gap in how addresses are written.
+    const alphabet = [...'ab/. ()<>"\'#:_*[]&;'];
+    const lost: string[] = [];
+    for (let round = 0; round < 4000; round++) {
+      let tail = '';
+      const length = 1 + Math.floor(random() * 8);
+      for (let index = 0; index < length; index++) {
+        tail += alphabet[Math.floor(random() * alphabet.length)];
+      }
+      const url = `https://e.com/${tail}`;
+      const read = richLinks(exportLinkTo(url));
+      if (read.length !== 1 || read[0].url !== url) {
+        lost.push(url);
+      }
+    }
+    expect(lost).toEqual([]);
+  });
+});

@@ -41,7 +41,7 @@ export function markdownDestination(url: string): string {
   if (/\s/.test(url) || url.startsWith('<')) {
     // Only an angle-bracket destination may hold a space or open with `<`
     // (CommonMark §6.3).
-    return `<${url.replace(/[<>]/g, '\\$&')}>`;
+    return `<${url.replace(/[\\<>]/g, '\\$&')}>`;
   }
   return isBalanced(url) ? url : url.replace(/[()]/g, '\\$&');
 }

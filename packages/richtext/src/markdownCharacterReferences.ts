@@ -323,6 +323,65 @@ function pairedDelimiters(
 }
 
 /**
+ * Where a destination that opens with `<` ends — the index of the `)` that
+ * closes the link — read as core Markdown reads it (CommonMark 0.31 §6.3):
+ * `'refused'` when it opens with `<` but is no angle-bracket destination,
+ * and null when the content after `open` (the `(`) does not open with `<`.
+ * Inside the brackets parentheses are plain characters; a line ending, even
+ * escaped, or an unescaped `<` makes it no destination; after the `>` come
+ * only spaces, an optional title, and the `)`.
+ */
+function angleDestinationEnd(
+  text: string,
+  open: number,
+): number | 'refused' | null {
+  let index = open + 1;
+  while (text[index] === ' ' || text[index] === '\t') {
+    index++;
+  }
+  if (text[index] !== '<') {
+    return null;
+  }
+  for (index++; index < text.length; index++) {
+    const character = text[index];
+    if (
+      character === '\\' &&
+      text[index + 1] !== '\n' &&
+      text[index + 1] !== '\r'
+    ) {
+      index++;
+    } else if (character === '\n' || character === '\r' || character === '<') {
+      return 'refused';
+    } else if (character === '>') {
+      break;
+    }
+  }
+  if (index >= text.length) {
+    return 'refused';
+  }
+  index++;
+  while (/\s/.test(text[index] ?? '')) {
+    index++;
+  }
+  const quote = text[index];
+  if (quote === '"' || quote === "'" || quote === '(') {
+    const closer = quote === '(' ? ')' : quote;
+    for (index++; index < text.length && text[index] !== closer; index++) {
+      if (text[index] === '\\') {
+        index++;
+      } else if (quote === '(' && text[index] === '(') {
+        return 'refused';
+      }
+    }
+    index++;
+    while (/\s/.test(text[index] ?? '')) {
+      index++;
+    }
+  }
+  return text[index] === ')' ? index : 'refused';
+}
+
+/**
  * Whether core Markdown refuses a link to `destination`, as written in the
  * source: its own parser decides, so both surfaces refuse the same
  * destinations by one policy.
@@ -380,7 +439,11 @@ export function protectRefusedLinks(markdown: string): ProtectedMarkdown {
     index = markdown.indexOf('](', index + 1)
   ) {
     const open = pair[index];
-    const close = pair[index + 1];
+    // A destination in angle brackets ends where core ends it — parentheses
+    // inside the brackets are plain characters — so `[a](<b)c>)` is probed
+    // whole, not as `<b`.
+    const angleClose = angleDestinationEnd(markdown, index + 1);
+    const close = typeof angleClose === 'number' ? angleClose : pair[index + 1];
     if (index < probedTo || open === -1 || close === -1) {
       continue;
     }
