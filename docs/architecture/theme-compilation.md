@@ -162,12 +162,19 @@ Platform-specific details stay inside that compiler.
   diagnostics schema. A CLI paired with an older core retains that core's existing
   compilation behavior; it does not pretend to detect drops the older core cannot
   report.
+- **INV15 — Component icon slot maps pass through unchanged.** `componentIcons`
+  produces no CSS. The built theme module carries the normalized map from
+  `DefinedTheme` with the same keys and values, including `null`, so a runtime
+  theme and its built counterpart expose the same map. A theme that extends a
+  built theme inherits the same map it inherits from source. An absent field and
+  an empty map both mean no slot mappings.
 
 This record does not own:
 
 - token names and defaults, including the meanings of theme-local names;
 - `DefineThemeInput`, local-token enrollment and lineage, inheritance, or
   authoring precedence;
+- what a `componentIcons` entry means;
 - which component parts and properties are public theme APIs; or
 - provider nesting, root synchronization, and DOM observation after compilation.
 
@@ -226,6 +233,8 @@ This record does not own:
   parity across tokens, local tokens, variants, pseudo states, media surfaces,
   adaptations, inheritance, and Heading fallback rules. Collector tests verify
   append-only text, unchanged CSS with/without a collector, and build receipts.
+- Changing how `componentIcons` is saved verifies exact source/built parity of
+  keys, values, and `null` entries, including a child that extends a built theme.
 - Build packaging may change without changing compiled theme behavior.
 
 ## Owning code
@@ -272,6 +281,7 @@ tiers.
 | INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures                                                 | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure                          |
 | INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures                                                    | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges                                |
 | INV13, INV14     | Declaration scanner, generator, Theme mounting, CLI receipt tests, and the existing theme-family Chromium guard | One unsafe declaration corrupts neighbors, valid CSS changes, legacy token generation crashes, or reporting changes CSS |
+| INV15            | `build.test.mjs` component-icon fixtures and runtime/build comparison fixtures                                  | A built theme drops, rewrites, or converts a `null` mapping, or a child of a built theme inherits a different map       |
 | Built themes     | Theme and CLI build tests                                                                                       | Runtime recompiles a built theme, or built output omits canonical rules                                                 |
 
 ## Known conformance and verification gaps
@@ -286,6 +296,10 @@ classify local references. Until implementation lands, INV11's prefix-independen
 clauses are current authority but not enforcement; exact-name emission and the existing
 enrollment, owner, lineage, collision, cycle, and legacy-unenrolled behavior remain
 shipped.
+
+`componentIcons` preservation is unshipped. The current built theme module does
+not carry the field, so INV15 is current authority but not enforcement. Its
+verification row describes implementation acceptance, not existing enforcement.
 
 The remaining invariants above describe the approved current contract. The following
 shipped behavior does not yet conform and must not be treated as enforcement:

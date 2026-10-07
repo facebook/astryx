@@ -83,6 +83,7 @@ source configuration independently.
 - optional theme-family-local token declarations;
 - component target/style-key overrides;
 - icon and indicator registries;
+- a component icon slot map (`componentIcons`);
 - syntax tokens;
 - `onDark` / `onLight` surface overrides; and
 - ordered environmental `adaptations` with a fixed named width map.
@@ -100,10 +101,16 @@ Normalization follows one precedence order:
 5. inherited and explicit media-surface overrides;
 6. inherited and explicit theme-local declarations, validated against the
    resolved token, component, and media surfaces; and
-7. inherited and explicit icon/indicator registry entries.
+7. inherited and explicit icon/indicator registry entries and component icon
+   slot mappings.
 
 Explicit values win within their surface. Component maps merge by component,
 style key, and CSS property rather than replacing the entire inherited target.
+
+`componentIcons` takes the public `ComponentIconMap`: each key is a component
+icon slot name and each value is a shared `IconName` or `null`.
+`architecture:icon-resolution-and-component-slots` owns what an entry means.
+`DefinedTheme.componentIcons` exposes the normalized map as public theme data.
 
 ## Boundaries and invariants
 
@@ -115,7 +122,7 @@ style key, and CSS property rather than replacing the entire inherited target.
 - **INV3 — Extension is semantically flattened.** `extends` accepts a real
   `DefinedTheme` and carries forward its resolved tokens, local-token owner and
   lineage metadata, component rules, media surfaces, adaptations and axes, icons,
-  and indicators. The normalized child is complete.
+  indicators, and component icon slot mappings. The normalized child is complete.
 - **INV4 — Invalid bases fail loudly.** An undefined, namespace, or plain object
   passed to `extends` cannot produce a plausible partial theme.
 - **INV5 — Explicit tokens override generated scales.** Generated values provide
@@ -150,6 +157,12 @@ style key, and CSS property rather than replacing the entire inherited target.
   derive, or normalize input into a durable typed theme value used by a current
   supported consumer; validating and returning the exact input unchanged is
   insufficient.
+- **INV13 — Component icon slot maps merge per slot.** An explicit `IconName` or
+  `null` in `componentIcons` replaces the inherited entry for that slot, and every
+  inherited slot the child does not restate remains. A key whose value is
+  `undefined` is absent: the slot keeps its inherited entry or, with none, its
+  component fallback. The normalized map contains no `undefined` values and keeps
+  every `null`.
 
 This record does not own:
 
@@ -157,8 +170,9 @@ This record does not own:
 - turning `DefinedTheme` into style rules, including local-token emission,
   private-variable expansion, and cascade/layer behavior;
 - runtime mounting, scope lifetime, root synchronization, or DOM observation;
-- CLI file generation and packaging; or
-- which component targets, states, and public properties participate.
+- CLI file generation and packaging;
+- which component targets, states, and public properties participate; or
+- what a `componentIcons` entry means or how a component resolves it.
 
 `architecture:theme-compilation` owns platform output. For web, runtime and
 static build use one CSS compiler and the same maintained stylesheet rules. A
@@ -192,6 +206,8 @@ public surface belongs to
   portable token helpers would otherwise resolve different values.
 - Changing precedence is a compatibility decision because existing themes may
   contain both generated and explicit values.
+- A `componentIcons` change verifies per-slot merge, `undefined` inheritance, and
+  `null` preservation through `extends`.
 - Changing `ComponentStyleMap` merge behavior verifies base, generated, explicit,
   and on-media composition; no layer invents its own merge rule.
 - A new generated scale states which semantic tokens it may produce and confirms
@@ -241,6 +257,11 @@ classify local references. Until the implementation lands, INV8's prefix-indepen
 clauses are current authority but not enforcement. Existing explicit enrollment,
 owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped.
 
+`componentIcons` is unshipped. The current `DefineThemeInput` and `DefinedTheme`
+do not declare it, so INV13 and the `componentIcons` clause of INV3
+are current authority but not enforcement. The INV13 verification row describes
+implementation acceptance, not existing enforcement.
+
 ## Verification
 
 | Invariant                | Evidence                                                                                                | Failure signal                                                                                                            |
@@ -253,5 +274,6 @@ owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped
 | INV10                    | `themeAdaptations.test.ts` and CLI build fixtures                                                       | Width metadata, rule order, or child re-resolution diverges across source and built themes                                |
 | INV11                    | `DefineThemeInput`/output diff plus runtime/build fixtures                                              | Validation-only data enters the normalized theme, or productive input loses construction validation                       |
 | INV12                    | Core theme export diff, constructed-value evidence, and current-consumer callsite                       | A theme `define*` helper only checks input and returns that exact input unchanged                                         |
+| INV13                    | `defineTheme.test.ts` component-icon merge and extension tests                                          | A child drops an inherited slot, `undefined` replaces an inherited entry, or a `null` mapping is lost                     |
 | Theme/Core compatibility | Maintained theme source/build against the minimum Core in its currently supported peer/dependency range | A theme update silently requires newer in-range Core or bypasses the `spec:AST-017` path                                  |
 | Authoring projection     | `scripts/check-theme-template.test.mjs`                                                                 | A supported authoring concept is missing or misstated in the template                                                     |
