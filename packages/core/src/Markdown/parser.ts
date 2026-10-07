@@ -959,18 +959,19 @@ function matchReferenceLink(
   linkDefs: ReadonlyMap<string, string>,
   opts: ResolvedOptions,
   context: 'default' | 'tableCell',
+  inlineIndex: InlineIndex,
 ): {
   node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
   end: number;
 } | null {
-  const textClose = closingBracket(text, start + 1);
+  const textClose = inlineIndex.closingBracket(start + 1);
   if (textClose === -1) {
     return null;
   }
   const linkText = text.slice(start + 1, textClose);
   // Full `[text][label]` / collapsed `[text][]` — a matching definition wins.
   if (text[textClose + 1] === '[') {
-    const labelClose = closingBracket(text, textClose + 2);
+    const labelClose = inlineIndex.closingBracket(textClose + 2);
     if (labelClose !== -1) {
       const rawLabel = text.slice(textClose + 2, labelClose);
       // Only truly-empty brackets are the collapsed form; a whitespace-only
@@ -1023,17 +1024,18 @@ function matchReferenceImage(
   text: string,
   start: number,
   linkDefs: ReadonlyMap<string, string>,
+  inlineIndex: InlineIndex,
 ): {
   node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
   end: number;
 } | null {
-  const altClose = closingBracket(text, start + 2);
+  const altClose = inlineIndex.closingBracket(start + 2);
   if (altClose === -1) {
     return null;
   }
   const alt = text.slice(start + 2, altClose);
   if (text[altClose + 1] === '[') {
-    const labelClose = closingBracket(text, altClose + 2);
+    const labelClose = inlineIndex.closingBracket(altClose + 2);
     if (labelClose !== -1) {
       const rawLabel = text.slice(altClose + 2, labelClose);
       const label = rawLabel === '' ? alt : rawLabel;
@@ -1118,17 +1120,91 @@ function decodeLinkDestination(raw: string): string {
  * The `]` that closes link text, an image's alternative text, or a reference
  * label opened before `from`; an escaped `\]` does not close it.
  */
-function closingBracket(text: string, from: number): number {
-  for (let index = from; index < text.length; index++) {
-    if (text[index] === '\\') {
-      index++;
-      continue;
+/**
+ * What the inline scan of one text asks about it again and again, each
+ * answer indexed once, when first asked, so no question rescans the text.
+ */
+interface InlineIndex {
+  /**
+   * Where the backtick string of `length` that closes a code span opened
+   * before `from` starts, or -1: the first backtick string of exactly that
+   * length at or after `from` (CommonMark 0.31 §6.1).
+   */
+  backtickCloser(from: number, length: number): number;
+  /**
+   * The index of the unescaped `]` at or after `from` that closes link text
+   * or a label, or -1. A code span hides its brackets: code spans bind
+   * tighter than links (CommonMark 0.31 §6.1), so `[`a]b`](u)` links `a]b`
+   * as code.
+   */
+  closingBracket(from: number): number;
+}
+
+function inlineIndexOf(text: string): InlineIndex {
+  let backtickStarts: Map<number, number[]> | null = null;
+  const backtickCloser = (from: number, length: number): number => {
+    if (backtickStarts == null) {
+      backtickStarts = new Map();
+      for (let start = text.indexOf('`'); start !== -1;) {
+        let end = start;
+        while (text[end] === '`') {
+          end++;
+        }
+        const sameLength = backtickStarts.get(end - start);
+        if (sameLength == null) {
+          backtickStarts.set(end - start, [start]);
+        } else {
+          sameLength.push(start);
+        }
+        start = text.indexOf('`', end);
+      }
     }
-    if (text[index] === ']') {
-      return index;
+    const sameLength = backtickStarts.get(length);
+    if (sameLength == null) {
+      return -1;
     }
-  }
-  return -1;
+    let low = 0;
+    let high = sameLength.length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      if (sameLength[middle] < from) {
+        low = middle + 1;
+      } else {
+        high = middle;
+      }
+    }
+    return low < sameLength.length ? sameLength[low] : -1;
+  };
+  let nextClosingBracket: Int32Array | null = null;
+  const closingBracket = (from: number): number => {
+    if (nextClosingBracket == null) {
+      // Which `]` can close: outside code spans, paired left to right as
+      // the inline scan pairs them, and not escaped.
+      const closes = new Uint8Array(text.length);
+      for (let index = 0; index < text.length; index++) {
+        const character = text[index];
+        if (character === '\\') {
+          index++;
+        } else if (character === '`') {
+          let runEnd = index;
+          while (text[runEnd] === '`') {
+            runEnd++;
+          }
+          const closer = backtickCloser(runEnd, runEnd - index);
+          index = (closer === -1 ? runEnd : closer + (runEnd - index)) - 1;
+        } else if (character === ']') {
+          closes[index] = 1;
+        }
+      }
+      nextClosingBracket = new Int32Array(text.length + 1).fill(-1);
+      for (let index = text.length - 1; index >= 0; index--) {
+        nextClosingBracket[index] =
+          closes[index] === 1 ? index : nextClosingBracket[index + 1];
+      }
+    }
+    return from < text.length ? nextClosingBracket[from] : -1;
+  };
+  return {backtickCloser, closingBracket};
 }
 
 function findClosingParen(text: string, start: number): number {
@@ -1890,13 +1966,9 @@ function parseInlineImpl(
   // resolveEmphasis pairs it. Created only when a run appears.
   let delimiters: DelimiterRun[] | null = null;
   let delimiterNodes: Set<object> | null = null;
-  // Where each backtick string of `text` starts, by length, with how far the
-  // search for a closer of that length has come: built when the first one
-  // appears, so finding every code span's closer is linear.
-  let backtickStrings: Map<
-    number,
-    {readonly starts: number[]; searched: number}
-  > | null = null;
+  // Code-span closers and link-text closers, each indexed when first asked,
+  // so neither code spans nor link text rescan the text.
+  const inlineIndex = inlineIndexOf(text);
   // Only a plugin that actually contributes INLINE syntax may cost anything
   // per source position. A transform-only list contributes none, so it takes
   // the same path as an omitted or empty one: no candidate probe per
@@ -1934,35 +2006,7 @@ function parseInlineImpl(
         openIndex++;
       }
       const tickCount = openIndex - i;
-      if (backtickStrings == null) {
-        backtickStrings = new Map();
-        for (let start = i; start !== -1;) {
-          let end = start;
-          while (text[end] === '`') {
-            end++;
-          }
-          const sameLength = backtickStrings.get(end - start);
-          if (sameLength == null) {
-            backtickStrings.set(end - start, {starts: [start], searched: 0});
-          } else {
-            sameLength.starts.push(start);
-          }
-          start = text.indexOf('`', end);
-        }
-      }
-      const sameLength = backtickStrings.get(tickCount);
-      if (sameLength != null) {
-        while (
-          sameLength.searched < sameLength.starts.length &&
-          sameLength.starts[sameLength.searched] < openIndex
-        ) {
-          sameLength.searched++;
-        }
-      }
-      const closeIndex =
-        sameLength != null && sameLength.searched < sameLength.starts.length
-          ? sameLength.starts[sameLength.searched]
-          : -1;
+      const closeIndex = inlineIndex.backtickCloser(openIndex, tickCount);
       if (closeIndex === -1) {
         appendInlineText(nodes, delimiterNodes, text.slice(i, openIndex));
         i = openIndex;
@@ -2004,7 +2048,7 @@ function parseInlineImpl(
 
     // --- Image ![alt](src) ---
     if (text[i] === '!' && text[i + 1] === '[') {
-      const altClose = closingBracket(text, i + 2);
+      const altClose = inlineIndex.closingBracket(i + 2);
       if (altClose !== -1 && text[altClose + 1] === '(') {
         const srcClose = findClosingParen(text, altClose + 2);
         if (srcClose !== -1) {
@@ -2029,7 +2073,7 @@ function parseInlineImpl(
 
     // --- Reference image ![alt][label] / ![alt][] / ![alt] ---
     if (opts.linkDefs != null && text[i] === '!' && text[i + 1] === '[') {
-      const ref = matchReferenceImage(text, i, opts.linkDefs);
+      const ref = matchReferenceImage(text, i, opts.linkDefs, inlineIndex);
       if (ref) {
         nodes.push(ref.node);
         i = ref.end;
@@ -2049,7 +2093,7 @@ function parseInlineImpl(
 
     // --- Link [text](url) ---
     if (text[i] === '[') {
-      const textClose = closingBracket(text, i + 1);
+      const textClose = inlineIndex.closingBracket(i + 1);
       if (textClose !== -1 && text[textClose + 1] === '(') {
         const urlClose = findClosingParen(text, textClose + 2);
         if (urlClose !== -1) {
@@ -2078,7 +2122,14 @@ function parseInlineImpl(
 
     // --- Reference link [text][label] / [text][] / [text] ---
     if (opts.linkDefs != null && text[i] === '[') {
-      const ref = matchReferenceLink(text, i, opts.linkDefs, opts, context);
+      const ref = matchReferenceLink(
+        text,
+        i,
+        opts.linkDefs,
+        opts,
+        context,
+        inlineIndex,
+      );
       if (ref) {
         nodes.push(ref.node);
         i = ref.end;
