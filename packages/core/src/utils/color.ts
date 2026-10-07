@@ -80,28 +80,41 @@ export function parseRgb(value: string): RGBA | null {
     .split(/[\s,]+/)
     .map(p => p.trim())
     .filter(Boolean);
-  if (parts.length < 3) {
+  if (parts.length !== 3 && parts.length !== 4) {
     return null;
   }
 
-  const channel = (p: string): number => {
-    const n = p.endsWith('%') ? (parseFloat(p) / 100) * 255 : parseFloat(p);
-    return clamp(n, 0, 255);
+  const parseNumber = (part: string): number | null => {
+    const raw = part.endsWith('%') ? part.slice(0, -1) : part;
+    if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)) {
+      return null;
+    }
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
+  };
+
+  const channel = (part: string): number | null => {
+    const value = parseNumber(part);
+    if (value === null) {
+      return null;
+    }
+    return clamp(part.endsWith('%') ? (value / 100) * 255 : value, 0, 255);
   };
   const r = channel(parts[0]);
   const g = channel(parts[1]);
   const b = channel(parts[2]);
-  if ([r, g, b].some(Number.isNaN)) {
+  if (r === null || g === null || b === null) {
     return null;
   }
 
   let a = 1;
-  if (parts.length >= 4) {
+  if (parts.length === 4) {
     const raw = parts[3];
-    a = raw.endsWith('%') ? parseFloat(raw) / 100 : parseFloat(raw);
-    if (Number.isNaN(a)) {
+    const value = parseNumber(raw);
+    if (value === null) {
       return null;
     }
+    a = raw.endsWith('%') ? value / 100 : value;
     a = clamp(a, 0, 1);
   }
   return {r, g, b, a};

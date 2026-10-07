@@ -2,14 +2,12 @@
 
 /**
  * @file vegaLiteConfig.ts
- * @input Astryx theme tokens via useTheme
- * @output Predefined Vega-Lite Config object for Astryx-themed charts
- * @position Utility module; consumed by VegaChart and exported standalone
+ * @input Concrete Astryx token resolver supplied by the caller
+ * @output Serializable Vega-Lite Config object for Astryx-themed charts
+ * @position Renderer config utility; consumed by VegaChart and exported standalone
  *
- * Ported from the internal Astryx data-viz config — structural config only.
- * Colors are wired through Astryx data tokens (see domainTokens/dataTokens.ts).
- *
- * SYNC: When modified, update this header and /packages/lab/src/VegaChart/README.md
+ * The builder owns structural Vega-Lite configuration. Colors come from the
+ * caller's resolved Astryx data tokens and remain plain serializable values.
  */
 
 import type {Config as VegaLiteConfig} from 'vega-lite';
@@ -39,8 +37,8 @@ export const TITLE_OFFSET = 16;
 
 /**
  * A token resolver function — matches the `token` function returned by
- * `useXDSTheme()`. Accepts a CSS custom property name, returns its
- * resolved value for the current color mode.
+ * `useTheme()`. It accepts a CSS custom-property name and returns its concrete
+ * value for the caller's effective color mode.
  */
 type TokenResolver = (name: string) => string;
 
@@ -51,10 +49,11 @@ type TokenResolver = (name: string) => string;
 /**
  * Build a Vega-Lite `Config` object themed with Astryx tokens.
  *
- * Call this inside a component that has access to `useXDSTheme()`:
+ * Call this inside a component with `useTheme()`, or pass a resolver over an
+ * explicit resolved token map for server rendering and export:
  *
  * ```
- * const { token } = useXDSTheme();
+ * const {token} = useTheme();
  * const config = buildVegaLiteConfig(token);
  * ```
  *
@@ -62,7 +61,19 @@ type TokenResolver = (name: string) => string;
  * defaults, title typography, and view chrome — everything except color
  * scales (which are set via `range` using the Astryx data-viz tokens).
  */
-export function buildVegaLiteConfig(token: TokenResolver): VegaLiteConfig {
+export function buildVegaLiteConfig(
+  resolveToken: TokenResolver,
+): VegaLiteConfig {
+  const token: TokenResolver = name => {
+    const value = resolveToken(name);
+    if (value.includes('var(')) {
+      throw new Error(
+        `Vega-Lite config requires a concrete value for ${name}; received ${value}.`,
+      );
+    }
+    return value;
+  };
+
   return {
     axis: {
       domainColor: token('--color-icon-primary'),

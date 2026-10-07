@@ -88,6 +88,8 @@ describe('parseRgb', () => {
 
   it('returns null when it cannot parse', () => {
     expect(parseRgb('rgb(0, 0)')).toBeNull();
+    expect(parseRgb('rgb(255oops, 0, 0)')).toBeNull();
+    expect(parseRgb('rgb(0, 0, 0, 1, 2)')).toBeNull();
     expect(parseRgb('#000000')).toBeNull();
   });
 });
