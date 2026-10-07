@@ -29,6 +29,7 @@
 
 import {$isCodeNode} from '@lexical/code';
 import {$isLinkNode} from '@lexical/link';
+import {$dfs} from '@lexical/utils';
 import {
   $isElementNode,
   $isTextNode,
@@ -265,76 +266,121 @@ export function protectBackslashEscapes(markdown: string): ProtectedMarkdown {
   return {markdown: output + markdown.slice(copied), standIns};
 }
 
-/** Whether `text[index]` is escaped by an odd run of backslashes before it. */
-function isEscapedAt(text: string, index: number): boolean {
-  let backslashes = 0;
-  while (text[index - 1 - backslashes] === '\\') {
-    backslashes++;
+/**
+ * For each `[`, `]`, `(`, and `)` in `text` outside code and not escaped,
+ * the index of the bracket or parenthesis it pairs with by nesting; -1 for
+ * the rest. One pass, so a candidate never rescans the text.
+ */
+function pairedDelimiters(
+  text: string,
+  code: ReadonlyArray<readonly [number, number]>,
+): Int32Array {
+  const pair = new Int32Array(text.length).fill(-1);
+  const brackets: number[] = [];
+  const parentheses: number[] = [];
+  let codeIndex = 0;
+  for (let index = 0; index < text.length; index++) {
+    while (codeIndex < code.length && code[codeIndex][1] <= index) {
+      codeIndex++;
+    }
+    if (codeIndex < code.length && code[codeIndex][0] <= index) {
+      index = code[codeIndex][1] - 1;
+      continue;
+    }
+    const character = text[index];
+    const open =
+      character === ']'
+        ? brackets.pop()
+        : character === ')'
+          ? parentheses.pop()
+          : undefined;
+    if (character === '\\') {
+      index++;
+    } else if (character === '[') {
+      brackets.push(index);
+    } else if (character === '(') {
+      parentheses.push(index);
+    } else if (open !== undefined) {
+      pair[index] = open;
+      pair[open] = index;
+    }
   }
-  return backslashes % 2 === 1;
+  return pair;
 }
 
 /**
- * Returns `markdown` with each inline link that core Markdown refuses — its
- * destination is unsafe, such as `javascript:` — replaced by one stand-in for
- * the link's source. Core shows a refused link as its source text, exactly
- * as written, so the stand-in comes back as that text and never as a link
- * (spec:AST-061 FR7). Core's own parser decides, so both surfaces refuse the
- * same destinations. Run first, on the source as written.
+ * Whether core Markdown refuses a link to `destination`, as written in the
+ * source: its own parser decides, so both surfaces refuse the same
+ * destinations by one policy.
+ */
+function coreRefusesDestination(destination: string): boolean {
+  const probe = `[x](${destination})`;
+  const [only, ...rest] = parseInlineAst(probe);
+  return rest.length === 0 && only?.type === 'text' && only.value === probe;
+}
+
+/**
+ * Whether core Markdown refuses a link to `url`, a destination already
+ * decoded: the probe writes it back with every special character escaped.
+ * A URL that cannot be written back is refused.
+ */
+export function coreRefusesUrl(url: string): boolean {
+  if (/[<>\n\r]/.test(url) && /\s/.test(url)) {
+    return true;
+  }
+  const escaped = url.replace(/[\\()<>&[\]"']/g, character => `\\${character}`);
+  return coreRefusesDestination(/\s/.test(url) ? `<${escaped}>` : escaped);
+}
+
+/**
+ * Returns `markdown` with each inline link whose destination core Markdown
+ * refuses — `javascript:` and the like — kept from becoming a link
+ * (spec:AST-061 FR7). Where core shows the link as its source text, exactly
+ * as written, the whole source becomes one stand-in that comes back as that
+ * text. Where core reads no link there at all (its link text holds brackets
+ * of its own), only the `(` that opens the destination becomes a stand-in,
+ * so the text around it reads as core reads it, marks included. Brackets and
+ * parentheses pair by nesting, so link text holding brackets is found whole.
+ * Linear in the source: pairs come from one pass, and a destination inside a
+ * found link is not probed again. Run first, on the source as written;
+ * `$unwrapRefusedLinks` catches any link the editor still makes.
  */
 export function protectRefusedLinks(markdown: string): ProtectedMarkdown {
   const standIns = new Map<string, StandIn>();
   if (!markdown.includes('](')) {
     return {markdown, standIns};
   }
-  const code = codeRanges(markdown);
-  const inCode = (position: number): boolean =>
-    code.some(([start, end]) => start <= position && position < end);
-  const refused: Array<readonly [number, number]> = [];
-  let index = markdown.indexOf('](');
-  while (index !== -1) {
-    let next = index + 2;
-    if (!inCode(index) && !isEscapedAt(markdown, index)) {
-      // The link text opens at the nearest unescaped `[` with no unescaped
-      // `]` after it, as core reads link text.
-      let open = index - 1;
-      while (
-        open >= 0 &&
-        !(
-          (markdown[open] === '[' || markdown[open] === ']') &&
-          !isEscapedAt(markdown, open)
-        )
-      ) {
-        open--;
-      }
-      // The destination closes at the balancing `)`, skipping escapes.
-      let close = -1;
-      let depth = 1;
-      for (let position = index + 2; position < markdown.length; position++) {
-        const character = markdown[position];
-        if (character === '\\') {
-          position++;
-        } else if (character === '(') {
-          depth++;
-        } else if (character === ')' && --depth === 0) {
-          close = position;
-          break;
-        }
-      }
-      if (open >= 0 && markdown[open] === '[' && close !== -1) {
-        const source = markdown.slice(open, close + 1);
-        const [only, ...rest] = parseInlineAst(source);
-        if (
-          rest.length === 0 &&
-          only?.type === 'text' &&
-          only.value === source
-        ) {
-          refused.push([open, close + 1]);
-          next = close + 1;
-        }
-      }
+  const pair = pairedDelimiters(markdown, codeRanges(markdown));
+  // Ranges to replace, in order: a whole link, or the `(` that opens its
+  // destination.
+  const refused: Array<{start: number; end: number; whole: boolean}> = [];
+  // Where the last probed destination ends: a link cannot sit inside one.
+  let probedTo = -1;
+  for (
+    let index = markdown.indexOf('](');
+    index !== -1;
+    index = markdown.indexOf('](', index + 1)
+  ) {
+    const open = pair[index];
+    const close = pair[index + 1];
+    if (index < probedTo || open === -1 || close === -1) {
+      continue;
     }
-    index = markdown.indexOf('](', next);
+    probedTo = close;
+    if (!coreRefusesDestination(markdown.slice(index + 2, close))) {
+      continue;
+    }
+    const source = markdown.slice(open, close + 1);
+    const [only, ...rest] = parseInlineAst(source);
+    if (rest.length === 0 && only?.type === 'text' && only.value === source) {
+      // A whole link stands for the refused links found inside it.
+      while (refused.length > 0 && refused[refused.length - 1].start >= open) {
+        refused.pop();
+      }
+      refused.push({start: open, end: close + 1, whole: true});
+    } else {
+      refused.push({start: index + 1, end: index + 2, whole: false});
+    }
   }
   if (refused.length === 0) {
     return {markdown, standIns};
@@ -342,19 +388,37 @@ export function protectRefusedLinks(markdown: string): ProtectedMarkdown {
   const available = absentCharacters(markdown);
   let output = '';
   let copied = 0;
-  for (const [start, end] of refused) {
+  for (const {start, end, whole} of refused) {
     const next = available.next();
-    if (next.done === true) {
+    if (next.done === true || start < copied) {
       break;
     }
-    standIns.set(next.value, {
-      kind: 'literal',
-      text: markdown.slice(start, end),
-    });
+    standIns.set(
+      next.value,
+      whole
+        ? {kind: 'literal', text: markdown.slice(start, end)}
+        : {kind: 'escape', character: '('},
+    );
     output += markdown.slice(copied, start) + next.value;
     copied = end;
   }
   return {markdown: output + markdown.slice(copied), standIns};
+}
+
+/**
+ * Takes every link under `node` whose URL core Markdown refuses out of its
+ * link, leaving its text in place, so no form of link text or destination
+ * the source pass did not find can store or draw an unsafe URL.
+ */
+export function $unwrapRefusedLinks(node: ElementNode): void {
+  for (const {node: descendant} of $dfs(node)) {
+    if ($isLinkNode(descendant) && coreRefusesUrl(descendant.getURL())) {
+      for (const child of descendant.getChildren()) {
+        descendant.insertBefore(child);
+      }
+      descendant.remove();
+    }
+  }
 }
 
 /**

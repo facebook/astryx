@@ -57,6 +57,7 @@ import {
   protectCharacterReferences,
   protectLinkDestinationParentheses,
   protectRefusedLinks,
+  $unwrapRefusedLinks,
 } from './markdownCharacterReferences';
 import {
   $restoreExtensionSources,
@@ -390,6 +391,7 @@ export function importMarkdownKeepingSource(
             ...referenced.standIns,
           ]),
         );
+        $unwrapRefusedLinks(holder);
         $restoreExtensionSources(holder, shielded.standIns);
         $joinSoftLineBreaks(holder);
         for (const node of holder.getChildren()) {
