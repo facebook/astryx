@@ -9,8 +9,11 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {CommandPalette} from './CommandPalette';
+import {CommandPaletteInput} from './CommandPaletteInput';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -26,6 +29,11 @@ const groupedSource = createStaticSource([
 ]);
 
 const emptySource = createStaticSource([]);
+
+function NestedDismissible({onDismiss}: {onDismiss: () => void}) {
+  useLayerDismissal({isActive: true, onDismiss});
+  return null;
+}
 
 // Mock showModal and close since jsdom doesn't implement them
 beforeEach(() => {
@@ -198,6 +206,31 @@ describe('CommandPalette', () => {
     });
   });
 
+  it('keeps actionable empty content outside listbox semantics', async () => {
+    const {container} = render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={emptySource}
+        emptyBootstrapText={<a href="/commands/new">Create a command</a>}
+      />,
+    );
+
+    expect(
+      await screen.findByRole('link', {name: 'Create a command'}),
+    ).toHaveAttribute('href', '/commands/new');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('option')).not.toBeInTheDocument();
+    expect(
+      container.querySelectorAll('.astryx-command-palette-empty'),
+    ).toHaveLength(1);
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-controls');
+  });
+
   it('shows default emptyBootstrapText when not provided', async () => {
     render(
       <CommandPalette
@@ -209,6 +242,40 @@ describe('CommandPalette', () => {
     await waitFor(() => {
       expect(screen.getByText('Type to search')).toBeInTheDocument();
     });
+  });
+
+  it('clears a stale highlight across empty and repopulated results', async () => {
+    render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={simpleSource}
+      />,
+    );
+    await waitFor(() =>
+      expect(screen.getByText('Settings')).toBeInTheDocument(),
+    );
+
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input.getAttribute('aria-activedescendant')).toMatch(/-item-1$/);
+
+    fireEvent.change(input, {target: {value: 'zzz'}});
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull());
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+
+    fireEvent.change(input, {target: {value: 'hom'}});
+    await waitFor(() =>
+      expect(screen.getByRole('option', {name: 'Home'})).toBeInTheDocument(),
+    );
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute(
+      'aria-activedescendant',
+      screen.getByRole('option', {name: 'Home'}).id,
+    );
   });
 
   it('calls onOpenChange(false) when Escape is pressed', () => {
@@ -227,6 +294,46 @@ describe('CommandPalette', () => {
       cancelable: true,
     });
     dialog.dispatchEvent(escapeEvent);
+    expect(handleOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('lets the topmost nested layer handle Escape before the palette', () => {
+    const handleOpenChange = vi.fn();
+    const handleNestedDismiss = vi.fn();
+    render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={handleOpenChange}
+        searchSource={simpleSource}
+        input={
+          <>
+            <CommandPaletteInput />
+            <NestedDismissible onDismiss={handleNestedDismiss} />
+          </>
+        }
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'Escape'});
+
+    expect(handleNestedDismiss).toHaveBeenCalledOnce();
+    expect(handleOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('preserves local Escape closing for inline previews', () => {
+    const handleOpenChange = vi.fn();
+    render(
+      <CommandPalette
+        isOpen={true}
+        isInline
+        onOpenChange={handleOpenChange}
+        searchSource={simpleSource}
+      />,
+    );
+
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'Escape'});
+
+    expect(handleOpenChange).toHaveBeenCalledOnce();
     expect(handleOpenChange).toHaveBeenCalledWith(false);
   });
 
@@ -357,6 +464,52 @@ describe('CommandPalette', () => {
     expect(input).not.toHaveAttribute('aria-activedescendant');
   });
 
+  it('keeps Home and End on the query field and uses Page keys for results', async () => {
+    const user = userEvent.setup();
+    const handleOpenChange = vi.fn();
+    const handleValueChange = vi.fn();
+    render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={handleOpenChange}
+        onValueChange={handleValueChange}
+        searchSource={simpleSource}
+      />,
+    );
+
+    const input = screen.getByRole<HTMLInputElement>('combobox');
+    await waitFor(() =>
+      expect(screen.getByText('Settings')).toBeInTheDocument(),
+    );
+    await user.click(input);
+    await user.type(input, 'e');
+    await waitFor(() =>
+      expect(screen.getByText('Settings')).toBeInTheDocument(),
+    );
+    const homeOption = screen.getByText('Home').closest('[role="option"]');
+    const settingsOption = screen
+      .getByText('Settings')
+      .closest('[role="option"]');
+
+    expect(input).toHaveValue('e');
+    expect(input.selectionStart).toBe(1);
+    await user.keyboard('{Home}');
+    expect(input.selectionStart).toBe(0);
+    await user.keyboard('{End}');
+    expect(input.selectionStart).toBe(1);
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+
+    await user.keyboard('{PageDown}');
+    expect(input.getAttribute('aria-activedescendant')).toBe(
+      settingsOption?.id,
+    );
+    await user.keyboard('{PageUp}');
+    expect(input.getAttribute('aria-activedescendant')).toBe(homeOption?.id);
+    await user.keyboard('{Enter}');
+    expect(handleValueChange).toHaveBeenCalledWith('home');
+    expect(handleOpenChange).toHaveBeenCalledWith(false);
+  });
+
   it('highlights on hover without scrolling and scrolls once per key (#6077)', async () => {
     // Hover must be handled by the root's delegated list handler (routed to
     // useCombobox's hover-aware path), and the shared useHighlightedOptionScroll effect
@@ -453,7 +606,7 @@ describe('CommandPalette', () => {
       });
     });
 
-    it('announces the empty state with the query when nothing matches', async () => {
+    it('announces the rendered default empty state when nothing matches', async () => {
       render(
         <CommandPalette
           isOpen={true}
@@ -464,7 +617,33 @@ describe('CommandPalette', () => {
       await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
       fireEvent.change(screen.getByRole('combobox'), {target: {value: 'zzz'}});
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('No results for zzz');
+        expect(politeRegion()).toHaveTextContent(/^No results$/);
+      });
+    });
+
+    it('announces rich emptySearchText exactly as rendered', async () => {
+      render(
+        <CommandPalette
+          isOpen={true}
+          onOpenChange={() => {}}
+          searchSource={simpleSource}
+          emptySearchText={
+            <span>
+              Nothing like that here. <a href="/commands/new">Add a command</a>
+            </span>
+          }
+        />,
+      );
+      await waitFor(() => expect(screen.getByText('Home')).toBeInTheDocument());
+      fireEvent.change(screen.getByRole('combobox'), {target: {value: 'zzz'}});
+
+      expect(
+        await screen.findByRole('link', {name: 'Add a command'}),
+      ).toHaveAttribute('href', '/commands/new');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent(
+          /^Nothing like that here\. Add a command$/,
+        );
       });
     });
 

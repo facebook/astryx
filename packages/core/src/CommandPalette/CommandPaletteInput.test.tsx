@@ -20,6 +20,18 @@ describe('CommandPaletteInput', () => {
     expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
   });
 
+  it('renders the local input target and delegated search icon', () => {
+    const {container} = render(<CommandPaletteInput />);
+
+    expect(container.firstElementChild).toHaveClass(
+      'astryx-command-palette-input',
+    );
+    expect(container.querySelector('.astryx-icon')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+  });
+
   it('renders with custom placeholder', () => {
     render(<CommandPaletteInput placeholder="Type a command..." />);
     expect(
@@ -32,12 +44,11 @@ describe('CommandPaletteInput', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
-  it('has an accessible name by default', () => {
-    render(<CommandPaletteInput />);
-    expect(screen.getByRole('combobox')).toHaveAttribute(
-      'aria-label',
-      'Search…',
-    );
+  it('has an accessible name independent of its placeholder by default', () => {
+    render(<CommandPaletteInput placeholder="Find an action…" />);
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-label', 'Search commands');
+    expect(input).toHaveAttribute('placeholder', 'Find an action…');
   });
 
   it('uses the label prop as the accessible name', () => {
@@ -46,14 +57,6 @@ describe('CommandPaletteInput', () => {
     expect(input).toHaveAttribute('aria-label', 'Search commands');
     // The label prop does not affect the visible placeholder
     expect(input).toHaveAttribute('placeholder', 'Search…');
-  });
-
-  it('falls back to a custom placeholder for the accessible name', () => {
-    render(<CommandPaletteInput placeholder="Type a command..." />);
-    expect(screen.getByRole('combobox')).toHaveAttribute(
-      'aria-label',
-      'Type a command...',
-    );
   });
 
   it('lets a consumer-passed aria-label override the default', () => {
@@ -117,6 +120,7 @@ describe('CommandPaletteInput dialog context', () => {
       value: '',
       setValue: vi.fn(),
       listId: 'list-1',
+      hasListbox: true,
       highlightedIndex: -1,
       setHighlightedIndex: vi.fn(),
       getItemId: (i: number) => `item-${i}`,
@@ -130,6 +134,63 @@ describe('CommandPaletteInput dialog context', () => {
       ...overrides,
     };
   }
+
+  it('renders the delegated loading spinner while busy', () => {
+    render(
+      <CommandPaletteContext value={makeContext({isBusy: true})}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    expect(screen.getByRole('status', {name: 'Loading'})).toHaveClass(
+      'astryx-spinner',
+    );
+  });
+
+  it('omits popup ARIA while the result surface has no listbox', () => {
+    render(
+      <CommandPaletteContext value={makeContext({hasListbox: false})}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(input).not.toHaveAttribute('aria-controls');
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  it('omits an active descendant whose highlighted index has no option', () => {
+    render(
+      <CommandPaletteContext
+        value={makeContext({
+          highlightedIndex: 1,
+          selectableItems: [{value: 'home'}],
+        })}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    expect(screen.getByRole('combobox')).not.toHaveAttribute(
+      'aria-activedescendant',
+    );
+  });
+
+  it('does not route IME composition keys to palette commands', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <CommandPaletteContext value={makeContext({onKeyDown})}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    fireEvent.keyDown(screen.getByRole('combobox'), {
+      key: 'Enter',
+      isComposing: true,
+    });
+
+    expect(onKeyDown).not.toHaveBeenCalled();
+  });
 
   it('does not auto-focus inside an inline dialog', () => {
     const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');

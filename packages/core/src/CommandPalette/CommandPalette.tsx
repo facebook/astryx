@@ -3,7 +3,8 @@
 'use client';
 /**
  * @file CommandPalette.tsx
- * @input Uses React, Dialog, Layout, CommandPaletteContext, SearchSource, useCombobox, useAnnounce
+ * @input Uses React, Dialog, Layout, CommandPaletteContext, SearchSource,
+ *   useCombobox, useAnnounce, useAnnounceRenderedText
  * @output Exports CommandPalette root component and props
  * @position Core root component; dialog shell with searchSource-driven items
  *
@@ -37,6 +38,7 @@ import {CommandPaletteFooter} from './CommandPaletteFooter';
 import {CommandPaletteEmpty} from './CommandPaletteEmpty';
 import type {BaseProps} from '../BaseProps';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {useTranslator} from '../i18n';
 
 export interface CommandPaletteProps<
@@ -253,9 +255,10 @@ function ItemRenderer<T extends SearchableItem>({
  * Uses `searchSource` for all search logic — same interface as Typeahead.
  * For static lists, use `createStaticSource` from `@astryxdesign/core/Typeahead`.
  *
- * Keyboard navigation is handled by `useCombobox` from Selector,
- * ensuring consistent arrow key, Home/End, Enter, and Escape behavior
- * across all combobox-pattern components.
+ * Keyboard navigation is handled by `useCombobox` from Selector for arrows,
+ * PageUp/PageDown, and Enter. Home/End remain native caret keys. Modal Escape
+ * dismissal delegates to Dialog's shared layer stack so nested surfaces handle
+ * the first press.
  *
  * Input and footer are rendered by default — only pass them to replace the defaults.
  *
@@ -311,6 +314,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
     useOptimistic(searchResults);
   const isBusy = isPending;
   const searchVersionRef = useRef(0);
+  const emptyStateRef = useRef<HTMLDivElement>(null);
 
   // Announce search status to screen readers through the shared polite live
   // region (comboboxes-7 announce path, mirroring Selector / BaseTypeahead).
@@ -393,6 +397,10 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
     (query: string) => {
       searchSource.cancel?.();
       const version = ++searchVersionRef.current;
+      // A highlight belongs to the query that created it. Clear it before any
+      // optimistic narrowing so aria-activedescendant never shifts to a
+      // different command at the same index while the next result set loads.
+      combobox.setHighlightedIndex(-1);
 
       startTransition(async () => {
         const isBootstrap = query === '';
@@ -429,16 +437,12 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
 
           // Announce the outcome from the search commit (not a reactive
           // effect), matching Selector / BaseTypeahead: exactly one
-          // announcement per committed query, and the version check above
-          // already discards stale keystrokes. Bootstrap stays silent — the
-          // same role PowerSearch's mount guard plays — so opening the
-          // palette announces nothing; clearing the query only clears any
-          // lingering status text.
+          // announcement per committed non-empty query. Empty results are
+          // announced from their rendered content below so a caller-supplied
+          // ReactNode reaches assistive technology as written.
           if (isBootstrap) {
             announce('');
-          } else if (items.length === 0) {
-            announce(t('@astryx.commandPalette.noResultsFor', {query}));
-          } else {
+          } else if (items.length > 0) {
             announce(
               t('@astryx.commandPalette.resultCount', {count: items.length}),
             );
@@ -494,14 +498,19 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
     }
   }, [isOpen]);
 
-  // Wrap combobox's onKeyDown to intercept Escape (close palette) and
-  // Enter on highlight (select + close), since we're not using combobox's
-  // built-in open/close lifecycle.
+  // Wrap combobox's onKeyDown to preserve inline-preview Escape handling and
+  // select + close on Enter. Modal Escape stays unclaimed here so Dialog's
+  // shared dismissal stack can route it to the topmost surface.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Escape') {
-        e.preventDefault();
-        handleClose();
+        // Modal CommandPalette delegates Escape to Dialog's shared dismissal
+        // stack so a nested layer handles the first press. Inline previews do
+        // not join that stack, so preserve their local close behavior.
+        if (isInline) {
+          e.preventDefault();
+          handleClose();
+        }
         return;
       }
       if (e.key === 'Enter') {
@@ -518,13 +527,18 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
         }
         return;
       }
+      // Home and End remain native caret-movement keys for this editable
+      // combobox. PageUp/PageDown provide first/last result navigation.
+      if (e.key === 'Home' || e.key === 'End') {
+        return;
+      }
       // Space should type in the input, not trigger selection
       if (e.key === ' ') {
         return;
       }
       combobox.onKeyDown(e);
     },
-    [combobox, handleClose, selectableItems, selectItem],
+    [combobox, handleClose, isInline, selectableItems, selectItem],
   );
 
   // Hover highlight is owned here by a single delegated handler on the list
@@ -568,6 +582,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       value,
       setValue,
       listId,
+      hasListbox: selectableItems.length > 0,
       highlightedIndex: combobox.highlightedIndex,
       setHighlightedIndex: combobox.setHighlightedIndex,
       getItemId: combobox.getItemId,
@@ -605,14 +620,21 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
   // the empty state is never unmounted and re-added mid-search (which flashed).
   const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
   const showEmptySearch = search !== '' && optimisticResults.length === 0;
+  useAnnounceRenderedText(emptyStateRef, showEmptySearch, search);
 
   let listContent: ReactNode;
   if (showEmptyBootstrap) {
     listContent = (
-      <CommandPaletteEmpty>{emptyBootstrapText}</CommandPaletteEmpty>
+      <CommandPaletteEmpty ref={emptyStateRef}>
+        {emptyBootstrapText}
+      </CommandPaletteEmpty>
     );
   } else if (showEmptySearch) {
-    listContent = <CommandPaletteEmpty>{emptySearchText}</CommandPaletteEmpty>;
+    listContent = (
+      <CommandPaletteEmpty ref={emptyStateRef}>
+        {emptySearchText}
+      </CommandPaletteEmpty>
+    );
   } else {
     listContent = (
       <ItemRenderer

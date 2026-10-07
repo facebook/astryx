@@ -458,3 +458,113 @@ export const ThemedGroupHeading: Story = {
     </Theme>
   ),
 };
+
+// ─── Audit matrix ─────────────────────────────────────────────────────────────
+
+/**
+ * Stable, always-rendered states for visual, accessibility, RTL, and responsive
+ * verification. Inline mode keeps each palette in normal document flow while
+ * preserving the same owned input, result, empty, pending, and footer anatomy.
+ */
+export const AuditMatrix: Story = {
+  tags: ['visual-theme-matrix'],
+  render: function Render() {
+    const groupedSource = useMemo(
+      () =>
+        createStaticSource([
+          {id: 'home', label: 'Home', auxiliaryData: {group: 'Navigation'}},
+          {
+            id: 'settings',
+            label: 'Settings',
+            auxiliaryData: {group: 'Navigation'},
+          },
+          {id: 'save', label: 'Save', auxiliaryData: {group: 'Actions'}},
+          {id: 'export', label: 'Export', auxiliaryData: {group: 'Actions'}},
+        ]),
+      [],
+    );
+    const emptySource = useMemo(() => createStaticSource([]), []);
+    const pendingSource = useMemo<SearchSource>(
+      () => ({
+        bootstrap: () => new Promise<SearchableItem[]>(() => {}),
+        search: () => new Promise<SearchableItem[]>(() => {}),
+      }),
+      [],
+    );
+    const panelStyle = {
+      flex: '1 1 280px',
+      minWidth: 0,
+    } as const;
+    const headingStyle = {
+      marginBlock: '0 8px',
+      font: 'inherit',
+      fontWeight: 600,
+    } as const;
+
+    return (
+      <div
+        data-command-palette-audit-matrix
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+          gap: 16,
+          width: '100%',
+          padding: 16,
+          boxSizing: 'border-box',
+        }}>
+        <section style={panelStyle}>
+          <h2 style={headingStyle}>Grouped results</h2>
+          <CommandPalette
+            isOpen
+            isInline
+            role="region"
+            label="Grouped command palette"
+            onOpenChange={() => {}}
+            searchSource={groupedSource}
+            value="settings"
+            width="100%"
+            maxHeight={420}
+          />
+        </section>
+        <section style={panelStyle}>
+          <h2 style={headingStyle}>Empty bootstrap</h2>
+          <CommandPalette
+            isOpen
+            isInline
+            role="region"
+            label="Empty command palette"
+            onOpenChange={() => {}}
+            searchSource={emptySource}
+            emptyBootstrapText={
+              <span>
+                No commands yet. <a href="#new-command">Create a command</a>
+              </span>
+            }
+            emptySearchText={
+              <span>
+                No matching commands.{' '}
+                <a href="#new-command">Create a command</a>
+              </span>
+            }
+            width="100%"
+            maxHeight={420}
+          />
+        </section>
+        <section style={panelStyle}>
+          <h2 style={headingStyle}>Pending bootstrap</h2>
+          <CommandPalette
+            isOpen
+            isInline
+            role="region"
+            label="Pending command palette"
+            onOpenChange={() => {}}
+            searchSource={pendingSource}
+            width="100%"
+            maxHeight={420}
+          />
+        </section>
+      </div>
+    );
+  },
+};

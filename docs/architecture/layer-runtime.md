@@ -36,6 +36,7 @@ verified_by:
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenuSubMenu.test.tsx,
     packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx,
+    packages/core/src/CommandPalette/CommandPalette.test.tsx,
     packages/core/src/hooks/useFocusTrap.test.tsx,
     packages/core/src/hooks/useMenuHover.test.tsx,
     packages/core/src/Toast/ToastViewport.test.tsx,
@@ -315,8 +316,10 @@ modal, so the current root/fallback host does not fulfill that intent. Toast
 state also lives inside the viewport.
 
 CommandPalette composes native Dialog. Its normal launcher presentation therefore
-uses `showModal()`; its documentation/showcase `isInline` path does not. It
-currently handles Escape on its own element as well as composing Dialog.
+uses `showModal()`; its documentation/showcase `isInline` path does not. The
+modal path delegates Escape to Dialog's shared dismissal registration. Only the
+inline preview closes from CommandPalette's local key handler because it is not a
+registered layer.
 
 Banner and FieldStatus are in-flow. `useAnnounce` is nonvisual. AlertDialog,
 imperative Dialog, Lightbox, and ordinary Popover-family surfaces are
@@ -383,7 +386,6 @@ Current gaps are observable facts, not current target behavior:
 - Backdrop, manual outside, touch, and swipe paths do not share the existing
   gesture claim or one association model.
 - Toast's root and fallback hosts remain behind active native modals.
-- CommandPalette's local Escape handler bypasses shared owner selection.
 - The reduced browser fallback is not documented as non-equivalent.
 - Existing tests simulate Popover `toggle` and DOM nesting; they do not prove
   native pointer light dismissal, top-layer/modal ordering, real anchor geometry,

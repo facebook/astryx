@@ -40,15 +40,20 @@ afterEach(() => {
 
 describe('CommandPaletteItem', () => {
   it('renders children', () => {
-    render(
-      <CommandPaletteItem value="test">Test Item</CommandPaletteItem>,
-    );
+    render(<CommandPaletteItem value="test">Test Item</CommandPaletteItem>);
     expect(screen.getByText('Test Item')).toBeInTheDocument();
   });
 
   it('has option role', () => {
     render(<CommandPaletteItem value="test">Item</CommandPaletteItem>);
     expect(screen.getByRole('option')).toBeInTheDocument();
+  });
+
+  it('carries the stable item theme target', () => {
+    render(<CommandPaletteItem value="test">Item</CommandPaletteItem>);
+    expect(screen.getByRole('option')).toHaveClass(
+      'astryx-command-palette-item',
+    );
   });
 
   it('calls onSelect when clicked', () => {
@@ -158,9 +163,7 @@ describe('CommandPaletteItem', () => {
   });
 
   it('sets data-value attribute', () => {
-    render(
-      <CommandPaletteItem value="my-value">Item</CommandPaletteItem>,
-    );
+    render(<CommandPaletteItem value="my-value">Item</CommandPaletteItem>);
     expect(screen.getByRole('option')).toHaveAttribute(
       'data-value',
       'my-value',

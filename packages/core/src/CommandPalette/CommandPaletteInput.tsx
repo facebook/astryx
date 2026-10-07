@@ -16,7 +16,7 @@ import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {mergeProps} from '../utils';
+import {isImeKeyEvent, mergeProps} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -118,8 +118,7 @@ export interface CommandPaletteInputProps extends Omit<
 
   /**
    * Accessible label for the combobox input, announced by screen readers.
-   * Falls back to the placeholder text (`'Search…'` by default), since a
-   * placeholder alone is not a reliable accessible name.
+   * @default 'Search commands'
    */
   label?: string;
 
@@ -177,6 +176,7 @@ export function CommandPaletteInput({
   const t = useTranslator();
   const placeholder =
     placeholderFromProps ?? t('@astryx.commandPalette.input.placeholder');
+  const accessibleLabel = label ?? t('@astryx.commandPalette.input.label');
   const ctx = useCommandPaletteContext();
   const dialogContext = useDialogContext();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -202,7 +202,10 @@ export function CommandPaletteInput({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       onKeyDown?.(e);
-      if (e.defaultPrevented) {
+      if (e.defaultPrevented || isImeKeyEvent(e.nativeEvent)) {
+        // An in-progress IME composition owns Enter, Escape, and arrows. Let
+        // the input method finish or cancel composition without selecting or
+        // dismissing palette content.
         return;
       }
       // Delegate to useCombobox's keyboard handler from context
@@ -226,17 +229,18 @@ export function CommandPaletteInput({
         ref={useMergedRefs(ref, inputRef)}
         type="text"
         role="combobox"
-        aria-expanded={ctx?.isOpen ?? true}
+        aria-expanded={ctx ? ctx.isOpen && ctx.hasListbox : true}
         aria-autocomplete="list"
-        aria-controls={ctx?.listId}
+        aria-controls={ctx?.hasListbox ? ctx.listId : undefined}
         aria-activedescendant={
-          ctx && ctx.highlightedIndex >= 0
+          ctx &&
+          ctx.hasListbox &&
+          ctx.highlightedIndex >= 0 &&
+          ctx.highlightedIndex < ctx.selectableItems.length
             ? ctx.getItemId(ctx.highlightedIndex)
             : undefined
         }
-        // A placeholder alone is not a reliable accessible name; give the
-        // combobox an explicit one (consumer aria-label via rest props wins).
-        aria-label={label ?? placeholder}
+        aria-label={accessibleLabel}
         placeholder={placeholder}
         value={value}
         data-autofocus={effectiveAutoFocus || undefined}
