@@ -1,0 +1,137 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file markdownSpaceRuns.ts
+ * @input Lexical nodes to export as Markdown, and the transformers to use
+ * @output $convertToMarkdownKeepingTimeLinear: Lexical's Markdown export, in
+ *   time linear in the text even when a text holds long runs of spaces
+ * @position Every Markdown export in this package goes through it
+ *   (markdownSource.ts, markdownTable.ts). Lexical's text-format export splits
+ *   each text into leading spaces, content, and trailing spaces with
+ *   `/^(\s*)(.*?)(\s*)$/s`, which retries from every character of a long run
+ *   of spaces inside the text, so its time grows with the square of the run.
+ *   Each such run is exported as private-use stand-ins, which that pattern
+ *   passes in one step each, and put back afterwards. Leading and trailing
+ *   spaces, which decide where marks attach, are left as they are.
+ */
+
+import type {ElementNode, LexicalNode} from 'lexical';
+import type {Transformer} from '@lexical/markdown';
+import {$isCodeNode} from '@lexical/code';
+import {$convertToMarkdownString} from '@lexical/markdown';
+import {$isElementNode, $isTextNode} from 'lexical';
+import {absentCharacters} from './markdownCharacterReferences';
+
+/** Two or more spaces with other characters on both sides. */
+const INNER_SPACE_RUN = /(?<=\S)\s{2,}(?=\S)/g;
+
+/** Whether Lexical exports the text node's text as written, untouched. */
+function isLiteralText(node: LexicalNode): boolean {
+  return (
+    $isTextNode(node) &&
+    (node.hasFormat('code') || $isCodeNode(node.getParent()))
+  );
+}
+
+/**
+ * Lexical's `$convertToMarkdownString(transformers, root)`, with every run of
+ * two or more spaces inside a text exported as stand-ins and put back, so the
+ * export takes time linear in the text. The tree is read through views, never
+ * changed.
+ */
+export function $convertToMarkdownKeepingTimeLinear(
+  transformers: Array<Transformer>,
+  root: ElementNode,
+): string {
+  const texts: string[] = [];
+  const spaces = new Set<string>();
+  const visit = (node: LexicalNode) => {
+    if ($isTextNode(node)) {
+      const text = node.getTextContent();
+      texts.push(text);
+      if (!isLiteralText(node)) {
+        for (const run of text.match(INNER_SPACE_RUN) ?? []) {
+          for (const space of run) {
+            spaces.add(space);
+          }
+        }
+      }
+    } else if ($isElementNode(node) && !$isCodeNode(node)) {
+      node.getChildren().forEach(visit);
+    }
+  };
+  root.getChildren().forEach(visit);
+  if (spaces.size === 0) {
+    return $convertToMarkdownString(transformers, root);
+  }
+  const free = absentCharacters(texts.join(''));
+  const standIns = new Map<string, string>();
+  for (const space of spaces) {
+    const standIn = free.next().value;
+    if (standIn == null) {
+      return $convertToMarkdownString(transformers, root);
+    }
+    standIns.set(space, standIn);
+  }
+  const children = viewsOf(root.getChildren(), standIns);
+  const view = Object.create(root) as typeof root;
+  view.getChildren = <T extends LexicalNode>() => children as Array<T>;
+  let markdown = $convertToMarkdownString(transformers, view);
+  for (const [space, standIn] of standIns) {
+    markdown = markdown.split(standIn).join(space);
+  }
+  return markdown;
+}
+
+/**
+ * Views of `nodes` whose texts hold stand-ins for their inner runs of
+ * spaces; a node with no such run is itself. Each view's siblings are the
+ * views beside it, as Lexical's exporter reads neighbors to place marks.
+ */
+function viewsOf(
+  nodes: ReadonlyArray<LexicalNode>,
+  standIns: ReadonlyMap<string, string>,
+): LexicalNode[] {
+  const views = nodes.map(node => viewOf(node, standIns));
+  views.forEach((view, index) => {
+    if (view !== nodes[index]) {
+      view.getPreviousSibling = <T extends LexicalNode>() =>
+        (views[index - 1] ?? null) as T | null;
+      view.getNextSibling = <T extends LexicalNode>() =>
+        (views[index + 1] ?? null) as T | null;
+    }
+  });
+  return views;
+}
+
+function viewOf(
+  node: LexicalNode,
+  standIns: ReadonlyMap<string, string>,
+): LexicalNode {
+  if ($isTextNode(node)) {
+    if (isLiteralText(node)) {
+      return node;
+    }
+    const text = node.getTextContent();
+    const stood = text.replace(INNER_SPACE_RUN, run =>
+      Array.from(run, space => standIns.get(space) ?? space).join(''),
+    );
+    if (stood === text) {
+      return node;
+    }
+    const view = Object.create(node) as typeof node;
+    view.getTextContent = () => stood;
+    return view;
+  }
+  if ($isElementNode(node) && !$isCodeNode(node)) {
+    const original = node.getChildren();
+    const children = viewsOf(original, standIns);
+    if (children.every((child, index) => child === original[index])) {
+      return node;
+    }
+    const view = Object.create(node) as typeof node;
+    view.getChildren = <T extends LexicalNode>() => children as Array<T>;
+    return view;
+  }
+  return node;
+}

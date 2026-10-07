@@ -27,11 +27,7 @@
  * written instead.
  */
 
-import {
-  $convertFromMarkdownString,
-  $convertToMarkdownString,
-  type Transformer,
-} from '@lexical/markdown';
+import {$convertFromMarkdownString, type Transformer} from '@lexical/markdown';
 import {$isCodeNode} from '@lexical/code';
 import {$isListItemNode, $isListNode} from '@lexical/list';
 import {
@@ -69,6 +65,7 @@ import {
   withExtensionExport,
 } from './markdownExtensions';
 import {$isRichTextExtensionNode} from './markdownExtensionNode';
+import {$convertToMarkdownKeepingTimeLinear} from './markdownSpaceRuns';
 import type {MarkdownPluginEntry} from '@astryxdesign/core/Markdown/plugins';
 
 /** The whitespace and content one chunk of Markdown source was split into. */
@@ -459,7 +456,15 @@ export function $joinSoftLineBreaks(element: ElementNode): void {
     // The spaces around a soft break are part of it.
     const previous = child.getPreviousSibling();
     if ($isTextNode(previous) && !previous.hasFormat('code')) {
-      previous.setTextContent(previous.getTextContent().replace(/[ \t]+$/, ''));
+      // Counted from the end: a pattern such as /[ \t]+$/ retries from every
+      // space in a long run that does not end the text, so its time grows
+      // with the square of the run.
+      const text = previous.getTextContent();
+      let end = text.length;
+      while (end > 0 && (text[end - 1] === ' ' || text[end - 1] === '\t')) {
+        end--;
+      }
+      previous.setTextContent(text.slice(0, end));
     }
     const next = child.getNextSibling();
     if ($isTextNode(next) && !next.hasFormat('code')) {
@@ -632,7 +637,7 @@ function $canonicalMarkdown(
     descendants,
     descendants.map(node => node.getTextContent()).join(''),
   );
-  let markdown = $convertToMarkdownString(
+  let markdown = $convertToMarkdownKeepingTimeLinear(
     withExtensionExport(transformers),
     childrenOf(
       placeholders.size === 0
@@ -808,7 +813,7 @@ function $regeneratedMarkdown(
     descendantsOf(nodes),
     text + token,
   );
-  let marked = $convertToMarkdownString(
+  let marked = $convertToMarkdownKeepingTimeLinear(
     withExtensionExport(transformers),
     childrenOf(nodes.map(node => markedView(node, token, placeholders))),
   )

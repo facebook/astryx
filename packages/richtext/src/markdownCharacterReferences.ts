@@ -71,7 +71,7 @@ const PRIVATE_USE_RANGES: ReadonlyArray<readonly [number, number]> = [
 ];
 
 /** Private-use characters that do not occur in `text`, in order. */
-function* absentCharacters(text: string): Generator<string> {
+export function* absentCharacters(text: string): Generator<string> {
   const present = new Set(text);
   for (const [first, last] of PRIVATE_USE_RANGES) {
     for (let codePoint = first; codePoint <= last; codePoint++) {

@@ -17,7 +17,6 @@
 
 import {
   $convertFromMarkdownString,
-  $convertToMarkdownString,
   CODE,
   TEXT_FORMAT_TRANSFORMERS,
   TEXT_MATCH_TRANSFORMERS,
@@ -47,6 +46,7 @@ import {TASK_LIST} from './markdownTaskList';
 import {ORDERED_LIST_KEEPING_START} from './markdownOrderedList';
 import {LINK_KEEPING_DESTINATIONS} from './markdownLink';
 import {BACKTICK_CODE, TILDE_CODE} from './markdownCodeFence';
+import {$convertToMarkdownKeepingTimeLinear} from './markdownSpaceRuns';
 
 /**
  * Cells hold inline Markdown only, so they are imported and exported with the
@@ -169,10 +169,32 @@ function $createCell(
 function cellMarkdown(cell: TableCellNode): string {
   // A cell is one line of Markdown, so paragraph breaks inside it become
   // spaces, and literal pipes are escaped to stay inside the cell.
-  return $convertToMarkdownString(CELL_TRANSFORMERS, cell)
-    .replace(/\s*\n+\s*/g, ' ')
+  return oneLine($convertToMarkdownKeepingTimeLinear(CELL_TRANSFORMERS, cell))
     .replace(/\|/g, '\\|')
     .trim();
+}
+
+/**
+ * `markdown` with each run of spaces that holds a line break made one space.
+ * Read line by line: a pattern matching optional spaces around line breaks
+ * retries from every space in a long run without a line break, so its time
+ * grows with the square of the run.
+ */
+function oneLine(markdown: string): string {
+  if (!markdown.includes('\n')) {
+    return markdown;
+  }
+  const lines = markdown.split('\n');
+  let joined = lines[0].trimEnd();
+  for (let index = 1; index < lines.length; index++) {
+    const isLast = index === lines.length - 1;
+    const line = isLast ? lines[index].trimStart() : lines[index].trim();
+    // A blank line is part of the run of spaces around it.
+    if (line !== '' || isLast) {
+      joined += ` ${line}`;
+    }
+  }
+  return joined;
 }
 
 /**
