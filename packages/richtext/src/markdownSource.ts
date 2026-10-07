@@ -677,9 +677,8 @@ function $canonicalMarkdown(
 
 /** Line starts that would turn literal text into a block structure. */
 const LINE_START_SYNTAX: ReadonlyArray<RegExp> = [
-  // ATX heading, block quote, bullet list item.
+  // ATX heading, bullet list item.
   /^#{1,6}(?=[ \t]|$)/,
-  /^>/,
   /^[-+](?=[ \t]|$)/,
   // Setext underline or thematic break made of `=` or `-`.
   /^[=-](?=[=\- \t]*$)/,
@@ -688,6 +687,9 @@ const LINE_START_SYNTAX: ReadonlyArray<RegExp> = [
 ];
 // An ordered list item escapes its delimiter, not its first character.
 const ORDERED_LIST_START = /^(\d{1,9})([.)])(?=[ \t]|$)/;
+// A block quote marker may follow up to three spaces (CommonMark 0.31 §5.1);
+// the escape goes before its `>`.
+const QUOTE_START = /^( {0,3})>/;
 
 // Inline syntax Lexical's export leaves unescaped: link and image brackets and
 // character references.
@@ -757,8 +759,11 @@ function markedView(
     const previous = node.getPreviousSibling();
     if (previous == null || $isLineBreakNode(previous)) {
       const ordered = ORDERED_LIST_START.exec(text);
+      const quote = QUOTE_START.exec(text);
       if (ordered != null) {
         text = ordered[1] + token + text.slice(ordered[1].length);
+      } else if (quote != null) {
+        text = quote[1] + token + text.slice(quote[1].length);
       } else if (LINE_START_SYNTAX.some(pattern => pattern.test(text))) {
         text = token + text;
       }
