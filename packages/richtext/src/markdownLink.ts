@@ -43,7 +43,10 @@ export function markdownDestination(url: string): string {
     // (CommonMark §6.3).
     return `<${url.replace(/[\\<>]/g, '\\$&')}>`;
   }
-  return isBalanced(url) ? url : url.replace(/[()]/g, '\\$&');
+  // A backslash before punctuation would read back as an escape, so every
+  // backslash is written escaped; so is every parenthesis that does not
+  // balance.
+  return url.replace(isBalanced(url) ? /\\/g : /[\\()]/g, '\\$&');
 }
 
 /**

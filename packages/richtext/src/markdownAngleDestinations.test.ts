@@ -263,15 +263,28 @@ describe('angle-bracket destinations holding parentheses and backslashes', () =>
     expect(richLinks(exportLinkTo(url))).toEqual([{url, title: null}]);
   });
 
+  it.each([
+    'https://e.com/a\\*b',
+    'https://e.com/a\\',
+    'https://e.com/a\\(b',
+    'https://e.com/a\\b',
+    'https://e.com/a\\\\b',
+  ])(
+    'writes a link made in the editor to %j, backslashes and all, so it reads back',
+    url => {
+      expect(richLinks(exportLinkTo(url))).toEqual([{url, title: null}]);
+    },
+  );
+
   it('reads back every link made in the editor across 4,000 addresses', () => {
     let state = 4000;
     const random = () => {
       state = (state * 1103515245 + 12345) % 2147483648;
       return state / 2147483648;
     };
-    // Backslashes outside angle brackets and backticks are left out: they
-    // are an older, separate gap in how addresses are written.
-    const alphabet = [...'ab/. ()<>"\'#:_*[]&;'];
+    // Backticks are left out: inside an angle-bracket destination they can
+    // still pair as code, a separate gap.
+    const alphabet = [...'ab/. ()<>"\'#:_*[]&;\\'];
     const lost: string[] = [];
     for (let round = 0; round < 4000; round++) {
       let tail = '';
