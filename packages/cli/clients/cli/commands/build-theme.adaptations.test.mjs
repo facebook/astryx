@@ -519,7 +519,11 @@ describe('theme build adaptations', () => {
     );
 
     const result = await build(project, themeFile);
+    expect(result.code).toBe(1);
     expect(`${result.stdout}${result.stderr}`).toContain('private var');
+    expect(fs.existsSync(path.join(themesDir, 'rule-private.css'))).toBe(true);
+    expect(fs.existsSync(path.join(themesDir, 'rule-private.js'))).toBe(true);
+    expect(fs.existsSync(path.join(themesDir, 'rule-private.d.ts'))).toBe(true);
   });
 
   it('rejects cycles across co-matching rules before writing output', async () => {

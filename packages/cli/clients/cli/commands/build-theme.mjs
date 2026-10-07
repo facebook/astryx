@@ -6,9 +6,11 @@
  * Thin CLI wrapper. The `build` compiler lives in the programmatic API
  * (../../api/theme/build/build.mjs); `list`/`add` delegate to the
  * ../../api/theme/list/list.mjs and ../../api/theme/add/add.mjs leaves. This
- * file only parses options, injects a logger, renders human output, and maps
- * AstryxError → cliError. Watch mode (a human-interactive, long-running loop)
- * stays here because it re-invokes `theme build` as a child process.
+ * file only parses options, injects a logger, renders human output, maps
+ * AstryxError → cliError, and turns reported private-variable errors into exit 1
+ * after preserving the build output. Watch mode (a human-interactive,
+ * long-running loop) stays here because it re-invokes `theme build` as a child
+ * process.
  *
  * The command surface (group + subcommand descriptions, args, flags) is sourced
  * from the colocated CommandDocs via `defineCommand`; this file supplies only
@@ -633,6 +635,10 @@ export function registerTheme(program) {
       // [ok]/[warn] lines, and the install instructions are all emitted from
       // inside themeBuild via the shared logger.
       logger.setSilent(json);
+      let privateVarError = false;
+      const onPrivateVarError = () => {
+        privateVarError = true;
+      };
 
       if (options.family) {
         try {
@@ -642,11 +648,15 @@ export function registerTheme(program) {
               familyKey: /** @type {string} */ (options.familyKey),
               check: options.check,
               iconsSpecifier: options.iconsSpecifier,
+              __onPrivateVarError: onPrivateVarError,
             },
             {cwd: process.cwd()},
           );
           if (json) jsonOut(result);
-          if (result.type === 'theme.build.check' && !result.data.upToDate) {
+          if (
+            privateVarError ||
+            (result.type === 'theme.build.check' && !result.data.upToDate)
+          ) {
             process.exitCode = 1;
           }
           return NO_RESULT_SET;
@@ -674,6 +684,7 @@ export function registerTheme(program) {
             out: options.out,
             check: options.check,
             iconsSpecifier: options.iconsSpecifier,
+            __onPrivateVarError: onPrivateVarError,
           };
           let result;
           if (report) {
@@ -753,10 +764,10 @@ export function registerTheme(program) {
         );
       }
 
-      // In --check mode a stale/missing output is a failure: exit non-zero
-      // (after emitting the receipt) so CI can gate on it. The receipt is
-      // already printed above (shared logger or --json envelope).
-      if (options.check && stale) {
+      // Private-variable diagnostics are build failures even though the released
+      // output and generated files stay unchanged. Stale --check output is also
+      // a failure after its receipt has been emitted.
+      if (privateVarError || (options.check && stale)) {
         process.exitCode = 1;
       }
 
