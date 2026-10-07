@@ -144,7 +144,6 @@ try {
  *   generateThemeRulesSplit: any,
  *   generateOnMediaCSS: any,
  *   generateAdaptationCSS: any,
- *   dataTokenDefaults: any,
  * }} CoreBindings
  */
 
@@ -161,7 +160,6 @@ const _cliCore = {
   generateThemeRulesSplit: _generateThemeRulesSplit,
   generateOnMediaCSS: _generateOnMediaCSS,
   generateAdaptationCSS: _generateAdaptationCSS,
-  dataTokenDefaults: _dataTokenDefaults,
 };
 
 /**
@@ -176,7 +174,6 @@ function setCore(core) {
   _generateThemeRulesSplit = core.generateThemeRulesSplit;
   _generateOnMediaCSS = core.generateOnMediaCSS;
   _generateAdaptationCSS = core.generateAdaptationCSS;
-  _dataTokenDefaults = core.dataTokenDefaults;
 }
 
 /**
@@ -283,7 +280,6 @@ async function loadProjectCore(cwd) {
     generateThemeRulesSplit: themeModule.generateThemeRulesSplit,
     generateOnMediaCSS: themeModule.generateOnMediaCSS,
     generateAdaptationCSS: themeModule.generateAdaptationCSS,
-    dataTokenDefaults: themeModule.dataTokenDefaults,
   };
 }
 
