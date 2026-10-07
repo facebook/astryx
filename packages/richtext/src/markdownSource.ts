@@ -741,13 +741,16 @@ function markedView(
     return view;
   }
   if ($isElementNode(node) && !$isCodeNode(node)) {
-    const children = node
-      .getChildren()
-      .map(child => markedView(child, token, placeholders));
+    // Read once: each read walks every child, so reading per child would
+    // cost the square of their number — a run of tabs is one node per tab.
+    const original = node.getChildren();
+    const children = original.map(child =>
+      markedView(child, token, placeholders),
+    );
     // Each view's siblings are the views beside it, so a text view sees a
     // plugin node's text view as text with formats, not as a gap.
     children.forEach((child, index) => {
-      if (child !== node.getChildren()[index]) {
+      if (child !== original[index]) {
         child.getPreviousSibling = <T extends LexicalNode>() =>
           (children[index - 1] ?? null) as T | null;
         child.getNextSibling = <T extends LexicalNode>() =>
