@@ -45,14 +45,16 @@ connection between the closed trigger and its selection surface.
 
 ## Compatibility and migration
 
-- Released defaults and behavior remain unchanged by this record, except the
-  `presentation` default that DEC-1 changes.
+- Released defaults and behavior are unchanged except the `presentation`
+  default, which DEC-1 sets.
 - `indicatorPosition` defaults to `end`; a rendered selection mark occupies
   space at that logical edge, while an empty resolved indicator occupies none.
 - `presentation` defaults to `adaptive` (DEC-1): the modal bottom sheet on
   compact coarse-pointer screens and the anchored popover otherwise. `popover`
-  and `bottom-sheet` pin one surface on every device; pass `popover` to keep the
-  pre-DEC-1 default.
+  and `bottom-sheet` pin one surface on every device. The default is a
+  stable-default change, so it ships as `[breaking]` in a scheduled minor under
+  `spec:AST-017`; callers that need the anchored popover on every device pass
+  `popover`.
 - `hasClear` changes the value contract to include `null`; that distinction is
   already part of the public type.
 - `isReadOnly` is additive and defaults to `false`. It preserves the selected
@@ -296,18 +298,14 @@ FR3 implements the system decision owned by `spec:AST-004/DEC-1`.
 ### DEC-1 — Default presentation is `adaptive`
 
 **Reference:** `component:Selector/DEC-1`
-**Decider:** <owner>, <date>
+**Decider:** `cixzhang`, `2026-10-06`
 
-An omitted `presentation` resolves `adaptive` (FR4), so a Selector that does
-not name a surface gets the modal bottom sheet on compact coarse-pointer
-screens and the anchored popover elsewhere. Fine-pointer and large-screen
-output is unchanged. Rejected: keeping `popover` as the default (a phone gets
-a mouse-sized anchored list unless the caller knows to opt in); switching
-`adaptive` to the date inputs' pointer-only test (that changes what
-`adaptive` means for tablets and belongs to `spec:AST-043` OQ1); and shipping
-a codemod that pins `popover` (it would undo the default for every project
-that runs `astryx upgrade`). The default switch follows `spec:AST-017` as a
-stable-default change.
+An omitted `presentation` resolves `adaptive` (FR4): the modal bottom sheet on
+compact coarse-pointer screens and the anchored popover elsewhere, so
+fine-pointer and large-screen output matches `popover`. `adaptive` keeps its
+width-and-pointer query; a pointer-only test belongs to `spec:AST-043` OQ1.
+Rejected: keeping `popover` as the default, because a phone then gets a
+pointer-sized anchored list unless the caller opts in.
 
 ## Open questions
 
