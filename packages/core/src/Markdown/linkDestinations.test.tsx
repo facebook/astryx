@@ -84,3 +84,44 @@ describe('decoded destinations stay safe', () => {
     expect(targets('![pic](&#106;avascript:alert(1))')).toEqual([]);
   });
 });
+
+describe('a data URL with spaces before its media type stays unsafe', () => {
+  const html = 'text/html;base64,PHNjcmlwdD4=';
+  it.each([
+    `[x](<data: ${html}>)`,
+    `[x](<data:   ${html}>)`,
+    `[x](<DATA: TEXT/HTML,hi>)`,
+    `[x](data:&#32;${html})`,
+    `[x](data:&#x20;${html})`,
+    `[x](data:&#32;&#32;${html})`,
+    `[x][r]\n\n[r]: <data: ${html}>\n`,
+  ])('refuses the link %j', markdown => {
+    expect(targets(markdown)).toEqual([]);
+    const {container} = render(<Markdown>{markdown}</Markdown>);
+    expect(container.querySelector('a')).toBeNull();
+  });
+
+  it.each([`![x](<data: ${html}>)`, `![x](data:&#32;${html})`])(
+    'refuses the image %j',
+    markdown => {
+      expect(targets(markdown)).toEqual([]);
+    },
+  );
+
+  it.each([`<data:&#32;${html}>`, `<data:&#x20;${html}>`])(
+    'refuses the angle autolink %j',
+    markdown => {
+      const nodes = parseMarkdownAst(markdown, {autolink: 'gfm'})
+        .children as unknown as ReadonlyArray<Json>;
+      const links: string[] = [];
+      const visit = (node: Json) => {
+        if (node.type === 'link') {
+          links.push(node.url ?? '');
+        }
+        (node.children ?? []).forEach(visit);
+      };
+      nodes.forEach(visit);
+      expect(links).toEqual([]);
+    },
+  );
+});
