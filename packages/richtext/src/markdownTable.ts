@@ -45,6 +45,7 @@ import {LIST_EXPORT} from './markdownListExport';
 import {TASK_LIST} from './markdownTaskList';
 import {ORDERED_LIST_KEEPING_START} from './markdownOrderedList';
 import {LINK_KEEPING_DESTINATIONS} from './markdownLink';
+import {TILDE_CODE} from './markdownTildeFence';
 
 /**
  * Cells hold inline Markdown only, so they are imported and exported with the
@@ -246,7 +247,8 @@ export const TABLE: MultilineElementTransformer = {
 /**
  * The editor's default Markdown transformers: thematic breaks, list export
  * that nests to each parent's content column, GFM task list items, Lexical's
- * standard set (its ordered list keeping each nested list's start, and its
+ * standard set (with `~~~` fences beside its backtick ones, its ordered list
+ * keeping each nested list's start, and its
  * link writing an unbalanced destination's parentheses escaped), hard line
  * breaks for breaks typed in the editor, and GFM tables. Thematic breaks come first so a line such as `* * *` is a rule
  * rather than a list item, and task items before bullets so `- [ ] text` is a
@@ -256,6 +258,7 @@ export const DEFAULT_TRANSFORMERS: ReadonlyArray<Transformer> = [
   THEMATIC_BREAK,
   LIST_EXPORT,
   TASK_LIST,
+  TILDE_CODE,
   ...TRANSFORMERS.map(transformer =>
     transformer === ORDERED_LIST
       ? ORDERED_LIST_KEEPING_START
