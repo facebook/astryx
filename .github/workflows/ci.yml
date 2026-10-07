@@ -1292,6 +1292,50 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The landmark contract's role, name, and repeated-label outcomes are
+      # accessibility-tree facts that jsdom cannot observe. Run the contract's
+      # own fixture proof and the Layout regions binding whenever Layout source,
+      # the binding's stories, or the contract changes. Its own --output
+      # directory; the JSON report is the head-bound record, uploaded next.
+      - name: Run Landmark accessibility contract
+        id: landmark-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: landmark-contract/report.json
+        run: |
+          should_run=false
+          # Layout and the contract are matched by file name so every Layout
+          # region component is covered. If the base cannot be fetched, run.
+          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
+            if git diff --name-only "$BASE_SHA" HEAD \
+              | grep -qE '^(internal/a11y-spec/src/patterns/landmark|packages/core/src/Layout/|apps/storybook/stories/LayoutLandmarkA11y)'; then
+              should_run=true
+            fi
+          else
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "Layout and the landmark contract are not in PR scope; skipping landmark evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/landmark.chromium.spec.ts \
+            packages/core/src/Layout/__tests__/Layout.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output landmark-contract-output
+
+      - name: Upload Landmark accessibility contract evidence
+        if: ${{ !cancelled() && steps.landmark-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: landmark-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: landmark-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The Schedule time grid owns scroll geometry — pinned header and gutter
       # alignment under classic scrollbars, inline scroll ownership, keyboard
       # reach and its focus ring — none of which exists in jsdom. Every
