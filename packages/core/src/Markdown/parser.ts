@@ -1071,7 +1071,66 @@ function matchReferenceImage(
 // destination or one without spaces, then an optional `"…"`, `'…'`, or `(…)`
 // title after whitespace (CommonMark 0.31, link destinations and titles).
 const INLINE_DESTINATION_WITH_TITLE =
-  /^\s*(?:<([^<>\n]*)>|([^\s<]\S*?))(?:\s+(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\((?:[^()\\]|\\.)*\)))?\s*$/s;
+  /^\s*(?:<((?:[^<>\n\\]|\\.)*)>|([^\s<]\S*?))(?:\s+(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\((?:[^()\\]|\\.)*\)))?\s*$/s;
+
+/**
+ * Where an inline link's or image's destination ends when it is written in
+ * angle brackets — the index of the `)` that closes the link — or null when
+ * the content after `open` (the `(`) is not an angle-bracket destination.
+ * Inside the brackets parentheses are plain characters, so `<b(c>` is the
+ * destination `b(c`; a line ending or unescaped `<` there makes it no
+ * destination at all, so the link is text (CommonMark 0.31 §6.3).
+ */
+function angleDestinationClose(
+  text: string,
+  open: number,
+): number | 'refused' | null {
+  let index = open + 1;
+  while (text[index] === ' ' || text[index] === '\t') {
+    index++;
+  }
+  if (text[index] !== '<') {
+    return null;
+  }
+  for (index++; index < text.length; index++) {
+    const character = text[index];
+    if (character === '\\') {
+      index++;
+    } else if (character === '\n' || character === '\r') {
+      return 'refused';
+    } else if (character === '<') {
+      return null;
+    } else if (character === '>') {
+      break;
+    }
+  }
+  if (index >= text.length) {
+    return null;
+  }
+  // After the brackets: spaces, an optional title, spaces, and the `)`.
+  index++;
+  while (/\s/.test(text[index] ?? '')) {
+    index++;
+  }
+  const quote = text[index];
+  if (quote === '"' || quote === "'" || quote === '(') {
+    const closer = quote === '(' ? ')' : quote;
+    for (index++; index < text.length && text[index] !== closer; index++) {
+      if (text[index] === '\\') {
+        index++;
+      } else if (quote === '(' && text[index] === '(') {
+        // A title in parentheses holds no unescaped `(`; stopping here
+        // also keeps every search short.
+        return null;
+      }
+    }
+    index++;
+    while (/\s/.test(text[index] ?? '')) {
+      index++;
+    }
+  }
+  return text[index] === ')' ? index : null;
+}
 
 /**
  * The destination of an inline link or image, without its title. Content in
@@ -2059,7 +2118,11 @@ function parseInlineImpl(
     if (text[i] === '!' && text[i + 1] === '[') {
       const altClose = inlineIndex.closingBracket(i + 2);
       if (altClose !== -1 && text[altClose + 1] === '(') {
-        const srcClose = inlineIndex.closingParen(altClose + 1);
+        const angleClose = angleDestinationClose(text, altClose + 1);
+        const srcClose =
+          angleClose === 'refused'
+            ? -1
+            : (angleClose ?? inlineIndex.closingParen(altClose + 1));
         if (srcClose !== -1) {
           const src = decodeLinkDestination(
             inlineDestination(text.slice(altClose + 2, srcClose)),
@@ -2104,7 +2167,11 @@ function parseInlineImpl(
     if (text[i] === '[') {
       const textClose = inlineIndex.closingBracket(i + 1);
       if (textClose !== -1 && text[textClose + 1] === '(') {
-        const urlClose = inlineIndex.closingParen(textClose + 1);
+        const angleClose = angleDestinationClose(text, textClose + 1);
+        const urlClose =
+          angleClose === 'refused'
+            ? -1
+            : (angleClose ?? inlineIndex.closingParen(textClose + 1));
         if (urlClose !== -1) {
           const href = decodeLinkDestination(
             inlineDestination(text.slice(textClose + 2, urlClose)),
