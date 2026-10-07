@@ -1138,6 +1138,12 @@ interface InlineIndex {
    * as code.
    */
   closingBracket(from: number): number;
+  /**
+   * The index of the `)` that closes the `(` at `open`, by nesting and
+   * skipping escaped parentheses, or -1: where an inline link's or image's
+   * destination ends.
+   */
+  closingParen(open: number): number;
 }
 
 function inlineIndexOf(text: string): InlineIndex {
@@ -1204,27 +1210,30 @@ function inlineIndexOf(text: string): InlineIndex {
     }
     return from < text.length ? nextClosingBracket[from] : -1;
   };
-  return {backtickCloser, closingBracket};
-}
-
-function findClosingParen(text: string, start: number): number {
-  let depth = 1;
-  for (let index = start; index < text.length; index++) {
-    // An escaped parenthesis is part of the destination, not its end.
-    if (text[index] === '\\') {
-      index++;
-      continue;
-    }
-    if (text[index] === '(') {
-      depth++;
-    } else if (text[index] === ')') {
-      depth--;
-      if (depth === 0) {
-        return index;
+  let parenPartners: Int32Array | null = null;
+  const closingParen = (open: number): number => {
+    if (parenPartners == null) {
+      // Every parenthesis pairs once, by nesting, so no destination search
+      // rescans the text after an unclosed one.
+      parenPartners = new Int32Array(text.length).fill(-1);
+      const opens: number[] = [];
+      for (let index = 0; index < text.length; index++) {
+        const character = text[index];
+        if (character === '\\') {
+          index++;
+        } else if (character === '(') {
+          opens.push(index);
+        } else if (character === ')') {
+          const opened = opens.pop();
+          if (opened !== undefined) {
+            parenPartners[opened] = index;
+          }
+        }
       }
     }
-  }
-  return -1;
+    return text[open] === '(' ? parenPartners[open] : -1;
+  };
+  return {backtickCloser, closingBracket, closingParen};
 }
 
 // ---------------------------------------------------------------------------
@@ -2050,7 +2059,7 @@ function parseInlineImpl(
     if (text[i] === '!' && text[i + 1] === '[') {
       const altClose = inlineIndex.closingBracket(i + 2);
       if (altClose !== -1 && text[altClose + 1] === '(') {
-        const srcClose = findClosingParen(text, altClose + 2);
+        const srcClose = inlineIndex.closingParen(altClose + 1);
         if (srcClose !== -1) {
           const src = decodeLinkDestination(
             inlineDestination(text.slice(altClose + 2, srcClose)),
@@ -2095,7 +2104,7 @@ function parseInlineImpl(
     if (text[i] === '[') {
       const textClose = inlineIndex.closingBracket(i + 1);
       if (textClose !== -1 && text[textClose + 1] === '(') {
-        const urlClose = findClosingParen(text, textClose + 2);
+        const urlClose = inlineIndex.closingParen(textClose + 1);
         if (urlClose !== -1) {
           const href = decodeLinkDestination(
             inlineDestination(text.slice(textClose + 2, urlClose)),
