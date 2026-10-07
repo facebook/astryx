@@ -111,6 +111,52 @@ export function registerTemplate(program) {
         case 'template.list': {
           const pages = result.data.filter(t => t.type === 'page');
           const blocks = result.data.filter(t => t.type === 'block');
+
+          // Bare `template` (no --list, no name) shows a grouped summary so a
+          // no-context agent or terminal doesn't receive 150 KB of catalog. The
+          // full catalog stays reachable via `template --list`.
+          if (!options.list && !name) {
+            /** @param {import('../../../api/template/template.type.mjs').TemplateListEntry[]} items */
+            const grouped = items => {
+              /** @type {Map<string, string[]>} */
+              const groups = new Map();
+              for (const t of items) {
+                const cat = t.category || 'Other';
+                const list = groups.get(cat);
+                if (list) {
+                  list.push(t.id);
+                } else {
+                  groups.set(cat, [t.id]);
+                }
+              }
+              /** @type {string[]} */
+              const lines = [];
+              for (const [cat, ids] of groups) {
+                lines.push(`${cat}: ${ids.join(', ')}`);
+              }
+              return lines.join('\n');
+            };
+            emit(
+              section(`Page Templates (${pages.length})`),
+              pages.length > 0 && text(grouped(pages)),
+              section(`Block Templates (${blocks.length})`),
+              blocks.length > 0 && text(grouped(blocks)),
+              section('Usage'),
+              text(
+                [
+                  `${run} template <id>                  Show full source`,
+                  `${run} template <id> [target-path]     Scaffold page or block`,
+                  `${run} template <id> --skeleton        Layout reference`,
+                  `${run} template --list                 Full catalog with descriptions`,
+                  `${run} template --list --type block    List only blocks`,
+                  `${run} template --list --package <pkg> List from one package`,
+                  `${run} template --cdn                 CDN starter page, no build step`,
+                ].join('\n'),
+              ),
+            );
+            break;
+          }
+
           // Project each entry to its JSON-mirroring fields; the WIP marker is
           // folded into `name` (as before) and the package is shown only when it
           // isn't the built-in core package.
