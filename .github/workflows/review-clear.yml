@@ -13,7 +13,24 @@
 # (read-only token → 403). It therefore runs on workflow_run after Review signal
 # anchors approved, changes_requested, and dismissed review events from the base
 # repository with a write-capable token. It never checks out or runs
-# PR-controlled code.
+# PR-controlled code: its helper comes from the trusted workflow SHA.
+#
+# The reviewed PR is identified by the head commit and branch the review run
+# recorded. The run's head_repository is not evidence: for a fork PR it names
+# this repository, and the run lists no PRs. Candidates come from the run's own
+# PR list, GitHub's commit association, and every open PR whose head is that
+# exact commit; each is re-read and must match the commit and branch. When more
+# than one open PR matches, the run cannot tell which one was reviewed, so it
+# only restores gates and never clears one. A PR the default branch's
+# protection does not govern owns "review-required/stacked-pr-<number>" rather
+# than "review-required" (see review-signal.yml).
+#
+# Runs never cancel one another, so they can overlap or finish out of order.
+# Before every mutation, and again after its status write, a run re-reads the
+# PR and recomputes its decision from the live exact-head reviews, gate status,
+# and labels; if the decision changed, it reconciles again. Every review change
+# starts its own run after the change, so the last run to write also verifies
+# last.
 
 name: Review clear
 
@@ -25,8 +42,12 @@ on:
 permissions: {}
 
 concurrency:
-  group: review-clear-${{ github.event.workflow_run.head_repository.full_name || github.repository }}-${{ github.event.workflow_run.head_branch || github.run_id }}
-  cancel-in-progress: true
+  # Each run is its own group: no review-clear run cancels another. Grouping by
+  # any PR key cannot be exact (GitHub compares group names case-insensitively,
+  # while branch names are case-sensitive), and correctness does not depend on
+  # cancellation: every run re-decides from live state before each mutation.
+  group: review-clear-run-${{ github.run_id }}
+  cancel-in-progress: false
 
 jobs:
   clear:
@@ -50,47 +71,17 @@ jobs:
             const { owner, repo } = context.repo;
             const run = context.payload.workflow_run;
             const CODE = 'needs:code-review';
+            const MAX_ATTEMPTS = 3;
 
-            // Resolve the PR the review belonged to.
-            //
-            // NOTE: for a workflow_run fired by a pull_request_target/
-            // pull_request_review-triggered workflow, the payload's top-level
-            // head_sha/head_branch point at the DEFAULT BRANCH (main), not the
-            // PR — and pull_requests is empty for forks. So neither the SHA nor
-            // the payload branch resolves the PR. The reliable signal is the
-            // triggering run's own head_branch (correct even for forks); find
-            // the open PR whose head branch matches.
-            let prNumber = null;
-            const prs0 = run.pull_requests || [];
-            if (prs0.length) {
-              prNumber = prs0[0].number;
-            } else if (run.head_branch) {
-              try {
-                // head param wants OWNER:branch; head_repository is the fork/owner.
-                const headOwner = (run.head_repository && run.head_repository.owner &&
-                  run.head_repository.owner.login) || owner;
-                const list = await github.paginate(github.rest.pulls.list, {
-                  owner, repo, state: 'open',
-                  head: `${headOwner}:${run.head_branch}`, per_page: 100,
-                });
-                let match = list[0];
-                // Fallback: some fork setups don't match the head filter; scan by branch name.
-                if (!match) {
-                  const all = await github.paginate(github.rest.pulls.list, {
-                    owner, repo, state: 'open', per_page: 100,
-                  });
-                  match = all.find((p) => p.head && p.head.ref === run.head_branch);
-                }
-                if (match) prNumber = match.number;
-              } catch (e) {
-                core.warning(`Could not resolve PR from branch ${run.head_branch}: ${e.message}`);
-              }
+            // The review run records the reviewed head commit and branch. Its
+            // head_repository is not evidence: for a fork PR it names this
+            // repository, not the fork.
+            const headBranch = run.head_branch;
+            const headSha = run.head_sha;
+            if (!headBranch || !headSha) {
+              core.info('The review run does not identify a head; nothing to reconcile.');
+              return;
             }
-            if (!prNumber) { core.info('No PR resolved for this review run.'); return; }
-
-            // Full PR (labels + head sha).
-            const { data: full } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-            const headSha = full.head.sha;
 
             // Entitled code approvers come from the ENGOWNERS repo variable
             // (passed in as env above). Any eng owner's approval clears the code
@@ -109,19 +100,13 @@ jobs:
               return;
             }
 
-            // Resolve the effective exact-head review state with the same
-            // dependency-free helper review-signal uses. Also read this head's
-            // latest review-required status: only the existing label or a latest
-            // status emitted by this gate proves that review-signal owned it.
-            let codeApproved = false;
-            let codeWithdrawn = false;
-            let gateOwned = false;
+            // The same dependency-free helper review-signal uses, from this
+            // run's trusted default-branch SHA: an older or stacked base may
+            // predate it, and a stacked base is another PR's unmerged head.
+            let decision;
             try {
-              const reviews = await github.paginate(github.rest.pulls.listReviews, {
-                owner, repo, pull_number: prNumber, per_page: 100,
-              });
               const { data: decisionFile } = await github.rest.repos.getContent({
-                owner, repo, ref: full.base.sha,
+                owner, repo, ref: context.sha,
                 path: '.github/scripts/review-signal-decision.cjs',
               });
               const decisionSrc = Buffer.from(decisionFile.content, 'base64').toString('utf8');
@@ -130,21 +115,86 @@ jobs:
                 decisionModule, decisionModule.exports,
                 () => { throw new Error('review-signal-decision.cjs must stay dependency-free'); },
               );
-              ({codeApproved, codeWithdrawn} =
-                decisionModule.exports.resolveReviewApprovals({
-                  reviews,
-                  headSha,
-                  engOwners: [...codeApprovers],
-                  designOwners: [],
-                }));
+              decision = decisionModule.exports;
+            } catch (e) {
+              core.warning(`Could not load the review decision helper: ${e.message}`);
+              return;
+            }
 
+            // Candidate numbers from every source that can name the PR. The
+            // run lists only same-repository PRs, and commit association often
+            // lists none for an unmerged commit, so the open-PR scan by exact
+            // head commit is what finds a fork PR.
+            const numbers = new Set((run.pull_requests || []).map((pr) => pr.number));
+            try {
+              const associated = await github.paginate(
+                github.rest.repos.listPullRequestsAssociatedWithCommit,
+                { owner, repo, commit_sha: headSha, per_page: 100 },
+              );
+              for (const pr of associated) numbers.add(pr.number);
+            } catch (e) {
+              core.warning(`Could not read PRs associated with ${headSha.slice(0, 7)}: ${e.message}`);
+            }
+            const open = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', per_page: 100,
+            });
+            for (const pr of open) {
+              if (pr.head?.sha === headSha) numbers.add(pr.number);
+            }
+            // Only the live PR decides: open, and its head is exactly the
+            // reviewed commit on the reviewed branch.
+            const candidates = [];
+            for (const number of [...numbers].sort((a, b) => a - b)) {
+              const { data: live } = await github.rest.pulls.get({ owner, repo, pull_number: number });
+              if (live.state === 'open' && live.head?.sha === headSha && live.head?.ref === headBranch) {
+                candidates.push(live);
+              }
+            }
+            if (!candidates.length) {
+              core.info(`No open PR has head ${headBranch}@${headSha.slice(0, 7)}; the flag job reconciles any newer head.`);
+              return;
+            }
+            // One head can back several open PRs (for example one to the
+            // default branch and one stacked). The review belongs to one of
+            // them and the run does not say which, so never clear on
+            // ambiguity; still restore any candidate whose own exact-head
+            // review state was withdrawn.
+            const ambiguous = candidates.length > 1;
+            if (ambiguous) {
+              core.warning(`Head ${headSha.slice(0, 7)} on ${headBranch} backs open PRs ${candidates.map((pr) => `#${pr.number}`).join(', ')}; restoring gates only, never clearing.`);
+            }
+            for (const candidate of candidates) {
+              let settled = false;
+              for (let attempt = 1; attempt <= MAX_ATTEMPTS && !settled; attempt += 1) {
+                settled = (await reconcile(candidate.number, !ambiguous)) !== 'moved';
+              }
+              if (!settled) {
+                core.warning(`PR #${candidate.number} kept moving while its gate was reconciled; leaving it to the flag job.`);
+              }
+            }
+
+            // The decision for one PR from live state: 'restore' after an
+            // effective ENGOWNER withdrawal, 'clear' after an effective
+            // exact-head approval, or 'none'. Only the existing label or a
+            // latest gate status emitted by this gate proves that
+            // review-signal owned the gate.
+            async function decide(pr, allowClear) {
+              const scope = decision.gateScope(pr);
+              const gate = decision.gateContext('review-required', pr);
+              const reviews = await github.paginate(github.rest.pulls.listReviews, {
+                owner, repo, pull_number: pr.number, per_page: 100,
+              });
+              const { codeApproved, codeWithdrawn } = decision.resolveReviewApprovals({
+                reviews,
+                headSha,
+                engOwners: [...codeApprovers],
+                designOwners: [],
+              });
               const statuses = await github.paginate(
                 github.rest.repos.listCommitStatusesForRef,
                 {owner, repo, ref: headSha, per_page: 100},
               );
-              const latestGateStatus = statuses.find(
-                (status) => status.context === 'review-required',
-              );
+              const latestGateStatus = statuses.find((status) => status.context === gate);
               const trustedStatus =
                 latestGateStatus?.creator?.login === 'github-actions[bot]';
               const description = latestGateStatus?.description || '';
@@ -155,83 +205,169 @@ jobs:
                     description === 'Waiting on code review after approval withdrawal.')) ||
                   (latestGateStatus.state === 'success' &&
                     description === 'Cleared by code-owner approval.'));
-              gateOwned =
-                full.labels.some((label) => label.name === CODE) || statusOwnsGate;
-            } catch (e) {
-              core.warning(`Could not resolve exact-head gate state: ${e.message}`);
-              return;
-            }
-
-            if (!gateOwned) {
-              core.info(`PR #${prNumber}: current head was not marked as code-gated; leaving it as-is.`);
-              return;
-            }
-            if (!codeApproved && !codeWithdrawn) {
-              core.info(`PR #${prNumber}: no effective ENGOWNER review-state change; leaving gate as-is.`);
-              return;
-            }
-
-            // Re-read immediately before either mutation. A head that moved after
-            // review resolution must be reconciled by review-signal for the new
-            // head, never by carrying this decision forward.
-            const { data: current } = await github.rest.pulls.get({
-              owner, repo, pull_number: prNumber,
-            });
-            if (current.head.sha !== headSha) {
-              core.info(`PR #${prNumber}: head moved while resolving approval; leaving gate as-is.`);
-              return;
-            }
-            const labels = current.labels.map((l) => l.name);
-
-            if (codeWithdrawn) {
-              // The commit status is the hard gate; publish it before the advisory
-              // label. If this POST fails, throw without any label-only mutation.
-              await github.rest.repos.createCommitStatus({
-                owner, repo, sha: headSha, context: 'review-required',
-                state: 'pending',
-                description: 'Waiting on code review after approval withdrawal.',
-              });
-              core.info(`review-required status → pending on #${prNumber}.`);
-              if (!labels.includes(CODE)) {
-                await github.rest.issues.addLabels({
-                  owner, repo, issue_number: prNumber, labels: [CODE],
+              const gateOwned =
+                pr.labels.some((label) => label.name === CODE) || statusOwnsGate;
+              if (!gateOwned) return { action: 'none', gate, reason: 'not-owned' };
+              if (codeWithdrawn) return { action: 'restore', gate };
+              if (!codeApproved) return { action: 'none', gate, reason: 'no-change' };
+              if (!allowClear) return { action: 'none', gate, reason: 'ambiguous' };
+              // A required context is shared by every PR with this head. When
+              // another open PR that also reads it shares the head, one PR's
+              // approval cannot clear it (review-signal holds it pending).
+              // Commit association omits fork PRs, so also scan the open PRs.
+              if (scope.governed) {
+                const associated = await github.paginate(
+                  github.rest.repos.listPullRequestsAssociatedWithCommit,
+                  { owner, repo, commit_sha: headSha, per_page: 100 },
+                );
+                const openNow = await github.paginate(github.rest.pulls.list, {
+                  owner, repo, state: 'open', per_page: 100,
                 });
-                core.info(`Restored ${CODE} on #${prNumber}.`);
+                const sameHead = new Set(
+                  [...associated, ...openNow]
+                    .filter((other) => other.state === 'open' && other.head?.sha === headSha)
+                    .map((other) => other.number),
+                );
+                sameHead.delete(pr.number);
+                const others = [];
+                for (const number of sameHead) {
+                  const { data } = await github.rest.pulls.get({ owner, repo, pull_number: number });
+                  others.push(data);
+                }
+                const siblings = decision.governedSiblings(pr, others);
+                if (siblings.length) {
+                  return { action: 'none', gate, reason: 'shared', siblings };
+                }
               }
-              return;
+              return { action: 'clear', gate };
             }
 
-            // Clear: drop the label (ignore if already gone), set status success,
-            // and neutralize any stale action_required review-required check run.
-            if (labels.includes(CODE)) {
-              try {
-                await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: CODE });
-                core.info(`Removed ${CODE} on #${prNumber}.`);
-              } catch (e) {
-                core.warning(`Could not remove ${CODE} (may already be gone): ${e.message}`);
+            async function reconcile(prNumber, allowClear) {
+              // Full PR (labels, head, base, stack).
+              const { data: full } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+              if (full.state !== 'open' || full.head.sha !== headSha) {
+                core.info(`PR #${prNumber} no longer has the reviewed head; leaving it as-is.`);
+                return 'done';
               }
-            }
-            await github.rest.repos.createCommitStatus({
-              owner, repo, sha: headSha, context: 'review-required',
-              state: 'success', description: 'Cleared by code-owner approval.',
-            });
-            core.info(`review-required status → success on #${prNumber}.`);
-            // Neutralize stale check-run(s) of the same name so the rollup isn't
-            // dragged to failure by a pre-status action_required leftover.
-            try {
-              const { data } = await github.rest.checks.listForRef({
-                owner, repo, ref: headSha, check_name: 'review-required', per_page: 100,
+              let plan;
+              try {
+                plan = await decide(full, allowClear);
+              } catch (e) {
+                core.warning(`Could not resolve exact-head gate state: ${e.message}`);
+                return 'done';
+              }
+              const GATE = plan.gate;
+              if (plan.action === 'none') {
+                if (plan.reason === 'not-owned') {
+                  core.info(`PR #${prNumber}: current head was not marked as code-gated; leaving it as-is.`);
+                } else if (plan.reason === 'ambiguous') {
+                  core.info(`PR #${prNumber}: approval is ambiguous across PRs sharing this head; not clearing.`);
+                } else if (plan.reason === 'shared') {
+                  core.info(`PR #${prNumber}: head is shared with open PR ${plan.siblings.map((n) => `#${n}`).join(', ')}; not clearing ${GATE}.`);
+                } else {
+                  core.info(`PR #${prNumber}: no effective ENGOWNER review-state change; leaving gate as-is.`);
+                }
+                return 'done';
+              }
+
+              // Runs can overlap, so re-read the PR and recompute the decision
+              // from live reviews, statuses, and labels immediately before every
+              // mutation and after the status write. A moved head ends this
+              // run's claim; a moved base or stack, or a changed decision,
+              // starts the reconciliation over from the live state.
+              let labels = [];
+              async function stillPlanned() {
+                const { data: current } = await github.rest.pulls.get({
+                  owner, repo, pull_number: prNumber,
+                });
+                if (!decision.samePullIdentity(full, current)) {
+                  if (current.state !== 'open' || current.head.sha !== headSha) {
+                    core.info(`PR #${prNumber}: head moved while resolving approval; leaving gate as-is.`);
+                    return 'gone';
+                  }
+                  return 'moved';
+                }
+                let now;
+                try {
+                  now = await decide(current, allowClear);
+                } catch (e) {
+                  core.warning(`Could not re-resolve exact-head gate state: ${e.message}`);
+                  return 'gone';
+                }
+                if (now.action !== plan.action) {
+                  core.info(`PR #${prNumber}: the gate decision changed from ${plan.action} to ${now.action} while reconciling; reconciling again.`);
+                  return 'moved';
+                }
+                labels = current.labels.map((l) => l.name);
+                return 'same';
+              }
+              const stop = (state) => (state === 'moved' ? 'moved' : 'done');
+              let live = await stillPlanned();
+              if (live !== 'same') return stop(live);
+
+              // The commit status is the hard gate; publish it before the
+              // advisory label in both directions. If the status POST fails,
+              // throw without any label mutation.
+              if (plan.action === 'restore') {
+                await github.rest.repos.createCommitStatus({
+                  owner, repo, sha: headSha, context: GATE,
+                  state: 'pending',
+                  description: 'Waiting on code review after approval withdrawal.',
+                });
+                core.info(`${GATE} status → pending on #${prNumber}.`);
+                live = await stillPlanned();
+                if (live !== 'same') return stop(live);
+                if (!labels.includes(CODE)) {
+                  await github.rest.issues.addLabels({
+                    owner, repo, issue_number: prNumber, labels: [CODE],
+                  });
+                  core.info(`Restored ${CODE} on #${prNumber}.`);
+                }
+                return 'done';
+              }
+
+              // Clear: set status success, drop the label (ignore if already
+              // gone), and neutralize any stale action_required check run.
+              await github.rest.repos.createCommitStatus({
+                owner, repo, sha: headSha, context: GATE,
+                state: 'success', description: 'Cleared by code-owner approval.',
               });
-              for (const cr of data.check_runs) {
-                if (cr.conclusion && cr.conclusion !== 'success' && cr.conclusion !== 'neutral') {
+              core.info(`${GATE} status → success on #${prNumber}.`);
+              live = await stillPlanned();
+              if (live !== 'same') return stop(live);
+              if (labels.includes(CODE)) {
+                try {
+                  await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: CODE });
+                  core.info(`Removed ${CODE} on #${prNumber}.`);
+                } catch (e) {
+                  core.warning(`Could not remove ${CODE} (may already be gone): ${e.message}`);
+                }
+              }
+              // Neutralize stale check-run(s) of the same name so the rollup isn't
+              // dragged to failure by a pre-status action_required leftover.
+              let staleRuns = [];
+              try {
+                const { data } = await github.rest.checks.listForRef({
+                  owner, repo, ref: headSha, check_name: 'review-required', per_page: 100,
+                });
+                staleRuns = data.check_runs.filter((cr) =>
+                  cr.conclusion && cr.conclusion !== 'success' && cr.conclusion !== 'neutral');
+              } catch (e) {
+                core.warning(`Could not list stale check-runs: ${e.message}`);
+              }
+              for (const cr of staleRuns) {
+                live = await stillPlanned();
+                if (live !== 'same') return stop(live);
+                try {
                   await github.rest.checks.update({
                     owner, repo, check_run_id: cr.id,
                     conclusion: 'neutral',
                     output: { title: 'Superseded by review-required status', summary: 'Cleared by code-owner approval; see the review-required status.' },
                   });
                   core.info(`Neutralized stale check-run ${cr.id} on #${prNumber}.`);
+                } catch (e) {
+                  core.warning(`Could not neutralize stale check-run: ${e.message}`);
                 }
               }
-            } catch (e) {
-              core.warning(`Could not neutralize stale check-run: ${e.message}`);
+              return 'done';
             }

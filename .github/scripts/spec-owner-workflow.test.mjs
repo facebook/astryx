@@ -260,7 +260,7 @@ describe('spec-only workflow contract', () => {
       .replace(/\s+/g, ' ')
       .trim();
     expect(reconcileCondition).toBe(
-      "(github.event_name != 'pull_request_review' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'issue_comment' || (github.event.issue.pull_request != null && (startsWith(github.event.comment.body, '/approve-spec') || startsWith(github.event.comment.body, '/revoke-spec'))))",
+      "(github.event_name != 'pull_request_review' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name != 'issue_comment' || (github.event.issue.pull_request != null && (startsWith(github.event.comment.body, '/approve-spec') || startsWith(github.event.comment.body, '/revoke-spec')))) && (github.event.action != 'edited' || github.event.changes.base != null) && (github.event_name != 'workflow_dispatch' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch))",
     );
     expect(workflow).toContain('pull_request_review:');
     expect(workflow).toContain('issue_comment:');
@@ -302,14 +302,16 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).toContain('designOwners.includes(actor)');
     expect(reconciler).not.toContain('allOwners.has(actor)');
     expect(reconciler).toContain(
-      'readyAttestations,\n        owners: designApprovers',
+      'readyAttestations,\n          owners: designApprovers',
     );
     expect(reconciler).toContain('isSettled(initialPr)');
     expect(reconciler).toContain('isPublishable(headSha)');
     expect(reconciler).toContain('specDecision.approved');
     expect(reconciler).toContain('designDecision.approved');
     expect(reconciler).toContain('themeDecision.approved');
-    expect(reconciler).toContain('context: GATE_STATUS_CONTEXT');
+    // Every gate write targets the context its pull request's scope owns.
+    expect(reconciler).toContain('context: gate.context');
+    expect(reconciler).toContain('gateContext(GATE_STATUS_CONTEXT, initialPr)');
     expect(reconciler).toContain('expectedHeadOid: $oid');
     expect(reconciler).toContain('mergeMethod: SQUASH');
     expect(reconciler).toContain('disablePullRequestAutoMerge');

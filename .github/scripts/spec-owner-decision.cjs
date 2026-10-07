@@ -215,7 +215,10 @@ function isTrustedWorkflowStatus(status, repository) {
   );
 }
 
-function parseReadyAttestations(statuses, {repository, headSha, owners}) {
+function parseReadyAttestations(
+  statuses,
+  {repository, headSha, owners, prefix = READY_STATUS_PREFIX},
+) {
   // A ready marker is only design-group evidence, and only from a handle that
   // is a design owner *now*. Markers published before that rule existed, or
   // by someone since removed from .github/DESIGNOWNERS, are historical noise
@@ -225,14 +228,12 @@ function parseReadyAttestations(statuses, {repository, headSha, owners}) {
   for (const status of statuses) {
     if (
       status.state !== 'success' ||
-      !status.context?.startsWith(READY_STATUS_PREFIX) ||
+      !status.context?.startsWith(prefix) ||
       !isTrustedWorkflowStatus(status, repository)
     ) {
       continue;
     }
-    const owner = status.context
-      .slice(READY_STATUS_PREFIX.length)
-      .toLowerCase();
+    const owner = status.context.slice(prefix.length).toLowerCase();
     if (!/^[a-z0-9-]+$/.test(owner) || !allowed.has(owner)) continue;
     const match = status.description?.match(
       /^Owner ready at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)\.$/,
@@ -249,11 +250,15 @@ function parseReadyAttestations(statuses, {repository, headSha, owners}) {
   return attestations;
 }
 
-function newestGateRun(statuses, repository) {
+function newestGateRun(
+  statuses,
+  repository,
+  gateContext = GATE_STATUS_CONTEXT,
+) {
   let newest = null;
   for (const status of statuses) {
     if (
-      status.context !== GATE_STATUS_CONTEXT ||
+      status.context !== gateContext ||
       !isTrustedWorkflowStatus(status, repository)
     ) {
       continue;

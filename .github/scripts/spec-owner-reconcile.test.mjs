@@ -90,6 +90,10 @@ function createHarness({
   labels = [],
   autoMerge = null,
   draft = false,
+  baseRef = 'main',
+  stack = null,
+  associatedPulls = [],
+  filesForBase,
   onPullGet,
   onCreateStatus,
   onEnableAutoMerge,
@@ -110,6 +114,8 @@ function createHarness({
     timeline: [...timeline],
     calls: [],
     reads: [],
+    // Ordered reads of this pull request and mutations.
+    log: [],
     labels: new Set(labels),
     knownLabels: new Set(labels),
     pr: {
@@ -121,13 +127,17 @@ function createHarness({
       head: {sha: head, repo: {full_name: headRepository}},
       base: {
         sha: '2222222222222222222222222222222222222222',
-        repo: {full_name: repository},
+        ref: baseRef,
+        repo: {full_name: repository, default_branch: 'main'},
       },
       changed_files: files.length,
       labels: [],
       auto_merge: autoMerge,
       draft,
+      stack,
     },
+    // Other pull requests, keyed by number, for same-head sibling lookups.
+    otherPulls: new Map(associatedPulls.map(pull => [pull.number, pull])),
   };
 
   function syncLabels() {
@@ -136,14 +146,23 @@ function createHarness({
   syncLabels();
 
   const methods = {
-    getPull: async () => {
+    getPull: async ({pull_number: number} = {}) => {
+      if (number !== undefined && number !== state.pr.number) {
+        state.reads.push(`pull:${number}`);
+        return {data: state.otherPulls.get(number)};
+      }
       state.pullGets += 1;
       state.reads.push('pull');
+      state.log.push('read:pull');
       onPullGet?.(state.pullGets, state);
       syncLabels();
-      return {data: state.pr};
+      // Each read is a fresh object, as from the API; a snapshot never
+      // silently tracks later changes.
+      return {data: structuredClone(state.pr)};
     },
-    listFiles: async () => ({data: files}),
+    listFiles: async () => ({
+      data: filesForBase?.[state.pr.base.ref] ?? files,
+    }),
     listReviews: async () => ({data: state.reviews}),
     listComments: async () => ({data: state.comments}),
     listTimeline: async () => ({data: state.timeline}),
@@ -158,6 +177,12 @@ function createHarness({
     rest: {
       pulls: {
         get: methods.getPull,
+        // The real list endpoint omits `stack` and `changed_files`.
+        list: async () => ({
+          data: [state.pr, ...state.otherPulls.values()]
+            .filter(pull => pull.state === 'open')
+            .map(({stack: _stack, changed_files: _files, ...listed}) => listed),
+        }),
         listFiles: methods.listFiles,
         listReviews: methods.listReviews,
       },
@@ -175,13 +200,16 @@ function createHarness({
         createLabel: async ({name}) => {
           state.knownLabels.add(name);
           state.calls.push(`create-label:${name}`);
+          state.log.push('write:create-label');
         },
         addLabels: async ({labels: added}) => {
           for (const name of added) state.labels.add(name);
           syncLabels();
           state.calls.push(`add-label:${added.join(',')}`);
+          state.log.push('write:add-label');
         },
         removeLabel: async ({name}) => {
+          state.log.push('write:remove-label');
           if (!state.labels.delete(name)) {
             const error = new Error('Not found');
             error.status = 404;
@@ -197,12 +225,25 @@ function createHarness({
             created_at: '2026-08-30T10:00:30Z',
           });
           state.calls.push('create-comment');
+          state.log.push('write:create-comment');
           return {data: {body}};
         },
       },
       repos: {
+        // The real endpoint returns list-shaped pull requests (no `stack`).
+        // Like GitHub, commit association never lists a fork pull request.
+        listPullRequestsAssociatedWithCommit: async ({commit_sha: sha}) => ({
+          data: [state.pr, ...state.otherPulls.values()]
+            .filter(
+              pull =>
+                pull.head.sha === sha &&
+                pull.head.repo.full_name === repository,
+            )
+            .map(({stack: _stack, ...listed}) => listed),
+        }),
         listCommitStatusesForRef: methods.listStatuses,
         createCommitStatus: async input => {
+          state.log.push(`write:status:${input.context}`);
           onCreateStatus?.(input, state);
           state.reads.push(`status:${input.context}:${input.state}`);
           const status = {
@@ -225,6 +266,7 @@ function createHarness({
       },
     },
     graphql: async query => {
+      state.log.push('write:graphql');
       if (query.includes('enablePullRequestAutoMerge')) {
         onEnableAutoMerge?.(state);
         state.pr.auto_merge = {merge_method: 'squash'};
@@ -709,7 +751,7 @@ describe('spec owner workflow reconciliation', () => {
     const enable = specOnlyPath.indexOf('enablePullRequestAutoMerge');
     const catchStart = specOnlyPath.indexOf('} catch (error) {', enable);
     const catchEnd = specOnlyPath.indexOf(
-      '\n    }\n  }\n\n  if (enabledAutoMergeByThisRun)',
+      '\n      }\n    }\n\n    if (enabledAutoMergeByThisRun)',
       catchStart,
     );
     const catchBlock = specOnlyPath.slice(catchStart, catchEnd);
@@ -1548,6 +1590,429 @@ describe('spec owner workflow reconciliation', () => {
 
       expect(harness.state.calls).not.toContain('create-comment');
       expect(latestGateStatus(harness.state).state).toBe('success');
+    });
+  });
+
+  describe('pull requests stacked on another branch', () => {
+    const lower = 'feature/lower';
+    const scopedContext = 'spec-owner-approval/stacked-pr-17';
+    const statusesFor = (state, statusContext) =>
+      state.statuses.filter(status => status.context === statusContext);
+    const latestFor = (state, statusContext) =>
+      state.statuses.find(status => status.context === statusContext);
+    const sibling = ({number = 18, baseRef = 'main', stack = null} = {}) => ({
+      number,
+      state: 'open',
+      merged_at: null,
+      user: {login: 'someone'},
+      head: {sha: head, repo: {full_name: repository}},
+      base: {
+        sha: '3333333333333333333333333333333333333333',
+        ref: baseRef,
+        repo: {full_name: repository, default_branch: 'main'},
+      },
+      stack,
+    });
+    const nativeTrunk = {base: {ref: 'main', sha: '4'.repeat(40)}};
+
+    it('publishes a scoped context and never the required one', async () => {
+      const harness = createHarness({baseRef: lower});
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestFor(harness.state, scopedContext)).toMatchObject({
+        state: 'pending',
+        description: expect.stringContaining('engineering owner'),
+      });
+      expect(statusesFor(harness.state, 'spec-owner-approval')).toEqual([]);
+      expect(harness.state.labels.has('needs:spec-owner-review')).toBe(true);
+    });
+
+    it('does not let an older-head approval clear the scoped context', async () => {
+      const harness = createHarness({
+        baseRef: lower,
+        reviews: [{...specOwnerReview, commit_id: nextHead}],
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestFor(harness.state, scopedContext).state).toBe('pending');
+    });
+
+    it('gives a native stack rung on main the required context', async () => {
+      const harness = createApprovedHarness({
+        baseRef: lower,
+        stack: nativeTrunk,
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestFor(harness.state, 'spec-owner-approval')).toMatchObject({
+        state: 'success',
+        description: expect.stringContaining('Approved by @imdreamrunner'),
+      });
+      expect(statusesFor(harness.state, scopedContext)).toEqual([]);
+      // A rung merges through its stack, never through gate auto-merge.
+      expect(harness.state.calls).not.toContain('enable-auto-merge');
+    });
+
+    it('keeps the bottom rung of a stack out of gate auto-merge', async () => {
+      const harness = createApprovedHarness({stack: nativeTrunk});
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestFor(harness.state, 'spec-owner-approval').state).toBe(
+        'success',
+      );
+      expect(harness.state.calls).not.toContain('enable-auto-merge');
+    });
+
+    describe('two pull requests with the same head', () => {
+      it('leaves the main pull request required context to its own decision when the other is a manual stack', async () => {
+        const harness = createApprovedHarness({
+          associatedPulls: [sibling({baseRef: lower})],
+        });
+
+        await run(harness, context({runId: 100n}));
+
+        expect(latestFor(harness.state, 'spec-owner-approval')).toMatchObject({
+          state: 'success',
+          description: expect.stringContaining('Approved by'),
+        });
+        expect(harness.state.calls).toContain('enable-auto-merge');
+      });
+
+      it('never writes the required context from the manual stack', async () => {
+        const harness = createApprovedHarness({
+          baseRef: lower,
+          associatedPulls: [sibling()],
+        });
+
+        await run(harness, context({runId: 100n}));
+
+        expect(latestFor(harness.state, scopedContext).state).toBe('success');
+        expect(statusesFor(harness.state, 'spec-owner-approval')).toEqual([]);
+      });
+
+      it('holds a shared required context pending when both read it', async () => {
+        const harness = createApprovedHarness({
+          associatedPulls: [sibling({baseRef: lower, stack: nativeTrunk})],
+        });
+
+        await run(harness, context({runId: 100n}));
+
+        expect(latestFor(harness.state, 'spec-owner-approval')).toMatchObject({
+          state: 'pending',
+          description: `Head ${head.slice(0, 7)} is shared with open PR #18; each needs its own head.`,
+        });
+        expect(harness.state.calls).not.toContain('enable-auto-merge');
+      });
+
+      it('scopes a stacked ready attestation so the other pull request never reads it', async () => {
+        const stackedReady = createDesignHarness({baseRef: lower});
+        await run(
+          stackedReady,
+          context({runId: 100n, actor: 'ernestt', author: 'ernestt'}),
+        );
+        expect(
+          stackedReady.state.statuses.map(status => status.context),
+        ).toContain('spec-owner-ready/stacked-pr-17/ernestt');
+        expect(hasReadyAttestation(stackedReady.state)).toBe(false);
+
+        // The main pull request with the same head sees only that scoped marker.
+        const mainPull = createDesignHarness({
+          statuses: stackedReady.state.statuses.filter(status =>
+            status.context.startsWith('spec-owner-ready/'),
+          ),
+        });
+        await run(mainPull, context({runId: 101n, action: 'synchronize'}));
+        expect(latestFor(mainPull.state, 'spec-owner-approval').state).toBe(
+          'pending',
+        );
+      });
+    });
+
+    it('retires its own pending scoped status after a retarget onto main', async () => {
+      const harness = createApprovedHarness({
+        statuses: [trustedStatus({runId: 90n, statusContext: scopedContext})],
+      });
+
+      await run(harness, context({runId: 100n, action: 'edited'}));
+
+      expect(latestFor(harness.state, scopedContext)).toMatchObject({
+        state: 'success',
+        description: expect.stringContaining('Superseded'),
+      });
+      expect(latestFor(harness.state, 'spec-owner-approval').state).toBe(
+        'success',
+      );
+    });
+
+    describe('a pull request that moves while it is reconciled', () => {
+      it('starts over when a retarget with an equal file count lands mid-read', async () => {
+        // Both bases report one changed file, so only identity notices.
+        const harness = createHarness({
+          filesForBase: {
+            main: [
+              {filename: 'docs/specs/owner-ready/spec.md', status: 'added'},
+            ],
+            [lower]: [{filename: 'README.md', status: 'modified'}],
+          },
+          onPullGet: (count, state) => {
+            if (count === 3) state.pr.base.ref = lower;
+          },
+        });
+
+        await run(harness, context({runId: 100n}));
+
+        expect(latestFor(harness.state, scopedContext)).toMatchObject({
+          state: 'success',
+          description: 'No knowledge records changed.',
+        });
+        // The abandoned main-based attempt never published a decision.
+        expect(
+          statusesFor(harness.state, 'spec-owner-approval').map(
+            status => status.state,
+          ),
+        ).toEqual(['pending']);
+      });
+
+      it('reconciles again when the base SHA moves before the terminal write', async () => {
+        const harness = createApprovedHarness({
+          onPullGet: (count, state) => {
+            if (count === 5) state.pr.base.sha = '5'.repeat(40);
+          },
+        });
+
+        await run(harness, context({runId: 100n}));
+
+        expect(
+          statusesFor(harness.state, 'spec-owner-approval').filter(
+            status => status.state === 'success',
+          ),
+        ).toHaveLength(1);
+        expect(
+          harness.state.calls.some(call => call.includes('Reconciling again')),
+        ).toBe(true);
+        expect(harness.state.calls).toContain('enable-auto-merge');
+      });
+
+      it('fails without a decision when the base never stops moving', async () => {
+        let tick = 0;
+        const harness = createApprovedHarness({
+          onPullGet: (_count, state) => {
+            tick += 1;
+            state.pr.base.sha = tick.toString(16).padStart(40, '0');
+          },
+        });
+
+        await expect(run(harness, context({runId: 100n}))).rejects.toThrow(
+          'kept moving',
+        );
+        expect(
+          statusesFor(harness.state, 'spec-owner-approval').every(
+            status => status.state === 'pending',
+          ),
+        ).toBe(true);
+        expect(harness.state.calls).not.toContain('enable-auto-merge');
+      });
+
+      it('never enables auto-merge after a retarget lands behind the decision', async () => {
+        const harness = createApprovedHarness({
+          onPullGet: (_count, state) => {
+            if (state.calls.includes('status:spec-owner-approval:success')) {
+              state.pr.base.ref = lower;
+            }
+          },
+        });
+
+        await run(harness, context({runId: 100n}));
+
+        expect(harness.state.calls).not.toContain('enable-auto-merge');
+        expect(harness.state.pr.auto_merge).toBe(null);
+        expect(latestFor(harness.state, scopedContext).state).toBe('success');
+      });
+
+      it('withdraws its own enable when a retarget races the mutation', async () => {
+        const harness = createApprovedHarness({
+          onEnableAutoMerge: state => {
+            state.pr.base.ref = lower;
+          },
+        });
+
+        await run(harness, context({runId: 100n}));
+
+        expect(harness.state.calls.indexOf('enable-auto-merge')).toBeLessThan(
+          harness.state.calls.lastIndexOf('disable-auto-merge'),
+        );
+        expect(harness.state.pr.auto_merge).toBe(null);
+        expect(harness.state.labels.has('spec-auto-merge')).toBe(false);
+      });
+    });
+
+    describe('auto-merge', () => {
+      it('withdraws gate-owned auto-merge before publishing a stacked approval', async () => {
+        const harness = createApprovedHarness({
+          baseRef: lower,
+          labels: ['spec-auto-merge'],
+          autoMerge: {merge_method: 'squash'},
+        });
+
+        await run(harness, context({runId: 100n, action: 'edited'}));
+
+        const disabled = harness.state.calls.indexOf('disable-auto-merge');
+        const published = harness.state.calls.indexOf(
+          `status:${scopedContext}:success`,
+        );
+        expect(disabled).toBeGreaterThan(-1);
+        expect(published).toBeGreaterThan(disabled);
+        expect(harness.state.calls).not.toContain('enable-auto-merge');
+        expect(harness.state.labels.has('spec-auto-merge')).toBe(false);
+      });
+
+      it('withdraws gate-owned auto-merge on a backfill of a stacked pull request', async () => {
+        const harness = createApprovedHarness({
+          baseRef: lower,
+          labels: ['spec-auto-merge'],
+          autoMerge: {merge_method: 'squash'},
+        });
+
+        await run(harness, {
+          actor: 'cixzhang',
+          eventName: 'workflow_dispatch',
+          runId: 100n,
+          runAttempt: 1,
+          repo: {owner: 'facebook', repo: 'astryx'},
+          payload: {inputs: {pr: '17', backfill: true}},
+        });
+
+        expect(harness.state.pr.auto_merge).toBe(null);
+        expect(harness.state.labels.has('spec-auto-merge')).toBe(false);
+      });
+
+      it('leaves auto-merge a person enabled on a stacked pull request alone', async () => {
+        const harness = createApprovedHarness({
+          baseRef: lower,
+          autoMerge: {merge_method: 'squash'},
+        });
+
+        await run(
+          harness,
+          context({runId: 100n, action: 'auto_merge_enabled'}),
+        );
+
+        expect(harness.state.calls).not.toContain('disable-auto-merge');
+        expect(harness.state.pr.auto_merge).toEqual({merge_method: 'squash'});
+      });
+    });
+  });
+
+  describe('re-reads the pull request before every mutation', () => {
+    // The initial pending marker follows the run's first read directly, and a
+    // repository label creation is not a pull request mutation.
+    function unguardedWrites(log) {
+      const unguarded = [];
+      let readSinceWrite = false;
+      for (const entry of log) {
+        if (entry === 'read:pull') readSinceWrite = true;
+        else if (entry.startsWith('write:')) {
+          if (entry === 'write:create-label') continue;
+          if (!readSinceWrite) unguarded.push(entry);
+          readSinceWrite = false;
+        }
+      }
+      return unguarded;
+    }
+
+    it.each([
+      ['an approved spec-only change', () => createApprovedHarness(), {}],
+      [
+        'a stacked approval withdrawing gate-owned auto-merge',
+        () =>
+          createApprovedHarness({
+            baseRef: 'feature/lower',
+            labels: ['spec-auto-merge'],
+            autoMerge: {merge_method: 'squash'},
+          }),
+        {action: 'edited'},
+      ],
+      ['a change awaiting owner approval', () => createHarness(), {}],
+      [
+        'a design owner attesting ready',
+        () => createDesignHarness(),
+        {actor: 'ernestt', author: 'ernestt'},
+      ],
+      [
+        'an inexact owner command',
+        () => createHarness(),
+        {
+          eventName: 'issue_comment',
+          comment: {
+            user: {login: 'cixzhang'},
+            body: '/approve-spec',
+            created_at: '2026-08-30T10:00:00Z',
+          },
+        },
+      ],
+    ])('for %s', async (_name, makeHarness, overrides) => {
+      const harness = makeHarness();
+
+      await run(harness, context({runId: 100n, ...overrides}));
+
+      expect(harness.state.log.some(entry => entry.startsWith('write:'))).toBe(
+        true,
+      );
+      expect(unguardedWrites(harness.state.log)).toEqual([]);
+    });
+
+    it('holds a shared required context pending for a fork pull request on the same head', async () => {
+      // Commit association never lists the fork; only the open scan finds it.
+      const harness = createApprovedHarness({
+        associatedPulls: [
+          {
+            number: 6744,
+            state: 'open',
+            merged_at: null,
+            user: {login: 'someone'},
+            head: {sha: head, repo: {full_name: 'someone/astryx'}},
+            base: {
+              sha: '3333333333333333333333333333333333333333',
+              ref: 'main',
+              repo: {full_name: repository, default_branch: 'main'},
+            },
+            stack: null,
+          },
+        ],
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(latestGateStatus(harness.state)).toMatchObject({
+        state: 'pending',
+        description: `Head ${head.slice(0, 7)} is shared with open PR #6744; each needs its own head.`,
+      });
+      expect(harness.state.calls).not.toContain('enable-auto-merge');
+    });
+
+    it('stops before a label change when the base moves on its guard read', async () => {
+      const harness = createHarness({
+        onPullGet: (count, state) => {
+          // Reads 1-4 start the attempt and take the snapshot; read 5 guards
+          // the first mutation after it.
+          if (count === 5) state.pr.base.sha = '6'.repeat(40);
+        },
+      });
+
+      await run(harness, context({runId: 100n}));
+
+      expect(unguardedWrites(harness.state.log)).toEqual([]);
+      expect(
+        harness.state.calls.some(call => call.includes('Reconciling again')),
+      ).toBe(true);
+      expect(latestGateStatus(harness.state)).toMatchObject({
+        state: 'pending',
+        description: expect.stringContaining('engineering owner'),
+      });
     });
   });
 });
