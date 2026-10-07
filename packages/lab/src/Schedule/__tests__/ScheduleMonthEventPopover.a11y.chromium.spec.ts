@@ -104,9 +104,9 @@ function readChips(page: Page) {
   });
 }
 
-for (const [variant, globals] of [
-  ['ltr', undefined],
-  ['rtl-dark', 'direction:rtl;colorMode:dark'],
+for (const [variant, direction, globals] of [
+  ['ltr', 'ltr', undefined],
+  ['rtl-dark', 'rtl', 'direction:rtl;colorMode:dark'],
 ] as const) {
   test(`chips are named buttons in the cells where they start, inside their rows (${variant})`, async ({
     page,
@@ -118,7 +118,7 @@ for (const [variant, globals] of [
       page,
       `month-event-buttons-${variant}`,
       STORY,
-      variant,
+      direction,
       {chips},
     );
     expect(chips.length).toBeGreaterThan(0);
