@@ -978,7 +978,7 @@ function matchReferenceLink(
   node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
   end: number;
 } | null {
-  const textClose = inlineIndex.closingBracket(start + 1);
+  const textClose = inlineIndex.openerClose(start);
   if (textClose === -1) {
     return null;
   }
@@ -1043,7 +1043,7 @@ function matchReferenceImage(
   node: MarkdownAstPhrasingContent<RuntimeExtensionNode>;
   end: number;
 } | null {
-  const altClose = inlineIndex.closingBracket(start + 2);
+  const altClose = inlineIndex.openerClose(start + 1);
   if (altClose === -1) {
     return null;
   }
@@ -1217,9 +1217,24 @@ interface InlineIndex {
    * destination ends.
    */
   closingParen(open: number): number;
+  /**
+   * The index of the `]` that closes the link or image opened by the `[` at
+   * `open`, or -1 when no link or image forms there. Brackets pair as
+   * CommonMark 0.31 §6.3 pairs them: each `]` closes the nearest open `[`,
+   * so link text may hold balanced brackets and `[a [b](u)` links only `b`;
+   * and a link inside link text wins, so the outer brackets stay text —
+   * links never nest. Images may hold links.
+   */
+  openerClose(open: number): number;
 }
 
-function inlineIndexOf(text: string): InlineIndex {
+/** The most characters a link label may hold (CommonMark 0.31 §4.7). */
+const MAX_LINK_LABEL_LENGTH = 999;
+
+function inlineIndexOf(
+  text: string,
+  linkDefs?: ReadonlyMap<string, string>,
+): InlineIndex {
   let backtickStarts: Map<number, number[]> | null = null;
   const backtickCloser = (from: number, length: number): number => {
     if (backtickStarts == null) {
@@ -1306,7 +1321,94 @@ function inlineIndexOf(text: string): InlineIndex {
     }
     return text[open] === '(' ? parenPartners[open] : -1;
   };
-  return {backtickCloser, closingBracket, closingParen};
+  /**
+   * Where the link or image whose text closes at `close` ends — past its
+   * destination or label — or -1 when nothing after the `]` makes one. The
+   * same checks the inline scan makes when it builds the node.
+   */
+  const linkEnd = (open: number, close: number): number => {
+    if (text[close + 1] === '(') {
+      const angleClose = angleDestinationClose(text, close + 1);
+      const urlClose =
+        angleClose === 'refused' ? -1 : (angleClose ?? closingParen(close + 1));
+      if (urlClose !== -1) {
+        return urlClose + 1;
+      }
+    }
+    if (linkDefs == null || close - open - 1 > MAX_LINK_LABEL_LENGTH) {
+      return -1;
+    }
+    const linkText = text.slice(open + 1, close);
+    const defines = (label: string): boolean => {
+      const href = linkDefs.get(normalizeLinkLabel(label));
+      return href != null && isSafeMarkdownParserUrl(href);
+    };
+    if (text[close + 1] === '[') {
+      const labelClose = closingBracket(close + 2);
+      if (
+        labelClose !== -1 &&
+        labelClose - close - 2 <= MAX_LINK_LABEL_LENGTH &&
+        defines(
+          labelClose === close + 2
+            ? linkText
+            : text.slice(close + 2, labelClose),
+        )
+      ) {
+        return labelClose + 1;
+      }
+    }
+    return linkText.trim() !== '' && defines(linkText) ? close + 1 : -1;
+  };
+  let openerCloses: Map<number, number> | null = null;
+  const openerClose = (open: number): number => {
+    if (openerCloses == null) {
+      // One pass in text order, as CommonMark's bracket stack runs: a `]`
+      // closes the nearest open `[`; when that makes a link, every `[`
+      // still open before it can no longer make one.
+      openerCloses = new Map();
+      const openers: {index: number; image: boolean}[] = [];
+      let inactiveBelow = 0;
+      for (let index = 0; index < text.length; index++) {
+        const character = text[index];
+        if (character === '\\') {
+          index++;
+        } else if (character === '`') {
+          let runEnd = index;
+          while (text[runEnd] === '`') {
+            runEnd++;
+          }
+          const closer = backtickCloser(runEnd, runEnd - index);
+          index = (closer === -1 ? runEnd : closer + (runEnd - index)) - 1;
+        } else if (character === '!' && text[index + 1] === '[') {
+          openers.push({index: index + 1, image: true});
+          index++;
+        } else if (character === '[') {
+          openers.push({index, image: false});
+        } else if (character === ']' && openers.length > 0) {
+          const position = openers.length - 1;
+          const opener = openers[position];
+          openers.pop();
+          const active = opener.image || position >= inactiveBelow;
+          inactiveBelow = Math.min(inactiveBelow, position);
+          if (!active) {
+            continue;
+          }
+          const end = linkEnd(opener.index, index);
+          if (end === -1) {
+            continue;
+          }
+          openerCloses.set(opener.index, index);
+          if (!opener.image) {
+            inactiveBelow = openers.length;
+          }
+          // The destination or label is no part of any bracket pairing.
+          index = end - 1;
+        }
+      }
+    }
+    return openerCloses.get(open) ?? -1;
+  };
+  return {backtickCloser, closingBracket, closingParen, openerClose};
 }
 
 // ---------------------------------------------------------------------------
@@ -2050,7 +2152,7 @@ function parseInlineImpl(
   let delimiterNodes: Set<object> | null = null;
   // Code-span closers and link-text closers, each indexed when first asked,
   // so neither code spans nor link text rescan the text.
-  const inlineIndex = inlineIndexOf(text);
+  const inlineIndex = inlineIndexOf(text, opts.linkDefs);
   // Only a plugin that actually contributes INLINE syntax may cost anything
   // per source position. A transform-only list contributes none, so it takes
   // the same path as an omitted or empty one: no candidate probe per
@@ -2130,7 +2232,7 @@ function parseInlineImpl(
 
     // --- Image ![alt](src) ---
     if (text[i] === '!' && text[i + 1] === '[') {
-      const altClose = inlineIndex.closingBracket(i + 2);
+      const altClose = inlineIndex.openerClose(i + 1);
       if (altClose !== -1 && text[altClose + 1] === '(') {
         const angleClose = angleDestinationClose(text, altClose + 1);
         const srcClose =
@@ -2179,7 +2281,7 @@ function parseInlineImpl(
 
     // --- Link [text](url) ---
     if (text[i] === '[') {
-      const textClose = inlineIndex.closingBracket(i + 1);
+      const textClose = inlineIndex.openerClose(i);
       if (textClose !== -1 && text[textClose + 1] === '(') {
         const angleClose = angleDestinationClose(text, textClose + 1);
         const urlClose =
