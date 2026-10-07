@@ -39,7 +39,7 @@ export const LAYOUT_LANDMARK_A11Y_RENDERS: Readonly<
       height="auto"
       content={
         <LayoutContent data-a11y-landmark label="Project overview" role="main">
-          <p data-a11y-landmark-content>Project body</p>
+          <span data-a11y-landmark-content>Project body</span>
         </LayoutContent>
       }
     />
