@@ -3,7 +3,8 @@
 /**
  * @file theme build API — compile standalone themes or one selected family.
  * @input JS/TS theme modules, build/check options, and the installed Core.
- * @output Generated artifacts preserving imported and inherited icon registries.
+ * @output Generated artifacts preserving imported and inherited icon registries
+ *   and the normalized component icon slot map.
  * @position CLI theme compiler; standalone icon provenance is icon-imports.mjs.
  *
  * `themeBuild` and `themeBuildFamily` share the same loader, compiler,
@@ -11,7 +12,8 @@
  * @astryxdesign/core's shared generator (the SINGLE source of truth so the
  * build emits the exact CSS the `<Theme>` runtime does), writes:
  * - A CSS file with token overrides and component styles
- * - A JS module that re-exports the built theme (+ icon registry)
+ * - A JS module that re-exports the built theme (+ icon registry), carrying
+ *   the theme data an extending theme reads back, including `componentIcons`
  * - A .d.ts (plus an optional .variants.d.ts for custom prop values)
  *
  * It performs the writes and returns a `theme.build` receipt — its `warnings`
@@ -1766,6 +1768,29 @@ function extractRegistryInfo(filePath, field) {
 }
 
 /**
+ * The component icon slot map exactly as `defineTheme` normalizes it: own keys
+ * with a shared icon name or `null`, in their resolved order. An `undefined`
+ * value means the slot is unmapped, so it is left out, as `defineTheme` leaves
+ * it out; `null` is kept because it hides the slot. A raw theme object that
+ * skips `defineTheme` therefore saves the same map its resolved form would.
+ * Returns `undefined` when the theme has no map, so none is emitted.
+ *
+ * @param {unknown} componentIcons
+ * @returns {Record<string, unknown> | undefined}
+ */
+function normalizeComponentIcons(componentIcons) {
+  if (componentIcons == null || typeof componentIcons !== 'object') {
+    return undefined;
+  }
+  /** @type {Record<string, unknown>} */
+  const normalized = {};
+  for (const [slot, name] of Object.entries(componentIcons)) {
+    if (name !== undefined) normalized[slot] = name;
+  }
+  return normalized;
+}
+
+/**
  * Generate a minimal JS module for a built theme.
  * Includes the theme name, marker, and re-exports the icon registry.
  * All styling is in the CSS file.
@@ -1776,6 +1801,10 @@ function extractRegistryInfo(filePath, field) {
  * shipped themes expose one as their `./built` subpath), and a base that
  * carries only tokens makes its children silently lose every component
  * override it had.
+ *
+ * The normalized `componentIcons` map is inlined: it holds only shared icon
+ * names and `null`, so it serializes exactly, and a built theme then exposes —
+ * and passes to an extending theme — the same slot map as its source.
  *
  * The icon registry is imported rather than inlined because it holds React
  * elements, which cannot be serialized. `resolveIconImports` reads actual
@@ -1893,6 +1922,11 @@ function generateBuiltModule(
         `  __localTokenLineage: ${JSON.stringify(themeDef.__localTokenLineage)},\n`
       : '') +
     serializeField('components', themeDef.components) +
+    serializeField(
+      'componentIcons',
+      normalizeComponentIcons(themeDef.componentIcons),
+      true,
+    ) +
     serializeField('__onDark', themeDef.__onDark) +
     serializeField('__onLight', themeDef.__onLight) +
     serializeField('__adaptations', themeDef.__adaptations) +

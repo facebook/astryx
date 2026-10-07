@@ -8,8 +8,9 @@
  * end-to-end; these assert the API contract you get calling `themeBuild()` in
  * code: the typed `theme.build` receipt (with files actually written to disk),
  * that it honors the `cwd` option, stays SILENT under the default noopLogger,
- * returns `null` when there is nothing to build, and rejects unsupported icon
- * registries without creating or changing outputs in build and check modes.
+ * returns `null` when there is nothing to build, rejects unsupported icon
+ * registries without creating or changing outputs in build and check modes,
+ * and saves `componentIcons` with runtime/build parity.
  *
  * `themeBuild` compiles via @astryxdesign/core's generator, so it needs a built
  * core — the `node` project's globalSetup (vitest.global-setup.node.mjs) builds
@@ -20,12 +21,14 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import {pathToFileURL} from 'node:url';
 import {
   generateThemeRulesSplit as mockGenerateThemeRulesSplit,
   generateOnMediaCSS as mockGenerateOnMediaCSS,
 } from '@astryxdesign/core/theme';
 import {
   themeBuild,
+  themeBuildFamily,
   validateComponentOverridesAgainstRegistry,
 } from './build.mjs';
 
@@ -1024,6 +1027,250 @@ describe('themeBuild() — extends', () => {
 // =============================================================================
 // Theme name → valid JS identifier contract (deterministic from theme.name)
 // =============================================================================
+
+describe('themeBuild() — componentIcons', () => {
+  // `componentIcons` produces no CSS; it is theme data. A built module has to
+  // expose the normalized map its source does — same keys, same shared icon
+  // names, every `null` kept — so `<Theme theme={built}>` resolves a slot as
+  // the source would, and a theme extending the built module inherits the map
+  // it would inherit from source. Each fixture builds a real theme file and
+  // compares the generated module with the runtime result of the same source.
+  //
+  // The fixtures import `@astryxdesign/core/theme`, so they live where that
+  // specifier resolves; an OS temp dir has no node_modules above it.
+  /** @type {string} */
+  let dir;
+  beforeEach(() => {
+    dir = fs.mkdtempSync(
+      path.join(path.resolve(import.meta.dirname, '../../..'), '.tmp-slots-'),
+    );
+    fs.writeFileSync(path.join(dir, 'package.json'), '{"type":"module"}\n');
+  });
+  afterEach(() => {
+    fs.rmSync(dir, {recursive: true, force: true});
+  });
+
+  /** @param {string} name @param {string} source */
+  function write(name, source) {
+    fs.writeFileSync(path.join(dir, name), source);
+  }
+
+  /** Import a module fresh, bypassing the ESM cache between rebuilds. */
+  async function load(name) {
+    return import(
+      `${pathToFileURL(path.join(dir, name)).href}?t=${Date.now()}`
+    );
+  }
+
+  const BASE_SOURCE = `import {defineTheme} from '@astryxdesign/core/theme';
+  export const slotBaseTheme = defineTheme({
+    name: 'slot-base',
+    componentIcons: {
+      'fixture-card-dismiss': 'close',
+      'fixture-card-status': null,
+      'fixture-card-sort': 'arrowUp',
+    },
+    icons: {},
+  });
+  `;
+
+  it('saves the normalized map with the same keys, names, and nulls as the source', async () => {
+    write('slot-base.mjs', BASE_SOURCE);
+
+    await themeBuild('slot-base.mjs', {}, {cwd: dir});
+    const {slotBaseTheme: source} = await load('slot-base.mjs');
+    const {slotBaseTheme: built} = await load('slot-base.js');
+    const js = fs.readFileSync(path.join(dir, 'slot-base.js'), 'utf8');
+
+    expect(built.__built).toBe(true);
+    expect(built.componentIcons).toEqual(source.componentIcons);
+    expect(Object.keys(built.componentIcons)).toEqual(
+      Object.keys(source.componentIcons),
+    );
+    expect(built.componentIcons['fixture-card-status']).toBeNull();
+    expect(js).toContain('"fixture-card-status": null');
+    // No CSS: the map is data, never a declaration.
+    const css = fs.readFileSync(path.join(dir, 'slot-base.css'), 'utf8');
+    expect(css).not.toContain('fixture-card');
+  });
+
+  it('saves a child that extends a source base with its flattened map', async () => {
+    write('slot-base.mjs', BASE_SOURCE);
+    write(
+      'slot-child.mjs',
+      `import {defineTheme} from '@astryxdesign/core/theme';
+import {slotBaseTheme} from './slot-base.mjs';
+export const slotChildTheme = defineTheme({
+  name: 'slot-child',
+  extends: slotBaseTheme,
+  componentIcons: {
+    'fixture-card-dismiss': null,
+    'fixture-card-status': 'warning',
+    'fixture-card-sort': undefined,
+  },
+});
+`,
+    );
+
+    await themeBuild('slot-child.mjs', {}, {cwd: dir});
+    const {slotChildTheme: source} = await load('slot-child.mjs');
+    const {slotChildTheme: built} = await load('slot-child.js');
+
+    expect(built.componentIcons).toEqual({
+      'fixture-card-dismiss': null,
+      'fixture-card-status': 'warning',
+      'fixture-card-sort': 'arrowUp',
+    });
+    expect(built.componentIcons).toEqual(source.componentIcons);
+  });
+
+  it('gives a child of the built base the same map as a child of the source base', async () => {
+    write('slot-base.mjs', BASE_SOURCE);
+    await themeBuild('slot-base.mjs', {}, {cwd: dir});
+
+    const child = from => `import {defineTheme} from '@astryxdesign/core/theme';
+import {slotBaseTheme} from '${from}';
+export const slotChildTheme = defineTheme({
+  name: 'slot-child',
+  extends: slotBaseTheme,
+  componentIcons: {'fixture-card-status': 'warning'},
+});
+`;
+    write('from-source.mjs', child('./slot-base.mjs'));
+    write('from-built.mjs', child('./slot-base.js'));
+
+    const {slotChildTheme: fromSource} = await load('from-source.mjs');
+    const {slotChildTheme: fromBuilt} = await load('from-built.mjs');
+    expect(fromBuilt.componentIcons).toEqual(fromSource.componentIcons);
+    expect(fromBuilt.componentIcons).toEqual({
+      'fixture-card-dismiss': 'close',
+      'fixture-card-status': 'warning',
+      'fixture-card-sort': 'arrowUp',
+    });
+
+    // The built child carries the map it inherited through the built base.
+    await themeBuild('from-built.mjs', {}, {cwd: dir});
+    const {slotChildTheme: builtChild} = await load('slot-child.js');
+    expect(builtChild.componentIcons).toEqual(fromSource.componentIcons);
+  });
+
+  it('saves a raw theme object as defineTheme would normalize it', async () => {
+    write(
+      'raw-slots.mjs',
+      `export default {
+  name: 'raw-slots',
+  tokens: {'--color-accent': '#0077b6'},
+  componentIcons: {
+    'fixture-card-dismiss': 'close',
+    'fixture-card-status': null,
+    'fixture-card-sort': undefined,
+  },
+};
+`,
+    );
+
+    await themeBuild('raw-slots.mjs', {}, {cwd: dir});
+    const {defineTheme} = await import('@astryxdesign/core/theme');
+    const {default: raw} = await load('raw-slots.mjs');
+    const {rawSlotsTheme: built} = await load('raw-slots.js');
+
+    expect(built.componentIcons).toEqual(
+      defineTheme({...raw, name: 'raw-slots-runtime'}).componentIcons,
+    );
+    expect(Object.hasOwn(built.componentIcons, 'fixture-card-sort')).toBe(
+      false,
+    );
+  });
+
+  it('emits the field only when the source theme has one', async () => {
+    write(
+      'no-slots.mjs',
+      `import {defineTheme} from '@astryxdesign/core/theme';
+export const noSlotsTheme = defineTheme({name: 'no-slots', tokens: {'--color-accent': '#123456'}});
+`,
+    );
+    write(
+      'empty-slots.mjs',
+      `import {defineTheme} from '@astryxdesign/core/theme';
+export const emptySlotsTheme = defineTheme({name: 'empty-slots', tokens: {'--color-accent': '#123456'}, componentIcons: {}});
+`,
+    );
+
+    await themeBuild('no-slots.mjs', {}, {cwd: dir});
+    await themeBuild('empty-slots.mjs', {}, {cwd: dir});
+    const {noSlotsTheme: none} = await load('no-slots.js');
+    const {emptySlotsTheme: empty} = await load('empty-slots.js');
+
+    expect(Object.hasOwn(none, 'componentIcons')).toBe(false);
+    expect(
+      fs.readFileSync(path.join(dir, 'no-slots.js'), 'utf8'),
+    ).not.toContain('componentIcons');
+    expect(empty.componentIcons).toEqual({});
+  });
+
+  it('reports a built module whose slot map drifted from the source as stale', async () => {
+    write('slot-base.mjs', BASE_SOURCE);
+    await themeBuild('slot-base.mjs', {}, {cwd: dir});
+
+    const current = await themeBuild(
+      'slot-base.mjs',
+      {check: true},
+      {cwd: dir},
+    );
+    expect(current?.data.upToDate).toBe(true);
+
+    const jsPath = path.join(dir, 'slot-base.js');
+    const js = fs.readFileSync(jsPath, 'utf8');
+    fs.writeFileSync(
+      jsPath,
+      js.replace(
+        '"fixture-card-status": null',
+        '"fixture-card-status": "info"',
+      ),
+    );
+    const stale = await themeBuild('slot-base.mjs', {check: true}, {cwd: dir});
+    expect(stale?.data.upToDate).toBe(false);
+    expect(stale?.data.stale.map(entry => entry.path)).toEqual([
+      'slot-base.js',
+    ]);
+  });
+
+  describe('themeBuildFamily()', () => {
+    it('saves each member map, flattened through its parent', async () => {
+      write('slot-base.mjs', BASE_SOURCE);
+      write(
+        'slot-child.mjs',
+        `import {defineTheme} from '@astryxdesign/core/theme';
+import {slotBaseTheme} from './slot-base.mjs';
+export const slotChildTheme = defineTheme({
+  name: 'slot-child',
+  extends: slotBaseTheme,
+  componentIcons: {'fixture-card-dismiss': null, 'fixture-card-status': 'warning'},
+});
+`,
+      );
+
+      await themeBuildFamily(
+        ['slot-base.mjs', 'slot-child.mjs'],
+        {familyKey: 'slot-family'},
+        {cwd: dir},
+      );
+      const {slotBaseTheme: sourceBase} = await load('slot-base.mjs');
+      const {slotChildTheme: sourceChild} = await load('slot-child.mjs');
+      const built = await load('slot-family.js');
+
+      expect(built.slotBaseTheme.componentIcons).toEqual(
+        sourceBase.componentIcons,
+      );
+      expect(built.slotChildTheme.componentIcons).toEqual(
+        sourceChild.componentIcons,
+      );
+      expect(built.slotChildTheme.componentIcons['fixture-card-dismiss']).toBe(
+        null,
+      );
+    });
+  });
+});
 
 describe('themeBuild() — theme name identifier sanitization', () => {
   /**

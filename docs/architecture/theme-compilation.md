@@ -297,10 +297,6 @@ clauses are current authority but not enforcement; exact-name emission and the e
 enrollment, owner, lineage, collision, cycle, and legacy-unenrolled behavior remain
 shipped.
 
-`componentIcons` preservation is unshipped. The current built theme module does
-not carry the field, so INV15 is current authority but not enforcement. Its
-verification row describes implementation acceptance, not existing enforcement.
-
 The remaining invariants above describe the approved current contract. The following
 shipped behavior does not yet conform and must not be treated as enforcement:
 
