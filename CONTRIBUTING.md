@@ -115,8 +115,10 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@astryxdesign/core`:** nothing extra. The dev server
-serves the edited source, so the story updates on save — no rebuild, no restart.
+**If you make changes to `@astryxdesign/core`:** source changes update without a
+rebuild or restart. Storybook and the docsite also watch
+`packages/core/locales/*.json`, regenerate the compact runtime catalogs, and
+reload imported messages after a locale edit.
 
 ### Running the Doc Site
 
@@ -286,6 +288,83 @@ export * from './MyComponent';
 > It is auto-generated from the `src/` directory by `scripts/sync-exports.js` and
 > committed automatically when changes land on `main`. If you need to verify your
 > component will be included, run `pnpm sync:exports:check`.
+
+### User-facing strings and text direction
+
+Components read user-facing strings with `useTranslator()` rather than
+hardcoding them:
+
+```tsx
+import {useTranslator} from '@astryxdesign/core/i18n';
+
+function SaveButton() {
+  const t = useTranslator();
+  return <button>{t('@astryx.actions.save')}</button>;
+}
+```
+
+Astryx's own strings live in `packages/core/locales/en.json`. The
+`@astryx/no-hardcoded-i18n-string` ESLint rule rejects a hardcoded one. For a
+prop whose default is a translated string, alias the prop and resolve it in the
+body: destructure `label: labelFromProps`, then
+`const label = labelFromProps ?? t('@astryx.<component>.<key>')`.
+
+A component that responds to text direction resolves it from the DOM, not from
+a render-time JavaScript read. Reach for the lightest tool that works, in this
+order:
+
+1. **CSS logical properties.** Use `insetInlineStart`, `paddingInlineEnd`,
+   `marginInline`, and friends instead of physical `left`/`right`. Most
+   mirroring needs nothing more: the browser flips it from the ambient `dir`.
+   The `@astryx/no-physical-properties` ESLint rule enforces this.
+2. **Directional icons: mirror with CSS, not a name swap.** Render one fixed
+   glyph and wrap it in the shared `rtlStyles.mirror` (a `scaleX(-1)` that only
+   applies under `[dir="rtl"]`). It flips from the ancestor `dir` through the
+   cascade, so it works on the server with no hydration flash. Do not pick
+   `chevronLeft` or `chevronRight` in JavaScript. Pagination, Calendar, and
+   Carousel handle their chevrons this way.
+
+   ```tsx
+   import * as stylex from '@stylexjs/stylex';
+   import {rtlStyles} from '@astryxdesign/core';
+
+   function NextButton() {
+     // One glyph; CSS flips it under RTL. No direction read.
+     return (
+       <span {...stylex.props(rtlStyles.mirror)}>
+         <Icon icon="chevronRight" />
+       </span>
+     );
+   }
+   ```
+
+3. **Behavior: read the DOM lazily, on the event.** For what CSS can't express
+   (arrow-key mapping, drag and scroll math), read direction at interaction
+   time with `isRtlElement(el)` (a `getComputedStyle().direction` check), never
+   during render. The focus hooks (`useListFocus`, `useGridFocus`,
+   `useTreeFocus`) already detect direction from their container, so arrow keys
+   flip for free; don't pass them a direction flag.
+4. **`useDirection()` context, as a last resort.** Use it only when you need
+   the direction value during render and nothing above fits. It is SSR-safe
+   and returns `'ltr'` outside a provider (like `useTranslator`'s silent
+   fallback), but it is the one path that can mismatch on hydration when the
+   provider's direction disagrees with `<html dir>`. No Astryx component reads
+   direction from context at render time.
+
+### Adding a semantic icon
+
+Add a semantic icon name only for a glyph the whole system shares:
+
+1. Add the name to the `IconName` type in
+   `packages/core/src/Icon/globalIconRegistry.tsx`.
+2. Add the default SVG to `packages/core/src/Icon/defaultIcons.tsx`.
+3. Add a row to the Available Names table in
+   `packages/cli/assets/docs/icons.doc.mjs`.
+
+A glyph that belongs to one component takes a namespaced key instead
+(`numberInput:stepperDown`), so the shared `IconName` list does not grow. Ship
+its fallback in `defaultIcons` under the same key so the glyph still renders
+with no theme.
 
 ## Accessibility Checklist
 
@@ -599,6 +678,11 @@ pnpm changeset:new --category fix --summary "…" --pr 2717 --contributor yourha
 
 - **0.x (current): bump follows the category.** We track standard semver for the `0.x.y` range, where a minor bump is the stable breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`). A `[breaking]` change bumps the **minor** (`0.x.y → 0.(x+1).0`). A change confined to a surface that was explicitly marked experimental before its first stable publication uses `[experimental]` and bumps the **patch**, even when that experimental API changes incompatibly. Every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) also bumps the patch. If stable defaults, behavior, props, imports, CLI commands, or machine schemas break, the change remains `[breaking]`. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` enforces the coupling both ways.
 - All publishable packages are a `fixed` group, so a single change co-bumps them to the same version. Only genuinely-affected packages get a changelog entry — the rest get a clean version-only bump.
+- **Main targets a patch by default, and `[breaking]` waits for a scheduled minor.** Because the packages are a fixed group, one `[breaking]` entry moves every package to a new minor — so `pnpm check:changesets` refuses one while main is on its patch default. There are two ways forward, and the refusal prints both:
+  - **Keep the release patch-compatible** (the usual answer): leave the released surface working and deprecate it instead. Ship the replacement, keep the old usage equivalent, and take the patch bump; the removal lands once a minor is scheduled.
+  - **Wait for the scheduled minor**: minors are scheduled for a specific day. A release owner adds `.release/target.json` with the target version and that day, and from then until the release your `[breaking]` changeset can land. Removing that file afterwards is part of normal post-release setup, and an expired date stops admitting breaking changes on its own.
+
+  As a contributor you never author that file or decide the schedule — say what you intend in the PR and a maintainer handles it. The rule is `spec:AST-017` FR46–FR50.
 
 ### How a release is cut
 
@@ -815,7 +899,8 @@ and doesn't need network to use.
 Astryx accepts community translations via Crowdin. To help translate astryx
 into your language, visit <https://crowdin.com/project/astryx>. New locales are
 picked up automatically after a maintainer reviews the auto-generated
-translations PR.
+translations PR. Direct PRs against `packages/core/locales/*.json` also work if
+you prefer that flow.
 
 Calendar’s compact weekday labels, such as `Su` and `Mo`, are generated from
 Unicode CLDR data because browsers do not provide that format.

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx integration pack --check` — verify an integration package is
+ * @file `astryx integration verify` — verify an integration package is
  * ready to publish by cross-referencing its declared contributions against the
  * real npm tarball.
  *
@@ -29,9 +29,15 @@ import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs';
 import {
   docsTreeCliProblem,
+  keywordsCliProblem,
   replacesCliProblem,
+  sectionIdsCliProblem,
+  themesCliProblem,
 } from '../../foundation/integrations/cli-requirement.mjs';
-import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
+import {
+  discoverIntegrationDocs,
+  loadTopicModule,
+} from '../../foundation/discovery/docs-discovery.mjs';
 import {
   discoverIntegrationComponents,
   resolveIntegrationImportPath,
@@ -163,6 +169,22 @@ export function parseNpmPackOutput(output) {
 }
 
 /**
+ * Summarize the JSON error npm prints on stdout when `--json` pack fails.
+ * @param {string} output
+ * @returns {string}
+ */
+function npmPackErrorDetail(output) {
+  try {
+    const error = JSON.parse(output)?.error;
+    return [error?.summary, error?.detail]
+      .filter(part => typeof part === 'string' && part.trim() !== '')
+      .join(': ');
+  } catch {
+    return (output || '').trim();
+  }
+}
+
+/**
  * Run `npm pack --json` with output directed to `destDir` so no preexisting
  * tgz is overwritten. This intentionally runs the package lifecycle, matching
  * the artifact `npm publish` would produce. Uses spawnSync with an args array —
@@ -175,16 +197,25 @@ export function parseNpmPackOutput(output) {
 function runNpmPack(packageDir, destDir) {
   const result = spawnSync(
     'npm',
-    ['pack', '--json', '--silent', `--pack-destination=${destDir}`],
+    [
+      'pack',
+      '--json',
+      '--silent',
+      // Lifecycle scripts still run; background mode keeps their output off
+      // the stdout that carries the JSON result.
+      '--foreground-scripts=false',
+      `--pack-destination=${destDir}`,
+    ],
     {cwd: packageDir, encoding: 'utf-8', timeout: 60_000},
   );
   if (result.error) {
     throw new Error(`Could not start npm pack: ${result.error.message}`);
   }
   if (result.status !== 0) {
-    const stderr = (result.stderr || '').trim();
+    const detail =
+      (result.stderr || '').trim() || npmPackErrorDetail(result.stdout);
     throw new Error(
-      `npm pack failed (exit ${result.status})${stderr ? `: ${stderr}` : ''}.`,
+      `npm pack failed (exit ${result.status})${detail ? `: ${detail}` : ''}.`,
     );
   }
   return parseNpmPackOutput(result.stdout);
@@ -306,6 +337,23 @@ function moduleExportsName(file, exportName, seen = new Set()) {
       if (target && moduleExportsName(target, exportName, seen)) found = true;
     });
   return found;
+}
+
+/**
+ * Whether any of these doc files has a section that sets `id`.
+ * @param {string[]} files
+ * @returns {Promise<boolean>}
+ */
+async function setsSectionIds(files) {
+  for (const file of files) {
+    if (typeof file !== 'string') continue;
+    const doc = /** @type {any} */ (await loadTopicModule(file).catch(() => null));
+    const sections = Array.isArray(doc?.sections) ? doc.sections : [];
+    if (sections.some((/** @type {any} */ section) => section?.id != null)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -600,19 +648,32 @@ export async function integrationPackCheck(options = {}) {
   // (spec:AST-046 FR11): an older CLI can hide every doc topic the package
   // ships, so the declared CLI range must admit only CLIs that read it.
   if (loaded.docs) {
-    const {namespaces, guides} = await discoverIntegrationDocs(loaded).catch(
-      () => ({namespaces: [], guides: []}),
-    );
+    const {records, namespaces, guides} = await discoverIntegrationDocs(
+      loaded,
+    ).catch(() => ({records: [], namespaces: [], guides: []}));
     const problem =
       namespaces.length > 0 || guides.length > 0
         ? docsTreeCliProblem(pkg)
         : null;
     if (problem != null) {
       issues.push(error('docs_tree_needs_cli', problem));
+    } else if (
+      await setsSectionIds([
+        ...records.map(record => record.path),
+        ...guides.map(guide => /** @type {any} */ (guide.ref).topicFile),
+      ])
+    ) {
+      // A section `id` is also a field an older CLI rejects, hiding the
+      // package's doc topics. It needs an older CLI than the docs tree does.
+      const idProblem = sectionIdsCliProblem(pkg);
+      if (idProblem != null) {
+        issues.push(error('section_ids_need_cli', idProblem));
+      }
     }
   }
-  // A template that sets `replaces` needs a CLI that reads the field
-  // (spec:AST-035): an older CLI withholds the package's templates and docs.
+  // A template that sets `replaces` (spec:AST-035) or `keywords` needs a CLI
+  // that reads the field: an older CLI drops that template and hides the
+  // package's docs.
   if (loaded.templates) {
     const found = await discoverIntegrationTemplatesForOne(loaded).catch(
       () => ({templates: [], errors: []}),
@@ -624,6 +685,19 @@ export async function integrationPackCheck(options = {}) {
       );
     const problem = setsReplaces ? replacesCliProblem(pkg) : null;
     if (problem != null) issues.push(error('replaces_needs_cli', problem));
+    const setsKeywords = found.templates.some(
+      template => template.keywords != null && template.keywords.length > 0,
+    );
+    const keywordsProblem = setsKeywords ? keywordsCliProblem(pkg) : null;
+    if (keywordsProblem != null) {
+      issues.push(error('keywords_needs_cli', keywordsProblem));
+    }
+  }
+  // A theme needs a CLI that reads typed theme descriptors: an older CLI
+  // rejects the themes root and withholds the package's themes and docs.
+  if (localIdentities.themes.length > 0) {
+    const problem = themesCliProblem(pkg);
+    if (problem != null) issues.push(error('themes_need_cli', problem));
   }
 
   // Temp resources — always cleaned up
@@ -657,6 +731,14 @@ export async function integrationPackCheck(options = {}) {
     // package's already-installed dependencies. The unique suffix makes
     // concurrent checks independent.
     scratchBase = fs.mkdtempSync(path.join(packageDir, '.astryx-pack-check-'));
+    // The consumer's own package.json makes it the package scope for its
+    // imports. Without one, Node resolves the package's name through the
+    // SOURCE package.json (self-reference), so an export target left out of
+    // the tarball would still resolve.
+    fs.writeFileSync(
+      path.join(scratchBase, 'package.json'),
+      `${JSON.stringify({name: 'astryx-verify-consumer', private: true})}\n`,
+    );
 
     // Cross-reference file inventory vs pack list
     if (!packResult.packedPaths.has(fileInv.manifest)) {

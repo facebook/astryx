@@ -18,6 +18,8 @@
  * deduped, so each leaf stays a thin projection.
  */
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {
   findCoreDir,
@@ -147,6 +149,34 @@ function findLoadedIntegration(loadedIntegrations, packageName) {
 }
 
 /**
+ * Read the exact installed version available to a package-qualified component
+ * selector. Legacy docs packages do not expose a reliable version here, so a
+ * version-qualified lookup never falls through to them.
+ * @param {string} coreDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @param {string} packageName
+ * @returns {string|null}
+ */
+export function installedComponentPackageVersion(
+  coreDir,
+  loadedIntegrations,
+  packageName,
+) {
+  if (packageName === CORE_PACKAGE) {
+    try {
+      const pkg = JSON.parse(
+        fs.readFileSync(path.join(coreDir, 'package.json'), 'utf8'),
+      );
+      return typeof pkg.version === 'string' ? pkg.version : null;
+    } catch {
+      return null;
+    }
+  }
+  const integration = findLoadedIntegration(loadedIntegrations, packageName);
+  return typeof integration?.version === 'string' ? integration.version : null;
+}
+
+/**
  * Resolve an external package by name from the discovered externals list.
  * @param {string} packageName - e.g. '@acme/xds-widgets'
  * @param {string} cwd
@@ -245,6 +275,34 @@ export function classifyScope(
 }
 
 /**
+ * Internal ambiguity marker. Single-component callers still receive the same
+ * AstryxError code, message, and suggestions; batch callers can additionally
+ * project every installed candidate without parsing prose.
+ */
+export class ComponentAmbiguityError extends AstryxError {
+  /** @type {import('./component.type.mjs').ComponentBatchCandidate[]} */
+  candidates;
+
+  /**
+   * @param {ComponentOwner[]} owners
+   * @param {string} dirName
+   */
+  constructor(owners, dirName) {
+    super(
+      `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
+      owners.map(o => ({name: o.package, reason: 'provides this component'})),
+      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+    );
+    this.candidates = owners.map(owner => ({
+      package: owner.package,
+      component: dirName,
+      kind: 'component',
+      installed: true,
+    }));
+  }
+}
+
+/**
  * Refuse to guess when the name is owned by MORE THAN ONE package (core and/or
  * integrations) and the caller did not scope with --package. Legacy
  * `pkg.astryx.docs` externals are intentionally NOT part of this ambiguity set.
@@ -254,11 +312,7 @@ export function classifyScope(
  */
 export function assertUnambiguousOwners(owners, dirName) {
   if (owners.length > 1) {
-    throw new AstryxError(
-      `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
-      owners.map(o => ({name: o.package, reason: 'provides this component'})),
-      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
-    );
+    throw new ComponentAmbiguityError(owners, dirName);
   }
 }
 

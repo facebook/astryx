@@ -18,6 +18,9 @@
  * astryx --json component --category Form         -> component.list (filtered)
  * astryx --json component --list --detail compact -> component.list (data.detail='compact')
  * astryx --json component --list --detail full    -> component.list (data.detail='full')
+ * component([])                                  -> component.batch (data.count=0)
+ * component(['Button'])                          -> component.batch (data.count=1)
+ * astryx --json component Button Badge            -> component.batch
  * astryx --json component Button                  -> component.detail
  * astryx --json component Button --props          -> component.detail.props
  * astryx --json component Button --source         -> component.detail.source
@@ -47,6 +50,47 @@
  *   | {detail: 'compact'; components: Record<string, ComponentBriefEntry[]>}
  *   | {detail: 'full'; components: Record<string, import('@astryxdesign/cli/authoring').ComponentDoc[]>}
  * )} ComponentListData
+ */
+
+/**
+ * `component(string[])` always returns this type, including empty and one-item
+ * arrays. The CLI returns it for two or more positional selectors.
+ * @typedef {import('../../foundation/response/batch.type.mjs').BatchResponse<
+ *   'component.batch',
+ *   ComponentSingleResponse,
+ *   ComponentBatchCandidate
+ * >} ComponentBatchResponse
+ */
+
+/**
+ * One installed component that makes an unqualified selector ambiguous.
+ * Keys match a component row in `discover.search` so a caller does not learn a
+ * second candidate shape.
+ * @typedef {object} ComponentBatchCandidate
+ * @property {string} package
+ * @property {string} component
+ * @property {'component'} kind
+ * @property {true} installed
+ */
+
+/**
+ * The response a successful single selector would have returned.
+ * @typedef {(
+ *   | ComponentDetailResponse
+ *   | ComponentDetailPropsResponse
+ *   | ComponentDetailSourceResponse
+ *   | ComponentDetailShowcaseResponse
+ *   | ComponentDetailBlocksResponse
+ * )} ComponentSingleResponse
+ */
+
+/**
+ * One row per requested selector, in argument order. Duplicate selectors keep
+ * duplicate rows.
+ * @typedef {import('../../foundation/response/batch.type.mjs').BatchRow<
+ *   ComponentSingleResponse,
+ *   ComponentBatchCandidate
+ * >} ComponentBatchResult
  */
 
 /**

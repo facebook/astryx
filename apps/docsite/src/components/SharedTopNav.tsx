@@ -2,7 +2,7 @@
 
 'use client';
 
-import {lazy, Suspense, useEffect, useState} from 'react';
+import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -23,6 +23,7 @@ import {GITHUB_REPO} from '../constants';
 import {AstryxIcon} from './logos';
 import {useThemeMode} from '../app/providers';
 import {trackSearch, trackClickCta} from '../lib/analytics';
+import {useAppShellHeaderHeight} from '../lib/useAppShellHeaderHeight';
 
 const LazySearchPalette = lazy(() =>
   import('./SearchPalette').then(module => ({default: module.SearchPalette})),
@@ -121,6 +122,8 @@ export function SharedTopNav() {
     closeMobileNav,
   } = useAppShellMobile();
   const renderMode = useTopNavRenderMode();
+  const navRef = useRef<HTMLElement>(null);
+  useAppShellHeaderHeight(navRef);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -182,6 +185,7 @@ export function SharedTopNav() {
   return (
     <>
       <TopNav
+        ref={navRef}
         label="Astryx navigation"
         heading={
           <TopNavHeading

@@ -105,8 +105,17 @@ describe('generateCompressedIndex', () => {
 
   it('includes upgrade command and migration rule', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toContain('upgrade --apply');
+    // `upgrade --apply` alone stops with "Missing required --from".
+    expect(result).toContain('upgrade --from <old version> --apply');
     expect(result).toMatch(/after any Astryx or integration dependency bump/);
+  });
+
+  it('points agents at discover for integrations they could add', () => {
+    const result = generateCompressedIndex('1.0.0');
+    // Without this line no surface an agent reads names `discover`, and agents
+    // look for a theme in the package registry instead.
+    expect(result).toMatch(/^ {2}discover <words> {3}integrations you could add, and the ones you have$/m);
+    expect(result).toMatch(/^ {2}search "<query>" .*\/ theme$/m);
   });
 
   it('states the invocation once in the CLI header (yarn)', () => {
@@ -201,7 +210,7 @@ describe('generateCompressedIndex', () => {
       ],
     });
 
-    expect(result.indexOf('upgrade --apply')).toBeLessThan(
+    expect(result.indexOf('upgrade --from <old version> --apply')).toBeLessThan(
       result.indexOf('INTEGRATIONS:'),
     );
     expect(result.indexOf('INTEGRATIONS:')).toBeLessThan(

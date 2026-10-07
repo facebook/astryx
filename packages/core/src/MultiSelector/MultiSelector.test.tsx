@@ -20,7 +20,12 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
-import {MultiSelector} from './MultiSelector';
+import {
+  MultiSelector,
+  type MultiSelectorHandle,
+  type MultiSelectorChange,
+} from './MultiSelector';
+import {useRef} from 'react';
 import {Icon} from '../Icon';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -1071,6 +1076,90 @@ describe('MultiSelector', () => {
 
     // The panel message is role="presentation", so the live region is the
     // only thing a screen reader gets — it has to say the same words.
+    await waitFor(() =>
+      expect(politeRegion()?.textContent).toBe('Nothing like that here'),
+    );
+  });
+
+  // `emptySearchText` is typed ReactNode, which invites an element — a
+  // "no results, create one" row is exactly what a dead end is for. The
+  // announcement used to take the prop only when it was a string and
+  // announce the catalog default otherwise, so a screen-reader user was told
+  // something the sighted user was not reading (`spec:AST-056` AR1).
+  it('announces the text of an element emptySearchText', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        emptySearchText={
+          <span>
+            Nothing like that here. <a href="/new">Add a fruit</a>
+          </span>
+        }
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    await waitFor(() =>
+      expect(politeRegion()?.textContent).toBe(
+        'Nothing like that here. Add a fruit',
+      ),
+    );
+  });
+
+  it('announces the text of an element emptyText', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        emptyText={
+          <span>
+            Add a fruit first<span aria-hidden="true"> →</span>
+          </span>
+        }
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+
+    // The decorative arrow is hidden from the accessibility tree on screen,
+    // so it stays out of the announcement too.
+    await waitFor(() =>
+      expect(politeRegion()?.textContent).toBe('Add a fruit first'),
+    );
+  });
+
+  it('announces text a child component renders, which is only in the DOM', async () => {
+    const user = userEvent.setup();
+    // The words exist nowhere in the node the caller passed — they are
+    // produced inside this component's own render. Reading the DOM after
+    // render is what makes them announceable.
+    function Message() {
+      return <span>Nothing like that here</span>;
+    }
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        emptySearchText={<Message />}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
     await waitFor(() =>
       expect(politeRegion()?.textContent).toBe('Nothing like that here'),
     );
@@ -3142,5 +3231,551 @@ describe('MultiSelector popup theme target', () => {
     expect(trigger.parentElement).toHaveClass(
       stylex.props(selectorPresentationStyles.pointerRestoredFocus).className!,
     );
+  });
+});
+
+describe('MultiSelector trigger render prop', () => {
+  const OPTIONS = [
+    {value: 'bug', label: 'Bug'},
+    {value: 'feature', label: 'Feature'},
+    {value: 'docs', label: 'Docs'},
+  ];
+
+  it('renders the caller control instead of the field and button', () => {
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Pick labels
+          </button>
+        )}
+      />,
+    );
+    const opener = screen.getByRole('button', {name: 'Pick labels'});
+    expect(opener).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(opener).toHaveAttribute('aria-expanded', 'false');
+    expect(opener).toHaveAttribute('aria-controls');
+    // No field chrome: exactly one button, and no Field label element.
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(screen.queryByText('Labels')).toBeNull();
+  });
+
+  it('opens against the caller control and names the listbox by label', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={['bug']}
+        onChange={() => {}}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Pick labels
+          </button>
+        )}
+      />,
+    );
+    const opener = screen.getByRole('button', {name: 'Pick labels'});
+    await user.click(opener);
+
+    expect(opener).toHaveAttribute('aria-expanded', 'true');
+    const listbox = screen.getByRole('listbox', {name: 'Labels', ...h});
+    expect(opener.getAttribute('aria-controls')).toBe(listbox.id);
+    expect(screen.getAllByRole('option', h)).toHaveLength(3);
+    expect(screen.getByRole('option', {name: 'Bug', ...h})).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  it('the listbox owns the keyboard once open and toggles on Enter', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Pick labels
+          </button>
+        )}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Pick labels'}));
+    const listbox = screen.getByRole('listbox', h);
+    expect(listbox).toHaveAttribute('tabindex', '0');
+    await waitFor(() => expect(listbox).toHaveFocus());
+
+    // Opening by click highlights the first option; Enter toggles it.
+    fireEvent.keyDown(listbox, {key: 'ArrowDown'});
+    fireEvent.keyDown(listbox, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(['feature']);
+  });
+
+  it('handleRef opens and closes the panel and onOpenChange reports it', async () => {
+    const onOpenChange = vi.fn();
+    function Harness() {
+      const handleRef = useRef<MultiSelectorHandle>(null);
+      return (
+        <>
+          <button type="button" onClick={() => handleRef.current?.open()}>
+            open from outside
+          </button>
+          <button type="button" onClick={() => handleRef.current?.close()}>
+            close from outside
+          </button>
+          <MultiSelector
+            label="Labels"
+            options={OPTIONS}
+            value={[]}
+            onChange={() => {}}
+            handleRef={handleRef}
+            onOpenChange={onOpenChange}
+            renderTrigger={props => (
+              <button type="button" {...props}>
+                anchor
+              </button>
+            )}
+          />
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    render(<Harness />);
+    const anchor = screen.getByRole('button', {name: 'anchor'});
+    expect(anchor).toHaveAttribute('aria-expanded', 'false');
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', {name: 'open from outside'}));
+    expect(anchor).toHaveAttribute('aria-expanded', 'true');
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+
+    await user.click(screen.getByRole('button', {name: 'close from outside'}));
+    await waitFor(() => {
+      expect(anchor).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    expect(onOpenChange).toHaveBeenCalledTimes(2);
+  });
+
+  it('the handle does not open a disabled selector', () => {
+    const handleRef = {current: null as MultiSelectorHandle | null};
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        isDisabled
+        handleRef={handleRef}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            anchor
+          </button>
+        )}
+      />,
+    );
+    act(() => {
+      handleRef.current?.open();
+    });
+    expect(handleRef.current?.isOpen()).toBe(false);
+    expect(screen.getByRole('button', {name: 'anchor'})).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+});
+
+describe('MultiSelector renderTrigger — read-only', () => {
+  it("a read-only selector advertises no panel on the caller's control", () => {
+    // spec:AST-011 FR4. A read-only selector has no surface to open, so a
+    // control that says "collapsed, has popup" sends a screen-reader user
+    // to press Enter on something that cannot respond — with nothing to
+    // tell them the value is read-only rather than the control broken.
+    const onOpen = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        value={['a']}
+        onChange={() => {}}
+        isReadOnly
+        options={[
+          {value: 'a', label: 'Alpha'},
+          {value: 'b', label: 'Beta'},
+        ]}
+        renderTrigger={props => (
+          <button type="button" {...props} onClick={onOpen}>
+            Labels
+          </button>
+        )}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).not.toHaveAttribute('aria-haspopup');
+    expect(trigger).not.toHaveAttribute('aria-controls');
+    // Withholding the disclosure attributes stops the control lying about a
+    // panel; this says why it does not open, which the field path conveys
+    // through chrome the caller's control does not have.
+    expect(trigger).toHaveAttribute('aria-readonly', 'true');
+  });
+
+  it('still advertises the panel when the selector is not read-only', () => {
+    render(
+      <MultiSelector
+        label="Labels"
+        value={[]}
+        onChange={() => {}}
+        options={[{value: 'a', label: 'Alpha'}]}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Labels
+          </button>
+        )}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveAttribute('aria-controls');
+  });
+});
+
+describe('MultiSelector renderTrigger — focus return', () => {
+  it('returns focus to a control that takes no focus of its own', async () => {
+    // A glyph is not keyboard-openable, but when it IS opened by pointer the
+    // panel still has to give focus back somewhere the person recognises.
+    // Without the fallback focus lands on the body and they lose their place.
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        value={[]}
+        onChange={() => {}}
+        options={[
+          {value: 'a', label: 'Alpha'},
+          {value: 'b', label: 'Beta'},
+        ]}
+        renderTrigger={props => (
+          <span {...props} data-testid="glyph">
+            #
+          </span>
+        )}
+      />,
+    );
+
+    const glyph = screen.getByTestId('glyph');
+    expect(glyph).toHaveAttribute('tabindex', '-1');
+
+    await user.click(glyph);
+    await waitFor(() => expect(glyph).toHaveAttribute('aria-expanded', 'true'));
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(glyph).toHaveFocus());
+    expect(document.body).not.toHaveFocus();
+  });
+
+  it('leaves a real control\u2019s own focusability alone', () => {
+    render(
+      <MultiSelector
+        label="Labels"
+        value={[]}
+        onChange={() => {}}
+        options={[{value: 'a', label: 'Alpha'}]}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Labels
+          </button>
+        )}
+      />,
+    );
+
+    expect(screen.getByRole('button', {name: 'Labels'})).not.toHaveAttribute(
+      'tabindex',
+    );
+  });
+});
+
+describe('MultiSelector hasCreate', () => {
+  const OPTIONS = [
+    {value: 'bug', label: 'Bug'},
+    {value: 'feature', label: 'Feature'},
+    {value: 'cafe', label: 'Café'},
+  ];
+
+  it('offers Create "<query>" first and reports the creation through onChange', async () => {
+    const user = userEvent.setup();
+    const onChange =
+      vi.fn<(value: string[], change?: MultiSelectorChange) => void>();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={['bug']}
+        onChange={onChange}
+        hasSearch
+        hasCreate
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+
+    const options = screen.getAllByRole('option', h);
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveTextContent('Create "Urgent"');
+    expect(options[0]).toHaveAttribute('aria-selected', 'false');
+    expect(options[0].querySelector('input[type="checkbox"]')).toBeNull();
+    expect(screen.queryByText('No results found')).toBeNull();
+
+    await user.click(options[0]);
+    // One update: the query joins the value and the change says it is a
+    // creation, so the caller adds the option and accepts the value together.
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(['bug', 'Urgent'], {
+      type: 'create',
+      query: 'Urgent',
+    });
+    // The filter is cleared so the option the caller adds is visible.
+    expect(search).toHaveValue('');
+  });
+
+  it('a plain toggle passes no descriptor, so a one-argument handler is unchanged', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+        hasSearch
+        hasCreate
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    await user.click(screen.getByRole('option', {name: 'Bug', ...h}));
+    expect(onChange).toHaveBeenCalledWith(['bug']);
+    expect(onChange.mock.calls[0]).toHaveLength(1);
+  });
+
+  it('sits above partial matches and is skipped for a label the filter matches exactly', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasCreate
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+
+    await user.type(search, 'Bu');
+    expect(screen.getAllByRole('option', h).map(o => o.textContent)).toEqual([
+      'Create "Bu"',
+      'Bug',
+    ]);
+
+    await user.type(search, 'g');
+    expect(screen.getAllByRole('option', h).map(o => o.textContent)).toEqual([
+      'Bug',
+    ]);
+
+    await user.clear(search);
+    await user.type(search, 'bug');
+    // Case-insensitive, like the filter: "bug" is Bug, so nothing to create.
+    expect(screen.getAllByRole('option', h).map(o => o.textContent)).toEqual([
+      'Bug',
+    ]);
+
+    await user.clear(search);
+    await user.type(search, 'CAFE');
+    // The duplicate rule is the filter's rule: the filter cannot surface
+    // Café for CAFE, so refusing to create would be a dead end.
+    expect(screen.getAllByRole('option', h).map(o => o.textContent)).toEqual([
+      'Create "CAFE"',
+    ]);
+  });
+
+  it('leads the select-all row and is not handed to renderOption', async () => {
+    const user = userEvent.setup();
+    const renderOption = vi.fn((option: {label?: string}) => (
+      <span>{`row:${option.label}`}</span>
+    ));
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasSelectAll
+        hasCreate
+        renderOption={renderOption}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    await user.type(screen.getByRole('combobox', h), 'Bu');
+    const options = screen.getAllByRole('option', h);
+    expect(options[0]).toHaveTextContent('Create "Bu"');
+    expect(options[1]).toHaveTextContent('Select all');
+    expect(options[2]).toHaveTextContent('row:Bug');
+    expect(
+      renderOption.mock.calls.some(([option]) =>
+        (option.label ?? '').startsWith('Create'),
+      ),
+    ).toBe(false);
+  });
+
+  it('Enter with nothing highlighted commits the create row; ArrowDown reaches it', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+        hasSearch
+        hasCreate
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Urgent');
+    await user.keyboard('{Enter}');
+    expect(onChange).toHaveBeenLastCalledWith(['Urgent'], {
+      type: 'create',
+      query: 'Urgent',
+    });
+
+    await user.type(search, 'Later');
+    fireEvent.keyDown(search, {key: 'ArrowDown'});
+    const createRow = screen.getByRole('option', {
+      name: 'Create "Later"',
+      ...h,
+    });
+    expect(search).toHaveAttribute('aria-activedescendant', createRow.id);
+    fireEvent.keyDown(search, {key: 'Enter'});
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.arrayContaining(['Later']),
+      {type: 'create', query: 'Later'},
+    );
+  });
+
+  it('offers nothing while isLoading, and Enter commits nothing', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const {rerender} = render(
+      <MultiSelector
+        label="Labels"
+        options={[]}
+        value={[]}
+        onChange={onChange}
+        hasSearch
+        hasCreate
+        isLoading
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Bug');
+    expect(screen.queryAllByRole('option', h)).toHaveLength(0);
+    expect(politeRegion()?.textContent ?? '').toBe('');
+    await user.keyboard('{Enter}');
+    expect(onChange).not.toHaveBeenCalled();
+
+    // The options land: Bug exists, so still no create row for "Bug" — the
+    // duplicate the gate was there to prevent.
+    rerender(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+        hasSearch
+        hasCreate
+      />,
+    );
+    expect(screen.getAllByRole('option', h).map(o => o.textContent)).toEqual([
+      'Bug',
+    ]);
+  });
+
+  it('announces the create row, not "No results found", when it is the only result', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasCreate
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    await user.type(screen.getByRole('combobox', h), 'Urgent');
+    // The empty-state message is role="presentation", so the live region is
+    // what a screen reader gets — it must say what is on screen: a row.
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('Create "Urgent"');
+    });
+  });
+
+  it('warns in development and offers nothing when hasCreate is set without hasSearch', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+          hasCreate
+        />,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(/MultiSelector[\s\S]*hasSearch/),
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Labels'}));
+      // No search input, no query, no create row: the three real options only.
+      expect(
+        screen.queryByRole('combobox', {name: /search/i, ...h}),
+      ).toBeNull();
+      expect(screen.getAllByRole('option', h)).toHaveLength(3);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('is off by default', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    await user.type(screen.getByRole('combobox', h), 'Urgent');
+    expect(screen.queryAllByRole('option', h)).toHaveLength(0);
+    expect(screen.getByText('No results found')).toBeInTheDocument();
   });
 });

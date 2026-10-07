@@ -137,6 +137,12 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
   const apply = options.apply ?? false;
 
+  // One fact about the resolved source directory, captured before anything
+  // runs. `--path` defaults to `./src`, so a project laid out as `app/` (or a
+  // typo) skips every code codemod; without this the receipt is byte-identical
+  // to a clean, fully migrated project.
+  const sourcePathFound = fs.existsSync(path_);
+
   const currentVersion = /** @type {string} */ (options.from);
   const installed = detectInstalledTargetVersion(cwd);
   if (!installed) {
@@ -282,6 +288,7 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
             refreshed: false,
             action: 'none',
           },
+          sourcePathFound,
           filesChanged: coreResult?.totalFilesChanged ?? 0,
           transformsApplied: coreResult?.totalTransformsApplied ?? 0,
           modifiedFiles: uniqueFiles(coreResult?.changedFiles).map(file =>
@@ -407,6 +414,12 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
       refreshed: false,
       action: 'none',
     }),
+    // A missing source directory is the one way this command can migrate
+    // nothing and still look complete: every codemod is skipped, filesChanged
+    // stays 0, and errors stays empty. The receipt carries the fact so a
+    // machine consumer can tell "nothing needed changing" from "nothing was
+    // ever read" — the human text says so via the runner's own error line.
+    sourcePathFound,
   };
 
   let integrationResult = null;
@@ -437,9 +450,11 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
 
   const registryResult = await reconcileCompositions();
 
-  const mergedFilesChanged =
-    (coreResult?.totalFilesChanged ?? 0) +
-    (integrationResult?.totalFilesChanged ?? 0);
+  // A file a core codemod AND an integration codemod both changed is one file.
+  const mergedFilesChanged = new Set([
+    ...(coreResult?.changedFiles ?? []),
+    ...(integrationResult?.changedFiles ?? []),
+  ]).size;
   const mergedTransformsApplied =
     (coreResult?.totalTransformsApplied ?? 0) +
     (integrationResult?.totalTransformsApplied ?? 0);
@@ -640,12 +655,16 @@ export async function run(options = {}, {cwd = process.cwd()} = {}) {
   }
 
   const registryOk = receipt.registryCompositions?.ok ?? true;
+  const done = apply ? 'Upgrade complete' : 'Dry run complete';
   logger.log(
     protectedFiles.length > 0
       ? 'Upgrade incomplete: protected changes remain\n'
-      : registryOk
-        ? (apply ? 'Upgrade complete' : 'Dry run complete') + '\n'
-        : 'Upgrade finished with unresolved registry items\n',
+      : !registryOk
+        ? 'Upgrade finished with unresolved registry items\n'
+        : sourcePathFound
+          ? done + '\n'
+          : `${done}, but ${path.relative(cwd, path_) || '.'} does not exist, so no source files were scanned. ` +
+            `Pass --path <your source directory> if your code does not live in ./src.\n`,
   );
   return {
     type: 'upgrade.run',

@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: cixzhang
-approved_at: 2026-09-29
+approved_at: 2026-10-07
 phase: accepted
 owners: [cixzhang, josephfarina]
 affects_architecture:
@@ -66,6 +66,10 @@ affects_consumer_docs: [release-process, templates]
       "FR27",
       "FR28",
       "FR29",
+      "FR29a",
+      "FR29b",
+      "FR29c",
+      "FR29d",
       "FR30",
       "FR31",
       "FR32",
@@ -81,7 +85,14 @@ affects_consumer_docs: [release-process, templates]
       "FR42",
       "FR43",
       "FR44",
-      "FR45"
+      "FR45",
+      "FR46",
+      "FR47",
+      "FR48",
+      "FR49",
+      "FR50",
+      "DEC-15",
+      "DEC-16"
     ]
   }
 }
@@ -107,6 +118,10 @@ For CLI controls, keep every supported behavior discoverable and put each contro
 the narrowest surface that owns it. Global controls require evidence that their value
 and meaning are global. Cross-cutting guarantees must be complete, observable, and
 independent for each invocation.
+
+Admission is part of that contract. Main is heading for a patch unless an owner has
+scheduled a minor, and incompatible work waits for that schedule. A release does not
+change shape because one removal merged ahead of the decision to allow it.
 
 ## Non-goals
 
@@ -383,31 +398,78 @@ independent for each invocation.
   experimental routes. An omitted opt-in MUST leave stable defaults, output, routes,
   data, and behavior unchanged. Promotion requires owner approval and a `[feat]`
   Changeset; withdrawal uses `[experimental]` and MUST prove no stable spillover.
-- **FR28 — Deprecation is replacement-first and machine-readable.** A deprecation
-  patch ships the working replacement while old usage remains equivalent. A public
-  record assigns a stable `DEP-*` id and a distinct `CLN-*` cleanup id and names the
-  package, surface kind, old contract, replacement, direct authority, warning,
-  migration, codemod or non-mechanical reason, downstream proof, state, and target
-  plan. Prose alone does not create removal eligibility.
-- **FR29 — Warnings fit the surface without changing success.** Declarations use
-  `@deprecated`; CLI aliases expose the deprecation id and replacement in their
-  machine result and emit at most one human-readable stderr warning per invocation;
-  runtime and build APIs use deduplicated development warnings; CSS and tokens use
-  static diagnostics. Warnings MUST NOT change production behavior, successful exit
-  status, canonical output, or machine-readable stdout.
+- **FR28 — Deprecation is replacement-first, actionable, and machine-readable.** A
+  deprecation patch ships the working replacement while old usage remains equivalent.
+  Before a surface enters `deprecated`, its supported modernization route MUST be
+  available: an exact migration command or codemod when the rewrite is mechanical, or
+  ordered and testable instructions when it is not. A public record assigns a stable
+  `DEP-*` id and a distinct `CLN-*` cleanup id and names the package, surface kind, old
+  contract, replacement, direct authority, warning, migration, codemod or non-mechanical
+  reason, downstream proof, state, and target plan. Prose alone does not create removal
+  eligibility.
+- **FR29 — Deprecation adds no production-runtime behavior.** Marking a surface
+  deprecated MUST NOT add a production runtime branch, log, byte, network action,
+  changed render, or changed output. Compatibility code needed to keep an already
+  released old contract working is separate from warning delivery and MUST preserve
+  that contract. A development-only runtime diagnostic is permitted only when runtime
+  information is necessary to explain an ambiguous coexistence state, such as both an
+  old and replacement prop being supplied; it explains the direct owner's precedence
+  rule and is not the primary deprecation channel.
+- **FR29a — Warnings live at the earliest accurate authoring surface.** TypeScript
+  declarations use static `@deprecated` metadata. Build-interpreted source and
+  configuration warn in the authoring, validation, or build reader that can name the
+  exact source use. CLI commands and options expose the deprecation id and replacement
+  in their machine result and emit at most one human-readable stderr warning per
+  invocation. CSS and tokens use static diagnostics. Rendered applications never emit
+  a warning merely because a deprecated surface is used. Warnings MUST NOT change a
+  successful exit status, canonical output, machine-readable stdout, generated output,
+  or rendered behavior.
+- **FR29b — Guidance teaches one modern path.** Every warning names the `DEP-*` id,
+  exact replacement, stable versioned instructions, and exact migration command when
+  one exists. Maintained API docs, generated docs, templates, examples, stories,
+  starter output, and agent-facing guidance teach only the replacement. Explicit
+  reference remains available for the deprecated surface, visibly labeled with the
+  same replacement and modernization route. A warning MUST NOT ship before those
+  instructions and that route exist.
+- **FR29c — Modernization is safe and verifiable.** A mechanical migration is
+  previewable, idempotent, evidence-scoped, and complete under `spec:AST-040`; it
+  preserves the old observable result as its baseline and reports every uncertain or
+  blocked case. Non-mechanical migration gives short, ordered, testable instructions
+  rather than saying only to update manually. The direct owner names the applicable
+  source, type, build, runtime, visual, accessibility, and CLI proof. Maintained Astryx
+  packages and authoring surfaces migrate in the deprecation patch.
+- **FR29d — Each public surface projects the lifecycle without inventing another one.**
+  Whole components remain exported, renderable, accessible, themeable, and explicitly
+  discoverable, but leave recommendations and copyable examples; their exports and
+  docs carry the replacement and modernization route, with no render-time deprecation
+  warning. Deprecated props and values keep old-only behavior, declare deterministic
+  old-plus-new precedence, and statically name the replacement; codemods rewrite proven
+  static uses and report spreads or dynamic expressions they cannot prove. Theme API
+  fields, helpers, tokens, targets, and source keep identical normalization and rendered
+  output; declarations use `@deprecated`, and theme build or validation reports exact
+  source uses without `defineTheme`, theme mounting, or applications warning at
+  runtime. Deprecated CLI commands and options remain accepted with their released
+  exit status, canonical stdout, JSON envelope, and side effects; help and explicit
+  lookup label them, human mode warns once on stderr, machine mode carries the
+  deprecation metadata, and generated examples use the replacement. When old and new
+  CLI controls coexist, their direct command contract defines precedence or rejects
+  the ambiguous combination identically in text and JSON modes.
 - **FR30 — Deprecation minima come only from direct authority.** This global spec
   imposes no elapsed-time or release-count minimum. The structural minimum is that the
   final patch preserves old and new behavior together. A direct current spec MAY
   require a duration or number of stable releases for its own surface; the `DEP-*`
   record cites that exact requirement and CI enforces it. Release cadence MUST NOT be
   interpreted as a deprecation clock or eligibility gate.
-- **FR31 — Cleanup is one-to-one with approved ids.** A removal or default switch is
-  allowed only when its applicable lifecycle record id (`DEP-*` for deprecation or
-  `IFIX-*` for correction) and distinct `CLN-*` id appear in the frozen minor
-  manifest. Each incompatible delta maps to exactly one applicable lifecycle record
-  and one cleanup id, and each cleanup id maps to the old contract, replacement,
-  migration, proof, and rollback. Newly introduced incompatibility cannot be legalized
-  by adding it directly to a plan.
+- **FR31 — Cleanup is one-to-one with approved ids and proven modernization.** A
+  removal or default switch is allowed only when its applicable lifecycle record id
+  (`DEP-*` for deprecation or `IFIX-*` for correction) and distinct `CLN-*` id appear in
+  the frozen minor manifest. Each incompatible delta maps to exactly one applicable
+  lifecycle record and one cleanup id, and each cleanup id maps to the old contract,
+  replacement, migration, proof, and rollback. Cleanup evidence MUST show that
+  maintained sources no longer teach or use the old surface and that a latest-stable
+  consumer can follow the supported old-to-new route; uncertain cases remain reported
+  rather than guessed. Newly introduced incompatibility cannot be legalized by adding
+  it directly to a plan.
 - **FR32 — Behavior-correcting incompatibility is a distinct classification.** An
   `incompatible-fix` exists when pre-existing current authority proves released
   behavior wrong, unsafe, or nonconforming AND a valid latest-stable consumer relies
@@ -524,6 +586,47 @@ independent for each invocation.
   schemas remain contractual under FR3 and FR13. Template identifiers, slugs, display
   names, and names are outside this requirement and remain governed separately by FR9,
   FR11, and applicable registry identity contracts.
+- **FR46 — Main targets a patch by default.** Between releases, main is heading
+  for the next patch of the version its published packages already share. That
+  default needs no file, no ceremony, and no per-change approval: it is simply
+  what main is for, and the overwhelming majority of work ships under it.
+- **FR47 — A minor is scheduled explicitly, by an owner, before its work
+  lands.** Main targets a minor only while a release owner has said so in the
+  repository, naming the version and the day it is scheduled for. That statement
+  is the only thing that switches the mode. Pending Changesets MUST NOT switch
+  it: a `[breaking]` entry waiting to merge is the work the mode governs, never
+  evidence for it, and treating it as evidence would let the release retarget
+  itself. The order is fixed — schedule the minor, then land the breaking work.
+- **FR48 — While main targets a patch, incompatible work is refused.** A
+  Changeset carrying the `[breaking]` category, or the `planned-removal` or
+  `incompatible-fix` classification of FR42, is inadmissible and MUST be
+  rejected before merge. The admissible route is FR28's replacement-first
+  deprecation: ship the working replacement, keep old usage equivalent, take the
+  patch bump, and let the removal land once a minor is scheduled. This gate
+  decides patch-versus-minor admission and nothing else; the lifecycle
+  conditions of FR28, FR31, FR32, and FR37, and every review and release
+  requirement outside this record, continue to apply on their own terms and are
+  neither restated nor enforced here.
+- **FR49 — The schedule fails closed.** A target statement admits incompatible
+  work only when it can be read with certainty and still applies. It is refused
+  when it is malformed or carries anything beyond the version and the date; when
+  its version is not the minor successor of the version the published packages
+  share, so that the schedule and the repository disagree; when its scheduled
+  day has passed, so that a forgotten statement cannot hold the mode open
+  indefinitely; and when the published packages do not all carry one identical
+  `MAJOR.MINOR.PATCH` version, so that there is no base to check it against. A
+  prerelease or canary identifier is publication metadata and is never that
+  base. In each case main stays on its patch default rather than inheriting a
+  mode from an input nobody can trust.
+- **FR50 — Returning to a patch target is ordinary cleanup.** Once the scheduled
+  minor has shipped, removing the target statement is part of the normal
+  post-release setup that readies main for the next release, alongside consuming
+  the Changesets. No separate approval is needed to go back to the default, and
+  FR49's expiry means a statement left behind stops admitting work on its own.
+  A rejection names the version main is targeting and both ways forward —
+  deprecate now under FR28 and keep the patch, or schedule the minor under
+  FR47 — and names no particular version, surface, or contributor as a special
+  case, so a contributor who has never read this spec can act on it.
 
 ### Platform support
 
@@ -582,7 +685,10 @@ than restating them:
   [`scripts/check-changesets.mjs`](../../../scripts/check-changesets.mjs), and
   [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) implement fixed
   grouping, declaration validation, and checks. Their current behavior is not policy
-  when it differs from this spec.
+  when it differs from this spec. The `fixed` group in that config is why one
+  incompatible Changeset moves every published package, and `check-changesets.mjs`
+  is where the FR48 admission gate and its FR50 message belong; neither file may
+  narrow or widen the rule it implements.
 
 The direct current owner decides the intended product contract. This spec decides how
 that contract may change in a stable release. The public Release Process decides how
@@ -592,12 +698,13 @@ incompatible.
 
 ## Current-state impact
 
-Existing classification remains in force. This amendment adds the missing durable
-lifecycle around it:
+Public lifecycle classification remains in force with these operational effects:
 
 - stable changes default to compatible patch treatment;
 - experimental containment extends to every public surface kind;
-- deprecations and behavior corrections become machine-readable and cleanup-owned;
+- deprecations are replacement-first, machine-readable, and cleanup-owned; warnings
+  stay at authoring surfaces, production runtime stays unchanged, and an executable
+  modernization route precedes warning delivery;
 - planned minors use a locked final-patch baseline while admitting only approved
   cleanup, closed release metadata, and independently patch-compatible fixes;
 - minor frequency remains planning guidance and creates no deprecation or pair wait;
@@ -607,31 +714,42 @@ lifecycle around it:
   `docs` command and machine-readable schemas stay contractual; and
 - exact-main release comparison rejects unclassified deltas.
 
-These are specification changes only. They do not alter a published package and need
-no Changeset. Authoring helpers, validators, manifests, compatibility snapshots,
-release workflows, and contributor documentation are follow-up implementation. Until
-they land, maintainers apply these requirements in review and release approval.
+Main targets a patch by default. A scheduled minor makes breaking work admissible
+before that work lands; a pending `[breaking]` Changeset cannot retarget its own
+release. Because the fixed package group publishes as one version, this admission gate
+prevents one unapproved removal from moving the whole release to a minor. It does not
+add a per-change approval path: lifecycle, cleanup, migration, and freeze requirements
+remain independently enforceable.
+
+These requirements alter no published package by themselves and need no Changeset.
+Authoring helpers, validators, metadata projections, compatibility snapshots, release
+workflows, and contributor guidance implement the contract. Until each projection
+lands, maintainers apply its requirement in review and release approval.
 
 ## Verification
 
-| Contract  | Verification                                                                                                                                       | Representative states                                                                                                                                  | Mutation or failure expectation                                                                                                                                                                                |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                                   | released export, behavior, CLI command; unreleased and private surface                                                                                 | A change is labeled from diff size or possibility alone, or a released contract change is missed                                                                                                               |
-| FR4–FR6   | Old-usage type/runtime/CLI regression test                                                                                                         | alias retained, deprecation warning, broad rewrite, low-adoption caller                                                                                | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                              |
-| FR7–FR8   | `pnpm check:changesets` plus migration review                                                                                                      | existing `[fix]`, `[feat]`, `[breaking]`, and `[experimental]` tags paired with compatible, deprecation, planned-removal, or incompatible-fix metadata | A new lifecycle replaces an established tag, tag/metadata/bump diverge, an incompatible correction uses bare `[fix]`, or migration is unusable                                                                 |
-| FR9–FR13  | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests                   | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                                                          | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                                 |
-| FR12      | Minimum and representative supported-version tests plus manifest and release-note review                                                           | retained range, narrowed range, adapter, coordinated upgrade                                                                                           | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                                                                                      |
-| FR14      | Help/manifest snapshots, public API and consumer docs, and focused contract tests                                                                  | command, option, API/config, private rollout/test hook                                                                                                 | Supported behavior is hidden, an environment variable changes behavior, or automation lacks a documented API                                                                                                   |
-| FR15      | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                                               | global invariant, scoped command group, single command, programmatic API                                                                               | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                                                                                     |
-| FR16–FR18 | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                                       | known and new extension, partial result, text/JSON/API parity, independent concurrent calls                                                            | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                                                                                 |
-| FR19–FR20 | Proposal evidence with a regression fixture for the detection failure, plus composition and provenance tests                                       | convention covers the case, detection fails, app plus two integrations, refusal, failing contribution, repeated load                                   | A key ships without a reproduced detection failure, a contribution displaces the app or applies twice, a part of the effective value has no inspectable source, or a failure silently weakens protection       |
-| FR21–FR24 | Published-surface comparison, declaration/doc metadata checks, import-boundary checks, and Changeset classification review                         | experimental prop object, experimental subpath, patch evolution, promotion, unpublished adjacent field, stable warning behavior, integration theme     | A prose-only marker excludes a stable API, adjacency falsely publishes a new field, an experimental export leaks through a stable path, a patch changes stable behavior, or a promoted API remains unprotected |
-| FR25–FR27 | Stable-surface inventory and experimental-boundary matrix                                                                                          | package/API, CSS/token, CLI/config, persistence, build tooling, docs, whole Lab component                                                              | An unmarked experiment changes stable defaults or a stable surface bypasses compatibility review                                                                                                               |
-| FR28–FR31 | Closed-schema deprecation and cleanup records plus old/new compatibility fixtures                                                                  | replacement first, warning projections, explicit direct-spec minimum, one-to-one cleanup                                                               | Prose creates eligibility, cadence invents a wait, old behavior degrades early, or a cleanup id covers more than one incompatible delta                                                                        |
-| FR32–FR35 | Latest-stable victim fixture, pre-existing authority, owner reviews, correction record, record-to-surface state mapping, and emergency attestation | victim-free `[fix]`, `[fix]` plus incompatible-fix metadata, coexistence, cleanup transition, critical-harm emergency                                  | A released victim uses bare `[fix]`, a new Changeset tag replaces metadata, a correction record disagrees with its public-surface state, or urgency bypasses migration                                         |
-| FR36–FR40 | Minor plan, locked final-patch receipt, three-way delta classification, and separated release notes                                                | ordinary cadence, immediate pair, cleanup, release metadata, pre/post-lock compatible fix                                                              | Cadence becomes eligibility, the final patch is recut for bookkeeping, a feature or incompatible fix enters the incidental-fix lane, or release notes merge cleanup with fixes                                 |
-| FR41–FR44 | Schema validation, PR declaration, semantic stable/base/head comparisons, exact-main gate, and immutable publish/rollback receipt                  | duplicate ids, missing evidence, route/schema removal, old-client metadata, partial publish, safe rollback                                             | A label passes without semantics, a delta maps zero or multiple times, fixed-group membership drifts, or a release rebuilds under one identity                                                                 |
-| FR45      | Docs route inventory, repository-reference checks, and Changeset review                                                                            | catalog entry rename, former-route miss, stable command and JSON schema                                                                                | Catalog routing is frozen as API, or a rename silently changes the contractual command or response schema                                                                                                      |
+| Contract  | Verification                                                                                                                                                                                          | Representative states                                                                                                                                                                         | Mutation or failure expectation                                                                                                                                                                                                                                       |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                                                                                      | released export, behavior, CLI command; unreleased and private surface                                                                                                                        | A change is labeled from diff size or possibility alone, or a released contract change is missed                                                                                                                                                                      |
+| FR4–FR6   | Old-usage type/runtime/CLI regression test                                                                                                                                                            | alias retained, deprecation warning, broad rewrite, low-adoption caller                                                                                                                       | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                                                                                     |
+| FR7–FR8   | `pnpm check:changesets` plus migration review                                                                                                                                                         | existing `[fix]`, `[feat]`, `[breaking]`, and `[experimental]` tags paired with compatible, deprecation, planned-removal, or incompatible-fix metadata                                        | A new lifecycle replaces an established tag, tag/metadata/bump diverge, an incompatible correction uses bare `[fix]`, or migration is unusable                                                                                                                        |
+| FR9–FR13  | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests                                                                      | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                                                                                                 | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                                                                                        |
+| FR12      | Minimum and representative supported-version tests plus manifest and release-note review                                                                                                              | retained range, narrowed range, adapter, coordinated upgrade                                                                                                                                  | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                                                                                                                                             |
+| FR14      | Help/manifest snapshots, public API and consumer docs, and focused contract tests                                                                                                                     | command, option, API/config, private rollout/test hook                                                                                                                                        | Supported behavior is hidden, an environment variable changes behavior, or automation lacks a documented API                                                                                                                                                          |
+| FR15      | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                                                                                                  | global invariant, scoped command group, single command, programmatic API                                                                                                                      | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                                                                                                                                            |
+| FR16–FR18 | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                                                                                          | known and new extension, partial result, text/JSON/API parity, independent concurrent calls                                                                                                   | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                                                                                                                                        |
+| FR19–FR20 | Proposal evidence with a regression fixture for the detection failure, plus composition and provenance tests                                                                                          | convention covers the case, detection fails, app plus two integrations, refusal, failing contribution, repeated load                                                                          | A key ships without a reproduced detection failure, a contribution displaces the app or applies twice, a part of the effective value has no inspectable source, or a failure silently weakens protection                                                              |
+| FR21–FR24 | Published-surface comparison, declaration/doc metadata checks, import-boundary checks, and Changeset classification review                                                                            | experimental prop object, experimental subpath, patch evolution, promotion, unpublished adjacent field, stable warning behavior, integration theme                                            | A prose-only marker excludes a stable API, adjacency falsely publishes a new field, an experimental export leaks through a stable path, a patch changes stable behavior, or a promoted API remains unprotected                                                        |
+| FR25–FR27 | Stable-surface inventory and experimental-boundary matrix                                                                                                                                             | package/API, CSS/token, CLI/config, persistence, build tooling, docs, whole Lab component                                                                                                     | An unmarked experiment changes stable defaults or a stable surface bypasses compatibility review                                                                                                                                                                      |
+| FR28–FR31 | Closed-schema deprecation/cleanup records; declaration/doc/build/CLI warning projections; old/new fixtures; dry-run/idempotence/migration tests; maintained-source and latest-stable upgrade evidence | whole component, prop/value, theme field/helper/token/target/source, CLI command, CLI option; old-only, new-only, both, static/dynamic/uncertain migration, text/JSON, development/production | A warning has no usable modernization route, production runtime changes for deprecation, maintained guidance teaches the old surface, a migration guesses, old behavior degrades early, cadence invents a wait, or one cleanup id covers multiple incompatible deltas |
+| FR32–FR35 | Latest-stable victim fixture, pre-existing authority, owner reviews, correction record, record-to-surface state mapping, and emergency attestation                                                    | victim-free `[fix]`, `[fix]` plus incompatible-fix metadata, coexistence, cleanup transition, critical-harm emergency                                                                         | A released victim uses bare `[fix]`, a new Changeset tag replaces metadata, a correction record disagrees with its public-surface state, or urgency bypasses migration                                                                                                |
+| FR36–FR40 | Minor plan, locked final-patch receipt, three-way delta classification, and separated release notes                                                                                                   | ordinary cadence, immediate pair, cleanup, release metadata, pre/post-lock compatible fix                                                                                                     | Cadence becomes eligibility, the final patch is recut for bookkeeping, a feature or incompatible fix enters the incidental-fix lane, or release notes merge cleanup with fixes                                                                                        |
+| FR41–FR44 | Schema validation, PR declaration, semantic stable/base/head comparisons, exact-main gate, and immutable publish/rollback receipt                                                                     | duplicate ids, missing evidence, route/schema removal, old-client metadata, partial publish, safe rollback                                                                                    | A label passes without semantics, a delta maps zero or multiple times, fixed-group membership drifts, or a release rebuilds under one identity                                                                                                                        |
+| FR45      | Docs route inventory, repository-reference checks, and Changeset review                                                                                                                               | catalog entry rename, former-route miss, stable command and JSON schema                                                                                                                       | Catalog routing is frozen as API, or a rename silently changes the contractual command or response schema                                                                                                                                                             |
+| FR46–FR47 | Admission tests pairing the default mode and an explicit scheduled minor with each Changeset category                                                                                                 | no target statement, a scheduled minor, a pending `[breaking]` entry with no statement                                                                                                        | A pending Changeset switches the mode by itself, or the default requires a file to be the default                                                                                                                                                                     |
+| FR48      | Category and classification admission under each mode                                                                                                                                                 | patch default with `[breaking]`, patch default with a deprecation, scheduled minor with `[breaking]`                                                                                          | Incompatible work passes under the patch default, or a deprecation is refused under it                                                                                                                                                                                |
+| FR49      | Malformed, inconsistent, expired, and mixed-version target fixtures                                                                                                                                   | unknown field, non-semver version, version that is not the minor successor, past scheduled day, disagreeing published versions, canary identifier                                             | An untrustworthy statement grants the minor mode, or a past schedule still admits work                                                                                                                                                                                |
+| FR50      | Removal of the statement, and message assertions on the rejection text                                                                                                                                | statement removed after the minor ships, rejection under the patch default                                                                                                                    | Returning to the default needs its own approval, or the refusal omits the target or either remedy                                                                                                                                                                     |
 
 ## Decision log
 
@@ -901,6 +1019,63 @@ contracts.
 Rejected: treating every route-shaped positional value as stable CLI API. That would
 freeze documentation organization rather than protect the command and schema
 contracts readers and automation rely on.
+
+### DEC-15 — A minor is scheduled before its breaking work lands
+
+**Reference:** `spec:AST-017/DEC-15`
+**Decider:** `cixzhang`, `2026-10-02`
+
+Main targets a patch by default, and incompatible work is refused while it does. A
+minor becomes admissible only after a release owner schedules it in the repository,
+naming the version and the day. Scheduling comes first; the breaking work follows.
+
+The order is the whole point. The publishable packages are a fixed group, so one
+`[breaking]` Changeset moves every package to a new minor. If a pending Changeset
+could establish the mode that admits it, the release would retarget itself and the
+owner would learn the shape of the release from a merge. Requiring the schedule first
+puts that decision back where it belongs, and makes an accidental breaking merge
+impossible rather than merely discouraged.
+
+Deliberately small. The statement carries a version and a date and nothing else: no
+list of Changesets, no lifecycle ids, no per-change manifest, no second approval
+path. This gate answers one question — is main on a patch or a scheduled minor — and
+leaves every other requirement where it already lives. FR28's deprecation lifecycle,
+FR31's cleanup mapping, FR37's release planning, and ordinary spec and code review
+continue to apply on their own terms; none of them is restated or enforced here.
+
+Rejected: deriving the mode from the pending Changesets. It reads as elegant — the
+bumps already imply a version — but it is circular, because the entry being judged
+would be its own authorization.
+
+Rejected: a per-change authorization record enumerating each approved removal with
+cleanup and lifecycle ids. It answers a question this gate is not asking, and it buys
+accuracy at the cost of bureaucracy on every breaking change, when a scheduled day is
+enough to stop the accident this exists to stop.
+
+Rejected: leaving the schedule open-ended. A statement with no date would outlive its
+release and quietly keep main in minor mode. Expiry makes a forgotten statement fail
+back to the patch default instead of silently widening what may land.
+
+### DEC-16 — Deprecation acts at authoring surfaces, not production runtime
+
+**Reference:** `spec:AST-017/DEC-16`
+**Decider:** `cixzhang`, `2026-10-07`
+
+A deprecation reaches a builder where the obsolete choice is authored: declarations,
+generated reference, theme validation or build, CLI help and invocation, and supported
+migration tooling. The working replacement and executable modernization route exist
+before warnings begin. Maintained guidance teaches the replacement, while explicit
+lookup keeps the deprecated surface and its exact route discoverable.
+
+Production runtime behavior and bytes remain unchanged merely because a surface is
+deprecated. The old contract continues working until its separately approved cleanup;
+a runtime-only coexistence conflict may receive a development diagnostic explaining
+the direct owner's precedence rule. Cleanup follows only after the migration can
+preserve or explicitly account for every observable result it owns.
+
+Rejected: a runtime compatibility flag or branch used only to acknowledge deprecation,
+a warning without an available modernization path, copyable guidance that keeps
+teaching the old surface, and a migration that guesses at uncertain consumer intent.
 
 ## Open questions
 

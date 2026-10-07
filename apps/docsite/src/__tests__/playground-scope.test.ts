@@ -5,7 +5,8 @@
  *
  * Validates that the generated playground scope includes every public
  * component exported from @astryxdesign/core/package.json, plus the expected
- * non-component scope entries and editor declarations used by page templates.
+ * non-component scope entries and editor declarations used by page templates
+ * and the imports needed by registered integration example blocks.
  *
  * This test reads the generated file as text (rather than importing it)
  * because the scope imports @astryxdesign/core/* which requires a prior build step.
@@ -17,6 +18,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {describe, it, expect, beforeAll} from 'vitest';
+import docsiteConfig from '../../astryx.config.mjs';
+import {blocks} from '../generated/blockRegistry';
 
 const GENERATED_SCOPE_PATH = path.resolve(
   __dirname,
@@ -322,7 +325,75 @@ describe('playground-scope', () => {
     );
   });
 
+  // ── Integration packages (canary whole-package bridge) ─────────────────
+
+  it('maps every configured integration package under its own namespace', () => {
+    // Whole-package admission is the contract: a NEW component exported by a
+    // configured integration is playground-importable with no scope edits.
+    // Each package gets a DISTINCT namespace import, so qualified imports
+    // (`import {Chart} from '@astryxdesign/charts'`) keep package identity
+    // even where packages share export names (@astryxdesign/lab and
+    // @astryxdesign/charts currently share 14, e.g. Chart/ChartAxis/useChart).
+    docsiteConfig.integrations.forEach((pkg: string, index: number) => {
+      expect(scopeContent).toContain(
+        `import * as Integration${index} from '${pkg}';`,
+      );
+      expect(scopeContent).toContain(`'${pkg}': Integration${index},`);
+    });
+  });
+
+  it('orders integration scope entries after recharts, in config order, before Core', () => {
+    // The preview runner builds UNQUALIFIED globals by iterating the scope
+    // map in insertion order with later-wins (runner.ts buildGlobalScope),
+    // so this order IS the collision policy: among integrations the
+    // later-configured package owns a shared unqualified name (charts
+    // shadows lab for their 14 shared exports), and Core's entries shadow
+    // every integration. Qualified imports are unaffected.
+    const mapStart = scopeContent.indexOf('export const scope');
+    expect(mapStart).toBeGreaterThan(-1);
+    const scopeMap = scopeContent.slice(mapStart);
+
+    const integrationPositions = docsiteConfig.integrations.map(
+      (pkg: string, index: number) =>
+        scopeMap.indexOf(`'${pkg}': Integration${index},`),
+    );
+    for (const position of integrationPositions) {
+      expect(position).toBeGreaterThan(-1);
+    }
+    expect([...integrationPositions].sort((a, b) => a - b)).toEqual(
+      integrationPositions,
+    );
+
+    const rechartsPosition = scopeMap.indexOf('recharts: Recharts,');
+    expect(rechartsPosition).toBeGreaterThan(-1);
+    expect(Math.min(...integrationPositions)).toBeGreaterThan(rechartsPosition);
+
+    const firstCorePosition = scopeMap.indexOf("'@astryxdesign/core");
+    expect(firstCorePosition).toBeGreaterThan(-1);
+    expect(firstCorePosition).toBeGreaterThan(
+      Math.max(...integrationPositions),
+    );
+  });
+
   // ── What the templates actually import ─────────────────────────────────
+
+  it('resolves every bare import in registered integration example blocks', () => {
+    const scopedModules = getScopeKeys(scopeContent);
+    const missing = new Set<string>();
+    for (const block of blocks.filter(entry => entry.sourcePackage)) {
+      for (const match of block.source.matchAll(IMPORT_RE)) {
+        const id = match[1];
+        if (
+          !id.startsWith('.') &&
+          !ASSET_RE.test(id) &&
+          !scopedModules.has(id.toLowerCase())
+        ) {
+          missing.add(id);
+        }
+      }
+    }
+    expect([...missing].sort()).toEqual([]);
+  });
 
   it('resolves every bare import in the page templates', () => {
     // The assertions above are an allowlist, and an allowlist only covers what

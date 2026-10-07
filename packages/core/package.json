@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/core",
-  "version": "0.6.3",
+  "version": "0.6.5",
   "displayName": "Astryx Core",
   "description": "The component library. Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling.",
   "author": "Meta Open Source",
@@ -71,6 +71,11 @@
       "types": "./dist/theme/tokens.stylex.d.ts",
       "default": "./dist/theme/tokens.stylex.js"
     },
+    "./theme/dataTokens.stylex": {
+      "source": "./src/theme/dataTokens.stylex.ts",
+      "types": "./dist/theme/dataTokens.stylex.d.ts",
+      "default": "./dist/theme/dataTokens.stylex.js"
+    },
     "./theme/syntax": {
       "source": "./src/theme/syntax/index.ts",
       "types": "./dist/theme/syntax/index.d.ts",
@@ -79,6 +84,11 @@
     "./docs.mjs": "./docs.mjs",
     "./groups.doc.mjs": "./groups.doc.mjs",
     "./locales/*.json": "./locales/*.json",
+    "./locales/*.generated.js": {
+      "source": "./src/i18n/generated-locales/*.generated.ts",
+      "types": "./dist/i18n/generated-locales/*.generated.d.ts",
+      "default": "./dist/i18n/generated-locales/*.generated.js"
+    },
     "./AlertDialog": {
       "source": "./src/AlertDialog/index.ts",
       "types": "./dist/AlertDialog/index.d.ts",
@@ -629,6 +639,11 @@
       "types": "./dist/Markdown/plugins/index.d.ts",
       "default": "./dist/Markdown/plugins/index.js"
     },
+    "./Markdown/plugin-renderer": {
+      "source": "./src/Markdown/plugin-renderer/index.ts",
+      "types": "./dist/Markdown/plugin-renderer/index.d.ts",
+      "default": "./dist/Markdown/plugin-renderer/index.js"
+    },
     "./Markdown/parser": {
       "source": "./src/Markdown/parser/index.ts",
       "types": "./dist/Markdown/parser/index.d.ts",
@@ -690,10 +705,11 @@
     "prepack": "pnpm build",
     "postinstall": "node scripts/postinstall.mjs",
     "build": "node ../../scripts/clean-dist.mjs && pnpm build:i18n && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs && node ../../scripts/check-fully-specified.mjs",
-    "build:i18n": "node scripts/build-pseudo-locale.mjs",
+    "build:i18n": "node ../../scripts/generate-i18n-runtime.mjs && node scripts/build-pseudo-locale.mjs",
     "build:esm": "babel src --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.json",
     "build:css": "node ../../scripts/build-css.mjs",
     "dev": "babel src --watch --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*\" --config-file ./babel.config.json",
+    "dev:i18n": "babel src/i18n/generated-locales --watch --out-dir dist/i18n/generated-locales --extensions .ts --out-file-extension .js --config-file ./babel.config.json",
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
     "lint": "eslint src",

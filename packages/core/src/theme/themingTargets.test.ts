@@ -39,6 +39,7 @@ import {stableClassName} from '../naming';
 
 const CORE_SRC_DIR = join(__dirname, '..');
 const LAB_SRC_DIR = join(__dirname, '../../../lab/src');
+const RICHTEXT_SRC_DIR = join(__dirname, '../../../richtext/src');
 const LAB_PROMOTION_MANIFEST = join(
   __dirname,
   '../../../../internal/lab-readiness/manifest.mjs',
@@ -337,7 +338,7 @@ type DocBlock = {theming?: {targets?: DocTarget[]}};
 type ComponentDocModule = {docs?: DocBlock; docsZh?: DocBlock};
 
 interface ComponentInfo {
-  packageName: 'core' | 'lab';
+  packageName: 'core' | 'lab' | 'richtext';
   dir: string;
   sites: ThemeTargetSite[];
   /** The doc blocks that carry theming.targets, by the key they live under. */
@@ -402,6 +403,10 @@ function sourceDirs(srcDir: string): string[] {
     }
   };
   walk('');
+  // The package root itself. A package that keeps its components as flat
+  // files rather than one directory each (richtext) has no subdirectory to
+  // find, so without this it is silently discovered as zero components.
+  out.push('');
   return out;
 }
 
@@ -493,6 +498,7 @@ describe('theming.targets matches the themeProps() call sites', () => {
   const components = [
     ...discoverComponents(CORE_SRC_DIR, 'core'),
     ...discoverComponents(LAB_SRC_DIR, 'lab', LAB_PROMOTION_DIRS),
+    ...discoverComponents(RICHTEXT_SRC_DIR, 'richtext'),
   ];
 
   it('finds participating Core and Lab components', () => {
@@ -504,6 +510,12 @@ describe('theming.targets matches the themeProps() call sites', () => {
     expect(components.some(component => component.packageName === 'lab')).toBe(
       true,
     );
+    // richtext keeps its components as flat files, so a regression in
+    // directory discovery would enroll zero of them and the guard would pass
+    // on an unchecked package rather than fail.
+    expect(
+      components.some(component => component.packageName === 'richtext'),
+    ).toBe(true);
   });
 
   it('enrolls every Lab promotion candidate and explicit theming capability', () => {

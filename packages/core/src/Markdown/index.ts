@@ -4,7 +4,8 @@
 
 /**
  * @file index.ts
- * @output Exports Markdown component, canonical and compatibility parser functions, and types
+ * @output Exports Markdown component, canonical and compatibility parser functions,
+ *   the character reference decoder, and types
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
@@ -56,6 +57,7 @@ export {
   parseInline,
   parseInlineAst,
 } from './parser';
+export {decodeMarkdownCharacterReferences} from './characterReferences';
 export type {
   BlockNode,
   BlockNodeWithMath,

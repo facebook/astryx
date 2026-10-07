@@ -22,7 +22,7 @@ export const doc = {
     'Same source as the Theming table `astryx component <Name>` prints ' +
     '(the component docs), so the list cannot drift from the components, and `theme build` ' +
     'validates overrides against this exact set. A filter naming a component gives that ' +
-    "component's set; anything else is a substring search over the keys.",
+    "component's set; anything else is a case-insensitive substring search over each target's key, class and component.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'themeTargets(filter?: string, ctx?: {cwd?: string}): Promise<ThemeTargetsResponse>',
@@ -41,13 +41,14 @@ export const doc = {
       name: 'filter',
       type: 'string',
       description:
-        'A component name (exact, case-insensitive) or a substring of a target key. Omit for the whole surface.',
+        'A component name (exact, case-insensitive), or a substring of a target key, class or component. Omit for the whole surface.',
     },
     {
       name: 'ctx.cwd',
       type: 'string',
       description:
         "Directory the project's @astryxdesign/core is resolved from.",
+      default: 'process.cwd()',
     },
   ],
   returns: [

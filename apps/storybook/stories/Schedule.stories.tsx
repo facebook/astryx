@@ -1,7 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState, useSyncExternalStore} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {Text} from '@astryxdesign/core';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {
   Schedule,
   createScheduleDayView,
@@ -314,6 +316,33 @@ export const List: Story = {
   },
 };
 
+/**
+ * The list in a right-to-left locale: its 24-hour time ranges read start
+ * first, right to left.
+ */
+export const RightToLeftLocale: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(focusDate);
+    const view = useMemo(() => createScheduleListView(), []);
+
+    return (
+      <InternationalizationProvider locale="he-IL">
+        <div dir="rtl">
+          <Schedule
+            view={view}
+            events={events}
+            categories={categories}
+            date={date}
+            focusDate={focusDate}
+            onChangeDate={setDate}
+            timezoneID="America/Los_Angeles"
+          />
+        </div>
+      </InternationalizationProvider>
+    );
+  },
+};
+
 export const AsyncLoader: Story = {
   render: () => {
     const [date, setDate] = useState<Instant>(focusDate);
@@ -338,6 +367,423 @@ export const AsyncLoader: Story = {
         focusDate={focusDate}
         onChangeDate={setDate}
         timezoneID="America/Los_Angeles"
+      />
+    );
+  },
+};
+
+// A fixed week in UTC, so the overlap layout is identical on every machine and
+// in CI. Each day exercises one overlap shape of the time grid.
+const FIXTURE_TIMEZONE = 'UTC';
+const FIXTURE_DATE = Date.UTC(2026, 4, 13, 12) as Instant;
+
+function fixtureEvent({
+  id,
+  title,
+  category,
+  day,
+  start,
+  end,
+}: {
+  id: string;
+  title: string;
+  category: string;
+  day: number;
+  start: [hour: number, minute?: number];
+  end: [hour: number, minute?: number];
+}): CalendarEvent {
+  const iso = ([hour, minute = 0]: [number, number?]) =>
+    `2026-05-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00.000Z`;
+  return createEventFromISO({
+    id,
+    title,
+    category,
+    start: iso(start),
+    end: iso(end),
+  });
+}
+
+const overlappingEvents: CalendarEvent[] = [
+  // Monday: an exact tie — same title, same minutes, different ids.
+  fixtureEvent({
+    id: 'tie-a',
+    title: 'Pair review',
+    category: 'Design',
+    day: 11,
+    start: [9],
+    end: [10],
+  }),
+  fixtureEvent({
+    id: 'tie-b',
+    title: 'Pair review',
+    category: 'Design',
+    day: 11,
+    start: [9],
+    end: [10],
+  }),
+  // Tuesday: three simultaneous events.
+  fixtureEvent({
+    id: 'trio-1',
+    title: 'Interview loop 1',
+    category: 'Company',
+    day: 12,
+    start: [13],
+    end: [14],
+  }),
+  fixtureEvent({
+    id: 'trio-2',
+    title: 'Interview loop 2',
+    category: 'Launch',
+    day: 12,
+    start: [13],
+    end: [14],
+  }),
+  fixtureEvent({
+    id: 'trio-3',
+    title: 'Interview loop 3',
+    category: 'Focus',
+    day: 12,
+    start: [13],
+    end: [14],
+  }),
+  // Wednesday: five simultaneous events.
+  fixtureEvent({
+    id: 'quint-1',
+    title: 'Office hours A',
+    category: 'Company',
+    day: 13,
+    start: [10],
+    end: [11],
+  }),
+  fixtureEvent({
+    id: 'quint-2',
+    title: 'Office hours B',
+    category: 'Design',
+    day: 13,
+    start: [10],
+    end: [11],
+  }),
+  fixtureEvent({
+    id: 'quint-3',
+    title: 'Office hours C',
+    category: 'Launch',
+    day: 13,
+    start: [10],
+    end: [11],
+  }),
+  fixtureEvent({
+    id: 'quint-4',
+    title: 'Office hours D',
+    category: 'Focus',
+    day: 13,
+    start: [10],
+    end: [11],
+  }),
+  fixtureEvent({
+    id: 'quint-5',
+    title: 'Office hours E',
+    category: 'Retro',
+    day: 13,
+    start: [10],
+    end: [11],
+  }),
+  // Thursday: a chain — the first and last do not overlap each other.
+  fixtureEvent({
+    id: 'chain-1',
+    title: 'Standup',
+    category: 'Company',
+    day: 14,
+    start: [9],
+    end: [10],
+  }),
+  fixtureEvent({
+    id: 'chain-2',
+    title: 'Design sync',
+    category: 'Design',
+    day: 14,
+    start: [9, 30],
+    end: [10, 30],
+  }),
+  fixtureEvent({
+    id: 'chain-3',
+    title: 'Retro',
+    category: 'Retro',
+    day: 14,
+    start: [10],
+    end: [11],
+  }),
+  // Friday: containment plus the shortest block the grid draws.
+  fixtureEvent({
+    id: 'contain-long',
+    title: 'Workshop',
+    category: 'Launch',
+    day: 15,
+    start: [9],
+    end: [12],
+  }),
+  fixtureEvent({
+    id: 'contain-short',
+    title: 'Coffee chat',
+    category: 'Focus',
+    day: 15,
+    start: [10],
+    end: [10, 30],
+  }),
+  fixtureEvent({
+    id: 'quarter',
+    title: 'Quick check-in',
+    category: 'Company',
+    day: 15,
+    start: [14],
+    end: [14, 15],
+  }),
+  // All-day spans that overlap each other.
+  createEventFromISO({
+    id: 'offsite',
+    title: 'Offsite',
+    category: 'Company',
+    start: '2026-05-11',
+    end: '2026-05-12',
+  }),
+  createEventFromISO({
+    id: 'hack-week',
+    title: 'Hack week',
+    category: 'Launch',
+    start: '2026-05-12',
+    end: '2026-05-13',
+  }),
+];
+
+export const OverlappingEvents: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const view = useMemo(
+      () => createScheduleWeeklyView({minHour: 8, maxHour: 18}),
+      [],
+    );
+
+    return (
+      <Schedule
+        view={view}
+        events={overlappingEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
+/**
+ * The week view owns a popover for its events: each event is a button that
+ * opens the system's standard Popover with the content the story returns.
+ * "Quick check-in" returns no content and stays read-only.
+ */
+export const EventPopover: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const view = useMemo(
+      () =>
+        createScheduleWeeklyView({
+          minHour: 8,
+          maxHour: 18,
+          renderPopover: event =>
+            event.id === 'quarter' ? null : (
+              <div
+                data-event-details={event.id}
+                style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+                <Text type="label" weight="bold">
+                  {event.title}
+                </Text>
+                <Text type="supporting" color="secondary">
+                  {event.category ?? 'No category'} · {event.id}
+                </Text>
+              </div>
+            ),
+        }),
+      [],
+    );
+
+    return (
+      <Schedule
+        view={view}
+        events={overlappingEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
+const midnightEvents: CalendarEvent[] = [
+  createEventFromISO({
+    id: 'planning',
+    title: 'Planning',
+    category: 'Focus',
+    start: '2026-05-13T17:00:00.000Z',
+    end: '2026-05-13T18:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'late-sync',
+    title: 'Late sync',
+    category: 'Company',
+    start: '2026-05-13T22:00:00.000Z',
+    end: '2026-05-14T00:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'evening-review',
+    title: 'Evening review',
+    category: 'Design',
+    start: '2026-05-14T20:00:00.000Z',
+    end: '2026-05-15T00:00:00.000Z',
+  }),
+];
+
+/**
+ * Timed events that end exactly at midnight paint from their start to the
+ * bottom of their day.
+ */
+export const EventEndingAtMidnight: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const view = useMemo(
+      () => createScheduleWeeklyView({minHour: 16, maxHour: 24}),
+      [],
+    );
+
+    return (
+      <Schedule
+        view={view}
+        events={midnightEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
+// A fixed UTC month for the month view's overflow contract: Wednesday May 13
+// needs five levels (a three-day span sits on its third) and Friday May 15
+// needs four, so both trade their third level for "+N more"; the other days
+// fit and paint every chip.
+function monthFixtureEvent(
+  id: string,
+  title: string,
+  category: string,
+  day: number,
+  hour: number,
+): CalendarEvent {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return createEventFromISO({
+    id,
+    title,
+    category,
+    start: `2026-05-${pad(day)}T${pad(hour)}:00:00.000Z`,
+    end: `2026-05-${pad(day)}T${pad(hour + 1)}:00:00.000Z`,
+  });
+}
+
+const busyMonthEvents: CalendarEvent[] = [
+  createEventFromISO({
+    id: 'conference',
+    title: 'Design conference',
+    category: 'Design',
+    start: '2026-05-10',
+    end: '2026-05-13',
+  }),
+  createEventFromISO({
+    id: 'hack-week',
+    title: 'Hack week',
+    category: 'Launch',
+    start: '2026-05-10',
+    end: '2026-05-12',
+  }),
+  createEventFromISO({
+    id: 'offsite',
+    title: 'Team offsite',
+    category: 'Company',
+    start: '2026-05-11',
+    end: '2026-05-13',
+  }),
+  monthFixtureEvent('standup', 'Standup', 'Company', 13, 9),
+  monthFixtureEvent('incident-review', 'Incident review', 'Incident', 13, 11),
+  monthFixtureEvent('launch-check', 'Launch check', 'Launch', 13, 14),
+  monthFixtureEvent('planning', 'Planning', 'Company', 15, 9),
+  monthFixtureEvent('critique', 'Design critique', 'Design', 15, 10),
+  monthFixtureEvent('retro', 'Weekly retro', 'Retro', 15, 13),
+  monthFixtureEvent('focus', 'Focus block', 'Focus', 15, 15),
+  monthFixtureEvent('one-on-one', '1:1', 'Company', 5, 10),
+  createEventFromISO({
+    id: 'holiday',
+    title: 'Company holiday',
+    category: 'Holiday',
+    start: '2026-05-25',
+    end: '2026-05-25',
+  }),
+];
+
+/**
+ * A week row of the month paints at most three levels of chips. A busy day
+ * shows two and a "+N more" button that opens a popover listing every event
+ * of that day.
+ */
+// Test seam for the month-overflow browser contract: removes an event the way
+// a data refresh would, while a day's popover stays open. The events live in
+// one module-level store so the removal reaches every rendered copy of the
+// story.
+let monthOverflowEvents: ReadonlyArray<CalendarEvent> = busyMonthEvents;
+const monthOverflowListeners = new Set<() => void>();
+
+function subscribeToMonthOverflowEvents(listener: () => void): () => void {
+  monthOverflowListeners.add(listener);
+  return () => {
+    monthOverflowListeners.delete(listener);
+  };
+}
+
+function getMonthOverflowEvents(): ReadonlyArray<CalendarEvent> {
+  return monthOverflowEvents;
+}
+
+function removeMonthOverflowEvent(id: string): void {
+  monthOverflowEvents = monthOverflowEvents.filter(event => event.id !== id);
+  monthOverflowListeners.forEach(listener => listener());
+}
+
+export const MonthOverflow: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const monthEvents = useSyncExternalStore(
+      subscribeToMonthOverflowEvents,
+      getMonthOverflowEvents,
+      getMonthOverflowEvents,
+    );
+    const view = useMemo(() => createScheduleMonthlyView(), []);
+    useEffect(() => {
+      (
+        window as unknown as {
+          scheduleMonthOverflowStory?: {removeEvent: (id: string) => void};
+        }
+      ).scheduleMonthOverflowStory = {removeEvent: removeMonthOverflowEvent};
+    }, []);
+
+    return (
+      <Schedule
+        view={view}
+        events={monthEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
       />
     );
   },

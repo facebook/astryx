@@ -163,7 +163,7 @@ describe('ComplexSelector', () => {
     );
   });
 
-  it('gives the popup clearance on both block edges, not just the leading one (#4803)', async () => {
+  it('gives the popup clearance on the edge facing the trigger, which a flip carries to the other side (#4803)', async () => {
     const user = userEvent.setup();
     render(
       <FruitComplexSelector
@@ -174,14 +174,15 @@ describe('ComplexSelector', () => {
     await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
     const popup = document.querySelector('[popover]') as HTMLElement;
     expect(popup).not.toBeNull();
-    // Both edges, not just the leading one: the trailing edge is what faces
-    // the trigger when the same popup opens upward (placement="above") or is
-    // flipped by position-try-fallbacks. useLayer's `offset` sets both from
-    // the resolved placement; jsdom resolves neither the var indirection nor
-    // logical margins, so read the debug-mode declarations it emits.
+    // The clearance rides the edge facing the trigger and the viewport gutter
+    // the far edge; a position-try flip swaps the two with the area, so the
+    // gap survives opening upward (spec:AST-059 FR1, FR4). jsdom resolves
+    // neither the var indirection nor logical margins, so read the
+    // debug-mode declarations it emits.
     const blockStart = popup.style.getPropertyValue('--x-marginBlockStart');
     expect(blockStart).not.toBe('');
-    expect(popup.style.getPropertyValue('--x-marginBlockEnd')).toBe(blockStart);
+    expect(popup.style.getPropertyValue('--x-marginBlockEnd')).toBe('');
+    expect(popup.className).toContain('useLayer__styles.placementBelow');
   });
 
   it('runs changeAction through the provided onChange helper', async () => {
@@ -448,6 +449,90 @@ describe('ComplexSelector popup theme target', () => {
     fireEvent.click(trigger);
 
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('ComplexSelector trigger render prop', () => {
+  it('renders the caller control instead of the field and button', () => {
+    render(
+      <ComplexSelector
+        label="View options"
+        value={[]}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Options
+          </button>
+        )}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const opener = screen.getByRole('button', {name: 'Options'});
+    expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(opener).toHaveAttribute('aria-expanded', 'false');
+    expect(opener).toHaveAttribute('aria-controls');
+    expect(screen.queryByText('View options')).toBeNull();
+    expect(screen.queryByRole('button', {name: 'View options'})).toBeNull();
+  });
+
+  it('opens against the caller control and returns focus to it on close', async () => {
+    const user = userEvent.setup();
+    const handleRef = React.createRef<ComplexSelectorHandle>();
+    render(
+      <ComplexSelector
+        label="View options"
+        value={[]}
+        handleRef={handleRef}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Options
+          </button>
+        )}>
+        {(_value, _onChange, close) => (
+          <button type="button" onClick={close}>
+            Apply
+          </button>
+        )}
+      </ComplexSelector>,
+    );
+    const opener = screen.getByRole('button', {name: 'Options'});
+    await user.click(opener);
+    expect(opener).toHaveAttribute('aria-expanded', 'true');
+    expect(handleRef.current?.isOpen()).toBe(true);
+    const content = document.getElementById(
+      opener.getAttribute('aria-controls')!,
+    );
+    expect(content).not.toBeNull();
+
+    await user.click(screen.getByRole('button', {name: 'Apply', hidden: true}));
+    await waitFor(() => {
+      expect(opener).toHaveAttribute('aria-expanded', 'false');
+    });
+    // Focus return lands after the attribute flips, so it needs its own
+    // wait: asserting it synchronously passes alone and fails in a full-file
+    // run, where the surrounding work shifts the timing.
+    await waitFor(() => {
+      expect(opener).toHaveFocus();
+    });
+  });
+
+  it('ArrowDown on the caller control opens the popup', async () => {
+    render(
+      <ComplexSelector
+        label="View options"
+        value={[]}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Options
+          </button>
+        )}>
+        {() => <button type="button">Apply</button>}
+      </ComplexSelector>,
+    );
+    const opener = screen.getByRole('button', {name: 'Options'});
+    fireEvent.keyDown(opener, {key: 'ArrowDown'});
+    await waitFor(() => {
+      expect(opener).toHaveAttribute('aria-expanded', 'true');
+    });
   });
 });
 

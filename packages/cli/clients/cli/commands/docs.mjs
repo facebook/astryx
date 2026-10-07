@@ -4,10 +4,12 @@
  * @file docs command — Print Astryx reference docs
  *
  * In text, every read is one level: a topic lists its sections, so a reader can
- * open one section by its key, and `--full` prints the whole topic. `--json`
- * keeps the docs() contract: a topic returns its whole doc, and `--index` its
- * sections.
- * Supports --detail (full|compact|brief) and --lang (en|zh|dense).
+ * open one section by its key, and `--full` prints the whole topic. `--depth`
+ * reads a docs-tree namespace as many levels down as asked, each doc below it
+ * at --detail (brief by default: one line each). `--json` keeps the docs()
+ * contract: a topic returns its whole doc, and `--index` its sections.
+ * Supports --detail (full|compact|brief) and --lang (en|zh|dense). A code
+ * block's label prints above its fence, and table cells escape their pipes.
  *
  * Usage:
  *   astryx docs                          List available topics
@@ -17,6 +19,7 @@
  *   astryx docs <topic> --full           Print the whole topic
  *   astryx docs <route>                  Open a node of the docs tree, such as
  *                                        cli, cli/api, or cli/api/functions/search
+ *   astryx docs <route> --depth <n|all>  Read that many levels below it
  */
 
 import {
@@ -43,20 +46,34 @@ import {doc as docsFn} from '../../../api/docs/docs.doc.mjs';
 // ─── Formatting ──────────────────────────────────────────────────────────────
 
 /**
+ * A table cell with its pipes escaped. Columns are separated by ` | `, and a
+ * union type such as `'light' | 'dark'` is spelled with the same character,
+ * so an unescaped cell reads as extra columns. `astryx component` escapes its
+ * prop tables the same way.
+ * @param {string | undefined} cell
+ * @returns {string}
+ */
+function tableCell(cell) {
+  return (cell || '').replaceAll('|', '\\|');
+}
+
+/**
  * @param {string[]} headers
  * @param {string[][]} rows
  * @returns {string}
  */
 function formatTable(headers, rows) {
-  const widths = headers.map((h, i) =>
-    Math.max(h.length, ...rows.map(r => (r[i] || '').length)),
+  const head = headers.map(tableCell);
+  const cells = rows.map(r => r.map(tableCell));
+  const widths = head.map((h, i) =>
+    Math.max(h.length, ...cells.map(r => (r[i] || '').length)),
   );
   const sep = widths.map(w => '-'.repeat(w)).join(' | ');
-  const head = headers.map((h, i) => h.padEnd(widths[i])).join(' | ');
-  const body = rows
-    .map(r => r.map((c, i) => (c || '').padEnd(widths[i])).join(' | '))
+  const top = head.map((h, i) => h.padEnd(widths[i])).join(' | ');
+  const body = cells
+    .map(r => r.map((c, i) => c.padEnd(widths[i])).join(' | '))
     .join('\n');
-  return `${head}\n${sep}\n${body}`;
+  return `${top}\n${sep}\n${body}`;
 }
 
 /**
@@ -65,15 +82,19 @@ function formatTable(headers, rows) {
  * @returns {string}
  */
 function formatTableCompact(headers, rows) {
-  return rows.map(r => r.join(' = ')).join('\n');
+  // An empty cell, such as a Default with none, adds nothing to the line.
+  return rows
+    .map(r => r.filter(cell => String(cell ?? '').trim() !== '').join(' = '))
+    .join('\n');
 }
 
 /**
+ * One content block as text. Exported for its tests.
  * @param {import('@astryxdesign/cli/authoring').ReferenceContentBlock} block
  * @param {'full' | 'compact' | 'brief'} detail
  * @returns {string | null}
  */
-function formatBlock(block, detail) {
+export function formatBlock(block, detail) {
   switch (block.type) {
     case 'prose':
       return block.text;
@@ -84,13 +105,20 @@ function formatBlock(block, detail) {
     case 'code':
       if (detail === 'compact' || detail === 'brief') return null;
       {
-        const label = block.label ? `// ${block.label}\n` : '';
-        return `\`\`\`${block.lang}\n${label}${block.code}\n\`\`\``;
+        // The label names the block, so it prints above the fence, not
+        // inside it: `// label` is not a comment in bash, CSS, JSON, or
+        // HTML, and a reader who copies the block would copy it too.
+        const label = block.label
+          ? `${block.label.replace(/:\s*$/, '')}:\n`
+          : '';
+        return `${label}\`\`\`${block.lang}\n${block.code}\n\`\`\``;
       }
 
     case 'table':
       if (detail === 'brief') {
-        return block.rows.map(r => r.slice(0, 2).join('=')).join(' | ');
+        return block.rows
+          .map(r => r.slice(0, 2).map(tableCell).join('='))
+          .join(' | ');
       }
       if (detail === 'compact') {
         return formatTableCompact(block.headers, block.rows);
@@ -156,6 +184,202 @@ function formatReferenceFull(docs, detail) {
 }
 
 /**
+ * @param {string} title
+ * @param {number} level
+ * @returns {string}
+ */
+function treeHeading(title, level) {
+  return `${'#'.repeat(Math.max(1, Math.min(6, level)))} ${title}`;
+}
+
+/**
+ * A doc's blocks at one depth: its headings move down with it.
+ * @param {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} blocks
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @param {number} headingOffset
+ * @returns {string[]}
+ */
+function formatTreeBlocks(blocks, detail, headingOffset) {
+  /** @type {string[]} */
+  const formatted = [];
+  for (const block of blocks) {
+    const value =
+      block.type === 'heading'
+        ? treeHeading(block.text, (block.level || 3) + headingOffset)
+        : formatBlock(block, detail);
+    if (value) formatted.push(value);
+  }
+  return formatted;
+}
+
+/**
+ * @param {import('../../../api/docs/docs.type.mjs').DocsReadSection} docSection
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @param {number} headingLevel
+ * @returns {string}
+ */
+function formatTreeSection(docSection, detail, headingLevel) {
+  const heading = treeHeading(docSection.title, headingLevel);
+  const blocks = formatTreeBlocks(docSection.content, detail, headingLevel - 2);
+  return blocks.length > 0 ? `${heading}\n\n${blocks.join('\n\n')}` : heading;
+}
+
+/**
+ * Where a route sits below the namespace a read names.
+ * @param {string} route
+ * @param {string} root
+ * @returns {string}
+ */
+function belowRoot(route, root) {
+  return route.startsWith(`${root}/`) ? route.slice(root.length + 1) : route;
+}
+
+/**
+ * @param {number} count
+ * @returns {string}
+ */
+function docsBelow(count) {
+  return `${count} ${count === 1 ? 'doc' : 'docs'} below`;
+}
+
+/**
+ * Every child of a depth read, one row each in reading order, named by where
+ * it sits below the read's namespace.
+ * @param {import('../../../api/docs/docs.type.mjs').DocsNodeChild[]} children
+ * @param {string} root
+ * @returns {{name: string, summary: string}[]}
+ */
+function treeRows(children, root) {
+  return children.flatMap(child => [
+    {
+      name: belowRoot(child.route, root),
+      summary: child.childCount
+        ? `${childRow(child).summary} (${docsBelow(child.childCount)})`
+        : childRow(child).summary,
+    },
+    ...(child.slots ?? []).flatMap(slot => treeRows(slot.children, root)),
+  ]);
+}
+
+/**
+ * One child of a depth read with its text, under a heading for its level, and
+ * its own children below it.
+ * @param {import('../../../api/docs/docs.type.mjs').DocsNodeChild} child
+ * @param {'full' | 'compact'} detail
+ * @param {number} level
+ * @param {string} root
+ * @param {string} run
+ * @returns {string}
+ */
+function formatTreeChild(child, detail, level, root, run) {
+  const parts = [
+    `${treeHeading(child.title, level)} (${belowRoot(child.route, root)})`,
+  ];
+  if (
+    child.summary &&
+    (child.kind === 'namespace' || child.kind === 'generic')
+  ) {
+    parts.push(child.summary);
+  }
+  const content = formatTreeBlocks(child.content ?? [], detail, level - 2);
+  if (content.length > 0) parts.push(content.join('\n\n'));
+  parts.push(
+    ...(child.sections ?? []).map(docSection =>
+      formatTreeSection(docSection, detail, level + 1),
+    ),
+  );
+  if (child.childCount) {
+    parts.push(
+      `${docsBelow(child.childCount)}: ${run} docs ${child.route} --depth 1`,
+    );
+  }
+  for (const slot of child.slots ?? []) {
+    parts.push(
+      ...slot.children.map(each =>
+        formatTreeChild(each, detail, level + 1, root, run),
+      ),
+    );
+  }
+  return parts.join('\n\n');
+}
+
+/**
+ * A depth read of a namespace: its intro, then each slot's docs as deep as
+ * asked, one line each (brief) or with their text (compact, full). A typed doc
+ * has nothing below it, so it reads as it always does.
+ * @param {import('../../../api/docs/docs.type.mjs').DocsNode} node
+ * @param {'full' | 'compact' | 'brief'} detail how the named node reads
+ * @param {'full' | 'compact' | 'brief'} childDetail how each doc below reads
+ * @param {string} run
+ */
+function emitTree(node, detail, childDetail, run) {
+  if (node.kind !== 'namespace') {
+    emitNode(node, detail, run);
+    return;
+  }
+  /**
+   * @param {import('../../../api/docs/docs.type.mjs').DocsNodeChild[]} children
+   * @returns {string[]}
+   */
+  const routes = children =>
+    children.flatMap(child => [
+      child.route,
+      ...(child.slots ?? []).flatMap(slot => routes(slot.children)),
+    ]);
+  const allBelow = node.slots
+    .flatMap(slot => routes(slot.children))
+    .every(route => route.startsWith(`${node.route}/`));
+  const root = allBelow ? node.route : '';
+  emit(
+    section(node.title, wrapText(node.summary)),
+    ...(node.content?.length
+      ? [
+          text(
+            node.content
+              .map(b => formatBlock(b, detail))
+              .filter(Boolean)
+              .join('\n\n'),
+          ),
+        ]
+      : []),
+    ...(node.childCount
+      ? [
+          text(
+            `${docsBelow(node.childCount)}. Read them: ${run} docs ${node.route} --depth 1`,
+          ),
+        ]
+      : []),
+    ...node.slots.flatMap(slot => [
+      ...(node.slots.length === 1 && slot.title === node.title
+        ? []
+        : [section(slot.title)]),
+      childDetail === 'brief'
+        ? records(treeRows(slot.children, root), {
+            fields: ['name', 'summary'],
+            layout: 'inline',
+          })
+        : code(
+            slot.children
+              .map(child => formatTreeChild(child, childDetail, 2, root, run))
+              .join('\n\n'),
+          ),
+    ]),
+    text(
+      [
+        ...(node.slots.length > 0
+          ? [
+              allBelow
+                ? `Open one: ${run} docs ${node.route}/<name>`
+                : `Open one: ${run} docs <name>`,
+            ]
+          : []),
+        ...linkLines(node.links),
+      ].join('\n'),
+    ),
+  );
+}
+
+/**
  * The moves a read offers (spec:AST-047), one runnable command per line: up to
  * the level it sits in, the item before and after it, and the docs it names.
  * @param {import('../../../api/docs/docs.type.mjs').DocsLinks | undefined} links
@@ -202,16 +426,23 @@ function emitIndex(index, run) {
 }
 
 /**
- * One child row of a namespace: its route name, then the doc's own title when
- * it is not the route name (`assertResponse()`, `search()`), then its summary.
+ * One child row of a namespace. Namespace and guide route names are already
+ * readable, so repeating their titles adds noise (`start-a-template  Start a
+ * template`). Typed docs keep a distinct title when it carries the real symbol
+ * name (`assert-response  assertResponse()`).
  * @param {import('../../../api/docs/docs.type.mjs').DocsNodeChild} child
  * @returns {{name: string, summary: string}}
  */
 function childRow(child) {
+  const titleAddsIdentity =
+    child.kind !== 'namespace' &&
+    child.kind !== 'generic' &&
+    child.title !== child.name;
   return {
     name: child.name,
-    summary:
-      child.title === child.name ? child.summary : `${child.title}: ${child.summary}`,
+    summary: titleAddsIdentity
+      ? `${child.title}: ${child.summary}`
+      : child.summary,
   };
 }
 
@@ -227,6 +458,17 @@ function emitNode(node, detail, run) {
   if (node.kind === 'namespace') {
     emit(
       section(node.title, wrapText(node.summary)),
+      // A namespace may author intro `blocks`; they render above its children.
+      ...(node.content?.length
+        ? [
+            text(
+              node.content
+                .map(b => formatBlock(b, detail))
+                .filter(Boolean)
+                .join('\n\n'),
+            ),
+          ]
+        : []),
       ...node.slots.flatMap(slot => [
         // A namespace with one slot titled like itself needs no second heading.
         ...(node.slots.length === 1 && slot.title === node.title
@@ -235,7 +477,6 @@ function emitNode(node, detail, run) {
         records(slot.children.map(childRow), {
           fields: ['name', 'summary'],
           layout: 'inline',
-          overflow: 'truncate',
         }),
       ]),
       text(
@@ -288,7 +529,7 @@ export function registerDocs(program) {
     action: async (
       /** @type {string | undefined} */ topic,
       /** @type {string | undefined} */ sectionName,
-      /** @type {{index?: boolean, full?: boolean}} */ options = {},
+      /** @type {{index?: boolean, full?: boolean, depth?: string}} */ options = {},
     ) => {
       const run = getCliInvocation();
       const lang = program.opts().lang || null;
@@ -303,6 +544,22 @@ export function registerDocs(program) {
           {code: ERROR_CODES.ERR_INVALID_ARGUMENT},
         );
       }
+      /** @type {number | 'all' | undefined} */
+      let depth;
+      if (options.depth != null) {
+        if (options.depth === 'all') depth = 'all';
+        else if (/^\d+$/.test(options.depth)) depth = Number(options.depth);
+        else {
+          return cliError(
+            `--depth takes a number of levels (0, 1, 2, ...) or all, not "${options.depth}".`,
+            {code: ERROR_CODES.ERR_INVALID_ARGUMENT},
+          );
+        }
+      }
+      // With --depth, --detail is how much of each doc below shows; left at
+      // its default, each is one line.
+      const childDetail =
+        program.getOptionValueSource('detail') === 'default' ? 'brief' : detail;
       // Text reads one level: a topic lists its sections (one with a single
       // section prints whole). JSON keeps docs(): the whole topic unless
       // --index. The dense variant is written to be read whole.
@@ -320,6 +577,7 @@ export function registerDocs(program) {
           zh,
           dense,
           index: listSections,
+          ...(depth != null ? {depth, detail: childDetail} : {}),
         });
         if (
           !options.index &&
@@ -374,6 +632,7 @@ export function registerDocs(program) {
                 `       ${run} docs <topic> <section>        read one section`,
                 `       ${run} docs <topic> --full           read the whole topic`,
                 `       ${run} docs cli/api                  go down the docs tree one level at a time`,
+                `       ${run} docs cli --depth all          every doc below cli, one line each`,
                 `With --json, a topic returns its whole doc; add --index for its section list.`,
               ].join('\n'),
             ),
@@ -419,7 +678,8 @@ export function registerDocs(program) {
         }
 
         case 'docs.node': {
-          emitNode(result.data, detail, run);
+          if (depth != null) emitTree(result.data, detail, childDetail, run);
+          else emitNode(result.data, detail, run);
           break;
         }
       }

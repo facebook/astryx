@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Fix the PowerSearch menu not reopening when its already-focused input is clicked after adding or removing a token (#6845).
+[fix] Refresh stale cached field entries when `PowerSearch` reopens an already-focused input after its search source changes (#6845).
 
 @korkt-kim

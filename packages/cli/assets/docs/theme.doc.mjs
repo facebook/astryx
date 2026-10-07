@@ -6,12 +6,14 @@ export const docs = {
   name: 'theme',
   title: 'Theme System',
   category: 'guide',
+  keywords: ['use', 'apply', 'setup'],
   description:
-    'Theme provider, custom themes, theme build for production/SSR, light/dark mode, and component style overrides.',
+    'How to use and apply themes in your app: providers, custom themes, light/dark mode, production builds, and component style overrides.',
 
   sections: [
     {
-      title: 'Quick Start',
+      id: 'quick-start',
+      title: 'Wrap your app in a theme',
       category: 'guide',
       content: [
         {
@@ -96,7 +98,7 @@ function App() {
             [
               'Matcha',
               "import {matchaTheme} from '@astryxdesign/theme-matcha'",
-              'Earthy green theme with Figtree typography.',
+              'Earthy greens; DM Sans + Playwrite US Trad type.',
             ],
             [
               'Stone',
@@ -121,22 +123,13 @@ function App() {
       category: 'guide',
       content: [
         {
-          type: 'table',
-          headers: ['Prop', 'Type', 'Default', 'Description'],
-          rows: [
-            ['theme', 'DefinedTheme', '-', 'Theme object (required)'],
-            [
-              'mode',
-              "'system' | 'light' | 'dark'",
-              "'system'",
-              'Color mode. system follows OS preference.',
-            ],
-            ['children', 'ReactNode', '-', 'App content'],
-          ],
+          type: 'prose',
+          text: "`<Theme>` takes `theme` (required), `mode` (`'system'` by default, or `'light'`/`'dark'`), and `children`. For every prop, run `astryx component Theme`.",
         },
       ],
     },
     {
+      id: 'integration-themes',
       title: 'Using a Theme from an Integration',
       category: 'guide',
       content: [
@@ -157,7 +150,8 @@ function App() {
       ],
     },
     {
-      title: 'Creating a Custom Theme',
+      id: 'creating-a-custom-theme',
+      title: 'Custom themes',
       category: 'guide',
       content: [
         {
@@ -365,11 +359,18 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: '`widthBreakpoints` are fixed named start points. Defaults are 640 / 768 / 1024 / 1280 / 1536 CSS pixels. `from` includes its point; `below` excludes it. Breakpoint configuration alone emits no CSS.',
+          text: '`widthBreakpoints` are fixed named start points. Defaults are 640 / 768 / 1024 / 1280 / 1536 CSS pixels. `from` includes its point; `below` excludes it. Breakpoint configuration alone emits no CSS. For how matching rules combine and what a rule may write, see Adaptation order and validation.',
         },
+      ],
+    },
+    {
+      id: 'adaptation-rules',
+      title: 'Adaptation order and validation',
+      category: 'guide',
+      content: [
         {
           type: 'prose',
-          text: '**Precedence follows rule order.** Root theme values apply first, then every matching rule in declaration order. A later rule may deliberately restore a root value. `onDark` and `onLight` media-surface overrides apply after adaptations and win on the same leaf.',
+          text: 'Precedence follows rule order. Root theme values apply first, then every matching rule in declaration order. A later rule may deliberately restore a root value. `onDark` and `onLight` media-surface overrides apply after adaptations and win on the same leaf.',
         },
         {
           type: 'prose',
@@ -400,7 +401,7 @@ const brandTheme = defineTheme({
           code: `components: {
   // Standard CSS properties are expanded automatically.
   // borderRadius also sets the internal radius var for concentric math.
-  // padding on container components (card, section, dialog) expands to layout tokens.
+  // padding on container components (card, section, dialog, bottom-sheet) expands to layout tokens.
   card: {
     base: { borderRadius: '20px', padding: '24px' },
   },
@@ -464,7 +465,7 @@ const brandTheme = defineTheme({
   banner: {
     // Any extensible prop axis works — not just variant
     'status:neutral': {
-      backgroundColor: 'var(--color-muted)',
+      backgroundColor: 'var(--color-background-muted)',
       color: 'var(--color-text-secondary)',
     },
   },
@@ -489,7 +490,8 @@ const brandTheme = defineTheme({
       ],
     },
     {
-      title: 'Building Themes for Production',
+      id: 'building-themes-for-production',
+      title: 'Build a theme',
       category: 'guide',
       content: [
         {
@@ -516,7 +518,7 @@ const brandTheme = defineTheme({
             ],
             [
               'ocean.js',
-              'ES module exporting the theme object with `__built: true` and pre-resolved token values. Also imports and re-exports an icon registry when the build detects its named import in the source theme (see the limitations below).',
+              'ES module exporting the theme object with `__built: true` and pre-resolved token values. Also imports and re-exports an icon registry when the build detects its named import in the source theme (see Built themes with an icon registry).',
             ],
             [
               'ocean.d.ts',
@@ -527,29 +529,6 @@ const brandTheme = defineTheme({
               "(Optional) Module augmentations for custom component prop values found in the theme's component overrides",
             ],
           ],
-        },
-        {
-          type: 'prose',
-          text: "The current `theme build` implementation emits an icon import when it detects a named import used by the theme’s `icons:` field, such as `import {oceanIcons} from './icons'` with `icons: oceanIcons`. It does not compile that registry module. Inline registries, including local constants, are currently omitted from the generated theme even though `defineTheme` accepts them at runtime. Move the registry to a separate module and use a named import for this build flow. For a registry that uses React and lucide-react, the following example compiles it alongside the generated theme:",
-        },
-        {
-          type: 'code',
-          lang: 'bash',
-          label: 'Compiling the icon registry sidecar',
-          code: `# Emit the built theme; point its icon import at the file the next step produces
-astryx theme build ./src/themes/ocean.ts -o dist/theme.css --icons-specifier ./icons.mjs
-
-# Compile the icon registry to a real ES module next to the generated JS
-esbuild src/themes/icons.tsx --bundle --format=esm --outfile=dist/icons.mjs \\
-  --external:react --external:lucide-react --jsx=automatic`,
-        },
-        {
-          type: 'prose',
-          text: 'In the example above, the generated theme imports `./icons.mjs` from `dist`. If the second command is skipped, `theme build` can still succeed, but loading or bundling the generated module fails because `dist/icons.mjs` is missing. `--icons-specifier` changes the emitted import; it does not create or verify the target file. Match the specifier to a module that resolves from the generated JS file. Keep `react` and the icon library external so the registry does not bundle its own copies of those dependencies.',
-        },
-        {
-          type: 'prose',
-          text: 'Without `--icons-specifier`, the detected source import specifier is emitted unchanged. In the default no-`--out` flow, a bundler can resolve an extensionless `./icons` to the neighboring `icons.tsx` source. Node ESM does not perform that lookup and reports `ERR_MODULE_NOT_FOUND`. Moving the output with `--out` also changes where relative imports resolve; the generated module cannot find the original source merely because a bundler is used.',
         },
         {
           type: 'prose',
@@ -573,6 +552,36 @@ import './themes/ocean.css';
         {
           type: 'prose',
           text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See {@link generic:typography} for the full recipe.",
+        },
+      ],
+    },
+    {
+      id: 'icon-registry',
+      title: 'Built themes with an icon registry',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: "The current `theme build` implementation emits an icon import when it detects a named import used by the theme’s `icons:` field, such as `import {oceanIcons} from './icons'` with `icons: oceanIcons`. It does not compile that registry module. Inline registries, including local constants, are currently omitted from the generated theme even though `defineTheme` accepts them at runtime. Move the registry to a separate module and use a named import for this build flow. For a registry that uses React and lucide-react, the following example compiles it alongside the generated theme:",
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          label: 'Compiling the icon registry sidecar',
+          code: `# Emit the built theme; point its icon import at the file the next step produces
+astryx theme build ./src/themes/ocean.ts -o dist/theme.css --icons-specifier ./icons.mjs
+
+# Compile the icon registry to a real ES module next to the generated JS
+esbuild src/themes/icons.tsx --bundle --format=esm --outfile=dist/icons.mjs \\
+  --external:react --external:lucide-react --jsx=automatic`,
+        },
+        {
+          type: 'prose',
+          text: 'In the example above, the generated theme imports `./icons.mjs` from `dist`. If the second command is skipped, `theme build` can still succeed, but loading or bundling the generated module fails because `dist/icons.mjs` is missing. `--icons-specifier` changes the emitted import; it does not create or verify the target file. Match the specifier to a module that resolves from the generated JS file. Keep `react` and the icon library external so the registry does not bundle its own copies of those dependencies.',
+        },
+        {
+          type: 'prose',
+          text: 'Without `--icons-specifier`, the detected source import specifier is emitted unchanged. In the default no-`--out` flow, a bundler can resolve an extensionless `./icons` to the neighboring `icons.tsx` source. Node ESM does not perform that lookup and reports `ERR_MODULE_NOT_FOUND`. Moving the output with `--out` also changes where relative imports resolve; the generated module cannot find the original source merely because a bundler is used.',
         },
       ],
     },
@@ -677,7 +686,8 @@ import './themes/ocean.css';
       ],
     },
     {
-      title: 'Light/Dark Mode',
+      id: 'light-dark-mode',
+      title: 'Dark mode',
       category: 'guide',
       content: [
         {
@@ -706,12 +716,13 @@ import './themes/ocean.css';
       ],
     },
     {
-      title: 'Nesting Themes',
+      id: 'nesting-themes',
+      title: 'Nested themes',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Wrap different sections in separate [`<Theme>`](/components/Theme) providers.',
+          text: 'Wrap different sections in separate `<Theme>` providers.',
         },
         {
           type: 'code',

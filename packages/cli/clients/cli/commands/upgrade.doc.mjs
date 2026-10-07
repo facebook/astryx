@@ -13,7 +13,8 @@ export const doc = {
   name: 'upgrade',
   displayName: 'astryx upgrade',
   namespace: 'cli/commands',
-  summary: 'Migrate versions and update ShadCN-copied compositions',
+  summary:
+    'Update your code after upgrading Astryx, and refresh ShadCN-copied components',
   description:
     'Migrates project source from a previous Astryx version to the installed one by ' +
     'running the registered codemods, and refreshes the fully rendered managed ' +
@@ -33,7 +34,7 @@ export const doc = {
     {
       flag: '--apply',
       param: 'options.apply',
-      description: 'Write changes to disk (default: dry-run)',
+      description: 'Write changes to disk; without it, the run is a dry run',
       default: false,
     },
     {
@@ -80,7 +81,8 @@ export const doc = {
       flag: '--registry',
       param: 'options.registry',
       description:
-        'Only reconcile ShadCN-copied compositions; --from is not required. ' +
+        'Only update ShadCN-copied compositions from their install receipts: unchanged files are updated, ' +
+        'edits that do not overlap are merged, and conflicts are left untouched; --from is not required. ' +
         'Combining it with --list, --from, --force, --codemod, --skip-codemod, --integration or --install-deps exits 1 with ERR_INVALID_ARGUMENT',
       default: false,
     },
@@ -113,4 +115,61 @@ export const doc = {
     },
   ],
   related: ['init', 'doctor'],
+  notes: [
+    {type: 'heading', level: 3, text: 'Protected files'},
+    {
+      type: 'prose',
+      text:
+        'Codemods never write to a file your project marks as generated, vendored, or ignored. ' +
+        'upgrade reads these marks from the files on disk, so the answer is the same with any version control, or none. ' +
+        'A file is protected when:',
+    },
+    {
+      type: 'list',
+      style: 'unordered',
+      items: [
+        'a `.gitattributes` file marks it `linguist-generated` or `linguist-vendored`',
+        'its leading comment says `@generated`, `@partially-generated`, or `Code generated ... DO NOT EDIT.`',
+        'a `.gitignore`, or the `.hgignore` at the project root, excludes it',
+        'it is an installed dependency (such as anything in `node_modules`), is inside `.git`, `.hg`, or `.sl`, is a symbolic link, or is outside the project',
+      ],
+    },
+    {
+      type: 'prose',
+      text:
+        'Rules work as they do in Git: a later rule wins, so `linguist-generated=false` or a `!` line in an ignore file ' +
+        'returns a file to normal handling. A folder name such as `dist` or `generated` protects nothing by itself. ' +
+        'If a protection file cannot be read or parsed, upgrade stops with ERR_CODEMOD_PROTECTION_SOURCE before it writes anything.',
+    },
+    {
+      type: 'code',
+      lang: 'text',
+      code:
+        '# .gitattributes\n' +
+        'generated/** linguist-generated=true\n' +
+        'vendor/** linguist-vendored=true\n' +
+        '\n' +
+        '# A later rule returns one authored file to normal handling\n' +
+        'generated/hand-authored.ts linguist-generated=false',
+    },
+    {
+      type: 'prose',
+      text:
+        'When a codemod would change a protected file, upgrade makes the change only in memory and leaves the file as it is. ' +
+        'The rest of the upgrade goes ahead. With --apply, your other files are written, then upgrade runs the ' +
+        '`hooks.postCodemod` commands from astryx.config (see `astryx docs authoring config`) and checks the protected ' +
+        'files again. If one still needs the change, the run is incomplete: it exits 1, prints ' +
+        'ERR_CODEMOD_PROTECTED with each file and the rule that protects it, and does not refresh the agent docs. ' +
+        'Regenerate or edit those files, then run the same upgrade again. A dry run reports the same files and writes nothing.',
+    },
+    {
+      type: 'prose',
+      text:
+        'With --json, the receipt says `complete: false` and `errorCode: "ERR_CODEMOD_PROTECTED"`. `modifiedFiles` lists the files ' +
+        'upgrade changed (or would change), and `protectedFiles` lists each blocked file with its `reasons`, `declarations` ' +
+        '(the rules that protect it), `codemods`, and `commands`. A generated file can name the command that rebuilds it on a ' +
+        '`Command:` line in its header, such as `// Command: pnpm run gen:panel`; upgrade prints it as ' +
+        '`Regenerate with: <command>` and lists it in `commands`.',
+    },
+  ],
 };

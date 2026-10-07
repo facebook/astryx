@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: null
 approved_at: null
 owners: [cixzhang]
-review_triggers: [theming]
+review_triggers: [theming, layout, public-api]
 verified_by:
   [
     packages/core/src/BottomSheet/BottomSheet.test.tsx,
@@ -23,7 +23,11 @@ modules: []
 families: [family:overlay-dismissal]
 design_specs: []
 architecture:
-  [architecture:component-theming-surface, architecture:layer-runtime]
+  [
+    architecture:component-theming-surface,
+    architecture:container-padding,
+    architecture:layer-runtime,
+  ]
 contributing: []
 system_specs: [spec:AST-025]
 ---
@@ -34,16 +38,18 @@ system_specs: [spec:AST-025]
 
 BottomSheet presents caller-provided content in a panel that rises from the
 bottom edge. This draft records current consumer anatomy, keyboard-reachable
-scrolling, and theming reachability without changing public API.
+scrolling, theming reachability, and the Content area's container padding.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
-- Compatibility class: additive internal content box and shared scroll behavior;
-  public props, defaults, targets, and caller child ordering inside the content box
-  remain unchanged
+- Released default preserved: `no` — with no `padding` prop and no theme
+  padding, the Content area insets by `--spacing-4` on every logical edge
+- Compatibility class: breaking default, scheduled for a minor release. Content
+  whose only child is a padded Section keeps its geometry because that Section
+  escapes the inset; content that supplies its own inset is padded twice until
+  it drops that inset or sets `padding={0}`
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: none
+- Migration decision: `padding={0}` restores the released unpadded Content area
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -54,6 +60,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - The visual Sheet panel and its current `bottom-sheet` target.
 - The scrolling Content area, its shared viewport/content-box integration, and
   automatic keyboard-path selection.
+- The Content area's container padding, published per
+  `architecture:container-padding`.
 - Standalone sheet presentation, including its optional native-dialog Scrim.
 
 **Does not own / non-goals**
@@ -77,6 +85,7 @@ in `BottomSheet.doc.mjs`.
 | FR1 | The current presented sheet contains one Sheet panel, one scrolling Content area, and one decorative Handle; a Scrim is present only in scrim-backed presentation.                                                                          | Current source, docs, and tests    | Verified current behavior; no new behavior decided |
 | FR2 | The Sheet panel carries `bottom-sheet`; Content area, Handle, and Scrim carry no BottomSheet public target.                                                                                                                                 | Current source, docs, and tests    | Verified current behavior; no target change        |
 | FR3 | Content renders in one real observed content box. Effective overflow, containment, and keyboard access come from `useScrollableArea`; the named overflowing body delegates forward Tab entry to a safe first sequential native link/button. | `spec:AST-025`; issue #5207; tests | Focus-time prototype for owner review              |
+| FR4 | The Content area pads caller content by the sheet's container inset and publishes the applied inset to descendants as a container publisher.                                                                                                | `architecture:container-padding`   | Admitted; implementation pending                   |
 
 ### Allowed variation
 
@@ -94,7 +103,9 @@ in `BottomSheet.doc.mjs`.
 
 ### Transformation and precedence order
 
-- No new height, gesture, motion, or styling precedence rule is introduced.
+- Content area inset: the `padding` prop, then the theme's `padding` properties
+  on `bottom-sheet`, then `--spacing-4` on every logical edge.
+- No new height, gesture, or motion precedence rule is introduced.
 
 ### Performance and resources
 
@@ -116,7 +127,7 @@ in `BottomSheet.doc.mjs`.
 | Anatomy or state | Design requirement                                                                    | Representation authority       | Hierarchy role | Component contract |
 | ---------------- | ------------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
 | Sheet panel      | Presents the painted bottom-edge surface and owns panel geometry and motion.          | Current source and public docs | Prominent      | FR1, FR2           |
-| Content area     | Provides the scrolling area for caller-provided sheet content.                        | Current source and tests       | Prominent      | FR1, FR2           |
+| Content area     | Provides the scrolling, inset area for caller-provided sheet content.                 | Current source and tests       | Prominent      | FR1, FR2, FR4      |
 | Handle           | Presents the decorative grab affordance and owns the panel's drag interaction region. | Current source and tests       | Supporting     | FR1, FR2           |
 | Scrim            | Dims and blocks the page in a scrim-backed host.                                      | Current source and public docs | Supporting     | FR1, FR2           |
 
@@ -153,6 +164,8 @@ a decision that they must remain unthemeable.
 
 - `architecture:component-theming-surface` owns anatomy qualification, target
   mapping, and factual `none` dispositions.
+- `architecture:container-padding` owns the shared container inset protocol and
+  admits the Content area as a container publisher.
 - `architecture:layer-runtime` owns the current native-dialog host distinction
   and records that sheets retain local scrim and swipe behavior.
 - `spec:AST-025` owns effective scroll measurement, overflow and containment,
@@ -168,6 +181,7 @@ a decision that they must remain unthemeable.
 | FR1                 | `BottomSheet.test.tsx` render, content, Handle, and scrim behavior suites                          | Modal, non-modal, and switcher presentations                             | Removing a documented part fails existing content, structure, or dismissal assertions.                  | `audit:BottomSheet/anatomy`       |
 | FR2                 | Panel target assertion, source inspection, and theming target inventories                          | Sheet panel, Content area, Handle, and Scrim                             | Removing the panel target or documenting an unshipped child target fails evidence or inventory.         | `audit:BottomSheet/theming`       |
 | FR3, AR1–AR2        | `BottomSheetKeyboard.test.tsx`; `BottomSheetKeyboard.a11y.browser.spec.ts`; open Storybook stories | fitting/overflow, plain text, usable/unusable/dynamic descendants, focus | Missing/duplicate keyboard access, stale ownership, focus movement, or broken content-box layout fails. | `audit:BottomSheet/accessibility` |     | Layout evidence | `BottomSheetPanel.test.tsx` | Floating Handle and scrolling Content area | Reordering or merging the stable parts fails existing panel structure and style assertions. | `audit:BottomSheet/anatomy` |
+| FR4                 | `BottomSheetPanel.test.tsx` container padding tests; `derivedVarRegistry.test.ts`                  | default, `padding` prop, theme `padding`, lone padded Section child      | The published inset differs from the applied padding, or a lone padded Section changes geometry.        | `audit:BottomSheet/anatomy`       |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                      | Canonical anatomy and current target inventory                           | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.              | `audit:BottomSheet/theming`       |
 
 Existing tests directly assert the Sheet panel target, Content area placement,

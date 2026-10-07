@@ -265,9 +265,14 @@ describe('Popover', () => {
 
     const layer = document.querySelector('[popover]');
     expect(layer).toHaveStyle({boxSizing: 'border-box'});
-    expect(layer?.className).toContain('Popover__styles.viewportFit');
-    expect(layer?.className).toContain('Popover__styles.viewportAligned');
-    expect(layer?.className).toContain('Popover__styles.viewportStart');
+    // The viewport fit is the layer runtime's (spec:AST-059 FR1, FR3); the
+    // explicit width is clamped to the viewport, never to the span beside
+    // the trigger (FR2).
+    expect(layer?.className).toContain('useLayer__styles.viewportFit');
+    expect(layer?.className).toContain('useLayer__styles.gutterInlineEnd');
+    expect(layer?.className).toContain('Popover__styles.customWidth');
+    expect(layer?.getAttribute('style')).toContain('min(640px, calc(100vw');
+    expect(layer?.getAttribute('style')).not.toContain('100%');
     const surface = screen.getByTestId('popover-content').parentElement;
     expect(surface?.className).toContain('Popover__styles.surfaceViewportFit');
     const popoverSource = readFileSync(
@@ -275,11 +280,12 @@ describe('Popover', () => {
       'utf8',
     );
     expect(popoverSource).toMatch(
-      /surfaceViewportFit:[\s\S]*?maxInlineSize: stylex\.firstThatWorks\(\s*POPOVER_MAX_INLINE_SIZE/,
+      /surfaceViewportFit:[\s\S]*?maxInlineSize: stylex\.firstThatWorks\(\s*layerViewportInset\.maxInlineSize/,
     );
     expect(popoverSource).toMatch(
-      /surfaceViewportFit:[\s\S]*?maxBlockSize: stylex\.firstThatWorks\(\s*POPOVER_MAX_BLOCK_SIZE/,
+      /surfaceViewportFit:[\s\S]*?maxBlockSize: stylex\.firstThatWorks\(\s*layerViewportInset\.maxBlockSize/,
     );
+    expect(popoverSource).not.toMatch(/safe-area-inset|calc\(100%/);
     expect(surface?.className).not.toContain(
       'Popover__styles.surfaceScrollable',
     );
@@ -435,7 +441,7 @@ describe('Popover', () => {
     }
   });
 
-  it('keeps aligned popovers anchored while applying viewport gutters', () => {
+  it('inherits the far-edge gutter from the layer runtime for aligned popovers', () => {
     render(
       <Popover content={<span>Content</span>} label="Test">
         <button type="button">Open</button>
@@ -445,10 +451,13 @@ describe('Popover', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
 
     const layer = document.querySelector('[popover]');
-    expect(layer?.className).toContain('Popover__styles.viewportAligned');
-    expect(layer?.className).toContain('Popover__styles.viewportStart');
+    expect(layer?.className).toContain('useLayer__styles.gutterInlineEnd');
+    expect(layer?.className).not.toContain(
+      'useLayer__styles.gutterInlineStart',
+    );
+    expect(layer?.className).toContain('Popover__styles.matchTrigger');
     expect(layer).toHaveStyle(
-      'min-width: min(anchor-size(width),calc(100% - max(var(--spacing-4),env(safe-area-inset-left,0px),env(safe-area-inset-right,0px))))',
+      'min-width: min(anchor-size(width),calc(100vi - calc(max(var(--spacing-4), env(safe-area-inset-left, 0px)) + var(--astryx-layer-inset-inline-start, 0px)) - calc(max(var(--spacing-4), env(safe-area-inset-right, 0px)) + var(--astryx-layer-inset-inline-end, 0px))))',
     );
   });
 
@@ -462,12 +471,11 @@ describe('Popover', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
 
     const layer = document.querySelector('[popover]');
-    expect(layer?.className).toContain('Popover__styles.viewportAligned');
-    expect(layer?.className).toContain('Popover__styles.viewportEnd');
-    expect(layer?.className).not.toContain('Popover__styles.viewportStart');
+    expect(layer?.className).toContain('useLayer__styles.gutterInlineStart');
+    expect(layer?.className).not.toContain('useLayer__styles.gutterInlineEnd');
   });
 
-  it('reserves both inline gutters only for centered popovers', () => {
+  it('reserves both inline gutters for centered popovers', () => {
     render(
       <Popover content={<span>Content</span>} label="Test" alignment="center">
         <button type="button">Open</button>
@@ -477,11 +485,10 @@ describe('Popover', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
 
     const layer = document.querySelector('[popover]');
-    expect(layer?.className).toContain('Popover__styles.viewportCentered');
-    expect(layer?.className).not.toContain('Popover__styles.viewportAligned');
-    expect(layer).toHaveStyle(
-      'min-width: min(anchor-size(width),calc(100vi - max(var(--spacing-4),env(safe-area-inset-left,0px)) - max(var(--spacing-4),env(safe-area-inset-right,0px))))',
-    );
+    expect(layer?.className).toContain('useLayer__styles.gutterInlineStart');
+    expect(layer?.className).toContain('useLayer__styles.gutterInlineEnd');
+    // One match-trigger minimum for every alignment: the cap is the viewport.
+    expect(layer?.className).toContain('Popover__styles.matchTrigger');
   });
 
   it('uses block-axis gutters for side placement', () => {
@@ -498,8 +505,8 @@ describe('Popover', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
 
     const layer = document.querySelector('[popover]');
-    expect(layer?.className).toContain('Popover__styles.viewportBlockStart');
-    expect(layer?.className).not.toContain('Popover__styles.viewportStart');
+    expect(layer?.className).toContain('useLayer__styles.gutterBlockEnd');
+    expect(layer?.className).not.toContain('useLayer__styles.gutterInlineEnd');
   });
 
   it('preserves the dialog aria-haspopup contract for render-prop triggers', () => {
@@ -955,6 +962,85 @@ describe('Popover', () => {
 
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
       expect(trigger).toHaveFocus();
+    });
+  });
+
+  describe('surface padding', () => {
+    // StyleX's dev runtime names the style object a class came from
+    // ("padding__paddingStyles.3"), which is the padding rung the surface
+    // was handed.
+    function paddingRungOf(surface: Element | null): string | null {
+      const match = surface?.className.match(
+        /padding__paddingStyles\.([\d.]+)/,
+      );
+      return match ? match[1] : null;
+    }
+
+    it('paints the spacing-3 rung by default, unchanged', () => {
+      render(
+        <Popover isOpen content={<span>Content</span>} label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const surface = document.querySelector('.astryx-popover');
+      expect(paddingRungOf(surface)).toBe('3');
+      expect(surface?.className).not.toContain('contentPadding');
+    });
+
+    it('paints no padding on a flush surface (padding={0})', () => {
+      render(
+        <Popover
+          isOpen
+          padding={0}
+          content={<span data-testid="content">Content</span>}
+          label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const surface = document.querySelector('.astryx-popover');
+      // The rung lands on the painted surface itself, not a wrapper inside
+      // it, so the content reaches the surface edge.
+      expect(surface).toContainElement(screen.getByTestId('content'));
+      expect(paddingRungOf(surface)).toBe('0');
+    });
+
+    it('paints the requested rung', () => {
+      render(
+        <Popover isOpen padding={4} content={<span>Content</span>} label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const surface = document.querySelector('.astryx-popover');
+      expect(paddingRungOf(surface)).toBe('4');
+    });
+
+    it('lets a direct usePopover consumer opt into a rung, and paints none by default', () => {
+      function Direct({padding}: {padding?: 0 | 2}) {
+        const popover = usePopover({dialogLabel: 'Direct', padding});
+        return (
+          <>
+            <button
+              ref={popover.triggerRef}
+              type="button"
+              onClick={popover.toggle}
+              {...popover.triggerProps}>
+              Open
+            </button>
+            {popover.render(<span>Direct content</span>)}
+          </>
+        );
+      }
+      const {unmount} = render(<Direct />);
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+      expect(paddingRungOf(document.querySelector('.astryx-popover'))).toBe(
+        null,
+      );
+      unmount();
+      render(<Direct padding={2} />);
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+      expect(paddingRungOf(document.querySelector('.astryx-popover'))).toBe(
+        '2',
+      );
     });
   });
 

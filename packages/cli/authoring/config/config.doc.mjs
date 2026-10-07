@@ -10,7 +10,7 @@
 export const doc = {
   type: 'schema',
   name: 'config',
-  displayName: 'Astryx Config',
+  displayName: 'astryx.config',
   namespace: 'authoring',
   description:
     'The optional astryx.config.* file at your project root. Declares which ' +
@@ -59,6 +59,14 @@ export const doc = {
         'Handle explicit gap reports in addition to every loaded integration handler. The project handler runs first. Public handlers require caller consent; internal handlers always run.',
       example:
         "{ audience: 'internal', async handle(report, {signal}) { return sendGap(report, {signal}); } }",
+    },
+    {
+      name: 'discover',
+      type: 'DiscoverSource',
+      description:
+        'Tell `astryx discover` which integrations this project could add: an async function that returns a catalog. An integration can provide one too, as a `discover` named export from its manifest. Discover calls every source, yours first, and one that fails never hides the others. Discover only reads; your package manager installs.',
+      example:
+        "async ({signal, package: name, version}) => fetchCatalog({signal, name, version})",
     },
     {
       name: 'experimental',

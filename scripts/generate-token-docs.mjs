@@ -3,13 +3,15 @@
 
 /**
  * @file generate-token-docs.mjs
- * @description Generates packages/cli/assets/docs/tokens.doc.mjs from the source of
- *   truth: packages/core/src/theme/tokens.stylex.ts
+ * @description Generates packages/cli/assets/docs/tokens.doc.mjs from the sources
+ *   of truth: packages/core/src/theme/tokens.stylex.ts, plus the domain tokens in
+ *   packages/core/src/theme/domainTokens/dataTokens.ts (data visualization) and
+ *   packages/core/src/theme/syntax/tokens.ts (code syntax).
  *
  * Run: node scripts/generate-token-docs.mjs
- * CI:  Add to lint or build to catch drift.
+ * CI:  `node scripts/generate-token-docs.mjs --check` fails on drift.
  *
- * Reads the *Defaults export objects from tokens.stylex.ts, groups them by
+ * Reads the *Defaults export objects from those files, groups them by
  * category, and writes a ReferenceDoc-shaped .doc.mjs file.
  */
 
@@ -20,22 +22,40 @@ import {fileURLToPath} from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const TOKENS_SRC = resolve(ROOT, 'packages/core/src/theme/tokens.stylex.ts');
+const DATA_TOKENS_SRC = resolve(
+  ROOT,
+  'packages/core/src/theme/dataTokens.stylex.ts',
+);
+const SYNTAX_TOKENS_SRC = resolve(
+  ROOT,
+  'packages/core/src/theme/syntax/tokens.ts',
+);
 const TOKENS_DOC = resolve(ROOT, 'packages/cli/assets/docs/tokens.doc.mjs');
 
 // ---------------------------------------------------------------------------
 // 1. Parse token groups from source
 // ---------------------------------------------------------------------------
 
-const src = readFileSync(TOKENS_SRC, 'utf-8');
+/** Each source file's text, read once. */
+const sources = new Map();
+
+/** @param {string} file */
+function sourceText(file) {
+  if (!sources.has(file)) sources.set(file, readFileSync(file, 'utf-8'));
+  return sources.get(file);
+}
 
 /**
  * Extract key-value pairs from a `const xxxDefaults = { ... } as const;` block.
  * Returns array of [tokenName, defaultValue].
+ * @param {string} name
+ * @param {string} [file] the source that exports it (default tokens.stylex.ts)
  */
-function extractDefaults(name) {
-  // Match: `export const <name> = {` ... `} as const;`
+function extractDefaults(name, file = TOKENS_SRC) {
+  const src = sourceText(file);
+  // Match: `[export] const <name> = {` ... `} as const;`
   const re = new RegExp(
-    `export const ${name}\\s*=\\s*\\{([^}]+(?:\\{[^}]*\\}[^}]*)*)\\}\\s*as const`,
+    `(?:export\\s+)?const ${name}\\s*=\\s*\\{([^}]+(?:\\{[^}]*\\}[^}]*)*)\\}\\s*as const`,
     's',
   );
   const m = src.match(re);
@@ -52,7 +72,29 @@ function extractDefaults(name) {
   return pairs;
 }
 
-/** Map of group name → { exportName, title, description, headers } */
+/**
+ * A `light-dark(<light>, <dark>)` value as its two halves. Splits at the
+ * comma at nesting depth 0, so a half that holds its own commas, such as
+ * `rgba(0, 0, 0, 0.1)`, stays whole. Anything else is the same in both modes.
+ * @param {string} name
+ * @param {string} value
+ * @returns {[string, string, string]}
+ */
+function lightDarkRow(name, value) {
+  const inner = value.match(/^light-dark\((.*)\)$/s)?.[1];
+  let depth = 0;
+  for (let i = 0; inner != null && i < inner.length; i++) {
+    const c = inner[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth--;
+    else if (c === ',' && depth === 0) {
+      return [name, inner.slice(0, i).trim(), inner.slice(i + 1).trim()];
+    }
+  }
+  return [name, value, value];
+}
+
+/** Map of group name → { exportName, file?, title, description, headers } */
 const groups = [
   {
     key: 'color',
@@ -62,11 +104,29 @@ const groups = [
     description:
       'Semantic colors for consistent theming. All colors use light-dark() for automatic mode switching.',
     headers: ['Token', 'Light', 'Dark'],
-    formatRow(name, value) {
-      const ldMatch = value.match(/^light-dark\(([^,]+),\s*([^)]+)\)$/);
-      if (ldMatch) return [name, ldMatch[1].trim(), ldMatch[2].trim()];
-      return [name, value, value];
-    },
+    formatRow: lightDarkRow,
+  },
+  {
+    key: 'data',
+    previewType: 'swatch',
+    exportName: 'dataTokenDefaults',
+    file: DATA_TOKENS_SRC,
+    title: 'Data Visualization Tokens',
+    description:
+      'Colors for charts and graphs: one categorical accent per series, a neutral for labels and reference lines, and sequential ramps from 5 (darkest) to 1 (lightest) for ordered scales and heatmaps. Import their public StyleX variables from @astryxdesign/core/theme/dataTokens.stylex.',
+    headers: ['Token', 'Light', 'Dark'],
+    formatRow: lightDarkRow,
+  },
+  {
+    key: 'syntax',
+    previewType: 'swatch',
+    exportName: 'syntaxTokenDefaults',
+    file: SYNTAX_TOKENS_SRC,
+    title: 'Syntax Tokens',
+    description:
+      'Code highlighting colors used by CodeBlock. Each defaults to a palette token, so syntax colors follow the theme; defineTheme({syntax}) sets a syntax theme instead.',
+    headers: ['Token', 'Value'],
+    formatRow: (name, value) => [name, value],
   },
   {
     key: 'spacing',
@@ -192,7 +252,7 @@ const groups = [
 const sections = [];
 
 for (const group of groups) {
-  const pairs = extractDefaults(group.exportName);
+  const pairs = extractDefaults(group.exportName, group.file);
   if (pairs.length === 0) continue;
 
   const rows = pairs.map(([name, value]) => group.formatRow(name, value));
@@ -217,13 +277,17 @@ sections.push({
       lang: 'tsx',
       label: 'Using token imports',
       code: `import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core';
+import {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 
 const styles = stylex.create({
   card: {
     padding: spacingVars['--spacing-4'],
     backgroundColor: colorVars['--color-background-surface'],
     borderRadius: radiusVars['--radius-container'],
+  },
+  series: {
+    color: dataVars['--color-data-categorical-blue'],
   },
   button: {
     height: sizeVars['--size-element-md'],
@@ -245,7 +309,7 @@ const isCheck = process.argv.includes('--check');
 
 // Count total tokens for the header comment
 const totalTokens = groups.reduce(
-  (sum, g) => sum + extractDefaults(g.exportName).length,
+  (sum, g) => sum + extractDefaults(g.exportName, g.file).length,
   0,
 );
 
@@ -253,7 +317,8 @@ const output = `\
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 // AUTO-GENERATED — do not edit manually.
-// Source: packages/core/src/theme/tokens.stylex.ts
+// Source: packages/core/src/theme/tokens.stylex.ts,
+//   dataTokens.stylex.ts, and syntax/tokens.ts
 // Run: node scripts/generate-token-docs.mjs
 // Total: ${totalTokens} tokens across ${groups.length} categories.
 
@@ -265,7 +330,9 @@ export const docs = ${JSON.stringify(
     title: 'All Tokens',
     category: 'foundations',
     description:
-      'Complete reference for spacing, color, radius, typography, shadow, motion, and size tokens.',
+      'Complete reference for color, data visualization, syntax, spacing, size, border, focus, radius, shadow, motion, and typography tokens.',
+    // Words readers search for that the titles do not use (`astryx search`).
+    keywords: ['design tokens', 'css variables', 'custom properties'],
     sections,
   },
   null,

@@ -118,6 +118,15 @@ describe('search() API — filters', () => {
     }
   });
 
+  it('--type theme returns only themes, each with the command that adds it', async () => {
+    const {data} = await search('warm', {...OPTS, type: 'theme'});
+    expect(data.results.map(r => r.name)).toContain('neutral');
+    for (const r of data.results) {
+      expect(r.domain).toBe('theme');
+      expect(r.command).toBe(`astryx theme add ${r.name}`);
+    }
+  });
+
   it('respects --limit', async () => {
     const {data} = await search('button', {...OPTS, limit: 3});
     expect(data.results.length).toBeLessThanOrEqual(3);
@@ -190,6 +199,18 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('No results');
   });
+
+  it('takes every word after `search` as one query', async () => {
+    // Commander took only the first word, so `search dark mode` searched for
+    // "dark" and dropped "mode" without a word.
+    const json = await runCli(['--json', 'search', 'dark', 'mode', '--type', 'doc'], REPO_ROOT);
+    expect(json.status).toBe(0);
+    const env = JSON.parse(json.stdout);
+    expect(env.data.query).toBe('dark mode');
+    expect(env.data.results[0]).toMatchObject({name: 'theme', section: 'light-dark-mode'});
+    const text = await runCli(['search', 'dark', 'mode', '--type', 'doc'], REPO_ROOT);
+    expect(text.stdout).toContain('Results for "dark mode"');
+  }, SCAN_TIMEOUT);
 
   it('exits 1 for an invalid --type', async () => {
     const r = await runCli(['search', 'x', '--type', 'bogus'], REPO_ROOT);
@@ -267,22 +288,31 @@ describe('search CLI — exit codes + JSON contract', () => {
   });
 
   it('prints every result field under its JSON key (score and reason with --verbose)', async () => {
-    // One query that reaches all four domains, so every per-domain field shows.
-    const args = ['search', 'theme', '--limit', '60'];
-    const env = JSON.parse((await runCli(['--json', ...args], REPO_ROOT)).stdout);
-    expect(new Set(env.data.results.map(r => r.domain))).toEqual(new Set(SEARCH_DOMAINS));
-    const plain = (await runCli(args, REPO_ROOT)).stdout.split('\n');
-    const verbose = (await runCli([...args, '--verbose'], REPO_ROOT)).stdout.split('\n');
-    for (const result of env.data.results) {
-      for (const [key, value] of Object.entries(result)) {
-        if (value == null || value === '') continue;
-        const label = `${result.domain} ${result.name}: ${key}`;
-        expect(printsField(verbose, key, value), label).toBe(true);
-        if (key !== 'score' && key !== 'reason') {
-          expect(printsField(plain, key, value), label).toBe(true);
+    // Between them these reach every domain, so every per-domain field shows.
+    // A theme matches `theme` only through its description, a prose mention
+    // ranked below every name and keyword hit, so the theme domain comes from
+    // a theme's own name.
+    const domains = new Set();
+    for (const args of [
+      ['search', 'theme', '--limit', '60'],
+      ['search', 'neutral', '--type', 'theme'],
+    ]) {
+      const env = JSON.parse((await runCli(['--json', ...args], REPO_ROOT)).stdout);
+      const plain = (await runCli(args, REPO_ROOT)).stdout.split('\n');
+      const verbose = (await runCli([...args, '--verbose'], REPO_ROOT)).stdout.split('\n');
+      for (const result of env.data.results) {
+        domains.add(result.domain);
+        for (const [key, value] of Object.entries(result)) {
+          if (value == null || value === '') continue;
+          const label = `${result.domain} ${result.name}: ${key}`;
+          expect(printsField(verbose, key, value), label).toBe(true);
+          if (key !== 'score' && key !== 'reason') {
+            expect(printsField(plain, key, value), label).toBe(true);
+          }
         }
       }
     }
+    expect(domains).toEqual(new Set(SEARCH_DOMAINS));
   }, 90_000);
 
   it('--verbose exits 0 and prints import/match detail', async () => {
@@ -299,14 +329,45 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.stdout).toContain('reason:');
   });
 
-  it('exits 1 with ERR_CORE_NOT_FOUND when no @astryxdesign/core is reachable', async () => {
+  it('points at discover for packages that could add more, except for hooks', async () => {
+    const open = await runCli(['search', 'data', 'table'], REPO_ROOT);
+    expect(open.status).toBe(0);
+    expect(open.stdout).toMatch(/^More in packages you could add: .*discover 'data table'$/m);
+    const none = await runCli(['search', 'zzqqxxnomatch'], REPO_ROOT);
+    expect(none.stdout).toMatch(/^More in packages you could add: .*discover zzqqxxnomatch$/m);
+    const hooks = await runCli(['search', 'click', '--type', 'hook'], REPO_ROOT);
+    expect(hooks.status).toBe(0);
+    expect(hooks.stdout).not.toContain('More in packages you could add');
+    const json = await runCli(['--json', 'search', 'button'], REPO_ROOT);
+    expect(json.stdout).not.toContain('More in packages you could add');
+  });
+
+  it('searches the docs and themes when no @astryxdesign/core is reachable, and exits 1 for --type component', async () => {
     const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-search-cli-no-core-'));
     try {
-      const json = await runCli(['--json', 'search', 'button'], empty);
+      const open = await runCli(['--json', 'search', 'make', 'an', 'integration'], empty);
+      expect(open.status).toBe(0);
+      expect(JSON.parse(open.stdout).data.results[0]).toMatchObject({domain: 'doc'});
+      // Bundled themes need no project, so an open search finds them too.
+      const theme = await runCli(['--json', 'search', 'neutral'], empty);
+      expect(theme.status).toBe(0);
+      expect(JSON.parse(theme.stdout).data.results[0]).toMatchObject({
+        domain: 'theme',
+        name: 'neutral',
+      });
+      // The text says the search covered the docs and themes alone.
+      const text = await runCli(['search', 'button'], empty);
+      expect(text.status).toBe(0);
+      expect(text.stdout).toContain('only the docs and themes were searched');
+      // A themes-only search needs no core, like a docs-only one.
+      const themes = await runCli(['--json', 'search', 'warm', '--type', 'theme'], empty);
+      expect(themes.status).toBe(0);
+      const found = JSON.parse(themes.stdout).data.results;
+      expect(found.map(r => r.name)).toContain('neutral');
+      expect(found.every(r => r.domain === 'theme')).toBe(true);
+      const json = await runCli(['--json', 'search', 'button', '--type', 'component'], empty);
       expect(json.status).toBe(1);
       expect(JSON.parse(json.stdout)).toMatchObject({code: 'ERR_CORE_NOT_FOUND'});
-      const text = await runCli(['search', 'button'], empty);
-      expect(text.status).toBe(1);
     } finally {
       fs.rmSync(empty, {recursive: true, force: true});
     }

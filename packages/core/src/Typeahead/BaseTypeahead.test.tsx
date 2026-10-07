@@ -3,7 +3,7 @@
 /**
  * @file BaseTypeahead.test.tsx
  * @input BaseTypeahead public props and a synchronous SearchSource
- * @output Combobox contract tests, including menu reopening after selection
+ * @output Combobox contract tests, including stale source refresh on reopen
  * @position Colocated verification for BaseTypeahead
  */
 
@@ -150,35 +150,6 @@ describe('BaseTypeahead', () => {
     expect(input).toHaveAttribute('aria-describedby', 'legacy-description');
     expect(input).toHaveAttribute('aria-labelledby', 'legacy-label');
     expect(input).toHaveAttribute('tabindex', '-1');
-  });
-
-  it('reopens the menu when clicked after selection leaves the input focused', async () => {
-    const user = userEvent.setup();
-    render(
-      <BaseTypeahead
-        searchSource={{search: () => [], bootstrap: () => [resultItem]}}
-        value={null}
-        onChange={() => {}}
-        hasEntriesOnFocus
-      />,
-    );
-    const input = screen.getByRole('combobox');
-
-    await user.click(input);
-    await waitFor(() => {
-      expect(input).toHaveAttribute('aria-expanded', 'true');
-    });
-    await user.keyboard('{Enter}');
-    expect(input).toHaveFocus();
-    expect(input).toHaveAttribute('aria-expanded', 'false');
-
-    await user.click(input);
-    await waitFor(() => {
-      expect(input).toHaveAttribute('aria-expanded', 'true');
-    });
-    expect(
-      screen.getByRole('option', {name: 'Result', hidden: true}),
-    ).toBeInTheDocument();
   });
 
   it('refreshes nonempty cached results after source replacement on a focused-input click', async () => {

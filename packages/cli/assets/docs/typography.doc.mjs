@@ -8,6 +8,7 @@ export const docs = {
   category: 'foundations',
   description:
     'Font families, geometric type scale, weight, line-height, and semantic text tokens for consistent, accessible text styling.',
+  keywords: ['font', 'fonts', 'font size'],
   tokenCategory: 'typography',
 
   sections: [
@@ -44,9 +45,10 @@ export const docs = {
       ],
     },
 
-    // ── Loading Custom Fonts ────────────────────────────────────────────────
+    // ── Custom Fonts ────────────────────────────────────────────────────────
     {
-      title: 'Loading Custom Fonts',
+      id: 'loading-custom-fonts',
+      title: 'Custom fonts',
   category: 'foundations',
       content: [
         {
@@ -165,11 +167,16 @@ export const docs = {
       ],
     },
 
-    // ── Usage ────────────────────────────────────────────────────────────────
+    // ── Headings and text ───────────────────────────────────────────────────
     {
-      title: 'Usage',
+      id: 'usage',
+      title: 'Headings and text',
   category: 'foundations',
       content: [
+        {
+          type: 'prose',
+          text: 'Use `Heading` for document structure and `Text` for everything else; each maps its props to the type scale tokens.',
+        },
         {
           type: 'code',
           lang: 'tsx',
@@ -204,6 +211,19 @@ export const docs = {
 
 // Display without heading semantics (data callouts, decorative)
 <Text type="display-2">$1.2M Revenue</Text>`,
+        },
+      ],
+    },
+
+    // ── Custom type scale ───────────────────────────────────────────────────
+    {
+      id: 'custom-type-scale',
+      title: 'Custom type scale',
+  category: 'foundations',
+      content: [
+        {
+          type: 'prose',
+          text: 'Change the whole ramp with `base` and `ratio` in `defineTheme`; every font size and line height recomputes from them.',
         },
         {
           type: 'code',

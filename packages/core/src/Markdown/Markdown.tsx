@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as Astryx components
  */
 
-import {Component, Suspense, useMemo, useRef} from 'react';
+import {Suspense, useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -32,6 +32,7 @@ import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
 import {Blockquote} from '../Blockquote/Blockquote';
 import {List} from '../List/List';
 import {ListItem} from '../List/ListItem';
+import {ListMarkerScope, type ListMarker} from '../List/ListContext';
 import {Table} from '../Table/Table';
 import {TableRow} from '../Table/TableRow';
 import {TableCell} from '../Table/TableCell';
@@ -53,8 +54,6 @@ import {
   parseMarkdownAstIncremental,
   createIncrementalState,
   trimStreamingArtifacts,
-  slugify,
-  uniqueSlug,
 } from './parser';
 import type {IncrementalState, MathParseOptions, ParseOptions} from './parser';
 import {getMarkdownAstLegacyCodeLanguage, markdownAstText} from './ast';
@@ -71,12 +70,24 @@ import {
   reportMarkdownPluginFailure,
 } from './plugins/protocol';
 import {getMarkdownFenceProposal} from './plugins/semanticFence';
+import {
+  MarkdownPluginBoundary,
+  renderMarkdownPluginNode,
+} from './plugin-renderer/MarkdownPluginNodeRenderer';
 import type {
   MarkdownExtensionNode,
   MarkdownPluginEntry,
   PreparedMarkdownPlugins,
 } from './plugins/protocol';
 import {sanitizeMarkdownLinkUrl, sanitizeMarkdownUrl} from './url';
+import {
+  projectMarkdownHeadings,
+  type MarkdownHeadingProjection,
+} from './headingProjection';
+import {
+  HeadingLinksRenderer,
+  headingLinksHeadingStyle,
+} from './plugins/HeadingLinksRenderer';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
 
@@ -84,6 +95,19 @@ type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
 type RenderExtensionNode = MarkdownExtensionNode;
 type RenderInlineNode = MarkdownAstPhrasingContent<RenderExtensionNode>;
 type RenderBlockNode = MarkdownAstBlockContent<RenderExtensionNode>;
+
+// spec:AST-061 DEC-6: a list nested inside n lists, of either kind, draws the
+// marker at n modulo 3.
+const BULLET_MARKERS: readonly [ListMarker, ListMarker, ListMarker] = [
+  'disc',
+  'circle',
+  'square',
+];
+const NUMBER_MARKERS: readonly [ListMarker, ListMarker, ListMarker] = [
+  'decimal',
+  'lower-alpha',
+  'lower-roman',
+];
 type RenderTable = MarkdownAstTable<RenderExtensionNode>;
 
 // ---------------------------------------------------------------------------
@@ -143,11 +167,10 @@ export interface MarkdownComponents {
     level: 1 | 2 | 3 | 4 | 5 | 6;
     children: React.ReactNode;
     /**
-     * Generated slug for this heading, matching the ids produced by
-     * useOutlineFromMarkdown / parseOutlineFromMarkdown. Render it as the
-     * element's `id` to keep Outline hash navigation working. Undefined for
-     * headings nested inside blockquotes or list items (the outline only
-     * lists top-level headings).
+     * Generated stable id for this heading, matching Markdown-derived Outline.
+     * Released output supplies it to root headings; createMarkdownHeadingLinks()
+     * expands the shared allocator to headings nested in blockquotes and lists.
+     * Custom renderers own their output and should apply the id they receive.
      */
     id?: string;
   }>;
@@ -768,57 +791,6 @@ function applyInlinePlugins(
   return segments;
 }
 
-interface MarkdownPluginBoundaryProps {
-  children: React.ReactNode;
-  fallback: React.ReactNode;
-  pluginName: string;
-  resetKey: unknown;
-  resetRenderer: unknown;
-}
-
-interface MarkdownPluginBoundaryState {
-  failed: boolean;
-  resetKey: unknown;
-  resetRenderer: unknown;
-}
-
-class MarkdownPluginBoundary extends Component<
-  MarkdownPluginBoundaryProps,
-  MarkdownPluginBoundaryState
-> {
-  state: MarkdownPluginBoundaryState = {
-    failed: false,
-    resetKey: this.props.resetKey,
-    resetRenderer: this.props.resetRenderer,
-  };
-
-  static getDerivedStateFromError(): Partial<MarkdownPluginBoundaryState> {
-    return {failed: true};
-  }
-
-  static getDerivedStateFromProps(
-    props: MarkdownPluginBoundaryProps,
-    state: MarkdownPluginBoundaryState,
-  ): Partial<MarkdownPluginBoundaryState> | null {
-    return props.resetKey === state.resetKey &&
-      props.resetRenderer === state.resetRenderer
-      ? null
-      : {
-          failed: false,
-          resetKey: props.resetKey,
-          resetRenderer: props.resetRenderer,
-        };
-  }
-
-  componentDidCatch(error: unknown): void {
-    reportMarkdownPluginFailure(this.props.pluginName, 'render', error);
-  }
-
-  render(): React.ReactNode {
-    return this.state.failed ? this.props.fallback : this.props.children;
-  }
-}
-
 function useStableMarkdownSyntaxEntries(
   plugins: PreparedMarkdownPlugins | undefined,
 ): ReadonlyArray<MarkdownPluginEntry> | undefined {
@@ -1120,34 +1092,17 @@ function renderInline(
         />
       );
     }
-    case 'extension': {
-      const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
-      const fallback = wrapTextWithFade(
-        node.source ?? markdownExtensionText(preparedPlugins, node),
-        cursor,
+    case 'extension':
+      return renderMarkdownPluginNode(
+        preparedPlugins,
+        node,
+        wrapTextWithFade(
+          node.source ?? markdownExtensionText(preparedPlugins, node),
+          cursor,
+          index,
+        ),
         index,
       );
-      if (renderer == null) {
-        return fallback;
-      }
-      let rendered: React.ReactNode;
-      try {
-        rendered = renderer.render({node});
-      } catch (error) {
-        reportMarkdownPluginFailure(node.plugin, 'render', error);
-        return fallback;
-      }
-      return (
-        <MarkdownPluginBoundary
-          key={index}
-          pluginName={node.plugin}
-          resetKey={node}
-          resetRenderer={renderer.render}
-          fallback={fallback}>
-          <Suspense fallback={fallback}>{rendered}</Suspense>
-        </MarkdownPluginBoundary>
-      );
-    }
     case 'break':
       cursor.offset += 1;
       return <br key={index} />;
@@ -1304,7 +1259,9 @@ function renderBlock(
   components: Partial<MarkdownComponents> | undefined,
   preparedPlugins: PreparedMarkdownPlugins | undefined,
   t: TranslatorFn,
-  headingIdMap?: ReadonlyMap<RenderBlockNode, string>,
+  headingProjection?: MarkdownHeadingProjection,
+  // How many lists enclose this block (spec:AST-061 DEC-6).
+  listDepth = 0,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1332,11 +1289,9 @@ function renderBlock(
           preparedPlugins,
         ),
       );
-      // Only top-level headings get an id: the map is built from the same
-      // traversal parseOutlineFromMarkdown uses (which skips headings nested
-      // in blockquotes / list items), so rendered ids and outline ids stay
-      // identical — including duplicate-slug numbering.
-      const headingId = headingIdMap?.get(node);
+      const headingId = headingProjection?.ids.get(node);
+      const headingLabel = headingProjection?.labels.get(node) ?? '';
+      const permalinkUrl = headingProjection?.permalinkUrls.get(node);
       const HeadingComp = components?.heading;
       if (HeadingComp) {
         return (
@@ -1346,28 +1301,58 @@ function renderBlock(
         );
       }
       const Tag = `h${level}` as const;
+      if (permalinkUrl == null || headingId == null) {
+        return (
+          <Tag
+            key={index}
+            id={headingId}
+            {...mergeProps(
+              themeProps('markdown-heading', {density, level}),
+              stylex.props(
+                styles.headingBase,
+                headingStyles[level],
+                spacing,
+                contentWidthValue != null
+                  ? dynamicStyles.proseWidth(contentWidthValue)
+                  : null,
+                contentAlign !== 'start'
+                  ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+                  : null,
+                isFirst && styles.noMarginBlockStart,
+                isLast && styles.noMarginBlockEnd,
+              ),
+            )}>
+            {headingChildren}
+          </Tag>
+        );
+      }
       return (
-        <Tag
+        <HeadingLinksRenderer
           key={index}
-          id={headingId}
-          {...mergeProps(
-            themeProps('markdown-heading', {density, level}),
-            stylex.props(
-              styles.headingBase,
-              headingStyles[level],
-              spacing,
-              contentWidthValue != null
-                ? dynamicStyles.proseWidth(contentWidthValue)
-                : null,
-              contentAlign !== 'start'
-                ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
-                : null,
-              isFirst && styles.noMarginBlockStart,
-              isLast && styles.noMarginBlockEnd,
-            ),
-          )}>
-          {headingChildren}
-        </Tag>
+          headingId={headingId}
+          headingLabel={headingLabel}
+          permalinkUrl={permalinkUrl}
+          contentWidth={contentWidthValue}
+          contentAlign={contentAlign}
+          headingTextStyle={[styles.headingBase, headingStyles[level]]}
+          blockSpacingStyle={[
+            spacing,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          ]}>
+          <Tag
+            id={headingId}
+            {...mergeProps(
+              themeProps('markdown-heading', {density, level}),
+              stylex.props(
+                styles.headingBase,
+                headingLinksHeadingStyle,
+                headingStyles[level],
+              ),
+            )}>
+            {headingChildren}
+          </Tag>
+        </HeadingLinksRenderer>
       );
     }
     case 'paragraph': {
@@ -1517,6 +1502,8 @@ function renderBlock(
             components,
             preparedPlugins,
             t,
+            headingProjection,
+            listDepth,
           ),
         );
         return <BlockquoteComp key={index}>{bqC}</BlockquoteComp>;
@@ -1553,6 +1540,8 @@ function renderBlock(
               components,
               preparedPlugins,
               t,
+              headingProjection,
+              listDepth,
             ),
           )}
         </Blockquote>
@@ -1630,6 +1619,8 @@ function renderBlock(
                         components,
                         preparedPlugins,
                         t,
+                        headingProjection,
+                        listDepth + 1,
                       ),
                     )}
                   </>
@@ -1714,17 +1705,49 @@ function renderBlock(
                       components,
                       preparedPlugins,
                       t,
+                      headingProjection,
+                      listDepth + 1,
                     ),
                   )}
                 </>
               );
 
+              // A task item beside plain items keeps its own checked state
+              // (FR23): it shows a read-only checkbox where its marker
+              // would be, named by its text.
+              const firstParagraph = item.children.find(
+                block => block.type === 'paragraph',
+              );
+              const task =
+                item.checked == null
+                  ? undefined
+                  : {
+                      isChecked: item.checked,
+                      label:
+                        firstParagraph?.type === 'paragraph'
+                          ? markdownAstText(
+                              firstParagraph.children,
+                              extension =>
+                                markdownExtensionText(
+                                  preparedPlugins,
+                                  extension,
+                                ),
+                            )
+                          : t('@astryx.markdown.taskList'),
+                    };
+
               return (
-                <ListItem
+                <ListMarkerScope
                   // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown list items are rendered from positional AST nodes
                   key={i}
-                  label={label}
-                />
+                  marker={
+                    (node.ordered ? NUMBER_MARKERS : BULLET_MARKERS)[
+                      listDepth % 3
+                    ]
+                  }
+                  task={task}>
+                  <ListItem label={label} />
+                </ListMarkerScope>
               );
             })}
           </List>
@@ -1834,27 +1857,15 @@ function renderBlock(
       );
     }
     case 'extension': {
-      const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
-      const fallbackText =
-        node.source ?? markdownExtensionText(preparedPlugins, node);
-      const fallback = wrapTextWithFade(fallbackText, cursor, index);
-      let content: React.ReactNode = fallback;
-      if (renderer != null) {
-        try {
-          const rendered = renderer.render({node});
-          content = (
-            <MarkdownPluginBoundary
-              pluginName={node.plugin}
-              resetKey={node}
-              resetRenderer={renderer.render}
-              fallback={fallback}>
-              <Suspense fallback={fallback}>{rendered}</Suspense>
-            </MarkdownPluginBoundary>
-          );
-        } catch (error) {
-          reportMarkdownPluginFailure(node.plugin, 'render', error);
-        }
-      }
+      const content = renderMarkdownPluginNode(
+        preparedPlugins,
+        node,
+        wrapTextWithFade(
+          node.source ?? markdownExtensionText(preparedPlugins, node),
+          cursor,
+          index,
+        ),
+      );
       return (
         <div
           key={index}
@@ -1969,6 +1980,7 @@ export function Markdown<
   xstyle,
   className,
   style,
+  id: rootId,
   'data-testid': testId,
   ...props
 }: MarkdownProps<Plugins>): React.ReactElement {
@@ -2084,27 +2096,17 @@ export function Markdown<
     [parsedBlocks, preparedPlugins, transformSource, isStreaming],
   );
 
-  // Assign each top-level heading the slug that parseOutlineFromMarkdown
-  // would derive for it, so Outline hash links built from the same source
-  // always find a matching DOM id. Mirrors that function's traversal exactly:
-  // top-level blocks only, one shared duplicate-numbering sequence.
-  // NOTE: must stay above the `display === 'inline'` early return below —
-  // hooks cannot be conditional.
-  const headingIdMap = useMemo(() => {
+  // Resolve one post-transform projection for Markdown and derived Outline.
+  // The default remains root-only; installed first-party modules own any
+  // alternative projection returned through this narrow integration seam.
+  const headingProjection = useMemo(() => {
     if (display === 'inline' || blocks.length === 0) {
       return undefined;
     }
-    const map = new Map<RenderBlockNode, string>();
-    const counts = new Map<string, number>();
-    for (const block of blocks) {
-      if (block.type === 'heading') {
-        const label = markdownAstText(block.children, node =>
-          markdownExtensionText(preparedPlugins, node),
-        ).trim();
-        map.set(block, uniqueSlug(slugify(label), counts));
-      }
-    }
-    return map;
+    return projectMarkdownHeadings(
+      {type: 'root', children: blocks},
+      preparedPlugins,
+    );
   }, [display, blocks, preparedPlugins]);
 
   const parsedInlineNodes = useMemo(() => {
@@ -2207,6 +2209,7 @@ export function Markdown<
         ref={ref}
         // Consumer props first: what the component sets for itself wins.
         {...props}
+        id={rootId}
         data-testid={testId}
         {...mergeProps(
           themeProps('markdown', {density}),
@@ -2243,6 +2246,7 @@ export function Markdown<
       // Consumer props first: what the component sets for itself — the
       // document role included — wins.
       {...props}
+      id={rootId}
       role="document"
       data-testid={testId}
       {...mergeProps(
@@ -2272,7 +2276,7 @@ export function Markdown<
           components,
           preparedPlugins,
           t,
-          headingIdMap,
+          headingProjection,
         ),
       )}
     </div>

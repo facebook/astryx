@@ -362,6 +362,11 @@
       "aliases": []
     },
     {
+      "name": "component-dropdown-menu-group",
+      "path": "components/dropdown-menu-group",
+      "aliases": []
+    },
+    {
       "name": "component-dropdown-menu-item",
       "path": "components/dropdown-menu-item",
       "aliases": []
@@ -554,6 +559,11 @@
     {
       "name": "component-lab-drawer",
       "path": "components/lab/drawer",
+      "aliases": []
+    },
+    {
+      "name": "component-lab-drawer-header",
+      "path": "components/lab/drawer-header",
       "aliases": []
     },
     {
@@ -1978,6 +1988,36 @@
     {
       "name": "example-divider-vertical",
       "path": "examples/divider/vertical",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-mobile-the-56px-page-reveal-default",
+      "path": "examples/drawer/mobile-the-56px-page-reveal-default",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-modal-or-non-modal-has-scrim",
+      "path": "examples/drawer/modal-or-non-modal-has-scrim",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-slide-in-from-the-start-edge",
+      "path": "examples/drawer/slide-in-from-the-start-edge",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-wide-desktop-panel-full-width-on-mobile",
+      "path": "examples/drawer/wide-desktop-panel-full-width-on-mobile",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-width-budget-pixels-or-any-css-length",
+      "path": "examples/drawer/width-budget-pixels-or-any-css-length",
+      "aliases": []
+    },
+    {
+      "name": "example-dropdown-menu-group-selectable-rows",
+      "path": "examples/dropdown-menu-group/selectable-rows",
       "aliases": []
     },
     {
@@ -3751,6 +3791,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-menu-press",
+      "path": "hooks/use-menu-press",
+      "aliases": []
+    },
+    {
       "name": "hook-use-merged-refs",
       "path": "hooks/use-merged-refs",
       "aliases": []
@@ -3763,6 +3808,11 @@
     {
       "name": "hook-use-popover",
       "path": "hooks/use-popover",
+      "aliases": []
+    },
+    {
+      "name": "hook-use-press-feedback",
+      "path": "hooks/use-press-feedback",
       "aliases": []
     },
     {
@@ -4198,6 +4248,16 @@
     {
       "name": "showcase-divider-variants",
       "path": "showcases/divider/variants",
+      "aliases": []
+    },
+    {
+      "name": "showcase-drawer-basic",
+      "path": "showcases/drawer/basic",
+      "aliases": []
+    },
+    {
+      "name": "showcase-dropdown-menu-group-default",
+      "path": "showcases/dropdown-menu-group/default",
       "aliases": []
     },
     {

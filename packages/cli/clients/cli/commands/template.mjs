@@ -156,16 +156,30 @@ export function registerTemplate(program) {
         }
 
         case 'template.show': {
-          // Source must survive piping byte-for-byte.
-          emit(code(result.data.source));
+          // Source must survive piping byte-for-byte, so the note about
+          // replaced demo media goes to stderr, in the copy receipt's words.
+          // (Text mode only: --json returned above with the count in data.)
+          const {source, demoMediaReplaced} = result.data;
+          emit(code(source));
+          if (demoMediaReplaced > 0) {
+            console.error(
+              `Replaced ${demoMediaReplaced} Astryx demo media reference${demoMediaReplaced === 1 ? '' : 's'}: ` +
+                'images now show a neutral placeholder and videos have an empty source. Supply your own media there.',
+            );
+          }
           break;
         }
 
         case 'template.copy': {
+          const {outputDir, fileName, demoMediaReplaced} = result.data;
+          const file = `${outputDir}/${fileName}`;
           emit(
-            text(
-              `Copied template to ${result.data.outputDir}/${result.data.fileName}`,
-            ),
+            text(`Copied template to ${file}`),
+            demoMediaReplaced > 0 &&
+              text(
+                `Replaced ${demoMediaReplaced} Astryx demo media reference${demoMediaReplaced === 1 ? '' : 's'} in ${file}: ` +
+                  'images now show a neutral placeholder and videos have an empty source. Supply your own media there.',
+              ),
           );
           break;
         }

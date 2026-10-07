@@ -82,6 +82,11 @@ const STATIC_EXPORTS = {
     types: './dist/theme/tokens.stylex.d.ts',
     default: './dist/theme/tokens.stylex.js',
   },
+  './theme/dataTokens.stylex': {
+    source: './src/theme/dataTokens.stylex.ts',
+    types: './dist/theme/dataTokens.stylex.d.ts',
+    default: './dist/theme/dataTokens.stylex.js',
+  },
   './theme/syntax': {
     source: './src/theme/syntax/index.ts',
     types: './dist/theme/syntax/index.d.ts',
@@ -89,17 +94,25 @@ const STATIC_EXPORTS = {
   },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',
-  // i18n message catalogs. Consumers pass these to
-  // <InternationalizationProvider messages={{fr, ...}}> or use them for
-  // custom overrides / pseudoloc smoke-tests. Wildcard export exposes every
-  // JSON file under packages/core/locales/, which ships thanks to the
-  // `locales` entry in the `files` array.
+  // Rich authoring catalogs keep their existing JSON paths. Generated string
+  // maps are additive runtime imports for applications that want no translator
+  // metadata in their bundles.
   './locales/*.json': './locales/*.json',
+  './locales/*.generated.js': {
+    source: './src/i18n/generated-locales/*.generated.ts',
+    types: './dist/i18n/generated-locales/*.generated.d.ts',
+    default: './dist/i18n/generated-locales/*.generated.js',
+  },
 };
 
-/** Nested modules backed by an index.ts entry point. */
+/**
+ * Nested modules backed by an index.ts entry point. `Markdown/plugin-renderer`
+ * is client-only (its entry starts with 'use client'); the plugin protocol and
+ * parser entries stay server-safe (spec:AST-064 DEC-6).
+ */
 const DIRECTORY_MODULE_SUBPATH_EXPORTS = [
   'Markdown/plugins',
+  'Markdown/plugin-renderer',
   'Markdown/parser',
 ];
 

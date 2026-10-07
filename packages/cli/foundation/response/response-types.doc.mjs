@@ -2,10 +2,11 @@
 
 /**
  * @file EnumDoc for the `type` discriminant carried on every --json success
- * envelope. The vocabulary mirrors the RESPONSE_TYPES map (each command's
- * `jsonOut(...)` call sites) in `clients/cli/lib/manifest.mjs`; a consumer
- * switches on `type` to narrow the `data` payload. Descriptions follow the
- * currently published response projection, not a future package-version boundary.
+ * envelope. The vocabulary equals the manifest's response types (each
+ * command's FunctionDoc returns; see `clients/cli/lib/manifest.mjs`) plus
+ * ROOT_RESPONSE_TYPES (help, version) there; a consumer switches on `type` to
+ * narrow the `data` payload. Descriptions follow the currently published
+ * response projection, not a future package-version boundary.
  *
  * @input Public response discriminants and their currently released payloads.
  * @output Generated consumer reference for every typed JSON success response.
@@ -35,7 +36,12 @@ export const doc = {
     {
       value: 'component.list',
       description:
-        'The component catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of names entries ({name, package, and optional canonical import for integrations}), brief entries, or a full ComponentDoc per entry.',
+        "The component catalog grouped by component group (each component's group field): `detail` (the level: names | compact | full) and `components`, the grouped map of names entries ({name, package, and optional canonical import for integrations}), brief entries, or a full ComponentDoc per entry.",
+    },
+    {
+      value: 'component.batch',
+      description:
+        'The component specialization of the shared `BatchResponse` and `BatchRow` types. An explicit programmatic selector array, or two or more CLI selectors, returns one ordered receipt: `count` plus `results`, one row per selector including duplicates. Every row carries `selector` and `status` (found | not_found | ambiguous | error). A found row carries `result`, the same {type, data} response as one selector. An ambiguous row carries `code`, `error`, and `candidates` ({package, component, kind, installed}). Other failed rows carry `code`, `error`, and optional `suggestions` ({name, reason}).',
     },
     {
       value: 'component.detail',
@@ -104,21 +110,27 @@ export const doc = {
     {
       value: 'discover.list',
       description:
-        'The configured external packages (name, category, components, version, description); when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".',
+        'The integrations the project loads (name, category, components, version, a list per other kind they add, and latest when a source knows it); with a discover source, meta.available lists what the project could add and meta.sources reports each source; when empty it carries meta.configured to tell "nothing configured" from "nothing discovered".',
     },
     {
       value: 'discover.detail',
-      description: 'A single external package entry, for an @scope/name query.',
+      description:
+        'One package, for an @scope/name or @scope/name@version query: what the shown version adds, whether the project has it, and, when a source knows the package, its versions, latest release, and the command that adds it.',
     },
     {
       value: 'discover.detail.doc',
       description:
-        'The validated ComponentDoc for one external component: an @scope/name/Component query, or a free-text term resolving to exactly one component.',
+        'The validated ComponentDoc for one installed component, for an @scope/name/Component query.',
+    },
+    {
+      value: 'discover.item',
+      description:
+        'One item that is not an installed component, for an @scope/name/<item> query: its kind, name, package, version, and whether the project has the package.',
     },
     {
       value: 'discover.search',
       description:
-        'The echoed query plus the matching {package, component} pairs, when a free-text term matches several components.',
+        'The echoed query plus every matching item and package across all packages, each with its kind and whether the project has it, even when only one matches; total is set when --limit cut the list.',
     },
 
     // search
@@ -149,7 +161,7 @@ export const doc = {
     {
       value: 'swizzle.copy',
       description:
-        'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and an optional maintainer note.',
+        'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling.',
     },
 
     // gap reports
@@ -172,7 +184,7 @@ export const doc = {
     {
       value: 'template.show',
       description:
-        "The resolved template's raw source plus its description, kind, and the component names it composes.",
+        "The resolved template's source, exactly as a copy writes it, plus its description, kind, the component names it composes, and demoMediaReplaced (how many Astryx demo media references were replaced with placeholders for you to swap for your own media).",
     },
     {
       value: 'template.skeleton',
@@ -182,7 +194,7 @@ export const doc = {
     {
       value: 'template.copy',
       description:
-        'A scaffold receipt: template id, output directory, written file name, and file count.',
+        'A scaffold receipt: template id, output directory, written file name, file count, and demoMediaReplaced (how many Astryx demo media references were replaced with placeholders for you to swap for your own media).',
     },
 
     {
@@ -252,6 +264,11 @@ export const doc = {
         'Every available codemod, oldest→newest, as {name, title, version, optional}; returned for --list without running anything.',
     },
     {
+      value: 'upgrade.registry',
+      description:
+        'The copied-composition receipt for --registry: applied, ok, the counts (found, current, wouldUpdate, updated, wouldMerge, merged, wouldRefreshReceipt, receiptsRefreshed, conflicts, missing, invalid, failed), and items.',
+    },
+    {
       value: 'upgrade.status',
       description:
         'A short-circuit outcome with no codemods run (up_to_date, no_codemods, or config_fixable), each carrying the agent-docs summary.',
@@ -259,7 +276,7 @@ export const doc = {
     {
       value: 'upgrade.run',
       description:
-        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, and (apply mode) filesChanged, transformsApplied, and per-codemod errors.',
+        'The run receipt: from/to versions, codemod count, integrations processed, the agent-docs summary, sourcePathFound (false when the resolved source directory does not exist, so no source file was read), and (apply mode) filesChanged, transformsApplied, and per-codemod errors.',
     },
 
     // manifest
@@ -269,11 +286,24 @@ export const doc = {
         'The CLI capability manifest: name, version, apiVersion, description, globalOptions, commands (each name, description, arguments, options, json, aliases?, responseTypes?, examples?, exitCodes? as [{code, when}], subcommands?), jsonSupported, and the flat responseTypes index.',
     },
 
+    // help and version, which no single command owns
+    {
+      value: 'help',
+      description:
+        'Help, in one of two shapes. A bare `astryx --json` returns the root manifest: name, version, commands (the command names), jsonSupported, and manifest (the full payload `astryx manifest --json` returns). ' +
+        "`--help --json` on any command, or `astryx help [command] --json`, returns that command's help: command, description, usage, options (each flags, description, and defaultValue and choices when set), and subcommands (each name and description). " +
+        'data.manifest marks the first shape; data.usage marks the second.',
+    },
+    {
+      value: 'version',
+      description: 'The CLI version, for `astryx --version --json`: {version}.',
+    },
+
     // doctor
     {
       value: 'doctor',
       description:
-        'The health-check report: `checks` (each with id, label, status: pass | warn | fail | info, a message, and a fix when not passing) plus a `summary` of counts per status.',
+        'The health-check report: `checks` (each with id, label, status: pass | warn | fail | info, a message, and an optional fix, always present on warn and fail) plus a `summary` of counts per status.',
     },
 
     // integration authoring
@@ -290,29 +320,29 @@ export const doc = {
     {
       value: 'integration.validate',
       description:
-        'The validation result: the package name and version (both null when no local manifest is found) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
+        'The validation result: validated (false when no integration manifest was found, so nothing was checked and the empty issues list proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
     },
     {
       value: 'integration.template-conflicts',
       description:
-        'The integration identity, structural issues, and non-blocking Core template-id conflicts as {id, severity: warning, integrationPackage, integrationType, integrationName, coreMatches, message, command}.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking Core template-id conflicts as {id, severity: warning, integrationPackage, integrationType, integrationName, coreMatches, message, command}.',
     },
     {
       value: 'integration.component-conflicts',
       description:
-        'The integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.',
     },
     {
       value: 'integration.doc-conflicts',
       description:
-        'The integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
+        'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
     },
 
     // layout (XLE/XLO)
     {
       value: 'layout.expand',
       description:
-        'The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, and written (the output path, or null when nothing was written).',
+        'The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, written (the output path, or null when nothing was written), and demoMediaReplaced (count of demo media placeholders).',
     },
     {
       value: 'layout.check',

@@ -435,6 +435,10 @@
     "defaultMessage": "Back",
     "description": "Button label that returns from a nested action list to its parent inside a DropdownMenu bottom sheet. Imperative navigation action."
   },
+  "@astryx.dropdownMenu.backTo": {
+    "defaultMessage": "Back to {parent}",
+    "description": "Menu row that returns from a drilled-in sub-menu to the menu it came from. {parent} is that menu's name (e.g. \"Back to Actions\"). Imperative navigation action."
+  },
   "@astryx.lightbox.close": {
     "defaultMessage": "Close",
     "description": "\"Close\" = shut/dismiss (not \"nearby\"). Screen-reader-only label on the X button that dismisses a Lightbox."
@@ -522,6 +526,14 @@
   "@astryx.listInput.announceAlreadyAtBoundary": {
     "defaultMessage": "This {itemName} is already {boundary, select, first {first} last {last} other {}}.",
     "description": "Screen-reader-only live announcement when an arrow-key reorder attempt has no effect because the record is already at that end of the list. `{itemName}` is the consumer's singular noun for one record; `{boundary}` is always exactly \"first\" or \"last\"."
+  },
+  "@astryx.markdownHeadingLinks.copied": {
+    "defaultMessage": "Link copied",
+    "description": "Accessible name on the Markdown heading copy button and text announced to a polite live region for ~1.5s after a successful copy. Sentence meaning \"Link copied\"; pairs with `markdownHeadingLinks.copy`."
+  },
+  "@astryx.markdownHeadingLinks.copy": {
+    "defaultMessage": "Copy link to {heading}",
+    "description": "Accessible name on the Markdown heading copy button in its default state. `{heading}` is the heading's plain text, or its generated id when the text is empty; pairs with `markdownHeadingLinks.copied`."
   },
   "@astryx.markdown.taskList": {
     "defaultMessage": "Task list",
@@ -1251,6 +1263,10 @@
     "defaultMessage": "error",
     "description": "Screen-reader-only status word rendered next to a Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
   },
+  "@astryx.switch.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only live-region announcement while a Switch is in its busy state (spinner shown, action in flight)."
+  },
   "@astryx.tableTree.collapseRow": {
     "defaultMessage": "Collapse row",
     "description": "Aria label for the Table tree-data expander chevron when the row is currently expanded."
@@ -1338,6 +1354,14 @@
   "@astryx.multiSelector.selectionCount": {
     "defaultMessage": "{count, number} of {total, number} selected",
     "description": "Polite screen-reader announcement of how many MultiSelector options are selected out of the total, spoken after each toggle. Live-region text, never shown on screen; example: `3 of 12 selected`."
+  },
+  "@astryx.multiSelector.createOption": {
+    "defaultMessage": "Create \"{query}\"",
+    "description": "Label of the first row in a MultiSelector's search panel when `hasCreate` is set and the typed text matches no option. Picking it reports a creation to the caller. `{query}` is the trimmed text the person typed, shown in quotes."
+  },
+  "@astryx.multiSelector.optionCreated": {
+    "defaultMessage": "{label} created",
+    "description": "Polite screen-reader announcement after the create row of a MultiSelector is picked. Live-region text, never shown on screen; `{label}` is the text the person typed."
   },
   "@astryx.multiSelector.emptySearchResults": {
     "defaultMessage": "No results found",

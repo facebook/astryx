@@ -21,6 +21,8 @@ import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
+import {Theme} from '../theme/Theme';
+import {defineTheme} from '../theme/defineTheme';
 
 // The `=1` branch names the file; the `other` branch must not. Both come from
 // this test, so neither can pass against a hardcoded English string.
@@ -122,16 +124,36 @@ describe('FileInput', () => {
   it.each([
     {mode: 'input' as const, size: 'sm'},
     {mode: 'dropzone' as const, size: 'md'},
-  ])('exposes the upload icon as a $mode theme target', ({mode, size}) => {
-    render(
-      <FileInput label="Upload" mode={mode} value={null} onChange={() => {}} />,
-    );
+  ])(
+    'uses the shared upload icon registry and preserves the $mode theme target',
+    ({mode, size}) => {
+      const theme = {
+        ...defineTheme({
+          name: `file-input-semantic-icon-${mode}`,
+          icons: {upload: <svg data-testid={`themed-upload-${mode}`} />},
+        }),
+        __built: true as const,
+      };
 
-    const icon = document.querySelector('.astryx-file-input-icon');
-    expect(icon).toHaveClass('astryx-icon');
-    expect(icon).toHaveAttribute('data-mode', mode);
-    expect(icon).toHaveAttribute('data-size', size);
-  });
+      render(
+        <Theme theme={theme}>
+          <FileInput
+            label="Upload"
+            mode={mode}
+            value={null}
+            onChange={() => {}}
+          />
+        </Theme>,
+      );
+
+      const icon = screen
+        .getByTestId(`themed-upload-${mode}`)
+        .closest('.astryx-file-input-icon');
+      expect(icon).toHaveClass('astryx-icon');
+      expect(icon).toHaveAttribute('data-mode', mode);
+      expect(icon).toHaveAttribute('data-size', size);
+    },
+  );
 
   it('displays selected file name', () => {
     const file = createFile('report.pdf', 1024, 'application/pdf');

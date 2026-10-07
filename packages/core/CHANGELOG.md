@@ -1,5 +1,140 @@
 # @xds/core
 
+# 0.6.5
+
+#### New Features
+
+- Stop bundling translator-only descriptions with the built-in English
+  fallback and add compact generated string-map modules for every shipped locale. Existing rich JSON catalog exports remain unchanged.
+- Popover and usePopover take a `padding` prop on the spacing scale (matching Card and Stack). `padding={0}` paints a flush surface for content that owns its own edges, such as a list of rows or a header with a rule; the default rung (3) is unchanged.
+
+#### Fixes
+
+- Button no longer overflows narrow rows: a labelled button can shrink below its label width and truncates the label with an ellipsis, while icon-only buttons stay square
+- Prevent an empty Tokenizer input from creating a blank trailing row.
+- SegmentedControl's default `hug` layout is now capped at its container width, and its segments shrink and truncate their labels instead of overflowing narrow cards and phone rows
+- SelectableCard: keep disabled cards in sequential focus navigation with aria-disabled and gated interaction handlers.
+- Selector's one-line trigger matches its size token when the theme's `--spacing-5` is taller than the token can hold, instead of overshooting it.
+- Switch: announce busy/loading states through the persistent `useAnnounce` live region and localize the announcement via `@astryx.switch.loading`.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @Geervan
+- @imdreamrunner
+- @nynexman4464
+- @thedjpetersen
+- @vjeux
+
+---
+
+# 0.6.4
+
+#### New Features
+
+- Add Timer for standardized elapsed durations without React tick renders. (#6438)
+  Use `Timer` for active-operation elapsed time. It starts from mount by default, accepts an earlier Unix-millisecond `startTime`, offers `elapsed` and `clock` formats with adaptive cadence, and matches Timestamp typography props.
+- DialogHeader: expose the start- and end-content wrappers as theme targets (#6415)
+  Adds `dialog-header-start-content` and `dialog-header-end-content` so themes can style the existing content-slot wrappers without relying on their DOM positions. The end-content slot also contains the optional close button. Default layout and behavior are unchanged.
+- `DialogHeader` `title` and `subtitle` now accept any `ReactNode`, not only strings.
+  A title can carry inline markup and still renders inside the focusable `h2` that receives focus on open and names the Dialog; the accessible name is the title's text content. A subtitle can carry inline content such as a `Link`. String callers are unchanged. An empty-string, boolean, or nullish subtitle renders nothing, and a numeric `0` subtitle now renders inside the subtitle text.
+- `DropdownMenuItem`, `DropdownMenuCheckboxItem` and `DropdownMenuRadioItem` forward a `ref` to the row root (#6687).
+  The ref reaches the element carrying `role="menuitem"` (or `menuitemcheckbox` / `menuitemradio`), the way `Item` and `DropdownMenuDivider` already forward one, so a menu row can be registered with an element-keyed observer or overlay — an IntersectionObserver for an impression, a measurement, a debug outline — without a wrapper between `role="menu"` and the row.
+- Add `presentation` to DateInput, DateTimeInput, and TimeInput (`spec:AST-043`) (#6628).
+  `presentation` names every picker surface, distinguishing Astryx's desktop surface, Astryx's bottom sheet (including a new TimeInput sheet), the browser/OS picker, and — for TimeInput only — a plain typed field. DateInput and DateTimeInput accept five values: `'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'` (default). TimeInput accepts those five plus `'text-input'`, the typed field on every pointer, because that is the surface its released `nativePicker="never"` already was. `presentation="native"` always shows native; `adaptive-native` keeps the released native fallbacks.
+
+  `nativePicker` is deprecated but keeps working exactly as released (`touch`→`adaptive-native`, `always`→`native`, `never`→`adaptive-bottom-sheet`, or `text-input` for TimeInput); `presentation` wins when both are set. `astryx upgrade` ships `migrate-native-picker-to-presentation` for static callsites.
+
+- `List`: add `edgeCompensation="inline"` to compensate for item content inset within container padding (#2626)
+  `ListItem` insets its content by a density-dependent horizontal padding, so a list under a section heading reads as misaligned and consumers reach for negative-margin custom CSS. `edgeCompensation="inline"` on `List` cancels, per inline edge, the smaller of that inset and the container's published padding on that edge; zero-padding and full-bleed surfaces therefore stay in place, asymmetric container padding never over-cancels an edge, and headers, hover backgrounds, and selection backgrounds keep their existing geometry.
+
+  `Item` now publishes its inline inset as `--_item-inset-inline` and derives its own `paddingInline` from it, and the clamped cancelling margin reads the same variable — so the cancel tracks density and theme overrides instead of mirroring hardcoded values. Themes that set `paddingInline` on `item` feed the variable automatically via the derived var registry.
+
+- Markdown: add the first-party soft-breaks plugin (#6459)
+  Use `markdownSoftBreaksPlugin` from `@astryxdesign/core/Markdown/plugins` to render soft line endings as hard breaks without preprocessing source. The plugin matches the real `remark-breaks` package through Astryx's supported adapter path while keeping code and other opaque content unchanged.
+- Table: add a selection-aware bulk-actions wrapper that consumes `useTableSelectionState` output while keeping the selection plugin behavior-only. (#6474)
+
+#### Fixes
+
+- Preserve authored heading and text component styles when theme adaptations change the type scale (#6710)
+- AvatarGroup keeps its overlap when avatars are wrapped in a HoverCard or Tooltip. Every avatar and the overflow indicator now take the overlap margin, and the group pads its start edge to match, so the overlap no longer depends on each avatar being a direct child of the group (#6736).
+- Avatar initials skip punctuation: each word's initial is its first letter, digit or emoji, so `Northwind Workbench (automation)` renders `NA` instead of `N(` and `“Ada” Lovelace` renders `AL` instead of `“L`. Words with none of those, such as a lone `-`, are ignored, and a name made only of punctuation shows the default icon rather than a stray symbol (#6698).
+- Size an Astryx Icon without an explicit size to match its Button or
+  IconButton: 16px for small and medium controls, and 20px for large controls. (#5762)
+- `ChatComposerInput`: an empty input no longer shrinks by 8px when `isDisabled` flips to `true`, which shifted anything bottom-aligned beside it (e.g. a send button in a grid row) (#6654).
+  The root's `minHeight` was set to the shared line-height only, not the padding `editable` and `placeholder` both add on top of it — normally immaterial, since the editable region reserves its own padded box even when empty. A disabled, empty `contentEditable` region stops reserving that empty line at all in Chromium, and the absolutely positioned placeholder standing in for it doesn't contribute to layout height, so the root fell back to just the line-height and lost the padding. `minHeight` now explicitly accounts for both.
+- ChatComposerInput no longer scrolls for a short single-line draft with `maxRows={1}`. Removing vertical padding also keeps the empty input and placeholder aligned when disabled. (#6733)
+- Keep numeric zero aligned in ChatMessageBubble name and metadata slots. (#6600)
+  The aligned wrappers are omitted for non-rendering scalar values (`null`, `undefined`, booleans, and the empty string), while numeric `0` remains visible inside the same inset as other slot content.
+- Render numeric zero when it is passed as the ChatMessageList empty state. A valid ReactNode should not disappear when the transcript is empty. (#6636)
+- Omit empty ChatMessageMetadata slots and their separators (#6637).
+  Boolean and empty-string timestamp or footer values no longer leave a blank row or a stray dot. Numeric zero remains visible, and all delivery statuses keep their existing labels and icons.
+- Compose accepted `onClick` handlers with ChatSendButton's send and stop actions instead of replacing them (#6653). Consumers that used `onClick` to replace sending should move that logic to `onSend`, because both handlers now run.
+- Allow long ChatSystemMessage content to wrap within narrow chat layouts instead of crossing the container edge (#6655).
+- ChatTokenizedText now ignores empty token values so tokenized messages always finish rendering (#6679).
+- ChatToolCalls now displays custom group labels, keeps collapsed details out of keyboard navigation, adds visible focus treatment, and uses readable secondary text for neutral metadata (#6680).
+- Stop ChatLayout's scroll-to-bottom button from being a tab stop while it is invisible. At rest the layout's default `scrollButton` renders hidden, but `opacity: 0` and `pointer-events: none` leave it in sequential focus navigation — so a keyboard user's first Tab into any chat landed on a control with no visible focus indicator (WCAG 2.2 SC 2.4.7), and Enter scrolled the transcript. The hidden state now also sets `visibility: hidden`, which the fade transition carries so the animation is unchanged; the visible button keeps its keyboard access. The pill's height and collapsed width now track `--size-element-md` instead of a hardcoded `32px`, so a theme that retunes the element scale can no longer make the pill clip its own Button. ChatLayout's consumer docs also gain the `density` prop, which was undocumented, and drop the claim that density adapts automatically to container width — it never did. A Chromium evidence spec pins the hidden/visible/re-hidden keyboard contract and the pill's containment of its Button under a size-retuning theme, and the RTL applicability ledger records why ChatLayout and its scroll button have no applicable RTL dimension. (#6466)
+- Make a theme that styles `chat-layout-scroll-button` actually restyle the chat scroll-to-bottom pill. The documented target sat on the invisible full-width row that centres the pill, so a `backgroundColor` override painted a band across the chat dock while the pill kept the surface the theme asked to replace — and every automated check passed, because the override did reach _an_ element. The target now rides the pill, which is what paints the fill, elevation, and radius (`architecture:component-theming-surface` INV4). The target keeps its name, stays a single target, and the component's props, DOM shape, ref target, and consumer passthrough are unchanged. A Chromium spec pins the placement and proves the repair by moving the target back and showing the pill go unstyled under a theme. (#6482)
+- Correct CheckboxIndicator theming, replacement-content, and focus guidance (#6745).
+- Align CheckboxInput theming and label-icon guidance with shipped behavior (#6747).
+- A CheckboxList option that is saving through `changeAction` now keeps its spinner, busy state, and re-toggle guard when another option is toggled before it settles (#6777).
+- Clicking a read-only CheckboxList option that has an `onClick` now fires that handler once, instead of re-dispatching the click until the browser's call stack overflows (#6777).
+- Give inert Citation references a supported accessible name, and document their linked and inert root contract.
+- CodeBlock no longer crashes on custom tokenizer types outside the built-in grammar (a dotted type such as `keyword.control.sql` threw from `insertRule` and took the whole block down). The generated `::highlight()` name and `--color-syntax-*` custom property now pass through `CSS.escape` before entering the dynamic stylesheet, so every type the CSS parser accepts (dotted, digit-led, `_private`, non-ASCII) keeps its colour, and no token type can reach outside its own highlight rule. A rule the engine still refuses costs that type its colour, never the block. (#5528)
+- `Dialog` and 30 other components no longer lose their `border` and `background` resets in the shipped CSS. The sources used the `border: 'none'` and `background: 'none' | 'transparent'` shorthands, which StyleX's default property-specificity mode drops silently, so the declarations never reached `astryx.css`; a consumer that does not load `reset.css` saw the UA `<dialog>` frame. They are now the `borderWidth` / `borderStyle` / `backgroundColor` longhands. No API change.
+- Apply the same narrow blocked-scheme rule to native links, custom routers, clickable surfaces, and Markdown links. Rejected destinations stay visible without navigating or invoking a router, including structured URLs with a separate protocol. Ordinary URLs, safe custom schemes, downloads, and accepted router-object identity are preserved; Markdown image/resource policy is unchanged. (#5524)
+- Preserve Tailwind font weights when using the theme bridge. (#6479)
+- Ignore IME key events (`isComposing` or `keyCode` 229) in useHotkeys, even with allowInInputs enabled, without preventing their default behavior (#6773).
+- Keep hug-layout segmented controls content-sized in flex containers (#6643)
+- Keep a reopened top layer at the front of Escape dismissal order. (#6073)
+- Prevent ancestor text formatting and surface/group context from leaking into Layer content. (#6457)
+  Layer content now starts with theme body typography and neutral text formatting. Core layer content no longer inherits accidental ancestor surface/group membership, including group-owned disabled state, selection, callbacks, and label associations. Intentional groups and required providers created inside the layer still apply. Unrelated contexts, explicit props, themes, and styling overrides remain unchanged.
+- `List` with `hasDividers` no longer draws a divider after the last `ListItem`. The last-item reset used the `borderBlockEnd` shorthand, which StyleX's default property-specificity mode drops silently, so it never reached the shipped CSS; it is now the `borderBlockEndWidth` longhand. (#6420)
+- Localize PowerSearch boolean operators in Japanese and Korean and use locale-appropriate ellipses in Chinese. (#6783)
+- Markdown: keep lazy continuation lines inside blockquotes and list items (#6752)
+  Wrapped paragraph lines may omit repeated blockquote markers or list indentation without escaping their owning container. Nested, ordered, unordered, and task-list continuations now preserve their rendered structure, text projection, and source range.
+- Markdown tables now use the `spacing-2` token (8px) on every header and body cell edge. The tighter inline spacing leaves more room for content in narrow reading columns while keeping rows comfortably readable.
+- Markdown: render escaped table pipes literally in code spans (#6642)
+  A `\|` used to keep a pipe inside a table cell now displays as `|` in inline code, matching prose cells without exposing the structural backslash. Completed inline-code spans render only their parsed contents inside `<code>`, without source backticks; standalone inline code otherwise remains unchanged.
+- Markdown: table columns keep a content-derived width floor and headers stop truncating (#6708).
+  A Markdown table in a narrow reading column no longer squashes every column to a few characters. Each column keeps a floor derived from its own content, measured in characters on the cell's text box, so a column is never narrower than its longest unbreakable token and cell padding does not eat into the floor. Identifiers, URLs, and inline code stay whole, header labels wrap instead of ellipsizing, and a table that is genuinely wider than its container scrolls in Table's own scroll region — which is now the table's only scroll viewport, accessible name, and keyboard stop.
+- Align titled sections in DropdownMenu and ContextMenu bottom sheets with their spacious action rows (#6694).
+- Keep MetadataList side labels readable beside long badges in narrow containers by allowing value columns to shrink, including numeric columns and custom label widths. (#6598)
+- PowerSearch: `enum_list` value menus now show every value instead of the typeahead default of 10. (#6481)
+- Selector keeps compact single-line triggers aligned with their size tokens, including icons and clear controls.
+- Name the no-search bottom-sheet `Selector` listbox from the component's `label` so Chromium exposes it with an accessible name; the searchable sheet and popover paths keep their existing trigger relationship. (#6395)
+- Keep Tailwind bridge tokens reference-only so utilities follow the active theme without emitting competing runtime declarations.
+- Keep authored theme declarations inside their CSS boundaries. Drop only an unsafe declaration, preserve valid CSS values and legacy token generation, and continue compiling the rest of the theme. Runtime reports dropped declarations on the console; theme builds include them in the existing receipt warnings. CSS generators accept an optional warning-text array for build collectors, without a callback API or additional exported diagnostic types. (#5529)
+
+#### Documentation
+
+- Document CheckboxList's `isReadOnly` prop, and separate the select-all block example's rows with `hasDividers` instead of placing a Divider inside the options list (#6777).
+- Clarify that CheckboxListItem reads `isChecked` and `onCheck` inside a CheckboxList without `value` (such as a select-all item), and requires `value` only when the parent CheckboxList has a `value` array (#6778).
+- Clarify that CheckIndicator is the selection mark itself and does not render persistent control chrome.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @bhamodi
+- @cixzhang
+- @fullstackhacker
+- @harjothkhara
+- @HelloOjasMutreja
+- @humbertovirtudes
+- @imdreamrunner
+- @jiunshinn
+- @korkt-kim
+- @ksying
+- @kyu-rong
+- @light-merlin-dark
+- @nynexman4464
+- @rubyycheung
+- @vjeux
+
+---
+
 # 0.6.3
 
 #### New Features
