@@ -192,6 +192,12 @@ describe('a paragraph line that starts like a quote marker stays text', () => {
     },
   );
 
+  it('escapes a marker after more spaces, as a list continuation line may add them', () => {
+    const result = roundTrip(['      >a']);
+    expect(result.exported.trimEnd()).toBe('      \\>a');
+    expect(result.blocks).toEqual(['paragraph:      >a']);
+  });
+
   it('escapes the line after a line break too', () => {
     const result = roundTrip(['a', '>b']);
     expect(result.exported.trimEnd()).toBe('a\\\n\\>b');

@@ -687,9 +687,10 @@ const LINE_START_SYNTAX: ReadonlyArray<RegExp> = [
 ];
 // An ordered list item escapes its delimiter, not its first character.
 const ORDERED_LIST_START = /^(\d{1,9})([.)])(?=[ \t]|$)/;
-// A block quote marker may follow up to three spaces (CommonMark 0.31 §5.1);
-// the escape goes before its `>`.
-const QUOTE_START = /^( {0,3})>/;
+// A block quote marker may follow up to three spaces (CommonMark 0.31 §5.1),
+// and a list item's continuation line adds its own indentation, so the escape
+// goes before a `>` after any spaces.
+const QUOTE_START = /^( *)>/;
 
 // Inline syntax Lexical's export leaves unescaped: link and image brackets and
 // character references.
