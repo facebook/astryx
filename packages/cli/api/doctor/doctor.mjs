@@ -24,6 +24,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
+import {AGENT_DOC_PATHS} from '../../foundation/agent-docs/agent-doc-state.mjs';
 import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
 import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {
@@ -153,6 +154,25 @@ function nameIntegrations(integrations) {
   return names.length <= NAMED_INTEGRATIONS
     ? names.join(', ')
     : `${names.slice(0, NAMED_INTEGRATIONS).join(', ')} and ${names.length - NAMED_INTEGRATIONS} more`;
+}
+
+/**
+ * The project's root: the folder of its config, else of the nearest
+ * package.json above the working directory (where the config is looked for),
+ * else the working directory.
+ * @param {DoctorContext} ctx
+ * @returns {string}
+ */
+function projectRootOf(ctx) {
+  if (ctx.configPath) return path.dirname(ctx.configPath);
+  let dir = ctx.cwd;
+  for (let i = 0; i < 50; i++) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return ctx.cwd;
 }
 
 /* ── individual checks ────────────────────────────────────────────────── */
@@ -461,27 +481,30 @@ function describeUnreadableManifests(failures) {
  * @returns {DoctorCheck}
  */
 export function checkAgentDocs(ctx) {
-  const candidates = [
-    'AGENTS.md',
-    'CLAUDE.md',
-    path.join('.claude', 'CLAUDE.md'),
-    '.cursorrules',
-  ];
-  const present = candidates.filter(rel => fs.existsSync(path.join(ctx.cwd, rel)));
+  // Every file init can write (one shared list), looked for in the working
+  // directory and in the project root: run from src/, the docs sit at the root.
+  const dirs = [...new Set([ctx.cwd, projectRootOf(ctx)])];
+  const present = dirs.flatMap(dir =>
+    AGENT_DOC_PATHS.map(rel => path.join(dir, rel)).filter(abs =>
+      fs.existsSync(abs),
+    ),
+  );
+  /** @param {string} abs */
+  const shown = abs => path.relative(ctx.cwd, abs) || path.basename(abs);
 
   if (present.length === 0) {
     return {
       id: 'agent-docs',
       label: 'AI agent docs',
       status: 'info',
-      message: 'No agent docs (CLAUDE.md / AGENTS.md / .cursorrules) found.',
+      message: `No agent docs found: looked for ${AGENT_DOC_PATHS.join(', ')} in ${dirs.map(dir => path.relative(ctx.cwd, dir) || '.').join(' and ')}.`,
       fix: `Generate agent docs with \`${getCliInvocation(ctx.cwd)} init --features agents\`.`,
     };
   }
 
-  const withMarkers = present.filter(rel => {
+  const withMarkers = present.filter(abs => {
     try {
-      const content = fs.readFileSync(path.join(ctx.cwd, rel), 'utf-8');
+      const content = fs.readFileSync(abs, 'utf-8');
       return (
         (content.includes('<!-- ASTRYX:START -->') || content.includes('<!-- XDS:START -->')) &&
         (content.includes('<!-- ASTRYX:END -->') || content.includes('<!-- XDS:END -->'))
@@ -496,7 +519,7 @@ export function checkAgentDocs(ctx) {
       id: 'agent-docs',
       label: 'AI agent docs',
       status: 'warn',
-      message: `Agent docs present (${present.join(', ')}) but no Astryx section markers found.`,
+      message: `Agent docs present (${present.map(shown).join(', ')}) but no Astryx section markers found.`,
       fix: `Add the Astryx section to your agent docs with \`${getCliInvocation(ctx.cwd)} init --features agents\`.`,
     };
   }
@@ -505,7 +528,7 @@ export function checkAgentDocs(ctx) {
     id: 'agent-docs',
     label: 'AI agent docs',
     status: 'pass',
-    message: `Astryx agent docs section present in ${withMarkers.join(', ')}.`,
+    message: `Astryx agent docs section present in ${withMarkers.map(shown).join(', ')}.`,
   };
 }
 

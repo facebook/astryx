@@ -186,6 +186,39 @@ describe('doctor — individual checks', () => {
     expect(res.status).toBe('pass');
   });
 
+  it('agent-docs: PASS from a subfolder, reading the project root', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"app"}');
+    fs.writeFileSync(
+      path.join(tmpDir, 'AGENTS.md'),
+      '<!-- ASTRYX:START -->\nstuff\n<!-- ASTRYX:END -->\n',
+    );
+    const src = path.join(tmpDir, 'src');
+    fs.mkdirSync(src);
+    const res = checkAgentDocs({cwd: src});
+    expect(res.status).toBe('pass');
+    expect(res.message).toBe(
+      `Astryx agent docs section present in ${path.join('..', 'AGENTS.md')}.`,
+    );
+  });
+
+  it('agent-docs: reads every file init can write, Hermes included', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'HERMES.md'),
+      '<!-- ASTRYX:START -->\nstuff\n<!-- ASTRYX:END -->\n',
+    );
+    expect(checkAgentDocs({cwd: tmpDir})).toMatchObject({
+      status: 'pass',
+      message: 'Astryx agent docs section present in HERMES.md.',
+    });
+  });
+
+  it('agent-docs: INFO names what it looked for and where', () => {
+    const res = checkAgentDocs({cwd: tmpDir});
+    expect(res.status).toBe('info');
+    expect(res.message).toContain('AGENTS.md, CLAUDE.md');
+    expect(res.message).toContain('HERMES.md');
+  });
+
   it('peer-deps: INFO when core not installed', () => {
     const res = checkPeerDeps({cwd: tmpDir, coreDir: null});
     expect(res.status).toBe('info');
