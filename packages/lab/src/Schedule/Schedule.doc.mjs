@@ -43,9 +43,14 @@ export const docs = {
           'Rely on event color alone to carry meaning. Only ten colors exist, so they repeat on larger category sets; the accessible label already announces title, category, and time.',
       },
       {
+        guidance: true,
+        description:
+          'When your page already pages the range with its own controls, keep date in your state and pass plugins={[]}: Schedule then renders the range title with no controls of its own, and your controls call the same setter as onChangeDate.',
+      },
+      {
         guidance: false,
         description:
-          'Pass a custom plugins array without re-adding the pagination plugin unless you deliberately want no navigation controls; a custom array replaces the default set rather than extending it.',
+          "Pass a custom plugins array without useSchedulePaginationPlugin when you still want Schedule's previous, Today, and next controls; a custom array replaces the default set rather than extending it.",
       },
     ],
     anatomy: [
@@ -106,14 +111,14 @@ export const docs = {
       name: 'events',
       type: 'ReadonlyArray<CalendarEvent> | ((start: Instant, end: Instant) => Promise<ReadonlyArray<CalendarEvent>>)',
       description:
-        "Either a static array, filtered to the events overlapping the rendered range and sorted by start, or a loader called with that range's start and end epoch milliseconds. A loader suspends while pending; the header shows a spinner and the view renders empty. Results are cached per loader identity and range, so keep the loader reference stable (useCallback) or every re-render refetches.",
+        "Either a static array, filtered to the events overlapping the rendered range and sorted by start, or a loader called with that range's start and end epoch milliseconds. A loader suspends while pending; the header shows a spinner and the view renders empty. Results are cached per loader identity and range, so keep the loader reference stable (useCallback) or every re-render refetches. When your page already holds the events, pass them as an array; Schedule picks out each range's events without a loader.",
       required: true,
     },
     {
       name: 'categories',
       type: "ReadonlyArray<{label: string, color: 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'cyan' | 'blue' | 'purple' | 'pink' | 'gray'}>",
       description:
-        'Category definitions matched to each event by label === event.category. The match supplies the event\'s color and the category name in its accessible label. An event whose category names no entry keeps that name but falls back to blue; an event with no category is announced as "Event" in blue.',
+        'Category definitions matched to each event by label === event.category. The match supplies the event\'s color and the category name in its accessible label. An event whose category names no entry keeps that name but falls back to blue; an event with no category is announced as "Event" in blue. A category can stand for any grouping you color by — an event kind, a calendar, or a team; to color events by calendar, give each calendar its own entry.',
       default: '[]',
     },
     {

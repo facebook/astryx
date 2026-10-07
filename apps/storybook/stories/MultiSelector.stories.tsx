@@ -4,7 +4,6 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {expect} from 'storybook/test';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
-import {IconButton} from '@astryxdesign/core/IconButton';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
@@ -747,6 +746,37 @@ export const EndIndicatorPosition: Story = {
         value={value}
         onChange={setValue}
         indicatorPosition="end"
+        isDefaultOpen
+      />
+    );
+  },
+};
+
+export const CreateFromQuery: Story = {
+  render: () => {
+    const [options, setOptions] = useState([
+      {value: 'bug', label: 'Bug'},
+      {value: 'feature', label: 'Feature'},
+      {value: 'docs', label: 'Docs'},
+    ]);
+    const [value, setValue] = useState<string[]>(['bug']);
+    return (
+      <MultiSelector
+        label="Labels"
+        options={options}
+        value={value}
+        onChange={(next, change) => {
+          if (change?.type === 'create') {
+            setOptions(current => [
+              ...current,
+              {value: change.query, label: change.query},
+            ]);
+          }
+          setValue(next);
+        }}
+        hasSearch
+        hasCreate
+        triggerDisplay="badges"
         isDefaultOpen
       />
     );

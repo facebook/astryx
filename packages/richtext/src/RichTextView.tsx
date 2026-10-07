@@ -31,6 +31,12 @@ import {ContentEditable} from '@lexical/react/LexicalContentEditable';
 import {LexicalErrorBoundary} from '@lexical/react/LexicalErrorBoundary';
 import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
 import {TableScrollRegionPlugin} from './TableScrollRegionPlugin';
+import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
+import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
+import {CodeSyntaxPlugin} from './CodeSyntaxPlugin';
+import {MarkdownExtensionsPlugin} from './MarkdownExtensionsPlugin';
+import type {RichTextMarkdownExtension} from './markdownExtensions';
+import {TaskCheckboxPlugin} from './TaskCheckboxPlugin';
 import type {
   AnyLexicalExtension,
   Klass,
@@ -38,12 +44,16 @@ import type {
   EditorThemeClasses,
 } from 'lexical';
 import {defineExtension} from 'lexical';
+import {TextSemanticsExtension} from './textSemantics';
 // The same node set as the editor, so anything it writes renders here.
 import {DEFAULT_NODES} from './editorNodes';
 
 const styles = stylex.create({
   root: {
     width: '100%',
+    // Holds the code block headers and task checkboxes drawn over the
+    // content.
+    position: 'relative',
   },
 });
 
@@ -74,6 +84,9 @@ const VIEW_CONTENT_EDITABLE_PROPS = {
   role: null as unknown as undefined,
 } as const;
 
+/** The view imports and exports no Markdown, so it uses no transformers. */
+const NO_TRANSFORMERS: ReadonlyArray<never> = [];
+
 export interface RichTextViewProps extends BaseProps {
   /**
    * Serialized editor state to render (a JSON string produced by
@@ -85,6 +98,15 @@ export interface RichTextViewProps extends BaseProps {
    * the nodes used to author `value` so custom node types deserialize.
    */
   nodes?: ReadonlyArray<Klass<LexicalNode>>;
+  /**
+   * Markdown plugins whose nodes this surface draws, each adopted with
+   * `createRichTextExtension` (spec:AST-064). A plugin node renders exactly as
+   * core `Markdown` renders it, and one whose plugin is not given here shows
+   * its source. Pass the extensions the content was converted with. Create
+   * them in a client module: they hold the plugins' functions, so they are not
+   * serializable props.
+   */
+  markdownExtensions?: ReadonlyArray<RichTextMarkdownExtension>;
   /**
    * Additional read-only plugins to render inside the composer (e.g. hover
    * cards, decorators).
@@ -167,6 +189,7 @@ function SyncValuePlugin({value}: {value: string}): null {
 export function RichTextView({
   value,
   nodes,
+  markdownExtensions,
   plugins,
   namespace = 'astryx-view',
   onParseError,
@@ -254,6 +277,8 @@ export function RichTextView({
       theme: themeRef.current,
       editable: false,
       nodes: nodes ? [...DEFAULT_NODES, ...nodes] : [...DEFAULT_NODES],
+      // Struck text is a deletion.
+      dependencies: [TextSemanticsExtension],
       $initialEditorState: value,
       // A read-only view renders persisted content; a bad node/schema should not
       // crash the host. Surface it via onParseError + fallback instead of re-throwing.
@@ -278,11 +303,23 @@ export function RichTextView({
           hasHorizontalScroll
         />
         <TableScrollRegionPlugin />
+        <TableColumnFloorPlugin />
         <RichTextPlugin
           contentEditable={<ContentEditable {...VIEW_CONTENT_EDITABLE_PROPS} />}
           placeholder={null}
           ErrorBoundary={LexicalErrorBoundary}
         />
+        {/* After the content, so the copy buttons and checkboxes follow it
+            in tab order. */}
+        <CodeBlockHeaderPlugin />
+        <CodeSyntaxPlugin />
+        {markdownExtensions != null && markdownExtensions.length > 0 ? (
+          <MarkdownExtensionsPlugin
+            extensions={markdownExtensions}
+            transformers={NO_TRANSFORMERS}
+          />
+        ) : null}
+        <TaskCheckboxPlugin isReadOnly />
         {plugins}
       </LexicalExtensionComposer>
     </div>

@@ -3,7 +3,7 @@
   "type": "search",
   "data": {
     "query": "zorblax",
-    "matchCount": 3,
+    "matchCount": 4,
     "results": [
       {
         "domain": "component",
@@ -34,6 +34,16 @@
         "displayName": "Zorblax hero",
         "kind": "block",
         "command": "astryx template hero --type block"
+      },
+      {
+        "domain": "theme",
+        "name": "ocean",
+        "score": 50,
+        "reason": "description mentions \"zorblax\"",
+        "description": "A zorblax blue.",
+        "displayName": "Ocean",
+        "command": "astryx theme add ocean",
+        "package": "@acme/kit"
       }
     ]
   }

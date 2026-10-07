@@ -10,11 +10,13 @@
 import {describe, expectTypeOf, it} from 'vitest';
 import {
   createIncrementalState,
+  decodeMarkdownCharacterReferences,
   parseInline,
   parseMarkdown,
   parseMarkdownIncremental,
   visitMarkdownNodes,
 } from './index';
+import {decodeMarkdownCharacterReferences as decodeFromParser} from './parser/index';
 import {
   createMarkdownFenceTransform,
   createMarkdownHeadingLinks,
@@ -91,6 +93,15 @@ function legacyBlockText(node: BlockNode): string {
       return assertNever(node);
   }
 }
+
+describe('decodeMarkdownCharacterReferences entry points (spec:AST-061 DEC-5)', () => {
+  it('is the same function from the Markdown entry and the parser subpath', () => {
+    expectTypeOf(decodeMarkdownCharacterReferences).toEqualTypeOf<
+      (text: string) => string
+    >();
+    expectTypeOf(decodeFromParser).toEqualTypeOf<(text: string) => string>();
+  });
+});
 
 describe('Markdown public parser types', () => {
   it('keeps default and legacy parser calls on the legacy unions', () => {

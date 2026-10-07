@@ -45,6 +45,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./markdown": {
+      "source": "./src/markdown.ts",
+      "types": "./dist/markdown.d.ts",
+      "default": "./dist/markdown.js"
+    },
     "./richtext.css": {
       "default": "./dist/richtext.css"
     }

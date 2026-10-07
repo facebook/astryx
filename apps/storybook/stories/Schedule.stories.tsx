@@ -3,6 +3,7 @@
 import {useMemo, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Text} from '@astryxdesign/core';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {
   Schedule,
   createScheduleDayView,
@@ -315,6 +316,33 @@ export const List: Story = {
   },
 };
 
+/**
+ * The list in a right-to-left locale: its 24-hour time ranges read start
+ * first, right to left.
+ */
+export const RightToLeftLocale: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(focusDate);
+    const view = useMemo(() => createScheduleListView(), []);
+
+    return (
+      <InternationalizationProvider locale="he-IL">
+        <div dir="rtl">
+          <Schedule
+            view={view}
+            events={events}
+            categories={categories}
+            date={date}
+            focusDate={focusDate}
+            onChangeDate={setDate}
+            timezoneID="America/Los_Angeles"
+          />
+        </div>
+      </InternationalizationProvider>
+    );
+  },
+};
+
 export const AsyncLoader: Story = {
   render: () => {
     const [date, setDate] = useState<Instant>(focusDate);
@@ -582,6 +610,56 @@ export const EventPopover: Story = {
       <Schedule
         view={view}
         events={overlappingEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
+const midnightEvents: CalendarEvent[] = [
+  createEventFromISO({
+    id: 'planning',
+    title: 'Planning',
+    category: 'Focus',
+    start: '2026-05-13T17:00:00.000Z',
+    end: '2026-05-13T18:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'late-sync',
+    title: 'Late sync',
+    category: 'Company',
+    start: '2026-05-13T22:00:00.000Z',
+    end: '2026-05-14T00:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'evening-review',
+    title: 'Evening review',
+    category: 'Design',
+    start: '2026-05-14T20:00:00.000Z',
+    end: '2026-05-15T00:00:00.000Z',
+  }),
+];
+
+/**
+ * Timed events that end exactly at midnight paint from their start to the
+ * bottom of their day.
+ */
+export const EventEndingAtMidnight: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const view = useMemo(
+      () => createScheduleWeeklyView({minHour: 16, maxHour: 24}),
+      [],
+    );
+
+    return (
+      <Schedule
+        view={view}
+        events={midnightEvents}
         categories={categories}
         date={date}
         focusDate={FIXTURE_DATE}

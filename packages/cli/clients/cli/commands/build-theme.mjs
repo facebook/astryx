@@ -209,11 +209,16 @@ async function warnOnThemeIntegrationIssues(json) {
  * @param {import('../../../api/theme/theme.type.mjs').ThemeListEntry[]} themes
  */
 function printThemeList(themes) {
+  const run = getCliInvocation();
+  // `theme list` shows what this project can add now. Themes in packages it
+  // has not installed are `discover`'s.
+  const more = text(
+    `More themes in packages you could add: ${run} discover theme`,
+  );
   if (themes.length === 0) {
-    emit(text('No themes are available in this project.'));
+    emit(text('No themes are available in this project.'), more);
     return;
   }
-  const run = getCliInvocation();
   emit(
     section('Themes'),
     list(
@@ -226,6 +231,7 @@ function printThemeList(themes) {
     text(
       `Usage:\n  ${run} theme add <slug> [target-path]   Scaffold a theme file you own`,
     ),
+    more,
   );
 }
 

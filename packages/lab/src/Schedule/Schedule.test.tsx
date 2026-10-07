@@ -263,6 +263,45 @@ describe('Schedule', () => {
     expect(screen.getAllByText('11:00 PM - 2:00 AM')).toHaveLength(2);
   });
 
+  it('isolates each painted time in the locale direction, whatever the layout direction', async () => {
+    const renderList = (locale: string) =>
+      render(
+        <InternationalizationProvider locale={locale} dir="rtl">
+          <div dir="rtl">
+            <Schedule
+              view={createScheduleListView({days: 7})}
+              events={events}
+              categories={categories}
+              date={Date.UTC(2026, 4, 13)}
+              timezoneID="UTC"
+            />
+          </div>
+        </InternationalizationProvider>,
+      );
+    const timesOf = async () => {
+      await waitFor(() => {
+        expect(screen.getByText('Visible sync')).toBeInTheDocument();
+      });
+      return Array.from(document.querySelectorAll('bdi')).map(time => [
+        time.textContent,
+        time.getAttribute('dir'),
+      ]);
+    };
+
+    const english = renderList('en-US');
+    expect(await timesOf()).toEqual([
+      ['All day', 'ltr'],
+      ['4:00 PM - 4:30 PM', 'ltr'],
+    ]);
+    english.unmount();
+
+    // A right-to-left locale keeps its 24-hour range start first.
+    renderList('he-IL');
+    const hebrew = await timesOf();
+    expect(hebrew.map(([, dir]) => dir)).toEqual(['rtl', 'rtl']);
+    expect(hebrew[1][0]).toMatch(/^16:00\s?-\s?16:30$/u);
+  });
+
   it('renders weekly view with the same month title as monthly view', () => {
     render(
       <Schedule
@@ -660,6 +699,41 @@ describe('Schedule event popover', () => {
     expect(dialog).not.toBeNull();
     return dialog as HTMLElement;
   }
+
+  it('paints a timed event that ends exactly at midnight on the day it starts', () => {
+    const lateSync = createEventFromISO({
+      id: 'late',
+      title: 'Late sync',
+      category: 'Sync',
+      start: '2026-05-13T22:00:00.000Z',
+      end: '2026-05-14T00:00:00.000Z',
+    });
+    const {unmount} = renderWeek({minHour: 0, maxHour: 24}, [lateSync]);
+    // Painted: a block outside the hidden read-only grid.
+    const grid = screen.getByRole('grid', {name: 'Schedule time grid'});
+    expect(
+      screen
+        .getAllByText('Late sync')
+        .filter(element => !grid.contains(element)),
+    ).toHaveLength(1);
+    unmount();
+
+    renderWeek({minHour: 0, maxHour: 24, renderPopover}, [lateSync]);
+    const wednesday = screen.getByRole('group', {
+      name: 'Wednesday, May 13, 2026',
+    });
+    expect(
+      Array.from(wednesday.querySelectorAll('button')).map(button =>
+        button.getAttribute('aria-label'),
+      ),
+    ).toEqual([
+      'Late sync, 10:00 PM - 12:00 AM, Sync, Wednesday, May 13, 2026',
+    ]);
+    const thursday = screen.getByRole('group', {
+      name: 'Thursday, May 14, 2026',
+    });
+    expect(thursday.querySelectorAll('button')).toHaveLength(0);
+  });
 
   it('keeps the read-only grid and renders no button when the option is absent', () => {
     renderWeek();

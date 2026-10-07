@@ -501,5 +501,14 @@
       "prev": ".astryx-avatar-group > .astryx-avatar:first-child",
       "next": ".astryx-avatar-group-overflow"
     }
+  },
+  {
+    "component": "CommandPaletteFooter",
+    "storyId": "core-commandpalettefooter--default",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-command-palette-footer > span:first-child",
+      "next": ".astryx-command-palette-footer > span:last-child"
+    }
   }
 ]

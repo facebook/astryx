@@ -31,6 +31,7 @@ import {
   focusOutlineStyles,
   plainDateAddDays,
   plainDateFromInstant,
+  plainDateIsAfter,
   plainDateIsBefore,
   plainDateIsEqual,
   plainDateToInstant,
@@ -47,7 +48,6 @@ import {
   EventPill,
   eventPastSurfaceColorStyle,
   eventSurfaceColorStyle,
-  eventSpansPastDay,
   formatEventAccessibilityLabel,
   formatDayNumber,
   formatEventTime,
@@ -58,6 +58,7 @@ import {
   getEventCategory,
   getMinutesSinceStartOfDay,
   isEventInPast,
+  ScheduleTime,
   styles,
 } from './shared';
 import {layoutTimedEvents, type TimedEventPlacement} from './timeGridLayout';
@@ -492,7 +493,7 @@ export function TimeGridView({
                     styles.timeLabel,
                     styles.timeLabelPosition(index + 1, hourHeight),
                   )}>
-                  {formatHour(hour, locale)}
+                  <ScheduleTime>{formatHour(hour, locale)}</ScheduleTime>
                 </div>
               ))}
             </div>
@@ -578,7 +579,7 @@ export function TimeGridView({
                             type="supporting"
                             color="inherit"
                             xstyle={styles.eventTime}>
-                            {timeLabel}
+                            <ScheduleTime>{timeLabel}</ScheduleTime>
                           </Text>
                         </>
                       );
@@ -921,7 +922,12 @@ function getTimedEventLayouts({
     const rawStart = plainDateIsBefore(startDate, day)
       ? 0
       : getMinutesSinceStartOfDay(event.start, timezoneID);
-    const rawEnd = eventSpansPastDay(event, day, timezoneID)
+    // An event that runs to midnight or past it fills the rest of the day;
+    // ending exactly at midnight is the bottom of the column, not minute 0.
+    const rawEnd = plainDateIsAfter(
+      plainDateFromInstant(event.end, timezoneID),
+      day,
+    )
       ? 24 * 60
       : getMinutesSinceStartOfDay(event.end, timezoneID);
     if (rawEnd <= minMinute || rawStart >= maxMinute) {

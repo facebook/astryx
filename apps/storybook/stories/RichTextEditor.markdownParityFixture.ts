@@ -10,7 +10,8 @@
  *
  * Coverage: ATX headings 1-4; emphasis, strong, strikethrough, inline code,
  * titled and bare links; soft and hard line breaks; a blockquote; nested
- * unordered (2-space) and ordered (3-space) lists; a GFM task list; a fenced
+ * unordered (2-space) and ordered (3-space) lists; a GFM task list, and a
+ * list that mixes task and plain items; a fenced
  * code block with an info string; a GFM table with column alignment; a
  * thematic break; backslash escapes and character references; a right-to-left
  * paragraph; and the Storybook demo plugins' mention, TODO, and callout syntax.
@@ -120,6 +121,56 @@ export const MARKDOWN_PARITY_BLOCKS: readonly MarkdownParityBlock[] = [
       'export function retryDelay(attempt: number): number {',
       '  return Math.min(30_000, 2 ** attempt * 250);',
       '}',
+      '```',
+    ),
+  },
+  {
+    key: 'list-task-mixed',
+    label: 'Task and plain items',
+    probe: 'Mixed open task',
+    // Not right after the task list, which it would continue as one list.
+    markdown: lines(
+      '- [ ] Mixed open task',
+      '- Mixed plain item',
+      '- [x] Mixed done task',
+    ),
+  },
+  // Fences that show no language label, as core CodeBlock decides: no info
+  // string, a blank one, and `plaintext`; and an unknown language, which
+  // shows its name.
+  {
+    key: 'code-plain',
+    label: 'Fenced code, no info string',
+    probe: 'plainFence',
+    markdown: lines('```', 'const plainFence = true;', '```'),
+  },
+  {
+    key: 'code-blank',
+    label: 'Fenced code, blank info string',
+    probe: 'blankFence',
+    markdown: lines('```   ', 'const blankFence = true;', '```'),
+  },
+  {
+    key: 'code-plaintext',
+    label: 'Fenced code, plaintext',
+    probe: 'typedAsIs',
+    markdown: lines('```plaintext', 'typedAsIs = 1', '```'),
+  },
+  {
+    key: 'code-unknown',
+    label: 'Fenced code, unknown language',
+    probe: 'unknownFence',
+    markdown: lines('```notalanguage', 'unknownFence()', '```'),
+  },
+  // A line longer than the prose measure: the frame grows to fit it, up to
+  // the full width, and wraps beyond that.
+  {
+    key: 'code-long',
+    label: 'Fenced code, long line',
+    probe: 'longFenceLine',
+    markdown: lines(
+      '```sh',
+      'echo "longFenceLine: the quick brown fox jumps over the lazy dog, then runs back across the field to do it again"',
       '```',
     ),
   },

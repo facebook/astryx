@@ -199,7 +199,8 @@ test('narrow tracks keep the title and drop the time line', async ({page}) => {
         titleVisible:
           getComputedStyle(title).display !== 'none' &&
           title.getBoundingClientRect().height > 0,
-        timeDisplay: time == null ? null : getComputedStyle(time).display,
+        // Whether the time line paints, read through any inner markup.
+        timeVisible: time == null ? null : time.checkVisibility(),
       };
     });
   });
@@ -212,8 +213,8 @@ test('narrow tracks keep the title and drop the time line', async ({page}) => {
     // Five tracks in a 140px column are ~24px each: below the time label's
     // room, so the time line is gone rather than squeezing the title.
     if ((reading.blockWidth ?? 0) <= 72) {
-      expect(reading.timeDisplay, `${reading.title} time line collapses`).toBe(
-        'none',
+      expect(reading.timeVisible, `${reading.title} time line collapses`).toBe(
+        false,
       );
     }
   }

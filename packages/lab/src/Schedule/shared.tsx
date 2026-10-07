@@ -11,7 +11,7 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {Locale} from '@astryxdesign/core/i18n';
+import {getLocaleDirection, type Locale} from '@astryxdesign/core/i18n';
 import {
   borderVars,
   colorVars,
@@ -27,7 +27,6 @@ import {HStack} from '@astryxdesign/core/Stack';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {
   plainDateFromInstant,
-  plainDateIsAfter,
   plainDateIsBefore,
   plainDateToInstant,
   type PlainDate,
@@ -189,6 +188,16 @@ export function ScheduleRangeMonthTitle({
   );
 }
 
+/**
+ * A painted time or time range, isolated in the locale's direction: it lays
+ * out as one unit whatever the layout direction, so "9:00 AM" never paints as
+ * "AM 9:00" and a right-to-left locale's range still reads start first.
+ */
+export function ScheduleTime({children}: {children: ReactNode}) {
+  const {locale} = useScheduleContext();
+  return <bdi dir={getLocaleDirection(locale)}>{children}</bdi>;
+}
+
 export function EventPill({
   event,
   day,
@@ -216,7 +225,7 @@ export function EventPill({
       )}>
       {timeLabel != null && (
         <Text type="supporting" color="inherit" xstyle={styles.eventTime}>
-          {timeLabel}
+          <ScheduleTime>{timeLabel}</ScheduleTime>
         </Text>
       )}
       <Text
@@ -254,7 +263,7 @@ export function MonthEventPill({
       )}>
       {timeLabel != null && (
         <Text type="supporting" color="inherit" xstyle={styles.eventTime}>
-          {timeLabel}
+          <ScheduleTime>{timeLabel}</ScheduleTime>
         </Text>
       )}
       <Text
@@ -290,9 +299,11 @@ export function ListEventRow({
         )}
       />
       <span {...stylex.props(styles.listEventTime)}>
-        {isDayEvent(event)
-          ? 'All day'
-          : formatEventTimeRange(event, timezoneID, locale)}
+        <ScheduleTime>
+          {isDayEvent(event)
+            ? 'All day'
+            : formatEventTimeRange(event, timezoneID, locale)}
+        </ScheduleTime>
       </span>
       <span
         {...stylex.props(
@@ -580,17 +591,6 @@ export function getMinutesSinceStartOfDay(
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
-}
-
-export function eventSpansPastDay(
-  event: CalendarInstantEvent,
-  day: PlainDate,
-  timezoneID: string,
-): boolean {
-  return plainDateIsAfter(
-    plainDateFromInstant(Math.max(event.end - 1, event.start), timezoneID),
-    day,
-  );
 }
 
 export function isEventInPast(

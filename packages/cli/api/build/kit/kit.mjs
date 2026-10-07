@@ -32,8 +32,15 @@ import {findCoreDir} from '../../../foundation/fs/paths.mjs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {getResultCoverage} from '../../search/coverage.mjs';
-import {loadComponents, loadPageTemplates} from '../_adapter.mjs';
-import {ideaKind, pickAlternatives, pickStart, rankPages} from './rank.mjs';
+import {loadComponents, loadPageTemplates, loadWeights} from '../_adapter.mjs';
+import {
+  asksForNewPage,
+  ideaKind,
+  pickAlternatives,
+  pickStart,
+  rankPages,
+} from './rank.mjs';
+import {weighStart} from './weights.mjs';
 
 /** A page at/above this score is a confident direct match. */
 const PAGE_DIRECT = 95;
@@ -151,9 +158,10 @@ function placement(kind, inPage) {
  * @param {SearchResultEntry[]} pages
  * @param {boolean} directMatch
  * @param {PageTemplate[]} catalog
+ * @param {string} idea
  * @returns {Omit<BuildStart, 'alternatives'> | null}
  */
-function chooseStart(ranked, kind, pages, directMatch, catalog) {
+function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
   const direct = directMatch ? pages[0].name : null;
   const unready =
     direct && !catalog.some(t => t.name === direct) ? direct : null;
@@ -170,7 +178,27 @@ function chooseStart(ranked, kind, pages, directMatch, catalog) {
     direct && direct !== startName
       ? `Search matched \`${direct}\` by name, but ${place}`
       : place[0].toUpperCase() + place.slice(1);
-  const pick = pickStart(ranked, kind);
+  const proposed = pickStart(ranked, kind);
+  // The checked-in word weights (weights.mjs), blended with the ranker's
+  // scores, decide the start of a whole page. A part or an edit starts where
+  // the ranker's placement rules put it (spec:AST-048/FR3).
+  const weighed =
+    kind === 'page'
+      ? weighStart(idea, ranked, proposed, catalog, {
+          weights: loadWeights(),
+          newPage: asksForNewPage(idea, catalog),
+        })
+      : undefined;
+  // A shell start keeps the shell the ranker named, if any, and never replaces
+  // the template the ranker chose for a page search matched directly.
+  const pick =
+    weighed === undefined
+      ? proposed
+      : weighed === null
+        ? proposed?.family === 'Shell' || (proposed && direct && !unready)
+          ? proposed
+          : null
+        : (ranked.find(r => r.name === weighed) ?? proposed);
   const closest = pick && catalog.find(t => t.name === pick.name);
   if (pick && closest) {
     const agrees = closest.name === direct;
@@ -194,7 +222,9 @@ function chooseStart(ranked, kind, pages, directMatch, catalog) {
     if (shell) {
       // The shell can also be the ranker's best guess without the evidence to
       // lead ("horizontal site navigation"); say so rather than "no match".
-      const nearest = ranked[0]?.name === shell.name && ranked[0].hits > 0;
+      const nearest =
+        (ranked[0]?.name === shell.name && ranked[0].hits > 0) ||
+        (weighed === null && !!proposed && proposed.family !== 'Shell');
       const place = placement(kind, false);
       return {
         ...asTemplate(shell),
@@ -204,7 +234,9 @@ function chooseStart(ranked, kind, pages, directMatch, catalog) {
           : place
             ? placed(place, shell.name)
             : direct
-              ? `Search matched \`${direct}\` by name, but too little of the idea fits it, so start from the app shell.`
+              ? weighed === null
+                ? `Search matched \`${direct}\` by name, but the app shell is the closer start.`
+                : `Search matched \`${direct}\` by name, but too little of the idea fits it, so start from the app shell.`
               : nearest
                 ? 'No template is a clear match; the app shell is the closest.'
                 : loose
@@ -346,7 +378,7 @@ export async function buildKit(query, options = {}) {
       )
     : 'page';
   const chosen = wantsPages
-    ? chooseStart(ranked, kind, matchedPages, directMatch, catalog)
+    ? chooseStart(ranked, kind, matchedPages, directMatch, catalog, query)
     : null;
   // Name the ranker's next two templates beside the start: the reader judges
   // meaning better than keywords do, and an acceptable template is in these
