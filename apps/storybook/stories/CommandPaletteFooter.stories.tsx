@@ -15,7 +15,7 @@ const meta: Meta<typeof CommandPaletteFooter> = {
   tags: ['autodocs', 'visual-theme-matrix'],
   parameters: {
     layout: 'centered',
-    docs: {story: {inline: false}},
+    docs: {story: {inline: false, height: '600px'}},
   },
 };
 

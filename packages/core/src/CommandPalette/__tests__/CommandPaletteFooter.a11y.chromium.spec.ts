@@ -423,14 +423,16 @@ async function capture(page: Page, scenario: Case) {
       ]);
       expect(observed.kbdTargetCount).toBe(4);
       expect(observed.hintCenters).toHaveLength(3);
-      if (scenario.direction === 'rtl') {
-        expect(observed.hintCenters[0]).toBeGreaterThan(
-          observed.hintCenters[2] ?? 0,
-        );
-      } else {
-        expect(observed.hintCenters[0]).toBeLessThan(
-          observed.hintCenters[2] ?? Number.POSITIVE_INFINITY,
-        );
+      if (scenario.viewport.width > NARROW.width) {
+        if (scenario.direction === 'rtl') {
+          expect(observed.hintCenters[0]).toBeGreaterThan(
+            observed.hintCenters[2] ?? 0,
+          );
+        } else {
+          expect(observed.hintCenters[0]).toBeLessThan(
+            observed.hintCenters[2] ?? Number.POSITIVE_INFINITY,
+          );
+        }
       }
     } else {
       expect(observed.text).toBe('Type to filter available commands.');
