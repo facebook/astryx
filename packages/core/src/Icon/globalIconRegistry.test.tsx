@@ -2,7 +2,7 @@
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {render} from '@testing-library/react';
-import {defineTheme} from '../theme/defineTheme';
+import {defineTheme, type DefinedTheme} from '../theme/defineTheme';
 import {resetThemes} from '../theme/themeRegistry';
 import {__resetDevWarnings} from '../utils/devWarning';
 import {defaultIcons} from './defaultIcons';
@@ -11,10 +11,21 @@ import {
   getIconRegistry,
   getIcon,
   getExtendedIcon,
+  getComponentIconName,
+  getComponentIcon,
   resetIcons,
   type IconRegistry,
 } from './globalIconRegistry';
 import {Icon} from './Icon';
+
+// Exactly what a package that owns a slot writes, aimed at the public module
+// (`@astryxdesign/core/Icon` resolves to ./index). Core itself declares none.
+declare module './index' {
+  interface ComponentIconSlotMap {
+    'fixture-card-dismiss': true;
+    'fixture-card-status': true;
+  }
+}
 
 describe('iconRegistry (global, RSC-compatible)', () => {
   beforeEach(() => {
@@ -213,6 +224,160 @@ describe('iconRegistry (global, RSC-compatible)', () => {
       registerIcons({'richtext:bold': 'my-bold'});
       resetIcons();
       expect(getExtendedIcon('richtext:bold', 'fallback')).toBe('fallback');
+    });
+  });
+
+  describe('component icon slots', () => {
+    it('returns the fallback without a theme source', () => {
+      expect(getComponentIconName('fixture-card-dismiss', 'close')).toBe(
+        'close',
+      );
+      expect(getComponentIconName('fixture-card-dismiss', null)).toBeNull();
+      expect(getComponentIcon('fixture-card-dismiss', 'close')).toBe(
+        defaultIcons.close,
+      );
+      expect(getComponentIcon('fixture-card-dismiss', null)).toBeNull();
+    });
+
+    it('returns the fallback when the theme does not map the slot', () => {
+      const noMap = defineTheme({
+        name: 'no-map',
+        icons: {close: 'theme-close'},
+      });
+      const otherSlot = defineTheme({
+        name: 'other-slot',
+        componentIcons: {'fixture-card-status': 'warning'},
+      });
+
+      expect(getComponentIconName('fixture-card-dismiss', 'close', noMap)).toBe(
+        'close',
+      );
+      expect(getComponentIcon('fixture-card-dismiss', 'close', noMap)).toBe(
+        'theme-close',
+      );
+      expect(
+        getComponentIconName('fixture-card-dismiss', 'close', otherSlot),
+      ).toBe('close');
+      expect(
+        getComponentIconName('fixture-card-dismiss', null, otherSlot),
+      ).toBe(null);
+    });
+
+    it('treats an undefined theme entry as unmapped', () => {
+      // defineTheme strips undefined entries; a hand-built theme object may not.
+      const theme: DefinedTheme = {
+        name: 'raw',
+        tokens: {},
+        componentIcons: {'fixture-card-dismiss': undefined},
+      };
+
+      expect(getComponentIconName('fixture-card-dismiss', 'close', theme)).toBe(
+        'close',
+      );
+      expect(getComponentIcon('fixture-card-dismiss', null, theme)).toBeNull();
+    });
+
+    it('renders no icon for a null theme entry, whatever the fallback', () => {
+      registerIcons({close: 'global-close'});
+      const theme = defineTheme({
+        name: 'hidden',
+        componentIcons: {'fixture-card-dismiss': null},
+        icons: {close: 'theme-close'},
+      });
+
+      expect(getComponentIconName('fixture-card-dismiss', 'close', theme)).toBe(
+        null,
+      );
+      expect(
+        getComponentIcon('fixture-card-dismiss', 'close', theme),
+      ).toBeNull();
+    });
+
+    it('draws a mapped name through the shared theme, global, default order', () => {
+      registerIcons({check: 'global-check', success: 'global-success'});
+      const theme = defineTheme({
+        name: 'mapped',
+        componentIcons: {
+          'fixture-card-dismiss': 'success',
+          'fixture-card-status': 'check',
+        },
+        icons: {success: 'theme-success'},
+      });
+
+      expect(getComponentIconName('fixture-card-dismiss', 'close', theme)).toBe(
+        'success',
+      );
+      // Theme artwork for the mapped name wins.
+      expect(getComponentIcon('fixture-card-dismiss', 'close', theme)).toBe(
+        'theme-success',
+      );
+      // No theme artwork: the global registration for the mapped name.
+      expect(getComponentIcon('fixture-card-status', 'close', theme)).toBe(
+        'global-check',
+      );
+
+      resetIcons();
+      // Nothing registered: the built-in default for the mapped name.
+      expect(getComponentIcon('fixture-card-status', 'close', theme)).toBe(
+        defaultIcons.check,
+      );
+      // A mapped name replaces the fallback entirely, even a null one.
+      expect(getComponentIcon('fixture-card-status', null, theme)).toBe(
+        defaultIcons.check,
+      );
+    });
+
+    it('resolves a registered theme name like getIcon does', () => {
+      defineTheme({
+        name: 'registered',
+        componentIcons: {'fixture-card-dismiss': 'info'},
+        icons: {info: 'theme-info'},
+      });
+
+      expect(
+        getComponentIconName('fixture-card-dismiss', 'close', 'registered'),
+      ).toBe('info');
+      expect(
+        getComponentIcon('fixture-card-dismiss', 'close', 'registered'),
+      ).toBe('theme-info');
+      expect(
+        getComponentIconName('fixture-card-dismiss', 'close', 'unregistered'),
+      ).toBe('close');
+      expect(getComponentIconName('fixture-card-dismiss', 'close', null)).toBe(
+        'close',
+      );
+    });
+
+    it('leaves the shared names and extension keys untouched', () => {
+      const theme = defineTheme({
+        name: 'slot-only',
+        componentIcons: {'fixture-card-dismiss': 'success'},
+      });
+
+      expect(getIcon('close', theme)).toBe(defaultIcons.close);
+      expect(getIcon('success', theme)).toBe(defaultIcons.success);
+      expect(getIconRegistry(theme)).toEqual(getIconRegistry());
+      expect(Object.keys(getIconRegistry(theme))).not.toContain(
+        'fixture-card-dismiss',
+      );
+      expect(getIcon('numberInput:stepperDown', theme)).toBe(
+        defaultIcons['numberInput:stepperDown'],
+      );
+      expect(getExtendedIcon('richtext:bold', 'inline-svg', theme)).toBe(
+        'inline-svg',
+      );
+    });
+
+    it('ignores inherited object properties as slot entries', () => {
+      const theme: DefinedTheme = {
+        name: 'proto',
+        tokens: {},
+        componentIcons: Object.create({'fixture-card-dismiss': 'success'}),
+      };
+
+      expect(getComponentIconName('fixture-card-dismiss', 'close', theme)).toBe(
+        'close',
+      );
     });
   });
 });

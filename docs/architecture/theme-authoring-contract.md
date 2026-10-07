@@ -257,11 +257,6 @@ classify local references. Until the implementation lands, INV8's prefix-indepen
 clauses are current authority but not enforcement. Existing explicit enrollment,
 owner, lineage, collision, cycle, and legacy-unenrolled behavior remains shipped.
 
-`componentIcons` is unshipped. The current `DefineThemeInput` and `DefinedTheme`
-do not declare it, so INV13 and the `componentIcons` clause of INV3
-are current authority but not enforcement. The INV13 verification row describes
-implementation acceptance, not existing enforcement.
-
 ## Verification
 
 | Invariant                | Evidence                                                                                                | Failure signal                                                                                                            |

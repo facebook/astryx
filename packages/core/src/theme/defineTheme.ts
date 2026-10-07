@@ -41,6 +41,7 @@
 
 import type {ReactNode} from 'react';
 import type {IconName, NamespacedIconName} from '../Icon/globalIconRegistry';
+import type {ComponentIconMap} from '../Icon';
 
 /**
  * Icon overrides a theme may declare: any built-in semantic name, plus the
@@ -354,6 +355,24 @@ export interface DefineThemeInput {
    */
   indicators?: IndicatorRegistry;
   /**
+   * Component icon slot map — chooses which shared icon name a component icon
+   * slot renders, or `null` to render none, without changing that shared
+   * icon anywhere else.
+   *
+   * Keys are slots declared on `ComponentIconSlotMap` in
+   * `@astryxdesign/core/Icon`; an unmapped slot uses its component's fallback.
+   * `icons` still chooses the artwork for the mapped name. With `extends`, an
+   * explicit name or `null` replaces the inherited entry for that slot, other
+   * inherited slots remain, and an `undefined` value leaves the slot as if it
+   * were not listed.
+   *
+   * @example
+   * ```
+   * componentIcons: {'brand-card-status': 'warning'},
+   * ```
+   */
+  componentIcons?: ComponentIconMap;
+  /**
    * Default syntax highlighting theme for code components.
    * Sets --color-syntax-* tokens at the theme root. Can be overridden
    * per-region (or per-instance) by wrapping in SyntaxTheme.
@@ -433,6 +452,11 @@ export interface DefinedTheme {
   icons?: ThemeIconOverrides;
   /** Indicator overrides for stateful control visuals, keyed by name */
   indicators?: IndicatorRegistry;
+  /**
+   * Normalized component icon slot map, inherited per slot through `extends`.
+   * Holds only shared icon names and `null`; never `undefined` values.
+   */
+  componentIcons?: ComponentIconMap;
   /** Whether this theme has been pre-compiled by theme build CLI */
   __built?: true;
   /**
@@ -518,6 +542,40 @@ function describeBadBase(value: unknown): string {
   }
   const keys = Object.keys(value);
   return `an object with keys [${keys.slice(0, 4).join(', ')}${keys.length > 4 ? ', …' : ''}]`;
+}
+
+/**
+ * Merge component icon slot maps per slot: the base entries first, then each
+ * explicit `IconName` or `null` from the child. An `undefined` value is absent,
+ * so it neither replaces an inherited entry nor appears in the result. Always
+ * returns a fresh object and never mutates either input; returns `undefined`
+ * when neither map is present.
+ */
+function mergeComponentIcons(
+  base: ComponentIconMap | undefined,
+  own: ComponentIconMap | undefined,
+): ComponentIconMap | undefined {
+  if (base === undefined && own === undefined) {
+    return undefined;
+  }
+
+  const merged: Record<string, IconName | null> = {};
+  for (const map of [base, own]) {
+    if (map == null) {
+      continue;
+    }
+    for (const [slot, name] of Object.entries(
+      map as Partial<Record<string, IconName | null>>,
+    )) {
+      if (name !== undefined) {
+        merged[slot] = name;
+      }
+    }
+  }
+  // Required where no slot is declared (the published declarations), where the
+  // map admits no keys; programs that declare slots see it as redundant.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+  return merged as ComponentIconMap;
 }
 
 /**
@@ -614,6 +672,12 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
       ? {...base.indicators, ...input.indicators}
       : (input.indicators ?? base?.indicators);
 
+  // Component icon slots merge per slot; `null` survives, `undefined` does not.
+  const componentIcons = mergeComponentIcons(
+    base?.componentIcons,
+    input.componentIcons,
+  );
+
   const theme: ResolvedDefinedTheme = {
     name: input.name,
     tokens,
@@ -627,6 +691,7 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
     components,
     icons,
     indicators,
+    ...(componentIcons !== undefined ? {componentIcons} : {}),
     __inputTokens:
       base?.__inputTokens || input.tokens
         ? {...base?.__inputTokens, ...input.tokens}

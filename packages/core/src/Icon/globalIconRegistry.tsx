@@ -2,12 +2,19 @@
 
 /**
  * @file globalIconRegistry.tsx
- * @input None (pure module-level state)
- * @output Exports registerIcons, getIconRegistry, getIcon, resetIcons, IconName, IconRegistry
+ * @input Theme sources (DefinedTheme or registered theme name); component icon
+ *   slot types from the public ./index module
+ * @output Exports registerIcons, getIconRegistry, getIcon, getExtendedIcon,
+ *   getComponentIconName, getComponentIcon, resetIcons, IconName, IconRegistry
  * @position Global and theme-scoped icon registry; works in server and client environments
  *
  * This module has NO 'use client' directive — it's importable from RSC.
- * Components resolve semantic icons through getIcon() or the client useIcon() hook.
+ * Components resolve semantic icons through getIcon() or the client useIcon()
+ * hook, and component icon slots through getComponentIcon() or the client
+ * useComponentIcon() hook.
+ *
+ * SYNC: Component icon slot resolution is mirrored by useComponentIcon in
+ * /packages/core/src/Icon/useIcon.ts.
  */
 
 import type {ReactNode} from 'react';
@@ -15,6 +22,7 @@ import {defaultIcons} from './defaultIcons';
 import type {DefinedTheme} from '../theme/defineTheme';
 import {getRegisteredTheme} from '../theme/themeRegistry';
 import {warnOnce} from '../utils/devWarning';
+import type {ComponentIconSlotName} from './index';
 
 // =============================================================================
 // Types
@@ -248,6 +256,74 @@ export function getExtendedIcon(
     defaultIcons[name as IconName] ??
     fallback
   );
+}
+
+// =============================================================================
+// Component icon slots
+// =============================================================================
+
+function getThemeComponentIcons(
+  source: IconRegistrySource,
+): Readonly<Partial<Record<string, IconName | null>>> | null {
+  if (source == null) {
+    return null;
+  }
+
+  if (typeof source === 'string') {
+    return getRegisteredTheme(source)?.componentIcons ?? null;
+  }
+
+  return source.componentIcons ?? null;
+}
+
+/**
+ * Resolve a component icon slot to the shared icon name it renders.
+ *
+ * The theme's `componentIcons[slot]` entry wins: a mapped {@link IconName} is
+ * returned as-is and `null` means the slot renders no icon. A slot the theme
+ * does not map — including one mapped to `undefined` — returns the
+ * component's `fallback`. `source` selects the theme exactly as it does for
+ * {@link getIcon}; without one, the fallback is returned.
+ *
+ * A consumer-provided instance icon, when the component exposes one, wins
+ * before this is called; the component owns that check.
+ * @example
+ * ```
+ * getComponentIconName('brand-card-status', 'info', theme); // 'info' unless mapped
+ * ```
+ */
+export function getComponentIconName(
+  slot: ComponentIconSlotName,
+  fallback: IconName | null,
+  source?: IconRegistrySource,
+): IconName | null {
+  const componentIcons = getThemeComponentIcons(source);
+  if (
+    componentIcons == null ||
+    !Object.prototype.hasOwnProperty.call(componentIcons, slot)
+  ) {
+    return fallback;
+  }
+
+  const mapped = componentIcons[slot];
+  return mapped === undefined ? fallback : mapped;
+}
+
+/**
+ * Resolve a component icon slot to artwork.
+ *
+ * Chooses the shared name with {@link getComponentIconName}, then draws it
+ * through {@link getIcon} against the same `source`, so the theme's `icons`
+ * entry, `registerIcons()`, and the built-in defaults apply in their usual
+ * order. Returns `null` when the slot resolves to `null`.
+ */
+export function getComponentIcon(
+  slot: ComponentIconSlotName,
+  fallback: IconName | null,
+  source?: IconRegistrySource,
+): ReactNode {
+  const name = getComponentIconName(slot, fallback, source);
+  return name === null ? null : getIcon(name, source);
 }
 
 /**

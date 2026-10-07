@@ -279,6 +279,10 @@ const brandTheme = defineTheme({
               'Shallow-merged: child indicators override matching names from the base.',
             ],
             [
+              'componentIcons',
+              'Merged per slot: a child icon name or null replaces the base entry for that slot. Slots the child leaves out, or sets to undefined, keep the base entry.',
+            ],
+            [
               'onDark, onLight',
               "Deep-merged per surface: the base's resolved surface first, then the child's overrides.",
             ],

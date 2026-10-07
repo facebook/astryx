@@ -2,9 +2,18 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import type {IconRegistry} from '../Icon/globalIconRegistry';
+import type {ComponentIconMap} from '../Icon';
 import type {DefinedTheme} from './defineTheme';
 import {defineTheme, generateThemeCSS, isDefinedTheme} from './defineTheme';
 import {resolveThemeToken} from './tokens';
+
+// A package-owned slot declaration, written against the public Icon module.
+declare module '../Icon' {
+  interface ComponentIconSlotMap {
+    'fixture-card-dismiss': true;
+    'fixture-card-status': true;
+  }
+}
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -1490,5 +1499,155 @@ describe('defineTheme extends', () => {
     } as DefinedTheme;
     const child = defineTheme({name: 'child', extends: built});
     expect(child.tokens['--color-accent']).toBe('#111111');
+  });
+});
+
+describe('defineTheme componentIcons', () => {
+  it('omits the map when neither the theme nor its base declares one', () => {
+    const theme = defineTheme({name: 'plain'});
+    const child = defineTheme({name: 'plain-child', extends: theme});
+
+    expect('componentIcons' in theme).toBe(false);
+    expect('componentIcons' in child).toBe(false);
+  });
+
+  it('keeps names and null, drops undefined, and copies the input', () => {
+    const input: ComponentIconMap = {
+      'fixture-card-dismiss': 'close',
+      'fixture-card-status': null,
+    };
+    const theme = defineTheme({name: 'own', componentIcons: input});
+    const sparse = defineTheme({
+      name: 'sparse',
+      componentIcons: {'fixture-card-dismiss': undefined},
+    });
+
+    expect(theme.componentIcons).toEqual({
+      'fixture-card-dismiss': 'close',
+      'fixture-card-status': null,
+    });
+    expect(theme.componentIcons).not.toBe(input);
+    expect(sparse.componentIcons).toEqual({});
+    expect(Object.keys(sparse.componentIcons ?? {})).toEqual([]);
+  });
+
+  it('inherits every base slot the child does not restate', () => {
+    const base = defineTheme({
+      name: 'base',
+      componentIcons: {
+        'fixture-card-dismiss': 'close',
+        'fixture-card-status': null,
+      },
+    });
+    const child = defineTheme({name: 'child', extends: base});
+    const emptyChild = defineTheme({
+      name: 'empty-child',
+      extends: base,
+      componentIcons: {},
+    });
+
+    expect(child.componentIcons).toEqual(base.componentIcons);
+    expect(emptyChild.componentIcons).toEqual(base.componentIcons);
+    // A fresh map, so changing one theme's data cannot reach another.
+    expect(child.componentIcons).not.toBe(base.componentIcons);
+  });
+
+  it('replaces per slot with explicit names and null; undefined inherits', () => {
+    const base = defineTheme({
+      name: 'base',
+      componentIcons: {
+        'fixture-card-dismiss': 'close',
+        'fixture-card-status': null,
+      },
+    });
+    const replaced = defineTheme({
+      name: 'replaced',
+      extends: base,
+      componentIcons: {
+        'fixture-card-dismiss': null,
+        'fixture-card-status': 'warning',
+      },
+    });
+    const partial = defineTheme({
+      name: 'partial',
+      extends: base,
+      componentIcons: {
+        'fixture-card-dismiss': undefined,
+        'fixture-card-status': 'info',
+      },
+    });
+
+    expect(replaced.componentIcons).toEqual({
+      'fixture-card-dismiss': null,
+      'fixture-card-status': 'warning',
+    });
+    expect(partial.componentIcons).toEqual({
+      'fixture-card-dismiss': 'close',
+      'fixture-card-status': 'info',
+    });
+  });
+
+  it('flattens through more than one level of extends', () => {
+    const base = defineTheme({
+      name: 'base',
+      componentIcons: {'fixture-card-dismiss': 'close'},
+    });
+    const middle = defineTheme({
+      name: 'middle',
+      extends: base,
+      componentIcons: {'fixture-card-status': null},
+    });
+    const leaf = defineTheme({
+      name: 'leaf',
+      extends: middle,
+      componentIcons: {'fixture-card-dismiss': 'success'},
+    });
+
+    expect(leaf.componentIcons).toEqual({
+      'fixture-card-dismiss': 'success',
+      'fixture-card-status': null,
+    });
+  });
+
+  it('mutates neither the child input nor the base theme', () => {
+    const baseInput: ComponentIconMap = {
+      'fixture-card-dismiss': 'close',
+      'fixture-card-status': null,
+    };
+    const base = defineTheme({name: 'base', componentIcons: baseInput});
+    const baseMapBefore = structuredClone(base.componentIcons);
+    const childInput: ComponentIconMap = {
+      'fixture-card-dismiss': undefined,
+      'fixture-card-status': 'check',
+    };
+    const child = defineTheme({
+      name: 'child',
+      extends: base,
+      componentIcons: childInput,
+    });
+
+    expect(baseInput).toEqual({
+      'fixture-card-dismiss': 'close',
+      'fixture-card-status': null,
+    });
+    expect(childInput).toEqual({
+      'fixture-card-dismiss': undefined,
+      'fixture-card-status': 'check',
+    });
+    expect('fixture-card-dismiss' in childInput).toBe(true);
+    expect(base.componentIcons).toEqual(baseMapBefore);
+    expect(child.componentIcons).not.toBe(childInput);
+  });
+
+  it('stays separate from the icons map', () => {
+    const theme = defineTheme({
+      name: 'separate',
+      componentIcons: {'fixture-card-dismiss': 'success'},
+      icons: {success: 'theme-success'} as Partial<IconRegistry>,
+    });
+
+    expect(theme.icons).toEqual({success: 'theme-success'});
+    expect(theme.icons).not.toHaveProperty('fixture-card-dismiss');
+    expect(theme.componentIcons).toEqual({'fixture-card-dismiss': 'success'});
   });
 });

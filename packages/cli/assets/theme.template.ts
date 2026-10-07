@@ -310,6 +310,16 @@ export const myTheme = defineTheme({
   // indicators: {check: RadioIndicator},
 
   /**
+   * Choose which shared icon name a component icon slot renders, or `null` to
+   * render none, without changing that icon anywhere else. A slot is declared
+   * by the package whose component renders it; Core declares none, so this
+   * stays commented out until a component you use documents one. `icons`
+   * still draws the chosen name.
+   * Reference: `astryx docs icons`.
+   */
+  // componentIcons: {'brand-card-status': 'warning'},
+
+  /**
    * Code highlighting: sets the --color-syntax-* tokens. Presets live in
    * `@astryxdesign/core/theme/syntax`.
    */
