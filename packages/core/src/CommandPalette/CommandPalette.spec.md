@@ -18,6 +18,8 @@ verified_by:
     packages/core/src/CommandPalette/CommandPaletteItem.test.tsx,
     packages/core/src/CommandPalette/CommandPaletteGroup.test.tsx,
     packages/core/src/CommandPalette/CommandPaletteFooter.test.tsx,
+    packages/core/src/CommandPalette/CommandPaletteEmpty.test.tsx,
+    packages/core/src/CommandPalette/__tests__/CommandPaletteEmpty.a11y.chromium.spec.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
@@ -115,8 +117,13 @@ documented in `CommandPalette.doc.mjs` and its subcomponent docs.
 
 ## Accessibility contract
 
-This draft does not change or extend CommandPalette's current Dialog, combobox,
-listbox, option, announcement, or keyboard behavior.
+The built-in Empty branch currently renders a generic message directly inside the
+listbox. Empty search also announces the no-results state through the live region;
+empty bootstrap clears that region and has no separate announcement. The WAI-ARIA
+Listbox Pattern permits only option and group owned children, so the correct
+exposed-tree and announcement treatment remains OQ3 rather than an audit-authored
+rule. Dialog, combobox, listbox, selectable-option, announcement, and keyboard
+behavior otherwise remain owned by CommandPalette and its corresponding parts.
 
 ## Design relationships
 
@@ -216,6 +223,11 @@ layer, API, or theming decision.
 - **OQ2 — Should focused tests pin the default Search glyph, pending Loading
   spinner, and default Footer Keyboard shortcuts?** (`checkable`) Their presence
   is currently source-inspected rather than asserted.
+- **OQ3 — Should both empty states be exposed as disabled options inside the
+  listbox, or should Empty stay presentational with bootstrap gaining an explicit
+  announcement to match empty search?** (`human-api`) A generic owned child
+  conflicts with the WAI-ARIA Listbox Pattern. Empty search already uses the live
+  region; empty bootstrap currently does not.
 
 ## Content boundary
 

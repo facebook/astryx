@@ -52,13 +52,11 @@ export interface CommandPaletteEmptyProps extends BaseProps<HTMLDivElement> {
  * - `emptyBootstrapText`: no search term and bootstrap() returns nothing
  * - `emptySearchText`: a search query returned no results
  *
- * Can also be composed manually inside a custom render function.
- *
  * @example
  * ```
  * <CommandPalette
- *   emptyBootstrapText={<CommandPaletteEmpty>Start typing to search</CommandPaletteEmpty>}
- *   emptySearchText={<CommandPaletteEmpty>No results found</CommandPaletteEmpty>}
+ *   emptyBootstrapText="Start typing to search"
+ *   emptySearchText="No results found"
  *   searchSource={source}
  * />
  * ```

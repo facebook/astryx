@@ -318,5 +318,9 @@
       "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb",
       "packages/core/src/Divider/Divider.tsx": "sha256:f302b5c9eecde40b486c09d49c71cb7dab158e2fcedcb38c0145671c45d9cf8d"
     }
+  },
+  {
+    "component": "core/CommandPaletteEmpty",
+    "reason": "CommandPaletteEmpty paints centered message content with symmetric flex alignment and logical block/inline padding. It owns no directional glyph, inline-side placement, reordered controls, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior; caller-provided message content follows normal document direction."
   }
 ]
