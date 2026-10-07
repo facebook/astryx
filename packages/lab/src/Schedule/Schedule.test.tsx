@@ -661,6 +661,41 @@ describe('Schedule event popover', () => {
     return dialog as HTMLElement;
   }
 
+  it('paints a timed event that ends exactly at midnight on the day it starts', () => {
+    const lateSync = createEventFromISO({
+      id: 'late',
+      title: 'Late sync',
+      category: 'Sync',
+      start: '2026-05-13T22:00:00.000Z',
+      end: '2026-05-14T00:00:00.000Z',
+    });
+    const {unmount} = renderWeek({minHour: 0, maxHour: 24}, [lateSync]);
+    // Painted: a block outside the hidden read-only grid.
+    const grid = screen.getByRole('grid', {name: 'Schedule time grid'});
+    expect(
+      screen
+        .getAllByText('Late sync')
+        .filter(element => !grid.contains(element)),
+    ).toHaveLength(1);
+    unmount();
+
+    renderWeek({minHour: 0, maxHour: 24, renderPopover}, [lateSync]);
+    const wednesday = screen.getByRole('group', {
+      name: 'Wednesday, May 13, 2026',
+    });
+    expect(
+      Array.from(wednesday.querySelectorAll('button')).map(button =>
+        button.getAttribute('aria-label'),
+      ),
+    ).toEqual([
+      'Late sync, 10:00 PM - 12:00 AM, Sync, Wednesday, May 13, 2026',
+    ]);
+    const thursday = screen.getByRole('group', {
+      name: 'Thursday, May 14, 2026',
+    });
+    expect(thursday.querySelectorAll('button')).toHaveLength(0);
+  });
+
   it('keeps the read-only grid and renders no button when the option is absent', () => {
     renderWeek();
     expect(eventButtons()).toEqual([]);

@@ -27,7 +27,6 @@ import {HStack} from '@astryxdesign/core/Stack';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {
   plainDateFromInstant,
-  plainDateIsAfter,
   plainDateIsBefore,
   plainDateToInstant,
   type PlainDate,
@@ -580,17 +579,6 @@ export function getMinutesSinceStartOfDay(
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
-}
-
-export function eventSpansPastDay(
-  event: CalendarInstantEvent,
-  day: PlainDate,
-  timezoneID: string,
-): boolean {
-  return plainDateIsAfter(
-    plainDateFromInstant(Math.max(event.end - 1, event.start), timezoneID),
-    day,
-  );
 }
 
 export function isEventInPast(

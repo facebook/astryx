@@ -592,6 +592,56 @@ export const EventPopover: Story = {
   },
 };
 
+const midnightEvents: CalendarEvent[] = [
+  createEventFromISO({
+    id: 'planning',
+    title: 'Planning',
+    category: 'Focus',
+    start: '2026-05-13T17:00:00.000Z',
+    end: '2026-05-13T18:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'late-sync',
+    title: 'Late sync',
+    category: 'Company',
+    start: '2026-05-13T22:00:00.000Z',
+    end: '2026-05-14T00:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'evening-review',
+    title: 'Evening review',
+    category: 'Design',
+    start: '2026-05-14T20:00:00.000Z',
+    end: '2026-05-15T00:00:00.000Z',
+  }),
+];
+
+/**
+ * Timed events that end exactly at midnight paint from their start to the
+ * bottom of their day.
+ */
+export const EventEndingAtMidnight: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const view = useMemo(
+      () => createScheduleWeeklyView({minHour: 16, maxHour: 24}),
+      [],
+    );
+
+    return (
+      <Schedule
+        view={view}
+        events={midnightEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
 export const ViewSelectorPlugin: Story = {
   render: () => {
     const views = useMemo(
