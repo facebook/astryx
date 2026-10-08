@@ -34,7 +34,8 @@ test.use({
   deviceScaleFactor: 3,
 });
 
-const sleep = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = async (ms: number) =>
+  new Promise(resolve => setTimeout(resolve, ms));
 
 async function openSheet(page: Page) {
   await page.goto(
@@ -107,7 +108,16 @@ async function trackSheetTravel(page: Page) {
   });
 }
 
-const PINCHES: {name: string; fingers: (box: Box) => [Point, Point]}[] = [
+// `maxTravel` is how far the sheet may move while the fingers are down. A pinch
+// is not a drag, so it is 2px except in one order: a finger that lands off the
+// sheet is invisible to the sheet until the handle finger's next touch event,
+// and the browser delivers that finger's pointermove first. That one input
+// sample can move the sheet before it yields and returns to its detent.
+const PINCHES: {
+  name: string;
+  fingers: (box: Box) => [Point, Point];
+  maxTravel?: number;
+}[] = [
   {
     name: 'across the handle and the body',
     fingers: box => [
@@ -123,6 +133,28 @@ const PINCHES: {name: string; fingers: (box: Box) => [Point, Point]}[] = [
     ],
   },
   {
+    name: 'across the body and the handle, body finger first',
+    fingers: box => [
+      {x: box.x + box.width / 2 + 10, y: box.y + 90},
+      {x: box.x + box.width / 2, y: box.y + 12},
+    ],
+  },
+  {
+    name: 'at the top of the body, lower finger first',
+    fingers: box => [
+      {x: box.x + box.width / 2 + 10, y: box.y + 220},
+      {x: box.x + box.width / 2, y: box.y + 160},
+    ],
+  },
+  {
+    name: 'from the handle and off the sheet above it',
+    fingers: box => [
+      {x: box.x + box.width / 2, y: box.y + 12},
+      {x: box.x + box.width / 2 + 10, y: box.y - 70},
+    ],
+    maxTravel: 16,
+  },
+  {
     name: 'in the body, spreading sideways',
     fingers: box => [
       {x: box.x + box.width / 2 - 30, y: box.y + 280},
@@ -132,7 +164,7 @@ const PINCHES: {name: string; fingers: (box: Box) => [Point, Point]}[] = [
 ];
 type Box = {x: number; y: number; width: number; height: number};
 
-for (const {name, fingers} of PINCHES) {
+for (const {name, fingers, maxTravel = 2} of PINCHES) {
   test(`a pinch ${name} zooms the page and leaves the sheet at rest`, async ({
     page,
   }) => {
@@ -145,12 +177,12 @@ for (const {name, fingers} of PINCHES) {
     expect(
       await page.evaluate(() => window.visualViewport?.scale ?? 1),
     ).toBeGreaterThan(1.2);
-    // A pinch is not a drag: the sheet never left its detent.
+    // A pinch is not a drag: the sheet holds its detent.
     expect(
       await page.evaluate(
         () => (window as unknown as {__travel: number}).__travel,
       ),
-    ).toBeLessThan(2);
+    ).toBeLessThan(maxTravel);
     await expect(dialog).toBeVisible();
     // Layout-viewport coordinates: the zoom itself does not move them.
     expect(

@@ -54,8 +54,10 @@
  *
  * Every gesture here is one finger. A second finger is a pinch, and pinch-zoom
  * belongs to the browser (WCAG 1.4.4): the surfaces declare `pinch-zoom` in
- * their `touch-action`, and a second finger landing ends any drag in flight
- * or armed — the sheet returns to its detent and the pinch zooms the page.
+ * their `touch-action`, and a second finger — on either surface, in either
+ * order — ends any drag in flight or armed (yieldToPinch), as does the
+ * browser cancelling a handle drag to take the pinch. The sheet returns to
+ * its detent and the pinch zooms the page.
  *
  * Kept private to BottomSheet: a dismiss edge + detents on a bottom-anchored
  * surface are inherently sheet concepts. It is not a general primitive and is
@@ -80,6 +82,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type RefObject,
+  type TouchEvent as ReactTouchEvent,
   type UIEvent as ReactUIEvent,
 } from 'react';
 import {useMediaQuery} from '../hooks';
@@ -346,6 +349,8 @@ export interface SheetHandleProps {
   onPointerMove: (event: ReactPointerEvent) => void;
   onPointerUp: (event: ReactPointerEvent) => void;
   onPointerCancel: (event: ReactPointerEvent) => void;
+  onTouchStart: (event: ReactTouchEvent) => void;
+  onTouchMove: (event: ReactTouchEvent) => void;
 }
 
 export interface SheetBodyProps {
@@ -1082,12 +1087,7 @@ export function useSheetGestures({
 
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent) => {
-      if (!event.isPrimary) {
-        // A second finger is a pinch: give it to the browser.
-        cancelDrag(event.currentTarget as HTMLElement);
-        return;
-      }
-      if (event.button !== 0) {
+      if (event.button !== 0 || !event.isPrimary) {
         return;
       }
       // The handle has no native focus action. Prevent pointer-down from
@@ -1096,7 +1096,7 @@ export function useSheetGestures({
       event.preventDefault();
       beginDrag(event, measureHeight());
     },
-    [beginDrag, cancelDrag, measureHeight],
+    [beginDrag, measureHeight],
   );
 
   const handleContextMenu = useCallback(
@@ -1358,14 +1358,29 @@ export function useSheetGestures({
     end: (e: TouchEvent) => void;
   } | null>(null);
 
+  // A second finger is a pinch, and pinch-zoom is the browser's. Whichever
+  // surface it lands on and whichever finger came first, drop every armed
+  // hand-off and any drag in flight so nothing claims (or preventDefault()s)
+  // the gesture; the sheet returns to its detent.
+  const yieldToPinch = useCallback(
+    (target?: HTMLElement) => {
+      touchDragRef.current = null;
+      armedBodyRef.current = null;
+      cancelDrag(target);
+    },
+    [cancelDrag],
+  );
+
   const beginDragRef = useRef(beginDrag);
   const cancelDragRef = useRef(cancelDrag);
+  const yieldToPinchRef = useRef(yieldToPinch);
   const pointerMoveRef = useRef(handlePointerMove);
   const endDragRef = useRef(endDrag);
   const measureHeightRef = useRef(measureHeight);
   useEffect(() => {
     beginDragRef.current = beginDrag;
     cancelDragRef.current = cancelDrag;
+    yieldToPinchRef.current = yieldToPinch;
     pointerMoveRef.current = handlePointerMove;
     endDragRef.current = endDrag;
     measureHeightRef.current = measureHeight;
@@ -1386,10 +1401,7 @@ export function useSheetGestures({
     const onTouchStart = (event: TouchEvent) => {
       const body = event.currentTarget as HTMLElement;
       if (event.touches.length > 1) {
-        // A second finger is a pinch. Disarm, and drop a drag already in
-        // flight, so no later touchmove is cancelled out from under the zoom.
-        touchDragRef.current = null;
-        cancelDragRef.current(body);
+        yieldToPinchRef.current(body);
         return;
       }
       const touch = event.changedTouches[0];
@@ -1426,6 +1438,13 @@ export function useSheetGestures({
 
     const onTouchMove = (event: TouchEvent) => {
       const scroller = event.currentTarget as HTMLElement;
+      // `touches` lists every finger on the screen, so this also catches a
+      // second finger that landed outside the body (on the handle, or off the
+      // sheet), where no listener here saw it arrive.
+      if (event.touches.length > 1) {
+        yieldToPinchRef.current(scroller);
+        return;
+      }
       const armed = touchDragRef.current;
       if (dragStateRef.current) {
         const t = [...event.changedTouches].find(
@@ -1595,6 +1614,53 @@ export function useSheetGestures({
     [reconcileScrollPreservationInset],
   );
 
+  // A second pointer on either surface is a pinch: yield before either
+  // surface's primary-pointer handling sees it.
+  const handleHandlePointerDown = useCallback(
+    (event: ReactPointerEvent) => {
+      if (!event.isPrimary) {
+        yieldToPinch(event.currentTarget as HTMLElement);
+        return;
+      }
+      handlePointerDown(event);
+    },
+    [handlePointerDown, yieldToPinch],
+  );
+  const handleBodyPointerDownOrPinch = useCallback(
+    (event: ReactPointerEvent) => {
+      if (!event.isPrimary) {
+        yieldToPinch(event.currentTarget as HTMLElement);
+        return;
+      }
+      handleBodyPointerDown(event);
+    },
+    [handleBodyPointerDown, yieldToPinch],
+  );
+  // A finger that started on the handle reports every finger on the screen,
+  // so a second one landing anywhere (off the sheet included) is seen here,
+  // usually before the browser gets round to cancelling the handle pointer.
+  const handleHandleTouch = useCallback(
+    (event: ReactTouchEvent) => {
+      if (event.touches.length > 1) {
+        yieldToPinch(event.currentTarget as HTMLElement);
+      }
+    },
+    [yieldToPinch],
+  );
+  // The handle allows only pinch-zoom, so the browser cancels a handle drag's
+  // pointer when it takes a pinch. That is not a release: return to the
+  // detent rather than settling from wherever the finger had got to.
+  const handleHandlePointerCancel = useCallback(
+    (event: ReactPointerEvent) => {
+      const state = dragStateRef.current;
+      if (state?.pointerId !== event.pointerId || state.syntheticTouch) {
+        return;
+      }
+      cancelDrag(event.currentTarget as HTMLElement);
+    },
+    [cancelDrag],
+  );
+
   // The resting transform; a drag in flight writes its own to the element
   // (writeLiveTransform) and a host that owns the element's transform must not
   // render this over it while `isDragging`.
@@ -1626,16 +1692,20 @@ export function useSheetGestures({
       style: {touchAction: 'pinch-zoom', cursor: 'grab'},
       onContextMenu: handleContextMenu,
       onLostPointerCapture: handleLostPointerCapture,
-      onPointerDown: handlePointerDown,
+      onPointerDown: handleHandlePointerDown,
       onPointerMove: handlePointerMove,
       onPointerUp: endDrag,
-      onPointerCancel: endDrag,
+      onPointerCancel: handleHandlePointerCancel,
+      onTouchStart: handleHandleTouch,
+      onTouchMove: handleHandleTouch,
     }),
     [
       endDrag,
       handleContextMenu,
+      handleHandlePointerCancel,
+      handleHandlePointerDown,
+      handleHandleTouch,
       handleLostPointerCapture,
-      handlePointerDown,
       handlePointerMove,
     ],
   );
@@ -1645,7 +1715,7 @@ export function useSheetGestures({
       ref: bodyRef,
       onContextMenu: handleContextMenu,
       onLostPointerCapture: handleLostPointerCapture,
-      onPointerDown: handleBodyPointerDown,
+      onPointerDown: handleBodyPointerDownOrPinch,
       onPointerMove: handleBodyPointerMove,
       onPointerUp: handleBodyEnd,
       onPointerCancel: handleBodyEnd,
@@ -1654,7 +1724,7 @@ export function useSheetGestures({
     [
       bodyRef,
       handleBodyEnd,
-      handleBodyPointerDown,
+      handleBodyPointerDownOrPinch,
       handleBodyPointerMove,
       handleBodyScroll,
       handleContextMenu,

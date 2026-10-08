@@ -617,6 +617,64 @@ describe('useSheetGestures', () => {
       up(hook, 300, 400, target);
       expect(onDismiss).not.toHaveBeenCalled();
     });
+
+    it('returns to the detent when the browser cancels a handle drag to take a pinch', () => {
+      const onSnap = vi.fn();
+      const {hook, onDismiss} = setup({snapHeights: () => [200], onSnap});
+      const target = makeTarget();
+      down(hook, 0, 0, target);
+      // Fast enough that settling from here would throw the sheet away.
+      move(hook, 60, 20, target);
+      act(() =>
+        hook.result.current.handleProps.onPointerCancel(
+          pointerEvent(60, 22, target),
+        ),
+      );
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.contentProps.style.transform).toBeUndefined();
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(onSnap).not.toHaveBeenCalled();
+    });
+
+    it('returns a handle drag to its detent when a second finger lands off the sheet', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const target = makeTarget();
+      down(hook, 0, 0, target);
+      move(hook, 40, 100, target);
+      expect(hook.result.current.isDragging).toBe(true);
+      act(() =>
+        hook.result.current.handleProps.onTouchMove({
+          currentTarget: target,
+          touches: [
+            {identifier: 1, clientY: 40},
+            {identifier: 2, clientY: -60},
+          ],
+        } as unknown as React.TouchEvent),
+      );
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.contentProps.style.transform).toBeUndefined();
+      expect(onDismiss).not.toHaveBeenCalled();
+    });
+
+    it('drops an armed body pull when a second pointer lands on the body', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const body = makeTarget();
+      act(() => hook.result.current.sheetRef(body));
+      act(() =>
+        hook.result.current.bodyProps.onPointerDown(pointerEvent(0, 0, body)),
+      );
+      act(() =>
+        hook.result.current.bodyProps.onPointerDown(
+          pointerEvent(80, 10, body, 2, 0, false),
+        ),
+      );
+      act(() =>
+        hook.result.current.bodyProps.onPointerMove(
+          pointerEvent(60, 100, body),
+        ),
+      );
+      expect(hook.result.current.isDragging).toBe(false);
+    });
   });
 
   it('does not start a drag from a secondary pointer button', () => {
@@ -956,6 +1014,60 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(false);
       expect(hook.result.current.contentProps.style.transform).toBeUndefined();
       expect(onDismiss).not.toHaveBeenCalled();
+    });
+
+    it('leaves a pinch to the browser when the body finger lands first and the second lands on the handle', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      const handle = makeTarget();
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      let pull: Event | undefined;
+      act(() => {
+        touch(el, 'touchstart', 100);
+        hook.result.current.handleProps.onPointerDown(
+          pointerEvent(20, 10, handle, 2, 0, false),
+        );
+        // The spread carries the body finger down past the promotion slop.
+        pull = touch(el, 'touchmove', 160);
+      });
+      expect(pull?.defaultPrevented).toBe(false);
+      expect(hook.result.current.isDragging).toBe(false);
+    });
+
+    it('leaves a pinch to the browser when the second finger lands off the body', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      let pull: Event | undefined;
+      act(() => {
+        touch(el, 'touchstart', 100);
+        // No listener here saw the second finger arrive; `touches` lists it.
+        const ev = new Event('touchmove', {bubbles: true, cancelable: true});
+        Object.defineProperty(ev, 'changedTouches', {
+          value: [{identifier: 1, clientY: 160}],
+        });
+        Object.defineProperty(ev, 'touches', {
+          value: [
+            {identifier: 1, clientY: 160},
+            {identifier: 2, clientY: 20},
+          ],
+        });
+        Object.defineProperty(ev, 'currentTarget', {value: el});
+        el.dispatchEvent(ev);
+        pull = ev;
+      });
+      expect(pull?.defaultPrevented).toBe(false);
+      expect(hook.result.current.isDragging).toBe(false);
     });
 
     it('leaves native scrolling alone in the middle of the content', () => {
