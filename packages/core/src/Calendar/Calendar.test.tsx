@@ -3,7 +3,7 @@
 /**
  * @file Calendar.test.tsx
  * @input Uses vitest, @testing-library/react
- * @output Test suite for Calendar component
+ * @output Calendar selection, rendering and navigation-focus regression tests
  * @position Tests for Calendar.tsx
  *
  * SYNC: When Calendar.tsx changes, update tests accordingly
@@ -1542,5 +1542,66 @@ describe('forced colors (WCAG 1.4.11)', () => {
     // A <button> keeps the native ButtonFace surface and ignores the authored
     // Highlight fill unless it opts out of UA remapping.
     expect(getAllInjectedCss()).toContain('forced-color-adjust: none;');
+  });
+});
+
+describe('Calendar boundary focus', () => {
+  it.each([1, 2] as const)(
+    'keeps focus on an available header control with %s visible months',
+    async numberOfMonths => {
+      render(
+        <Calendar
+          numberOfMonths={numberOfMonths}
+          focusDate="2026-01-01"
+          min="2026-01-01"
+          max={numberOfMonths === 1 ? '2026-02-28' : '2026-03-31'}
+        />,
+      );
+      const user = userEvent.setup();
+      const next = screen.getByRole('button', {name: 'Next month'});
+      const previous = screen.getByRole('button', {name: 'Previous month'});
+      next.focus();
+      await user.keyboard('{Enter}');
+      expect(next).toBeDisabled();
+      expect(previous).toHaveFocus();
+      await user.keyboard(' ');
+      expect(previous).toBeDisabled();
+      expect(next).toHaveFocus();
+    },
+  );
+
+  it('waits for a controlled month change to be accepted', async () => {
+    const onFocusDateChange = vi.fn();
+    const view = (focusDate: ISODateString) => (
+      <Calendar
+        focusDate={focusDate}
+        onFocusDateChange={onFocusDateChange}
+        min="2026-01-01"
+        max="2026-02-28"
+      />
+    );
+    const {rerender} = render(view('2026-01-01'));
+    const next = screen.getByRole('button', {name: 'Next month'});
+    next.focus();
+    await userEvent.setup().keyboard('{Enter}');
+    expect(onFocusDateChange).toHaveBeenCalledWith('2026-02-01');
+    expect(next).toHaveFocus();
+    rerender(view('2026-02-01'));
+    expect(screen.getByRole('button', {name: 'Previous month'})).toHaveFocus();
+  });
+
+  it('falls back to the existing day tab stop when new bounds disable both arrows', () => {
+    const ref = vi.fn();
+    const view = (max: ISODateString) => (
+      <Calendar ref={ref} focusDate="2026-01-01" min="2026-01-01" max={max} />
+    );
+    const {rerender} = render(view('2026-02-28'));
+    screen.getByRole('button', {name: 'Next month'}).focus();
+    rerender(view('2026-01-31'));
+    const day = screen.getByRole('grid').querySelector('button[tabindex="0"]');
+    expect(day).toHaveFocus();
+    expect(ref).toHaveBeenCalledWith(
+      screen.getByRole('grid').closest('.astryx-calendar'),
+    );
   });
 });

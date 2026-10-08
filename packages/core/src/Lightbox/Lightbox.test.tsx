@@ -1,8 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Lightbox.test.tsx
+ * @input Vitest, Testing Library and the Lightbox component
+ * @output Media, dismissal and bounded gallery-focus regression coverage
+ * @position Tests for Lightbox.tsx
+ */
+
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Lightbox} from './Lightbox';
+import userEvent from '@testing-library/user-event';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
 
@@ -674,5 +682,67 @@ describe('Lightbox', () => {
       fireEvent.click(screen.getByRole('img', {hidden: true}));
       expect(onOpenChange).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('Lightbox boundary focus', () => {
+  const media = [
+    {src: '/one.jpg', alt: 'One'},
+    {src: '/two.jpg', alt: 'Two'},
+  ];
+
+  it('moves to the newly available opposite button in both directions', async () => {
+    render(<Lightbox isOpen onOpenChange={() => {}} media={media} />);
+    const user = userEvent.setup();
+    const next = screen.getByRole('button', {name: 'Next'});
+    const previous = screen.getByRole('button', {name: 'Previous'});
+    next.focus();
+    await user.keyboard('{Enter}');
+    expect(next).toBeDisabled();
+    expect(previous).toHaveFocus();
+    await user.keyboard(' ');
+    expect(previous).toBeDisabled();
+    expect(next).toHaveFocus();
+  });
+
+  it('keeps focus while a controlled owner ignores an index request', async () => {
+    const onIndexChange = vi.fn();
+    render(
+      <Lightbox
+        isOpen
+        onOpenChange={() => {}}
+        media={media}
+        index={0}
+        onIndexChange={onIndexChange}
+      />,
+    );
+    const next = screen.getByRole('button', {name: 'Next'});
+    next.focus();
+    await userEvent.setup().keyboard('{Enter}');
+    expect(onIndexChange).toHaveBeenCalledWith(1);
+    expect(next).toHaveFocus();
+    expect(next).not.toBeDisabled();
+  });
+
+  it('does not move focus away from Close after a delayed index change', () => {
+    const view = (index: number) => (
+      <Lightbox isOpen onOpenChange={() => {}} media={media} index={index} />
+    );
+    const {rerender} = render(view(0));
+    screen.getByRole('button', {name: 'Next'}).focus();
+    const close = screen.getByRole('button', {name: 'Close'});
+    close.focus();
+    rerender(view(1));
+    expect(close).toHaveFocus();
+  });
+
+  it('keeps focus on Close if a gallery shrinks to a single item', () => {
+    const view = (items: typeof media) => (
+      <Lightbox isOpen onOpenChange={() => {}} media={items} />
+    );
+    const {rerender} = render(view(media));
+    screen.getByRole('button', {name: 'Next'}).focus();
+    rerender(view(media.slice(0, 1)));
+    expect(screen.getByRole('button', {name: 'Close'})).toHaveFocus();
   });
 });
