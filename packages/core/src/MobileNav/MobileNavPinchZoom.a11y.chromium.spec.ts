@@ -33,7 +33,8 @@ test.use({
   deviceScaleFactor: 3,
 });
 
-const sleep = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = async (ms: number) =>
+  new Promise(resolve => setTimeout(resolve, ms));
 
 async function openNav(page: Page) {
   await page.goto(
@@ -106,13 +107,38 @@ test('a pinch on the nav content zooms the page', async ({page}) => {
 test('a pinch on the backdrop beside the nav zooms the page', async ({
   page,
 }) => {
-  const {nav, box} = await openNav(page);
+  const {nav} = await openNav(page);
+  // The panel is the dialog's own child; the rest of the dialog is backdrop.
+  // Whichever side the panel sits on, pinch in the strip beside it.
+  const panel = await nav.locator(':scope > div').first().boundingBox();
+  if (panel == null) {
+    throw new Error('no nav panel box');
+  }
   const viewport = page.viewportSize()!;
-  // The strip between the panel's end edge and the viewport's.
-  const x = (box.x + box.width + viewport.width) / 2;
-  expect(x).toBeGreaterThan(box.x + box.width);
+  const before = panel.x;
+  const after = viewport.width - (panel.x + panel.width);
+  const strip =
+    before >= after
+      ? {start: 0, end: panel.x}
+      : {start: panel.x + panel.width, end: viewport.width};
+  expect(strip.end - strip.start).toBeGreaterThan(40);
+  const x = (strip.start + strip.end) / 2;
+  const fingers = [
+    {x: x - 4, y: 380},
+    {x: x + 4, y: 440},
+  ];
+  // Both fingers land on the backdrop, outside the panel.
+  for (const finger of fingers) {
+    expect(finger.x < panel.x || finger.x > panel.x + panel.width).toBe(true);
+    expect(
+      await nav.evaluate(
+        (dialog, p) => document.elementFromPoint(p.x, p.y) === dialog,
+        finger,
+      ),
+    ).toBe(true);
+  }
   const cdp = await page.context().newCDPSession(page);
-  await pinch(cdp, {x, y: 380}, {x: x + 4, y: 440});
+  await pinch(cdp, fingers[0], fingers[1]);
   expect(
     await page.evaluate(() => window.visualViewport?.scale ?? 1),
   ).toBeGreaterThan(1.2);
