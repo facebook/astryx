@@ -1139,8 +1139,8 @@ describe('no Astryx-owned environment variables (spec:AST-017 FR14)', () => {
           walk(full);
           continue;
         }
-        if (!/\.(?:mjs|js|ts)$/.test(entry.name)) continue;
-        if (/\.test\.|\.d\.ts$/.test(entry.name)) continue;
+        if (!/\.[cm]?[jt]sx?$/.test(entry.name)) continue;
+        if (/\.test\.|\.d\.[cm]?ts$/.test(entry.name)) continue;
         if (ENV_READ.test(fs.readFileSync(full, 'utf8'))) {
           hits.push(path.relative(cliDir, full));
         }
