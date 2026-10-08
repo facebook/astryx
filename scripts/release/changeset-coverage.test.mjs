@@ -189,6 +189,11 @@ describe('classifyPath — what ships to consumers', () => {
     expect(result.reason).toMatch(reason);
   });
 
+  it('treats a browser spec test inside a shipped package as exempt', () => {
+    const withSpec = repo({'packages/core/src/Button/Button.a11y.chromium.spec.ts': 'test();\n'});
+    expect(classifyPath('packages/core/src/Button/Button.a11y.chromium.spec.ts', at(withSpec)).ships).toBe(false);
+  });
+
   it('treats a story inside a shipped package as exempt', () => {
     const withStory = repo({'packages/core/src/Button/Button.stories.tsx': 'export default {};\n'});
     expect(classifyPath('packages/core/src/Button/Button.stories.tsx', at(withStory))).toMatchObject({ships: false, reason: 'story'});
@@ -495,6 +500,30 @@ describe('rule 2 — the released CLI JSON contract', () => {
     expect(problems).toContain('response type `docs.list`');
   });
 
+  it('does not count moving fields into a composed typedef as a removal', () => {
+    const released = repo({
+      'packages/cli/api/docs/docs.type.mjs': '/**\n * @typedef {object} DocsIndexSection\n * @property {string} id\n * @property {string} title\n */\n',
+    });
+    const head = repo({
+      'packages/cli/api/docs/docs.type.mjs':
+        '/**\n * @typedef {object} DocsIndexEntry\n * @property {string} id\n * @property {string} title\n */\n\n' +
+        '/**\n * @typedef {DocsIndexEntry & {package: string}} DocsIndexSection\n */\n',
+      '.changeset/x.md': changeset({'@astryxdesign/cli': 'patch'}, '[feat] Sections name their `package`.'),
+    });
+    expect(change(released, head).problems).toEqual([]);
+  });
+
+  it('does not pin a field another change removed on a Changeset that merely uses the word', () => {
+    const released = repo();
+    const base = repo({'packages/cli/api/doctor/doctor.type.mjs': DOCTOR_TYPES.replace(' * @property {string} [fix] - Remediation.\n', '')});
+    const head = {
+      ...base,
+      'packages/cli/api/search/search.mjs': 'export const rank = 2;\n',
+      '.changeset/search.md': changeset({'@astryxdesign/cli': 'patch'}, '[fix] Search ranks a `fix` keyword as prose.'),
+    };
+    expect(change(base, head, {released}).problems).toEqual([]);
+  });
+
   it('ignores an id that was never released (FR2)', () => {
     const released = repo();
     const base = repo({'packages/cli/api/doctor/theme-checks.mjs': THEME_CHECKS});
@@ -513,6 +542,12 @@ describe('parsers', () => {
       'DoctorResponse.data',
     ]);
     expect(typedefFields('/**\n * @typedef {object} R\n * @property {object} data\n * @property {string[]} data.items\n */')).toEqual(['R.data', 'R.data.items']);
+    expect(
+      typedefFields(
+        "/**\n * @typedef {object} Base\n * @property {import('@astryxdesign/cli/authoring').Block[]} [content]\n */",
+        "/**\n * @typedef {Base & {package: string, 'kind'?: string}} Child\n */",
+      ).sort(),
+    ).toEqual(['Base.content', 'Child.content', 'Child.kind', 'Child.package']);
   });
 
   it('collects key paths, not values', () => {

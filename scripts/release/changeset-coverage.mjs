@@ -28,8 +28,9 @@
  *      release — a response `type`, a field of a response type, a field of a
  *      golden JSON response, or a doctor check id — that is missing at head
  *      breaks a script reading it (spec:AST-017 FR3, FR13). A change that
- *      removes one, or whose Changeset describes one, needs a `[breaking]`
- *      Changeset naming the id or a `Compatibility:` note naming it. Catalog
+ *      removes one, or that adds or edits a Changeset naming a missing
+ *      response type or doctor check id, needs a `[breaking]` Changeset
+ *      naming the id or a `Compatibility:` note naming it. Catalog
  *      values carried inside those responses (template slugs, docs routes,
  *      theme slugs) are mutable data (FR9, FR11, FR45) and are not compared.
  *
@@ -331,6 +332,9 @@ export function classifyPath(file, {tree, config}) {
   if (!isPackageReleasePath(file)) {
     return {ships: false, reason: 'test, fixture, snapshot, or spec record'};
   }
+  if (/\.spec\.[cm]?[jt]sx?$/.test(rel)) {
+    return {ships: false, reason: 'test, fixture, snapshot, or spec record'};
+  }
   if (/(?:^|\/)[^/]+\.stories\.[^/]+$/.test(rel) || /(?:^|\/)stories\//.test(rel)) {
     return {ships: false, reason: 'story'};
   }
@@ -520,46 +524,127 @@ const GOLDEN_DIR = 'packages/cli/test/__golden__';
 const DOCTOR_DIR = 'packages/cli/api/doctor';
 
 /**
- * Skip a JSDoc `{type}` expression (braces may nest) and return the rest.
+ * Split a JSDoc `{type}` expression off the front of `text`.
+ *
+ * @returns {{type: string, rest: string}}  type without its outer braces
  */
-function afterTypeExpression(text) {
+function splitTypeExpression(text) {
   let i = 0;
   while (i < text.length && /\s/.test(text[i])) i++;
-  if (text[i] === '{') {
-    let depth = 0;
-    for (; i < text.length; i++) {
-      if (text[i] === '{') depth++;
-      else if (text[i] === '}' && --depth === 0) {
-        i++;
-        break;
-      }
+  if (text[i] !== '{') return {type: '', rest: text.slice(i)};
+  const start = i;
+  let depth = 0;
+  for (; i < text.length; i++) {
+    if (text[i] === '{') depth++;
+    else if (text[i] === '}' && --depth === 0) {
+      i++;
+      break;
     }
   }
-  return text.slice(i).trimStart();
+  return {type: text.slice(start + 1, i - 1).trim(), rest: text.slice(i).trimStart()};
+}
+
+/** Split `text` on `separator` where no bracket is open. */
+function splitTopLevel(text, separator) {
+  const parts = [];
+  let depth = 0;
+  let current = '';
+  for (const char of text) {
+    if ('{[(<'.includes(char)) depth++;
+    else if ('}])>'.includes(char)) depth--;
+    if (char === separator && depth === 0) {
+      parts.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts;
 }
 
 /**
- * Every `@typedef` property in a `.type.mjs` source, as `Typedef.field`.
+ * What a typedef's own type expression contributes: the typedefs it extends
+ * (`Base & {extra: T}`, or a plain alias) and the keys of inline object parts.
+ */
+function typedefComposition(type) {
+  const bases = [];
+  const keys = [];
+  for (const part of splitTopLevel(type, '&')) {
+    if (/^[A-Za-z_$][\w$]*$/.test(part) && part !== 'object' && part !== 'Object') {
+      bases.push(part);
+    } else if (part.startsWith('{') && part.endsWith('}')) {
+      for (const member of splitTopLevel(part.slice(1, -1), ',')) {
+        const key = /^['"]?([A-Za-z_$][\w$]*)['"]?\??\s*:/.exec(member)?.[1];
+        if (key) keys.push(key);
+      }
+    }
+  }
+  return {bases, keys};
+}
+
+/**
+ * Every typedef in a `.type.mjs` source: its own `@property` names and what
+ * its type expression composes.
  *
  * @param {string} source
- * @returns {string[]}
+ * @returns {Array<{name: string, fields: string[], bases: string[]}>}
  */
-export function typedefFields(source) {
-  const fields = [];
+export function parseTypedefs(source) {
+  const typedefs = [];
   for (const [, comment] of source.matchAll(/\/\*\*([\s\S]*?)\*\//g)) {
     const body = comment.replace(/^[ \t]*\*[ \t]?/gm, '');
-    let typedef = null;
+    let current = null;
     for (const tag of body.split(/\n(?=\s*@)/)) {
       const m = /^\s*@(typedef|property|prop)\b([\s\S]*)$/.exec(tag);
       if (!m) continue;
-      const rest = afterTypeExpression(m[2]);
+      const {type, rest} = splitTypeExpression(m[2]);
       const name = /^\[?\s*([A-Za-z_$][\w$]*(?:(?:\[\])?\.[A-Za-z_$][\w$]*)*)/.exec(rest)?.[1];
       if (!name) continue;
-      if (m[1] === 'typedef') typedef = name;
-      else if (typedef) fields.push(`${typedef}.${name}`);
+      if (m[1] === 'typedef') {
+        const {bases, keys} = typedefComposition(type);
+        current = {name, fields: [...keys], bases};
+        typedefs.push(current);
+      } else if (current) {
+        current.fields.push(name);
+      }
     }
   }
-  return fields;
+  return typedefs;
+}
+
+/**
+ * Every field of every typedef, as `Typedef.field`, with fields a typedef
+ * gains by composing another typedef (`A & {extra: T}`) resolved, so moving a
+ * field into a shared base is not a removal.
+ *
+ * @param {string[]} sources  every `.type.mjs` source
+ * @returns {string[]}
+ */
+export function typedefFields(...sources) {
+  const byName = new Map();
+  for (const source of sources) {
+    for (const typedef of parseTypedefs(source)) byName.set(typedef.name, typedef);
+  }
+  const resolved = new Map();
+  const resolve = (name, seen = new Set()) => {
+    if (resolved.has(name)) return resolved.get(name);
+    const typedef = byName.get(name);
+    if (!typedef || seen.has(name)) return [];
+    seen.add(name);
+    const fields = new Set(typedef.fields);
+    for (const base of typedef.bases) {
+      for (const field of resolve(base, seen)) fields.add(field);
+    }
+    const list = [...fields];
+    resolved.set(name, list);
+    return list;
+  };
+  const out = [];
+  for (const name of byName.keys()) {
+    for (const field of resolve(name)) out.push(`${name}.${field}`);
+  }
+  return out;
 }
 
 /**
@@ -588,13 +673,14 @@ const lastSegment = dotted => dotted.split('.').pop().replace(/\[\]$/, '');
 
 /**
  * The machine-readable ids of the CLI's JSON contract in `tree`.
- * Keyed by a stable string; each carries the token a Changeset names it by.
+ * Keyed by a stable string; each carries the token a Changeset names it by,
+ * and whether that token is distinctive (an id) or an ordinary word (a field).
  *
  * @param {Tree} tree
- * @returns {Map<string, {label: string, token: string}>}
+ * @returns {Map<string, {label: string, token: string, distinctive: boolean}>}
  */
 export function cliJsonIds(tree) {
-  /** @type {Map<string, {label: string, token: string}>} */
+  /** @type {Map<string, {label: string, token: string, distinctive: boolean}>} */
   const ids = new Map();
 
   const typeFiles = tree.list(CLI_DIR).filter(file => file.endsWith('.type.mjs'));
@@ -605,7 +691,11 @@ export function cliJsonIds(tree) {
   const responseTypes = tree.read(RESPONSE_TYPES_DOC);
   if (responseTypes !== null) {
     for (const [, value] of responseTypes.matchAll(/\bvalue:\s*'([^']+)'/g)) {
-      ids.set(`response-type:${value}`, {label: `response type \`${value}\``, token: value});
+      ids.set(`response-type:${value}`, {
+        label: `response type \`${value}\``,
+        token: value,
+        distinctive: true,
+      });
     }
   }
 
@@ -614,14 +704,13 @@ export function cliJsonIds(tree) {
     !/\.(?:test|spec)\.[^/]+$/.test(file) &&
     isPackageReleasePath(file);
 
-  for (const file of typeFiles) {
-    if (!sourceFile(file)) continue;
-    for (const field of typedefFields(tree.read(file) ?? '')) {
-      ids.set(`field:${field}`, {
-        label: `response field \`${field}\``,
-        token: lastSegment(field),
-      });
-    }
+  const typeSources = typeFiles.filter(sourceFile).map(file => tree.read(file) ?? '');
+  for (const field of typedefFields(...typeSources)) {
+    ids.set(`field:${field}`, {
+      label: `response field \`${field}\``,
+      token: lastSegment(field),
+      distinctive: false,
+    });
   }
 
   for (const file of goldenFiles) {
@@ -636,6 +725,7 @@ export function cliJsonIds(tree) {
       ids.set(`golden:${name}:${keyPath}`, {
         label: `field \`${keyPath}\` of the ${name} golden response`,
         token: lastSegment(keyPath),
+        distinctive: false,
       });
     }
   }
@@ -647,7 +737,11 @@ export function cliJsonIds(tree) {
     for (const [, , id] of (tree.read(file) ?? '').matchAll(
       /\bid:\s*(['"])([a-z0-9][a-z0-9-]*)\1/g,
     )) {
-      ids.set(`doctor-check:${id}`, {label: `doctor check id \`${id}\``, token: id});
+      ids.set(`doctor-check:${id}`, {
+        label: `doctor check id \`${id}\``,
+        token: id,
+        distinctive: true,
+      });
     }
   }
 
@@ -695,10 +789,10 @@ export function pendingChangesets(tree) {
  * (a release), every released id missing at head must be classified.
  *
  * @param {object} input
- * @param {Map<string, {label: string, token: string}>} input.released
+ * @param {Map<string, {label: string, token: string, distinctive: boolean}>} input.released
  * @param {string} input.releasedLabel
- * @param {Map<string, {label: string, token: string}>|null} input.base
- * @param {Map<string, {label: string, token: string}>} input.head
+ * @param {Map<string, {label: string, token: string, distinctive: boolean}>|null} input.base
+ * @param {Map<string, {label: string, token: string, distinctive: boolean}>} input.head
  * @param {Array<{file: string, text: string}>} input.describedBy  Changesets this change adds or edits
  * @param {ReturnType<typeof pendingChangesets>} input.pending  every Changeset at head
  * @returns {{missing: string[], attributed: string[], problems: string[]}}
@@ -707,8 +801,14 @@ export function checkReleasedIds({released, releasedLabel, base, head, described
   const missing = [...released.keys()].filter(key => !head.has(key)).sort();
   const attributed = missing.filter(key => {
     if (!base) return true;
-    const {token} = released.get(key);
-    return base.has(key) || describedBy.some(({text}) => names(text, token));
+    // A response type or doctor check id is distinctive enough that a
+    // Changeset naming it is describing it; a field name such as `content`
+    // is an ordinary word, so a field is this change's only when it removes it.
+    const {token, distinctive} = released.get(key);
+    return (
+      base.has(key) ||
+      (distinctive && describedBy.some(({text}) => names(text, token)))
+    );
   });
 
   const cliChangesets = pending.filter(
