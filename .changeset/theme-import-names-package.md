@@ -6,4 +6,6 @@
 
 `astryx theme add --list` keeps its JSON. Its text now names `theme add <slug> --import` to use a theme and `theme eject <slug>` to fork one, instead of the deprecated copy form.
 
+`astryx doctor`'s `themes` check is now `theme-management`, with focused `theme-*` checks beside it once a project has a generated theme module.
+
 @josephfarina
