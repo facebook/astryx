@@ -199,8 +199,8 @@ function RuntimeThemeSwitchExample() {
 }
 
 const BAR_SELECTORS = {
-  revenue: 'path[fill="var(--color-data-categorical-blue)"]',
-  costs: 'path[fill="var(--color-data-categorical-orange)"]',
+  revenue: `path[fill="${series.revenue}"]`,
+  costs: `path[fill="${series.costs}"]`,
 } as const;
 
 const BAR_SELECTOR = Object.values(BAR_SELECTORS).join(', ');
