@@ -362,7 +362,7 @@ export async function createProgram() {
     .addOption(
       new Option(
         '--detail <level>',
-        'Detail level for component, hook, and docs tree reads (e.g. docs cli/commands/build), and for theme build reports (compact or brief: one line per built theme; --check is unchanged). Lists default to brief',
+        'Detail level for component, hook, and docs tree reads (e.g. docs cli/commands/build), and for theme build reports. Lists default to brief; theme build prints one line per built theme unless full, which adds the install example and font recipe',
       )
         .choices(['full', 'compact', 'brief'])
         .default('full'),

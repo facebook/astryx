@@ -64,6 +64,7 @@ import {
 import {
   importSpecifier,
   printBatchTrailer,
+  printCompactTrailer,
   themeBuild,
   themeBuildFamily,
   themeBuildForReport,
@@ -113,7 +114,10 @@ function resolveCliBin() {
  */
 function runThemeBuildOnceChild(file, options) {
   const cliBin = resolveCliBin();
-  const args = [cliBin, 'theme', 'build', file];
+  // A detail level the user chose applies to every rebuild.
+  const args = options.detail
+    ? [cliBin, '--detail', options.detail, 'theme', 'build', file]
+    : [cliBin, 'theme', 'build', file];
   if (options.out) args.push('--out', options.out);
   if (options.iconsSpecifier)
     args.push('--icons-specifier', options.iconsSpecifier);
@@ -137,7 +141,7 @@ function runThemeBuildOnceChild(file, options) {
  *
  * @param {Array<{file: string, filePath: string}>} entries - The theme file
  *   arguments as the user passed them, with their resolved absolute paths.
- * @param {{out?: string, iconsSpecifier?: string}} options - Parsed command options.
+ * @param {{out?: string, iconsSpecifier?: string, detail?: string}} options - Parsed command options, plus the detail level the user chose.
  * @returns {Promise<void>} Resolves when the watcher is stopped (Ctrl-C).
  */
 async function runThemeBuildWatch(entries, options) {
@@ -536,6 +540,13 @@ export function registerTheme(program) {
       /** @type {{out?: string, watch?: boolean, check?: boolean, iconsSpecifier?: string, family?: boolean, familyKey?: string}} */ options,
     ) => {
       const json = program.opts().json || false;
+      // The report is one line per theme unless the user asks for
+      // `--detail full`, which prints the install example and the font
+      // guidance: once for one theme, as it always has, and once for the whole
+      // batch rather than per theme.
+      const detailChosen = program.getOptionValueSource('detail') !== 'default';
+      const detail = detailChosen ? program.opts().detail : undefined;
+      const compact = detail !== 'full';
       const entries = files.map(file => ({
         file,
         filePath: path.resolve(process.cwd(), file),
@@ -611,7 +622,7 @@ export function registerTheme(program) {
             code: ERROR_CODES.ERR_THEME_INVALID,
           });
         }
-        await runThemeBuildWatch(entries, options);
+        await runThemeBuildWatch(entries, {...options, detail});
         return NO_RESULT_SET;
       }
 
@@ -648,11 +659,7 @@ export function registerTheme(program) {
         }
       }
 
-      // A batch prints the install example and the font guidance once, after
-      // every theme, instead of once per theme. `--detail compact|brief` prints
-      // one line per theme and neither block. One theme at the default detail
-      // keeps its standalone report; --json and --check are unchanged.
-      const compact = (program.opts().detail || 'full') !== 'full';
+      // --json and --check keep their own output at every detail level.
       const report = !json && !options.check && (entries.length > 1 || compact);
       /** @type {import('../../../api/theme/build/build.mjs').ThemeBuildTrailer[]} */
       const trailers = [];
@@ -706,7 +713,8 @@ export function registerTheme(program) {
           // With several themes in flight the message alone rarely says which
           // one broke, so name it. Themes already written keep their install
           // and font guidance.
-          if (report && !compact) printBatchTrailer(trailers);
+          if (report && compact) printCompactTrailer(trailers);
+          else if (report) printBatchTrailer(trailers);
           return cliError(
             entries.length > 1 ? `${entry.file}: ${err.message}` : err.message,
             {suggestions: err.suggestions, code: err.code},
@@ -727,8 +735,14 @@ export function registerTheme(program) {
           };
           jsonOut(batch);
         }
-      } else if (entries.length > 1) {
-        if (report && !compact) printBatchTrailer(trailers);
+      } else {
+        if (report && compact) {
+          printCompactTrailer(trailers, {hint: !detailChosen});
+        } else if (report) {
+          printBatchTrailer(trailers);
+        }
+      }
+      if (!json && entries.length > 1) {
         emit(
           text(
             options.check

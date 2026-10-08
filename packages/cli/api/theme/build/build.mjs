@@ -3102,6 +3102,46 @@ Or with a <link> tag:
       );
     }
   }
+  const fonts = groupUnloadedFonts(trailers);
+  if (fonts.length > 0) logger.log(formatBatchFontLoadingHelp(fonts));
+}
+
+/**
+ * Print what a short report keeps after its one line per theme: one line
+ * naming the fonts the themes do not load, and, when the caller chose no
+ * detail level, where the install example and font recipe are.
+ * @param {ThemeBuildTrailer[]} trailers
+ * @param {{hint?: boolean}} [options]
+ */
+export function printCompactTrailer(trailers, {hint = false} = {}) {
+  if (trailers.length === 0) return;
+  const fonts = groupUnloadedFonts(trailers);
+  if (fonts.length > 0) {
+    const named = fonts
+      .map(({family, themes}) =>
+        trailers.length > 1
+          ? `"${family}" (${themes.join(', ')})`
+          : `"${family}"`,
+      )
+      .join(', ');
+    logger.log(
+      `[note] Fonts named but not loaded: ${named}. Load them in your app: astryx docs typography`,
+    );
+  }
+  if (hint) {
+    logger.log(
+      'Run with --detail full for the install example and font recipe.',
+    );
+  }
+}
+
+/**
+ * Each font family the themes name but do not load, with the themes that
+ * name it, in first-seen order.
+ * @param {ThemeBuildTrailer[]} trailers
+ * @returns {Array<{family: string, themes: string[]}>}
+ */
+function groupUnloadedFonts(trailers) {
   /** @type {Map<string, {family: string, themes: string[]}>} */
   const byFamily = new Map();
   for (const trailer of trailers) {
@@ -3112,9 +3152,7 @@ Or with a <link> tag:
       byFamily.set(key, entry);
     }
   }
-  if (byFamily.size > 0) {
-    logger.log(formatBatchFontLoadingHelp([...byFamily.values()]));
-  }
+  return [...byFamily.values()];
 }
 
 /**

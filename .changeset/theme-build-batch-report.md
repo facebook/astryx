@@ -2,6 +2,6 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] `astryx theme build` with several theme files no longer repeats the same install and font blocks for every theme. It prints each theme's outputs, then the install example once, one import line per theme, and the font guidance once for every font family the themes name but do not load. `--detail compact` or `--detail brief` prints one line per theme. One theme at the default detail, `--json`, and `--check` print what they did before.
+[fix] `astryx theme build` prints one line per built theme, plus one line naming fonts the themes do not load. Before, every theme printed the same install example and font recipe, so a build of many themes printed the same blocks again and again. `--detail full` prints the install example and font recipe, once for a batch instead of once per theme; for one theme it prints what the default printed before. `--json` and `--check` are unchanged.
 
 @josephfarina

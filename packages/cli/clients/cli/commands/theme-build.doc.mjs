@@ -21,9 +21,9 @@ export const doc = {
     'theme. --family combines one selected extension tree into the three files named by ' +
     'the required --family-key, ready for one CSS load and identity-only switching. ' +
     'With --check it writes nothing and reports source drift. --icons-specifier keeps ' +
-    'its existing generated-module behavior. Several files print the install example ' +
-    'and the font guidance once for the batch; --detail compact or brief prints one ' +
-    'line per built theme.',
+    'its existing generated-module behavior. It prints one line per built theme and ' +
+    'one line naming fonts the themes do not load; --detail full adds the install ' +
+    'example and the font recipe, once for a batch.',
   fn: 'themeBuild',
   args: [{name: 'files', param: 'file', required: true, variadic: true}],
   options: [
