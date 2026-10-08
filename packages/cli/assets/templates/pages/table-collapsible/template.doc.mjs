@@ -6,7 +6,16 @@ export const doc = {
   name: 'Collapsible Table',
   displayName: 'Collapsible Table',
   description:
-    'Several tables on one page, each in a collapsible card with its own columns — for groups that do not share a schema, where one table would stand full of empty cells. One time range drives them all, and rows expand into a history chart. Accounts, integrations, sections, sort, expand, or collapse.',
+    'Several independent tables on one page, each inside a collapsible card with its own columns — for groups that do not share a schema, where a single table would stand full of empty cells. One time-range selector drives them all, and each row expands into a detail chart. Use this instead of Grouped Table when each group needs different columns.',
+  keywords: [
+    'collapsible',
+    'accordion',
+    'expand collapse',
+    'multiple tables',
+    'different columns',
+    'heterogeneous',
+    'detail chart',
+  ],
   isReady: true,
   category: 'Table - Grouped',
 };
