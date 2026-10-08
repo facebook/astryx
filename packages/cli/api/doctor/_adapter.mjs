@@ -132,6 +132,54 @@ export function findDoctorInstalledPackage(projectDir, packageName) {
   return findInstalledPackage(projectDir, packageName);
 }
 
+/**
+ * Names of the `@astryxdesign/theme-*` packages installed in the nearest
+ * `node_modules` at or above `cwd`, looking up to six levels.
+ * @param {string} cwd
+ * @returns {string[]}
+ */
+export function listDoctorThemePackages(cwd) {
+  let dir = path.resolve(cwd);
+  let nodeModules = null;
+  for (let level = 0; level < 6; level++) {
+    const candidate = path.join(dir, 'node_modules');
+    if (fs.existsSync(candidate)) {
+      nodeModules = candidate;
+      break;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  if (!nodeModules) return [];
+  const scopeDir = path.join(nodeModules, '@astryxdesign');
+  let entries;
+  try {
+    entries = fs.readdirSync(scopeDir, {withFileTypes: true});
+  } catch {
+    return [];
+  }
+  /** @type {string[]} */
+  const names = [];
+  for (const entry of entries) {
+    if (!entry.name.startsWith('theme-')) continue;
+    // pnpm links packages into node_modules/.pnpm, and a symlink entry does
+    // not report itself as a directory, so check what it points to.
+    let isDirectory = entry.isDirectory();
+    if (!isDirectory && entry.isSymbolicLink()) {
+      try {
+        isDirectory = fs
+          .statSync(path.join(scopeDir, entry.name))
+          .isDirectory();
+      } catch {
+        isDirectory = false;
+      }
+    }
+    if (isDirectory) names.push(`@astryxdesign/${entry.name}`);
+  }
+  return names;
+}
+
 /** @param {string} file */
 export function readPackageJson(file) {
   try {

@@ -6,7 +6,8 @@ import {afterEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {spawnSync} from 'node:child_process';
-import {checkAppThemes} from './theme-checks.mjs';
+import {checkAppThemes, checkThemes} from './theme-checks.mjs';
+import {runChecks} from './doctor.mjs';
 import {themeAdd} from '../theme/add/add.mjs';
 import {themeEject} from '../theme/eject/eject.mjs';
 import {themeBuild} from '../theme/build/build.mjs';
@@ -138,6 +139,109 @@ afterEach(() => {
   while (dirs.length > 0) {
     fs.rmSync(dirs.pop(), {recursive: true, force: true});
   }
+});
+
+describe('the released themes check', () => {
+  /** @param {string} name */
+  function emptyApp(name) {
+    const dir = fs.mkdtempSync(
+      path.join(process.cwd(), `.astryx-doctor-${name}-`),
+    );
+    dirs.push(dir);
+    write(path.join(dir, 'package.json'), '{"name":"app","private":true}\n');
+    return dir;
+  }
+
+  /** @param {string} dir @param {string} slug */
+  function installThemePackage(dir, slug) {
+    write(
+      path.join(
+        dir,
+        'node_modules/@astryxdesign',
+        `theme-${slug}`,
+        'package.json',
+      ),
+      JSON.stringify({name: `@astryxdesign/theme-${slug}`, version: '1.0.0'}),
+    );
+  }
+
+  it('keeps its released id, label, fields, and statuses without a generated theme module', async () => {
+    const dir = emptyApp('themes-none');
+    expect(checkThemes(dir, await checkAppThemes(dir))).toEqual({
+      id: 'themes',
+      label: 'Theme packages',
+      status: 'warn',
+      message: 'No @astryxdesign/theme-* packages are installed.',
+      fix: expect.stringContaining('theme add neutral --import'),
+    });
+
+    installThemePackage(dir, 'neutral');
+    const unwired = checkThemes(dir, await checkAppThemes(dir));
+    expect(unwired).toEqual({
+      id: 'themes',
+      label: 'Theme packages',
+      status: 'warn',
+      message:
+        'Theme package(s) installed (@astryxdesign/theme-neutral) but no theme appears wired.',
+      fix: expect.stringContaining('theme add <slug> --import'),
+    });
+    expect(unwired.fix).not.toContain('ASTRYX_THEME');
+
+    write(
+      path.join(dir, 'package.json'),
+      JSON.stringify({
+        name: 'app',
+        private: true,
+        astryx: {theme: '@astryxdesign/theme-neutral'},
+      }),
+    );
+    expect(checkThemes(dir, await checkAppThemes(dir))).toEqual({
+      id: 'themes',
+      label: 'Theme packages',
+      status: 'pass',
+      message:
+        'Theme package(s) installed (@astryxdesign/theme-neutral); wired via package.json astryx.theme.',
+    });
+  });
+
+  it('reports the overall result of the app-theme checks with a generated module', async () => {
+    const healthy = await fixture();
+    expect(checkThemes(healthy.dir, await checkAppThemes(healthy.dir))).toEqual(
+      {
+        id: 'themes',
+        label: 'Theme packages',
+        status: 'pass',
+        message:
+          'App themes come from the generated theme module, and every theme check passes.',
+      },
+    );
+
+    // A module is loaded once per process, so the broken one is a new fixture.
+    const {dir, packageDir} = await fixture();
+    write(
+      path.join(packageDir, 'dist/ocean.js'),
+      `import '@acme/definitely-missing-dep';\nexport const oceanTheme = {name: 'ocean', tokens: {}};\n`,
+    );
+    expect(checkThemes(dir, await checkAppThemes(dir))).toEqual({
+      id: 'themes',
+      label: 'Theme packages',
+      status: 'fail',
+      message: 'One theme check needs attention: theme-owners.',
+      fix: 'Follow the fix on the theme-owners check.',
+    });
+  }, 30_000);
+
+  it('appears once in the doctor report, right after version alignment, with and without a module', async () => {
+    const {dir} = await fixture();
+    for (const cwd of [emptyApp('themes-report'), dir]) {
+      const ids = (await runChecks({cwd})).checks.map(item => item.id);
+      expect(ids.filter(id => id === 'themes')).toHaveLength(1);
+      expect(ids.indexOf('themes')).toBe(ids.indexOf('version-alignment') + 1);
+      expect(ids.indexOf('themes')).toBeLessThan(
+        ids.findIndex(id => id === 'theme-management' || id === 'theme-owners'),
+      );
+    }
+  }, 30_000);
 });
 
 describe('app-theme doctor checks', () => {

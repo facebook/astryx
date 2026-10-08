@@ -17,6 +17,7 @@ import {
   findDoctorCoreDir,
   findDoctorInstalledPackage,
   isLocalThemeOwner,
+  listDoctorThemePackages,
   listProjectSourceFiles,
   planThemeAppWrite,
   readPackageJson,
@@ -51,6 +52,8 @@ const CHECKS = [
   ['theme-fonts', 'Theme font loading'],
   ['theme-global-rules', 'Cross-theme global CSS rules'],
 ];
+
+const APP_THEME_CHECK_IDS = new Set(CHECKS.map(([id]) => id));
 
 /**
  * @param {string} message
@@ -382,6 +385,97 @@ function unmigratedCopyCheck(projectDir) {
     status: 'warn',
     message: `${copies.length} source theme copy or copies are not managed themes yet: ${shown}.`,
     fix: `Write their missing descriptors with \`${command}\`.`,
+  };
+}
+
+/**
+ * Whether the app's package.json names a theme in `astryx.theme`.
+ * @param {string} cwd
+ */
+function appPackageNamesTheme(cwd) {
+  let state;
+  try {
+    state = readThemeState(cwd);
+  } catch {
+    return false;
+  }
+  const pkg = readPackageJson(state.packageFile);
+  return Boolean(pkg?.astryx?.theme);
+}
+
+/**
+ * The `themes` check that every released doctor report carries. Its id is
+ * stable, so it stays beside the app-theme checks. Without a generated theme
+ * module it reports what it always has: whether an `@astryxdesign/theme-*`
+ * package is installed, and whether the app's package.json names a theme in
+ * `astryx.theme`. With a generated module it reports the overall result of the
+ * app-theme checks.
+ * @param {string} cwd
+ * @param {DoctorCheck[]} appChecks - the checks {@link checkAppThemes} returned
+ * @returns {DoctorCheck}
+ */
+export function checkThemes(cwd, appChecks) {
+  const label = 'Theme packages';
+  const managed = appChecks.some(
+    check => APP_THEME_CHECK_IDS.has(check.id) && check.status !== 'info',
+  );
+  if (managed) {
+    const needsWork = appChecks.filter(
+      check => check.status === 'fail' || check.status === 'warn',
+    );
+    if (needsWork.length === 0) {
+      return {
+        id: 'themes',
+        label,
+        status: 'pass',
+        message:
+          'App themes come from the generated theme module, and every theme check passes.',
+      };
+    }
+    const ids = needsWork.map(check => check.id).join(', ');
+    return {
+      id: 'themes',
+      label,
+      status: needsWork.some(check => check.status === 'fail')
+        ? 'fail'
+        : 'warn',
+      message:
+        needsWork.length === 1
+          ? `One theme check needs attention: ${ids}.`
+          : `${needsWork.length} theme checks need attention: ${ids}.`,
+      fix:
+        needsWork.length === 1
+          ? `Follow the fix on the ${ids} check.`
+          : `Follow the fix on each of these checks: ${ids}.`,
+    };
+  }
+
+  const run = getCliInvocation(cwd);
+  const packages = listDoctorThemePackages(cwd);
+  if (packages.length === 0) {
+    return {
+      id: 'themes',
+      label,
+      status: 'warn',
+      message: 'No @astryxdesign/theme-* packages are installed.',
+      fix: `Install a theme, e.g. \`npm install @astryxdesign/theme-neutral\`, then add it to the app with \`${run} theme add neutral --import\`.`,
+    };
+  }
+  const names = packages.join(', ');
+  if (!appPackageNamesTheme(cwd)) {
+    return {
+      id: 'themes',
+      label,
+      status: 'warn',
+      message: `Theme package(s) installed (${names}) but no theme appears wired.`,
+      fix: `Add one to the app with \`${run} theme add <slug> --import\`.`,
+    };
+  }
+  return {
+    id: 'themes',
+    label,
+    status: 'pass',
+    message: `Theme package(s) installed (${names}); wired via package.json astryx.theme.`,
   };
 }
 

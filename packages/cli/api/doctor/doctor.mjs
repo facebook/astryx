@@ -50,7 +50,7 @@ import {
 import {typedEdges} from '../docs/node/node.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
-import {checkAppThemes} from './theme-checks.mjs';
+import {checkAppThemes, checkThemes} from './theme-checks.mjs';
 
 /**
  * @typedef {'pass'|'warn'|'fail'|'info'} DoctorStatus
@@ -1197,11 +1197,13 @@ export async function runChecks(options = {}) {
 
   /** @type {DoctorCheck[]} */
   const checks = [];
-  // Run the app-theme checks and config check after the environment checks.
+  // Run the theme checks and config check after the environment checks. The
+  // released `themes` check keeps its place, ahead of the app-theme checks.
   for (const fn of SYNC_CHECKS) {
     checks.push(fn(ctx));
     if (fn === checkVersionAlignment) {
-      checks.push(...(await checkAppThemes(cwd)));
+      const appThemeChecks = await checkAppThemes(cwd);
+      checks.push(checkThemes(cwd, appThemeChecks), ...appThemeChecks);
       checks.push(await checkConfig(ctx));
     }
   }
