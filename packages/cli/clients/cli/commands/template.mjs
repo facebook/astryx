@@ -137,9 +137,9 @@ export function registerTemplate(program) {
               return lines.join('\n');
             };
             emit(
-              section(`Page Templates (${pages.length})`),
+              pages.length > 0 && section(`Page Templates (${pages.length})`),
               pages.length > 0 && text(grouped(pages)),
-              section(`Block Templates (${blocks.length})`),
+              blocks.length > 0 && section(`Block Templates (${blocks.length})`),
               blocks.length > 0 && text(grouped(blocks)),
               section('Usage'),
               text(
