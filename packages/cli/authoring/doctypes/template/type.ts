@@ -132,6 +132,7 @@ export type TemplateCategory =
   | 'Table - Filtering'
   | 'Table - Tree/Hierarchical List'
   | 'Table - Frozen Column'
+  | 'Table - Comparison'
   | 'Table - Chart'
   | 'Table - Heatmap'
   // Form
