@@ -2861,7 +2861,8 @@ describe('DropdownMenu popoverXstyle', () => {
   const hash = (style: stylex.StyleXStyles) =>
     stylex.props(style).className!.split(' ').pop()!;
   const overrides = stylex.create({
-    corners: {borderRadius: '30px'},
+    // A radius no Astryx part declares, so its class marks this override alone.
+    corners: {borderRadius: 'var(--test-popover-corners)'},
     // The popover surface's own radius declaration.
     surfaceRadius: {borderRadius: 'var(--_popover-radius)'},
   });
