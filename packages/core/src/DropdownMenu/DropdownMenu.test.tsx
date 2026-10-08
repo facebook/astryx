@@ -3055,6 +3055,27 @@ describe('DropdownMenuItem href', () => {
     expect(row).not.toHaveAttribute('href');
     expect(row).toHaveAttribute('aria-disabled', 'true');
   });
+
+  it('a link row is not draggable; a row without an address keeps the default', () => {
+    // A link is draggable by default, and a mouse press that moves a few
+    // pixels on one starts the browser's link drag, which cancels the press
+    // model's pointer stream before the row under the release can act.
+    render(
+      <DropdownMenu button={{label: 'Places'}}>
+        <DropdownMenuItem label="Inbox" href="/inbox" />
+        <DropdownMenuItem label="Archive" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    const inbox = screen.getByRole('menuitem', {name: 'Inbox', hidden: true});
+    expect(inbox.tagName).toBe('A');
+    expect(inbox).toHaveAttribute('draggable', 'false');
+    expect(inbox.draggable).toBe(false);
+    const archive = screen.getByRole('menuitem', {
+      name: 'Archive',
+      hidden: true,
+    });
+    expect(archive).not.toHaveAttribute('draggable');
+  });
 });
 
 describe("DropdownMenu link rows — the browser's own clicks", () => {

@@ -280,6 +280,11 @@ export function DropdownMenuItem({
       href={href}
       target={target}
       rel={rel}
+      // A menu row is never a draggable link. Under a mouse, the browser's
+      // native link drag starts a few pixels into a press and cancels the
+      // pointer stream (`pointercancel`), so the press model could not let
+      // the row under the release act.
+      draggable={href != null ? false : undefined}
       isDisabled={isDisabled}
       xstyle={[
         menuItemStyles.root,
