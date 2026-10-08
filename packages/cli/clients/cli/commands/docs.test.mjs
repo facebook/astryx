@@ -198,7 +198,7 @@ describe('blocks as text', () => {
   it('prints the labels of a real section above their fences', async () => {
     const {status, stdout} = await runCli(['docs', 'theme', 'quick-start']);
     expect(status).toBe(0);
-    expect(stdout).toContain('Basic theme setup:\n```tsx\nimport {Theme}');
+    expect(stdout).toContain('Wire the generated module once:\n```tsx\nimport {Theme}');
   }, SLOW);
 });
 

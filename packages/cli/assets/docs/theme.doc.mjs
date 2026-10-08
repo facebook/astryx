@@ -17,13 +17,13 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Install a theme package, wrap your app in `<Theme>`, and pick light or dark mode. For the full guide — available themes, integration themes, dark mode, nested themes, and production builds — see {@link generic:use-a-theme}.',
+          text: 'Install a theme, import it with the CLI, and wire the generated module once. For the full guide — available themes, integration themes, dark mode, nested themes, and production builds — see {@link generic:use-a-theme}.',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Basic theme setup',
-          code: "import {Theme} from '@astryxdesign/core';\nimport {neutralTheme} from '@astryxdesign/theme-neutral';\n\nfunction App() {\n  return (\n    <Theme theme={neutralTheme}>\n      <YourApp />\n    </Theme>\n  );\n}",
+          label: 'Wire the generated module once',
+          code: "import {Theme} from '@astryxdesign/core';\nimport {themes, defaultThemeSlug} from './astryx-themes';\n\nfunction App() {\n  return (\n    <Theme theme={themes[defaultThemeSlug]}>\n      <YourApp />\n    </Theme>\n  );\n}",
         },
       ],
     },
@@ -39,7 +39,7 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Quick start',
-          code: 'astryx theme template    # annotated starter file\nastryx theme add stone   # copy an existing theme\nastryx theme build ./src/themes/my-theme.ts',
+          code: 'astryx theme add stone --import   # use an existing theme\nastryx theme eject stone            # fork its source to customize\nastryx theme build src/themes/stone/stoneTheme.ts',
         },
       ],
     },
@@ -64,7 +64,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Install an integration and Astryx discovers its themes automatically. Copy one into your project with `astryx theme add <name> --package <integration>`. For the full walkthrough, see {@link generic:use-a-theme}.',
+          text: 'Install an integration and Astryx discovers its themes automatically. Import one with `astryx theme add <name> --import --package <integration>`. Use `theme eject` only for an independent source fork. For the full walkthrough, see {@link generic:use-a-theme}.',
         },
       ],
     },

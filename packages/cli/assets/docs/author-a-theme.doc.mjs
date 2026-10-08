@@ -14,10 +14,10 @@ export const docs = {
       id: 'creating-a-custom-theme',
       title: 'Custom themes',
       content: [
-        {type: 'prose', text: "Start from a bundled theme or one contributed by an installed integration, or write one from scratch with defineTheme. `theme list` names each owner; when packages share a slug, pass `--package`. Only override tokens that differ from defaults; omitted tokens use the design system defaults."},
-        {type: 'code', lang: 'bash', label: 'Browse, then copy a theme in as editable source', code: 'astryx theme list\nastryx theme add stone\nastryx theme add ocean --package @acme/themes'},
+        {type: 'prose', text: "Use an installed built theme as the base for ordinary customization. Import it into your source and pass it as `extends` to `defineTheme({extends: importedTheme, ...})`. Build the result, then add the local slug. Only eject when you need to own and maintain a full source fork."},
+        {type: 'code', lang: 'bash', label: 'Add to use, eject to fork', code: 'astryx theme list\nastryx theme add stone --import\nastryx theme eject stone\nastryx theme build src/themes/stone/stoneTheme.ts\nastryx theme add stone --import'},
         {type: 'prose', text: "For an annotated map of the whole surface (every defineTheme field, the token families, and the component override syntax, each with the CLI command that prints its reference), run `astryx theme template`. It writes `theme.template.ts` into your project to read and copy from (`astryx init --features theme` writes it as part of project setup)."},
-        {type: 'prose', text: 'To apply a theme you created, see {@link generic:use-a-theme}. To generate colors from seed values, see the Palette section below.'},
+        {type: 'prose', text: 'To apply a theme you created, see {@link generic:use-a-theme}. To generate colors from seed values, see the Palette section below. Use `theme eject` only when you want an independent source fork that no longer receives the package owner\u2019s updates.'},
       ],
     },
     {
