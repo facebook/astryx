@@ -78,24 +78,24 @@ Options:
 
 <!-- BEGIN GENERATED: commands -->
 
-| Command       | Description                                                                   |
-| ------------- | ----------------------------------------------------------------------------- |
-| `blog`        | Read the Astryx blog from the published feed                                  |
-| `build`       | Build a page: the template to start from, or the workflow playbook (no query) |
-| `component`   | List components or print component docs                                       |
-| `discover`    | Browse and search integrations: the ones you have and the ones you could add  |
-| `docs`        | Print reference docs                                                          |
-| `doctor`      | Diagnose Astryx projects and integration packages                             |
-| `gap-report`  | Report a missing component or feature to the package that owns it             |
-| `hook`        | List hooks or print hook docs                                                 |
-| `init`        | Initialize the design system in your project                                  |
-| `integration` | Author and verify an Astryx integration package                               |
-| `layout`      | Generate XDS layouts from compressed expressions (XLE/XLO)                    |
-| `search`      | Search components, hooks, docs, templates, and themes in one ranked list      |
-| `swizzle`     | Copy component source for customization                                       |
-| `template`    | List, show, or scaffold page and block templates                              |
-| `theme`       | Add, switch, build, and author themes                                         |
-| `upgrade`     | Update your code after upgrading Astryx, and refresh ShadCN-copied components |
+| Command       | Description                                                                                                                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `blog`        | Read the Astryx blog from the published feed                                                                                                                                                          |
+| `build`       | Build a page: the template to start from, or the workflow playbook (no query)                                                                                                                         |
+| `component`   | List components or print component docs                                                                                                                                                               |
+| `discover`    | Browse and search integrations: the ones you have and the ones you could add                                                                                                                          |
+| `docs`        | Print reference docs                                                                                                                                                                                  |
+| `doctor`      | Diagnose Astryx projects and integration packages                                                                                                                                                     |
+| `gap-report`  | Report a missing component or feature to the package that owns it                                                                                                                                     |
+| `hook`        | List hooks or print hook docs                                                                                                                                                                         |
+| `init`        | Initialize the design system in your project                                                                                                                                                          |
+| `integration` | Author and verify an Astryx integration package                                                                                                                                                       |
+| `layout`      | Generate XDS layouts from compressed expressions (XLE/XLO) [DEPRECATED: DEP-0006: Use `astryx build` to start from a template, `astryx template` to scaffold, and `astryx docs layout` for guidance.] |
+| `search`      | Search components, hooks, docs, templates, and themes in one ranked list                                                                                                                              |
+| `swizzle`     | Copy component source for customization                                                                                                                                                               |
+| `template`    | List, show, or scaffold page and block templates                                                                                                                                                      |
+| `theme`       | Add, switch, build, and author themes                                                                                                                                                                 |
+| `upgrade`     | Update your code after upgrading Astryx, and refresh ShadCN-copied components                                                                                                                         |
 
 <!-- END GENERATED: commands -->
 <!-- Generated by scripts/generate-cli-readme.mjs from `astryx manifest`. Run `pnpm -F @astryxdesign/cli readme`. -->
