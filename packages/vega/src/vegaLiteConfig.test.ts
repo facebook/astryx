@@ -4,7 +4,7 @@
  * @file vegaLiteConfig.test.ts
  * @input Uses vitest, buildVegaLiteConfig and its exported layout constants
  * @output Functional tests for the Astryx-themed Vega-Lite config builder
- * @position Colocated test for vegaLiteConfig.ts (issue #4295 vega coverage)
+ * @position Colocated test for vegaLiteConfig.ts
  */
 
 import {describe, it, expect} from 'vitest';
@@ -73,6 +73,37 @@ describe('buildVegaLiteConfig', () => {
       'resolved(--color-data-blue-4)',
       'resolved(--color-data-blue-5)',
     ]);
+  });
+
+  it('serializes concrete custom-theme values without ambient CSS', () => {
+    const concreteToken = (name: string): string => {
+      if (name === '--color-data-categorical-blue') {
+        return '#005A4E';
+      }
+      if (name.startsWith('--font-family-')) {
+        return 'Arial, sans-serif';
+      }
+      return '#112233';
+    };
+
+    const config = buildVegaLiteConfig(concreteToken);
+    const roundTripped = JSON.parse(JSON.stringify(config));
+
+    expect(roundTripped).toEqual(config);
+    expect(roundTripped.range.category[0]).toBe('#005A4E');
+    expect(JSON.stringify(roundTripped)).not.toContain('var(');
+  });
+
+  it('rejects CSS references that would make detached output depend on ambient styles', () => {
+    expect(() =>
+      buildVegaLiteConfig(name =>
+        name === '--color-data-categorical-blue'
+          ? 'var(--brand-chart)'
+          : '#112233',
+      ),
+    ).toThrow(
+      'Vega-Lite config requires a concrete value for --color-data-categorical-blue',
+    );
   });
 
   it('applies the structural mark and layout constants', () => {
