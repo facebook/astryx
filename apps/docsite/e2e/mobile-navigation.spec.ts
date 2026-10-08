@@ -94,6 +94,13 @@ test('desktop search stays exposed across hydration at exactly 768px', async ({
     ).toBeVisible();
     const search = page.getByRole('textbox', {name: 'Search components'});
     await expect(search).toBeVisible();
+    // With no pending fonts, fonts.ready can wait for the held scripts' load
+    // event even though geometry is settled (for example with offline fonts).
+    await page.evaluate(async () => {
+      if (document.fonts.status === 'loading') {
+        await document.fonts.ready;
+      }
+    });
 
     // A reload can restore scroll before hydration. Visibility alone misses
     // the real input being painted underneath the sticky header.
@@ -122,13 +129,14 @@ test('desktop search stays exposed across hydration at exactly 768px', async ({
     expect(initialBox.y + initialBox.height).toBeLessThan(844);
 
     resumeHydration();
-    // Retry the idempotent open action if the first click precedes hydration.
-    await expect(async () => {
-      await nav.getByRole('button', {name: 'Search', exact: true}).click();
-      await expect(page.getByRole('dialog')).toBeVisible({timeout: 1000});
-    }).toPass({timeout: 10000});
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog')).toBeHidden();
+    // Only the existing layout effect writes this inline value; the bootstrap
+    // writes a stylesheet, so this proves the header has hydrated.
+    await page.waitForFunction(
+      () =>
+        document.documentElement.style.getPropertyValue(
+          '--appshell-header-height',
+        ) !== '',
+    );
     expect(await search.boundingBox()).toEqual(initialBox);
 
     const banner = page.getByRole('alert').filter({hasText: 'unreleased docs'});

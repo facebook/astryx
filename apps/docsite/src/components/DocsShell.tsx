@@ -64,17 +64,21 @@ const foundationsSort = (a: DocTopic, b: DocTopic) => {
 };
 
 // Seed the full header height while parsing, before restored scroll can put
-// the sidebar under it. CSSOM leaves React's DOM unchanged; the existing header
-// observer's inline value takes over after hydration, including banner changes.
+// the sidebar under it, and refresh once its fonts settle. CSSOM leaves React's
+// DOM unchanged; the existing observer's inline value takes over after hydration.
 const initialHeaderHeightScript = `(() => {
   const script = document.currentScript;
   const header = script?.closest('.astryx-app-shell-header');
-  const sheet = script?.previousElementSibling?.sheet;
-  if (header && sheet) {
+  const style = script?.previousElementSibling;
+  const sheet = style?.sheet;
+  const publish = () => {
+    if (!header?.isConnected || !style?.isConnected || !sheet) return;
     if (sheet.cssRules.length === 0) sheet.insertRule(':root {}');
     sheet.cssRules[0].style.setProperty('--appshell-header-height',
       header.getBoundingClientRect().height + 'px');
-  }
+  };
+  publish();
+  document.fonts.ready.then(publish);
 })();`;
 
 // ── Shell ──────────────────────────────────────────────────────────────
