@@ -95,7 +95,12 @@ function ThemeAwareRechartsExample({
             tooltip radius, and bar radius.
           </Text>
         </Stack>
-        <div {...stylex.props(styles.chart)} data-bar-radius={barRadius}>
+        <div
+          {...stylex.props(styles.chart)}
+          aria-label="Quarterly performance chart"
+          data-bar-radius={barRadius}
+          role="group"
+          tabIndex={0}>
           <ResponsiveContainer>
             <BarChart
               data={data}
@@ -271,13 +276,15 @@ export const RuntimeThemeSwitch: Story = {
       costs: 'rgb(122, 46, 0)',
     });
 
-    const chart = canvasElement.querySelector('svg.recharts-surface');
+    const surface = canvasElement.querySelector('svg.recharts-surface');
+    const focusTarget = canvasElement.querySelector('[data-bar-radius]');
     const firstBar = barElements(canvasElement)[0];
-    expect(chart).not.toBeNull();
+    expect(surface).not.toBeNull();
+    expect(focusTarget).toBeInstanceOf(HTMLElement);
     expect(firstBar).not.toBeUndefined();
-    if (chart instanceof SVGElement) {
-      chart.focus();
-      expect(document.activeElement).toBe(chart);
+    if (focusTarget instanceof HTMLElement) {
+      focusTarget.focus();
+      expect(document.activeElement).toBe(focusTarget);
     }
 
     const button = canvasElement.querySelector('button');
@@ -290,10 +297,11 @@ export const RuntimeThemeSwitch: Story = {
         costs: 'rgb(255, 178, 128)',
       });
     });
-    expect(canvasElement.querySelector('svg.recharts-surface')).toBe(chart);
+    expect(canvasElement.querySelector('svg.recharts-surface')).toBe(surface);
+    expect(canvasElement.querySelector('[data-bar-radius]')).toBe(focusTarget);
     expect(barElements(canvasElement)[0]).toBe(firstBar);
-    if (chart instanceof SVGElement) {
-      expect(document.activeElement).toBe(chart);
+    if (focusTarget instanceof HTMLElement) {
+      expect(document.activeElement).toBe(focusTarget);
     }
   },
 };
