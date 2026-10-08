@@ -703,7 +703,8 @@ release: response `type` values, response fields, golden JSON fields, and
 that read it. Restore it, or classify the removal in a `@astryxdesign/cli`
 Changeset: a `[breaking]` entry that names the id, or a paragraph beginning
 `Compatibility:` that names the id and says why consumers of the latest
-release keep working. Catalog values inside those responses, such as template
+release keep working. Name an id the way the failure prints it, such as
+`themes` or `DoctorCheck.fix`. Catalog values inside those responses, such as template
 slugs and docs routes, are data and may change.
 
 ### Version Bumps

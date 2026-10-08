@@ -122,6 +122,8 @@ function repo(overrides = {}) {
     'packages/core/src/Button/Button.tsx': 'export const Button = 1;\n',
     'packages/core/src/Button/Button.doc.mjs': 'export const doc = {};\n',
     'packages/core/src/Button/Button.test.tsx': 'test();\n',
+    'packages/core/src/Button/Button.a11y.chromium.spec.ts': 'test();\n',
+    'packages/core/src/Button/Button.stories.tsx': 'export default {};\n',
     'packages/core/src/Button/Button.spec.md': '# Button spec\n',
     'packages/core/src/Button/__fixtures__/data.ts': 'export {};\n',
     'packages/core/CHANGELOG.md': '# Changelog\n',
@@ -216,6 +218,8 @@ describe('classifyPath — what ships to consumers', () => {
 
   it.each([
     ['packages/core/src/Button/Button.test.tsx', /test/],
+    ['packages/core/src/Button/Button.a11y.chromium.spec.ts', /test/],
+    ['packages/core/src/Button/Button.stories.tsx', /story/],
     ['packages/core/src/Button/Button.spec.md', /spec record/],
     ['packages/core/src/Button/__fixtures__/data.ts', /fixture/],
     ['packages/cli/api/doctor/doctor.test.mjs', /test/],
@@ -234,30 +238,6 @@ describe('classifyPath — what ships to consumers', () => {
     const result = classifyPath(file, at(files));
     expect(result.ships).toBe(false);
     expect(result.reason).toMatch(reason);
-  });
-
-  it('treats a browser spec test inside a shipped package as exempt', () => {
-    const withSpec = repo({
-      'packages/core/src/Button/Button.a11y.chromium.spec.ts': 'test();\n',
-    });
-    expect(
-      classifyPath(
-        'packages/core/src/Button/Button.a11y.chromium.spec.ts',
-        at(withSpec),
-      ).ships,
-    ).toBe(false);
-  });
-
-  it('treats a story inside a shipped package as exempt', () => {
-    const withStory = repo({
-      'packages/core/src/Button/Button.stories.tsx': 'export default {};\n',
-    });
-    expect(
-      classifyPath(
-        'packages/core/src/Button/Button.stories.tsx',
-        at(withStory),
-      ),
-    ).toMatchObject({ships: false, reason: 'story'});
   });
 
   it('treats a Changesets-ignored package as exempt even when it is not private', () => {
@@ -421,6 +401,23 @@ describe('rule 1 — a shipped change names its package', () => {
     expect(problems).toHaveLength(2);
     expect(problems[0]).toMatch(/^@astryxdesign\/core:/);
     expect(problems[1]).toMatch(/^@astryxdesign\/theme-stone:/);
+  });
+
+  it('does not let a package leaving the stable cut exempt its own shipped edits', () => {
+    const base = repo();
+    const head = repo({
+      'packages/themes/stone/package.json': manifest(
+        '@astryxdesign/theme-stone',
+        {private: true, files: ['dist', 'src']},
+      ),
+      'packages/themes/stone/src/stoneTheme.ts':
+        'export const stone = {a: 1};\n',
+    });
+    const problems = change(base, head).problems;
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain(
+      'package source: packages/themes/stone/src/stoneTheme.ts',
+    );
   });
 
   it('counts a deleted shipped file', () => {
@@ -714,6 +711,30 @@ describe('rule 2 — the released CLI JSON contract', () => {
     expect(problems).toContain('response type `docs.list`');
   });
 
+  it('clears a removed field only by its full identity, not a shared field name', () => {
+    const base = repo();
+    const removed = DOCTOR_TYPES.replace(
+      ' * @property {string} [fix] - Remediation.\n',
+      '',
+    );
+    const byName = repo({
+      'packages/cli/api/doctor/doctor.type.mjs': removed,
+      '.changeset/x.md': changeset(
+        {'@astryxdesign/cli': 'minor'},
+        '[breaking] Drop `fix`.',
+      ),
+    });
+    expect(change(base, byName).ids.problems).toHaveLength(1);
+    const byIdentity = repo({
+      'packages/cli/api/doctor/doctor.type.mjs': removed,
+      '.changeset/x.md': changeset(
+        {'@astryxdesign/cli': 'minor'},
+        '[breaking] Drop `DoctorCheck.fix`.',
+      ),
+    });
+    expect(change(base, byIdentity).problems).toEqual([]);
+  });
+
   it('does not count moving fields into a composed typedef as a removal', () => {
     const released = repo({
       'packages/cli/api/docs/docs.type.mjs':
@@ -729,25 +750,6 @@ describe('rule 2 — the released CLI JSON contract', () => {
       ),
     });
     expect(change(released, head).problems).toEqual([]);
-  });
-
-  it('does not pin a field another change removed on a Changeset that merely uses the word', () => {
-    const released = repo();
-    const base = repo({
-      'packages/cli/api/doctor/doctor.type.mjs': DOCTOR_TYPES.replace(
-        ' * @property {string} [fix] - Remediation.\n',
-        '',
-      ),
-    });
-    const head = {
-      ...base,
-      'packages/cli/api/search/search.mjs': 'export const rank = 2;\n',
-      '.changeset/search.md': changeset(
-        {'@astryxdesign/cli': 'patch'},
-        '[fix] Search ranks a `fix` keyword as prose.',
-      ),
-    };
-    expect(change(base, head, {released}).problems).toEqual([]);
   });
 
   it('ignores an id that was never released (FR2)', () => {

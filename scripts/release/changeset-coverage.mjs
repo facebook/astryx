@@ -4,35 +4,20 @@
 /**
  * @file Changeset coverage: one classifier for pull requests and releases.
  *
- * A change to what a published package ships needs a Changeset naming that
- * package. Pull-request CI asks that question of the pull request's diff, and
- * the release coverage audit asks it of every commit in the cut range, through
- * the same `evaluateChange`. The two cannot disagree about what needed a
- * Changeset.
+ * Pull-request CI and the release coverage audit judge each change through the
+ * same `evaluateChange`, so they cannot disagree about what needed a Changeset.
  *
- * Two rules:
- *
- *   1. Coverage. A changed path that ships in a stable package's tarball needs
- *      a Changeset, added or edited by the same change, that names that
- *      package. A path ships when the package is in the stable cut (not
- *      private, not canary-only, not ignored by Changesets) and the path is in
- *      its `files` list, is its root README, or is a consumer-facing
- *      package.json field. That covers package source, CLI behavior and
- *      output, and shipped documentation such as `packages/cli/assets/docs`
- *      and `*.doc.mjs`. Tests, fixtures, snapshots, stories, spec records,
- *      generated CHANGELOGs, files outside the tarball, and everything outside
- *      a stable package (the docsite app, Storybook, sandbox, CI, repository
- *      tooling) never reach a consumer and need none.
- *
- *   2. Released CLI JSON ids. A machine-readable id from the latest stable
- *      release — a response `type`, a field of a response type, a field of a
- *      golden JSON response, or a doctor check id — that is missing at head
- *      breaks a script reading it (spec:AST-017 FR3, FR13). A change that
- *      removes one, or that adds or edits a Changeset naming a missing
- *      response type or doctor check id, needs a `[breaking]` Changeset
- *      naming the id or a `Compatibility:` note naming it. Catalog
- *      values carried inside those responses (template slugs, docs routes,
- *      theme slugs) are mutable data (FR9, FR11, FR45) and are not compared.
+ * 1. Coverage: a changed path that lands in a stable package's tarball (its
+ *    `files`, root README, or consumer-facing package.json fields) needs a
+ *    Changeset, added or edited by the same change, naming that package. Tests,
+ *    stories, spec records, generated CHANGELOGs, unpacked files, private and
+ *    canary-only packages, and everything outside a package need none.
+ * 2. Released CLI JSON ids: a response `type`, response field, golden field, or
+ *    doctor check id from the latest stable release that is missing at head
+ *    breaks scripts (spec:AST-017 FR3, FR13). The change that removes it, or
+ *    whose Changeset names it, needs a `[breaking]` Changeset or a
+ *    `Compatibility:` note naming its full identity. Catalog values (template
+ *    slugs, docs routes) are data and are not compared (FR9, FR11, FR45).
  *
  * @input  git revisions: a pull request's base and head, or a release range
  * @output problems naming each package or id and the Changeset that resolves it
@@ -43,6 +28,7 @@
 import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 import {createRequire} from 'node:module';
+import {parseArgs} from 'node:util';
 import {fileURLToPath} from 'node:url';
 import {parseFrontmatter} from '../check-changesets.mjs';
 import {parseWorkspaceGlobs} from '../lib/workspace-globs.mjs';
@@ -69,42 +55,20 @@ const CHANGESET_FILE = /^\.changeset\/(?!README\.md$)[^/]+\.md$/;
  * leave the repository, so neither needs a Changeset.
  */
 export const CONSUMER_MANIFEST_FIELDS = Object.freeze([
-  'name',
-  'type',
-  'main',
-  'module',
-  'types',
-  'typings',
-  'exports',
-  'imports',
-  'bin',
-  'files',
-  'sideEffects',
-  'engines',
-  'os',
-  'cpu',
-  'browser',
-  'style',
-  'dependencies',
-  'peerDependencies',
-  'peerDependenciesMeta',
-  'optionalDependencies',
-  'bundleDependencies',
-  'bundledDependencies',
-  'astryx',
+  ...['name', 'type', 'main', 'module', 'types', 'typings', 'exports'],
+  ...['imports', 'bin', 'files', 'sideEffects', 'engines', 'os', 'cpu'],
+  ...['browser', 'style', 'astryx', 'peerDependenciesMeta'],
+  ...['dependencies', 'peerDependencies', 'optionalDependencies'],
+  ...['bundleDependencies', 'bundledDependencies'],
 ]);
 
-/** What each shipped surface is called in a failure, and its usual category. */
+/** What each shipped surface is called in a failure. */
 const SURFACES = Object.freeze({
-  docs: {label: 'shipped documentation', categories: ['docs']},
-  cli: {label: 'CLI behavior or output', categories: ['fix', 'feat']},
-  source: {label: 'package source', categories: ['fix', 'feat']},
-  manifest: {label: 'consumer-facing package.json', categories: ['fix']},
+  docs: 'shipped documentation',
+  cli: 'CLI behavior or output',
+  source: 'package source',
+  manifest: 'consumer-facing package.json',
 });
-
-// ---------------------------------------------------------------------------
-// Trees: the repository at one revision, from git or from memory (tests).
-// ---------------------------------------------------------------------------
 
 /**
  * @typedef {object} Tree
@@ -123,28 +87,14 @@ function git(root, args) {
   });
 }
 
-/**
- * The repository at `rev`, read through git and cached.
- *
- * @param {string} root
- * @param {string} rev
- * @returns {Tree}
- */
+/** The repository at `rev`, read through `git cat-file --batch` and cached. */
 export function gitTree(root, rev) {
   const reads = new Map();
   const lists = new Map();
   return {
     label: rev,
     read(file) {
-      if (!reads.has(file)) {
-        let contents = null;
-        try {
-          contents = git(root, ['show', `${rev}:${file}`]);
-        } catch {
-          contents = null;
-        }
-        reads.set(file, contents);
-      }
+      if (!reads.has(file)) this.prefetch([file]);
       return reads.get(file);
     },
     prefetch(files) {
@@ -184,13 +134,7 @@ export function gitTree(root, rev) {
   };
 }
 
-/**
- * A tree held in memory: `{path: contents}`.
- *
- * @param {Record<string, string>} files
- * @param {string} [label]
- * @returns {Tree}
- */
+/** A tree held in memory, `{path: contents}`, for tests. */
 export function memoryTree(files, label = 'memory') {
   return {
     label,
@@ -212,10 +156,6 @@ function readJson(tree, file) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Rule 1: which changed paths ship, in which package.
-// ---------------------------------------------------------------------------
-
 function globToRegExp(glob) {
   const escaped = glob
     .split('*')
@@ -224,13 +164,7 @@ function globToRegExp(glob) {
   return new RegExp(`^${escaped}$`);
 }
 
-/**
- * Is `dir` a workspace package directory under these pnpm globs?
- *
- * @param {string} dir  repo-relative directory
- * @param {string[]} globs
- * @returns {boolean}
- */
+/** Is repo-relative `dir` a workspace package directory under these globs? */
 export function isWorkspaceDir(dir, globs) {
   let matched = false;
   for (const glob of globs) {
@@ -243,14 +177,7 @@ export function isWorkspaceDir(dir, globs) {
   return matched;
 }
 
-/**
- * The workspace package that owns `file` in `tree`: the nearest enclosing
- * workspace directory with a package.json.
- *
- * @param {Tree} tree
- * @param {string} file
- * @returns {{dir: string, manifest: object}|null}
- */
+/** The workspace package that owns `file`: its nearest workspace directory. */
 function owningPackage(tree, file) {
   const source = tree.read('pnpm-workspace.yaml');
   if (source === null) return null;
@@ -335,10 +262,7 @@ export function classifyPath(file, {tree, config}) {
     };
   }
   const rel = file.slice(dir.length + 1);
-  if (!isPackageReleasePath(file)) {
-    return {ships: false, reason: 'test, fixture, snapshot, or spec record'};
-  }
-  if (/\.spec\.[cm]?[jt]sx?$/.test(rel)) {
+  if (!isPackageReleasePath(file) || /\.spec\.[cm]?[jt]sx?$/.test(rel)) {
     return {ships: false, reason: 'test, fixture, snapshot, or spec record'};
   }
   if (
@@ -400,12 +324,7 @@ function lockstepNeutral(manifest, field) {
   );
 }
 
-/**
- * Packages a set of Changesets names with a real bump.
- *
- * @param {Array<{file: string, text: string}>} changesets
- * @returns {Set<string>}
- */
+/** Packages a set of Changesets names with a real bump. */
 function namedPackages(changesets) {
   const names = new Set();
   for (const {text} of changesets) {
@@ -418,10 +337,7 @@ function namedPackages(changesets) {
   return names;
 }
 
-/**
- * Normalize changed-file records and read the Changesets the change adds or
- * edits, from the head tree.
- */
+/** The Changesets a change adds or edits, read from its head. */
 function changedChangesets(changes, head) {
   return changes
     .filter(
@@ -486,13 +402,16 @@ export function checkCoverage({
   head.prefetch?.([...wanted]);
 
   for (const file of [...paths].sort()) {
-    // A path that still exists is judged by its package at head; a deleted
-    // path by its package at base, so removing shipped files still counts.
-    const at =
-      head.read(file) !== null
-        ? {tree: head, config: headConfig}
-        : {tree: base, config: baseConfig};
-    const result = classifyPath(file, at);
+    // A path ships when it ships on either side: a deleted file shipped at
+    // base, and a package leaving the stable cut in this same change cannot
+    // exempt its own shipped edits.
+    const sides = [
+      {tree: head, config: headConfig},
+      {tree: base, config: baseConfig},
+    ].filter(side => side.tree.read(file) !== null);
+    const results = sides.map(side => classifyPath(file, side));
+    const result = results.find(r => r.ships) ??
+      results[0] ?? {ships: false, reason: 'absent on both sides'};
     if (!result.ships) {
       exempt.push({file, reason: result.reason});
       continue;
@@ -525,32 +444,22 @@ export function checkCoverage({
 }
 
 function coverageProblem(pkg, bySurface) {
-  const lines = [];
-  const categories = new Set();
-  for (const [surface, files] of bySurface) {
-    const shown = files.slice(0, 5).join(', ');
+  const lines = [...bySurface].map(([surface, files]) => {
     const more = files.length > 5 ? `, and ${files.length - 5} more` : '';
-    lines.push(`      ${SURFACES[surface].label}: ${shown}${more}`);
-    for (const category of SURFACES[surface].categories)
-      categories.add(category);
-  }
+    return `      ${SURFACES[surface]}: ${files.slice(0, 5).join(', ')}${more}`;
+  });
   const docsOnly = bySurface.size === 1 && bySurface.has('docs');
-  const category = docsOnly ? 'docs' : '<fix|feat>';
   return (
     `${pkg}: this change ships to consumers without a Changeset naming ${pkg}.\n` +
     `${lines.join('\n')}\n` +
     `      Add (or edit) a Changeset naming '${pkg}':\n` +
-    `        pnpm changeset:new --packages ${pkg} --category ${category}\n` +
+    `        pnpm changeset:new --packages ${pkg} --category ${docsOnly ? 'docs' : '<fix|feat>'}\n` +
     (docsOnly
       ? `      [docs] fits a change to shipped documentation alone.`
       : `      Use [fix] for a correction or [feat] for a new capability ` +
         `(or [docs], [perf], [component], [experimental] when that is what changed).`)
   );
 }
-
-// ---------------------------------------------------------------------------
-// Rule 2: released CLI JSON ids.
-// ---------------------------------------------------------------------------
 
 const RESPONSE_TYPES_DOC =
   'packages/cli/foundation/response/response-types.doc.mjs';
@@ -693,12 +602,7 @@ export function typedefFields(...sources) {
   return out;
 }
 
-/**
- * Every object key path in a golden JSON response: `data[].topic`.
- *
- * @param {unknown} value
- * @returns {string[]}
- */
+/** Every object key path in a golden JSON response, like `data[].topic`. */
 export function jsonKeyPaths(value) {
   const paths = new Set();
   (function walk(node, at) {
@@ -715,18 +619,17 @@ export function jsonKeyPaths(value) {
   return [...paths];
 }
 
-const lastSegment = dotted => dotted.split('.').pop().replace(/\[\]$/, '');
-
 /**
  * The machine-readable ids of the CLI's JSON contract in `tree`.
- * Keyed by a stable string; each carries the token a Changeset names it by,
- * and whether that token is distinctive (an id) or an ordinary word (a field).
+ * Keyed by a stable string; each carries the full identity a Changeset names
+ * it by (`DoctorCheck.fix`, `docs.list.data[].topic`, `themes`), never a bare
+ * field name that unrelated fields share.
  *
  * @param {Tree} tree
- * @returns {Map<string, {label: string, token: string, distinctive: boolean}>}
+ * @returns {Map<string, {label: string, token: string}>}
  */
 export function cliJsonIds(tree) {
-  /** @type {Map<string, {label: string, token: string, distinctive: boolean}>} */
+  /** @type {Map<string, {label: string, token: string}>} */
   const ids = new Map();
 
   const typeFiles = tree
@@ -751,7 +654,6 @@ export function cliJsonIds(tree) {
       ids.set(`response-type:${value}`, {
         label: `response type \`${value}\``,
         token: value,
-        distinctive: true,
       });
     }
   }
@@ -767,8 +669,7 @@ export function cliJsonIds(tree) {
   for (const field of typedefFields(...typeSources)) {
     ids.set(`field:${field}`, {
       label: `response field \`${field}\``,
-      token: lastSegment(field),
-      distinctive: false,
+      token: field,
     });
   }
 
@@ -780,11 +681,11 @@ export function cliJsonIds(tree) {
       continue;
     }
     const name = path.posix.basename(file);
+    const type = typeof golden?.type === 'string' ? golden.type : name;
     for (const keyPath of jsonKeyPaths(golden)) {
       ids.set(`golden:${name}:${keyPath}`, {
         label: `field \`${keyPath}\` of the ${name} golden response`,
-        token: lastSegment(keyPath),
-        distinctive: false,
+        token: `${type}.${keyPath}`,
       });
     }
   }
@@ -799,7 +700,6 @@ export function cliJsonIds(tree) {
       ids.set(`doctor-check:${id}`, {
         label: `doctor check id \`${id}\``,
         token: id,
-        distinctive: true,
       });
     }
   }
@@ -822,12 +722,7 @@ function compatibilityNoteNames(text, token) {
     );
 }
 
-/**
- * Pending Changesets in `tree`, parsed.
- *
- * @param {Tree} tree
- * @returns {Array<{file: string, text: string, category: string|null, releases: Record<string, string>}>}
- */
+/** Pending Changesets in `tree`: file, text, category, and releases. */
 export function pendingChangesets(tree) {
   const files = tree
     .list('.changeset')
@@ -852,10 +747,10 @@ export function pendingChangesets(tree) {
  * (a release), every released id missing at head must be classified.
  *
  * @param {object} input
- * @param {Map<string, {label: string, token: string, distinctive: boolean}>} input.released
+ * @param {Map<string, {label: string, token: string}>} input.released
  * @param {string} input.releasedLabel
- * @param {Map<string, {label: string, token: string, distinctive: boolean}>|null} input.base
- * @param {Map<string, {label: string, token: string, distinctive: boolean}>} input.head
+ * @param {Map<string, {label: string, token: string}>|null} input.base
+ * @param {Map<string, {label: string, token: string}>} input.head
  * @param {Array<{file: string, text: string}>} input.describedBy  Changesets this change adds or edits
  * @param {ReturnType<typeof pendingChangesets>} input.pending  every Changeset at head
  * @returns {{missing: string[], attributed: string[], problems: string[]}}
@@ -871,14 +766,8 @@ export function checkReleasedIds({
   const missing = [...released.keys()].filter(key => !head.has(key)).sort();
   const attributed = missing.filter(key => {
     if (!base) return true;
-    // A response type or doctor check id is distinctive enough that a
-    // Changeset naming it is describing it; a field name such as `content`
-    // is an ordinary word, so a field is this change's only when it removes it.
-    const {token, distinctive} = released.get(key);
-    return (
-      base.has(key) ||
-      (distinctive && describedBy.some(({text}) => names(text, token)))
-    );
+    const {token} = released.get(key);
+    return base.has(key) || describedBy.some(({text}) => names(text, token));
   });
 
   const cliChangesets = pending.filter(
@@ -907,10 +796,6 @@ export function checkReleasedIds({
   }
   return {missing, attributed, problems};
 }
-
-// ---------------------------------------------------------------------------
-// One change, both rules — shared by pull-request and release modes.
-// ---------------------------------------------------------------------------
 
 /**
  * @param {object} input
@@ -967,127 +852,90 @@ export function fixupCoverage(pending, prNumber) {
   return covered;
 }
 
-// ---------------------------------------------------------------------------
-// CLI
-// ---------------------------------------------------------------------------
-
-/**
- * The newest stable `vX.Y.Z` tag — the release the audit compares against.
- *
- * @param {string} root
- * @returns {string|null}
- */
+/** The newest stable `vX.Y.Z` tag: the release the check compares against. */
 export function newestStableTag(root) {
-  const tags = git(root, ['tag', '--list', 'v*']).split('\n').filter(Boolean);
-  const stable = tags
-    .map(tag => ({tag, m: /^v(\d+)\.(\d+)\.(\d+)$/.exec(tag)}))
-    .filter(({m}) => m)
-    .sort((a, b) => {
-      for (let i = 1; i <= 3; i++) {
-        const d = Number(b.m[i]) - Number(a.m[i]);
-        if (d) return d;
-      }
-      return 0;
-    });
-  return stable[0]?.tag ?? null;
+  return (
+    git(root, ['tag', '--list', 'v*', '--sort=-v:refname'])
+      .split('\n')
+      .find(tag => /^v\d+\.\d+\.\d+$/.test(tag)) ?? null
+  );
 }
 
 function diffChanges(root, from, to) {
   return parseNameStatus(git(root, ['diff', '--name-status', '-M', from, to]));
 }
 
-function parseArgs(argv) {
-  const [mode, ...rest] = argv;
-  const flags = {};
-  for (let i = 0; i < rest.length; i++) {
-    const m = /^--([\w-]+)(?:=(.*))?$/.exec(rest[i]);
-    if (!m) throw new Error(`unexpected argument: ${rest[i]}`);
-    flags[m[1]] =
-      m[2] ?? (rest[i + 1] && !rest[i + 1].startsWith('--') ? rest[++i] : true);
-  }
-  return {mode, flags};
-}
-
-function report(title, results, {explain}) {
-  const problems = results.flatMap(r => r.problems);
-  if (explain) {
-    for (const {label, result} of results.map(r => ({
-      label: r.label,
-      result: r.result,
-    }))) {
-      console.log(`\n${label}`);
-      for (const [pkg, bySurface] of result.coverage.required) {
-        for (const [surface, files] of bySurface) {
-          for (const file of files)
-            console.log(`  ships  ${pkg} (${surface}): ${file}`);
-        }
-      }
-      for (const {file, reason} of result.coverage.exempt) {
-        console.log(`  exempt ${file} — ${reason}`);
+/** Print each problem (and with --explain, every classification); 1 on problems. */
+function report(entries, explain) {
+  for (const {label, result} of explain ? entries : []) {
+    console.log(`\n${label}`);
+    for (const [pkg, bySurface] of result.coverage.required) {
+      for (const [surface, files] of bySurface) {
+        for (const file of files)
+          console.log(`  ships  ${pkg} (${surface}): ${file}`);
       }
     }
-  }
-  if (problems.length) {
-    console.error(`\n✗ ${title} found ${problems.length} problem(s):\n`);
-    for (const r of results) {
-      for (const p of r.problems) console.error(`  - ${r.prefix}${p}`);
+    for (const {file, reason} of result.coverage.exempt) {
+      console.log(`  exempt ${file} — ${reason}`);
     }
-    console.error(
-      '\nSee "Adding a Changeset" in CONTRIBUTING.md and the Release Process wiki.\n',
-    );
-    return 1;
   }
-  return 0;
+  const failing = entries.filter(entry => entry.result.problems.length);
+  if (failing.length === 0) return 0;
+  console.error('\n✗ Changeset coverage found problems:\n');
+  for (const {label, result} of failing) {
+    for (const problem of result.problems)
+      console.error(`  - ${label}\n    ${problem}`);
+  }
+  console.error('\nSee "When CI requires one" in CONTRIBUTING.md.\n');
+  return 1;
 }
 
 function main(argv) {
-  const {mode, flags} = parseArgs(argv);
-  const root = typeof flags.root === 'string' ? path.resolve(flags.root) : ROOT;
-  const releasedRef =
-    typeof flags.released === 'string' ? flags.released : newestStableTag(root);
-  if (!releasedRef) {
+  const {positionals, values} = parseArgs({
+    args: argv,
+    allowPositionals: true,
+    options: {
+      root: {type: 'string', default: ROOT},
+      released: {type: 'string'},
+      base: {type: 'string'},
+      head: {type: 'string', default: 'HEAD'},
+      since: {type: 'string'},
+      until: {type: 'string', default: 'origin/main'},
+      explain: {type: 'boolean', default: false},
+    },
+  });
+  const [mode] = positionals;
+  const root = path.resolve(values.root);
+  const releasedRef = values.released ?? newestStableTag(root);
+  const released = releasedRef ? gitTree(root, releasedRef) : null;
+  if (!released || released.read('package.json') === null) {
     console.error(
-      'No vX.Y.Z release tag is available to compare CLI JSON ids against. ' +
-        "Fetch release tags (git fetch origin 'refs/tags/v*:refs/tags/v*') or pass --released <ref>.",
+      'No vX.Y.Z release is available to compare CLI JSON ids against. Fetch ' +
+        "release tags (git fetch origin 'refs/tags/v*:refs/tags/v*') or pass --released <ref>.",
     );
     return 2;
   }
-  const released = gitTree(root, releasedRef);
-  if (released.read('package.json') === null) {
-    console.error(
-      `Release ref ${releasedRef} is not available locally; fetch it first.`,
-    );
-    return 2;
-  }
-  const explain = flags.explain === true;
 
-  if (mode === 'pr') {
-    if (typeof flags.base !== 'string')
-      throw new Error('pr mode needs --base <ref>');
-    const headRef = typeof flags.head === 'string' ? flags.head : 'HEAD';
-    const mergeBase = git(root, ['merge-base', flags.base, headRef]).trim();
+  if (mode === 'pr' && values.base) {
+    const mergeBase = git(root, [
+      'merge-base',
+      values.base,
+      values.head,
+    ]).trim();
     const result = evaluateChange({
-      changes: diffChanges(root, mergeBase, headRef),
+      changes: diffChanges(root, mergeBase, values.head),
       base: gitTree(root, mergeBase),
-      head: gitTree(root, headRef),
+      head: gitTree(root, values.head),
       released,
     });
     const code = report(
-      'changeset coverage',
-      [
-        {
-          label: `${mergeBase.slice(0, 12)}...${headRef}`,
-          prefix: '',
-          result,
-          problems: result.problems,
-        },
-      ],
-      {explain},
+      [{label: `${mergeBase.slice(0, 12)}..${values.head}`, result}],
+      values.explain,
     );
     if (code === 0) {
       const pkgs = [...result.coverage.required.keys()];
       console.log(
-        `✓ changeset coverage — ${pkgs.length ? `ships to ${pkgs.join(', ')}, each named by a Changeset` : 'nothing here ships to consumers'}; ` +
+        `✓ Changeset coverage — ${pkgs.length ? `ships to ${pkgs.join(', ')}, each named` : 'nothing here ships to consumers'}; ` +
           `released CLI JSON ids checked against ${releasedRef}`,
       );
     }
@@ -1095,8 +943,12 @@ function main(argv) {
   }
 
   if (mode === 'release') {
-    const since = typeof flags.since === 'string' ? flags.since : releasedRef;
-    const until = typeof flags.until === 'string' ? flags.until : 'origin/main';
+    // Every commit in the range, judged exactly as its pull request was, plus
+    // the fix-up Changesets the release process adds for a commit that merged
+    // without one. Released ids are judged once, at the end of the range.
+    const since = values.since ?? releasedRef;
+    const until = values.until;
+    const pending = pendingChangesets(gitTree(root, until));
     const commits = git(root, [
       'rev-list',
       '--reverse',
@@ -1105,55 +957,41 @@ function main(argv) {
     ])
       .split('\n')
       .filter(Boolean);
-    const pending = pendingChangesets(gitTree(root, until));
-    const results = [];
-    for (const sha of commits) {
+    const entries = commits.map(sha => {
       const subject = git(root, ['log', '-1', '--format=%s', sha]).trim();
-      const parent = `${sha}^`;
+      const pr = /\(#(\d+)\)\s*$/.exec(subject)?.[1] ?? null;
       const result = evaluateChange({
-        changes: diffChanges(root, parent, sha),
-        base: gitTree(root, parent),
+        changes: diffChanges(root, `${sha}^`, sha),
+        base: gitTree(root, `${sha}^`),
         head: gitTree(root, sha),
         released: null,
-        coveredElsewhere: fixupCoverage(
-          pending,
-          /\(#(\d+)\)\s*$/.exec(subject)?.[1] ?? null,
-        ),
+        coveredElsewhere: fixupCoverage(pending, pr),
       });
-      results.push({
-        label: `${sha.slice(0, 10)} ${subject}`,
-        prefix: `${sha.slice(0, 10)} ${subject}\n    `,
-        result,
-        problems: result.problems,
-      });
-    }
-    // Released ids are judged once, at the end of the range, against every
-    // pending Changeset: the release ships whatever the range left missing.
-    const ids = evaluateChange({
-      changes: [],
-      base: gitTree(root, until),
-      head: gitTree(root, until),
-      released,
-      attributeToChange: false,
+      return {label: `${sha.slice(0, 10)} ${subject}`, result};
     });
-    results.push({
-      label: `${until} JSON ids`,
-      prefix: '',
-      result: ids,
-      problems: ids.problems,
+    const end = gitTree(root, until);
+    entries.push({
+      label: `${until}: released CLI JSON ids`,
+      result: evaluateChange({
+        changes: [],
+        base: end,
+        head: end,
+        released,
+        attributeToChange: false,
+      }),
     });
-    console.log(`range:   ${since}..${until} (${commits.length} commits)`);
-    console.log(`release: CLI JSON ids compared against ${releasedRef}`);
-    const code = report('release changeset coverage', results, {explain});
+    console.log(
+      `range: ${since}..${until} (${commits.length} commits); CLI JSON ids against ${releasedRef}`,
+    );
+    const code = report(entries, values.explain);
     if (code === 0)
       console.log('✓ every shipped change in the range names its package');
     return code;
   }
 
   console.error(
-    'usage:\n' +
-      '  changeset-coverage.mjs pr --base <ref> [--head <ref>] [--released <ref>] [--explain]\n' +
-      '  changeset-coverage.mjs release [--since <tag>] [--until <ref>] [--released <ref>] [--explain]',
+    'usage: changeset-coverage.mjs pr --base <ref> [--head <ref>] [--released <ref>] [--explain]\n' +
+      '       changeset-coverage.mjs release [--since <tag>] [--until <ref>] [--released <ref>] [--explain]',
   );
   return 2;
 }
