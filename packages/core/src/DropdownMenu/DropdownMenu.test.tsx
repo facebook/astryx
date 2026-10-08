@@ -2854,6 +2854,71 @@ describe('DropdownMenu menuMaxHeight', () => {
   });
 });
 
+describe('DropdownMenu popoverXstyle', () => {
+  // StyleX class names hash property and value, so the same declaration
+  // yields the same class (the dev build prefixes a debug name; the hash is
+  // the last token).
+  const hash = (style: stylex.StyleXStyles) =>
+    stylex.props(style).className!.split(' ').pop()!;
+  const overrides = stylex.create({
+    corners: {borderRadius: '30px'},
+    // The popover surface's own radius declaration.
+    surfaceRadius: {borderRadius: 'var(--_popover-radius)'},
+  });
+
+  it('styles the popover surface that paints the menu, after its own styles', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'More'}}
+        popoverXstyle={overrides.corners}
+        items={[{label: 'Edit'}]}
+      />,
+    );
+    const menu = screen.getByRole('menu', {hidden: true});
+    const surface = menu.closest('.astryx-popover');
+    expect(surface).not.toBeNull();
+    expect(surface).not.toBe(menu);
+    expect(surface).toHaveClass(hash(overrides.corners));
+    // It replaces the surface's own radius rather than losing to it.
+    expect(surface).not.toHaveClass(hash(overrides.surfaceRadius));
+    expect(menu).not.toHaveClass(hash(overrides.corners));
+    expect(menu).not.toHaveAttribute('popoverxstyle');
+  });
+
+  it('leaves xstyle on the menu and the surface on its own radius', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'More'}}
+        xstyle={overrides.corners}
+        items={[{label: 'Edit'}]}
+      />,
+    );
+    const menu = screen.getByRole('menu', {hidden: true});
+    const surface = menu.closest('.astryx-popover');
+    expect(menu).toHaveClass(hash(overrides.corners));
+    expect(surface).not.toHaveClass(hash(overrides.corners));
+    expect(surface).toHaveClass(hash(overrides.surfaceRadius));
+  });
+
+  it('is ignored by the bottom-sheet presentation and never reaches the DOM', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'More'}}
+        presentation="bottom-sheet"
+        popoverXstyle={overrides.corners}
+        items={[{label: 'Edit'}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /More/}));
+    expect(screen.getByRole('dialog', {hidden: true})).toBeInTheDocument();
+    expect(document.querySelector('[popoverxstyle]')).toBeNull();
+    expect(
+      document.getElementsByClassName(hash(overrides.corners)),
+    ).toHaveLength(0);
+  });
+});
+
 describe('DropdownMenu focus return after a pointer pick', () => {
   function renderMenu(onPick: (label: string) => void = () => {}) {
     render(

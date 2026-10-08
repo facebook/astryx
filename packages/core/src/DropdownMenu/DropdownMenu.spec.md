@@ -16,6 +16,7 @@ verified_by:
     packages/core/src/DropdownMenu/DropdownMenuSelectable.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenuSubMenu.test.tsx,
     packages/core/src/DropdownMenu/__tests__/DropdownMenuDrillIn.a11y.chromium.spec.ts,
+    packages/core/src/DropdownMenu/__tests__/DropdownMenuPopoverStyle.a11y.chromium.spec.ts,
     packages/core/src/DropdownMenu/__tests__/MenuPress.a11y.chromium.spec.ts,
     packages/core/src/BottomSheet/BottomSheet.test.tsx,
     packages/core/src/List/List.test.tsx,
@@ -85,13 +86,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 ## Public concepts
 
 Consumer props, item shapes, subcomponents, and presentation policy remain
-documented in `DropdownMenu.doc.mjs` and the subcomponent docs. Two component-local concepts are added, by DEC-2 and DEC-3; each keeps its
+documented in `DropdownMenu.doc.mjs` and the subcomponent docs. Three component-local concepts are added, by DEC-2, DEC-3 and DEC-8; each keeps its
 released default.
 
 | Concept         | Closed values or states                                  | Meaning                                                                                                                                                               | Availability by variant/orientation/state | Default  | Owner                    | Stability | Invalid-value behavior                              |
 | --------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------- | ------------------------ | --------- | --------------------------------------------------- |
 | Menu height cap | `menuMaxHeight`: a number of pixels                      | Lifts the 300px cap for a menu that must fit its rows; the viewport still bounds it.                                                                                  | Pointer presentation                      | `300px`  | `component:DropdownMenu` | stable    | Ignored by the touch sheet.                         |
 | Trigger source  | `button` (Button props) or `renderTrigger` (render prop) | Which control the menu hangs off. `trigger` receives `DropdownMenuTriggerProps` — the press model, keyboard opens, toggle click and ARIA wiring — and names the menu. | Both presentations                        | `button` | `component:DropdownMenu` | stable    | Both given: `trigger` wins and a dev warning fires. |
+| Popover style   | `popoverXstyle`: StyleX styles                           | Styles the popover surface that paints the pointer menu's background, corner radius and elevation; `xstyle` keeps styling the menu inside it.                         | Pointer presentation, root menu           | none     | `component:DropdownMenu` | proposed  | Ignored by the touch sheet.                         |
 
 ## Behavioral and layout contract
 
@@ -114,6 +116,7 @@ released default.
 | FR12                  | In the pointer menu ArrowDown on the last enabled row wraps to the first and ArrowUp on the first to the last; PageDown and PageUp move to the last and first fully visible enabled row and, pressed there again, one viewport further without wrapping; ArrowUp on the trigger opens with the last enabled row highlighted; the key that opened the menu and its auto-repeats do not activate; typeahead matches the row's label element alone and ignores Control/Command chords and input-method composition.                                                                                                                                                                                                              | Proposed in this change; `DropdownMenu.test.tsx` keyboard suite, `useListFocus.test.tsx`, `useTypeahead.test.tsx`                                                             | Proposed; verified in jsdom, pending owner review                                 |
 | FR13                  | On a mouse, a nested flyout stays open while the pointer is inside the triangle from where it left its row to the flyout's near edge — including while the pointer is paused there — and closes after the existing delay once the pointer has left both the row and that triangle. The row's click toggle and its guard window are unchanged.                                                                                                                                                                                                                                                                                                                                                                                 | Proposed in this change; `DropdownMenuSubMenu.test.tsx` safe-triangle suite, `useMenuHover.test.tsx`                                                                          | Proposed; verified in jsdom, pending owner review                                 |
 | FR14                  | A compound `DropdownMenuGroup` is one `role="group"` named by its heading through `aria-labelledby`; the heading carries `dropdown-menu-section-heading`, is plain text rather than a menu item, and is skipped by roving focus and typeahead. An untitled group is an unnamed `role="group"`.                                                                                                                                                                                                                                                                                                                                                                                                                                | DEC-1, docs, and tests                                                                                                                                                        | Proposed; awaiting owner approval                                                 |
+| FR15                  | `popoverXstyle` MUST land on the popover surface that paints the root pointer menu's background, corner radius and elevation, merged after the surface's own styles, and MUST NOT reach the `role="menu"` element, where `xstyle`, `className` and `style` keep landing. Sub-menu flyouts keep their own surfaces; the touch sheet ignores it.                                                                                                                                                                                                                                                                                                                                                                                | DEC-8; `DropdownMenu.test.tsx` popoverXstyle suite; `DropdownMenuPopoverStyle.a11y.chromium.spec.ts`                                                                          | Proposed; verified in jsdom and real Chromium; owner to confirm DEC-8             |
 
 ### Allowed variation
 
@@ -276,6 +279,7 @@ than adding a DropdownMenu-owned heading target.
 | FR8, AR2            | `DropdownMenu.test.tsx` "DropdownMenuItem href" suite (pointer menu and bottom sheet)                                                                                        | Plain click, ⌘-click, Enter with modifiers, disabled link row                                              | A row rendering an inner anchor, running `onClick` on a modified click, or a synthesized click dropping the modifiers fails.                                  | `audit:DropdownMenu/behavior` |
 | FR12, AR3           | `DropdownMenuSubMenu.test.tsx` "drill-in on a phone" suite; `__tests__/DropdownMenuDrillIn.a11y.chromium.spec.ts` (real Chromium, coarse pointer)                            | Drill in, Back, Escape, ArrowLeft, nested level, scoped typeahead, forced presentations, close resets      | A flyout opening on a coarse pointer, a missing Back row, sibling rows staying in the order, or focus not returning to the row fails.                         | `audit:DropdownMenu/behavior` |
 | FR10                | `DropdownMenuSubMenu.test.tsx` safe-triangle suite; `useMenuHover.test.tsx` `isPointInSafeTriangle` and click-guard suites                                                   | diagonal path toward the flyout, a pause inside it, path away, click-opened and hover-opened guard windows | A flyout that closes while the pointer is inside the triangle or paused in it, one that never closes after leaving it, or a changed guard-window rule, fails. | `audit:DropdownMenu/behavior` |
+| FR15                | `DropdownMenu.test.tsx` popoverXstyle suite; `__tests__/DropdownMenuPopoverStyle.a11y.chromium.spec.ts` in real Chromium                                                     | surface with and without `popoverXstyle`, `xstyle` on the menu, bottom sheet                               | A style that lands on the menu, loses to the surface's own radius, or reaches the DOM as an attribute fails.                                                  | `audit:DropdownMenu/theming`  |
 
 ## Decision log
 
@@ -440,3 +444,21 @@ The value is a number of pixels. Rejected: an arbitrary CSS length (`50vh`,
 `calc(...)`), which is product-shaped tuning on a shared component that
 `spec:AST-002` does not admit, and which lets a caller write a cap the
 viewport term cannot reason about.
+
+### DEC-8 — The popover surface takes a per-menu style
+
+**Reference:** `component:DropdownMenu/DEC-8`
+**Decider:** proposed by `vjeux`, `2026-10-08`; pending owner review
+
+The box a viewer sees as the pointer menu is the popover surface: it paints
+the background, the corner radius and the elevation, and it carries the theme
+scope, so the theme's tokens are declared on it rather than inherited. The
+`role="menu"` element inside it paints no background, and `xstyle`,
+`className` and `style` style that element, so they cannot change the box's
+shape. `popoverXstyle` styles the surface of the root pointer menu, merged
+after the surface's own styles, for a shape one menu needs and the others do
+not, such as a sheet docked to a bar that shares its rounding.
+
+Rejected: moving `xstyle` to the surface, which breaks callers that style the
+menu's padding, gap or block size; a `dropdown-menu-popup` theme target, which
+restyles every menu rather than the one that needs it.

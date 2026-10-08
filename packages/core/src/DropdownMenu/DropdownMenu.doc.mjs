@@ -228,6 +228,12 @@ export const docs = {
         'Maximum height in pixels for the popover presentation, for a menu that must fit its rows. Lifts the default 300px cap; the viewport still bounds it.',
     },
     {
+      name: 'popoverXstyle',
+      type: 'StyleXStyles',
+      description:
+        "StyleX styles for the popover that presents the menu: the surface that paints its background, corner radius and elevation, merged after the surface's own styles. `xstyle`, `className` and `style` keep styling the menu inside it, which paints no background of its own. Sub-menu flyouts keep their own surfaces. Must be a stylex.create() value. Ignored by the bottom-sheet presentation.",
+    },
+    {
       name: 'placement',
       type: "'above' | 'below' | 'start' | 'end'",
       description:

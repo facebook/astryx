@@ -45,6 +45,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {Button, type ButtonProps} from '../Button';
 import {Heading} from '../Heading';
@@ -352,6 +353,20 @@ interface DropdownMenuBaseProps extends BaseProps {
    * bottom-sheet presentation.
    */
   menuMaxHeight?: number;
+  /**
+   * StyleX styles for the popover that presents the menu: the surface that
+   * paints its background, corner radius and elevation. They merge after the
+   * surface's own styles. `xstyle`, `className` and `style` keep styling the
+   * menu inside it, which paints no background of its own. Sub-menu flyouts
+   * keep their own surfaces. Ignored by bottom-sheet presentation.
+   *
+   * @example
+   * ```
+   * const sheet = stylex.create({surface: {borderRadius: 24}});
+   * <DropdownMenu button={{label: 'More'}} popoverXstyle={sheet.surface}>...</DropdownMenu>
+   * ```
+   */
+  popoverXstyle?: StyleXStyles;
   onClick?: () => void;
   hasChevron?: boolean;
   /**
@@ -462,6 +477,7 @@ function DropdownMenuBottomSheet({
   presentation: _presentation,
   menuWidth: _menuWidth,
   menuMaxHeight: _menuMaxHeight,
+  popoverXstyle: _popoverXstyle,
   placement: _placement,
   alignment: _alignment,
   className,
@@ -692,6 +708,9 @@ function DropdownMenuPopover({
   onOpenChange,
   menuWidth,
   menuMaxHeight,
+  // `popoverXstyle` below is the layer's width style; this one styles the
+  // surface inside the layer.
+  popoverXstyle: popoverSurfaceXstyle,
   onClick,
   hasChevron = true,
   placement = 'below',
@@ -812,6 +831,10 @@ function DropdownMenuPopover({
     // The popup's own role="menu" is the exposed semantics; wrapping it in a
     // modal dialog would announce an unnamed dialog around the menu.
     role: 'none',
+    // The surface paints the box a viewer sees (background, radius,
+    // elevation); the menu inside it is transparent, so a caller styles the
+    // box here rather than through `xstyle`.
+    xstyle: popoverSurfaceXstyle,
   });
 
   const closeMenu = useCallback(() => {

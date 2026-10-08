@@ -96,6 +96,14 @@ const readinessStyles = stylex.create({
   },
 });
 
+// A menu whose popover keeps larger corners than the system's container
+// radius, e.g. a sheet docked to a bar with the same rounding.
+const popoverStyleStyles = stylex.create({
+  surface: {
+    borderRadius: '24px',
+  },
+});
+
 const PROJECT_ACTIONS = [
   {
     label: 'Edit project',
@@ -1373,6 +1381,31 @@ export const LinkRows: Story = {
       description: {
         story:
           'A row whose act is navigation takes an `href` and renders as a real anchor with role="menuitem", routed through LinkProvider. A ⌘-click, Ctrl-click or middle click keeps the browser\'s meaning (a new tab) and skips `onClick`; a plain click runs `onClick`, closes the menu and navigates. Enter and Space synthesize a click that keeps the key\'s modifiers.',
+      },
+    },
+  },
+};
+
+export const PopoverStyle: Story = {
+  name: 'Popover style (popoverXstyle)',
+  render: () => (
+    <DropdownMenu
+      button={{label: 'More'}}
+      popoverXstyle={popoverStyleStyles.surface}>
+      <DropdownMenuItem icon={UserIcon} label="Profile" onClick={() => {}} />
+      <DropdownMenuItem
+        icon={Cog6ToothIcon}
+        label="Settings"
+        onClick={() => {}}
+      />
+      <DropdownMenuItem icon={ShareIcon} label="Share" onClick={() => {}} />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`popoverXstyle` styles the popover that presents the menu: the box that paints its background, corner radius and elevation. Here it rounds the corners to 24px. `xstyle` styles the menu inside that box, which paints no background of its own.',
       },
     },
   },
