@@ -542,7 +542,7 @@ describe('build kit — every page starts from a template', () => {
   it('starts a page the words describe from its template', async () => {
     for (const [idea, name] of [
       ['a weekly report of sales by region', 'dashboard-scorecard'],
-      ['a pricing page with three plans and a comparison table', 'table-page'],
+      ['a pricing page with three plans and a comparison table', 'table-comparison'],
     ]) {
       const r = await build(idea, {cwd: REPO});
       if (r.type !== 'build.kit') throw new Error(r.type);

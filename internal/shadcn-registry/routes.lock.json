@@ -5006,6 +5006,11 @@
       "aliases": []
     },
     {
+      "name": "template-table-collapsible",
+      "path": "templates/table-collapsible",
+      "aliases": []
+    },
+    {
       "name": "template-table-comparison",
       "path": "templates/table-comparison",
       "aliases": []
