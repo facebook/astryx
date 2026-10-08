@@ -967,7 +967,8 @@ describe('useSheetGestures', () => {
       });
       expect(pull?.defaultPrevented).toBe(true);
       expect(hook.result.current.isDragging).toBe(true);
-      expect(hook.result.current.dragOffset).toBe(60);
+      expect(liveOffset(hook)).toBe(60);
+      expect(body.style.transform).toBe('translateY(60px)');
     });
 
     it('chains to a scrolled body before the sheet when the nested box is at its top', () => {
