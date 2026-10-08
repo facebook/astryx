@@ -52,6 +52,11 @@
  * nothing left to scroll — and instead anchors at the point where the content
  * ran out and drives the sheet from the travel beyond it.
  *
+ * Every gesture here is one finger. A second finger is a pinch, and pinch-zoom
+ * belongs to the browser (WCAG 1.4.4): the surfaces declare `pinch-zoom` in
+ * their `touch-action`, and a second finger landing ends any drag in flight
+ * or armed — the sheet returns to its detent and the pinch zooms the page.
+ *
  * Kept private to BottomSheet: a dismiss edge + detents on a bottom-anchored
  * surface are inherently sheet concepts. It is not a general primitive and is
  * intentionally not exported.
@@ -361,7 +366,7 @@ export interface UseSheetGesturesResult {
    * rotation / viewport changes without re-measuring mid-drag.
    */
   sheetRef: (node: HTMLElement | null) => void;
-  /** Spread on the sliding surface: live translate + touch-action guard. */
+  /** Spread on the sliding surface: live translate + touch-action guard (pans are the sheet's, pinch-zoom is the browser's). */
   contentProps: SheetContentProps;
   /** Spread on the grab-handle element: pointer drag handlers. */
   handleProps: SheetHandleProps;
@@ -1077,7 +1082,12 @@ export function useSheetGestures({
 
   const handlePointerDown = useCallback(
     (event: ReactPointerEvent) => {
-      if (event.button !== 0 || !event.isPrimary) {
+      if (!event.isPrimary) {
+        // A second finger is a pinch: give it to the browser.
+        cancelDrag(event.currentTarget as HTMLElement);
+        return;
+      }
+      if (event.button !== 0) {
         return;
       }
       // The handle has no native focus action. Prevent pointer-down from
@@ -1086,7 +1096,7 @@ export function useSheetGestures({
       event.preventDefault();
       beginDrag(event, measureHeight());
     },
-    [beginDrag, measureHeight],
+    [beginDrag, cancelDrag, measureHeight],
   );
 
   const handleContextMenu = useCallback(
@@ -1375,6 +1385,13 @@ export function useSheetGestures({
 
     const onTouchStart = (event: TouchEvent) => {
       const body = event.currentTarget as HTMLElement;
+      if (event.touches.length > 1) {
+        // A second finger is a pinch. Disarm, and drop a drag already in
+        // flight, so no later touchmove is cancelled out from under the zoom.
+        touchDragRef.current = null;
+        cancelDragRef.current(body);
+        return;
+      }
       const touch = event.changedTouches[0];
       // Record where the gesture began and whether it began at a scroll edge.
       // At the top, a pull DOWN hands off (collapse); at the bottom, a pull UP
@@ -1596,7 +1613,8 @@ export function useSheetGestures({
           isOpen && (isDragging || isScrollAreaReconciling || reducedMotion)
             ? 'none'
             : undefined,
-        touchAction: 'none',
+        // One-finger drags are the sheet's; a pinch stays the browser's.
+        touchAction: 'pinch-zoom',
         overscrollBehavior: 'contain',
       },
     }),
@@ -1605,7 +1623,7 @@ export function useSheetGestures({
 
   const handleProps = useMemo<SheetHandleProps>(
     () => ({
-      style: {touchAction: 'none', cursor: 'grab'},
+      style: {touchAction: 'pinch-zoom', cursor: 'grab'},
       onContextMenu: handleContextMenu,
       onLostPointerCapture: handleLostPointerCapture,
       onPointerDown: handlePointerDown,
