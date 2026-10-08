@@ -622,7 +622,7 @@ export async function checkAppThemes(cwd) {
       label: 'App imports the theme module',
       status: 'warn',
       message: `Could not prove that project source imports ${state.module.path}${importEvidence.parseFailures ? `; ${importEvidence.parseFailures} source file(s) could not be parsed` : ''}.`,
-      fix: `Import {themes, defaultThemeSlug} from the generated module and render <Theme theme={themes[defaultThemeSlug]}>.`,
+      fix: `Import {themes, defaultThemeSlug} from the generated module and {Theme} from '@astryxdesign/core', then render <Theme theme={themes[defaultThemeSlug]}>.`,
     });
   }
 

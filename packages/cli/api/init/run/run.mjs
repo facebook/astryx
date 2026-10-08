@@ -54,6 +54,7 @@ export function getNextSteps(invocation) {
     '    4. Add and wire a theme:',
     '       npm install @astryxdesign/theme-neutral',
     `       ${invocation} theme add neutral --import`,
+    "       import { Theme } from '@astryxdesign/core'",
     "       import { themes, defaultThemeSlug } from './astryx-themes'",
     '       <Theme theme={themes[defaultThemeSlug]}>...</Theme>',
     `       Extend an imported theme to customize it. Run \`${invocation} theme eject <slug>\` only to fork source.`,

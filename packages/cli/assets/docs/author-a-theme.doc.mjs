@@ -118,7 +118,7 @@ export const docs = {
           ['ocean.d.ts', 'TypeScript declarations for the theme and icon registry exports'],
           ['ocean.variants.d.ts', "(Optional) Module augmentations for custom component prop values"],
         ]},
-        {type: 'code', lang: 'tsx', label: 'Using a custom built theme', code: "import {oceanTheme} from './themes/ocean';\nimport './themes/ocean.css';\n\n<Theme theme={oceanTheme}>\n  <App />\n</Theme>"},
+        {type: 'code', lang: 'tsx', label: 'Using a custom built theme', code: "import {Theme} from '@astryxdesign/core';\nimport {oceanTheme} from './themes/ocean';\nimport './themes/ocean.css';\n\n<Theme theme={oceanTheme}>\n  <App />\n</Theme>"},
         {type: 'prose', text: "After upgrading Astryx, rerun `astryx theme build` for every custom prebuilt theme. Deploy the regenerated files together. The build also warns when the theme names font families it does not load. See {@link generic:typography} for the full recipe."},
         {type: 'prose', text: 'For the runtime vs built tradeoff, see the Runtime vs Built section of {@link generic:use-a-theme}.'},
       ],
