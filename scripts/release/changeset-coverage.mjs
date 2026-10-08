@@ -55,7 +55,10 @@ const {
   parseNameStatus,
 } = require('../../.github/scripts/change-scope.cjs');
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../..',
+);
 
 export const CLI_PACKAGE = '@astryxdesign/cli';
 const CHANGESET_FILE = /^\.changeset\/(?!README\.md$)[^/]+\.md$/;
@@ -164,7 +167,10 @@ export function gitTree(root, rev) {
           continue;
         }
         const size = Number(m[2]);
-        reads.set(file, m[1] === 'blob' ? out.toString('utf8', offset, offset + size) : null);
+        reads.set(
+          file,
+          m[1] === 'blob' ? out.toString('utf8', offset, offset + size) : null,
+        );
         offset += size + 1;
       }
     },
@@ -335,7 +341,10 @@ export function classifyPath(file, {tree, config}) {
   if (/\.spec\.[cm]?[jt]sx?$/.test(rel)) {
     return {ships: false, reason: 'test, fixture, snapshot, or spec record'};
   }
-  if (/(?:^|\/)[^/]+\.stories\.[^/]+$/.test(rel) || /(?:^|\/)stories\//.test(rel)) {
+  if (
+    /(?:^|\/)[^/]+\.stories\.[^/]+$/.test(rel) ||
+    /(?:^|\/)stories\//.test(rel)
+  ) {
     return {ships: false, reason: 'story'};
   }
   if (/^changelog\.md$/i.test(rel)) {
@@ -344,7 +353,11 @@ export function classifyPath(file, {tree, config}) {
   if (!isPackedFile(manifest, rel)) {
     return {ships: false, reason: `not in the ${manifest.name} tarball`};
   }
-  return {ships: true, package: manifest.name, surface: surfaceOf(manifest.name, rel)};
+  return {
+    ships: true,
+    package: manifest.name,
+    surface: surfaceOf(manifest.name, rel),
+  };
 }
 
 /**
@@ -411,8 +424,14 @@ function namedPackages(changesets) {
  */
 function changedChangesets(changes, head) {
   return changes
-    .filter(change => change.status?.[0] !== 'D' && CHANGESET_FILE.test(change.filename))
-    .map(change => ({file: change.filename, text: head.read(change.filename) ?? ''}));
+    .filter(
+      change =>
+        change.status?.[0] !== 'D' && CHANGESET_FILE.test(change.filename),
+    )
+    .map(change => ({
+      file: change.filename,
+      text: head.read(change.filename) ?? '',
+    }));
 }
 
 /**
@@ -425,7 +444,12 @@ function changedChangesets(changes, head) {
  * @param {Set<string>} [input.coveredElsewhere]  packages a later fix-up Changeset covers (release audit only)
  * @returns {{required: Map<string, Map<string, string[]>>, covered: Set<string>, exempt: Array<{file: string, reason: string}>, problems: string[]}}
  */
-export function checkCoverage({changes, base, head, coveredElsewhere = new Set()}) {
+export function checkCoverage({
+  changes,
+  base,
+  head,
+  coveredElsewhere = new Set(),
+}) {
   const baseConfig = readJson(base, '.changeset/config.json') || {};
   const headConfig = readJson(head, '.changeset/config.json') || {};
   /** @type {Map<string, Map<string, string[]>>} package -> surface -> files */
@@ -450,7 +474,11 @@ export function checkCoverage({changes, base, head, coveredElsewhere = new Set()
   const wanted = new Set(['pnpm-workspace.yaml', '.changeset/config.json']);
   for (const file of paths) {
     wanted.add(file);
-    for (let dir = path.posix.dirname(file); dir && dir !== '.'; dir = path.posix.dirname(dir)) {
+    for (
+      let dir = path.posix.dirname(file);
+      dir && dir !== '.';
+      dir = path.posix.dirname(dir)
+    ) {
       wanted.add(`${dir}/package.json`);
     }
   }
@@ -475,7 +503,10 @@ export function checkCoverage({changes, base, head, coveredElsewhere = new Set()
         readJson(head, file),
       );
       if (fields.length === 0) {
-        exempt.push({file, reason: 'no consumer-facing package.json field changed'});
+        exempt.push({
+          file,
+          reason: 'no consumer-facing package.json field changed',
+        });
         continue;
       }
       need(result.package, 'manifest', `${file} (${fields.join(', ')})`);
@@ -500,7 +531,8 @@ function coverageProblem(pkg, bySurface) {
     const shown = files.slice(0, 5).join(', ');
     const more = files.length > 5 ? `, and ${files.length - 5} more` : '';
     lines.push(`      ${SURFACES[surface].label}: ${shown}${more}`);
-    for (const category of SURFACES[surface].categories) categories.add(category);
+    for (const category of SURFACES[surface].categories)
+      categories.add(category);
   }
   const docsOnly = bySurface.size === 1 && bySurface.has('docs');
   const category = docsOnly ? 'docs' : '<fix|feat>';
@@ -520,7 +552,8 @@ function coverageProblem(pkg, bySurface) {
 // Rule 2: released CLI JSON ids.
 // ---------------------------------------------------------------------------
 
-const RESPONSE_TYPES_DOC = 'packages/cli/foundation/response/response-types.doc.mjs';
+const RESPONSE_TYPES_DOC =
+  'packages/cli/foundation/response/response-types.doc.mjs';
 const CLI_DIR = 'packages/cli';
 const GOLDEN_DIR = 'packages/cli/test/__golden__';
 const DOCTOR_DIR = 'packages/cli/api/doctor';
@@ -543,7 +576,10 @@ function splitTypeExpression(text) {
       break;
     }
   }
-  return {type: text.slice(start + 1, i - 1).trim(), rest: text.slice(i).trimStart()};
+  return {
+    type: text.slice(start + 1, i - 1).trim(),
+    rest: text.slice(i).trimStart(),
+  };
 }
 
 /** Split `text` on `separator` where no bracket is open. */
@@ -573,7 +609,11 @@ function typedefComposition(type) {
   const bases = [];
   const keys = [];
   for (const part of splitTopLevel(type, '&')) {
-    if (/^[A-Za-z_$][\w$]*$/.test(part) && part !== 'object' && part !== 'Object') {
+    if (
+      /^[A-Za-z_$][\w$]*$/.test(part) &&
+      part !== 'object' &&
+      part !== 'Object'
+    ) {
       bases.push(part);
     } else if (part.startsWith('{') && part.endsWith('}')) {
       for (const member of splitTopLevel(part.slice(1, -1), ',')) {
@@ -601,7 +641,10 @@ export function parseTypedefs(source) {
       const m = /^\s*@(typedef|property|prop)\b([\s\S]*)$/.exec(tag);
       if (!m) continue;
       const {type, rest} = splitTypeExpression(m[2]);
-      const name = /^\[?\s*([A-Za-z_$][\w$]*(?:(?:\[\])?\.[A-Za-z_$][\w$]*)*)/.exec(rest)?.[1];
+      const name =
+        /^\[?\s*([A-Za-z_$][\w$]*(?:(?:\[\])?\.[A-Za-z_$][\w$]*)*)/.exec(
+          rest,
+        )?.[1];
       if (!name) continue;
       if (m[1] === 'typedef') {
         const {bases, keys} = typedefComposition(type);
@@ -626,7 +669,8 @@ export function parseTypedefs(source) {
 export function typedefFields(...sources) {
   const byName = new Map();
   for (const source of sources) {
-    for (const typedef of parseTypedefs(source)) byName.set(typedef.name, typedef);
+    for (const typedef of parseTypedefs(source))
+      byName.set(typedef.name, typedef);
   }
   const resolved = new Map();
   const resolve = (name, seen = new Set()) => {
@@ -685,10 +729,21 @@ export function cliJsonIds(tree) {
   /** @type {Map<string, {label: string, token: string, distinctive: boolean}>} */
   const ids = new Map();
 
-  const typeFiles = tree.list(CLI_DIR).filter(file => file.endsWith('.type.mjs'));
-  const goldenFiles = tree.list(GOLDEN_DIR).filter(file => file.endsWith('.json'));
-  const doctorFiles = tree.list(DOCTOR_DIR).filter(file => file.endsWith('.mjs'));
-  tree.prefetch?.([RESPONSE_TYPES_DOC, ...typeFiles, ...goldenFiles, ...doctorFiles]);
+  const typeFiles = tree
+    .list(CLI_DIR)
+    .filter(file => file.endsWith('.type.mjs'));
+  const goldenFiles = tree
+    .list(GOLDEN_DIR)
+    .filter(file => file.endsWith('.json'));
+  const doctorFiles = tree
+    .list(DOCTOR_DIR)
+    .filter(file => file.endsWith('.mjs'));
+  tree.prefetch?.([
+    RESPONSE_TYPES_DOC,
+    ...typeFiles,
+    ...goldenFiles,
+    ...doctorFiles,
+  ]);
 
   const responseTypes = tree.read(RESPONSE_TYPES_DOC);
   if (responseTypes !== null) {
@@ -706,7 +761,9 @@ export function cliJsonIds(tree) {
     !/\.(?:test|spec)\.[^/]+$/.test(file) &&
     isPackageReleasePath(file);
 
-  const typeSources = typeFiles.filter(sourceFile).map(file => tree.read(file) ?? '');
+  const typeSources = typeFiles
+    .filter(sourceFile)
+    .map(file => tree.read(file) ?? '');
   for (const field of typedefFields(...typeSources)) {
     ids.set(`field:${field}`, {
       label: `response field \`${field}\``,
@@ -759,7 +816,10 @@ const names = (text, token) => text.includes(`\`${token}\``);
 function compatibilityNoteNames(text, token) {
   return text
     .split(/\n\s*\n/)
-    .some(paragraph => /^\s*Compatibility:/i.test(paragraph) && names(paragraph, token));
+    .some(
+      paragraph =>
+        /^\s*Compatibility:/i.test(paragraph) && names(paragraph, token),
+    );
 }
 
 /**
@@ -769,19 +829,20 @@ function compatibilityNoteNames(text, token) {
  * @returns {Array<{file: string, text: string, category: string|null, releases: Record<string, string>}>}
  */
 export function pendingChangesets(tree) {
-  const files = tree.list('.changeset').filter(file => CHANGESET_FILE.test(file));
+  const files = tree
+    .list('.changeset')
+    .filter(file => CHANGESET_FILE.test(file));
   tree.prefetch?.(files);
-  return files
-    .map(file => {
-      const text = tree.read(file) ?? '';
-      const fm = parseFrontmatter(text);
-      return {
-        file,
-        text,
-        category: fm ? parseEntry(fm.summary).category : null,
-        releases: fm ? fm.releases : {},
-      };
-    });
+  return files.map(file => {
+    const text = tree.read(file) ?? '';
+    const fm = parseFrontmatter(text);
+    return {
+      file,
+      text,
+      category: fm ? parseEntry(fm.summary).category : null,
+      releases: fm ? fm.releases : {},
+    };
+  });
 }
 
 /**
@@ -799,7 +860,14 @@ export function pendingChangesets(tree) {
  * @param {ReturnType<typeof pendingChangesets>} input.pending  every Changeset at head
  * @returns {{missing: string[], attributed: string[], problems: string[]}}
  */
-export function checkReleasedIds({released, releasedLabel, base, head, describedBy, pending}) {
+export function checkReleasedIds({
+  released,
+  releasedLabel,
+  base,
+  head,
+  describedBy,
+  pending,
+}) {
   const missing = [...released.keys()].filter(key => !head.has(key)).sort();
   const attributed = missing.filter(key => {
     if (!base) return true;
@@ -814,7 +882,8 @@ export function checkReleasedIds({released, releasedLabel, base, head, described
   });
 
   const cliChangesets = pending.filter(
-    entry => entry.releases[CLI_PACKAGE] && entry.releases[CLI_PACKAGE] !== 'none',
+    entry =>
+      entry.releases[CLI_PACKAGE] && entry.releases[CLI_PACKAGE] !== 'none',
   );
   const problems = [];
   for (const key of attributed) {
@@ -933,7 +1002,8 @@ function parseArgs(argv) {
   for (let i = 0; i < rest.length; i++) {
     const m = /^--([\w-]+)(?:=(.*))?$/.exec(rest[i]);
     if (!m) throw new Error(`unexpected argument: ${rest[i]}`);
-    flags[m[1]] = m[2] ?? (rest[i + 1] && !rest[i + 1].startsWith('--') ? rest[++i] : true);
+    flags[m[1]] =
+      m[2] ?? (rest[i + 1] && !rest[i + 1].startsWith('--') ? rest[++i] : true);
   }
   return {mode, flags};
 }
@@ -941,11 +1011,15 @@ function parseArgs(argv) {
 function report(title, results, {explain}) {
   const problems = results.flatMap(r => r.problems);
   if (explain) {
-    for (const {label, result} of results.map(r => ({label: r.label, result: r.result}))) {
+    for (const {label, result} of results.map(r => ({
+      label: r.label,
+      result: r.result,
+    }))) {
       console.log(`\n${label}`);
       for (const [pkg, bySurface] of result.coverage.required) {
         for (const [surface, files] of bySurface) {
-          for (const file of files) console.log(`  ships  ${pkg} (${surface}): ${file}`);
+          for (const file of files)
+            console.log(`  ships  ${pkg} (${surface}): ${file}`);
         }
       }
       for (const {file, reason} of result.coverage.exempt) {
@@ -980,13 +1054,16 @@ function main(argv) {
   }
   const released = gitTree(root, releasedRef);
   if (released.read('package.json') === null) {
-    console.error(`Release ref ${releasedRef} is not available locally; fetch it first.`);
+    console.error(
+      `Release ref ${releasedRef} is not available locally; fetch it first.`,
+    );
     return 2;
   }
   const explain = flags.explain === true;
 
   if (mode === 'pr') {
-    if (typeof flags.base !== 'string') throw new Error('pr mode needs --base <ref>');
+    if (typeof flags.base !== 'string')
+      throw new Error('pr mode needs --base <ref>');
     const headRef = typeof flags.head === 'string' ? flags.head : 'HEAD';
     const mergeBase = git(root, ['merge-base', flags.base, headRef]).trim();
     const result = evaluateChange({
@@ -997,7 +1074,14 @@ function main(argv) {
     });
     const code = report(
       'changeset coverage',
-      [{label: `${mergeBase.slice(0, 12)}...${headRef}`, prefix: '', result, problems: result.problems}],
+      [
+        {
+          label: `${mergeBase.slice(0, 12)}...${headRef}`,
+          prefix: '',
+          result,
+          problems: result.problems,
+        },
+      ],
       {explain},
     );
     if (code === 0) {
@@ -1013,7 +1097,12 @@ function main(argv) {
   if (mode === 'release') {
     const since = typeof flags.since === 'string' ? flags.since : releasedRef;
     const until = typeof flags.until === 'string' ? flags.until : 'origin/main';
-    const commits = git(root, ['rev-list', '--reverse', '--no-merges', `${since}..${until}`])
+    const commits = git(root, [
+      'rev-list',
+      '--reverse',
+      '--no-merges',
+      `${since}..${until}`,
+    ])
       .split('\n')
       .filter(Boolean);
     const pending = pendingChangesets(gitTree(root, until));
@@ -1026,7 +1115,10 @@ function main(argv) {
         base: gitTree(root, parent),
         head: gitTree(root, sha),
         released: null,
-        coveredElsewhere: fixupCoverage(pending, /\(#(\d+)\)\s*$/.exec(subject)?.[1] ?? null),
+        coveredElsewhere: fixupCoverage(
+          pending,
+          /\(#(\d+)\)\s*$/.exec(subject)?.[1] ?? null,
+        ),
       });
       results.push({
         label: `${sha.slice(0, 10)} ${subject}`,
@@ -1044,11 +1136,17 @@ function main(argv) {
       released,
       attributeToChange: false,
     });
-    results.push({label: `${until} JSON ids`, prefix: '', result: ids, problems: ids.problems});
+    results.push({
+      label: `${until} JSON ids`,
+      prefix: '',
+      result: ids,
+      problems: ids.problems,
+    });
     console.log(`range:   ${since}..${until} (${commits.length} commits)`);
     console.log(`release: CLI JSON ids compared against ${releasedRef}`);
     const code = report('release changeset coverage', results, {explain});
-    if (code === 0) console.log('✓ every shipped change in the range names its package');
+    if (code === 0)
+      console.log('✓ every shipped change in the range names its package');
     return code;
   }
 

@@ -34,13 +34,24 @@ const WORKSPACE = `packages:
 `;
 
 const CONFIG = JSON.stringify({
-  fixed: [['@astryxdesign/cli', '@astryxdesign/core', '@astryxdesign/theme-stone']],
+  fixed: [
+    ['@astryxdesign/cli', '@astryxdesign/core', '@astryxdesign/theme-stone'],
+  ],
   ignore: ['@astryxdesign/storybook', '@astryxdesign/sandbox'],
 });
 
-const manifest = (name, extra = {}) => JSON.stringify({name, version: '0.6.6', ...extra});
+const manifest = (name, extra = {}) =>
+  JSON.stringify({name, version: '0.6.6', ...extra});
 
-const CLI_FILES = ['clients', 'api', 'assets', 'authoring', 'foundation', 'scripts/postinstall.mjs', 'CHANGELOG.md'];
+const CLI_FILES = [
+  'clients',
+  'api',
+  'assets',
+  'authoring',
+  'foundation',
+  'scripts/postinstall.mjs',
+  'CHANGELOG.md',
+];
 
 const DOCTOR_RELEASED = `export const checks = [
   {id: 'node-version', label: 'Node'},
@@ -79,7 +90,9 @@ const DOCTOR_TYPES = `/**
 const DOCS_LIST_GOLDEN = JSON.stringify({
   apiVersion: 1,
   type: 'docs.list',
-  data: [{topic: 'layout', description: 'Layout.', package: '@astryxdesign/cli'}],
+  data: [
+    {topic: 'layout', description: 'Layout.', package: '@astryxdesign/cli'},
+  ],
 });
 
 /** A small repository with the real package layout. */
@@ -89,31 +102,52 @@ function repo(overrides = {}) {
     'package.json': manifest('astryx-root', {private: true}),
     '.changeset/config.json': CONFIG,
     '.changeset/README.md': '# Changesets\n',
-    'packages/cli/package.json': manifest('@astryxdesign/cli', {files: CLI_FILES, bin: {astryx: './clients/cli/bin/astryx.mjs'}}),
+    'packages/cli/package.json': manifest('@astryxdesign/cli', {
+      files: CLI_FILES,
+      bin: {astryx: './clients/cli/bin/astryx.mjs'},
+    }),
     'packages/cli/README.md': '# CLI\n',
-    'packages/cli/assets/docs/layout.doc.mjs': 'export default {title: "Layout"};\n',
+    'packages/cli/assets/docs/layout.doc.mjs':
+      'export default {title: "Layout"};\n',
     'packages/cli/api/doctor/doctor.mjs': DOCTOR_RELEASED,
     'packages/cli/api/doctor/doctor.type.mjs': DOCTOR_TYPES,
     'packages/cli/api/doctor/doctor.test.mjs': "it('x', () => {});\n",
     'packages/cli/foundation/response/response-types.doc.mjs': RESPONSE_TYPES,
     'packages/cli/test/__golden__/docs-list.json': DOCS_LIST_GOLDEN,
     'packages/cli/scripts/generate.mjs': '// repo-only generator\n',
-    'packages/core/package.json': manifest('@astryxdesign/core', {files: ['dist', 'src', 'README.md', 'CHANGELOG.md'], peerDependencies: {react: '^19.0.0'}}),
+    'packages/core/package.json': manifest('@astryxdesign/core', {
+      files: ['dist', 'src', 'README.md', 'CHANGELOG.md'],
+      peerDependencies: {react: '^19.0.0'},
+    }),
     'packages/core/src/Button/Button.tsx': 'export const Button = 1;\n',
     'packages/core/src/Button/Button.doc.mjs': 'export const doc = {};\n',
     'packages/core/src/Button/Button.test.tsx': 'test();\n',
     'packages/core/src/Button/Button.spec.md': '# Button spec\n',
     'packages/core/src/Button/__fixtures__/data.ts': 'export {};\n',
     'packages/core/CHANGELOG.md': '# Changelog\n',
-    'packages/themes/stone/package.json': manifest('@astryxdesign/theme-stone', {files: ['dist', 'src']}),
+    'packages/themes/stone/package.json': manifest(
+      '@astryxdesign/theme-stone',
+      {files: ['dist', 'src']},
+    ),
     'packages/themes/stone/src/stoneTheme.ts': 'export const stone = {};\n',
-    'packages/lab/package.json': manifest('@astryxdesign/lab', {private: true, files: ['src']}),
+    'packages/lab/package.json': manifest('@astryxdesign/lab', {
+      private: true,
+      files: ['src'],
+    }),
     'packages/lab/src/Thing.tsx': 'export {};\n',
-    'packages/charts/package.json': manifest('@astryxdesign/charts', {private: true, astryx: {canaryOnly: true}, files: ['src']}),
+    'packages/charts/package.json': manifest('@astryxdesign/charts', {
+      private: true,
+      astryx: {canaryOnly: true},
+      files: ['src'],
+    }),
     'packages/charts/src/Chart.tsx': 'export {};\n',
-    'apps/storybook/package.json': manifest('@astryxdesign/storybook', {private: true}),
+    'apps/storybook/package.json': manifest('@astryxdesign/storybook', {
+      private: true,
+    }),
     'apps/storybook/stories/Button.stories.tsx': 'export default {};\n',
-    'apps/sandbox/package.json': manifest('@astryxdesign/sandbox', {private: true}),
+    'apps/sandbox/package.json': manifest('@astryxdesign/sandbox', {
+      private: true,
+    }),
     'apps/sandbox/src/App.tsx': 'export {};\n',
     'apps/docsite/package.json': manifest('docsite', {private: true}),
     'apps/docsite/pages/index.tsx': 'export {};\n',
@@ -136,7 +170,10 @@ const changeset = (packages, body) =>
 /** Build the change between two in-memory trees, git name-status style. */
 function change(baseFiles, headFiles, {released = baseFiles} = {}) {
   const changes = [];
-  for (const file of new Set([...Object.keys(baseFiles), ...Object.keys(headFiles)])) {
+  for (const file of new Set([
+    ...Object.keys(baseFiles),
+    ...Object.keys(headFiles),
+  ])) {
     const before = baseFiles[file];
     const after = headFiles[file];
     if (before === after) continue;
@@ -164,9 +201,17 @@ describe('classifyPath — what ships to consumers', () => {
     ['packages/cli/api/doctor/doctor.mjs', '@astryxdesign/cli', 'cli'],
     ['packages/cli/assets/docs/layout.doc.mjs', '@astryxdesign/cli', 'docs'],
     ['packages/cli/README.md', '@astryxdesign/cli', 'docs'],
-    ['packages/themes/stone/src/stoneTheme.ts', '@astryxdesign/theme-stone', 'source'],
+    [
+      'packages/themes/stone/src/stoneTheme.ts',
+      '@astryxdesign/theme-stone',
+      'source',
+    ],
   ])('%s ships in %s as %s', (file, pkg, surface) => {
-    expect(classifyPath(file, at(files))).toEqual({ships: true, package: pkg, surface});
+    expect(classifyPath(file, at(files))).toEqual({
+      ships: true,
+      package: pkg,
+      surface,
+    });
   });
 
   it.each([
@@ -192,18 +237,36 @@ describe('classifyPath — what ships to consumers', () => {
   });
 
   it('treats a browser spec test inside a shipped package as exempt', () => {
-    const withSpec = repo({'packages/core/src/Button/Button.a11y.chromium.spec.ts': 'test();\n'});
-    expect(classifyPath('packages/core/src/Button/Button.a11y.chromium.spec.ts', at(withSpec)).ships).toBe(false);
+    const withSpec = repo({
+      'packages/core/src/Button/Button.a11y.chromium.spec.ts': 'test();\n',
+    });
+    expect(
+      classifyPath(
+        'packages/core/src/Button/Button.a11y.chromium.spec.ts',
+        at(withSpec),
+      ).ships,
+    ).toBe(false);
   });
 
   it('treats a story inside a shipped package as exempt', () => {
-    const withStory = repo({'packages/core/src/Button/Button.stories.tsx': 'export default {};\n'});
-    expect(classifyPath('packages/core/src/Button/Button.stories.tsx', at(withStory))).toMatchObject({ships: false, reason: 'story'});
+    const withStory = repo({
+      'packages/core/src/Button/Button.stories.tsx': 'export default {};\n',
+    });
+    expect(
+      classifyPath(
+        'packages/core/src/Button/Button.stories.tsx',
+        at(withStory),
+      ),
+    ).toMatchObject({ships: false, reason: 'story'});
   });
 
   it('treats a Changesets-ignored package as exempt even when it is not private', () => {
-    const ignored = repo({'apps/sandbox/package.json': manifest('@astryxdesign/sandbox')});
-    expect(classifyPath('apps/sandbox/src/App.tsx', at(ignored)).ships).toBe(false);
+    const ignored = repo({
+      'apps/sandbox/package.json': manifest('@astryxdesign/sandbox'),
+    });
+    expect(classifyPath('apps/sandbox/src/App.tsx', at(ignored)).ships).toBe(
+      false,
+    );
   });
 });
 
@@ -221,7 +284,12 @@ describe('isPackedFile, isWorkspaceDir, consumerManifestDelta', () => {
   });
 
   it('matches pnpm workspace globs, honoring exclusions', () => {
-    const globs = ['apps/*', '!apps/example-*', 'packages/*', 'packages/themes/*'];
+    const globs = [
+      'apps/*',
+      '!apps/example-*',
+      'packages/*',
+      'packages/themes/*',
+    ];
     expect(isWorkspaceDir('packages/core', globs)).toBe(true);
     expect(isWorkspaceDir('packages/themes/stone', globs)).toBe(true);
     expect(isWorkspaceDir('apps/example-next', globs)).toBe(false);
@@ -229,16 +297,37 @@ describe('isPackedFile, isWorkspaceDir, consumerManifestDelta', () => {
   });
 
   it('reports only consumer-facing manifest fields', () => {
-    expect(consumerManifestDelta({version: '1', scripts: {a: 'x'}}, {version: '2', scripts: {a: 'y'}})).toEqual([]);
-    expect(consumerManifestDelta({peerDependencies: {react: '^18'}}, {peerDependencies: {react: '^19'}})).toEqual(['peerDependencies']);
+    expect(
+      consumerManifestDelta(
+        {version: '1', scripts: {a: 'x'}},
+        {version: '2', scripts: {a: 'y'}},
+      ),
+    ).toEqual([]);
+    expect(
+      consumerManifestDelta(
+        {peerDependencies: {react: '^18'}},
+        {peerDependencies: {react: '^19'}},
+      ),
+    ).toEqual(['peerDependencies']);
   });
 
   it('ignores a fixed-group co-bump of a sibling pin, but not a real range edit', () => {
-    const before = {version: '0.6.5', peerDependencies: {'@astryxdesign/core': '0.6.5', react: '>=19'}};
-    const synced = {version: '0.6.6', peerDependencies: {'@astryxdesign/core': '0.6.6', react: '>=19'}};
+    const before = {
+      version: '0.6.5',
+      peerDependencies: {'@astryxdesign/core': '0.6.5', react: '>=19'},
+    };
+    const synced = {
+      version: '0.6.6',
+      peerDependencies: {'@astryxdesign/core': '0.6.6', react: '>=19'},
+    };
     expect(consumerManifestDelta(before, synced)).toEqual([]);
-    const loosened = {version: '0.6.5', peerDependencies: {'@astryxdesign/core': '^0.6.0', react: '>=19'}};
-    expect(consumerManifestDelta(before, loosened)).toEqual(['peerDependencies']);
+    const loosened = {
+      version: '0.6.5',
+      peerDependencies: {'@astryxdesign/core': '^0.6.0', react: '>=19'},
+    };
+    expect(consumerManifestDelta(before, loosened)).toEqual([
+      'peerDependencies',
+    ]);
   });
 });
 
@@ -247,7 +336,10 @@ describe('rule 1 — a shipped change names its package', () => {
     const base = repo();
     const head = repo({
       'packages/core/src/Button/Button.tsx': 'export const Button = 2;\n',
-      '.changeset/button.md': changeset({'@astryxdesign/core': 'patch'}, '[fix] Button renders.'),
+      '.changeset/button.md': changeset(
+        {'@astryxdesign/core': 'patch'},
+        '[fix] Button renders.',
+      ),
     });
     expect(change(base, head).problems).toEqual([]);
   });
@@ -256,37 +348,65 @@ describe('rule 1 — a shipped change names its package', () => {
     const base = repo();
     const head = repo({
       'packages/core/src/Button/Button.tsx': 'export const Button = 2;\n',
-      '.changeset/button.md': changeset({'@astryxdesign/cli': 'patch'}, '[fix] Wrong package.'),
+      '.changeset/button.md': changeset(
+        {'@astryxdesign/cli': 'patch'},
+        '[fix] Wrong package.',
+      ),
     });
     const [problem, ...rest] = change(base, head).problems;
     expect(rest).toEqual([]);
-    expect(problem).toContain("@astryxdesign/core: this change ships to consumers without a Changeset naming @astryxdesign/core");
-    expect(problem).toContain('package source: packages/core/src/Button/Button.tsx');
-    expect(problem).toContain('pnpm changeset:new --packages @astryxdesign/core --category <fix|feat>');
+    expect(problem).toContain(
+      '@astryxdesign/core: this change ships to consumers without a Changeset naming @astryxdesign/core',
+    );
+    expect(problem).toContain(
+      'package source: packages/core/src/Button/Button.tsx',
+    );
+    expect(problem).toContain(
+      'pnpm changeset:new --packages @astryxdesign/core --category <fix|feat>',
+    );
   });
 
   it('does not count a Changeset that only names the package with bump none', () => {
     const base = repo();
     const head = repo({
       'packages/core/src/Button/Button.tsx': 'export const Button = 2;\n',
-      '.changeset/button.md': changeset({'@astryxdesign/core': 'none'}, '[fix] Nothing.'),
+      '.changeset/button.md': changeset(
+        {'@astryxdesign/core': 'none'},
+        '[fix] Nothing.',
+      ),
     });
     expect(change(base, head).problems).toHaveLength(1);
   });
 
   it('accepts an edit to an existing pending Changeset that names the package', () => {
-    const base = repo({'.changeset/button.md': changeset({'@astryxdesign/core': 'patch'}, '[fix] Button.')});
+    const base = repo({
+      '.changeset/button.md': changeset(
+        {'@astryxdesign/core': 'patch'},
+        '[fix] Button.',
+      ),
+    });
     const head = repo({
       'packages/core/src/Button/Button.tsx': 'export const Button = 2;\n',
-      '.changeset/button.md': changeset({'@astryxdesign/core': 'patch'}, '[fix] Button, again.'),
+      '.changeset/button.md': changeset(
+        {'@astryxdesign/core': 'patch'},
+        '[fix] Button, again.',
+      ),
     });
     expect(change(base, head).problems).toEqual([]);
   });
 
   it('does not let an untouched pending Changeset cover a new change', () => {
-    const pending = {'.changeset/button.md': changeset({'@astryxdesign/core': 'patch'}, '[fix] Button.')};
+    const pending = {
+      '.changeset/button.md': changeset(
+        {'@astryxdesign/core': 'patch'},
+        '[fix] Button.',
+      ),
+    };
     const base = repo(pending);
-    const head = repo({...pending, 'packages/core/src/Button/Button.tsx': 'export const Button = 2;\n'});
+    const head = repo({
+      ...pending,
+      'packages/core/src/Button/Button.tsx': 'export const Button = 2;\n',
+    });
     expect(change(base, head).problems).toHaveLength(1);
   });
 
@@ -294,7 +414,8 @@ describe('rule 1 — a shipped change names its package', () => {
     const base = repo();
     const head = repo({
       'packages/core/src/Button/Button.tsx': 'export const Button = 2;\n',
-      'packages/themes/stone/src/stoneTheme.ts': 'export const stone = {a: 1};\n',
+      'packages/themes/stone/src/stoneTheme.ts':
+        'export const stone = {a: 1};\n',
     });
     const problems = change(base, head).problems;
     expect(problems).toHaveLength(2);
@@ -305,28 +426,48 @@ describe('rule 1 — a shipped change names its package', () => {
   it('counts a deleted shipped file', () => {
     const base = repo();
     const head = repo({'packages/core/src/Button/Button.doc.mjs': null});
-    expect(change(base, head).problems[0]).toContain('shipped documentation: packages/core/src/Button/Button.doc.mjs');
+    expect(change(base, head).problems[0]).toContain(
+      'shipped documentation: packages/core/src/Button/Button.doc.mjs',
+    );
   });
 
   it('counts a peer range change but not a version or script change', () => {
     const base = repo();
-    const bumped = repo({'packages/core/package.json': manifest('@astryxdesign/core', {version: '0.6.7', files: ['dist', 'src', 'README.md', 'CHANGELOG.md'], peerDependencies: {react: '^19.0.0'}, scripts: {build: 'x'}})});
+    const bumped = repo({
+      'packages/core/package.json': manifest('@astryxdesign/core', {
+        version: '0.6.7',
+        files: ['dist', 'src', 'README.md', 'CHANGELOG.md'],
+        peerDependencies: {react: '^19.0.0'},
+        scripts: {build: 'x'},
+      }),
+    });
     expect(change(base, bumped).problems).toEqual([]);
-    const narrowed = repo({'packages/core/package.json': manifest('@astryxdesign/core', {files: ['dist', 'src', 'README.md', 'CHANGELOG.md'], peerDependencies: {react: '^19.1.0'}})});
-    expect(change(base, narrowed).problems[0]).toContain('consumer-facing package.json: packages/core/package.json (peerDependencies)');
+    const narrowed = repo({
+      'packages/core/package.json': manifest('@astryxdesign/core', {
+        files: ['dist', 'src', 'README.md', 'CHANGELOG.md'],
+        peerDependencies: {react: '^19.1.0'},
+      }),
+    });
+    expect(change(base, narrowed).problems[0]).toContain(
+      'consumer-facing package.json: packages/core/package.json (peerDependencies)',
+    );
   });
 
   it('needs nothing for stories, sandbox, tests, lab, canary-only, docsite, CI, tooling, specs, or CHANGELOGs', () => {
     const base = repo();
     const head = repo({
-      'apps/storybook/stories/Button.stories.tsx': 'export default {title: "B"};\n',
+      'apps/storybook/stories/Button.stories.tsx':
+        'export default {title: "B"};\n',
       'apps/sandbox/src/App.tsx': 'export const x = 1;\n',
       'apps/docsite/pages/index.tsx': 'export const y = 1;\n',
       'packages/core/src/Button/Button.test.tsx': 'test(2);\n',
       'packages/core/src/Button/Button.spec.md': '# Button spec v2\n',
       'packages/core/src/Button/__fixtures__/data.ts': 'export const d = 1;\n',
       'packages/core/CHANGELOG.md': '# Changelog\n\n## 0.6.7\n',
-      'packages/cli/test/__golden__/docs-list.json': DOCS_LIST_GOLDEN.replace('Layout.', 'Layouts.'),
+      'packages/cli/test/__golden__/docs-list.json': DOCS_LIST_GOLDEN.replace(
+        'Layout.',
+        'Layouts.',
+      ),
       'packages/cli/scripts/generate.mjs': '// changed generator\n',
       'packages/lab/src/Thing.tsx': 'export const t = 1;\n',
       'packages/charts/src/Chart.tsx': 'export const c = 1;\n',
@@ -348,23 +489,38 @@ describe('red arm — #7125: shipped CLI docs changed without a Changeset', () =
   // change would have shipped with no release note.
   const base = repo();
   const head = repo({
-    'packages/cli/assets/docs/layout.doc.mjs': 'export default {title: "Layout", children: ["layout/scaffold"]};\n',
-    'packages/cli/assets/docs/tree/scaffold.doc.mjs': 'export default {title: "Scaffold"};\n',
-    'packages/cli/assets/docs/tree/side-panels.doc.mjs': 'export default {title: "Side panels"};\n',
+    'packages/cli/assets/docs/layout.doc.mjs':
+      'export default {title: "Layout", children: ["layout/scaffold"]};\n',
+    'packages/cli/assets/docs/tree/scaffold.doc.mjs':
+      'export default {title: "Scaffold"};\n',
+    'packages/cli/assets/docs/tree/side-panels.doc.mjs':
+      'export default {title: "Side panels"};\n',
     'packages/cli/api/doctor/doctor.test.mjs': "it('y', () => {});\n",
     'packages/cli/test/__golden__/docs-list.json': JSON.stringify({
       apiVersion: 1,
       type: 'docs.list',
-      data: [{topic: 'layout/scaffold', description: 'Scaffold.', package: '@astryxdesign/cli'}],
+      data: [
+        {
+          topic: 'layout/scaffold',
+          description: 'Scaffold.',
+          package: '@astryxdesign/cli',
+        },
+      ],
     }),
   });
 
   it('fails, naming @astryxdesign/cli and a [docs] Changeset', () => {
     const {problems} = change(base, head);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toContain('@astryxdesign/cli: this change ships to consumers without a Changeset naming @astryxdesign/cli');
-    expect(problems[0]).toContain('shipped documentation: packages/cli/assets/docs/layout.doc.mjs');
-    expect(problems[0]).toContain('pnpm changeset:new --packages @astryxdesign/cli --category docs');
+    expect(problems[0]).toContain(
+      '@astryxdesign/cli: this change ships to consumers without a Changeset naming @astryxdesign/cli',
+    );
+    expect(problems[0]).toContain(
+      'shipped documentation: packages/cli/assets/docs/layout.doc.mjs',
+    );
+    expect(problems[0]).toContain(
+      'pnpm changeset:new --packages @astryxdesign/cli --category docs',
+    );
   });
 
   it('does not treat the renamed docs route in the golden as a broken JSON id (FR45)', () => {
@@ -372,12 +528,19 @@ describe('red arm — #7125: shipped CLI docs changed without a Changeset', () =
   });
 
   it('at release time, accepts a later fix-up Changeset that names the package and cites the pull request', () => {
-    const fixup = changeset({'@astryxdesign/cli': 'patch'}, '[docs] Layout lists its focused guides.\n\n(#7125)');
-    const pending = pendingChangesets(memoryTree({...head, '.changeset/layout-docs-namespace.md': fixup}));
+    const fixup = changeset(
+      {'@astryxdesign/cli': 'patch'},
+      '[docs] Layout lists its focused guides.\n\n(#7125)',
+    );
+    const pending = pendingChangesets(
+      memoryTree({...head, '.changeset/layout-docs-namespace.md': fixup}),
+    );
     expect([...fixupCoverage(pending, '7125')]).toEqual(['@astryxdesign/cli']);
     expect(fixupCoverage(pending, '712')).toEqual(new Set());
     const result = evaluateChange({
-      changes: [{filename: 'packages/cli/assets/docs/layout.doc.mjs', status: 'M'}],
+      changes: [
+        {filename: 'packages/cli/assets/docs/layout.doc.mjs', status: 'M'},
+      ],
       base: memoryTree(base),
       head: memoryTree(head),
       released: null,
@@ -387,7 +550,13 @@ describe('red arm — #7125: shipped CLI docs changed without a Changeset', () =
   });
 
   it('passes once a [docs] Changeset names @astryxdesign/cli', () => {
-    const fixed = {...head, '.changeset/layout-namespace.md': changeset({'@astryxdesign/cli': 'patch'}, '[docs] Layout is now a namespace of focused guides.')};
+    const fixed = {
+      ...head,
+      '.changeset/layout-namespace.md': changeset(
+        {'@astryxdesign/cli': 'patch'},
+        '[docs] Layout is now a namespace of focused guides.',
+      ),
+    };
     expect(change(base, fixed).problems).toEqual([]);
   });
 });
@@ -415,15 +584,24 @@ describe('red arm — #7154: a released doctor check id described as a [fix] ren
     const {problems, coverage} = change(base, head, {released});
     expect(coverage.problems).toEqual([]);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toContain('@astryxdesign/cli: doctor check id `themes` is in the released v0.6.6 JSON contract and is missing at this head.');
-    expect(problems[0]).toContain('a [breaking] Changeset whose text names `themes`');
-    expect(problems[0]).toContain('a paragraph beginning "Compatibility:" that names `themes`');
+    expect(problems[0]).toContain(
+      '@astryxdesign/cli: doctor check id `themes` is in the released v0.6.6 JSON contract and is missing at this head.',
+    );
+    expect(problems[0]).toContain(
+      'a [breaking] Changeset whose text names `themes`',
+    );
+    expect(problems[0]).toContain(
+      'a paragraph beginning "Compatibility:" that names `themes`',
+    );
   });
 
   it('also fails the change that removed the id', () => {
     const removal = {
       ...base,
-      '.changeset/app-themes.md': changeset({'@astryxdesign/cli': 'patch'}, '[feat] Apps can import package-managed themes.'),
+      '.changeset/app-themes.md': changeset(
+        {'@astryxdesign/cli': 'patch'},
+        '[feat] Apps can import package-managed themes.',
+      ),
     };
     const {problems} = change(released, removal, {released});
     expect(problems).toHaveLength(1);
@@ -443,7 +621,7 @@ describe('red arm — #7154: a released doctor check id described as a [fix] ren
       ...head,
       '.changeset/theme-import-names-package.md': changeset(
         {'@astryxdesign/cli': 'patch'},
-        "[fix] Theme import names its package.\n\nCompatibility: `themes` was never documented as stable in this release line, so no released consumer reads it.",
+        '[fix] Theme import names its package.\n\nCompatibility: `themes` was never documented as stable in this release line, so no released consumer reads it.',
       ),
     };
     expect(change(base, noted, {released}).problems).toEqual([]);
@@ -452,7 +630,10 @@ describe('red arm — #7154: a released doctor check id described as a [fix] ren
   it('passes with a [breaking] Changeset naming the id', () => {
     const breaking = {
       ...head,
-      '.changeset/doctor-themes-renamed.md': changeset({'@astryxdesign/cli': 'minor'}, "[breaking] `astryx doctor`'s `themes` check is now `theme-management`."),
+      '.changeset/doctor-themes-renamed.md': changeset(
+        {'@astryxdesign/cli': 'minor'},
+        "[breaking] `astryx doctor`'s `themes` check is now `theme-management`.",
+      ),
     };
     expect(change(base, breaking, {released}).problems).toEqual([]);
   });
@@ -460,7 +641,10 @@ describe('red arm — #7154: a released doctor check id described as a [fix] ren
   it('does not accept a [breaking] Changeset that never names the id', () => {
     const vague = {
       ...head,
-      '.changeset/doctor-themes-renamed.md': changeset({'@astryxdesign/cli': 'minor'}, '[breaking] Doctor checks were reorganized.'),
+      '.changeset/doctor-themes-renamed.md': changeset(
+        {'@astryxdesign/cli': 'minor'},
+        '[breaking] Doctor checks were reorganized.',
+      ),
     };
     expect(change(base, vague, {released}).problems).toHaveLength(1);
   });
@@ -469,7 +653,10 @@ describe('red arm — #7154: a released doctor check id described as a [fix] ren
     const unrelated = {
       ...base,
       'packages/core/src/Button/Button.tsx': 'export const Button = 3;\n',
-      '.changeset/button.md': changeset({'@astryxdesign/core': 'patch'}, '[fix] Button renders.'),
+      '.changeset/button.md': changeset(
+        {'@astryxdesign/core': 'patch'},
+        '[fix] Button renders.',
+      ),
     };
     expect(change(base, unrelated, {released}).problems).toEqual([]);
   });
@@ -508,9 +695,19 @@ describe('rule 2 — the released CLI JSON contract', () => {
   it('flags a removed response field and a removed response type', () => {
     const base = repo();
     const head = repo({
-      'packages/cli/api/doctor/doctor.type.mjs': DOCTOR_TYPES.replace(' * @property {string} [fix] - Remediation.\n', ''),
-      'packages/cli/foundation/response/response-types.doc.mjs': RESPONSE_TYPES.replace("    {value: 'docs.list', description: 'Doc topics.'},\n", ''),
-      '.changeset/x.md': changeset({'@astryxdesign/cli': 'patch'}, '[fix] Tidy.'),
+      'packages/cli/api/doctor/doctor.type.mjs': DOCTOR_TYPES.replace(
+        ' * @property {string} [fix] - Remediation.\n',
+        '',
+      ),
+      'packages/cli/foundation/response/response-types.doc.mjs':
+        RESPONSE_TYPES.replace(
+          "    {value: 'docs.list', description: 'Doc topics.'},\n",
+          '',
+        ),
+      '.changeset/x.md': changeset(
+        {'@astryxdesign/cli': 'patch'},
+        '[fix] Tidy.',
+      ),
     });
     const problems = change(base, head).ids.problems.join('\n');
     expect(problems).toContain('response field `DoctorCheck.fix`');
@@ -519,32 +716,51 @@ describe('rule 2 — the released CLI JSON contract', () => {
 
   it('does not count moving fields into a composed typedef as a removal', () => {
     const released = repo({
-      'packages/cli/api/docs/docs.type.mjs': '/**\n * @typedef {object} DocsIndexSection\n * @property {string} id\n * @property {string} title\n */\n',
+      'packages/cli/api/docs/docs.type.mjs':
+        '/**\n * @typedef {object} DocsIndexSection\n * @property {string} id\n * @property {string} title\n */\n',
     });
     const head = repo({
       'packages/cli/api/docs/docs.type.mjs':
         '/**\n * @typedef {object} DocsIndexEntry\n * @property {string} id\n * @property {string} title\n */\n\n' +
         '/**\n * @typedef {DocsIndexEntry & {package: string}} DocsIndexSection\n */\n',
-      '.changeset/x.md': changeset({'@astryxdesign/cli': 'patch'}, '[feat] Sections name their `package`.'),
+      '.changeset/x.md': changeset(
+        {'@astryxdesign/cli': 'patch'},
+        '[feat] Sections name their `package`.',
+      ),
     });
     expect(change(released, head).problems).toEqual([]);
   });
 
   it('does not pin a field another change removed on a Changeset that merely uses the word', () => {
     const released = repo();
-    const base = repo({'packages/cli/api/doctor/doctor.type.mjs': DOCTOR_TYPES.replace(' * @property {string} [fix] - Remediation.\n', '')});
+    const base = repo({
+      'packages/cli/api/doctor/doctor.type.mjs': DOCTOR_TYPES.replace(
+        ' * @property {string} [fix] - Remediation.\n',
+        '',
+      ),
+    });
     const head = {
       ...base,
       'packages/cli/api/search/search.mjs': 'export const rank = 2;\n',
-      '.changeset/search.md': changeset({'@astryxdesign/cli': 'patch'}, '[fix] Search ranks a `fix` keyword as prose.'),
+      '.changeset/search.md': changeset(
+        {'@astryxdesign/cli': 'patch'},
+        '[fix] Search ranks a `fix` keyword as prose.',
+      ),
     };
     expect(change(base, head, {released}).problems).toEqual([]);
   });
 
   it('ignores an id that was never released (FR2)', () => {
     const released = repo();
-    const base = repo({'packages/cli/api/doctor/theme-checks.mjs': THEME_CHECKS});
-    const head = repo({'.changeset/x.md': changeset({'@astryxdesign/cli': 'patch'}, '[fix] Drop the unreleased `theme-management` check.')});
+    const base = repo({
+      'packages/cli/api/doctor/theme-checks.mjs': THEME_CHECKS,
+    });
+    const head = repo({
+      '.changeset/x.md': changeset(
+        {'@astryxdesign/cli': 'patch'},
+        '[fix] Drop the unreleased `theme-management` check.',
+      ),
+    });
     expect(change(base, head, {released}).problems).toEqual([]);
   });
 });
@@ -558,7 +774,11 @@ describe('parsers', () => {
       'DoctorResponse.type',
       'DoctorResponse.data',
     ]);
-    expect(typedefFields('/**\n * @typedef {object} R\n * @property {object} data\n * @property {string[]} data.items\n */')).toEqual(['R.data', 'R.data.items']);
+    expect(
+      typedefFields(
+        '/**\n * @typedef {object} R\n * @property {object} data\n * @property {string[]} data.items\n */',
+      ),
+    ).toEqual(['R.data', 'R.data.items']);
     expect(
       typedefFields(
         "/**\n * @typedef {object} Base\n * @property {import('@astryxdesign/cli/authoring').Block[]} [content]\n */",
@@ -568,6 +788,12 @@ describe('parsers', () => {
   });
 
   it('collects key paths, not values', () => {
-    expect(jsonKeyPaths({type: 'x', data: [{a: 1, b: {c: 2}}]})).toEqual(['type', 'data', 'data[].a', 'data[].b', 'data[].b.c']);
+    expect(jsonKeyPaths({type: 'x', data: [{a: 1, b: {c: 2}}]})).toEqual([
+      'type',
+      'data',
+      'data[].a',
+      'data[].b',
+      'data[].b.c',
+    ]);
   });
 });
