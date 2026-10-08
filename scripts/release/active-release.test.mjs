@@ -118,7 +118,10 @@ describe('one branch per release lifecycle', () => {
     writeAuthority(root, values, false);
     const markerPath = path.join(root, '.release/active.json');
     const marker = JSON.parse(fs.readFileSync(markerPath, 'utf8'));
-    fs.writeFileSync(markerPath, `${JSON.stringify({...marker, state: 'closed'})}\n`);
+    fs.writeFileSync(
+      markerPath,
+      `${JSON.stringify({...marker, state: 'closed'})}\n`,
+    );
 
     expect(() => writeAuthority(root, values, true)).toThrow(
       'marker state must be active',
@@ -350,6 +353,31 @@ describe('active release branch authority', () => {
 
 describe('post-release bookkeeping sync', () => {
   const digest = value => value.repeat(64).slice(0, 64);
+  const manifestPath = 'packages/core/package.json';
+  const cutManifest = {
+    name: '@astryxdesign/core',
+    version: '0.6.5',
+    exports: {'.': './dist/index.js'},
+    files: ['dist'],
+    sideEffects: false,
+    dependencies: {'@astryxdesign/build': '^0.6.5'},
+  };
+  const releaseManifest = {
+    ...cutManifest,
+    version: '0.6.6',
+    dependencies: {'@astryxdesign/build': '^0.6.6'},
+  };
+  const baseManifest = {
+    ...cutManifest,
+    exports: {...cutManifest.exports, './fonts.css': './dist/fonts.css'},
+    files: ['dist', 'fonts.css'],
+    sideEffects: ['*.css'],
+  };
+  const headManifest = {
+    ...baseManifest,
+    version: '0.6.6',
+    dependencies: {'@astryxdesign/build': '^0.6.6'},
+  };
   const plan = {
     changesets: [
       {path: '.changeset/frozen.md', sha256: digest('a')},
@@ -361,7 +389,7 @@ describe('post-release bookkeeping sync', () => {
     return validateReleaseSync({
       entries: [
         'D\t.changeset/frozen.md',
-        'M\tpackages/core/package.json',
+        `M\t${manifestPath}`,
         'M\tpackages/core/CHANGELOG.md',
       ],
       plan,
@@ -370,26 +398,45 @@ describe('post-release bookkeeping sync', () => {
         ['.changeset/post-cut.md', digest('c')],
       ]),
       headChangesets: new Map([['.changeset/post-cut.md', digest('c')]]),
-      releaseOutputs: new Map([
-        ['packages/core/package.json', digest('d')],
-        ['packages/core/CHANGELOG.md', digest('e')],
-      ]),
-      headOutputs: new Map([
-        ['packages/core/package.json', digest('d')],
-        ['packages/core/CHANGELOG.md', digest('e')],
-      ]),
+      releaseOutputs: new Map([['packages/core/CHANGELOG.md', digest('e')]]),
+      headOutputs: new Map([['packages/core/CHANGELOG.md', digest('e')]]),
+      cutManifests: new Map([[manifestPath, cutManifest]]),
+      baseManifests: new Map([[manifestPath, baseManifest]]),
+      releaseManifests: new Map([[manifestPath, releaseManifest]]),
+      headManifests: new Map([[manifestPath, headManifest]]),
       ...overrides,
     });
   }
 
-  it('accepts consumed-only deletion, exact outputs, and idempotent reruns', () => {
+  it('accepts version-only manifests, exact outputs, and idempotent reruns', () => {
     expect(sync()).toEqual([]);
     expect(
       sync({
         entries: [],
         baseChangesets: new Map([['.changeset/post-cut.md', digest('c')]]),
+        baseManifests: new Map([[manifestPath, headManifest]]),
       }),
     ).toEqual([]);
+  });
+
+  it('rejects wholesale release-manifest copies that erase newer main fields', () => {
+    expect(
+      sync({headManifests: new Map([[manifestPath, releaseManifest]])}),
+    ).toContain(
+      `release sync changed non-version manifest fields: ${manifestPath}`,
+    );
+  });
+
+  it('rejects any other non-version manifest change', () => {
+    expect(
+      sync({
+        headManifests: new Map([
+          [manifestPath, {...headManifest, scripts: {build: 'changed'}}],
+        ]),
+      }),
+    ).toContain(
+      `release sync changed non-version manifest fields: ${manifestPath}`,
+    );
   });
 
   it('rejects changes to post-cut Changesets and non-bookkeeping paths', () => {
@@ -410,22 +457,19 @@ describe('post-release bookkeeping sync', () => {
     );
   });
 
-  it('rejects missing frozen deletions and release-output drift', () => {
+  it('rejects missing frozen deletions and exact-output drift', () => {
     expect(
       sync({
         headChangesets: new Map([
           ['.changeset/frozen.md', digest('a')],
           ['.changeset/post-cut.md', digest('c')],
         ]),
-        headOutputs: new Map([
-          ['packages/core/package.json', digest('f')],
-          ['packages/core/CHANGELOG.md', digest('e')],
-        ]),
+        headOutputs: new Map([['packages/core/CHANGELOG.md', digest('f')]]),
       }),
     ).toEqual(
       expect.arrayContaining([
         'release sync did not delete frozen Changeset: .changeset/frozen.md',
-        'release sync output differs from published branch: packages/core/package.json',
+        'release sync output differs from published branch: packages/core/CHANGELOG.md',
       ]),
     );
   });

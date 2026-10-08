@@ -256,20 +256,43 @@ function changesetMapAtRef(root, ref) {
   );
 }
 
+function isPackageManifestPath(file) {
+  return /^packages\/(?:[^/]+|themes\/[^/]+)\/package\.json$/.test(file);
+}
+
+function releaseOutputPathsAtRef(root, plan, releaseRef) {
+  return git(root, ['diff', '--name-only', plan.cutSha, releaseRef, '--'])
+    .split('\n')
+    .filter(Boolean);
+}
+
 function releaseOutputMapAtRef(root, plan, releaseRef) {
-  const files = git(root, [
-    'diff',
-    '--name-only',
-    plan.cutSha,
-    releaseRef,
-    '--',
-  ]);
   return new Map(
-    files
-      .split('\n')
-      .filter(Boolean)
+    releaseOutputPathsAtRef(root, plan, releaseRef)
       .filter(isReleaseOutputPath)
+      .filter(file => !isPackageManifestPath(file) && file !== 'pnpm-lock.yaml')
       .map(file => [file, fileDigestAtRef(root, releaseRef, file)]),
+  );
+}
+
+function jsonAtRef(root, ref, file) {
+  try {
+    return JSON.parse(git(root, ['show', `${ref}:${file}`]));
+  } catch {
+    return null;
+  }
+}
+
+function manifestMapAtRef(root, ref, files) {
+  return new Map([...files].map(file => [file, jsonAtRef(root, ref, file)]));
+}
+
+function currentManifestMap(root, files) {
+  return new Map(
+    [...files].map(file => {
+      const absolute = path.join(root, file);
+      return [file, fs.existsSync(absolute) ? readJson(absolute) : null];
+    }),
   );
 }
 
@@ -394,6 +417,57 @@ function validateReleaseDiff(entries, {plan, baseChangesets} = {}) {
   return errors;
 }
 
+const VERSION_DEPENDENCY_FIELDS = [
+  'dependencies',
+  'devDependencies',
+  'optionalDependencies',
+  'peerDependencies',
+];
+
+function expectedSyncedManifest({file, cut, base, release}) {
+  if (!cut || !base || !release)
+    return {error: `release sync cannot read manifest history: ${file}`};
+
+  const releaseFromCut = structuredClone(cut);
+  releaseFromCut.version = release.version;
+  const expected = structuredClone(base);
+  expected.version = release.version;
+
+  for (const field of VERSION_DEPENDENCY_FIELDS) {
+    const cutValues = cut[field] ?? {};
+    const releaseValues = release[field] ?? {};
+    const names = new Set([
+      ...Object.keys(cutValues),
+      ...Object.keys(releaseValues),
+    ]);
+    for (const name of names) {
+      if (canonicalJson(cutValues[name]) === canonicalJson(releaseValues[name]))
+        continue;
+      if (!name.startsWith('@astryxdesign/'))
+        return {
+          error: `published manifest contains a non-version release change: ${file} ${field}.${name}`,
+        };
+      releaseFromCut[field] ??= {};
+      if (releaseValues[name] === undefined) delete releaseFromCut[field][name];
+      else releaseFromCut[field][name] = releaseValues[name];
+
+      if (
+        canonicalJson(base[field]?.[name]) === canonicalJson(cutValues[name])
+      ) {
+        expected[field] ??= {};
+        if (releaseValues[name] === undefined) delete expected[field][name];
+        else expected[field][name] = releaseValues[name];
+      }
+    }
+  }
+
+  if (canonicalJson(releaseFromCut) !== canonicalJson(release))
+    return {
+      error: `published manifest contains a non-version release change: ${file}`,
+    };
+  return {expected};
+}
+
 function validateReleaseSync({
   entries,
   plan,
@@ -401,6 +475,10 @@ function validateReleaseSync({
   headChangesets,
   releaseOutputs,
   headOutputs,
+  cutManifests = new Map(),
+  baseManifests = new Map(),
+  releaseManifests = new Map(),
+  headManifests = new Map(),
 }) {
   const errors = [];
   const planned = new Set(plan.changesets.map(entry => entry.path));
@@ -414,6 +492,11 @@ function validateReleaseSync({
     if (file.startsWith('.changeset/')) {
       if (status !== 'D' || !planned.has(file))
         errors.push(`release sync may only delete frozen Changesets: ${file}`);
+    } else if (isPackageManifestPath(file)) {
+      if (!releaseManifests.has(file))
+        errors.push(
+          `release sync changed an unplanned package manifest: ${file}`,
+        );
     } else if (
       !isReleaseOutputPath(file) &&
       !/^\.github\/pages\/assets\/(?:manifest\.json|reset\.css|astryx\.css|theme\.css)$/.test(
@@ -441,6 +524,23 @@ function validateReleaseSync({
   for (const [file, digest] of releaseOutputs) {
     if (headOutputs.get(file) !== digest)
       errors.push(`release sync output differs from published branch: ${file}`);
+  }
+  for (const [file, release] of releaseManifests) {
+    const result = expectedSyncedManifest({
+      file,
+      cut: cutManifests.get(file),
+      base: baseManifests.get(file),
+      release,
+    });
+    if (result.error) {
+      errors.push(result.error);
+      continue;
+    }
+    const head = headManifests.get(file);
+    if (!head || head.version !== release.version)
+      errors.push(`release sync manifest has the wrong version: ${file}`);
+    if (canonicalJson(head) !== canonicalJson(result.expected))
+      errors.push(`release sync changed non-version manifest fields: ${file}`);
   }
   return errors;
 }
@@ -498,7 +598,9 @@ function writeAuthority(root, values, refresh) {
 
   if (refresh) {
     if (!markerExists || !planExists)
-      throw new Error('release refresh requires an existing active marker and plan');
+      throw new Error(
+        'release refresh requires an existing active marker and plan',
+      );
     const existingMarker = readJson(markerPath);
     const existingPlan = readJson(planPath);
     const identityErrors = validateIdentity(existingMarker, existingPlan);
@@ -605,6 +707,22 @@ function main() {
       'HEAD',
     ]);
     const releaseOutputs = releaseOutputMapAtRef(root, plan, releaseRef);
+    const releaseManifestFiles = releaseOutputPathsAtRef(
+      root,
+      plan,
+      releaseRef,
+    ).filter(isPackageManifestPath);
+    const cutManifests = manifestMapAtRef(
+      root,
+      plan.cutSha,
+      releaseManifestFiles,
+    );
+    const baseManifests = manifestMapAtRef(root, base, releaseManifestFiles);
+    const releaseManifests = manifestMapAtRef(
+      root,
+      releaseRef,
+      releaseManifestFiles,
+    );
     errors.push(
       ...validateReleaseSync({
         entries: raw ? raw.split('\n') : [],
@@ -615,6 +733,10 @@ function main() {
         ),
         releaseOutputs,
         headOutputs: currentOutputMap(root, releaseOutputs.keys()),
+        cutManifests,
+        baseManifests,
+        releaseManifests,
+        headManifests: currentManifestMap(root, releaseManifestFiles),
       }),
     );
     if (errors.length) throw new Error(errors.join('\n'));
