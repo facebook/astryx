@@ -420,33 +420,53 @@ export function checkThemes(cwd, appChecks) {
     check => APP_THEME_CHECK_IDS.has(check.id) && check.status !== 'info',
   );
   if (managed) {
+    // A check passes only on its own evidence, so the rollup passes only when
+    // every check it summarizes passed. An `info` result here means a check
+    // could not prove its evidence.
     const needsWork = appChecks.filter(
       check => check.status === 'fail' || check.status === 'warn',
     );
-    if (needsWork.length === 0) {
+    const unproven = appChecks.filter(check => check.status === 'info');
+    if (needsWork.length > 0) {
+      const ids = needsWork.map(check => check.id).join(', ');
       return {
         id: 'themes',
         label,
-        status: 'pass',
+        status: needsWork.some(check => check.status === 'fail')
+          ? 'fail'
+          : 'warn',
         message:
-          'App themes come from the generated theme module, and every theme check passes.',
+          needsWork.length === 1
+            ? `One theme check needs attention: ${ids}.`
+            : `${needsWork.length} theme checks need attention: ${ids}.`,
+        fix:
+          needsWork.length === 1
+            ? `Follow the fix on the ${ids} check.`
+            : `Follow the fix on each of these checks: ${ids}.`,
       };
     }
-    const ids = needsWork.map(check => check.id).join(', ');
+    if (unproven.length > 0) {
+      const ids = unproven.map(check => check.id).join(', ');
+      return {
+        id: 'themes',
+        label,
+        status: 'info',
+        message:
+          unproven.length === 1
+            ? `One theme check could not prove its result: ${ids}.`
+            : `${unproven.length} theme checks could not prove their results: ${ids}.`,
+        fix:
+          unproven.length === 1
+            ? `See the ${ids} check.`
+            : `See each of these checks: ${ids}.`,
+      };
+    }
     return {
       id: 'themes',
       label,
-      status: needsWork.some(check => check.status === 'fail')
-        ? 'fail'
-        : 'warn',
+      status: 'pass',
       message:
-        needsWork.length === 1
-          ? `One theme check needs attention: ${ids}.`
-          : `${needsWork.length} theme checks need attention: ${ids}.`,
-      fix:
-        needsWork.length === 1
-          ? `Follow the fix on the ${ids} check.`
-          : `Follow the fix on each of these checks: ${ids}.`,
+        'App themes come from the generated theme module, and every theme check passes.',
     };
   }
 

@@ -231,6 +231,43 @@ describe('the released themes check', () => {
     });
   }, 30_000);
 
+  it('passes the module rollup only when every summarized check passed', () => {
+    /** @param {string} id @param {'pass'|'warn'|'fail'|'info'} status */
+    const result = (id, status) => ({id, label: id, status, message: id});
+    const passing = [
+      result('theme-owners', 'pass'),
+      result('theme-module', 'pass'),
+    ];
+
+    expect(
+      checkThemes(process.cwd(), [
+        ...passing,
+        result('theme-stylesheet-imports', 'info'),
+      ]),
+    ).toEqual({
+      id: 'themes',
+      label: 'Theme packages',
+      status: 'info',
+      message:
+        'One theme check could not prove its result: theme-stylesheet-imports.',
+      fix: 'See the theme-stylesheet-imports check.',
+    });
+    expect(
+      checkThemes(process.cwd(), [
+        result('theme-owners', 'fail'),
+        result('theme-module', 'pass'),
+        result('theme-fonts', 'warn'),
+        result('theme-global-rules', 'info'),
+      ]),
+    ).toMatchObject({
+      status: 'fail',
+      message: '2 theme checks need attention: theme-owners, theme-fonts.',
+    });
+    expect(checkThemes(process.cwd(), passing)).toMatchObject({
+      status: 'pass',
+    });
+  });
+
   it('appears once in the doctor report, right after version alignment, with and without a module', async () => {
     const {dir} = await fixture();
     for (const cwd of [emptyApp('themes-report'), dir]) {
