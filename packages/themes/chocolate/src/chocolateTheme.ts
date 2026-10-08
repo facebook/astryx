@@ -55,6 +55,18 @@ export const chocolateTheme = defineTheme({
     },
   },
 
+  // Touch + narrow (Mobile Type, Pin): floor base to the 16px floor and
+  // re-derive the ratio so Display 1 keeps its desktop size:
+  // ratio' = 1.2 * (14/16)^(1/6) ~= 1.1736. Body 14 -> 16px, display-1 stays 42px.
+  adaptations: {
+    rules: [
+      {
+        when: {pointer: 'coarse', width: {below: 'lg'}},
+        value: {typography: {scale: {base: 16, ratio: 1.1736}}},
+      },
+    ],
+  },
+
   motion: {fast: 125, medium: 300, slow: 700, ratio: 0.75},
 
   syntax: chocolateSyntax,
