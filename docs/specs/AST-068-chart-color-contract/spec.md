@@ -21,10 +21,13 @@ affects_consumer_docs: [theme, charts, cli/integrations/components]
 
 ## Intent
 
-An end user can keep a chart series on its automatic color, choose a stable
-Astryx theme color for that chart, or set an exact custom color without changing
-the active theme. A stored theme choice follows light, dark, and custom themes;
-a stored custom choice remains exact.
+An end user can keep a chart series on its automatically assigned theme color,
+choose a stable Astryx theme color for that chart, or set an exact custom color
+without changing the active theme. Automatic is not a color value: it is the
+absence of a chart-local override, so the product assigns a theme token from the
+series' stable identity. A stored theme choice follows light, dark, and custom
+themes; a stored custom choice remains exact. Reset returns to Automatic by
+deleting the override.
 
 Chart components translate that same color intent into the representation their
 renderer consumes. A live DOM or SVG paint may use a CSS reference. JavaScript

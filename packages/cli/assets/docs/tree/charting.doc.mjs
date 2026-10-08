@@ -116,7 +116,7 @@ export const docs = {
             [
               'Automatic',
               'No override',
-              'The product assigns a stable theme token for the series',
+              'The product assigns a theme token from the stable series identity; the resolved color follows the theme and mode',
             ],
             [
               'Theme color',
