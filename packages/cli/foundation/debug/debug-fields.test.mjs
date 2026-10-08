@@ -284,30 +284,17 @@ describe('environment attribution', () => {
     });
   });
 
-  it('parses comma-separated metadata via the generic API', () => {
+  it('reads no Astryx-owned or metadata variable for attribution', () => {
     clearAttributionEnv();
-    // With ASTRYX_AGENT_METADATA removed, the metadata parser still works
-    // when called directly — it just no longer reads an env var.
-    // Agent identity falls back to the AGENT env var.
-    vi.stubEnv('AGENT', 'future-agent');
-    vi.stubEnv('AGENT_SESSION_ID', 'future-session');
-    const env = captureEnv();
-    expect(env).toMatchObject({
-      agentIdentity: 'future-agent',
-      agentSessionId: null,
-      agentSessionIdSource: 'AGENT_SESSION_ID',
-      invocationSource: 'ai',
-    });
-    expect(env.agentSessionIdHash).toBe(
-      createHash('sha256').update('future-session', 'utf8').digest('hex'),
+    // The removed variables, set: none of them attributes the run.
+    vi.stubEnv('ASTRYX_AGENT_ID', 'old-agent');
+    vi.stubEnv('ASTRYX_AGENT_SESSION_ID', 'old-session');
+    vi.stubEnv(
+      'ASTRYX_AGENT_METADATA',
+      'id=old-agent,session_id=old-session,invocation_id=old-invocation',
     );
-  });
-
-  it('no metadata env var is read (ASTRYX_AGENT_METADATA removed, no replacement)', () => {
-    clearAttributionEnv();
-    // Even with a value in what used to be read, nothing picks it up.
-    const env = captureEnv();
-    expect(env).toMatchObject({
+    vi.stubEnv('AGENT_METADATA', JSON.stringify({id: 'meta-agent'}));
+    expect(captureEnv()).toMatchObject({
       agentIdentity: null,
       agentSessionIdHash: null,
       agentSessionIdSource: null,
