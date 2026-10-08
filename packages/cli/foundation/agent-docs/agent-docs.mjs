@@ -335,6 +335,9 @@ export function detectStylingSystem(targetDir) {
     // Key off a StyleX *compiler* plugin — the runtime alone won't render.
     const stylexCompilers = [
       '@stylexjs/babel-plugin',
+      '@stylexjs/rollup-plugin',
+      '@stylexjs/webpack-plugin',
+      '@stylexjs/nextjs-plugin',
       'vite-plugin-stylex',
       'unplugin-stylex',
       '@stylexswc/unplugin',
@@ -452,7 +455,7 @@ export function generateCompressedIndex(
   } else if (stylingSystem === 'tailwind') {
     lines.push('- Style with component props first, then Tailwind utilities backed by tokens. No raw hex/px.');
   } else {
-    lines.push("- Style with component props first, then tokens (var(--color-*|--spacing-*|--radius-*)). No raw hex/px. No StyleX/Tailwind compiler here — don't use xstyle/utility classes.");
+    lines.push("- Style with component props first, then tokens (var(--color-*|--spacing-*|--radius-*)). No raw hex/px. No StyleX/Tailwind compiler here — don't use xstyle/utility classes directly. Some templates use StyleX and need a compiler plugin; see `astryx docs styling-overview`.");
   }
   lines.push('- Palettes and custom colors go through the theme, never :root overrides. See `astryx docs theme`.');
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/

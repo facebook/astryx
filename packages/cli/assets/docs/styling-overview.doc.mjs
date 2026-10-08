@@ -122,7 +122,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Only needed when you swizzle a component (`astryx swizzle <Component>`) or write your own StyleX. The plain path already supports `xstyle` overrides \u2014 this path is for editing component internals.',
+          text: 'Only needed when you swizzle a component (`astryx swizzle <Component>`) or write your own StyleX. The plain path already supports `xstyle` overrides \u2014 this path is for editing component internals. Some built-in page templates also use StyleX for layout; if you scaffold one and see "Unexpected stylex.create call at runtime", add the compiler plugin for your bundler below.',
         },
         {
           type: 'code',

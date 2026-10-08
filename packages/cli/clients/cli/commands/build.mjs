@@ -226,6 +226,7 @@ export function registerBuild(program) {
                 }
               : brief(['name', 'package', 'description', 'command']),
           ),
+          ...(start.notes ?? []).map(note => text(note)),
         );
         if (start.alternatives.length) {
           out.push(
