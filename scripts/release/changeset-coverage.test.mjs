@@ -10,6 +10,7 @@
  * @position focused suite for scripts/release/changeset-coverage.mjs
  */
 
+import fs from 'node:fs';
 import {describe, expect, it} from 'vitest';
 import {
   classifyPath,
@@ -797,5 +798,21 @@ describe('parsers', () => {
       'data[].b',
       'data[].b.c',
     ]);
+  });
+});
+
+describe('lint workflow', () => {
+  it('runs the Changeset coverage and generated CLI README checks on pull requests', () => {
+    const workflow = fs.readFileSync(
+      new URL('../../.github/workflows/lint.yml', import.meta.url),
+      'utf8',
+    );
+    expect(workflow).toMatch(/^ {2}pull_request:/m);
+    expect(workflow).toContain(
+      'node scripts/release/changeset-coverage.mjs pr',
+    );
+    expect(workflow).toContain(
+      'node packages/cli/scripts/generate-cli-readme.mjs --check',
+    );
   });
 });

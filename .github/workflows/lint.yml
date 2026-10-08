@@ -87,6 +87,13 @@ jobs:
         if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true'
         run: pnpm check:repo
 
+      # The CLI README's generated tables (commands, error codes, response
+      # types) ship to consumers. A merge from main can silently drop a
+      # generated row, so the merged result is checked against its sources.
+      - name: Check generated CLI README
+        if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true'
+        run: node packages/cli/scripts/generate-cli-readme.mjs --check
+
       - name: Run ESLint
         if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true'
         run: pnpm lint
