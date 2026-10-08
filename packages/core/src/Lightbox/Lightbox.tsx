@@ -5,7 +5,8 @@
 /**
  * @file Lightbox.tsx
  * @input Uses React, native dialog, StyleX, IconButton, theme tokens, layerTextReset
- * @output Exports Lightbox component, LightboxProps, LightboxMedia
+ * @output Exports Lightbox component, LightboxProps, LightboxMedia,
+ *   LightboxCustomItem, LightboxItem; custom content retains its keyboard events
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -51,7 +52,7 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 export type LightboxMediaType = 'image' | 'video';
 
 /**
- * Describes a single media item in a lightbox.
+ * Describes a single image or video item in a lightbox.
  */
 export interface LightboxMedia {
   /** Media source URL */
@@ -67,6 +68,38 @@ export interface LightboxMedia {
   type?: LightboxMediaType;
 }
 
+/**
+ * Describes an arbitrary React content item in a lightbox — a live preview,
+ * an embed, or any rich subtree. Custom items reuse the same gallery
+ * navigation, keyboard handling, scroll lock, and backdrop/Escape dismissal
+ * as media items, but zoom/pan never applies to them.
+ */
+export interface LightboxCustomItem {
+  /** Discriminant marking this as an arbitrary React content item. */
+  type: 'custom';
+  /** React subtree rendered on the lightbox stage. */
+  content: ReactNode;
+  /**
+   * Accessible label for this item. Used as the dialog's `aria-label` while
+   * the item is active and announced to screen readers on gallery
+   * navigation. Required because custom items have no `alt` text.
+   */
+  label: string;
+  /** Optional noninteractive caption displayed below the content. */
+  caption?: ReactNode;
+}
+
+/**
+ * A single lightbox item — either an image/video (`LightboxMedia`) or an
+ * arbitrary React subtree (`LightboxCustomItem`). Discriminated by `type`.
+ */
+export type LightboxItem = LightboxMedia | LightboxCustomItem;
+
+/** Narrows a lightbox item to a custom (arbitrary React content) item. */
+function isCustomItem(entry: LightboxItem): entry is LightboxCustomItem {
+  return entry.type === 'custom';
+}
+
 export interface LightboxProps extends BaseProps<HTMLDialogElement> {
   /** Ref forwarded to the root dialog element */
   ref?: React.Ref<HTMLDialogElement>;
@@ -80,10 +113,13 @@ export interface LightboxProps extends BaseProps<HTMLDialogElement> {
    */
   onOpenChange: (isOpen: boolean) => void;
   /**
-   * Media to display. Pass a single object for one item, or an array
-   * for gallery mode with prev/next navigation.
+   * Items to display. Pass a single object for one item, or an array for
+   * gallery mode with prev/next navigation. Each item is either an
+   * image/video (`LightboxMedia`) or an arbitrary React subtree
+   * (`LightboxCustomItem`, `type: 'custom'`); the two kinds can be mixed
+   * in a single gallery.
    */
-  media: LightboxMedia | LightboxMedia[];
+  media: LightboxItem | LightboxItem[];
   /**
    * Current index in gallery mode (when `media` is an array).
    * When provided, puts the component in controlled mode.
@@ -159,6 +195,17 @@ const styles = stylex.create({
     overflow: 'hidden',
     cursor: 'default',
     userSelect: 'none',
+    minHeight: 0,
+  },
+  // Custom (arbitrary React) content: centered but interactive — no zoom
+  // cursor and no userSelect lock, so nested controls and text behave
+  // normally. The content sizes itself within the viewport.
+  customContent: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: '100%',
+    maxHeight: '100%',
     minHeight: 0,
   },
   imageWrapperZoomable: {
@@ -270,13 +317,18 @@ const KEYBOARD_PAN_OFFSETS: Record<string, [number, number]> = {
 };
 
 /**
- * A fullscreen overlay for viewing images at full resolution.
+ * A fullscreen overlay for viewing images, videos, and arbitrary React
+ * content at full resolution.
  *
- * Supports single image and gallery modes. In gallery mode, provides
+ * Supports single-item and gallery modes. In gallery mode, provides
  * prev/next navigation via buttons and arrow keys. Optionally supports
  * zoom (double-click, Enter/Space on the image, or `+`/`-` to toggle 2x)
  * and pan (drag or arrow keys when zoomed; arrows navigate the gallery
  * when not zoomed).
+ * Items with `type: 'custom'` host an arbitrary React subtree (a live
+ * preview, an embed, a rich card) and reuse the same gallery navigation,
+ * keyboard handling, scroll lock, and backdrop/Escape dismissal; zoom/pan
+ * never applies to them.
  *
  * Uses the native `<dialog>` element with `showModal()` for focus
  * trapping and top-layer placement. Dismiss via Escape, close button,
@@ -300,6 +352,16 @@ const KEYBOARD_PAN_OFFSETS: Record<string, [number, number]> = {
  *   media={photos}
  *   index={currentIndex}
  *   onIndexChange={setCurrentIndex}
+ * />
+ * <Lightbox
+ *   isOpen={isOpen}
+ *   onOpenChange={setIsOpen}
+ *   media={{
+ *     type: "custom",
+ *     label: "Dashboard preview",
+ *     content: <LivePreview slug="dashboard" />,
+ *     caption: "Live template preview",
+ *   }}
  * />
  * ```
  */
@@ -325,6 +387,7 @@ export function Lightbox({
   const mergedDialogRef = useMergedRefs(ref, dialogRef);
   const containerRef = useRef<HTMLDivElement>(null);
   const imageWrapperRef = useRef<HTMLDivElement>(null);
+  const customContentRef = useRef<HTMLDivElement>(null);
   const triggerElementRef = useRef<Element | null>(null);
 
   // Index state (controlled + uncontrolled)
@@ -360,6 +423,10 @@ export function Lightbox({
       : null;
   const currentType = currentItem?.type ?? 'image';
   const isVideo = currentType === 'video';
+  // Custom items have no `src`; used only to reset zoom when the active image
+  // is swapped at a fixed index.
+  const currentSrc =
+    currentItem && !isCustomItem(currentItem) ? currentItem.src : undefined;
   const canPrev = isGallery && index > 0;
   const canNext = isGallery && index < mediaArray.length - 1;
 
@@ -373,15 +440,15 @@ export function Lightbox({
     setZoom(1);
     // eslint-disable-next-line @eslint-react/set-state-in-effect
     setPan({x: 0, y: 0});
-  }, [index, currentItem?.src]);
+  }, [index, currentSrc]);
 
-  // Announce gallery navigation to screen readers. Moving between images only
+  // Announce gallery navigation to screen readers. Moving between items only
   // updates the visual counter, which is silent to assistive tech, so mirror
-  // each change in a polite live region ("<alt>, 3 of 12", or "Image 3 of 12"
-  // when the image has no alt). Announce only when the image changes during an
-  // already-open session — not on mount, not when opening (even at a new
-  // index, since the dialog's aria-label already names the current image), and
-  // not on close.
+  // each change in a polite live region ("<name>, 3 of 12", or "Image 3 of 12"
+  // when a media item has no alt). Custom items narrate by their required
+  // `label`. Announce only when the item changes during an already-open
+  // session — not on mount, not when opening (even at a new index, since the
+  // dialog's aria-label already names the current item), and not on close.
   const announce = useAnnounce();
   const prevIndexRef = useRef(index);
   const wasOpenRef = useRef(isOpen);
@@ -394,10 +461,11 @@ export function Lightbox({
       return;
     }
     const item = mediaArray[Math.min(index, mediaArray.length - 1)];
+    const name = item ? (isCustomItem(item) ? item.label : item.alt) : '';
     const position = {index: index + 1, total: mediaArray.length};
     announce(
-      item?.alt
-        ? t('@astryx.lightbox.mediaPosition', {alt: item.alt, ...position})
+      name
+        ? t('@astryx.lightbox.mediaPosition', {alt: name, ...position})
         : t('@astryx.lightbox.imagePosition', position),
     );
   }, [index, isOpen, announce, mediaArray, t]);
@@ -486,7 +554,7 @@ export function Lightbox({
   // pan while zoomed.
   const applyZoom = useCallback(
     (next: number) => {
-      if (!hasZoom || isVideo || next === zoom) {
+      if (!hasZoom || currentType !== 'image' || next === zoom) {
         return;
       }
       setZoom(next);
@@ -497,7 +565,7 @@ export function Lightbox({
           : t('@astryx.lightbox.zoomedOut'),
       );
     },
-    [hasZoom, isVideo, zoom, announce, t],
+    [hasZoom, currentType, zoom, announce, t],
   );
 
   const handleDoubleClick = useCallback(() => {
@@ -508,7 +576,17 @@ export function Lightbox({
   // lightbox conventions); when not zoomed they navigate the gallery.
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (hasZoom && !isVideo) {
+      // Custom subtrees own their keyboard interaction, including native input
+      // defaults and composite widgets. Keep shortcuts on the viewer/chrome.
+      if (
+        e.defaultPrevented ||
+        (e.target instanceof Node &&
+          customContentRef.current?.contains(e.target))
+      ) {
+        return;
+      }
+
+      if (hasZoom && currentType === 'image') {
         if (e.key === '+' || e.key === '=') {
           e.preventDefault();
           applyZoom(2);
@@ -534,7 +612,7 @@ export function Lightbox({
         goToNext();
       }
     },
-    [hasZoom, isVideo, zoom, applyZoom, goToPrev, goToNext],
+    [hasZoom, currentType, zoom, applyZoom, goToPrev, goToNext],
   );
 
   // Enter/Space on the focused image wrapper (role="button") toggles zoom.
@@ -594,7 +672,7 @@ export function Lightbox({
   }, [isDragging]);
 
   const isZoomed = zoom > 1;
-  const isZoomTarget = hasZoom && !isVideo;
+  const isZoomTarget = hasZoom && currentType === 'image';
   const imageTransform =
     zoom === 1
       ? null
@@ -603,6 +681,12 @@ export function Lightbox({
   if (!currentItem) {
     return null;
   }
+
+  // Custom items carry a required `label`; media items name the dialog by
+  // `alt`, falling back to a generic viewer label when unlabeled.
+  const currentLabel = isCustomItem(currentItem)
+    ? currentItem.label
+    : currentItem.alt || t('@astryx.lightbox.mediaViewer');
 
   return (
     <dialog
@@ -613,10 +697,10 @@ export function Lightbox({
         onClickProp?.(e);
       }}
       onKeyDown={e => {
-        handleKeyDown(e);
         onKeyDownProp?.(e);
+        handleKeyDown(e);
       }}
-      aria-label={currentItem.alt || t('@astryx.lightbox.mediaViewer')}
+      aria-label={currentLabel}
       {...mergeProps(
         themeProps('lightbox'),
         stylex.props(
@@ -668,51 +752,59 @@ export function Lightbox({
 
             {/* Media + caption group (centered together) */}
             <div {...stylex.props(styles.mediaGroup)}>
-              <div
-                ref={imageWrapperRef}
-                // The wrapper is a keyboard-operable zoom toggle when zoom is
-                // enabled: Enter/Space toggles, aria-pressed reflects state.
-                role={isZoomTarget ? 'button' : undefined}
-                tabIndex={isZoomTarget ? 0 : undefined}
-                aria-pressed={isZoomTarget ? isZoomed : undefined}
-                aria-label={
-                  isZoomTarget ? t('@astryx.lightbox.zoom') : undefined
-                }
-                {...stylex.props(
-                  styles.imageWrapper,
-                  isZoomTarget && focusOutlineStyles.focusVisible,
-                  !isVideo &&
-                    hasZoom &&
-                    !isZoomed &&
-                    styles.imageWrapperZoomable,
-                  !isVideo && isZoomed && styles.imageWrapperZoomed,
-                  !isVideo && isDragging && styles.imageWrapperDragging,
-                )}
-                onDoubleClick={isVideo ? undefined : handleDoubleClick}
-                onKeyDown={isZoomTarget ? handleImageKeyDown : undefined}
-                onPointerDown={isVideo ? undefined : handlePointerDown}>
-                {isVideo ? (
-                  <video
-                    src={currentItem.src}
-                    aria-label={currentItem.alt}
-                    controls
-                    autoPlay={hasAutoPlay}
-                    {...stylex.props(styles.video)}
-                  />
-                ) : (
-                  <img
-                    src={currentItem.src}
-                    alt={currentItem.alt}
-                    draggable={false}
-                    {...stylex.props(
-                      styles.image,
-                      isDragging && styles.imageDragging,
-                      imageTransform != null &&
-                        dynamicStyles.imageTransform(imageTransform),
-                    )}
-                  />
-                )}
-              </div>
+              {isCustomItem(currentItem) ? (
+                <div
+                  ref={customContentRef}
+                  {...stylex.props(styles.customContent)}>
+                  {currentItem.content}
+                </div>
+              ) : (
+                <div
+                  ref={imageWrapperRef}
+                  // The wrapper is a keyboard-operable zoom toggle when zoom is
+                  // enabled: Enter/Space toggles, aria-pressed reflects state.
+                  role={isZoomTarget ? 'button' : undefined}
+                  tabIndex={isZoomTarget ? 0 : undefined}
+                  aria-pressed={isZoomTarget ? isZoomed : undefined}
+                  aria-label={
+                    isZoomTarget ? t('@astryx.lightbox.zoom') : undefined
+                  }
+                  {...stylex.props(
+                    styles.imageWrapper,
+                    isZoomTarget && focusOutlineStyles.focusVisible,
+                    !isVideo &&
+                      hasZoom &&
+                      !isZoomed &&
+                      styles.imageWrapperZoomable,
+                    !isVideo && isZoomed && styles.imageWrapperZoomed,
+                    !isVideo && isDragging && styles.imageWrapperDragging,
+                  )}
+                  onDoubleClick={isVideo ? undefined : handleDoubleClick}
+                  onKeyDown={isZoomTarget ? handleImageKeyDown : undefined}
+                  onPointerDown={isVideo ? undefined : handlePointerDown}>
+                  {isVideo ? (
+                    <video
+                      src={currentItem.src}
+                      aria-label={currentItem.alt}
+                      controls
+                      autoPlay={hasAutoPlay}
+                      {...stylex.props(styles.video)}
+                    />
+                  ) : (
+                    <img
+                      src={currentItem.src}
+                      alt={currentItem.alt}
+                      draggable={false}
+                      {...stylex.props(
+                        styles.image,
+                        isDragging && styles.imageDragging,
+                        imageTransform != null &&
+                          dynamicStyles.imageTransform(imageTransform),
+                      )}
+                    />
+                  )}
+                </div>
+              )}
 
               {currentItem.caption && (
                 <div {...stylex.props(styles.caption)}>
