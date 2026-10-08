@@ -87,6 +87,11 @@ const STATIC_EXPORTS = {
     types: './dist/theme/dataTokens.stylex.d.ts',
     default: './dist/theme/dataTokens.stylex.js',
   },
+  './theme/chartColors': {
+    source: './src/theme/chartColors.ts',
+    types: './dist/theme/chartColors.d.ts',
+    default: './dist/theme/chartColors.js',
+  },
   './theme/syntax': {
     source: './src/theme/syntax/index.ts',
     types: './dist/theme/syntax/index.d.ts',
