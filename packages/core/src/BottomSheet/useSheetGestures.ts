@@ -23,6 +23,14 @@
  * only a sliver of the sheet — keeps the full height and slides below the
  * viewport instead of reflowing to that sliver.
  *
+ * A live drag writes that transform straight to the sheet element, once per
+ * input sample, and renders nothing: React state changes when the drag begins
+ * and ends, and in between only when the layout split changes (a drag that
+ * crosses above its base detent restores the full height). The live offset
+ * is readable through `activeOffsetRef`. The host owns the element's
+ * transform outside a drag and writes the resting value after each commit,
+ * so a settle animates from wherever the finger left the sheet.
+ *
  * Those are pixels, and the stops behind them are relative to the viewport, so
  * a sheet at rest re-resolves its detent on `resize` / `orientationchange`,
  * and whenever the host swaps the snap points, and re-anchors to the new
@@ -296,12 +304,25 @@ export interface UseSheetGesturesResult {
    * in a second callback ref.
    */
   bodyElementRef: RefObject<HTMLElement | null>;
-  /** Current live drag translate in px (0 = fully expanded, larger = collapsed). */
+  /**
+   * The drag offset the host last had to render against, in px (0 = fully
+   * expanded, larger = collapsed): seeded when a drag begins and refreshed
+   * when its layout split changes. Not the live position; see
+   * `activeOffsetRef`.
+   */
   dragOffset: number;
   /** Translate of the resting detent in px (0 = tallest detent). */
   settledOffset: number;
   /** Whether a drag is currently in progress. */
   isDragging: boolean;
+  /** Whether the drag in progress has moved the sheet off its base detent. */
+  isTraveling: boolean;
+  /**
+   * The sheet's offset right now, in px: the settled detent at rest, the live
+   * position during a drag. Written per input sample without a render; read
+   * it where the live number is needed without subscribing to it.
+   */
+  activeOffsetRef: RefObject<number>;
   /** Measured height of the fully expanded sheet. */
   sheetHeight: number;
   /** End padding that preserves the scroll position across height changes. */
@@ -363,6 +384,9 @@ export function useSheetGestures({
   const [dragOffset, setDragOffset] = useState(0);
   const [settledOffset, setSettledOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  // Whether the drag in flight has moved the sheet off its base detent. One
+  // state change per drag, for hosts that react to travel beginning.
+  const [isTraveling, setIsTraveling] = useState(false);
   const [sheetHeight, setSheetHeight] = useState(0);
   const [scrollPreservationInset, setScrollPreservationInset] = useState(0);
   // How much of the settled travel is expressed as layout height. Equal to
@@ -455,8 +479,13 @@ export function useSheetGestures({
     },
     [updateScrollPreservationInset],
   );
+  // The sheet's offset right now: the settled detent at rest, the live drag
+  // position while dragging (written by the move handler, not by a render, so
+  // a render in the middle of a drag must not overwrite it).
   const activeOffsetRef = useRef(0);
-  activeOffsetRef.current = isDragging ? dragOffset : settledOffset;
+  if (!isDragging) {
+    activeOffsetRef.current = settledOffset;
+  }
   const isOpenRef = useRef(isOpen);
   isOpenRef.current = isOpen;
 
@@ -495,6 +524,7 @@ export function useSheetGestures({
     renderedOffset: number;
     layoutOffset: number;
     naturalEndGap: number;
+    hasTraveled: boolean;
   } | null>(null);
 
   // Fully-open height, tracked by a ResizeObserver (see sheetRef) so detents
@@ -571,6 +601,8 @@ export function useSheetGestures({
       setSettledOffset(0);
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setIsDragging(false);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
+      setIsTraveling(false);
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- resets gesture state on controlled reopen
       setIsScrollAreaReconciling(false);
       recordSettledLayoutOffset(0);
@@ -743,6 +775,23 @@ export function useSheetGestures({
     reanchorToSettledDetent();
   }, [reanchorToSettledDetent, snapHeights]);
 
+  // The one write a finger sample costs: the sheet's compositor transform,
+  // on the element, with no render between the input and the paint. The
+  // value matches what the host renders at rest (offset less the layout
+  // split), so a settle that follows continues from it.
+  const writeLiveTransform = useCallback(
+    (offset: number, layoutOffset: number) => {
+      const element = sheetElRef.current;
+      if (element == null) {
+        return;
+      }
+      const translation = offset - layoutOffset;
+      element.style.transform =
+        translation !== 0 ? `translateY(${translation}px)` : '';
+    },
+    [],
+  );
+
   const cancelDrag = useCallback(
     (target?: HTMLElement) => {
       const state = dragStateRef.current;
@@ -758,6 +807,7 @@ export function useSheetGestures({
       }
       setDragOffset(state.baseOffset);
       setIsDragging(false);
+      setIsTraveling(false);
       prepareScrollAreaSettle(
         state.baseLayoutOffset,
         state.baseOffset,
@@ -959,6 +1009,7 @@ export function useSheetGestures({
         renderedOffset: settledOffset,
         layoutOffset: baseLayoutOffset,
         naturalEndGap,
+        hasTraveled: false,
       };
       updateScrollPreservationInset(
         preservationInsetForOffset(
@@ -1052,9 +1103,20 @@ export function useSheetGestures({
       // viewport; otherwise keep whatever layout the base detent settled with
       // (0 at a peek, so a peek drag stays transform-only).
       const layoutOffset = next < state.baseOffset ? 0 : state.baseLayoutOffset;
+      const hasLayoutChanged = layoutOffset !== state.layoutOffset;
       state.renderedOffset = next;
       state.layoutOffset = layoutOffset;
-      setDragOffset(next);
+      activeOffsetRef.current = next;
+      writeLiveTransform(next, layoutOffset);
+      if (hasLayoutChanged) {
+        // The layout split moved: the host renders the new height, reading
+        // the offset it has to pair with it from state.
+        setDragOffset(next);
+      }
+      if (!state.hasTraveled && next !== state.baseOffset) {
+        state.hasTraveled = true;
+        setIsTraveling(true);
+      }
       updateScrollPreservationInset(
         preservationInsetForOffset(
           state.baseLayoutOffset,
@@ -1078,7 +1140,7 @@ export function useSheetGestures({
         scrimOpacityForOffset(next, offsets, dismissOffset, peekOffset),
       );
     },
-    [resolveDetents, updateScrollPreservationInset],
+    [resolveDetents, updateScrollPreservationInset, writeLiveTransform],
   );
 
   const endDrag = useCallback(
@@ -1102,6 +1164,7 @@ export function useSheetGestures({
         target.releasePointerCapture?.(event.pointerId);
       }
       setIsDragging(false);
+      setIsTraveling(false);
       settleFromDrag(
         offset,
         state.velocity,
@@ -1441,7 +1504,9 @@ export function useSheetGestures({
     [reconcileScrollPreservationInset],
   );
 
-  // While dragging, follow the finger; otherwise rest at the settled detent.
+  // The resting transform; a drag in flight writes its own to the element
+  // (writeLiveTransform) and a host that owns the element's transform must not
+  // render this over it while `isDragging`.
   const activeOffset = isDragging ? dragOffset : settledOffset;
 
   const contentProps = useMemo<SheetContentProps>(
@@ -1514,6 +1579,8 @@ export function useSheetGestures({
     dragOffset,
     settledOffset,
     isDragging,
+    isTraveling,
+    activeOffsetRef,
     sheetHeight,
     scrollPreservationInset,
     settlingLayoutOffset,

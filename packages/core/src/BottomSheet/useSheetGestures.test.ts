@@ -82,6 +82,11 @@ type Hook = {
   result: {current: ReturnType<typeof useSheetGestures>};
 };
 
+// The live drag position: written per input sample, not rendered.
+function liveOffset(hook: Hook): number {
+  return hook.result.current.activeOffsetRef.current;
+}
+
 function down(hook: Hook, y: number, t: number, target: HTMLElement) {
   // Register the sheet element the way the component does on mount, so the
   // hook can measure its height (it no longer queries the DOM for it).
@@ -396,7 +401,7 @@ describe('useSheetGestures', () => {
     const t = makeTarget();
     down(hook, 0, 0, t);
     move(hook, 90, 100, t); // raw offset 90, 10px from the 100 detent
-    const off = hook.result.current.dragOffset;
+    const off = liveOffset(hook);
     expect(off).toBeGreaterThan(90); // pulled up toward 100
     expect(off).toBeLessThanOrEqual(100);
   });
@@ -406,11 +411,51 @@ describe('useSheetGestures', () => {
     const t = makeTarget();
     down(hook, 0, 0, t);
     move(hook, 50, 100, t);
-    expect(hook.result.current.dragOffset).toBe(50);
+    expect(liveOffset(hook)).toBe(50);
     expect(hook.result.current.isDragging).toBe(true);
-    expect(hook.result.current.contentProps.style.transform).toBe(
-      'translateY(50px)',
+    // Written to the element, not rendered: the move costs one style write
+    // and no commit.
+    expect(t.style.transform).toBe('translateY(50px)');
+  });
+
+  it('renders nothing for a move that keeps the layout split', () => {
+    let renders = 0;
+    const onDismiss = vi.fn();
+    const hook = renderHook(
+      (props: UseSheetGesturesOptions) => {
+        renders += 1;
+        return useSheetGestures(props);
+      },
+      {initialProps: {isOpen: true, onDismiss, snapHeights: () => [200]}},
     );
+    const t = makeTarget();
+    down(hook, 0, 0, t);
+    const rendersAtDown = renders;
+    move(hook, 30, 50, t);
+    move(hook, 60, 100, t);
+    move(hook, 90, 150, t);
+    expect(t.style.transform).toBe('translateY(90px)');
+    // One render announces that the sheet is traveling; the moves after it
+    // render nothing.
+    expect(renders - rendersAtDown).toBeLessThanOrEqual(1);
+  });
+
+  it('restores the full layout height when a drag crosses above its base', () => {
+    const onSnap = vi.fn();
+    const {hook} = setup({snapHeights: () => [200], onSnap});
+    const t = makeTarget();
+    // Rest at the 200px working detent: the sheet gives 200px up as layout.
+    down(hook, 0, 0, t);
+    move(hook, 200, 400, t);
+    up(hook, 200, 800, t);
+    expect(hook.result.current.settledLayoutOffset).toBe(200);
+    // Drag back up above the base: the layout split changes, and that one
+    // render carries the offset the host pairs with the new height.
+    down(hook, 200, 1000, t);
+    move(hook, 150, 1100, t);
+    expect(liveOffset(hook)).toBe(150);
+    expect(liveOffset(hook)).toBe(150);
+    expect(t.style.transform).toBe('translateY(150px)');
   });
 
   it('returns to the settled detent when a context menu interrupts a drag', () => {
@@ -476,7 +521,7 @@ describe('useSheetGestures', () => {
     move(hook, 20, 100, t); // drag up 80px past the top of a rested-at-top sheet
     // Overscroll is allowed but damped: a resisted fraction of the raw -80,
     // and negative (above the top), not the raw distance and not clamped to 0.
-    const off = hook.result.current.dragOffset;
+    const off = liveOffset(hook);
     expect(off).toBeLessThan(0);
     expect(off).toBeGreaterThan(-80); // resisted, so smaller in magnitude
   });
@@ -527,7 +572,7 @@ describe('useSheetGestures', () => {
       bodyDown(hook, 0, 0, body);
       bodyMove(hook, 40, 100, body); // pull down while at the top
       expect(hook.result.current.isDragging).toBe(true);
-      expect(hook.result.current.dragOffset).toBe(40);
+      expect(liveOffset(hook)).toBe(40);
     });
 
     /**
@@ -652,7 +697,7 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(true);
       // The handoff is only worth taking if the sheet follows the finger:
       // 50px of pull expands 50px toward the tallest detent.
-      expect(hook.result.current.dragOffset).toBe(150);
+      expect(liveOffset(hook)).toBe(150);
     });
 
     it('leaves a bottom pull-up with the scroller at the tallest detent', () => {
@@ -831,7 +876,7 @@ describe('useSheetGestures', () => {
         touch(el, 'touchmove', 400, 7);
       });
       // 100px of pull past the touchstart, from the 200px detent.
-      expect(hook.result.current.dragOffset).toBe(100);
+      expect(liveOffset(hook)).toBe(100);
     });
 
     // `pointercancel` for that same finger arrives the moment WebKit claims
@@ -865,7 +910,7 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(true);
       // Anchored where the content ran out, so only the 50px past it moves the
       // sheet. Anchoring at touchstart would have thrown it 350px instead.
-      expect(hook.result.current.dragOffset).toBe(150);
+      expect(liveOffset(hook)).toBe(150);
     });
 
     it('does not preventDefault the mid-gesture handoff', () => {
@@ -899,7 +944,7 @@ describe('useSheetGestures', () => {
         touch(el, 'touchmove', 200); // the content ended here
         touch(el, 'touchmove', 150);
       });
-      expect(hook.result.current.dragOffset).toBe(150);
+      expect(liveOffset(hook)).toBe(150);
 
       act(() => {
         touch(el, 'touchmove', 210); // back below the anchor
@@ -915,7 +960,7 @@ describe('useSheetGestures', () => {
         touch(el, 'touchmove', 140);
       });
       expect(hook.result.current.isDragging).toBe(true);
-      expect(hook.result.current.dragOffset).toBe(150);
+      expect(liveOffset(hook)).toBe(150);
     });
 
     it('does not hand off on reaching the end without travelling past it', () => {
