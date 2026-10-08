@@ -10,6 +10,5 @@ export const docsDense = {
     { section: 'Size Tokens', title: 'Size', content: [{ type: 'prose', text: 'control heights for buttons/inputs/selectors.' }, null] },
     { section: 'Radius Tokens', title: 'Radius', content: [null] },
     { section: 'Shadow Tokens', title: 'Elevation', content: [null] },
-    { section: 'Usage in StyleX', title: 'StyleX Usage', content: [null, null] },
   ],
 };

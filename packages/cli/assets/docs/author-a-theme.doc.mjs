@@ -67,7 +67,7 @@ export const docs = {
     {
       title: 'Component Style Overrides',
       content: [
-        {type: 'prose', text: 'The `components` field in defineTheme uses semantic component keys and style keys, not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in {@link generic:styling}.'},
+        {type: 'prose', text: 'The `components` field in defineTheme uses semantic component keys and style keys, not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in {@link generic:styling-advanced}.'},
         {type: 'code', lang: 'tsx', label: 'Component overrides with standard CSS', code: "components: {\n  card: {\n    base: { borderRadius: '20px', padding: '24px' },\n  },\n  button: {\n    base: {\n      borderRadius: '9999px',\n      textTransform: 'uppercase',\n      '--button-focus-offset': '3px',\n    },\n    'variant:ghost': { borderWidth: '2px', borderStyle: 'solid' },\n  },\n}"},
         {type: 'prose', text: "Run `astryx theme targets` for every themeable key in the system (`astryx theme targets <Name>` to scope it, `--json` to lint a theme against it), and `astryx component <Name>` for one component's theming targets, public CSS variables, and which standard CSS properties are supported."},
         {type: 'list', style: 'do', items: ['Write standard CSS properties (borderRadius, padding); the pipeline expands them into internal vars.', 'Set public CSS vars directly when no standard property equivalent exists.']},
@@ -121,7 +121,7 @@ export const docs = {
         ]},
         {type: 'prose', text: 'The `__built: true` flag tells Theme to skip runtime `<style>` injection; the CSS file handles it. Load the generated CSS wherever you load the module.'},
         {type: 'code', lang: 'tsx', label: 'Using a custom built theme', code: "import {Theme} from '@astryxdesign/core';\nimport {oceanTheme} from './themes/ocean';\nimport './themes/ocean.css';\n\n<Theme theme={oceanTheme}>\n  <App />\n</Theme>"},
-        {type: 'prose', text: "After upgrading Astryx, rerun `astryx theme build` for every custom prebuilt theme. Deploy the regenerated files together. The runtime intentionally trusts `__built: true` and will not repair stale CSS from an older build. The build also warns when the theme names font families it does not load. See {@link generic:typography} for the full recipe."},
+        {type: 'prose', text: "After upgrading Astryx, rerun `astryx theme build` for every custom prebuilt theme. Deploy the regenerated files together. The runtime intentionally trusts `__built: true` and will not repair stale CSS from an older build. The build also warns when the theme names font families it does not load. See {@link generic:font-setup} for the full recipe."},
         {type: 'prose', text: 'For the runtime vs built tradeoff, see the Runtime vs Built section of {@link generic:use-a-theme}.'},
       ],
     },
@@ -151,7 +151,7 @@ export const docs = {
         {type: 'code', lang: 'ts', label: 'CSS var references for styling-library configs', code: "import {tokenVar, tokenVars} from '@astryxdesign/core/theme/tokens';\n\nconst pandaOrEmotionTheme = {\n  colors: {\n    text: tokenVar('--color-text-primary'),\n    surface: tokenVars['--color-background-surface'],\n  },\n};"},
         {type: 'code', lang: 'ts', label: 'Resolve token values without a hook', code: "import {resolveThemeTokens} from '@astryxdesign/core/theme/tokens';\nimport {neutralTheme} from '@astryxdesign/theme-neutral';\n\nconst lightTokens = resolveThemeTokens(neutralTheme, {mode: 'light'});\nconst chartTheme = {\n  textColor: lightTokens['--color-text-primary'],\n  seriesColor: lightTokens['--color-data-categorical-blue'],\n};"},
         {type: 'prose', text: 'The `@astryxdesign/core/theme/tokens` subpath is server-safe and does not require React. The main `@astryxdesign/core/theme` barrel also re-exports these helpers for client code that already imports theme APIs.'},
-        {type: 'prose', text: 'For styling library interop patterns, see {@link generic:styling-libraries}.'},
+        {type: 'prose', text: 'For styling library interop patterns, see {@link namespace:styling-libraries}.'},
       ],
     },
     {
@@ -159,7 +159,7 @@ export const docs = {
       content: [
         {type: 'prose', text: '`useTheme()` reads the nearest Theme and effective color mode from React context. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript.'},
         {type: 'code', lang: 'tsx', label: 'Access resolved token values in React', code: "import {useMemo} from 'react';\nimport {useTheme} from '@astryxdesign/core/theme';\n\nfunction ChartConfig() {\n  const {mode, tokens} = useTheme();\n  const options = useMemo(() => ({\n    mode,\n    textColor: tokens['--color-text-primary'],\n    gridColor: tokens['--color-border'],\n    seriesColor: tokens['--color-data-categorical-blue'],\n  }), [mode, tokens]);\n  return <Chart options={options} />;\n}"},
-        {type: 'prose', text: 'Prefer CSS variables for ordinary styling. See {@link generic:use-a-theme} for the provider setup, and {@link generic:tokens} for the full token reference.'},
+        {type: 'prose', text: 'Prefer CSS variables for ordinary styling. See {@link generic:use-a-theme} for the provider setup, and {@link namespace:tokens} for the full token reference.'},
       ],
     },
   ],

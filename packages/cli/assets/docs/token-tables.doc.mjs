@@ -5,14 +5,17 @@
 //   dataTokens.stylex.ts, and syntax/tokens.ts
 // Run: node scripts/generate-token-docs.mjs
 // Total: 258 tokens across 15 categories.
+//
+// This flat doc exists for token-ref resolution only; the user-facing
+// navigation lives in tree/tokens.doc.mjs (namespace) and its children.
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
 export const docs = {
-  "name": "tokens",
-  "title": "All Tokens",
+  "name": "token-tables",
+  "title": "Token Tables",
   "category": "foundations",
-  "description": "Complete reference for color, data visualization, syntax, spacing, size, border, focus, radius, shadow, motion, and typography tokens.",
+  "description": "Internal token reference used by token-ref blocks in other docs.",
   "keywords": [
     "design tokens",
     "css variables",
@@ -1471,21 +1474,6 @@ export const docs = {
         }
       ],
       "previewType": "font-sample"
-    },
-    {
-      "title": "Usage in StyleX",
-      "content": [
-        {
-          "type": "code",
-          "lang": "tsx",
-          "label": "Using token imports",
-          "code": "import * as stylex from '@stylexjs/stylex';\nimport {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';\nimport {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';\n\nconst styles = stylex.create({\n  card: {\n    padding: spacingVars['--spacing-4'],\n    backgroundColor: colorVars['--color-background-surface'],\n    borderRadius: radiusVars['--radius-container'],\n  },\n  series: {\n    color: dataVars['--color-data-categorical-blue'],\n  },\n  button: {\n    height: sizeVars['--size-element-md'],\n  },\n});"
-        },
-        {
-          "type": "prose",
-          "text": "See {@link generic:styling} for how to apply tokens via xstyle, className, and compound component patterns. See {@link generic:author-a-theme} for overriding tokens with defineTheme."
-        }
-      ]
     }
   ]
 };

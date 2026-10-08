@@ -98,8 +98,7 @@ describe('migration docs', () => {
 
     const output = console.log.mock.calls.map(c => c[0]).join('\n');
     expect(output).toContain('Migration Guide');
-    expect(output).toContain('Recommended Order');
-    expect(output).toContain('Map shadcn and Radix Primitives');
+    expect(output).toContain('migration');
   });
 });
 

@@ -53,7 +53,7 @@ describe('docs() dispatcher routing', () => {
 
   it('reads a shortened section by its old key, which its title still derives', async () => {
     const r = await docs(
-      'styling',
+      'styling/tokens-and-setup',
       'stylex-build-setup-required-for-swizzled-components',
     );
     expect(r.type).toBe('docs.detail.section');
@@ -92,7 +92,7 @@ describe('docs() dispatcher routing', () => {
 
   it("lists the docs tree's namespaces in meta, so every data entry reads as a topic", async () => {
     const res = await docs();
-    expect(res.meta.namespaces.map(entry => entry.topic)).toEqual(['cli', 'layout', 'unorganized']);
+    expect(res.meta.namespaces.map(entry => entry.topic)).toEqual(['cli', 'internationalization', 'layout', 'migration', 'styling', 'styling-libraries', 'tokens', 'typography', 'unorganized']);
     for (const entry of res.data) {
       expect((await docs(entry.topic)).type).toBe('docs.detail');
     }

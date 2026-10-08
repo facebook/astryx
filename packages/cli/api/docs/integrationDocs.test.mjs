@@ -100,7 +100,7 @@ describe('integration-contributed topics', () => {
       package: '@acme/widgets',
     });
     // The built-in topics keep their own owner.
-    expect(listed.data.find(t => t.topic === 'tokens').package).toBe('@astryxdesign/cli');
+    expect(listed.data.find(t => t.topic === 'token-tables').package).toBe('@astryxdesign/cli');
 
     const detail = await docs('deploying', undefined, {cwd: tmpDir, full: true});
     expect(detail.type).toBe('docs.detail');
@@ -331,7 +331,7 @@ describe('integration-contributed topics', () => {
   it("falls back to the CLI's own topics when the project config is unreadable", async () => {
     scaffold({'deploying.doc.mjs': topic()}, {config: 'export default {integrations: 42};\n'});
     const catalog = await loadDocsCatalog(tmpDir);
-    expect(catalog.resolve('tokens')).toBeTruthy();
+    expect(catalog.resolve('token-tables')).toBeTruthy();
     expect(catalog.resolve('deploying')).toBeUndefined();
   }, SLOW);
 });

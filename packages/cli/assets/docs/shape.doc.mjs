@@ -31,7 +31,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'tokens',
+          topic: 'token-tables',
           section: 'Radius Tokens',
         },
       ],

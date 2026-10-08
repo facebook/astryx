@@ -53,7 +53,7 @@ describe('reads that share a catalog', () => {
     'never let one read change another',
     async () => {
       const catalog = await loadDocsCatalog();
-      const tokens = catalog.resolve('tokens');
+      const tokens = catalog.resolve('token-tables');
       const first = detailView(await compileTopic(catalog, tokens));
       for (const section of first.sections) {
         section.title = 'EDITED';

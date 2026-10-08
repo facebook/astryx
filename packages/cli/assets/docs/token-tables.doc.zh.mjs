@@ -10,6 +10,5 @@ export const docsZh = {
     { section: 'Size Tokens', title: '尺寸令牌', content: [{ type: 'prose', text: '控制按钮、输入框和选择器的一致高度。' }, null] },
     { section: 'Radius Tokens', title: '圆角令牌', content: [null] },
     { section: 'Shadow Tokens', title: '阴影令牌', content: [null] },
-    { section: 'Usage in StyleX', title: 'StyleX 用法', content: [null, null] },
   ],
 };

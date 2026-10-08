@@ -106,7 +106,7 @@ import {themes, defaultThemeSlug} from './astryx-themes';
         },
         {
           type: 'prose',
-          text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. Before building screens, read the two cascade layer sections of {@link generic:migration}.',
+          text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. Before building screens, read the two cascade layer sections of {@link generic:migration-setup}.',
         },
         {
           type: 'prose',
@@ -143,7 +143,7 @@ export default function Page() {
       content: [
         {
           type: 'prose',
-          text: 'Astryx components support various styling solutions, from plain CSS and `className` to Tailwind and CSS-in-JS. See {@link generic:styling} for the full guide. Astryx also has a deep integration with [StyleX](https://stylexjs.com/), an atomic CSS-in-JS library: create styles with `stylex.create()` and pass them to components with the `xstyle` prop.',
+          text: 'Astryx components support various styling solutions, from plain CSS and `className` to Tailwind and CSS-in-JS. See {@link namespace:styling} for the full guide. Astryx also has a deep integration with [StyleX](https://stylexjs.com/), an atomic CSS-in-JS library: create styles with `stylex.create()` and pass them to components with the `xstyle` prop.',
         },
         {
           type: 'code',

@@ -3,19 +3,18 @@
 
 /**
  * @file generate-token-docs.mjs
- * @description Generates packages/cli/assets/docs/tokens.doc.mjs from the sources
- *   of truth: packages/core/src/theme/tokens.stylex.ts, plus the domain tokens in
+ * @description Generates the tokens namespace (tree/tokens.doc.mjs), one child
+ *   guide per token category (tree/tokens-<key>.doc.mjs), the thin overview
+ *   (tokens.doc.mjs), and a hand-written usage section, from the sources of
+ *   truth: packages/core/src/theme/tokens.stylex.ts, plus the domain tokens in
  *   packages/core/src/theme/domainTokens/dataTokens.ts (data visualization) and
  *   packages/core/src/theme/syntax/tokens.ts (code syntax).
  *
  * Run: node scripts/generate-token-docs.mjs
  * CI:  `node scripts/generate-token-docs.mjs --check` fails on drift.
- *
- * Reads the *Defaults export objects from those files, groups them by
- * category, and writes a ReferenceDoc-shaped .doc.mjs file.
  */
 
-import {readFileSync, writeFileSync} from 'node:fs';
+import {readFileSync, writeFileSync, existsSync} from 'node:fs';
 import {resolve, dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -30,7 +29,8 @@ const SYNTAX_TOKENS_SRC = resolve(
   ROOT,
   'packages/core/src/theme/syntax/tokens.ts',
 );
-const TOKENS_DOC = resolve(ROOT, 'packages/cli/assets/docs/tokens.doc.mjs');
+const TOKENS_DOC = resolve(ROOT, 'packages/cli/assets/docs/token-tables.doc.mjs');
+const TREE_DIR = resolve(ROOT, 'packages/cli/assets/docs/tree');
 
 // ---------------------------------------------------------------------------
 // 1. Parse token groups from source
@@ -92,6 +92,15 @@ function lightDarkRow(name, value) {
     }
   }
   return [name, value, value];
+}
+
+/**
+ * Convert a camelCase key to a kebab-case file-safe slug.
+ * @param {string} key
+ * @returns {string}
+ */
+function keyToSlug(key) {
+  return key.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
 }
 
 /** Map of group name → { exportName, file?, title, description, headers } */
@@ -246,16 +255,24 @@ const groups = [
 ];
 
 // ---------------------------------------------------------------------------
-// 2. Build sections
+// 2. Build per-category child docs and collect sections for overview
 // ---------------------------------------------------------------------------
 
-const sections = [];
+const totalTokens = groups.reduce(
+  (sum, g) => sum + extractDefaults(g.exportName, g.file).length,
+  0,
+);
 
+/** @type {Array<{slug: string, output: string, path: string, tokenCount: number}>} */
+const childFiles = [];
+
+let order = 10;
 for (const group of groups) {
   const pairs = extractDefaults(group.exportName, group.file);
   if (pairs.length === 0) continue;
 
   const rows = pairs.map(([name, value]) => group.formatRow(name, value));
+  const slug = `tokens-${keyToSlug(group.key)}`;
 
   /** @type {import('@astryxdesign/cli/authoring').ReferenceContentBlock[]} */
   const content = [
@@ -265,18 +282,93 @@ for (const group of groups) {
 
   const section = {title: group.title, content};
   if (group.previewType) section.previewType = group.previewType;
-  sections.push(section);
+
+  const childDoc = {
+    type: 'generic',
+    name: slug,
+    title: group.title,
+    placement: {parent: 'namespace:tokens', slot: 'guides', order},
+    category: 'foundations',
+    description: group.description,
+    keywords: ['design tokens', 'css variables', group.key],
+    sections: [section],
+  };
+
+  const childOutput = `\
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+// AUTO-GENERATED — do not edit manually.
+// Source: packages/core/src/theme/tokens.stylex.ts,
+//   dataTokens.stylex.ts, and syntax/tokens.ts
+// Run: node scripts/generate-token-docs.mjs
+
+/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
+
+export const docs = ${JSON.stringify(childDoc, null, 2)};
+`;
+
+  childFiles.push({
+    slug,
+    output: childOutput,
+    path: resolve(TREE_DIR, `${slug}.doc.mjs`),
+    tokenCount: pairs.length,
+  });
+
+  order += 10;
 }
 
-// Add a usage section at the end (hand-written, not generated)
-sections.push({
+// ---------------------------------------------------------------------------
+// 3. Build the namespace doc
+// ---------------------------------------------------------------------------
+
+const namespaceDoc = {
+  type: 'namespace',
+  name: 'tokens',
+  title: 'All Tokens',
+  summary:
+    'Complete reference for color, data visualization, syntax, spacing, size, border, focus, radius, shadow, motion, and typography tokens.',
+  keywords: ['design tokens', 'css variables', 'custom properties'],
+  slots: {
+    guides: {title: 'Token Categories', accepts: {kinds: ['generic']}},
+  },
+};
+
+const namespaceOutput = `\
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+// AUTO-GENERATED — do not edit manually.
+// Run: node scripts/generate-token-docs.mjs
+// Total: ${totalTokens} tokens across ${groups.length} categories.
+
+/** @type {import('@astryxdesign/cli/authoring').NamespaceDoc} */
+export const docs = ${JSON.stringify(namespaceDoc, null, 2)};
+`;
+
+const namespacePath = resolve(TREE_DIR, 'tokens.doc.mjs');
+
+// ---------------------------------------------------------------------------
+// 4. Build a usage child (hand-written content, generated file)
+// ---------------------------------------------------------------------------
+
+const usageSlug = 'tokens-usage';
+const usageDoc = {
+  type: 'generic',
+  name: usageSlug,
   title: 'Usage in StyleX',
-  content: [
+  placement: {parent: 'namespace:tokens', slot: 'guides', order},
+  category: 'foundations',
+  description:
+    'How to import and use token variables in StyleX styles.',
+  keywords: ['StyleX', 'import', 'colorVars', 'spacingVars', 'sizeVars'],
+  sections: [
     {
-      type: 'code',
-      lang: 'tsx',
-      label: 'Using token imports',
-      code: `import * as stylex from '@stylexjs/stylex';
+      title: 'Usage in StyleX',
+      content: [
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Using token imports',
+          code: `import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 
@@ -293,27 +385,51 @@ const styles = stylex.create({
     height: sizeVars['--size-element-md'],
   },
 });`,
-    },
-    {
-      type: 'prose',
-      text: 'See {@link generic:styling} for how to apply tokens via xstyle, className, and compound component patterns. See {@link generic:author-a-theme} for overriding tokens with defineTheme.',
+        },
+        {
+          type: 'prose',
+          text: 'See {@link namespace:styling} for how to apply tokens via xstyle, className, and compound component patterns. See {@link generic:author-a-theme} for overriding tokens with defineTheme.',
+        },
+      ],
     },
   ],
-});
+};
+
+const usageOutput = `\
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+// AUTO-GENERATED — do not edit manually.
+// Run: node scripts/generate-token-docs.mjs
+
+/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
+
+export const docs = ${JSON.stringify(usageDoc, null, 2)};
+`;
+
+const usagePath = resolve(TREE_DIR, `${usageSlug}.doc.mjs`);
 
 // ---------------------------------------------------------------------------
-// 3. Write output (or check for drift)
+// 5. Build the flat token-tables reference (for token-ref resolution)
 // ---------------------------------------------------------------------------
 
-const isCheck = process.argv.includes('--check');
+// token-ref blocks in other docs (color, spacing, etc.) resolve topics
+// from the flat doc catalog. The tree children are not in that catalog.
+// Keep a flat doc with all sections so token-ref inlining keeps working.
+const flatSections = [];
+for (const group of groups) {
+  const pairs = extractDefaults(group.exportName, group.file);
+  if (pairs.length === 0) continue;
+  const rows = pairs.map(([name, value]) => group.formatRow(name, value));
+  const content = [
+    {type: 'prose', text: group.description},
+    {type: 'table', headers: group.headers, rows},
+  ];
+  const sec = {title: group.title, content};
+  if (group.previewType) sec.previewType = group.previewType;
+  flatSections.push(sec);
+}
 
-// Count total tokens for the header comment
-const totalTokens = groups.reduce(
-  (sum, g) => sum + extractDefaults(g.exportName, g.file).length,
-  0,
-);
-
-const output = `\
+const flatOutput = `\
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 // AUTO-GENERATED — do not edit manually.
@@ -321,47 +437,73 @@ const output = `\
 //   dataTokens.stylex.ts, and syntax/tokens.ts
 // Run: node scripts/generate-token-docs.mjs
 // Total: ${totalTokens} tokens across ${groups.length} categories.
+//
+// This flat doc exists for token-ref resolution only; the user-facing
+// navigation lives in tree/tokens.doc.mjs (namespace) and its children.
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
 export const docs = ${JSON.stringify(
   {
-    name: 'tokens',
-    title: 'All Tokens',
+    name: 'token-tables',
+    title: 'Token Tables',
     category: 'foundations',
     description:
-      'Complete reference for color, data visualization, syntax, spacing, size, border, focus, radius, shadow, motion, and typography tokens.',
-    // Words readers search for that the titles do not use (`astryx search`).
+      'Internal token reference used by token-ref blocks in other docs.',
     keywords: ['design tokens', 'css variables', 'custom properties'],
-    sections,
+    sections: flatSections,
   },
   null,
   2,
 )};
 `;
 
+const flatPath = TOKENS_DOC;
+
+// ---------------------------------------------------------------------------
+// 6. Write output (or check for drift)
+// ---------------------------------------------------------------------------
+
+const isCheck = process.argv.includes('--check');
+
+/** @type {Array<{path: string, output: string, label: string}>} */
+const allFiles = [
+  {path: flatPath, output: flatOutput, label: 'tokens.doc.mjs (token-ref source)'},
+  {path: namespacePath, output: namespaceOutput, label: 'tree/tokens.doc.mjs (namespace)'},
+  ...childFiles.map(f => ({
+    path: f.path,
+    output: f.output,
+    label: `tree/${f.slug}.doc.mjs (${f.tokenCount} tokens)`,
+  })),
+  {path: usagePath, output: usageOutput, label: `tree/${usageSlug}.doc.mjs (usage)`},
+];
+
 if (isCheck) {
-  // CI mode: compare generated output to existing file
-  let existing = '';
-  try {
-    existing = readFileSync(TOKENS_DOC, 'utf-8');
-  } catch {
-    console.error(
-      '✗ tokens.doc.mjs does not exist. Run: node scripts/generate-token-docs.mjs',
-    );
-    process.exit(1);
+  let failed = false;
+  for (const {path: filePath, output, label} of allFiles) {
+    let existing = '';
+    try {
+      existing = readFileSync(filePath, 'utf-8');
+    } catch {
+      console.error(`✗ ${label} does not exist. Run: node scripts/generate-token-docs.mjs`);
+      failed = true;
+      continue;
+    }
+    if (existing !== output) {
+      console.error(`✗ ${label} is out of date. Run: node scripts/generate-token-docs.mjs`);
+      failed = true;
+    }
   }
-  if (existing !== output) {
-    console.error(
-      '✗ tokens.doc.mjs is out of date. Run: node scripts/generate-token-docs.mjs',
-    );
-    process.exit(1);
-  }
-  console.log(`✓ tokens.doc.mjs is up to date (${totalTokens} tokens)`);
+  if (failed) process.exit(1);
+  console.log(`✓ All token docs are up to date (${totalTokens} tokens, ${allFiles.length} files)`);
 } else {
-  writeFileSync(TOKENS_DOC, output);
-  const lineCount = output.split('\n').length;
+  for (const {path: filePath, output, label} of allFiles) {
+    writeFileSync(filePath, output);
+  }
   console.log(
-    `✓ Generated ${TOKENS_DOC} (${totalTokens} tokens, ${lineCount} lines)`,
+    `✓ Generated ${allFiles.length} token doc files (${totalTokens} tokens)`,
   );
+  for (const {label} of allFiles) {
+    console.log(`  ${label}`);
+  }
 }
