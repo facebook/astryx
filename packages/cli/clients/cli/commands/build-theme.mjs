@@ -108,8 +108,9 @@ function resolveCliBin() {
  * Resolves with the child's exit code; never rejects.
  *
  * @param {string} file - The theme file argument, as the user passed it.
- * @param {{out?: string, iconsSpecifier?: string}} options - Parsed command
- *   options that affect generated output.
+ * @param {{out?: string, iconsSpecifier?: string, detail?: string}} options -
+ *   Parsed command options that affect generated output, plus the detail
+ *   level the user chose.
  * @returns {Promise<number>}
  */
 function runThemeBuildOnceChild(file, options) {
