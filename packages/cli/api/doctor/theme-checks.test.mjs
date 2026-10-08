@@ -390,7 +390,7 @@ describe('app-theme doctor checks', () => {
 
     expect(check(await checkAppThemes(dir), 'theme-owners')).toMatchObject({
       status: 'fail',
-      fix: expect.stringContaining('theme add ocean --import'),
+      fix: expect.stringContaining('theme add ocean'),
     });
   });
 
@@ -592,9 +592,10 @@ describe('app-theme doctor checks', () => {
         id: 'theme-management',
         status: 'info',
         message: expect.stringContaining('manages no themes'),
-        fix: expect.stringContaining('theme add <slug> --import'),
+        fix: expect.stringContaining('theme add <slug>'),
       }),
     ]);
+    expect(checks[0]?.fix).not.toContain('--import');
   });
 
   it('reads astryx.theme from the app package when node_modules is hoisted to a workspace root', async () => {

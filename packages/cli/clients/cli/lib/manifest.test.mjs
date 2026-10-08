@@ -235,6 +235,13 @@ describe('manifest: shape', () => {
     expect(detail.default).toBe('full');
   });
 
+  it('omits hidden compatibility options from the public manifest', () => {
+    const themeAdd = allEntries.find(c => c.name === 'theme add');
+    expect(themeAdd.options.map(option => option.flag)).not.toContain(
+      '-f, --overwrite',
+    );
+  });
+
   it('each command entry carries the required fields', () => {
     for (const c of allEntries) {
       expect(typeof c.name).toBe('string');

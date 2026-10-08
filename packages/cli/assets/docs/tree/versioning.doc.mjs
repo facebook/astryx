@@ -62,7 +62,7 @@ export const docs = {
             ],
             [
               'A theme slug, such as `ocean`',
-              '`npx astryx theme add ocean --import`',
+              '`npx astryx theme add ocean`',
             ],
             [
               'A topic name or route, such as `acme/deploying`',

@@ -69,7 +69,7 @@ function unavailableChecks(message, moduleError = null) {
       moduleError && id === 'theme-module' ? moduleError.message : message,
     ...(moduleError && id === 'theme-module'
       ? {
-          fix: 'Keep one CLI-generated astryx-themes.ts or astryx-themes.js file, then run `astryx theme add <slug> --import`.',
+          fix: 'Keep one CLI-generated astryx-themes.ts or astryx-themes.js file, then run `astryx theme add <slug>`.',
         }
       : {}),
   }));
@@ -101,12 +101,12 @@ function refreshThemeCommand(projectDir, run, available, slug, owner) {
   );
   if (!isLocalThemeOwner(owner)) {
     const selector = theme?.package ?? owner;
-    return `npm install ${owner}@latest; ${run} theme add ${slug} --import --package ${selector}`;
+    return `npm install ${owner}@latest; ${run} theme add ${slug} --package ${selector}`;
   }
   const source = theme
     ? relative(projectDir, path.join(theme.sourceDir, theme.entry))
     : projectPath(path.join(owner, slug, `${slug}Theme.ts`));
-  return `${run} theme build ${source}; ${run} theme add ${slug} --import`;
+  return `${run} theme build ${source}; ${run} theme add ${slug}`;
 }
 
 /** @param {string} source */
@@ -538,7 +538,7 @@ export async function checkAppThemes(cwd) {
         message: state.legacyTheme
           ? `The CLI manages no themes. The released package.json astryx.theme value ${JSON.stringify(state.legacyTheme)} remains active.`
           : 'The CLI manages no themes because this project has no generated theme module.',
-        fix: `Start managing app themes with \`${run} theme add <slug> --import\`.`,
+        fix: `Start managing app themes with \`${run} theme add <slug>\`.`,
       },
     ];
     const migration = unmigratedCopyCheck(state.projectDir);
@@ -656,7 +656,7 @@ export async function checkAppThemes(cwd) {
       label: 'Theme owners and built imports',
       status: 'fail',
       message: 'The generated record has no added themes.',
-      fix: `${run} theme add <slug> --import`,
+      fix: `${run} theme add <slug>`,
     });
   } else if (discoveryError) {
     checks.push({
@@ -664,7 +664,7 @@ export async function checkAppThemes(cwd) {
       label: 'Theme owners and built imports',
       status: 'fail',
       message: discoveryError.message,
-      fix: `${run} theme add <slug> --import`,
+      fix: `${run} theme add <slug>`,
     });
   } else if (resolutionProblems.length > 0) {
     checks.push({
@@ -1003,7 +1003,7 @@ export async function checkAppThemes(cwd) {
           fix:
             ownerEntries.length > 0
               ? `${run} theme use ${ownerEntries[0][0]}`
-              : `${run} theme add <slug> --import`,
+              : `${run} theme add <slug>`,
         },
   );
 
@@ -1083,7 +1083,7 @@ export async function checkAppThemes(cwd) {
     if (localWarnings.length > 0) {
       fontWarningFixes.push(
         `Add <slug>.fonts.css beside each built local theme output, then ${localWarnings
-          .map(problem => `${run} theme add ${problem.theme.slug} --import`)
+          .map(problem => `${run} theme add ${problem.theme.slug}`)
           .join('; ')}.`,
       );
     }

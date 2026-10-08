@@ -458,7 +458,7 @@ export function generateCompressedIndex(
   } else {
     lines.push("- Style with component props first, then tokens (var(--color-*|--spacing-*|--radius-*)). No raw hex/px. No StyleX/Tailwind compiler here — don't use xstyle/utility classes directly. Some templates use StyleX and need a compiler plugin; see `astryx docs styling-overview`.");
   }
-  lines.push('- Palettes and custom colors go through the theme, never :root overrides. See `astryx docs theme`.');
+  lines.push('- Palettes and custom colors go through the theme, never :root overrides. Run `astryx theme add <slug>` to import; `theme eject <slug>` only forks source. See `astryx docs theme`.');
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.

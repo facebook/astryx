@@ -62,7 +62,6 @@ import {
   themePaletteGenerate,
 } from '../../../api/theme/palette/generate/generate.mjs';
 import {
-  importSpecifier,
   printBatchTrailer,
   printCompactTrailer,
   themeBuild,
@@ -230,8 +229,8 @@ async function warnOnThemeIntegrationIssues(json) {
 }
 
 /**
- * Print `theme add --list`. Its JSON stays the released `theme.list`; its text
- * names the commands of the current lifecycle stage (AST-050 FR12).
+ * Print cleanup-stage `theme add --list`. Its JSON stays the released
+ * `theme.list`; its text names the cleanup commands (AST-050 FR12).
  * @param {import('../../../api/theme/theme.type.mjs').ThemeListEntry[]} themes
  */
 function printThemeAddList(themes) {
@@ -255,7 +254,7 @@ function printThemeAddList(themes) {
       }),
     ),
     text(
-      `Import one: ${run} theme add <slug> --import [--package <package>]\n` +
+      `Import one: ${run} theme add <slug> [--package <package>]\n` +
         `Fork source: ${run} theme eject <slug> [target-path]`,
     ),
     more,
@@ -297,7 +296,7 @@ function printThemeList(themes, unmigratedCopies = []) {
         },
       }),
       text(
-        `Import one: ${run} theme add <slug> --import [--package <package>]\n` +
+        `Import one: ${run} theme add <slug> [--package <package>]\n` +
           `Fork source: ${run} theme eject <slug> [target-path]`,
       ),
       more,
@@ -801,16 +800,24 @@ export function registerTheme(program) {
     },
   });
 
-  defineCommand(theme, themeAddCommand, {
+  const themeAddCli = defineCommand(theme, themeAddCommand, {
     fn: themeAddFn,
     action: async (
       /** @type {string | undefined} */ slug,
-      /** @type {string | undefined} */ targetPath,
-      /** @type {{list?: boolean, overwrite?: boolean, import?: boolean, package?: string}} */ options,
+      /** @type {{list?: boolean, import?: boolean, package?: string, overwrite?: boolean}} */ options,
+      /** @type {import('commander').Command} */ command,
     ) => {
       const json = program.opts().json || false;
-      /** @type {import('../../../api/theme/theme.type.mjs').ThemeListResponse | import('../../../api/theme/theme.type.mjs').ThemeAddResponse | import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeListResponse | import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
       let result;
+      if (command.args.length > 1 || options.overwrite === true) {
+        const replacementSlug = slug || '<slug>';
+        return cliError(
+          '`theme add` no longer copies source or accepts a target path or --overwrite. ' +
+            `Run \`${getCliInvocation()} theme eject ${replacementSlug} [path] [--overwrite] [--package <package>]\` to fork source.`,
+          {code: ERROR_CODES.ERR_THEME_INVALID},
+        );
+      }
       try {
         result =
           options.list || !slug
@@ -819,8 +826,6 @@ export function registerTheme(program) {
                 package: options.package,
               })
             : await themeAdd(slug, {
-                targetPath,
-                overwrite: options.overwrite,
                 import: options.import,
                 cwd: process.cwd(),
                 package: options.package,
@@ -848,44 +853,14 @@ export function registerTheme(program) {
         printThemeAddList(result.data);
         return answered;
       }
-      if (result.type === 'theme.app') {
-        printThemeApp(result);
-        return answered;
-      }
-
-      const {
-        displayName,
-        outputDir,
-        entry,
-        exportName,
-        files,
-        package: owner,
-      } = result.data;
-      const entryModule = importSpecifier(
-        outputDir,
-        entry.replace(/\.tsx?$/, ''),
-      );
-      emit(
-        text(`[ok] Added ${displayName} theme from ${owner} to ${outputDir}/`),
-        list(files.map(file => `${outputDir}/${file}`)),
-        text(
-          'Use it in your app (import path is relative to a file in src/ — adjust if yours lives elsewhere):',
-        ),
-        code(
-          "import { Theme } from '@astryxdesign/core';\n" +
-            `import { ${exportName} } from '${entryModule}';\n\n` +
-            `<Theme theme={${exportName}}>\n  <App />\n</Theme>`,
-        ),
-        text(
-          `This is your copy of the ${displayName} theme — edit ${entry} to make it your own.`,
-        ),
-      );
-      console.error(
-        `Warning: \`theme add\` source copying is deprecated (DEP-0005). Run \`${getCliInvocation()} theme eject ${result.data.slug}\` to fork source or \`${getCliInvocation()} theme add ${result.data.slug} --import\` to use the built theme.`,
-      );
+      printThemeApp(result);
       return answered;
     },
   });
+  // Parse removed copy syntax only far enough to give callers its exact
+  // replacement. Neither item appears in help or the manifest.
+  themeAddCli.allowExcessArguments(true);
+  themeAddCli.addOption(themeAddCli.createOption('-f, --overwrite').hideHelp());
 
   defineCommand(theme, themeRemoveCommand, {
     fn: themeRemoveFn,

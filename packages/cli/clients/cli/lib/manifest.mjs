@@ -169,7 +169,9 @@ function describeCommand(cmd, root, jsonSupported) {
     name,
     description: cmd.description() || '',
     arguments: args.map(describeArgument),
-    options: (cmd.options || []).map(describeOption),
+    options: (cmd.options || [])
+      .filter(option => !option.hidden)
+      .map(describeOption),
     json: jsonSupported.has(name),
   };
 

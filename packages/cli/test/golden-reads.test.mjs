@@ -169,6 +169,7 @@ describe('golden reads of integration docs', () => {
     ['docs-index.txt', ['docs', 'acme-guide', '--index']],
     ['docs-section.json', ['docs', 'acme-guide', 'colors', '--json']],
     ['search.json', ['search', 'zorblax', '--json']],
+    ['theme-add-list.json', ['theme', 'add', '--list', '--json']],
   ])('%s', async (name, args) => {
     await expect(astryx(args)).toMatchFileSnapshot(path.join(GOLDEN, name));
   });
