@@ -110,15 +110,24 @@ describe('taught @astryxdesign/core imports', () => {
     '%s shows where Theme comes from wherever it shows the <Theme> wrapper',
     file => {
       const source = fs.readFileSync(path.join(CLI, file), 'utf8');
-      const wrappers = [...source.matchAll(/<Theme theme=/g)];
+      const wrappers = [...source.matchAll(/<Theme theme=/g)].map(
+        match => match.index ?? 0,
+      );
       expect(wrappers.length).toBeGreaterThan(0);
-      for (const wrapper of wrappers) {
-        const index = wrapper.index ?? 0;
-        const nearby = source.slice(Math.max(0, index - 400), index + 200);
+      wrappers.forEach((index, n) => {
+        // Look back from this wrapper, but not past the previous one, so one
+        // example's import cannot stand in for another's. A sentence can name
+        // the import after the wrapper on the same line.
+        const previous = n > 0 ? wrappers[n - 1] + 1 : 0;
+        const lineEnd = source.indexOf('\n', index);
+        const nearby = source.slice(
+          Math.max(previous, index - 400),
+          lineEnd === -1 ? source.length : lineEnd,
+        );
         expect(nearby, `${file} at offset ${index}`).toMatch(
           /\{\s*Theme\s*\}\s+from\s+'@astryxdesign\/core'/,
         );
-      }
+      });
     },
   );
 });
