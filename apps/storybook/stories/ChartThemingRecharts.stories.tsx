@@ -235,10 +235,14 @@ export const ThemeTokens: Story = {
       BAR_SELECTORS.revenue,
     );
     expect(revenueBar).not.toBeNull();
-    if (revenueBar) {
-      await userEvent.hover(revenueBar);
+    const hoverTarget = revenueBar?.closest<SVGGElement>(
+      '.recharts-bar-rectangle',
+    );
+    expect(hoverTarget).not.toBeNull();
+    if (revenueBar && hoverTarget) {
       const bounds = revenueBar.getBoundingClientRect();
-      fireEvent.mouseMove(revenueBar, {
+      await userEvent.hover(hoverTarget);
+      fireEvent.mouseOver(hoverTarget, {
         clientX: bounds.left + bounds.width / 2,
         clientY: bounds.top + bounds.height / 2,
       });
