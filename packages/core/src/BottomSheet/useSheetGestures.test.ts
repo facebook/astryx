@@ -749,6 +749,166 @@ describe('useSheetGestures', () => {
     });
   });
 
+  describe('body touch handoff from a nested scroller', () => {
+    // A host that scrolls content in a box of its own inside the body (a
+    // pinned header and footer around a scrolling middle, a grid) never moves
+    // the body's scrollTop. The edge that decides the handoff is the edge of
+    // the box under the finger, not the body's.
+    function makeNested(opts: {
+      bodyScrollTop: number;
+      bodyScrollHeight?: number;
+      innerScrollTop: number;
+      innerScrollHeight?: number;
+    }) {
+      const sheet = makeTarget();
+      const body = document.createElement('div');
+      Object.defineProperty(body, 'scrollTop', {
+        value: opts.bodyScrollTop,
+        writable: true,
+      });
+      Object.defineProperty(body, 'clientHeight', {value: 400});
+      Object.defineProperty(body, 'scrollHeight', {
+        value: opts.bodyScrollHeight ?? 400,
+      });
+      body.getBoundingClientRect = () => ({height: SHEET_HEIGHT}) as DOMRect;
+      const inner = document.createElement('div');
+      inner.style.overflowY = 'auto';
+      Object.defineProperty(inner, 'scrollTop', {
+        value: opts.innerScrollTop,
+        writable: true,
+      });
+      Object.defineProperty(inner, 'clientHeight', {value: 200});
+      Object.defineProperty(inner, 'scrollHeight', {
+        value: opts.innerScrollHeight ?? 800,
+      });
+      const tile = document.createElement('button');
+      inner.appendChild(tile);
+      body.appendChild(inner);
+      sheet.appendChild(body);
+      document.body.appendChild(sheet);
+      return {body, inner, tile};
+    }
+    function touchOn(
+      target: HTMLElement,
+      listener: HTMLElement,
+      type: string,
+      y: number,
+      id = 1,
+    ) {
+      const ev = new Event(type, {bubbles: true, cancelable: true});
+      Object.defineProperty(ev, 'changedTouches', {
+        value: [{identifier: id, clientY: y}],
+      });
+      Object.defineProperty(ev, 'touches', {
+        value:
+          type === 'touchend' || type === 'touchcancel'
+            ? []
+            : [{identifier: id, clientY: y}],
+      });
+      Object.defineProperty(ev, 'currentTarget', {value: listener});
+      target.dispatchEvent(ev);
+      return ev;
+    }
+
+    it('leaves a pull-down to a nested scroller that is scrolled', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const {body, tile} = makeNested({bodyScrollTop: 0, innerScrollTop: 120});
+      act(() => hook.result.current.sheetRef(body));
+      act(() => hook.result.current.bodyProps.ref(body));
+      let pull: Event | undefined;
+      act(() => {
+        touchOn(tile, body, 'touchstart', 100);
+        pull = touchOn(tile, body, 'touchmove', 160);
+      });
+      expect(pull?.defaultPrevented).toBe(false);
+      expect(hook.result.current.isDragging).toBe(false);
+    });
+
+    it('promotes a pull-down from the top of a nested scroller', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const {body, tile} = makeNested({bodyScrollTop: 0, innerScrollTop: 0});
+      act(() => hook.result.current.sheetRef(body));
+      act(() => hook.result.current.bodyProps.ref(body));
+      let pull: Event | undefined;
+      act(() => {
+        touchOn(tile, body, 'touchstart', 100);
+        pull = touchOn(tile, body, 'touchmove', 160);
+      });
+      expect(pull?.defaultPrevented).toBe(true);
+      expect(hook.result.current.isDragging).toBe(true);
+      expect(hook.result.current.dragOffset).toBe(60);
+    });
+
+    it('chains to a scrolled body before the sheet when the nested box is at its top', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const {body, tile} = makeNested({
+        bodyScrollTop: 80,
+        bodyScrollHeight: 900,
+        innerScrollTop: 0,
+      });
+      act(() => hook.result.current.sheetRef(body));
+      act(() => hook.result.current.bodyProps.ref(body));
+      let pull: Event | undefined;
+      act(() => {
+        touchOn(tile, body, 'touchstart', 100);
+        pull = touchOn(tile, body, 'touchmove', 160);
+      });
+      // The browser scrolls the body back up; the sheet's turn has not come.
+      expect(pull?.defaultPrevented).toBe(false);
+      expect(hook.result.current.isDragging).toBe(false);
+    });
+
+    it('reads the body when the nested box has nothing to scroll', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const {body, tile} = makeNested({
+        bodyScrollTop: 0,
+        innerScrollTop: 0,
+        innerScrollHeight: 200,
+      });
+      act(() => hook.result.current.sheetRef(body));
+      act(() => hook.result.current.bodyProps.ref(body));
+      act(() => {
+        touchOn(tile, body, 'touchstart', 100);
+        touchOn(tile, body, 'touchmove', 160);
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+    });
+
+    it('leaves a pull-up to a nested scroller with content below', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const {body, tile} = makeNested({bodyScrollTop: 0, innerScrollTop: 100});
+      act(() => hook.result.current.sheetRef(body));
+      act(() => hook.result.current.bodyProps.ref(body));
+      // Rest at the lower detent, so an expanding handoff would have somewhere
+      // to go if the body's edge were read.
+      down(hook, 0, 0, body);
+      move(hook, 180, 700, body);
+      up(hook, 180, 1100, body);
+      expect(hook.result.current.settledOffset).toBe(200);
+      let pull: Event | undefined;
+      act(() => {
+        touchOn(tile, body, 'touchstart', 300);
+        pull = touchOn(tile, body, 'touchmove', 250);
+      });
+      expect(pull?.defaultPrevented).toBe(false);
+      expect(hook.result.current.isDragging).toBe(false);
+    });
+
+    it('arms the pointer path on the nested scroller too', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const {body, tile} = makeNested({bodyScrollTop: 0, innerScrollTop: 120});
+      act(() => hook.result.current.sheetRef(body));
+      const over = (y: number, t: number) => {
+        const ev = pointerEvent(y, t, body);
+        Object.defineProperty(ev, 'target', {value: tile});
+        return ev;
+      };
+      act(() => hook.result.current.bodyProps.onPointerDown(over(0, 0)));
+      act(() => hook.result.current.bodyProps.onPointerMove(over(40, 100)));
+      expect(hook.result.current.isDragging).toBe(false);
+    });
+  });
+
   describe('body touch handoff mid-gesture', () => {
     // The reported bug: the finger lands mid-content, swipes up, REACHES the
     // end of the content, and keeps pulling in the same continuous gesture.

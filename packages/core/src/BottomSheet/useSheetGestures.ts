@@ -31,7 +31,10 @@
  * the user chose does not.
  *
  * On touch, the scrolling body hands the gesture to the sheet at a scroll
- * edge. Two shapes, because the browser only offers one of them a choice: a
+ * edge — once every scroller under the finger, a box nested inside the body
+ * and the body itself, is at the edge the pull opposes (see
+ * scrollChainUnder). Two shapes, because the browser only offers one of them
+ * a choice: a
  * finger that lands on an edge and pulls away from it promotes by cancelling
  * the first, still-cancelable touchmove; a finger that scrolls INTO the end of
  * the content mid-gesture cannot, since the browser has committed the gesture
@@ -196,6 +199,68 @@ function naturalEndGapFor(body: HTMLElement | null): number {
     body.scrollHeight - body.clientHeight - renderedInset,
   );
   return naturalMaxScrollTop - body.scrollTop;
+}
+
+// A box the user can scroll down the block axis: it has overflow to scroll and
+// an overflow mode that lets a finger or wheel do the scrolling.
+function isBlockScroller(element: HTMLElement): boolean {
+  if (element.scrollHeight - element.clientHeight <= 1) {
+    return false;
+  }
+  const {overflowY} = getComputedStyle(element);
+  return overflowY === 'auto' || overflowY === 'scroll';
+}
+
+/**
+ * The scrollers a gesture that lands on `target` can scroll, innermost first
+ * and the body last: every scrollable box between the target and the body,
+ * then the body itself.
+ *
+ * The body is where the hook listens, but it is not always what scrolls. A
+ * host that pins a header and footer around a scrolling middle, or lays a
+ * scrolling grid inside the sheet, moves that inner box's `scrollTop` and
+ * never the body's. Reading the edge off the body alone then reports "at the
+ * top" for every touch, so a pull meant to scroll the inner box back up
+ * drags the sheet instead, and the box can never be scrolled back by hand.
+ *
+ * The browser scrolls the innermost box that has room, then chains outward,
+ * so the sheet's turn comes only when every box in the chain is at the edge
+ * the pull opposes: see `chainAtTop` and `chainAtBottom`.
+ */
+export function scrollChainUnder(
+  target: EventTarget | null,
+  body: HTMLElement,
+): HTMLElement[] {
+  const chain: HTMLElement[] = [];
+  for (
+    let element = target instanceof Element ? target : null;
+    element != null && element !== body;
+    element = element.parentElement
+  ) {
+    if (element instanceof HTMLElement && isBlockScroller(element)) {
+      chain.push(element);
+    }
+  }
+  chain.push(body);
+  return chain;
+}
+
+function elementAtTop(element: HTMLElement): boolean {
+  return element.scrollTop <= 0;
+}
+
+function elementAtBottom(element: HTMLElement): boolean {
+  return element.scrollTop + element.clientHeight >= element.scrollHeight - 1;
+}
+
+/** Nothing in the chain can scroll up any further, so a pull down is the sheet's. */
+function chainAtTop(chain: ReadonlyArray<HTMLElement>): boolean {
+  return chain.every(elementAtTop);
+}
+
+/** Nothing in the chain can scroll down any further, so a pull up is the sheet's. */
+function chainAtBottom(chain: ReadonlyArray<HTMLElement>): boolean {
+  return chain.every(elementAtBottom);
 }
 
 function visibleHeightForOffset(
@@ -1124,22 +1189,25 @@ export function useSheetGestures({
   const armedBodyRef = useRef<{
     pointerId: number;
     startCoord: number;
-    scroller: HTMLElement;
+    scrollers: HTMLElement[];
   } | null>(null);
 
   const handleBodyPointerDown = useCallback((event: ReactPointerEvent) => {
     if (event.button !== 0 || !event.isPrimary) {
       return;
     }
-    const scroller = event.currentTarget as HTMLElement;
-    if (scroller.scrollTop > 0) {
+    const scrollers = scrollChainUnder(
+      event.target,
+      event.currentTarget as HTMLElement,
+    );
+    if (!chainAtTop(scrollers)) {
       armedBodyRef.current = null;
       return;
     }
     armedBodyRef.current = {
       pointerId: event.pointerId,
       startCoord: event.clientY,
-      scroller,
+      scrollers,
     };
   }, []);
 
@@ -1154,7 +1222,7 @@ export function useSheetGestures({
         return;
       }
       const delta = event.clientY - armed.startCoord;
-      if (delta > DRAG_PROMOTION_SLOP && armed.scroller.scrollTop <= 0) {
+      if (delta > DRAG_PROMOTION_SLOP && chainAtTop(armed.scrollers)) {
         // Downward pull at the top: promote to a sheet drag, anchored at the
         // original pointer-down position so the pull distance carries over.
         armedBodyRef.current = null;
@@ -1193,6 +1261,9 @@ export function useSheetGestures({
   const touchDragRef = useRef<{
     id: number;
     startY: number;
+    // The boxes this touch can scroll (see scrollChainUnder); their edges
+    // decide the handoff for the rest of the touch.
+    scrollers: HTMLElement[];
     top: boolean;
     bottom: boolean;
     // Where the finger was when the scroller ran out of content, or null while
@@ -1236,12 +1307,8 @@ export function useSheetGestures({
         releasePointerCapture: () => {},
       }) as unknown as ReactPointerEvent;
 
-    const atTop = (el: HTMLElement) => el.scrollTop <= 0;
-    const atBottom = (el: HTMLElement) =>
-      el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-
     const onTouchStart = (event: TouchEvent) => {
-      const scroller = event.currentTarget as HTMLElement;
+      const body = event.currentTarget as HTMLElement;
       const touch = event.changedTouches[0];
       // Record where the gesture began and whether it began at a scroll edge.
       // At the top, a pull DOWN hands off (collapse); at the bottom, a pull UP
@@ -1252,7 +1319,8 @@ export function useSheetGestures({
         touchDragRef.current = null;
         return;
       }
-      const top = atTop(scroller);
+      const scrollers = scrollChainUnder(event.target, body);
+      const top = chainAtTop(scrollers);
       // The bottom edge hands off so the sheet can EXPAND, so it is only a
       // handoff when a taller detent exists. Already at the tallest, an
       // upward pull has nowhere to travel: promoting it would trade the
@@ -1261,10 +1329,11 @@ export function useSheetGestures({
       // strand the scroller for as long as the finger stays down, so reversing
       // downward to scroll back would collapse the sheet instead. Leave the
       // gesture with the content.
-      const bottom = atBottom(scroller) && activeOffsetRef.current > 0;
+      const bottom = chainAtBottom(scrollers) && activeOffsetRef.current > 0;
       touchDragRef.current = {
         id: touch.identifier,
         startY: touch.clientY,
+        scrollers,
         top,
         bottom,
         contentEndY: null,
@@ -1317,9 +1386,11 @@ export function useSheetGestures({
       // collapses; at the bottom, an upward pull (delta < 0) expands. The
       // opposite direction is a real scroll, so disarm and let it through.
       const pullDownAtTop =
-        armed.top && delta > DRAG_PROMOTION_SLOP && atTop(scroller);
+        armed.top && delta > DRAG_PROMOTION_SLOP && chainAtTop(armed.scrollers);
       const pullUpAtBottom =
-        armed.bottom && delta < -DRAG_PROMOTION_SLOP && atBottom(scroller);
+        armed.bottom &&
+        delta < -DRAG_PROMOTION_SLOP &&
+        chainAtBottom(armed.scrollers);
       if (pullDownAtTop || pullUpAtBottom) {
         event.preventDefault();
         touchDragRef.current = null;
@@ -1345,7 +1416,7 @@ export function useSheetGestures({
       // upward travel scrolls nothing. Anchor at the point where the content
       // ran out and give the sheet everything past it, so the pull continues
       // into the sheet with no jump and no lost scrolling.
-      if (activeOffsetRef.current > 0 && atBottom(scroller)) {
+      if (activeOffsetRef.current > 0 && chainAtBottom(armed.scrollers)) {
         if (armed.contentEndY == null) {
           armed.contentEndY = t.clientY;
         } else if (armed.contentEndY - t.clientY >= CONTENT_END_HANDOFF_SLOP) {
