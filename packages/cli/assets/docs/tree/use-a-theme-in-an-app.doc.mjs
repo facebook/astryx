@@ -38,7 +38,7 @@ import {themes, defaultThemeSlug} from './astryx-themes';
         },
         {
           type: 'prose',
-          text: '`theme list` shows the available, added, and default themes. Use `theme use <slug>` to change the default, `theme remove <slug>` to stop importing one, and `theme eject <slug>` only when the app needs an independent source fork. Applying a theme — `mode`, SSR, and the production build — works the same for every theme; see {@link generic:theme}.',
+          text: '`theme list` shows the available, added, and default themes. Use `theme use <slug>` to change the default, `theme remove <slug>` to stop importing one, and `theme eject <slug>` only when the app needs an independent source fork. Applying a theme — `mode`, SSR, and the production build — works the same for every theme; see {@link generic:use-a-theme}.',
         },
       ],
     },

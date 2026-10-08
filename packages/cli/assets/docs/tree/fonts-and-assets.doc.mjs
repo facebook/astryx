@@ -38,7 +38,7 @@ export const oceanTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'The full type scale and font roles are in {@link generic:theme}.',
+          text: 'The full type scale and font roles are in {@link generic:author-a-theme}.',
         },
       ],
     },

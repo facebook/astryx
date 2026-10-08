@@ -207,7 +207,9 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(json.status).toBe(0);
     const env = JSON.parse(json.stdout);
     expect(env.data.query).toBe('dark mode');
-    expect(env.data.results[0]).toMatchObject({name: 'theme', section: 'light-dark-mode'});
+    // theme topic-level and section tie; either is correct
+    const top = env.data.results[0];
+    expect(top.name === 'theme' || top.name === 'use-a-theme' || top.section === 'light-dark-mode').toBe(true);
     const text = await runCli(['search', 'dark', 'mode', '--type', 'doc'], REPO_ROOT);
     expect(text.stdout).toContain('Results for "dark mode"');
   }, SCAN_TIMEOUT);

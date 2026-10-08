@@ -27,7 +27,7 @@ export const docs = {
     },
     {
       type: 'prose',
-      text: 'These guides cover the whole path: scaffold the source, generate its palette, define and build the theme, ship fonts and assets, run `integration verify`, and document how apps add and extend it. Applying a theme, including mode and SSR, works the same for every theme; see {@link generic:theme}.',
+      text: 'These guides cover the whole path: scaffold the source, generate its palette, define and build the theme, ship fonts and assets, run `integration verify`, and document how apps add and extend it. Applying a theme, including mode and SSR, works the same for every theme; see {@link generic:use-a-theme}.',
     },
   ],
   slots: {

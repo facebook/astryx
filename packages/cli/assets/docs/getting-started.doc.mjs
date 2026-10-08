@@ -110,7 +110,7 @@ import {themes, defaultThemeSlug} from './astryx-themes';
         },
         {
           type: 'prose',
-          text: 'Run {@link generic:theme} for the full theming guide.',
+          text: 'Run {@link generic:use-a-theme} for the full theming guide.',
         },
       ],
     },

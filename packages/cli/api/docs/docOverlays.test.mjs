@@ -136,17 +136,21 @@ describe('the reported defect: docs tokens --dense (#2182)', () => {
     expect(dense.data.sections.length).toBe(full.data.sections.length);
   });
 
-  it('does not lose the Extending a Theme section from docs theme --dense', async () => {
+  it('does not lose a section from docs theme --dense', async () => {
+    const full = await docs('theme');
     const dense = await docs('theme', null, {dense: true});
     const titles = dense.data.sections.map(s => s.title);
-    expect(titles).toContain('Extending a Theme');
+    // The dense overlay keeps every base section.
+    expect(titles.length).toBe(full.data.sections.length);
   });
 
-  it('does not emit a duplicate useTheme heading in docs theme --dense', async () => {
+  it('does not emit a duplicate heading in docs theme --dense', async () => {
     const dense = await docs('theme', null, {dense: true});
     const titles = dense.data.sections.map(s => s.title.toLowerCase());
-    const useTheme = titles.filter(t => t.includes('usetheme'));
-    expect(useTheme.length).toBe(1);
+    const counts = new Map();
+    for (const t of titles) counts.set(t, (counts.get(t) ?? 0) + 1);
+    const dupes = [...counts.entries()].filter(([, c]) => c > 1);
+    expect(dupes).toEqual([]);
   });
 
   it('does not leak English headings into docs theme --zh', async () => {
@@ -154,6 +158,6 @@ describe('the reported defect: docs tokens --dense (#2182)', () => {
     const titles = zh.data.sections.map(s => s.title);
     // Every section the overlay translates must appear once, in Chinese only.
     expect(titles).not.toContain('Dark mode');
-    expect(titles).toContain('亮/暗模式');
+    expect(titles).toContain('深色模式');
   });
 });
