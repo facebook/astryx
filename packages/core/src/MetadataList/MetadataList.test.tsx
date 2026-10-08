@@ -124,6 +124,30 @@ describe('MetadataList', () => {
     expect(screen.getByText('B')).toBeInTheDocument();
   });
 
+  it('uses top labels in horizontal orientation even when position is start', () => {
+    render(
+      <MetadataList orientation="horizontal" label={{position: 'start'}}>
+        <MetadataListItem label="A">1</MetadataListItem>
+      </MetadataList>,
+    );
+
+    const item = screen.getByRole('term').closest('.astryx-metadata-list-item');
+    expect(item).toContainElement(screen.getByRole('definition'));
+  });
+
+  it('defaults to side labels and preserves width when position is omitted', () => {
+    const {container} = render(
+      <MetadataList label={{width: 120}}>
+        <MetadataListItem label="A">1</MetadataListItem>
+      </MetadataList>,
+    );
+
+    const list = container.querySelector('dl');
+    expect(list?.getAttribute('style')).toContain('120px 1fr');
+    expect(screen.getByRole('term').parentElement).toBe(list);
+    expect(screen.getByRole('definition').parentElement).toBe(list);
+  });
+
   describe('numeric columns', () => {
     // A fixed column count is a runtime value, so it arrives as a StyleX
     // dynamic style: the template lands in the element's inline style (as the
@@ -161,6 +185,20 @@ describe('MetadataList', () => {
       );
 
       expect(gridTemplateOf(container)).not.toContain('repeat(');
+    });
+
+    it('defaults to top labels for columns={2} with a width-only label config', () => {
+      const {container} = render(
+        <MetadataList columns={2} label={{width: 260}}>
+          <MetadataListItem label="A">1</MetadataListItem>
+        </MetadataList>,
+      );
+
+      expect(gridTemplateOf(container)).toContain('repeat(2, 1fr)');
+      const item = screen
+        .getByRole('term')
+        .closest('.astryx-metadata-list-item');
+      expect(item).toContainElement(screen.getByRole('definition'));
     });
 
     it('ignores numeric columns in horizontal orientation', () => {
