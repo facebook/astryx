@@ -54,6 +54,12 @@
  * description hold both words of `troubleshoot integration` answers it better
  * than a doc named `integration`.
  *
+ * Between domains, ranking adds one rule ahead of the score: domain priority
+ * (see {@link domainPriority}). A component, hook, template, or theme whose
+ * name or keyword a query word hits ranks ahead of every doc that matched only
+ * by keyword, title, or prose, so `font size` finds `Text` before a typography
+ * topic that declares the phrase. A doc the query names keeps its place.
+ *
  * Description and guidance are separate tiers on purpose. A component's own
  * one-line description saying "notification" is a claim about what it IS; the
  * same word inside another component's best-practice advice is a passing
@@ -475,6 +481,71 @@ const FULL_COVERAGE_SCORE = 151;
  * below an exact name or keyword hit on one of the words.
  */
 const STRONG_TOKEN_SCORE = 70;
+
+/**
+ * A match's domain priority: 0 (none), 1, or 2 (a doc the whole query names).
+ * A component, hook, template, or theme with priority ranks ahead of any doc
+ * without it, whatever the two scores are. Docs among themselves rank by score,
+ * except that a doc the whole query names comes first; everything else ranks
+ * among itself by score.
+ *
+ * A component, hook, template, or theme has priority (1) when one of the
+ * query's words, or the whole query, hits its name or an authored keyword at
+ * {@link STRONG_TOKEN_SCORE} or above. A doc has it only when the query names
+ * the doc: the whole query spells its name or its last route segment (2:
+ * `font setup` is typography/font-setup, `motion` is the motion guide), or one
+ * of the query's words is that name (1: `illustration` in a longer question is
+ * the illustrations guide).
+ *
+ * A doc's keywords, titles, and prose stay in its score but give it no
+ * priority. Docs are split into many small topics, and each topic declares its
+ * own keywords and headings, so a common phrase such as `font size` hits a
+ * guide's keyword or heading exactly (170-190) while the component the reader
+ * is after matches one word by keyword (`Text`, 98). Ranked on text alone,
+ * every split adds another doc above the component. The score stays the
+ * text-match strength the result reports, so callers that gate on it (`build`)
+ * see the same numbers.
+ *
+ * @param {string} term - Lowercased search term.
+ * @param {string[]} tokens - Content tokens from tokenizeQuery(term).
+ * @param {Candidate} candidate
+ * @param {number} score - The candidate's scoreQuery score.
+ * @returns {0 | 1 | 2}
+ */
+export function domainPriority(term, tokens, candidate, score) {
+  const words = [term, ...tokens];
+  if (candidate.domain === 'doc') {
+    const asWords = (/** @type {string} */ n) =>
+      n.replace(/[-_\s]+/g, ' ').trim();
+    const spelled = asWords(term);
+    const names = [candidate.name, ...(candidate.aliases ?? [])]
+      .filter(Boolean)
+      .map(n => n.toLowerCase());
+    if (
+      names.some(
+        n =>
+          asWords(n) === spelled ||
+          asWords(n.slice(n.lastIndexOf('/') + 1)) === spelled,
+      )
+    ) {
+      return 2;
+    }
+    const asNamed = {name: candidate.name, aliases: candidate.aliases};
+    return words.some(
+      w => (scoreCandidate(w, asNamed, {fuzzy: false})?.score ?? 0) >= 95,
+    )
+      ? 1
+      : 0;
+  }
+  if (score >= FULL_COVERAGE_SCORE) return 1;
+  const fuzzy = tokens.length <= 1;
+  return words.some(
+    w =>
+      (bestForToken(w, candidate, {fuzzy})?.score ?? 0) >= STRONG_TOKEN_SCORE,
+  )
+    ? 1
+    : 0;
+}
 
 /**
  * The words of a title or query, lowercased, without punctuation or code ticks.
@@ -1711,24 +1782,57 @@ export async function search(query, options = {}) {
   // role (page / block / component) and takes the top of each, so there's no
   // cross-role competition to engineer — a target page only needs to be the
   // strongest PAGE, not outrank every component.
-  const scored = [];
+  /** @type {{result: any, priority: 0 | 1 | 2}[]} */
+  const ranked = [];
   for (const candidate of all) {
     const hit = scoreQuery(term, tokens, candidate);
     if (hit)
-      scored.push(
-        toResult(candidate, hit.score, hit.reason, hit.matched, hit.total),
-      );
+      ranked.push({
+        result: toResult(
+          candidate,
+          hit.score,
+          hit.reason,
+          hit.matched,
+          hit.total,
+        ),
+        priority: domainPriority(term, tokens, candidate, hit.score),
+      });
   }
 
-  // Sort by score desc, then domain (stable order), then name.
+  // Docs and everything else are each sorted by score desc, then domain
+  // (stable order), then name, with a doc the whole query names first among
+  // docs. The two are merged: at each step the stronger head goes next, except
+  // that a head with domain priority goes ahead of a doc head without it (see
+  // domainPriority). Each side keeps its own order.
   /** @type {Record<string, number>} */
   const domainOrder = {component: 0, hook: 1, doc: 2, template: 3, theme: 4};
-  scored.sort(
-    (a, b) =>
-      b.score - a.score ||
-      (domainOrder[a.domain] ?? 9) - (domainOrder[b.domain] ?? 9) ||
-      a.name.localeCompare(b.name),
-  );
+  /**
+   * @param {{result: any}} x
+   * @param {{result: any}} y
+   */
+  const byScore = ({result: a}, {result: b}) =>
+    b.score - a.score ||
+    (domainOrder[a.domain] ?? 9) - (domainOrder[b.domain] ?? 9) ||
+    a.name.localeCompare(b.name);
+  const docs = ranked
+    .filter(r => r.result.domain === 'doc')
+    .sort(
+      (x, y) =>
+        Number(y.priority === 2) - Number(x.priority === 2) || byScore(x, y),
+    );
+  const others = ranked.filter(r => r.result.domain !== 'doc').sort(byScore);
+  const scored = [];
+  let i = 0;
+  let j = 0;
+  while (i < others.length || j < docs.length) {
+    const other = others[i];
+    const doc = docs[j];
+    const otherFirst =
+      !doc ||
+      (other != null &&
+        ((other.priority && !doc.priority) || byScore(other, doc) < 0));
+    scored.push(otherFirst ? others[i++].result : docs[j++].result);
+  }
 
   // `results` is bounded by `limit` so a caller (and the recorded run that
   // quotes it) never carries an unbounded payload. `matchCount` is the number
