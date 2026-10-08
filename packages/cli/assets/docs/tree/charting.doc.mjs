@@ -115,8 +115,8 @@ export const docs = {
           rows: [
             [
               'Automatic',
-              'No override',
-              'The product assigns a theme token from the stable series identity; the resolved color follows the theme and mode',
+              'No manual color choice',
+              'The chart runs the product’s normal color-assignment rule using the active theme and mode',
             ],
             [
               'Theme color',
@@ -132,7 +132,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Reset deletes the override. Do not persist Automatic, the current palette index, a resolved preview, or renderer configuration.',
+          text: 'Automatic does not name a color or token. It means there is no manual chart-level choice, so the chart assigns a color during rendering with the product’s normal rule, such as series order. Reset deletes a saved theme or custom choice and returns control to that rule. If a product needs one series to keep the same palette slot after reordering or filtering, it owns that mapping separately from the user override. Do not persist the current palette index, resolved preview, or renderer configuration as the override.',
         },
         {
           type: 'code',

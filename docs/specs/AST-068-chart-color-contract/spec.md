@@ -23,14 +23,20 @@ affects_consumer_docs: [theme, charts, cli/integrations/components]
 
 People editing a chart can choose one of three color behaviors:
 
-| Choice           | What is saved                     | What happens when the theme changes                       |
-| ---------------- | --------------------------------- | --------------------------------------------------------- |
-| **Automatic**    | No chart-level color override     | The product chooses the series color                      |
-| **Theme color**  | A stable Astryx chart-color token | The color follows the active theme and light or dark mode |
-| **Custom color** | An exact solid color              | The color stays the same across theme changes             |
+| Choice           | What is saved                            | What happens when the theme changes                                              |
+| ---------------- | ---------------------------------------- | -------------------------------------------------------------------------------- |
+| **Automatic**    | Nothing; there is no manual color choice | The chart runs the product's normal color-assignment rule using the active theme |
+| **Theme color**  | A stable Astryx chart-color token        | The color follows the active theme and light or dark mode                        |
+| **Custom color** | An exact solid color                     | The color stays the same across theme changes                                    |
 
-Automatic is a behavior, not a saved color. Reset removes the chart-level
-override and returns the series to Automatic.
+Automatic does not name a specific color or token. It means Astryx has no
+manual chart-level choice to apply. The chart assigns a color while rendering
+with the product's normal rule, such as series order. Reset removes a manual
+theme or custom choice and lets that rule take over again.
+
+This contract does not define the product's automatic-assignment algorithm. If a
+product must keep one series on the same palette slot after reordering or
+filtering, it owns that mapping separately from the user's color override.
 
 A chart renderer receives the same choice in the format it can safely use. A
 live SVG or DOM property may use a CSS token reference. Canvas, configuration
@@ -60,12 +66,17 @@ Canvas, WebGL, or other renderers.
 
 ### Saved color choices
 
-- **FR1 — Automatic means no override.** A series in Automatic mode has no
-  stored chart-level color choice. Reset removes any stored choice. The product
-  owns the policy that chooses the automatic series color.
+- **FR1 — Automatic means no manual override.** A series in Automatic mode has
+  no stored chart-level color choice. The chart assigns a color during rendering
+  with the product's normal rule. Reset removes any saved theme or custom choice
+  and returns control to that rule.
 
-  **Why:** saving the current automatic color would turn a product default into
-  a fixed snapshot and prevent it from following future theme changes.
+  The product owns the assignment algorithm. A stable series-to-slot mapping,
+  when needed, is product state rather than a user-selected color override.
+
+  **Why:** saving the current automatic color as the override would turn a
+  product default into a fixed snapshot and prevent it from following future
+  theme changes.
 
 - **FR2 — A saved override has one of two exact shapes.** A theme choice stores
   only a supported chart-color token identity:
