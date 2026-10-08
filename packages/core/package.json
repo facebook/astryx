@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/core",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "displayName": "Astryx Core",
   "description": "The component library. Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling.",
   "author": "Meta Open Source",
@@ -80,6 +80,86 @@
       "source": "./src/theme/syntax/index.ts",
       "types": "./dist/theme/syntax/index.d.ts",
       "default": "./dist/theme/syntax/index.js"
+    },
+    "./DateInput/tokens.stylex": {
+      "source": "./src/DateInput/tokens.stylex.ts",
+      "types": "./dist/DateInput/tokens.stylex.d.ts",
+      "default": "./dist/DateInput/tokens.stylex.js"
+    },
+    "./Icon/IconSize.stylex": {
+      "source": "./src/Icon/IconSize.stylex.ts",
+      "types": "./dist/Icon/IconSize.stylex.d.ts",
+      "default": "./dist/Icon/IconSize.stylex.js"
+    },
+    "./Indicator/indicator.markers.stylex": {
+      "source": "./src/Indicator/indicator.markers.stylex.ts",
+      "types": "./dist/Indicator/indicator.markers.stylex.d.ts",
+      "default": "./dist/Indicator/indicator.markers.stylex.js"
+    },
+    "./Layer/layerAnimations.stylex": {
+      "source": "./src/Layer/layerAnimations.stylex.ts",
+      "types": "./dist/Layer/layerAnimations.stylex.d.ts",
+      "default": "./dist/Layer/layerAnimations.stylex.js"
+    },
+    "./Layer/layerTextReset.stylex": {
+      "source": "./src/Layer/layerTextReset.stylex.ts",
+      "types": "./dist/Layer/layerTextReset.stylex.d.ts",
+      "default": "./dist/Layer/layerTextReset.stylex.js"
+    },
+    "./Layer/layerViewportInset.stylex": {
+      "source": "./src/Layer/layerViewportInset.stylex.ts",
+      "types": "./dist/Layer/layerViewportInset.stylex.d.ts",
+      "default": "./dist/Layer/layerViewportInset.stylex.js"
+    },
+    "./Layout/container.stylex": {
+      "source": "./src/Layout/container.stylex.ts",
+      "types": "./dist/Layout/container.stylex.d.ts",
+      "default": "./dist/Layout/container.stylex.js"
+    },
+    "./Layout/edgeCompensation.stylex": {
+      "source": "./src/Layout/edgeCompensation.stylex.ts",
+      "types": "./dist/Layout/edgeCompensation.stylex.d.ts",
+      "default": "./dist/Layout/edgeCompensation.stylex.js"
+    },
+    "./Layout/padding.stylex": {
+      "source": "./src/Layout/padding.stylex.ts",
+      "types": "./dist/Layout/padding.stylex.d.ts",
+      "default": "./dist/Layout/padding.stylex.js"
+    },
+    "./NavItem/navItemStyles.stylex": {
+      "source": "./src/NavItem/navItemStyles.stylex.ts",
+      "types": "./dist/NavItem/navItemStyles.stylex.d.ts",
+      "default": "./dist/NavItem/navItemStyles.stylex.js"
+    },
+    "./Selector/selectorPresentation.stylex": {
+      "source": "./src/Selector/selectorPresentation.stylex.ts",
+      "types": "./dist/Selector/selectorPresentation.stylex.d.ts",
+      "default": "./dist/Selector/selectorPresentation.stylex.js"
+    },
+    "./Stack/stack.stylex": {
+      "source": "./src/Stack/stack.stylex.ts",
+      "types": "./dist/Stack/stack.stylex.d.ts",
+      "default": "./dist/Stack/stack.stylex.js"
+    },
+    "./Stack/stackItem.stylex": {
+      "source": "./src/Stack/stackItem.stylex.ts",
+      "types": "./dist/Stack/stackItem.stylex.d.ts",
+      "default": "./dist/Stack/stackItem.stylex.js"
+    },
+    "./Text/text.stylex": {
+      "source": "./src/Text/text.stylex.ts",
+      "types": "./dist/Text/text.stylex.d.ts",
+      "default": "./dist/Text/text.stylex.js"
+    },
+    "./utils/focusOutline.stylex": {
+      "source": "./src/utils/focusOutline.stylex.ts",
+      "types": "./dist/utils/focusOutline.stylex.d.ts",
+      "default": "./dist/utils/focusOutline.stylex.js"
+    },
+    "./utils/interactionOverlay.stylex": {
+      "source": "./src/utils/interactionOverlay.stylex.ts",
+      "types": "./dist/utils/interactionOverlay.stylex.d.ts",
+      "default": "./dist/utils/interactionOverlay.stylex.js"
     },
     "./docs.mjs": "./docs.mjs",
     "./groups.doc.mjs": "./groups.doc.mjs",

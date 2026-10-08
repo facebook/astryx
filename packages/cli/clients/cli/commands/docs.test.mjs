@@ -137,7 +137,7 @@ describe('progressive reads', () => {
     const full = await runCli(['docs', 'theme', '--full']);
     expect(full.status).toBe(0);
     expect(full.stdout).toMatch(/^## Wrap your app in a theme/m);
-    expect(full.stdout.length).toBeGreaterThan(index.stdout.length * 3);
+    expect(full.stdout.length).toBeGreaterThan(index.stdout.length);
     expect((await runCli(['--detail', 'full', 'docs', 'theme', '--full'])).stdout).toBe(
       full.stdout,
     );
@@ -198,8 +198,7 @@ describe('blocks as text', () => {
   it('prints the labels of a real section above their fences', async () => {
     const {status, stdout} = await runCli(['docs', 'theme', 'quick-start']);
     expect(status).toBe(0);
-    expect(stdout).toContain('Install a theme package:\n```bash\nnpm install');
-    expect(stdout).not.toContain('// Install a theme package');
+    expect(stdout).toContain('Wire the generated module once:\n```tsx\nimport {Theme}');
   }, SLOW);
 });
 

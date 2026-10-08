@@ -2202,7 +2202,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         id={listboxId}
         role={isGrid ? 'grid' : 'listbox'}
         aria-multiselectable="true"
-        {...listboxLabelProps}
+        // The bottom sheet is rendered in a modal layer, so Chromium cannot
+        // reliably compute this listbox's name from the trigger outside that
+        // layer. Name only this no-search sheet directly from the component's
+        // existing label; searchable sheets and popovers retain their current
+        // trigger relationship.
+        {...(surface.activePresentation === 'bottom-sheet'
+          ? {'aria-label': label}
+          : listboxLabelProps)}
         aria-activedescendant={activeDescendantId}
         tabIndex={listboxOwnsKeyboard ? 0 : undefined}
         onKeyDown={listboxOwnsKeyboard ? onKeyDown : undefined}

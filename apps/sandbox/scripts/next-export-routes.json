@@ -761,6 +761,8 @@
     "/templates/shell-side-nav/",
     "/templates/shell-top-nav/",
     "/templates/side-gallery/",
+    "/templates/table-collapsible/",
+    "/templates/table-comparison/",
     "/templates/table-filter/",
     "/templates/table-grouped/",
     "/templates/table-inbox/",

@@ -24,6 +24,7 @@ import {
   discoverIntegrationComponents,
   discoverOwnedComponents,
 } from '../../foundation/discovery/component-discovery.mjs';
+import {loadComponentReplacements} from '../component/_adapter.mjs';
 import {
   discoverBuiltinTopics,
   discoverIntegrationDocs,
@@ -260,9 +261,28 @@ export async function integrationComponentConflicts(pkg, options = {}) {
       .filter(record => record.package === '@astryxdesign/core')
       .map(record => record.name),
   );
+  // Component replacements (spec:AST-035 FR10-FR15). A package without the
+  // CLI floor gets only warnings, so its exit code is what it was before the
+  // floor existed. An active replacement named after its own target is
+  // intentional, not a conflict.
+  const replacements = await loadComponentReplacements(coreDir, [
+    resolved.integration,
+  ]);
+  addErrors(issues, replacements.findings, 'invalid_component_replacement');
+  const intentional = new Set(
+    replacements.active
+      .filter(
+        active => active.package === name && active.name === active.target,
+      )
+      .map(active => active.name),
+  );
+
   const run = getCliInvocation(cwd);
   const conflicts = discoverIntegrationComponents(resolved.integration)
-    .filter(component => coreNames.has(component.name))
+    .filter(
+      component =>
+        coreNames.has(component.name) && !intentional.has(component.name),
+    )
     .map(component => ({
       name: component.name,
       severity: /** @type {const} */ ('warning'),

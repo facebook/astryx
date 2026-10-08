@@ -197,6 +197,11 @@ export const doc = {
       ],
     },
     {
+      name: 'deprecated',
+      type: 'string',
+      description: 'Deprecation notice — a DEP-* id and the replacement.',
+    },
+    {
       name: 'related',
       type: 'string[]',
       description: 'Related command names.',

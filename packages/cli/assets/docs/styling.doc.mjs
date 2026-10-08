@@ -257,7 +257,7 @@ const overrides = stylex.create({
         },
         {
           type: 'prose',
-          text: 'For systematic theming, use defineTheme component overrides instead of raw CSS selectors. defineTheme keeps the higher-level `prop:value` API (`variant:primary`, `size:sm`) and handles selector generation for you. Run {@link generic:theme} for the full theming guide.',
+          text: 'For systematic theming, use defineTheme component overrides instead of raw CSS selectors. defineTheme keeps the higher-level `prop:value` API (`variant:primary`, `size:sm`) and handles selector generation for you. Run {@link generic:author-a-theme} for component theming.',
         },
       ],
     },
@@ -333,7 +333,7 @@ const styles = stylex.create({
         },
         {
           type: 'prose',
-          text: 'See {@link generic:tokens} for the full token reference (all spacing, color, radius, shadow, and typography tokens with values). See {@link generic:theme} for how to override tokens via defineTheme.',
+          text: 'See {@link generic:tokens} for the full token reference (all spacing, color, radius, shadow, and typography tokens with values). See {@link generic:author-a-theme} for how to override tokens via defineTheme.',
         },
       ],
     },

@@ -5,10 +5,12 @@ import {describe, expect, it} from 'vitest';
 import {semverCompare} from '../env/semver.mjs';
 import * as requirement from './cli-requirement.mjs';
 import {
+  COMPONENT_REPLACES_CLI,
   NAMESPACE_DOCS_CLI,
   REPLACES_CLI,
   SECTION_IDS_CLI,
   cliRangeProblem,
+  componentReplacesCliProblem,
   THEMES_CLI,
   lowestAdmitted,
   docsTreeCliProblem,
@@ -106,6 +108,70 @@ describe('replacesCliProblem', () => {
   });
 });
 
+describe('componentReplacesCliProblem', () => {
+  // The floor is also the opt-in (spec:AST-035 FR10): a component's `replaces`
+  // applies only for a package whose CLI range starts at it. Earlier stable
+  // CLIs accept the field and keep the component under its own name.
+  it('asks a package whose component sets replaces for the release that applies it', () => {
+    expect(componentReplacesCliProblem({name: '@acme/kit'})).toContain(
+      'has a component that sets `replaces`',
+    );
+    expect(componentReplacesCliProblem({name: '@acme/kit'})).toContain(
+      'keeps the component under its own name',
+    );
+    for (const range of ['>=0.6.4', '^0.6.0', '>=0.6.5', '*']) {
+      expect(
+        componentReplacesCliProblem({
+          peerDependencies: {'@astryxdesign/cli': range},
+        }),
+      ).toContain(`admits a stable CLI before ${COMPONENT_REPLACES_CLI}`);
+    }
+    for (const range of [
+      `>=${COMPONENT_REPLACES_CLI}`,
+      `^${COMPONENT_REPLACES_CLI}`,
+      '>=0.7.0',
+    ]) {
+      expect(
+        componentReplacesCliProblem({
+          peerDependencies: {'@astryxdesign/cli': range},
+        }),
+      ).toBeNull();
+    }
+  });
+
+  it('is the range every shipped doc tells an author to declare', () => {
+    // The floor is tied to the next patch slot. If the slot moves, these docs
+    // move with the constant and its row in the floor table below.
+    for (const file of [
+      '../../assets/docs/tree/replace-a-core-component.doc.mjs',
+      '../../authoring/doctypes/component/component.doc.mjs',
+      '../../authoring/doctypes/component/type.ts',
+    ]) {
+      const text = fs.readFileSync(new URL(file, import.meta.url), 'utf-8');
+      const named = [
+        ...text.matchAll(/"@astryxdesign\/cli\\?":\s*\\?">=(\d+\.\d+\.\d+)/g),
+      ].map(match => match[1]);
+      expect(named.length, file).toBeGreaterThan(0);
+      expect(new Set(named), file).toEqual(new Set([COMPONENT_REPLACES_CLI]));
+    }
+    const troubleshooting = fs.readFileSync(
+      new URL(
+        '../../assets/docs/tree/troubleshooting.doc.mjs',
+        import.meta.url,
+      ),
+      'utf-8',
+    );
+    const row = troubleshooting
+      .split('],')
+      .find(part => part.includes('`component_replaces_needs_cli`'));
+    expect(row).toContain(`@astryxdesign/cli=>=${COMPONENT_REPLACES_CLI}'`);
+    // Every version that row names is the floor.
+    expect(new Set(row?.match(/\d+\.\d+\.\d+/g))).toEqual(
+      new Set([COMPONENT_REPLACES_CLI]),
+    );
+  });
+});
+
 describe('themesCliProblem and sectionIdsCliProblem', () => {
   // Published 0.6.4 reads typed theme descriptors and section ids. Published
   // 0.6.3 rejects both and hides the package's doc topics.
@@ -184,6 +250,7 @@ describe('every feature check names its CLI floor', () => {
   // check whose floor changes, fails here until this table says so on
   // purpose, so a floor never moves as a side effect of another change.
   const FLOORS = {
+    componentReplacesCliProblem: COMPONENT_REPLACES_CLI,
     docsTreeCliProblem: '0.6.4',
     replacesCliProblem: REPLACES_CLI,
     keywordsCliProblem: REPLACES_CLI,
@@ -209,6 +276,9 @@ describe('every feature check names its CLI floor', () => {
     );
     expect(named).toEqual({
       ...FLOORS,
+      // Tied to the next patch slot: the first stable release that ships
+      // component replacement.
+      componentReplacesCliProblem: '0.6.7',
       replacesCliProblem: '0.7.0',
       keywordsCliProblem: '0.7.0',
     });

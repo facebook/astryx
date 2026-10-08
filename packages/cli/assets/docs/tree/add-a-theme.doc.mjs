@@ -44,11 +44,11 @@ Declare theme root ./themes in astryx.integration.mjs.
         },
         {
           type: 'prose',
-          text: "`oceanTheme.ts` exports `oceanTheme`, a `defineTheme` source. `oceanTheme.doc.mjs` describes it with `type: 'theme'`, `name`, `displayName`, `description`, and `maintained`; `theme list` shows its `name`, `description`, and `maintained`. Every field is in {@link generic:authoring}.",
+          text: "`oceanTheme.ts` exports `oceanTheme`, a `defineTheme` source. `oceanTheme.doc.mjs` describes it with `type: 'theme'`, `name`, `displayName`, `description`, and `maintained`; `theme list` shows its `name`, `description`, and `maintained`. The command also declares `./themes/ocean` and `./themes/ocean.css` package exports. Every descriptor field is in {@link generic:authoring}.",
         },
         {
           type: 'prose',
-          text: 'The source ships in your package. An app installs the package and applies the theme — it is not copied; see {@link generic:use-a-theme-in-an-app}.',
+          text: 'The source and built outputs ship in your package. Build the source with `theme build`, then run `integration verify` before publishing. An app runs `theme add --import` to record and import the built module and stylesheets; plain `theme add` still copies source while that default is deprecated. See {@link generic:use-a-theme-in-an-app}.',
         },
       ],
     },

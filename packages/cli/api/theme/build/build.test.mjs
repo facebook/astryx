@@ -74,11 +74,13 @@ describe('themeBuild() — receipt', () => {
 
     // Output paths are cwd-relative and derive from the theme name…
     expect(result?.data.outputs.css).toBe('apitheme.css');
+    expect(result?.data.outputs.cssDts).toBe('apitheme.css.d.ts');
     expect(result?.data.outputs.js).toBe('apitheme.js');
     expect(result?.data.outputs.dts).toBe('apitheme.d.ts');
     // …and every declared output actually exists on disk.
     for (const rel of [
       result?.data.outputs.css,
+      result?.data.outputs.cssDts,
       result?.data.outputs.js,
       result?.data.outputs.dts,
     ]) {
@@ -86,6 +88,9 @@ describe('themeBuild() — receipt', () => {
         fs.existsSync(path.join(tmpDir, /** @type {string} */ (rel))),
       ).toBe(true);
     }
+    expect(
+      fs.readFileSync(path.join(tmpDir, 'apitheme.css.d.ts'), 'utf8'),
+    ).toContain('export {};');
   });
 
   it('emits local tokens and preserves enrollment metadata in the built module', async () => {
@@ -375,6 +380,31 @@ describe('themeBuild() — check mode', () => {
     expect(result?.data.checked).toContain('chk.css');
     // Check mode must not rewrite the file.
     expect(fs.readFileSync(path.join(tmpDir, 'chk.css'), 'utf8')).toBe(before);
+  });
+
+  it('accepts released outputs that do not have a CSS type stub', async () => {
+    const themeFile = path.join(tmpDir, 'released.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default { name: 'released', tokens: { '--color-bg': '#0a0a0a' } };\n`,
+    );
+    await themeBuild('released.mjs', {}, {cwd: tmpDir});
+    fs.rmSync(path.join(tmpDir, 'released.css.d.ts'));
+
+    const result = await themeBuild(
+      'released.mjs',
+      {check: true},
+      {cwd: tmpDir},
+    );
+
+    expect(result?.data.upToDate).toBe(true);
+    expect(result?.data.stale).toEqual([]);
+    expect(result?.data.checked).toEqual([
+      'released.css',
+      'released.js',
+      'released.d.ts',
+    ]);
+    expect(fs.existsSync(path.join(tmpDir, 'released.css.d.ts'))).toBe(false);
   });
 
   it('flags a stale output when the committed CSS content drifts from the source', async () => {

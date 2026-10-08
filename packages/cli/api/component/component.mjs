@@ -28,6 +28,7 @@ import {
   scopeSubComponent,
   ComponentAmbiguityError,
   installedComponentPackageVersion,
+  resolveComponentReplacement,
 } from './_adapter.mjs';
 import {componentList} from './list/list.mjs';
 import {componentDetail} from './detail/detail.mjs';
@@ -380,6 +381,21 @@ export async function component(name, options = {}) {
   // Searches that package first — critical for names that exist in both core
   // and an external package (AppShell, Button, SideNav).
   if (packageScope) {
+    // The package whose component replaces a Core component answers to that
+    // Core name too, as the bare name does (spec:AST-035 FR11).
+    if (
+      packageScope !== CORE_PACKAGE &&
+      !owners.some(owner => owner.package === packageScope)
+    ) {
+      const replacement = await resolveComponentReplacement(
+        coreDir,
+        loadedIntegrations,
+        dirName,
+      );
+      if (replacement?.package === packageScope) {
+        return component(replacement.name, {...options, package: packageScope});
+      }
+    }
     const scoped = classifyScope(packageScope, {
       owners,
       loadedIntegrations,
@@ -447,6 +463,22 @@ export async function component(name, options = {}) {
       undefined,
       ERROR_CODES.ERR_UNKNOWN_COMPONENT,
     );
+  }
+
+  // ── Replaced Core component (spec:AST-035 FR11) ────────────────
+  // An active integration replacement answers to the Core name it replaces,
+  // bare or qualified by its own package (above). The original stays
+  // reachable with `--package @astryxdesign/core`.
+  const replacement = await resolveComponentReplacement(
+    coreDir,
+    loadedIntegrations,
+    dirName,
+  );
+  if (replacement) {
+    return component(replacement.name, {
+      ...options,
+      package: replacement.package,
+    });
   }
 
   // Invalid integration metadata does not create ambiguity against a valid

@@ -23,11 +23,14 @@ afterEach(() => {
 });
 
 describe('astryx theme list', () => {
-  it('lists the bundled themes and points at discover for more', async () => {
+  it('lists bundled themes and points at import, eject, and discover', async () => {
     const {status, stdout} = await runCli(['theme', 'list'], {cwd: tmpDir});
 
     expect(status).toBe(0);
-    expect(stdout).toMatch(/^- neutral \(maintained, @astryxdesign\/cli\)/m);
+    expect(stdout).toMatch(/^slug:\s+neutral$/m);
+    expect(stdout).toMatch(/^package:\s+@astryxdesign\/cli$/m);
+    expect(stdout).toMatch(/Import one: .*theme add <slug> --import/m);
+    expect(stdout).toMatch(/Fork source: .*theme eject <slug>/m);
     expect(stdout).toMatch(/More themes in packages you could add: .*discover theme$/m);
   });
 

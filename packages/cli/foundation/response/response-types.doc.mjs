@@ -224,7 +224,7 @@ export const doc = {
     {
       value: 'theme.build',
       description:
-        'A theme build receipt: name, tokenCount and componentCount (override counts), sizeKB, the written outputs {css, js, dts, and variantsDts when applicable}, warnings (defects to fix), and notices (advisories about a correct theme, such as a named font it does not load).',
+        'A theme build receipt: name, tokenCount and componentCount (override counts), sizeKB, the written outputs {css, cssDts, js, dts, and variantsDts when applicable}, warnings (defects to fix), and notices (advisories about a correct theme, such as a named font it does not load).',
     },
     {
       value: 'theme.build.check',
@@ -239,12 +239,22 @@ export const doc = {
     {
       value: 'theme.list',
       description:
-        'Every bundled or installed integration theme as a ThemeListEntry[]: each with slug, displayName, description, maintained flag, and owner package.',
+        'Every bundled, installed package, and local theme as a ThemeListEntry[]. Each entry has slug, displayName, description, maintained, owner package or local root, source, added, and default fields. Optional meta.unmigratedCopies names earlier descriptor-less copies, their missing descriptor, and the upgrade command; those copies are not data entries.',
     },
     {
       value: 'theme.add',
       description:
-        'A scaffold receipt: resolved slug, displayName, maintained flag, owner package, outputDir (relative to cwd), the theme entry file, its exportName, and the files written.',
+        'The released source-copy receipt: slug, displayName, maintained flag, owner package, outputDir, source entry, exportName, and files. Its additive meta.deprecations entry names DEP-0005 and the source-fork/import replacements.',
+    },
+    {
+      value: 'theme.app',
+      description:
+        'The app theme record after add, remove, or use. It includes every added theme and its built imports, the default slug, generated module path, and the command change. After add, the envelope package names the npm package that owns the added theme; a local theme has none.',
+    },
+    {
+      value: 'theme.eject',
+      description:
+        'A local source-fork receipt with the resolved slug, displayName, source theme maintained flag, source-selector package, outputDir, source entry, exportName, and every file written, including the descriptor. The written local descriptor always uses maintained: false.',
     },
     {
       value: 'theme.template',

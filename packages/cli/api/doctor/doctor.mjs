@@ -50,6 +50,7 @@ import {
 import {typedEdges} from '../docs/node/node.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
 import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
+import {checkAppThemes, checkThemes} from './theme-checks.mjs';
 
 /**
  * @typedef {'pass'|'warn'|'fail'|'info'} DoctorStatus
@@ -70,7 +71,6 @@ import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env
  * @property {string} nodeVersion - Running Node version.
  * @property {string|null} coreDir - Resolved core package directory, or null.
  * @property {string|null} configPath - Resolved astryx.config.mjs path, or null.
- * @property {string|null} configTheme - theme value read from config, or null.
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} [integrations]
  *   Every integration the project loaded, or null when the project could not be
  *   read at all.
@@ -111,77 +111,6 @@ function pkgVersion(dir) {
   if (!dir) return null;
   const pkg = readPkg(path.join(dir, 'package.json'));
   return pkg?.version ?? null;
-}
-
-/**
- * Walk up from `startDir` to locate the nearest node_modules directory.
- * @param {string} startDir
- * @returns {string|null}
- */
-function findNodeModules(startDir) {
-  let dir = startDir;
-  for (let i = 0; i < 6; i++) {
-    const candidate = path.join(dir, 'node_modules');
-    if (fs.existsSync(candidate)) return candidate;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return null;
-}
-
-/**
- * Find every installed @astryxdesign/theme-* package under node_modules.
- * @param {string} cwd
- * @returns {Array<{name: string, version: string|null}>}
- */
-function findThemePackages(cwd) {
-  const nm = findNodeModules(cwd);
-  /** @type {Array<{name: string, version: string|null}>} */
-  const found = [];
-  if (!nm) return found;
-  const scopeDir = path.join(nm, '@astryxdesign');
-  if (!fs.existsSync(scopeDir)) return found;
-  let entries;
-  try {
-    entries = fs.readdirSync(scopeDir, {withFileTypes: true});
-  } catch {
-    return found;
-  }
-  for (const entry of entries) {
-    if (!entry.name.startsWith('theme-')) continue;
-    const dir = path.join(scopeDir, entry.name);
-    // pnpm installs packages as symlinks into node_modules/.pnpm, and a
-    // symlink dirent reports isDirectory() as false — stat the target instead.
-    let isDir = entry.isDirectory();
-    if (!isDir && entry.isSymbolicLink()) {
-      try {
-        isDir = fs.statSync(dir).isDirectory();
-      } catch {
-        isDir = false;
-      }
-    }
-    if (!isDir) continue;
-    const name = `@astryxdesign/${entry.name}`;
-    found.push({name, version: pkgVersion(dir)});
-  }
-  return found;
-}
-
-/**
- * Detect whether a theme appears to be wired up via the ASTRYX_THEME env var or
- * an `xds.theme` field in the nearest package.json. Config-based wiring is
- * handled by the caller (ctx.configTheme). This only inspects static signals.
- * @param {string} cwd
- * @returns {{wired: boolean, source: string|null}}
- */
-function detectThemeWiring(cwd) {
-  if (process.env.ASTRYX_THEME) return {wired: true, source: 'ASTRYX_THEME env var'};
-  const nm = findNodeModules(cwd);
-  const projectDir = nm ? path.dirname(nm) : cwd;
-  const pkg = readPkg(path.join(projectDir, 'package.json'));
-  if (pkg?.astryx?.theme) return {wired: true, source: 'package.json astryx.theme'};
-  return {wired: false, source: null};
 }
 
 /* ── individual checks ────────────────────────────────────────────────── */
@@ -281,47 +210,6 @@ export function checkVersionAlignment(ctx) {
               : `Update @astryxdesign/cli to ${coreMajor}.${coreMinor}.x to match @astryxdesign/core.`,
         }
       : {}),
-  };
-}
-
-/**
- * Check 4 — at least one @astryxdesign/theme-* is installed and a theme is wired.
- * @param {DoctorContext} ctx
- * @returns {DoctorCheck}
- */
-export function checkThemes(ctx) {
-  const themes = findThemePackages(ctx.cwd);
-  const wiring = detectThemeWiring(ctx.cwd);
-  const hasConfigTheme = Boolean(ctx.configTheme);
-  const wired = wiring.wired || hasConfigTheme;
-
-  if (themes.length === 0) {
-    return {
-      id: 'themes',
-      label: 'Theme packages',
-      status: 'warn',
-      message: 'No @astryxdesign/theme-* packages are installed.',
-      fix: 'Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import its CSS or set astryx.theme.',
-    };
-  }
-
-  const names = themes.map(t => t.name).join(', ');
-  if (!wired) {
-    return {
-      id: 'themes',
-      label: 'Theme packages',
-      status: 'warn',
-      message: `Theme package(s) installed (${names}) but no theme appears wired.`,
-      fix: 'Wire a theme via the `astryx.theme` field in package.json, the ASTRYX_THEME env var, or your astryx.config.mjs.',
-    };
-  }
-
-  const source = hasConfigTheme ? 'astryx.config.mjs theme' : wiring.source;
-  return {
-    id: 'themes',
-    label: 'Theme packages',
-    status: 'pass',
-    message: `Theme package(s) installed (${names}); wired via ${source}.`,
   };
 }
 
@@ -1219,7 +1107,6 @@ export const SYNC_CHECKS = [
   checkNodeVersion,
   checkCoreInstalled,
   checkVersionAlignment,
-  checkThemes,
   checkImplicitIntegrations,
   checkProviderIdentity,
   checkIntegrationIssues,
@@ -1249,9 +1136,7 @@ export async function runChecks(options = {}) {
     configError = /** @type {Error} */ (err);
   }
 
-  // Resolve a possible theme key from config, and the integrations the project
-  // actually loaded (best-effort; never throws).
-  let configTheme = null;
+  // Resolve integrations the project actually loaded (best-effort; never throws).
   /** @type {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]|null} */
   let integrations = null;
   // A docs read falls back to the built-in topics when the project cannot be
@@ -1268,8 +1153,6 @@ export async function runChecks(options = {}) {
   let autolinkFailures = null;
   try {
     const project = await Project.load(cwd);
-    configTheme =
-      /** @type {{theme?: string}} */ (project.config ?? {}).theme ?? null;
     integrations = project.loadedIntegrations;
     // An installed dependency whose manifest cannot be loaded is kept out of
     // loadedIntegrations on purpose. The provider ledger still records it.
@@ -1294,7 +1177,7 @@ export async function runChecks(options = {}) {
     }
     integrationIssues = await project.issues();
   } catch {
-    // Best-effort: a missing/invalid config leaves configTheme null.
+    // Best-effort: a missing or invalid config leaves integrations unavailable.
   }
 
   /** @type {DoctorContext} */
@@ -1303,7 +1186,6 @@ export async function runChecks(options = {}) {
     nodeVersion: process.versions.node,
     coreDir,
     configPath,
-    configTheme,
     integrations,
     docsCatalog,
     docsCatalogIssues,
@@ -1315,10 +1197,13 @@ export async function runChecks(options = {}) {
 
   /** @type {DoctorCheck[]} */
   const checks = [];
-  // checkConfig is async; run it in its declared slot (after themes).
+  // Run the theme checks and config check after the environment checks. The
+  // released `themes` check keeps its place, ahead of the app-theme checks.
   for (const fn of SYNC_CHECKS) {
     checks.push(fn(ctx));
-    if (fn === checkThemes) {
+    if (fn === checkVersionAlignment) {
+      const appThemeChecks = await checkAppThemes(cwd);
+      checks.push(checkThemes(cwd, appThemeChecks), ...appThemeChecks);
       checks.push(await checkConfig(ctx));
     }
   }

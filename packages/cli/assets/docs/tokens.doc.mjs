@@ -1483,7 +1483,7 @@ export const docs = {
         },
         {
           "type": "prose",
-          "text": "See {@link generic:styling} for how to apply tokens via xstyle, className, and compound component patterns. See {@link generic:theme} for overriding tokens with defineTheme."
+          "text": "See {@link generic:styling} for how to apply tokens via xstyle, className, and compound component patterns. See {@link generic:author-a-theme} for overriding tokens with defineTheme."
         }
       ]
     }

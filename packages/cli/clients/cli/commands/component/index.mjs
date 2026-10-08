@@ -93,14 +93,22 @@ function summarize(result) {
  * @param {import('../../../../api/component/component.type.mjs').ComponentSingleResponse} result
  * @param {string} requestedName
  * @param {'full'|'compact'|'brief'} detail
- * @param {ReturnType<typeof resolveTheme>} themeData
+ * @param {Awaited<ReturnType<typeof resolveTheme>>} themeData
  * @returns {import('../../formatters/index.mjs').Block[]}
  */
 function componentDetailBlocks(result, requestedName, detail, themeData) {
-  const resolvedName = (requestedName.split('/').pop() ?? requestedName).replace(
+  const requested = (requestedName.split('/').pop() ?? requestedName).replace(
     /^XDS/,
     '',
   );
+  // A replacement answers to the Core name it replaces (spec:AST-035 FR11),
+  // but its package exports it under its own name: print that one.
+  const resolvedName =
+    result.type === 'component.detail' &&
+    typeof result.data.name === 'string' &&
+    result.data.replaces === requested
+      ? result.data.name
+      : requested;
   switch (result.type) {
     case 'component.detail': {
       /** @type {import('../../formatters/index.mjs').Block[]} */
@@ -255,7 +263,18 @@ export function registerComponent(program) {
       // The api layer already resolved against core (result exists), so core is
       // present on this path; narrow away the null branch findCoreDir allows.
       const coreDir = /** @type {string} */ (findCoreDir(process.cwd()));
-      const themeData = resolveTheme(process.cwd());
+      let themeData;
+      try {
+        themeData = await resolveTheme(process.cwd());
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message.split('\n', 1)[0]?.trim() || error.name
+            : String(error);
+        return cliError(`Could not load the recorded theme: ${message}`, {
+          code: ERROR_CODES.ERR_THEME_LOAD,
+        });
+      }
 
       // Footer shared by the compact + names list views (prose → text()).
       const listFooter = text(
@@ -271,8 +290,31 @@ export function registerComponent(program) {
           // in result.data.detail and the grouped map in result.data.components.
           if (result.data.detail === 'full') {
             // --detail full — dense per-component docs (signature, props, theming,
-            // examples). Verbatim doc block from the shared formatter.
-            emit(code(await formatBriefAll(coreDir, {zh, lang, themeData})));
+            // examples). Verbatim doc block from the shared formatter. A Core slot
+            // an integration component replaces prints that component, from the
+            // list result (spec:AST-035 FR11).
+            /** @type {Map<string, any>} */
+            const replacements = new Map();
+            for (const items of Object.values(result.data.components)) {
+              for (const item of /** @type {any[]} */ (items)) {
+                if (
+                  item.package !== '@astryxdesign/core' &&
+                  typeof item.replaces === 'string'
+                ) {
+                  replacements.set(item.replaces, item);
+                }
+              }
+            }
+            emit(
+              code(
+                await formatBriefAll(coreDir, {
+                  zh,
+                  lang,
+                  themeData,
+                  replacements,
+                }),
+              ),
+            );
             break;
           }
 
@@ -288,7 +330,13 @@ export function registerComponent(program) {
               const isUngrouped =
                 entries.length === 1 && items.length === 1 && items[0]?.name === cat;
               if (!isUngrouped) out.push(section(cat));
-              out.push(records(items, {fields: ['name', 'import', 'description']}));
+              // An entry from another package says which one (cli-surface INV28).
+              const named = items.map(item =>
+                item.package === '@astryxdesign/core'
+                  ? item
+                  : {...item, import: `${item.import}  [${item.package}]`},
+              );
+              out.push(records(named, {fields: ['name', 'import', 'description']}));
             }
             out.push(listFooter);
             emit(...out);

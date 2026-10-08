@@ -65,7 +65,7 @@ export const doc = {
           name: 'meta',
           type: 'Record<string, unknown>',
           description:
-            'Optional sidecar, emitted as a sibling of data (never merged in).',
+            'Optional sidecar, emitted as a sibling of data (never merged in). A `deprecations` field is an array of `{id, replacements}` entries; each stable lifecycle id names the replacement commands without changing the command data.',
         },
       ],
     },

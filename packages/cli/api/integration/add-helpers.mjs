@@ -60,19 +60,29 @@ export function findPackageDir(startDir) {
  */
 
 /**
- * Compute one package.json update for an existing `files` allowlist and existing
- * `exports` map. Neither field is created: adding an exports map to a package
- * that has none would make every previously-open deep import private.
+ * @typedef {object} PackageJsonUpdateOptions
+ * @property {boolean} [createExports] create a subpath map when the package has
+ *   no exports field
+ * @property {string[]} [sideEffects] side-effect glob patterns to preserve when
+ *   package.json currently declares `sideEffects: false` or a pattern array
+ */
+
+/**
+ * Compute one package.json update for an existing `files` allowlist and an
+ * optional exports map. An exports map is created only when `createExports` is
+ * explicit because doing so makes every unlisted deep import private.
  *
  * @param {string} packageFile
  * @param {string[]} entries project-relative files or directories
  * @param {PackageExportEntry[]} [publicExports]
+ * @param {PackageJsonUpdateOptions} [options]
  * @returns {PackageJsonUpdate|null}
  */
 export function packageJsonFilesUpdate(
   packageFile,
   entries,
   publicExports = [],
+  {createExports = false, sideEffects = []} = {},
 ) {
   const expectedOriginal = fs.readFileSync(packageFile);
   const original = expectedOriginal.toString('utf-8');
@@ -117,11 +127,13 @@ export function packageJsonFilesUpdate(
     }
   }
 
-  if (pkg.exports !== undefined && publicExports.length > 0) {
+  if ((pkg.exports !== undefined || createExports) && publicExports.length > 0) {
     const authored = pkg.exports;
     /** @type {Record<string, unknown>} */
     let exportsMap;
-    if (
+    if (authored === undefined) {
+      exportsMap = {};
+    } else if (
       authored == null ||
       typeof authored !== 'object' ||
       Array.isArray(authored)
@@ -160,6 +172,36 @@ export function packageJsonFilesUpdate(
     if (changed || exportsMap !== authored) pkg.exports = exportsMap;
   }
 
+  if (sideEffects.length > 0 && pkg.sideEffects !== undefined) {
+    if (pkg.sideEffects === false) {
+      pkg.sideEffects = [...sideEffects];
+      changed = true;
+    } else if (Array.isArray(pkg.sideEffects)) {
+      if (
+        pkg.sideEffects.some(
+          (/** @type {unknown} */ item) => typeof item !== 'string',
+        )
+      ) {
+        throw new AstryxError(
+          'package.json sideEffects must be a boolean or an array of strings before Astryx can add theme CSS.',
+          undefined,
+          ERROR_CODES.ERR_INVALID_ARGUMENT,
+        );
+      }
+      for (const pattern of sideEffects) {
+        if (pkg.sideEffects.includes(pattern)) continue;
+        pkg.sideEffects.push(pattern);
+        changed = true;
+      }
+    } else if (pkg.sideEffects !== true) {
+      throw new AstryxError(
+        'package.json sideEffects must be a boolean or an array of strings before Astryx can add theme CSS.',
+        undefined,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
+  }
+
   if (!changed) return null;
   const indent = original.match(/\n([ \t]+)"/u)?.[1] ?? '  ';
   return {
@@ -176,6 +218,7 @@ export function packageJsonFilesUpdate(
  * @param {string} rootPath
  * @param {string} manifestName
  * @param {PackageExportEntry[]} [publicExports]
+ * @param {PackageJsonUpdateOptions} [options]
  * @returns {PackageJsonUpdate|null}
  */
 export function packageJsonUpdate(
@@ -183,11 +226,13 @@ export function packageJsonUpdate(
   rootPath,
   manifestName,
   publicExports = [],
+  options = {},
 ) {
   return packageJsonFilesUpdate(
     packageFile,
     [rootPath, manifestName],
     publicExports,
+    options,
   );
 }
 

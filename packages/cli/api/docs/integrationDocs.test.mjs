@@ -243,7 +243,7 @@ describe('integration-contributed topics', () => {
       const english = await docs('theme', undefined, {full: true});
       const englishTitles = english.data.sections.map(section => section.title);
       expect(englishTitles).toEqual(
-        expect.arrayContaining(['Available Themes', 'Theme Props']),
+        expect.arrayContaining(['Wrap your app in a theme', 'Dark mode']),
       );
       scaffold({
         'theme-internal.doc.mjs': topic({
@@ -251,12 +251,13 @@ describe('integration-contributed topics', () => {
           extends: 'theme',
           sections: [
             {
-              id: 'acme-available-themes',
-              title: 'Available Themes',
+              id: 'quick-start',
+              title: 'Wrap your app in a theme',
               content: [{type: 'prose', text: 'Acme themes.'}],
             },
             {
-              title: 'Theme Props',
+              id: 'light-dark-mode',
+              title: 'Dark mode',
               content: [{type: 'prose', text: 'Acme props.'}],
             },
           ],
@@ -271,7 +272,7 @@ describe('integration-contributed topics', () => {
       expect(extended.data.sections).toHaveLength(base.data.sections.length);
       expect(
         extended.data.sections.filter(
-          section => section.id === 'acme-available-themes',
+          section => section.id === 'quick-start',
         ),
       ).toHaveLength(1);
       expect(

@@ -61,5 +61,6 @@ export const doc = {
       when: 'the expression is invalid, empty or over 5 MB (from stdin or --file), has a syntax error, or a bad --form',
     },
   ],
+  deprecated: 'DEP-0006: Use `astryx build` to start from a template, `astryx template` to scaffold, and `astryx docs layout` for guidance.',
   related: ['layout expand', 'layout grammar'],
 };

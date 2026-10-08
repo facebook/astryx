@@ -30,5 +30,6 @@ export const doc = {
     {code: 0, when: 'a subcommand succeeded, or --help'},
     {code: 1, when: 'no subcommand (help is printed) or an unknown subcommand'},
   ],
+  deprecated: 'DEP-0006: Use `astryx build` to start from a template, `astryx template` to scaffold, and `astryx docs layout` for guidance.',
   related: ['template', 'build'],
 };

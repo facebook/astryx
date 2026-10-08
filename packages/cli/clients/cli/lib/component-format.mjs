@@ -636,11 +636,17 @@ export function formatProps(docs, componentName) {
 
 /**
  * Format brief summaries for ALL components in one output.
+ * `replacements` maps a replaced Core name to the full list entry of the
+ * integration component that takes its slot; that entry is printed in its
+ * place, naming its package.
  * @param {string} coreDir
- * @param {{zh?: boolean, lang?: string, themeData?: any}} [options]
+ * @param {{zh?: boolean, lang?: string, themeData?: any, replacements?: Map<string, any>}} [options]
  * @returns {Promise<string>}
  */
-export async function formatBriefAll(coreDir, {zh = false, lang, themeData = null} = {}) {
+export async function formatBriefAll(
+  coreDir,
+  {zh = false, lang, themeData = null, replacements = new Map()} = {},
+) {
   const components = discoverComponents(coreDir);
   /** @type {string[]} */
   const output = [];
@@ -651,6 +657,17 @@ export async function formatBriefAll(coreDir, {zh = false, lang, themeData = nul
       output.push(`## ${key}\n`);
     }
     for (const comp of comps) {
+      const replacement = replacements.get(comp);
+      if (replacement) {
+        const [first, ...rest] = formatBrief(
+          replacement,
+          replacement.name,
+          replacement.import,
+          {themeData},
+        ).split('\n');
+        output.push([`${first}  [${replacement.package}]`, ...rest].join('\n'));
+        continue;
+      }
       const readmePath = findComponentReadme(coreDir, comp);
       if (readmePath && readmePath.endsWith('.doc.mjs')) {
         const docs = await loadDocs(readmePath, {zh, lang});

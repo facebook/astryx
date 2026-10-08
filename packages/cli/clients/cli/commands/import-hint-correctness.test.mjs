@@ -85,7 +85,7 @@ describe('import hint correctness', () => {
     }
   });
 
-  describe('CLI --detail brief shows correct import path', () => {
+  describe('CLI --detail compact shows correct import path', () => {
     // Test a representative set across different patterns
     const representative = [
       {name: 'Button', expected: '@astryxdesign/core/Button'},
@@ -101,8 +101,8 @@ describe('import hint correctness', () => {
     ];
 
     for (const {name, expected} of representative) {
-      it(`npx astryx component ${name} --detail brief shows ${expected}`, async () => {
-        const result = await runCli(['component', name, '--detail', 'brief'], REPO_ROOT);
+      it(`npx astryx component ${name} --detail compact shows ${expected}`, async () => {
+        const result = await runCli(['component', name, '--detail', 'compact'], REPO_ROOT);
         expect(result.code).toBe(0);
         expect(result.stdout).toContain(expected);
       });
@@ -179,11 +179,11 @@ describe('import hint correctness', () => {
       }
     });
 
-    it('component <Name> --detail brief also shows the integration package', async () => {
+    it('component <Name> --detail compact also shows the integration package', async () => {
       const fixtureDir = createIntegrationFixture();
       try {
         const result = await runCli(
-          ['component', 'Widget', '--detail', 'brief'],
+          ['component', 'Widget', '--detail', 'compact'],
           fixtureDir,
         );
         expect(result.code).toBe(0);
