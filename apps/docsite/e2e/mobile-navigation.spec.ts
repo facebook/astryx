@@ -4,7 +4,7 @@
  * @file mobile-navigation.spec.ts
  * @input Production docsite HTML/CSS, with hydration held then released
  * @output Regression proof for initial navigation and its hydration handoff
- * @position Docsite browser tests; jsdom cannot measure the rendered icon
+ * @position Docsite browser tests; jsdom cannot measure icons or sticky occlusion
  */
 
 import {expect, test} from '@playwright/test';
@@ -67,19 +67,75 @@ test('the mobile hamburger survives hydration without changing icon size or draw
   }
 });
 
-test('desktop navigation remains available at exactly 768px before hydration', async ({
+test('desktop search stays exposed across hydration at exactly 768px', async ({
   page,
 }) => {
   await page.setViewportSize({width: 768, height: 844});
-  await page.route('**/_next/**/*.js*', route => route.abort());
-  await page.goto('/components', {waitUntil: 'load'});
+  let resumeHydration = () => {};
+  const hydration = new Promise<void>(resolve => {
+    resumeHydration = resolve;
+  });
+  await page.route('**/_next/**/*.js*', async route => {
+    await hydration;
+    await route.continue();
+  });
 
-  const nav = page.getByRole('navigation', {name: 'Astryx navigation'});
-  await expect(nav.getByRole('button', {name: 'Open navigation'})).toBeHidden();
-  await expect(
-    nav.getByRole('link', {name: 'Components', exact: true}),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('textbox', {name: 'Search components'}),
-  ).toBeVisible();
+  try {
+    await page.goto('/components', {waitUntil: 'commit'});
+    await page.waitForFunction(
+      () => performance.getEntriesByName('first-contentful-paint').length > 0,
+    );
+    const nav = page.getByRole('navigation', {name: 'Astryx navigation'});
+    await expect(
+      nav.getByRole('button', {name: 'Open navigation'}),
+    ).toBeHidden();
+    await expect(
+      nav.getByRole('link', {name: 'Components', exact: true}),
+    ).toBeVisible();
+    const search = page.getByRole('textbox', {name: 'Search components'});
+    await expect(search).toBeVisible();
+
+    // A reload can restore scroll before hydration. Visibility alone misses
+    // the real input being painted underneath the sticky header.
+    await page.evaluate(() => window.scrollTo(0, 700));
+    const isSearchExposed = () =>
+      search.evaluate(input => {
+        const box = input.getBoundingClientRect();
+        return (
+          document.elementFromPoint(
+            box.x + box.width / 2,
+            box.y + box.height / 2,
+          ) === input
+        );
+      });
+    await expect.poll(isSearchExposed).toBe(true);
+    const initialBox = await search.evaluate(input => {
+      const {x, y, width, height} = input.getBoundingClientRect();
+      return {x, y, width, height};
+    });
+    const headerBottom = await nav.evaluate(
+      element => element.getBoundingClientRect().bottom,
+    );
+    expect(initialBox.width).toBeGreaterThan(0);
+    expect(initialBox.height).toBeGreaterThan(0);
+    expect(initialBox.y).toBeGreaterThanOrEqual(headerBottom);
+    expect(initialBox.y + initialBox.height).toBeLessThan(844);
+
+    resumeHydration();
+    // Opening and closing the real search dialog proves hydration completed.
+    await nav.getByRole('button', {name: 'Search', exact: true}).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toBeHidden();
+    expect(await search.boundingBox()).toEqual(initialBox);
+
+    const banner = page.getByRole('alert').filter({hasText: 'unreleased docs'});
+    if (await banner.count()) {
+      await banner.getByRole('button', {name: /^Dismiss/}).click();
+      await expect(banner).toHaveCount(0);
+      await expect.poll(isSearchExposed).toBe(true);
+    }
+  } finally {
+    resumeHydration();
+  }
 });
