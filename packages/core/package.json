@@ -768,6 +768,11 @@
       "source": "./src/Markdown/remark.ts",
       "types": "./dist/Markdown/remark.d.ts",
       "default": "./dist/Markdown/remark.js"
+    },
+    "./Dialog/DialogContext": {
+      "source": "./src/Dialog/DialogContext.ts",
+      "types": "./dist/Dialog/DialogContext.d.ts",
+      "default": "./dist/Dialog/DialogContext.js"
     }
   },
   "files": [

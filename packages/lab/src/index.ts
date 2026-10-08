@@ -50,6 +50,13 @@ export {
   type DrawerHeaderProps,
 } from './Drawer';
 
+// DialogHeroHeader — hero-style Dialog header (facebook/astryx#4182)
+export {
+  DialogHeroHeader,
+  type DialogHeroHeaderProps,
+  type DialogHeroHeaderMediaMode,
+} from './DialogHeroHeader';
+
 // Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
 export {
   Tour,
