@@ -8,7 +8,8 @@
  * names a subpath Core does not export, or names it with the wrong case, fails
  * in the user's app, so every specifier must match an entry in Core's
  * package.json `exports`. Wherever command output shows the `<Theme>` wrapper,
- * it also shows where `Theme` comes from.
+ * it also shows where `Theme` comes from, and so does every doc page that shows
+ * it.
  *
  * @position packages/cli/test — taught imports
  */
@@ -16,6 +17,7 @@
 import {describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {pathToFileURL} from 'node:url';
 
 const CLI = path.resolve(import.meta.dirname, '..');
 const CORE_PACKAGE = path.resolve(CLI, '..', 'core', 'package.json');
@@ -60,6 +62,25 @@ function isExported(keys, subpath) {
       subpath.endsWith(after)
     );
   });
+}
+
+const THEME_IMPORT =
+  /\{\s*Theme\s*\}\s+from\s+'@astryxdesign\/core(?:\/theme)?'/;
+
+/**
+ * Every code block (`{type: 'code', code}`) reachable from a doc module.
+ * @param {unknown} value
+ * @param {string[]} [found]
+ * @returns {string[]}
+ */
+function codeBlocks(value, found = [], seen = new Set()) {
+  if (!value || typeof value !== 'object' || seen.has(value)) return found;
+  seen.add(value);
+  const node = /** @type {Record<string, unknown>} */ (value);
+  if (node.type === 'code' && typeof node.code === 'string')
+    found.push(node.code);
+  for (const child of Object.values(node)) codeBlocks(child, found, seen);
+  return found;
 }
 
 /** @param {string} source */
@@ -130,4 +151,31 @@ describe('taught @astryxdesign/core imports', () => {
       });
     },
   );
+  it('every doc page that shows the <Theme> wrapper shows where Theme comes from', () => {
+    const pages = docFiles(path.join(CLI, 'assets', 'docs')).filter(file =>
+      /<Theme[\s>]/.test(fs.readFileSync(file, 'utf8')),
+    );
+    expect(pages.length).toBeGreaterThan(0);
+    const missing = pages
+      .filter(file => !THEME_IMPORT.test(fs.readFileSync(file, 'utf8')))
+      .map(file => path.relative(CLI, file));
+    expect(missing).toEqual([]);
+  });
+
+  it('every doc example with imports and the wrapper imports Theme', async () => {
+    /** @type {string[]} */
+    const missing = [];
+    for (const file of docFiles(path.join(CLI, 'assets', 'docs'))) {
+      const blocks = codeBlocks(await import(pathToFileURL(file).href));
+      for (const block of blocks) {
+        // A continuation snippet (no imports) builds on the page's full example.
+        if (!/<Theme theme=/.test(block) || !/^\s*import\s/m.test(block))
+          continue;
+        if (!THEME_IMPORT.test(block)) {
+          missing.push(`${path.relative(CLI, file)}: ${block.split('\n')[0]}`);
+        }
+      }
+    }
+    expect(missing).toEqual([]);
+  });
 });

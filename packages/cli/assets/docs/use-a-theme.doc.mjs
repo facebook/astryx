@@ -31,7 +31,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Switch among added themes',
-          code: "import {useState} from 'react';\nimport {themes, type ThemeSlug} from './astryx-themes';\n\nconst [slug, setSlug] = useState<ThemeSlug>('neutral');\nconst app = <Theme theme={themes[slug]}><YourApp /></Theme>;",
+          code: "import {useState} from 'react';\nimport {Theme} from '@astryxdesign/core';\nimport {themes, type ThemeSlug} from './astryx-themes';\n\nconst [slug, setSlug] = useState<ThemeSlug>('neutral');\nconst app = <Theme theme={themes[slug]}><YourApp /></Theme>;",
         },
         {
           type: 'prose',

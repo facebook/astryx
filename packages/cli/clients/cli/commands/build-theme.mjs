@@ -63,8 +63,10 @@ import {
 } from '../../../api/theme/palette/generate/generate.mjs';
 import {
   importSpecifier,
+  printBatchTrailer,
   themeBuild,
   themeBuildFamily,
+  themeBuildForReport,
 } from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
@@ -646,20 +648,48 @@ export function registerTheme(program) {
         }
       }
 
+      // A batch prints the install example and the font guidance once, after
+      // every theme, instead of once per theme. `--detail compact|brief` prints
+      // one line per theme and neither block. One theme at the default detail
+      // keeps its standalone report; --json and --check are unchanged.
+      const compact = (program.opts().detail || 'full') !== 'full';
+      const report = !json && !options.check && (entries.length > 1 || compact);
+      /** @type {import('../../../api/theme/build/build.mjs').ThemeBuildTrailer[]} */
+      const trailers = [];
+
       /** @type {Array<{file: string, receipt: import('../../../api/theme/theme.type.mjs').ThemeBuildResponse | import('../../../api/theme/theme.type.mjs').ThemeBuildCheckResponse | null}>} */
       const results = [];
       let stale = false;
       for (const entry of entries) {
         try {
-          const result = await themeBuild(
-            entry.file,
-            {
-              out: options.out,
-              check: options.check,
-              iconsSpecifier: options.iconsSpecifier,
-            },
-            {cwd: process.cwd()},
-          );
+          const buildOptions = {
+            out: options.out,
+            check: options.check,
+            iconsSpecifier: options.iconsSpecifier,
+          };
+          let result;
+          if (report) {
+            const built = await themeBuildForReport(
+              entry.file,
+              buildOptions,
+              {cwd: process.cwd()},
+              {compact},
+            );
+            result = built.receipt;
+            if (built.trailer) trailers.push(built.trailer);
+            if (compact && result?.type === 'theme.build') {
+              const {outputs, sizeKB, tokenCount, componentCount} = result.data;
+              emit(
+                text(
+                  `[ok] ${outputs.css} (${sizeKB} KB, ${tokenCount} token overrides, ${componentCount} component overrides)`,
+                ),
+              );
+            }
+          } else {
+            result = await themeBuild(entry.file, buildOptions, {
+              cwd: process.cwd(),
+            });
+          }
           results.push({file: entry.file, receipt: result ?? null});
           if (
             options.check &&
@@ -674,7 +704,9 @@ export function registerTheme(program) {
             /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
           // Stop at the first failure, as a shell loop under `set -e` does.
           // With several themes in flight the message alone rarely says which
-          // one broke, so name it.
+          // one broke, so name it. Themes already written keep their install
+          // and font guidance.
+          if (report && !compact) printBatchTrailer(trailers);
           return cliError(
             entries.length > 1 ? `${entry.file}: ${err.message}` : err.message,
             {suggestions: err.suggestions, code: err.code},
@@ -696,6 +728,7 @@ export function registerTheme(program) {
           jsonOut(batch);
         }
       } else if (entries.length > 1) {
+        if (report && !compact) printBatchTrailer(trailers);
         emit(
           text(
             options.check
