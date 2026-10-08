@@ -110,6 +110,10 @@ export const docs = {
       title: 'Store end-user color intent',
       content: [
         {
+          type: 'prose',
+          text: 'Use these choices when your product lets people override colors in an editable chart. Automatic is the way to remove a manual choice and return that series to the chart default. A chart with no end-user color control does not need to expose Automatic.',
+        },
+        {
           type: 'table',
           headers: ['Choice', 'Persist', 'Theme behavior'],
           rows: [
