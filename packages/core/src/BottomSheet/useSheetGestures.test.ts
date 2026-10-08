@@ -157,11 +157,97 @@ describe('useSheetGestures', () => {
     expect(hook.result.current.settledOffset).toBe(0);
   });
 
+  describe('release projection', () => {
+    // A release is judged where the sheet would coast to at the finger's
+    // speed, the way a thrown scroll view is, not where the finger left it.
+    it('dismisses on a medium throw released short of the dismiss line', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      // 150px in 150ms = 1px/ms. The finger stops at 150, well short of the
+      // 280px line; a surface moving at that speed coasts far past it.
+      move(hook, 50, 50, t);
+      move(hook, 100, 100, t);
+      move(hook, 150, 150, t);
+      up(hook, 150, 152, t);
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('lands a gentle throw on the next detent, not back where it started', () => {
+      const onSnap = vi.fn();
+      const {hook, onDismiss} = setup({snapHeights: () => [200], onSnap});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      // 60px in 200ms = 0.3px/ms: too slow to be a flick, too short to reach
+      // the 200px detent by position. The coast carries it there.
+      move(hook, 30, 100, t);
+      move(hook, 60, 200, t);
+      up(hook, 60, 202, t);
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(200);
+      expect(onSnap).toHaveBeenLastCalledWith(200);
+    });
+
+    it('reads the release speed over the last stretch, so one slow sample does not cancel a throw', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      move(hook, 60, 20, t); // 3px/ms
+      move(hook, 62, 90, t); // the lift's own last, slow sample
+      up(hook, 62, 92, t);
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('reads a throw that begins after a hold at its own speed, not the average since touch-down', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      move(hook, 0, 250, t); // a still hold on the handle
+      move(hook, 30, 275, t); // then 60px in 50ms
+      move(hook, 60, 300, t);
+      up(hook, 60, 302, t);
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('reads a single move after a hold as a move, not as the whole hold', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      move(hook, 60, 300, t); // one sample, 300ms after touch-down
+      up(hook, 60, 302, t);
+      expect(onDismiss).toHaveBeenCalledTimes(1);
+    });
+
+    it('releases no throw from a finger that rested before lifting', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      move(hook, 60, 20, t); // 3px/ms ...
+      up(hook, 60, 400, t); // ... then 380ms of rest, then the lift
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(0);
+    });
+
+    it('settles a throw that would coast past the line at the shortest detent when canDismiss is false', () => {
+      const {hook, onDismiss} = setup({
+        canDismiss: false,
+        snapHeights: () => [200],
+      });
+      const t = makeTarget();
+      down(hook, 0, 0, t);
+      move(hook, 50, 50, t);
+      move(hook, 100, 100, t);
+      up(hook, 100, 102, t);
+      expect(onDismiss).not.toHaveBeenCalled();
+      expect(hook.result.current.settledOffset).toBe(200);
+    });
+  });
+
   it('does not flick-dismiss on a fast but short nudge', () => {
     const {hook, onDismiss} = setup({snapHeights: () => [200]});
     const t = makeTarget();
     // Fast (20px/10ms = 2px/ms) but only 20px of travel — under the distance
-    // floor, so it settles rather than dismissing.
+    // floor, so nothing is projected and it settles rather than dismissing.
     down(hook, 0, 0, t);
     move(hook, 20, 10, t);
     up(hook, 20, 12, t);

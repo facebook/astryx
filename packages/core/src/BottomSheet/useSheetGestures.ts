@@ -10,9 +10,10 @@
  * @position Internal to BottomSheet; not exported from the core entry point
  *
  * Drag + snap machinery for the bottom sheet. Tracks a pointer drag down the
- * block axis, translates the sliding surface live, and on release either
- * settles to the nearest snap detent (a slow drag) or dismisses (a fast flick
- * down). A fast flick up expands to the tallest detent. This is the core
+ * block axis, translates the sliding surface live, and on release settles to
+ * the detent nearest where the sheet would coast to at the finger's speed, or
+ * dismisses when that is past the dismiss line. A slow drag projects onto
+ * itself and places; a throw continues past the finger. This is the core
  * behavior split the sheet needs: DRAG places, SWIPE closes.
  *
  * A settled detent is split across two properties: `settledLayoutOffset` is
@@ -90,11 +91,19 @@ interface SheetDetents {
   peekOffset: number | null;
 }
 
-// A flick (fast throw) dismisses (down) or expands (up) regardless of where
-// it ends. Requires both a speed and a distance floor so a small nudge
-// doesn't trigger it.
-const FLICK_VELOCITY = 1.2; // px/ms
-const FLICK_MIN_DISTANCE = 48; // px traveled during the gesture
+// A release is judged where the sheet WOULD come to rest, not where the
+// finger left it: the release position plus the distance a surface moving at
+// the finger's speed travels while it decelerates. The rate is UIKit's normal
+// scroll deceleration (0.998 per ms), so a throw ends where a thrown scroll
+// view would, and a slow release projects onto itself. A gesture shorter than
+// the travel floor projects nothing: a nudge has no throw to continue.
+const DECELERATION_RATE = 0.998;
+const PROJECTION_FACTOR = DECELERATION_RATE / (1 - DECELERATION_RATE); // ms
+const PROJECTION_MIN_TRAVEL = 48; // px traveled during the gesture
+// The release speed is the finger's speed over its last stretch, not between
+// its last two samples: one slow sample before the lift must not cancel a
+// throw, and a finger that paused before lifting has no speed at all.
+const VELOCITY_WINDOW_MS = 100;
 // On a slow drag below the shortest detent, dismiss once dragged past it by
 // more than this fraction of that detent's height; otherwise snap back to it.
 const DISMISS_OVERSHOOT_RATIO = 0.4;
@@ -517,6 +526,9 @@ export function useSheetGestures({
     startCoord: number;
     lastCoord: number;
     lastTime: number;
+    // The finger's recent positions, oldest first, kept to VELOCITY_WINDOW_MS
+    // (and never fewer than two) for the release speed.
+    samples: {t: number; y: number}[];
     velocity: number;
     height: number;
     baseOffset: number;
@@ -877,8 +889,12 @@ export function useSheetGestures({
         maxOffset,
         offscreenBlockEndInsetRef.current,
       );
-      const speed = Math.abs(velocity);
-      const isFlick = speed > FLICK_VELOCITY && travel > FLICK_MIN_DISTANCE;
+      const dismissOffset =
+        maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
+      const projected =
+        travel > PROJECTION_MIN_TRAVEL
+          ? offset + velocity * PROJECTION_FACTOR
+          : offset;
       const settleAt = (target: number) => {
         // A peek keeps the full layout height and slides below the viewport;
         // every taller detent resizes the scrolling area to what it shows.
@@ -902,8 +918,6 @@ export function useSheetGestures({
             offscreenBlockEndInsetRef.current,
           ),
         );
-        const dismissOffset =
-          maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO;
         onScrimOpacityRef.current?.(
           scrimOpacityForOffset(target, offsets, dismissOffset, peekOffset),
         );
@@ -912,7 +926,9 @@ export function useSheetGestures({
         }
       };
 
-      if (dir > 0 && isFlick) {
+      // A release that would coast past the dismiss line closes the sheet: a
+      // throw from anywhere, or a slow drag that already crossed it.
+      if (dir > 0 && projected > dismissOffset) {
         if (canDismissRef.current) {
           prepareScrollAreaSettle(
             baseLayoutOffset,
@@ -929,49 +945,16 @@ export function useSheetGestures({
         }
         return;
       }
-      // Fast upward flick = expand to the tallest detent (the sheet's full
-      // provided height).
-      if (dir < 0 && isFlick) {
-        prepareScrollAreaSettle(
-          baseLayoutOffset,
-          0,
-          0,
-          renderedOffset,
-          layoutOffset,
-          naturalEndGap,
-          true,
-        );
-        recordSettledLayoutOffset(0);
-        settledDetentIndexRef.current = 0;
-        setDragOffset(0);
-        setSettledOffset(0);
-        onSnapRef.current?.(
-          visibleHeightForOffset(height, 0, offscreenBlockEndInsetRef.current),
-        );
-        onScrimOpacityRef.current?.(1);
-        hapticTick();
-        return;
-      }
-      if (offset > maxOffset + shortestDetentHeight * DISMISS_OVERSHOOT_RATIO) {
-        if (canDismissRef.current) {
-          prepareScrollAreaSettle(
-            baseLayoutOffset,
-            baseOffset,
-            baseLayoutOffset,
-            baseLayoutOffset,
-            baseLayoutOffset,
-            naturalEndGap,
-            false,
-          );
-          onDismissRef.current();
-        } else {
-          settleAt(maxOffset);
-        }
-        return;
-      }
-      // Settle to the nearest detent in the drag direction (never back past
-      // the starting detent), de-duped and direction-clamped by the util.
-      const target = resolveSettleOffset(offset, offsets, dir, baseOffset);
+      // Settle to the detent nearest where the release would coast to, in the
+      // drag direction (never back past the starting detent), de-duped and
+      // direction-clamped by the util. A throw upward projects past the
+      // tallest detent and lands on it.
+      const target = resolveSettleOffset(
+        Math.min(Math.max(projected, 0), maxOffset),
+        offsets,
+        dir,
+        baseOffset,
+      );
       settleAt(target);
     },
     [prepareScrollAreaSettle, recordSettledLayoutOffset, resolveDetents],
@@ -1002,6 +985,7 @@ export function useSheetGestures({
         startCoord: start,
         lastCoord: event.clientY,
         lastTime: event.timeStamp,
+        samples: [{t: event.timeStamp, y: event.clientY}],
         velocity: 0,
         height: sheetHeight,
         baseOffset: settledOffset,
@@ -1080,9 +1064,23 @@ export function useSheetGestures({
       const delta = event.clientY - state.startCoord;
       const dt = event.timeStamp - state.lastTime;
       if (dt > 0) {
-        state.velocity = (event.clientY - state.lastCoord) / dt;
         state.lastCoord = event.clientY;
         state.lastTime = event.timeStamp;
+        state.samples.push({t: event.timeStamp, y: event.clientY});
+        // Drop what fell out of the window while a partner remains: a throw
+        // that begins after a rest reads its own speed, not the average since
+        // touch-down.
+        while (
+          state.samples.length > 2 &&
+          event.timeStamp - state.samples[0].t > VELOCITY_WINDOW_MS
+        ) {
+          state.samples.shift();
+        }
+        const first = state.samples[0];
+        // A lone partner older than the window says only where the finger
+        // rested; the move it precedes is read as if it took the window.
+        const span = Math.min(event.timeStamp - first.t, VELOCITY_WINDOW_MS);
+        state.velocity = span > 0 ? (event.clientY - first.y) / span : 0;
       }
       const {offsets, peekOffset} = resolveDetents(state.height);
 
@@ -1159,6 +1157,11 @@ export function useSheetGestures({
       const delta = event.clientY - state.startCoord;
       const offset = Math.max(0, state.baseOffset + delta);
       const dir = delta === 0 ? 0 : delta > 0 ? 1 : -1;
+      // A finger that rested before lifting released nothing in motion.
+      const velocity =
+        event.timeStamp - state.lastTime < VELOCITY_WINDOW_MS
+          ? state.velocity
+          : 0;
       dragStateRef.current = null;
       if (!state.syntheticTouch) {
         target.releasePointerCapture?.(event.pointerId);
@@ -1167,7 +1170,7 @@ export function useSheetGestures({
       setIsTraveling(false);
       settleFromDrag(
         offset,
-        state.velocity,
+        velocity,
         state.height || 1,
         dir,
         Math.abs(delta),
