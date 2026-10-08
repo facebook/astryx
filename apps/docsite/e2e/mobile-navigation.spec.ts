@@ -122,9 +122,11 @@ test('desktop search stays exposed across hydration at exactly 768px', async ({
     expect(initialBox.y + initialBox.height).toBeLessThan(844);
 
     resumeHydration();
-    // Opening and closing the real search dialog proves hydration completed.
-    await nav.getByRole('button', {name: 'Search', exact: true}).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    // Retry the idempotent open action if the first click precedes hydration.
+    await expect(async () => {
+      await nav.getByRole('button', {name: 'Search', exact: true}).click();
+      await expect(page.getByRole('dialog')).toBeVisible({timeout: 1000});
+    }).toPass({timeout: 10000});
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toBeHidden();
     expect(await search.boundingBox()).toEqual(initialBox);
