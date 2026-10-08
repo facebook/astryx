@@ -46,6 +46,24 @@ describe('extractImportedPackages', () => {
     expect(extractImportedPackages(source).size).toBe(0);
   });
 
+  it('ignores Node builtins with the node: prefix', () => {
+    const source = `
+      import * as fs from 'node:fs';
+      import * as path from 'node:path';
+      import {createRequire} from 'node:module';
+    `;
+    expect(extractImportedPackages(source).size).toBe(0);
+  });
+
+  it('ignores bare Node builtins and their subpaths', () => {
+    const source = `
+      import * as fs from 'fs';
+      import {join} from 'path';
+      import {createReadStream} from 'fs/promises';
+    `;
+    expect(extractImportedPackages(source).size).toBe(0);
+  });
+
   it('handles type imports', () => {
     const source = `import type {Props} from 'some-package';`;
     expect(extractImportedPackages(source)).toEqual(new Set(['some-package']));
@@ -59,6 +77,15 @@ describe('extractImportedPackages', () => {
     expect(extractImportedPackages(source)).toEqual(
       new Set(['@heroicons/react']),
     );
+  });
+
+  it('maps subpath imports to the package root', () => {
+    const source = `
+      import debounce from 'lodash/debounce';
+      import {Chart} from 'recharts/es6';
+    `;
+    const pkgs = extractImportedPackages(source);
+    expect(pkgs).toEqual(new Set(['lodash', 'recharts']));
   });
 });
 

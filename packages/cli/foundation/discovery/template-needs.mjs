@@ -17,6 +17,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import module from 'node:module';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {detectStylingSystem} from '../agent-docs/agent-docs.mjs';
 
@@ -26,6 +27,9 @@ import {detectStylingSystem} from '../agent-docs/agent-docs.mjs';
 const FRAMEWORK_PREFIXES = ['react', 'react-dom'];
 const DESIGN_SYSTEM_SCOPE = '@astryxdesign/';
 const STYLEX_RUNTIME = '@stylexjs/stylex';
+
+// Node builtins: anything with a `node:` prefix or in builtinModules.
+const NODE_BUILTINS = new Set(module.builtinModules);
 
 /**
  * Extract bare (non-relative) package names from ES import statements.
@@ -44,9 +48,12 @@ export function extractImportedPackages(source) {
   let m;
   while ((m = re.exec(source)) !== null) {
     const spec = m[1];
+    // Skip Node builtins: `node:fs`, `fs`, `fs/promises`, etc.
+    if (spec.startsWith('node:')) continue;
     const name = spec.startsWith('@')
       ? spec.split('/').slice(0, 2).join('/')
       : spec.split('/')[0];
+    if (NODE_BUILTINS.has(name)) continue;
     pkgs.add(name);
   }
   return pkgs;
