@@ -53,7 +53,6 @@ export const INTERACTIVE_SELECTORS = [
   '[role="slider"]',
   '[role="spinbutton"]',
   '[data-pressable-container]',
-  '[contenteditable]:not([contenteditable="false"])',
 ].join(',');
 
 const NON_INTERACTIVE_SELECTORS = '[aria-readonly="true"]';
