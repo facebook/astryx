@@ -176,7 +176,19 @@ function WebGLSeries() {
     gl.drawArrays(gl.TRIANGLES, 0, 18);
     gl.finish();
 
+    const centerPixel = new Uint8Array(4);
+    gl.readPixels(
+      Math.floor(canvas.width / 2),
+      Math.floor(canvas.height / 2),
+      1,
+      1,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      centerPixel,
+    );
+
     drawCount.current += 1;
+    canvas.dataset.centerPixel = Array.from(centerPixel).join(',');
     canvas.dataset.drawCount = String(drawCount.current);
     canvas.dataset.rgba = rgba.join(',');
   }, [rgba]);
@@ -230,21 +242,8 @@ function RuntimeWebGLThemeSwitch() {
 }
 
 function readCenterPixel(canvas: HTMLCanvasElement): number[] {
-  const gl = canvas.getContext('webgl');
-  if (!gl) {
-    throw new Error('WebGL is unavailable.');
-  }
-  const pixel = new Uint8Array(4);
-  gl.readPixels(
-    Math.floor(canvas.width / 2),
-    Math.floor(canvas.height / 2),
-    1,
-    1,
-    gl.RGBA,
-    gl.UNSIGNED_BYTE,
-    pixel,
-  );
-  return Array.from(pixel);
+  const value = canvas.dataset.centerPixel;
+  return value ? value.split(',').map(Number) : [];
 }
 
 export const RuntimeUniformUpdate: Story = {
