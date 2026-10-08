@@ -422,9 +422,10 @@ function changedChangesets(changes, head) {
  * @param {Array<{filename: string, previous_filename?: string|null, status?: string|null}>} input.changes
  * @param {Tree} input.base
  * @param {Tree} input.head
+ * @param {Set<string>} [input.coveredElsewhere]  packages a later fix-up Changeset covers (release audit only)
  * @returns {{required: Map<string, Map<string, string[]>>, covered: Set<string>, exempt: Array<{file: string, reason: string}>, problems: string[]}}
  */
-export function checkCoverage({changes, base, head}) {
+export function checkCoverage({changes, base, head, coveredElsewhere = new Set()}) {
   const baseConfig = readJson(base, '.changeset/config.json') || {};
   const headConfig = readJson(head, '.changeset/config.json') || {};
   /** @type {Map<string, Map<string, string[]>>} package -> surface -> files */
@@ -484,6 +485,7 @@ export function checkCoverage({changes, base, head}) {
   }
 
   const covered = namedPackages(changedChangesets(changes, head));
+  for (const pkg of coveredElsewhere) covered.add(pkg);
   const problems = [];
   for (const [pkg, bySurface] of [...required.entries()].sort()) {
     if (!covered.has(pkg)) problems.push(coverageProblem(pkg, bySurface));
@@ -848,9 +850,17 @@ export function checkReleasedIds({released, releasedLabel, base, head, described
  * @param {Tree} input.head
  * @param {Tree|null} input.released  latest stable release, or null to skip rule 2
  * @param {boolean} [input.attributeToChange]  false at release time: every missing id counts
+ * @param {Set<string>} [input.coveredElsewhere]  see checkCoverage
  */
-export function evaluateChange({changes, base, head, released, attributeToChange = true}) {
-  const coverage = checkCoverage({changes, base, head});
+export function evaluateChange({
+  changes,
+  base,
+  head,
+  released,
+  attributeToChange = true,
+  coveredElsewhere,
+}) {
+  const coverage = checkCoverage({changes, base, head, coveredElsewhere});
   let ids = {missing: [], attributed: [], problems: []};
   if (released) {
     ids = checkReleasedIds({
@@ -863,6 +873,29 @@ export function evaluateChange({changes, base, head, released, attributeToChange
     });
   }
   return {coverage, ids, problems: [...coverage.problems, ...ids.problems]};
+}
+
+/**
+ * Packages that pending Changesets cover for an already-merged pull request:
+ * a fix-up Changeset that names the package and cites the pull request
+ * (`#1234`), as the release process asks for a change that merged without
+ * one.
+ *
+ * @param {ReturnType<typeof pendingChangesets>} pending
+ * @param {string|null} prNumber
+ * @returns {Set<string>}
+ */
+export function fixupCoverage(pending, prNumber) {
+  const covered = new Set();
+  if (!prNumber) return covered;
+  const cites = new RegExp(`#${prNumber}(?!\\d)`);
+  for (const entry of pending) {
+    if (!cites.test(entry.text)) continue;
+    for (const [name, bump] of Object.entries(entry.releases)) {
+      if (bump !== 'none') covered.add(name);
+    }
+  }
+  return covered;
 }
 
 // ---------------------------------------------------------------------------
@@ -983,6 +1016,7 @@ function main(argv) {
     const commits = git(root, ['rev-list', '--reverse', '--no-merges', `${since}..${until}`])
       .split('\n')
       .filter(Boolean);
+    const pending = pendingChangesets(gitTree(root, until));
     const results = [];
     for (const sha of commits) {
       const subject = git(root, ['log', '-1', '--format=%s', sha]).trim();
@@ -992,6 +1026,7 @@ function main(argv) {
         base: gitTree(root, parent),
         head: gitTree(root, sha),
         released: null,
+        coveredElsewhere: fixupCoverage(pending, /\(#(\d+)\)\s*$/.exec(subject)?.[1] ?? null),
       });
       results.push({
         label: `${sha.slice(0, 10)} ${subject}`,

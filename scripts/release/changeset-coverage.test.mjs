@@ -16,6 +16,8 @@ import {
   cliJsonIds,
   consumerManifestDelta,
   evaluateChange,
+  fixupCoverage,
+  pendingChangesets,
   isPackedFile,
   isWorkspaceDir,
   jsonKeyPaths,
@@ -367,6 +369,21 @@ describe('red arm — #7125: shipped CLI docs changed without a Changeset', () =
 
   it('does not treat the renamed docs route in the golden as a broken JSON id (FR45)', () => {
     expect(change(base, head).ids.problems).toEqual([]);
+  });
+
+  it('at release time, accepts a later fix-up Changeset that names the package and cites the pull request', () => {
+    const fixup = changeset({'@astryxdesign/cli': 'patch'}, '[docs] Layout lists its focused guides.\n\n(#7125)');
+    const pending = pendingChangesets(memoryTree({...head, '.changeset/layout-docs-namespace.md': fixup}));
+    expect([...fixupCoverage(pending, '7125')]).toEqual(['@astryxdesign/cli']);
+    expect(fixupCoverage(pending, '712')).toEqual(new Set());
+    const result = evaluateChange({
+      changes: [{filename: 'packages/cli/assets/docs/layout.doc.mjs', status: 'M'}],
+      base: memoryTree(base),
+      head: memoryTree(head),
+      released: null,
+      coveredElsewhere: fixupCoverage(pending, '7125'),
+    });
+    expect(result.problems).toEqual([]);
   });
 
   it('passes once a [docs] Changeset names @astryxdesign/cli', () => {
