@@ -2750,7 +2750,7 @@ async function themeBuildInternal(
       );
     }
     if (cssParts.length === 0) {
-      logger.log('No overrides found; nothing to build.');
+      logger.log(`${source}No overrides found; nothing to build.`);
       return null;
     }
     // The data-token defaults are theme-independent and go in @layer
@@ -3125,7 +3125,7 @@ export function printCompactTrailer(trailers, {hint = false} = {}) {
       )
       .join(', ');
     logger.log(
-      `[note] Fonts named but not loaded: ${named}. Load them in your app: astryx docs typography`,
+      `[note] Fonts named but not loaded: ${named}. Load them in your app (recipe: astryx docs typography).`,
     );
   }
   if (hint) {

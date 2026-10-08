@@ -13,7 +13,7 @@
 [ok] themes/meadow.css (<size> KB, 3 token overrides, 0 component overrides)
 [ok] themes/nimbus.css (<size> KB, 2 token overrides, 0 component overrides)
 [ok] themes/orchid.css (<size> KB, 2 token overrides, 0 component overrides)
-[note] Fonts named but not loaded: "Space Grotesk" (amber, basil, fjord, grove, kelp, lagoon), "JetBrains Mono" (amber, dune, grove, iris, juniper, meadow, nimbus), "Figtree" (cedar, harbor, meadow). Load them in your app: astryx docs typography
+[note] Fonts named but not loaded: "Space Grotesk" (amber, basil, fjord, grove, kelp, lagoon), "JetBrains Mono" (amber, dune, grove, iris, juniper, meadow, nimbus), "Figtree" (cedar, harbor, meadow). Load them in your app (recipe: astryx docs typography).
 Run with --detail full for the install example and font recipe.
 
 [ok] Built 15 themes.

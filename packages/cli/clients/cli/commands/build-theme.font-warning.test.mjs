@@ -106,7 +106,7 @@ describe('theme build font-loading warning', () => {
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain(
-      '[note] Fonts named but not loaded: "Space Grotesk", "JetBrains Mono". Load them in your app: astryx docs typography\n',
+      '[note] Fonts named but not loaded: "Space Grotesk", "JetBrains Mono". Load them in your app (recipe: astryx docs typography).\n',
     );
     expect(result.stdout).not.toContain('fonts.googleapis.com');
     expect(result.stdout).not.toContain('@font-face');

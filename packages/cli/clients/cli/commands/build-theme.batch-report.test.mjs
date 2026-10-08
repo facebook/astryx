@@ -52,7 +52,7 @@ const FONT_NOTE =
   '[note] Fonts named but not loaded: ' +
   '"Space Grotesk" (amber, basil, fjord, grove, kelp, lagoon), ' +
   '"JetBrains Mono" (amber, dune, grove, iris, juniper, meadow, nimbus), ' +
-  '"Figtree" (cedar, harbor, meadow). Load them in your app: astryx docs typography';
+  '"Figtree" (cedar, harbor, meadow). Load them in your app (recipe: astryx docs typography).';
 const HINT = 'Run with --detail full for the install example and font recipe.';
 const OK_LINE =
   /^\[ok\] themes\/([a-z]+)\.css \(\d+(\.\d+)? KB, \d+ token overrides, \d+ component overrides\)$/;
@@ -225,7 +225,7 @@ describe('theme build report', () => {
     const amber = await runCli(['theme', 'build', 'themes/amber.mjs'], dir);
     expect(amber.status).toBe(0);
     expect(lines(amber.stdout).slice(1)).toEqual([
-      '[note] Fonts named but not loaded: "Space Grotesk", "JetBrains Mono". Load them in your app: astryx docs typography',
+      '[note] Fonts named but not loaded: "Space Grotesk", "JetBrains Mono". Load them in your app (recipe: astryx docs typography).',
       HINT,
     ]);
   }, 120_000);

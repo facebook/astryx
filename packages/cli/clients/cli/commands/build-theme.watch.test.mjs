@@ -157,6 +157,39 @@ describe('theme build --watch', () => {
     expect(stdout).toMatch(/Stopped watching/);
   }, 30_000);
 
+  it.each([
+    [[], false],
+    [['--detail', 'full'], true],
+  ])(
+    'keeps the detail level for each build (%j)',
+    async (detail, full) => {
+      fs.writeFileSync(
+        path.join(tmpDir, 'wd.mjs'),
+        `export default { name: 'wd', tokens: { '--color-bg': '#ffffff' } };\n`,
+      );
+      const child = spawn(
+        process.execPath,
+        [CLI_BIN, ...detail, 'theme', 'build', 'wd.mjs', '--watch'],
+        {cwd: tmpDir, env: {...process.env, FORCE_COLOR: '0'}},
+      );
+      let stdout = '';
+      child.stdout.on('data', d => (stdout += d.toString()));
+      child.stderr.on('data', d => (stdout += d.toString()));
+      try {
+        expect(await waitFor(() => /Watching/i.test(stdout))).toBe(true);
+      } finally {
+        child.kill('SIGINT');
+      }
+      await new Promise(resolve => {
+        child.on('exit', resolve);
+        setTimeout(resolve, 4000);
+      });
+      expect(stdout.includes('Install in your app')).toBe(full);
+      expect(/\[ok\] wd\.css \(/.test(stdout)).toBe(!full);
+    },
+    30_000,
+  );
+
   it('watches every file it was given and rebuilds only the one that changed', async () => {
     const first = path.join(tmpDir, 'w1.mjs');
     const second = path.join(tmpDir, 'w2.mjs');
