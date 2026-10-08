@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {expect, userEvent, waitFor} from 'storybook/test';
+import {expect, fireEvent, userEvent, waitFor} from 'storybook/test';
 import {Button, Card, Stack, Text} from '@astryxdesign/core';
 import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
 import {Heading} from '@astryxdesign/core/Text';
@@ -237,11 +237,16 @@ export const ThemeTokens: Story = {
     expect(revenueBar).not.toBeNull();
     if (revenueBar) {
       await userEvent.hover(revenueBar);
+      const bounds = revenueBar.getBoundingClientRect();
+      fireEvent.mouseMove(revenueBar, {
+        clientX: bounds.left + bounds.width / 2,
+        clientY: bounds.top + bounds.height / 2,
+      });
       await waitFor(() => {
-        const activeBar = canvasElement.querySelector<SVGElement>(
-          `[fill="${hoverSeries.revenue}"]`,
-        );
-        expect(activeBar).not.toBeNull();
+        const activeBar = Array.from(
+          canvasElement.querySelectorAll<SVGElement>('.recharts-active-bar'),
+        ).find(bar => bar.getAttribute('fill') === hoverSeries.revenue);
+        expect(activeBar).not.toBeUndefined();
         if (activeBar) {
           expect(activeBar.getAttribute('fill')).toBe(hoverSeries.revenue);
           expect(getComputedStyle(activeBar).fill).not.toBe(
