@@ -25,7 +25,15 @@ verified_by:
     packages/core/src/theme/themeRegistry.test.ts,
     packages/core/src/AppShell/AppShell.test.tsx,
   ]
-deciding_specs: [spec:AST-012/DEC-1]
+deciding_specs:
+  [
+    spec:AST-012/DEC-1,
+    spec:AST-054/DEC-5,
+    spec:AST-054/DEC-7,
+    spec:AST-054/DEC-8,
+    spec:AST-054/DEC-9,
+    spec:AST-054/DEC-10,
+  ]
 ---
 
 # Theme application
@@ -36,7 +44,7 @@ deciding_specs: [spec:AST-012/DEC-1]
 {
   "scope": "global",
   "triggers": {
-    "theming": ["INV1", "INV2", "INV3", "INV7", "INV8", "INV9"]
+    "theming": ["INV1", "INV2", "INV3", "INV7", "INV8", "INV9", "INV11"]
   }
 }
 ```
@@ -89,6 +97,14 @@ mobile-navigation width points. The nearest Theme wins; without provider context
 it follows the registered root theme, and without an active theme it uses the
 standard width map.
 
+Icon capability consumers use that same active-theme identity. The nearest provider
+supplies normalized icon dimensions, presentation, role-size overrides, adaptive
+registry entries, and component-slot mappings. Detached consumers follow the
+registered root theme. No Icon-specific provider, registry scope, or document
+observer creates another selection path. Built and unbuilt themes expose equivalent
+normalized non-CSS data; application mounts CSS when required but does not reinterpret
+Icon capability policy.
+
 ## Boundaries and invariants
 
 - **INV1 — The nearest provider wins.** Children read the closest Theme context
@@ -119,6 +135,13 @@ standard width map.
   `sm`/`md`/`lg`/`xl`/`2xl` from the nearest active theme through the same root
   fallback as other no-provider consumers. Its mobile side is strictly below the
   point; equality belongs to the wider layout.
+- **INV11 — Icon capability data follows the same active theme.** Registry and
+  adapted direct Icon requests, component slots, hooks, and request-aware reads use
+  the nearest provider or the shared registered-root fallback. Nested themes apply
+  their flattened presentation and per-role inheritance results. Theme switching,
+  hydration, detached roots, server lookup, and built/unbuilt themes select the same
+  supplied icon version for equivalent inputs. Application creates no Icon-specific
+  provider and does not reinterpret presentation, state precedence, or fallback.
 
 This record does not own theme authoring, token definitions, compiler output, or
 which component parts are public theme targets.
@@ -136,14 +159,21 @@ which component parts are public theme targets.
   identity.
 - A change to runtime compilation belongs first in the shared compiler and is
   checked against the static build path.
+- An Icon capability application change tests nearest/nested providers,
+  registered-root fallback, detached roots, server rendering, hydration, theme
+  switching, fixed/adaptive registry entries, ordinary/adapted direct components,
+  role size/effective state, and built/unbuilt parity. It must not create another
+  provider or resolve a different policy from the normalized theme.
 
 ## Owning code
 
 - `Theme.tsx` owns provider scope, runtime style lifetime, and root document sync.
-- `themeRegistry.ts` owns server-safe lookup by theme name.
+- `themeRegistry.ts` owns server-safe lookup by theme name, including normalized
+  non-CSS Icon capability data preserved on the registered `DefinedTheme`.
 - `useTheme.ts` owns provider access and the shared root fallback used by
-  detached consumers. Its observation and subscription logic stays
-  single-owned; extracting another module is not part of this contract.
+  detached consumers. Icon hooks and request-aware reads consume that result rather
+  than observing the document independently. Its observation and subscription logic
+  stays single-owned; extracting another module is not part of this contract.
 - `MediaTheme.tsx` owns local light/dark surface context.
 - `AppShell.tsx` consumes the nearest effective width map for mobile navigation.
 - `architecture:theme-compilation` owns the CSS that Theme mounts.
@@ -151,14 +181,26 @@ which component parts are public theme targets.
 ## Deciding specs
 
 - `spec:AST-012/DEC-1` owns the fixed width-point vocabulary AppShell consumes.
+- `spec:AST-054/DEC-5` owns the shared Icon resolution sequence.
+  `spec:AST-054/DEC-7` and `spec:AST-054/DEC-8` give adapted direct and registry
+  icons equivalent active-theme requests. `spec:AST-054/DEC-9` owns one effective
+  role state, and `spec:AST-054/DEC-10` owns flattened presentation/role-size
+  inheritance. `spec:AST-054/FR15` and `spec:AST-054/FR21` own environment parity.
+
+## Known conformance and verification gaps
+
+INV11's Icon capability lookup and parity paths are accepted but unshipped. Existing
+Theme selection, registry lookup, root fallback, runtime style lifetime, and built-theme
+CSS behavior remain the implemented baseline.
 
 ## Verification
 
-| Invariant        | Evidence                                  | Failure signal                                                                                     |
-| ---------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV3 | `Theme.test.tsx` and portal/root fixtures | A nested provider changes `<html>`, or portal content cannot find the root theme                   |
-| INV4, INV5       | Runtime injection and cleanup tests       | A built theme injects CSS, duplicate providers duplicate CSS, or one unmount removes shared styles |
-| INV6, INV7       | `useTheme.test.tsx`                       | Provider consumers observe the DOM, fallback observers leak, or system mode resolves incorrectly   |
-| INV8             | `MediaTheme.dom.test.tsx`                 | Surface mode replaces the theme, loses parent component rules, or remounts children                |
-| INV9             | Runtime/build compiler comparison         | Provider-mounted CSS differs from built CSS for the same theme                                     |
-| INV10            | `AppShell.test.tsx`                       | A named point ignores the nearest theme or treats equality as mobile                               |
+| Invariant        | Evidence                                                                                                               | Failure signal                                                                                                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| INV1, INV2, INV3 | `Theme.test.tsx` and portal/root fixtures                                                                              | A nested provider changes `<html>`, or portal content cannot find the root theme                                                                                         |
+| INV4, INV5       | Runtime injection and cleanup tests                                                                                    | A built theme injects CSS, duplicate providers duplicate CSS, or one unmount removes shared styles                                                                       |
+| INV6, INV7       | `useTheme.test.tsx`                                                                                                    | Provider consumers observe the DOM, fallback observers leak, or system mode resolves incorrectly                                                                         |
+| INV8             | `MediaTheme.dom.test.tsx`                                                                                              | Surface mode replaces the theme, loses parent component rules, or remounts children                                                                                      |
+| INV9             | Runtime/build compiler comparison                                                                                      | Provider-mounted CSS differs from built CSS for the same theme                                                                                                           |
+| INV10            | `AppShell.test.tsx`                                                                                                    | A named point ignores the nearest theme or treats equality as mobile                                                                                                     |
+| INV11            | Icon resolver/hook/server/browser fixtures across root/nested/detached, switching, hydration, and built/unbuilt themes | Equivalent active-theme inputs select different source/size/appearance/weight, an Icon-specific observer/provider appears, or application reinterprets normalized policy |

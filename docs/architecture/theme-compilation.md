@@ -35,6 +35,14 @@ deciding_specs:
     spec:AST-006/DEC-4,
     spec:AST-012/DEC-3,
     spec:AST-012/DEC-4,
+    spec:AST-054/DEC-1,
+    spec:AST-054/DEC-2,
+    spec:AST-054/DEC-3,
+    spec:AST-054/DEC-5,
+    spec:AST-054/DEC-7,
+    spec:AST-054/DEC-8,
+    spec:AST-054/DEC-9,
+    spec:AST-054/DEC-10,
   ]
 ---
 
@@ -46,7 +54,7 @@ deciding_specs:
 {
   "scope": "global",
   "triggers": {
-    "theming": ["INV2", "INV3", "INV4", "INV6", "INV9", "INV10"]
+    "theming": ["INV2", "INV3", "INV4", "INV6", "INV9", "INV10", "INV15"]
   }
 }
 ```
@@ -81,6 +89,15 @@ The current web compiler works like this:
 6. A built theme preserves local-token ownership, effective width points,
    generative-axis metadata, and normalized ordered rules, and is marked so the
    provider does not compile or inject it again.
+
+INV15 is the accepted compiler and packaging contract for non-CSS Icon capability
+data; it is not current build behavior. Its implementation must package the normalized
+capability projection, fixed/adaptive entries, component-slot mappings, resolved
+dimensions, presentation, role-size overrides, and generated role/state metadata in
+built JavaScript/types rather than CSS. Runtime, static build, and server consumers
+must use the same normalized values and shared resolver. The serialized projection
+mirrors the application capability set and cannot independently admit or override
+values.
 
 For top-level declarations in base component target rules, the compiler preserves
 generic CSS properties as written. When a guaranteed property needs to reach
@@ -162,6 +179,17 @@ Platform-specific details stay inside that compiler.
   diagnostics schema. A CLI paired with an older core retains that core's existing
   compilation behavior; it does not pretend to detect drops the older core cannot
   report.
+- **INV15 — Built Icon capability data must preserve normalized semantics.** The
+  accepted compiler output contract retains a serialized projection of the application
+  capability set, canonical/overridden dimensions, atomic presentation, per-role size
+  results, fixed/adaptive entries, component-slot maps, and generated role/state
+  metadata without converting them to CSS or dropping sparse branches. The serialized
+  projection cannot independently admit or override application values. Invalid
+  authoring fails before partial output. Runtime, build, and server resolution select
+  the same supplied version and diagnostics outcome for equivalent input; explicit
+  mismatch may warn in development, theme-policy fallback remains inspection-only,
+  and production stays quiet. This invariant is an ownership and conformance target,
+  not a claim about the current build implementation.
 
 This record does not own:
 
@@ -227,6 +255,14 @@ This record does not own:
   adaptations, inheritance, and Heading fallback rules. Collector tests verify
   append-only text, unchanged CSS with/without a collector, and build receipts.
 - Build packaging may change without changing compiled theme behavior.
+- Changing Icon capability packaging verifies source/built/server parity for grouped
+  contract composition, canonical and theme dimensions, absent/replace/null
+  presentation, per-role merge/null clear, fixed/adaptive registry entries,
+  ordinary/adapted direct sources, `true` versus metadata-bearing roles, effective
+  state, and exact mismatch provenance. Malformed contracts, entries, ranges,
+  dimensions, presentations, and role-size overrides fail before output; a malformed
+  runtime registry entry instead follows the source-local diagnostic and precedence
+  from `spec:AST-054/FR6`.
 
 ## Owning code
 
@@ -238,9 +274,12 @@ This record does not own:
 - Component `.doc.mjs` `theming.derived[]` mirrors those mappings;
   `theming.vars[]` distinguishes reviewed public semantic variables from private
   implementation variables.
-- `packages/cli/api/theme/build/build.mjs` saves and packages compiled CSS. Its
-  private-variable diagnostic is currently non-blocking; rejecting that input is
-  a named conformance gap, not existing enforcement. It also owns the
+- `packages/cli/api/theme/build/build.mjs` saves and packages the current compiled
+  CSS, JavaScript, and types. It is the accepted owner for packaging normalized Icon
+  capability/registry/role metadata under INV15 once that unshipped contract is
+  implemented; this record does not claim that current `build.mjs` preserves that
+  metadata. Its private-variable diagnostic is currently non-blocking; rejecting that
+  input is a named conformance gap, not existing enforcement. It also owns the
   adaptation-capability check for the installed core: baseline generation is
   required, and `generateAdaptationCSS` is demanded by valid or malformed
   adaptation intent in authored, resolved, or built input.
@@ -259,22 +298,37 @@ parity. The system owner separately selected one definition with platform-specif
 outputs and the guaranteed, best-effort, public-semantic, and private implementation
 tiers.
 
+`spec:AST-054/DEC-1`, `spec:AST-054/DEC-2`, and `spec:AST-054/DEC-3` own
+capability composition, dimensions, and diagnostics. `spec:AST-054/DEC-5` owns
+source-local one-direction resolution. `spec:AST-054/DEC-7` and
+`spec:AST-054/DEC-8` own adapted-direct parity and theme presentation.
+`spec:AST-054/DEC-9` owns generated role/state metadata, and
+`spec:AST-054/DEC-10` owns exact inheritance, inventory, and conformance.
+`spec:AST-054/FR15` and `spec:AST-054/FR21` own runtime/build/server parity.
+
 ## Verification
 
-| Invariant        | Evidence                                                                                                        | Failure signal                                                                                                          |
-| ---------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV3 | Compiler imports and runtime/build comparison fixtures                                                          | Runtime and build use different theme-to-CSS logic or produce different web rules                                       |
-| INV4             | `generateThemeRules.test.ts` and source/distribution cascade tests                                              | Scope or layer order differs by output path                                                                             |
-| INV5             | Existing per-property fixtures (partial; gap below)                                                             | A guaranteed property compiles but does not produce its promised observable effect                                      |
-| INV6, INV7       | Existing registry and CLI public-variable tests (partial)                                                       | Private variables become authorable, or a reviewed public semantic variable fails build/runtime                         |
-| INV8             | Component target metadata and compatibility review                                                              | Successful generic emission is treated as a guaranteed public behavior                                                  |
-| INV9, INV10      | Platform compiler tests when another compiler ships                                                             | CSS details enter shared authoring, or shared theme intent silently disappears                                          |
-| INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures                                                 | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure                          |
-| INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures                                                    | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges                                |
-| INV13, INV14     | Declaration scanner, generator, Theme mounting, CLI receipt tests, and the existing theme-family Chromium guard | One unsafe declaration corrupts neighbors, valid CSS changes, legacy token generation crashes, or reporting changes CSS |
-| Built themes     | Theme and CLI build tests                                                                                       | Runtime recompiles a built theme, or built output omits canonical rules                                                 |
+| Invariant        | Evidence                                                                                                                       | Failure signal                                                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV2, INV3 | Compiler imports and runtime/build comparison fixtures                                                                         | Runtime and build use different theme-to-CSS logic or produce different web rules                                                                                 |
+| INV4             | `generateThemeRules.test.ts` and source/distribution cascade tests                                                             | Scope or layer order differs by output path                                                                                                                       |
+| INV5             | Existing per-property fixtures (partial; gap below)                                                                            | A guaranteed property compiles but does not produce its promised observable effect                                                                                |
+| INV6, INV7       | Existing registry and CLI public-variable tests (partial)                                                                      | Private variables become authorable, or a reviewed public semantic variable fails build/runtime                                                                   |
+| INV8             | Component target metadata and compatibility review                                                                             | Successful generic emission is treated as a guaranteed public behavior                                                                                            |
+| INV9, INV10      | Platform compiler tests when another compiler ships                                                                            | CSS details enter shared authoring, or shared theme intent silently disappears                                                                                    |
+| INV11            | `defineTheme.test.ts` and `build.test.mjs` local-token fixtures                                                                | Runtime/static output rewrites a local name, disagrees, or leaves partial output after failure                                                                    |
+| INV12            | `themeAdaptations.test.ts` and CLI adaptation build fixtures                                                                   | Rule blocks merge/reorder/drop, surfaces lose precedence, or runtime/static CSS diverges                                                                          |
+| INV13, INV14     | Declaration scanner, generator, Theme mounting, CLI receipt tests, and the existing theme-family Chromium guard                | One unsafe declaration corrupts neighbors, valid CSS changes, legacy token generation crashes, or reporting changes CSS                                           |
+| INV15            | Source/built/server capability snapshots, resolver/diagnostic parity, inheritance fixtures, and generated inventory comparison | Built output drops or rewrites Icon metadata, emits partial invalid output, resolves another supplied version, changes warning provenance, or inventory disagrees |
+| Built themes     | Theme and CLI build tests                                                                                                      | Runtime recompiles a built theme, or built output omits canonical rules                                                                                           |
 
 ## Known conformance and verification gaps
+
+INV15's Icon capability packaging and runtime/build/server resolver parity are accepted
+but unshipped. Current `build.mjs` does not preserve the capability, presentation,
+role-size, adaptive-entry, or generated role/state metadata described by INV15.
+Existing fixed registry packaging and built-theme CSS behavior remain the implemented
+baseline.
 
 Declaration-boundary enforcement and the warnings-array collector in INV13–INV14
 are accepted but not yet shipped. Their verification obligations above describe

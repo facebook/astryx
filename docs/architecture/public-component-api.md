@@ -30,6 +30,11 @@ deciding_specs:
     spec:AST-005/DEC-1,
     spec:AST-012/DEC-1,
     spec:AST-012/DEC-2,
+    spec:AST-054/DEC-1,
+    spec:AST-054/DEC-6,
+    spec:AST-054/DEC-7,
+    spec:AST-054/DEC-8,
+    spec:AST-054/DEC-9,
   ]
 ---
 
@@ -51,7 +56,8 @@ deciding_specs:
       "INV7",
       "INV8",
       "INV9",
-      "INV12"
+      "INV12",
+      "INV15"
     ]
   }
 }
@@ -135,6 +141,14 @@ guidance owns the process used to propose and test APIs.
 - **INV14 — Shared breakpoint names keep one meaning.** Components that accept a
   theme width point use `sm`/`md`/`lg`/`xl`/`2xl` from the active Theme. A
   `below` boundary is exclusive, so equality belongs to the wider side.
+- **INV15 — Icon capability APIs keep independent caller intent and safe source
+  boundaries.** Optional Icon size, appearance, and weight requests remain separate;
+  final size may select only the theme's default weight. Appearance is caller-owned
+  when the required supplied artwork cannot be derived from the semantic name or
+  component role/state. Adapter-produced direct icons remain assignable to
+  `IconType` and carry participation through opaque Astryx metadata; ordinary direct
+  components receive no presentation props. Components do not gain appearance or
+  weight props when their role/state contract can derive the visual result.
 
 This record applies to stable public packages. Lab components are not stable
 public promises until promotion.
@@ -157,7 +171,14 @@ public promises until promotion.
   when the existing docs would otherwise become false. Fixing an implementation
   defect does not by itself require consumer-doc changes.
 - A new prop includes the admission argument from `spec:AST-002/DEC-1`; it does
-  not get accepted only because it solves one callsite.
+  not get accepted only because it solves one callsite. Icon `appearance` satisfies
+  that bar under `spec:AST-054/DEC-6` only for caller-owned supplied-artwork intent
+  that semantic name and documented component state cannot derive.
+- Changes to the grouped Icon capability types, `ComponentIconSlotMap` value
+  contract, conditional `ComponentIconStateName`, or adapter participation metadata
+  update their public subpath exports, generated declarations/docs, compatibility
+  fixtures, and owning system/slot records together. `true` slot values and ordinary
+  `IconType` components remain valid nonparticipants.
 - A new public semantic CSS custom property includes the same admission argument
   and shows why the target's guaranteed CSS property set cannot express the
   caller-owned need. Its detailed contract and evidence stay in the owning
@@ -189,6 +210,12 @@ public promises until promotion.
   destination-safety decision.
 - `spec:AST-012/DEC-1` and `spec:AST-012/DEC-2` — components reuse the fixed
   theme width names and inclusive-`from`/exclusive-`below` edge meanings.
+- `spec:AST-054/DEC-1` owns grouped public Icon capability types.
+  `spec:AST-054/DEC-6` admits independent caller-owned appearance.
+  `spec:AST-054/DEC-7` preserves `IconType` compatibility through opaque adapter
+  participation, `spec:AST-054/DEC-8` keeps explicit requests authoritative over
+  theme presentation, and `spec:AST-054/DEC-9` keeps `true` slot declarations
+  compatible while adding conditional role-state types.
 
 Transition Action sequencing and pending behavior belong to their component or
 family contract. This record links that owner once it is current; it does not
@@ -196,17 +223,18 @@ copy the component matrix.
 
 ## Verification
 
-| Invariant               | Evidence                                                                     | Failure signal                                                                                                           |
-| ----------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| INV1, INV8              | Export, public-subpath, prop, and ref checks                                 | A promised component/type cannot be imported or its ref cannot reach the contract element                                |
-| INV2                    | Naming and logical-direction lint/tests                                      | Equivalent concepts use conflicting names or physical direction leaks into public API                                    |
-| INV3, INV4              | Historical API review benchmark and `spec:AST-002` evidence                  | A prop combines unrelated axes or exposes a derivable implementation choice                                              |
-| INV5, INV6, INV7        | BaseProps/passthrough lint and representative runtime tests                  | Consumer ARIA/data/style/events are dropped, clobber component semantics, or fail to compose                             |
-| INV9                    | Published-surface, Changeset, migration, and public-type checks              | A released API changes without explicit compatibility evidence                                                           |
-| INV11                   | Public-API admission review plus owning theming/component tests              | A public semantic custom property exposes derivable or unsupported implementation detail                                 |
-| INV12, INV13            | Generated declaration/export/behavior inventory plus canonical-owner mapping | A reachable supporting type or behavior is called internal, or mechanical evidence is treated as permission to accept it |
-| INV14                   | `AppShell.test.tsx`                                                          | A component hardcodes a divergent point or treats equality as below                                                      |
-| Consumer-doc projection | `docPropReferences.test.ts` and `docPropLiterals.test.ts`                    | Docs name a nonexistent prop or omit public literal choices                                                              |
+| Invariant               | Evidence                                                                                                               | Failure signal                                                                                                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV8              | Export, public-subpath, prop, and ref checks                                                                           | A promised component/type cannot be imported or its ref cannot reach the contract element                                                                           |
+| INV2                    | Naming and logical-direction lint/tests                                                                                | Equivalent concepts use conflicting names or physical direction leaks into public API                                                                               |
+| INV3, INV4              | Historical API review benchmark and `spec:AST-002` evidence                                                            | A prop combines unrelated axes or exposes a derivable implementation choice                                                                                         |
+| INV5, INV6, INV7        | BaseProps/passthrough lint and representative runtime tests                                                            | Consumer ARIA/data/style/events are dropped, clobber component semantics, or fail to compose                                                                        |
+| INV9                    | Published-surface, Changeset, migration, and public-type checks                                                        | A released API changes without explicit compatibility evidence                                                                                                      |
+| INV11                   | Public-API admission review plus owning theming/component tests                                                        | A public semantic custom property exposes derivable or unsupported implementation detail                                                                            |
+| INV12, INV13            | Generated declaration/export/behavior inventory plus canonical-owner mapping                                           | A reachable supporting type or behavior is called internal, or mechanical evidence is treated as permission to accept it                                            |
+| INV14                   | `AppShell.test.tsx`                                                                                                    | A component hardcodes a divergent point or treats equality as below                                                                                                 |
+| INV15                   | Icon public type tests, adapter assignability/prop-leakage fixtures, role augmentation tests, and API admission review | Independent requests rewrite one another, ordinary direct components receive presentation props, `true` stops type-checking, or a derivable component prop is added |
+| Consumer-doc projection | `docPropReferences.test.ts` and `docPropLiterals.test.ts`                                                              | Docs name a nonexistent prop or omit public literal choices                                                                                                         |
 
 Known verification gaps:
 
@@ -217,5 +245,9 @@ Known verification gaps:
   delta across supporting types, context members, hook returns, utility signatures,
   defaults, CLI schemas, and observable behavior for both the branch and synthetic
   merge. Reviews must build that inventory explicitly until enforcement exists.
+- INV15's public Icon capability types, adapter participation metadata, and
+  metadata-bearing slot/state types are accepted but unshipped. Existing fixed Icon
+  props, ordinary `IconType` components, and `true` slot declarations remain the
+  implemented public baseline.
 
 These gaps are named here rather than treating partial checks as complete proof.
