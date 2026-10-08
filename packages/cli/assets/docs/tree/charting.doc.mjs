@@ -111,7 +111,21 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Use these choices when your product lets people override colors in an editable chart. Automatic is the way to remove a manual choice and return that series to the chart default. A chart with no end-user color control does not need to expose Automatic.',
+          text: 'Use these choices when your product lets people override colors in an editable chart. Automatic is the way to remove a manual choice and return that series to the chart default.',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'Dashboard and report builders with editable series colors.',
+            'Spreadsheet-style chart editors with a color picker and Reset action.',
+            'Reusable chart templates where people can override and restore defaults.',
+            'Saved charts that may be rendered through SVG, Canvas, serialized configuration, or GPU paths.',
+          ],
+        },
+        {
+          type: 'prose',
+          text: 'A static chart with no end-user color control does not need Automatic or the saved-choice API.',
         },
         {
           type: 'table',

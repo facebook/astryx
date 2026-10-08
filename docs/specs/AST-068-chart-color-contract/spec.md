@@ -23,12 +23,20 @@ affects_consumer_docs: [theme, charts, cli/integrations/components]
 
 Use this contract when a product lets people override the colors in an editable
 chart. Automatic gives them a way to remove a manual choice and return that
-series to the chart's default behavior. A chart with no end-user color control
-does not need to expose Automatic.
+series to the chart's default behavior.
 
-For example, a dashboard may color Revenue blue by default. A person changes it
-to purple, then later chooses Automatic. The saved purple choice is deleted, so
-the dashboard controls Revenue's color again.
+### Use cases
+
+- Dashboard and report builders where people can change individual series
+  colors.
+- Spreadsheet-style chart editors with a color picker and a Reset action.
+- Reusable chart templates where a person can override a default and later
+  restore it.
+- Saved charts that may be shown through SVG, Canvas, serialized configuration,
+  or GPU renderers.
+
+A static chart with no end-user color control does not need Automatic or the
+saved-choice API.
 
 An editable chart can offer three color behaviors:
 
