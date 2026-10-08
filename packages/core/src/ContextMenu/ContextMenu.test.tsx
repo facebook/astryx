@@ -8,6 +8,7 @@
  * SYNC: When ContextMenu.tsx changes, update tests to match new behavior
  */
 
+import {useRef, useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -23,6 +24,27 @@ import {
 } from './index';
 import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
 import {Divider} from '../Divider';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
+
+function NestedDismissibleLayer({onDismiss}: {onDismiss: () => void}) {
+  const [isOpen, setIsOpen] = useState(true);
+  const containerRef = useRef<HTMLButtonElement>(null);
+
+  useLayerDismissal({
+    isActive: isOpen,
+    onDismiss: () => {
+      setIsOpen(false);
+      onDismiss();
+    },
+    getContainer: () => containerRef.current,
+  });
+
+  return isOpen ? (
+    <button ref={containerRef} type="button">
+      Nested layer
+    </button>
+  ) : null;
+}
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -147,6 +169,56 @@ describe('ContextMenu', () => {
 
     fireEvent.contextMenu(screen.getByText('Right-click me'));
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('composes the consumer context-menu handler with menu opening', () => {
+    const onContextMenu = vi.fn();
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]} onContextMenu={onContextMenu}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(onContextMenu).toHaveBeenCalledOnce();
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+  });
+
+  it('keeps component-owned opening when a consumer prevents default', () => {
+    render(
+      <ContextMenu
+        items={[{label: 'Item 1'}]}
+        onContextMenu={event => event.preventDefault()}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+  });
+
+  it('lets a nested layer consume Escape before the context menu', () => {
+    const onNestedDismiss = vi.fn();
+    render(
+      <ContextMenu
+        menuContent={<NestedDismissibleLayer onDismiss={onNestedDismiss} />}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const nestedLayer = screen.getByRole('button', {
+      name: 'Nested layer',
+      hidden: true,
+    });
+    nestedLayer.focus();
+    fireEvent.keyDown(nestedLayer, {key: 'Escape'});
+
+    expect(onNestedDismiss).toHaveBeenCalledOnce();
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalledOnce();
   });
 
   it('opens the real menu content in a BottomSheet when requested', async () => {
@@ -388,6 +460,60 @@ describe('ContextMenu', () => {
         vi.advanceTimersByTime(500);
       });
       expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('composes consumer touch handlers with long-press detection', () => {
+    vi.useFakeTimers();
+    try {
+      const onTouchStart = vi.fn();
+      render(
+        <ContextMenu
+          items={[{label: 'Item 1'}]}
+          data-testid="ctx"
+          onTouchStart={onTouchStart}>
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+
+      fireEvent.touchStart(screen.getByTestId('ctx'), {
+        touches: [{clientX: 20, clientY: 20}],
+      });
+      expect(onTouchStart).toHaveBeenCalledOnce();
+
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('clears a pending long-press when a consumer prevents default on touch end', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <ContextMenu
+          items={[{label: 'Item 1'}]}
+          data-testid="ctx"
+          onTouchEnd={event => event.preventDefault()}>
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+
+      const trigger = screen.getByTestId('ctx');
+      fireEvent.touchStart(trigger, {
+        touches: [{clientX: 20, clientY: 20}],
+      });
+      fireEvent.touchEnd(trigger);
+
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
@@ -1070,7 +1196,6 @@ describe('ContextMenuGroup', () => {
     // Three public surfaces alias this component at once. An alias that
     // re-exports without the semantics would pass a render test and fail a
     // screen reader.
-    const user = userEvent.setup();
     render(
       <ContextMenu
         menuContent={
