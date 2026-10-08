@@ -24,7 +24,7 @@ verified_by:
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
-modules: [module:Table/useTableRowStatus]
+modules: [module:Table/useTableInfiniteScroll, module:Table/useTableRowStatus]
 families: []
 design_specs: []
 architecture:
