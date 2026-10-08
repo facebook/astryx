@@ -20,7 +20,6 @@ export const docs = {
     'checklist',
     'AI prompt',
     'migration',
-    'dark mode',
     'keyboard navigation',
   ],
 

@@ -370,8 +370,7 @@ describe('search leaf — a whole-query phrase in a title or heading is top tier
       // The topic-level hit and the section can tie; either is correct.
       const top = r.data.results[0];
       const hasDarkMode = top.section === 'light-dark-mode' ||
-        top.name === 'use-a-theme' || top.name === 'theme' ||
-        top.name === 'migration/migration-verification';
+        top.name === 'use-a-theme' || top.name === 'theme';
       expect(hasDarkMode).toBe(true);
     }
   }, SLOW);

@@ -213,7 +213,7 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(env.data.query).toBe('dark mode');
     // theme topic-level and section tie; either is correct
     const top = env.data.results[0];
-    expect(top.name === 'theme' || top.name === 'use-a-theme' || top.section === 'light-dark-mode' || top.name === 'migration/migration-verification').toBe(true);
+    expect(top.name === 'theme' || top.name === 'use-a-theme' || top.section === 'light-dark-mode').toBe(true);
     const text = await runCli(['search', 'dark', 'mode', '--type', 'doc'], REPO_ROOT);
     expect(text.stdout).toContain('Results for "dark mode"');
   }, SCAN_TIMEOUT);
