@@ -537,7 +537,7 @@ export function cliJsonIds(tree) {
 
   const responseTypes = tree.read(RESPONSE_TYPES_DOC);
   if (responseTypes !== null) {
-    for (const [, value] of responseTypes.matchAll(/^\s*value:\s*'([^']+)'/gm)) {
+    for (const [, value] of responseTypes.matchAll(/\bvalue:\s*'([^']+)'/g)) {
       ids.set(`response-type:${value}`, {label: `response type \`${value}\``, token: value});
     }
   }
