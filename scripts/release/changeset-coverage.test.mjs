@@ -225,6 +225,14 @@ describe('isPackedFile, isWorkspaceDir, consumerManifestDelta', () => {
     expect(consumerManifestDelta({version: '1', scripts: {a: 'x'}}, {version: '2', scripts: {a: 'y'}})).toEqual([]);
     expect(consumerManifestDelta({peerDependencies: {react: '^18'}}, {peerDependencies: {react: '^19'}})).toEqual(['peerDependencies']);
   });
+
+  it('ignores a fixed-group co-bump of a sibling pin, but not a real range edit', () => {
+    const before = {version: '0.6.5', peerDependencies: {'@astryxdesign/core': '0.6.5', react: '>=19'}};
+    const synced = {version: '0.6.6', peerDependencies: {'@astryxdesign/core': '0.6.6', react: '>=19'}};
+    expect(consumerManifestDelta(before, synced)).toEqual([]);
+    const loosened = {version: '0.6.5', peerDependencies: {'@astryxdesign/core': '^0.6.0', react: '>=19'}};
+    expect(consumerManifestDelta(before, loosened)).toEqual(['peerDependencies']);
+  });
 });
 
 describe('rule 1 — a shipped change names its package', () => {

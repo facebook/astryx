@@ -107,6 +107,7 @@ const SURFACES = Object.freeze({
  * @property {string} label  revision or name, for messages
  * @property {(file: string) => string|null} read  file contents, or null when absent
  * @property {(dir: string) => string[]} list  every file under `dir`, repo-relative
+ * @property {(files: string[]) => void} [prefetch]  read many files in one batch
  */
 
 function git(root, args) {
@@ -141,6 +142,30 @@ export function gitTree(root, rev) {
         reads.set(file, contents);
       }
       return reads.get(file);
+    },
+    prefetch(files) {
+      const wanted = files.filter(file => !reads.has(file));
+      if (wanted.length === 0) return;
+      const out = execFileSync('git', ['cat-file', '--batch'], {
+        cwd: root,
+        input: wanted.map(file => `${rev}:${file}`).join('\n') + '\n',
+        maxBuffer: 256 * 1024 * 1024,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      let offset = 0;
+      for (const file of wanted) {
+        const newline = out.indexOf(10, offset);
+        const header = out.toString('utf8', offset, newline);
+        offset = newline + 1;
+        const m = /^\S+ (\w+) (\d+)$/.exec(header);
+        if (!m) {
+          reads.set(file, null); // "<object> missing"
+          continue;
+        }
+        const size = Number(m[2]);
+        reads.set(file, m[1] === 'blob' ? out.toString('utf8', offset, offset + size) : null);
+        offset += size + 1;
+      }
     },
     list(dir) {
       if (!lists.has(dir)) {
@@ -328,8 +353,33 @@ export function classifyPath(file, {tree, config}) {
 export function consumerManifestDelta(before, after) {
   return CONSUMER_MANIFEST_FIELDS.filter(
     field =>
-      JSON.stringify(before?.[field] ?? null) !==
-      JSON.stringify(after?.[field] ?? null),
+      JSON.stringify(lockstepNeutral(before, field)) !==
+      JSON.stringify(lockstepNeutral(after, field)),
+  );
+}
+
+const DEPENDENCY_FIELDS = new Set([
+  'dependencies',
+  'peerDependencies',
+  'optionalDependencies',
+]);
+
+/**
+ * A field's value with fixed-group co-bumps neutralized. The release moves a
+ * fixed group together, rewriting each member's pin on its siblings to the
+ * package's own new version; that version-only co-bump needs no Changeset
+ * (spec:AST-017 FR7). Any other range edit still counts.
+ */
+function lockstepNeutral(manifest, field) {
+  const value = manifest?.[field] ?? null;
+  if (!DEPENDENCY_FIELDS.has(field) || !value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([name, range]) => [
+      name,
+      range === manifest.version ? '<own version>' : range,
+    ]),
   );
 }
 
@@ -389,6 +439,18 @@ export function checkCoverage({changes, base, head}) {
     paths.add(change.filename);
     if (change.previous_filename) paths.add(change.previous_filename);
   }
+
+  // One batched read per tree for everything classification touches: the
+  // workspace layout, every candidate package manifest, and the paths.
+  const wanted = new Set(['pnpm-workspace.yaml', '.changeset/config.json']);
+  for (const file of paths) {
+    wanted.add(file);
+    for (let dir = path.posix.dirname(file); dir && dir !== '.'; dir = path.posix.dirname(dir)) {
+      wanted.add(`${dir}/package.json`);
+    }
+  }
+  base.prefetch?.([...wanted]);
+  head.prefetch?.([...wanted]);
 
   for (const file of [...paths].sort()) {
     // A path that still exists is judged by its package at head; a deleted
@@ -535,6 +597,11 @@ export function cliJsonIds(tree) {
   /** @type {Map<string, {label: string, token: string}>} */
   const ids = new Map();
 
+  const typeFiles = tree.list(CLI_DIR).filter(file => file.endsWith('.type.mjs'));
+  const goldenFiles = tree.list(GOLDEN_DIR).filter(file => file.endsWith('.json'));
+  const doctorFiles = tree.list(DOCTOR_DIR).filter(file => file.endsWith('.mjs'));
+  tree.prefetch?.([RESPONSE_TYPES_DOC, ...typeFiles, ...goldenFiles, ...doctorFiles]);
+
   const responseTypes = tree.read(RESPONSE_TYPES_DOC);
   if (responseTypes !== null) {
     for (const [, value] of responseTypes.matchAll(/\bvalue:\s*'([^']+)'/g)) {
@@ -547,8 +614,8 @@ export function cliJsonIds(tree) {
     !/\.(?:test|spec)\.[^/]+$/.test(file) &&
     isPackageReleasePath(file);
 
-  for (const file of tree.list(CLI_DIR)) {
-    if (!file.endsWith('.type.mjs') || !sourceFile(file)) continue;
+  for (const file of typeFiles) {
+    if (!sourceFile(file)) continue;
     for (const field of typedefFields(tree.read(file) ?? '')) {
       ids.set(`field:${field}`, {
         label: `response field \`${field}\``,
@@ -557,8 +624,7 @@ export function cliJsonIds(tree) {
     }
   }
 
-  for (const file of tree.list(GOLDEN_DIR)) {
-    if (!file.endsWith('.json')) continue;
+  for (const file of goldenFiles) {
     let golden;
     try {
       golden = JSON.parse(tree.read(file) ?? '');
@@ -574,8 +640,8 @@ export function cliJsonIds(tree) {
     }
   }
 
-  for (const file of tree.list(DOCTOR_DIR)) {
-    if (!/\.mjs$/.test(file) || /\.(?:doc|type)\.mjs$/.test(file) || !sourceFile(file)) {
+  for (const file of doctorFiles) {
+    if (/\.(?:doc|type)\.mjs$/.test(file) || !sourceFile(file)) {
       continue;
     }
     for (const [, , id] of (tree.read(file) ?? '').matchAll(
@@ -607,9 +673,9 @@ function compatibilityNoteNames(text, token) {
  * @returns {Array<{file: string, text: string, category: string|null, releases: Record<string, string>}>}
  */
 export function pendingChangesets(tree) {
-  return tree
-    .list('.changeset')
-    .filter(file => CHANGESET_FILE.test(file))
+  const files = tree.list('.changeset').filter(file => CHANGESET_FILE.test(file));
+  tree.prefetch?.(files);
+  return files
     .map(file => {
       const text = tree.read(file) ?? '';
       const fm = parseFrontmatter(text);
