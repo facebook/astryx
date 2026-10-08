@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {expect, waitFor} from 'storybook/test';
+import {expect, userEvent, waitFor} from 'storybook/test';
 import {Button, Card, Stack, Text} from '@astryxdesign/core';
 import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
 import {Heading} from '@astryxdesign/core/Text';
@@ -230,7 +230,26 @@ async function barFills(
 export const ThemeTokens: Story = {
   render: () => <ThemeAwareRechartsExample />,
   play: async ({canvasElement}) => {
-    await barFills(canvasElement);
+    const restingFills = await barFills(canvasElement);
+    const revenueBar = canvasElement.querySelector<SVGElement>(
+      BAR_SELECTORS.revenue,
+    );
+    expect(revenueBar).not.toBeNull();
+    if (revenueBar) {
+      await userEvent.hover(revenueBar);
+      await waitFor(() => {
+        const activeBar = canvasElement.querySelector<SVGElement>(
+          `[fill="${hoverSeries.revenue}"]`,
+        );
+        expect(activeBar).not.toBeNull();
+        if (activeBar) {
+          expect(activeBar.getAttribute('fill')).toBe(hoverSeries.revenue);
+          expect(getComputedStyle(activeBar).fill).not.toBe(
+            restingFills.revenue,
+          );
+        }
+      });
+    }
     const radius = Number(
       canvasElement
         .querySelector('[data-bar-radius]')
