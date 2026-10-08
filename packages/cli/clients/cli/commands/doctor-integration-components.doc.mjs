@@ -17,7 +17,7 @@ export const doc = {
     'range that turns replacement on, a missing Core target, an invalid value, a ' +
     'component named after a different Core component, or two replacements for one ' +
     'Core component is an error. In a package without that range they are warnings, ' +
-    'with one more warning naming the range to declare.',
+    'with a warning for each such component, naming the range to declare.',
   fn: 'integrationComponentConflicts',
   args: [
     {

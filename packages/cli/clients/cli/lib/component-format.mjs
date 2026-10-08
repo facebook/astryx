@@ -638,20 +638,30 @@ export function formatProps(docs, componentName) {
  * Format brief summaries for ALL components in one output.
  * `replacements` maps a replaced Core name to the full list entry of the
  * integration component that takes its slot; that entry is printed in its
- * place, naming its package.
+ * place, naming its package. `categories`, when given, limits the output to
+ * those group keys (the keys of the list result it renders), so the text shows
+ * the same groups as the JSON and `replacements` covers every slot it prints.
  * @param {string} coreDir
- * @param {{zh?: boolean, lang?: string, themeData?: any, replacements?: Map<string, any>}} [options]
+ * @param {{zh?: boolean, lang?: string, themeData?: any, replacements?: Map<string, any>, categories?: string[]}} [options]
  * @returns {Promise<string>}
  */
 export async function formatBriefAll(
   coreDir,
-  {zh = false, lang, themeData = null, replacements = new Map()} = {},
+  {
+    zh = false,
+    lang,
+    themeData = null,
+    replacements = new Map(),
+    categories,
+  } = {},
 ) {
   const components = discoverComponents(coreDir);
+  const shown = categories ? new Set(categories) : null;
   /** @type {string[]} */
   const output = [];
 
   for (const [key, comps] of Object.entries(components)) {
+    if (shown && !shown.has(key)) continue;
     const isUngrouped = comps.length === 1 && comps[0] === key;
     if (!isUngrouped) {
       output.push(`## ${key}\n`);
