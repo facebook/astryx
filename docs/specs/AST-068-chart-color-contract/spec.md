@@ -222,17 +222,18 @@ Canvas, WebGL, or other renderers.
   **Why:** rebuilding can discard focus, selection, zoom, hover, tooltips,
   animation progress, and renderer resources.
 
-### Color accessibility
+### Accessibility boundary
 
-- **FR10 — Accessibility is evaluated in the rendered chart.** The picker and
-  resolver do not label an isolated color as accessible. Products check marks
-  and text against their actual surfaces and provide another perceivable cue
-  when color carries meaning. A readable data alternative is required when the
-  visual chart alone does not communicate the data.
+- **FR10 — The chart-color API does not guarantee that a chart is accessible.**
+  It returns color values and validation diagnostics. It does not label a color
+  or a finished chart as accessible.
 
-  **Why:** contrast and meaning depend on the final background, geometry,
-  neighboring marks, and the role the color plays. A color value cannot prove
-  those conditions by itself.
+  The product and renderer integration own contrast on the actual background,
+  non-color cues, labels, keyboard and touch access, and readable data
+  alternatives.
+
+  **Why:** the same color can be readable in one chart and unreadable in another.
+  Accessibility depends on the final chart, not the color value by itself.
 
 ### Packaging and documentation
 
@@ -289,7 +290,7 @@ values to charts by assigning them to the stable data tokens owned by
 | FR4–FR6   | Inventory, projection, validation, and resolution tests            | default list, product subset, theme preview changes, malformed input, unsupported resolved value                 | picker membership becomes validation, IDs drift, invalid input is guessed, or resolution failure is hidden              |
 | FR7–FR8   | Format and renderer-boundary tests                                 | direct CSS theme choice, concrete custom choice, sRGB, `rgba01`, explicit theme and mode, bounded worker payload | a CSS reference reaches Canvas, serialization, worker, or GPU code; custom live paint is treated as `dataVars`          |
 | FR9       | Real-renderer lifecycle evidence                                   | in-place SVG, Canvas, and GPU updates; disclosed rebuild and state reset                                         | a theme change silently remounts stateful output or claims seamless switching after state loss                          |
-| FR10–FR11 | Accessibility, package-boundary, and docs checks                   | actual light/dark/custom surfaces, non-color association, renderer examples                                      | an isolated color is labeled accessible, Core gains a renderer dependency, or docs promise universal support            |
+| FR10–FR11 | API, package-boundary, and docs checks                             | accessibility ownership, renderer examples                                                                       | the API certifies a color or chart as accessible, Core gains a renderer dependency, or docs promise universal support   |
 
 ## Decision log
 
