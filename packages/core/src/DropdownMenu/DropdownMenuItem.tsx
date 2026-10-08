@@ -15,6 +15,10 @@
  * creating an invisible button (keyboard access is provided by the parent menu).
  * With an `href` the root is a real anchor carrying the role.
  *
+ * Host attributes and DOM handlers the caller passes (aria-*, data-*, id, drag
+ * and drop, …) reach that row root; the row's own role, tab stop and hover
+ * focus are set after them, so a caller cannot overwrite them.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/DropdownMenu/DropdownMenu.doc.mjs
  * - /packages/core/src/DropdownMenu/DropdownMenuItem.doc.mjs
@@ -40,7 +44,7 @@ import {
   typographyVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {composeEventHandlers, mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useDropdownMenuContext} from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
@@ -105,9 +109,9 @@ const itemSizeStyles = stylex.create({
   lg: {},
 });
 
-export interface DropdownMenuItemProps extends Pick<
+export interface DropdownMenuItemProps extends Omit<
   BaseProps,
-  'xstyle' | 'className' | 'style'
+  'role' | 'tabIndex'
 > {
   /** Icon to display before the label. */
   icon?: ReactNode | IconType;
@@ -192,6 +196,9 @@ export function DropdownMenuItem({
   className,
   style,
   ref,
+  onPointerMove,
+  onAuxClick,
+  ...rest
 }: DropdownMenuItemProps) {
   const ctx = useDropdownMenuContext();
   const menuSize = ctx?.menuSize ?? 'md';
@@ -254,6 +261,7 @@ export function DropdownMenuItem({
 
   return (
     <Item
+      {...rest}
       ref={ref}
       // A row that navigates IS the link: its root is the application's
       // anchor, so a modified click, a middle click, copying the address and
@@ -262,7 +270,8 @@ export function DropdownMenuItem({
       as={href != null ? LinkComponent : undefined}
       role="menuitem"
       tabIndex={isDisabled ? undefined : -1}
-      onPointerMove={handlePointerMove}
+      // The row's own handling runs first, then the caller's.
+      onPointerMove={composeEventHandlers(handlePointerMove, onPointerMove)}
       {...pressable}
       startContent={
         icon
@@ -276,7 +285,7 @@ export function DropdownMenuItem({
       description={description}
       endContent={endContent}
       onClick={handleClick}
-      onAuxClick={handleAuxClick}
+      onAuxClick={composeEventHandlers(handleAuxClick, onAuxClick)}
       href={href}
       target={target}
       rel={rel}
