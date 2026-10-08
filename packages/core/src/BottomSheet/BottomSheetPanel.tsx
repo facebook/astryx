@@ -212,7 +212,8 @@ const styles = stylex.create({
     // surface behind the pill itself, fading out across the lower half so the
     // content emerging below has no visible cut line.
     backgroundImage: `linear-gradient(to bottom, ${colorVars['--color-background-surface']} 60%, transparent)`,
-    touchAction: 'none',
+    // Drags are the handle's; a pinch still zooms the page (WCAG 1.4.4).
+    touchAction: 'pinch-zoom',
     cursor: {
       default: 'grab',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -228,7 +229,7 @@ const styles = stylex.create({
     flexGrow: 1,
     minHeight: 0,
     boxSizing: 'border-box',
-    touchAction: 'pan-y',
+    touchAction: 'pan-y pinch-zoom',
     outlineOffset: {
       default: 0,
       ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,

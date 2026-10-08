@@ -337,6 +337,129 @@ describe('Field', () => {
     });
   });
 
+  // The tooltip placement renders no FieldStatus, so Field itself must speak
+  // the message; otherwise a screen-reader user is never told it appeared.
+  describe('tooltip status placement', () => {
+    /** Every non-empty text written into a live region, in order. */
+    function recordAnnouncements(): string[] {
+      const spoken: string[] = [];
+      const observer = new MutationObserver(records => {
+        for (const record of records) {
+          const target =
+            record.target instanceof HTMLElement
+              ? record.target
+              : record.target.parentElement;
+          const text = target
+            ?.closest('[data-astryx-live-region]')
+            ?.textContent?.trim();
+          if (text) {
+            spoken.push(text);
+          }
+        }
+      });
+      observer.observe(document.body, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+      return spoken;
+    }
+
+    it('announces a warning that appears after mount, politely', async () => {
+      const {rerender} = render(
+        <Field label="Email" inputID="email-input" statusVariant="tooltip">
+          <input id="email-input" />
+        </Field>,
+      );
+      expect(politeRegion()).toBeNull();
+
+      rerender(
+        <Field
+          label="Email"
+          inputID="email-input"
+          statusVariant="tooltip"
+          status={{type: 'warning', message: 'Check this'}}>
+          <input id="email-input" />
+        </Field>,
+      );
+      // No message box renders for this placement; the text lives only in
+      // the live region (and in the member's tooltip, which Field does not own).
+      expect(screen.queryByText('Check this')).toBeNull();
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Check this');
+      });
+      expect(assertiveRegion()).toHaveTextContent('');
+    });
+
+    it('announces an error assertively, matching the message box placements', async () => {
+      render(
+        <Field
+          label="Email"
+          inputID="email-input"
+          statusVariant="tooltip"
+          status={{type: 'error', message: 'Email is required'}}>
+          <input id="email-input" />
+        </Field>,
+      );
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent('Email is required');
+      });
+    });
+
+    it('speaks a message once, and again only when it changes', async () => {
+      const spoken = recordAnnouncements();
+      const field = (message: string) => (
+        <Field
+          label="Email"
+          inputID="email-input"
+          statusVariant="tooltip"
+          status={{type: 'warning', message}}>
+          <input id="email-input" />
+        </Field>
+      );
+      const {rerender} = render(field('First'));
+      await waitFor(() => expect(spoken).toEqual(['First']));
+
+      rerender(field('First'));
+      rerender(field('Second'));
+      await waitFor(() => expect(spoken).toEqual(['First', 'Second']));
+    });
+
+    it.each(['attached', 'detached'] as const)(
+      'does not add a second announcement to the %s message box',
+      async statusVariant => {
+        const spoken = recordAnnouncements();
+        render(
+          <Field
+            label="Email"
+            inputID="email-input"
+            statusVariant={statusVariant}
+            status={{type: 'warning', message: 'Check this'}}>
+            <input id="email-input" />
+          </Field>,
+        );
+        await waitFor(() => expect(spoken).toEqual(['Check this']));
+        // Give a duplicate announcement's animation frame time to land.
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(spoken).toEqual(['Check this']);
+      },
+    );
+
+    it('does not announce a status without a message', () => {
+      render(
+        <Field
+          label="Email"
+          inputID="email-input"
+          statusVariant="tooltip"
+          status={{type: 'error'}}>
+          <input id="email-input" />
+        </Field>,
+      );
+      expect(assertiveRegion()).toBeNull();
+      expect(politeRegion()).toBeNull();
+    });
+  });
+
   it('auto-generates description ID as {inputID}-desc when descriptionID is not provided', () => {
     render(
       <Field label="Email" inputID="my-input" description="Help text">

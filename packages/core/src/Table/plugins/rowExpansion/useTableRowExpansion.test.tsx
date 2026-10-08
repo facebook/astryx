@@ -433,6 +433,69 @@ describe('useTableRowExpansion (detail panel)', () => {
       expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
     });
 
+    it('yields to a contenteditable cell', () => {
+      render(
+        <Harness
+          hasRowClickExpansion
+          columnsOverride={[
+            {
+              key: 'name',
+              header: 'Name',
+              renderCell: item => (
+                <div contentEditable data-testid={`editable-${item.id}`}>
+                  {item.name}
+                </div>
+              ),
+            },
+          ]}
+        />,
+      );
+      fireEvent.click(screen.getByTestId('editable-a'));
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+    });
+
+    it('yields to a nested element inside a contenteditable cell', () => {
+      render(
+        <Harness
+          hasRowClickExpansion
+          columnsOverride={[
+            {
+              key: 'name',
+              header: 'Name',
+              renderCell: item => (
+                <div contentEditable>
+                  <span data-testid={`inner-${item.id}`}>{item.name}</span>
+                </div>
+              ),
+            },
+          ]}
+        />,
+      );
+      fireEvent.click(screen.getByTestId('inner-a'));
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+    });
+
+    it('does not yield to contenteditable="false"', () => {
+      render(
+        <Harness
+          hasRowClickExpansion
+          columnsOverride={[
+            {
+              key: 'name',
+              header: 'Name',
+              renderCell: item => (
+                <div contentEditable="false" data-testid={`readonly-${item.id}`}>
+                  {item.name}
+                </div>
+              ),
+            },
+          ]}
+        />,
+      );
+      fireEvent.click(screen.getByTestId('readonly-a'));
+      expect(screen.getByTestId('panel')).toHaveTextContent('Ada: Ada bio');
+    });
+
     it('yields to a text selection', () => {
       // Dragging across a cell to copy it ends in a click. Toggling then would
       // shift the row out from under the text the reader just selected. The

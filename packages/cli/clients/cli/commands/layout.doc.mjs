@@ -31,5 +31,6 @@ export const doc = {
     {code: 1, when: 'no subcommand (help is printed) or an unknown subcommand'},
   ],
   deprecated: 'DEP-0006: Use `astryx build` to start from a template, `astryx template` to scaffold, and `astryx docs layout` for guidance.',
+  notes: [{"type": "prose", "text": "**Deprecated (DEP-0006).** Use `astryx build` to choose the template to start from, `astryx template` to scaffold it, and `astryx docs layout` for layout guidance. This command will be removed in a future minor release."}],
   related: ['template', 'build'],
 };

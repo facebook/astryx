@@ -20,7 +20,7 @@ export const doc = {
     'expression, then expands it into ready-to-use XDS TSX, auto-routing structural children ' +
     'into the right slots, scaffolding typed useState for interactive controls, and splicing or ' +
     'importing any referenced template blocks. Returns the code (and metadata) in a layout.expand ' +
-    'envelope, optionally writing it to a path within cwd.',
+    'envelope, optionally writing it to a path within cwd. **Deprecated (DEP-0006).** Use `build`, `template`, and `docs layout` instead. This function will be removed in a future minor release.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'layoutExpand(expression: string, options?: LayoutExpandOptions): Promise<LayoutExpandResponse>',

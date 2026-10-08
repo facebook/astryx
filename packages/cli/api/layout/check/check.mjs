@@ -15,6 +15,7 @@ import {toCompact, toOutline} from '../../../foundation/xle/print.mjs';
 import {analyze, formatIssue} from '../_adapter.mjs';
 
 /**
+ * @deprecated DEP-0006: Use `build`, `template`, and `docs layout` instead. Removal in CLN-0006.
  * `astryx layout check "<expr>" [--form compact|outline]`
  * Validates without expanding; echoes both canonical surfaces.
  *

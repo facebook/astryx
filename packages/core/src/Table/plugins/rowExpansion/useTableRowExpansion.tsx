@@ -486,6 +486,19 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                   if (target !== row && hasInteractiveAncestor(target, row)) {
                     return;
                   }
+                  // A click inside a contenteditable region is an edit
+                  // action, not a row toggle. The shared guard does not
+                  // include contenteditable (it would change ClickableCard
+                  // and other consumers), so the Table row-click path
+                  // checks it separately.
+                  if (
+                    target !== row &&
+                    target.closest(
+                      '[contenteditable]:not([contenteditable="false"])',
+                    )
+                  ) {
+                    return;
+                  }
                   if (hasTextSelection(row)) {
                     return;
                   }

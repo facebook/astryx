@@ -586,6 +586,39 @@ describe('useSheetGestures', () => {
     expect(onDismiss).not.toHaveBeenCalled();
   });
 
+  describe('pinch', () => {
+    // A second finger is a pinch, and pinch-zoom belongs to the browser.
+    it('declares pinch-zoom on the sliding surface and the handle', () => {
+      const {hook} = setup();
+      expect(hook.result.current.contentProps.style.touchAction).toBe(
+        'pinch-zoom',
+      );
+      expect(hook.result.current.handleProps.style.touchAction).toBe(
+        'pinch-zoom',
+      );
+    });
+
+    it('returns to the settled detent when a second finger lands on the handle', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const target = makeTarget();
+      down(hook, 0, 0, target);
+      move(hook, 120, 200, target);
+      expect(hook.result.current.isDragging).toBe(true);
+
+      act(() =>
+        hook.result.current.handleProps.onPointerDown(
+          pointerEvent(160, 220, target, 2, 0, false),
+        ),
+      );
+
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.contentProps.style.transform).toBeUndefined();
+      // The first finger's later release is not a drag either.
+      up(hook, 300, 400, target);
+      expect(onDismiss).not.toHaveBeenCalled();
+    });
+  });
+
   it('does not start a drag from a secondary pointer button', () => {
     const {hook} = setup();
     const target = makeTarget();
@@ -863,6 +896,68 @@ describe('useSheetGestures', () => {
       expect(hook.result.current.isDragging).toBe(false);
     });
 
+    function secondFinger(el: HTMLElement, y: number, firstY: number) {
+      const ev = new Event('touchstart', {bubbles: true, cancelable: true});
+      Object.defineProperty(ev, 'changedTouches', {
+        value: [{identifier: 2, clientY: y}],
+      });
+      Object.defineProperty(ev, 'touches', {
+        value: [
+          {identifier: 1, clientY: firstY},
+          {identifier: 2, clientY: y},
+        ],
+      });
+      Object.defineProperty(ev, 'currentTarget', {value: el});
+      el.dispatchEvent(ev);
+    }
+
+    it('leaves a pinch at the top to the browser', () => {
+      const {hook} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      let pull: Event | undefined;
+      act(() => {
+        touch(el, 'touchstart', 100);
+        secondFinger(el, 140, 100);
+        // The spread carries the second finger down past the promotion slop.
+        pull = touch(el, 'touchmove', 160, 2);
+      });
+      expect(pull?.defaultPrevented).toBe(false);
+      expect(hook.result.current.isDragging).toBe(false);
+    });
+
+    it('returns a pull in flight to its detent when a second finger lands', () => {
+      const {hook, onDismiss} = setup({snapHeights: () => [200]});
+      const el = makeScroller({
+        scrollTop: 0,
+        clientHeight: 200,
+        scrollHeight: 800,
+      });
+      act(() => hook.result.current.sheetRef(el));
+      act(() => hook.result.current.bodyProps.ref(el));
+      act(() => {
+        touch(el, 'touchstart', 0);
+        touch(el, 'touchmove', 50);
+      });
+      expect(hook.result.current.isDragging).toBe(true);
+
+      let after: Event | undefined;
+      act(() => {
+        secondFinger(el, 120, 50);
+        after = touch(el, 'touchmove', 90);
+        touch(el, 'touchend', 90);
+      });
+      expect(after?.defaultPrevented).toBe(false);
+      expect(hook.result.current.isDragging).toBe(false);
+      expect(hook.result.current.contentProps.style.transform).toBeUndefined();
+      expect(onDismiss).not.toHaveBeenCalled();
+    });
+
     it('leaves native scrolling alone in the middle of the content', () => {
       const {hook} = setup({snapHeights: () => [200]});
       const el = makeScroller({
@@ -967,7 +1062,8 @@ describe('useSheetGestures', () => {
       });
       expect(pull?.defaultPrevented).toBe(true);
       expect(hook.result.current.isDragging).toBe(true);
-      expect(hook.result.current.dragOffset).toBe(60);
+      expect(liveOffset(hook)).toBe(60);
+      expect(body.style.transform).toBe('translateY(60px)');
     });
 
     it('chains to a scrolled body before the sheet when the nested box is at its top', () => {

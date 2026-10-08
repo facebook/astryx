@@ -357,17 +357,17 @@ export const doc = {
     {
       value: 'layout.expand',
       description:
-        'The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, written (the output path, or null when nothing was written), and demoMediaReplaced (count of demo media placeholders).',
+        'The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, written (the output path, or null when nothing was written), and demoMediaReplaced (count of demo media placeholders). Carries `meta.deprecations` with DEP-0006 and its replacement commands.',
     },
     {
       value: 'layout.check',
       description:
-        'The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline).',
+        'The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline). Carries `meta.deprecations` with DEP-0006 and its replacement commands.',
     },
     {
       value: 'layout.grammar',
       description:
-        "The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry.",
+        "The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry. Carries `meta.deprecations` with DEP-0006 and its replacement commands.",
     },
   ],
 };

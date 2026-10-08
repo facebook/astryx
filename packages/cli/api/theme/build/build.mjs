@@ -2956,6 +2956,7 @@ async function themeBuildInternal(
   logger.log(`
 Install in your app (paths are relative to a file in src/; adjust if yours lives elsewhere):
 
+  import { Theme } from '@astryxdesign/core';
   import { ${exportName} } from '${jsImport}';
   import '${cssImport}';
 
@@ -2965,6 +2966,7 @@ Install in your app (paths are relative to a file in src/; adjust if yours lives
 
 Or with a <link> tag:
 
+  import { Theme } from '@astryxdesign/core';
   import { ${exportName} } from '${jsImport}';
 
   <link rel="stylesheet" href="${cssImport}" />
