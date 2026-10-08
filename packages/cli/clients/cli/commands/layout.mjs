@@ -63,17 +63,12 @@ import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
  * DEP-0006: the `astryx layout` command group is deprecated.
  *
  * Human mode: one stderr warning per invocation.
- * JSON mode: `meta.deprecation` in the response envelope.
+ * JSON mode: `meta.deprecations` array in the response envelope.
  */
-const DEPRECATION = {
+const LAYOUT_DEPRECATION = Object.freeze({
   id: 'DEP-0006',
-  cleanup: 'CLN-0006',
-  replacement: [
-    'astryx build "<idea>" — choose the template to start from',
-    'astryx template <name> <path> — scaffold it',
-    'astryx docs layout — layout guidance',
-  ],
-};
+  replacements: ['build', 'template', 'docs layout'],
+});
 
 function warnDeprecated() {
   if (!isJsonMode()) {
@@ -91,10 +86,10 @@ function warnDeprecated() {
  * Add deprecation metadata to a JSON response before output.
  * Canonical stdout (type, data) is unchanged; the metadata sits in `meta`.
  * @param {{type: string, data: unknown}} result
- * @returns {{type: string, data: unknown, meta: {deprecation: typeof DEPRECATION}}}
+ * @returns {{type: string, data: unknown, meta: {deprecations: [typeof LAYOUT_DEPRECATION]}}}
  */
 function withDeprecation(result) {
-  return {...result, meta: {deprecation: DEPRECATION}};
+  return {...result, meta: {deprecations: [LAYOUT_DEPRECATION]}};
 }
 
 /** The largest layout expression read from --file or stdin. */
