@@ -45,11 +45,16 @@ connection between the closed trigger and its selection surface.
 
 ## Compatibility and migration
 
-- Released defaults and behavior remain unchanged by this record.
+- Released defaults and behavior are unchanged except the `presentation`
+  default, which DEC-1 sets.
 - `indicatorPosition` defaults to `end`; a rendered selection mark occupies
   space at that logical edge, while an empty resolved indicator occupies none.
-- `presentation` defaults to `popover`. `bottom-sheet` is an explicit modal
-  presentation, and `adaptive` selects it on compact coarse-pointer screens.
+- `presentation` defaults to `adaptive` (DEC-1): the modal bottom sheet on
+  compact coarse-pointer screens and the anchored popover otherwise. `popover`
+  and `bottom-sheet` pin one surface on every device. The default is a
+  stable-default change, so it ships as `[breaking]` in a scheduled minor under
+  `spec:AST-017`; callers that need the anchored popover on every device pass
+  `popover`.
 - `hasClear` changes the value contract to include `null`; that distinction is
   already part of the public type.
 - `isReadOnly` is additive and defaults to `false`. It preserves the selected
@@ -82,28 +87,29 @@ connection between the closed trigger and its selection surface.
 This table names semantic concepts reviewers need. Prop syntax, complete defaults,
 and examples remain in `Selector.doc.mjs`.
 
-| Concept                | Closed values or states                | Meaning                                                  | Availability by variant/orientation/state | Default   | Owner    | Stability | Invalid-value behavior          |
-| ---------------------- | -------------------------------------- | -------------------------------------------------------- | ----------------------------------------- | --------- | -------- | --------- | ------------------------------- |
-| trigger variant        | `input`, `ghost`                       | Form-field or toolbar presentation                       | All trigger states                        | `input`   | Selector | released  | TypeScript rejects other values |
-| size                   | `sm`, `md`, `lg`                       | Trigger and option-row density                           | All presentations                         | `md`      | Selector | released  | TypeScript rejects other values |
-| selected-mark position | `start`, `end`                         | Logical edge containing a rendered selection mark        | Every option row                          | `end`     | Selector | released  | TypeScript rejects other values |
-| presentation           | `popover`, `bottom-sheet`, `adaptive`  | Anchored pointer surface or modal compact-touch surface  | All trigger variants                      | `popover` | Selector | released  | TypeScript rejects other values |
-| popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox` | Selector | released  | No separate role prop is public |
-| option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither   | Selector | released  | Unknown states are not emitted  |
-| read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`   | Caller   | additive  | Boolean normalization           |
+| Concept                | Closed values or states                | Meaning                                                  | Availability by variant/orientation/state | Default    | Owner    | Stability | Invalid-value behavior          |
+| ---------------------- | -------------------------------------- | -------------------------------------------------------- | ----------------------------------------- | ---------- | -------- | --------- | ------------------------------- |
+| trigger variant        | `input`, `ghost`                       | Form-field or toolbar presentation                       | All trigger states                        | `input`    | Selector | released  | TypeScript rejects other values |
+| size                   | `sm`, `md`, `lg`                       | Trigger and option-row density                           | All presentations                         | `md`       | Selector | released  | TypeScript rejects other values |
+| selected-mark position | `start`, `end`                         | Logical edge containing a rendered selection mark        | Every option row                          | `end`      | Selector | released  | TypeScript rejects other values |
+| presentation           | `popover`, `bottom-sheet`, `adaptive`  | Anchored pointer surface or modal compact-touch surface  | All trigger variants                      | `adaptive` | Selector | released  | TypeScript rejects other values |
+| popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox`  | Selector | released  | No separate role prop is public |
+| option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither    | Selector | released  | Unknown states are not emitted  |
+| read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`    | Caller   | additive  | Boolean normalization           |
 
 ## Behavioral and layout contract
 
 These requirements describe shipped behavior on current `main`.
 
-| ID  | Shipped invariant                                                                                                                                                                                                                                                                                                             | Evidence                                                                 |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| FR1 | Selecting an enabled option updates the one selected value, closes the active presentation, and returns the trigger to its stable closed state.                                                                                                                                                                               | Consumer docs and selection interaction tests                            |
-| FR2 | Without explicit placement, a non-search popover aligns the selected row over the trigger and clamps it to the viewport. Search popovers and explicit placement use normal Layer positioning.                                                                                                                                 | Consumer docs, implementation, and geometry tests                        |
-| FR3 | An option whose resolved selection indicator draws no content reserves no mark-column space. Visible selected or themed replacement indicators remain in layout at `indicatorPosition`; the resulting state-dependent label position or available width is intentional, and row content keeps its existing overflow behavior. | `itemMarkColumn`, focused indicator tests, and Chromium evidence stories |
-| FR4 | `popover` uses an anchored Popover. `bottom-sheet` uses a modal BottomSheet. `adaptive` resolves to the modal bottom sheet on compact coarse-pointer screens and Popover otherwise.                                                                                                                                           | Presentation controller and adaptive-presentation tests                  |
-| FR5 | While `isLoading` is true, the trigger exposes busy state and the listbox suppresses empty and no-results output.                                                                                                                                                                                                             | Loading, empty-state, and announcement tests                             |
-| FR6 | While `isReadOnly` is true, the selected value remains focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                                                                          | Read-only interaction, form, and accessibility tests                     |
+| ID  | Shipped invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Evidence                                                                  |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| FR1 | Selecting an enabled option updates the one selected value, closes the active presentation, and returns the trigger to its stable closed state.                                                                                                                                                                                                                                                                                                                                        | Consumer docs and selection interaction tests                             |
+| FR2 | Without explicit placement, a non-search popover aligns the selected row over the trigger and clamps it to the viewport. Search popovers and explicit placement use normal Layer positioning.                                                                                                                                                                                                                                                                                          | Consumer docs, implementation, and geometry tests                         |
+| FR3 | An option whose resolved selection indicator draws no content reserves no mark-column space. Visible selected or themed replacement indicators remain in layout at `indicatorPosition`; the resulting state-dependent label position or available width is intentional, and row content keeps its existing overflow behavior.                                                                                                                                                          | `itemMarkColumn`, focused indicator tests, and Chromium evidence stories  |
+| FR4 | `popover` uses an anchored Popover. `bottom-sheet` uses a modal BottomSheet. `adaptive` resolves to the modal bottom sheet on compact coarse-pointer screens and Popover otherwise.                                                                                                                                                                                                                                                                                                    | Presentation controller and adaptive-presentation tests                   |
+| FR5 | While `isLoading` is true, the trigger exposes busy state and the listbox suppresses empty and no-results output.                                                                                                                                                                                                                                                                                                                                                                      | Loading, empty-state, and announcement tests                              |
+| FR6 | While `isReadOnly` is true, the selected value remains focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                                                                                                                                                                                                                                   | Read-only interaction, form, and accessibility tests                      |
+| FR7 | The listbox carries `data-astryx-menu-press` and follows `module:DropdownMenu/useMenuPress` FR1–FR3, FR5 and AR2: the option under a pointer's release is the one selected, the highlight follows a held pointer through `aria-activedescendant` while DOM focus stays on the combobox, a mouse released outside closes the list and a finger leaves it open, and the browser's stray click never selects. Trigger opening, arrow clamping and closed-trigger typeahead are unchanged. | `module:DropdownMenu/useMenuPress`; `Selector.test.tsx` press model suite |
 
 ### Allowed variation
 
@@ -123,7 +129,7 @@ These requirements describe shipped behavior on current `main`.
 | closed with no value     | Label and placeholder identify the field                                                  | Consumer placeholder text                                  |
 | closed with a value      | Selected option is represented in the trigger                                             | Custom `renderValue` content                               |
 | pointer / popover        | Anchored surface exposes the listbox without modal-dialog semantics                       | Default or explicit placement                              |
-| compact coarse pointer   | BottomSheet exposes a modal dialog containing the listbox                                 | Explicit `bottom-sheet` or resolved `adaptive`             |
+| compact coarse pointer   | BottomSheet exposes a modal dialog containing the listbox                                 | Default or explicit `adaptive`, or explicit `bottom-sheet` |
 | searching                | Visible options, keyboard navigation, and announced result count use one filter           | Consumer search and empty text                             |
 | loading                  | Trigger is busy; empty and no-results output is suppressed                                | Consumer loading duration                                  |
 | disabled with reason     | Trigger remains focusable enough to expose the reason while activation stays blocked      | Consumer reason text                                       |
@@ -272,6 +278,10 @@ new theming target.
   size, end-control, disabled-reason, and status-placement policy. Selector
   keeps its DEC-1 standalone inline-size exception; this component contract
   owns selection behavior inside that boundary.
+- `module:DropdownMenu/useMenuPress` owns the listbox press model FR7 adopts
+  (release-to-select, pointer-following highlight, outside-release split,
+  stray-click swallowing); Selector keeps arrow clamping and its combobox
+  focus (module AR2).
 
 ## Verification map
 
@@ -284,12 +294,24 @@ new theming target.
 | AR1, AV2              | `Selector.listbox.a11y.test.tsx` and `Listbox.a11y.chromium.spec.ts` against the shared Listbox contract             | popover/sheet, flat/grouped, selected/unselected, disabled, search, loading, custom RTL | A new or wider loss of role, listbox/option name, state, or ownership gates; the exact unnamed no-search sheet state remains known debt | `audit:Selector/accessibility`   |
 | FR5                   | loading, empty-state, and live-region tests                                                                          | empty options, unmatched search, loading                                                | Empty/no-results output appears or is announced while loading                                                                           | `audit:Selector/behavior`        |
 | FR6, AR4              | read-only interaction, form, ARIA, and theme-state tests                                                             | search/non-search, clearable, open→read-only, disabled precedence                       | A value changes, popup or edit affordance remains, form value disappears, or read-only semantics are absent                             | `audit:Selector/accessibility`   |
+| FR7                   | `Selector.test.tsx` press model suite                                                                                | finger release over another option, finger/mouse release outside, listbox marker        | The press option is selected, the listbox takes focus, a finger release outside closes the list, or the stray click selects             | `audit:Selector/behavior`        |
 | source-build contract | `Selector.source-build.test.mjs`                                                                                     | package source compiled by consumer Babel                                               | Moving evaluated StyleX values outside the supported source form fails compilation                                                      | `audit:Selector/code-health`     |
 
 ## Decision log
 
-No component-local future decision is recorded here. FR3 implements the
-system decision owned by `spec:AST-004/DEC-1`.
+FR3 implements the system decision owned by `spec:AST-004/DEC-1`.
+
+### DEC-1 — Default presentation is `adaptive`
+
+**Reference:** `component:Selector/DEC-1`
+**Decider:** `cixzhang`, `2026-10-06`
+
+An omitted `presentation` resolves `adaptive` (FR4): the modal bottom sheet on
+compact coarse-pointer screens and the anchored popover elsewhere, so
+fine-pointer and large-screen output matches `popover`. `adaptive` keeps its
+width-and-pointer query; a pointer-only test belongs to `spec:AST-043` OQ1.
+Rejected: keeping `popover` as the default, because a phone then gets a
+pointer-sized anchored list unless the caller opts in.
 
 ## Open questions
 

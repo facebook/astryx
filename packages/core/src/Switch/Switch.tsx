@@ -4,7 +4,7 @@
 
 /**
  * @file Switch.tsx
- * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip
+ * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip, i18n (useTranslator)
  * @output Exports Switch component, SwitchProps, SwitchLabelPosition, SwitchLabelSpacing
  * @position Core implementation; consumed by index.ts, tested by Switch.test.tsx
  *
@@ -20,6 +20,7 @@ import {
   useId,
   useOptimistic,
   useTransition,
+  useEffect,
   type ChangeEvent,
   type FocusEvent,
   type ReactNode,
@@ -43,13 +44,16 @@ import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import {switchScope} from './switch.markers.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {VisuallyHidden} from '../VisuallyHidden';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
+import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 const wrapperSizeStyles = stylex.create({
   sm: {
     width: 32,
@@ -130,6 +134,11 @@ const thumbOnSizeStyles = stylex.create({
 // hover tint already is: pressing the input, the track or the label all
 // activate the row.
 const pressedImage = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+// The touch press's paint, declared by the shared overlay styles on the
+// element the controller writes to (`pressedAlpha`) at the press's strength,
+// 1 while on and 1 → 0 over the release, and inherited resolved by the layer
+// that paints it. See interactionOverlay.stylex.ts.
+const pressedOverlayImage = 'var(--_press-paint-image)';
 
 const labelWrapperSizeStyles = stylex.create({
   sm: {
@@ -222,7 +231,28 @@ const styles = stylex.create({
       default: null,
       [stylex.when.ancestor(':active', switchScope)]: {
         default: null,
-        '@media (forced-colors: none)': pressedImage,
+        '@media (forced-colors: none)': {
+          default: pressedImage,
+          // Under a coarse pointer the touch press model writes `data-astryx-press`
+          // on the row instead; see interactionOverlay.stylex.ts.
+          '@media (pointer: coarse)': 'none',
+        },
+      },
+      // Nested in the same media as the arm above so it outranks the drop: an
+      // ancestor-scoped attribute selector gets no priority of its own.
+      [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+      },
+      [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
       },
     },
   },
@@ -303,7 +333,26 @@ const styles = stylex.create({
       default: null,
       [stylex.when.ancestor(':active', switchScope)]: {
         default: null,
-        '@media (forced-colors: none)': pressedImage,
+        '@media (forced-colors: none)': {
+          default: pressedImage,
+          '@media (pointer: coarse)': 'none',
+        },
+      },
+      // Nested in the same media as the arm above so it outranks the drop: an
+      // ancestor-scoped attribute selector gets no priority of its own.
+      [stylex.when.ancestor('[data-astryx-press="on"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+      },
+      [stylex.when.ancestor('[data-astryx-press="fading"]', switchScope)]: {
+        default: null,
+        '@media (forced-colors: none)': {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
       },
     },
   },
@@ -519,7 +568,11 @@ export function Switch({
   ref,
   ...rest
 }: SwitchProps) {
+  const t = useTranslator();
   const id = useId();
+  // The row is the pressable: the input, the track and the label all sit
+  // inside it, and the pressed arms above read the row's scope marker.
+  const pressable = usePressFeedback();
   const descriptionID = useId();
   const statusMessageID = useId();
   // Announce the effective required state (form default included) while the
@@ -530,6 +583,13 @@ export function Switch({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (isBusy) {
+      announce(t('@astryx.switch.loading'));
+    }
+  }, [announce, isBusy, t]);
 
   const isOn = optimisticValue === true;
 
@@ -642,7 +702,6 @@ export function Switch({
           {isBusy && <Spinner size="sm" />}
         </div>
       </div>
-      {isBusy && <VisuallyHidden role="status">Loading</VisuallyHidden>}
     </div>
   );
 
@@ -688,11 +747,15 @@ export function Switch({
           // unconditionally is safe.
           disabledMessageTooltip.interactionRef(el);
         }}
+        {...(isDisabled ? undefined : pressable)}
         {...stylex.props(
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
           labelSpacing === 'spread' && styles.containerSpread,
           !isDisabled && switchScope,
+          // The touch press's strength and release live on the row the
+          // controller writes to; the track and thumb inherit and paint it.
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
         )}>
         {' '}
         {labelPosition === 'start' ? (

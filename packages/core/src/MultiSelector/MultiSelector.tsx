@@ -20,6 +20,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useImperativeHandle,
   useMemo,
   useOptimistic,
   useRef,
@@ -71,7 +72,10 @@ import {
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
+import {devWarn} from '../utils/devWarning';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
+import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -79,6 +83,7 @@ import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -91,6 +96,14 @@ import {selectorPresentationStyles} from '../Selector/selectorPresentation.style
 
 // Sentinel value for the select-all item in keyboard navigation
 const SELECT_ALL_VALUE = '__xds_select_all__';
+
+// Value of the synthetic "Create <query>" row `hasCreate` offers. Never a real
+// option value: picking it reports a `create` change, not a toggle.
+const CREATE_VALUE_PREFIX = '__astryx_multi_selector_create__';
+
+function isCreateValue(value: string): boolean {
+  return value.startsWith(CREATE_VALUE_PREFIX);
+}
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -211,7 +224,13 @@ const styles = stylex.create({
       'background-image, background-color, color, opacity, transform',
     transform: {
       default: 'scale(1)',
-      ':active': 'scale(0.98)',
+      // A mouse press; under a coarse pointer the touch press model writes
+      // `data-astryx-press` instead (see interactionOverlay.stylex.ts).
+      ':active': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
   triggerGhostDisabled: {
@@ -219,6 +238,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
   triggerReadOnly: {
@@ -229,6 +249,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
 
@@ -318,7 +339,8 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     outline: 'none',
   },
   itemHighlighted: {
@@ -436,6 +458,71 @@ export type MultiSelectorStatusType = 'warning' | 'error' | 'success';
 
 export type {MultiSelectorStatus};
 
+/**
+ * Props the `renderTrigger` render prop hands to the control the caller
+ * renders.
+ * Spread them onto that control: it becomes the panel's anchor, the element
+ * focus returns to, and the control that announces the panel's state.
+ */
+export interface MultiSelectorRenderTriggerProps {
+  /** Attaches the control as the panel's anchor and focus-return target. */
+  ref: (element: HTMLElement | null) => void;
+  /** The id the field would have given its own button. */
+  id: string;
+  /**
+   * Opening handlers, present only when there is a panel to open. A
+   * read-only selector withholds them, so spreading these props onto a
+   * control gives it no opener rather than a dead one.
+   */
+  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLElement>) => void;
+  onFocus: (event: React.FocusEvent<HTMLElement>) => void;
+  /**
+   * Disclosure state. A read-only selector has no surface to disclose, so
+   * `aria-haspopup` and `aria-controls` are absent and `aria-expanded` is
+   * `false` (`spec:AST-011` FR4).
+   */
+  'aria-haspopup'?: 'listbox' | 'dialog';
+  'aria-expanded': boolean;
+  'aria-controls'?: string;
+  'aria-busy': boolean | undefined;
+  /**
+   * `true` when the selector is read-only, so the caller's control can show
+   * that state the way its own design calls for.
+   */
+  'aria-readonly'?: boolean;
+}
+
+/**
+ * Imperative control surface for MultiSelector, accessed via the `handleRef`
+ * prop. Methods drive the same popover machinery as the built-in trigger, so
+ * they respect focus restoration, light dismiss, and Escape. Pair with
+ * `onOpenChange` to observe every open and close, including the ones the
+ * selector performs itself. Same shape as `ComplexSelectorHandle`.
+ */
+export interface MultiSelectorHandle {
+  /** Open the panel. No-op when disabled, read-only, or already open. */
+  open(): void;
+  /** Close the panel. Restores focus to the trigger. */
+  close(): void;
+  /** Toggle the panel open or closed. */
+  toggle(): void;
+  /** Whether the panel is currently open. Reads live state. */
+  isOpen(): boolean;
+}
+
+/**
+ * What kind of change an `onChange` call reports. Only a creation is reported
+ * today; a plain toggle, clear, or select-all passes no descriptor, so a
+ * one-argument `onChange` keeps working unchanged.
+ */
+export type MultiSelectorChange = {
+  /** The person picked the `Create "<query>"` row of a search. */
+  type: 'create';
+  /** The trimmed query, which is also the new entry appended to `value`. */
+  query: string;
+};
+
 export interface MultiSelectorSelectedItem {
   value: string;
   label: string;
@@ -532,9 +619,12 @@ export interface MultiSelectorProps<
   htmlName?: string;
 
   /**
-   * Callback when selection changes.
+   * Callback when selection changes. A creation (`hasCreate`) arrives with
+   * a descriptor as the second argument and the typed text appended to
+   * `value`; the caller adds the matching option and accepts the value in the
+   * same update. Every other change passes no descriptor.
    */
-  onChange: (value: string[]) => void;
+  onChange: (value: string[], change?: MultiSelectorChange) => void;
 
   /**
    * Async action on change. Fires after onChange.
@@ -639,12 +729,26 @@ export interface MultiSelectorProps<
    * Content shown in the panel when a search query matches no options, and
    * announced in a polite live region at the same time.
    *
-   * The panel message is `role="presentation"`, so the live region is the only
-   * route to assistive tech: a string is announced verbatim, a richer node
-   * falls back to the default text since it cannot be spoken.
+   * The panel message is `role="presentation"`, so the live region is the
+   * only route to assistive tech. It announces the text this content renders,
+   * read from the DOM, so an element is announced as written and anything
+   * marked `aria-hidden` is left out of both.
    * @default 'No results found'
    */
   emptySearchText?: ReactNode;
+
+  /**
+   * With `hasSearch`, offer a `Create "<query>"` row first in the list when the
+   * trimmed query equals no option's label under the search's own matching
+   * (case-insensitive). Picking it, or Enter with nothing highlighted, calls
+   * `onChange` with the query appended to `value` and a `{type: 'create',
+   * query}` descriptor, then clears the search. The caller MUST add an option
+   * for the new value in that same update; the component does not mint
+   * options. Nothing is offered while `isLoading`. Setting this without
+   * `hasSearch` warns in development and offers nothing.
+   * @default false
+   */
+  hasCreate?: boolean;
 
   /**
    * How to display selected items in the trigger.
@@ -703,6 +807,56 @@ export interface MultiSelectorProps<
   isDefaultOpen?: boolean;
 
   /**
+   * Render the control the panel hangs off — a glyph in a list row, a chip,
+   * an icon button — instead of the selector's own field and button. Spread
+   * the given props onto it; the listbox is then anchored to and labelled by
+   * that control, and `label` names the listbox for assistive technology.
+   * The field chrome (`Field`, status, clear button, spinner) is not
+   * rendered; the caller owns the opener. Pair with `handleRef` to open the
+   * panel from a keystroke elsewhere.
+   *
+   * Hover and pressed paint stay yours. The open state reaches your control
+   * as `aria-expanded` on the given props, so style it from the rendered
+   * attribute. A pressed look keyed to `:active` is not a substitute:
+   * `:active` does not behave the same under a coarse pointer, which is why
+   * menu rows drop coarse-pointer `:active` paint entirely.
+   *
+   * A read-only selector has no panel to open, so the disclosure attributes
+   * and the opening handlers are withheld: your control reports
+   * `aria-expanded="false"` and points at nothing.
+   *
+   * @example
+   * ```
+   * <MultiSelector
+   *   label="Labels"
+   *   renderTrigger={props => <IconButton icon="tag" label="Labels" {...props} />}
+   *   …
+   * />
+   * ```
+   *
+   * @example
+   * ```
+   * // Styling the open state from the rendered attribute:
+   * // .my-trigger[aria-expanded='true'] { background: var(--color-overlay-pressed); }
+   * ```
+   */
+  renderTrigger?: (props: MultiSelectorRenderTriggerProps) => ReactNode;
+
+  /**
+   * Imperative handle for opening and closing the panel. Prefer `handleRef`
+   * over mirroring open state in the parent — the selector owns its
+   * visibility, and imperative calls avoid the focus-management pitfalls of
+   * syncing an external `isOpen` prop.
+   */
+  handleRef?: React.Ref<MultiSelectorHandle>;
+
+  /**
+   * Called whenever the panel opens or closes, however it happened — the
+   * trigger, the keyboard, a light dismiss, Escape, or the imperative handle.
+   */
+  onOpenChange?: (isOpen: boolean) => void;
+
+  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -711,6 +865,10 @@ export interface MultiSelectorProps<
 // Case-insensitive substring match for a single option. The one predicate used
 // by both the flat filter (count + keyboard nav) and the grouped renderer, so
 // what is shown while searching stays in lockstep with the announced count.
+function normalizeLabel(label: string): string {
+  return label.toLowerCase();
+}
+
 function optionMatchesQuery(
   option: MultiSelectorOptionData,
   query: string,
@@ -718,9 +876,19 @@ function optionMatchesQuery(
   if (!query) {
     return true;
   }
-  return (option.label ?? option.value)
-    .toLowerCase()
-    .includes(query.toLowerCase());
+  return normalizeLabel(option.label ?? option.value).includes(
+    normalizeLabel(query),
+  );
+}
+
+// "Already exists" for the create row uses the filter's own normalization, so
+// a label the filter shows as an exact match is never offered for creation,
+// and a label the filter cannot surface for this query is never a dead end.
+function hasLabel(items: MultiSelectorOptionData[], query: string): boolean {
+  const wanted = normalizeLabel(query);
+  return items.some(
+    item => normalizeLabel(item.label ?? item.value) === wanted,
+  );
 }
 
 // Case-insensitive substring filter over the selectable options. Shared by the
@@ -780,6 +948,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   searchPlaceholder: searchPlaceholderFromProps,
   emptyText: emptyTextFromProps,
   emptySearchText: emptySearchTextFromProps,
+  hasCreate = false,
   triggerDisplay = 'count',
   formatValue,
   maxBadges = 3,
@@ -787,6 +956,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   indicatorPosition = 'start',
   presentation = 'popover',
   isDefaultOpen = false,
+  renderTrigger,
+  handleRef,
+  onOpenChange,
   'data-testid': testId,
   htmlName,
   width,
@@ -796,6 +968,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   onFocus,
 }: MultiSelectorProps<T>) {
   const t = useTranslator();
+  const pressable = usePressFeedback();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.multiSelector.selectPlaceholder');
@@ -820,6 +993,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const inputLabelId = useId();
   const readOnlyDescriptionId = useId();
   const searchId = useId();
+  // Read by the live region above so it speaks what this element renders.
+  const emptyStateRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
@@ -881,22 +1056,22 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     [options],
   );
 
+  // The one half-configuration a single switch cannot rule out: creation
+  // needs a query to create from. Say so rather than offer nothing in silence.
+  useEffect(() => {
+    if (hasCreate && !hasSearch && process.env.NODE_ENV !== 'production') {
+      devWarn(
+        'MultiSelector',
+        '`hasCreate` needs `hasSearch`: the create row is minted from the ' +
+          'typed query, so without a search input nothing is offered.',
+      );
+    }
+  }, [hasCreate, hasSearch]);
+
   // Announce selection-count changes politely (comboboxes-7 announce path).
   // Toggling options / select-all previously produced no audible feedback.
   const announce = useAnnounce();
 
-  // The panel's empty message is role="presentation" and reaches assistive tech
-  // only through this live region, so the region has to speak whatever the
-  // panel shows. A ReactNode override cannot be spoken; fall back to the
-  // catalog copy for that case rather than announcing nothing.
-  const emptyAnnouncement =
-    typeof emptyText === 'string'
-      ? emptyText
-      : t('@astryx.multiSelector.empty');
-  const emptySearchAnnouncement =
-    typeof emptySearchText === 'string'
-      ? emptySearchText
-      : t('@astryx.multiSelector.emptySearchResults');
   const announceSelection = useCallback(
     (nextValue: string[]) => {
       const total = selectableItems.length;
@@ -929,6 +1104,29 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   // Selected-at-open items are placed first within each group/section, and the
   // same walk applies while searching so group structure survives filtering
   // (only matching items are kept; the query is empty in non-search mode).
+  // The query the create row would mint, or null when there is none to offer:
+  // no `hasCreate`, no search, options still loading (a label that is a moment
+  // from arriving must not be offered as new), nothing typed, or an option
+  // already carries that label — `Tokenizer.hasCreate`'s rule.
+  const canCreate = hasCreate && hasSearch && !isLoading;
+  const getCreateQuery = useCallback(
+    (query: string): string | null => {
+      if (!canCreate) {
+        return null;
+      }
+      const trimmed = query.trim();
+      if (trimmed === '') {
+        return null;
+      }
+      return hasLabel(selectableItems, trimmed) ? null : trimmed;
+    },
+    [canCreate, selectableItems],
+  );
+  const createQuery = useMemo(
+    () => getCreateQuery(searchQuery),
+    [getCreateQuery, searchQuery],
+  );
+
   const sortedItems = useMemo(() => {
     const selectedSet = selectedAtOpen ?? new Set<string>();
     const result: MultiSelectorOptionData[] = [];
@@ -967,30 +1165,70 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     flushFlat();
 
     if (hasSelectAll) {
-      return [{value: SELECT_ALL_VALUE, label: selectAllLabel}, ...result];
+      result.unshift({value: SELECT_ALL_VALUE, label: selectAllLabel});
+    }
+    if (createQuery != null) {
+      // First row, before select-all: the row the typed text asked for.
+      result.unshift({
+        value: `${CREATE_VALUE_PREFIX}${createQuery}`,
+        label: t('@astryx.multiSelector.createOption', {query: createQuery}),
+      });
     }
     return result;
-  }, [searchQuery, options, selectedAtOpen, hasSelectAll, selectAllLabel]);
+  }, [
+    searchQuery,
+    options,
+    selectedAtOpen,
+    hasSelectAll,
+    selectAllLabel,
+    createQuery,
+    t,
+  ]);
 
   // Layer for dropdown positioning
+  const hasExternalTrigger = renderTrigger != null;
+
+  // The open handlers defer their focus move by a frame, so a panel closed
+  // inside that frame would otherwise be focused after it has gone — the
+  // person loses focus to a surface that is no longer there. The pending
+  // frame is cancelled on hide.
+  const openFocusFrameRef = useRef<number | null>(null);
+  const cancelOpenFocus = useCallback(() => {
+    if (openFocusFrameRef.current != null) {
+      cancelAnimationFrame(openFocusFrameRef.current);
+      openFocusFrameRef.current = null;
+    }
+  }, []);
+
   const handleLayerHide = useCallback(() => {
+    cancelOpenFocus();
     setSearchQuery('');
     setSelectedAtOpen(null);
     // Clear any lingering result count when the popover closes so stale status
     // text does not linger in the a11y tree.
     announce('');
-  }, [announce]);
+    onOpenChange?.(false);
+  }, [announce, onOpenChange, cancelOpenFocus]);
 
   const handleLayerShow = useCallback(() => {
     // Snapshot selection only after the surface actually opens; a same-gesture
     // rejection must not prepare state for an opening that never happened.
     setSelectedAtOpen(new Set(optimisticValue));
     if (hasSearch) {
-      requestAnimationFrame(() => {
+      openFocusFrameRef.current = requestAnimationFrame(() => {
+        openFocusFrameRef.current = null;
         searchRef.current?.focus();
       });
+    } else if (hasExternalTrigger) {
+      // The caller's anchor may not take focus (a glyph in a link row), so
+      // the listbox owns the keyboard while the panel is open.
+      openFocusFrameRef.current = requestAnimationFrame(() => {
+        openFocusFrameRef.current = null;
+        listboxRef.current?.focus();
+      });
     }
-  }, [hasSearch, optimisticValue]);
+    onOpenChange?.(true);
+  }, [hasSearch, hasExternalTrigger, optimisticValue, onOpenChange]);
 
   const surface = useSelectorPresentation({
     presentation,
@@ -1031,6 +1269,28 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }
   }, [isEffectivelyReadOnly, isSurfaceOpen, hideSurface]);
 
+  const canOpen = !isDisabled && !isEffectivelyReadOnly;
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      open: () => {
+        if (canOpen && !surface.isOpen) {
+          surface.show();
+        }
+      },
+      close: () => surface.hide(),
+      toggle: () => {
+        if (surface.isOpen) {
+          surface.hide();
+        } else if (canOpen) {
+          surface.show();
+        }
+      },
+      isOpen: () => surface.isOpen,
+    }),
+    [canOpen, surface],
+  );
+
   // Announce the filtered result count from the query-change handler (matching
   // BaseTypeahead) rather than a reactive effect: computing the count for the
   // next query here fires the announcement exactly once per keystroke and does
@@ -1052,45 +1312,51 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         return;
       }
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
-      announce(
-        count === 0
-          ? emptySearchAnnouncement
-          : t('@astryx.multiSelector.resultCount', {count}),
-      );
+      if (count === 0) {
+        const nextCreateQuery = getCreateQuery(nextQuery);
+        if (nextCreateQuery != null) {
+          // The create row is the one result on screen, so the panel is not
+          // empty and the rendered-message route below stays silent; say the
+          // row.
+          announce(
+            t('@astryx.multiSelector.createOption', {query: nextCreateQuery}),
+          );
+          return;
+        }
+        // The empty panel is announced from the rendered message below, not
+        // from here. Two speakers for one transition would say it twice, and
+        // this one cannot cover an empty result that arrives after the
+        // keystroke — an async load landing with nothing that matches.
+        return;
+      }
+      announce(t('@astryx.multiSelector.resultCount', {count}));
     },
-    [announce, isLoading, selectableItems, emptySearchAnnouncement, t],
+    [announce, isLoading, selectableItems, getCreateQuery, t],
   );
 
-  // The panel's empty message is role="presentation", so this region is the
-  // only route to assistive tech. It has to watch the STATE rather than the
-  // open event: the panel can become empty either on open or when a fetch
-  // lands with nothing in it, and an open-only announcement leaves the second
-  // case silent while the message sits on screen. The ref makes it fire once
-  // per arrival at that state rather than on every re-render.
-  const announcedEmptyRef = useRef<string | null>(null);
-  useEffect(() => {
-    const isPanelEmpty =
-      surface.isOpen &&
-      !isLoading &&
-      searchQuery === '' &&
-      selectableItems.length === 0;
-    if (!isPanelEmpty) {
-      announcedEmptyRef.current = null;
-      return;
-    }
-    if (announcedEmptyRef.current === emptyAnnouncement) {
-      return;
-    }
-    announcedEmptyRef.current = emptyAnnouncement;
-    announce(emptyAnnouncement);
-  }, [
-    surface.isOpen,
-    isLoading,
-    searchQuery,
-    selectableItems.length,
-    emptyAnnouncement,
-    announce,
-  ]);
+  // The panel's empty message is role="presentation" — role="listbox" permits
+  // only option and group children — so this region is its only route to
+  // assistive tech, and the region has to say what the panel says. Both
+  // `emptyText` and `emptySearchText` take a ReactNode, so the words are read
+  // off the rendered element rather than guessed from the prop: a caller who
+  // puts a link in the dead end is announced their link, not a default
+  // (`spec:AST-056` AR1).
+  //
+  // Watching the rendered STATE rather than the keystroke also covers the
+  // case the old keystroke-time announcement could not: a fetch that lands
+  // with nothing matching an active query left the message on screen and the
+  // region silent.
+  //
+  // `realItemCount` mirrors renderOptions exactly: the select-all sentinel
+  // and the create row ride in `sortedItems`, in that order from the top,
+  // but neither is an option anybody can match. A create row is a result of
+  // its own, so a panel showing one is not empty.
+  const hasCreateRow = createQuery != null;
+  const leadingCount = (hasCreateRow ? 1 : 0) + (hasSelectAll ? 1 : 0);
+  const realItemCount = sortedItems.length - leadingCount;
+  const isPanelEmpty =
+    surface.isOpen && !isLoading && realItemCount === 0 && !hasCreateRow;
+  useAnnounceRenderedText(emptyStateRef, isPanelEmpty, searchQuery);
 
   // Handle toggle
   // Clear all selected values. Shared by the clear button and the keyboard
@@ -1208,16 +1474,49 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     announceSelection,
   ]);
 
-  // Route toggle: select-all sentinel → handleSelectAll, everything else → handleToggle
+  // Picking the create row: the typed text joins the value and the caller is
+  // told it is a creation on the channel it already listens to, so adding the
+  // option and accepting the value are one update. The search is cleared so
+  // the option the caller adds is visible.
+  const commitCreate = useCallback(
+    (query: string) => {
+      const newValue = optimisticValue.includes(query)
+        ? optimisticValue
+        : [...optimisticValue, query];
+      onChange(newValue, {type: 'create', query});
+      setSearchQuery('');
+      announce(t('@astryx.multiSelector.optionCreated', {label: query}));
+      if (changeAction) {
+        startTransition(async () => {
+          setOptimisticValue(newValue);
+          await changeAction(newValue);
+        });
+      }
+    },
+    [
+      optimisticValue,
+      onChange,
+      changeAction,
+      startTransition,
+      setOptimisticValue,
+      announce,
+      t,
+    ],
+  );
+
+  // Route toggle: select-all sentinel → handleSelectAll, the create row →
+  // commitCreate, everything else → handleToggle
   const handleNavigableToggle = useCallback(
     (itemValue: string) => {
       if (itemValue === SELECT_ALL_VALUE) {
         handleSelectAll();
+      } else if (isCreateValue(itemValue)) {
+        commitCreate(itemValue.slice(CREATE_VALUE_PREFIX.length));
       } else {
         handleToggle(itemValue);
       }
     },
-    [handleSelectAll, handleToggle],
+    [handleSelectAll, handleToggle, commitCreate],
   );
 
   // Multi-select combobox behavior — index-based, matching useCombobox pattern.
@@ -1369,6 +1668,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           if (isImeKeyEvent(e.nativeEvent)) {
             return;
           }
+          if (
+            e.key === 'Enter' &&
+            highlightedIndex < 0 &&
+            createQuery != null
+          ) {
+            // Nothing highlighted and the typed text matches no option:
+            // Enter mints it, as it does in Tokenizer.
+            e.preventDefault();
+            commitCreate(createQuery);
+            return;
+          }
           // Arrow keys navigate options; Enter toggles; Escape closes.
           // Space and Home/End are left to the input (type a space / move
           // the caret) per the APG editable combobox; PageUp/PageDown are
@@ -1406,6 +1716,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     surface.isOpen,
     highlightedIndex,
     getItemId,
+    createQuery,
+    commitCreate,
     t,
   ]);
 
@@ -1414,9 +1726,12 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     (item: MultiSelectorOptionData, flatIndex: number) => {
       const isHighlighted = flatIndex === highlightedIndex;
       const isSelectAll = item.value === SELECT_ALL_VALUE;
+      // The create row is a plain labelled option: no checkbox, never
+      // selected, and the caller's `renderOption` does not see it.
+      const isCreate = isCreateValue(item.value);
       const isSelected = isSelectAll
         ? allEnabledSelected
-        : optimisticValue.includes(item.value);
+        : !isCreate && optimisticValue.includes(item.value);
       const checkboxValue = isSelectAll ? selectAllState : isSelected;
       // aria-selected="mixed" is invalid on role="option", and the tri-state
       // checkbox is inert/decorative, so the indeterminate state must be
@@ -1424,7 +1739,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const isPartiallySelected =
         isSelectAll && selectAllState === 'indeterminate';
 
-      const checkbox = (
+      const checkbox = isCreate ? null : (
         <div
           inert
           {...stylex.props(
@@ -1482,7 +1797,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             ),
           )}>
           {indicatorPosition === 'start' && checkbox}
-          {renderOption && !isSelectAll ? (
+          {renderOption && !isSelectAll && !isCreate ? (
             renderOption(item)
           ) : (
             <span {...stylex.props(styles.itemLabel)}>
@@ -1516,20 +1831,21 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     const elements: ReactNode[] = [];
     let cursor = 0;
 
-    // Number of real items (excluding the select-all sentinel)
-    const realItemCount = hasSelectAll
-      ? sortedItems.length - 1
-      : sortedItems.length;
+    // The create row is the first row: the row the typed text asked for.
+    if (hasCreateRow) {
+      elements.push(renderItem(sortedItems[cursor], cursor));
+      cursor++;
+    }
 
     // Show select-all only when there are real items to select. It reads as
     // the first row of the list, not a section of its own — no divider under
     // it (the checkbox column already lines it up with the options below).
-    if (hasSelectAll && realItemCount > 0) {
-      elements.push(renderItem(sortedItems[0], 0));
-      cursor = 1;
-    } else if (hasSelectAll) {
+    if (hasSelectAll) {
+      if (realItemCount > 0) {
+        elements.push(renderItem(sortedItems[cursor], cursor));
+      }
       // Skip the select-all sentinel when there are no real items
-      cursor = 1;
+      cursor++;
     }
 
     // Empty state — no real items to show. role="presentation" keeps the
@@ -1539,10 +1855,12 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     // While isLoading the options have not arrived yet, so asserting either
     // message would be a claim the component cannot make; the trigger's
     // spinner covers it.
-    if (realItemCount === 0 && !isLoading) {
+    // A create row is a result of its own, so the empty state stays out.
+    if (realItemCount === 0 && !isLoading && !hasCreateRow) {
       elements.push(
         <div
           key="empty"
+          ref={emptyStateRef}
           role="presentation"
           {...mergeProps(
             themeProps('multi-selector-empty-state'),
@@ -1642,11 +1960,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     options,
     renderItem,
     sortedItems,
+    realItemCount,
     searchQuery,
     hasSelectAll,
     isLoading,
     emptyText,
     emptySearchText,
+    hasCreateRow,
   ]);
 
   // The detached message box renders its own leading status icon, so the
@@ -1655,6 +1975,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     status != null && effectiveStatusVariant !== 'detached';
   const showStatusTooltip =
     status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
+
+  // With the caller's own trigger, `label` names the listbox directly: the
+  // anchor may carry no text of its own (a glyph in a link row).
+  const listboxLabelProps = hasExternalTrigger
+    ? {'aria-label': label}
+    : {'aria-labelledby': triggerId};
+  // In a bottom sheet, or hung off a caller's anchor that may not take focus,
+  // the listbox itself owns the keyboard.
+  const listboxOwnsKeyboard =
+    surface.activePresentation === 'bottom-sheet' || hasExternalTrigger;
 
   const panelContent = hasSearch ? (
     <div>
@@ -1666,7 +1996,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           id={listboxId}
           role="listbox"
           aria-multiselectable="true"
-          aria-labelledby={triggerId}
+          {...listboxLabelProps}
           {...stylex.props(styles.listbox)}>
           {renderOptions()}
         </div>
@@ -1679,16 +2009,21 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         id={listboxId}
         role="listbox"
         aria-multiselectable="true"
-        aria-labelledby={triggerId}
+        // The bottom sheet is rendered in a modal layer, so Chromium cannot
+        // reliably compute this listbox's name from the trigger outside that
+        // layer. Name only this no-search sheet directly from the component's
+        // existing label; searchable sheets and popovers retain their current
+        // trigger relationship.
+        {...(surface.activePresentation === 'bottom-sheet'
+          ? {'aria-label': label}
+          : listboxLabelProps)}
         aria-activedescendant={
           surface.isOpen && highlightedIndex >= 0
             ? getItemId(highlightedIndex)
             : undefined
         }
-        tabIndex={surface.activePresentation === 'bottom-sheet' ? 0 : undefined}
-        onKeyDown={
-          surface.activePresentation === 'bottom-sheet' ? onKeyDown : undefined
-        }
+        tabIndex={listboxOwnsKeyboard ? 0 : undefined}
+        onKeyDown={listboxOwnsKeyboard ? onKeyDown : undefined}
         {...stylex.props(styles.listbox)}>
         {renderOptions()}
       </div>
@@ -1737,6 +2072,70 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     ),
   };
 
+  if (renderTrigger != null) {
+    // Anchor-only mode: the caller renders the opener and spreads these props
+    // on it. No Field, no status, no clear button — the caller owns the
+    // control; the selector owns the panel, its anchor, and focus return.
+    const triggerProps: MultiSelectorRenderTriggerProps = {
+      ref: el => {
+        popover.triggerRef(el);
+        triggerRef.current = el;
+        // A control that takes no focus has nowhere for focus to return to
+        // when the panel closes, and focus would land on the body — the
+        // person loses their place in the page. Making it programmatically
+        // focusable repairs the return without putting it in the tab order,
+        // which is the caller's decision to make. It does not make the
+        // control openable from the keyboard: only a real control does
+        // that, which is what the warning below is for.
+        if (el != null && !el.matches(FOCUSABLE_SELECTOR)) {
+          el.tabIndex = -1;
+        }
+      },
+      id: triggerId,
+      onClick: isEffectivelyReadOnly ? undefined : onTriggerClick,
+      onKeyDown: isEffectivelyReadOnly ? undefined : onKeyDown,
+      onFocus: event => {
+        onFocus?.(event);
+        surface.onTriggerFocus(event);
+      },
+      // A read-only selector has no selection surface to open, so it must
+      // not advertise one: `spec:AST-011` FR4. Telling a screen-reader user
+      // "collapsed, has popup" on a control that cannot open leaves them
+      // pressing Enter with nothing happening and no way to tell the value
+      // is read-only rather than the control broken. The field path below
+      // already respects this; the anchor-only path must not regress it.
+      'aria-haspopup': isEffectivelyReadOnly
+        ? undefined
+        : surface.activePresentation === 'bottom-sheet'
+          ? 'dialog'
+          : 'listbox',
+      'aria-expanded': isEffectivelyReadOnly ? false : surface.isOpen,
+      'aria-controls': isEffectivelyReadOnly ? undefined : listboxId,
+      'aria-busy': isBusy || undefined,
+      // Withholding the disclosure attributes stops the control lying about
+      // a panel, but leaves it silent about WHY it does not open. The field
+      // path says so through its own chrome; the caller's control has none,
+      // so the state is handed over for it to present.
+      'aria-readonly': isEffectivelyReadOnly || undefined,
+    };
+    return (
+      <>
+        {renderTrigger(triggerProps)}
+        {htmlName != null &&
+          value.map(v => (
+            <input
+              key={v}
+              type="hidden"
+              name={htmlName}
+              value={v}
+              disabled={isDisabled}
+            />
+          ))}
+        {selectionSurface}
+      </>
+    );
+  }
+
   const multiSelectorContent = (
     <>
       <div
@@ -1749,6 +2148,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         }}
         onClick={onTriggerClick}
         data-testid={testId}
+        {...pressable}
         {...mergeProps(
           themeProps('multi-selector', {
             variant,

@@ -3,7 +3,7 @@
 /**
  * @file Fast PR accessibility scope contracts.
  * @input Exact/invalid analysis fixtures and public component ownership
- * @output No full-suite fallback, qualified owners, and grouped-owner coverage
+ * @output No full-suite fallback, qualified owners, and normalized umbrella coverage
  * @position Regression tests for the PR-only accessibility scope projection
  */
 
@@ -111,6 +111,98 @@ describe('fast PR accessibility scope', () => {
       ),
     ).toThrow('No scoped Storybook route');
   });
+
+  it('audits Lab Chat additions through the Chat umbrella without selecting other Lab stories', () => {
+    const routes = buildStoryComponentRoutes({
+      stories: [
+        {id: 'lab-chatadditions--reactions', title: 'Lab/ChatAdditions'},
+        {
+          id: 'lab-chatadditions--typing-and-unread',
+          title: 'Lab/ChatAdditions',
+        },
+        {id: 'lab-chatadditions--emoji-picker', title: 'Lab/ChatAdditions'},
+        {id: 'lab-drawer--showcase', title: 'Lab/Drawer'},
+      ],
+      publicComponentsByPackage: {
+        lab: [
+          'ChatEmojiPicker',
+          'ChatReactionBar',
+          'ChatTypingIndicator',
+          'ChatUnreadDivider',
+          'Drawer',
+        ],
+      },
+    }).map(route => ({
+      ...route,
+      component: storyIdentity.ownerForA11yStory(route.id) ?? route.component,
+    }));
+    const chatScope = resolvePrA11yComponents(
+      analysis({unresolvedComponentSources: ['lab/Chat']}),
+      process.cwd(),
+      routes,
+    );
+    expect(chatScope).toEqual(['lab/Chat']);
+    expect(unresolvedComponentFilters(routes, chatScope)).toEqual([]);
+    expect(storyIdsForComponentFilters(routes, chatScope)).toEqual([
+      'lab-chatadditions--reactions',
+      'lab-chatadditions--typing-and-unread',
+      'lab-chatadditions--emoji-picker',
+    ]);
+
+    const drawerScope = resolvePrA11yComponents(
+      analysis({modifiedComponentOwners: ['lab/Drawer']}),
+      process.cwd(),
+      routes,
+    );
+    expect(drawerScope).toEqual(['lab/Drawer']);
+    expect(storyIdsForComponentFilters(routes, drawerScope)).toEqual([
+      'lab-drawer--showcase',
+    ]);
+  });
+
+  it('routes NavHeadingMenu through its normalized NavMenu umbrella', () => {
+    const routes = buildStoryComponentRoutes({
+      stories: [
+        {id: 'core-navmenu--default', title: 'Core/NavMenu'},
+        {id: 'core-button--default', title: 'Core/Button'},
+      ],
+      publicComponentsByPackage: {core: ['NavHeadingMenu', 'Button']},
+    });
+    expect(routes[0]).toEqual({
+      id: 'core-navmenu--default',
+      component: 'core/navmenu',
+    });
+    const source = analysis({unresolvedComponentSources: ['core/NavMenu']});
+    const result = resolvePrA11yComponents(source, process.cwd(), routes);
+    expect(result).toEqual(['core/NavMenu']);
+    expect(unresolvedComponentFilters(routes, result)).toEqual([]);
+    expect(storyIdsForComponentFilters(routes, result)).toEqual([
+      'core-navmenu--default',
+    ]);
+    expect(() =>
+      resolvePrA11yComponents(source, process.cwd(), routes.slice(1)),
+    ).toThrow('No scoped Storybook route for core/NavHeadingMenu or core/NavMenu');
+  });
+
+  it.each([
+    {modifiedComponentOwners: []},
+    {modifiedComponentOwners: ['core/Button']},
+  ])(
+    'keeps shared theme utilities outside component scope while retaining $modifiedComponentOwners',
+    ({modifiedComponentOwners}) => {
+      expect(
+        resolvePrA11yComponents(
+          analysis({
+            modifiedComponentOwners,
+            unresolvedComponentSources: ['core/theme'],
+            forceFullComponentAudits: true,
+          }),
+          process.cwd(),
+          [{id: 'core-button--default', component: 'core/Button'}],
+        ),
+      ).toEqual(modifiedComponentOwners);
+    },
+  );
 
   it('does not turn a shared source into a full audit', () => {
     expect(

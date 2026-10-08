@@ -957,6 +957,33 @@ describe('derived var expansion', () => {
     expect(rule).toContain('--_dropdown-menu-padding: 8px');
   });
 
+  it('emits paddingInline AND internal inset var for item', () => {
+    // The inset var is what keeps List's isFullBleed cancel in sync with a
+    // themed row padding — the padding override alone would move the text
+    // while the cancel keeps the default width.
+    const theme = defineTheme({
+      name: 'test-derived-item',
+      components: {
+        item: {
+          base: {paddingInline: 'var(--spacing-3)'},
+          'density:spacious': {paddingInline: 'var(--spacing-4)'},
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const baseRule = rules.find(
+      r => r.includes('.astryx-item ') || r.includes('.astryx-item {'),
+    );
+    expect(baseRule).toBeDefined();
+    expect(baseRule).toContain('padding-inline: var(--spacing-3)');
+    expect(baseRule).toContain('--_item-inset-inline: var(--spacing-3)');
+    const spaciousRule = rules.find(r =>
+      r.includes('.astryx-item[data-density="spacious"]'),
+    );
+    expect(spaciousRule).toBeDefined();
+    expect(spaciousRule).toContain('--_item-inset-inline: var(--spacing-4)');
+  });
+
   it('emits internal vars for chat composer', () => {
     const theme = defineTheme({
       name: 'test-derived-chat',
@@ -1089,7 +1116,7 @@ describe('derived var expansion', () => {
       name: 'test-derived-textarea',
       components: {
         textarea: {
-          base: {paddingInline: 'var(--eps-input-padding-x)'},
+          base: {paddingInline: 'var(--app-input-padding-x)'},
         },
       },
     });
@@ -1098,11 +1125,11 @@ describe('derived var expansion', () => {
     expect(rule).toBeDefined();
     // Value flows to the inner <textarea> via the var…
     expect(rule).toContain(
-      '--_textarea-inline-padding: var(--eps-input-padding-x)',
+      '--_textarea-inline-padding: var(--app-input-padding-x)',
     );
     // …and must NOT land on the flush wrapper, which would re-inset the
     // full-bleed textarea and push the native resize grip off the corner.
-    expect(rule).not.toContain('padding-inline: var(--eps-input-padding-x)');
+    expect(rule).not.toContain('padding-inline: var(--app-input-padding-x)');
   });
 
   it('lowers onDark and onLight text-area paddingInline to the adaptation leaf', () => {

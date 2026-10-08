@@ -12,6 +12,7 @@ export const doc = {
   type: 'function',
   kind: 'api',
   name: 'validateIntegration',
+  namespace: 'cli/api',
   displayName: 'validateIntegration()',
   summary:
     'Validate a single Astryx integration package and report its issues.',
@@ -45,7 +46,7 @@ export const doc = {
     {
       type: 'integration.validate',
       description:
-        'The result envelope: `data.name` and `data.version` of the validated package (both null when no local manifest is found), plus `data.issues`, an AstryxIntegrationIssue[] of {code, severity: `warning` | `error`, message}.',
+        'The result envelope: `data.validated`, false only when no integration manifest was found — nothing was checked, so the empty `data.issues` means "not looked at", not "healthy"; `data.name` and `data.version` of the validated package (both null when `data.validated` is false; `data.name` is `(local package)` when the local package.json has no readable name), plus `data.issues`, an AstryxIntegrationIssue[] of {code, severity: `warning` | `error`, message}.',
     },
   ],
   examples: [
@@ -59,5 +60,5 @@ export const doc = {
     },
   ],
   command: 'doctor integration validate',
-  related: ['summarizeIssues', 'doctor integration templates', 'upgrade'],
+  related: ['summarizeIssues', 'integrationTemplateConflicts', 'upgrade'],
 };

@@ -16,7 +16,12 @@ import {runCli} from '../../../test-utils/run-cli.mjs';
 vi.setConfig({testTimeout: 120_000});
 const CLI_ROOT = path.resolve(import.meta.dirname, '../../..');
 const FAMILY_KEY = 'ocean-family';
-const OUTPUTS = [`${FAMILY_KEY}.css`, `${FAMILY_KEY}.js`, `${FAMILY_KEY}.d.ts`];
+const OUTPUTS = [
+  `${FAMILY_KEY}.css`,
+  `${FAMILY_KEY}.css.d.ts`,
+  `${FAMILY_KEY}.js`,
+  `${FAMILY_KEY}.d.ts`,
+];
 /** @type {string[]} */ let dirs;
 beforeAll(() => ensureCoreBuilt(), 200_000);
 beforeEach(() => (dirs = []));
@@ -121,7 +126,7 @@ describe('themeBuildFamily()', () => {
     expect(result?.type).toBe('theme.build');
     expect(result?.data.name).toBe('ocean');
     // prettier-ignore
-    expect(result?.data.outputs).toEqual({css: `themes/${FAMILY_KEY}.css`, js: `themes/${FAMILY_KEY}.js`, dts: `themes/${FAMILY_KEY}.d.ts`});
+    expect(result?.data.outputs).toEqual({css: `themes/${FAMILY_KEY}.css`, cssDts: `themes/${FAMILY_KEY}.css.d.ts`, js: `themes/${FAMILY_KEY}.js`, dts: `themes/${FAMILY_KEY}.d.ts`});
     // prettier-ignore
     for (const output of OUTPUTS) { const a = fs.readFileSync(path.join(first, 'themes', output), 'utf8'), b = fs.readFileSync(path.join(second, 'themes', output), 'utf8'); expect({output, content: a}).toEqual({output, content: b}); }
     const css = fs.readFileSync(
@@ -251,23 +256,22 @@ describe('themeBuildFamily()', () => {
     const dir = makeDir();
     const files = writeFamily(dir);
     const outputDir = path.join(dir, 'themes');
-    const blockedTmp = path.join(
-      outputDir,
-      `${FAMILY_KEY}.js.${process.pid}.tmp`,
-    );
-    fs.mkdirSync(blockedTmp);
+    // A directory where the JS output goes fails its staging after the CSS
+    // output was already staged.
+    fs.mkdirSync(path.join(outputDir, `${FAMILY_KEY}.js`));
 
     await expect(build(dir, files)).rejects.toThrow(
       /Failed to write theme outputs/,
     );
-    for (const output of OUTPUTS) {
-      expect(fs.existsSync(path.join(outputDir, output))).toBe(false);
-    }
+    expect(fs.existsSync(path.join(outputDir, `${FAMILY_KEY}.css`))).toBe(
+      false,
+    );
+    expect(fs.existsSync(path.join(outputDir, `${FAMILY_KEY}.d.ts`))).toBe(
+      false,
+    );
     expect(
-      fs.existsSync(
-        path.join(outputDir, `${FAMILY_KEY}.css.${process.pid}.tmp`),
-      ),
-    ).toBe(false);
+      fs.readdirSync(outputDir).filter(name => name.includes('.tmp-')),
+    ).toEqual([]);
   });
 
   it('rejects invalid graphs and keys before touching an existing trio', async () => {

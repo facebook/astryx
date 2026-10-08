@@ -2,10 +2,9 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {Drawer} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
-import {Divider} from '@astryxdesign/core/Divider';
 import {Heading} from '@astryxdesign/core/Heading';
 import {Section} from '@astryxdesign/core/Section';
 import {VStack, HStack} from '@astryxdesign/core/Stack';
@@ -51,12 +50,6 @@ const meta: Meta<typeof Drawer> = {
 export default meta;
 type Story = StoryObj<typeof Drawer>;
 
-const HOSTS = [
-  {id: 'web-01', region: 'us-east-1', status: 'Healthy', cpu: '32%'},
-  {id: 'web-02', region: 'us-east-1', status: 'Healthy', cpu: '41%'},
-  {id: 'worker-01', region: 'eu-west-1', status: 'Degraded', cpu: '87%'},
-];
-
 const REGIONS = ['us-east-1', 'eu-west-1', 'ap-south-1'];
 
 export const Showcase: Story = {
@@ -70,15 +63,14 @@ export const Showcase: Story = {
           onOpenChange={setIsOpen}
           label="Deployment details"
           width={400}>
+          <DrawerHeader
+            title="web-prod-04"
+            subtitle="us-east-1, deployed 12 min ago"
+            onOpenChange={setIsOpen}
+            hasDivider
+          />
           <Section padding={4}>
             <VStack gap={4}>
-              <VStack gap={1}>
-                <Heading level={3}>web-prod-04</Heading>
-                <Text type="supporting" color="secondary">
-                  us-east-1, deployed 12 min ago
-                </Text>
-              </VStack>
-              <Divider />
               <VStack gap={2}>
                 <Text type="label">Status</Text>
                 <Text type="body">
@@ -97,52 +89,91 @@ export const Showcase: Story = {
   },
 };
 
+/**
+ * Non-modal inspector: no scrim, no focus trap, and the page behind stays
+ * interactive. In a real master-detail flow, derive the open state from the
+ * selection (`isOpen={selected != null}`) and clear it in `onOpenChange`.
+ */
 export const RowInspector: Story = {
   render: () => {
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const selected = HOSTS.find(host => host.id === selectedId);
+    const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <VStack gap={1}>
-          {HOSTS.map(host => (
-            <Button
-              key={host.id}
-              variant="ghost"
-              label={`${host.id} / ${host.region}`}
-              onClick={() => setSelectedId(host.id)}
-            />
-          ))}
-        </VStack>
+        <Button label="Open drawer" onClick={() => setIsOpen(true)} />
         <Drawer
-          isOpen={selected != null}
-          onOpenChange={isOpen => !isOpen && setSelectedId(null)}
-          label={selected ? `Host details: ${selected.id}` : 'Host details'}
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          label="Details"
           hasScrim={false}
           width={360}>
-          {selected != null && (
-            <Section padding={4}>
-              <VStack gap={4}>
-                <VStack gap={1}>
-                  <Heading level={3}>{selected.id}</Heading>
-                  <Text type="supporting" color="secondary">
-                    {selected.region}
-                  </Text>
-                </VStack>
-                <Divider />
-                <VStack gap={2}>
-                  <Text type="label">Status</Text>
-                  <Text type="body">{selected.status}</Text>
-                  <Text type="label">CPU</Text>
-                  <Text type="body">{selected.cpu}</Text>
-                </VStack>
-                <Button
-                  label="Close inspector"
-                  variant="secondary"
-                  onClick={() => setSelectedId(null)}
-                />
+          <Section padding={4}>
+            <VStack gap={4}>
+              <VStack gap={1}>
+                <Heading level={3}>Details</Heading>
+                <Text type="supporting" color="secondary">
+                  The page behind stays interactive.
+                </Text>
               </VStack>
-            </Section>
-          )}
+              <Button
+                label="Close inspector"
+                variant="secondary"
+                onClick={() => setIsOpen(false)}
+              />
+            </VStack>
+          </Section>
+        </Drawer>
+      </>
+    );
+  },
+};
+
+/**
+ * Sibling drawers share one top-layer stack. A closing inner drawer continues
+ * to own Escape until its slide-out finishes, then the outer drawer becomes
+ * the topmost dismissible surface.
+ */
+export const StackedDrawers: Story = {
+  render: () => {
+    const [orderOpen, setOrderOpen] = useState(false);
+    const [lineItemOpen, setLineItemOpen] = useState(false);
+    return (
+      <>
+        <Button label="Open order" onClick={() => setOrderOpen(true)} />
+        <Drawer
+          isOpen={orderOpen}
+          onOpenChange={setOrderOpen}
+          label="Order details"
+          hasScrim={false}>
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Order #4821</Heading>
+              <Text type="body">Three line items, ready to ship.</Text>
+              <Button
+                label="Open line item"
+                data-autofocus
+                onClick={() => setLineItemOpen(true)}
+              />
+            </VStack>
+          </Section>
+        </Drawer>
+        <Drawer
+          isOpen={lineItemOpen}
+          onOpenChange={setLineItemOpen}
+          label="Line item details"
+          hasScrim={false}
+          width={320}>
+          <Section padding={4}>
+            <VStack gap={4}>
+              <Heading level={3}>Compute instance</Heading>
+              <Text type="body">Quantity 6 · us-east-1</Text>
+              <Button
+                label="Close line item"
+                variant="secondary"
+                data-autofocus
+                onClick={() => setLineItemOpen(false)}
+              />
+            </VStack>
+          </Section>
         </Drawer>
       </>
     );
@@ -380,17 +411,74 @@ export const Scrim: Story = {
           isOpen={openWithout}
           onOpenChange={setOpenWithout}
           label="Non-modal details"
-          hasScrim={false}
-          hasCloseButton>
+          hasScrim={false}>
+          {/* No scrim to click, so the header's close button is the visible exit. */}
+          <DrawerHeader title="Non-modal" onOpenChange={setOpenWithout} />
           <Section padding={4}>
-            <VStack gap={4}>
-              <Heading level={3}>Non-modal</Heading>
-              <Text type="body">
-                No scrim, no focus trap. The page behind keeps working while
-                this stays open.
-              </Text>
-            </VStack>
+            <Text type="body">
+              No scrim, no focus trap. The page behind keeps working while this
+              stays open.
+            </Text>
           </Section>
+        </Drawer>
+      </>
+    );
+  },
+};
+
+/**
+ * `purpose` matches Dialog. `info` (default) closes on Escape and a scrim
+ * click; `form` ignores the scrim click so a stray click cannot discard input;
+ * `required` ignores both and is exposed as an `alertdialog`, so its content
+ * owns the way out. Drawer has no close button of its own: `DrawerHeader`
+ * renders one when given `onOpenChange`.
+ */
+export const Purpose: Story = {
+  render: () => {
+    const [purpose, setPurpose] = useState<'info' | 'form' | 'required' | null>(
+      null,
+    );
+    const close = () => setPurpose(null);
+    return (
+      <>
+        <HStack gap={2}>
+          <Button label="info" onClick={() => setPurpose('info')} />
+          <Button label="form" onClick={() => setPurpose('form')} />
+          <Button label="required" onClick={() => setPurpose('required')} />
+        </HStack>
+        <Drawer
+          isOpen={purpose != null}
+          onOpenChange={isOpen => !isOpen && close()}
+          label={`Purpose: ${purpose ?? 'info'}`}
+          purpose={purpose ?? 'info'}>
+          {purpose === 'required' ? (
+            <>
+              <DrawerHeader title="Accept the terms" />
+              <Section padding={4}>
+                <VStack gap={4}>
+                  <Text type="body">
+                    Escape and the scrim do nothing. Only this button closes the
+                    drawer.
+                  </Text>
+                  <Button label="Accept" data-autofocus onClick={close} />
+                </VStack>
+              </Section>
+            </>
+          ) : (
+            <>
+              <DrawerHeader
+                title={purpose === 'form' ? 'Edit details' : 'Details'}
+                onOpenChange={isOpen => !isOpen && close()}
+              />
+              <Section padding={4}>
+                <Text type="body">
+                  {purpose === 'form'
+                    ? 'Escape or the close button closes; a scrim click does not.'
+                    : 'Escape, a scrim click, or the close button closes.'}
+                </Text>
+              </Section>
+            </>
+          )}
         </Drawer>
       </>
     );

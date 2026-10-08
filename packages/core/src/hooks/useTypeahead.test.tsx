@@ -256,4 +256,55 @@ describe('useTypeahead', () => {
     expect(handled).toBe(true);
     expect(onMatch).toHaveBeenCalledWith(0);
   });
+
+  it('ignores a key that is part of an input method composition', () => {
+    const {onMatch, api} = setup();
+    const handled = api.onKeyDown(
+      new KeyboardEvent('keydown', {key: 'b', isComposing: true}),
+    );
+    expect(handled).toBe(false);
+    expect(onMatch).not.toHaveBeenCalled();
+  });
+
+  it('ignores a composing Space even mid-buffer', () => {
+    const {onMatch, api} = setup();
+    api.onKeyDown(key('a'));
+    const handled = api.onKeyDown(
+      new KeyboardEvent('keydown', {key: ' ', isComposing: true}),
+    );
+    expect(handled).toBe(false);
+    expect(onMatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores Control and Command chords on a letter', () => {
+    const {onMatch, api} = setup();
+    expect(
+      api.onKeyDown(new KeyboardEvent('keydown', {key: 'b', ctrlKey: true})),
+    ).toBe(false);
+    expect(
+      api.onKeyDown(new KeyboardEvent('keydown', {key: 'b', metaKey: true})),
+    ).toBe(false);
+    expect(onMatch).not.toHaveBeenCalled();
+  });
+
+  it('leaves the highlight where it was when nothing matches', () => {
+    const {onMatch, api} = setup({current: 1});
+    const handled = api.onKeyDown(key('z'));
+    // The key is still consumed — it is typing, not a shortcut for the host.
+    expect(handled).toBe(true);
+    expect(onMatch).not.toHaveBeenCalled();
+  });
+
+  it('reads a React synthetic event’s isComposing through nativeEvent', () => {
+    const {onMatch, api} = setup();
+    const synthetic = {
+      key: 'b',
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false,
+      nativeEvent: {isComposing: true},
+    } as unknown as React.KeyboardEvent;
+    expect(api.onKeyDown(synthetic)).toBe(false);
+    expect(onMatch).not.toHaveBeenCalled();
+  });
 });

@@ -114,4 +114,30 @@ export {TABS_PATTERN, type TabsStateFacts} from './patterns/tabs';
 
 export {LISTBOX_PATTERN, type ListboxStateFacts} from './patterns/listbox';
 
+export {
+  SPINBUTTON_PATTERN,
+  type SpinbuttonStateFacts,
+} from './patterns/spinbutton';
+
+export {
+  TOGGLE_BUTTON_PATTERN,
+  type ToggleButtonStateFacts,
+} from './patterns/toggle-button';
+
+export {
+  DISCLOSURE_PATTERN,
+  type DisclosureStateFacts,
+} from './patterns/disclosure';
+
+export {
+  BREADCRUMB_PATTERN,
+  type BreadcrumbStateFacts,
+} from './patterns/breadcrumb';
+
+export {
+  LANDMARK_PATTERN,
+  type LandmarkRole,
+  type LandmarkStateFacts,
+} from './patterns/landmark';
+
 export {CAROUSEL_PATTERN, type CarouselStateFacts} from './patterns/carousel';

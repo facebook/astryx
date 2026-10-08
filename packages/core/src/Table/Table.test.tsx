@@ -24,7 +24,9 @@ import {
   pixel,
   generateColumns,
   resolveColumnWidths,
+  resolveTableMinWidth,
   capitalize,
+  DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH,
   DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
 import type {TablePlugin, TableColumn, ProportionalWidth} from './types';
@@ -452,10 +454,63 @@ describe('BaseTable', () => {
       );
     });
 
-    it('lets a consumer style.minWidth survive when columns compute none', () => {
+    it('lets a consumer style.minWidth survive when no columns are resolved', () => {
+      render(
+        <Table style={{minWidth: '10px'}}>
+          <tbody>
+            <TableRow>
+              <TableCell>Cell</TableCell>
+            </TableRow>
+          </tbody>
+        </Table>,
+      );
+      expect(screen.getByRole('table').style.minWidth).toBe('10px');
+    });
+
+    it('keeps a larger consumer style.minWidth beside width-less column floors', () => {
+      const plain: TableColumn<User>[] = [
+        {key: 'name'},
+        {key: 'age'},
+        {key: 'email'},
+        {key: 'role'},
+      ];
+      render(<Table data={users} columns={plain} style={{minWidth: 900}} />);
+      expect(screen.getByRole('table').style.minWidth).toBe('900px');
+    });
+
+    it.each([
+      [undefined, '240px'],
+      [900, '900px'],
+      [100, '240px'],
+      [0, '240px'],
+      ['900px', '900px'],
+      ['10px', '240px'],
+      ['0', '240px'],
+      ['0rem', '240px'],
+      ['', '240px'],
+      ['60rem', 'max(60rem, 240px)'],
+      ['50%', 'max(50%, 240px)'],
+      ['calc(100% - 2rem)', 'max(calc(100% - 2rem), 240px)'],
+      ['var(--table-min)', 'max(var(--table-min), 240px)'],
+      ['auto', '240px'],
+      ['max-content', '240px'],
+      ['min-content', '240px'],
+      ['fit-content', '240px'],
+      ['inherit', '240px'],
+      ['12', '240px'],
+    ] as const)(
+      'resolves a consumer minWidth of %j beside a 240px floor to %s',
+      (consumer, expected) => {
+        expect(resolveTableMinWidth(consumer, 240)).toBe(expected);
+      },
+    );
+
+    it('raises a smaller consumer style.minWidth to the column floors', () => {
       const plain: TableColumn<User>[] = [{key: 'name'}, {key: 'age'}];
       render(<Table data={users} columns={plain} style={{minWidth: '10px'}} />);
-      expect(screen.getByRole('table').style.minWidth).toBe('10px');
+      expect(screen.getByRole('table').style.minWidth).toBe(
+        `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH * 2}px`,
+      );
     });
 
     it('keeps the astryx theme classes alongside a consumer className', () => {
@@ -745,18 +800,70 @@ describe('BaseTable', () => {
       }
     });
 
-    it('does not apply minWidth on columns with no explicit width', () => {
+    it('keeps width-less columns flexible with a compact readability floor', () => {
       const cols: TableColumn<User>[] = [
         {key: 'name', header: 'Name'},
         {key: 'age', header: 'Age'},
       ];
       render(<BaseTable data={users} columns={cols} />);
       const headers = screen.getAllByRole('columnheader');
-      expect(headers[0]).not.toHaveStyle({
-        minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
+      expect(headers[0]).toHaveStyle({
+        width: '50%',
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH}px`,
       });
-      expect(headers[1]).not.toHaveStyle({
-        minWidth: `${DEFAULT_MIN_COLUMN_WIDTH}px`,
+      expect(headers[1]).toHaveStyle({
+        width: '50%',
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH}px`,
+      });
+      expect(screen.getByRole('table')).toHaveStyle({
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH * 2}px`,
+      });
+    });
+
+    it('lets one column set its own floor with proportional minWidth', () => {
+      const cols: TableColumn<User>[] = [
+        {key: 'name', header: 'Name', width: proportional(1, {minWidth: 96})},
+        {key: 'age', header: 'Age', width: proportional(1, {minWidth: 40})},
+        {key: 'email', header: 'Email'},
+      ];
+      render(<BaseTable data={users} columns={cols} />);
+      const headers = screen.getAllByRole('columnheader');
+      // A larger and a smaller authored floor both replace the 60px default
+      // for their own column; the width-less column keeps the compact floor.
+      expect(headers[0]).toHaveStyle({minWidth: '96px'});
+      expect(headers[1]).toHaveStyle({minWidth: '40px'});
+      expect(headers[2]).toHaveStyle({
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH}px`,
+      });
+      expect(screen.getByRole('table')).toHaveStyle({
+        minWidth: `${Math.max(96, 40, DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH) * 3}px`,
+      });
+    });
+
+    it('keeps the width-less floor stable when row content changes', () => {
+      const cols: TableColumn<User>[] = [
+        {key: 'name', header: 'Name'},
+        {key: 'age', header: 'Age'},
+      ];
+      const {rerender} = render(<BaseTable data={[]} columns={cols} />);
+      const table = screen.getByRole('table');
+      expect(table).toHaveStyle({
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH * 2}px`,
+      });
+
+      rerender(
+        <BaseTable
+          data={[
+            {
+              ...users[0],
+              name: 'one-unbreakable-token-that-must-not-change-column-sizing',
+            },
+          ]}
+          columns={cols}
+        />,
+      );
+      expect(table).toHaveStyle({
+        minWidth: `${DEFAULT_FLEXIBLE_COLUMN_MIN_WIDTH * 2}px`,
       });
     });
 

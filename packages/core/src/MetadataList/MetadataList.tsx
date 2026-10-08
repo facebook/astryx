@@ -113,7 +113,7 @@ const styles = stylex.create({
   // Vertical orientation — grid layout for label-value pairs
   gridSingle: {
     display: 'grid',
-    gridTemplateColumns: 'auto 1fr',
+    gridTemplateColumns: 'auto minmax(0, 1fr)',
     gap: `${spacingVars['--spacing-2']} ${spacingVars['--spacing-4']}`,
     alignItems: 'baseline',
   },
@@ -143,8 +143,9 @@ const styles = stylex.create({
   // Show more/less button
   toggleButton: {
     appearance: 'none',
-    background: 'none',
-    border: 'none',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderStyle: 'none',
     padding: `${spacingVars['--spacing-2']} 0`,
     cursor: {
       default: 'pointer',
@@ -263,7 +264,7 @@ export function MetadataList({
     if (typeof columns === 'number' && columns > 1) {
       return isStacked
         ? `repeat(${columns}, 1fr)`
-        : `repeat(${columns}, auto 1fr)`;
+        : `repeat(${columns}, auto minmax(0, 1fr))`;
     }
     // A custom label width only applies to the label track of side labels.
     if (!isStacked && labelConfig.width != null) {
@@ -271,7 +272,7 @@ export function MetadataList({
         typeof labelConfig.width === 'number'
           ? `${labelConfig.width}px`
           : labelConfig.width;
-      return `${width} 1fr`;
+      return `${width} minmax(0, 1fr)`;
     }
     return null;
   };

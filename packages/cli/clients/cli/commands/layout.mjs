@@ -18,7 +18,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {jsonOut} from '../../../foundation/response/json.mjs';
+import {jsonOut, isJsonMode} from '../../../foundation/response/json.mjs';
 import {emit, section, text, list, record, code, WARN} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -60,6 +60,47 @@ import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
  */
 
 /**
+ * DEP-0006: the `astryx layout` command group is deprecated.
+ *
+ * Human mode: one stderr warning per invocation.
+ * JSON mode: `meta.deprecation` in the response envelope.
+ */
+const DEPRECATION = {
+  id: 'DEP-0006',
+  cleanup: 'CLN-0006',
+  replacement: [
+    'astryx build "<idea>" — choose the template to start from',
+    'astryx template <name> <path> — scaffold it',
+    'astryx docs layout — layout guidance',
+  ],
+};
+
+function warnDeprecated() {
+  if (!isJsonMode()) {
+    console.error(
+      '[DEP-0006] astryx layout is deprecated and will be removed in a future minor release.\n' +
+      '  Use instead:\n' +
+      '    astryx build "<idea>"       choose the template to start from\n' +
+      '    astryx template <name>      scaffold it\n' +
+      '    astryx docs layout          layout guidance\n',
+    );
+  }
+}
+
+/**
+ * Add deprecation metadata to a JSON response before output.
+ * Canonical stdout (type, data) is unchanged; the metadata sits in `meta`.
+ * @param {{type: string, data: unknown}} result
+ * @returns {{type: string, data: unknown, meta: {deprecation: typeof DEPRECATION}}}
+ */
+function withDeprecation(result) {
+  return {...result, meta: {deprecation: DEPRECATION}};
+}
+
+/** The largest layout expression read from --file or stdin. */
+const MAX_EXPRESSION_BYTES = 5 * 1024 * 1024; // 5 MB
+
+/**
  * Resolve the expression from arg, --file, or stdin ('-').
  * @param {string} [expr]
  * @param {{file?: string}} [options]
@@ -78,8 +119,7 @@ async function readExpression(expr, options = {}) {
         code: ERROR_CODES.ERR_FILE_NOT_FOUND,
       });
     }
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-    if (stat.size > MAX_FILE_SIZE) {
+    if (stat.size > MAX_EXPRESSION_BYTES) {
       cliError(
         `File "${options.file}" is too large (${(stat.size / 1024 / 1024).toFixed(1)} MB, max 5 MB)`,
         {code: ERROR_CODES.ERR_FILE_NOT_FOUND},
@@ -100,12 +140,36 @@ async function readExpression(expr, options = {}) {
     }
   }
   if (expr === '-') {
+    // Capped like --file: an endless stream must not be buffered whole.
     /** @type {Buffer[]} */
     const chunks = [];
-    for await (const chunk of process.stdin) chunks.push(/** @type {Buffer} */ (chunk));
+    let size = 0;
+    for await (const chunk of process.stdin) {
+      size += /** @type {Buffer} */ (chunk).length;
+      if (size > MAX_EXPRESSION_BYTES) {
+        cliError('The layout expression on stdin is too large (max 5 MB)', {
+          code: ERROR_CODES.ERR_INVALID_ARGUMENT,
+        });
+      }
+      chunks.push(/** @type {Buffer} */ (chunk));
+    }
     return Buffer.concat(chunks).toString('utf-8');
   }
   return expr ?? '';
+}
+
+/**
+ * The disclosure for demo media replaced in spliced template blocks, or '' when
+ * none was. After printed code it is a line comment, so piped output stays TSX.
+ * @param {LayoutExpandResponse['data']} data
+ * @returns {string}
+ */
+function demoMediaNotice({demoMediaReplaced, written}) {
+  if (demoMediaReplaced === 0) return '';
+  const notice =
+    `Replaced ${demoMediaReplaced} Astryx demo media reference${demoMediaReplaced === 1 ? '' : 's'} in ${written ?? 'the code above'}: ` +
+    'images now show a neutral placeholder and videos have an empty source. Supply your own media there.';
+  return written ? notice : `// ${notice}`;
 }
 
 /**
@@ -117,6 +181,7 @@ export function registerLayout(program) {
   defineCommand(layoutCmd, layoutExpandCommand, {
     fn: layoutExpandFn,
     action: async (/** @type {string} */ expression, /** @type {string} */ targetPath, /** @type {LayoutExpandOptions} */ options) => {
+      warnDeprecated();
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
       if (!source || source.trim() === '') {
@@ -142,7 +207,7 @@ export function registerLayout(program) {
       // Expanding turns an expression into TSX — a transformation, not a
       // lookup. What it produced is in the output; there is no set to count.
       if (json) {
-        jsonOut(result);
+        jsonOut(withDeprecation(result));
         return NO_RESULT_SET;
       }
 
@@ -154,21 +219,23 @@ export function registerLayout(program) {
       if (result.data.written) {
         out.push(
           text(`[ok] Expanded to ${result.data.written}`),
+          // Field names are the JSON keys; todos are summarised, not listed.
           record(
+            {componentsUsed: result.data.componentsUsed, todos: result.data.todos},
             {
-              components: result.data.componentsUsed,
-              todos:
-                result.data.todos.length > 0
-                  ? `${result.data.todos.length} (search for "TODO(xle)")`
-                  : '',
+              format: {
+                todos: (/** @type {string[]} */ todos) =>
+                  `${todos.length} (search for "TODO(xle)")`,
+              },
             },
-            {labels: {components: 'Components', todos: 'TODOs'}},
           ),
         );
       } else {
         // Raw expanded TSX (no target path) — preformatted, emitted verbatim.
         out.push(code(result.data.code));
       }
+      const mediaNotice = demoMediaNotice(result.data);
+      if (mediaNotice) out.push(text(mediaNotice));
       emit(...out);
       return NO_RESULT_SET;
     },
@@ -177,6 +244,7 @@ export function registerLayout(program) {
   defineCommand(layoutCmd, layoutCheckCommand, {
     fn: layoutCheckFn,
     action: async (/** @type {string} */ expression, /** @type {LayoutCheckOptions} */ options) => {
+      warnDeprecated();
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
       if (!source || source.trim() === '') {
@@ -206,7 +274,7 @@ export function registerLayout(program) {
       // A verdict on one expression: valid or not, with the errors that made
       // it so. Nothing was looked up.
       if (json) {
-        jsonOut(result);
+        jsonOut(withDeprecation(result));
         return NO_RESULT_SET;
       }
 
@@ -240,6 +308,7 @@ export function registerLayout(program) {
   defineCommand(layoutCmd, layoutGrammarCommand, {
     fn: layoutGrammarFn,
     action: async () => {
+      warnDeprecated();
       const json = program.opts().json || false;
       /** @type {LayoutGrammarResponse} */
       let result;
@@ -252,7 +321,7 @@ export function registerLayout(program) {
       // One document, the same one every time: the grammar cheatsheet.
       const answered = resultSet({count: 1, resultKind: 'doc'});
       if (json) {
-        jsonOut(result);
+        jsonOut(withDeprecation(result));
         return answered;
       }
       // The cheatsheet is a preformatted document — emit verbatim.

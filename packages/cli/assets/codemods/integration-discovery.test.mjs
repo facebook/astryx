@@ -163,6 +163,21 @@ describe('integration codemod discovery', () => {
     ).rejects.toThrow(/is invalid/i);
   });
 
+  it('names a broken codemod by its path inside the package', async () => {
+    scaffold({
+      '1.1.0/no-default.mjs': `export const nope = 1;\n`,
+    });
+    const project = await Project.load(tmpDir);
+    const failure = await discoverIntegrationCodemods(
+      project.loadedIntegrations,
+    ).then(
+      () => null,
+      error => error,
+    );
+    expect(failure?.message).toContain('(codemods/1.1.0/no-default.mjs)');
+    expect(failure?.message).not.toContain(tmpDir);
+  });
+
   it('fails discovery when default export is not a codemod envelope', async () => {
     scaffold({
       '0.2.0/bad.mjs': `export default { title: 'x', transform: () => null };\n`,
@@ -277,5 +292,69 @@ describe('test files beside a codemod', () => {
     expect(byVersion.get('0.2.0').map(entry => entry.id)).toEqual([
       'imports/drop-foo',
     ]);
+  });
+});
+
+describe('non-source directories at codemods root', () => {
+  const MARKER_CODEMOD = `
+    import * as fs from 'node:fs';
+    export default {
+      type: 'code',
+      title: 'Evil marker',
+      transform: (file) => {
+        fs.writeFileSync('/tmp/evil-marker', 'pwned');
+        return file.source;
+      },
+    };
+  `;
+  const REAL_CODEMOD = `
+    export default {
+      type: 'code',
+      title: 'Real transform',
+      transform: (file) => file.source.replace(/old/g, 'new'),
+    };
+  `;
+
+  it('excludes node_modules from version folder discovery', async () => {
+    // When codemods root is the package root (codemods: "./"), node_modules
+    // must not be treated as a version folder.
+    const pkgDir = scaffold({
+      '0.2.0/real.mjs': REAL_CODEMOD,
+    });
+    // Plant a file inside node_modules at the codemods root level
+    const nmDir = path.join(pkgDir, 'codemods', 'node_modules', 'evil');
+    fs.mkdirSync(nmDir, {recursive: true});
+    fs.writeFileSync(path.join(nmDir, 'index.mjs'), MARKER_CODEMOD);
+
+    const project = await Project.load(tmpDir);
+    const byVersion = await discoverIntegrationCodemods(
+      project.loadedIntegrations,
+    );
+
+    // Only the real version folder is discovered
+    expect([...byVersion.keys()]).toEqual(['0.2.0']);
+    expect(byVersion.get('0.2.0').map(e => e.id)).toEqual(['real']);
+  });
+
+  it.each([
+    ['node_modules'],
+    ['.git'],
+    ['__tests__'],
+    ['__fixtures__'],
+  ])('excludes %s from version folder enumeration', async (dirName) => {
+    const pkgDir = scaffold({
+      '0.3.0/legit.mjs': REAL_CODEMOD,
+    });
+    // Create a non-source dir at the codemods root with a valid-looking codemod
+    const badDir = path.join(pkgDir, 'codemods', dirName, 'sneaky.mjs');
+    fs.mkdirSync(path.dirname(badDir), {recursive: true});
+    fs.writeFileSync(badDir, REAL_CODEMOD);
+
+    const project = await Project.load(tmpDir);
+    const byVersion = await discoverIntegrationCodemods(
+      project.loadedIntegrations,
+    );
+
+    expect([...byVersion.keys()]).toEqual(['0.3.0']);
   });
 });

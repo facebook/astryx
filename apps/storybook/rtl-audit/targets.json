@@ -11,9 +11,7 @@
   {
     "component": "Button",
     "storyId": "core-button--icon-with-text",
-    "dims": [
-      "D2"
-    ],
+    "dims": ["D2"],
     "selectors": {
       "prev": "[data-testid=\"button-leading-icon\"]",
       "next": "[data-testid=\"button-label\"]"
@@ -62,6 +60,15 @@
   },
   {
     "component": "CheckboxList",
+    "storyId": "core-checkboxlist--rich-descriptions",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-checkbox-input",
+      "next": "[data-testid=\"checkbox-end-content\"]"
+    }
+  },
+  {
+    "component": "CheckboxListItem",
     "storyId": "core-checkboxlist--rich-descriptions",
     "dims": ["D2"],
     "selectors": {
@@ -134,12 +141,33 @@
   {
     "component": "ScrollableArea",
     "storyId": "core-scrollablearea--rtl-behavior-probe",
-    "dims": [
-      "D3"
-    ],
+    "dims": ["D3"],
     "selectors": {
       "scroller": "[data-rtl-scroll-probe]",
       "nextButton": "[data-rtl-scroll-button]"
+    }
+  },
+  {
+    "component": "ChatMessageBubble",
+    "storyId": "core-chatmessagebubble--states",
+    "dims": ["D9"],
+    "selectors": {
+      "groups": [
+        {
+          "name": "assistant",
+          "logicalSide": "inline-start",
+          "first": "[data-testid=\"assistant-group-first\"]",
+          "middle": "[data-testid=\"assistant-group-middle\"]",
+          "last": "[data-testid=\"assistant-group-last\"]"
+        },
+        {
+          "name": "user",
+          "logicalSide": "inline-end",
+          "first": "[data-testid=\"user-group-first\"]",
+          "middle": "[data-testid=\"user-group-middle\"]",
+          "last": "[data-testid=\"user-group-last\"]"
+        }
+      ]
     }
   },
   {
@@ -150,6 +178,11 @@
       "prev": ".astryx-chat-message-bubble[data-sender=\"assistant\"]",
       "next": ".astryx-chat-message-bubble[data-sender=\"user\"]"
     }
+  },
+  {
+    "component": "ChatSendButton",
+    "storyId": "core-chatcomposer--with-streaming",
+    "dims": []
   },
   {
     "component": "DropdownMenu",
@@ -467,6 +500,15 @@
     "selectors": {
       "prev": ".astryx-avatar-group > .astryx-avatar:first-child",
       "next": ".astryx-avatar-group-overflow"
+    }
+  },
+  {
+    "component": "CommandPaletteFooter",
+    "storyId": "core-commandpalettefooter--default",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-command-palette-footer > span:first-child",
+      "next": ".astryx-command-palette-footer > span:last-child"
     }
   }
 ]

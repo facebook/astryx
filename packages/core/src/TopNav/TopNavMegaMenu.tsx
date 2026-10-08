@@ -61,6 +61,7 @@ import {useTopNavRenderMode} from './TopNavRenderContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
@@ -93,7 +94,8 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     fontFamily: 'inherit',
   },
   triggerOpen: {
@@ -209,8 +211,9 @@ const styles = stylex.create({
   // base layout/colors come from navItemStyles.item
   drawerHeader: {
     justifyContent: 'space-between',
-    border: 'none',
-    background: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
   },
   drawerChevron: {
     display: 'inline-flex',
@@ -551,6 +554,7 @@ function DrawerMegaMenu({
 }: Pick<TopNavMegaMenuProps, 'label' | 'items' | 'featured'> &
   BaseProps<HTMLButtonElement>) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const pressable = usePressFeedback();
   const menuId = `mega-menu-${label.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
@@ -564,6 +568,7 @@ function DrawerMegaMenu({
         )}
         aria-expanded={isExpanded}
         aria-controls={`${menuId}-items`}
+        {...pressable}
         {...mergeProps(
           themeProps('top-nav-mega-menu', {mode: 'drawer'}),
           focusOutlineProps.focusVisible(

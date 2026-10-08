@@ -14,6 +14,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {component} from './component.mjs';
 import {AstryxError} from '../error.mjs';
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 // api/component/ -> up 4 = repo root (has packages/core, which findCoreDir walks to).
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -159,5 +160,74 @@ describe('component dispatcher — category guard', () => {
       expect(err).toBeInstanceOf(AstryxError);
       expect(err.code).toBe('ERR_UNKNOWN_CATEGORY');
     }
+  }, SLOW);
+});
+
+describe('component dispatcher — detail and lang guards', () => {
+  // `detail` and `lang` are the same controls as the CLI's --detail and --lang:
+  // same accepted values, same error codes.
+  it('rejects a detail level the CLI rejects, with the same code', async () => {
+    const cliRun = await runCli(['--json', 'component', '--list', '--detail', 'bogus'], cwd);
+    expect(cliRun.code).toBe(1);
+    expect(JSON.parse(cliRun.stdout).code).toBe('ERR_INVALID_DETAIL');
+
+    const bogus = /** @type {any} */ ('bogus');
+    for (const call of [
+      () => component(undefined, {cwd, list: true, detail: bogus}),
+      () => component('Button', {cwd, detail: bogus}),
+    ]) {
+      const err = await call().catch(e => e);
+      expect(err).toBeInstanceOf(AstryxError);
+      expect(err.code).toBe('ERR_INVALID_DETAIL');
+    }
+  }, SLOW);
+
+  it('rejects a lang the CLI rejects, with the same code', async () => {
+    const cliRun = await runCli(['--json', 'component', 'Button', '--lang', 'fr'], cwd);
+    expect(cliRun.code).toBe(1);
+    expect(JSON.parse(cliRun.stdout).code).toBe('ERR_INVALID_LANG');
+
+    for (const call of [
+      () => component('Button', {cwd, lang: 'fr'}),
+      () => component(undefined, {cwd, list: true, detail: 'compact', lang: 'fr'}),
+    ]) {
+      const err = await call().catch(e => e);
+      expect(err).toBeInstanceOf(AstryxError);
+      expect(err.code).toBe('ERR_INVALID_LANG');
+    }
+    const zh = await component('Button', {cwd, lang: 'zh'});
+    expect(zh.type).toBe('component.detail');
+  }, SLOW);
+});
+
+describe('component dispatcher — detail levels on single component (text only)', () => {
+  it('--detail compact returns less text than full', async () => {
+    const full = await runCli(['component', 'Button'], cwd);
+    const compact = await runCli(['component', 'Button', '--detail', 'compact'], cwd);
+    expect(full.code).toBe(0);
+    expect(compact.code).toBe(0);
+    expect(compact.stdout.length).toBeLessThan(full.stdout.length);
+    // Compact still shows the name and import
+    expect(compact.stdout).toContain('Button');
+    expect(compact.stdout).toContain('@astryxdesign/core');
+  }, SLOW);
+
+  it('--detail brief returns less text than compact', async () => {
+    const compact = await runCli(['component', 'Button', '--detail', 'compact'], cwd);
+    const brief = await runCli(['component', 'Button', '--detail', 'brief'], cwd);
+    expect(brief.code).toBe(0);
+    expect(brief.stdout.length).toBeLessThan(compact.stdout.length);
+    expect(brief.stdout).toContain('Button');
+  }, SLOW);
+
+  it('--json --detail compact returns the same full JSON as --json (contract)', async () => {
+    const full = await runCli(['--json', 'component', 'Button'], cwd);
+    const compact = await runCli(['--json', 'component', 'Button', '--detail', 'compact'], cwd);
+    expect(full.code).toBe(0);
+    expect(compact.code).toBe(0);
+    const fullData = JSON.parse(full.stdout);
+    const compactData = JSON.parse(compact.stdout);
+    // JSON shape is identical — detail is a text-only projection
+    expect(Object.keys(compactData.data).sort()).toEqual(Object.keys(fullData.data).sort());
   }, SLOW);
 });

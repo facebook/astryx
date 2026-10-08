@@ -23,15 +23,16 @@
 // ═══════════════════════════════════════════════════════════════════════
 // AUTHOR THESE — each is the default export of one authored file.
 // ═══════════════════════════════════════════════════════════════════════
-export type {ComponentDoc} from './doctypes/types.js'; //   Button.doc.{ts,mjs}
-export type {HookDoc} from './doctypes/types.js'; //         useToast.doc.{ts,mjs}
+export type {ComponentDoc} from './doctypes/types.js'; //   Button.doc.mjs
+export type {HookDoc} from './doctypes/types.js'; //         useToast.doc.mjs
 export type {FunctionDoc} from './doctypes/types.js'; //     search.doc.mjs (hook | api)
-export type {ReferenceDoc} from './doctypes/types.js'; //    theming.doc.{ts,mjs}
-export type {TemplateDoc} from './doctypes/types.js'; //     Foo.template.{ts,mjs}
+export type {ReferenceDoc} from './doctypes/types.js'; //    theming.doc.mjs
+export type {TemplateDoc} from './doctypes/types.js'; //     Foo.doc.mjs
 export type {SchemaDoc} from './doctypes/types.js'; //       config.doc.mjs (object shape)
 export type {CommandDoc} from './doctypes/types.js'; //      search.doc.mjs (CLI command)
 export type {EnumDoc} from './doctypes/types.js'; //         error-codes.doc.mjs (vocabulary)
 export type {NamespaceDoc} from './doctypes/types.js'; //    cli.doc.mjs (hierarchy)
+export type {ThemeDoc} from './doctypes/types.js'; //        oceanTheme.doc.mjs
 export type {AstryxConfig} from './config/type.js'; //       astryx.config.{ts,mjs}
 export type {DebugEvent} from './debug/type.js'; //          one recorded CLI run
 export type {AstryxIntegration} from './integration/type.js'; // astryx.integration.{ts,mjs}
@@ -43,6 +44,15 @@ export type {
   GapReportTarget,
   GapReportHandlerReceipt,
 } from './gap-report/type.js'; // gap-report handler contract
+export type {
+  DiscoverSource,
+  DiscoverSourceContext,
+  DiscoverCatalog,
+  DiscoverPackage,
+  DiscoverVersion,
+  DiscoverContribution,
+  DiscoverKind,
+} from './discover/type.js'; // discover source contract
 export type {AstryxCodemod, AstryxConfigCodemod} from './codemod/type.js'; // codemods/*
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -58,6 +68,7 @@ export {parseSchema} from './doctypes/schema/parse.mjs';
 export {parseCommand} from './doctypes/command/parse.mjs';
 export {parseEnum} from './doctypes/enum/parse.mjs';
 export {parseNamespace} from './doctypes/namespace/parse.mjs';
+export {parseTheme} from './doctypes/theme/parse.mjs';
 export {parseLegacyDoc} from './doctypes/legacy.mjs';
 export {parseConfig} from './config/parse.mjs';
 export {parseIntegration} from './integration/parse.mjs';
@@ -65,6 +76,7 @@ export {
   parseGapReportHandler,
   parseGapReportReceipt,
 } from './gap-report/parse.mjs';
+export {parseDiscoverCatalog} from './discover/parse.mjs';
 export {parseCodemod} from './codemod/parse.mjs';
 export {parseDebugEvent} from './debug/parse.mjs';
 
@@ -129,6 +141,7 @@ export type {
   // reference
   ReferenceSection,
   ReferenceContentBlock,
+  GraphContentBlock,
   ReferenceTokenPreviewType,
   ReferenceTranslationDoc,
   WorkflowStep,

@@ -43,32 +43,39 @@ describe('generateCompressedIndex', () => {
 
   it('includes theme nudge rule', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toMatch(/astryx theme/);
-    expect(result).toMatch(/never override --color-/);
+    expect(result).toMatch(/astryx docs theme/);
+    expect(result).toMatch(/never :root/);
   });
 
   it('sends frame choice to the layout doc rather than naming a shell', () => {
     const result = generateCompressedIndex('1.0.0');
-    const frameRule = result.split('\n').find(l => l.includes('Frame first'));
-    expect(frameRule).toContain('astryx docs layout');
+    const frameRule = result.split('\n').find(l => l.includes('astryx docs layout'));
+    expect(frameRule).toBeDefined();
     expect(result).not.toMatch(/AppShell/);
     expect(frameRule).not.toMatch(/https?:/);
   });
 
+  it('starts every page from a template before any component', () => {
+    const lines = generateCompressedIndex('1.0.0').split('\n');
+    const workflow = lines.findIndex(l => l.startsWith('WORKFLOW'));
+    expect(lines[workflow]).toMatch(/start every page from a template/);
+    expect(lines[workflow + 1]).toMatch(/^1\. `astryx build /);
+    expect(lines[workflow + 2]).toMatch(/^2\. .*keep its frame, gap and padding/);
+    expect(lines.join('\n')).not.toMatch(/reference code/);
+  });
+
   it('includes the post-generation self-check rule', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toContain('SELF-CHECK before you finish');
+    expect(result).toContain('SELF-CHECK');
     expect(result).toMatch(/re-read the file/);
-    expect(result).toMatch(/don't hand-roll CSS/);
+    expect(result).toMatch(/component or a token/);
   });
 
   it('tailors the self-check to the styling system (xstyle for StyleX, not className for Tailwind)', () => {
-    // StyleX path: className/inline style are veers; the fix is the xstyle prop + a token
     const stylex = generateCompressedIndex('1.0.0', {stylingSystem: 'stylex'});
     const stylexSelfCheck = stylex.split('\n').find(l => l.includes('SELF-CHECK'));
     expect(stylexSelfCheck).toMatch(/xstyle/);
     expect(stylexSelfCheck).toMatch(/className=/);
-    // className IS the system in Tailwind — it must NOT be flagged
     const tailwind = generateCompressedIndex('1.0.0', {stylingSystem: 'tailwind'});
     const tailwindSelfCheck = tailwind.split('\n').find(l => l.includes('SELF-CHECK'));
     expect(tailwindSelfCheck).toBeDefined();
@@ -77,10 +84,11 @@ describe('generateCompressedIndex', () => {
 
   it('defaults to the CSS-variable styling path (no compiler)', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toMatch(/style\/className with tokens/);
-    expect(result).toMatch(/var\(--color-\*/);
+    expect(result).toMatch(/tokens.*var\(--color-/);
     // Must NOT push xstyle when no StyleX compiler is present.
     expect(result).not.toMatch(/xstyle prop/);
+    // Must warn that no compiler is present.
+    expect(result).toMatch(/No StyleX\/Tailwind compiler/);
   });
 
   it('recommends xstyle when StyleX is configured', () => {
@@ -90,14 +98,22 @@ describe('generateCompressedIndex', () => {
 
   it('recommends Tailwind utilities when Tailwind is configured', () => {
     const result = generateCompressedIndex('1.0.0', {stylingSystem: 'tailwind'});
-    expect(result).toMatch(/Tailwind utilities backed by tokens/);
-    expect(result).toMatch(/tailwind-theme\.css/);
+    expect(result).toMatch(/Tailwind utilities/);
   });
 
   it('includes upgrade command and migration rule', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toContain('upgrade --apply');
-    expect(result).toMatch(/after any Astryx or integration dependency bump/);
+    // `upgrade --apply` alone stops with "Missing required --from".
+    expect(result).toContain('upgrade --from <old version> --apply');
+    expect(result).toMatch(/after a dependency bump/);
+  });
+
+  it('points agents at discover for integrations they could add', () => {
+    const result = generateCompressedIndex('1.0.0');
+    // Without this line no surface an agent reads names `discover`, and agents
+    // look for a theme in the package registry instead.
+    expect(result).toMatch(/^ {2}discover <words> {3}integrations you could add$/m);
+    expect(result).toMatch(/^ {2}search "<query>"/m);
   });
 
   it('states the invocation once in the CLI header (yarn)', () => {
@@ -126,31 +142,37 @@ describe('generateCompressedIndex', () => {
     );
   }
 
-  it('names the hyphenated topics, which the scan used to drop', () => {
-    // The fallback scan matched `\w+`, which does not match `-`, so five real
-    // topics were missing from every block ever written. An agent cannot ask
-    // for a topic it was never told about, and `getting-started` — the one it
-    // should reach for first — was one of them.
+  it('keeps hyphenated key topics visible and points at astryx docs for the rest', () => {
+    // The compact block shows key topics inline; the full list is via
+    // `astryx docs`. `getting-started` is a hyphenated key topic that the old
+    // \w+ scan used to drop — it must stay visible.
     const line = topicLine(generateCompressedIndex('1.0.0'));
-    for (const topic of [
-      'getting-started',
-      'cli-integrations',
-      'browser-support',
-      'styling-libraries',
-      'working-with-ai',
-    ]) {
-      expect(line).toContain(topic);
-    }
+    expect(line).toContain('getting-started');
+    expect(line).toContain('principles');
+    expect(line).toContain('astryx docs');
   });
 
-  it('lists the topics it is given, so an integration’s reach the agent', () => {
+  it('points to the CLI docs tree on a line of its own', () => {
+    // The integration guide lives in the docs tree now (cli/integrations), so
+    // the topic line no longer names it; the tree's entry point does.
+    const block = generateCompressedIndex('1.0.0');
+    expect(block).toContain(
+      '  docs cli           commands, API reference, integration authoring',
+    );
+    expect(topicLine(block)).not.toContain('cli-integrations');
+  });
+
+  it('shows key topics from the given list and points at astryx docs for the rest', () => {
     const line = topicLine(
       generateCompressedIndex('1.0.0', {topics: ['tokens', 'deploying']}),
     );
-    expect(line).toContain('tokens, deploying');
-    // The project's catalog replaces the built-in scan rather than adding to it:
-    // a topic an integration replaced must not also be listed under its old name.
+    // 'tokens' is a key topic present in the given list, so it appears inline.
+    expect(line).toContain('tokens');
+    // The project's catalog replaces the built-in scan: a built-in topic not
+    // in the given list must not appear.
     expect(line).not.toContain('typography');
+    // Agents reach the full list via 'astryx docs'.
+    expect(line).toContain('astryx docs');
   });
 
   it('omits the line entirely when the project has no topics', () => {
@@ -183,7 +205,7 @@ describe('generateCompressedIndex', () => {
       ],
     });
 
-    expect(result.indexOf('upgrade --apply')).toBeLessThan(
+    expect(result.indexOf('upgrade --from <old version> --apply')).toBeLessThan(
       result.indexOf('INTEGRATIONS:'),
     );
     expect(result.indexOf('INTEGRATIONS:')).toBeLessThan(

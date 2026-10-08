@@ -581,3 +581,39 @@ describe('Field', () => {
     });
   });
 });
+
+describe('Field in a narrow row', () => {
+  it('lets a row shrink the field below its control width', () => {
+    const {container} = render(
+      <Field label="Search" inputID="search">
+        <input id="search" />
+      </Field>,
+    );
+    const root = container.querySelector('.astryx-field')!;
+    expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+
+  it('keeps an explicit width, which a row may still shrink', () => {
+    const {container} = render(
+      <Field label="Search" inputID="search" width={240}>
+        <input id="search" />
+      </Field>,
+    );
+    const root = container.querySelector('.astryx-field')!;
+    expect(root.getAttribute('style')).toContain('240');
+    expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+
+  it('leaves horizontal-labels mode (display: contents) untouched', () => {
+    const {container} = render(
+      <FormLayoutContext value={{direction: 'horizontal-labels'}}>
+        <Field label="Name" inputID="name">
+          <input id="name" />
+        </Field>
+      </FormLayoutContext>,
+    );
+    const root = container.firstChild as HTMLElement;
+    expect(getComputedStyle(root).display).toBe('contents');
+    expect(getComputedStyle(root).minWidth).not.toBe('0');
+  });
+});

@@ -292,7 +292,11 @@ interface InternalMarkdownPluginEntry<
   readonly [markdownPluginDefinition]: MarkdownPluginBrand<Node>;
 }
 
-function getMarkdownPluginDefinition(
+/**
+ * @internal Validates an opaque entry and returns its frozen definition for
+ * first-party modules that carry their own Symbol.for-branded portable data.
+ */
+export function getMarkdownPluginDefinition(
   publicEntry: MarkdownPluginEntry,
 ): MarkdownPluginDefinition<string, MarkdownExtensionNode> {
   if (
@@ -326,6 +330,31 @@ function getMarkdownPluginDefinition(
     fail('entries must come from a compatible createMarkdownPlugin()');
   }
   return definition;
+}
+
+/** What a plugin declares, without the definition itself. */
+export interface MarkdownPluginCapabilities {
+  /** The plugin declares inline or block syntax. */
+  readonly syntax: boolean;
+  /** The plugin declares an immutable document transform. */
+  readonly transform: boolean;
+}
+
+/**
+ * Whether `plugin` declares syntax and whether it declares a transform, and
+ * nothing else about it: the entry stays opaque. Throws, as every consumer of
+ * an entry does, when `plugin` did not come from a compatible
+ * `createMarkdownPlugin()`. Surfaces that adopt only some capabilities, as
+ * the RichText surfaces do, read them here (spec:AST-064 FR4, DEC-6).
+ */
+export function getMarkdownPluginCapabilities(
+  plugin: MarkdownPluginEntry,
+): MarkdownPluginCapabilities {
+  const definition = getMarkdownPluginDefinition(plugin);
+  return Object.freeze({
+    syntax: 'syntax' in definition && definition.syntax != null,
+    transform: definition.transform != null,
+  });
 }
 
 function deepFreezeConfig<T>(value: T, seen: Set<object> = new Set()): T {

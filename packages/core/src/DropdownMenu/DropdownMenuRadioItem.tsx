@@ -108,6 +108,8 @@ export interface DropdownMenuRadioItemProps extends Omit<
    * metadata.
    */
   endContent?: ReactNode;
+  /** Ref forwarded to the row root — the element carrying `role="menuitemradio"`. */
+  ref?: React.Ref<HTMLElement>;
 }
 
 /**

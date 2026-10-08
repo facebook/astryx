@@ -4,8 +4,8 @@
 
 /**
  * @file ToastViewport.tsx
- * @input Uses React state/effects, ToastContext, useAnnounce, viewport tokens,
- *   and placement-derived motion variables
+ * @input Uses React state/effects, ToastContext, content-provider boundary, useAnnounce, viewport tokens,
+ *   shared layer text reset, and placement-derived motion variables
  * @output Exports the ToastViewport provider, stack, live announcement dispatch,
  *   focus handoff, safe-area-aware edge gutters, and motion context
  * @position Core provider/imperative viewport for useToast()
@@ -29,10 +29,14 @@ import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {ToastSurface} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
 import {useTranslator} from '../i18n';
+import {layerInsetProperties} from '../Layer/layerInset';
+import type {LayerInset} from '../Layer/LayerContext';
 
 const SAFE_AREA_INLINE_START = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-left, 0px))`;
 const SAFE_AREA_INLINE_END = `max(${spacingVars['--spacing-4']}, env(safe-area-inset-right, 0px))`;
@@ -74,24 +78,33 @@ const styles = stylex.create({
     // at x=19.
     width: 'auto',
     margin: 0,
-    border: 'none',
-    background: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     backgroundColor: 'transparent',
     overflow: 'visible',
   },
+  // The viewport sits at the inset the app declared on LayerProvider for a
+  // bar floating over that edge (spec:AST-059 FR6); unset, each reads 0px.
+  // A toast-only `inset` prop writes the same edges inline and wins.
   viewportInlineSpan: {
-    insetInlineStart: 0,
-    insetInlineEnd: 0,
+    insetInlineStart: 'var(--astryx-layer-inset-inline-start, 0px)',
+    insetInlineEnd: 'var(--astryx-layer-inset-inline-end, 0px)',
   },
-  bottomEnd: {bottom: 0, alignItems: 'flex-end'},
-  bottomStart: {bottom: 0, alignItems: 'flex-start'},
+  bottomEnd: {
+    bottom: 'var(--astryx-layer-inset-block-end, 0px)',
+    alignItems: 'flex-end',
+  },
+  bottomStart: {
+    bottom: 'var(--astryx-layer-inset-block-end, 0px)',
+    alignItems: 'flex-start',
+  },
   topEnd: {
-    top: 0,
+    top: 'var(--astryx-layer-inset-block-start, 0px)',
     alignItems: 'flex-end',
     flexDirection: 'column-reverse',
   },
   topStart: {
-    top: 0,
+    top: 'var(--astryx-layer-inset-block-start, 0px)',
     alignItems: 'flex-start',
     flexDirection: 'column-reverse',
   },
@@ -177,6 +190,11 @@ export interface ToastViewportProps {
   /** Maximum number of visible toasts. @default 5 */
   maxVisible?: number;
   inset?: {top?: number; bottom?: number; start?: number; end?: number};
+  /**
+   * The app-declared viewport inset from LayerProvider (spec:AST-059 FR6).
+   * The viewport sits at it on each edge unless `inset` overrides that edge.
+   */
+  layerInset?: LayerInset;
   /**
    * Promote viewport to CSS top layer via popover="manual".
    * Set to false when inside a dialog or other top-layer element.
@@ -305,6 +323,7 @@ export function ToastViewport({
   position = 'bottomEnd',
   maxVisible = 5,
   inset,
+  layerInset,
   isTopLayer = true,
   children,
 }: ToastViewportProps) {
@@ -513,7 +532,9 @@ export function ToastViewport({
 
   const visibleToasts = toasts.slice(-maxVisible);
 
-  const insetStyle: React.CSSProperties = {};
+  const insetStyle: React.CSSProperties = {
+    ...layerInsetProperties(layerInset),
+  };
   if (inset?.top) {
     insetStyle.top = inset.top;
   }
@@ -603,21 +624,28 @@ export function ToastViewport({
         // Omitted inside dialogs where the viewport is already in a top layer.
         popover={isTopLayer ? 'manual' : undefined}
         {...mergeProps(
-          stylex.props(styles.viewport, styles.viewportInlineSpan, posStyle),
+          stylex.props(
+            layerTextReset.reset,
+            styles.viewport,
+            styles.viewportInlineSpan,
+            posStyle,
+          ),
           {
             style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
           },
         )}>
-        {visibleToasts.map(entry => (
-          <ToastRow
-            key={entry.id}
-            entry={entry}
-            isExiting={exitingIds.has(entry.id)}
-            isReversed={isReversed}
-            onExited={handleExited}
-            onDismiss={removeToast}
-          />
-        ))}
+        <LayerContentBoundary>
+          {visibleToasts.map(entry => (
+            <ToastRow
+              key={entry.id}
+              entry={entry}
+              isExiting={exitingIds.has(entry.id)}
+              isReversed={isReversed}
+              onExited={handleExited}
+              onDismiss={removeToast}
+            />
+          ))}
+        </LayerContentBoundary>
       </div>
     </ToastContext>
   );

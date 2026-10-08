@@ -549,6 +549,7 @@ export function buildShadcnRegistry({
   cliRoot = process.cwd(),
   dependencyTag = null,
   externalDependencySpecs = {},
+  skipBlocksWithUnavailableComponents = false,
 }) {
   const cliPackage = packages.find(pkg => pkg.name === '@astryxdesign/cli');
   const sourceVersion = dependencyTag ?? cliPackage?.version;
@@ -587,10 +588,27 @@ export function buildShadcnRegistry({
       ),
     )
     .sort((a, b) => a.name.localeCompare(b.name));
+  const availableComponentNames = new Set(
+    componentEntries
+      .filter(([packageName]) => packageDependencies.has(packageName))
+      .flatMap(([, components]) => components.map(component => component.name)),
+  );
   const packageCatalog = new Map(packages.map(pkg => [pkg.name, pkg]));
   const blockItems = [];
   let skippedUnpublishedBlocks = 0;
   for (const block of blocks) {
+    // A released subpath can still lack a named component added after the last
+    // package release. Production blocks must satisfy both contracts: the
+    // imported subpath below and the published component snapshot here.
+    if (
+      skipBlocksWithUnavailableComponents &&
+      block.componentsUsed?.some(
+        componentName => !availableComponentNames.has(componentName),
+      )
+    ) {
+      skippedUnpublishedBlocks++;
+      continue;
+    }
     const unpublishedComponentImport = readImportSpecifiers(
       block.source,
       `${block.dirName}.tsx`,
@@ -698,7 +716,11 @@ export function generateShadcnRegistryForTarget({target, outDir, ...options}) {
     fs.rmSync(outDir, {recursive: true, force: true});
     throw new Error(`Unsupported ShadCN registry target: ${String(target)}`);
   }
-  return generateShadcnRegistry({outDir, ...options});
+  return generateShadcnRegistry({
+    outDir,
+    ...options,
+    skipBlocksWithUnavailableComponents: target === 'latest',
+  });
 }
 
 export function generateShadcnRegistry({
@@ -710,6 +732,7 @@ export function generateShadcnRegistry({
   cliRoot,
   dependencyTag,
   externalDependencySpecs,
+  skipBlocksWithUnavailableComponents,
 }) {
   const result = buildShadcnRegistry({
     packages,
@@ -719,6 +742,7 @@ export function generateShadcnRegistry({
     cliRoot,
     dependencyTag,
     externalDependencySpecs,
+    skipBlocksWithUnavailableComponents,
   });
   fs.rmSync(outDir, {recursive: true, force: true});
   fs.mkdirSync(outDir, {recursive: true});

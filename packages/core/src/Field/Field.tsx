@@ -41,6 +41,11 @@ const styles = stylex.create({
     // detached/tooltip fields — whose input wrapper renders outside the
     // attached-status wrapper — compete with page-level stacking (#5689).
     isolation: 'isolate',
+    // The Field root is the flex/grid item a row actually sizes. With the
+    // automatic minimum it held a filter bar at its controls' intrinsic
+    // widths (a native input's ~20ch, a Selector's full value), so the row
+    // overflowed on phones; the reset lets the row shrink the whole field.
+    minWidth: 0,
   },
   containerGap: {
     gap: spacingVars['--spacing-1'],

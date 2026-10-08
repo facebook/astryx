@@ -102,7 +102,7 @@ describe('integration-contributed topics', () => {
     // The built-in topics keep their own owner.
     expect(listed.data.find(t => t.topic === 'tokens').package).toBe('@astryxdesign/cli');
 
-    const detail = await docs('deploying', undefined, {cwd: tmpDir});
+    const detail = await docs('deploying', undefined, {cwd: tmpDir, full: true});
     expect(detail.type).toBe('docs.detail');
     expect(detail.data.sections[0].content[0].text).toBe('Push the button.');
 
@@ -129,7 +129,7 @@ describe('integration-contributed topics', () => {
       }),
     });
 
-    const detail = await docs('getting-started', undefined, {cwd: tmpDir});
+    const detail = await docs('getting-started', undefined, {cwd: tmpDir, full: true});
     expect(detail.data.sections.map(s => s.title)).toEqual(['Install']);
     expect(detail.data.sections[0].content[0].text).toBe('yarn add @acme/widgets');
 
@@ -146,14 +146,14 @@ describe('integration-contributed topics', () => {
     scaffold({
       'setup.doc.mjs': topic({name: 'setup', replaces: 'getting-started'}),
     });
-    const byOldName = await docs('getting-started', undefined, {cwd: tmpDir});
-    const byNewName = await docs('setup', undefined, {cwd: tmpDir});
+    const byOldName = await docs('getting-started', undefined, {cwd: tmpDir, full: true});
+    const byNewName = await docs('setup', undefined, {cwd: tmpDir, full: true});
     expect(byOldName.data.name).toBe('setup');
     expect(byNewName.data.name).toBe('setup');
   }, SLOW);
 
   it('merges an extension into the topic it extends', async () => {
-    const builtin = await docs('theme');
+    const builtin = await docs('theme', undefined, {full: true});
     const baseSectionTitle = builtin.data.sections[0].title;
     scaffold({
       'theme-internal.doc.mjs': topic({
@@ -166,7 +166,7 @@ describe('integration-contributed topics', () => {
       }),
     });
 
-    const extended = await docs('theme', undefined, {cwd: tmpDir});
+    const extended = await docs('theme', undefined, {cwd: tmpDir, full: true});
     // The extension is not a topic of its own.
     expect((await docs(undefined, undefined, {cwd: tmpDir})).data.some(
       t => t.topic === 'theme-internal',
@@ -178,7 +178,7 @@ describe('integration-contributed topics', () => {
   }, SLOW);
 
   it('migrates a real built-in section to a stable ID without duplicating it', async () => {
-    const builtin = await docs('theme');
+    const builtin = await docs('theme', undefined, {full: true});
     // Readers see a key on every section; the migration case is one whose
     // source authors no id.
     const {docs: authored} = await import('../../assets/docs/theme.doc.mjs');
@@ -198,7 +198,7 @@ describe('integration-contributed topics', () => {
       }),
     });
 
-    const extended = await docs('theme', undefined, {cwd: tmpDir});
+    const extended = await docs('theme', undefined, {cwd: tmpDir, full: true});
     expect(extended.data.sections).toHaveLength(builtin.data.sections.length);
     const matches = extended.data.sections.filter(
       section => section.title === target.title,
@@ -228,7 +228,7 @@ describe('integration-contributed topics', () => {
       }),
     });
 
-    const extended = await docs('theme', undefined, {cwd: tmpDir});
+    const extended = await docs('theme', undefined, {cwd: tmpDir, full: true});
     expect(extended.data.sections).toHaveLength(index.data.sections.length);
     expect(extended.data.sections.filter(s => s.id === target.id)).toEqual([
       expect.objectContaining({content: [{type: 'prose', text: 'Acme first.'}]}),
@@ -240,10 +240,10 @@ describe('integration-contributed topics', () => {
   it.each(['zh', 'dense'])(
     'replaces translated real sections by their authored titles under --%s',
     async lang => {
-      const english = await docs('theme');
+      const english = await docs('theme', undefined, {full: true});
       const englishTitles = english.data.sections.map(section => section.title);
       expect(englishTitles).toEqual(
-        expect.arrayContaining(['Quick Start', 'Theme Props']),
+        expect.arrayContaining(['Wrap your app in a theme', 'Dark mode']),
       );
       scaffold({
         'theme-internal.doc.mjs': topic({
@@ -251,27 +251,28 @@ describe('integration-contributed topics', () => {
           extends: 'theme',
           sections: [
             {
-              id: 'acme-quick-start',
-              title: 'Quick Start',
-              content: [{type: 'prose', text: 'Acme quick start.'}],
+              id: 'quick-start',
+              title: 'Wrap your app in a theme',
+              content: [{type: 'prose', text: 'Acme themes.'}],
             },
             {
-              title: 'Theme Props',
+              id: 'light-dark-mode',
+              title: 'Dark mode',
               content: [{type: 'prose', text: 'Acme props.'}],
             },
           ],
         }),
       });
 
-      const base = await docs('theme', undefined, {lang});
+      const base = await docs('theme', undefined, {lang, full: true});
       expect(base.data.sections.map(section => section.title)).not.toEqual(
         englishTitles,
       );
-      const extended = await docs('theme', undefined, {cwd: tmpDir, lang});
+      const extended = await docs('theme', undefined, {cwd: tmpDir, lang, full: true});
       expect(extended.data.sections).toHaveLength(base.data.sections.length);
       expect(
         extended.data.sections.filter(
-          section => section.id === 'acme-quick-start',
+          section => section.id === 'quick-start',
         ),
       ).toHaveLength(1);
       expect(
@@ -285,11 +286,11 @@ describe('integration-contributed topics', () => {
 
   it('offers the contributed topics as suggestions on an unknown one', async () => {
     scaffold({'deploying.doc.mjs': topic()});
-    await expect(docs('nope-not-a-topic', undefined, {cwd: tmpDir})).rejects.toBeInstanceOf(
+    await expect(docs('nope-not-a-topic', undefined, {cwd: tmpDir, full: true})).rejects.toBeInstanceOf(
       AstryxError,
     );
     try {
-      await docs('nope-not-a-topic', undefined, {cwd: tmpDir});
+      await docs('nope-not-a-topic', undefined, {cwd: tmpDir, full: true});
     } catch (err) {
       expect(err.suggestions.map(s => s.name)).toContain('deploying');
     }
@@ -303,6 +304,28 @@ describe('integration-contributed topics', () => {
       name: 'deploying',
       command: 'astryx docs deploying',
     });
+  }, SLOW);
+
+  it('ranks the topics that match every word of the query first', async () => {
+    // Dozens of CLI docs match `integration` alone, by name or in a code
+    // tick; the topics that hold both words, this one and the CLI's own
+    // troubleshooting guide, must still come first.
+    scaffold({
+      'troubleshooting.doc.mjs': topic({
+        name: 'troubleshooting',
+        title: 'Troubleshooting',
+        description: 'What to check when an integration does not load.',
+      }),
+    });
+    const {data} = await search('troubleshoot integration', {cwd: tmpDir, type: 'doc'});
+    const top = data.results.slice(0, 2).map(result => result.name);
+    // This topic, and the CLI's own troubleshooting guide wherever the tree
+    // places it.
+    expect(top).toContain('troubleshooting');
+    expect(
+      top.some(name => /^cli\/integrations\/(?:.+\/)?troubleshooting$/.test(name)),
+      top.join(', '),
+    ).toBe(true);
   }, SLOW);
 
   it("falls back to the CLI's own topics when the project config is unreadable", async () => {

@@ -6,8 +6,10 @@
  * Both config loading and integration loading need to (a) import a
  * user-authored module (`.ts` via jiti, `.mjs`/`.js` via native dynamic
  * import) and (b) find conventional files by basename in a fixed
- * load-precedence order. These helpers centralize that so the two callers stay
- * in lockstep.
+ * load-precedence order. Generated theme artifacts also use a dedicated jiti
+ * path that resolves extensionless JSX/TSX registry imports. These helpers
+ * centralize that behavior so callers stay in lockstep. A module's stdout writes go to stderr while it loads, so
+ * project code that prints cannot corrupt a `--json` envelope.
  *
  * `loadModuleWithParser` builds on these primitives to provide the single
  * load/validation boundary shared by config, integration, codemod, and
@@ -16,6 +18,7 @@
  */
 
 import * as path from 'node:path';
+import {AsyncLocalStorage} from 'node:async_hooks';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import * as fs from 'node:fs';
@@ -56,6 +59,43 @@ function isCommonJsFile(file) {
   }
 }
 
+let loadsInFlight = 0;
+/** @type {typeof process.stdout.write | undefined} */
+let realStdoutWrite;
+/** Set in the async context of a module load, and only there. */
+const moduleLoad = new AsyncLocalStorage();
+
+/**
+ * Run a module load with the stdout writes made in its async context sent to
+ * stderr. Writes from any other context pass through, so the CLI's own output
+ * stays on stdout even while an abandoned load is still in flight. The gate
+ * is installed for the first overlapping load and removed after the last.
+ * @template T
+ * @param {() => Promise<T>} load
+ * @returns {Promise<T>}
+ */
+async function withStdoutOnStderr(load) {
+  if (loadsInFlight++ === 0) {
+    const write = process.stdout.write;
+    realStdoutWrite = write;
+    process.stdout.write = /** @type {any} */ (
+      function (/** @type {any} */ chunk, /** @type {any[]} */ ...rest) {
+        return moduleLoad.getStore()
+          ? process.stderr.write(chunk, ...rest)
+          : write.call(process.stdout, chunk, ...rest);
+      }
+    );
+  }
+  try {
+    return await moduleLoad.run(true, load);
+  } finally {
+    if (--loadsInFlight === 0 && realStdoutWrite) {
+      process.stdout.write = realStdoutWrite;
+      realStdoutWrite = undefined;
+    }
+  }
+}
+
 /**
  * Import a user-authored module. `.ts` is loaded via jiti; `.mjs`/`.js` use
  * native dynamic import for ordinary cached reads. A fresh `.ts` read uses a
@@ -64,12 +104,90 @@ function isCommonJsFile(file) {
  * nearest package.json `type` decides `.js`, matching Node's package scopes.
  * Normal loads retain module caching. `fresh` is an explicit migration-only
  * escape hatch for rereading files that a codemod changed during this process.
+ * Anything the module writes to stdout while it loads goes to stderr.
  *
  * @param {string} file absolute path
  * @param {{fresh?: boolean}} [options]
  * @returns {Promise<Record<string, unknown>>}
  */
 export async function importUserModule(file, {fresh = false} = {}) {
+  return await withStdoutOnStderr(() => importModule(file, fresh));
+}
+
+const THEME_ARTIFACT_EXTENSIONS = [
+  '.js',
+  '.jsx',
+  '.ts',
+  '.tsx',
+  '.mjs',
+  '.cjs',
+  '.mts',
+  '.cts',
+];
+
+class ThemeArtifactNotFoundError extends Error {
+  code = 'ERR_THEME_ARTIFACT_NOT_FOUND';
+
+  /** @param {string} specifier @param {unknown} [cause] */
+  constructor(specifier, cause) {
+    super(`Theme artifact "${specifier}" does not resolve.`, {cause});
+    this.name = 'ThemeArtifactNotFoundError';
+  }
+}
+
+/** @param {unknown} error */
+function isMissingPackageExport(error) {
+  if (error == null || typeof error !== 'object' || !('code' in error)) {
+    return false;
+  }
+  return (
+    typeof error.code === 'string' &&
+    [
+      'ERR_MODULE_NOT_FOUND',
+      'ERR_PACKAGE_PATH_NOT_EXPORTED',
+      'MODULE_NOT_FOUND',
+    ].includes(error.code)
+  );
+}
+
+/**
+ * Load a generated theme artifact and its extensionless JS/JSX/TS/TSX graph.
+ * Package specifiers resolve from the consumer project, while relative paths
+ * resolve from that same project root.
+ * @param {string} specifier
+ * @param {string} cwd
+ * @returns {Promise<Record<string, unknown>>}
+ */
+export async function importThemeArtifact(specifier, cwd) {
+  const loader = createJiti(path.join(cwd, 'package.json'), {
+    moduleCache: false,
+    jsx: true,
+    interopDefault: true,
+    extensions: THEME_ARTIFACT_EXTENSIONS,
+  });
+  let target;
+  if (specifier.startsWith('.') || path.isAbsolute(specifier)) {
+    target = path.resolve(cwd, specifier);
+  } else {
+    try {
+      target = loader.resolve(specifier);
+    } catch (error) {
+      if (!isMissingPackageExport(error)) throw error;
+      throw new ThemeArtifactNotFoundError(specifier, error);
+    }
+  }
+  if (!fs.existsSync(target)) {
+    throw new ThemeArtifactNotFoundError(specifier);
+  }
+  return await withStdoutOnStderr(() => loader.import(target));
+}
+
+/**
+ * @param {string} file absolute path
+ * @param {boolean} fresh
+ * @returns {Promise<Record<string, unknown>>}
+ */
+async function importModule(file, fresh) {
   if (fresh && file.endsWith('.ts')) {
     return await createJiti(import.meta.url, {moduleCache: false}).import(file);
   }

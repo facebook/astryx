@@ -11,8 +11,8 @@
  * BottomSheet selects one of two focused hosts. A standalone host owns its
  * native dialog lifecycle; a switcher item participates in the parent's shared
  * dialog and transition state machine. Both render the same BottomSheetPanel,
- * which owns sheet presentation, gestures, mobile-keyboard accommodation, and
- * motion completion.
+ * which owns sheet presentation, content padding, gestures, mobile-keyboard
+ * accommodation, and motion completion.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
@@ -38,6 +38,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
+import type {SpacingStep} from '../utils/types';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {useDevWarning, useScrollLock} from '../hooks';
 import {isImeKeyEvent} from '../utils';
@@ -66,7 +67,8 @@ const styles = stylex.create({
     maxHeight: 'none',
     margin: 0,
     padding: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     backgroundColor: 'transparent',
     overflow: 'visible',
     display: 'none',
@@ -136,6 +138,16 @@ interface BottomSheetSharedProps extends BaseProps<HTMLDivElement> {
 
   /** Sheet content, rendered below the grab handle in a scrollable area. */
   children: ReactNode;
+
+  /**
+   * Internal padding of the sheet content using the spacing scale, matching
+   * Dialog. Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * When omitted, uses the theme default for bottom sheets: no padding unless
+   * the theme sets `padding` on `bottom-sheet`. The content box is a
+   * container: a Section that is its only child escapes the padding, and bleed
+   * children such as Table and Divider compensate against it.
+   */
+  padding?: SpacingStep;
 
   /** Height budget or custom CSS length. Only fully expanded Tall is keyboard-aware. @default 'capped' */
   height?: BottomSheetHeight | number | string;

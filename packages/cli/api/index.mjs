@@ -3,7 +3,7 @@
 /**
  * @file Programmatic API for the Astryx CLI.
  *
- * Every function returns the same { type, data } envelope that `xds --json` outputs.
+ * Every function returns the same { type, data } envelope that `astryx --json` outputs.
  * Errors throw AstryxError (with optional .suggestions).
  *
  * @example
@@ -28,8 +28,13 @@ export {template} from './template/template.mjs';
 export {
   themeBuild,
   themeAdd,
+  themeRemove,
+  themeUse,
+  themeEject,
+  themeTemplate,
   themeList,
   themeListAvailable,
+  themeListCopySources,
   themeTargets,
   themePaletteGenerate,
   generateTonalPalette,
@@ -72,10 +77,12 @@ export {logger} from './logger.mjs';
  * @typedef {import('./logger.mjs').Logger} Logger
  */
 
-// ── Types (re-exported from each command's colocated `.type.mjs`) ─────
+// ── Types (re-exported from the shared response foundation and each command's
+// colocated `.type.mjs`) ──────────────────────────────────────────────────
 // Runtime no-ops (the .type.mjs files are `export {}`); tsc carries these
 // through to the generated api/index.d.mts so the public type surface exposes
-// every command's Options + response types by name.
+// the shared receipt vocabulary and every command's Options + response types.
+export * from '../foundation/response/batch.type.mjs';
 export * from './component/component.type.mjs';
 export * from './docs/docs.type.mjs';
 export * from './blog/blog.type.mjs';

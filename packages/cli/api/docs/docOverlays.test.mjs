@@ -76,6 +76,32 @@ describe('reference doc overlays (#2182)', () => {
       ).toEqual([]);
     });
 
+    it(`${topic} --${variant}: every content override lands on a block of its own type`, async () => {
+      // Blocks are matched by index and type, and a mismatch is dropped with
+      // no warning: a prose override aimed at a code block leaves the base
+      // text in place, so the reader gets a translated title over an English
+      // body. Pad with null to reach the block you mean.
+      const base = await load(basePath);
+      const overlayMod = await load(overlayPath);
+      const overlay = overlayMod.docsDense || overlayMod.docsZh;
+      const byTitle = new Map(base.docs.sections.map(s => [s.title, s]));
+      const dropped = [];
+      for (const entry of overlay.sections || []) {
+        const section = byTitle.get(entry.section);
+        if (!section) continue;
+        (entry.content || []).forEach((block, i) => {
+          if (block == null) return;
+          const target = section.content[i];
+          if (target?.type !== block.type) {
+            dropped.push(
+              `${entry.section} block ${i}: ${block.type} over ${target?.type ?? 'nothing'}`,
+            );
+          }
+        });
+      }
+      expect(dropped, `${topic}.doc.${variant}.mjs overrides that never apply`).toEqual([]);
+    });
+
     it(`${topic} --${variant}: no base section is overridden twice`, async () => {
       const overlayMod = await load(overlayPath);
       const overlay = overlayMod.docsDense || overlayMod.docsZh;
@@ -110,24 +136,28 @@ describe('the reported defect: docs tokens --dense (#2182)', () => {
     expect(dense.data.sections.length).toBe(full.data.sections.length);
   });
 
-  it('does not lose the Extending a Theme section from docs theme --dense', async () => {
+  it('does not lose a section from docs theme --dense', async () => {
+    const full = await docs('theme');
     const dense = await docs('theme', null, {dense: true});
     const titles = dense.data.sections.map(s => s.title);
-    expect(titles).toContain('Extending a Theme');
+    // The dense overlay keeps every base section.
+    expect(titles.length).toBe(full.data.sections.length);
   });
 
-  it('does not emit a duplicate useTheme heading in docs theme --dense', async () => {
+  it('does not emit a duplicate heading in docs theme --dense', async () => {
     const dense = await docs('theme', null, {dense: true});
     const titles = dense.data.sections.map(s => s.title.toLowerCase());
-    const useTheme = titles.filter(t => t.includes('usetheme'));
-    expect(useTheme.length).toBe(1);
+    const counts = new Map();
+    for (const t of titles) counts.set(t, (counts.get(t) ?? 0) + 1);
+    const dupes = [...counts.entries()].filter(([, c]) => c > 1);
+    expect(dupes).toEqual([]);
   });
 
   it('does not leak English headings into docs theme --zh', async () => {
     const zh = await docs('theme', null, {zh: true});
     const titles = zh.data.sections.map(s => s.title);
     // Every section the overlay translates must appear once, in Chinese only.
-    expect(titles).not.toContain('Light/Dark Mode');
-    expect(titles).toContain('亮/暗模式');
+    expect(titles).not.toContain('Dark mode');
+    expect(titles).toContain('深色模式');
   });
 });

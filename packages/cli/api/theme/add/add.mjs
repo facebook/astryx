@@ -1,43 +1,58 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx theme add` leaf — copies an available theme's source from the
- * CLI bundle or an installed integration into the consumer's project so they own it.
- * this leaf owns the copy I/O + path-safety and returns a `theme.add` receipt.
+ * @file `astryx theme add` — copy by default; import built output by opt-in.
+ *
+ * The released command copies source and returns `theme.add`. `--import` adds
+ * the built theme to the generated app module and returns `theme.app`.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {addThemeToApp, findTheme, listAvailableThemes} from '../_adapter.mjs';
 import {
   assertWithin,
   PathSafetyError,
 } from '../../../foundation/fs/path-safety.mjs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {listAvailableThemes, findTheme} from '../_adapter.mjs';
-// Scaffolded files must not carry our repo boilerplate into a consumer's tree.
+import {applyWrites} from '../../integration/add-helpers.mjs';
 import {stripCopyrightHeader} from '../../../foundation/text/copyright-header.mjs';
 
-/**
- * @param {string} slug
- * @returns {string}
- */
+const COPY_DEPRECATION = Object.freeze({
+  id: 'DEP-0005',
+  replacements: ['theme eject', 'theme add --import'],
+});
+
+/** @param {string} slug */
 function defaultTargetDir(slug) {
   return path.join('src', 'themes', slug);
 }
 
 /**
- * Copy a bundled theme's files into the consumer's project (defaults to
- * `src/themes/<slug>/`). Writes are staged to temp files then renamed, rolling
- * back partials on failure so a failed write never leaves a half-written theme.
- * Throws AstryxError for an unknown slug, a target that escapes cwd, an existing
- * file (without `overwrite`), a missing bundled file, or a write failure.
+ * Strip repository boilerplate from UTF-8 text while preserving binary bytes.
+ * @param {Buffer} bytes
+ * @returns {Buffer|string}
+ */
+function scaffoldContents(bytes) {
+  const text = bytes.toString('utf-8');
+  return Buffer.from(text, 'utf-8').equals(bytes)
+    ? stripCopyrightHeader(text)
+    : bytes;
+}
+
+/**
+ * Bundled and package themes preserve their released copy inventories. Bundled
+ * themes keep their authoring descriptor behind; integration themes copy the
+ * complete directory, including the descriptor. Local themes are deliberately
+ * excluded: copying `theme add` resolves only bundled and package themes, while
+ * `--import` can select a built local theme.
  *
  * @param {string} slug
- * @param {{targetPath?: string, overwrite?: boolean, cwd?: string, package?: string}} [options]
+ * @param {{targetPath?: string, overwrite?: boolean, cwd?: string, package?: string}} options
  * @returns {Promise<import('../theme.type.mjs').ThemeAddResponse>}
  */
-export async function themeAdd(slug, options = {}) {
+async function copyThemeSource(slug, options) {
   const {
     targetPath,
     overwrite = false,
@@ -45,126 +60,123 @@ export async function themeAdd(slug, options = {}) {
     package: packageName,
   } = options;
 
-  const match = await findTheme(slug, {cwd, package: packageName});
+  const match = await findTheme(slug, {
+    cwd,
+    package: packageName,
+    includeLocal: false,
+  });
   if (!match) {
-    const available = await listAvailableThemes(cwd);
+    const available = await listAvailableThemes(cwd, {includeLocal: false});
     throw new AstryxError(
       `Unknown theme "${slug}"${packageName ? ` in package "${packageName}"` : ''}`,
       available.map(theme => ({
         name: `${theme.slug} --package ${theme.package}`,
-        reason: theme.bundled
-          ? 'bundled theme'
-          : `provided by ${theme.package}`,
+        reason:
+          theme.source === 'bundled'
+            ? 'bundled theme'
+            : `provided by ${theme.package}`,
       })),
       ERROR_CODES.ERR_UNKNOWN_THEME,
     );
   }
 
-  const themeSrcDir = match.sourceDir;
-
-  // Path-safe destination; reject traversal outside cwd.
   const rawTarget = targetPath || defaultTargetDir(match.slug);
   let resolvedDir;
   try {
     resolvedDir = assertWithin(rawTarget, cwd, {label: 'theme target path'});
-  } catch (err) {
-    if (err instanceof PathSafetyError) {
+  } catch (error) {
+    if (error instanceof PathSafetyError) {
       throw new AstryxError(
-        err.message,
+        error.message,
         undefined,
         ERROR_CODES.ERR_PATH_TRAVERSAL,
       );
     }
-    throw err;
+    throw error;
   }
 
+  const descriptor = path
+    .relative(match.sourceDir, match.docPath)
+    .split(path.sep)
+    .join('/');
+  const copyFiles = match.bundled
+    ? match.files.filter(name => name !== descriptor)
+    : [match.entry, ...match.files.filter(name => name !== match.entry).sort()];
   let writes;
   try {
-    writes = match.files.map(name => ({
+    writes = copyFiles.map(name => ({
       name,
-      src: path.join(themeSrcDir, name),
+      src: path.join(match.sourceDir, name),
       dest: assertWithin(name, resolvedDir, {
         label: `theme destination for ${name}`,
       }),
     }));
-  } catch (err) {
-    if (err instanceof PathSafetyError) {
+  } catch (error) {
+    if (error instanceof PathSafetyError) {
       throw new AstryxError(
-        err.message,
+        error.message,
         undefined,
         ERROR_CODES.ERR_PATH_TRAVERSAL,
       );
     }
-    throw err;
+    throw error;
   }
-  for (const w of writes) {
-    if (!fs.existsSync(w.src)) {
+
+  for (const write of writes) {
+    if (!fs.existsSync(write.src)) {
       throw new AstryxError(
-        `Theme "${match.slug}" is missing bundled file "${w.name}". ` +
-          `Re-run \`node scripts/generate-cli-themes.mjs\` to rebuild the bundle.`,
+        `Theme "${match.slug}" is missing bundled file "${write.name}". ` +
+          'Re-run `node scripts/generate-cli-themes.mjs` to rebuild the bundle.',
         undefined,
         ERROR_CODES.ERR_NO_SOURCE,
       );
     }
   }
 
-  // Refuse to clobber unless --overwrite.
   if (!overwrite) {
-    const existing = writes.find(w => fs.existsSync(w.dest));
+    const existing = writes.find(write => fs.existsSync(write.dest));
     if (existing) {
       const rel = path.relative(cwd, existing.dest) || existing.dest;
       throw new AstryxError(
         `Refusing to overwrite existing file ${rel}. ` +
-          `Re-run with --overwrite (or -f) to replace it.`,
+          'Re-run with --overwrite (or -f) to replace it.',
         undefined,
         ERROR_CODES.ERR_FILE_EXISTS,
       );
     }
   }
 
-  // Stage to temp files then rename, rolling back partials on failure so a
-  // failed write never leaves a half-written theme. mkdir is inside the try so
-  // a failure (e.g. an ancestor is a file → EEXIST/ENOTDIR) surfaces as a
-  // stable ERR_WRITE_FAILED rather than leaking a raw fs errno + absolute path.
-  const staged = [];
   try {
     fs.mkdirSync(resolvedDir, {recursive: true});
-    for (const w of writes) {
-      const dest = assertWithin(w.name, resolvedDir, {
-        label: `theme destination for ${w.name}`,
+    const plans = writes.map(write => {
+      fs.mkdirSync(path.dirname(write.dest), {recursive: true});
+      const dest = assertWithin(write.name, resolvedDir, {
+        label: `theme destination for ${write.name}`,
       });
-      fs.mkdirSync(path.dirname(dest), {recursive: true});
-      const tmp = `${dest}.${process.pid}.tmp`;
-      const contents = stripCopyrightHeader(fs.readFileSync(w.src, 'utf-8'));
-      fs.writeFileSync(tmp, contents);
-      staged.push({tmp, dest});
-    }
-    for (const s of staged) {
-      fs.renameSync(s.tmp, s.dest);
-    }
-  } catch (err) {
-    for (const s of staged) {
-      try {
-        fs.rmSync(s.tmp, {force: true});
-      } catch {
-        /* best-effort */
-      }
-    }
-    if (err instanceof PathSafetyError) {
+      return {
+        path: dest,
+        contents: scaffoldContents(fs.readFileSync(write.src)),
+        createOnly: !overwrite,
+      };
+    });
+    applyWrites(plans);
+  } catch (error) {
+    if (error instanceof AstryxError) throw error;
+    if (error instanceof PathSafetyError) {
       throw new AstryxError(
-        err.message,
+        error.message,
         undefined,
         ERROR_CODES.ERR_PATH_TRAVERSAL,
       );
     }
+    const message = error instanceof Error ? error.message : String(error);
     throw new AstryxError(
-      `Failed to write theme files: ${/** @type {any} */ (err).message}`,
+      `Failed to write theme files: ${message}`,
       undefined,
       ERROR_CODES.ERR_WRITE_FAILED,
     );
   }
 
-  const relDir = path.relative(cwd, resolvedDir) || '.';
   return {
     type: 'theme.add',
     data: {
@@ -172,10 +184,30 @@ export async function themeAdd(slug, options = {}) {
       displayName: match.displayName,
       maintained: match.maintained,
       package: match.package,
-      outputDir: relDir,
+      outputDir: path.relative(cwd, resolvedDir) || '.',
       entry: match.entry,
       exportName: match.exportName,
-      files: match.files,
+      files: copyFiles,
     },
+    meta: {deprecations: [COPY_DEPRECATION]},
   };
+}
+
+/**
+ * Copy one available source theme, or import its built output with `import`.
+ * @param {string} slug
+ * @param {{targetPath?: string, overwrite?: boolean, cwd?: string, package?: string, import?: boolean}} [options]
+ * @returns {Promise<import('../theme.type.mjs').ThemeAddResponse | import('../theme.type.mjs').ThemeAppResponse>}
+ */
+export async function themeAdd(slug, options = {}) {
+  if (!options.import) return copyThemeSource(slug, options);
+
+  if (options.targetPath != null || options.overwrite === true) {
+    throw new AstryxError(
+      '`theme add --import` cannot be combined with a target path or --overwrite.',
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+  return addThemeToApp(slug, options);
 }

@@ -20,16 +20,17 @@
  *             in repeated-item or between-sibling contexts mirror exactly once.
  *     (B) CURATED PRECISION — targets.json entries add D2 (order-flip),
  *         D3 (behavior-flip), D4 (overlay-side), D7 (coarse hit alignment),
- *         and D8 (logical inline-edge mirroring): the geometry/behavior dims that
- *         genuinely need hand-written selectors.
+ *         D8 (logical inline-edge mirroring), and D9 (logical grouped corners):
+ *         the geometry/behavior dims that genuinely need hand-written selectors.
  *     (C) APPLICABILITY: every component is measured, explicitly verified N/A,
  *         or reported as a coverage gap. An all-N/A result is never called clean.
  * @input --storybook-dir <path> --output <file> [--targets <path>]
  *   [--verified-not-applicable <path>] [--filter <csv>] [--packages <csv>]
  *   [--auto-only] [--curated-only]
- * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4/D7/D8
- *   results, exact planned/completed scan counts, and a component coverage
- *   rollup. Mirrors the pr-a11y accessibility-audit harness.
+ * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4/D7/D8/D9
+ *   results, exact planned/completed scan counts, a component coverage
+ *   rollup, and the worker pages replaced after a failed story
+ *   (`pageRecoveries`). Mirrors the pr-a11y accessibility-audit harness.
  * @position internal test harness; run by the soft-gated `pr-rtl` CI job and
  *   locally via `pnpm -F @astryxdesign/storybook rtl-audit`.
  *
@@ -54,12 +55,19 @@ import {
   buildAuditedComponentRoster,
   buildComponentCoverage,
   buildStoryComponentRoutes,
+  classifyLogicalGroupedCorners,
   classifyLogicalInlinePair,
   collectDirectionalDecorations,
   componentFromTarget,
   evaluateDirectionalDecorations,
   filterStoryRoutesByPackages,
 } from './rtl-audit-coverage.mjs';
+import {
+  createCuratedPages,
+  createPagePool,
+  mapPool,
+  runSteps,
+} from './rtl-audit-pool.mjs';
 
 const {
   componentPackage,
@@ -100,8 +108,10 @@ const CURATED_ONLY = hasFlag('curated-only');
 // Story-id prefixes the auto-discovery layer sweeps come from the same
 // canonical package registry used for source discovery below.
 const AUDITED_STORY_PREFIX = new RegExp(`^(?:${AUDITED_STORY_PREFIXES.join('|')})`);
-// Worker pool size. Each worker owns its own Playwright page; stories are
-// independent, and the run is dominated by page-load latency rather than CPU.
+// Worker pool size. Each worker holds one Playwright page at a time; stories
+// are independent, and the run is dominated by page-load latency rather than
+// CPU. A worker whose story fails gets a fresh page before its next story
+// (rtl-audit-pool.mjs), so one unusable page cannot fail the stories after it.
 // Defaults to 1 (serial) so the per-PR job's behaviour is unchanged while the
 // suite is still soft-gated; rtl-weekly.yml opts into 4 for the full sweep.
 const CONCURRENCY = Math.max(1, Number(getArg('concurrency') || process.env.RTL_CONCURRENCY || 1));
@@ -707,7 +717,7 @@ async function autoD1(page, port, storyId, component) {
 }
 
 // ===========================================================================
-// CURATED precision dims (D2/D3/D4) — hand selectors from targets.json
+// CURATED precision dims (D2/D3/D4/D7/D8/D9) — hand selectors from targets.json
 // ===========================================================================
 async function checkD2(page, port, t, card) {
   const {prev, next} = t.selectors;
@@ -897,21 +907,82 @@ async function checkD8LogicalInline(page, port, t, card) {
   );
 }
 
-async function scoreCurated(page, coarsePage, port, t) {
+async function measureGroupedCorners(page, group) {
+  return page.evaluate(({first, middle, last}) => {
+    const selectors = [first, middle, last];
+    const boxes = selectors.map(selector => {
+      const elements = document.querySelectorAll(selector);
+      if (elements.length !== 1) return null;
+      const element = elements[0];
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      const number = value => Number.parseFloat(value);
+      const visible = typeof element.checkVisibility === 'function'
+        ? element.checkVisibility({checkOpacity: true, checkVisibilityCSS: true})
+        : style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0;
+      return {
+        visible, width: rect.width, height: rect.height,
+        direction: style.direction, writingMode: style.writingMode,
+        corners: {
+          topLeft: number(style.borderTopLeftRadius),
+          topRight: number(style.borderTopRightRadius),
+          bottomRight: number(style.borderBottomRightRadius),
+          bottomLeft: number(style.borderBottomLeftRadius),
+        },
+      };
+    });
+    return {
+      direction: boxes.find(Boolean)?.direction ?? null,
+      writingMode: boxes.find(Boolean)?.writingMode ?? null,
+      boxes,
+    };
+  }, group).catch(() => null);
+}
+
+async function checkD9GroupedCorners(page, port, t, card) {
+  const groups = t.selectors?.groups;
+  if (!Array.isArray(groups) || groups.length === 0) {
+    card.dims.D9 = 'N-A';
+    card.notes.push('D9: no grouped-corner selectors configured');
+    return;
+  }
+  const run = async rtl => {
+    await page.goto(storyUrl(port, t.storyId, rtl), {waitUntil: 'domcontentloaded'});
+    await settle(page); await doSetup(page, t);
+    return Promise.all(groups.map(group => measureGroupedCorners(page, group)));
+  };
+  const ltr = await run(false), rtl = await run(true);
+  const results = groups.map((group, index) => ({
+    name: group.name,
+    logicalSide: group.logicalSide,
+    ...classifyLogicalGroupedCorners(ltr[index], rtl[index], group.logicalSide),
+  }));
+  card.dims.D9 = results.every(result => result.verdict === 'pass') ? 'pass' : 'fail';
+  card.notes.push(...results.map(result => `D9 ${result.name ?? result.logicalSide}: ${result.reason}`));
+  card.groupedCorners = results;
+}
+
+// `pages` is the curated page pair (rtl-audit-pool.mjs). A dim that throws is
+// recorded as an ERROR, and the page it ran on is replaced before the next dim.
+async function scoreCurated(pages, port, t) {
   const card = {component: t.component, storyId: t.storyId, dims: {}, notes: []};
-  for (const dim of t.dims) {
-    try {
+  await runSteps(t.dims, pages, {
+    pageFor: dim => (dim === 'D7' ? 'coarse' : 'main'),
+    run: async (dim, page) => {
       if (dim === 'D2') await checkD2(page, port, t, card);
       else if (dim === 'D3') await checkD3Scroll(page, port, t, card);
       else if (dim === 'D4') await checkD4(page, port, t, card);
-      else if (dim === 'D7') await checkD7CoarseHit(coarsePage, port, t, card);
+      else if (dim === 'D7') await checkD7CoarseHit(page, port, t, card);
       else if (dim === 'D8') await checkD8LogicalInline(page, port, t, card);
+      else if (dim === 'D9') await checkD9GroupedCorners(page, port, t, card);
       // D1 is handled by auto-discovery; ignore any stray D1 in curated entries.
-    } catch (e) {
+    },
+    onError: (dim, e) => {
       card.dims[dim] = 'ERROR';
       card.notes.push(`${dim} threw: ${String(e).slice(0, 160)}`);
-    }
-  }
+    },
+    describe: dim => ({phase: 'curated', storyId: t.storyId, dim}),
+  });
   const vals = Object.entries(card.dims).filter(([, v]) => v !== 'N-A');
   const anyFail = vals.some(([, v]) => v === 'fail' || v === 'ERROR');
   const allPass = vals.length > 0 && vals.every(([, v]) => v === 'pass');
@@ -930,32 +1001,15 @@ function belongsToActivePackage(route) {
   return filterStoryRoutesByPackages([route], ACTIVE_PACKAGE_NAMES).length === 1;
 }
 
-// Run `fn` over `items` with `pages.length` workers, each pinned to its own
-// page. Results are written by index, so the output array is in input order
-// regardless of completion order — the report stays byte-identical to a serial
-// run. Progress lines still print as they land, so they interleave.
-async function mapPool(items, pages, fn) {
-  const out = new Array(items.length);
-  let next = 0;
-  await Promise.all(
-    pages.slice(0, Math.max(1, Math.min(pages.length, items.length))).map(async page => {
-      for (let i = next++; i < items.length; i = next++) {
-        out[i] = await fn(items[i], page);
-      }
-    }),
-  );
-  return out;
-}
-
 const runtime = {
   server: null,
   browser: null,
-  pages: [],
+  pool: null,
   coarseContext: null,
 };
 
 async function cleanupRuntime() {
-  await Promise.all(runtime.pages.map(page => page.close().catch(() => {})));
+  await runtime.pool?.close();
   await runtime.coarseContext?.close().catch(() => {});
   await runtime.browser?.close().catch(() => {});
   if (runtime.server) {
@@ -1031,14 +1085,14 @@ async function cleanupRuntime() {
   runtime.server = server;
   const browser = await chromium.launch();
   runtime.browser = browser;
-  const pages = await Promise.all(
-    Array.from({length: CONCURRENCY}, () =>
+  const pool = await createPagePool({
+    size: CONCURRENCY,
+    openPage: () =>
       browser.newPage({viewport: {width: 1100, height: 760}, deviceScaleFactor: 1}),
-    ),
-  );
-  runtime.pages = pages;
-  const page = pages[0]; // curated dims run serially on the first page
-  const d8BrowserContract = await verifyD8BrowserContract(page);
+  });
+  runtime.pool = pool;
+  // Curated dims run serially on the first slot's current page.
+  const d8BrowserContract = await verifyD8BrowserContract(pool.first());
   const coarseContext = await browser.newContext({
     viewport: {width: 1100, height: 760},
     deviceScaleFactor: 1,
@@ -1046,7 +1100,11 @@ async function cleanupRuntime() {
     isMobile: true,
   });
   runtime.coarseContext = coarseContext;
-  const coarsePage = await coarseContext.newPage();
+  const curatedPages = createCuratedPages({
+    pool,
+    coarsePage: await coarseContext.newPage(),
+    openCoarsePage: () => coarseContext.newPage(),
+  });
 
   // ---- (A) auto-discovery over every audited-package story ----
   const autoResults = []; // D1 icon-mirror
@@ -1064,49 +1122,55 @@ async function cleanupRuntime() {
     // positioned bug can be story-specific (only a `withStatus` variant mounts
     // the offending element), so we don't collapse to one-per-component.
     autoResults.push(
-      ...(await mapPool(d1Targets, pages, async ({comp, id}, workerPage) => {
-        try {
+      ...(await mapPool(d1Targets, pool, {
+        scan: async ({comp, id}, workerPage) => {
           const card = await autoD1(workerPage, port, id, comp);
           if (card.verdict !== 'N-A') {
             console.error(`AUTO ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} icons=${card.icons}`);
           }
           return card;
-        } catch (e) {
+        },
+        onError: ({comp, id}, e) => {
           console.error(`AUTO ERROR ${comp}: ${String(e).slice(0, 120)}`);
           return {component: comp, storyId: id, dim: 'D1', verdict: 'ERROR', notes: [String(e).slice(0, 160)], icons: 0};
-        }
+        },
+        describe: ({id}) => ({phase: 'D1', storyId: id}),
       })),
     );
     // D5 positional-mirror over every audited story.
     const pmTargets = scopedStoryRoutes.map(({id, component}) => ({id, comp: component}));
     pmResults.push(
-      ...(await mapPool(pmTargets, pages, async ({id, comp}, workerPage) => {
-        try {
+      ...(await mapPool(pmTargets, pool, {
+        scan: async ({id, comp}, workerPage) => {
           const card = await autoPositionalMirror(workerPage, port, id, comp);
           if (card.verdict !== 'N-A') {
             console.error(`PM   ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} cand=${card.candidates}`);
           }
           return card;
-        } catch (e) {
+        },
+        onError: ({id, comp}, e) => {
           console.error(`PM   ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
           return {component: comp, storyId: id, dim: 'D5-positional', verdict: 'ERROR', notes: [String(e).slice(0, 160)], candidates: 0, fails: []};
-        }
+        },
+        describe: ({id}) => ({phase: 'D5', storyId: id}),
       })),
     );
     // D6 scans every story. A directional decoration can exist only in a
     // custom/variant story even when the default story is neutral.
     decorationResults.push(
-      ...(await mapPool(pmTargets, pages, async ({id, comp}, workerPage) => {
-        try {
+      ...(await mapPool(pmTargets, pool, {
+        scan: async ({id, comp}, workerPage) => {
           const card = await autoDirectionalDecorations(workerPage, port, id, comp);
           if (card.verdict !== 'N-A') {
             console.error(`DEC  ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} glyphs=${card.decorations}`);
           }
           return card;
-        } catch (e) {
+        },
+        onError: ({id, comp}, e) => {
           console.error(`DEC  ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
           return {component: comp, storyId: id, dim: 'D6-decoration', verdict: 'ERROR', notes: [String(e).slice(0, 160)], decorations: 0, results: []};
-        }
+        },
+        describe: ({id}) => ({phase: 'D6', storyId: id}),
       })),
     );
   }
@@ -1132,13 +1196,11 @@ async function cleanupRuntime() {
       // skip if the entry only had D1 (now covered by auto-discovery)
       const dims = (t.dims || []).filter(d => d !== 'D1');
       if (dims.length === 0) continue;
-      try {
-        const card = await scoreCurated(page, coarsePage, port, {...t, component, dims});
-        curatedResults.push(card);
-        console.error(`CUR  ${card.rollup.padEnd(10)} ${component.padEnd(20)} ${JSON.stringify(card.dims)}`);
-      } catch (e) {
-        curatedResults.push({component, storyId: t.storyId, rollup: 'ERROR', dims: {}, notes: [String(e).slice(0, 200)]});
-      }
+      // scoreCurated records each dim's failure itself; what escapes it is a
+      // page that could not be replaced, which ends the run.
+      const card = await scoreCurated(curatedPages, port, {...t, component, dims});
+      curatedResults.push(card);
+      console.error(`CUR  ${card.rollup.padEnd(10)} ${component.padEnd(20)} ${JSON.stringify(card.dims)}`);
     }
   }
 
@@ -1203,6 +1265,10 @@ async function cleanupRuntime() {
     },
     dist: DIST,
     selfChecks: {d8LogicalInline: d8BrowserContract},
+    // Worker pages replaced after a story failed on them. The failed story
+    // keeps its ERROR result; the record shows the stories after it ran on a
+    // fresh page.
+    pageRecoveries: pool.recoveries,
     autoDiscovery: {
       total: autoResults.length,
       applicable: autoResults.filter(r => r.verdict !== 'N-A').length,
@@ -1238,6 +1304,7 @@ async function cleanupRuntime() {
   console.error(`AUTO: ${report.autoDiscovery.pass} pass / ${report.autoDiscovery.fail} fail (${surprises.length} surprise) / ${report.autoDiscovery.na} N-A`);
   console.error(`PM  : ${report.positionalMirror.pass} pass / ${report.positionalMirror.fail} fail / ${report.positionalMirror.na} N-A (tol ${PM_TOL}px)`);
   console.error(`DEC : ${report.directionalDecorations.pass} pass / ${report.directionalDecorations.fail} fail / ${report.directionalDecorations.na} N-A`);
+  console.error(`POOL: ${pool.recoveries.length} page replacement(s) after a failed story`);
   console.error(`COV : ${coverage.measured} measured / ${coverage.verifiedNa} verified N-A / ${coverage.gaps} gap / ${coverage.staleVerifiedNa} stale`);
   // Non-zero exit only signals CI (which is soft/continue-on-error). Surface a
   // signal but never let it hard-block during the stability window.

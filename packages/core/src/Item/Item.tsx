@@ -5,7 +5,7 @@
 /**
  * @file Item.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, useClickableContainer
- * @output Exports Item component, ItemProps type
+ * @output Exports Item component, ItemProps type; publishes the shared inline inset
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -37,6 +37,7 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 // =============================================================================
 // Types
@@ -50,10 +51,18 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLElement>;
 
   /**
-   * HTML element to render as the root.
+   * What the root renders as: an HTML element, or a component for a caller
+   * that needs the root to be something else. A menu row that navigates
+   * passes the application's link component here, so the row's root IS the
+   * anchor and a modified or middle click keeps the browser's meaning.
+   *
+   * Give a component only when the row carries a `role`, so the parent owns
+   * keyboard access and the row adds no second tab stop; and only when no
+   * interactive node sits in `startContent` or `endContent`, since a control
+   * nested inside an anchor is invalid.
    * @default 'div'
    */
-  as?: 'div' | 'li' | 'span';
+  as?: 'div' | 'li' | 'span' | React.ElementType;
 
   /**
    * Marker rendered before startContent as a direct flex child.
@@ -138,7 +147,9 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   interactiveRef?: React.RefObject<HTMLElement | null>;
 
   /**
-   * Link URL. Makes the item a link via an invisible anchor element.
+   * Link URL. Makes the item a link via an invisible anchor element. A row
+   * whose root is already a link component (see `as`) carries the address on
+   * that root instead, and no invisible anchor is rendered.
    */
   href?: string;
 
@@ -209,7 +220,13 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-2'],
+    // The inline inset is published as --_item-inset-inline and the padding
+    // derives from it, so consumers that need to compensate for the inset
+    // (List's edgeCompensation) read the var instead of mirroring the values.
+    // Themes that set paddingInline on `item` also feed this var via the
+    // derived var registry, keeping padding and compensation in sync.
+    '--_item-inset-inline': spacingVars['--spacing-2'],
+    paddingInline: 'var(--_item-inset-inline)',
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
@@ -237,16 +254,19 @@ const styles = stylex.create({
     cursor: 'default',
     pointerEvents: 'none' as const,
   },
+  // A row whose root is the link: the browser's anchor paint stays out of it.
+  linkRoot: {
+    color: 'inherit',
+    textDecoration: 'none',
+  },
   disabledContent: {
     opacity: 0.5,
   },
   invisibleButton: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    font: 'inherit',
     color: 'inherit',
     display: 'flex',
     flexDirection: 'column',
@@ -256,12 +276,10 @@ const styles = stylex.create({
     outline: 'none',
   },
   invisibleAnchor: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    font: 'inherit',
     color: 'inherit',
     display: 'flex',
     flexDirection: 'column',
@@ -356,7 +374,7 @@ const densityStyles = stylex.create({
   },
   spacious: {
     paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-3'],
+    '--_item-inset-inline': spacingVars['--spacing-3'],
   },
 });
 
@@ -407,6 +425,7 @@ export function Item({
   role,
   ...restProps
 }: ItemProps) {
+  const pressable = usePressFeedback();
   const LinkComponent = useLinkComponent();
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
@@ -436,6 +455,18 @@ export function Item({
   // handles keyboard access. Skip the invisible button/anchor and put
   // onClick directly on the root element instead.
   const hasParentRole = role != null;
+  // The root is whatever `as` says it is. A caller that passed a link
+  // component means the root itself is the anchor, so the address rides it
+  // and the invisible anchor below is not rendered.
+  const isLinkRoot = typeof Component !== 'string' && href != null;
+  const linkRootProps = isLinkRoot
+    ? {
+        // A disabled row keeps its place in the tree but goes nowhere.
+        href: isDisabled ? undefined : href,
+        target: isDisabled ? undefined : target,
+        rel: isDisabled ? undefined : rel,
+      }
+    : null;
   // aria-selected is only valid on selectable roles (option, tab, treeitem,
   // grid cells). On the default div/li root the attribute is invalid ARIA
   // (axe: aria-allowed-attr), so selection stays visual-only there — callers
@@ -536,7 +567,7 @@ export function Item({
           )}>
           {labelAndDescription}
         </span>
-      ) : href != null ? (
+      ) : href != null && !isLinkRoot ? (
         <LinkComponent
           href={href}
           target={target}
@@ -591,6 +622,7 @@ export function Item({
     <Component
       ref={(isDelegate ? mergedRef : ref) as React.Ref<never>}
       {...restProps}
+      {...linkRootProps}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
       // bare div, etc.). For those, convey selection via aria-current — valid
@@ -601,6 +633,7 @@ export function Item({
         (isSelected && !allowsAriaSelected ? true : undefined)
       }
       aria-disabled={isDisabled || undefined}
+      {...(isInteractive ? pressable : undefined)}
       {...mergeProps(
         themeProps('item', {density, align}),
         focusOutlineProps.focusWithin(
@@ -609,6 +642,7 @@ export function Item({
           align === 'start' && styles.alignStart,
           isInteractive && styles.interactive,
           isInteractive && interactionOverlayStyles.backgroundColor,
+          isLinkRoot && styles.linkRoot,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
           isDisabled && !hasParentRole && styles.disabled,

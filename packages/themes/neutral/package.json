@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/theme-neutral",
-  "version": "0.6.3",
+  "version": "0.6.6",
   "displayName": "Neutral Theme",
   "private": false,
   "description": "Restrained warm grays. Minimal and quiet, so the content stays the focus.",
@@ -22,7 +22,9 @@
     "lucide",
     "design-tokens"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "main": "./dist/source.js",
   "types": "./dist/source.d.ts",
   "exports": {
@@ -39,11 +41,17 @@
     "./theme.css": {
       "types": "./theme.css.d.ts",
       "default": "./dist/theme.css"
+    },
+    "./fonts.css": {
+      "types": "./fonts.css.d.ts",
+      "default": "./fonts.css"
     }
   },
   "files": [
     "dist",
     "src",
+    "fonts.css",
+    "fonts.css.d.ts",
     "palette.config.json"
   ],
   "scripts": {
@@ -53,11 +61,11 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.6.3",
+    "@astryxdesign/core": "0.6.6",
     "react": ">=19"
   },
   "devDependencies": {
-    "@astryxdesign/cli": "0.6.3"
+    "@astryxdesign/cli": "0.6.6"
   },
   "module": "./dist/source.mjs"
 }

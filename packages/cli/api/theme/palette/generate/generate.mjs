@@ -86,7 +86,8 @@ function serializePalette(palette, indentation = 0) {
 
 /** @param {TonalPaletteCandidate} candidate */
 export function serializePaletteCandidate(candidate) {
-  return `{\n  "schemaVersion": 1,\n  "status": "candidate",\n  "recipe": ${JSON.stringify(candidate.recipe)},\n  "black": ${JSON.stringify(candidate.black)},\n  "white": ${JSON.stringify(candidate.white)},\n  "stops": ${JSON.stringify(candidate.stops)},\n  "palette": ${serializePalette(candidate.palette, 2)}\n}\n`;
+  const stops = candidate.stops.map(stop => `    ${JSON.stringify(stop)}`);
+  return `{\n  "schemaVersion": 1,\n  "status": "candidate",\n  "recipe": ${JSON.stringify(candidate.recipe)},\n  "black": ${JSON.stringify(candidate.black)},\n  "white": ${JSON.stringify(candidate.white)},\n  "stops": [\n${stops.join(',\n')}\n  ],\n  "palette": ${serializePalette(candidate.palette, 2)}\n}\n`;
 }
 
 /** @param {TonalPaletteCandidate} candidate @param {string} outputPath */
@@ -168,7 +169,11 @@ function existingFileIdentity(filePath) {
     ) {
       return null;
     }
-    throw error;
+    throw new AstryxError(
+      `Could not write palette candidate: ${error instanceof Error ? error.message : String(error)}`,
+      undefined,
+      ERROR_CODES.ERR_WRITE_FAILED,
+    );
   }
 }
 

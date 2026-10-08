@@ -124,7 +124,8 @@ const styles = stylex.create({
     },
     outline: 'none',
     backgroundColor: 'transparent',
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     textAlign: 'start' as const,
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
@@ -639,7 +640,10 @@ export function useTriggerMenu(
 
   const renderMenu = useCallback((): ReactNode => {
     const trigger = state.activeTrigger;
-    const emptyText = trigger?.emptySearchResultsText ?? 'No results';
+    const emptyText =
+      trigger?.emptySearchText ??
+      trigger?.emptySearchResultsText ??
+      'No results';
     const loadingText = trigger?.loadingText ?? 'Searching\u2026';
 
     let listContent: ReactNode;

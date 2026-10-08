@@ -2,8 +2,8 @@
 
 /**
  * @file Resolve explicit changed-component scope for fast PR accessibility.
- * @input Exact PR analysis and the canonical component package registry
- * @output Qualified component filters; an empty set never means a full audit
+ * @input Exact PR analysis and canonical public-component ownership
+ * @output Qualified filters matched like the audit consumer; empty never means full
  * @position PR-only projection; exhaustive accessibility belongs to release-check
  */
 
@@ -11,7 +11,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import componentPackages from '../../scripts/component-packages.cjs';
-import {buildStoryComponentRoutes} from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
+import {
+  buildStoryComponentRoutes,
+  componentRoutesForFilters,
+} from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 import storyIdentity from './lib/a11y-story-identity.js';
 
 const {
@@ -101,6 +104,7 @@ export function resolvePrA11yComponents(
   }
   // Analysis deliberately leaves multi-component folders (such as Chat)
   // unresolved. Expand only that changed folder, not the whole package roster.
+  const publicComponentsByPackage = new Map();
   for (const source of analysis.unresolvedComponentSources) {
     const [packageName, directory, extra] = source.split('/');
     const pkg = componentPackage(packageName);
@@ -116,11 +120,22 @@ export function resolvePrA11yComponents(
     const changedDirectory = path.join(sourceRoot, directory);
     const names = documentedComponentNames(changedDirectory);
     if (names.length === 0) continue;
+    let publicComponents = publicComponentsByPackage.get(packageName);
+    if (publicComponents == null) {
+      publicComponents = new Set(
+        pkg.layout === 'flat'
+          ? flatPackageComponentNames(repoRoot, pkg)
+          : nestedPackageComponentNames(repoRoot, pkg),
+      );
+      publicComponentsByPackage.set(packageName, publicComponents);
+    }
     const exports = componentExportsFromBarrel(
       path.join(sourceRoot, 'index.ts'),
       sourceRoot,
     );
     for (const name of names) {
+      // Utility docs in shared source directories do not create component owners.
+      if (!publicComponents.has(name)) continue;
       const implementation = exports.get(name);
       // A doc can mention a dependency such as Avatar; it does not make that
       // component part of the changed folder's scope.
@@ -128,9 +143,9 @@ export function resolvePrA11yComponents(
         routes ??= readPrA11yRoutes(repoRoot);
         const owner = `${packageName}/${name}`;
         const umbrella = `${packageName}/${directory}`;
-        if (routes.some(route => route.component === owner)) {
+        if (componentRoutesForFilters(routes, [owner]).length > 0) {
           owners.add(owner);
-        } else if (routes.some(route => route.component === umbrella)) {
+        } else if (componentRoutesForFilters(routes, [umbrella]).length > 0) {
           // Some grouped exports are exercised only by their family's stories.
           owners.add(umbrella);
         } else {

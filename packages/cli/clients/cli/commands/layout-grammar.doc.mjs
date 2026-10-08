@@ -13,7 +13,7 @@ export const doc = {
   type: 'command',
   name: 'layout grammar',
   displayName: 'astryx layout grammar',
-  namespace: 'cli',
+  namespace: 'cli/commands',
   summary:
     'Print the XLE/XLO cheatsheet (alias table generated from this branch)',
   description:
@@ -26,5 +26,6 @@ export const doc = {
     {code: 0, when: 'success'},
     {code: 1, when: 'the component registry cannot be read'},
   ],
+  deprecated: 'DEP-0006: Use `astryx build` to start from a template, `astryx template` to scaffold, and `astryx docs layout` for guidance.',
   related: ['layout expand', 'layout check'],
 };

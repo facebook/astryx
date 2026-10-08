@@ -6,7 +6,7 @@
  * @file Selector.tsx
  * @input Uses React, StyleX, adaptive selection surfaces, theme-resolved
  *   indicators, Field, and InputGroup context
- * @output Exports Selector with content-derived option-mark layout
+ * @output Exports Selector with content-derived option-mark layout and token-sized single-line triggers
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
@@ -50,6 +50,7 @@ import {InternalInputClearButton} from '../Field/InputClearButton';
 import {Spinner} from '../Spinner';
 import {PanelSearchInput} from '../Field/PanelSearchInput';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
 import {
   colorVars,
   sizeVars,
@@ -71,6 +72,8 @@ import {
   getSelectableOptions,
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
+import {useMenuPress} from '../hooks/useMenuPress';
+import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {SelectorOption} from './SelectorOption';
@@ -82,6 +85,7 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -113,13 +117,8 @@ const styles = stylex.create({
         '@supports (-webkit-touch-callout: none)': `max(1rem, ${typeScaleVars['--text-label-size']})`,
       },
     },
-    // A FIXED line box, not the ratio: the trigger's padding is derived from
-    // one line being `--spacing-5` tall, and a ratio makes the line box track
-    // the font — which the coarse-pointer bump above (and any theme that
-    // changes `--font-size-base`) then moves, taking the control off its size
-    // token. The glyphs still grow for touch; only the box they sit in is
-    // pinned. Item's own rows set their line heights and are unaffected.
-    lineHeight: spacingVars['--spacing-5'],
+    // The line box is set per size in sizeStyles below, where it can be capped
+    // to what that size token holds.
     color: colorVars['--color-text-primary'],
     cursor: {
       default: 'pointer',
@@ -171,10 +170,13 @@ const styles = stylex.create({
   // trigger stops asserting a floor of its own — otherwise a control sized
   // above its group (`<InputGroup size="md"><Selector size="lg">`) grows the
   // row it was supposed to sit in. The padding goes with it: the row is
-  // already the size token, and the value box is centred in it.
+  // already the size token, and the value box is centred in it. The line box
+  // likewise stops reading the control's own size token (sizeStyles caps it
+  // there), so grouped triggers keep one line box whatever their `size`.
   triggerInGroup: {
     minHeight: 0,
     paddingBlock: 0,
+    lineHeight: `max(${spacingVars['--spacing-5']}, 20px, 1rem)`,
   },
   // Wrapper for `renderValue` output. Takes the free width and clips
   // horizontally so a long value ellipsizes rather than widening the trigger;
@@ -224,9 +226,12 @@ const styles = stylex.create({
   triggerIconOpen: {
     transform: 'rotate(180deg)',
   },
+  // Ghost has no borders, so its spacing row never overshoots the token; it
+  // keeps the uncapped line box from before the sizeStyles cap.
   triggerGhost: {
     width: 'auto',
     borderWidth: 0,
+    lineHeight: `max(${spacingVars['--spacing-5']}, 20px, 1rem)`,
     backgroundColor: 'transparent',
     boxShadow: {
       default: 'none',
@@ -241,7 +246,13 @@ const styles = stylex.create({
       'background-image, background-color, color, opacity, transform',
     transform: {
       default: 'scale(1)',
-      ':active': 'scale(0.98)',
+      // A mouse press; under a coarse pointer the touch press model writes
+      // `data-astryx-press` instead (see interactionOverlay.stylex.ts).
+      ':active': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
   triggerGhostDisabled: {
@@ -249,6 +260,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
   triggerReadOnly: {
@@ -259,6 +271,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
 
@@ -295,6 +308,17 @@ const styles = stylex.create({
     // The input trigger's text inset includes its border. Mirror that extra
     // pixel in the menu; the borderless ghost variant needs no correction.
     paddingInline: `calc(${spacingVars['--spacing-1']} + ${borderVars['--border-width']})`,
+  },
+  // Scroll ownership by the browser's own signal, as the menus declare it: a
+  // list whose options fit keeps every finger, so a slide over the options
+  // stays a slide; one that scrolls lets the browser pan it vertically and
+  // cancel the press when it does.
+  touchNone: {
+    touchAction: 'none',
+  },
+  touchPanY: {
+    touchAction: 'pan-y',
+    overscrollBehavior: 'contain',
   },
   // Same correction for the search row's gutter, so the search field and the
   // option rows share one left edge.
@@ -354,7 +378,8 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-label-size'],
     color: colorVars['--color-text-primary'],
     backgroundColor: 'transparent',
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -404,14 +429,21 @@ const styles = stylex.create({
 
 // The trigger is sized by PADDING, not by a fixed height, so it is the size
 // token plus one text line for each extra line the value uses: 28/32/36 for
-// one line, 48/52/56 for two. The token and a text line are both multiples of
-// 4, so every trigger lands on the 4px rhythm and lines up with the Buttons
-// and inputs beside it. No prop picks the height — the content does, and it
-// can only land on the grid.
+// one line, 48/52/56 for two with the default tokens, where the token and a
+// text line are both multiples of 4 and the trigger lines up with the Buttons
+// and inputs beside it. No prop picks the height — the content does.
 //
-// `--spacing-5` is one line here because `triggerContainer` pins its
-// line-height to exactly that; the two must stay in step, which is why both
-// read the same token rather than one hardcoding 20px.
+// The line box is `--spacing-5`, floored at the 20px clear control and 1rem
+// icons. When that row would not fit inside the size token's borders, it is
+// capped at what the token holds, so a spacing scale taller than the token
+// cannot push a one-line trigger past it. The cap never goes below 1.5em of
+// the trigger's own font — the type scale's loosest target leading, a
+// conservative bound above a label's glyph extent — so label text too large
+// for the token keeps room rather than being clipped. Line box and padding
+// read the same value; nothing changes wherever the row already fit. Ghost and
+// grouped triggers keep the uncapped line box. `renderValue` content inherits
+// this row like the built-in label; content that sets a larger font should set
+// its own line height, as it must at any spacing scale.
 // Keep these calculations inline: a consumer's Babel preset can lower a
 // module-scope helper to a function expression before StyleX evaluates this
 // object, and StyleX cannot constant-evaluate that transformed helper.
@@ -419,15 +451,18 @@ const styles = stylex.create({
 const sizeStyles = stylex.create({
   sm: {
     minHeight: sizeVars['--size-element-sm'],
-    paddingBlock: `calc((${sizeVars['--size-element-sm']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
+    lineHeight: `max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-sm']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem)`,
+    paddingBlock: `calc((${sizeVars['--size-element-sm']} - max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-sm']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   md: {
     minHeight: sizeVars['--size-element-md'],
-    paddingBlock: `calc((${sizeVars['--size-element-md']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
+    lineHeight: `max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-md']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem)`,
+    paddingBlock: `calc((${sizeVars['--size-element-md']} - max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-md']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
   lg: {
     minHeight: sizeVars['--size-element-lg'],
-    paddingBlock: `calc((${sizeVars['--size-element-lg']} - ${spacingVars['--spacing-5']} - 2 * ${borderVars['--border-width']}) / 2)`,
+    lineHeight: `max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-lg']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem)`,
+    paddingBlock: `calc((${sizeVars['--size-element-lg']} - max(min(${spacingVars['--spacing-5']}, max(${sizeVars['--size-element-lg']} - 2 * ${borderVars['--border-width']}, 1.5em)), 20px, 1rem) - 2 * ${borderVars['--border-width']}) / 2)`,
   },
 });
 
@@ -691,9 +726,10 @@ interface SelectorPropsBase<
    * Content shown in the panel when a search query matches no options, and
    * announced in a polite live region at the same time.
    *
-   * The panel message is `role="presentation"`, so the live region is the only
-   * route to assistive tech: a string is announced verbatim, a richer node
-   * falls back to the default text since it cannot be spoken.
+   * The panel message is `role="presentation"`, so the live region is the
+   * only route to assistive tech. It announces the text this content renders,
+   * read from the DOM, so an element is announced as written and anything
+   * marked `aria-hidden` is left out of both.
    * @default 'No results found'
    */
   emptySearchText?: ReactNode;
@@ -827,6 +863,7 @@ export function Selector<T extends SelectorOptionType>(
   props: SelectorProps<T>,
 ) {
   const t = useTranslator();
+  const pressable = usePressFeedback();
   const {
     label,
     isLabelHidden = false,
@@ -891,6 +928,8 @@ export function Selector<T extends SelectorOptionType>(
   // has to be that same value or the label and listbox point at nothing.
   const triggerId = id ?? generatedTriggerId;
   const listboxId = useId();
+  // Read by the live region above so it speaks what this element renders.
+  const emptyStateRef = useRef<HTMLDivElement>(null);
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputLabelId = useId();
@@ -915,17 +954,6 @@ export function Selector<T extends SelectorOptionType>(
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
   const isBusy = isLoading || optimisticValue !== normalizedValue;
   const announce = useAnnounce();
-
-  // The panel's empty message is role="presentation" and reaches assistive tech
-  // only through this live region, so the region has to speak whatever the
-  // panel shows. A ReactNode override cannot be spoken; fall back to the
-  // catalog copy for that case rather than announcing nothing.
-  const emptyAnnouncement =
-    typeof emptyText === 'string' ? emptyText : t('@astryx.selector.empty');
-  const emptySearchAnnouncement =
-    typeof emptySearchText === 'string'
-      ? emptySearchText
-      : t('@astryx.selector.emptySearchResults');
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the trigger container (which already exists)
@@ -1076,13 +1104,16 @@ export function Selector<T extends SelectorOptionType>(
         return;
       }
       const count = filterOptionsByQuery(selectableItems, nextQuery).length;
-      announce(
-        count === 0
-          ? emptySearchAnnouncement
-          : t('@astryx.selector.resultCount', {count}),
-      );
+      if (count === 0) {
+        // The empty panel is announced from the rendered message below, not
+        // from here. Two speakers for one transition would say it twice, and
+        // this one cannot cover an empty result that arrives after the
+        // keystroke — an async load landing with nothing that matches.
+        return;
+      }
+      announce(t('@astryx.selector.resultCount', {count}));
     },
-    [announce, isLoading, selectableItems, emptySearchAnnouncement, t],
+    [announce, isLoading, selectableItems, t],
   );
 
   const handleSearchChange = useCallback(
@@ -1094,36 +1125,21 @@ export function Selector<T extends SelectorOptionType>(
     [announceSearchResults],
   );
 
-  // The panel's empty message is role="presentation", so this region is the
-  // only route to assistive tech. It has to watch the STATE rather than the
-  // open event: the panel can become empty either on open or when a fetch
-  // lands with nothing in it, and an open-only announcement leaves the second
-  // case silent while the message sits on screen. The ref makes it fire once
-  // per arrival at that state rather than on every re-render.
-  const announcedEmptyRef = useRef<string | null>(null);
-  useEffect(() => {
-    const isPanelEmpty =
-      surface.isOpen &&
-      !isLoading &&
-      searchQuery === '' &&
-      selectableItems.length === 0;
-    if (!isPanelEmpty) {
-      announcedEmptyRef.current = null;
-      return;
-    }
-    if (announcedEmptyRef.current === emptyAnnouncement) {
-      return;
-    }
-    announcedEmptyRef.current = emptyAnnouncement;
-    announce(emptyAnnouncement);
-  }, [
-    surface.isOpen,
-    isLoading,
-    searchQuery,
-    selectableItems.length,
-    emptyAnnouncement,
-    announce,
-  ]);
+  // The panel's empty message is role="presentation" — role="listbox" permits
+  // only option and group children — so this region is its only route to
+  // assistive tech, and the region has to say what the panel says. Both
+  // `emptyText` and `emptySearchText` take a ReactNode, so the words are read
+  // off the rendered element rather than guessed from the prop: a caller who
+  // puts a link in the dead end is announced their link, not a default
+  // (`spec:AST-056` AR1).
+  //
+  // Watching the rendered STATE rather than the keystroke also covers the
+  // case the old keystroke-time announcement could not: a fetch that lands
+  // with nothing matching an active query left the message on screen and the
+  // region silent.
+  const isPanelEmpty =
+    surface.isOpen && !isLoading && filteredItems.length === 0;
+  useAnnounceRenderedText(emptyStateRef, isPanelEmpty, searchQuery);
 
   // Calculate offset to position selected item over trigger. Explicit
   // placement opts out of the selector-specific overlay behavior and uses the
@@ -1240,6 +1256,48 @@ export function Selector<T extends SelectorOptionType>(
     },
   });
   resetTypeaheadRef.current = typeahead.reset;
+
+  // The press model for the listbox: the option under a finger's or
+  // a mouse's RELEASE is the one picked, and the highlight follows a held
+  // pointer through `highlightedIndex` — DOM focus stays on the trigger, as a
+  // combobox's must. A mouse released outside dismisses the list; a finger
+  // leaves it open.
+  const optionIndexFromRow = useCallback((row: HTMLElement): number => {
+    const match = /-item-(\d+)$/.exec(row.id);
+    return match == null ? -1 : Number(match[1]);
+  }, []);
+  // Re-measured when the option set changes; the count is the dependency.
+  const listboxHasOverflow = useMenuOverflow(
+    listboxRef,
+    filteredItems.length,
+    surface.isOpen,
+  );
+  const listboxPress = useMenuPress({
+    menuRef: listboxRef,
+    itemSelector: '[role="option"]:not([aria-disabled="true"])',
+    onHighlight: row => {
+      if (row == null) {
+        setHighlightedIndex(-1);
+        return;
+      }
+      // The hover path, not the raw setter: a pointer-driven highlight must
+      // never scroll the option into view, or the rows move under the
+      // stationary finger and the highlight runs away (the same rule hover
+      // follows).
+      const index = optionIndexFromRow(row);
+      const item = filteredItems[index];
+      if (item != null) {
+        onItemMouseEnter(item, index);
+      }
+    },
+    onActivate: row => {
+      const item = filteredItems[optionIndexFromRow(row)];
+      if (item != null) {
+        onItemSelect(item);
+      }
+    },
+    onDismiss: surface.hide,
+  });
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -1487,6 +1545,7 @@ export function Selector<T extends SelectorOptionType>(
       return [
         <div
           key="empty"
+          ref={emptyStateRef}
           role="presentation"
           {...mergeProps(
             themeProps('selector-empty-state'),
@@ -1627,8 +1686,10 @@ export function Selector<T extends SelectorOptionType>(
         id={listboxId}
         role="listbox"
         aria-labelledby={triggerId}
+        {...listboxPress.menuProps}
         {...stylex.props(
           styles.dropdown,
+          listboxHasOverflow ? styles.touchPanY : styles.touchNone,
           surface.activePresentation === 'popover' &&
             variant !== 'ghost' &&
             styles.dropdownInput,
@@ -1641,7 +1702,18 @@ export function Selector<T extends SelectorOptionType>(
       ref={listboxRef}
       id={listboxId}
       role="listbox"
-      aria-labelledby={triggerId}
+      {...listboxPress.menuProps}
+      // The bottom sheet is a modal layer, so Chromium drops the trigger
+      // outside it from the accessibility tree and a reference to it yields
+      // no name. Name only this no-search sheet directly from the component's
+      // label; the searchable sheet and the popovers keep the trigger
+      // relationship.
+      aria-label={
+        surface.activePresentation === 'bottom-sheet' ? label : undefined
+      }
+      aria-labelledby={
+        surface.activePresentation === 'bottom-sheet' ? undefined : triggerId
+      }
       aria-activedescendant={
         surface.isOpen && highlightedIndex >= 0
           ? getItemId(highlightedIndex)
@@ -1655,6 +1727,7 @@ export function Selector<T extends SelectorOptionType>(
       }
       {...stylex.props(
         styles.dropdown,
+        listboxHasOverflow ? styles.touchPanY : styles.touchNone,
         surface.activePresentation === 'popover' &&
           variant !== 'ghost' &&
           styles.dropdownInput,
@@ -1729,6 +1802,7 @@ export function Selector<T extends SelectorOptionType>(
         }}
         onClick={onTriggerClick}
         data-testid={testId}
+        {...pressable}
         {...mergeProps(
           themeProps('selector', {
             variant,

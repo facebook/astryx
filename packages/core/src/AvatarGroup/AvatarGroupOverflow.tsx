@@ -31,6 +31,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 
 const BORDER_WIDTH = 2;
@@ -101,12 +102,10 @@ const styles = stylex.create({
     // Focus ring via focus-visible
   },
   overlap: {
-    // Matches Avatar's own overlap rule: the first item in the row must not be
-    // pulled outside the group's box.
-    marginInlineStart: {
-      default: null,
-      ':not(:first-child)': 'var(--_avatar-group-overlap)',
-    },
+    // Matches Avatar's own overlap rule. AvatarGroup pads its start edge by
+    // the same amount, so the indicator stays inside the group's box even
+    // when it is the first child.
+    marginInlineStart: 'var(--_avatar-group-overlap)',
   },
 });
 
@@ -160,6 +159,7 @@ export function AvatarGroupOverflow({
   style,
   ...rest
 }: AvatarGroupOverflowProps): ReactNode {
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const group = useAvatarGroup();
   const size = group?.size ?? 'md';
@@ -183,6 +183,7 @@ export function AvatarGroupOverflow({
         {...rest}
         aria-label={label}
         data-avatar-item=""
+        {...pressable}
         {...mergeProps(
           themeProps('avatar-group-overflow', {size, shape}),
           focusOutlineProps.focusVisible(

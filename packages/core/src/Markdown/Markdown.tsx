@@ -9,7 +9,7 @@
  * @position Core implementation; renders markdown as Astryx components
  */
 
-import {Component, Suspense, useMemo, useRef} from 'react';
+import {Suspense, useMemo, useRef} from 'react';
 import type React from 'react';
 import {Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -32,6 +32,7 @@ import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
 import {Blockquote} from '../Blockquote/Blockquote';
 import {List} from '../List/List';
 import {ListItem} from '../List/ListItem';
+import {ListMarkerScope, type ListMarker} from '../List/ListContext';
 import {Table} from '../Table/Table';
 import {TableRow} from '../Table/TableRow';
 import {TableCell} from '../Table/TableCell';
@@ -53,8 +54,6 @@ import {
   parseMarkdownAstIncremental,
   createIncrementalState,
   trimStreamingArtifacts,
-  slugify,
-  uniqueSlug,
 } from './parser';
 import type {IncrementalState, MathParseOptions, ParseOptions} from './parser';
 import {getMarkdownAstLegacyCodeLanguage, markdownAstText} from './ast';
@@ -71,12 +70,24 @@ import {
   reportMarkdownPluginFailure,
 } from './plugins/protocol';
 import {getMarkdownFenceProposal} from './plugins/semanticFence';
+import {
+  MarkdownPluginBoundary,
+  renderMarkdownPluginNode,
+} from './plugin-renderer/MarkdownPluginNodeRenderer';
 import type {
   MarkdownExtensionNode,
   MarkdownPluginEntry,
   PreparedMarkdownPlugins,
 } from './plugins/protocol';
 import {sanitizeMarkdownLinkUrl, sanitizeMarkdownUrl} from './url';
+import {
+  projectMarkdownHeadings,
+  type MarkdownHeadingProjection,
+} from './headingProjection';
+import {
+  HeadingLinksRenderer,
+  headingLinksHeadingStyle,
+} from './plugins/HeadingLinksRenderer';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator, type TranslatorFn} from '../i18n';
 
@@ -84,6 +95,19 @@ type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
 type RenderExtensionNode = MarkdownExtensionNode;
 type RenderInlineNode = MarkdownAstPhrasingContent<RenderExtensionNode>;
 type RenderBlockNode = MarkdownAstBlockContent<RenderExtensionNode>;
+
+// spec:AST-061 DEC-6: a list nested inside n lists, of either kind, draws the
+// marker at n modulo 3.
+const BULLET_MARKERS: readonly [ListMarker, ListMarker, ListMarker] = [
+  'disc',
+  'circle',
+  'square',
+];
+const NUMBER_MARKERS: readonly [ListMarker, ListMarker, ListMarker] = [
+  'decimal',
+  'lower-alpha',
+  'lower-roman',
+];
 type RenderTable = MarkdownAstTable<RenderExtensionNode>;
 
 // ---------------------------------------------------------------------------
@@ -143,11 +167,10 @@ export interface MarkdownComponents {
     level: 1 | 2 | 3 | 4 | 5 | 6;
     children: React.ReactNode;
     /**
-     * Generated slug for this heading, matching the ids produced by
-     * useOutlineFromMarkdown / parseOutlineFromMarkdown. Render it as the
-     * element's `id` to keep Outline hash navigation working. Undefined for
-     * headings nested inside blockquotes or list items (the outline only
-     * lists top-level headings).
+     * Generated stable id for this heading, matching Markdown-derived Outline.
+     * Released output supplies it to root headings; createMarkdownHeadingLinks()
+     * expands the shared allocator to headings nested in blockquotes and lists.
+     * Custom renderers own their output and should apply the id they receive.
      */
     id?: string;
   }>;
@@ -277,6 +300,65 @@ const cellAlignStyles = stylex.create({
   center: {textAlign: 'center'},
   end: {textAlign: 'end'},
 });
+
+/**
+ * Cell sizing for Markdown's own default Table part, layered over Table's
+ * wrap-mode defaults.
+ *
+ * Table sizes wrap-mode cells with `max-width: 0` + `word-break: break-word`,
+ * and its header cell also applies nowrap + ellipsis. Those defaults zero every
+ * column's min-content contribution, so automatic layout divides the container
+ * equally: a six-column Markdown table squashes to a few characters per cell,
+ * identifiers split mid-word, header labels ellipsize, and nothing ever
+ * overflows into the Scroll region that exists to take the width.
+ *
+ * Here the cell reports an honest min-content, the header wraps instead of
+ * truncating, and `box-sizing: content-box` makes the per-column `ch` floor a
+ * floor on the text box rather than on the padded border box — so the floor
+ * means the same number of characters at every density, with no padding
+ * arithmetic to keep in sync with Table's own tokens.
+ *
+ * Data-driven `Table` keeps its released wrap mode; only Markdown's part is
+ * restyled.
+ */
+const markdownTableCellStyles = stylex.create({
+  cell: {
+    boxSizing: 'content-box',
+    maxWidth: 'none',
+    overflow: 'visible',
+    overflowWrap: 'break-word',
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-2'],
+    wordBreak: 'normal',
+  },
+  headerCell: {
+    boxSizing: 'content-box',
+    maxWidth: 'none',
+    overflow: 'visible',
+    overflowWrap: 'break-word',
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-2'],
+    textOverflow: 'clip',
+    whiteSpace: 'normal',
+    wordBreak: 'normal',
+  },
+  // Inline Code sets `word-break: break-word` so a long token cannot widen a
+  // paragraph. Inside a table cell that same rule zeroes the token's
+  // min-content and splits an identifier across lines; the cell keeps it whole
+  // and lets the column carry the width instead.
+  code: {
+    wordBreak: 'normal',
+  },
+});
+
+/**
+ * Default inline-code renderer inside Markdown table cells. Used only when the
+ * consumer supplies no `components.inlineCode`; a custom renderer owns its own
+ * wrapping rules.
+ */
+function MarkdownTableCellCode({children}: {children: string}) {
+  return <Code xstyle={markdownTableCellStyles.code}>{children}</Code>;
+}
 
 const styles = stylex.create({
   root: {
@@ -418,7 +500,9 @@ const styles = stylex.create({
     maxWidth: '100%',
   },
   tableWrapper: {
-    overflowX: 'auto',
+    // No `overflow-x` here: Table's own Scroll region (`table-scroll-wrapper`)
+    // is the table's scroller, and this block is exactly as wide as it, so a
+    // second scroll container would only add a dead focus stop.
     maxWidth: '100%',
     '--container-padding-inline-start': '0px',
     '--container-padding-inline-end': '0px',
@@ -705,57 +789,6 @@ function applyInlinePlugins(
   }
 
   return segments;
-}
-
-interface MarkdownPluginBoundaryProps {
-  children: React.ReactNode;
-  fallback: React.ReactNode;
-  pluginName: string;
-  resetKey: unknown;
-  resetRenderer: unknown;
-}
-
-interface MarkdownPluginBoundaryState {
-  failed: boolean;
-  resetKey: unknown;
-  resetRenderer: unknown;
-}
-
-class MarkdownPluginBoundary extends Component<
-  MarkdownPluginBoundaryProps,
-  MarkdownPluginBoundaryState
-> {
-  state: MarkdownPluginBoundaryState = {
-    failed: false,
-    resetKey: this.props.resetKey,
-    resetRenderer: this.props.resetRenderer,
-  };
-
-  static getDerivedStateFromError(): Partial<MarkdownPluginBoundaryState> {
-    return {failed: true};
-  }
-
-  static getDerivedStateFromProps(
-    props: MarkdownPluginBoundaryProps,
-    state: MarkdownPluginBoundaryState,
-  ): Partial<MarkdownPluginBoundaryState> | null {
-    return props.resetKey === state.resetKey &&
-      props.resetRenderer === state.resetRenderer
-      ? null
-      : {
-          failed: false,
-          resetKey: props.resetKey,
-          resetRenderer: props.resetRenderer,
-        };
-  }
-
-  componentDidCatch(error: unknown): void {
-    reportMarkdownPluginFailure(this.props.pluginName, 'render', error);
-  }
-
-  render(): React.ReactNode {
-    return this.state.failed ? this.props.fallback : this.props.children;
-  }
 }
 
 function useStableMarkdownSyntaxEntries(
@@ -1059,34 +1092,17 @@ function renderInline(
         />
       );
     }
-    case 'extension': {
-      const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
-      const fallback = wrapTextWithFade(
-        node.source ?? markdownExtensionText(preparedPlugins, node),
-        cursor,
+    case 'extension':
+      return renderMarkdownPluginNode(
+        preparedPlugins,
+        node,
+        wrapTextWithFade(
+          node.source ?? markdownExtensionText(preparedPlugins, node),
+          cursor,
+          index,
+        ),
         index,
       );
-      if (renderer == null) {
-        return fallback;
-      }
-      let rendered: React.ReactNode;
-      try {
-        rendered = renderer.render({node});
-      } catch (error) {
-        reportMarkdownPluginFailure(node.plugin, 'render', error);
-        return fallback;
-      }
-      return (
-        <MarkdownPluginBoundary
-          key={index}
-          pluginName={node.plugin}
-          resetKey={node}
-          resetRenderer={renderer.render}
-          fallback={fallback}>
-          <Suspense fallback={fallback}>{rendered}</Suspense>
-        </MarkdownPluginBoundary>
-      );
-    }
     case 'break':
       cursor.offset += 1;
       return <br key={index} />;
@@ -1174,16 +1190,39 @@ function getElementSpacing(
 // ---------------------------------------------------------------------------
 
 /**
- * Compute per-column min-widths from table AST content.
- * Buckets: ≤6 chars → 60px, 7–15 → 80px, >15 → 120px.
+ * Content-derived width floors for a Markdown table's columns, in `ch`.
+ *
+ * Once the cells stop clamping themselves (see `markdownTableCellStyles`),
+ * automatic table layout already gives every column its min-content — the
+ * longest unbreakable token — so no identifier can split mid-word. That floor
+ * is honest but not readable: a prose column's longest word is short, so six
+ * prose columns in a narrow container still wrap one word per line. The
+ * readable floor lets a column's longest cell wrap to about two lines instead,
+ * scaled by that cell's own length and bounded so a table of short columns
+ * still fits its container.
+ *
+ * A header label adds its own floor, so a short-bodied column stays as wide as
+ * its label reads on one line, up to a cap past which the label wraps rather
+ * than widening the column further.
+ *
+ * The floors are `ch`, not `px`: they follow the reader's font size, and with
+ * `box-sizing: content-box` on the cells they are floors on the text box, so
+ * cell padding does not eat into them. Exact tuning lives here, not in the
+ * spec.
  */
+const TABLE_COLUMN_MIN_CH = 4;
+const TABLE_COLUMN_MAX_CH = 24;
+const TABLE_COLUMN_TARGET_LINES = 2;
+const TABLE_HEADER_ONE_LINE_MAX_CH = 20;
+
 function computeTableColumnMinWidths(node: RenderTable): number[] {
   const [header, ...rows] = node.children;
   if (header == null) {
     return [];
   }
   return header.children.map((cell, colIdx) => {
-    let maxLen = countInlineTextLength(cell.children);
+    const headerLen = countInlineTextLength(cell.children);
+    let maxLen = headerLen;
     for (const row of rows) {
       const rowCell = row.children[colIdx];
       if (rowCell != null) {
@@ -1193,7 +1232,14 @@ function computeTableColumnMinWidths(node: RenderTable): number[] {
         }
       }
     }
-    return maxLen <= 6 ? 60 : maxLen <= 15 ? 80 : 120;
+    // Body floor: the longest cell wraps to about TARGET_LINES lines.
+    const bodyFloor = Math.ceil(maxLen / TABLE_COLUMN_TARGET_LINES);
+    // Header floor: the label reads on one line up to the one-line cap.
+    const headerFloor = Math.min(headerLen, TABLE_HEADER_ONE_LINE_MAX_CH);
+    return Math.min(
+      TABLE_COLUMN_MAX_CH,
+      Math.max(TABLE_COLUMN_MIN_CH, bodyFloor, headerFloor),
+    );
   });
 }
 
@@ -1213,7 +1259,9 @@ function renderBlock(
   components: Partial<MarkdownComponents> | undefined,
   preparedPlugins: PreparedMarkdownPlugins | undefined,
   t: TranslatorFn,
-  headingIdMap?: ReadonlyMap<RenderBlockNode, string>,
+  headingProjection?: MarkdownHeadingProjection,
+  // How many lists enclose this block (spec:AST-061 DEC-6).
+  listDepth = 0,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1241,11 +1289,9 @@ function renderBlock(
           preparedPlugins,
         ),
       );
-      // Only top-level headings get an id: the map is built from the same
-      // traversal parseOutlineFromMarkdown uses (which skips headings nested
-      // in blockquotes / list items), so rendered ids and outline ids stay
-      // identical — including duplicate-slug numbering.
-      const headingId = headingIdMap?.get(node);
+      const headingId = headingProjection?.ids.get(node);
+      const headingLabel = headingProjection?.labels.get(node) ?? '';
+      const permalinkUrl = headingProjection?.permalinkUrls.get(node);
       const HeadingComp = components?.heading;
       if (HeadingComp) {
         return (
@@ -1255,28 +1301,58 @@ function renderBlock(
         );
       }
       const Tag = `h${level}` as const;
+      if (permalinkUrl == null || headingId == null) {
+        return (
+          <Tag
+            key={index}
+            id={headingId}
+            {...mergeProps(
+              themeProps('markdown-heading', {density, level}),
+              stylex.props(
+                styles.headingBase,
+                headingStyles[level],
+                spacing,
+                contentWidthValue != null
+                  ? dynamicStyles.proseWidth(contentWidthValue)
+                  : null,
+                contentAlign !== 'start'
+                  ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
+                  : null,
+                isFirst && styles.noMarginBlockStart,
+                isLast && styles.noMarginBlockEnd,
+              ),
+            )}>
+            {headingChildren}
+          </Tag>
+        );
+      }
       return (
-        <Tag
+        <HeadingLinksRenderer
           key={index}
-          id={headingId}
-          {...mergeProps(
-            themeProps('markdown-heading', {density, level}),
-            stylex.props(
-              styles.headingBase,
-              headingStyles[level],
-              spacing,
-              contentWidthValue != null
-                ? dynamicStyles.proseWidth(contentWidthValue)
-                : null,
-              contentAlign !== 'start'
-                ? dynamicStyles.proseAlign(ALIGN_MARGIN[contentAlign])
-                : null,
-              isFirst && styles.noMarginBlockStart,
-              isLast && styles.noMarginBlockEnd,
-            ),
-          )}>
-          {headingChildren}
-        </Tag>
+          headingId={headingId}
+          headingLabel={headingLabel}
+          permalinkUrl={permalinkUrl}
+          contentWidth={contentWidthValue}
+          contentAlign={contentAlign}
+          headingTextStyle={[styles.headingBase, headingStyles[level]]}
+          blockSpacingStyle={[
+            spacing,
+            isFirst && styles.noMarginBlockStart,
+            isLast && styles.noMarginBlockEnd,
+          ]}>
+          <Tag
+            id={headingId}
+            {...mergeProps(
+              themeProps('markdown-heading', {density, level}),
+              stylex.props(
+                styles.headingBase,
+                headingLinksHeadingStyle,
+                headingStyles[level],
+              ),
+            )}>
+            {headingChildren}
+          </Tag>
+        </HeadingLinksRenderer>
       );
     }
     case 'paragraph': {
@@ -1426,6 +1502,8 @@ function renderBlock(
             components,
             preparedPlugins,
             t,
+            headingProjection,
+            listDepth,
           ),
         );
         return <BlockquoteComp key={index}>{bqC}</BlockquoteComp>;
@@ -1462,6 +1540,8 @@ function renderBlock(
               components,
               preparedPlugins,
               t,
+              headingProjection,
+              listDepth,
             ),
           )}
         </Blockquote>
@@ -1539,6 +1619,8 @@ function renderBlock(
                         components,
                         preparedPlugins,
                         t,
+                        headingProjection,
+                        listDepth + 1,
                       ),
                     )}
                   </>
@@ -1623,17 +1705,49 @@ function renderBlock(
                       components,
                       preparedPlugins,
                       t,
+                      headingProjection,
+                      listDepth + 1,
                     ),
                   )}
                 </>
               );
 
+              // A task item beside plain items keeps its own checked state
+              // (FR23): it shows a read-only checkbox where its marker
+              // would be, named by its text.
+              const firstParagraph = item.children.find(
+                block => block.type === 'paragraph',
+              );
+              const task =
+                item.checked == null
+                  ? undefined
+                  : {
+                      isChecked: item.checked,
+                      label:
+                        firstParagraph?.type === 'paragraph'
+                          ? markdownAstText(
+                              firstParagraph.children,
+                              extension =>
+                                markdownExtensionText(
+                                  preparedPlugins,
+                                  extension,
+                                ),
+                            )
+                          : t('@astryx.markdown.taskList'),
+                    };
+
               return (
-                <ListItem
+                <ListMarkerScope
                   // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown list items are rendered from positional AST nodes
                   key={i}
-                  label={label}
-                />
+                  marker={
+                    (node.ordered ? NUMBER_MARKERS : BULLET_MARKERS)[
+                      listDepth % 3
+                    ]
+                  }
+                  task={task}>
+                  <ListItem label={label} />
+                </ListMarkerScope>
               );
             })}
           </List>
@@ -1643,17 +1757,21 @@ function renderBlock(
     case 'table': {
       const colMinWidths = computeTableColumnMinWidths(node);
       const [header, ...rows] = node.children;
+      // Inline code inside a cell keeps its token whole, through the same
+      // `components` seam consumers use. A supplied renderer owns its own
+      // wrapping and is left alone.
+      const cellComponents: Partial<MarkdownComponents> | undefined =
+        components?.inlineCode != null
+          ? components
+          : {...components, inlineCode: MarkdownTableCellCode};
 
       return (
         <div
           key={index}
-          // Keyboard-focusable so keyboard users can scroll a horizontally
-          // overflowing GFM table. Uses role="group" (not "region") so
-          // multiple tables don't create duplicate same-named landmarks
-          // (axe: landmark-unique).
-          tabIndex={0}
-          role="group"
-          aria-label={t('@astryx.markdown.table')}
+          // No role, name, or tab stop here: Table's Scroll region owns the
+          // table's horizontal overflow, its accessible name, and its
+          // conditional keyboard focusability. This block only carries
+          // spacing, sizing, and alignment.
           {...mergeProps(
             themeProps('markdown-table', {density}),
             stylex.props(
@@ -1677,7 +1795,8 @@ function renderBlock(
                     // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table columns are positional by definition
                     key={i}
                     xstyle={[
-                      dynamicStyles.cellMinWidth(`${colMinWidths[i]}px`),
+                      markdownTableCellStyles.headerCell,
+                      dynamicStyles.cellMinWidth(`${colMinWidths[i]}ch`),
                       node.align[i] === 'center' && cellAlignStyles.center,
                       node.align[i] === 'right' && cellAlignStyles.end,
                     ]}>
@@ -1690,7 +1809,7 @@ function renderBlock(
                         citationCtx,
                         linkComponent,
                         inlinePlugins,
-                        components,
+                        cellComponents,
                         preparedPlugins,
                       ),
                     )}
@@ -1705,6 +1824,7 @@ function renderBlock(
                     // eslint-disable-next-line @eslint-react/no-array-index-key -- markdown table cells are positional by row and column
                     key={j}
                     xstyle={[
+                      markdownTableCellStyles.cell,
                       node.align[j] === 'center' && cellAlignStyles.center,
                       node.align[j] === 'right' && cellAlignStyles.end,
                     ]}>
@@ -1717,7 +1837,7 @@ function renderBlock(
                         citationCtx,
                         linkComponent,
                         inlinePlugins,
-                        components,
+                        cellComponents,
                         preparedPlugins,
                       ),
                     )}
@@ -1737,27 +1857,15 @@ function renderBlock(
       );
     }
     case 'extension': {
-      const renderer = getMarkdownExtensionRenderer(preparedPlugins, node);
-      const fallbackText =
-        node.source ?? markdownExtensionText(preparedPlugins, node);
-      const fallback = wrapTextWithFade(fallbackText, cursor, index);
-      let content: React.ReactNode = fallback;
-      if (renderer != null) {
-        try {
-          const rendered = renderer.render({node});
-          content = (
-            <MarkdownPluginBoundary
-              pluginName={node.plugin}
-              resetKey={node}
-              resetRenderer={renderer.render}
-              fallback={fallback}>
-              <Suspense fallback={fallback}>{rendered}</Suspense>
-            </MarkdownPluginBoundary>
-          );
-        } catch (error) {
-          reportMarkdownPluginFailure(node.plugin, 'render', error);
-        }
-      }
+      const content = renderMarkdownPluginNode(
+        preparedPlugins,
+        node,
+        wrapTextWithFade(
+          node.source ?? markdownExtensionText(preparedPlugins, node),
+          cursor,
+          index,
+        ),
+      );
       return (
         <div
           key={index}
@@ -1872,6 +1980,7 @@ export function Markdown<
   xstyle,
   className,
   style,
+  id: rootId,
   'data-testid': testId,
   ...props
 }: MarkdownProps<Plugins>): React.ReactElement {
@@ -1987,27 +2096,17 @@ export function Markdown<
     [parsedBlocks, preparedPlugins, transformSource, isStreaming],
   );
 
-  // Assign each top-level heading the slug that parseOutlineFromMarkdown
-  // would derive for it, so Outline hash links built from the same source
-  // always find a matching DOM id. Mirrors that function's traversal exactly:
-  // top-level blocks only, one shared duplicate-numbering sequence.
-  // NOTE: must stay above the `display === 'inline'` early return below —
-  // hooks cannot be conditional.
-  const headingIdMap = useMemo(() => {
+  // Resolve one post-transform projection for Markdown and derived Outline.
+  // The default remains root-only; installed first-party modules own any
+  // alternative projection returned through this narrow integration seam.
+  const headingProjection = useMemo(() => {
     if (display === 'inline' || blocks.length === 0) {
       return undefined;
     }
-    const map = new Map<RenderBlockNode, string>();
-    const counts = new Map<string, number>();
-    for (const block of blocks) {
-      if (block.type === 'heading') {
-        const label = markdownAstText(block.children, node =>
-          markdownExtensionText(preparedPlugins, node),
-        ).trim();
-        map.set(block, uniqueSlug(slugify(label), counts));
-      }
-    }
-    return map;
+    return projectMarkdownHeadings(
+      {type: 'root', children: blocks},
+      preparedPlugins,
+    );
   }, [display, blocks, preparedPlugins]);
 
   const parsedInlineNodes = useMemo(() => {
@@ -2110,6 +2209,7 @@ export function Markdown<
         ref={ref}
         // Consumer props first: what the component sets for itself wins.
         {...props}
+        id={rootId}
         data-testid={testId}
         {...mergeProps(
           themeProps('markdown', {density}),
@@ -2146,6 +2246,7 @@ export function Markdown<
       // Consumer props first: what the component sets for itself — the
       // document role included — wins.
       {...props}
+      id={rootId}
       role="document"
       data-testid={testId}
       {...mergeProps(
@@ -2175,7 +2276,7 @@ export function Markdown<
           components,
           preparedPlugins,
           t,
-          headingIdMap,
+          headingProjection,
         ),
       )}
     </div>

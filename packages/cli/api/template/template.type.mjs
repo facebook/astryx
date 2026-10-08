@@ -31,6 +31,7 @@
  * @property {string} description
  * @property {'page' | 'block'} type
  * @property {string} package - Owning package; core (built-in) templates report '@astryxdesign/core'.
+ * @property {string} [replaces] - Core template id this integration template replaces by default.
  * @property {string} [category] - Optional grouping/category label.
  * @property {string[]} [componentsUsed] - Component display names the template composes.
  * @property {number} [aspectRatio] - Block preview width/height ratio.
@@ -46,18 +47,21 @@
  * astryx --json template <name>
  * @typedef {object} TemplateShowResponse
  * @property {'template.show'} type
+ * @property {string} package The npm package that owns the template.
  * @property {object} data
  * @property {string} data.template
  * @property {string} data.description
  * @property {'page' | 'block'} data.type
  * @property {string[]} data.components
  * @property {string} data.source
+ * @property {number} data.demoMediaReplaced Astryx demo media references (images, posters, videos) replaced in the returned source: images with a neutral placeholder, videos with an empty source. Swap in your own media at those points; no media is installed. 0 when the template carried none.
  */
 
 /**
  * astryx --json template <name> --skeleton
  * @typedef {object} TemplateSkeletonResponse
  * @property {'template.skeleton'} type
+ * @property {string} package The npm package that owns the template.
  * @property {object} data
  * @property {string} data.template
  * @property {string} data.description
@@ -69,11 +73,13 @@
  * astryx --json template <name> [path]
  * @typedef {object} TemplateCopyResponse
  * @property {'template.copy'} type
+ * @property {string} package The npm package that owns the template.
  * @property {object} data
  * @property {string} data.template
  * @property {string} data.outputDir
  * @property {string} data.fileName
  * @property {number} data.filesCopied
+ * @property {number} data.demoMediaReplaced Astryx demo media references (images, posters, videos) replaced in the written file: images with a neutral placeholder, videos with an empty source. Swap in your own media at those points; no media is installed. 0 when the template carried none.
  */
 
 /**
@@ -93,8 +99,8 @@
  * @property {boolean} [skeleton]
  * @property {boolean} [show]
  * @property {boolean | string} [cdn] Write the no-build-step CDN starter page instead of resolving a template. A string is used as the destination path.
- * @property {'page' | 'block'} [type] Filter templates by kind: 'page' or 'block'. Only applies to list views.
- * @property {string} [package] Narrow to templates from a specific package (id-only lookups across packages are ambiguous).
+ * @property {'page' | 'block'} [type] Filter templates by kind: 'page' or 'block'. Narrows both list and direct lookup.
+ * @property {string} [package] Narrow to templates from a specific package. Without it, a valid integration replacement is selected for the Core id; @astryxdesign/core explicitly selects the original.
  * @property {string} [targetPath]
  * @property {boolean} [overwrite] Overwrite an existing target file instead of erroring (ERR_FILE_EXISTS).
  * @property {string} [cwd]

@@ -14,7 +14,6 @@ import {
   checkNodeVersion,
   checkCoreInstalled,
   checkVersionAlignment,
-  checkThemes,
   checkConfig,
   checkAgentDocs,
   checkPeerDeps,
@@ -63,33 +62,6 @@ function installPkg(name, version = '1.0.0') {
   return dir;
 }
 
-/**
- * Mirror pnpm's layout: the real package lives under node_modules/.pnpm and
- * the entry in the scope directory is a symlink to it.
- */
-function installPkgPnpmStyle(name, version = '1.0.0') {
-  const realDir = path.join(
-    tmpDir,
-    'node_modules',
-    '.pnpm',
-    `${name.replace('/', '+')}@${version}`,
-    'node_modules',
-    ...name.split('/'),
-  );
-  fs.mkdirSync(realDir, {recursive: true});
-  fs.writeFileSync(
-    path.join(realDir, 'package.json'),
-    JSON.stringify({name, version, main: 'index.js'}),
-  );
-  fs.writeFileSync(path.join(realDir, 'index.js'), 'module.exports = {};');
-  const linkPath = path.join(tmpDir, 'node_modules', ...name.split('/'));
-  fs.mkdirSync(path.dirname(linkPath), {recursive: true});
-  // 'junction' keeps this working on Windows without elevated permissions;
-  // it is ignored on posix.
-  fs.symlinkSync(realDir, linkPath, 'junction');
-  return linkPath;
-}
-
 function find(checks, id) {
   return checks.find(c => c.id === id);
 }
@@ -128,29 +100,15 @@ describe('doctor — individual checks', () => {
     expect(res.status).toBe('info');
   });
 
-  it('themes: WARN when no theme packages installed', () => {
-    const res = checkThemes({cwd: tmpDir, configTheme: null});
-    expect(res.status).toBe('warn');
-  });
-
-  it('themes: WARN when theme installed but not wired', () => {
-    installPkg('@astryxdesign/theme-neutral', '0.0.14');
-    const res = checkThemes({cwd: tmpDir, configTheme: null});
-    expect(res.status).toBe('warn');
-    expect(res.message).toContain('@astryxdesign/theme-neutral');
-  });
-
-  it('themes: PASS when theme installed and wired via config', () => {
-    installPkg('@astryxdesign/theme-neutral', '0.0.14');
-    const res = checkThemes({cwd: tmpDir, configTheme: 'default'});
-    expect(res.status).toBe('pass');
-  });
-
-  it('themes: detects pnpm-style symlinked theme packages (#3530)', () => {
-    installPkgPnpmStyle('@astryxdesign/theme-neutral', '0.1.2');
-    const res = checkThemes({cwd: tmpDir, configTheme: 'default'});
-    expect(res.status).toBe('pass');
-    expect(res.message).toContain('@astryxdesign/theme-neutral');
+  it('app themes: reports unmanaged state as one INFO check', async () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"app"}\n');
+    const result = await runChecks({cwd: tmpDir});
+    const themeChecks = result.checks.filter(check =>
+      check.id.startsWith('theme-'),
+    );
+    expect(themeChecks).toEqual([
+      expect.objectContaining({id: 'theme-management', status: 'info'}),
+    ]);
   });
 
   it('config: INFO when no astryx.config.mjs', async () => {
@@ -353,4 +311,46 @@ describe('doctor — command', () => {
       process.exitCode = prevExit;
     }
   });
+});
+
+describe('doctor — text output mirrors the JSON', () => {
+  /** @param {string} line */
+  const field = line => /^(\w+):\s+(.*)$/.exec(line)?.slice(1) ?? [line, ''];
+
+  it('prints every check and summary field under its JSON key', async () => {
+    const prevCwd = process.cwd();
+    const prevExit = process.exitCode;
+    process.chdir(tmpDir);
+    try {
+      await createProgram().parseAsync(['node', 'astryx', '--json', 'doctor']);
+      const {checks, summary} = JSON.parse(logCalls.join('\n')).data;
+      logCalls = [];
+      await createProgram().parseAsync(['node', 'astryx', 'doctor']);
+      const blocks = logCalls
+        .join('\n')
+        .split(/\n{2,}/)
+        .map(block => block.split('\n').map(field));
+
+      for (const check of checks) {
+        const block = blocks.find(fields =>
+          fields.some(([key, value]) => key === 'id' && value === check.id),
+        );
+        expect(block, `no text record for check ${check.id}`).toBeDefined();
+        expect(
+          /** @type {string[][]} */ (block).map(([key]) => key).sort(),
+        ).toEqual(Object.keys(check).sort());
+      }
+
+      const heading = blocks.findIndex(
+        fields => fields.length === 1 && fields[0][0] === 'summary',
+      );
+      expect(heading, 'no summary section').toBeGreaterThan(-1);
+      expect(blocks[heading + 1]).toEqual(
+        Object.entries(summary).map(([key, count]) => [key, String(count)]),
+      );
+    } finally {
+      process.chdir(prevCwd);
+      process.exitCode = prevExit;
+    }
+  }, 60_000);
 });

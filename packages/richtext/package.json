@@ -45,6 +45,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./markdown": {
+      "source": "./src/markdown.ts",
+      "types": "./dist/markdown.d.ts",
+      "default": "./dist/markdown.js"
+    },
     "./richtext.css": {
       "default": "./dist/richtext.css"
     }
@@ -63,7 +68,7 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.6.3",
+    "@astryxdesign/core": "0.6.6",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
     "lexical": "^0.46.0",
@@ -76,6 +81,8 @@
     "@lexical/rich-text": "^0.46.0",
     "@lexical/selection": "^0.46.0",
     "@lexical/code": "^0.46.0",
+    "@lexical/extension": "^0.46.0",
+    "@lexical/table": "^0.46.0",
     "@lexical/utils": "^0.46.0"
   },
   "peerDependenciesMeta": {
@@ -109,17 +116,25 @@
     "@lexical/code": {
       "optional": true
     },
+    "@lexical/extension": {
+      "optional": true
+    },
+    "@lexical/table": {
+      "optional": true
+    },
     "@lexical/utils": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@astryxdesign/a11y-spec": "workspace:*",
     "@astryxdesign/cli": "workspace:*",
     "@babel/cli": "catalog:",
     "@babel/core": "catalog:",
     "@babel/preset-react": "catalog:",
     "@babel/preset-typescript": "catalog:",
     "@lexical/code": "^0.46.0",
+    "@lexical/extension": "^0.46.0",
     "@lexical/headless": "^0.46.0",
     "@lexical/html": "^0.46.0",
     "@lexical/link": "^0.46.0",
@@ -128,6 +143,7 @@
     "@lexical/react": "^0.46.0",
     "@lexical/rich-text": "^0.46.0",
     "@lexical/selection": "^0.46.0",
+    "@lexical/table": "^0.46.0",
     "@lexical/utils": "^0.46.0",
     "@stylexjs/babel-plugin": "catalog:",
     "@testing-library/react": "catalog:",

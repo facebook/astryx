@@ -88,6 +88,7 @@ import {
   IS_APPLE,
   isExactShortcutMatch,
   $getSelection,
+  $isNodeSelection,
   $isRangeSelection,
   $setSelection,
   $createParagraphNode,
@@ -95,6 +96,7 @@ import {
   type RangeSelection,
 } from 'lexical';
 import {sanitizeUrl} from './linkUtils';
+import {$selectedExtensionNodesOnly} from './markdownExtensionNode';
 
 /** Block types exposed by the toolbar's format selector. */
 type BlockType =
@@ -508,10 +510,14 @@ export function RichTextEditorToolbar({
 
   const $syncToolbar = useCallback(() => {
     const selection = $getSelection();
-    if (!$isRangeSelection(selection)) {
+    if (!$isRangeSelection(selection) && !$isNodeSelection(selection)) {
       return;
     }
     const formats = new Set<string>();
+    // A selection of Markdown plugin nodes alone — a range around them, or
+    // a node selection from a click — shows their formats. Any other node
+    // selection, such as a rule, has none.
+    const nodesOnly = $selectedExtensionNodesOnly(selection);
     for (const fmt of [
       'bold',
       'italic',
@@ -519,16 +525,22 @@ export function RichTextEditorToolbar({
       'strikethrough',
       'code',
     ] as const) {
-      if (selection.hasFormat(fmt)) {
+      if (
+        nodesOnly != null
+          ? nodesOnly.every(node => node.hasFormat(fmt))
+          : $isRangeSelection(selection) && selection.hasFormat(fmt)
+      ) {
         formats.add(fmt);
       }
     }
     setActiveFormats(formats);
+    if (!$isRangeSelection(selection)) {
+      return;
+    }
 
     // Link active state — a link is "active" when the caret/selection anchor
-    // sits inside a LinkNode (or its immediate parent is one). Mirrors the EPS
-    // eps-lexical toolbar (`$isLinkNode(parent) || $isLinkNode(node)`), which is
-    // the implementation astryx aims to be swappable with.
+    // sits inside a LinkNode (or its immediate parent is one):
+    // `$isLinkNode(parent) || $isLinkNode(node)`.
     const node = selection.anchor.getNode();
     const parent = node.getParent();
     const linkNode = $isLinkNode(node)

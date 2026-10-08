@@ -106,6 +106,7 @@ const docCompilerOnly = (allowed = []) =>
         'lowerReferenceTopic',
         'linkReferenceTopic',
         'linkReferenceSection',
+        'lowerDoc',
       ].filter(name => !allowed.includes(name)),
     },
   ]
@@ -306,7 +307,10 @@ export default defineConfig(
   },
   // Astryx design token enforcement - applies to core package (excluding theme files)
   {
-    files: ['packages/core/src/**/*.{ts,tsx}'],
+    files: [
+      'packages/core/src/**/*.{ts,tsx}',
+      'packages/richtext/src/**/*.{ts,tsx}',
+    ],
     ignores: ['packages/core/src/theme/**'],
     ...astryxConfig,
     rules: {
@@ -348,7 +352,10 @@ export default defineConfig(
   // ships, so these two rules reach past core: lab components are consumed
   // the same way, and lab is where the next core component comes from.
   {
-    files: ['packages/lab/src/**/*.{ts,tsx}'],
+    files: [
+      'packages/lab/src/**/*.{ts,tsx}',
+      'packages/richtext/src/**/*.{ts,tsx}',
+    ],
     plugins: {
       '@astryx': astryxEslintPlugin,
     },
@@ -368,7 +375,10 @@ export default defineConfig(
   // they should read — a token decision, not a mechanical one. Flip to
   // 'error' once that lands.
   {
-    files: ['packages/lab/src/**/*.{ts,tsx}'],
+    files: [
+      'packages/lab/src/**/*.{ts,tsx}',
+      'packages/richtext/src/**/*.{ts,tsx}',
+    ],
     plugins: {
       '@astryx': astryxEslintPlugin,
     },
@@ -412,7 +422,10 @@ export default defineConfig(
   // Uses @eslint-react for bugs that TypeScript alone cannot catch.
   // Children.*/cloneElement are already covered by @astryx/no-react-introspection.
   {
-    files: ['packages/core/src/**/*.{ts,tsx}'],
+    files: [
+      'packages/core/src/**/*.{ts,tsx}',
+      'packages/richtext/src/**/*.{ts,tsx}',
+    ],
     plugins: {
       ...eslintReact.configs.recommended.plugins,
       'react-compiler': reactCompiler,
@@ -520,6 +533,11 @@ export default defineConfig(
       // Test harnesses wrap components in sized/positioned <div>s to set up a
       // scenario; that scaffolding is not shipped DOM.
       '@astryx/no-style-only-wrapper': 'off',
+      // Reading `.type` off a rendered element is how a test asserts which
+      // component a renderer chose. The rule exists to stop *shipped* code
+      // branching on child identity; a test making that assertion is the
+      // point, and has no data-driven API to prefer instead.
+      '@astryx/no-react-introspection': 'off',
     },
   },
   // Non-production code — allow console.log for demos, tools, and examples
@@ -728,6 +746,69 @@ export default defineConfig(
       ],
     },
   },
+  // ── INV23 + FR3: text-layout bans in command handlers ───────────────
+  // Handlers must use the formatter kit (section, text, list, record,
+  // records, code) rather than string padding or manual layout.
+  // Extends the Commander-registration ban to the same file scope.
+  {
+    files: ['packages/cli/clients/cli/commands/**/*.mjs'],
+    ignores: ['**/*.test.mjs', '**/*.doc.mjs'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.property.name='command']",
+          message:
+            'Register commands with defineCommand(parent, doc, {fn, action}) so --help and the manifest come from the colocated CommandDoc. See CONTRIBUTING > Working on the astryx CLI.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='padEnd']",
+          message:
+            'Use the formatter kit — record(), records({layout: "inline"}), list() — not .padEnd() (INV23, FR3). See architecture:cli-surface.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='padStart']",
+          message:
+            'Use the formatter kit — record(), records({layout: "inline"}), list() — not .padStart() (INV23, FR3). See architecture:cli-surface.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name='repeat']",
+          message:
+            'Use the formatter kit — section(), text(), code() — not .repeat() for layout (INV23, FR3). See architecture:cli-surface.',
+        },
+        {
+          selector: "NewExpression[callee.name='Block']",
+          message:
+            'Use the formatter kit constructors — section(), text(), list(), record(), records(), code() — not new Block() (INV23, FR3). See architecture:cli-surface.',
+        },
+      ],
+    },
+  },
+  // Known gaps recorded in AST-042; remove an entry when the file is
+  // fixed; do not add entries. check-cli-structure.mjs enforces the
+  // exact-entry allowlist so a new text-layout violation in these files
+  // still fails there.
+  {
+    files: [
+      'packages/cli/clients/cli/commands/build-theme.mjs',
+      'packages/cli/clients/cli/commands/docs.mjs',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.property.name='command']",
+          message:
+            'Register commands with defineCommand(parent, doc, {fn, action}) so --help and the manifest come from the colocated CommandDoc. See CONTRIBUTING > Working on the astryx CLI.',
+        },
+      ],
+    },
+  },
   // CLI tests — relax author-ergonomics rules (test files emit freely and may
   // keep intentionally-unused fixtures). Must come after the CLI block above.
   {
@@ -738,6 +819,36 @@ export default defineConfig(
       // Tests build fixtures directly against zod and Commander.
       'no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
+    },
+  },
+  // richtext — the pre-existing backlog, held at `warn` while it is worked
+  // off. Must come last so it overrides the blocks above.
+  //
+  // The package was outside these rules until now, so turning them on finds
+  // drift that predates this scope change: 25 untranslatable strings, four
+  // props missing `ref`, and six smaller API-shape items. Failing CI on work
+  // nobody has had the chance to do would mean either reverting the scope or
+  // landing a very large mixed change, so each one stays visible as a warning
+  // and is tracked separately. Everything the package is ALREADY clean on —
+  // the token and DOM rules, `no-classname-clobber`, `no-physical-properties`,
+  // `disabled-cursor`, the rest of the React set — is enforced at full
+  // strength, so new drift is an error from today.
+  //
+  // Remove an entry here as its backlog closes; the file is clean when the
+  // block is empty.
+  {
+    files: ['packages/richtext/src/**/*.{ts,tsx}'],
+    rules: {
+      // Every user- and AT-facing string in the toolbar is a literal.
+      '@astryx/no-hardcoded-i18n-string': 'warn',
+      // React 19 ref-in-props migration for the editor's public props.
+      '@astryx/require-ref-prop': 'warn',
+      '@eslint-react/no-forward-ref': 'warn',
+      '@eslint-react/naming-convention-ref-name': 'warn',
+      // Public API shape, settled with the package's stable-API decision.
+      '@astryx/require-base-props': 'warn',
+      '@astryx/boolean-prop-naming': 'warn',
+      '@eslint-react/no-unstable-default-props': 'warn',
     },
   },
 );

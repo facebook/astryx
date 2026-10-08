@@ -17,7 +17,7 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import {CLI_ROOT} from '../../../foundation/fs/paths.mjs';
-import {PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
+import {PathSafetyError, assertWithin} from '../../../foundation/fs/path-safety.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {
   installAgentDocs,
@@ -35,11 +35,9 @@ const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'];
 /**
  * Build the "Next steps" lines printed at the end of `astryx init`.
  *
- * Theme guidance must match the runtime recommendation emitted by core's
- * <Theme> component (packages/core/src/theme/Theme.tsx): the pre-built theme
- * path (`/built` import + `theme.css`) plus the base CSS import, so users
- * don't end up with an unstyled app or the slower runtime style-injection
- * path. See https://github.com/facebook/astryx/issues/3080.
+ * Theme guidance follows the generated app-module workflow. `theme add --import` records
+ * installed built themes and imports their production and font stylesheets. The
+ * app imports that module once and passes its default to <Theme>.
  *
  * @param {string} invocation install-aware CLI invocation stem (e.g. `npx astryx`, `pnpm exec astryx`, or `npx @astryxdesign/cli` for one-off runs)
  * @returns {string[]} ordered list of human-facing lines
@@ -53,11 +51,12 @@ export function getNextSteps(invocation) {
     "    2. Import base styles: import '@astryxdesign/core/reset.css'",
     "       and import '@astryxdesign/core/astryx.css'",
     "    3. Import components: import { Button } from '@astryxdesign/core'",
-    '    4. Optionally add a theme (use the pre-built path for performance):',
-    "       import { neutralTheme } from '@astryxdesign/theme-neutral/built'",
-    "       import '@astryxdesign/theme-neutral/theme.css'",
-    '       <Theme theme={neutralTheme}>...</Theme>',
-    `       For custom themes, run \`${invocation} theme build <file>\` to generate the built artifacts.`,
+    '    4. Add and wire a theme:',
+    '       npm install @astryxdesign/theme-neutral',
+    `       ${invocation} theme add neutral --import`,
+    "       import { themes, defaultThemeSlug } from './astryx-themes'",
+    '       <Theme theme={themes[defaultThemeSlug]}>...</Theme>',
+    `       Extend an imported theme to customize it. Run \`${invocation} theme eject <slug>\` only to fork source.`,
     `    5. ${invocation} --help for all commands`,
     '',
   ];
@@ -98,7 +97,7 @@ async function applyAgents(cwd, options, invocation, data) {
       renderedBlock,
     });
     data.docsWritten = written;
-    logger.log(`✓ AI agent docs installed → ${written.join(', ')}`);
+    logger.log(`[ok] AI agent docs installed -> ${written.join(', ')}`);
   } catch (err) {
     // PathSafetyError carries a precise, user-actionable message — surface it
     // (and flag exit 1) instead of the generic "could not install" warning so
@@ -132,8 +131,8 @@ function applyTheme(cwd, invocation, data) {
     data.themeTemplatePath = didWrite ? written : null;
     logger.log(
       didWrite
-        ? `✓ Theme template written → ${written}`
-        : `• ${written} already exists — left as is.`,
+        ? `[ok] Theme template written -> ${written}`
+        : `- ${written} already exists - left as is.`,
     );
   } catch {
     // Soft failure, like agent docs: the guidance below is still useful.
@@ -141,7 +140,7 @@ function applyTheme(cwd, invocation, data) {
     logger.error('Could not write the theme template.');
   }
   logger.log(
-    `  Copy it to your theme file and edit, or run \`${invocation} theme add <slug>\` to start from a shipped theme (\`${invocation} theme list\` to browse).`,
+    `  Edit the blank template for a new theme, or run \`${invocation} theme add <slug> --import\` to import an installed built theme (\`${invocation} theme list\` to browse). Extend an imported theme for ordinary customization; use \`${invocation} theme eject <slug>\` only to fork source.`,
   );
 }
 
@@ -166,16 +165,16 @@ function applyTemplate(cwd, {templateName}, invocation, data) {
     // Point agents at the build workflow rather than dumping page-template
     // names — `build` surfaces pages AND blocks AND components for an idea,
     // and `build` with no args is the full how-to-build playbook.
-    logger.log('✓ To build UI, use these commands:');
+    logger.log('[ok] To build UI, use these commands:');
     logger.log('');
     logger.log(
-      `    ${invocation} build "<what you're building>"   build a page — kit: closest template + blocks + components`,
+      `    ${invocation} build "<what you're building>"   build a page - kit: closest template + blocks + components`,
     );
     logger.log(
       `    ${invocation} build                            the how-to-build workflow (read this first)`,
     );
     logger.log(
-      `    ${invocation} search <query>                   find anything — components, docs, templates, blocks`,
+      `    ${invocation} search <query>                   find anything - components, docs, templates, blocks`,
     );
     logger.log('');
     data.template = 'workflow';
@@ -190,9 +189,19 @@ function applyTemplate(cwd, {templateName}, invocation, data) {
     );
   }
 
-  const outputDir = path.resolve(cwd, `./src/pages/${templateName}`);
+  let destFile;
+  try {
+    destFile = assertWithin(path.join('src', 'pages', templateName, 'page.tsx'), cwd, {
+      label: 'template output path',
+    });
+  } catch (err) {
+    if (err instanceof PathSafetyError) {
+      throw new AstryxError(err.message, undefined, ERROR_CODES.ERR_PATH_TRAVERSAL);
+    }
+    throw err;
+  }
+  const outputDir = path.dirname(destFile);
   const srcPath = path.join(CLI_ROOT, 'assets', 'templates', 'pages', templateName, 'page.tsx');
-  const destFile = path.join(outputDir, 'page.tsx');
   // Don't clobber a user's existing page — same guard the peer template/copy and
   // theme/add write-leaves apply (init is a public API surface too).
   if (fs.existsSync(destFile)) {
@@ -206,7 +215,7 @@ function applyTemplate(cwd, {templateName}, invocation, data) {
   fs.mkdirSync(outputDir, {recursive: true});
   fs.copyFileSync(srcPath, destFile);
   const rel = path.relative(cwd, outputDir);
-  logger.log(`✓ Template created at ${rel}/page.tsx`);
+  logger.log(`[ok] Template created at ${rel}/page.tsx`);
   data.template = 'created';
   data.templatePath = rel;
 }
