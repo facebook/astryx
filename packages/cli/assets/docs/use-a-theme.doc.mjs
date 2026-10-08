@@ -179,7 +179,7 @@ export const docs = {
             ['How it works', 'useInsertionEffect injects <style> at hydration', 'Pre-compiled .css file loaded with the page'],
             ['Component overrides', 'Injected client-only', 'In static CSS: present during SSR'],
             ['SSR safe', 'Tokens yes, component overrides flash on hydration', 'Fully SSR safe: no flash'],
-            ['Best for', 'Dev, prototyping, client-only SPAs', 'Production, SSR apps (Next.js, Remix)'],
+            ['Best for', 'Authoring input for `astryx theme build`', 'App wiring, in development and production'],
           ],
         },
         {
@@ -187,7 +187,8 @@ export const docs = {
           style: 'do',
           items: [
             'Use `theme add --import` for production apps; it wires the built module and CSS.',
-            'Use runtime themes during development for fast iteration.',
+            'Import `themes` and `defaultThemeSlug` from the generated module once, and keep that wiring in development too.',
+            'While you edit a local theme, run `astryx theme build --watch` so its built files stay current.',
             'Run `astryx theme build` for custom themes to get the built artifacts.',
           ],
         },
@@ -197,6 +198,8 @@ export const docs = {
           items: [
             'Use runtime themes in production SSR apps; component overrides will flash on hydration.',
             "Import /built without the CSS file; component overrides won't apply.",
+            'Import package theme source into app runtime code.',
+            'Hand-edit the generated theme module; `theme add`, `theme remove`, and `theme use` regenerate it.',
           ],
         },
         {
