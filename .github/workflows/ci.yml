@@ -1375,6 +1375,51 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The carousel contract's collection and slide names, off-screen slide
+      # exposure, scroll-area keyboard entry and exit, and control focus are
+      # accessibility-tree and engine facts that jsdom cannot observe. Run the
+      # contract's own fixture proof and the Carousel binding whenever Carousel
+      # source, the binding's stories, or the contract changes. Its own --output
+      # directory; the JSON report is the head-bound record, uploaded next.
+      - name: Run Carousel accessibility contract
+        id: carousel-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: carousel-contract/report.json
+        run: |
+          should_run=false
+          # Carousel and the contract are matched by file name. If the base
+          # cannot be fetched, run.
+          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
+            if git diff --name-only "$BASE_SHA" HEAD \
+              | grep -qE '^(internal/a11y-spec/src/patterns/carousel|packages/core/src/Carousel/|apps/storybook/stories/CarouselA11y)'; then
+              should_run=true
+            fi
+          else
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "Carousel and the carousel contract are not in PR scope; skipping carousel evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/carousel.chromium.spec.ts \
+            packages/core/src/Carousel/__tests__/Carousel.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output carousel-contract-output
+
+      - name: Upload Carousel accessibility contract evidence
+        if: ${{ !cancelled() && steps.carousel-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: carousel-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: carousel-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The Schedule time grid owns scroll geometry — pinned header and gutter
       # alignment under classic scrollbars, inline scroll ownership, keyboard
       # reach and its focus ring — none of which exists in jsdom. Every
