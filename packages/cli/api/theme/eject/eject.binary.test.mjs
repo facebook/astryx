@@ -62,8 +62,8 @@ describe('themeEject copies every file of the theme', () => {
 
     expect(result.data.files).toEqual([
       'oceanTheme.ts',
-      'fonts/ocean.woff2',
       'oceanTheme.doc.mjs',
+      'fonts/ocean.woff2',
     ]);
     const copied = fs.readFileSync(
       path.join(tmpDir, 'src', 'themes', 'ocean', 'fonts', 'ocean.woff2'),

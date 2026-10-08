@@ -196,7 +196,6 @@ describe('themeAdd', () => {
   it.each([
     ['a target path', {targetPath: 'src/brand'}],
     ['overwrite true', {overwrite: true}],
-    ['overwrite false', {overwrite: false}],
   ])(
     'rejects removed copy option %s before writing',
     async (_label, copyOption) => {
@@ -210,7 +209,7 @@ describe('themeAdd', () => {
         }),
       ).rejects.toMatchObject({
         code: 'ERR_THEME_INVALID',
-        message: expect.stringContaining('theme eject ocean'),
+        message: expect.stringContaining('themeEject'),
       });
       expect(fs.existsSync(path.join(tmpDir, 'src/astryx-themes.ts'))).toBe(
         false,
@@ -218,6 +217,21 @@ describe('themeAdd', () => {
       expect(fs.existsSync(path.join(tmpDir, 'src/brand'))).toBe(false);
     },
   );
+
+  it('accepts overwrite false as a compatibility no-op', async () => {
+    installTheme();
+
+    const result = await themeAdd('ocean', {
+      cwd: tmpDir,
+      package: '@acme/themes',
+      overwrite: false,
+    });
+
+    expect(result.type).toBe('theme.app');
+    expect(result.data.change).toMatchObject({action: 'add', changed: true});
+    expect(fs.existsSync(path.join(tmpDir, 'src/astryx-themes.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, 'src/themes/ocean'))).toBe(false);
+  });
 
   it('keeps the released CLI selector while recording the import package', async () => {
     installBuiltThemePackage('neutral');

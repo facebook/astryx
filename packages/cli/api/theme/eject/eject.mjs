@@ -49,10 +49,6 @@ export async function themeEject(slug, options = {}) {
     targetPath,
     overwrite,
   });
-  const files = [
-    match.entry,
-    ...match.files.filter(name => name !== match.entry).sort(),
-  ];
   return {
     type: 'theme.eject',
     data: {
@@ -63,7 +59,7 @@ export async function themeEject(slug, options = {}) {
       outputDir,
       entry: match.entry,
       exportName: match.exportName,
-      files,
+      files: match.files,
     },
   };
 }

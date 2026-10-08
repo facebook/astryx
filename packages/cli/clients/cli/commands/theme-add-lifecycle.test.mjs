@@ -164,13 +164,21 @@ describe('theme add cleanup lifecycle', () => {
   });
 
   it.each([
-    ['target path', ['src/brand']],
-    ['overwrite', ['--overwrite']],
-    ['target path with --import', ['--import', 'src/brand']],
-    ['overwrite with --import', ['--import', '--overwrite']],
+    ['target path', ['src/brand'], 'ERR_INVALID_ARGUMENT'],
+    ['overwrite', ['--overwrite'], 'ERR_INVALID_OPTION'],
+    [
+      'target path with --import',
+      ['--import', 'src/brand'],
+      'ERR_INVALID_ARGUMENT',
+    ],
+    [
+      'overwrite with --import',
+      ['--import', '--overwrite'],
+      'ERR_INVALID_OPTION',
+    ],
   ])(
-    'rejects removed %s before writing and names theme eject',
-    async (_label, extra) => {
+    'rejects removed %s before writing with the standard parser code',
+    async (_label, extra, code) => {
       const result = await runCli(
         [
           'theme',
@@ -184,11 +192,8 @@ describe('theme add cleanup lifecycle', () => {
         tmpDir,
       );
 
-      expect(result.status).not.toBe(0);
-      expect(JSON.parse(result.stdout)).toMatchObject({
-        code: 'ERR_THEME_INVALID',
-        error: expect.stringContaining('theme eject ocean'),
-      });
+      expect(result.status).toBe(1);
+      expect(JSON.parse(result.stdout)).toMatchObject({code});
       expect(fs.existsSync(path.join(tmpDir, 'src/astryx-themes.ts'))).toBe(
         false,
       );
@@ -196,24 +201,28 @@ describe('theme add cleanup lifecycle', () => {
     },
   );
 
-  it('rejects --overwrite without a slug and names theme eject', async () => {
-    const result = await runCli(['theme', 'add', '--overwrite', '--json'], tmpDir);
+  it('rejects --overwrite without a slug as an invalid option', async () => {
+    const result = await runCli(
+      ['theme', 'add', '--overwrite', '--json'],
+      tmpDir,
+    );
 
-    expect(result.status).not.toBe(0);
+    expect(result.status).toBe(1);
     expect(JSON.parse(result.stdout)).toMatchObject({
-      code: 'ERR_THEME_INVALID',
-      error: expect.stringContaining('theme eject <slug>'),
+      code: 'ERR_INVALID_OPTION',
     });
-    expect(fs.existsSync(path.join(tmpDir, 'src/astryx-themes.ts'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, 'src/astryx-themes.ts'))).toBe(
+      false,
+    );
   });
 
-  it('shows --import as a compatibility no-op without advertising copy options', async () => {
+  it('shows --import and the visible eject replacement without a hidden option', async () => {
     const result = await runCli(['theme', 'add', '--help'], tmpDir);
 
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain('--import');
     expect(result.stdout).toMatch(/compatibility no-op/i);
-    expect(result.stdout).not.toContain('--overwrite');
-    expect(result.stdout).not.toContain('[path]');
+    expect(result.stdout).toContain('theme eject <slug> [path] [--overwrite]');
+    expect(result.stdout).not.toMatch(/^\s+-f, --overwrite/m);
   });
 });

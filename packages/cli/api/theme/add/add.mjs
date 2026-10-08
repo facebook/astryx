@@ -17,20 +17,21 @@ import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
  * accepted as a no-op so callers that opted in before the cleanup keep working.
  *
  * Removed source-copy options are rejected before discovery or any write, and
- * name the command that now owns them.
+ * name the function that now owns them. `overwrite: false` remains an accepted
+ * compatibility no-op.
  *
  * @param {string} slug
- * @param {{import?: boolean, cwd?: string, package?: string}} [options]
+ * @param {{targetPath?: string, overwrite?: boolean, import?: boolean, cwd?: string, package?: string}} [options]
  * @returns {Promise<import('../theme.type.mjs').ThemeAppResponse>}
  */
 export async function themeAdd(slug, options = {}) {
   const legacy = /** @type {{targetPath?: unknown, overwrite?: unknown}} */ (
     options
   );
-  if (legacy.targetPath != null || legacy.overwrite != null) {
+  if (legacy.targetPath != null || legacy.overwrite === true) {
     throw new AstryxError(
-      '`theme add` no longer copies source or accepts a target path or --overwrite. ' +
-        `Run \`theme eject ${slug} [path] [--overwrite] [--package <package>]\` to fork source.`,
+      '`themeAdd` no longer copies source or accepts targetPath or overwrite: true. ' +
+        'Call `themeEject` with the same slug and copy options to fork source.',
       undefined,
       ERROR_CODES.ERR_THEME_INVALID,
     );

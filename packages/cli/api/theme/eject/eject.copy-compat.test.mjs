@@ -2,8 +2,9 @@
 
 /**
  * @file Cleanup-stage compatibility: `theme eject` keeps the released copying
- * `theme add` receipt fields, file order, and copied bytes. Its one intentional
- * addition is the unmaintained descriptor that makes the fork a local theme.
+ * `theme add` receipt fields, file set, and copied bytes. Its one intentional
+ * file-list change moves the unmaintained local descriptor directly behind the
+ * entry.
  */
 
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
@@ -14,12 +15,19 @@ import {themeEject} from './eject.mjs';
 import {runCli} from '../../../test-utils/run-cli.mjs';
 
 const HEADER = '// Copyright (c) Meta Platforms, Inc. and affiliates.\n\n';
-const FILES = [
+const RELEASED_COPY_FILES = [
   'oceanTheme.ts',
   'fonts/ocean.woff2',
   'icons.tsx',
   'oceanTheme.doc.mjs',
   'tokens/colors.ts',
+];
+const EJECT_FILES = [
+  RELEASED_COPY_FILES[0],
+  'oceanTheme.doc.mjs',
+  ...RELEASED_COPY_FILES.slice(1).filter(
+    file => file !== 'oceanTheme.doc.mjs',
+  ),
 ];
 const FONT_BYTES = Buffer.concat([
   Buffer.from('wOF2'),
@@ -75,7 +83,7 @@ afterEach(() => {
 });
 
 describe('themeEject released-copy compatibility', () => {
-  it('keeps the old copy receipt fields and output order', async () => {
+  it('keeps the old copy receipt fields and moves the descriptor to second', async () => {
     const result = await themeEject('ocean', {
       cwd: tmpDir,
       package: '@acme/themes',
@@ -91,9 +99,11 @@ describe('themeEject released-copy compatibility', () => {
         outputDir: 'src/themes/ocean',
         entry: 'oceanTheme.ts',
         exportName: 'oceanTheme',
-        files: FILES,
+        files: EJECT_FILES,
       },
     });
+    expect(new Set(result.data.files)).toEqual(new Set(RELEASED_COPY_FILES));
+    expect(result.data.files).toEqual(EJECT_FILES);
     expect(Object.keys(result.data)).toEqual([
       'slug',
       'displayName',
@@ -145,7 +155,7 @@ describe('themeEject released-copy compatibility', () => {
     expect(json.status, json.stderr).toBe(0);
     expect(JSON.parse(json.stdout)).toMatchObject({
       type: 'theme.eject',
-      data: {outputDir: 'json-fork', files: FILES},
+      data: {outputDir: 'json-fork', files: EJECT_FILES},
     });
 
     const text = await runCli(
@@ -153,7 +163,7 @@ describe('themeEject released-copy compatibility', () => {
       tmpDir,
     );
     expect(text.status, text.stderr).toBe(0);
-    const positions = FILES.map(file => text.stdout.indexOf(file));
+    const positions = EJECT_FILES.map(file => text.stdout.indexOf(file));
     expect(positions.every(position => position >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });

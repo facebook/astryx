@@ -11,10 +11,10 @@ export const doc = {
   displayName: 'themeAdd()',
   summary: 'Add a built theme to the app.',
   description:
-    'Records a package or built local theme and regenerates the app theme module with its built module and stylesheets. options.import is an accepted compatibility no-op. Source copying, targetPath, and overwrite belong to themeEject; passing a removed copy option fails before writing and names theme eject.',
+    'Records a package or built local theme and regenerates the app theme module with its built module and stylesheets. options.import is an accepted compatibility no-op, as is options.overwrite set to false. Passing targetPath or options.overwrite set to true fails before writing and names themeEject, which owns source copying.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'themeAdd(slug: string, options?: {import?: boolean, cwd?: string, package?: string}): Promise<ThemeAppResponse>',
+    'themeAdd(slug: string, options?: {targetPath?: string, overwrite?: boolean, import?: boolean, cwd?: string, package?: string}): Promise<ThemeAppResponse>',
   keywords: ['theme', 'add', 'import', 'app', 'default', 'local'],
   params: [
     {
@@ -22,6 +22,19 @@ export const doc = {
       type: 'string',
       description: 'Slug of the available theme.',
       required: true,
+    },
+    {
+      name: 'options.targetPath',
+      type: 'string',
+      description:
+        'Removed copy destination. Passing it throws ERR_THEME_INVALID. Call themeEject instead.',
+    },
+    {
+      name: 'options.overwrite',
+      type: 'boolean',
+      description:
+        'False is a compatibility no-op. True throws ERR_THEME_INVALID. Call themeEject instead.',
+      default: 'false',
     },
     {
       name: 'options.import',
@@ -45,7 +58,8 @@ export const doc = {
   returns: [
     {
       type: 'theme.app',
-      description: 'The complete generated-module state and add change. Its envelope package names the npm package that owns the added theme, except for a local theme.',
+      description:
+        'The complete generated-module state and add change. Its envelope package names the npm package that owns the added theme, except for a local theme.',
     },
   ],
   throws: [
@@ -56,7 +70,7 @@ export const doc = {
     {code: 'ERR_AMBIGUOUS_THEME', when: 'more than one package owns the slug'},
     {
       code: 'ERR_THEME_INVALID',
-      when: 'the selected theme is invalid, or a removed source-copy option is passed',
+      when: 'the selected theme is invalid, targetPath is passed, or overwrite is true',
     },
     {
       code: 'ERR_FILE_EXISTS',

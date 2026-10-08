@@ -36,12 +36,12 @@ describe('themeEject (api/theme/eject)', () => {
     // The complete local theme shape includes its same-stem descriptor.
     expect(result.data.files).toEqual([
       'neutralTheme.ts',
+      'neutralTheme.doc.mjs',
       'icons.tsx',
+      'neutralPalettes.ts',
+      'neutralPalettes.generated.ts',
       'neutralPaletteRefs.generated.ts',
       'neutralPalettes.generated.receipt.json',
-      'neutralPalettes.generated.ts',
-      'neutralPalettes.ts',
-      'neutralTheme.doc.mjs',
       'palette.config.json',
     ]);
     expect(

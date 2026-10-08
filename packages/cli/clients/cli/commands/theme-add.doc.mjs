@@ -8,9 +8,10 @@ export const doc = {
   name: 'theme add',
   displayName: 'astryx theme add',
   namespace: 'cli/commands',
-  summary: 'Add a built theme to the app',
+  summary:
+    "Add a built theme to the app. To copy a theme's source as an editable fork, run `theme eject <slug> [path] [--overwrite]`.",
   description:
-    'Records the theme in the generated app module and imports its built module and stylesheets. --import remains accepted as a compatibility no-op. Source copying, target paths, and --overwrite belong to theme eject. A bare command or --list delegates to themeListCopySources(), whose released JSON bytes stay unchanged while its text names the current add and eject commands; use --package when owners share a slug.',
+    "Records the theme in the generated app module and imports its built module and stylesheets. --import remains accepted as a compatibility no-op. To copy a theme's source as an editable fork, run `theme eject <slug> [path] [--overwrite]`. A bare command or --list delegates to themeListCopySources(), whose released JSON bytes stay unchanged while its text names the current add and eject commands; use --package when owners share a slug.",
   fn: 'themeAdd',
   args: [{name: 'slug', param: 'slug', required: false}],
   options: [

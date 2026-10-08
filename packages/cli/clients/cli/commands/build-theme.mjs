@@ -804,20 +804,11 @@ export function registerTheme(program) {
     fn: themeAddFn,
     action: async (
       /** @type {string | undefined} */ slug,
-      /** @type {{list?: boolean, import?: boolean, package?: string, overwrite?: boolean}} */ options,
-      /** @type {import('commander').Command} */ command,
+      /** @type {{list?: boolean, import?: boolean, package?: string}} */ options,
     ) => {
       const json = program.opts().json || false;
       /** @type {import('../../../api/theme/theme.type.mjs').ThemeListResponse | import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
       let result;
-      if (command.args.length > 1 || options.overwrite === true) {
-        const replacementSlug = slug || '<slug>';
-        return cliError(
-          '`theme add` no longer copies source or accepts a target path or --overwrite. ' +
-            `Run \`${getCliInvocation()} theme eject ${replacementSlug} [path] [--overwrite] [--package <package>]\` to fork source.`,
-          {code: ERROR_CODES.ERR_THEME_INVALID},
-        );
-      }
       try {
         result =
           options.list || !slug
@@ -857,10 +848,8 @@ export function registerTheme(program) {
       return answered;
     },
   });
-  // Parse removed copy syntax only far enough to give callers its exact
-  // replacement. Neither item appears in help or the manifest.
-  themeAddCli.allowExcessArguments(true);
-  themeAddCli.addOption(themeAddCli.createOption('-f, --overwrite').hideHelp());
+  // Reject the removed target-path argument in Commander's standard parse path.
+  themeAddCli.allowExcessArguments(false);
 
   defineCommand(theme, themeRemoveCommand, {
     fn: themeRemoveFn,
