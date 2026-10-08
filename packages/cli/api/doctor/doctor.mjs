@@ -24,6 +24,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
+import {AGENT_DOC_PATHS} from '../../foundation/agent-docs/agent-doc-state.mjs';
 import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
 import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {
@@ -85,6 +86,9 @@ import {checkAppThemes} from './theme-checks.mjs';
  *   Combined project-level integration issues, including cross-package template replacement warnings.
  * @property {Error|null} [configError] - Error thrown while resolving the config
  *   path (e.g. multiple config files present), surfaced by checkConfig as a FAIL.
+ * @property {string|null} [projectError] - Why the CLI could not load the
+ *   project from its config, when it could not. Checks that need the loaded
+ *   project quote it when they skip, so a skip says what was found.
  */
 
 /* ── helpers ──────────────────────────────────────────────────────────── */
@@ -111,6 +115,64 @@ function pkgVersion(dir) {
   if (!dir) return null;
   const pkg = readPkg(path.join(dir, 'package.json'));
   return pkg?.version ?? null;
+}
+
+/**
+ * The first line of an error message, bounded for a one-line check message.
+ * @param {string} message
+ * @returns {string}
+ */
+function firstLine(message) {
+  return String(message).split('\n')[0].slice(0, 300);
+}
+
+/**
+ * The message of a check that needs the loaded project and could not have it.
+ * It carries the reason the CLI gave, so the line says what Doctor found
+ * instead of only that it did not look.
+ * @param {DoctorContext} ctx
+ * @param {string} what
+ * @returns {string}
+ */
+function skippedBecause(ctx, what) {
+  return ctx.projectError
+    ? `Skipped — ${what}: ${firstLine(ctx.projectError)}`
+    : `Skipped — ${what}.`;
+}
+
+/** Integrations one message names before it counts the rest. */
+const NAMED_INTEGRATIONS = 10;
+
+/**
+ * @param {Array<{name?: string, __spec?: string}>} integrations
+ * @returns {string}
+ */
+function nameIntegrations(integrations) {
+  const names = integrations.map(
+    integration => integration.name ?? integration.__spec ?? '(integration)',
+  );
+  return names.length <= NAMED_INTEGRATIONS
+    ? names.join(', ')
+    : `${names.slice(0, NAMED_INTEGRATIONS).join(', ')} and ${names.length - NAMED_INTEGRATIONS} more`;
+}
+
+/**
+ * The project's root: the folder of its config, else of the nearest
+ * package.json above the working directory (where the config is looked for),
+ * else the working directory.
+ * @param {DoctorContext} ctx
+ * @returns {string}
+ */
+function projectRootOf(ctx) {
+  if (ctx.configPath) return path.dirname(ctx.configPath);
+  let dir = ctx.cwd;
+  for (let i = 0; i < 50; i++) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return ctx.cwd;
 }
 
 /* ── individual checks ────────────────────────────────────────────────── */
@@ -255,6 +317,18 @@ export async function checkConfig(ctx) {
         fix: 'Export a default object from astryx.config.mjs, e.g. `export default { integrations: [] };`.',
       };
     }
+    // Importing is not the whole test: the CLI also validates the config, and
+    // a config it rejects leaves every project-aware command without the
+    // project. Doctor is the CI gate, so that fails.
+    if (ctx.projectError) {
+      return {
+        id: 'config',
+        label: 'astryx.config.mjs',
+        status: 'fail',
+        message: `astryx.config.mjs loads, but the CLI could not load the project from it: ${firstLine(ctx.projectError)}`,
+        fix: 'Fix what the message names. `astryx docs authoring config` lists every field astryx.config accepts.',
+      };
+    }
     return {
       id: 'config',
       label: 'astryx.config.mjs',
@@ -304,7 +378,7 @@ export function checkImplicitIntegrations(ctx) {
       id,
       label,
       status: 'info',
-      message: 'Skipped — the project configuration could not be read.',
+      message: skippedBecause(ctx, 'the project configuration could not be read'),
     };
   }
 
@@ -402,32 +476,110 @@ function describeUnreadableManifests(failures) {
 }
 
 /**
+ * Every integration named in astryx.config loads.
+ *
+ * A configured integration that cannot be loaded (not installed, no
+ * manifest, or a manifest that throws or fails its schema) is withdrawn
+ * whole, because none of its contribution roots is trustworthy
+ * (spec:AST-035 FR9). The project then runs without something it asked
+ * for, so this fails the CI gate.
+ *
+ * Two neighbours stay as they were. A problem inside one contribution kind
+ * leaves the rest of the integration working, so `integration-issues` keeps
+ * warning about it (spec:AST-035 FR9). An autolinked dependency that cannot
+ * be loaded stays informational in `implicit-integrations`: the project did
+ * not ask for it.
+ *
+ * @param {DoctorContext} ctx
+ * @returns {DoctorCheck}
+ */
+export function checkConfiguredIntegrations(ctx) {
+  const id = 'configured-integrations';
+  const label = 'Configured integrations';
+  if (ctx.integrations == null) {
+    // The config check reports a config the CLI cannot load.
+    return {
+      id,
+      label,
+      status: 'info',
+      message: skippedBecause(ctx, 'the project configuration could not be read'),
+    };
+  }
+  const configured = ctx.integrations.filter(
+    integration =>
+      !integration.__autolinked &&
+      !integration.__local &&
+      !integration.__providerConflict,
+  );
+  if (configured.length === 0) {
+    return {
+      id,
+      label,
+      status: 'info',
+      message: 'No integration is named in astryx.config.',
+    };
+  }
+  const plural = configured.length === 1 ? '' : 's';
+  const withdrawn = configured.filter(
+    integration => integration.__loadError != null,
+  );
+  if (withdrawn.length > 0) {
+    const listed = withdrawn
+      .map(
+        integration =>
+          `${integration.name ?? integration.__spec} (${firstLine(String(integration.__loadError)).slice(0, 160)})`,
+      )
+      .join('; ');
+    return {
+      id,
+      label,
+      status: 'fail',
+      message:
+        `${withdrawn.length} of ${configured.length} integration${plural} named in astryx.config could not be loaded, ` +
+        `so ${withdrawn.length === 1 ? 'it contributes' : 'they contribute'} nothing: ${listed}.`,
+      fix:
+        'Install each one, fix its astryx.integration.* manifest (`astryx doctor integration validate <package>` says what is wrong), ' +
+        'or remove it from `integrations` in astryx.config.',
+    };
+  }
+  return {
+    id,
+    label,
+    status: 'pass',
+    message: `${configured.length} integration${plural} named in astryx.config loaded: ${nameIntegrations(configured)}.`,
+  };
+}
+
+/**
  * Check 7 — agent docs exist and contain the Astryx section markers.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
 export function checkAgentDocs(ctx) {
-  const candidates = [
-    'AGENTS.md',
-    'CLAUDE.md',
-    path.join('.claude', 'CLAUDE.md'),
-    '.cursorrules',
-  ];
-  const present = candidates.filter(rel => fs.existsSync(path.join(ctx.cwd, rel)));
+  // Every file init can write (one shared list), looked for in the working
+  // directory and in the project root: run from src/, the docs sit at the root.
+  const dirs = [...new Set([ctx.cwd, projectRootOf(ctx)])];
+  const present = dirs.flatMap(dir =>
+    AGENT_DOC_PATHS.map(rel => path.join(dir, rel)).filter(abs =>
+      fs.existsSync(abs),
+    ),
+  );
+  /** @param {string} abs */
+  const shown = abs => path.relative(ctx.cwd, abs) || path.basename(abs);
 
   if (present.length === 0) {
     return {
       id: 'agent-docs',
       label: 'AI agent docs',
       status: 'info',
-      message: 'No agent docs (CLAUDE.md / AGENTS.md / .cursorrules) found.',
+      message: `No agent docs found: looked for ${AGENT_DOC_PATHS.join(', ')} in ${dirs.map(dir => path.relative(ctx.cwd, dir) || '.').join(' and ')}.`,
       fix: `Generate agent docs with \`${getCliInvocation(ctx.cwd)} init --features agents\`.`,
     };
   }
 
-  const withMarkers = present.filter(rel => {
+  const withMarkers = present.filter(abs => {
     try {
-      const content = fs.readFileSync(path.join(ctx.cwd, rel), 'utf-8');
+      const content = fs.readFileSync(abs, 'utf-8');
       return (
         (content.includes('<!-- ASTRYX:START -->') || content.includes('<!-- XDS:START -->')) &&
         (content.includes('<!-- ASTRYX:END -->') || content.includes('<!-- XDS:END -->'))
@@ -442,7 +594,7 @@ export function checkAgentDocs(ctx) {
       id: 'agent-docs',
       label: 'AI agent docs',
       status: 'warn',
-      message: `Agent docs present (${present.join(', ')}) but no Astryx section markers found.`,
+      message: `Agent docs present (${present.map(shown).join(', ')}) but no Astryx section markers found.`,
       fix: `Add the Astryx section to your agent docs with \`${getCliInvocation(ctx.cwd)} init --features agents\`.`,
     };
   }
@@ -451,7 +603,7 @@ export function checkAgentDocs(ctx) {
     id: 'agent-docs',
     label: 'AI agent docs',
     status: 'pass',
-    message: `Astryx agent docs section present in ${withMarkers.join(', ')}.`,
+    message: `Astryx agent docs section present in ${withMarkers.map(shown).join(', ')}.`,
   };
 }
 
@@ -546,15 +698,31 @@ export function checkIntegrationIssues(ctx) {
       id: 'integration-issues',
       label: 'Integration contributions',
       status: 'info',
-      message: 'Skipped — the project integration graph could not be loaded.',
+      message: skippedBecause(
+        ctx,
+        'the project integration graph could not be loaded',
+      ),
     };
   }
   if (issues.length === 0) {
+    // "No problems" is a finding only when something was looked at.
+    const checked = (ctx.integrations ?? []).filter(
+      integration => integration.__loadError == null,
+    );
+    if (checked.length === 0) {
+      return {
+        id: 'integration-issues',
+        label: 'Integration contributions',
+        status: 'info',
+        message:
+          'No integration is loaded, so there are no integration contributions to check.',
+      };
+    }
     return {
       id: 'integration-issues',
       label: 'Integration contributions',
       status: 'pass',
-      message: 'Integration contributions and cross-package relationships are valid.',
+      message: `${checked.length} loaded integration${checked.length === 1 ? '' : 's'} checked (${nameIntegrations(checked)}): contributions and cross-package relationships are valid.`,
     };
   }
   const errors = issues.filter(issue => issue.severity === 'error').length;
@@ -651,7 +819,7 @@ export function checkProviderIdentity(ctx) {
       id,
       label,
       status: 'info',
-      message: 'Skipped — the project configuration could not be read.',
+      message: skippedBecause(ctx, 'the project configuration could not be read'),
     };
   }
 
@@ -1108,6 +1276,7 @@ export const SYNC_CHECKS = [
   checkCoreInstalled,
   checkVersionAlignment,
   checkImplicitIntegrations,
+  checkConfiguredIntegrations,
   checkProviderIdentity,
   checkIntegrationIssues,
   checkAgentDocs,
@@ -1151,33 +1320,48 @@ export async function runChecks(options = {}) {
   let integrationIssues = null;
   /** @type {Array<{spec: string, error: string}>|null} */
   let autolinkFailures = null;
+  /** @type {string|null} */
+  let projectError = null;
+  /** @type {import('../../foundation/config/project.mjs').Project | null} */
+  let project = null;
   try {
-    const project = await Project.load(cwd);
-    integrations = project.loadedIntegrations;
-    // An installed dependency whose manifest cannot be loaded is kept out of
-    // loadedIntegrations on purpose. The provider ledger still records it.
-    autolinkFailures = [...providerLedgerOf(project).values()]
-      .filter(
-        entry =>
-          entry.outcome === 'load-failed' &&
-          entry.candidate.source === 'autolinked',
-      )
-      .map(entry => ({
-        spec: entry.candidate.spec ?? entry.label,
-        error: entry.error ?? 'its manifest could not be loaded',
-      }));
+    project = await Project.load(cwd);
+  } catch (err) {
+    // A project the CLI cannot load leaves the checks that need it
+    // skipped. The reason is kept: those checks and the config
+    // check quote it, so a skip is never silent.
+    projectError = err instanceof Error ? err.message : String(err);
+  }
+  if (project) {
     try {
-      docsCatalog = await project.docs();
-      docsCatalogIssues = (await project.issues()).filter(
-        issue => issue.code === 'invalid_doc',
-      );
-    } catch (err) {
-      docsCatalog = null;
-      docsCatalogError = err instanceof Error ? err.message : String(err);
+      integrations = project.loadedIntegrations;
+      // An installed dependency whose manifest cannot be loaded is kept out of
+      // loadedIntegrations on purpose. The provider ledger still records it.
+      autolinkFailures = [...providerLedgerOf(project).values()]
+        .filter(
+          entry =>
+            entry.outcome === 'load-failed' &&
+            entry.candidate.source === 'autolinked',
+        )
+        .map(entry => ({
+          spec: entry.candidate.spec ?? entry.label,
+          error: entry.error ?? 'its manifest could not be loaded',
+        }));
+      try {
+        docsCatalog = await project.docs();
+        docsCatalogIssues = (await project.issues()).filter(
+          issue => issue.code === 'invalid_doc',
+        );
+      } catch (err) {
+        docsCatalog = null;
+        docsCatalogError = err instanceof Error ? err.message : String(err);
+      }
+      integrationIssues = await project.issues();
+    } catch {
+      // Best-effort: once the project has loaded, a later read that throws
+      // leaves the remaining fields at their defaults. It is no reason to
+      // blame the config, so it never becomes projectError.
     }
-    integrationIssues = await project.issues();
-  } catch {
-    // Best-effort: a missing or invalid config leaves integrations unavailable.
   }
 
   /** @type {DoctorContext} */
@@ -1193,6 +1377,7 @@ export async function runChecks(options = {}) {
     integrationIssues,
     autolinkFailures,
     configError,
+    projectError,
   };
 
   /** @type {DoctorCheck[]} */

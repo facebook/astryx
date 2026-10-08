@@ -1018,3 +1018,232 @@ describe('doctor says what it could not check', () => {
     expect(check.message).toContain('could not be read');
   });
 });
+
+describe('doctor says why it skipped and what it checked', () => {
+  const CORE_STUB = {
+    'node_modules/@astryxdesign/core/package.json': JSON.stringify({
+      name: '@astryxdesign/core',
+      version: '0.6.3',
+    }),
+  };
+
+  /** A project under the working directory, so its config can be imported. */
+  function cwdProject(files) {
+    const dir = fs.mkdtempSync(
+      path.join(process.cwd(), '.astryx-doctor-shape-'),
+    );
+    tmpDirs.push(dir);
+    for (const [rel, content] of Object.entries(files)) {
+      const abs = path.join(dir, rel);
+      fs.mkdirSync(path.dirname(abs), {recursive: true});
+      fs.writeFileSync(abs, content);
+    }
+    return dir;
+  }
+
+  it(
+    'fails, and quotes the reason, when the CLI cannot load the project from a config that imports',
+    async () => {
+      const dir = cwdProject({
+        'package.json': '{"name":"app"}',
+        ...CORE_STUB,
+        'astryx.config.mjs': "export default { integrations: 'oops' };\n",
+      });
+      const {checks, summary} = (await doctor({cwd: dir})).data;
+      const by = Object.fromEntries(checks.map(c => [c.id, c]));
+      expect(by.config.status).toBe('fail');
+      expect(by.config.message).toMatch(
+        /^astryx\.config\.mjs loads, but the CLI could not load the project from it: .*integrations/,
+      );
+      expect(by.config.fix).toContain('astryx docs authoring config');
+      for (const id of ['implicit-integrations', 'provider-identity']) {
+        expect(by[id].message).toMatch(
+          /^Skipped — the project configuration could not be read: .*integrations/,
+        );
+      }
+      expect(by['integration-issues'].message).toMatch(
+        /^Skipped — the project integration graph could not be loaded: .*integrations/,
+      );
+      // The config check is the one failure; the skipped checks stay info.
+      expect(summary.fail).toBe(1);
+    },
+    SLOW,
+  );
+
+  it(
+    'passes the config check when the CLI loads the project from it',
+    async () => {
+      const dir = cwdProject({
+        'package.json': '{"name":"app"}',
+        ...CORE_STUB,
+        'astryx.config.mjs': 'export default { integrations: [] };\n',
+      });
+      const by = Object.fromEntries(
+        (await doctor({cwd: dir})).data.checks.map(c => [c.id, c]),
+      );
+      expect(by.config.status).toBe('pass');
+      expect(by['implicit-integrations'].message).not.toContain('Skipped');
+    },
+    SLOW,
+  );
+
+  it('says there is nothing to check when no integration is loaded', () => {
+    expect(
+      checkIntegrationIssues({integrationIssues: [], integrations: []}),
+    ).toEqual({
+      id: 'integration-issues',
+      label: 'Integration contributions',
+      status: 'info',
+      message:
+        'No integration is loaded, so there are no integration contributions to check.',
+    });
+  });
+
+  it('names what it checked when every loaded integration is clean', () => {
+    expect(
+      checkIntegrationIssues({
+        integrationIssues: [],
+        integrations: [{name: '@acme/widgets'}],
+      }),
+    ).toMatchObject({
+      status: 'pass',
+      message:
+        '1 loaded integration checked (@acme/widgets): contributions and cross-package relationships are valid.',
+    });
+  });
+
+  it('bounds the names it lists', () => {
+    const integrations = Array.from({length: 12}, (_, i) => ({
+      name: `@acme/kit-${i}`,
+    }));
+    const c = checkIntegrationIssues({integrationIssues: [], integrations});
+    expect(c.message).toMatch(
+      /^12 loaded integrations checked \(.* and 2 more\): /,
+    );
+  });
+});
+
+describe('a configured integration that cannot load fails the gate', () => {
+  const CORE_STUB = {
+    'node_modules/@astryxdesign/core/package.json': JSON.stringify({
+      name: '@astryxdesign/core',
+      version: '0.6.3',
+    }),
+  };
+  const WIDGETS = 'node_modules/@acme/widgets';
+  /** @param {string} [manifest] */
+  const widgets = (
+    manifest = "export default {components: './components'};\n",
+  ) => ({
+    [`${WIDGETS}/package.json`]: JSON.stringify({
+      name: '@acme/widgets',
+      version: '1.0.0',
+    }),
+    [`${WIDGETS}/astryx.integration.mjs`]: manifest,
+    [`${WIDGETS}/components/AcmeCard.doc.mjs`]:
+      "export default {type: 'component', name: 'AcmeCard', displayName: 'AcmeCard', description: 'Fixture.', props: []};\n",
+    [`${WIDGETS}/components/AcmeCard.tsx`]:
+      'export default function AcmeCard() { return null; }\n',
+  });
+  const APP = {
+    'package.json': '{"name":"app"}',
+    ...CORE_STUB,
+    'astryx.config.mjs': "export default { integrations: ['@acme/widgets'] };\n",
+  };
+
+  /** Run doctor on a project under the working directory. */
+  async function report(files) {
+    const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-gate-'));
+    tmpDirs.push(dir);
+    for (const [rel, content] of Object.entries(files)) {
+      const abs = path.join(dir, rel);
+      fs.mkdirSync(path.dirname(abs), {recursive: true});
+      fs.writeFileSync(abs, content);
+    }
+    const {checks, summary} = (await doctor({cwd: dir})).data;
+    return {by: Object.fromEntries(checks.map(c => [c.id, c])), summary};
+  }
+
+  it.each([
+    ['not installed', {}, /Could not find installed integration package "@acme\/widgets"/],
+    [
+      'installed without a manifest',
+      {[`${WIDGETS}/package.json`]: JSON.stringify({name: '@acme/widgets', version: '1.0.0'})},
+      /no conventional root manifest/,
+    ],
+    ['installed with a manifest that throws', widgets('export default {  not valid ((\n'), /Unexpected/],
+  ])(
+    'fails when a configured integration is %s, and names it',
+    async (_shape, extra, reason) => {
+      const {by, summary} = await report({...APP, ...extra});
+      const check = by['configured-integrations'];
+      expect(check.status).toBe('fail');
+      expect(check.message).toMatch(
+        /^1 of 1 integration named in astryx\.config could not be loaded, so it contributes nothing: @acme\/widgets \(/,
+      );
+      expect(check.message).toMatch(reason);
+      expect(check.fix).toContain('astryx doctor integration validate <package>');
+      expect(summary.fail).toBe(1);
+    },
+    SLOW,
+  );
+
+  it(
+    'passes, naming each one, when every configured integration loads',
+    async () => {
+      const {by, summary} = await report({...APP, ...widgets()});
+      expect(by['configured-integrations']).toEqual({
+        id: 'configured-integrations',
+        label: 'Configured integrations',
+        status: 'pass',
+        message: '1 integration named in astryx.config loaded: @acme/widgets.',
+      });
+      expect(summary.fail).toBe(0);
+    },
+    SLOW,
+  );
+
+  it.each([
+    [
+      'an invalid component doc',
+      {[`${WIDGETS}/components/AcmeCard.doc.mjs`]: 'export default {;\n'},
+    ],
+    [
+      'a declared root missing on disk',
+      {
+        [`${WIDGETS}/astryx.integration.mjs`]:
+          "export default {components: './components', templates: './templates'};\n",
+      },
+    ],
+  ])(
+    'keeps %s a warning, because the rest of the integration still loads (spec:AST-035 FR9)',
+    async (_shape, extra) => {
+      const {by, summary} = await report({...APP, ...widgets(), ...extra});
+      expect(by['configured-integrations'].status).toBe('pass');
+      expect(by['integration-issues'].status).toBe('warn');
+      expect(summary.fail).toBe(0);
+    },
+    SLOW,
+  );
+
+  it(
+    'leaves an autolinked dependency that cannot load informational',
+    async () => {
+      const {by, summary} = await report({
+        'package.json': JSON.stringify({
+          name: 'app',
+          dependencies: {'@acme/widgets': '1.0.0'},
+        }),
+        ...CORE_STUB,
+        ...widgets('export default {  not valid ((\n'),
+      });
+      expect(by['configured-integrations']).toMatchObject({
+        status: 'info',
+        message: 'No integration is named in astryx.config.',
+      });
+      expect(by['implicit-integrations'].status).toBe('info');
+      expect(summary.fail).toBe(0);
+    },
+    SLOW,
+  );
+});

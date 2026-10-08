@@ -186,6 +186,39 @@ describe('doctor — individual checks', () => {
     expect(res.status).toBe('pass');
   });
 
+  it('agent-docs: PASS from a subfolder, reading the project root', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"app"}');
+    fs.writeFileSync(
+      path.join(tmpDir, 'AGENTS.md'),
+      '<!-- ASTRYX:START -->\nstuff\n<!-- ASTRYX:END -->\n',
+    );
+    const src = path.join(tmpDir, 'src');
+    fs.mkdirSync(src);
+    const res = checkAgentDocs({cwd: src});
+    expect(res.status).toBe('pass');
+    expect(res.message).toBe(
+      `Astryx agent docs section present in ${path.join('..', 'AGENTS.md')}.`,
+    );
+  });
+
+  it('agent-docs: reads every file init can write, Hermes included', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'HERMES.md'),
+      '<!-- ASTRYX:START -->\nstuff\n<!-- ASTRYX:END -->\n',
+    );
+    expect(checkAgentDocs({cwd: tmpDir})).toMatchObject({
+      status: 'pass',
+      message: 'Astryx agent docs section present in HERMES.md.',
+    });
+  });
+
+  it('agent-docs: INFO names what it looked for and where', () => {
+    const res = checkAgentDocs({cwd: tmpDir});
+    expect(res.status).toBe('info');
+    expect(res.message).toContain('AGENTS.md, CLAUDE.md');
+    expect(res.message).toContain('HERMES.md');
+  });
+
   it('peer-deps: INFO when core not installed', () => {
     const res = checkPeerDeps({cwd: tmpDir, coreDir: null});
     expect(res.status).toBe('info');
@@ -351,6 +384,39 @@ describe('doctor — text output mirrors the JSON', () => {
     } finally {
       process.chdir(prevCwd);
       process.exitCode = prevExit;
+    }
+  }, 60_000);
+});
+
+describe('doctor — a configured integration that cannot load', () => {
+  it('sets exit code 1 and reports it in the JSON', async () => {
+    const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-exit-'));
+    const prevCwd = process.cwd();
+    const prevExit = process.exitCode;
+    process.exitCode = undefined;
+    try {
+      fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"app"}');
+      fs.writeFileSync(
+        path.join(dir, 'astryx.config.mjs'),
+        "export default { integrations: ['@acme/missing'] };\n",
+      );
+      const coreDir = path.join(dir, 'node_modules', '@astryxdesign', 'core');
+      fs.mkdirSync(coreDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(coreDir, 'package.json'),
+        JSON.stringify({name: '@astryxdesign/core', version: '0.6.3'}),
+      );
+      process.chdir(dir);
+      await createProgram().parseAsync(['node', 'astryx', '--json', 'doctor']);
+      expect(process.exitCode).toBe(1);
+      const {data} = JSON.parse(logCalls.join('\n'));
+      expect(
+        data.checks.find(c => c.id === 'configured-integrations'),
+      ).toMatchObject({status: 'fail'});
+    } finally {
+      process.chdir(prevCwd);
+      process.exitCode = prevExit;
+      fs.rmSync(dir, {recursive: true, force: true});
     }
   }, 60_000);
 });
