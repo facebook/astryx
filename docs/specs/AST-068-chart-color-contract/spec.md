@@ -23,20 +23,24 @@ affects_consumer_docs: [theme, charts, cli/integrations/components]
 
 People editing a chart can choose one of three color behaviors:
 
-| Choice           | What is saved                            | What happens when the theme changes                                              |
-| ---------------- | ---------------------------------------- | -------------------------------------------------------------------------------- |
-| **Automatic**    | Nothing; there is no manual color choice | The chart runs the product's normal color-assignment rule using the active theme |
-| **Theme color**  | A stable Astryx chart-color token        | The color follows the active theme and light or dark mode                        |
-| **Custom color** | An exact solid color                     | The color stays the same across theme changes                                    |
+| Choice                            | What is saved          | What happens when the theme changes                  |
+| --------------------------------- | ---------------------- | ---------------------------------------------------- |
+| **Automatic (use chart default)** | Nothing                | The chart picks again from the active theme's colors |
+| **Theme color**                   | An Astryx theme color  | The selected color follows the new theme             |
+| **Custom color**                  | The exact custom color | The selected color does not change                   |
 
-Automatic does not name a specific color or token. It means Astryx has no
-manual chart-level choice to apply. The chart assigns a color while rendering
-with the product's normal rule, such as series order. Reset removes a manual
-theme or custom choice and lets that rule take over again.
+For example, a chart may give Revenue the first color in its palette and Costs
+the second. In Automatic mode, that is all that happens—there is no saved color
+choice for either series. When the theme changes, the chart uses the first and
+second colors from the new theme.
 
-This contract does not define the product's automatic-assignment algorithm. If a
-product must keep one series on the same palette slot after reordering or
-filtering, it owns that mapping separately from the user's color override.
+If someone manually changes Revenue to purple, purple is saved. Reset deletes
+purple, and the chart goes back to choosing Revenue's color by its default rule.
+
+The product owns that default rule. This contract does not promise that an
+Automatic color stays on the same series after reordering or filtering. A
+product that needs that behavior must keep its own stable series-to-color
+mapping.
 
 A chart renderer receives the same choice in the format it can safely use. A
 live SVG or DOM property may use a CSS token reference. Canvas, configuration
@@ -66,17 +70,16 @@ Canvas, WebGL, or other renderers.
 
 ### Saved color choices
 
-- **FR1 — Automatic means no manual override.** A series in Automatic mode has
-  no stored chart-level color choice. The chart assigns a color during rendering
-  with the product's normal rule. Reset removes any saved theme or custom choice
-  and returns control to that rule.
+- **FR1 — Automatic means use the chart default.** An Automatic series has no
+  saved color choice. The chart chooses a color with the product's default rule.
+  Reset deletes a saved theme or custom choice and returns to that default.
 
-  The product owns the assignment algorithm. A stable series-to-slot mapping,
-  when needed, is product state rather than a user-selected color override.
+  The product owns the default rule. If it needs one series to keep the same
+  default color after reordering or filtering, it stores that mapping separately
+  from the person's color choice.
 
-  **Why:** saving the current automatic color as the override would turn a
-  product default into a fixed snapshot and prevent it from following future
-  theme changes.
+  **Why:** saving the chart's current default as though the person selected it
+  would stop the color from following future theme changes.
 
 - **FR2 — A saved override has one of two exact shapes.** A theme choice stores
   only a supported chart-color token identity:

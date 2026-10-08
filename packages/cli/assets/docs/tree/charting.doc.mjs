@@ -114,25 +114,25 @@ export const docs = {
           headers: ['Choice', 'Persist', 'Theme behavior'],
           rows: [
             [
-              'Automatic',
-              'No manual color choice',
-              'The chart runs the product’s normal color-assignment rule using the active theme and mode',
+              'Automatic (use chart default)',
+              'Nothing',
+              'The chart picks again from the active theme’s colors',
             ],
             [
               'Theme color',
-              'A supported chart-color token identity',
-              'The resolved color follows the active theme and mode',
+              'An Astryx theme color',
+              'The selected color follows the new theme',
             ],
             [
               'Custom color',
-              'Canonical uppercase `#RRGGBB`',
-              'The exact color stays fixed across theme changes',
+              'The exact custom color',
+              'The selected color does not change',
             ],
           ],
         },
         {
           type: 'prose',
-          text: 'Automatic does not name a color or token. It means there is no manual chart-level choice, so the chart assigns a color during rendering with the product’s normal rule, such as series order. Reset deletes a saved theme or custom choice and returns control to that rule. If a product needs one series to keep the same palette slot after reordering or filtering, it owns that mapping separately from the user override. Do not persist the current palette index, resolved preview, or renderer configuration as the override.',
+          text: 'For example, a chart may give Revenue the first palette color and Costs the second. In Automatic mode, neither choice is saved. When the theme changes, the chart uses the first and second colors from the new theme. If someone manually changes Revenue to purple, purple is saved. Reset deletes purple and returns Revenue to the chart default. The product owns that default rule. If Automatic colors must stay on the same series after reordering or filtering, keep that mapping separately from the person’s color choice.',
         },
         {
           type: 'code',
