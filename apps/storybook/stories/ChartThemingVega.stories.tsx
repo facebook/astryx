@@ -10,8 +10,9 @@ import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {buildVegaLiteConfig, VegaChart, type AnySpec} from '@astryxdesign/vega';
 import {Heading} from '@astryxdesign/core/Text';
 
-const meta: Meta = {
+const meta: Meta<typeof VegaChart> = {
   title: 'Lab/ChartTheming/Vega',
+  component: VegaChart,
   parameters: {
     docs: {
       description: {

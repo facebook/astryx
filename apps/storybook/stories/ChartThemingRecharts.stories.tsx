@@ -193,20 +193,31 @@ function RuntimeThemeSwitchExample() {
   );
 }
 
-const BAR_SELECTOR =
-  'path[fill="var(--color-data-categorical-blue)"], path[fill="var(--color-data-categorical-orange)"]';
+const BAR_SELECTORS = {
+  revenue: 'path[fill="var(--color-data-categorical-blue)"]',
+  costs: 'path[fill="var(--color-data-categorical-orange)"]',
+} as const;
+
+const BAR_SELECTOR = Object.values(BAR_SELECTORS).join(', ');
 
 function barElements(canvasElement: HTMLElement): SVGElement[] {
   return Array.from(canvasElement.querySelectorAll<SVGElement>(BAR_SELECTOR));
 }
 
-async function barFills(canvasElement: HTMLElement): Promise<string[]> {
-  let fills: string[] = [];
+async function barFills(
+  canvasElement: HTMLElement,
+): Promise<Record<keyof typeof BAR_SELECTORS, string>> {
+  const fills = {revenue: '', costs: ''};
   await waitFor(() => {
-    const bars = barElements(canvasElement);
-    expect(bars.length).toBeGreaterThan(0);
-    fills = [...new Set(bars.map(bar => getComputedStyle(bar).fill))];
-    expect(fills).not.toContain('');
+    for (const [seriesName, selector] of Object.entries(BAR_SELECTORS)) {
+      const bar = canvasElement.querySelector<SVGElement>(selector);
+      expect(bar).not.toBeNull();
+      if (bar) {
+        fills[seriesName as keyof typeof BAR_SELECTORS] =
+          getComputedStyle(bar).fill;
+      }
+    }
+    expect(Object.values(fills)).not.toContain('');
   });
   return fills;
 }
@@ -245,20 +256,20 @@ export const SquareBars: Story = {
 export const CustomDataTokens: Story = {
   render: () => <CustomDataTokenThemeExample />,
   play: async ({canvasElement}) => {
-    expect(await barFills(canvasElement)).toEqual([
-      'rgb(0, 90, 78)',
-      'rgb(122, 46, 0)',
-    ]);
+    expect(await barFills(canvasElement)).toEqual({
+      revenue: 'rgb(0, 90, 78)',
+      costs: 'rgb(122, 46, 0)',
+    });
   },
 };
 
 export const RuntimeThemeSwitch: Story = {
   render: () => <RuntimeThemeSwitchExample />,
   play: async ({canvasElement}) => {
-    expect(await barFills(canvasElement)).toEqual([
-      'rgb(0, 90, 78)',
-      'rgb(122, 46, 0)',
-    ]);
+    expect(await barFills(canvasElement)).toEqual({
+      revenue: 'rgb(0, 90, 78)',
+      costs: 'rgb(122, 46, 0)',
+    });
 
     const chart = canvasElement.querySelector('svg.recharts-surface');
     const firstBar = barElements(canvasElement)[0];
@@ -274,10 +285,10 @@ export const RuntimeThemeSwitch: Story = {
     button?.click();
 
     await waitFor(async () => {
-      expect(await barFills(canvasElement)).toEqual([
-        'rgb(114, 225, 193)',
-        'rgb(255, 178, 128)',
-      ]);
+      expect(await barFills(canvasElement)).toEqual({
+        revenue: 'rgb(114, 225, 193)',
+        costs: 'rgb(255, 178, 128)',
+      });
     });
     expect(canvasElement.querySelector('svg.recharts-surface')).toBe(chart);
     expect(barElements(canvasElement)[0]).toBe(firstBar);
