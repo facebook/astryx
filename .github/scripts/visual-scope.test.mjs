@@ -17,11 +17,7 @@ beforeEach(() => {
   const manifests = {
     core: {name: '@astryxdesign/core'},
     lab: {name: '@astryxdesign/lab', private: true, astryx: {canaryOnly: true}},
-    charts: {
-      name: '@astryxdesign/charts',
-      private: true,
-      astryx: {canaryOnly: true},
-    },
+    charts: {name: '@astryxdesign/charts'},
   };
   for (const [name, manifest] of Object.entries(manifests)) {
     const dir = path.join(root, 'packages', name);
@@ -241,9 +237,11 @@ describe('classifyVisualScope', () => {
       ['packages/charts/src/Bar.tsx', 'packages/themes/preview/src/theme.ts'],
       root,
     );
+    // charts is now stable but not a core/theme path, so hasStableVisual
+    // depends only on the preview theme (still canaryOnly). Neither path
+    // contributes to hasStableVisual (no core files, no stable themes).
     expect(result.hasStableVisual).toBe(false);
     expect(result.canaryPackages).toEqual([
-      '@astryxdesign/charts',
       '@astryxdesign/theme-preview',
     ]);
   });

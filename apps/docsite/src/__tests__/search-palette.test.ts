@@ -98,20 +98,25 @@ describe('SearchPalette data', () => {
     ).toBe(true);
 
     expect(canaryCategories.map(category => category.displayName)).toEqual([
-      'Charts',
       'Lab',
       'Rich Text',
       'Vega',
     ]);
-    const chartEntries = canaryCategories.flatMap(category =>
-      category.componentItems.flatMap(item =>
-        item.type === 'entry' || item.label !== 'Charts' ? [] : item.entries,
-      ),
-    );
+    // Charts is on the stable channel, so its family sits with the ready
+    // components rather than under a canary category.
+    const chartEntries =
+      readyGroups.find(group => group.label === 'Charts')?.entries ?? [];
     expect(chartEntries.map(entry => entry.name)).toEqual(
-      expect.arrayContaining(['Chart', 'ChartSwatch', 'ChartBar', 'ChartLine']),
+      expect.arrayContaining([
+        'Chart',
+        'ChartAxis',
+        'ChartGrid',
+        'ChartLegend',
+        'ChartSwatch',
+        'ChartTooltip',
+      ]),
     );
-    expect(chartEntries.every(entry => !entry.isReady)).toBe(true);
+    expect(chartEntries.every(entry => entry.isReady)).toBe(true);
 
     const lab = canaryCategories.find(
       category => category.displayName === 'Lab',

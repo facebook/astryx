@@ -1,8 +1,7 @@
 {
   "name": "@astryxdesign/charts",
   "version": "0.1.9",
-  "private": true,
-  "description": "Astryx charts — a config-model data visualization library (d3-based). Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
+  "description": "Astryx charts — a config-model data visualization library (d3-based).",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -20,10 +19,6 @@
     "data-visualization",
     "design-system"
   ],
-  "astryx": {
-    "canaryOnly": true,
-    "_comment": "Published ONLY to the @canary dist-tag (see .github/workflows/release.yml). Never published as a stable `latest` release. `private: true` is intentional and must stay — it is npm's hard guarantee against an accidental stable publish."
-  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

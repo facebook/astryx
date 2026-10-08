@@ -5,6 +5,7 @@
   "fixed": [
     [
       "@astryxdesign/build",
+      "@astryxdesign/charts",
       "@astryxdesign/cli",
       "@astryxdesign/core",
       "@astryxdesign/theme-butter",
@@ -20,6 +21,9 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@astryxdesign/storybook", "@astryxdesign/sandbox"],
+  "ignore": [
+    "@astryxdesign/storybook",
+    "@astryxdesign/sandbox"
+  ],
   "bumpVersionsWithWorkspaceProtocolOnly": true
 }

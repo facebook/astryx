@@ -50,7 +50,13 @@ const COMPONENT_REGISTRY_SOURCE = fs.readFileSync(
   COMPONENT_REGISTRY_PATH,
   'utf-8',
 );
-const CONFIGURED_CANARY_PACKAGES = new Set(docsiteConfig.integrations);
+// Charts is the one configured integration on the stable channel; the others
+// publish only as canaries.
+const CANARY_ONLY_INTEGRATIONS = [
+  '@astryxdesign/lab',
+  '@astryxdesign/richtext',
+  '@astryxdesign/vega',
+];
 
 function findFiles(dir: string, predicate: (filePath: string) => boolean) {
   const files: string[] = [];
@@ -132,8 +138,14 @@ describe('packageRegistry', () => {
     expect(names).not.toContain('@astryxdesign/theme-daily');
     expect(names).not.toContain('@astryxdesign/build');
     expect(packages.filter(pkg => pkg.canaryOnly).map(pkg => pkg.name)).toEqual(
-      [...CONFIGURED_CANARY_PACKAGES].sort(),
+      CANARY_ONLY_INTEGRATIONS,
     );
+    expect(
+      packages.find(pkg => pkg.name === '@astryxdesign/charts')?.canaryOnly,
+    ).toBe(false);
+    expect(
+      [...CANARY_ONLY_INTEGRATIONS, '@astryxdesign/charts'].sort(),
+    ).toEqual([...docsiteConfig.integrations].sort());
     expect(packages.length).toBeGreaterThanOrEqual(9);
   });
 
@@ -245,7 +257,7 @@ describe('componentRegistry', () => {
     expect(components['@astryxdesign/core'].length).toBeGreaterThan(100);
   });
 
-  it('discovers CLI-configured canary package components', () => {
+  it('discovers CLI-configured integration components', () => {
     expect(components['@astryxdesign/lab'].length).toBeGreaterThan(30);
     expect(components['@astryxdesign/charts'].map(comp => comp.name)).toEqual([
       'Chart',
@@ -262,17 +274,17 @@ describe('componentRegistry', () => {
       'VegaChart',
     ]);
 
-    for (const packageName of [
-      '@astryxdesign/lab',
-      '@astryxdesign/charts',
-      '@astryxdesign/richtext',
-      '@astryxdesign/vega',
-    ]) {
+    // spec:AST-033 FR4: a canary-only package's components are not ready;
+    // a stable-channel package's are.
+    for (const packageName of CANARY_ONLY_INTEGRATIONS) {
       expect(
         components[packageName].every(comp => !comp.isReady),
         packageName,
       ).toBe(true);
     }
+    expect(components['@astryxdesign/charts'].every(comp => comp.isReady)).toBe(
+      true,
+    );
     expect(components['@astryxdesign/core'].every(comp => comp.isReady)).toBe(
       true,
     );

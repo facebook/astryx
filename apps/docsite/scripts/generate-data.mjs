@@ -30,7 +30,7 @@ import {
   template as queryTemplates,
 } from '@astryxdesign/cli/api';
 import docsiteConfig from '../astryx.config.mjs';
-import {integrationContentEnabled} from '../src/lib/integrationTargets.mjs';
+import {integrationPackagesForTarget} from '../src/lib/integrationTargets.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
 import {
   buildTypeDefinitionIndex,
@@ -66,6 +66,7 @@ const {
   target: DOCSITE_TARGET,
   contentRoot: CONTENT_ROOT,
   cliRoot: CLI_ROOT,
+  packages: LATEST_PACKAGES,
 } = resolveContentRoot();
 
 console.log(
@@ -88,14 +89,19 @@ function writeRegistry(filename, content) {
 }
 
 /**
- * Ask the CLI for the component packages configured by this docsite. The
- * integration list is canary-only: stable production content comes from the
- * published package snapshot and never loads workspace integrations.
+ * Ask the CLI for the component packages configured by this docsite, narrowed
+ * to the ones this target admits. Canary admits every configured integration;
+ * `latest` admits one only once it has released stable, and then reads its
+ * docs from the published snapshot like every other package.
  */
 function discoverConfiguredComponentPackages() {
-  // Same gate as generate-scope.mjs (src/lib/integrationTargets.mjs): only the
-  // canary target ever loads workspace integration packages.
-  if (!integrationContentEnabled(DOCSITE_TARGET)) {
+  // Same gate as generate-scope.mjs (src/lib/integrationTargets.mjs).
+  const admitted = integrationPackagesForTarget(
+    DOCSITE_TARGET,
+    docsiteConfig,
+    LATEST_PACKAGES,
+  );
+  if (admitted.length === 0) {
     return new Set();
   }
 
@@ -123,7 +129,7 @@ function discoverConfiguredComponentPackages() {
       `Astryx CLI did not discover configured integration packages: ${missing.join(', ')}`,
     );
   }
-  return discovered;
+  return new Set(admitted.filter(name => discovered.has(name)));
 }
 
 const CONFIGURED_COMPONENT_PACKAGES = discoverConfiguredComponentPackages();
@@ -1483,7 +1489,7 @@ async function generateBlockRegistry() {
     });
   }
 
-  if (integrationContentEnabled(DOCSITE_TARGET)) {
+  if (CONFIGURED_COMPONENT_PACKAGES.size > 0) {
     const templateList = await queryTemplates(undefined, {
       list: true,
       type: 'block',
