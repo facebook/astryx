@@ -4587,7 +4587,7 @@ describe('Selector press model', () => {
     }
   });
 
-  it('the listbox owns touch scrolling: touch-action none while the options fit', async () => {
+  it('the listbox owns touch scrolling: touch-action pinch-zoom while the options fit', async () => {
     const user = userEvent.setup();
     render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
     await user.click(screen.getByRole('combobox'));
@@ -4597,12 +4597,14 @@ describe('Selector press model', () => {
     // build prefixes a debug name; the hash is the last token).
     const touchStyles = stylex.create({
       none: {touchAction: 'none'},
-      panY: {touchAction: 'pan-y'},
+      pinchZoom: {touchAction: 'pinch-zoom'},
+      panYPinchZoom: {touchAction: 'pan-y pinch-zoom'},
     });
     const hash = (style: stylex.StyleXStyles) =>
       stylex.props(style).className!.split(' ').pop()!;
-    expect(listbox).toHaveClass(hash(touchStyles.none));
-    expect(listbox).not.toHaveClass(hash(touchStyles.panY));
+    expect(listbox).toHaveClass(hash(touchStyles.pinchZoom));
+    expect(listbox).not.toHaveClass(hash(touchStyles.none));
+    expect(listbox).not.toHaveClass(hash(touchStyles.panYPinchZoom));
   });
 
   it('marks the listbox as carrying the press model', async () => {

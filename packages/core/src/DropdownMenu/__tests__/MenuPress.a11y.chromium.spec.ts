@@ -312,7 +312,7 @@ test.describe('DropdownMenu press model (Chromium)', () => {
       .toBe(true);
     await expect
       .poll(async () => menu.evaluate(el => getComputedStyle(el).touchAction))
-      .toBe('pan-y');
+      .toBe('pan-y pinch-zoom');
 
     const first = await center(page, 'menuitem', 'New File');
     const scrollBefore = await menu.evaluate(el => el.scrollTop);
@@ -327,7 +327,7 @@ test.describe('DropdownMenu press model (Chromium)', () => {
     await expect(menu).toBeVisible();
   });
 
-  test('touch: a menu whose rows fit declares touch-action none, so a slide stays a slide', async ({
+  test('touch: a menu whose rows fit declares touch-action pinch-zoom, so a slide stays a slide', async ({
     page,
   }) => {
     await enableTouch(page);
@@ -336,7 +336,7 @@ test.describe('DropdownMenu press model (Chromium)', () => {
     const menu = page.getByRole('menu');
     await expect
       .poll(async () => menu.evaluate(el => getComputedStyle(el).touchAction))
-      .toBe('none');
+      .toBe('pinch-zoom');
   });
 
   test('pen: a drag released over another row acts on it once; a release outside leaves the menu open', async ({

@@ -310,14 +310,15 @@ const styles = stylex.create({
     paddingInline: `calc(${spacingVars['--spacing-1']} + ${borderVars['--border-width']})`,
   },
   // Scroll ownership by the browser's own signal, as the menus declare it: a
-  // list whose options fit keeps every finger, so a slide over the options
-  // stays a slide; one that scrolls lets the browser pan it vertically and
-  // cancel the press when it does.
-  touchNone: {
-    touchAction: 'none',
+  // list whose options fit keeps every one-finger move, so a slide over the
+  // options stays a slide; one that scrolls lets the browser pan it vertically
+  // and cancel the press when it does. Both leave a two-finger pinch to the
+  // browser, so the page stays zoomable over an open list.
+  touchPinchZoom: {
+    touchAction: 'pinch-zoom',
   },
-  touchPanY: {
-    touchAction: 'pan-y',
+  touchPanYPinchZoom: {
+    touchAction: 'pan-y pinch-zoom',
     overscrollBehavior: 'contain',
   },
   // Same correction for the search row's gutter, so the search field and the
@@ -1689,7 +1690,9 @@ export function Selector<T extends SelectorOptionType>(
         {...listboxPress.menuProps}
         {...stylex.props(
           styles.dropdown,
-          listboxHasOverflow ? styles.touchPanY : styles.touchNone,
+          listboxHasOverflow
+            ? styles.touchPanYPinchZoom
+            : styles.touchPinchZoom,
           surface.activePresentation === 'popover' &&
             variant !== 'ghost' &&
             styles.dropdownInput,
@@ -1727,7 +1730,7 @@ export function Selector<T extends SelectorOptionType>(
       }
       {...stylex.props(
         styles.dropdown,
-        listboxHasOverflow ? styles.touchPanY : styles.touchNone,
+        listboxHasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
         surface.activePresentation === 'popover' &&
           variant !== 'ghost' &&
           styles.dropdownInput,

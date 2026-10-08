@@ -143,11 +143,11 @@ const styles = stylex.create({
     WebkitTouchCallout: 'none',
   },
   // Scroll ownership by the browser's own signal; see DropdownMenu.
-  touchNone: {
-    touchAction: 'none',
+  touchPinchZoom: {
+    touchAction: 'pinch-zoom',
   },
-  touchPanY: {
-    touchAction: 'pan-y',
+  touchPanYPinchZoom: {
+    touchAction: 'pan-y pinch-zoom',
     overscrollBehavior: 'contain',
   },
   popover: {
@@ -646,7 +646,7 @@ export function ContextMenu({
         stylex.props(
           usesBottomSheet ? styles.sheetMenu : styles.menu,
           !usesBottomSheet &&
-            (hasOverflow ? styles.touchPanY : styles.touchNone),
+            (hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom),
           xstyle,
         ),
         className,
