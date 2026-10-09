@@ -293,7 +293,7 @@ JSON.stringify(exportConfig);`,
         },
         {
           type: 'prose',
-          text: 'Server rendering and export require an explicit theme and light or dark mode. Do not infer a client’s system preference. A worker should receive only the concrete values it uses plus a theme revision; do not send hooks, document-dependent CSS references, callbacks, or the full theme object.',
+          text: 'Server rendering and export require an explicit theme and light or dark mode. Do not infer a client’s system preference. A worker should receive only the concrete values it uses. When the product changes theme or mode, send a fresh payload; do not send hooks, document-dependent CSS references, callbacks, or the full theme object.',
         },
       ],
     },

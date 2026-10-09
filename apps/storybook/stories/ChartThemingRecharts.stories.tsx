@@ -274,6 +274,12 @@ export const ThemeTokens: Story = {
   render: () => <ThemeTokensExample />,
   play: async ({canvasElement}) => {
     const restingFills = await barFills(canvasElement);
+    expect(canvasElement.querySelector('title')).toHaveTextContent(
+      'Quarterly performance',
+    );
+    expect(canvasElement.querySelector('desc')).toHaveTextContent(
+      'Revenue and costs for Q1 through Q4',
+    );
     const revenueBar = canvasElement.querySelector<SVGElement>(
       BAR_SELECTORS.revenue,
     );
@@ -314,12 +320,6 @@ export const ThemeTokens: Story = {
     );
     expect(Number.isFinite(radius)).toBe(true);
     expect(radius).toBeGreaterThanOrEqual(0);
-    expect(canvasElement.querySelector('title')).toHaveTextContent(
-      'Quarterly performance',
-    );
-    expect(canvasElement.querySelector('desc')).toHaveTextContent(
-      'Revenue and costs for Q1 through Q4',
-    );
   },
 };
 
