@@ -213,7 +213,7 @@ function resetSeriesColor(series: StoredSeries): StoredSeries {
         },
         {
           type: 'prose',
-          text: 'Astryx does not define a persisted color grammar. The Storybook picker example accepts normalized opaque six-digit sRGB hex (`#RRGGBB`), but that is an example rather than an Astryx storage contract. A product that accepts alpha, named colors, functional syntax, or wider color spaces must document and normalize its own JSON-safe format.',
+          text: 'Astryx does not define a persisted color format. If your product accepts custom colors, choose and document a JSON-safe format. For example, a product could accept normalized opaque six-digit sRGB hex (`#RRGGBB`). Supporting alpha, named colors, functional syntax, or wider color spaces is a product decision.',
         },
         {
           type: 'prose',
