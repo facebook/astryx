@@ -111,14 +111,16 @@ lead to the same content (FR13, FR6, FR14).
   doc MUST fail with `ERR_UNKNOWN_SECTION` and name the doc. On a namespace,
   the read `astryx docs <namespace> <section>` MUST return that section when
   exactly one guide below the namespace, at any depth, has it, found the way a
-  topic's section read finds it: by its key (its `id`, else the key its title
-  derives) or by its title. The response MUST be the one a section read of
+  topic's section read finds it: first by its key (its `id`, else the key its
+  title derives), then by its title. A key match in exactly one guide answers
+  even when another guide's title also matches; otherwise a title match in
+  exactly one guide answers. The response MUST be the one a section read of
   that guide returns (`docs.detail.section`), so a section read that worked on
-  a topic before it became a namespace (FR13) returns the same shape. When no guide has the
-  section, or more than one does, the read MUST fail with `ERR_UNKNOWN_SECTION`,
-  the error a topic's unknown section gives; its suggestions MUST name the
-  route of each guide that has it, or of every guide below the namespace when
-  none does. An unknown route MUST fail with `ERR_UNKNOWN_TOPIC` and suggest
+  a topic before it became a namespace (FR13) returns the same shape. When no
+  guide has the section, or more than one does at the same step, the read MUST
+  fail with `ERR_UNKNOWN_SECTION`, the error a topic's unknown section gives;
+  its suggestions MUST name the route of each guide that has it, or of every
+  guide below the namespace when none does. An unknown route MUST fail with `ERR_UNKNOWN_TOPIC` and suggest
   the children of the deepest namespace the route reaches.
 - **FR7 — The topic list names the tree.** `astryx docs --json` MUST list each
   top-level namespace in `meta.namespaces`, so `data` stays the topic list, and
