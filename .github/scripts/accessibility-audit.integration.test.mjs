@@ -23,6 +23,7 @@ const Module = require('node:module');
 const originalLoad = Module._load;
 let requestedUrl = '';
 let reads = 0;
+let selectorResolved = false;
 
 function scenarioState() {
   const scenario = process.env.A11Y_TEST_SCENARIO;
@@ -66,10 +67,14 @@ function evaluateInFixture(fn, arg) {
 const page = {
   goto: async url => { requestedUrl = url; },
   addStyleTag: async () => {},
-  waitForSelector: async selector => {
+  waitForSelector: async (selector, options) => {
     if (process.env.A11Y_TEST_SCENARIO === 'selector-missing') {
       throw new Error('selector did not become visible: ' + selector);
     }
+    if (options?.state !== 'visible') {
+      throw new Error('readiness selector must wait for visible state');
+    }
+    selectorResolved = true;
     return {};
   },
   evaluate: async (fn, arg) => evaluateInFixture(fn, arg),
@@ -80,7 +85,12 @@ const browser = {newContext: async () => context, close: async () => {}};
 
 class FakeAxeBuilder {
   disableRules() { return this; }
-  async analyze() { return {violations: []}; }
+  async analyze() {
+    if (process.argv.includes('--ready-selector') && !selectorResolved) {
+      throw new Error('axe ran before the readiness selector resolved');
+    }
+    return {violations: []};
+  }
 }
 
 Module._load = function(request, parent, isMain) {
