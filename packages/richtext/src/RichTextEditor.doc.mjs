@@ -239,7 +239,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG. A theme can restyle any glyph without forking the toolbar: registerIcons({'richtext:bold': <MyBoldIcon />}) from @astryxdesign/core/Icon. registerIcons now accepts arbitrary extension keys, and getExtendedIcon(key, fallback) resolves them; the same pattern any library can use to make its own icons theme-overridable.",
+          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG. A theme restyles any glyph without forking the toolbar by naming its key: defineTheme({icons: {'richtext:bold': <MyBoldIcon />}}). Undo and redo mirror under right-to-left direction, whichever glyph draws them.",
       },
       {
         guidance: false,

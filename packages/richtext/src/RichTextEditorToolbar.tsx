@@ -26,11 +26,12 @@
  * commands); the UI is built from Astryx primitives so it matches the theme.
  *
  * ICONS: Each control resolves its glyph through the core icon registry under a
- * stable `richtext:*` key (see {@link RICHTEXT_ICON_KEYS}), falling back to the
- * bundled inline SVGs below. A theme can restyle any glyph by registering its
- * own icon for that key — no need to fork the toolbar:
- *   import {registerIcons} from '@astryxdesign/core/Icon';
- *   registerIcons({'richtext:bold': <MyBoldIcon />});
+ * stable `richtext:*` key (see {@link RICHTEXT_ICON_KEYS}) for the active
+ * theme, falling back to the bundled inline SVGs below — the library seam
+ * `getExtendedIcon` documents. A theme restyles any glyph by naming its key:
+ *   defineTheme({icons: {'richtext:bold': <MyBoldIcon />}});
+ * Undo and redo point backward and forward in time, so they mirror under RTL
+ * whichever glyph draws them.
  */
 
 import {
@@ -75,6 +76,12 @@ import {
   LayoutFooter,
 } from '@astryxdesign/core/Layout';
 import {getExtendedIcon} from '@astryxdesign/core/Icon';
+import {useThemeName} from '@astryxdesign/core/theme';
+import {rtlStyles} from '@astryxdesign/core/utils';
+import {
+  fontWeightVars,
+  typeScaleVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {
   FORMAT_TEXT_COMMAND,
@@ -126,6 +133,18 @@ const toolbarDividerStyles = stylex.create({
   },
 });
 
+const glyphStyles = stylex.create({
+  // A transform needs a box: the wrapper is inline-flex so the mirror applies.
+  directional: {
+    display: 'inline-flex',
+  },
+  text: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    fontWeight: fontWeightVars['--font-weight-bold'],
+    fontVariantNumeric: 'tabular-nums',
+  },
+});
+
 const toolbarScrollStyles = stylex.create({
   actions: {
     flex: '1 1 0%',
@@ -150,10 +169,10 @@ function isInsertLink(event: KeyboardEvent): boolean {
 }
 
 /**
- * Stable icon-registry keys for the toolbar's controls. Themes can override any
- * of these via `registerIcons({'richtext:bold': <MyIcon />})` from
- * `@astryxdesign/core/Icon`. Keys are namespaced (`richtext:*`) to avoid
- * collisions with the core semantic icon set.
+ * Stable icon-registry keys for the toolbar's controls. A theme overrides any
+ * of these by key: `defineTheme({icons: {'richtext:bold': <MyIcon />}})`.
+ * Keys are namespaced (`richtext:*`) to avoid collisions with the core
+ * semantic icon set.
  */
 export const RICHTEXT_ICON_KEYS = {
   bold: 'richtext:bold',
@@ -379,24 +398,39 @@ const defaultToolbarIcons: Record<string, ReactNode> = {
 /** Renders a short text label as a toolbar glyph (for heading buttons). */
 function TextGlyph({label}: {label: string}) {
   return (
-    <span
-      aria-hidden="true"
-      style={{
-        fontSize: '0.75rem',
-        fontWeight: 700,
-        fontVariantNumeric: 'tabular-nums',
-      }}>
+    <span aria-hidden="true" {...stylex.props(glyphStyles.text)}>
       {label}
     </span>
   );
 }
 
+type ToolbarIconName = keyof typeof RICHTEXT_ICON_KEYS;
+
 /**
- * Resolve a toolbar glyph: prefer a theme-registered icon for the stable
- * `richtext:*` key, otherwise fall back to the bundled inline default.
+ * Resolve a toolbar glyph for the active theme: the theme's icon for the
+ * stable `richtext:*` key, then a globally registered one, then the bundled
+ * inline default.
  */
-function resolveIcon(name: keyof typeof RICHTEXT_ICON_KEYS): ReactNode {
-  return getExtendedIcon(RICHTEXT_ICON_KEYS[name], defaultToolbarIcons[name]);
+function resolveIcon(
+  name: ToolbarIconName,
+  themeName: string | null | undefined,
+): ReactNode {
+  return getExtendedIcon(
+    RICHTEXT_ICON_KEYS[name],
+    defaultToolbarIcons[name],
+    themeName,
+  );
+}
+
+/** A glyph that points along the reading direction, mirrored under RTL. */
+function DirectionalGlyph({children}: {children: ReactNode}) {
+  return (
+    <span
+      aria-hidden="true"
+      {...stylex.props(glyphStyles.directional, rtlStyles.mirror)}>
+      {children}
+    </span>
+  );
 }
 
 export interface RichTextEditorToolbarProps {
@@ -482,6 +516,8 @@ export function RichTextEditorToolbar({
   endContent,
 }: RichTextEditorToolbarProps) {
   const [editor] = useLexicalComposerContext();
+  const themeName = useThemeName();
+  const icon = (name: ToolbarIconName) => resolveIcon(name, themeName);
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.richTextEditor.toolbar.label');
   // Literal keys, so the catalog gate can verify every one.
@@ -815,27 +851,27 @@ export function RichTextEditorToolbar({
     {
       value: 'paragraph',
       label: t('@astryx.richTextEditor.toolbar.paragraph'),
-      icon: resolveIcon('paragraph'),
+      icon: icon('paragraph'),
     },
     ...headingLevels.map(level => ({
       value: level,
       label: headingLabels[level],
-      icon: resolveIcon(level),
+      icon: icon(level),
     })),
     {
       value: 'bullet',
       label: t('@astryx.richTextEditor.toolbar.bulletedList'),
-      icon: resolveIcon('bullet'),
+      icon: icon('bullet'),
     },
     {
       value: 'number',
       label: t('@astryx.richTextEditor.toolbar.numberedList'),
-      icon: resolveIcon('number'),
+      icon: icon('number'),
     },
     {
       value: 'quote',
       label: t('@astryx.richTextEditor.toolbar.blockQuote'),
-      icon: resolveIcon('quote'),
+      icon: icon('quote'),
     },
   ];
 
@@ -852,7 +888,7 @@ export function RichTextEditorToolbar({
             xstyle={toolbarScrollStyles.actions}>
             <IconButton
               label={t('@astryx.richTextEditor.toolbar.undo')}
-              icon={resolveIcon('undo')}
+              icon={<DirectionalGlyph>{icon('undo')}</DirectionalGlyph>}
               variant="ghost"
               tooltip={t('@astryx.richTextEditor.toolbar.undo')}
               isDisabled={!isEditable || !canUndo}
@@ -860,7 +896,7 @@ export function RichTextEditorToolbar({
             />
             <IconButton
               label={t('@astryx.richTextEditor.toolbar.redo')}
-              icon={resolveIcon('redo')}
+              icon={<DirectionalGlyph>{icon('redo')}</DirectionalGlyph>}
               variant="ghost"
               tooltip={t('@astryx.richTextEditor.toolbar.redo')}
               isDisabled={!isEditable || !canRedo}
@@ -878,7 +914,7 @@ export function RichTextEditorToolbar({
               size={size}
               value={blockType}
               options={blockOptions}
-              startIcon={resolveIcon(blockType)}
+              startIcon={icon(blockType)}
               isDisabled={!isEditable}
               onChange={value => setBlock(value as BlockType)}
             />
@@ -891,7 +927,7 @@ export function RichTextEditorToolbar({
               <ToggleButton
                 key={action.format}
                 label={inlineFormatLabels[action.format]}
-                icon={resolveIcon(action.icon)}
+                icon={icon(action.icon)}
                 size={size}
                 isIconOnly
                 isPressed={activeFormats.has(action.format)}
@@ -903,7 +939,7 @@ export function RichTextEditorToolbar({
               <ToggleButton
                 key="link"
                 label={t('@astryx.richTextEditor.toolbar.link')}
-                icon={resolveIcon('link')}
+                icon={icon('link')}
                 size={size}
                 isIconOnly
                 isPressed={isLink || isLinkDialogOpen}

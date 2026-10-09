@@ -41,6 +41,8 @@ import {
 } from './markdownSerializers';
 import {RichTextEditorToolbar} from './RichTextEditorToolbar';
 import {registerIcons, resetIcons} from '@astryxdesign/core/Icon';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import {rtlStyles} from '@astryxdesign/core/utils';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {
   RichTextEditorAutoLinkPlugin,
@@ -1461,6 +1463,46 @@ describe('RichTextEditorToolbar', () => {
     } finally {
       resetIcons();
     }
+  });
+
+  it('draws the glyphs of the theme it renders in', () => {
+    const theme = defineTheme({
+      name: 'richtext-toolbar-themed-icons',
+      icons: {
+        'richtext:bold': <svg data-testid="theme-bold" />,
+        'richtext:undo': <svg data-testid="theme-undo" />,
+      },
+    });
+    render(
+      <Theme theme={theme}>
+        <RichTextEditor label="Notes" toolbar={<RichTextEditorToolbar />} />
+      </Theme>,
+    );
+    expect(
+      screen
+        .getByRole('button', {name: 'Bold'})
+        .querySelector('[data-testid="theme-bold"]'),
+    ).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole('button', {name: 'Undo'})
+        .querySelector('[data-testid="theme-undo"]'),
+    ).toBeInTheDocument();
+  });
+
+  it('wraps only undo and redo in the RTL mirror', () => {
+    const {container} = render(
+      <RichTextEditor label="Notes" toolbar={<RichTextEditorToolbar />} />,
+    );
+    // The atomic class only; dev builds add a debug name with a dot in it.
+    const mirrorClass = (stylex.props(rtlStyles.mirror).className ?? '')
+      .split(' ')
+      .find(name => !name.includes('__'));
+    expect(mirrorClass).toBeDefined();
+    const mirrored = [
+      ...container.getElementsByClassName(mirrorClass ?? ''),
+    ].map(element => element.closest('button')?.getAttribute('aria-label'));
+    expect(mirrored).toEqual(['Undo', 'Redo']);
   });
 });
 
