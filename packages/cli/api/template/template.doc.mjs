@@ -124,7 +124,7 @@ export const doc = {
     {
       type: 'template.copy',
       description:
-        'A receipt after scaffolding the template into the project: the template id, output directory, written file name, file count, and `demoMediaReplaced` — how many Astryx demo media references (images, posters, videos) in the written file were replaced with placeholders for you to swap for your own media.',
+        'A receipt after scaffolding the template into the project: the template id, output directory, written file name, file count, `demoMediaReplaced` — how many Astryx demo media references were replaced with placeholders, `notes` — setup notes naming what the template needs that the project lacks (missing packages, missing StyleX compiler; empty when satisfied), `missingPackages` — external package names the template imports that are not in the project, and `installCommand` — a ready-to-run install command with the detected package manager and workspace version ranges (null when nothing is missing).',
     },
     {
       type: 'template.cdn',

@@ -72,7 +72,17 @@ function run(args) {
 
 describe('theme command human output is plain ASCII', () => {
   it('a standalone build: ok, warning, error, notice, and font help lines', async () => {
-    const result = await run(['build', 'ocean.mjs']);
+    const short = await run(['build', 'ocean.mjs']);
+    expect(short.code).toBe(0);
+    expect(short.stdout).toContain(
+      '[note] Fonts named but not loaded: "Inter"',
+    );
+    expect(nonAscii(short)).toEqual([]);
+
+    const result = await runCli(
+      ['--detail', 'full', 'theme', 'build', 'ocean.mjs'],
+      dir,
+    );
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('[ok] ocean.css');

@@ -53,7 +53,11 @@ function asText(value) {
  * @param {unknown} value
  */
 function printsField(lines, key, value) {
-  const shown = asText(value).split('\n')[0].trimEnd();
+  // The text prefixes a command (`command`, `parent`) with the project's
+  // invocation (`pnpm exec astryx`, or `pnpm dlx @astryxdesign/cli` where no
+  // `astryx` bin is installed), so compare the part after `astryx`.
+  const text = asText(value).split('\n')[0].trimEnd();
+  const shown = text.replace(/^astryx /, '');
   return lines.some(line => line.startsWith(`${key}:`) && line.trimEnd().endsWith(shown));
 }
 
@@ -282,7 +286,7 @@ describe('search CLI — exit codes + JSON contract', () => {
 
   it('renders each result as a greppable key: value record', async () => {
     const r = await runCli(['search', 'button'], REPO_ROOT);
-    expect(r.stdout).toContain('astryx component Button');
+    expect(r.stdout).toMatch(/^command:\s+\S.*(?:astryx|@astryxdesign\/cli) component Button$/m);
     // Fields mirror the JSON object and are line-greppable.
     expect(r.stdout).toMatch(/^name:\s+Button$/m);
     expect(r.stdout).toMatch(/^domain:\s+component$/m);

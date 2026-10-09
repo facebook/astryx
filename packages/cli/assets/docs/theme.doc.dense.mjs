@@ -9,7 +9,7 @@ export const docsDense = {
       section: 'Wrap your app in a theme',
       title: 'Quick start',
       content: [
-        {type: 'prose', text: 'Install a theme, wrap in `<Theme>`. {@link generic:use-a-theme} for full guide.'},
+        {type: 'prose', text: "Install a theme, wrap in `<Theme>` (`import {Theme} from '@astryxdesign/core'`). {@link generic:use-a-theme} for full guide."},
       ],
     },
     {

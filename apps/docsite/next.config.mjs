@@ -9,7 +9,7 @@
  * @position Next.js configuration for the existing Vercel docsite deployment.
  */
 
-import {readFileSync, readdirSync} from 'node:fs';
+import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import {resolve} from 'node:path';
 
 const playgroundCookieCompatibility = readFileSync(
@@ -19,6 +19,17 @@ const playgroundCookieCompatibility = readFileSync(
   ),
   'utf8',
 );
+
+// Slugs that are not pages of their own (generate-data.mjs): a guide under a
+// docs-tree namespace opens at its section on the namespace's full page, and
+// a flat topic merged into another page opens there.
+const docRedirectsPath = resolve(
+  import.meta.dirname,
+  'src/generated/docRedirects.json',
+);
+const docRedirects = existsSync(docRedirectsPath)
+  ? JSON.parse(readFileSync(docRedirectsPath, 'utf8'))
+  : {};
 
 const stagesStaticApps =
   process.env.VERCEL_ENV === 'preview' ||
@@ -68,6 +79,12 @@ const nextConfig = {
         destination: '/docs/cli-integrations-docs-add-a-topic',
         permanent: true,
       },
+      // Temporary: a later site version may give these guides pages again.
+      ...Object.entries(docRedirects).map(([slug, destination]) => ({
+        source: `/docs/${slug}`,
+        destination,
+        permanent: false,
+      })),
     ];
   },
   // The playground preview evaluates user-authored code, so it is the one

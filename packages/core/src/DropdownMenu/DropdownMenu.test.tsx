@@ -2557,6 +2557,59 @@ describe('DropdownMenu press model', () => {
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
   });
 
+  it('a press-opened menu returns focus to its trigger, not to the control focused before the press', async () => {
+    // A browser's popover remembers the focused element when it is shown
+    // and, when it hides with focus inside it, hands focus back to that
+    // element before the layer's own hide handler runs. jsdom has no popover,
+    // so the mocks carry that one rule here. A mouse press opens the menu
+    // before the browser's mousedown would have focused the trigger: the
+    // popover must still remember the trigger, or Escape lands focus on
+    // whatever control was focused before the press.
+    let rememberedFocus: Element | null = null;
+    const showPopover = HTMLElement.prototype.showPopover;
+    const hidePopover = HTMLElement.prototype.hidePopover;
+    HTMLElement.prototype.showPopover = function (this: HTMLElement) {
+      rememberedFocus = document.activeElement;
+      showPopover.call(this);
+    };
+    HTMLElement.prototype.hidePopover = function (this: HTMLElement) {
+      if (
+        rememberedFocus instanceof HTMLElement &&
+        this.contains(document.activeElement)
+      ) {
+        rememberedFocus.focus();
+      }
+      hidePopover.call(this);
+    };
+
+    render(
+      <>
+        <button type="button">Before</button>
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          items={[{label: 'Edit'}, {label: 'Delete'}]}
+        />
+      </>,
+    );
+    const before = screen.getByRole('button', {name: 'Before'});
+    const trigger = screen.getByRole('button', {name: /Actions/});
+    before.focus();
+
+    fireEvent.pointerDown(trigger, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // The popover recorded the trigger, not the control focused before.
+    expect(rememberedFocus).toBe(trigger);
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+
+    fireEvent.keyDown(menu, {key: 'Escape'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveFocus();
+    expect(before).not.toHaveFocus();
+  });
+
   it('the opening release before the settle time acts on nothing and the menu stays', () => {
     vi.useFakeTimers();
     try {

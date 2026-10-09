@@ -194,7 +194,7 @@ export const doc = {
     {
       value: 'template.copy',
       description:
-        'A scaffold receipt: template id, output directory, written file name, file count, and demoMediaReplaced (how many Astryx demo media references were replaced with placeholders for you to swap for your own media). The envelope\'s package names the npm package that owns the template.',
+        'A scaffold receipt: template id, output directory, written file name, file count, demoMediaReplaced (how many Astryx demo media references were replaced with placeholders), notes (setup notes naming what the template needs that the project lacks — missing packages, missing StyleX compiler; empty when satisfied), missingPackages (external package names the template imports that are not in the project), and installCommand (a ready-to-run install command with the detected package manager and workspace version ranges; null when nothing is missing). The envelope\'s package names the npm package that owns the template.',
     },
 
     {
@@ -357,17 +357,17 @@ export const doc = {
     {
       value: 'layout.expand',
       description:
-        'The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, written (the output path, or null when nothing was written), and demoMediaReplaced (count of demo media placeholders).',
+        'The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, written (the output path, or null when nothing was written), and demoMediaReplaced (count of demo media placeholders). Carries `meta.deprecations` with DEP-0006 and its replacement commands.',
     },
     {
       value: 'layout.check',
       description:
-        'The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline).',
+        'The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline). Carries `meta.deprecations` with DEP-0006 and its replacement commands.',
     },
     {
       value: 'layout.grammar',
       description:
-        "The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry.",
+        "The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry. Carries `meta.deprecations` with DEP-0006 and its replacement commands.",
     },
   ],
 };

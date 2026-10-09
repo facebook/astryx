@@ -124,17 +124,28 @@ function validateIdentity(marker, plan) {
   return errors;
 }
 
+/**
+ * Does this manifest belong to the stable cut? Private and canary-only
+ * packages publish outside it (or not at all), so their changes never block or
+ * enter a stable release.
+ *
+ * @param {{name?: string, private?: boolean, astryx?: {canaryOnly?: boolean}}} manifest
+ * @returns {boolean}
+ */
+function isStableReleasePackage(manifest) {
+  return (
+    manifest?.name?.startsWith('@astryxdesign/') === true &&
+    manifest.private !== true &&
+    manifest.astryx?.canaryOnly !== true
+  );
+}
+
 function publishablePackages(root) {
   return expandWorkspaceDirs(root)
     .map(dir => path.join(dir, 'package.json'))
     .filter(file => fs.existsSync(file))
     .map(file => ({file, manifest: readJson(file)}))
-    .filter(
-      ({manifest}) =>
-        manifest.name?.startsWith('@astryxdesign/') &&
-        manifest.private !== true &&
-        manifest.astryx?.canaryOnly !== true,
-    );
+    .filter(({manifest}) => isStableReleasePackage(manifest));
 }
 
 function validateReleaseState({
@@ -811,6 +822,7 @@ export {
   buildPlan,
   canonicalJson,
   computePlanDigest,
+  isStableReleasePackage,
   listActiveBranches,
   validateIdentity,
   validateRefMarker,

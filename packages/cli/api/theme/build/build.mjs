@@ -74,7 +74,11 @@ import {
   collectThemingTargets,
   targetValidationRegistry,
 } from '../../../foundation/discovery/theming-targets.mjs';
-import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
+import {
+  collectUnloadedFonts,
+  formatBatchFontLoadingHelp,
+  formatFontLoadingHelp,
+} from './font-warning.mjs';
 import {interceptCore} from './core-interception.mjs';
 import {generateFamilyCSS, resolveThemeFamily} from './family.mjs';
 import {resolveIconImports} from './icon-imports.mjs';
@@ -2339,6 +2343,7 @@ async function themeBuildInternal(
   file,
   options = {},
   {cwd = process.cwd()} = {},
+  /** @type {{compact?: boolean, trailers?: ThemeBuildTrailer[]}} */ report = {},
 ) {
   const filePath = path.resolve(cwd, file);
 
@@ -2350,7 +2355,11 @@ async function themeBuildInternal(
     );
   }
 
-  logger.log(`\nBuilding theme from ${path.relative(cwd, filePath)}...`);
+  if (!report.compact) {
+    logger.log(`\nBuilding theme from ${path.relative(cwd, filePath)}...`);
+  }
+  // A compact report has no per-theme heading, so each warning names its file.
+  const source = report.compact ? `${path.relative(cwd, filePath)}: ` : '';
 
   await selectCore(cwd);
 
@@ -2469,18 +2478,18 @@ async function themeBuildInternal(
   const noticeMessages = [];
   for (const w of warnings) {
     warningMessages.push(w);
-    logger.warn(`  [warn] ${w}`);
+    logger.warn(`  [warn] ${source}${w}`);
   }
 
   // Validate no private vars are set directly
   const privateVarErrors = validatePrivateVars(themeDef);
   for (const e of privateVarErrors) {
     warningMessages.push(e);
-    logger.error(`  [error] ${e}`);
+    logger.error(`  [error] ${source}${e}`);
   }
   if (privateVarErrors.length > 0) {
     logger.error(
-      `\n  ${privateVarErrors.length} private var error(s). Use standard CSS properties instead.`,
+      `\n  ${source}${privateVarErrors.length} private var error(s). Use standard CSS properties instead.`,
     );
   }
 
@@ -2719,7 +2728,7 @@ async function themeBuildInternal(
     for (const message of droppedDeclarations) {
       const w = `Declaration ${message}. The generated CSS omits it; fix the value in the theme source.`;
       warningMessages.push(w);
-      logger.warn(`  [warn] ${w}`);
+      logger.warn(`  [warn] ${source}${w}`);
     }
     const unemittedHeadingTypes = headingTypesWithoutEmittedRule(
       customHeadingTypes(themeDef),
@@ -2741,7 +2750,7 @@ async function themeBuildInternal(
       );
     }
     if (cssParts.length === 0) {
-      logger.log('No overrides found; nothing to build.');
+      logger.log(`${source}No overrides found; nothing to build.`);
       return null;
     }
     // The data-token defaults are theme-independent and go in @layer
@@ -2933,19 +2942,21 @@ async function themeBuildInternal(
 
   writeBuildOutputs(writes);
 
-  logger.log(`\n[ok] ${path.relative(cwd, outPath)}`);
-  logger.log(`[ok] ${path.relative(cwd, cssDtsPath)}`);
-  logger.log(
-    `  ${tokenCount} token overrides, ${componentCount} component overrides`,
-  );
-  logger.log(`  ${size} KB`);
-  logger.log(`[ok] ${path.relative(cwd, jsPath)}`);
-  logger.log(`[ok] ${path.relative(cwd, dtsPath)}`);
-  if (variantDtsPath && variantDecl) {
-    const augCount = (variantDecl.match(/': true;/g) || []).length;
+  if (!report.compact) {
+    logger.log(`\n[ok] ${path.relative(cwd, outPath)}`);
+    logger.log(`[ok] ${path.relative(cwd, cssDtsPath)}`);
     logger.log(
-      `[ok] ${path.relative(cwd, variantDtsPath)} (${augCount} type augmentations)`,
+      `  ${tokenCount} token overrides, ${componentCount} component overrides`,
     );
+    logger.log(`  ${size} KB`);
+    logger.log(`[ok] ${path.relative(cwd, jsPath)}`);
+    logger.log(`[ok] ${path.relative(cwd, dtsPath)}`);
+    if (variantDtsPath && variantDecl) {
+      const augCount = (variantDecl.match(/': true;/g) || []).length;
+      logger.log(
+        `[ok] ${path.relative(cwd, variantDtsPath)} (${augCount} type augmentations)`,
+      );
+    }
   }
 
   const relOutDir = path.relative(cwd, outDir) || '.';
@@ -2953,25 +2964,6 @@ async function themeBuildInternal(
   const jsImport = importSpecifier(relOutDir, baseName);
   const cssImport = importSpecifier(relOutDir, cssBase) + '.css';
   const exportName = `${toIdentifier(baseName)}Theme`;
-  logger.log(`
-Install in your app (paths are relative to a file in src/; adjust if yours lives elsewhere):
-
-  import { ${exportName} } from '${jsImport}';
-  import '${cssImport}';
-
-  <Theme theme={${exportName}}>
-    <App />
-  </Theme>
-
-Or with a <link> tag:
-
-  import { ${exportName} } from '${jsImport}';
-
-  <link rel="stylesheet" href="${cssImport}" />
-  <Theme theme={${exportName}}>
-    <App />
-  </Theme>
-`);
 
   // Fonts the theme names but nothing loads (#5015). Resolved tokens and
   // component overrides carry the final font-family values on both load
@@ -2985,14 +2977,26 @@ Or with a <link> tag:
   // permanently in violation of its own "compiles with no warnings" guard).
   // Adaptation rules are resolved theme writes in their own right, so a family
   // named only inside one needs the same notice as one named at the root.
+  /** @type {string[]} */
+  const fontNotices = [];
   for (const family of unloadedFonts) {
     const msg = `Font "${family}" is named by this theme but not loaded; add a <link> or @font-face in your app (recipe: astryx docs typography)`;
     noticeMessages.push(msg);
-    logger.log(`  note: ${msg}`);
+    fontNotices.push(msg);
   }
-  if (unloadedFonts.length > 0) {
-    logger.log(formatFontLoadingHelp(themeDef.name, unloadedFonts));
-  }
+
+  /** @type {ThemeBuildTrailer} */
+  const trailer = {
+    themeName: themeDef.name,
+    exportName,
+    jsImport,
+    cssImport,
+    unloadedFonts,
+    fontNotices,
+  };
+  // A batch or compact report prints this once for the whole run instead.
+  if (report.trailers) report.trailers.push(trailer);
+  else printBuildTrailer(trailer);
 
   return {
     type: 'theme.build',
@@ -3014,6 +3018,166 @@ Or with a <link> tag:
       notices: noticeMessages,
     },
   };
+}
+
+/**
+ * What a standalone build prints after its [ok] lines, kept as data so a
+ * batch can print it once for every theme.
+ * @typedef {object} ThemeBuildTrailer
+ * @property {string} themeName The theme's name.
+ * @property {string} exportName The built module's theme export.
+ * @property {string} jsImport Import specifier of the built JS module.
+ * @property {string} cssImport Import specifier of the built CSS.
+ * @property {string[]} unloadedFonts Font families the theme names but does not load.
+ * @property {string[]} fontNotices One notice per unloaded font family.
+ */
+
+/**
+ * Print a standalone build's install snippet and font guidance.
+ * @param {ThemeBuildTrailer} trailer
+ */
+function printBuildTrailer(trailer) {
+  logger.log(`
+Install in your app (paths are relative to a file in src/; adjust if yours lives elsewhere):
+
+  import { Theme } from '@astryxdesign/core';
+  import { ${trailer.exportName} } from '${trailer.jsImport}';
+  import '${trailer.cssImport}';
+
+  <Theme theme={${trailer.exportName}}>
+    <App />
+  </Theme>
+
+Or with a <link> tag:
+
+  import { Theme } from '@astryxdesign/core';
+  import { ${trailer.exportName} } from '${trailer.jsImport}';
+
+  <link rel="stylesheet" href="${trailer.cssImport}" />
+  <Theme theme={${trailer.exportName}}>
+    <App />
+  </Theme>
+`);
+  for (const msg of trailer.fontNotices) logger.log(`  note: ${msg}`);
+  if (trailer.unloadedFonts.length > 0) {
+    logger.log(formatFontLoadingHelp(trailer.themeName, trailer.unloadedFonts));
+  }
+}
+
+/**
+ * Print the install snippet and font guidance once for a batch: the first
+ * theme as the full example, one import line per built theme, and one font
+ * recipe naming every family the themes do not load.
+ * @param {ThemeBuildTrailer[]} trailers
+ */
+export function printBatchTrailer(trailers) {
+  if (trailers.length === 0) return;
+  const [first] = trailers;
+  logger.log(`
+Install in your app (paths are relative to a file in src/; adjust if yours lives elsewhere):
+
+  import { Theme } from '@astryxdesign/core';
+  import { ${first.exportName} } from '${first.jsImport}';
+  import '${first.cssImport}';
+
+  <Theme theme={${first.exportName}}>
+    <App />
+  </Theme>
+
+Or with a <link> tag:
+
+  import { Theme } from '@astryxdesign/core';
+  import { ${first.exportName} } from '${first.jsImport}';
+
+  <link rel="stylesheet" href="${first.cssImport}" />
+  <Theme theme={${first.exportName}}>
+    <App />
+  </Theme>
+`);
+  if (trailers.length > 1) {
+    logger.log('Each built theme imports the same way:');
+    for (const trailer of trailers) {
+      logger.log(
+        `  import { ${trailer.exportName} } from '${trailer.jsImport}'; import '${trailer.cssImport}';`,
+      );
+    }
+  }
+  const fonts = groupUnloadedFonts(trailers);
+  if (fonts.length > 0) logger.log(formatBatchFontLoadingHelp(fonts));
+}
+
+/**
+ * Print what a short report keeps after its one line per theme: one line
+ * naming the fonts the themes do not load, and, when the caller chose no
+ * detail level, where the install example and font recipe are.
+ * @param {ThemeBuildTrailer[]} trailers
+ * @param {{hint?: boolean}} [options]
+ */
+export function printCompactTrailer(trailers, {hint = false} = {}) {
+  if (trailers.length === 0) return;
+  const fonts = groupUnloadedFonts(trailers);
+  if (fonts.length > 0) {
+    const named = fonts
+      .map(({family, themes}) =>
+        trailers.length > 1
+          ? `"${family}" (${themes.join(', ')})`
+          : `"${family}"`,
+      )
+      .join(', ');
+    logger.log(
+      `[note] Fonts named but not loaded: ${named}. Load them in your app (recipe: astryx docs typography).`,
+    );
+  }
+  if (hint) {
+    logger.log(
+      'Run with --detail full for the install example and font recipe.',
+    );
+  }
+}
+
+/**
+ * Each font family the themes name but do not load, with the themes that
+ * name it, in first-seen order.
+ * @param {ThemeBuildTrailer[]} trailers
+ * @returns {Array<{family: string, themes: string[]}>}
+ */
+function groupUnloadedFonts(trailers) {
+  /** @type {Map<string, {family: string, themes: string[]}>} */
+  const byFamily = new Map();
+  for (const trailer of trailers) {
+    for (const family of trailer.unloadedFonts) {
+      const key = family.toLowerCase();
+      const entry = byFamily.get(key) ?? {family, themes: []};
+      entry.themes.push(trailer.themeName);
+      byFamily.set(key, entry);
+    }
+  }
+  return [...byFamily.values()];
+}
+
+/**
+ * Build one theme for a batch or compact CLI report. Same build, outputs, and
+ * receipt as {@link themeBuild}; the install snippet and font guidance come
+ * back as `trailer` instead of being printed, and `compact` leaves out the
+ * per-file progress lines. CLI-internal: not exported from the API entry.
+ * @param {string} file
+ * @param {{out?: string, check?: boolean, iconsSpecifier?: string}} [options]
+ * @param {{cwd?: string}} [ctx]
+ * @param {{compact?: boolean}} [report]
+ * @returns {Promise<{receipt: import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse | null, trailer: ThemeBuildTrailer | null}>}
+ */
+export async function themeBuildForReport(
+  file,
+  options = {},
+  ctx = {},
+  {compact = false} = {},
+) {
+  /** @type {ThemeBuildTrailer[]} */
+  const trailers = [];
+  const receipt = /** @type {any} */ (
+    await themeBuildInternal(file, options, ctx, {compact, trailers})
+  );
+  return {receipt, trailer: trailers[0] ?? null};
 }
 
 /** @param {string} file @param {{out?: string, check?: boolean, iconsSpecifier?: string}} [options] @param {{cwd?: string}} [ctx] @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | import('../theme.type.mjs').ThemeBuildCheckResponse | null>} */

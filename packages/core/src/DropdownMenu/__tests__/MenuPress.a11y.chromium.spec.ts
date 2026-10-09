@@ -7,7 +7,8 @@
  * @output Browser evidence for the menu press model: the row under the
  *   release acts once, the highlight follows the pointer, a release outside
  *   closes under a mouse and not under a finger, a touch pan in an
- *   overflowing menu cancels the gesture, and a pen behaves like a finger
+ *   overflowing menu cancels the gesture, a pen behaves like a finger, and
+ *   Escape after a press-open returns focus to the trigger
  * @position Real-engine proof for module:DropdownMenu/useMenuPress — the
  *   paths jsdom cannot exercise (hit testing, touch synthesis, scrolling)
  */
@@ -204,6 +205,39 @@ test.describe('DropdownMenu press model (Chromium)', () => {
     await page.mouse.up();
     await expect(menu).toBeHidden();
     expect(activations).toEqual([]);
+  });
+
+  test('mouse: Escape after a press-open returns focus to the trigger, not to the control focused before the press', async ({
+    page,
+  }) => {
+    await mount(page, MENU_STORY);
+    // The control a user had focused before reaching for the menu — a field,
+    // a toolbar button. The story renders none, so one is added to the page.
+    await page.evaluate(() => {
+      const before = document.createElement('button');
+      before.id = 'focused-before-the-press';
+      before.textContent = 'Before';
+      document.body.prepend(before);
+      before.focus();
+    });
+    const before = page.locator('#focused-before-the-press');
+    await expect(before).toBeFocused();
+
+    const trigger = page.locator(TRIGGER);
+    const point = await center(page, TRIGGER);
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.down();
+    const menu = page.getByRole('menu');
+    await expect(menu).toBeVisible();
+    await page.mouse.up();
+    // The opening release leaves the menu open with focus on the menu, where
+    // Escape is read.
+    await expect(menu).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await expect(before).not.toBeFocused();
   });
 
   test('touch: a finger that lands on Edit and lifts on Delete acts on Delete, once; the highlight followed it', async ({

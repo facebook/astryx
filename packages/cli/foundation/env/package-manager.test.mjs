@@ -9,6 +9,7 @@ import {
   explainPackageManager,
   getDlxPrefix,
   isCliOneOff,
+  cliBinResolves,
   getCliInvocation,
   formatCliCommand,
 } from './package-manager.mjs';
@@ -30,6 +31,16 @@ function makeTmpDir() {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-pm-test-'));
   return tmpDir;
 }
+
+/** Install the CLI's bin link in `dir`, the way a package manager does. */
+function linkCliBin(dir, name = 'astryx') {
+  const binDir = path.join(dir, 'node_modules', '.bin');
+  fs.mkdirSync(binDir, {recursive: true});
+  fs.writeFileSync(path.join(binDir, name), '');
+}
+
+/** An installed CLI's entry, outside any runner cache (a global or workspace install). */
+const INSTALLED_ENTRY = '/usr/local/lib/node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs';
 
 describe('detectPackageManager', () => {
   it('detects yarn from yarn.lock', () => {
@@ -79,6 +90,7 @@ describe('detectPackageManager', () => {
     const dir = makeTmpDir();
     fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
     fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    linkCliBin(dir);
     process.env.npm_config_user_agent = 'yarn/1.22.21 npm/? node/v22.0.0';
     expect(detectPackageManager(dir)).not.toBe('yarn');
     expect(getCliInvocation(dir)).toBe('npx astryx');
@@ -90,6 +102,7 @@ describe('detectPackageManager', () => {
     try {
       fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
       fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+      linkCliBin(dir);
       process.env.npm_config_user_agent = 'yarn/1.22.21 npm/? node/v22.0.0';
       process.argv[1] = path.join(dir, 'node_modules/.bin/astryx');
       expect(getCliInvocation(dir)).toBe('npx astryx');
@@ -198,6 +211,7 @@ describe('detectPackageManager', () => {
       path.join(dir, 'package.json'),
       JSON.stringify({packageManager: 'pnpm@8.0.0'}),
     );
+    linkCliBin(dir);
     expect(detectPackageManager(dir)).toBe('pnpm');
     expect(getCliInvocation(dir)).toBe('pnpm exec astryx');
   });
@@ -351,12 +365,88 @@ describe('isCliOneOff', () => {
   });
 });
 
+describe('cliBinResolves', () => {
+  it('finds the bin link in the project', () => {
+    const dir = makeTmpDir();
+    linkCliBin(dir);
+    expect(cliBinResolves(dir)).toBe(true);
+  });
+
+  it('finds it in a folder above the project (a workspace root)', () => {
+    const root = makeTmpDir();
+    linkCliBin(root);
+    const pkg = path.join(root, 'packages', 'app');
+    fs.mkdirSync(pkg, {recursive: true});
+    expect(cliBinResolves(pkg)).toBe(true);
+  });
+
+  it('finds a Windows shim', () => {
+    const dir = makeTmpDir();
+    linkCliBin(dir, 'astryx.cmd');
+    expect(cliBinResolves(dir)).toBe(true);
+  });
+
+  it('is false when no bin link exists up the tree', () => {
+    const dir = makeTmpDir();
+    fs.mkdirSync(path.join(dir, 'node_modules', '.bin'), {recursive: true});
+    expect(cliBinResolves(dir)).toBe(false);
+  });
+});
+
 describe('getCliInvocation', () => {
-  it('uses the run-prefix + bare bin when installed (not one-off)', () => {
+  it('uses the run-prefix + bare bin when the bin resolves from the project', () => {
     process.argv[1] = '/proj/node_modules/@astryxdesign/cli/bin/astryx.mjs';
     const dir = makeTmpDir();
     fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    linkCliBin(dir);
     expect(getCliInvocation(dir)).toBe('pnpm exec astryx');
+  });
+
+  it('keeps `npx astryx` for a project with a local CLI', () => {
+    process.argv[1] = INSTALLED_ENTRY;
+    const dir = makeTmpDir();
+    fs.writeFileSync(path.join(dir, 'package-lock.json'), '{}');
+    linkCliBin(dir);
+    expect(getCliInvocation(dir)).toBe('npx astryx');
+  });
+
+  it('keeps the installed form in a workspace package when the root has the bin', () => {
+    process.argv[1] = INSTALLED_ENTRY;
+    const root = makeTmpDir();
+    fs.writeFileSync(path.join(root, 'pnpm-lock.yaml'), '');
+    linkCliBin(root);
+    const pkg = path.join(root, 'packages', 'app');
+    fs.mkdirSync(pkg, {recursive: true});
+    fs.writeFileSync(path.join(pkg, 'package.json'), '{"name":"app"}');
+    expect(getCliInvocation(pkg)).toBe('pnpm exec astryx');
+  });
+
+  // The hazard: the npm package named `astryx` is not this CLI. Launched from
+  // an installed path (a global install, or a workspace install running in a
+  // fresh package), the CLI used to print `npx astryx` for a project where that
+  // bin does not resolve, so following the hint fetched someone else's package.
+  it.each([
+    ['package-lock.json', '{}', 'npx @astryxdesign/cli'],
+    ['pnpm-lock.yaml', '', 'pnpm dlx @astryxdesign/cli'],
+    ['yarn.lock', '', 'yarn dlx @astryxdesign/cli'],
+    ['bun.lockb', '', 'bunx @astryxdesign/cli'],
+  ])(
+    'prints the scoped package for a project with no local CLI (%s), launched from an installed path',
+    (lockfile, contents, expected) => {
+      process.argv[1] = INSTALLED_ENTRY;
+      const dir = makeTmpDir();
+      fs.writeFileSync(path.join(dir, lockfile), contents);
+      expect(isCliOneOff()).toBe(false);
+      expect(getCliInvocation(dir)).toBe(expected);
+    },
+  );
+
+  it('prints the scoped package for a fresh package with no lockfile or install', () => {
+    process.argv[1] = INSTALLED_ENTRY;
+    const dir = makeTmpDir();
+    delete process.env.npm_config_user_agent;
+    fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"fresh"}');
+    expect(getCliInvocation(dir)).toBe('npx @astryxdesign/cli');
   });
 
   it('uses the dlx runner + scoped package when run one-off', () => {
@@ -379,6 +469,7 @@ describe('formatCliCommand', () => {
     process.argv[1] = '/proj/node_modules/@astryxdesign/cli/bin/astryx.mjs';
     const dir = makeTmpDir();
     fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    linkCliBin(dir);
     expect(formatCliCommand('astryx component Button', dir)).toBe('pnpm exec astryx component Button');
   });
 
@@ -386,6 +477,7 @@ describe('formatCliCommand', () => {
     process.argv[1] = '/proj/node_modules/@astryxdesign/cli/bin/astryx.mjs';
     const dir = makeTmpDir();
     fs.writeFileSync(path.join(dir, 'package-lock.json'), '{}');
+    linkCliBin(dir);
     expect(formatCliCommand('docs tokens', dir)).toBe('npx astryx docs tokens');
   });
 
