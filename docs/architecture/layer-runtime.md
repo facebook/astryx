@@ -14,7 +14,7 @@ applies_to:
     packages/core/src/Layer/,
     packages/core/src/Popover/,
     packages/core/src/Dialog/,
-    packages/lab/src/Drawer/,
+    packages/core/src/Drawer/,
     packages/core/src/DropdownMenu/,
     packages/core/src/Tooltip/,
     packages/core/src/HoverCard/,
@@ -237,11 +237,11 @@ contract. The current shared stack registers present layers with `close` or
 active-cycle registration sequence. `useFocusTrap` adapts an active trap with `onEscape` into
 that stack.
 
-Tooltip, HoverCard, Dialog, Lab Drawer, Popover, DropdownMenu, Lightbox,
+Tooltip, HoverCard, Dialog, Drawer, Popover, DropdownMenu, Lightbox,
 MobileNav, and BottomSheetSwitcher all register with the shared stack. Tooltip
 and HoverCard report current DOM presence; Popover and DropdownMenu register
 through `useFocusTrap`; Dialog, Lightbox, MobileNav, BottomSheetSwitcher, and
-Lab Drawer additionally ask `shouldDismissOnCloseRequest()` before acting on
+Drawer additionally ask `shouldDismissOnCloseRequest()` before acting on
 native platform close requests. Other family members still use local Escape
 handling as listed in `family:overlay-dismissal`.
 
@@ -287,11 +287,11 @@ remount live content or discard state/focus. Existing native depth-provider seam
 retain their original depth values; raw Layer, sheet panels, and toast content
 use the private content boundary directly. Toast page children stay outside it.
 
-Lab Drawer uses the equivalent package-local text baseline and retains its
-existing hosting, dismissal depth, and ancestor React contexts. Whole-context
-isolation for Drawer is not implemented: the private Core boundary is not
-available across that package boundary. This is a remaining package-architecture
-gap, not a claim of complete provider isolation.
+Drawer applies an equivalent text baseline of its own and retains its existing
+hosting, dismissal depth, and ancestor React contexts. It does not use the
+private content boundary, so whole-context isolation for Drawer is not
+implemented. This is a remaining gap, not a claim of complete provider
+isolation.
 
 Structural custom-property channels remain outside this implementation. A layer
 opened from supported `Step.children` content can contain an inner Stepper that
@@ -447,8 +447,8 @@ be updated only as that work ships.
   menu-cascade parent-close chain.
 - Dialog families own native modal/backdrop presentation and their local channel
   policies.
-- Lab Drawer owns modal `showModal()` and non-modal `showPopover()` hosting while
-  the shared dismissal stack owns Escape and platform close routing.
+- Drawer owns modal `showModal()` and non-modal `showPopover()` hosting while the
+  shared dismissal stack owns Escape and platform close routing.
 - `LayerProvider`, `ToastContext`, `useToast`, and `ToastViewport` own current
   notification state, dispatch, and viewport rendering; the viewport sits at
   the provider's inset on each edge unless its own `toast.inset` overrides that

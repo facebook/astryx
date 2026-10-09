@@ -6,7 +6,7 @@
  * @file DrawerHeader.tsx
  * @input Uses React, StyleX, LayoutHeader, Button, Icon, Heading, Text, i18n, BaseProps, mergeProps, themeProps
  * @output Exports DrawerHeader component and DrawerHeaderProps
- * @position Lab Drawer header; composed as the first child of Drawer, tested by DrawerHeader.test.tsx
+ * @position Drawer header; composed in a Layout header slot inside Drawer, tested by DrawerHeader.test.tsx
  *
  * Mirrors DialogHeader's API: a title, an optional subtitle, start/end content
  * slots, and a close button that renders only when `onOpenChange` is passed.
@@ -16,27 +16,25 @@
  * - It does not name the drawer. Drawer's required `label` does.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/Drawer/DrawerHeader.doc.mjs (props, anatomy, theming)
- * - /packages/lab/src/Drawer/DrawerHeader.test.tsx (tests for new/changed behavior)
- * - /packages/lab/src/Drawer/index.ts (exports if types change)
+ * - /packages/core/src/Drawer/DrawerHeader.doc.mjs (props, anatomy, theming)
+ * - /packages/core/src/Drawer/DrawerHeader.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Drawer/index.ts (exports if types change)
+ * - /packages/cli/assets/templates/blocks/components/Drawer/ (showcase blocks)
+ * - /packages/cli/assets/templates/blocks/components/DrawerHeader/ (showcase blocks)
  * - /apps/storybook/stories/Drawer.stories.tsx (examples and visual coverage)
  */
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '@astryxdesign/core';
-import {
-  sizeVars,
-  spacingVars,
-  typeScaleVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {Button} from '@astryxdesign/core/Button';
-import {Heading} from '@astryxdesign/core/Heading';
-import {Icon} from '@astryxdesign/core/Icon';
-import {LayoutHeader} from '@astryxdesign/core/Layout';
-import {Text} from '@astryxdesign/core/Text';
-import {useTranslator} from '@astryxdesign/core/i18n';
-import {mergeProps, themeProps} from '@astryxdesign/core/utils';
+import type {BaseProps} from '../BaseProps';
+import {sizeVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
+import {Button} from '../Button';
+import {Heading} from '../Heading';
+import {Icon} from '../Icon';
+import {LayoutHeader} from '../Layout';
+import {Text} from '../Text';
+import {useTranslator} from '../i18n';
+import {mergeProps, themeProps} from '../utils';
 
 const styles = stylex.create({
   container: {

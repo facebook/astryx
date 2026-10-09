@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
-export default {
+export const doc = {
   type: 'block',
-  name: 'Slide in from the start edge',
-  displayName: 'Slide in from the start edge',
+  name: 'Width budget: pixels or any CSS length',
+  displayName: 'Width budget: pixels or any CSS length',
   description:
-    'Set side="start" to open from the inline start edge: left in LTR and right in RTL. The default end edge follows the inspector convention.',
+    'Compare a numeric pixel width with rem and percentage lengths. The width budget also caps the drawer on mobile.',
   exampleFor: 'Drawer',
   isReady: true,
   aspectRatio: 16 / 9,
@@ -15,6 +15,7 @@ export default {
     'Button',
     'Layout',
     'LayoutContent',
+    'HStack',
     'DrawerHeader',
     'Text',
   ],

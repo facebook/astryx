@@ -1,14 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
-export default {
+export const doc = {
   type: 'block',
-  name: 'Mobile: the 56px page reveal (default)',
-  displayName: 'Mobile: the 56px page reveal (default)',
+  name: 'Basic',
+  displayName: 'Basic',
   description:
-    'Below 640px, the default drawer leaves at least 56px of the page visible while respecting its width budget. Open this example in a narrow viewport to see the reveal.',
+    'Open a modal drawer from a single trigger. The scrim dims the page; Escape, a scrim click, or the header close button closes it, and focus returns to the trigger.',
   exampleFor: 'Drawer',
   isReady: true,
+  isShowcase: true,
   aspectRatio: 16 / 9,
   componentsUsed: [
     'Drawer',

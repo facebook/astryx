@@ -347,6 +347,20 @@
       "aliases": []
     },
     {
+      "name": "component-drawer",
+      "path": "components/drawer",
+      "aliases": [
+        "components/lab/drawer"
+      ]
+    },
+    {
+      "name": "component-drawer-header",
+      "path": "components/drawer-header",
+      "aliases": [
+        "components/lab/drawer-header"
+      ]
+    },
+    {
       "name": "component-dropdown-menu",
       "path": "components/dropdown-menu",
       "aliases": []
@@ -554,16 +568,6 @@
     {
       "name": "component-lab-code-editor",
       "path": "components/lab/code-editor",
-      "aliases": []
-    },
-    {
-      "name": "component-lab-drawer",
-      "path": "components/lab/drawer",
-      "aliases": []
-    },
-    {
-      "name": "component-lab-drawer-header",
-      "path": "components/lab/drawer-header",
       "aliases": []
     },
     {

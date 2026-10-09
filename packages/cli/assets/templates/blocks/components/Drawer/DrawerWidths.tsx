@@ -5,11 +5,11 @@
 /**
  * @input A pixel, rem, or percentage width and controlled open state
  * @output A Drawer demonstrating the selected width budget
- * @position Copyable Lab Drawer example
+ * @position Copyable Drawer example
  */
 
 import {useState} from 'react';
-import {Drawer, DrawerHeader} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/core/Drawer';
 import {Button} from '@astryxdesign/core/Button';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {HStack} from '@astryxdesign/core/Stack';

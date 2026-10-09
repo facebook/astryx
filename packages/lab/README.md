@@ -59,7 +59,7 @@ Authoring is the same two-artifact flow a Core author uses; the only difference 
 1. **Component doc** — `src/<Name>/<Name>.doc.mjs` exporting `docs` (props, usage, playground config, `examples`). Picked up automatically on canary; no registration anywhere.
 2. **Runnable demos** — same-stem pairs in `blocks/`: `<BlockName>.tsx` + `<BlockName>.doc.mjs` (a `TemplateDoc` stamped `type: 'block'`). Discovered automatically once this package declares the directory — nothing per-component. The docsite renders the pair as the component page's showcase/examples and the playground can import anything the package exports.
 
-This package declares that directory once: `templates: './blocks'` in `astryx.integration.mjs`, and `"blocks"` in the `files` list in `package.json`. A new demo is just its block pair.
+Lab has no block pairs today, so it declares no `blocks/` directory. Add the declaration together with the first pair: `templates: './blocks'` in `astryx.integration.mjs`, `"blocks"` in the `files` list in `package.json`, and `"blocks/**/*"` in `tsconfig.docs.json`. An empty declared directory fails `astryx integration pack --check`. After that, a new demo is just its block pair.
 
 How a demo reaches a component page: **`exampleFor: '<Component>'` (or `alsoExampleFor`) is what attaches a block** — the page renders every block attributed to it, whatever the block is named. The block's `name` is the demo's display name; component-doc example `labels` are CLI-snippet headings. The two are independent mechanisms.
 

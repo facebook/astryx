@@ -6,7 +6,7 @@
  * @file Drawer.tsx
  * @input Uses React, StyleX, theme tokens and text defaults, the Dialog purpose type, shared focus/dismissal/depth primitives, container padding lowering, scroll locking/dialog presence, BaseProps, merged refs/props, themeProps
  * @output Exports Drawer component and DrawerProps
- * @position Lab implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
+ * @position Core implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
  *
  * Overlay panel for inspectors and detail views — the "click a table row,
  * see its details" pattern. Slides in from the inline start or end edge and
@@ -49,16 +49,17 @@
  * root dialog stays the overlay boundary (`overlayPaddingReset`).
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/lab/src/Drawer/Drawer.doc.mjs (props table, features, usage)
- * - /packages/lab/src/Drawer/Drawer.test.tsx (tests for new/changed behavior)
- * - /packages/lab/src/Drawer/Drawer.spec.md (component contract)
- * - /packages/lab/src/Drawer/index.ts (exports if types change)
+ * - /packages/core/src/Drawer/Drawer.doc.mjs (props table, features, usage)
+ * - /packages/core/src/Drawer/Drawer.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Drawer/Drawer.spec.md (component contract)
+ * - /packages/core/src/Drawer/index.ts (exports if types change)
+ * - /packages/cli/assets/templates/blocks/components/Drawer/ (showcase blocks)
  * - /apps/storybook/stories/Drawer.stories.tsx (examples and visual coverage)
  */
 
 import {useCallback, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '@astryxdesign/core';
+import type {BaseProps} from '../BaseProps';
 import {
   borderVars,
   colorVars,
@@ -67,28 +68,20 @@ import {
   shadowVars,
   typeScaleVars,
   typographyVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import type {DialogPurpose} from '@astryxdesign/core/Dialog';
-import {
-  useFocusTrap,
-  useMergedRefs,
-  useScrollLock,
-} from '@astryxdesign/core/hooks';
-import {LayerDepthProvider, useLayerDismissal} from '@astryxdesign/core/Layer';
-import {
-  composeEventHandlers,
-  mergeProps,
-  themeProps,
-} from '@astryxdesign/core/utils';
-import {container, overlayPaddingReset} from '@astryxdesign/core/Layout';
+} from '../theme/tokens.stylex';
+import type {DialogPurpose} from '../Dialog';
+import {useFocusTrap, useMergedRefs, useScrollLock} from '../hooks';
+import {LayerDepthProvider, useLayerDismissal} from '../Layer';
+import {composeEventHandlers, mergeProps, themeProps} from '../utils';
+import {container, overlayPaddingReset} from '../Layout';
 import {
   containerPaddingBlockEndVarStyles,
   containerPaddingBlockStartVarStyles,
   containerPaddingInlineVarStyles,
   paddingStyles,
   spacingStepToToken,
-} from '@astryxdesign/core/Layout/padding.stylex';
-import type {SpacingStep, SpacingToken} from '@astryxdesign/core/Layout';
+} from '../Layout/padding.stylex';
+import type {SpacingStep, SpacingToken} from '../Layout';
 import {useDrawerDialogPresence} from './useDrawerDialogPresence';
 
 // =============================================================================
@@ -108,7 +101,8 @@ const MOBILE_WIDTH_FULL = '100dvw';
 
 const styles = stylex.create({
   dialog: {
-    // Keep the layer text boundary local rather than exposing Core styling internals.
+    // The layer text baseline, applied locally: Drawer does not use the
+    // private content boundary (architecture:layer-runtime).
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
     fontWeight: typeScaleVars['--text-body-weight'],

@@ -4,7 +4,7 @@
  * @file DrawerHeader.test.tsx
  * @input Uses vitest, @testing-library/react, DrawerHeader component
  * @output Unit tests for DrawerHeader rendering, close action, slots, and theming targets
- * @position Lab testing; validates DrawerHeader.tsx implementation
+ * @position Core testing; validates DrawerHeader.tsx implementation
  *
  * SYNC: When DrawerHeader.tsx changes, update tests to match new behavior
  */

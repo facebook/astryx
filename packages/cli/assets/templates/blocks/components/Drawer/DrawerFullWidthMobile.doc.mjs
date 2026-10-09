@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
-export default {
+export const doc = {
   type: 'block',
-  name: 'Width budget: pixels or any CSS length',
-  displayName: 'Width budget: pixels or any CSS length',
+  name: 'Wide desktop panel, full-width on mobile',
+  displayName: 'Wide desktop panel, full-width on mobile',
   description:
-    'Compare a numeric pixel width with rem and percentage lengths. The width budget also caps the drawer on mobile.',
+    'Use a 560px desktop width and isFullWidthOnMobile to fill the viewport below 640px, without the default page reveal.',
   exampleFor: 'Drawer',
   isReady: true,
   aspectRatio: 16 / 9,
@@ -15,7 +15,6 @@ export default {
     'Button',
     'Layout',
     'LayoutContent',
-    'HStack',
     'DrawerHeader',
     'Text',
   ],

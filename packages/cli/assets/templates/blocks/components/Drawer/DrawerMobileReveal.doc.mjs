@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
-export default {
+export const doc = {
   type: 'block',
-  name: 'Wide desktop panel, full-width on mobile',
-  displayName: 'Wide desktop panel, full-width on mobile',
+  name: 'Mobile: the 56px page reveal (default)',
+  displayName: 'Mobile: the 56px page reveal (default)',
   description:
-    'Use a 560px desktop width and isFullWidthOnMobile to fill the viewport below 640px, without the default page reveal.',
+    'Below 640px, the default drawer leaves at least 56px of the page visible while respecting its width budget. Open this example in a narrow viewport to see the reveal.',
   exampleFor: 'Drawer',
   isReady: true,
   aspectRatio: 16 / 9,
