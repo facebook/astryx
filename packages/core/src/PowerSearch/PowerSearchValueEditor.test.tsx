@@ -327,7 +327,7 @@ describe('DateRangeEditor', () => {
       );
 
       expect(
-        screen.getByRole('button', {name: /^date range:/i}),
+        screen.getByRole('combobox', {name: /^date range:/i}),
       ).toHaveTextContent('Jan 5 – Jan 20');
       expect(onChange).not.toHaveBeenCalled();
     } finally {
@@ -357,7 +357,7 @@ describe('DateRangeEditor', () => {
       );
 
       expect(
-        screen.getByRole('button', {name: /^date range:/i}),
+        screen.getByRole('combobox', {name: /^date range:/i}),
       ).toHaveTextContent('Jan 10 – Jan 20');
       expect(onChange).not.toHaveBeenCalled();
     } finally {

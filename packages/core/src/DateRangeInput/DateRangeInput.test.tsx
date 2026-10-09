@@ -21,6 +21,11 @@ function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
 // popover keeps a two-month Calendar (~85 role=button nodes) mounted, which
 // made every role+name query compute ~85 accessible names through jsdom's
 // slow getComputedStyle (~450ms per query). See fastRoleQueries.ts.
+// The trigger is role=combobox (the only one in the tree), so trigger lookups
+// stay cheap even with a name matcher: one candidate, one name computation.
+// Most lookups are role-only for brevity; the accessible name itself
+// (label + value/placeholder via aria-label) is pinned by the name-matched
+// assertions in the combobox-exposure and formatted-range tests.
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateRangeInput} from './DateRangeInput';
 import type {DateRange} from './DateRangeInput';
@@ -67,7 +72,9 @@ describe('DateRangeInput', () => {
         hasClear={false}
       />,
     );
-    const trigger = getButton(/Range:/);
+    // Name-matched on purpose: guards that aria-label composes the label with
+    // the displayed value ("Range: Mar ..."), which AT announces on focus.
+    const trigger = screen.getByRole('combobox', {name: /^Range: .*Mar/});
     expect(trigger.textContent).toMatch(/Mar/);
     expect(trigger.textContent).toMatch(/15/);
     expect(trigger.textContent).toMatch(/22/);
@@ -121,6 +128,22 @@ describe('DateRangeInput', () => {
     expect(screen.getByText('Range')).toBeInTheDocument();
   });
 
+  it('exposes the trigger as a combobox (aria-required is not allowed on role=button)', () => {
+    render(
+      <DateRangeInput
+        label="Range"
+        isRequired
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+    // Name-matched: the empty-value name is "Range: <placeholder>".
+    const trigger = screen.getByRole('combobox', {name: /^Range:/});
+    expect(trigger).toHaveAttribute('aria-required', 'true');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('sets aria-required when isRequired is true', () => {
     render(
       <DateRangeInput
@@ -130,13 +153,13 @@ describe('DateRangeInput', () => {
         onChange={() => {}}
       />,
     );
-    const trigger = getButton(/Range/);
+    const trigger = screen.getByRole('combobox');
     expect(trigger).toHaveAttribute('aria-required', 'true');
   });
 
   it('does not set aria-required when isRequired is false', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
-    const trigger = getButton(/Range/);
+    const trigger = screen.getByRole('combobox');
     expect(trigger).not.toHaveAttribute('aria-required');
   });
 
@@ -149,25 +172,82 @@ describe('DateRangeInput', () => {
         onChange={() => {}}
       />,
     );
-    const trigger = getButton(/Range/);
+    const trigger = screen.getByRole('combobox');
     expect(trigger).toBeDisabled();
   });
 
   it('is not disabled by default', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
-    const trigger = getButton(/Range/);
+    const trigger = screen.getByRole('combobox');
     expect(trigger).not.toBeDisabled();
   });
 
   it('trigger has aria-haspopup="dialog"', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
-    const trigger = getButton(/Range/);
+    const trigger = screen.getByRole('combobox');
     expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
   });
 
   it('trigger has aria-expanded=false by default', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
-    const trigger = getButton(/Range/);
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('opens the dialog on ArrowDown and moves focus into it', async () => {
+    const user = userEvent.setup();
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    await user.tab();
+    expect(trigger).toHaveFocus();
+
+    await user.keyboard('{ArrowDown}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // Same as click: the trigger is select-only (nothing to type into), so
+    // focus moves into the dialog rather than staying on the trigger.
+    await waitFor(() => {
+      expect(
+        screen
+          .getByRole('dialog', {hidden: true})
+          .contains(document.activeElement),
+      ).toBe(true);
+    });
+  });
+
+  it('opens the dialog on Alt+ArrowDown', () => {
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    fireEvent.keyDown(trigger, {key: 'ArrowDown', altKey: true});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('prevents the default page scroll on ArrowDown', () => {
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    // fireEvent returns false when a handler called preventDefault().
+    expect(fireEvent.keyDown(trigger, {key: 'ArrowDown'})).toBe(false);
+  });
+
+  it('keeps the dialog open on ArrowDown while already open', () => {
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(trigger, {key: 'ArrowDown'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not open on ArrowDown while loading', () => {
+    render(
+      <DateRangeInput
+        label="Range"
+        value={null}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    fireEvent.keyDown(trigger, {key: 'ArrowDown'});
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
@@ -180,7 +260,7 @@ describe('DateRangeInput', () => {
         status={{type: 'error', message: 'Required'}}
       />,
     );
-    const trigger = getButton(/Range/);
+    const trigger = screen.getByRole('combobox');
     expect(trigger).toHaveAttribute('aria-invalid', 'true');
   });
 
@@ -193,7 +273,7 @@ describe('DateRangeInput', () => {
         status={{type: 'warning', message: 'Watch out'}}
       />,
     );
-    const trigger = getButton(/Range/);
+    const trigger = screen.getByRole('combobox');
     expect(trigger).not.toHaveAttribute('aria-invalid');
   });
 
@@ -218,7 +298,7 @@ describe('DateRangeInput', () => {
         status={{type: 'error', message: 'Please select dates'}}
       />,
     );
-    const trigger = getButton(/Range/);
+    const trigger = screen.getByRole('combobox');
     const describedBy = trigger.getAttribute('aria-describedby')!;
     const ids = describedBy.split(' ');
     const found = ids.some(id => {
@@ -517,7 +597,7 @@ describe('DateRangeInput', () => {
     it('shows the reason tooltip on hover when disabled with a reason', async () => {
       renderDisabled({disabledMessage: 'You need the Editor role'});
 
-      const trigger = getButton(/Range:/);
+      const trigger = screen.getByRole('combobox');
       const container = trigger.parentElement as HTMLElement;
       const tooltip = screen.getByRole('tooltip', h);
       expect(tooltip).toHaveTextContent('You need the Editor role');
@@ -539,7 +619,7 @@ describe('DateRangeInput', () => {
 
       const tooltip = screen.getByRole('tooltip', h);
       await user.tab();
-      expect(getButton(/Range:/)).toHaveFocus();
+      expect(screen.getByRole('combobox')).toHaveFocus();
       await waitFor(() => {
         expect(tooltip).toHaveAttribute('popover-open');
       });
@@ -564,14 +644,14 @@ describe('DateRangeInput', () => {
 
     it('keeps the trigger focusable via aria-disabled when a reason is provided', () => {
       renderDisabled({disabledMessage: 'You need the Editor role'});
-      const trigger = getButton(/Range:/);
+      const trigger = screen.getByRole('combobox');
       expect(trigger).not.toBeDisabled();
       expect(trigger).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('links the reason tooltip from the trigger via aria-describedby', () => {
       renderDisabled({disabledMessage: 'You need the Editor role'});
-      const trigger = getButton(/Range:/);
+      const trigger = screen.getByRole('combobox');
       const tooltip = screen.getByRole('tooltip', h);
       expect(trigger.getAttribute('aria-describedby')).toContain(tooltip.id);
     });
@@ -580,17 +660,20 @@ describe('DateRangeInput', () => {
       const user = userEvent.setup();
       renderDisabled({disabledMessage: 'You need the Editor role'});
 
-      const trigger = getButton(/Range:/);
+      const trigger = screen.getByRole('combobox');
       await user.click(trigger);
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
       await user.keyboard('{Enter}');
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+      await user.keyboard('{ArrowDown}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
     });
 
     it('remains natively disabled when disabled without a reason', () => {
       renderDisabled();
-      const trigger = getButton(/Range:/);
+      const trigger = screen.getByRole('combobox');
       expect(trigger).toBeDisabled();
       expect(trigger).not.toHaveAttribute('aria-disabled');
     });
