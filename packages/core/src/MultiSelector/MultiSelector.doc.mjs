@@ -92,6 +92,12 @@ const anatomy = [
       'Message shown when the shared panel content has no options or no search matches.',
   },
   {
+    name: 'Panel footer',
+    required: false,
+    description:
+      'Optional caller content under the list, outside the listbox, in both presentations.',
+  },
+  {
     name: 'Pointer popup',
     required: false,
     description:
@@ -278,6 +284,12 @@ export const docs = {
           description:
             'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time. The announcement is the text this content renders, read from the DOM, so an element is announced as written and aria-hidden parts are left out of both.',
           default: "'No results found'",
+        },
+        {
+          name: 'footer',
+          type: 'ReactNode',
+          description:
+            'Content at the foot of the panel, under the list, such as a door to where the options are managed. It sits outside the listbox, so its controls are never options, stays in view while the list scrolls, and renders in both presentations. Tab continues from the search field, or from the trigger or listbox that owns the keys, into its controls; in the popover, Tab past its last control closes the panel. A press inside it is not a light dismiss; close the panel through handleRef when a control should.',
         },
         {
           name: 'hasCreate',
@@ -502,6 +514,8 @@ export const docsZh = {
         searchPlaceholder: '搜索输入的占位文本。',
         emptyText: '没有可显示的选项时，下拉面板中显示的内容。',
         emptySearchText: '搜索查询未匹配到任何选项时，下拉面板中显示的内容。',
+        footer:
+          '面板底部、列表下方的内容，例如通往选项管理页面的入口。它位于列表框之外，因此其中的控件不是选项；列表滚动时它保持可见，两种呈现方式都会渲染。Tab 会从搜索框（或拥有键盘的触发器/列表框）继续进入其中的控件；在弹出框中，从最后一个控件继续按 Tab 会关闭面板。在其中按下不会触发轻量关闭；需要关闭面板时请通过 handleRef。',
         hasCreate:
           '配合 hasSearch：当输入的文本与任何选项标签都不匹配时，在列表首行提供“创建 "<query>"”行；选中后通过 onChange 以 {type: "create", query} 描述符报告，调用方需在同一次更新中添加该选项。',
         isDisabled: '禁用选择器。',
@@ -651,6 +665,8 @@ export const docsDense = {
         searchPlaceholder: 'search placeholder',
         emptyText: 'panel content when there are no options',
         emptySearchText: 'panel content when the query matches nothing',
+        footer:
+          'content under the list, outside the listbox, both presentations; Tab continues into its controls; popover closes on Tab past the last; not a light dismiss',
         hasCreate:
           'with hasSearch: first row is Create "<query>" when no option label matches; reported through onChange with a {type: "create", query} descriptor; caller adds the option',
         isDisabled: 'disables selector',
