@@ -119,9 +119,10 @@ the narrowest surface that owns it. Global controls require evidence that their 
 and meaning are global. Cross-cutting guarantees must be complete, observable, and
 independent for each invocation.
 
-Admission is part of that contract. Main is heading for a patch unless an owner has
-scheduled a minor, and incompatible work waits for that schedule. A release does not
-change shape because one removal merged ahead of the decision to allow it.
+Admission is part of that contract. Main declares the next planned version, and a
+release branch releases exactly that version. Incompatible work ships only in a
+release whose declared version is a minor. A release does not change shape because
+one removal merged ahead of the decision to allow it.
 
 ## Non-goals
 
@@ -182,7 +183,9 @@ change shape because one removal merged ahead of the decision to allow it.
   deprecation is `[feat]` plus `deprecation`, `DEP-*`, and `CLN-*` metadata and remains
   patch-compatible while old usage works. Approved removal is `[breaking]` plus
   `planned-removal`, its applicable lifecycle id, and `CLN-*`. While Astryx packages
-  remain on `0.x`, the incompatible tier is minor; compatible work is patch.
+  remain on `0.x`, the incompatible tier is minor; compatible work is patch. A
+  Changeset's bump states the tier its change requires; it never sets the release
+  version, which is the version main declares under FR46.
   Documentation-only, test-only, and private-package-only changes need no Changeset.
   Existing Changesets keep their current tag and validated bump semantics and MUST NOT
   be mass-migrated; the additive metadata is required only when work enters a lifecycle
@@ -586,47 +589,52 @@ change shape because one removal merged ahead of the decision to allow it.
   schemas remain contractual under FR3 and FR13. Template identifiers, slugs, display
   names, and names are outside this requirement and remain governed separately by FR9,
   FR11, and applicable registry identity contracts.
-- **FR46 — Main targets a patch by default.** Between releases, main is heading
-  for the next patch of the version its published packages already share. That
-  default needs no file, no ceremony, and no per-change approval: it is simply
-  what main is for, and the overwhelming majority of work ships under it.
-- **FR47 — A minor is scheduled explicitly, by an owner, before its work
-  lands.** Main targets a minor only while a release owner has said so in the
-  repository, naming the version and the day it is scheduled for. That statement
-  is the only thing that switches the mode. Pending Changesets MUST NOT switch
-  it: a `[breaking]` entry waiting to merge is the work the mode governs, never
-  evidence for it, and treating it as evidence would let the release retarget
-  itself. The order is fixed — schedule the minor, then land the breaking work.
-- **FR48 — While main targets a patch, incompatible work is refused.** A
-  Changeset carrying the `[breaking]` category, or the `planned-removal` or
-  `incompatible-fix` classification of FR42, is inadmissible and MUST be
-  rejected before merge. The admissible route is FR28's replacement-first
-  deprecation: ship the working replacement, keep old usage equivalent, take the
-  patch bump, and let the removal land once a minor is scheduled. This gate
-  decides patch-versus-minor admission and nothing else; the lifecycle
-  conditions of FR28, FR31, FR32, and FR37, and every review and release
-  requirement outside this record, continue to apply on their own terms and are
-  neither restated nor enforced here.
-- **FR49 — The schedule fails closed.** A target statement admits incompatible
-  work only when it can be read with certainty and still applies. It is refused
-  when it is malformed or carries anything beyond the version and the date; when
-  its version is not the minor successor of the version the published packages
-  share, so that the schedule and the repository disagree; when its scheduled
-  day has passed, so that a forgotten statement cannot hold the mode open
-  indefinitely; and when the published packages do not all carry one identical
-  `MAJOR.MINOR.PATCH` version, so that there is no base to check it against. A
-  prerelease or canary identifier is publication metadata and is never that
-  base. In each case main stays on its patch default rather than inheriting a
-  mode from an input nobody can trust.
-- **FR50 — Returning to a patch target is ordinary cleanup.** Once the scheduled
-  minor has shipped, removing the target statement is part of the normal
-  post-release setup that readies main for the next release, alongside consuming
-  the Changesets. No separate approval is needed to go back to the default, and
-  FR49's expiry means a statement left behind stops admitting work on its own.
-  A rejection names the version main is targeting and both ways forward —
-  deprecate now under FR28 and keep the patch, or schedule the minor under
-  FR47 — and names no particular version, surface, or contributor as a special
-  case, so a contributor who has never read this spec can act on it.
+- **FR46 — Main declares the next planned version.** The fixed package group's
+  version in main's `package.json` files is the next planned release version. It
+  changes only through an explicit release-owner bump on main and never moves
+  backward. Main publishes only canaries, versioned
+  `<declared version>-canary.<commit>`. Pull-request checks on main validate each
+  Changeset's format, category, bump, and coverage; they do not compare pending
+  Changesets with a published version and do not derive a release version.
+- **FR47 — A release branch releases the declared version.** A release branch's
+  version is the fixed-group version declared at its cut commit. Admission, the
+  release plan, Changeset consumption, changelog generation, and stable
+  publication run only on a release branch. Consuming Changesets writes changelog
+  entries under the declared version and never moves it: a `[breaking]` Changeset
+  on a branch that declares `0.7.0` releases `0.7.0`, and a patch Changeset on a
+  branch that declares `0.6.8` releases `0.6.8`. Pending Changesets MUST NOT
+  choose the version: an entry waiting to be released is the work admission
+  governs, never evidence for the version that carries it.
+- **FR48 — Admission checks the declared tier.** The declared version is either
+  the patch successor or the minor successor of the latest stable release, and
+  that successor is the release tier. In a patch release, a Changeset carrying the
+  `[breaking]` category, or the `planned-removal` or `incompatible-fix`
+  classification of FR42, is inadmissible and MUST be rejected before the release
+  consumes it. The admissible routes are FR28's replacement-first deprecation,
+  which keeps old usage equivalent and lets the removal ship in a minor release,
+  or an owner bump of main to the minor successor before the cut. This gate
+  decides patch-versus-minor admission and nothing else; the lifecycle conditions
+  of FR28, FR31, FR32, and FR37, and every review and release requirement outside
+  this record, continue to apply on their own terms and are neither restated nor
+  enforced here.
+- **FR49 — The declared version fails closed.** A release is refused when the
+  fixed group does not declare one identical `MAJOR.MINOR.PATCH` version; when the
+  release version differs from the version declared at the cut commit; when no
+  stable release exists to compare against; and when the declared version is
+  neither the patch nor the minor successor of the latest stable release,
+  including a version that is already released. The latest stable release is the
+  newest `vX.Y.Z` tag. A prerelease or canary identifier is publication metadata
+  and is never a declared version or a base.
+- **FR50 — Post-release sync never moves main backward.** Syncing a published
+  release back to main carries its changelogs and generated release outputs and
+  deletes the Changesets it consumed. Each main package version becomes the higher
+  of main's version and the released version, so main keeps an owner's later bump
+  and is never left below a published release. Choosing the next planned version
+  is a separate owner bump on main. A rejection names the declared version, the
+  latest stable release, and both ways forward — deprecate under FR28, or bump
+  main to the minor successor under FR46 — and names no particular surface or
+  contributor as a special case, so a contributor who has never read this spec
+  can act on it.
 
 ### Platform support
 
@@ -686,8 +694,10 @@ than restating them:
   [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) implement fixed
   grouping, declaration validation, and checks. Their current behavior is not policy
   when it differs from this spec. The `fixed` group in that config is why one
-  incompatible Changeset moves every published package, and `check-changesets.mjs`
-  is where the FR48 admission gate and its FR50 message belong; neither file may
+  incompatible Changeset puts every published package in a minor release.
+  `check-changesets.mjs` validates Changeset format on every pull request, and the
+  release-branch tooling under [`scripts/release/`](../../../scripts/release/)
+  implements FR47–FR50 admission, versioning, and sync; none of these files may
   narrow or widen the rule it implements.
 
 The direct current owner decides the intended product contract. This spec decides how
@@ -714,12 +724,13 @@ Public lifecycle classification remains in force with these operational effects:
   `docs` command and machine-readable schemas stay contractual; and
 - exact-main release comparison rejects unclassified deltas.
 
-Main targets a patch by default. A scheduled minor makes breaking work admissible
-before that work lands; a pending `[breaking]` Changeset cannot retarget its own
-release. Because the fixed package group publishes as one version, this admission gate
-prevents one unapproved removal from moving the whole release to a minor. It does not
-add a per-change approval path: lifecycle, cleanup, migration, and freeze requirements
-remain independently enforceable.
+Main declares the next planned version, publishes canaries of it, and checks only
+Changeset quality on pull requests. A release branch releases that version unchanged
+and admits incompatible work only when it is a minor; a pending `[breaking]`
+Changeset cannot choose its own release. Because the fixed package group publishes as
+one version, this admission gate prevents one unapproved removal from moving the whole
+release to a minor. It does not add a per-change approval path: lifecycle, cleanup,
+migration, and freeze requirements remain independently enforceable.
 
 These requirements alter no published package by themselves and need no Changeset.
 Authoring helpers, validators, metadata projections, compatibility snapshots, release
@@ -746,10 +757,10 @@ lands, maintainers apply its requirement in review and release approval.
 | FR36–FR40 | Minor plan, locked final-patch receipt, three-way delta classification, and separated release notes                                                                                                   | ordinary cadence, immediate pair, cleanup, release metadata, pre/post-lock compatible fix                                                                                                     | Cadence becomes eligibility, the final patch is recut for bookkeeping, a feature or incompatible fix enters the incidental-fix lane, or release notes merge cleanup with fixes                                                                                        |
 | FR41–FR44 | Schema validation, PR declaration, semantic stable/base/head comparisons, exact-main gate, and immutable publish/rollback receipt                                                                     | duplicate ids, missing evidence, route/schema removal, old-client metadata, partial publish, safe rollback                                                                                    | A label passes without semantics, a delta maps zero or multiple times, fixed-group membership drifts, or a release rebuilds under one identity                                                                                                                        |
 | FR45      | Docs route inventory, repository-reference checks, and Changeset review                                                                                                                               | catalog entry rename, former-route miss, stable command and JSON schema                                                                                                                       | Catalog routing is frozen as API, or a rename silently changes the contractual command or response schema                                                                                                                                                             |
-| FR46–FR47 | Admission tests pairing the default mode and an explicit scheduled minor with each Changeset category                                                                                                 | no target statement, a scheduled minor, a pending `[breaking]` entry with no statement                                                                                                        | A pending Changeset switches the mode by itself, or the default requires a file to be the default                                                                                                                                                                     |
-| FR48      | Category and classification admission under each mode                                                                                                                                                 | patch default with `[breaking]`, patch default with a deprecation, scheduled minor with `[breaking]`                                                                                          | Incompatible work passes under the patch default, or a deprecation is refused under it                                                                                                                                                                                |
-| FR49      | Malformed, inconsistent, expired, and mixed-version target fixtures                                                                                                                                   | unknown field, non-semver version, version that is not the minor successor, past scheduled day, disagreeing published versions, canary identifier                                             | An untrustworthy statement grants the minor mode, or a past schedule still admits work                                                                                                                                                                                |
-| FR50      | Removal of the statement, and message assertions on the rejection text                                                                                                                                | statement removed after the minor ships, rejection under the patch default                                                                                                                    | Returning to the default needs its own approval, or the refusal omits the target or either remedy                                                                                                                                                                     |
+| FR46–FR47 | Main pull-request checks, canary version, and a release-versioning fixture on a pre-bumped branch                                                                                                     | owner bump, version rollback on main, `[breaking]` Changeset on main, declared minor with `[breaking]`, declared patch with `[fix]`                                                           | Main checks admit or refuse by release version, main moves backward, or consuming a Changeset moves the declared version                                                                                                                                              |
+| FR48      | Category and classification admission under each declared tier                                                                                                                                        | patch release with `[breaking]`, patch release with a deprecation, minor release with `[breaking]`                                                                                            | Incompatible work passes in a patch release, or a deprecation is refused in one                                                                                                                                                                                       |
+| FR49      | Malformed and inconsistent declaration fixtures                                                                                                                                                       | disagreeing group versions, canary identifier, release version unlike the cut manifest, already-released version, skipped version, no stable tag                                              | An untrustworthy or mismatched declaration is released                                                                                                                                                                                                                |
+| FR50      | Sync fixtures and assertions on the rejection text                                                                                                                                                    | main ahead of the release, main equal to it, main behind it, a sync that lowers main                                                                                                          | A sync lowers a main version, or a refusal omits the declared version or either remedy                                                                                                                                                                                |
 
 ## Decision log
 
@@ -1020,41 +1031,33 @@ Rejected: treating every route-shaped positional value as stable CLI API. That w
 freeze documentation organization rather than protect the command and schema
 contracts readers and automation rely on.
 
-### DEC-15 — A minor is scheduled before its breaking work lands
+### DEC-15 — Main declares the version; the release branch admits work against it
 
 **Reference:** `spec:AST-017/DEC-15`
-**Decider:** `cixzhang`, `2026-10-02`
+**Decider:** `cixzhang`, `2026-10-09`
 
-Main targets a patch by default, and incompatible work is refused while it does. A
-minor becomes admissible only after a release owner schedules it in the repository,
-naming the version and the day. Scheduling comes first; the breaking work follows.
+Main's `package.json` carries the next planned version, set by a release owner, and
+main publishes only canaries of it. Release tooling runs on a release branch, which
+takes that version unchanged; admission, versioning, changelogs, and stable
+publication happen there. Incompatible work is admissible only when the declared
+version is the minor successor of the latest stable release.
 
-The order is the whole point. The publishable packages are a fixed group, so one
-`[breaking]` Changeset moves every package to a new minor. If a pending Changeset
-could establish the mode that admits it, the release would retarget itself and the
-owner would learn the shape of the release from a merge. Requiring the schedule first
-puts that decision back where it belongs, and makes an accidental breaking merge
-impossible rather than merely discouraged.
+Declaring the version on main makes the shape of each release an owner decision taken
+before the cut, keeps canaries ahead of the stable release they precede, and keeps
+main's pull-request checks about Changeset quality rather than release planning.
+Because the fixed group publishes one version, consuming a `[breaking]` Changeset on
+a branch that already declares the minor writes changelogs for that minor and never
+bumps again.
 
-Deliberately small. The statement carries a version and a date and nothing else: no
-list of Changesets, no lifecycle ids, no per-change manifest, no second approval
-path. This gate answers one question — is main on a patch or a scheduled minor — and
-leaves every other requirement where it already lives. FR28's deprecation lifecycle,
-FR31's cleanup mapping, FR37's release planning, and ordinary spec and code review
-continue to apply on their own terms; none of them is restated or enforced here.
+A `[breaking]` Changeset can merge while main declares a patch. The release that
+would carry it refuses it at admission until the work becomes a deprecation or an
+owner bumps main to the minor.
 
-Rejected: deriving the mode from the pending Changesets. It reads as elegant — the
-bumps already imply a version — but it is circular, because the entry being judged
-would be its own authorization.
+Rejected: deriving the version from pending Changesets, because the entry being judged would be its own authorization.
 
-Rejected: a per-change authorization record enumerating each approved removal with
-cleanup and lifecycle ids. It answers a question this gate is not asking, and it buys
-accuracy at the cost of bureaucracy on every breaking change, when a scheduled day is
-enough to stop the accident this exists to stop.
+Rejected: a dated schedule file beside `package.json`, because two declarations of the next version can disagree.
 
-Rejected: leaving the schedule open-ended. A statement with no date would outlive its
-release and quietly keep main in minor mode. Expiry makes a forgotten statement fail
-back to the patch default instead of silently widening what may land.
+Rejected: a sync that sets main to the released version, because it moves main backward past an owner's later bump.
 
 ### DEC-16 — Deprecation acts at authoring surfaces, not production runtime
 
