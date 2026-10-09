@@ -4,7 +4,8 @@
 
 /**
  * @file Dialog.tsx
- * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext, layerTextReset, layerStructureReset
+ * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext, layerTextReset,
+ *   layerStructureReset, modalOutlet
  * @output Exports Dialog component, DialogProps, DialogVariant, DialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by Dialog.test.tsx
  *
@@ -39,6 +40,7 @@ import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {useModalOutlet} from '../Layer/modalOutlet';
 import {
   colorVars,
   radiusVars,
@@ -550,6 +552,10 @@ export function Dialog({
       triggerElementRef.current = null;
     }
   }, [isOpen, isInline]);
+
+  // Host app-global surfaces (toasts) inside this modal while it is open, so
+  // they stay visible and operable above it.
+  useModalOutlet(dialogRef, isOpen && !isInline);
 
   // Lock body scroll when dialog is open (iOS Safari workaround)
   // Skip for inline rendering — no modal overlay to compensate for.

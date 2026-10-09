@@ -39,6 +39,7 @@ verified_by:
     packages/core/src/hooks/useFocusTrap.test.tsx,
     packages/core/src/hooks/useMenuHover.test.tsx,
     packages/core/src/Toast/ToastViewport.test.tsx,
+    packages/core/src/Toast/ToastViewport.modalHost.test.tsx,
   ]
 deciding_specs: [spec:AST-038, spec:AST-059]
 ---
@@ -313,10 +314,15 @@ general portal host for all layers. Without a provider, `useToast` creates a
 separate React root under `document.body` and mirrors root theme attributes onto
 it.
 
-ToastViewport uses `popover="manual"` for top-layer promotion and documents an
-above-dialog intent. A body-level manual popover remains behind an active native
-modal, so the current root/fallback host does not fulfill that intent. Toast
-state also lives inside the viewport.
+ToastViewport uses `popover="manual"` for top-layer promotion. Each open modal
+Dialog supplies its `<dialog>` as an outlet through the private
+`Layer/modalOutlet.ts` registry. A top-layer viewport renders into a host element
+it owns, moves that host into the latest open outlet, returns it to the
+viewport's tree position when no Dialog is open, and enters the top layer again
+after each move. Toasts therefore paint above the Dialog and stay operable inside
+it. Moving the host does not remount the rows, so entries, timers, and focus
+handoff survive. Toast state lives inside the viewport. A viewport rendered with
+`isTopLayer={false}` stays in place.
 
 CommandPalette composes native Dialog. Its normal launcher presentation therefore
 uses `showModal()`; its documentation/showcase `isInline` path does not. It
@@ -386,7 +392,8 @@ Current gaps are observable facts, not current target behavior:
   nested child branch through shared infrastructure.
 - Backdrop, manual outside, touch, and swipe paths do not share the existing
   gesture claim or one association model.
-- Toast's root and fallback hosts remain behind active native modals.
+- Toast's root and fallback hosts remain behind the other native modals:
+  Lightbox, MobileNav, and a scrim BottomSheet or BottomSheetSwitcher.
 - CommandPalette's local Escape handler bypasses shared owner selection.
 - The reduced browser fallback is not documented as non-equivalent.
 - Existing tests simulate Popover `toggle` and DOM nesting; they do not prove
@@ -491,7 +498,7 @@ this current architecture record.
 | INV6, INV7 | `useLayer.test.tsx`, `Popover.test.tsx`, `DropdownMenu.test.tsx`, and `useMenuHover.test.tsx`                                                               | Duplicate close callback or the same press/re-hover reopens a surface                                                                                                                                         |
 | INV8       | `useLayerDismissal.test.tsx`, `layerDismissalInvariants.test.tsx`, and `useFocusTrap.test.tsx`                                                              | Current top registered layer is skipped, two layers close, or a blocker leaks through                                                                                                                         |
 | INV9       | Representative Dialog, ContextMenu, Tooltip/HoverCard, and BottomSheet source/tests                                                                         | A current local channel silently changes ownership or policy                                                                                                                                                  |
-| INV10      | `LayerProvider.tsx`, `LayerProvider.test.tsx`, `useToast.tsx`, and `ToastViewport.test.tsx`                                                                 | Provider begins relocating ordinary layers, Toast fallback loses its current lifecycle, or a default provider renders differently from no provider                                                            |
+| INV10      | `LayerProvider.tsx`, `LayerProvider.test.tsx`, `useToast.tsx`, `ToastViewport.test.tsx`, and `ToastViewport.modalHost.test.tsx`                             | Provider begins relocating ordinary layers, Toast fallback loses its current lifecycle, or a default provider renders differently from no provider                                                            |
 
 Current unit coverage proves emitted styles, reducers, state transitions, and DOM
 placement. Native Popover, `<dialog>`, focus, top-layer ordering, and rendered

@@ -5,13 +5,13 @@
 /**
  * @file ToastViewport.tsx
  * @input Uses React state/effects, ToastContext, content-provider boundary, useAnnounce, viewport tokens,
- *   shared layer text reset, and placement-derived motion variables
+ *   shared layer text reset, the active modal outlet, and placement-derived motion variables
  * @output Exports the ToastViewport provider, stack, live announcement dispatch,
- *   focus handoff, safe-area-aware edge gutters, and motion context
+ *   focus handoff, safe-area-aware edge gutters, modal rehosting, and motion context
  * @position Core provider/imperative viewport for useToast()
  *
- * SYNC: When placement, stacking, focus, announcement, or safe-area behavior
- *   changes, update ToastViewport.test.tsx, Toast.doc.mjs, and Toast.stories.tsx.
+ * SYNC: When placement, stacking, hosting, focus, announcement, or safe-area
+ *   behavior changes, update ToastViewport.test.tsx, Toast.doc.mjs, and Toast.stories.tsx.
  */
 
 import {
@@ -24,6 +24,7 @@ import {
   useState,
 } from 'react';
 import type {ReactNode} from 'react';
+import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
@@ -32,6 +33,10 @@ import {useAnnounce} from '../hooks/useAnnounce';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
 import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 import {LayerContentBoundary} from '../Layer/layerScopedContext';
+import {
+  getActiveModalOutlet,
+  subscribeModalOutlets,
+} from '../Layer/modalOutlet';
 import {ToastSurface} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
@@ -47,6 +52,9 @@ const TOAST_EDGE_DRIFT = spacingVars['--spacing-2'];
 const TOAST_EDGE_DRIFT_NEGATIVE = `calc(-1 * ${TOAST_EDGE_DRIFT})`;
 
 const styles = stylex.create({
+  rootOutlet: {
+    display: 'contents',
+  },
   viewport: {
     position: 'fixed',
     zIndex: 500,
@@ -197,8 +205,10 @@ export interface ToastViewportProps {
    */
   layerInset?: LayerInset;
   /**
-   * Promote viewport to CSS top layer via popover="manual".
-   * Set to false when inside a dialog or other top-layer element.
+   * Promote viewport to CSS top layer via popover="manual". While a Dialog
+   * is open, the viewport moves into the latest one so toasts stay visible
+   * and clickable above it. Set to false to render in place, e.g. a viewport you mount
+   * inside your own top-layer element.
    * @default true
    */
   isTopLayer?: boolean;
@@ -334,7 +344,6 @@ export function ToastViewport({
   const toastsRef = useRef(toasts);
   toastsRef.current = toasts;
 
-  // Show the popover on mount so it enters the top layer.
   const viewportRef = useRef<HTMLDivElement>(null);
   // Toast ids whose exit has begun — guards onHide from double-firing (see
   // removeToast). Mirrors exitingIds state, readable synchronously.
@@ -549,20 +558,69 @@ export function ToastViewport({
     insetStyle.insetInlineEnd = inset.end;
   }
 
-  // Show the popover on mount so it enters the top layer
-  useEffect(() => {
+  // A top-layer viewport renders into a host element this component owns, so
+  // the host can move into the latest open native modal and back without
+  // React remounting the rows: their timers and gesture state live there.
+  // Outside a modal the host sits at the viewport's own place in the tree.
+  const rootOutletRef = useRef<HTMLDivElement>(null);
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
     if (!isTopLayer) {
       return;
     }
-    const el = viewportRef.current;
-    if (el && typeof el.showPopover === 'function') {
-      try {
-        el.showPopover();
-      } catch {
-        /* already showing */
-      }
-    }
+    const element = document.createElement('div');
+    element.style.display = 'contents';
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- the host exists only on the client, so server and hydration markup carry no portal
+    setHost(element);
+    return () => {
+      element.remove();
+      setHost(null);
+    };
   }, [isTopLayer]);
+
+  useLayoutEffect(() => {
+    if (!isTopLayer || host == null) {
+      return;
+    }
+    const place = () => {
+      const parent = getActiveModalOutlet() ?? rootOutletRef.current;
+      if (parent == null) {
+        return;
+      }
+      if (host.parentNode !== parent) {
+        // Moving a node blurs whatever inside it had focus.
+        const active = document.activeElement;
+        const hadFocus = active instanceof HTMLElement && host.contains(active);
+        parent.appendChild(host);
+        if (hadFocus) {
+          active.focus({preventScroll: true});
+        }
+      }
+      // Leaving the document hid the popover. Showing it again puts it above
+      // the modal that just opened, or above everything once the last modal
+      // closed.
+      const el = viewportRef.current;
+      if (el == null || typeof el.showPopover !== 'function') {
+        return;
+      }
+      let isShowing = false;
+      try {
+        isShowing = el.matches(':popover-open');
+      } catch {
+        /* :popover-open unsupported */
+      }
+      if (!isShowing) {
+        try {
+          el.showPopover();
+        } catch {
+          /* already showing */
+        }
+      }
+    };
+    place();
+    return subscribeModalOutlets(place);
+  }, [isTopLayer, host]);
 
   // F6 jumps focus into the toast viewport — the standard "go to
   // notifications" affordance. Focus the first control in the newest toast,
@@ -613,42 +671,54 @@ export function ToastViewport({
           : styles.bottomEnd;
   const isReversed = position === 'topEnd' || position === 'topStart';
 
+  const viewport = (
+    <div
+      ref={viewportRef}
+      role={hasToasts ? 'region' : undefined}
+      aria-label={hasToasts ? t('@astryx.toast.viewport') : undefined}
+      tabIndex={hasToasts ? -1 : undefined}
+      // popover="manual" promotes to the top layer; the host effect above
+      // keeps it above the latest open modal. Omitted when the caller
+      // renders the viewport in place.
+      popover={isTopLayer ? 'manual' : undefined}
+      {...mergeProps(
+        stylex.props(
+          layerTextReset.reset,
+          layerStructureReset.reset,
+          styles.viewport,
+          styles.viewportInlineSpan,
+          posStyle,
+        ),
+        {
+          style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
+        },
+      )}>
+      <LayerContentBoundary>
+        {visibleToasts.map(entry => (
+          <ToastRow
+            key={entry.id}
+            entry={entry}
+            isExiting={exitingIds.has(entry.id)}
+            isReversed={isReversed}
+            onExited={handleExited}
+            onDismiss={removeToast}
+          />
+        ))}
+      </LayerContentBoundary>
+    </div>
+  );
+
   return (
     <ToastContext value={contextValue}>
       {children}
-      <div
-        ref={viewportRef}
-        role={hasToasts ? 'region' : undefined}
-        aria-label={hasToasts ? t('@astryx.toast.viewport') : undefined}
-        tabIndex={hasToasts ? -1 : undefined}
-        // popover="manual" promotes to the top layer (above dialogs).
-        // Omitted inside dialogs where the viewport is already in a top layer.
-        popover={isTopLayer ? 'manual' : undefined}
-        {...mergeProps(
-          stylex.props(
-            layerTextReset.reset,
-            layerStructureReset.reset,
-            styles.viewport,
-            styles.viewportInlineSpan,
-            posStyle,
-          ),
-          {
-            style: Object.keys(insetStyle).length > 0 ? insetStyle : undefined,
-          },
-        )}>
-        <LayerContentBoundary>
-          {visibleToasts.map(entry => (
-            <ToastRow
-              key={entry.id}
-              entry={entry}
-              isExiting={exitingIds.has(entry.id)}
-              isReversed={isReversed}
-              onExited={handleExited}
-              onDismiss={removeToast}
-            />
-          ))}
-        </LayerContentBoundary>
-      </div>
+      {isTopLayer ? (
+        <>
+          <div ref={rootOutletRef} {...stylex.props(styles.rootOutlet)} />
+          {host != null ? createPortal(viewport, host) : null}
+        </>
+      ) : (
+        viewport
+      )}
     </ToastContext>
   );
 }
