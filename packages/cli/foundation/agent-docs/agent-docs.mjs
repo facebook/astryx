@@ -42,52 +42,17 @@ import {
   LEGACY_MARKER_END,
   discoverAgentDocs,
   isAstryxInitialized,
+  isAstryxPromptInReach,
 } from './agent-doc-state.mjs';
 
 // The agent-doc locations, markers, and the setup-state predicates
-// (discoverAgentDocs, isAstryxInitialized) are the ONE canonical contract. They
-// live in the dependency-free leaf ./agent-doc-state.mjs so the postinstall
-// nudge (enforcement layer 2) can load them safely at install time. Re-exported
-// here so existing importers (init/upgrade commands, the layer-3 nudge in
-// clients/cli/index.mjs, tests) keep their `from './agent-docs.mjs'` paths.
-export {discoverAgentDocs, isAstryxInitialized};
-
-/**
- * Does an agent working in `startDir` already have the Astryx prompt in reach?
- *
- * Coding agents read the agent docs between the repository root and the folder
- * they work in. So inside a git repository, init's block in any folder from
- * `startDir` up to the repository root counts: a workspace package of a
- * monorepo initialized at its root is set up. Outside a repository only
- * `startDir` itself is checked, as {@link isAstryxInitialized} does.
- *
- * @param {string} [startDir=process.cwd()]
- * @returns {boolean}
- */
-export function isAstryxPromptInReach(startDir = process.cwd()) {
-  const start = path.resolve(startDir);
-  const repositoryRoot = findRepositoryRoot(start);
-  if (!repositoryRoot) return isAstryxInitialized(start);
-  for (let dir = start; ; dir = path.dirname(dir)) {
-    if (isAstryxInitialized(dir)) return true;
-    if (dir === repositoryRoot) return false;
-  }
-}
-
-/**
- * The nearest folder at or above `start` that holds `.git` (a folder, or the
- * file a worktree uses), or null outside a repository.
- * @param {string} start
- * @returns {string | null}
- */
-function findRepositoryRoot(start) {
-  for (let dir = start; ; ) {
-    if (fs.existsSync(path.join(dir, '.git'))) return dir;
-    const parent = path.dirname(dir);
-    if (parent === dir) return null;
-    dir = parent;
-  }
-}
+// (discoverAgentDocs, isAstryxInitialized, isAstryxPromptInReach) are the ONE
+// canonical contract. They live in the dependency-free leaf
+// ./agent-doc-state.mjs so the postinstall nudge (enforcement layer 2) can load
+// them safely at install time. Re-exported here so existing importers
+// (init/upgrade commands, the layer-3 nudge in clients/cli/index.mjs, tests)
+// keep their `from './agent-docs.mjs'` paths.
+export {discoverAgentDocs, isAstryxInitialized, isAstryxPromptInReach};
 
 const MAX_PROJECT_AGENT_DOC_LINES = 32;
 const MANAGED_MARKER_TEXT = /(?:ASTRYX|XDS):(START|END)/u;
