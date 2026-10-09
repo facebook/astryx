@@ -31,7 +31,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Astryx does not provide a shared chart-editor or saved chart-color API in this version. Use the existing token APIs, and keep renderer configuration, end-user choices, validation, and document storage inside the product that owns the chart.',
+          text: 'Use Astryx’s existing theme tokens to style charts. Keep renderer settings, saved user choices, validation, and document storage in the product that owns the chart; Astryx does not define a shared chart editor or saved-color format in this version.',
         },
         {
           type: 'prose',
