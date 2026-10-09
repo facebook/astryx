@@ -26,6 +26,7 @@ import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 import {getCliInvocation} from '../env/package-manager.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {Project} from '../config/project.mjs';
+import {cliRootNamespaceNames} from '../doc-compiler/tree.mjs';
 import {humanLog} from '../response/json.mjs';
 import {ERROR_CODES} from '../response/error-codes.mjs';
 import {
@@ -487,6 +488,7 @@ export function generateCompressedIndex(
           .map(f => f.match(/^([\w-]+)\.doc\.mjs$/))
           .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
           .map(m => m[1])
+          .concat(cliRootNamespaceNames())
           .sort()
       : []);
   if (resolvedTopics.length > 0) {
@@ -555,7 +557,18 @@ export async function renderAgentDocsBlock(
       `Cannot render agent docs because integration ${packageLabel} has invalid agentDocs: ${invalidAgentDocs.__agentDocsError}`,
     );
   }
-  const topics = (await project.docs()).names();
+  const catalog = await project.docs();
+  // Every name `astryx docs <name>` opens: the flat topics, and each root
+  // namespace of the docs tree (a topic split into guides keeps its name).
+  const topics = [
+    ...catalog.names(),
+    ...cliRootNamespaceNames(),
+    ...catalog.treeInputs.flatMap(inputs =>
+      inputs.namespaces
+        .filter(input => !input.doc?.placement?.parent)
+        .map(input => input.doc.name),
+    ),
+  ];
   const agentDocs = project.loadedIntegrations.flatMap(integration => {
     const append = integration.agentDocs?.append ?? [];
     if (append.length === 0) return [];

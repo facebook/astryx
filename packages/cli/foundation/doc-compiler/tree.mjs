@@ -745,6 +745,28 @@ export function treeDocFiles(dir = TREE_DOCS_DIR) {
 }
 
 /**
+ * The names of the CLI's own root namespaces (spec:AST-046 FR7): each is read
+ * with `astryx docs <name>`, as a flat topic is, though no topic file has its
+ * name. Read from the namespace files' text, without loading them, so a
+ * synchronous caller (the agent docs block) lists them beside the flat topics.
+ * A topic split into a namespace (FR13) keeps its name in every such list.
+ * @param {string} [dir]
+ * @returns {string[]}
+ */
+export function cliRootNamespaceNames(dir = TREE_DOCS_DIR) {
+  /** @type {string[]} */
+  const names = [];
+  for (const file of treeDocFiles(dir)) {
+    const text = fs.readFileSync(file, 'utf8');
+    if (!/["']?type["']?\s*:\s*["']namespace["']/u.test(text)) continue;
+    if (/["']?placement["']?\s*:/u.test(text)) continue;
+    const name = /["']?name["']?\s*:\s*["']([\w-]+)["']/u.exec(text)?.[1];
+    if (name) names.push(name);
+  }
+  return names.sort(byText);
+}
+
+/**
  * The CLI's own tree inputs: the namespace docs and guides under
  * assets/docs/tree, and, unless left out, every typed self-doc with its
  * `namespace` group. A file that fails to load or parse is a diagnostic, never
