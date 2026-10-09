@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Theme consumer overview
+ * @input Theme application, authoring and non-CSS icon data
+ * @output Builder-facing entry points for applying and creating themes
+ * @position CLI theme guide; field details stay with their focused references
+ */
+
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 
 export const docs = {
@@ -56,6 +63,16 @@ export const docs = {
           lang: 'tsx',
           label: 'Light/dark tuple',
           code: "'--color-accent': ['#0064E0', '#2694FE'],\n//                   ^light     ^dark",
+        },
+      ],
+    },
+    {
+      id: 'icon-artwork',
+      title: 'Icon artwork and dimensions',
+      content: [
+        {
+          type: 'prose',
+          text: 'Use `icons` for fixed or bound adaptive artwork and `iconCapabilities` for a supplied contract, dimension overrides, and default/per-size presentation. These are non-CSS values: import the generated theme module as well as its stylesheet. `sizeOverrides` merge by name with null clearing; `presentation` replaces as a whole, with null clearing. See `astryx docs icons` for the focused authoring example.',
         },
       ],
     },

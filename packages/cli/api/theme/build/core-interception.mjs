@@ -1,7 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Capture a theme's authored adaptation input as the theme file loads.
+ * @file Capture authored capability inputs as the selected theme lineage loads.
+ * @input Installed Core namespaces, real defineTheme calls and capability metadata names.
+ * @output Private lineage evidence for compatibility, contributor provenance and family ancestry;
+ *   readonly A call capture is independent of the legacy adaptation diagnostic lane.
+ * @position CLI load-boundary recorder; never interprets capability grammar.
  *
  * `astryx theme build` resolves a theme by calling the INSTALLED core's
  * `defineTheme()`. A core that predates ordered adaptations builds its result
@@ -38,8 +42,9 @@
  * reaches any output path. It cannot leak into a generated file regardless:
  * `JSON.stringify`, `Object.keys` and `Object.entries` all ignore symbol keys.
  *
- * Used only when the installed core cannot compile adaptations. A core that
- * can reports them on the resolved theme itself, which needs none of this.
+ * Used for lossless contributor provenance, when installed Core could erase
+ * capability intent, and by family builds for exact private ancestry. Retained
+ * metadata is not evidence that an unrelated unsupported capability was observed.
  *
  * ## Reach, and its one edge
  *
@@ -51,13 +56,10 @@
  * wrapping the core's own CommonJS exports object for the duration of the
  * load.
  *
- * One combination stays out of reach: a `.cjs` package source resolving an
- * ESM-ONLY core. Node's `require(esm)` hands it a frozen/non-configurable module
- * namespace, which cannot be patched in place. `patchCommonJs` reports that
- * coverage gap; if the selected theme's lineage then contains an unobserved
- * member, the build fails closed rather than assuming erased adaptations were
- * absent. A package's BUILT artifact remains supported because it carries
- * `__adaptations` as observable plain data.
+ * Native `require(esm)` cannot mutate Core's module namespace. Its public Core
+ * entry paths are instead wrapped at a scoped native require boundary and
+ * restored after the load. Genuine remaining unobserved lineage fails closed;
+ * constructor support is never a substitute for captured authored intent.
  *
  * The same capture also retains raw typography, color, radius, and motion axes.
  * Older cores resolve those inputs into tokens but do not expose `__axes`; the
@@ -67,7 +69,7 @@
  * SYNC: packages/cli/api/theme/build/build.mjs (importThemeModule)
  */
 
-import {createRequire} from 'node:module';
+import Module, {createRequire} from 'node:module';
 import * as path from 'node:path';
 
 import {findInstalledPackage} from '../../../foundation/fs/paths.mjs';
@@ -85,6 +87,7 @@ const retainedLineageByReference = new WeakMap();
  * @typedef {object} ThemeLineage
  * @property {any} input - The raw `defineTheme()` argument.
  * @property {any} result - What the installed core returned for it.
+ * @property {boolean} [readonlyNative] New raw capture beyond the legacy mutable-export ABI.
  */
 
 /**
@@ -95,16 +98,18 @@ const retainedLineageByReference = new WeakMap();
  * @property {(theme: any) => boolean} observed - Whether authored input was captured.
  * @property {(theme: any) => void} retain - Retain capture before stripping.
  * @property {(theme: any) => any} parentOf - Exact authored `extends` value.
- * @property {(theme: any) => any[]} lineageOf - Every raw input that fed a
- *   theme, following its own `extends` chain and spread provenance.
- * @property {(theme: any) => any[]} unobservedIn - Lineage members this
- *   recorder never saw and that carry no adaptation metadata; ask before
- *   `strip`.
+ * @property {(theme: any) => any} inputOf - Exact captured input, or observable raw/built data.
+ * @property {(theme: any, options?: {legacy?: boolean}) => any[]} lineageOf - Every raw input that fed a
+ *   theme, following its own `extends` chain and spread provenance; the legacy
+ *   adaptation diagnostic lane omits newly captured readonly-native inputs.
+ * @property {(theme: any, metadataFields?: string[]) => any[]} unobservedIn - Lineage
+ *   members this recorder never saw and that carry no selected capability
+ *   metadata (adaptations by default); ask before `strip`.
  * @property {(theme: any) => Record<string, any> | undefined} capturedAxesOf -
  *   Effective generative-axis metadata reconstructed from captured raw inputs.
  * @property {(theme: any) => void} strip - Remove the marker from a theme and
  *   its reachable bases, before it is used to generate anything.
- * @property {(fromFile: string) => {covered: boolean, undo: () => void}} patchCommonJs -
+ * @property {(fromFile: string) => {covered: boolean, legacyCovered?: boolean, undo: () => void}} patchCommonJs -
  *   Cover the one path `virtualModules` cannot reach and report whether every
  *   resolvable CommonJS core namespace could be wrapped.
  */
@@ -232,16 +237,21 @@ function mergeGenerativeAxes(inherited, own) {
  * silently delete every one of those exports from a theme file that imports a
  * component. Every real export is preserved on each; one function is wrapped.
  *
- * Current-Core family builds also use this private recorder for exact parents;
- * standalone builds with current Core do not.
+ * Standalone and family builds capture source lineage for lossless contributor
+ * identity; family builds also retain exact authored parents privately.
  *
  * @param {any} coreThemeModule - The installed `@astryxdesign/core/theme` namespace.
  * @param {any} [coreRootModule] - The installed `@astryxdesign/core` namespace.
  * @returns {CoreInterception}
  */
-export function interceptCore(coreThemeModule, coreRootModule) {
+export function interceptCore(
+  coreThemeModule,
+  coreRootModule,
+  {captureReadonly = true} = {},
+) {
   /** @type {WeakMap<object, ThemeLineage>} */
   const byReference = new WeakMap();
+  const spreadInputs = new WeakMap();
 
   /** @param {any} value @param {ThemeLineage} lineage */
   const mark = (value, lineage) => {
@@ -270,9 +280,10 @@ export function interceptCore(coreThemeModule, coreRootModule) {
    * One namespace, spread so exports this file does not know about still
    * reach the theme file, with `defineTheme` (if present) wrapped.
    * @param {any} namespace
+   * @param {boolean} [readonlyNative]
    * @returns {any}
    */
-  const wrapNamespace = namespace => {
+  const wrapNamespace = (namespace, readonlyNative = false) => {
     if (!namespace) return namespace;
     const real = namespace.defineTheme;
     if (typeof real !== 'function') return {...namespace};
@@ -281,7 +292,7 @@ export function interceptCore(coreThemeModule, coreRootModule) {
       /** @param {any} input */
       defineTheme(input) {
         const result = real.call(namespace, input);
-        mark(result, {input, result});
+        mark(result, {input, result, readonlyNative});
         return result;
       },
     };
@@ -289,11 +300,17 @@ export function interceptCore(coreThemeModule, coreRootModule) {
 
   return {
     modules: {
-      '@astryxdesign/core/theme': wrapNamespace(coreThemeModule),
-      // Falls back to the theme namespace only when the root could not be
-      // imported at all; a partial root is better than none, and a core
-      // missing its own root entry is already broken.
-      '@astryxdesign/core': wrapNamespace(coreRootModule ?? coreThemeModule),
+      ...(coreThemeModule
+        ? {'@astryxdesign/core/theme': wrapNamespace(coreThemeModule)}
+        : {}),
+      // Do not replace a resolvable native import with a null virtual module.
+      ...(coreRootModule || coreThemeModule
+        ? {
+            '@astryxdesign/core': wrapNamespace(
+              coreRootModule ?? coreThemeModule,
+            ),
+          }
+        : {}),
     },
 
     // prettier-ignore
@@ -302,7 +319,40 @@ export function interceptCore(coreThemeModule, coreRootModule) {
     retain(theme) { const lineage = lineageFor(theme); if (lineage && theme && typeof theme === 'object') retainedLineageByReference.set(theme, lineage); },
     // prettier-ignore
     parentOf(theme) { const input = lineageFor(theme)?.input; return input && typeof input === 'object' && 'extends' in input ? input.extends : theme && typeof theme === 'object' ? theme.extends : undefined; },
-    lineageOf(theme) {
+    inputOf(theme) {
+      const lineage = lineageFor(theme);
+      if (!lineage || theme === lineage.result) return lineage?.input ?? theme;
+      // An actual post-call spread can author a new winning Icon field. Do not
+      // mistake that override for erasure inside the captured Core call.
+      if (spreadInputs.has(theme)) return spreadInputs.get(theme);
+      const descriptors = Object.getOwnPropertyDescriptors(lineage.input ?? {});
+      let changed = false;
+      for (const field of [
+        'icons',
+        'iconCapabilities',
+        '__iconSources',
+        '__iconContracts',
+      ]) {
+        const own = Object.getOwnPropertyDescriptor(theme, field);
+        const previous = Object.getOwnPropertyDescriptor(lineage.result, field);
+        if (
+          own &&
+          'value' in own &&
+          (!previous ||
+            !('value' in previous) ||
+            !Object.is(own.value, previous.value))
+        ) {
+          descriptors[field] = own;
+          changed = true;
+        }
+      }
+      const input = changed
+        ? Object.defineProperties({}, descriptors)
+        : lineage.input;
+      spreadInputs.set(theme, input);
+      return input;
+    },
+    lineageOf(theme, {legacy = false} = {}) {
       /** @type {any[]} */
       const inputs = [];
       /** @type {Set<any>} */
@@ -321,7 +371,7 @@ export function interceptCore(coreThemeModule, coreRootModule) {
         inputs.push(value);
 
         const lineage = lineageFor(value);
-        if (lineage) {
+        if (lineage && !(legacy && lineage.readonlyNative)) {
           // The raw input is where an erased `adaptations` still lives, and
           // its own `extends` is the next link in the chain.
           if (lineage.input && typeof lineage.input === 'object') {
@@ -333,7 +383,10 @@ export function interceptCore(coreThemeModule, coreRootModule) {
       return inputs;
     },
 
-    unobservedIn(theme) {
+    unobservedIn(
+      theme,
+      metadataFields = ['adaptations', '__adaptations', '__adaptationRules'],
+    ) {
       // Lineage members this recorder never saw AND that carry no adaptation
       // metadata of their own. On a degraded load these are exactly the
       // themes whose adaptations, if any, were erased unobserved. Retained
@@ -343,24 +396,44 @@ export function interceptCore(coreThemeModule, coreRootModule) {
       // it is the very object the recorder captured, and only the result
       // carries the marker. Counting it as unobserved would fail every
       // degraded build, including themes whose whole lineage was seen.
+      const legacyLane = metadataFields.includes('adaptations');
       /** @type {Set<any>} */
       const observedInputs = new Set();
-      for (const value of this.lineageOf(theme)) {
+      for (const value of this.lineageOf(theme, {legacy: legacyLane})) {
         const lineage = lineageFor(value);
         if (lineage?.input && typeof lineage.input === 'object') {
           observedInputs.add(lineage.input);
         }
       }
 
-      return this.lineageOf(theme).filter(
+      // Only this legacy lane keeps its old readonly-ABI diagnostic for
+      // actually declared adaptation intent. A capture uses the full raw
+      // evidence and never requires the optional adaptation compiler.
+      /** @param {any} value */
+      const legacyReadonlyIntent = value => {
+        const lineage = lineageFor(value);
+        return (
+          legacyLane &&
+          lineage?.readonlyNative &&
+          ['adaptations', '__adaptations', '__adaptationRules'].some(field => {
+            const descriptor = Object.getOwnPropertyDescriptor(
+              lineage.input ?? {},
+              field,
+            );
+            return (
+              descriptor &&
+              (!('value' in descriptor) || descriptor.value !== undefined)
+            );
+          })
+        );
+      };
+      return this.lineageOf(theme, {legacy: legacyLane}).filter(
         value =>
           value &&
           typeof value === 'object' &&
-          !wasObserved(value, byReference) &&
+          (!wasObserved(value, byReference) || legacyReadonlyIntent(value)) &&
           !observedInputs.has(value) &&
-          value.adaptations === undefined &&
-          value.__adaptations === undefined &&
-          value.__adaptationRules === undefined,
+          metadataFields.every(field => value[field] === undefined),
       );
     },
 
@@ -439,6 +512,7 @@ export function interceptCore(coreThemeModule, coreRootModule) {
       // whose adaptation intent could not be observed.
       /** @type {Array<() => void>} */
       const undo = [];
+      const readonlyEntries = new Set();
       let covered = true;
 
       // Only a core the theme's OWN node_modules chain can reach is one a
@@ -470,6 +544,7 @@ export function interceptCore(coreThemeModule, coreRootModule) {
         const descriptor = Object.getOwnPropertyDescriptor(cjs, 'defineTheme');
         if (!descriptor || !(descriptor.writable || descriptor.configurable)) {
           covered = false;
+          readonlyEntries.add(createRequire(fromFile).resolve(specifier));
           continue;
         }
 
@@ -491,10 +566,50 @@ export function interceptCore(coreThemeModule, coreRootModule) {
           // absent CommonJS entry: a `.cjs` dependency can call the function
           // while the recorder cannot wrap it.
           covered = false;
+          readonlyEntries.add(createRequire(fromFile).resolve(specifier));
+        }
+      }
+      const legacyCovered = covered;
+      if (readonlyEntries.size && captureReadonly) {
+        // Capture require(esm) at the scoped load boundary instead of mutating
+        // its immutable namespace. No registration or normalizer probe occurs.
+        const native = /** @type {any} */ (Module);
+        const previousLoad = native._load;
+        const wrapped = new WeakMap();
+        let active = true;
+        const load = function (
+          /** @type {string} */ request,
+          /** @type {any} */ parent,
+          /** @type {boolean} */ isMain,
+        ) {
+          const namespace = previousLoad.call(native, request, parent, isMain);
+          if (!active || !namespace || typeof namespace !== 'object')
+            return namespace;
+          let entry;
+          try {
+            entry = native._resolveFilename(request, parent, isMain);
+          } catch {
+            return namespace;
+          }
+          if (!readonlyEntries.has(entry)) return namespace;
+          if (!wrapped.has(namespace))
+            wrapped.set(namespace, wrapNamespace(namespace, true));
+          return wrapped.get(namespace);
+        };
+        try {
+          native._load = load;
+          covered = true;
+          undo.push(() => {
+            active = false;
+            if (native._load === load) native._load = previousLoad;
+          });
+        } catch {
+          /* keep the fail-closed coverage report */
         }
       }
       return {
         covered,
+        legacyCovered,
         undo() {
           for (const restore of undo.reverse()) {
             try {

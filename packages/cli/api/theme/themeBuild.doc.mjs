@@ -3,8 +3,8 @@
 /**
  * @file FunctionDoc for `themeBuild()` / `astryx theme build`. Colocated with
  * the API function it documents; the response-shape source of truth stays in
- * `theme.type.mjs`. Documents imported/inherited icons and atomic rejection
- * of registries that cannot be preserved in build/check modes.
+ * `theme.type.mjs`. Documents imported/inherited icons, bound adaptive artwork,
+ * non-CSS capability data and atomic rejection in build/check modes.
  * @input themeBuild's build/check and icon-import behavior.
  * @output Consumer API documentation for generated theme artifacts.
  * @position packages/cli/api/theme — function documentation
@@ -29,6 +29,10 @@ export const doc = {
     'Real registry imports are preserved, including aliases, default imports, and namespace ' +
     'imports. Icons inherited through extends are retained, with child entries taking precedence. ' +
     'Comment and string contents do not affect import detection. ' +
+    'Bound adaptive artwork, capability dimensions and default/per-size presentation ' +
+    'are preserved in the JS/types, including when extending built themes; they do not become CSS. ' +
+    'Keep supplied artwork in importable modules. Unsupported capability intent or data ' +
+    'that the selected Core loses fails before output writes. ' +
     'An inline registry that cannot be preserved fails with ERR_THEME_INVALID before any ' +
     'output is written, including in check mode. Move the registry to its own module and ' +
     'import it into the theme file. ' +
@@ -113,7 +117,7 @@ export const doc = {
     },
     {
       code: 'ERR_CORE_INCOMPATIBLE',
-      when: 'the installed @astryxdesign/core does not export generateAdaptationCSS and the theme either declares ordered adaptations or has lineage whose adaptation use could not be observed (upgrade core)',
+      when: 'the installed @astryxdesign/core does not support the selected Icon capability/source protocol, or lacks generateAdaptationCSS when the theme declares adaptations or its adaptation lineage could not be observed (upgrade core)',
     },
     {
       code: 'ERR_WRITE_FAILED',

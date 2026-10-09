@@ -4,13 +4,13 @@
 
 /**
  * @file useIcon.ts
- * @input Semantic icon name
- * @output Exports useIcon hook for theme-aware icon lookup
+ * @input A semantic name and the active effective theme object
+ * @output Actual ReactNode lookup with local inherited presentation
  * @position Client hook for components that render registry icons directly
  */
 
 import type {ReactNode} from 'react';
-import {useThemeName} from '../theme/useTheme';
+import {useThemeDefinition} from '../theme/useTheme';
 import {
   getIcon,
   type IconName,
@@ -25,6 +25,6 @@ import {
  * name; both resolve through the same registry.
  */
 export function useIcon(name: IconName | NamespacedIconName): ReactNode {
-  const themeName = useThemeName();
-  return getIcon(name, themeName);
+  const theme = useThemeDefinition();
+  return getIcon(name, theme);
 }

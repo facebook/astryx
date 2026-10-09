@@ -2,8 +2,8 @@
 
 /**
  * @file IconSize.stylex.ts
- * @input Defines the Icon size scale
- * @output Exports shared Icon size types and StyleX styles
+ * @input Released rem sizes or an explicit theme-resolved physical dimension
+ * @output Built-in rem classes and dynamic StyleX width/height/font-size styles
  * @position Internal Icon sizing source; consumed by Icon and icon-slot owners
  */
 
@@ -67,4 +67,14 @@ export const iconBoxSizeStyles = stylex.create({
     height: iconSizeValues.lg,
     fontSize: iconSizeValues.lg,
   },
+});
+
+/** Explicit theme dimensions use StyleX dynamic values, never a separate sizing provider. */
+export const iconDimensionStyles = stylex.create({
+  svg: (dimension: string) => ({width: dimension, height: dimension}),
+  box: (dimension: string) => ({
+    width: dimension,
+    height: dimension,
+    fontSize: dimension,
+  }),
 });
