@@ -24,14 +24,20 @@
  */
 export const GUIDE_PAGE_NAMESPACES = new Set(['cli']);
 
+const BUILDING_BLOCKS = 'cli/integrations/building-blocks';
+
 /**
- * The pages a root namespace in GUIDE_PAGE_NAMESPACES shows, as the docsite
- * listed them before the CLI's integration guide was split into short guides:
- * "CLI Integrations" and "Writing docs". Each is one full page of the
- * namespace at `route` (minus the routes in `except`, which another page
- * holds), at `slug`, so every guide slug below it redirects to its section
- * there. `aliases` are older slugs that redirect to the page.
- * @type {Map<string, Array<{route: string, slug: string, title: string, except?: string[], aliases?: string[]}>>}
+ * The pages a root namespace in GUIDE_PAGE_NAMESPACES shows. Each is one full
+ * page of the namespace or guide at `route`, at `slug` (the route with "/" as
+ * "-" unless given), so every guide slug below it redirects to its section
+ * there. A page leaves out what the other pages in its list hold. `aliases`
+ * are older slugs that redirect to the page. A page that names a `parent`
+ * shows under that page in the sidebar, in list order.
+ *
+ * CLI Integrations is the integration guide's overview and quick start. Each
+ * building block, shipping, and troubleshooting is a page under it, so the
+ * sidebar keeps one entry for the guide and no page holds all of it.
+ * @type {Map<string, Array<{route: string, slug?: string, title?: string, aliases?: string[], parent?: string}>>}
  */
 export const GUIDE_NAMESPACE_PAGES = new Map([
   [
@@ -41,18 +47,82 @@ export const GUIDE_NAMESPACE_PAGES = new Map([
         route: 'cli/integrations',
         slug: 'cli-integrations',
         title: 'CLI Integrations',
-        except: ['cli/integrations/building-blocks/docs'],
         aliases: ['cli-integrations-overview'],
       },
+      {route: `${BUILDING_BLOCKS}/components`, parent: 'cli-integrations'},
+      {route: `${BUILDING_BLOCKS}/templates`, parent: 'cli-integrations'},
+      {route: `${BUILDING_BLOCKS}/themes`, parent: 'cli-integrations'},
       {
-        route: 'cli/integrations/building-blocks/docs',
+        route: `${BUILDING_BLOCKS}/docs`,
         slug: 'cli-writing-docs',
         title: 'Writing docs',
         aliases: ['cli-integrations-docs-add-a-topic'],
+        parent: 'cli-integrations',
+      },
+      {route: `${BUILDING_BLOCKS}/codemods`, parent: 'cli-integrations'},
+      {route: `${BUILDING_BLOCKS}/configuration`, parent: 'cli-integrations'},
+      {route: 'cli/integrations/ship', parent: 'cli-integrations'},
+      {
+        route: 'cli/integrations/help',
+        title: 'Troubleshooting',
+        parent: 'cli-integrations',
       },
     ],
   ],
 ]);
+
+/**
+ * Flat topics that show under another page in the sidebar, after that page's
+ * own pages: the Authoring Reference is the field-by-field reference for the
+ * files the integration guide has you write.
+ */
+export const TOPIC_PARENTS = new Map([['authoring', 'cli-integrations']]);
+
+/**
+ * The page specs of a GUIDE_PAGE_NAMESPACES root, ready for namespacePage:
+ * each with the routes the other pages hold in `except`, and its place in the
+ * list as `order`.
+ * @param {string} root
+ * @returns {Array<{route: string, slug?: string, title?: string, aliases?: string[], parent?: string, except: string[], order: number}>}
+ */
+export function guideNamespacePages(root) {
+  const specs = GUIDE_NAMESPACE_PAGES.get(root) ?? [];
+  return specs.map((spec, order) => ({
+    ...spec,
+    except: specs
+      .filter(other => other.route.startsWith(`${spec.route}/`))
+      .map(other => other.route),
+    order,
+  }));
+}
+
+/**
+ * Nest pages under the pages they name as parent: a page from
+ * GUIDE_NAMESPACE_PAGES keeps its `parent` and `order`, and a flat topic in
+ * TOPIC_PARENTS goes after them. The docsite build fails when a parent is not
+ * a page, or is itself under another page.
+ * @param {Array<{topic: string, parent?: string, order?: number}>} topics
+ */
+export function nestPages(topics) {
+  const bySlug = new Map(topics.map(topic => [topic.topic, topic]));
+  let next = 1000;
+  for (const [slug, parent] of TOPIC_PARENTS) {
+    const topic = bySlug.get(slug);
+    if (!topic) continue;
+    topic.parent = parent;
+    topic.order = next++;
+  }
+  for (const topic of topics) {
+    if (topic.parent == null) continue;
+    const parent = bySlug.get(topic.parent);
+    if (!parent || parent.parent != null) {
+      throw new Error(
+        `docs: "${topic.topic}" shows under "${topic.parent}", which is not a top-level page.`,
+      );
+    }
+  }
+  return topics;
+}
 
 /**
  * Flat topics whose full text the site shows on another topic's page. The
@@ -140,22 +210,53 @@ export function namespaceCategory(own, guideCategories) {
  * order, as `astryx docs <route> --depth all --detail full` reads it. Each
  * guide and nested namespace keeps its slug as a redirect to where its text
  * starts on the page. Typed docs (commands, API docs) open only in
- * `astryx docs` and add nothing to the page.
+ * `astryx docs` and add nothing to the page. A route that is one guide is a
+ * page of that guide.
  *
  * A namespace with no guide placed under it (the tree's Unorganized level,
  * whose children are flat topics with pages of their own) has no page.
  * @param {(topic?: string, section?: string, options?: object) => Promise<any>} readDocs
  * @param {string} route
- * @param {{slug?: string, title?: string, except?: string[], aliases?: string[]}} [options]
+ * @param {{slug?: string, title?: string, except?: string[], aliases?: string[], parent?: string, order?: number}} [options]
  *   the page's slug and title when they are not the route's, routes below it
- *   that another page holds, and older slugs that redirect to it
+ *   that another page holds, older slugs that redirect to it, and the page it
+ *   shows under in the sidebar, at its place there
  * @returns {Promise<{page: object, redirects: Record<string, string>} | null>}
  */
 export async function namespacePage(readDocs, route, options = {}) {
-  const {slug = route, title, except = [], aliases = []} = options;
+  const {
+    slug = routeSlug(route),
+    title,
+    except = [],
+    aliases = [],
+    parent,
+    order,
+  } = options;
+  const nesting = parent == null ? {} : {parent, order: order ?? 0};
   const excluded = child =>
     except.some(skip => child === skip || child.startsWith(`${skip}/`));
   const read = await readDocs(route, undefined, {depth: 'all', detail: 'full'});
+  const olderSlugs = () => {
+    const redirects = {};
+    for (const alias of [routeSlug(route), ...aliases]) {
+      if (alias !== slug) redirects[alias] = `/docs/${slug}`;
+    }
+    return redirects;
+  };
+  if (read?.type === 'docs.detail' && read.data?.sections?.length > 0) {
+    const guide = read.data;
+    return {
+      page: {
+        topic: slug,
+        title: title || guide.title || route,
+        description: guide.description || '',
+        category: guide.category || 'guide',
+        sections: withoutResolvedTokens(guide.sections),
+        ...nesting,
+      },
+      redirects: olderSlugs(),
+    };
+  }
   if (read?.type !== 'docs.node' || read.data.kind !== 'namespace') return null;
   const node = read.data;
   const sections = [];
@@ -195,9 +296,7 @@ export async function namespacePage(readDocs, route, options = {}) {
     redirects[guideSlug] =
       index < sections.length ? `${href}#${anchors[index]}` : href;
   }
-  for (const alias of [routeSlug(route), ...aliases]) {
-    if (alias !== slug) redirects[alias] = href;
-  }
+  Object.assign(redirects, olderSlugs());
   return {
     page: {
       topic: slug,
@@ -205,6 +304,7 @@ export async function namespacePage(readDocs, route, options = {}) {
       description: node.summary || '',
       category: namespaceCategory(node.category, guideCategories),
       sections,
+      ...nesting,
     },
     redirects,
   };

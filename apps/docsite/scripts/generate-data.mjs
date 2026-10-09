@@ -26,10 +26,11 @@ import {createRequire} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolveContentRoot} from './resolve-content-root.mjs';
 import {
-  GUIDE_NAMESPACE_PAGES,
   GUIDE_PAGE_NAMESPACES,
+  guideNamespacePages,
   mergeFlatTopics,
   namespacePage,
+  nestPages,
   routeSlug,
   withoutResolvedTokens,
 } from './docs-pages.mjs';
@@ -1710,7 +1711,7 @@ async function docsTreePages() {
   for (const {topic: root} of list.meta?.namespaces ?? []) {
     if (GUIDE_PAGE_NAMESPACES.has(root)) {
       pending.push(root);
-      for (const spec of GUIDE_NAMESPACE_PAGES.get(root) ?? []) {
+      for (const spec of guideNamespacePages(root)) {
         for (const route of await treeRoutes(spec.route)) held.add(route);
         const full = await namespacePage(readDocs, spec.route, spec);
         if (!full) continue;
@@ -1842,9 +1843,10 @@ async function generateDocsRegistry() {
   // Guides the CLI's docs tree places (spec:AST-046) are not topic files: the
   // CLI reads them only by route. A root namespace is one full page at its
   // slug (a former flat topic keeps its URL), and each guide under it
-  // redirects to its section there. Guides under GUIDE_PAGE_NAMESPACES keep a
-  // flat page whose slug is the route with "/" as "-", so
-  // `cli/integrations/quick-start` is /docs/cli-integrations-quick-start.
+  // redirects to its section there. Under GUIDE_PAGE_NAMESPACES, the pages
+  // GUIDE_NAMESPACE_PAGES lists hold their guides the same way, and a guide
+  // no such page holds keeps a page whose slug is the route with "/" as "-",
+  // so `cli/component-lookups` is /docs/cli-component-lookups.
   const tree = await docsTreePages();
   for (const page of tree.pages) {
     if (docTopics.some(topic => topic.topic === page.topic)) {
@@ -1854,6 +1856,8 @@ async function generateDocsRegistry() {
     }
     docTopics.push(page);
   }
+  // Pages that show under another page in the sidebar (docs-pages.mjs).
+  nestPages(docTopics);
   const docsTreeRoutes = [...new Set(tree.routes)].sort();
   const docRedirects = Object.fromEntries(
     Object.entries({...merged.redirects, ...tree.redirects}).sort(([a], [b]) =>
@@ -1905,6 +1909,10 @@ export interface DocTopic {
   description: string;
   /** Navigation category: 'guide' | 'foundations' | null */
   category: string | null;
+  /** The page this one shows under in the sidebar, when it has one */
+  parent?: string;
+  /** Its place among the pages under that parent */
+  order?: number;
   /** Full doc sections with content blocks */
   sections: DocSection[];
 }
