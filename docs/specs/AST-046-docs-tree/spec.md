@@ -158,7 +158,9 @@ and references from other packages are an open question (OQ2).
   one. A typed doc MUST also match by its own name, and a doc part by each
   identifier it defines or names in code (`assertResponse`,
   `ERR_UNKNOWN_SECTION`). A docs-only search (`--type doc`) MUST NOT need
-  `@astryxdesign/core`, because `astryx docs` does not.
+  `@astryxdesign/core`, because `astryx docs` does not. Matching a query word
+  against a word of a title, a name, or a route segment MUST treat the singular
+  and plural forms of a word as the same word.
 - **FR11 — Integrations join the tree.** A configured integration MAY ship
   namespace docs, and guides with `placement`, in its docs directory. The tree
   MUST read them beside the CLI's own, identify each node by the integration's
