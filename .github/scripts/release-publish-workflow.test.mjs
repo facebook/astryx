@@ -114,6 +114,23 @@ describe('stable and canary publication authority', () => {
     expect(step(lint.jobs.lint, 'Check Changeset coverage').if).toBe(
       "github.event_name == 'pull_request' && steps.release-sync-scope.outputs.required != 'true'",
     );
+    const requiredLintValidation = step(
+      lint.jobs.lint,
+      'Validate release sync in required lint',
+    );
+    expect(requiredLintValidation.if).toBe(
+      "github.event_name == 'pull_request' && steps.release-sync-scope.outputs.required == 'true'",
+    );
+    for (const command of [
+      'git show origin/main:scripts/release/active-release.mjs',
+      'git show origin/main:scripts/lib/workspace-globs.mjs',
+      'validate-sync',
+      '--base origin/main',
+      '--release-ref "v$VERSION"',
+      '--active-branches "$ACTIVE_BRANCHES"',
+    ]) {
+      expect(requiredLintValidation.run).toContain(command);
+    }
 
     const validation = step(
       sync,

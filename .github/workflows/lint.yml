@@ -49,8 +49,8 @@ jobs:
           fi
 
       # Release-sync PRs copy already-published generated outputs and consume the
-      # frozen Changesets. They cannot add a new Changeset; the required
-      # release-sync lane validates their exact tag-owned bytes instead.
+      # frozen Changesets. They cannot add a new Changeset, so the required lint
+      # context runs the trusted release-sync validator instead.
       - name: Detect the release-sync branch contract
         if: github.event_name == 'pull_request'
         id: release-sync-scope
@@ -68,6 +68,29 @@ jobs:
               ;;
           esac
           echo "required=$required" >> "$GITHUB_OUTPUT"
+
+      - name: Validate release sync in required lint
+        if: github.event_name == 'pull_request' && steps.release-sync-scope.outputs.required == 'true'
+        env:
+          SYNC_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -eu
+          VERSION=${SYNC_BRANCH#chore/sync-v}
+          VERSION=${VERSION%-to-main}
+          git fetch origin main 'refs/tags/v*:refs/tags/v*' '+refs/heads/release/v*:refs/remotes/origin/release/v*'
+          TRUSTED_POLICY="$RUNNER_TEMP/release-policy"
+          mkdir -p "$TRUSTED_POLICY/scripts/release" "$TRUSTED_POLICY/scripts/lib"
+          git show origin/main:scripts/release/active-release.mjs \
+            > "$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          git show origin/main:scripts/lib/workspace-globs.mjs \
+            > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
+          VALIDATOR="$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          ACTIVE_BRANCHES=$(node "$VALIDATOR" list-active --root "$GITHUB_WORKSPACE")
+          node "$VALIDATOR" validate-sync \
+            --root "$GITHUB_WORKSPACE" \
+            --base origin/main \
+            --release-ref "v$VERSION" \
+            --active-branches "$ACTIVE_BRANCHES"
 
       # A change that ships to consumers names its package in a Changeset, and a
       # released CLI JSON id cannot disappear unclassified. The release coverage
