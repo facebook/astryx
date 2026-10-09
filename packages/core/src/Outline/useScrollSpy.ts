@@ -4,7 +4,8 @@
 
 /**
  * @file useScrollSpy.ts
- * @input Uses React, scroll position of heading elements, OutlineItem type
+ * @input Uses React, scroll position of heading elements, OutlineItem type,
+ *   the shared getScrollableAncestor utility
  * @output Exports internal useScrollSpy hook
  * @position Internal behavior hook; consumed by Outline.tsx
  *
@@ -36,6 +37,7 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import type {OutlineItem} from './types';
+import {getScrollableAncestor} from '../utils/getScrollableAncestor';
 
 /**
  * How long to wait for a programmatic smooth scroll to settle when the
@@ -56,30 +58,6 @@ const SCROLL_KEYS = new Set([
   ' ',
   'Spacebar',
 ]);
-
-function getScrollableAncestor(
-  element: HTMLElement | null,
-): HTMLElement | null {
-  let current = element?.parentElement ?? null;
-
-  while (current != null) {
-    const computedStyle = window.getComputedStyle(current);
-    const overflowY = computedStyle.overflowY;
-    const isScrollable =
-      (overflowY === 'auto' ||
-        overflowY === 'scroll' ||
-        overflowY === 'overlay') &&
-      current.scrollHeight > current.clientHeight;
-
-    if (isScrollable) {
-      return current;
-    }
-
-    current = current.parentElement;
-  }
-
-  return null;
-}
 
 /** The element's own `scroll-margin-top` in px (0 when unset). */
 function getScrollMarginTop(element: HTMLElement): number {
