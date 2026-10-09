@@ -31,7 +31,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Use Astryx’s existing theme tokens to style charts. Keep renderer settings, saved user choices, validation, and document storage in the product that owns the chart; Astryx does not define a shared chart editor or saved-color format in this version.',
+          text: 'Use Astryx’s existing theme tokens to style charts. Keep renderer settings and saved user choices with the chart so each renderer can update predictably.',
         },
         {
           type: 'prose',
@@ -87,22 +87,28 @@ export const docs = {
           type: 'table',
           headers: ['Visualization role', 'Astryx source'],
           rows: [
-            ['Series fill or stroke', 'Categorical or scale data tokens'],
+            [
+              'Series fill or stroke',
+              'Categorical data tokens for named series; sequential, diverging, or heatmap scale tokens for ordered values',
+            ],
             [
               'Series identity beyond color',
               'Renderer-owned shapes, patterns, dash styles, or direct labels with a text equivalent',
             ],
-            ['Grid', '`--color-border` or another verified structural token'],
+            [
+              'Plot grid lines',
+              '`--color-border` or another verified structural token',
+            ],
             [
               'Axis and tick lines',
               '`--color-border-emphasized` or another verified structural token',
             ],
             [
               'Axis, legend, and annotation text',
-              'Text color and typography tokens',
+              'Typography from the active theme and semantic text-color tokens',
             ],
             [
-              'Tooltip or popover surface',
+              'Hover-detail or popover surface',
               'Background, border, text, `--radius-element`, and shadow tokens',
             ],
             [
@@ -110,11 +116,11 @@ export const docs = {
               '`--radius-container` when it owns a surface',
             ],
             [
-              'Toolbar icons and controls',
+              'Action icons and controls',
               'Astryx `Icon` or `IconButton`, semantic foreground tokens, and established icon sizes',
             ],
             [
-              'Toolbar, legend, and tooltip spacing',
+              'Spacing around actions, legends, and hover details',
               'Spacing tokens for toolbar, legend, tooltip, and control gaps; renderer-owned plot geometry',
             ],
             ['Focus', 'Focus outline tokens'],
@@ -160,17 +166,17 @@ import {IconButton} from '@astryxdesign/core/IconButton';
         },
         {
           type: 'prose',
-          text: 'Do not create renderer-named tokens such as `--recharts-grid-color`. Keep data, scales, interactions, events, and renderer compatibility in the chart component that owns them.',
+          text: 'Keep data, scales, interactions, events, and renderer compatibility in the chart component. Use Astryx tokens for visual roles instead of inventing library-named tokens such as `--recharts-grid-color`.',
         },
       ],
     },
     {
       id: 'store-product-owned-intent',
-      title: 'Keep end-user color choices product-owned',
+      title: 'Save color choices in your chart',
       content: [
         {
           type: 'table',
-          headers: ['Choice', 'Suggested product behavior', 'Theme behavior'],
+          headers: ['Choice', 'What to save', 'Response to mode changes'],
           rows: [
             [
               'Automatic (use chart default)',
@@ -178,7 +184,7 @@ import {IconButton} from '@astryxdesign/core/IconButton';
               'The chart uses the product default from the active theme',
             ],
             [
-              'Theme color',
+              'Astryx color token',
               'Save the product’s stable token choice',
               'The resolved color follows the active theme and mode',
             ],
@@ -191,7 +197,7 @@ import {IconButton} from '@astryxdesign/core/IconButton';
         },
         {
           type: 'prose',
-          text: 'Reset deletes the manual choice and returns control to the chart default. The product owns its saved shape, validation, migration, automatic assignment, localized labels, and error presentation. Astryx does not guarantee compatibility for that stored product data in this version.',
+          text: 'Reset deletes the manual choice and returns control to the chart default. Choose a saved shape that fits your product, validate it before use, and show a clear recovery message when saved input is invalid.',
         },
         {
           type: 'code',
@@ -217,13 +223,13 @@ function resetSeriesColor(series: StoredSeries): StoredSeries {
         },
         {
           type: 'prose',
-          text: 'Treat saved chart settings as untrusted input. Allow only the product’s curated token IDs, validate custom colors before resolution, version the product-owned envelope, and define how invalid or unknown series recover. Do not pass an invalid stored string to CSS, Canvas, or a renderer.',
+          text: 'Validate saved settings before using them. Allow only token IDs offered by the picker, reject invalid custom colors, and return an affected series to Automatic with a clear message instead of passing an invalid string to CSS, Canvas, or the renderer.',
         },
       ],
     },
     {
       id: 'build-product-picker',
-      title: 'Build a product-owned theme-color picker',
+      title: 'Build a theme-color picker',
       content: [
         {
           type: 'prose',
@@ -288,7 +294,7 @@ export function SeriesMark() {
         },
         {
           type: 'prose',
-          text: 'Do not construct `var(--color-data-*)` strings by hand. Theme overrides also require Astryx’s layered StyleX build boundary; follow the **Vite Setup** section of the `@astryxdesign/build` README before using these imports in a new app. A bare unlayered transform can outrank layered theme overrides.',
+          text: 'Do not construct `var(--color-data-*)` strings by hand. Custom theme overrides also require Astryx’s layered StyleX build boundary; follow the **Vite Setup** section of the `@astryxdesign/build` README before using these imports in a new app. A bare unlayered transform can outrank layered theme overrides.',
         },
       ],
     },
@@ -349,7 +355,7 @@ export function CanvasSeries() {
         },
         {
           type: 'prose',
-          text: 'Token resolvers return concrete CSS values, but a concrete value can still include a unit such as `rem`. Preserve the token string when an API accepts CSS syntax, as `context.font` does. When an API requires numeric pixels, convert supported units deliberately; `Number.parseFloat` alone is not safe for `rem`, `em`, percentages, or calculated lengths. The product owns that conversion for its renderer.',
+          text: 'Resolved values can still include a unit such as `rem`. Preserve the token string when an API accepts CSS syntax, as `context.font` does. When an API requires numeric pixels, convert supported units deliberately; `Number.parseFloat` alone is not safe for `rem`, `em`, percentages, or calculated lengths.',
         },
         {
           type: 'prose',
@@ -475,15 +481,7 @@ export function RevenueChart({data}) {
       content: [
         {
           type: 'prose',
-          text: '`@astryxdesign/vega` is experimental and currently published only through the `@canary` tag. Pin an exact version and read the package README before adopting it. Pass only specs the product authors or reviews: Vega specs can evaluate expressions and load URLs, so user-, document-, or model-generated specs need the interpreter and restricted-loader boundary described in that README.',
-        },
-        {
-          type: 'prose',
-          text: 'Configuration-driven renderers need concrete, serializable values rather than retained CSS references. `buildVegaLiteConfig(token)` resolves Astryx colors and font families and supplies the current axis, legend, mark, range, title, padding, and view defaults. It does not create HTML tooltip chrome, apply product-specific mark radii, or manage renderer interaction state. Pass the result through `compileOptions.config`; do not copy the same object into `spec.config`.',
-        },
-        {
-          type: 'prose',
-          text: 'Check the text roles your spec enables. In this version, an enabled axis title needs explicit `config.axis.titleColor` and `config.axis.titleFont`; a chart title also needs `config.title.font` when it should use the theme font. Resolve those values with `token()` and verify the rendered chart in light and dark mode.',
+          text: 'Configuration-driven renderers need concrete, serializable values rather than retained CSS references. Build a Vega-Lite configuration from the active resolver and pass it through the configuration option owned by your Vega integration.',
         },
         {
           type: 'code',
@@ -492,32 +490,48 @@ export function RevenueChart({data}) {
 
 import {useMemo} from 'react';
 import {useTheme} from '@astryxdesign/core/theme';
-import {
-  buildVegaLiteConfig,
-  VegaChart,
-  type AnySpec,
-} from '@astryxdesign/vega';
+import type {Config} from 'vega-lite';
 
-export function VegaRevenueChart({spec, values}: {
-  spec: AnySpec;
-  values: readonly unknown[];
-}) {
+export function useVegaLiteThemeConfig(): Config {
   const {token} = useTheme();
-  const config = useMemo(
-    () => JSON.parse(JSON.stringify(buildVegaLiteConfig(token))),
+  return useMemo(
+    () => ({
+      background: token('--color-background-card'),
+      axis: {
+        domainColor: token('--color-border-emphasized'),
+        gridColor: token('--color-border'),
+        labelColor: token('--color-text-secondary'),
+        labelFont: token('--font-family-body'),
+        titleColor: token('--color-text-primary'),
+        titleFont: token('--font-family-heading'),
+      },
+      legend: {
+        labelColor: token('--color-text-secondary'),
+        labelFont: token('--font-family-body'),
+        titleColor: token('--color-text-primary'),
+        titleFont: token('--font-family-heading'),
+      },
+      range: {
+        category: [
+          token('--color-data-categorical-blue'),
+          token('--color-data-categorical-orange'),
+          token('--color-data-categorical-purple'),
+          token('--color-data-categorical-green'),
+        ],
+      },
+      title: {
+        color: token('--color-text-primary'),
+        font: token('--font-family-heading'),
+      },
+      view: {stroke: null},
+    }),
     [token],
   );
-
-  return (
-    <VegaChart
-      aria-label="Quarterly revenue"
-      compileOptions={{config}}
-      data={{table: [...values]}}
-      spec={spec}
-      viewOptions={{renderer: 'canvas'}}
-    />
-  );
 }`,
+        },
+        {
+          type: 'prose',
+          text: 'The returned object is concrete and JSON-safe. Supply it to Vega-Lite compilation through your integration’s config option; do not also duplicate the same values inside the spec. Product-specific mark radii, tooltips, data updates, and interaction state remain local to that integration.',
         },
         {
           type: 'prose',
@@ -525,15 +539,19 @@ export function VegaRevenueChart({spec, values}: {
         },
         {
           type: 'prose',
-          text: 'A Vega-Lite tooltip encoding defines tooltip data, not themed HTML tooltip chrome. If the product supplies an HTML tooltip through `viewOptions.tooltip`, keep that handler stable and style its surface with Astryx background, border, text, radius, typography, spacing, and shadow tokens.',
+          text: 'A Vega-Lite tooltip encoding defines tooltip data, not themed HTML tooltip chrome. If the product supplies an HTML tooltip, style its surface with Astryx background, border, text, radius, typography, spacing, and shadow tokens.',
         },
         {
           type: 'prose',
-          text: '`VegaChart.data` initializes named datasets only when a View is created. Changing `values` alone does not update the live View. For live data, capture the View with `onReady`, call `view.data(name, tuples)`, and then call `view.runAsync()`.',
+          text: 'For live data in a Vega View, call `view.data(name, tuples)` and then `view.runAsync()`. Whether a React data prop updates an existing View or creates a new one depends on the integration you choose; verify that lifecycle rather than assuming it.',
         },
         {
           type: 'prose',
-          text: '`VegaChart` rebuilds its View when the value of `spec`, `compileOptions`, `parseConfig`, `parseOptions`, or `viewOptions` changes. `onReady` receives each new View. Keep product-owned zoom, selection, and signal state outside the View and reapply supported state there; otherwise tell people that the mode switch resets it.',
+          text: 'Treat Vega and Vega-Lite specs as executable input: expressions can run and data entries can load URLs. Pass only specs the product authors or reviews. User-, document-, or model-generated specs need the interpreter and restricted-loader boundaries described by Vega’s security guidance.',
+        },
+        {
+          type: 'prose',
+          text: 'Changing a concrete configuration may rebuild the renderer and reset focus, selection, zoom, hover, tooltip, animation, or signal state. Keep product-owned state outside the renderer and restore supported state after a rebuild, or clearly document the reset.',
         },
       ],
     },
@@ -556,32 +574,6 @@ export function VegaRevenueChart({spec, values}: {
       ],
     },
     {
-      id: 'understand-the-boundary',
-      title: 'Understand what this guide does not guarantee',
-      content: [
-        {
-          type: 'list',
-          style: 'unordered',
-          items: [
-            'Astryx does not maintain adapters for the chart libraries shown here.',
-            'Product-owned saved chart choices have no Astryx compatibility guarantee in this version.',
-            'A color value does not certify the final chart as accessible.',
-            'The product owns automatic assignment, validation, migrations, and document storage.',
-            'The product owns number and date formatting, localization, direction, and loading, empty, error, or unavailable-data states.',
-            'The renderer integration owns responsive behavior, interaction state, performance, and third-party version compatibility.',
-          ],
-        },
-        {
-          type: 'prose',
-          text: 'The examples above demonstrate value transport and theme updates. They are not a complete chart editor and do not demonstrate persistence migrations, invalid-input recovery, localized or right-to-left layouts, every empty or error state, or complete non-color identity. Use the checklist below for those product-owned behaviors.',
-        },
-        {
-          type: 'prose',
-          text: 'Consider proposing a shared API only after multiple products repeat the same saved-choice model, picker projection, validation, or renderer conversion. Bring those concrete use cases and migration needs with the proposal.',
-        },
-      ],
-    },
-    {
       id: 'verify-integration',
       title: 'Verify your chart integration',
       content: [
@@ -594,7 +586,7 @@ export function VegaRevenueChart({spec, values}: {
           style: 'unordered',
           items: [
             'Render light mode, dark mode, at least one custom theme, and supported high-contrast or forced-colors modes.',
-            'Switch theme and mode without remounting the renderer when it supports live updates.',
+            'Change the theme or mode without remounting the renderer when it supports live updates.',
             'Verify chart defaults, manual theme colors, custom colors, invalid stored input, and Reset separately when your product exposes those choices.',
             'Make the chart understandable without relying on color alone; check marker shapes, line styles, patterns, labels, and borders in grayscale and exported output.',
             'Check text and marks against the background where they actually appear.',
