@@ -240,16 +240,15 @@ describe('docs() dispatcher routing', () => {
     );
   }, SLOW);
 
-  it('a section of a namespace -> ERR_UNKNOWN_SECTION, naming its children', async () => {
-    const err = await docs('cli', 'commands').catch(e => e);
+  it('a section no guide of a namespace has -> ERR_UNKNOWN_SECTION, naming its guides', async () => {
+    const err = await docs('cli', 'zzzz-nope').catch(e => e);
     expect(err).toBeInstanceOf(AstryxError);
     expect(err.code).toBe('ERR_UNKNOWN_SECTION');
-    // It names the namespace's children, in the order its slots list them.
-    const cli = (await docs('cli')).data;
-    expect(err.suggestions.map(s => s.name)).toEqual(
-      cli.slots.flatMap(slot => slot.children.map(child => child.route)),
-    );
-    expect(err.suggestions.map(s => s.name)).toContain('cli/commands');
+    // It names every guide below the namespace, at any depth.
+    const names = err.suggestions.map(s => s.name);
+    expect(names).toContain('cli/component-lookups');
+    expect(names).toContain('cli/integrations/quick-start');
+    expect(names.every(name => name.startsWith('cli/'))).toBe(true);
   }, SLOW);
 
   it('an unknown route suggests the children of the deepest namespace it reaches', async () => {

@@ -330,22 +330,25 @@ describe('the docs tree, one level at a time', () => {
     expect(old.stderr).toContain('Unknown topic "cli-integrations"');
   }, SLOW);
 
-  it('returns docs.node as JSON, and fails a section of a namespace', async () => {
+  it('returns docs.node as JSON, and reads a section of a namespace from its guide', async () => {
     const node = JSON.parse((await runCli(['docs', 'cli', '--json'])).stdout);
     expect(node).toMatchObject({
       type: 'docs.node',
       data: {route: 'cli', kind: 'namespace', breadcrumb: []},
     });
     expect(node.data.slots.map(slot => slot.name)).toEqual(['guides', 'reference']);
-    const section = await runCli(['docs', 'cli', 'commands', '--json']);
-    expect(section.status).toBe(1);
-    const error = JSON.parse(section.stdout);
-    expect(error).toMatchObject({code: 'ERR_UNKNOWN_SECTION'});
-    // It names the namespace's children, in the order its slots list them.
-    expect(error.suggestions.map(s => s.name)).toEqual(
-      node.data.slots.flatMap(slot => slot.children.map(child => child.route)),
+    const section = JSON.parse(
+      (await runCli(['docs', 'layout', 'side-panels', '--json'])).stdout,
     );
-    expect(error.suggestions.map(s => s.name)).toContain('cli/commands');
+    expect(section).toMatchObject({
+      type: 'docs.detail.section',
+      data: {id: 'side-panels', title: 'Side panels'},
+    });
+    const missing = await runCli(['docs', 'cli', 'zzzz-nope', '--json']);
+    expect(missing.status).toBe(1);
+    const error = JSON.parse(missing.stdout);
+    expect(error).toMatchObject({code: 'ERR_UNKNOWN_SECTION'});
+    expect(error.suggestions.map(s => s.name)).toContain('cli/integrations/quick-start');
   }, SLOW);
 });
 
