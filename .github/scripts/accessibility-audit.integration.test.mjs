@@ -24,6 +24,7 @@ const originalLoad = Module._load;
 let requestedUrl = '';
 let reads = 0;
 let selectorResolved = false;
+let storyFinished = false;
 
 function scenarioState() {
   const scenario = process.env.A11Y_TEST_SCENARIO;
@@ -78,6 +79,34 @@ const page = {
     return {};
   },
   evaluate: async (fn, arg) => evaluateInFixture(fn, arg),
+  waitForFunction: async (fn, arg, options) => {
+    if (options?.timeout !== 15000) {
+      throw new Error('story interaction wait must stay bounded');
+    }
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const previousPreview = global.__STORYBOOK_PREVIEW__;
+      global.__STORYBOOK_PREVIEW__ = {
+        selectionStore: {selection: {storyId: arg}},
+        currentRender: {
+          phase:
+            process.env.A11Y_TEST_SCENARIO === 'story-never-finishes'
+              ? 'playing'
+              : attempt === 2
+                ? 'finished'
+                : 'playing',
+        },
+      };
+      try {
+        if (fn(arg)) {
+          storyFinished = true;
+          return;
+        }
+      } finally {
+        global.__STORYBOOK_PREVIEW__ = previousPreview;
+      }
+    }
+    throw new Error('story interaction did not finish');
+  },
   close: async () => {},
 };
 const context = {newPage: async () => page, close: async () => {}};
@@ -86,6 +115,12 @@ const browser = {newContext: async () => context, close: async () => {}};
 class FakeAxeBuilder {
   disableRules() { return this; }
   async analyze() {
+    if (
+      process.env.A11Y_TEST_SCENARIO === 'story-delayed' &&
+      !storyFinished
+    ) {
+      throw new Error('axe ran before the story interaction finished');
+    }
     if (process.argv.includes('--ready-selector') && !selectorResolved) {
       throw new Error('axe ran before the readiness selector resolved');
     }
@@ -185,6 +220,18 @@ describe.sequential('accessibility-audit CLI readiness', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('✓ Audited: Button / Fixture');
     expect(result.report.auditedStoryKeys).toHaveLength(1);
+  });
+
+  it('waits for the story interaction to finish before running axe', () => {
+    const result = runFixture('story-delayed', VALID_INDEX);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('✓ Audited: Button / Fixture');
+  });
+
+  it('fails closed when the story interaction never finishes', () => {
+    const result = runFixture('story-never-finishes', VALID_INDEX);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('story interaction did not finish');
   });
 
   it('waits for a focused readiness selector and records it in the report', () => {

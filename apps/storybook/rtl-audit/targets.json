@@ -131,14 +131,11 @@
   },
   {
     "component": "DateInput",
-    "storyId": "core-dateinput--default",
+    "storyId": "core-dateinput--clearable",
     "dims": ["D2"],
-    "setup": {
-      "click": "[role=\"combobox\"]"
-    },
     "selectors": {
-      "prev": "button[aria-label=\"Previous month\"]",
-      "next": "button[aria-label=\"Next month\"]"
+      "prev": "button[aria-label=\"Open calendar\"]",
+      "next": "button[aria-label=\"Clear Event date\"]"
     }
   },
   {

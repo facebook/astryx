@@ -12,8 +12,8 @@
  * @output JSON report with accessibility violations; with --baseline, a gate
  *   summary (new / baselined / resolved) on stdout and a non-zero exit code
  *   when --fail-on-new finds regressions. Diff logic lives in
- *   lib/a11y-baseline.js. Pages are scanned with animations held at their end
- *   state.
+ *   lib/a11y-baseline.js. Pages are scanned only after Storybook finishes the
+ *   initial render and play function, with animations held at their end state.
  * @position Blocking PR accessibility audit; scoped stories share canonical
  *   package-qualified ownership with the RTL audit.
  */
@@ -337,6 +337,17 @@ async function runAccessibilityAudit() {
                 {expectedOrigin: `http://localhost:${port}`, storyId: story.id},
               ),
             {timeoutMs: 5000, pollMs: 50},
+          );
+          await page.waitForFunction(
+            expectedStoryId => {
+              const preview = globalThis.__STORYBOOK_PREVIEW__;
+              return (
+                preview?.selectionStore?.selection?.storyId ===
+                  expectedStoryId && preview?.currentRender?.phase === 'finished'
+              );
+            },
+            story.id,
+            {timeout: 15000},
           );
           if (readySelector != null) {
             await page.waitForSelector(readySelector, {
