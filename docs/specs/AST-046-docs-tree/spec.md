@@ -230,9 +230,14 @@ and references from other packages are an open question (OQ2).
   address, its sidebar group, and its text. The slug of each guide and nested
   namespace below it (its route with `/` as `-`) MUST be a temporary redirect
   to where its text starts on the page. A root namespace whose slug is a
-  package's page (`cli` is the CLI package's page) keeps one page per guide,
-  at the guide's slug, and has no namespace page. A namespace page's sidebar
-  group MUST be the namespace's own `category`; without one, `foundations`
+  package's page (`cli` is the CLI package's page) has no namespace page.
+  The docsite lists the pages below it: each one is a namespace or a guide
+  below it, at its route's slug unless the list names another, read and
+  redirected the way a namespace page is, and leaves out what the other
+  listed pages hold. A guide below it that no listed page holds keeps a page
+  of its own at its slug. A listed page or a flat topic MAY show under
+  another page in the sidebar, which MUST be a top-level page; the page shown
+  under it keeps its own address. A namespace page's sidebar group MUST be the namespace's own `category`; without one, `foundations`
   when every guide below it is a foundations doc, and `guide` otherwise. A
   namespace with no guide below it, such as the Unorganized level (FR12), has
   no page. The docsite build MUST fail when a slug is both a page and a
