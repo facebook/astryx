@@ -355,7 +355,7 @@ function isYarnClassic({dir}) {
 function declaredYarnMajor(dir) {
   try {
     const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
-    const match = /^yarn@(\d+)\./.exec(String(pkg.packageManager ?? ''));
+    const match = /^yarn@(\d+)(?:[.+]|$)/.exec(String(pkg.packageManager ?? ''));
     return match ? Number(match[1]) : null;
   } catch {
     // Best-effort: no package.json, or an unreadable one.

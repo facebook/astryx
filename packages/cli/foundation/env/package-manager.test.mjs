@@ -367,6 +367,23 @@ describe('getDlxPrefix', () => {
     expect(getDlxPrefix(berry)).toBe('yarn dlx');
   });
 
+  it('reads a bare major version in the declaration', () => {
+    const classic = makeTmpDir();
+    fs.writeFileSync(
+      path.join(classic, 'package.json'),
+      JSON.stringify({packageManager: 'yarn@1'}),
+    );
+    expect(getDlxPrefix(classic)).toBe('npx');
+    fs.rmSync(classic, {recursive: true, force: true});
+
+    const berry = makeTmpDir();
+    fs.writeFileSync(
+      path.join(berry, 'package.json'),
+      JSON.stringify({packageManager: 'yarn@4'}),
+    );
+    expect(getDlxPrefix(berry)).toBe('yarn dlx');
+  });
+
   it('reads a committed Yarn config when the lockfile has no header', () => {
     const classic = makeTmpDir();
     fs.writeFileSync(path.join(classic, 'yarn.lock'), '');
