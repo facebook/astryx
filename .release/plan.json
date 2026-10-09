@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 1,
+  "version": "0.6.7",
+  "branch": "release/v0.6.7",
+  "cutSha": "7c8ddf211857860971bf3c57d755742bc52bcad1",
+  "changesets": [
+    {
+      "path": ".changeset/app-themes-import-built.md",
+      "sha256": "2e4b1d5a828ab4a07da63724532d4a3f85f340b58bf48783b645b296caefbd2a"
+    },
+    {
+      "path": ".changeset/bottom-sheet-drag-off-render.md",
+      "sha256": "2c90bd711a9e2cfb4064c2df7efc3db120994178ecf7eb33e33c777be0a9f8cb"
+    },
+    {
+      "path": ".changeset/bottom-sheet-nested-scroller-handoff.md",
+      "sha256": "45734553e5bd72d516156da952754db50a22a98689f71f0de07609e780b29eb8"
+    },
+    {
+      "path": ".changeset/bottom-sheet-pinch-zoom.md",
+      "sha256": "490dd6b9bafe26cfe7ca5783a9cbef0bb0a7d59c44aa5ac79bb3d07e758f39ee"
+    },
+    {
+      "path": ".changeset/bottom-sheet-projected-release.md",
+      "sha256": "2491c6fb34cfbc5237ec2fdc6dccee4e44c4a0af4adfc58e8d6ee22ed3642159"
+    },
+    {
+      "path": ".changeset/cli-hints-scoped-package.md",
+      "sha256": "98fdca240d9f8edd4141cd41e97f99f03172ca34da628899b06b0a17f583eb84"
+    },
+    {
+      "path": ".changeset/cli-provenance-surfaces.md",
+      "sha256": "9770fb6b7520913da6272f0f8d7467a05b56fb902d58b4473449ecb7a08ca260"
+    },
+    {
+      "path": ".changeset/compact-agent-docs-block.md",
+      "sha256": "c72bea0233653e27abf5b2c30e6d4fafc60dacafafb17ae495903e3750b5efb2"
+    },
+    {
+      "path": ".changeset/core-docs-scoped-cli.md",
+      "sha256": "636fdb589900a2d81274fd0e1904a8c88b6863b45ce868d33796bea4a4861d57"
+    },
+    {
+      "path": ".changeset/deprecate-layout-command.md",
+      "sha256": "7ad63623eec7c8616a4f37be16e3471c5aa377020adf71199d83f01b26a5bc47"
+    },
+    {
+      "path": ".changeset/docs-split-six-topics.md",
+      "sha256": "c05ccc45aeca860b881864d540a7ba54901ec84bfeaf00876f0c56ffc41a514f"
+    },
+    {
+      "path": ".changeset/doctor-keeps-themes-check.md",
+      "sha256": "37790fc2cc9ba6495b96324a59dfc1e57e42a04792ce3409aadc05ed9a590bd3"
+    },
+    {
+      "path": ".changeset/doctor-says-what-it-found.md",
+      "sha256": "b2a5ac3c8fe63171f643dfc3a4c8b2e32cae83145f57e19fc482a9cca16441ba"
+    },
+    {
+      "path": ".changeset/dropdown-menu-press-open-focus-return.md",
+      "sha256": "67e92f1ee561fa2edfdbc779591bac711fb881252cfeb9f19da2ff287a6a2c2d"
+    },
+    {
+      "path": ".changeset/field-tooltip-status-announced.md",
+      "sha256": "44afd558edf67c97cfbaf98d7f555e9935b2ea1b4da19ca18918d2381e64dfbb"
+    },
+    {
+      "path": ".changeset/file-input-clear-change-action.md",
+      "sha256": "1c041dfb5128cf691a0d357328f280db648857f325c0c252c1c43828f190cf0a"
+    },
+    {
+      "path": ".changeset/fix-codemod-discovery-node-modules.md",
+      "sha256": "884f93f4a1ff7b5a69d7a6fe84cdec63b9de7c2f42d1e233667e67968043fbc3"
+    },
+    {
+      "path": ".changeset/fix-layout-deprecation-shape.md",
+      "sha256": "467b96ed35ecb83d9adbeda9c6edd09e3a768e9dd024d36f47819d120aa73f4a"
+    },
+    {
+      "path": ".changeset/fix-swizzle-stylex-deep-path.md",
+      "sha256": "ad4633e47cfb1cffae22bb2390414cb12b81646c88623790465f3c61db98b69c"
+    },
+    {
+      "path": ".changeset/fix-template-compact-default.md",
+      "sha256": "73c0a64999fc39313f603d282c8519803f2f82156ad97ca9c91a5ca157d8af0b"
+    },
+    {
+      "path": ".changeset/fix-template-empty-header.md",
+      "sha256": "0ef64f62634a9a16d8c5c0c907253e5fee2ec486fad7d307acd60adbfb1074d9"
+    },
+    {
+      "path": ".changeset/grouped-row-custom-header-disclosure.md",
+      "sha256": "586c13b1d20e6bd98cc9a353c6b113d20469504e03a19ed9bf48397b7f3dc65a"
+    },
+    {
+      "path": ".changeset/grouped-rows-sticky-chevron.md",
+      "sha256": "b12292e3c2fd46df04e3f78ebf0ae0e1cb0dd230beb14720ba8b1ec383128fd5"
+    },
+    {
+      "path": ".changeset/input-fields-status-variant-tooltip.md",
+      "sha256": "b041d8b19c92dcf97a40d0d2cb54b79d5cbd5fbe2c04bd30a6fc8aa03b24ae59"
+    },
+    {
+      "path": ".changeset/integration-component-replacements.md",
+      "sha256": "536382decf53a856b1cff05f3e88496b61a6f73c046687a8a84a6150f98bcd3b"
+    },
+    {
+      "path": ".changeset/item-swipe-actions.md",
+      "sha256": "591ae4ee2d8ffefc168236ef72c47fbdf4f4e5bf8ad2e2c9bdbc569fa56da623"
+    },
+    {
+      "path": ".changeset/keep-layers-inside-dialogs.md",
+      "sha256": "e09b9633e51701f4fad8abacab530de7d8fc268b92d1f59e3089285bcd28c913"
+    },
+    {
+      "path": ".changeset/lab-drawer-container-padding.md",
+      "sha256": "7018b6ac06f70e035ce9e34461df0aa7cb0a0c96ef049c96a9732378348c61cb"
+    },
+    {
+      "path": ".changeset/layout-docs-namespace.md",
+      "sha256": "a0ae681f5f54a2f991d4c14ed7a6b756b1a22b3cf9be0baa81f829024a590534"
+    },
+    {
+      "path": ".changeset/markdown-indented-table-columns.md",
+      "sha256": "c778e5112ccea7286f4d3cc94329e0aad30a1d9ecd1c39a3fc7e185e9227170b"
+    },
+    {
+      "path": ".changeset/markdown-long-link-label-lines.md",
+      "sha256": "b35614deccc452d3dfd783a48a9ad99e7c619418202e5b45af36d977f59e391a"
+    },
+    {
+      "path": ".changeset/markdown-open-fence-final-newline.md",
+      "sha256": "2b6527f65b947f99c865c05196c41aec28bdfa4f7d152fab353123b51faf6a2a"
+    },
+    {
+      "path": ".changeset/markdown-quoted-open-fence-blank-line.md",
+      "sha256": "db47c350832e3bf8f851433b36db607ba65c8d96fa80c3f27d1a30931dc52015"
+    },
+    {
+      "path": ".changeset/markdown-streaming-list-shapes.md",
+      "sha256": "dc1c9bc6ca81e122343c67dbf578ba80d8e0a293c99cc51617d7cf54ff5c6b33"
+    },
+    {
+      "path": ".changeset/mobilenav-pinch-zoom.md",
+      "sha256": "e9ef0e0b249a7a9bf68e607a22815ea85c3e2370bac184c048c7ce09c31faf6d"
+    },
+    {
+      "path": ".changeset/model-comparison-template.md",
+      "sha256": "0cdfa38245143469ce64c7afaabf30d46b0527ad8e27da37ae28efd1d7c8899a"
+    },
+    {
+      "path": ".changeset/multi-selector-bottom-sheet-listbox-name.md",
+      "sha256": "4c3ffa3777adc7b7eb28b77d7ccb2622d6337a053d37f05f7e639ca8a56746fb"
+    },
+    {
+      "path": ".changeset/multi-selector-option-action.md",
+      "sha256": "250d66b10d42c3334bb0f4fe66ce3ef40df22592222ee196b6833f64223d12ec"
+    },
+    {
+      "path": ".changeset/namespace-section-reads.md",
+      "sha256": "a44161e5c6750798b36357e86ea64e95aceb1fcfa45a47e823d8a05b7e99f1f9"
+    },
+    {
+      "path": ".changeset/restore-split-doc-guidance.md",
+      "sha256": "f95c828ae71a7a105a3f2375ab1aca0d75e103ede2b736c39be390edc6af3125"
+    },
+    {
+      "path": ".changeset/richtext-editor-i18n-catalog.md",
+      "sha256": "2996e02d0070ee93bc45518a4a790f3a07af88218cc821ba7e6d138d83e653c1"
+    },
+    {
+      "path": ".changeset/search-domain-priority.md",
+      "sha256": "8b4bc54505b1ad6298440b18ff42f493e59ebd210735484a141972f416d5ee8d"
+    },
+    {
+      "path": ".changeset/search-plural-doc-names.md",
+      "sha256": "eed452037bb256c451b9592e138a9b73e847d00ff19b8b3f96412cb1e7660297"
+    },
+    {
+      "path": ".changeset/side-nav-heading-hover-press.md",
+      "sha256": "d2f29438e92f08c2e535857fd3ddba42af3361cd178f92027a6c5d81668bf56b"
+    },
+    {
+      "path": ".changeset/styling-overview-theme-workflow.md",
+      "sha256": "85079026ee01d506036a492ba7e1e99622f8ae83fcb5f7bcf4acb2bcf72f65d9"
+    },
+    {
+      "path": ".changeset/table-collapsible-template.md",
+      "sha256": "fff4af2834787e7aeb6962ec3dfbd9550567d6a05ea6573ef68f8dcc77afbee4"
+    },
+    {
+      "path": ".changeset/table-comparison-category-fix.md",
+      "sha256": "ff9b8db414d2aad311e61b6787beccd7da9530124fb2f3c4af445af5b57864e5"
+    },
+    {
+      "path": ".changeset/table-contenteditable-guard.md",
+      "sha256": "9ddf5c7fa995ba862a1cb86ca8c133abc63e645ea9beb0940866a56c0b563b93"
+    },
+    {
+      "path": ".changeset/table-row-click-shared-guards.md",
+      "sha256": "3d557f2bf9f6cbc0f89fa503725160a6f60a80398d9656fcdabb536fef5c2d25"
+    },
+    {
+      "path": ".changeset/table-row-expansion-chevron.md",
+      "sha256": "339ea5b8181dfd39db617e8f82f8f9a18f5a25797bb32e0ebb87baddaa9c80ef"
+    },
+    {
+      "path": ".changeset/table-row-expansion-divider-placement.md",
+      "sha256": "cf71d3a1ed8a718d6f82b3ca363740f509fe055492c094fec38d0381164615bc"
+    },
+    {
+      "path": ".changeset/table-row-expansion-panel-indent.md",
+      "sha256": "bde562f9f684c4d44d81e829867bdd31db5cea8ccc50ffe0addb6fffb776d15c"
+    },
+    {
+      "path": ".changeset/table-row-expansion-panel-variant.md",
+      "sha256": "66c98e543061c733aa91d74327852644bd0d4ea9494c09df5f0ed68131f3a710"
+    },
+    {
+      "path": ".changeset/table-row-expansion-row-click.md",
+      "sha256": "1f52c5fb874d0e5042166ae4d0bf5fb4add74e4b6eec2887028325155977bdd4"
+    },
+    {
+      "path": ".changeset/table-striping-skips-expansion-panels.md",
+      "sha256": "e66c7913044073ec8183941de156948c1bed26e4982fe1913dee9154ea6f618f"
+    },
+    {
+      "path": ".changeset/table-widthless-column-floor.md",
+      "sha256": "8c712e1f590792d0d3cd33ff05771059fff9d74977ed4d2b4ed4b961d42dec1d"
+    },
+    {
+      "path": ".changeset/template-setup-notes.md",
+      "sha256": "dc48ccf446c288abca93a6d3059ab004993b8ea19d1649ad1aa723fdbd7896f0"
+    },
+    {
+      "path": ".changeset/theme-build-batch-report.md",
+      "sha256": "5018f6a3686eff1cc38105c1e48427c1b544b5b24a822db77cdf0c98bc3b37dd"
+    },
+    {
+      "path": ".changeset/theme-font-stylesheets.md",
+      "sha256": "6036df7ab06582bfc8cd46e1c4d015a680b34586c0fbfda51a319e06e1f57bf7"
+    },
+    {
+      "path": ".changeset/theme-guides-split.md",
+      "sha256": "335d6b22d47e7d894d51d3faeeb38c22c245aa4415f521ee8dbf9a5b66d4799d"
+    },
+    {
+      "path": ".changeset/theme-import-line.md",
+      "sha256": "6ca53110dfa9bf7ebccb1284bf6a6d6ce2c33201aa6d6916deafe6ba31319428"
+    },
+    {
+      "path": ".changeset/theme-import-names-package.md",
+      "sha256": "403c11be15151f94b8eb2ef12fdaa387afbae8102bbf640b948fac9bab5640ed"
+    },
+    {
+      "path": ".changeset/yarn-classic-one-off.md",
+      "sha256": "4e63792695e1c596681002f9b1a9a81d155ea212dbadbce84c320403fb102222"
+    }
+  ]
+}
