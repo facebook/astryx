@@ -237,10 +237,10 @@ createIconAdapter({capabilities: contract, resolveProps: callable});
 // @ts-expect-error The default mapped tuple does not admit undeclared extra keys.
 createIconAdapter({capabilities: contract, resolveProps: extra});
 
-// @ts-expect-error Declared mapped keys must exist in the mapper's supported output.
 export const unknownMappedKey = createIconAdapter({
   capabilities: contract,
   propNames: ['unknown'],
+  // @ts-expect-error Declared mapped keys must exist in the mapper's supported output.
   resolveProps: request => ({variant: request.appearance}),
 });
 export const unsupportedComponent = adapt(

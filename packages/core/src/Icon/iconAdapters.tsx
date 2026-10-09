@@ -255,17 +255,25 @@ export type IconAdapterOptions<
   PropNames extends ReadonlyArray<string> = DefaultPropNames,
 > = IconAdapterInput<C, MapperProps, PropNames> &
   ValidAdapterMapping<MapperProps, PropNames>;
-type MappingValidation<M, K extends ReadonlyArray<string>> = Record<
-  | InvalidMappedKeys<M, K>
-  | Exclude<
-      K[number],
-      MappedKeys<IconAdapterProps<M>> | DefaultPropNames[number]
-    >,
-  never
-> &
-  ([Extract<M, (...args: never[]) => unknown>] extends [never]
-    ? unknown
-    : {readonly resolveProps: never});
+// Validation lives in the mapper parameter's own constraint, which is resolved
+// only after the deferred mapper body is inferred. Naming MapperProps in the
+// options parameter instead (a conditional, a Record, a rest tuple or a this
+// type) resolves it to `object` before that inference runs, which drops the
+// declared axes from a plain `resolveProps(request)` mapper.
+type ValidMapperProps<M, K extends ReadonlyArray<string>> = [
+  Extract<M, (...args: never[]) => unknown>,
+] extends [never]
+  ? [InvalidMappedKeys<M, K>] extends [never]
+    ? [
+        Exclude<
+          K[number],
+          MappedKeys<IconAdapterProps<M>> | DefaultPropNames[number]
+        >,
+      ] extends [never]
+      ? object
+      : {readonly __invalidIconAdapterPropNames: never}
+    : {readonly __invalidIconAdapterMapping: never}
+  : {readonly __invalidIconAdapterMapping: never};
 type CompatibleComponent<P, M> =
   SVGProps<SVGSVGElement> extends P
     ? Exclude<MappedKeys<M>, keyof IconAdapterProps<P>> extends never
@@ -303,12 +311,17 @@ function isAllowedPropName(name: string): boolean {
 /** Bind a pure local mapper, then adapt a supplied library component once. */
 export function createIconAdapter<
   const C extends IconCapabilities,
-  const MapperProps extends object,
+  const MapperProps extends ValidMapperProps<MapperProps, PropNames>,
   const PropNames extends ReadonlyArray<string> = DefaultPropNames,
 >(
-  options: IconAdapterInput<C, MapperProps, PropNames> &
-    MappingValidation<NoInfer<MapperProps>, NoInfer<PropNames>>,
-) {
+  options: IconAdapterInput<C, MapperProps & object, PropNames>,
+): <P extends object>(
+  Component: ComponentType<P> &
+    CompatibleComponent<NoInfer<P>, MapperProps & object>,
+) => IconType;
+export function createIconAdapter(
+  options: IconAdapterInput<IconCapabilities, object, ReadonlyArray<string>>,
+): <P extends object>(Component: ComponentType<P>) => IconType {
   requireRecord(options, 'adapter options');
   for (const name of Reflect.ownKeys(options)) {
     if (
@@ -320,7 +333,7 @@ export function createIconAdapter<
     getOwnIconData(options, name);
   }
   const capabilities = defineIconCapabilities(
-    getOwnIconData(options, 'capabilities') as C,
+    getOwnIconData(options, 'capabilities') as IconCapabilities,
   );
   const resolveProps = getOwnIconData(options, 'resolveProps');
   if (typeof resolveProps !== 'function') {
@@ -343,18 +356,20 @@ export function createIconAdapter<
     }
     selectedNames.push(name);
   }
-  const mapper = resolveProps as (request: IconAdapterRequest<C>) => unknown;
+  const mapper = resolveProps as (
+    request: IconAdapterRequest<IconCapabilities>,
+  ) => unknown;
   const metadata: IconAdapterMetadata = Object.freeze({
     capabilities,
     propNames: Object.freeze(selectedNames),
     // selectIconAdapter has already checked every axis against this exact C.
     // eslint-disable-next-line @typescript-eslint/promise-function-async -- Opaque mapper values stay synchronous; promises are rejected, never awaited.
     resolveProps: (request: IconAdapterRequest<IconCapabilities>) =>
-      mapper(request as unknown as IconAdapterRequest<C>),
+      mapper(request),
   });
   const wrappers = new WeakMap<object, IconType>();
   return function adaptIcon<P extends object>(
-    Component: ComponentType<P> & CompatibleComponent<NoInfer<P>, MapperProps>,
+    Component: ComponentType<P>,
   ): IconType {
     if (!isIconComponent(Component)) {
       throw new Error('Icon: an adapter must wrap a supplied icon component.');
