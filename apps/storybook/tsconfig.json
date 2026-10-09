@@ -5,10 +5,9 @@
     // by path, because Storybook's config loader cannot resolve the package's
     // dist-only `./vite` export in an unbuilt worktree (#5128).
     "allowImportingTsExtensions": true,
+    "allowJs": true,
     "paths": {
-      "@astryxdesign/core": [
-        "../../packages/core/src/index.ts"
-      ],
+      "@astryxdesign/core": ["../../packages/core/src/index.ts"],
       "@astryxdesign/core/*": [
         "../../packages/core/src/*/index.ts",
         "../../packages/core/src/*"
@@ -17,24 +16,17 @@
         "../../packages/theme/src/*/index.ts",
         "../../packages/theme/src/*"
       ],
-      "@astryxdesign/lab": [
-        "../../packages/lab/src/index.ts"
-      ],
+      "@astryxdesign/lab": ["../../packages/lab/src/index.ts"],
       "@astryxdesign/lab/*": [
         "../../packages/lab/src/*/index.ts",
         "../../packages/lab/src/*"
       ],
-      "@astryxdesign/richtext": [
-        "../../packages/richtext/src/index.ts"
-      ],
+      "@astryxdesign/richtext": ["../../packages/richtext/src/index.ts"],
       "@astryxdesign/richtext/*": [
         "../../packages/richtext/src/*/index.ts",
         "../../packages/richtext/src/*"
       ]
     }
   },
-  "include": [
-    ".storybook/**/*",
-    "stories/**/*"
-  ]
+  "include": [".storybook/**/*", "stories/**/*"]
 }

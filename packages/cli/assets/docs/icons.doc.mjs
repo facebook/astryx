@@ -3,7 +3,7 @@
 /**
  * @file Icons consumer reference
  * @input Semantic names, supplied artwork, local contracts and owner-declared roles
- * @output Theme-scoped icon authoring and finite role/state consumer boundaries
+ * @output Theme-scoped icon authoring, finite role/state boundaries and generated review guidance
  * @position Builder-facing source contract; no component enrollment or internal transport API
  */
 
@@ -133,6 +133,25 @@ export const brandTheme = defineTheme({
         {
           type: 'prose',
           text: 'Outside core, pass a fallback to `getExtendedIcon(key, fallback)` so the glyph renders with no theme.',
+        },
+      ],
+    },
+    {
+      id: 'role-authoring-and-review',
+      title: 'Declare locally, review together',
+      category: 'foundations',
+      content: [
+        {
+          type: 'prose',
+          text: 'Component-library owners keep the ComponentIconSlotMap augmentation and declareComponentIconRole call beside the owning component source. Declare a stable purpose, a named defaultSize (sm, not 16px), and every finite state once in highest-first statePrecedence. Keep source fallback and rendering with that owner; do not add a central role list. A true slot has no states and does not participate in role sizing or state appearance. Product builders use the component’s documented icon props rather than declaring roles for an instance.',
+        },
+        {
+          type: 'prose',
+          text: 'In the Astryx repository, the proposed Storybook Core/Icon Role Inventory → Generated view collects those owners automatically. Select Theme and Mode in the toolbar to compare default and resolved size, effective state, source mode, appearance and weight together. Synthetic Policy demonstrates supplied adaptive artwork and role policy without claiming a real component is enrolled. Rows use a labelled shared check probe fallback or a direct probe; inspect the component’s own stories for its actual fallback glyph, placement and interaction.',
+        },
+        {
+          type: 'prose',
+          text: 'Review the no-condition row, each state and the all-active row: the first active declared state wins. True slots remain visibly stateless/nonparticipating. Use these rows to compare shared theme policy, then review the component itself for placement and interaction. The Storybook review location is a proposal, not a settled ownership decision or designer approval.',
         },
       ],
     },

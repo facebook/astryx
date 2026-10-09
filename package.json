@@ -13,7 +13,7 @@
     "test:a11y-contract": "playwright test --config playwright.config.ts --project chromium",
     "test:docsite-browser": "playwright test --config apps/docsite/playwright.config.ts",
     "check:package-boundaries": "node scripts/check-package-boundaries.js",
-    "check:repo": "pnpm check:visual-owner && pnpm check:sync && pnpm check:data-tokens && pnpm check:token-docs && pnpm check:knowledge && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits && pnpm check:cli-structure && pnpm check:use-client && pnpm check:portable-scripts && pnpm check:i18n-runtime && pnpm check:i18n-catalog && pnpm check:cldr-weekdays && pnpm check:fixtures && pnpm check:setup-contract",
+    "check:repo": "pnpm check:visual-owner && pnpm check:sync && pnpm check:data-tokens && pnpm check:token-docs && pnpm check:knowledge && pnpm check:icon-conformance && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits && pnpm check:cli-structure && pnpm check:use-client && pnpm check:portable-scripts && pnpm check:i18n-runtime && pnpm check:i18n-catalog && pnpm check:cldr-weekdays && pnpm check:fixtures && pnpm check:setup-contract",
     "check:visual-owner": "node scripts/check-visual-workflow-owner.mjs",
     "check:fixtures": "node internal/vibe-tests/scripts/fixture-suite.mjs verify",
     "generate:cldr-weekdays": "node scripts/generate-cldr-weekdays.mjs",
@@ -72,7 +72,8 @@
     "dev:sandbox": "pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/sandbox dev",
     "dev:sandbox:source": "pnpm generate:i18n-runtime && ASTRYX_SOURCE=1 pnpm -F @astryxdesign/sandbox dev",
     "npm:prune-canaries": "node scripts/npm/prune-canaries.mjs",
-    "check:knowledge": "node scripts/check-knowledge.mjs"
+    "check:knowledge": "node scripts/check-knowledge.mjs",
+    "check:icon-conformance": "node scripts/check-icon-conformance.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

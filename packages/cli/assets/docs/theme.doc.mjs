@@ -3,7 +3,7 @@
 /**
  * @file Theme consumer overview
  * @input Theme application, authoring and non-CSS icon data
- * @output Builder-facing entry points for applying and creating themes
+ * @output Builder-facing entry points for applying, creating and reviewing icon themes
  * @position CLI theme guide; field details stay with their focused references
  */
 
@@ -73,6 +73,16 @@ export const docs = {
         {
           type: 'prose',
           text: 'Use `icons` for fixed or bound adaptive artwork. `componentIcons` maps owner-declared positions to shared IconName or null, not artwork; {slot: true} positions stay source-only. `iconCapabilities` supplies a contract, dimensions, roleSizeOverrides for explicitly participating roles, and presentation.default/bySize/byState. byState chooses appearance only; final-size bySize still chooses weight. sizeOverrides and roleSizeOverrides merge by key with null clearing; presentation replaces as a whole, with null clearing. These are non-CSS values: import the generated theme module as well as its stylesheet. This source contract does not enroll Core components. See `astryx docs icons component-role-state` for the focused role/state contract.',
+        },
+      ],
+    },
+    {
+      id: 'icon-role-review',
+      title: 'Review icon roles under a theme',
+      content: [
+        {
+          type: 'prose',
+          text: 'For theme work in the Astryx repository, use the proposed Storybook Core/Icon Role Inventory → Generated surface and select Theme and Mode in the toolbar. It generates role/state rows from component-owned declarations; no catalog needs updating. Compare the owner default with the resolved box and inspect state appearance separately from final-size weight. True slots stay stateless. The shared check/direct probes are not the component’s real fallback or layout proof; review component stories and screenshots too. See `astryx docs icons role-authoring-and-review` for where owners declare roles. This review/check location remains a proposal, not an ownership ruling.',
         },
       ],
     },

@@ -29,6 +29,32 @@ find it:
   them. Icon and indicator registries, `MediaTheme`, `CodeTheme` and the like
   live under `Themes/`.
 
+## Generated icon role review
+
+`Core/Icon Role Inventory → Generated` is the proposed central role/state review
+surface. Use the existing Theme and Mode toolbar; `Synthetic Policy` deliberately
+pins a labelled test theme to demonstrate role sizes, finite-state appearance and
+size-selected weight. Single-state cases are shown once; the pinned synthetic
+provider preserves the toolbar-selected light/dark mode. The direct-probe control
+shows ordinary SVG fallback behavior.
+
+The Vite plugin derives the roster from canonical `ComponentIconSlotMap` types and
+imports each runtime declaration owner. Nothing is cataloged or written to disk;
+new owner roles appear without editing the story. True slots have one visibly
+stateless/nonparticipating row. Metadata roles show no condition, each finite
+state and all conditions active to expose precedence. The shared check fallback
+is a glyph probe, not the component's actual default artwork or layout proof.
+
+`pnpm check:icon-conformance` runs with `check:repo`, beside the knowledge checks.
+It checks discoverable declarations, state coverage, named default-size metadata
+and mechanically visible shared-rendering bypasses in enrolled owner modules.
+Dynamic data flow and component interaction/layout still need owner tests and
+browser review. UI inventory tests run in the root `ui` project; discovery and
+build-field preservation tests run in their existing Node lanes.
+
+This location/tooling is a concrete proposal, not an approval of inventory
+ownership or a replacement for component stories and real screenshots.
+
 ### A Theme Sheet must not pin its own theme
 
 Render the component plainly and let the toolbar drive the theme. A story that

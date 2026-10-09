@@ -3,7 +3,7 @@
 /**
  * @file Icon consumer documentation
  * @input Semantic/direct artwork, independent requests and owner-declared role policy
- * @output Public props, sizing, finite role/state boundaries and accessible-name guidance
+ * @output Public props, sizing, finite role/state boundaries, proposed central review and accessible-name guidance
  * @position Builder-facing source contract; component participation remains owner-declared
  */
 
@@ -106,7 +106,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. No Core component is enrolled by this source contract. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
+          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. Owners keep declarations beside their component source, not in an inventory file. In the repository, the proposed Storybook Core/Icon Role Inventory generates every declared role and finite state for theme review; true slots stay visibly stateless. Its glyph probe is not component layout or visual approval. Icon has no slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for authoring and review guidance.',
       },
       {
         guidance: true,
@@ -222,7 +222,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. No Core component is enrolled by this source contract. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
+          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. Owners keep declarations beside their component source, not in an inventory file. In the repository, the proposed Storybook Core/Icon Role Inventory generates every declared role and finite state for theme review; true slots stay visibly stateless. Its glyph probe is not component layout or visual approval. Icon has no slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for authoring and review guidance.',
       },
       {
         guidance: true,
@@ -290,7 +290,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. No Core component is enrolled by this source contract. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
+          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. Owners keep declarations beside their component source, not in an inventory file. In the repository, the proposed Storybook Core/Icon Role Inventory generates every declared role and finite state for theme review; true slots stay visibly stateless. Its glyph probe is not component layout or visual approval. Icon has no slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for authoring and review guidance.',
       },
       {
         guidance: true,
