@@ -40,11 +40,11 @@
   "integrity": {
     "sourceTree": {
       "algorithm": "sha256",
-      "value": "8526665a772ec9da100940808a22676b4dfd6d0d8d6e9065dba416bfd8a16405"
+      "value": "505c8a4060682154eff87dc35903c1ae1baeb2fb8a519c32d5e9beb65fb3b7b4"
     },
     "viewInput": {
       "algorithm": "sha256",
-      "value": "8526665a772ec9da100940808a22676b4dfd6d0d8d6e9065dba416bfd8a16405"
+      "value": "505c8a4060682154eff87dc35903c1ae1baeb2fb8a519c32d5e9beb65fb3b7b4"
     }
   },
   "network": {
