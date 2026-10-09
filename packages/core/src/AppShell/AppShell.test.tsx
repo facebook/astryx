@@ -302,6 +302,30 @@ describe('AppShell', () => {
   // Responsive breakpoint
   // ===========================================================================
 
+  it('preserves input value and focus across mobile breakpoints.', async () => {
+    const user = userEvent.setup();
+    render(
+      <AppShell
+        variant="elevated"
+        topNav="Top navigation"
+        sideNav="Side navigation"
+        mobileNav={{breakpoint: 'md'}}>
+        <input aria-label="Page draft" />
+      </AppShell>,
+    );
+    await user.type(
+      screen.getByRole('textbox', {name: 'Page draft'}),
+      'Keep this draft',
+    );
+
+    for (const isMobile of [true, false]) {
+      act(() => mockMql._setMatches(isMobile));
+      const input = screen.getByRole('textbox', {name: 'Page draft'});
+      expect(input).toHaveValue('Keep this draft');
+      expect(input).toHaveFocus();
+    }
+  });
+
   it('uses the default named breakpoint with an exclusive upper edge', () => {
     render(
       <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'md'}}>
