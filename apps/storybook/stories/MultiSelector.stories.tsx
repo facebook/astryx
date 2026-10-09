@@ -784,6 +784,55 @@ export const CreateFromQuery: Story = {
   },
 };
 
+// Each new label is dealt the next colour, and the create row shows that
+// colour before the label exists.
+const LABEL_COLORS = ['#e5484d', '#30a46c', '#0090ff', '#f76b15', '#8e4ec6'];
+
+export const CreateRowContent: Story = {
+  render: () => {
+    const [options, setOptions] = useState([
+      {value: 'bug', label: 'Bug'},
+      {value: 'feature', label: 'Feature'},
+    ]);
+    const [value, setValue] = useState<string[]>([]);
+    const nextColor = LABEL_COLORS[options.length % LABEL_COLORS.length];
+    return (
+      <MultiSelector
+        label="Labels"
+        options={options}
+        value={value}
+        onChange={(next, change) => {
+          if (change?.type === 'create') {
+            setOptions(current => [
+              ...current,
+              {value: change.query, label: change.query},
+            ]);
+          }
+          setValue(next);
+        }}
+        hasSearch
+        hasCreate
+        renderCreateOption={({label}) => (
+          <>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 10,
+                height: 10,
+                flexShrink: 0,
+                borderRadius: '50%',
+                backgroundColor: nextColor,
+              }}
+            />
+            {label}
+          </>
+        )}
+        isDefaultOpen
+      />
+    );
+  },
+};
+
 export const RowActions: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>(['feature']);
