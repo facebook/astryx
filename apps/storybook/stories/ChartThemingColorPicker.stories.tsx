@@ -59,6 +59,12 @@ const styles = stylex.create({
     inlineSize: 48,
     padding: 2,
   },
+  swatchOption: {
+    alignItems: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-1'],
+  },
   swatch: (color: string, selected: boolean) => ({
     backgroundColor: color,
     borderColor: selected
@@ -82,17 +88,17 @@ const pickerTheme = defineTheme({
   },
 });
 
-const productChartTokens = [
-  '--color-data-categorical-blue',
-  '--color-data-categorical-orange',
-  '--color-data-categorical-purple',
+const productChartColors = [
+  {id: '--color-data-categorical-blue', label: 'Blue'},
+  {id: '--color-data-categorical-orange', label: 'Orange'},
+  {id: '--color-data-categorical-purple', label: 'Purple'},
 ] as const;
 
-type ProductChartToken = (typeof productChartTokens)[number];
+type ProductChartToken = (typeof productChartColors)[number]['id'];
 type ProductChartColorChoice =
   {kind: 'theme'; token: ProductChartToken} | {kind: 'custom'; color: string};
 
-const automaticToken: ProductChartToken = '--color-data-categorical-blue';
+const automaticToken: ProductChartToken = productChartColors[0].id;
 
 function normalizeProductCustomColor(input: string): string | undefined {
   return /^#[0-9A-F]{6}$/i.test(input) ? input.toUpperCase() : undefined;
@@ -110,9 +116,9 @@ function PickerContents({
   const [customInput, setCustomInput] = useState('#336699');
   const projected = useMemo(
     () =>
-      productChartTokens.map(id => ({
-        id,
-        preview: token(id),
+      productChartColors.map(option => ({
+        ...option,
+        preview: token(option.id),
       })),
     [token],
   );
@@ -154,25 +160,28 @@ function PickerContents({
           aria-label="Theme color choices"
           role="group">
           <Button
+            aria-pressed={choice === undefined}
             label="Automatic"
             onClick={() => setChoice(undefined)}
             variant={choice === undefined ? 'primary' : 'secondary'}
           />
-          {projected.map((option, index) => (
-            <button
-              {...stylex.props(
-                styles.swatch(
-                  option.preview,
-                  choice?.kind === 'theme' && choice.token === option.id,
-                ),
-              )}
-              aria-label={`Theme color ${index + 1}`}
-              data-color-token={option.id}
-              key={option.id}
-              onClick={() => setChoice({kind: 'theme', token: option.id})}
-              type="button"
-            />
-          ))}
+          {projected.map(option => {
+            const selected =
+              choice?.kind === 'theme' && choice.token === option.id;
+            return (
+              <div {...stylex.props(styles.swatchOption)} key={option.id}>
+                <button
+                  {...stylex.props(styles.swatch(option.preview, selected))}
+                  aria-label={`${option.label} chart color`}
+                  aria-pressed={selected}
+                  data-color-token={option.id}
+                  onClick={() => setChoice({kind: 'theme', token: option.id})}
+                  type="button"
+                />
+                <Text type="supporting">{option.label}</Text>
+              </div>
+            );
+          })}
         </div>
 
         <div {...stylex.props(styles.actions)}>
@@ -233,29 +242,46 @@ export const EndUserChoices: Story = {
       canvasElement.querySelector<HTMLElement>('[data-choice-state]');
     expect(state()).toHaveAttribute('data-choice-state', 'automatic');
     expect(state()).toHaveAttribute('data-preview-color', '#005A4E');
-
-    await userEvent.click(canvas.getByRole('button', {name: 'Theme color 2'}));
-    expect(state()).toHaveAttribute('data-choice-state', 'theme');
-    expect(state()).toHaveAttribute('data-preview-color', '#7A2E00');
-
-    fireEvent.change(canvas.getByLabelText('Exact custom color'), {
-      target: {value: '#336699'},
-    });
-    await userEvent.click(
-      canvas.getByRole('button', {name: 'Apply custom color'}),
+    expect(canvas.getByRole('button', {name: 'Automatic'})).toHaveAttribute(
+      'aria-pressed',
+      'true',
     );
-    expect(state()).toHaveAttribute('data-choice-state', 'custom');
-    expect(state()).toHaveAttribute('data-preview-color', '#336699');
+
+    const purple = canvas.getByRole('button', {name: 'Purple chart color'});
+    await userEvent.click(purple);
+    expect(purple).toHaveAttribute('aria-pressed', 'true');
+    expect(state()).toHaveAttribute('data-choice-state', 'theme');
+    expect(state()).toHaveAttribute('data-preview-color', '#5A21A8');
 
     await userEvent.click(
       canvas.getByRole('button', {name: 'Switch to dark mode'}),
     );
     await waitFor(() =>
-      expect(state()).toHaveAttribute('data-preview-color', '#336699'),
+      expect(state()).toHaveAttribute('data-preview-color', '#C6A7FF'),
+    );
+
+    fireEvent.change(canvas.getByLabelText('Exact custom color'), {
+      target: {value: '#33aaff'},
+    });
+    await userEvent.click(
+      canvas.getByRole('button', {name: 'Apply custom color'}),
+    );
+    expect(state()).toHaveAttribute('data-choice-state', 'custom');
+    expect(state()).toHaveAttribute('data-preview-color', '#33AAFF');
+
+    await userEvent.click(
+      canvas.getByRole('button', {name: 'Switch to light mode'}),
+    );
+    await waitFor(() =>
+      expect(state()).toHaveAttribute('data-preview-color', '#33AAFF'),
     );
 
     await userEvent.click(canvas.getByRole('button', {name: 'Reset'}));
     expect(state()).toHaveAttribute('data-choice-state', 'automatic');
-    expect(state()).toHaveAttribute('data-preview-color', '#72E1C1');
+    expect(state()).toHaveAttribute('data-preview-color', '#005A4E');
+    expect(canvas.getByRole('button', {name: 'Automatic'})).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   },
 };

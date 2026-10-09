@@ -90,7 +90,7 @@ const TARGETS = [
     component: 'ChartTheming',
     story: 'lab-charttheming-recharts--runtime-theme-switch',
     guards:
-      'Recharts keeps its SVG and bar nodes while authored data colors switch modes',
+      'Recharts keeps its SVG and focused chart surface while authored data colors switch modes',
   },
   {
     component: 'ChartTheming',

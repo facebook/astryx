@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {expect, userEvent, waitFor, within} from 'storybook/test';
+import {expect, fireEvent, userEvent, waitFor, within} from 'storybook/test';
 import {Button, Card, Stack, Text} from '@astryxdesign/core';
 import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
 import {Heading} from '@astryxdesign/core/Text';
@@ -13,6 +13,7 @@ import {
   colorVars,
   radiusVars,
   shadowVars,
+  spacingVars,
   typographyVars,
   typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
@@ -23,6 +24,7 @@ import {
   Legend,
   ResponsiveContainer,
   Tooltip,
+  type TooltipContentProps,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -47,6 +49,49 @@ const styles = stylex.create({
     height: 320,
     width: '100%',
   },
+  legendItem: {
+    alignItems: 'center',
+    display: 'flex',
+    gap: spacingVars['--spacing-1'],
+  },
+  legendList: {
+    display: 'flex',
+    gap: spacingVars['--spacing-3'],
+    justifyContent: 'center',
+    listStyle: 'none',
+    margin: 0,
+    padding: 0,
+  },
+  table: {
+    borderCollapse: 'collapse',
+    width: '100%',
+  },
+  tableCell: {
+    borderBottomColor: colorVars['--color-border'],
+    borderBottomStyle: 'solid',
+    borderBottomWidth: 1,
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+    textAlign: 'start',
+  },
+  tooltip: {
+    backgroundColor: colorVars['--color-background-card'],
+    borderColor: colorVars['--color-border'],
+    borderRadius: radiusVars['--radius-element'],
+    borderStyle: 'solid',
+    borderWidth: 1,
+    boxShadow: shadowVars['--shadow-med'],
+    color: colorVars['--color-text-primary'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    padding: spacingVars['--spacing-2'],
+  },
+  tooltipRow: {
+    alignItems: 'center',
+    display: 'flex',
+    gap: spacingVars['--spacing-1'],
+    justifyContent: 'space-between',
+  },
 });
 
 const data = [
@@ -65,6 +110,104 @@ const hoverSeries = {
   revenue: `color-mix(in srgb, ${series.revenue} 88%, ${colorVars['--color-tint-hover']})`,
   costs: `color-mix(in srgb, ${series.costs} 88%, ${colorVars['--color-tint-hover']})`,
 };
+
+const seriesDefinitions = [
+  {key: 'revenue', label: 'Revenue', color: series.revenue, dash: undefined},
+  {key: 'costs', label: 'Costs', color: series.costs, dash: '6 4'},
+] as const;
+
+function SeriesCue({color, dash}: {color: string; dash: string | undefined}) {
+  return (
+    <svg aria-hidden="true" focusable="false" height="12" width="28">
+      <line
+        stroke={color}
+        strokeDasharray={dash}
+        strokeWidth="3"
+        x1="1"
+        x2="27"
+        y1="6"
+        y2="6"
+      />
+    </svg>
+  );
+}
+
+function SeriesLegend() {
+  return (
+    <ul {...stylex.props(styles.legendList)} aria-label="Chart series">
+      {seriesDefinitions.map(definition => (
+        <li {...stylex.props(styles.legendItem)} key={definition.key}>
+          <SeriesCue color={definition.color} dash={definition.dash} />
+          <Text type="supporting">{definition.label}</Text>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SeriesTooltip({active, label, payload}: TooltipContentProps) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  return (
+    <div {...stylex.props(styles.tooltip)} data-chart-tooltip role="status">
+      <Text type="supporting">{label}</Text>
+      {payload.map(entry => {
+        const definition = seriesDefinitions.find(
+          candidate => candidate.key === String(entry.dataKey),
+        );
+        if (!definition) {
+          return null;
+        }
+        return (
+          <div
+            {...stylex.props(styles.tooltipRow)}
+            data-series-cue={definition.key}
+            key={definition.key}>
+            <span {...stylex.props(styles.legendItem)}>
+              <SeriesCue color={definition.color} dash={definition.dash} />
+              {definition.label}
+            </span>
+            <span>{String(entry.value)}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ExactValuesTable() {
+  return (
+    <table {...stylex.props(styles.table)}>
+      <caption>Quarterly performance values</caption>
+      <thead>
+        <tr>
+          <th {...stylex.props(styles.tableCell)} scope="col">
+            Quarter
+          </th>
+          <th {...stylex.props(styles.tableCell)} scope="col">
+            Revenue
+          </th>
+          <th {...stylex.props(styles.tableCell)} scope="col">
+            Costs
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {data.map(row => (
+          <tr key={row.quarter}>
+            <th {...stylex.props(styles.tableCell)} scope="row">
+              {row.quarter}
+            </th>
+            <td {...stylex.props(styles.tableCell)}>{row.revenue}</td>
+            <td {...stylex.props(styles.tableCell)}>{row.costs}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 const customSeriesTheme = defineTheme({
   name: 'chart-theming-custom-series',
@@ -95,18 +238,22 @@ function ThemeAwareRechartsExample({
     <Card>
       <Stack direction="vertical" gap={4}>
         <Stack direction="vertical" gap={1}>
-          <Heading level={3}>Quarterly performance</Heading>
+          <Heading level={3}>
+            {useThemeRadius
+              ? 'Quarterly performance'
+              : 'Quarterly performance — square bars'}
+          </Heading>
           <Text type="supporting" color="secondary">
-            Recharts uses the active Astryx theme for series, typography, active
-            state, tooltip radius, and bar radius.
+            {useThemeRadius
+              ? 'Recharts uses the active Astryx theme for series, typography, hover, tooltip radius, and bar radius.'
+              : 'This opt-out keeps the bars square while the rest of the chart continues to use the active Astryx theme.'}
           </Text>
         </Stack>
         <div
           {...stylex.props(styles.chart)}
           aria-label="Quarterly performance chart"
           data-bar-radius={barRadius}
-          role="group"
-          tabIndex={0}>
+          role="group">
           <ResponsiveContainer>
             <BarChart
               data={data}
@@ -130,32 +277,17 @@ function ThemeAwareRechartsExample({
               />
               <YAxis axisLine={false} tick={axisTickStyle} tickLine={false} />
               <Tooltip
-                contentStyle={{
-                  background: colorVars['--color-background-card'],
-                  borderColor: colorVars['--color-border'],
-                  borderRadius: radiusVars['--radius-element'],
-                  boxShadow: shadowVars['--shadow-med'],
-                  color: colorVars['--color-text-primary'],
-                  fontFamily: typographyVars['--font-family-body'],
-                  fontSize: typeScaleVars['--text-supporting-size'],
-                }}
+                content={props => <SeriesTooltip {...props} />}
                 cursor={{
                   fill: colorVars['--color-tint-hover'],
                   fillOpacity: 0.05,
                 }}
-                labelStyle={{color: colorVars['--color-text-primary']}}
               />
-              <Legend
-                wrapperStyle={{
-                  color: colorVars['--color-text-secondary'],
-                  fontFamily: typographyVars['--font-family-body'],
-                  fontSize: typeScaleVars['--text-supporting-size'],
-                }}
-              />
+              <Legend content={<SeriesLegend />} />
               <Bar
                 activeBar={{
                   fill: hoverSeries.revenue,
-                  stroke: colorVars['--color-border-emphasized'],
+                  stroke: colorVars['--color-text-primary'],
                   strokeWidth: 2,
                 }}
                 dataKey="revenue"
@@ -166,14 +298,15 @@ function ThemeAwareRechartsExample({
                 stroke={
                   highlightRevenue
                     ? colorVars['--color-border-emphasized']
-                    : undefined
+                    : colorVars['--color-text-primary']
                 }
-                strokeWidth={highlightRevenue ? 2 : undefined}
+                strokeWidth={highlightRevenue ? 2 : 1}
               />
               <Bar
                 activeBar={{
                   fill: hoverSeries.costs,
-                  stroke: colorVars['--color-border-emphasized'],
+                  stroke: colorVars['--color-text-primary'],
+                  strokeDasharray: '6 4',
                   strokeWidth: 2,
                 }}
                 dataKey="costs"
@@ -181,10 +314,14 @@ function ThemeAwareRechartsExample({
                 isAnimationActive={false}
                 name="Costs"
                 radius={[barRadius, barRadius, 0, 0]}
+                stroke={colorVars['--color-text-primary']}
+                strokeDasharray="6 4"
+                strokeWidth={1}
               />
             </BarChart>
           </ResponsiveContainer>
         </div>
+        <ExactValuesTable />
       </Stack>
     </Card>
   );
@@ -234,12 +371,6 @@ const BAR_SELECTORS = {
   revenue: `.recharts-bar-rectangle path[fill="${series.revenue}"]`,
   costs: `.recharts-bar-rectangle path[fill="${series.costs}"]`,
 } as const;
-
-const BAR_SELECTOR = Object.values(BAR_SELECTORS).join(', ');
-
-function barElements(canvasElement: HTMLElement): SVGElement[] {
-  return Array.from(canvasElement.querySelectorAll<SVGElement>(BAR_SELECTOR));
-}
 
 async function barFills(
   canvasElement: HTMLElement,
@@ -295,6 +426,30 @@ export const ThemeTokens: Story = {
         revenueBar,
         hoverSeries.revenue,
       );
+      const bounds = revenueBar.getBoundingClientRect();
+      fireEvent.mouseMove(revenueBar, {
+        clientX: bounds.left + bounds.width / 2,
+        clientY: bounds.top + bounds.height / 2,
+      });
+      await waitFor(() => {
+        const cursor = canvasElement.querySelector('.recharts-tooltip-cursor');
+        expect(cursor).toHaveAttribute('fill', colorVars['--color-tint-hover']);
+        expect(cursor).toHaveAttribute('fill-opacity', '0.05');
+        const activeBar = canvasElement.querySelector(
+          '.recharts-active-bar path',
+        );
+        expect(activeBar).toHaveAttribute('fill', hoverSeries.revenue);
+        expect(activeBar).toHaveAttribute(
+          'stroke',
+          colorVars['--color-text-primary'],
+        );
+        expect(
+          canvasElement.querySelector('[data-chart-tooltip]'),
+        ).toBeVisible();
+        expect(
+          canvasElement.querySelector('[data-series-cue="costs"]'),
+        ).toBeVisible();
+      });
       expect(expectedActiveFill).not.toBe(restingFills.revenue);
       await userEvent.click(
         within(canvasElement).getByRole('button', {
@@ -326,6 +481,24 @@ export const ThemeTokens: Story = {
     );
     expect(Number.isFinite(radius)).toBe(true);
     expect(radius).toBeGreaterThan(5);
+    expect(revenueBar?.getAttribute('d')).toContain(`A ${radius},${radius}`);
+    expect(
+      canvasElement.querySelector('.recharts-cartesian-grid line'),
+    ).toHaveAttribute('stroke', colorVars['--color-border']);
+    expect(
+      canvasElement.querySelector('.recharts-cartesian-axis-tick-value'),
+    ).toHaveAttribute('fill', colorVars['--color-text-secondary']);
+    const legend = within(canvasElement).getByRole('list', {
+      name: 'Chart series',
+    });
+    expect(legend).toBeVisible();
+    expect(legend.querySelector('li:last-child line')).toHaveAttribute(
+      'stroke-dasharray',
+      '6 4',
+    );
+    expect(
+      within(canvasElement).getByText('Quarterly performance values'),
+    ).toBeVisible();
   },
 };
 
@@ -337,6 +510,16 @@ export const SquareBars: Story = {
       'data-bar-radius',
       '0',
     );
+    expect(
+      canvasElement
+        .querySelector<SVGElement>(BAR_SELECTORS.revenue)
+        ?.getAttribute('d'),
+    ).not.toContain('A ');
+    expect(
+      within(canvasElement).getByRole('heading', {
+        name: 'Quarterly performance — square bars',
+      }),
+    ).toBeVisible();
   },
 };
 
@@ -358,16 +541,14 @@ export const RuntimeThemeSwitch: Story = {
       costs: 'rgb(122, 46, 0)',
     });
 
-    const surface = canvasElement.querySelector('svg.recharts-surface');
-    const focusTarget = canvasElement.querySelector('[data-bar-radius]');
-    const firstBar = barElements(canvasElement)[0];
+    const surface = canvasElement.querySelector<SVGSVGElement>(
+      'svg.recharts-surface',
+    );
+    const focusTarget = surface;
     expect(surface).not.toBeNull();
-    expect(focusTarget).toBeInstanceOf(HTMLElement);
-    expect(firstBar).not.toBeUndefined();
-    if (focusTarget instanceof HTMLElement) {
-      focusTarget.focus();
-      expect(document.activeElement).toBe(focusTarget);
-    }
+    expect(focusTarget).not.toBeNull();
+    focusTarget?.focus();
+    expect(document.activeElement).toBe(focusTarget);
 
     const button = canvasElement.querySelector('button');
     expect(button).toHaveTextContent('Switch to dark mode');
@@ -380,10 +561,6 @@ export const RuntimeThemeSwitch: Story = {
       });
     });
     expect(canvasElement.querySelector('svg.recharts-surface')).toBe(surface);
-    expect(canvasElement.querySelector('[data-bar-radius]')).toBe(focusTarget);
-    expect(barElements(canvasElement)[0]).toBe(firstBar);
-    if (focusTarget instanceof HTMLElement) {
-      expect(document.activeElement).toBe(focusTarget);
-    }
+    expect(document.activeElement).toBe(focusTarget);
   },
 };

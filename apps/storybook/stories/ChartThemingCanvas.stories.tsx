@@ -75,18 +75,21 @@ function NativeCanvasChart() {
   }, [color, fontFamily, fontSize, radius, token]);
 
   return (
-    <canvas
-      {...stylex.props(styles.canvas)}
-      aria-label="Q1 is 112 units. Q2 is 152 units."
-      data-color={color}
-      data-font-family={fontFamily}
-      data-instance={instance.current}
-      data-radius={radius}
-      height={240}
-      ref={canvasRef}
-      role="img"
-      width={480}
-    />
+    <>
+      <canvas
+        {...stylex.props(styles.canvas)}
+        aria-label="Q1 is 112 units. Q2 is 152 units."
+        data-color={color}
+        data-font-family={fontFamily}
+        data-instance={instance.current}
+        data-radius={radius}
+        height={240}
+        ref={canvasRef}
+        role="img"
+        width={480}
+      />
+      <Text>Q1: 112 units · Q2: 152 units</Text>
+    </>
   );
 }
 
@@ -134,6 +137,7 @@ export const RuntimeThemeSwitch: Story = {
     }
 
     const instance = canvas.dataset.instance;
+    expect(canvasElement).toHaveTextContent('Q1: 112 units · Q2: 152 units');
     let initialDrawCount = 0;
     await waitFor(() => {
       expect(canvas.dataset.color).toBe('#005A4E');

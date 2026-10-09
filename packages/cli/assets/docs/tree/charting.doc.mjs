@@ -42,35 +42,11 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'For a new React app, install the public Astryx packages, the CLI used by this guide, and your renderer: `npm install @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex recharts && npm install -D @astryxdesign/cli`. Add `vega` and `vega-lite` when you use the Vega-Lite section. Existing Astryx apps can skip this setup.',
-        },
-        {
-          type: 'code',
-          lang: 'tsx',
-          code: `import {useState} from 'react';
-import '@astryxdesign/core/reset.css';
-import '@astryxdesign/core/astryx.css';
-import '@astryxdesign/theme-neutral/theme.css';
-
-import {Theme} from '@astryxdesign/core/theme';
-import {neutralTheme} from '@astryxdesign/theme-neutral/built';
-
-export function App() {
-  const [mode, setMode] = useState<'light' | 'dark'>('light');
-  return (
-    <Theme theme={neutralTheme} mode={mode}>
-      {/* chart and a control that calls setMode */}
-    </Theme>
-  );
-}`,
+          text: 'If Astryx is not set up in the app yet, follow the public {@link generic:getting-started} guide for Core, CSS, and build setup. Then run `astryx docs theme` to choose a published or product-owned theme. This chart guide works with whichever active `<Theme>` the app uses; Neutral is not required. Add the renderer package used by the chart: `npm install recharts` for Recharts, or `npm install vega vega-lite` for Vega-Lite.',
         },
         {
           type: 'prose',
-          text: 'The prebuilt theme path above needs no Astryx source-build plugin. If your app compiles Astryx or product StyleX from source, follow the Vite setup in the public `@astryxdesign/build` README instead.',
-        },
-        {
-          type: 'prose',
-          text: 'Use `astryx docs tokens` to browse token names, `astryx docs icons` to browse semantic icons, and `astryx docs use-a-theme` for custom themes and server rendering.',
+          text: 'Use `astryx docs tokens` to browse token names, `astryx docs icons` to browse semantic icons, and `astryx docs theme` for published themes, custom themes, and server rendering.',
         },
       ],
     },
@@ -167,7 +143,7 @@ export function App() {
         },
         {
           type: 'prose',
-          text: 'Use `Button` for chart actions with visible text and `IconButton` for familiar icon-only actions. Import `IconButton` from `@astryxdesign/core/IconButton` and render its glyph with `Icon` from `@astryxdesign/core/Icon`. `label` is the accessible name; add `tooltip` when sighted people may not recognize the action. If no semantic Astryx icon fits, pass a product-owned SVG component through `Icon` instead of rendering an unstyled SVG directly in the control.',
+          text: 'Use the same public Astryx controls around a chart that you would use elsewhere in the product; do not build chart-specific substitutes. Use `Button` or `IconButton` for commands such as Download or Reset zoom, `Selector` or `SegmentedControl` for one choice such as metric or time range, `MultiSelector` for several filters or visible series, `Switch` for an independent on/off setting, and `Field` for labels, help, and validation around a control. Astryx supplies the control behavior, appearance, and accessibility; connect its value or handler to the chart or renderer state the product owns. Run `astryx component <Name> --dense` for the current API.',
         },
         {
           type: 'code',
@@ -175,13 +151,22 @@ export function App() {
           code: `import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
 
-// DownloadGlyph is a product-owned SVG component.
-<IconButton
-  icon={<Icon icon={DownloadGlyph} />}
-  label="Download quarterly performance chart"
-  tooltip="Download chart"
-  variant="ghost"
-/>`,
+type ChartDownloadActionProps = {
+  onDownload: () => void;
+};
+
+// DownloadGlyph is a product-owned SVG component. The caller owns the export.
+export function ChartDownloadAction({onDownload}: ChartDownloadActionProps) {
+  return (
+    <IconButton
+      icon={<Icon icon={DownloadGlyph} />}
+      label="Download quarterly performance chart"
+      onClick={onDownload}
+      tooltip="Download chart"
+      variant="ghost"
+    />
+  );
+}`,
         },
         {
           type: 'prose',
@@ -189,7 +174,7 @@ import {IconButton} from '@astryxdesign/core/IconButton';
         },
         {
           type: 'prose',
-          text: 'Color cannot be the only way to distinguish a series or state. Combine it with a direct label, marker shape, line style, pattern, border, or another cue. Apply the same cue to the plotted mark, legend key, tooltip or direct label, and exported form; a legend-only shape does not distinguish otherwise identical marks in the plot.',
+          text: 'Do not rely on color alone to tell series or states apart. Give each one another recognizable cue, such as a direct label, marker shape, line style, pattern, or border, and repeat that cue wherever the series appears: in the plotted mark, legend, tooltip or direct label, and export. A legend symbol does not help identify the plotted marks unless those marks use the same symbol.',
         },
         {
           type: 'prose',
@@ -433,7 +418,8 @@ JSON.stringify(exportConfig);`,
         {
           type: 'code',
           lang: 'tsx',
-          code: `import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
+          code: `import * as stylex from '@stylexjs/stylex';
+import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 import {
   colorVars,
   radiusVars,
@@ -446,12 +432,34 @@ import {
   BarChart,
   CartesianGrid,
   Legend,
+  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 
-export function RevenueChart({data}) {
+const styles = stylex.create({
+  chart: {height: 320, width: '100%'},
+});
+
+type RevenueDatum = {
+  quarter: string;
+  revenue: number;
+};
+
+type RevenueChartProps = {
+  data: RevenueDatum[];
+};
+
+const revenueColor = dataVars['--color-data-categorical-blue'];
+const revenueHover =
+  'color-mix(in srgb, ' +
+  revenueColor +
+  ' 85%, ' +
+  colorVars['--color-tint-hover'] +
+  ')';
+
+export function RevenueChart({data}: RevenueChartProps) {
   const tick = {
     fill: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-family-body'],
@@ -459,14 +467,25 @@ export function RevenueChart({data}) {
   };
 
   return (
-    <BarChart
+    <div {...stylex.props(styles.chart)}>
+      <ResponsiveContainer>
+        <BarChart
       accessibilityLayer
       data={data}
-      desc="Quarterly revenue and costs"
+      desc="Quarterly revenue"
       title="Quarterly performance">
       <CartesianGrid stroke={colorVars['--color-border']} />
-      <XAxis dataKey="quarter" tick={tick} />
-      <YAxis tick={tick} />
+      <XAxis
+        axisLine={{stroke: colorVars['--color-border-emphasized']}}
+        dataKey="quarter"
+        tick={tick}
+        tickLine={{stroke: colorVars['--color-border-emphasized']}}
+      />
+      <YAxis
+        axisLine={{stroke: colorVars['--color-border-emphasized']}}
+        tick={tick}
+        tickLine={{stroke: colorVars['--color-border-emphasized']}}
+      />
       <Tooltip
         contentStyle={{
           background: colorVars['--color-background-card'],
@@ -481,18 +500,29 @@ export function RevenueChart({data}) {
         }}
       />
       <Legend
+        formatter={value => (
+          <span style={{color: colorVars['--color-text-secondary']}}>
+            {value}
+          </span>
+        )}
         wrapperStyle={{
-          color: colorVars['--color-text-secondary'],
           fontFamily: typographyVars['--font-family-body'],
           fontSize: typeScaleVars['--text-supporting-size'],
         }}
       />
       <Bar
+        activeBar={{
+          fill: revenueHover,
+          stroke: colorVars['--color-text-primary'],
+          strokeWidth: 2,
+        }}
         dataKey="revenue"
-        fill={dataVars['--color-data-categorical-blue']}
+        fill={revenueColor}
         isAnimationActive={false}
       />
-    </BarChart>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }`,
         },
@@ -507,7 +537,8 @@ export function RevenueChart({data}) {
         {
           type: 'code',
           lang: 'tsx',
-          code: `import {Legend, Line} from 'recharts';
+          code: `import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
+import {Legend, Line} from 'recharts';
 
 const lineSeries = [
   {key: 'revenue', label: 'Revenue', color: dataVars['--color-data-categorical-blue'], dash: undefined},
