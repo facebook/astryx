@@ -590,12 +590,16 @@ one removal merged ahead of the decision to allow it.
   names, and names are outside this requirement and remain governed separately by FR9,
   FR11, and applicable registry identity contracts.
 - **FR46 — Main declares the next planned version.** The fixed package group's
-  version in main's `package.json` files is the next planned release version. It
-  changes only through an explicit release-owner bump on main and never moves
-  backward. Main publishes only canaries, versioned
-  `<declared version>-canary.<commit>`. Pull-request checks on main validate each
-  Changeset's format, category, bump, and coverage; they do not compare pending
-  Changesets with a published version and do not derive a release version.
+  version in main's `package.json` files is the next planned release version. A
+  release owner may raise or lower it on main at any time before the cut, but the
+  declaration MUST remain a plain version strictly greater than the newest stable
+  `vX.Y.Z` tag. For example, after `v0.6.7`, changing `0.7.0` to `0.6.8` is valid;
+  changing it to `0.6.7` or lower is not. Main publishes only canaries, versioned
+  `<declared version>-canary.<commit>`. Pull-request checks on main compare the
+  declaration with the newest stable tag, refuse a version at or below that tag or
+  a split fixed group, validate a post-release sync under FR50, and validate each
+  Changeset's format, category, bump, and coverage. They do not derive the release
+  version from pending Changesets.
 - **FR47 — A release branch releases the declared version.** A release branch's
   version is the fixed-group version declared at its cut commit. Admission, the
   release plan, Changeset consumption, changelog generation, and stable
@@ -625,16 +629,18 @@ one removal merged ahead of the decision to allow it.
   including a version that is already released. The latest stable release is the
   newest `vX.Y.Z` tag. A prerelease or canary identifier is publication metadata
   and is never a declared version or a base.
-- **FR50 — Post-release sync never moves main backward.** Syncing a published
-  release back to main carries its changelogs and generated release outputs and
-  deletes the Changesets it consumed. Each main package version becomes the higher
-  of main's version and the released version, so main keeps an owner's later bump
-  and is never left below a published release. Choosing the next planned version
-  is a separate owner bump on main. A rejection names the declared version, the
-  latest stable release, and both ways forward — deprecate under FR28, or bump
+- **FR50 — Post-release sync advances main to the next patch by default.** Syncing
+  a published release back to main carries its changelogs and generated release
+  outputs and deletes the Changesets it consumed. Each main package version
+  becomes the higher of main's current planned version and the patch successor of
+  the released version. Sync therefore raises a declaration that is now at or below
+  the release, keeps any higher plan—including a pre-cut reduction that remains
+  above the release—and never lowers the current main declaration. Planning a minor
+  remains an explicit owner change on main. A rejection names the declared version,
+  the latest stable release, and both ways forward — deprecate under FR28, or change
   main to the minor successor under FR46 — and names no particular surface or
-  contributor as a special case, so a contributor who has never read this spec
-  can act on it.
+  contributor as a special case, so a contributor who has never read this spec can
+  act on it.
 
 ### Platform support
 
@@ -724,13 +730,15 @@ Public lifecycle classification remains in force with these operational effects:
   `docs` command and machine-readable schemas stay contractual; and
 - exact-main release comparison rejects unclassified deltas.
 
-Main declares the next planned version, publishes canaries of it, and checks only
-Changeset quality on pull requests. A release branch releases that version unchanged
-and admits incompatible work only when it is a minor; a pending `[breaking]`
-Changeset cannot choose its own release. Because the fixed package group publishes as
-one version, this admission gate prevents one unapproved removal from moving the whole
-release to a minor. It does not add a per-change approval path: lifecycle, cleanup,
-migration, and freeze requirements remain independently enforceable.
+Main declares the next planned version, may raise or lower that plan above the newest
+stable tag until cut, and publishes canaries of it. Pull-request checks keep the fixed
+group together and strictly above newest stable while validating Changeset quality. A
+release branch releases the cut's declaration unchanged and admits incompatible work
+only when it is a minor; a pending `[breaking]` Changeset cannot choose its own
+release. Because the fixed package group publishes as one version, this admission gate
+prevents one unapproved removal from moving the whole release to a minor. It does not
+add a per-change approval path: lifecycle, cleanup, migration, and freeze requirements
+remain independently enforceable.
 
 These requirements alter no published package by themselves and need no Changeset.
 Authoring helpers, validators, metadata projections, compatibility snapshots, release
@@ -757,10 +765,10 @@ lands, maintainers apply its requirement in review and release approval.
 | FR36–FR40 | Minor plan, locked final-patch receipt, three-way delta classification, and separated release notes                                                                                                   | ordinary cadence, immediate pair, cleanup, release metadata, pre/post-lock compatible fix                                                                                                     | Cadence becomes eligibility, the final patch is recut for bookkeeping, a feature or incompatible fix enters the incidental-fix lane, or release notes merge cleanup with fixes                                                                                        |
 | FR41–FR44 | Schema validation, PR declaration, semantic stable/base/head comparisons, exact-main gate, and immutable publish/rollback receipt                                                                     | duplicate ids, missing evidence, route/schema removal, old-client metadata, partial publish, safe rollback                                                                                    | A label passes without semantics, a delta maps zero or multiple times, fixed-group membership drifts, or a release rebuilds under one identity                                                                                                                        |
 | FR45      | Docs route inventory, repository-reference checks, and Changeset review                                                                                                                               | catalog entry rename, former-route miss, stable command and JSON schema                                                                                                                       | Catalog routing is frozen as API, or a rename silently changes the contractual command or response schema                                                                                                                                                             |
-| FR46–FR47 | Main pull-request checks, canary version, and a release-versioning fixture on a pre-bumped branch                                                                                                     | owner bump, version rollback on main, `[breaking]` Changeset on main, declared minor with `[breaking]`, declared patch with `[fix]`                                                           | Main checks admit or refuse by release version, main moves backward, or consuming a Changeset moves the declared version                                                                                                                                              |
+| FR46–FR47 | Main pull-request checks against the newest stable tag, canary version, and a release-versioning fixture on a pre-bumped branch                                                                       | owner increase, decrease that remains above newest stable, declaration equal to or below newest stable, split group, `[breaking]` Changeset on main, declared minor with `[breaking]`         | Main checks derive the version from pending Changesets or the previous main value, refuse an allowed pre-cut decrease, permit a declaration at or below newest stable, or consuming a Changeset moves the declared version                                            |
 | FR48      | Category and classification admission under each declared tier                                                                                                                                        | patch release with `[breaking]`, patch release with a deprecation, minor release with `[breaking]`                                                                                            | Incompatible work passes in a patch release, or a deprecation is refused in one                                                                                                                                                                                       |
 | FR49      | Malformed and inconsistent declaration fixtures                                                                                                                                                       | disagreeing group versions, canary identifier, release version unlike the cut manifest, already-released version, skipped version, no stable tag                                              | An untrustworthy or mismatched declaration is released                                                                                                                                                                                                                |
-| FR50      | Sync fixtures and assertions on the rejection text                                                                                                                                                    | main ahead of the release, main equal to it, main behind it, a sync that lowers main                                                                                                          | A sync lowers a main version, or a refusal omits the declared version or either remedy                                                                                                                                                                                |
+| FR50      | Sync fixtures and assertions on the rejection text                                                                                                                                                    | main at or below the release, a reduced main plan still above the release, an owner plan ahead of the patch successor, a sync that lowers the current main declaration                        | A sync leaves main at or below the published version, lowers the current plan, overrides a higher plan, or a refusal omits the declared version or either remedy                                                                                                      |
 
 ## Decision log
 
@@ -1036,18 +1044,22 @@ contracts readers and automation rely on.
 **Reference:** `spec:AST-017/DEC-15`
 **Decider:** `cixzhang`, `2026-10-09`
 
-Main's `package.json` carries the next planned version, set by a release owner, and
-main publishes only canaries of it. Release tooling runs on a release branch, which
-takes that version unchanged; admission, versioning, changelogs, and stable
-publication happen there. Incompatible work is admissible only when the declared
-version is the minor successor of the latest stable release.
+Main's `package.json` carries the next planned version and main publishes only
+canaries of it. Before the cut, a release owner may raise or lower that plan while
+keeping it strictly above the newest stable tag. After each release, sync uses the
+higher of the current plan and the released version's patch successor; planning a
+minor remains an explicit owner change. Release tooling runs on a release branch,
+which takes the declared version unchanged; admission, versioning, changelogs, and
+stable publication happen there. Incompatible work is admissible only when the
+declared version is the minor successor of the latest stable release.
 
 Declaring the version on main makes the shape of each release an owner decision taken
-before the cut, keeps canaries ahead of the stable release they precede, and keeps
-main's pull-request checks about Changeset quality rather than release planning.
-Because the fixed group publishes one version, consuming a `[breaking]` Changeset on
-a branch that already declares the minor writes changelogs for that minor and never
-bumps again.
+before the cut without turning an early estimate into a one-way ratchet. Comparing the
+malleable plan with the newest stable tag keeps every declaration releasable and
+canaries ahead of stable while main's pull-request checks remain independent of pending
+Changesets. Because the fixed group publishes one version, consuming a `[breaking]`
+Changeset on a branch that already declares the minor writes changelogs for that minor
+and never bumps again.
 
 A `[breaking]` Changeset can merge while main declares a patch. The release that
 would carry it refuses it at admission until the work becomes a deprecation or an
@@ -1057,7 +1069,7 @@ Rejected: deriving the version from pending Changesets, because the entry being 
 
 Rejected: a dated schedule file beside `package.json`, because two declarations of the next version can disagree.
 
-Rejected: a sync that sets main to the released version, because it moves main backward past an owner's later bump.
+Rejected: a sync that sets main to the released version, because the declaration would no longer be strictly greater than the newest stable tag.
 
 ### DEC-16 — Deprecation acts at authoring surfaces, not production runtime
 
