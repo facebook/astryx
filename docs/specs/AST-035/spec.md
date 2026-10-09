@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: josephfarina
-approved_at: 2026-10-07
+approved_at: 2026-10-09
 phase: accepted
 owners: [josephfarina, cixzhang]
 affects_architecture: [architecture:cli-surface]
@@ -306,7 +306,7 @@ Rejected: per-surface resolution — component, search, and swizzle would drift 
 ### DEC-7 — The template replacement floor is the first release that applies it
 
 **Reference:** `spec:AST-035/DEC-7`
-**Proposed by:** `josephfarina`, `2026-10-09`
+**Decider:** `josephfarina`, `2026-10-09`
 
 An integration whose template sets `replaces` declares an `@astryxdesign/cli` peer
 range that starts at 0.6.4, in place of DEC-4's `>=0.7.0`. Published 0.6.4 through
