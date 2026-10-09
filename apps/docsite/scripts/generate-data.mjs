@@ -26,6 +26,7 @@ import {createRequire} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolveContentRoot} from './resolve-content-root.mjs';
 import {
+  GUIDE_NAMESPACE_PAGES,
   GUIDE_PAGE_NAMESPACES,
   mergeFlatTopics,
   namespacePage,
@@ -1691,8 +1692,9 @@ export const templateMetadataCount = ${templateMetadata.length};
  * The docsite pages of the CLI's docs tree, read through the CLI's public docs
  * API. Every root namespace is one full page at its own slug (docs-pages.mjs),
  * so splitting a flat topic into a namespace keeps its URL, sidebar spot and
- * text; the guides under it redirect to their sections on that page. Root
- * namespaces in GUIDE_PAGE_NAMESPACES keep one page per guide instead.
+ * text; the guides under it redirect to their sections on that page. A root
+ * namespace in GUIDE_PAGE_NAMESPACES shows the pages GUIDE_NAMESPACE_PAGES
+ * lists, the same way one level down, and its other guides keep a page each.
  */
 async function docsTreePages() {
   const pages = [];
@@ -1702,9 +1704,19 @@ async function docsTreePages() {
   const routes = [];
   const list = await readDocs();
   const pending = [];
+  // Routes a page of a GUIDE_PAGE_NAMESPACES root holds, so their guides get
+  // no page of their own.
+  const held = new Set();
   for (const {topic: root} of list.meta?.namespaces ?? []) {
     if (GUIDE_PAGE_NAMESPACES.has(root)) {
       pending.push(root);
+      for (const spec of GUIDE_NAMESPACE_PAGES.get(root) ?? []) {
+        for (const route of await treeRoutes(spec.route)) held.add(route);
+        const full = await namespacePage(readDocs, spec.route, spec);
+        if (!full) continue;
+        pages.push(full.page);
+        Object.assign(redirects, full.redirects);
+      }
       continue;
     }
     routes.push(...(await treeRoutes(root)));
@@ -1723,7 +1735,11 @@ async function docsTreePages() {
         if (child.kind !== 'namespace') routes.push(child.route);
         if (child.kind === 'namespace') {
           pending.push(child.route);
-        } else if (child.kind === 'generic' && child.route.includes('/')) {
+        } else if (
+          child.kind === 'generic' &&
+          child.route.includes('/') &&
+          !held.has(child.route)
+        ) {
           const doc = (await readDocs(child.route)).data;
           pages.push({
             topic: routeSlug(child.route),
