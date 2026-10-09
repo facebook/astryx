@@ -267,7 +267,6 @@ export {
   type MobileTokenizerChange,
 } from './MobileTokenizer';
 
-// RichTextEditor (RFC facebook/astryx#3899) has graduated out of @astryxdesign/lab
-// into its own canary-only package, @astryxdesign/richtext, so it can be canaried
-// independently by an adopting application. Import it from there:
+// RichTextEditor (RFC facebook/astryx#3899) moved out of @astryxdesign/lab into
+// its own package, @astryxdesign/richtext. Import it from there:
 //   import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';

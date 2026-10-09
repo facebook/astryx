@@ -2,8 +2,7 @@
   "name": "@astryxdesign/richtext",
   "displayName": "Rich Text",
   "version": "0.1.9",
-  "private": true,
-  "description": "Astryx rich text — a Lexical-based rich text editor and viewer. Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
+  "description": "Astryx rich text — a Lexical-based rich text editor and viewer, styled with Astryx design tokens.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -23,10 +22,6 @@
     "lexical",
     "design-system"
   ],
-  "astryx": {
-    "canaryOnly": true,
-    "_comment": "Published ONLY to the @canary dist-tag (see .github/workflows/release.yml). Never released as a stable `latest` release. `private: true` is intentional and must stay — it is npm\"s hard guarantee against an accidental stable publish."
-  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

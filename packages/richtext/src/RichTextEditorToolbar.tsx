@@ -10,7 +10,7 @@
  *   ToggleButton / Divider / Dialog / TextInput / Button / Layout primitives.
  * @output Exports RichTextEditorToolbar (a compact formatting toolbar with a
  *   horizontally scrollable action row) and RichTextEditorToolbarProps.
- * @position Experimental (richtext). Drop into RichTextEditor's `toolbar` slot to
+ * @position @astryxdesign/richtext. Drop into RichTextEditor's `toolbar` slot to
  *   add a flush top formatting toolbar. Themed via Astryx Toolbar, Selector,
  *   IconButton, and ToggleButton, so it inherits the active theme.
  *
@@ -20,8 +20,8 @@
  * - /packages/richtext/src/RichTextEditor.test.tsx (tests)
  * - /apps/storybook/stories/RichTextEditor.stories.tsx (WithToolbar story)
  *
- * NOTE: Experimental `@astryxdesign/richtext` component (canary). `lexical` and
- * `@lexical/*` are OPTIONAL peer dependencies — install them to use this.
+ * NOTE: `lexical` and `@lexical/*` are OPTIONAL peer dependencies — install them
+ * to use this.
  * Behavior mirrors the Lexical playground toolbar (selection sync + format
  * commands); the UI is built from Astryx primitives so it matches the theme.
  *
