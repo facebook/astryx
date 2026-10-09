@@ -241,14 +241,15 @@ bar.
 **Reference:** `spec:AST-042/DEC-5`
 **Decider:** `josephfarina` (proposed), `2026-10-09`
 
-`check:changesets` reads only a Changeset's tag, and while the packages are 0.x it
-admits a minor bump only for `[breaking]`. An incompatible fix takes the
-incompatible version tier, so until Changesets gain a machine-readable
-classification, its Changeset uses `[breaking]` with a minor bump and names its
-`IFIX-*` and `CLN-*` ids. The record keeps the classification: the change is a
-correction under `spec:AST-017` FR32, not a generic removal, and the tag only
-carries the version tier that `spec:AST-017` FR7 gives it. `check:changesets` and
-the Changeset coverage gate stay as they are.
+A Changeset's bump states the tier its change requires (`spec:AST-017` FR7).
+`check:changesets` validates a Changeset's tag and bump and has no classification
+field, and while the packages are 0.x it accepts a minor bump only with
+`[breaking]`. An incompatible fix requires the incompatible tier, so until
+Changesets gain a machine-readable classification, its Changeset uses `[breaking]`
+with a minor bump and names its `IFIX-*` and `CLN-*` ids. The record keeps the
+classification: the change is a correction under `spec:AST-017` FR32, not a generic
+removal. This record changes none of `check:changesets`, the Changeset coverage
+gate, or release admission.
 
 Rejected: `[fix]` with a minor bump, which `check:changesets` refuses while the
 packages are 0.x; and a classification field in the release gates, which changes
@@ -264,7 +265,7 @@ path and a warning, when that is safe. For `IFIX-0006` the warning already exist
 every affected run prints `[error]` lines that name each private variable and the
 fix, and the correction changes only the exit status, with output and files
 identical. A transition patch adds nothing a user can act on, so the correction
-ships in the scheduled minor through `CLN-0012`.
+ships through `CLN-0012` in the next minor release.
 
 Rejected: a patch that prints one more warning line before the minor, which
 repeats the `[error]` lines and delays the correction by a release; and an option
@@ -316,7 +317,7 @@ that keeps exit 0, which makes a documented failure optional.
 | downstream       | Maintained docs, `init` next steps, doctor fixes, and `theme add --list` text name `theme add --import` while the default is deprecated and `theme add <slug>` after the cleanup                                                                                          |
 | direct authority | `spec:AST-050` FR12 (the copy default leaves through its lifecycle). Owners: `spec:AST-050`: `josephfarina`.                                                                                                                                                              |
 | state            | `deprecated`                                                                                                                                                                                                                                                              |
-| target plan      | `CLN-0005` in the next scheduled minor                                                                                                                                                                                                                                    |
+| target plan      | `CLN-0005` in the next minor release                                                                                                                                                                                                                                      |
 
 ### CLN-0005 — Make `astryx theme add` import by default
 
@@ -326,7 +327,7 @@ that keeps exit 0, which makes a documented failure optional.
 | lifecycle | `DEP-0005`                                                                                                                                                                                                                                                                                                                                     |
 | delta     | `theme add <slug>` imports and returns `theme.app`, with or without `--import`, which stays an accepted no-op. A target path exits 1 with `ERR_INVALID_ARGUMENT` and `--overwrite` exits 1 with `ERR_INVALID_OPTION`; neither writes files. The `theme.add` response type, the `ThemeAddResponse` type, and the `DEP-0005` warning are removed |
 | rollback  | Restore the copy default, its options, and the `theme.add` response from the final-patch baseline                                                                                                                                                                                                                                              |
-| state     | `pending` — lands only when a minor is scheduled and `CLN-0005` appears in its frozen manifest                                                                                                                                                                                                                                                 |
+| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0005`                                                                                                                                                                                                                                                               |
 
 ### IFIX-0001 — The CLI stops reading the Astryx-owned agent variables
 
@@ -357,7 +358,7 @@ that keeps exit 0, which makes a documented failure optional.
 | lifecycle | `IFIX-0001`                                                                                                                                                                                                                                                                               |
 | delta     | The CLI stops reading `ASTRYX_AGENT_ID`, `ASTRYX_AGENT_SESSION_ID`, and `ASTRYX_AGENT_METADATA`. Agent identity comes from `AGENT` or a known agent signal, and the session from `AGENT_SESSION_ID`. Command output, `--json` output, exit codes, and the debug event shape are unchanged |
 | rollback  | Restore reading the three variables from the final-patch baseline                                                                                                                                                                                                                         |
-| state     | `pending` — lands only when `IFIX-0001` is approved, a minor is scheduled, and `CLN-0007` appears in its frozen manifest                                                                                                                                                                  |
+| state     | `pending` — lands only in a minor release, once `IFIX-0001` is approved and that release's frozen manifest lists `CLN-0007`                                                                                                                                                               |
 
 ### IFIX-0003 — An empty positional argument is not an omitted one
 
@@ -388,7 +389,7 @@ that keeps exit 0, which makes a documented failure optional.
 | lifecycle | `IFIX-0003`                                                                                                                                                              |
 | delta     | `template`, `swizzle`, and `discover` reject `""` with `ERR_INVALID_ARGUMENT` and exit 1 where the selected mode uses the positional. Modes that ignore it are unchanged |
 | rollback  | Restore the released handling of `""` from the final-patch baseline                                                                                                      |
-| state     | `pending` — lands only when `IFIX-0003` is approved, a minor is scheduled, and `CLN-0009` appears in its frozen manifest                                                 |
+| state     | `pending` — lands only in a minor release, once `IFIX-0003` is approved and that release's frozen manifest lists `CLN-0009`                                              |
 
 ### IFIX-0004 — `astryx init --remove-agents` reports a removal only when one happened
 
@@ -413,13 +414,13 @@ that keeps exit 0, which makes a documented failure optional.
 
 ### CLN-0010 — Report whether agent docs were removed
 
-| Field     | Value                                                                                                                    |
-| --------- | ------------------------------------------------------------------------------------------------------------------------ |
-| id        | `CLN-0010`                                                                                                               |
-| lifecycle | `IFIX-0004`                                                                                                              |
-| delta     | `data.removed` widens from the literal `true` to a boolean, and the human line says which happened                       |
-| rollback  | Restore the literal `true` receipt and its human line from the final-patch baseline                                      |
-| state     | `pending` — lands only when `IFIX-0004` is approved, a minor is scheduled, and `CLN-0010` appears in its frozen manifest |
+| Field     | Value                                                                                                                       |
+| --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| id        | `CLN-0010`                                                                                                                  |
+| lifecycle | `IFIX-0004`                                                                                                                 |
+| delta     | `data.removed` widens from the literal `true` to a boolean, and the human line says which happened                          |
+| rollback  | Restore the literal `true` receipt and its human line from the final-patch baseline                                         |
+| state     | `pending` — lands only in a minor release, once `IFIX-0004` is approved and that release's frozen manifest lists `CLN-0010` |
 
 ### IFIX-0005 — Contradictory options are refused, not silently ignored
 
@@ -450,7 +451,7 @@ that keeps exit 0, which makes a documented failure optional.
 | lifecycle | `IFIX-0005`                                                                                                                                       |
 | delta     | `gap-report`, `init`, `upgrade`, and `template` refuse the contradictory option pairs with `ERR_INVALID_ARGUMENT` and exit 1, naming both options |
 | rollback  | Restore the released option handling from the final-patch baseline                                                                                |
-| state     | `pending` — lands only when `IFIX-0005` is approved, a minor is scheduled, and `CLN-0011` appears in its frozen manifest                          |
+| state     | `pending` — lands only in a minor release, once `IFIX-0005` is approved and that release's frozen manifest lists `CLN-0011`                       |
 
 ### IFIX-0006 — `astryx theme build` exits 1 when it reports private variables
 
@@ -475,13 +476,13 @@ that keeps exit 0, which makes a documented failure optional.
 
 ### CLN-0012 — Apply the `theme build` exit status correction
 
-| Field     | Value                                                                                                                    |
-| --------- | ------------------------------------------------------------------------------------------------------------------------ |
-| id        | `CLN-0012`                                                                                                               |
-| lifecycle | `IFIX-0006`                                                                                                              |
-| delta     | `theme build` exits 1 when it reports a private-variable error. Its output, receipts, and generated files are unchanged  |
-| rollback  | Restore exit 0 for these runs from the final-patch baseline                                                              |
-| state     | `pending` — lands only when `IFIX-0006` is approved, a minor is scheduled, and `CLN-0012` appears in its frozen manifest |
+| Field     | Value                                                                                                                       |
+| --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| id        | `CLN-0012`                                                                                                                  |
+| lifecycle | `IFIX-0006`                                                                                                                 |
+| delta     | `theme build` exits 1 when it reports a private-variable error. Its output, receipts, and generated files are unchanged     |
+| rollback  | Restore exit 0 for these runs from the final-patch baseline                                                                 |
+| state     | `pending` — lands only in a minor release, once `IFIX-0006` is approved and that release's frozen manifest lists `CLN-0012` |
 
 ### IFIX-0007 — Invalid input is refused, not accepted with an empty result
 
@@ -512,7 +513,7 @@ that keeps exit 0, which makes a documented failure optional.
 | lifecycle | `IFIX-0007`                                                                                                                                                                                                                                   |
 | delta     | `template` refuses unknown types and packages, `build` refuses `doc` as a type and a fractional limit, `integration add` refuses extra arguments, and `component()` throws `ERR_AMBIGUOUS_COMPONENT` for a name that several packages provide |
 | rollback  | Restore the released input handling and error code from the final-patch baseline                                                                                                                                                              |
-| state     | `pending` — lands only when `IFIX-0007` is approved, a minor is scheduled, and `CLN-0013` appears in its frozen manifest                                                                                                                      |
+| state     | `pending` — lands only in a minor release, once `IFIX-0007` is approved and that release's frozen manifest lists `CLN-0013`                                                                                                                   |
 
 ### IFIX-0008 — Validation exits 1 when there is nothing to validate
 
@@ -543,7 +544,7 @@ that keeps exit 0, which makes a documented failure optional.
 | lifecycle | `IFIX-0008`                                                                                                                                                  |
 | delta     | `doctor integration validate` exits 1 when nothing was validated, and `integration verify` fails with `ERR_INVALID_ARGUMENT` when it finds no `package.json` |
 | rollback  | Restore exit 0 and the success envelope for these runs from the final-patch baseline                                                                         |
-| state     | `pending` — lands only when `IFIX-0008` is approved, a minor is scheduled, and `CLN-0014` appears in its frozen manifest                                     |
+| state     | `pending` — lands only in a minor release, once `IFIX-0008` is approved and that release's frozen manifest lists `CLN-0014`                                  |
 
 ## Open questions
 
