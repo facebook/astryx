@@ -104,6 +104,12 @@ const TARGETS = [
     guards: 'Canvas redraws concrete theme colors on the same drawing surface',
   },
   {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-vega--serialized-canvas-config',
+    guards:
+      'Vega receives serialized concrete values and explicitly rebuilds its View when config changes',
+  },
+  {
     component: 'ChatToolCalls',
     story: 'core-chattoolcalls--focused-grouped-detail',
     guards:

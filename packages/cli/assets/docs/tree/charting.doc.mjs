@@ -359,6 +359,54 @@ export function RevenueChart({data}) {
       ],
     },
     {
+      id: 'apply-to-vega',
+      title: 'Apply the concrete-value path to Vega-Lite',
+      content: [
+        {
+          type: 'prose',
+          text: 'Configuration-driven renderers need concrete, serializable values rather than retained CSS references. The existing Astryx Vega package accepts the active theme resolver and produces a Vega-Lite configuration for the current theme. This example demonstrates the current integration; it is not a compatibility guarantee for future Vega releases.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          code: `'use client';
+
+import {useMemo} from 'react';
+import {useTheme} from '@astryxdesign/core/theme';
+import {
+  buildVegaLiteConfig,
+  VegaChart,
+  type AnySpec,
+} from '@astryxdesign/vega';
+
+export function VegaRevenueChart({spec, values}: {
+  spec: AnySpec;
+  values: readonly unknown[];
+}) {
+  const {token} = useTheme();
+  const config = useMemo(
+    () => JSON.parse(JSON.stringify(buildVegaLiteConfig(token))),
+    [token],
+  );
+
+  return (
+    <VegaChart
+      aria-label="Quarterly revenue"
+      compileOptions={{config}}
+      data={{table: values}}
+      spec={spec}
+      viewOptions={{renderer: 'canvas'}}
+    />
+  );
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'The current `VegaChart` wrapper rebuilds its View when compile configuration changes. A product that owns zoom, selection, hover, or signal state must restore supported state after that rebuild or document the reset. Do not describe this transition as preserving renderer state.',
+        },
+      ],
+    },
+    {
       id: 'update-existing-renderers',
       title: 'Update existing renderer instances on theme changes',
       content: [
