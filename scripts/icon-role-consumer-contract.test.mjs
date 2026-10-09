@@ -123,6 +123,16 @@ function checkConsumer(fixture, source) {
       `${internal} must not become a public package subpath (${source ? 'source' : 'declaration'})`,
     );
   }
+  assert.equal(
+    ts.resolveModuleName(
+      '@astryxdesign/core/Button/buttonIconRole',
+      consumer,
+      options,
+      host,
+    ).resolvedModule,
+    undefined,
+    `Button role metadata must not become a public package subpath (${source ? 'source' : 'declaration'})`,
+  );
   const program = ts.createProgram([consumer], options, host);
   return ts.getPreEmitDiagnostics(program).map(diagnostic => {
     const message = ts.flattenDiagnosticMessageText(

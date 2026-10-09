@@ -4,7 +4,7 @@
  * @file icon-role-source-only.fixture.tsx
  * @input Canonical public {slot: true} augmentation without finite states
  * @output Legacy source mappings with no automatic role/state participation
- * @position Independent external library consumer; no Core component enrollment
+ * @position Independent external library consumer; Core's Button role is the only participant
  */
 import {
   declareComponentIconRole,
@@ -30,6 +30,7 @@ export type CanonicalSourceEntry = Assert<
 export type SourceSlots = Assert<
   Equal<
     ComponentIconSlotName,
+    | 'button-leading'
     | 'consumer-source-leading'
     | 'consumer-source-trailing'
     | 'consumer-source-marker'
@@ -39,7 +40,7 @@ export type SourceHasNoState = Assert<
   Equal<ComponentIconStateName<'consumer-source-leading'>, never>
 >;
 export type SourceIsNotRole = Assert<
-  Equal<ParticipatingComponentIconSlotName, never>
+  Equal<ParticipatingComponentIconSlotName, 'button-leading'>
 >;
 export const mapping: ComponentIconMap = {
   'consumer-source-leading': 'search',

@@ -106,7 +106,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. No Core component is enrolled by this source contract. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
+          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. In Core, only the Button family participates: Button, IconButton and ToggleButton render a direct Icon in the `button-leading` role, which reports disabled, pressed or loading. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
       },
       {
         guidance: true,
@@ -222,7 +222,7 @@ export const docsZh = {
       {
         guidance: true,
         description:
-          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. No Core component is enrolled by this source contract. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
+          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. In Core, only the Button family participates: Button, IconButton and ToggleButton render a direct Icon in the `button-leading` role, which reports disabled, pressed or loading. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
       },
       {
         guidance: true,
@@ -290,7 +290,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. No Core component is enrolled by this source contract. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
+          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. In Core, only the Button family participates: Button, IconButton and ToggleButton render a direct Icon in the `button-leading` role, which reports disabled, pressed or loading. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
       },
       {
         guidance: true,

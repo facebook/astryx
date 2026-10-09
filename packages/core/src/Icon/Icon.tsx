@@ -287,6 +287,7 @@ export function Icon({
       legacyContextSize,
       slot: ownedSlot?.slot,
       state: ownedSlot?.state,
+      defaultSize: ownedSlot?.defaultSize,
       renderNode: typeof icon === 'string',
     },
   );

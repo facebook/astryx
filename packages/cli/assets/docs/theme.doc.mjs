@@ -72,7 +72,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Use `icons` for fixed or bound adaptive artwork. `componentIcons` maps owner-declared positions to shared IconName or null, not artwork; {slot: true} positions stay source-only. `iconCapabilities` supplies a contract, dimensions, roleSizeOverrides for explicitly participating roles, and presentation.default/bySize/byState. byState chooses appearance only; final-size bySize still chooses weight. sizeOverrides and roleSizeOverrides merge by key with null clearing; presentation replaces as a whole, with null clearing. These are non-CSS values: import the generated theme module as well as its stylesheet. This source contract does not enroll Core components. See `astryx docs icons component-role-state` for the focused role/state contract.',
+          text: 'Use `icons` for fixed or bound adaptive artwork. `componentIcons` maps owner-declared positions to shared IconName or null, not artwork; {slot: true} positions stay source-only. `iconCapabilities` supplies a contract, dimensions, roleSizeOverrides for explicitly participating roles, and presentation.default/bySize/byState. byState chooses appearance only; final-size bySize still chooses weight. sizeOverrides and roleSizeOverrides merge by key with null clearing; presentation replaces as a whole, with null clearing. These are non-CSS values: import the generated theme module as well as its stylesheet. In Core, only the Button family participates, through the `button-leading` role (disabled, pressed or loading). See `astryx docs icons component-role-state` for the focused role/state contract.',
         },
       ],
     },

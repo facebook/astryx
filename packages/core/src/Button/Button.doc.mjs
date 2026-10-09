@@ -157,7 +157,7 @@ export const docs = {
       name: 'icon',
       type: 'ReactNode',
       description:
-        'Icon element rendered before the label text. An Astryx Icon with no explicit size defaults to sm for sm/md buttons and md for lg buttons.',
+        'Icon element rendered before the label text. An Astryx Icon with no explicit size defaults to sm for sm/md buttons and md for lg buttons. Pass the Icon directly (not wrapped in another element) and it follows the theme\'s `button-leading` icon role: the theme can choose its size, and can change its appearance while the button is disabled, pressed or loading. The space reserved for the icon always matches the icon\'s final size, and the button height stays the same.',
       slotElements: [{__element: 'Icon', props: {icon: 'check'}}],
     },
     {
@@ -353,7 +353,7 @@ export const docsZh = {
       description: '禁用按钮。存在工具提示时，使用 aria-disabled 代替原生 disabled 以保持可聚焦。',
       default: 'false',
     },
-    {name: 'icon', type: 'ReactNode', description: '图标元素。未显式指定尺寸的 Astryx Icon 在 sm/md 按钮中默认为 sm，在 lg 按钮中默认为 md。仅提供 icon 而不提供 children 时，按钮渲染为正方形的纯图标按钮。'},
+    {name: 'icon', type: 'ReactNode', description: '图标元素。未显式指定尺寸的 Astryx Icon 在 sm/md 按钮中默认为 sm，在 lg 按钮中默认为 md。直接传入 Icon（不要包在其他元素里）时，它遵循主题的 `button-leading` 图标角色：主题可以选择它的尺寸，并在按钮禁用、按下或加载时改变它的外观。为图标预留的空间始终与图标的最终尺寸一致，按钮高度保持不变。仅提供 icon 而不提供 children 时，按钮渲染为正方形的纯图标按钮。'},
     {name: 'width', type: 'SizeValue', description: "按钮宽度。数字按像素处理，字符串按原样使用（如 '100%' 表示全宽按钮）。默认按内容自适应宽度，不会超出容器；行宽不足时标签以省略号截断；纯图标按钮保持正方形。"},
     {name: 'children', type: 'ReactNode', description: '可选的可见内容覆盖；label 仍然是必需的（用于无障碍名称）。大多数情况使用 <Button label="Save" />。'},
     {
@@ -420,7 +420,7 @@ export const docsDense = {
     value: 'HTML value for form submission',
     form: 'associates button with form element by ID',
     isLoading: 'shows spinner+disables interaction; announces via live region',
-    icon: 'icon element rendered before label text; unsized Astryx Icon defaults to sm for sm/md buttons and md for lg',
+    icon: 'icon element rendered before label text; unsized Astryx Icon defaults to sm for sm/md buttons and md for lg; a direct Icon follows the theme button-leading role (size; appearance when disabled/pressed/loading) and its box matches the final icon size',
     isIconOnly: 'when true, renders square icon-only button; label becomes aria-label',
     width: "Width of button. Numbers=pixels, strings=as-is (e.g. '100%' for full-width). Default: content width, capped at the container; label truncates w/ ellipsis in a narrow row; icon-only stays square.",
     children: 'optional visible override; label is still required for a11y. Prefer <Button label="Save" /> over using children',

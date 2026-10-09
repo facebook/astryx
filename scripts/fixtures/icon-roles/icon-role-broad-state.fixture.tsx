@@ -31,10 +31,13 @@ export type MissingMarkerRejected = Assert<
   Equal<ComponentIconStateName<'consumer-marker-missing'>, never>
 >;
 export type OnlyFiniteRole = Assert<
-  Equal<ParticipatingComponentIconSlotName, 'consumer-valid-leading'>
+  Equal<
+    ParticipatingComponentIconSlotName,
+    'button-leading' | 'consumer-valid-leading'
+  >
 >;
 export type FiniteVocabularySurvives = Assert<
-  Equal<ComponentIconStateName, 'selected'>
+  Equal<ComponentIconStateName, 'selected' | 'disabled' | 'pressed' | 'loading'>
 >;
 export const valid = declareComponentIconRole({
   slot: 'consumer-valid-leading',

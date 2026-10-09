@@ -3,7 +3,7 @@
 /**
  * @file index.ts
  * @input Icon rendering, actual node registry reads, capability constructors and owner slot declarations
- * @output Released Icon APIs plus canonical source-only slots and finite role/state authoring
+ * @output Released Icon APIs, canonical slots (including Core's Button-family role) and finite role/state authoring
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header and /packages/core/src/Icon/Icon.doc.mjs
@@ -58,9 +58,16 @@ export type {
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Intentional declaration-merging map owned by contributing libraries.
 export interface IconCapabilityMap {}
 
-/** Canonical owner augmented by component libraries. `{slot: true}` stays source-only. */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- No Core component is enrolled by this infrastructure change.
-export interface ComponentIconSlotMap {}
+/**
+ * Canonical owner augmented by component libraries. `{slot: true}` stays source-only.
+ *
+ * Core declares one metadata-bearing role: `button-leading`, the Button family's
+ * owned icon position (Button's `icon`, which IconButton and ToggleButton reuse).
+ * It reports at most one of its finite states; there is no universal state list.
+ */
+export interface ComponentIconSlotMap {
+  'button-leading': {slot: true; states: 'disabled' | 'pressed' | 'loading'};
+}
 export type ComponentIconSlotName = keyof ComponentIconSlotMap & string;
 type FiniteStates<T> = T extends {
   slot: true;

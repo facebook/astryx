@@ -312,7 +312,7 @@ export const myTheme = defineTheme({
    * Non-CSS icon policy for a supplied contract from your artwork module.
    * sizeOverrides: admitted size -> dimension|null (per-key inheritance clearing).
    * roleSizeOverrides: explicitly participating role -> admitted size|null;
-   * null restores the owner's default. No Core role is enrolled by this template.
+   * null restores the owner's default. Core's one role is 'button-leading'.
    * presentation replaces as a whole; null clears it. default/bySize select
    * appearance and weight; byState selects appearance ONLY for one owner state.
    * Explicit Icon intent wins. JS/types carry this data, not CSS.
