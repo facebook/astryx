@@ -31,6 +31,24 @@ import {AstryxError, writeFailed} from '../../error.mjs';
 const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
 
 /**
+ * StyleX `.stylex` modules that use `stylex.defineVars` — these define CSS
+ * custom properties that themes override. Vendoring them would create new
+ * variable hashes, breaking theme overrides. They MUST be imported from Core
+ * so every consumer shares the same variable identity.
+ *
+ * Every other `.stylex` module uses only `stylex.create` (style-only) and is
+ * safe to vendor locally.
+ */
+const DEFINE_VARS_STYLEX = new Set([
+  'utils/focusOutline.stylex',
+  'utils/interactionOverlay.stylex',
+  'DateInput/tokens.stylex',
+  'Layer/layerViewportInset.stylex',
+  // theme/tokens.stylex and theme/dataTokens.stylex are already handled by
+  // the `parts[0] === 'theme'` branch below.
+]);
+
+/**
  * Rewrite relative imports that point outside the component directory to use
  * the OWNER package's subpaths. Imports within the copied directory (./x) are
  * left untouched.
@@ -46,16 +64,21 @@ const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
  *   - Asset files (`.json`, `.css`): exported by full subpath (e.g.
  *     `./locales/*.json`, `./reset.css`), and collapsing a two-levels-up
  *     `../../locales/x.json` would emit the invalid `<pkg>/..`.
- *   - StyleX modules (`*.stylex`): the StyleX compiler needs the real module
- *     path so it can resolve the styles at compile time. The barrel re-export
- *     loses the module identity. Core exports every `.stylex` file by its
- *     deep subpath (e.g. `./utils/focusOutline.stylex`,
- *     `./theme/tokens.stylex`).
+ *   - StyleX modules that define CSS variables (`defineVars`): imported from
+ *     Core so theme overrides reach every consumer. Core exports these by
+ *     their deep subpath.
+ *   - StyleX modules that only create styles (`stylex.create`): vendored
+ *     locally alongside the swizzled component so Core needs no public
+ *     subpath for them.
  *
  * @param {string} content
  * @param {string} [ownerPackage]
+ * @param {{vendoredStylex?: Map<string, string>}} [ctx] when provided,
+ *   create-only .stylex imports are rewritten to local `./` paths and their
+ *   source locations are recorded in `vendoredStylex` for swizzleCopy to
+ *   vendor alongside the component.
  */
-export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
+export function rewriteImports(content, ownerPackage = CORE_PACKAGE, ctx) {
   /** @param {string} importPath */
   const mapTarget = importPath => {
     // Strip ALL leading `../` so a two-levels-up path never yields `<pkg>/..`.
@@ -66,9 +89,26 @@ export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
     if (/\.(?:json|css)$/.test(last)) {
       return `${ownerPackage}/${rest}`;
     }
-    // StyleX modules need the deep path so the compiler can resolve them.
+    // StyleX modules: defineVars modules use Core's deep export (theme
+    // overrides must share variable identity); create-only modules are
+    // vendored locally when a vendoring context is provided.
     if (/\.stylex(?:\.[cm]?[jt]sx?)?$/.test(last)) {
-      return `${ownerPackage}/${rest}`;
+      // Theme tokens are dedicated deep exports.
+      if (parts[0] === 'theme') {
+        return `${ownerPackage}/${rest}`;
+      }
+      // Strip the file extension to match the DEFINE_VARS_STYLEX keys.
+      const modKey = rest.replace(/\.[cm]?[jt]sx?$/, '');
+      if (DEFINE_VARS_STYLEX.has(modKey)) {
+        return `${ownerPackage}/${rest}`;
+      }
+      // Create-only: vendor locally.
+      if (ctx?.vendoredStylex) {
+        ctx.vendoredStylex.set(importPath, rest);
+        return `./${last}`;
+      }
+      // Fallback when no vendoring context: use the barrel (old behavior).
+      return `${ownerPackage}/${parts[0]}`;
     }
     return `${ownerPackage}/${parts[0]}`;
   };
@@ -319,6 +359,12 @@ export async function swizzleCopy(component, options = {}) {
   const files = fs.readdirSync(componentDir);
   let copied = 0;
   let usesStyleX = false;
+  // Track .stylex modules that need to be vendored alongside the component.
+  // rewriteImports populates this when it encounters a non-theme .stylex import
+  // from outside the component directory.
+  /** @type {Map<string, string>} importPath -> rest (resolved relative to src/) */
+  const vendoredStylex = new Map();
+  const vendorCtx = {vendoredStylex};
   // A copy that fails part-way undoes what it already wrote, so the report is
   // true and a retry does not trip over half a component. Each entry keeps
   // the bytes the file had before this run (null when the copy created it).
@@ -330,7 +376,7 @@ export async function swizzleCopy(component, options = {}) {
     if (!fs.statSync(srcPath).isFile()) continue;
     let content = fs.readFileSync(srcPath, 'utf-8');
     if (file.endsWith('.ts') || file.endsWith('.tsx')) {
-      content = rewriteImports(content, owner.ownerPackage);
+      content = rewriteImports(content, owner.ownerPackage, vendorCtx);
     }
     if (
       (file.endsWith('.ts') || file.endsWith('.tsx')) &&
@@ -358,6 +404,68 @@ export async function swizzleCopy(component, options = {}) {
       throw writeFailed(dest, cwd, err, unrestored);
     }
     copied++;
+  }
+
+  // Vendor the create-only .stylex dependencies: copy each source file into
+  // the output dir so the swizzled component can import it as
+  // `./filename.stylex`. Vendored files' own imports are rewritten:
+  //   - Non-stylex deps → the owner barrel (e.g. @astryxdesign/core/utils)
+  //   - theme .stylex → the Core deep export (theme overrides must share identity)
+  //   - defineVars .stylex → the Core deep export (same reason)
+  //   - Type-only imports from internal paths (e.g. SpacingStep from utils/types)
+  //     are inlined because the barrel may not re-export them.
+  const srcRoot = path.join(coreDir, 'src');
+  /** @type {Set<string>} */
+  const alreadyVendored = new Set();
+  // Process vendoredStylex iteratively: a vendored file may itself import
+  // another create-only .stylex module that also needs vendoring.
+  let toVendor = [...vendoredStylex.entries()];
+  while (toVendor.length > 0) {
+    const nextRound = [];
+    for (const [, rest] of toVendor) {
+      if (alreadyVendored.has(rest)) continue;
+      alreadyVendored.add(rest);
+      // rest is e.g. "utils/focusOutline.stylex" — resolve to the .ts source
+      const srcFile = path.join(srcRoot, rest + '.ts');
+      if (!fs.existsSync(srcFile)) continue;
+      const fileName = path.basename(rest) + '.ts';
+      let content = fs.readFileSync(srcFile, 'utf-8');
+      // Inline type-only imports that the barrel doesn't re-export.
+      // SpacingStep from ../utils/types is the known case.
+      content = content.replace(
+        /import\s+type\s*\{[^}]*SpacingStep[^}]*\}\s*from\s*['"][^'"]+['"]\s*;?\n?/g,
+        'type SpacingStep = 0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10;\n',
+      );
+      // Rewrite this file's own imports with vendoring context so any
+      // transitive create-only .stylex deps are also collected.
+      /** @type {Map<string, string>} */
+      const transitiveVendored = new Map();
+      content = rewriteImports(content, owner.ownerPackage, {
+        vendoredStylex: transitiveVendored,
+      });
+      // Queue any transitive deps for the next round.
+      for (const entry of transitiveVendored) {
+        if (!alreadyVendored.has(entry[1])) {
+          vendoredStylex.set(entry[0], entry[1]);
+          nextRound.push(entry);
+        }
+      }
+      const dest = path.join(outputDir, fileName);
+      try {
+        const original = fs.existsSync(dest) ? fs.readFileSync(dest) : null;
+        written.push({dest, original});
+        fs.writeFileSync(dest, content);
+      } catch (err) {
+        const unrestored = undoCopy(written);
+        if (!outputDirExisted) {
+          try { fs.rmdirSync(outputDir); } catch { /* */ }
+        }
+        throw writeFailed(dest, cwd, err, unrestored);
+      }
+      copied++;
+      if (content.includes('@stylexjs/stylex')) usesStyleX = true;
+    }
+    toVendor = nextRound;
   }
 
   const relOutput = path.relative(cwd, outputDir);

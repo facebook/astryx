@@ -77,27 +77,55 @@ describe('rewriteImports', () => {
     );
   });
 
-  it('rewrites ANY non-theme .stylex import to a deep path (not the barrel)', () => {
-    // Every .stylex module needs the deep path so the StyleX compiler can
-    // resolve styles at compile time. The barrel re-export loses identity.
-    const input = `import { interactionOverlayStyles } from '../utils/interactionOverlay.stylex';`;
+  it('vendors a create-only .stylex import locally when ctx is provided', () => {
+    const vendoredStylex = new Map();
+    const input = `import { s } from '../Layer/layerAnimations.stylex';`;
+    const result = rewriteImports(input, '@astryxdesign/core', {vendoredStylex});
+    expect(result).toBe(
+      `import { s } from './layerAnimations.stylex';`,
+    );
+    expect(vendoredStylex.size).toBe(1);
+    expect(vendoredStylex.get('../Layer/layerAnimations.stylex')).toBe(
+      'Layer/layerAnimations.stylex',
+    );
+  });
+
+  it('falls back to barrel for create-only .stylex without ctx', () => {
+    const input = `import { s } from '../Layer/layerAnimations.stylex';`;
     expect(rewriteImports(input)).toBe(
+      `import { s } from '@astryxdesign/core/Layer';`,
+    );
+  });
+
+  it('keeps defineVars .stylex imports as Core deep exports (not vendored)', () => {
+    const vendoredStylex = new Map();
+    const input = `import { interactionOverlayStyles } from '../utils/interactionOverlay.stylex';`;
+    const result = rewriteImports(input, '@astryxdesign/core', {vendoredStylex});
+    expect(result).toBe(
       `import { interactionOverlayStyles } from '@astryxdesign/core/utils/interactionOverlay.stylex';`,
     );
+    // defineVars modules are NOT vendored
+    expect(vendoredStylex.size).toBe(0);
   });
 
-  it('rewrites a Layout .stylex import to a deep path', () => {
-    const input = `import { container } from '../Layout/container.stylex';`;
-    expect(rewriteImports(input)).toBe(
-      `import { container } from '@astryxdesign/core/Layout/container.stylex';`,
-    );
-  });
-
-  it('rewrites a two-levels-up .stylex import to a deep path', () => {
-    const input = `import { focusOutlineProps } from '../../utils/focusOutline.stylex';`;
-    expect(rewriteImports(input)).toBe(
+  it('keeps focusOutline.stylex as a Core deep export', () => {
+    const vendoredStylex = new Map();
+    const input = `import { focusOutlineProps } from '../utils/focusOutline.stylex';`;
+    const result = rewriteImports(input, '@astryxdesign/core', {vendoredStylex});
+    expect(result).toBe(
       `import { focusOutlineProps } from '@astryxdesign/core/utils/focusOutline.stylex';`,
     );
+    expect(vendoredStylex.size).toBe(0);
+  });
+
+  it('vendors Layout/container.stylex locally (create-only)', () => {
+    const vendoredStylex = new Map();
+    const input = `import { container } from '../Layout/container.stylex';`;
+    const result = rewriteImports(input, '@astryxdesign/core', {vendoredStylex});
+    expect(result).toBe(
+      `import { container } from './container.stylex';`,
+    );
+    expect(vendoredStylex.size).toBe(1);
   });
 });
 
@@ -121,37 +149,41 @@ describe('swizzle() API', () => {
   });
 });
 
-describe('swizzle rewriteImports compiles for components with .stylex imports', () => {
-  it('Button: every rewritten import resolves in the core exports map', async () => {
-    const corePkg = JSON.parse(
-      fs.readFileSync(
-        path.join(REPO, 'packages/core/package.json'),
-        'utf-8',
-      ),
-    );
-    const exportKeys = new Set(Object.keys(corePkg.exports));
-
-    const buttonDir = path.join(REPO, 'packages/core/src/Button');
-    const files = fs.readdirSync(buttonDir).filter(
-      f => (f.endsWith('.ts') || f.endsWith('.tsx')) && !f.includes('.test.') && !f.includes('.doc.'),
-    );
-
-    for (const file of files) {
-      const content = fs.readFileSync(path.join(buttonDir, file), 'utf-8');
-      const rewritten = rewriteImports(content);
-
-      // Extract all rewritten @astryxdesign/core/* imports
-      const importRe = /from ['"](@astryxdesign\/core\/[^'"]+)['"]/g;
-      let m;
-      while ((m = importRe.exec(rewritten)) !== null) {
-        const specifier = m[1];
-        const subpath = './' + specifier.replace('@astryxdesign/core/', '');
-
-        expect(
-          exportKeys.has(subpath),
-          `${specifier} (subpath ${subpath}) must resolve in core exports`,
-        ).toBe(true);
+describe('swizzle vendors .stylex dependencies for compilable output', () => {
+  it('swizzle Button vendors its cross-directory .stylex imports', async () => {
+    const outputName = '.astryx-swizzle-vendor-test-' + Date.now();
+    try {
+      const r = await (await import('./swizzle.mjs')).swizzle('Button', {
+        cwd: REPO,
+        output: outputName,
+      });
+      expect(r.type).toBe('swizzle.copy');
+      const outDir = path.join(REPO, outputName, 'Button');
+      const files = fs.readdirSync(outDir);
+      // Should have vendored .stylex files alongside the component
+      const vendored = files.filter(f => f.endsWith('.stylex.ts') && !f.startsWith('Button'));
+      expect(vendored.length).toBeGreaterThan(0);
+      // Each vendored file should exist and contain StyleX
+      for (const v of vendored) {
+        const content = fs.readFileSync(path.join(outDir, v), 'utf-8');
+        expect(content).toContain('stylex');
       }
+      // The main Button file should import them locally
+      const buttonContent = fs.readFileSync(
+        path.join(outDir, 'Button.tsx'),
+        'utf-8',
+      );
+      // Should NOT have deep @astryxdesign/core paths for create-only modules
+      expect(buttonContent).not.toMatch(/@astryxdesign\/core\/Icon\/IconSize\.stylex/);
+      expect(buttonContent).not.toMatch(/@astryxdesign\/core\/Layout\/edgeCompensation\.stylex/);
+      // Should have local ./foo.stylex for vendored create-only modules
+      expect(buttonContent).toContain("from './IconSize.stylex'");
+      expect(buttonContent).toContain("from './edgeCompensation.stylex'");
+      // Should KEEP Core deep export for defineVars modules (theme overrides)
+      expect(buttonContent).toContain("from '@astryxdesign/core/utils/interactionOverlay.stylex'");
+      expect(buttonContent).toContain("from '@astryxdesign/core/utils/focusOutline.stylex'");
+    } finally {
+      fs.rmSync(path.join(REPO, outputName), {recursive: true, force: true});
     }
   });
 });
