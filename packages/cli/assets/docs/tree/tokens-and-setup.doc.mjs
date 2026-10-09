@@ -15,13 +15,7 @@ export const docs = {
   category: 'guide',
   description:
     'Using design tokens in custom styles and configuring a StyleX compiler for swizzled components.',
-  keywords: [
-    'StyleX setup',
-    'swizzle',
-    'webpack',
-    'Vite',
-    'Next.js',
-  ],
+  keywords: ['StyleX setup', 'swizzle', 'webpack', 'Vite', 'Next.js'],
 
   sections: [
     {
@@ -77,30 +71,40 @@ const styles = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'Astryx components ship pre-compiled, so consuming the published package needs no StyleX setup. But `astryx swizzle <Component>` copies the raw StyleX *source* into your app, and StyleX source requires a build-time StyleX compiler to produce atomic CSS. Without one the component compiles but renders completely unstyled: no error, no warning. If a swizzled component looks unstyled, a missing StyleX compiler is almost always why. The same applies if you author your own StyleX with `stylex.create()`.',
+          text: "Astryx components ship pre-compiled, so consuming the published package needs no StyleX setup. But `astryx swizzle <Component>` copies the raw StyleX *source* into your app, and StyleX source requires a build-time StyleX compiler to produce atomic CSS. Without one, importing the component throws an error that starts `Unexpected 'stylex.create' call at runtime`, and the page does not render. If a swizzled component throws that error, the app is missing a StyleX compiler. The same applies if you author your own StyleX with `stylex.create()`.",
         },
         {
           type: 'table',
           headers: ['Bundler', 'StyleX plugin'],
           rows: [
             ['Webpack', '@stylexjs/webpack-plugin'],
-            ['Vite / Rollup', '@stylexjs/rollup-plugin (or a community Vite plugin)'],
-            ['Babel (any bundler)', '@stylexjs/babel-plugin + @stylexjs/postcss-plugin'],
-            ['Next.js (App Router, SWC)', 'An SWC-based transform; see the Next.js note below'],
+            [
+              'Vite / Rollup',
+              '@stylexjs/rollup-plugin (or a community Vite plugin)',
+            ],
+            [
+              'Babel (any bundler)',
+              '@stylexjs/babel-plugin + @stylexjs/postcss-plugin',
+            ],
+            [
+              'Next.js (App Router, SWC)',
+              'An SWC-based transform; see the Next.js note below',
+            ],
           ],
         },
         {
           type: 'prose',
-          text: 'Next.js (App Router) is the sharp edge. StyleX\'s canonical compiler is a Babel plugin, but introducing a Babel config in Next.js disables the SWC compiler, and with it SWC-dependent features like `next/font`.',
+          text: "Next.js (App Router) is the sharp edge. StyleX's canonical compiler is a Babel plugin, but introducing a Babel config in Next.js disables the SWC compiler, and with it SWC-dependent features like `next/font`.",
         },
         {
           type: 'prose',
-          text: 'The repo\'s `apps/example-nextjs-stylex` takes the Babel path (`next/babel`, `@stylexjs/babel-plugin`, `@stylexjs/postcss-plugin`). Babel turns off SWC, so that app does not use `next/font`. To keep `next/font`, use an SWC transform such as `@stylexswc/nextjs-plugin`.',
+          text: "The repo's `apps/example-nextjs-stylex` takes the Babel path (`next/babel`, `@stylexjs/babel-plugin`, `@stylexjs/postcss-plugin`). Babel turns off SWC, so that app does not use `next/font`. To keep `next/font`, use an SWC transform such as `@stylexswc/nextjs-plugin`.",
         },
         {
           type: 'code',
           lang: 'js',
-          label: 'next.config.mjs: SWC-based StyleX transform (keeps next/font working)',
+          label:
+            'next.config.mjs: SWC-based StyleX transform (keeps next/font working)',
           code: `import stylexPlugin from '@stylexswc/nextjs-plugin';
 
 export default stylexPlugin({
