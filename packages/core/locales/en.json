@@ -535,6 +535,122 @@
     "defaultMessage": "Copy link to {heading}",
     "description": "Accessible name on the Markdown heading copy button in its default state. `{heading}` is the heading's plain text, or its generated id when the text is empty; pairs with `markdownHeadingLinks.copied`."
   },
+  "@astryx.richTextEditor.tabEscapeHint": {
+    "defaultMessage": "Press Escape then Tab to move focus out of the editor.",
+    "description": "Screen-reader-only hint attached to the RichTextEditor text area. Tab indents text inside the editor, so this tells keyboard users the two-key sequence that moves focus out of it."
+  },
+  "@astryx.richTextEditor.toolbar.label": {
+    "defaultMessage": "Text formatting",
+    "description": "Accessible name of the formatting toolbar above a RichTextEditor."
+  },
+  "@astryx.richTextEditor.toolbar.actions": {
+    "defaultMessage": "Formatting actions",
+    "description": "Accessible name of the group that holds every formatting control in the RichTextEditor toolbar."
+  },
+  "@astryx.richTextEditor.toolbar.undo": {
+    "defaultMessage": "Undo",
+    "description": "Label and tooltip of the toolbar button that undoes the last edit in a RichTextEditor."
+  },
+  "@astryx.richTextEditor.toolbar.redo": {
+    "defaultMessage": "Redo",
+    "description": "Label and tooltip of the toolbar button that redoes the last undone edit in a RichTextEditor."
+  },
+  "@astryx.richTextEditor.toolbar.historyDivider": {
+    "defaultMessage": "History and block formats",
+    "description": "Screen-reader name of the divider between the undo/redo buttons and the block-format menu in the RichTextEditor toolbar."
+  },
+  "@astryx.richTextEditor.toolbar.blockFormat": {
+    "defaultMessage": "Block format",
+    "description": "Visually hidden label of the RichTextEditor toolbar menu that turns the current block into a paragraph, heading, list, or quote."
+  },
+  "@astryx.richTextEditor.toolbar.formatDivider": {
+    "defaultMessage": "Block and inline formats",
+    "description": "Screen-reader name of the divider between the block-format menu and the bold/italic/etc. buttons in the RichTextEditor toolbar."
+  },
+  "@astryx.richTextEditor.toolbar.paragraph": {
+    "defaultMessage": "Paragraph",
+    "description": "Block-format menu option: plain body text."
+  },
+  "@astryx.richTextEditor.toolbar.heading1": {
+    "defaultMessage": "Heading 1",
+    "description": "Block-format menu option: top-level heading."
+  },
+  "@astryx.richTextEditor.toolbar.heading2": {
+    "defaultMessage": "Heading 2",
+    "description": "Block-format menu option: second-level heading."
+  },
+  "@astryx.richTextEditor.toolbar.heading3": {
+    "defaultMessage": "Heading 3",
+    "description": "Block-format menu option: third-level heading."
+  },
+  "@astryx.richTextEditor.toolbar.bulletedList": {
+    "defaultMessage": "Bulleted list",
+    "description": "Block-format menu option: a list whose items start with bullet markers."
+  },
+  "@astryx.richTextEditor.toolbar.numberedList": {
+    "defaultMessage": "Numbered list",
+    "description": "Block-format menu option: a list whose items are numbered."
+  },
+  "@astryx.richTextEditor.toolbar.blockQuote": {
+    "defaultMessage": "Block quote",
+    "description": "Block-format menu option: an indented quotation block."
+  },
+  "@astryx.richTextEditor.toolbar.bold": {
+    "defaultMessage": "Bold",
+    "description": "Label of the toolbar toggle that makes selected text bold."
+  },
+  "@astryx.richTextEditor.toolbar.italic": {
+    "defaultMessage": "Italic",
+    "description": "Label of the toolbar toggle that makes selected text italic."
+  },
+  "@astryx.richTextEditor.toolbar.underline": {
+    "defaultMessage": "Underline",
+    "description": "Label of the toolbar toggle that underlines selected text."
+  },
+  "@astryx.richTextEditor.toolbar.strikethrough": {
+    "defaultMessage": "Strikethrough",
+    "description": "Label of the toolbar toggle that strikes a line through selected text."
+  },
+  "@astryx.richTextEditor.toolbar.inlineCode": {
+    "defaultMessage": "Inline code",
+    "description": "Label of the toolbar toggle that formats selected text as source code inside a sentence."
+  },
+  "@astryx.richTextEditor.toolbar.link": {
+    "defaultMessage": "Link",
+    "description": "Label of the toolbar toggle that opens the dialog to add or edit a link on selected text."
+  },
+  "@astryx.richTextEditor.link.insertTitle": {
+    "defaultMessage": "Insert link",
+    "description": "Title of the RichTextEditor dialog that adds a new link."
+  },
+  "@astryx.richTextEditor.link.editTitle": {
+    "defaultMessage": "Edit link",
+    "description": "Title of the RichTextEditor dialog that changes or removes an existing link."
+  },
+  "@astryx.richTextEditor.link.url": {
+    "defaultMessage": "URL",
+    "description": "Label of the web address field in the RichTextEditor link dialog."
+  },
+  "@astryx.richTextEditor.link.invalidUrl": {
+    "defaultMessage": "Enter a valid http, https, mailto, or tel URL.",
+    "description": "Error under the link dialog address field when the entered address is not allowed. Keep the scheme names http, https, mailto, and tel untranslated."
+  },
+  "@astryx.richTextEditor.link.remove": {
+    "defaultMessage": "Remove link",
+    "description": "Button in the RichTextEditor link dialog that removes the link from the selected text and keeps the text."
+  },
+  "@astryx.richTextEditor.link.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes the RichTextEditor link dialog without changing anything."
+  },
+  "@astryx.richTextEditor.link.add": {
+    "defaultMessage": "Add link",
+    "description": "Submit button of the RichTextEditor link dialog when adding a new link."
+  },
+  "@astryx.richTextEditor.link.update": {
+    "defaultMessage": "Update link",
+    "description": "Submit button of the RichTextEditor link dialog when changing an existing link address."
+  },
   "@astryx.markdown.taskList": {
     "defaultMessage": "Task list",
     "description": "Screen-reader-only accessible name for a GitHub-flavored Markdown task list (rendered from `- [ ] item` / `- [x] done` syntax)."

@@ -135,8 +135,9 @@ export const docs = {
       name: 'tabEscapeHint',
       type: 'string',
       description:
-        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Override to localize; pass "" to omit.',
-      default: "'Press Escape then Tab to move focus out of the editor.'",
+        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Translated for the active locale; override to change the text, or pass "" to omit.',
+      default:
+        "'Press Escape then Tab to move focus out of the editor.' (translated)",
     },
     {
       name: 'maxLength',
