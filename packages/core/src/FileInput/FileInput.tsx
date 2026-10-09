@@ -427,6 +427,7 @@ export interface FileInputProps extends Omit<
  * ```
  */
 export function FileInput({
+  id: _id,
   label,
   isLabelHidden = false,
   value,
@@ -455,7 +456,8 @@ export function FileInput({
   ...rest
 }: FileInputProps) {
   const t = useTranslator();
-  const id = useId();
+  const generatedId = useId();
+  const id = _id || generatedId;
   const descriptionID = useId();
   const statusMessageID = useId();
   const requiredID = useId();

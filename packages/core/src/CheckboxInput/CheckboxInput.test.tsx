@@ -209,6 +209,40 @@ describe('CheckboxInput', () => {
     );
   });
 
+  it('preserves a caller-provided id on the input and its label', () => {
+    render(
+      <CheckboxInput
+        id="accept-terms"
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toHaveAttribute('id', 'accept-terms');
+    expect(screen.getByText('Accept terms').closest('label')).toHaveAttribute(
+      'for',
+      'accept-terms',
+    );
+    expect(screen.getByLabelText('Accept terms')).toBe(checkbox);
+  });
+
+  it('uses a generated id when the caller id is empty', () => {
+    render(
+      <CheckboxInput
+        id=""
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox.id).not.toBe('');
+    expect(screen.getByLabelText('Accept terms')).toBe(checkbox);
+  });
+
   it('forwards arbitrary data-* attributes to the input', () => {
     render(
       <CheckboxInput
