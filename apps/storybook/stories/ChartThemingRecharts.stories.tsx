@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {expect, waitFor} from 'storybook/test';
+import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {Button, Card, Stack, Text} from '@astryxdesign/core';
 import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
 import {Heading} from '@astryxdesign/core/Text';
@@ -79,10 +79,10 @@ const axisTickStyle = {
 };
 
 function ThemeAwareRechartsExample({
-  showActiveState = false,
+  highlightRevenue = false,
   useThemeRadius = true,
 }: {
-  showActiveState?: boolean;
+  highlightRevenue?: boolean;
   useThemeRadius?: boolean;
 } = {}) {
   const {token} = useTheme();
@@ -95,8 +95,8 @@ function ThemeAwareRechartsExample({
         <Stack direction="vertical" gap={1}>
           <Heading level={3}>Quarterly performance</Heading>
           <Text type="supporting" color="secondary">
-            Recharts uses the active Astryx theme for series, typography, hover,
-            tooltip radius, and bar radius.
+            Recharts uses the active Astryx theme for series, typography, active
+            state, tooltip radius, and bar radius.
           </Text>
         </Stack>
         <div
@@ -128,7 +128,6 @@ function ThemeAwareRechartsExample({
               />
               <YAxis axisLine={false} tick={axisTickStyle} tickLine={false} />
               <Tooltip
-                defaultIndex={showActiveState ? 0 : undefined}
                 contentStyle={{
                   background: colorVars['--color-background-card'],
                   borderColor: colorVars['--color-border'],
@@ -153,10 +152,16 @@ function ThemeAwareRechartsExample({
                   strokeWidth: 2,
                 }}
                 dataKey="revenue"
-                fill={series.revenue}
+                fill={highlightRevenue ? hoverSeries.revenue : series.revenue}
                 isAnimationActive={false}
                 name="Revenue"
                 radius={[barRadius, barRadius, 0, 0]}
+                stroke={
+                  highlightRevenue
+                    ? colorVars['--color-border-emphasized']
+                    : undefined
+                }
+                strokeWidth={highlightRevenue ? 2 : undefined}
               />
               <Bar
                 activeBar={{
@@ -200,6 +205,21 @@ function RuntimeThemeSwitchExample() {
         <ThemeAwareRechartsExample />
       </Stack>
     </Theme>
+  );
+}
+
+function ThemeTokensExample() {
+  const [highlightRevenue, setHighlightRevenue] = useState(false);
+  return (
+    <Stack direction="vertical" gap={3}>
+      <Button
+        label={
+          highlightRevenue ? 'Clear Revenue highlight' : 'Highlight Revenue'
+        }
+        onClick={() => setHighlightRevenue(current => !current)}
+      />
+      <ThemeAwareRechartsExample highlightRevenue={highlightRevenue} />
+    </Stack>
   );
 }
 
@@ -251,7 +271,7 @@ function resolveSvgFill(reference: SVGElement, fill: string): string {
 }
 
 export const ThemeTokens: Story = {
-  render: () => <ThemeAwareRechartsExample showActiveState />,
+  render: () => <ThemeTokensExample />,
   play: async ({canvasElement}) => {
     const restingFills = await barFills(canvasElement);
     const revenueBar = canvasElement.querySelector<SVGElement>(
@@ -264,14 +284,26 @@ export const ThemeTokens: Story = {
         hoverSeries.revenue,
       );
       expect(expectedActiveFill).not.toBe(restingFills.revenue);
+      await userEvent.click(
+        within(canvasElement).getByRole('button', {
+          name: 'Highlight Revenue',
+        }),
+      );
       await waitFor(() => {
-        const activeBar = Array.from(
-          canvasElement.querySelectorAll<SVGElement>('.recharts-active-bar'),
+        const highlightedRevenueBar = Array.from(
+          canvasElement.querySelectorAll<SVGElement>(
+            '.recharts-bar-rectangle path',
+          ),
         ).find(bar => bar.getAttribute('fill') === hoverSeries.revenue);
-        expect(activeBar).not.toBeUndefined();
-        if (activeBar) {
-          expect(activeBar.getAttribute('fill')).toBe(hoverSeries.revenue);
-          expect(getComputedStyle(activeBar).fill).toBe(expectedActiveFill);
+        expect(highlightedRevenueBar).not.toBeUndefined();
+        if (highlightedRevenueBar) {
+          expect(getComputedStyle(highlightedRevenueBar).fill).toBe(
+            expectedActiveFill,
+          );
+          expect(highlightedRevenueBar).toHaveAttribute(
+            'stroke',
+            colorVars['--color-border-emphasized'],
+          );
         }
       });
     }
