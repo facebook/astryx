@@ -1200,3 +1200,164 @@ describe('swipeActions', () => {
     }
   });
 });
+
+describe('controlProps', () => {
+  it('reaches the invisible button: states, relations, marks, key handling and the roving tabIndex', async () => {
+    const onKeyDown = vi.fn();
+    render(
+      <Item
+        label="Views"
+        onClick={vi.fn()}
+        controlProps={{
+          'aria-expanded': true,
+          'aria-haspopup': 'menu',
+          'aria-controls': 'views-menu',
+          'data-nav-id': 'row-1',
+          onKeyDown,
+          tabIndex: -1,
+        }}
+      />,
+    );
+    const control = screen.getByRole('button', {name: 'Views'});
+    expect(control).toHaveAttribute('aria-expanded', 'true');
+    expect(control).toHaveAttribute('aria-haspopup', 'menu');
+    expect(control).toHaveAttribute('aria-controls', 'views-menu');
+    expect(control).toHaveAttribute('data-nav-id', 'row-1');
+    expect(control).toHaveAttribute('tabindex', '-1');
+    // The root carries none of them.
+    const root = control.parentElement as HTMLElement;
+    expect(root).not.toHaveAttribute('aria-expanded');
+    expect(root).not.toHaveAttribute('data-nav-id');
+    fireEvent.keyDown(control, {key: 'ArrowDown'});
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    // The control is still the row's button: type and click are the row's.
+    expect(control).toHaveAttribute('type', 'button');
+  });
+
+  it('reaches the invisible anchor, and the row keeps the address, the target and the rel', () => {
+    render(
+      <Item
+        label="Message"
+        href="/m/1"
+        target="_blank"
+        controlProps={{
+          'aria-describedby': 'hint',
+          'data-nav-id': 'row-2',
+          tabIndex: 0,
+        }}
+      />,
+    );
+    const link = screen.getByRole('link', {name: 'Message'});
+    expect(link).toHaveAttribute('href', '/m/1');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(link).toHaveAttribute('aria-describedby', 'hint');
+    expect(link).toHaveAttribute('data-nav-id', 'row-2');
+    expect(link).toHaveAttribute('tabindex', '0');
+  });
+
+  it('gives a name of its own to the control, not the root', () => {
+    render(
+      <Item
+        label={<span aria-hidden="true">★</span>}
+        onClick={vi.fn()}
+        controlProps={{'aria-label': 'Star this message'}}
+      />,
+    );
+    expect(
+      screen.getByRole('button', {name: 'Star this message'}),
+    ).toBeInTheDocument();
+  });
+
+  it('a disabled row keeps its own tabIndex and aria-disabled over the caller\x27s', () => {
+    render(
+      <Item
+        label="Message"
+        href="/m/1"
+        isDisabled
+        controlProps={{tabIndex: 0, 'aria-disabled': false}}
+      />,
+    );
+    // A disabled anchor is out of the tab order and says so.
+    const link = screen.getByText('Message').closest('a') as HTMLElement;
+    expect(link).toHaveAttribute('tabindex', '-1');
+    expect(link).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('lands on the root when the root is the link', () => {
+    const LinkRoot = ({href, children, ...rest}: React.ComponentProps<'a'>) => (
+      <a href={href} {...rest}>
+        {children}
+      </a>
+    );
+    render(
+      <Item
+        as={LinkRoot}
+        role="menuitem"
+        label="Docs"
+        href="/docs"
+        controlProps={{'data-nav-id': 'row-3', 'aria-keyshortcuts': 'd'}}
+      />,
+    );
+    const root = screen.getByRole('menuitem', {name: 'Docs'});
+    expect(root.tagName).toBe('A');
+    expect(root).toHaveAttribute('data-nav-id', 'row-3');
+    expect(root).toHaveAttribute('aria-keyshortcuts', 'd');
+  });
+
+  it('warns in development, and lands nowhere, when the row renders no control', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const {unmount} = render(
+        <Item
+          role="menuitem"
+          label="Views"
+          onClick={vi.fn()}
+          controlProps={{'aria-expanded': true}}
+        />,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('controlProps'),
+      );
+      expect(screen.getByRole('menuitem')).not.toHaveAttribute('aria-expanded');
+      unmount();
+      warn.mockClear();
+      function Delegating() {
+        const inputRef = useRef<HTMLInputElement>(null);
+        return (
+          <Item
+            label="Pick"
+            interactiveRef={inputRef}
+            startContent={
+              <input ref={inputRef} type="checkbox" aria-label="Pick" />
+            }
+            controlProps={{'data-nav-id': 'x'}}
+          />
+        );
+      }
+      render(<Delegating />);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('controlProps'),
+      );
+      expect(document.querySelector('[data-nav-id]')).toBeNull();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('does not warn when the control is rendered', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <Item
+          label="Views"
+          onClick={vi.fn()}
+          controlProps={{'aria-expanded': false}}
+        />,
+      );
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});
