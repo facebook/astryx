@@ -458,7 +458,7 @@ export function RevenueChart({data}) {
         },
         {
           type: 'prose',
-          text: 'The default Recharts legend mainly mirrors series color. When a pattern, marker shape, or dash style carries series identity, pass a product-owned renderer through `Legend.content` and draw the same cue in each legend key. Keep SVG pattern IDs unique across the plot and legend.',
+          text: 'The default Recharts legend mainly mirrors series color. When a pattern, marker shape, or dash style carries series identity, pass a product-owned renderer through `Legend.content` and draw the same cue in each legend key. Keep SVG pattern IDs unique across the whole document, not only between the plot and legend: `url(#id)` resolves document-wide. Derive IDs per chart instance, for example from React’s `useId`.',
         },
         {
           type: 'prose',
