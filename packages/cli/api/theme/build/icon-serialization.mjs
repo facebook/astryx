@@ -3,8 +3,9 @@
 /**
  * @file Lossless packaging guards for non-CSS Icon theme data.
  * @input Resolved/captured theme data and the selected Core's Icon namespace.
- * @output Plain-data JavaScript, selected-lineage rejection and a pure constructor witness.
- * @position Private CLI packaging helper; Core owns Icon grammar and normalization.
+ * @output Plain-data JavaScript, structural role/state admission, selected-lineage rejection
+ *   and a pure constructor witness that does not prove individual field support.
+ * @position Private CLI packaging helper; Core owns capability membership and normalization.
  */
 
 import {AstryxError} from '../../error.mjs';
@@ -20,9 +21,10 @@ function invalid(message) {
  * artwork and renderers remain imported references, never serialized functions.
  * @param {unknown} value
  * @param {string} label
+ * @param {{allowHidden?: boolean}} [options] Captured own data is normalized to enumerable fields.
  * @returns {string}
  */
-export function serializeIconData(value, label) {
+export function serializeIconData(value, label, {allowHidden = false} = {}) {
   /** @param {unknown} item @param {string} location @param {Set<object>} ancestors @returns {string} */
   const visit = (item, location, ancestors) => {
     if (item === undefined) return 'undefined';
@@ -57,7 +59,7 @@ export function serializeIconData(value, label) {
         typeof key !== 'string' ||
         !descriptor ||
         !('value' in descriptor) ||
-        !descriptor.enumerable
+        (!descriptor.enumerable && !allowHidden)
       )
         invalid(`${location} must contain enumerable plain data fields.`);
       if (array && !/^(?:0|[1-9]\d*)$/u.test(key))
@@ -89,44 +91,135 @@ function dataField(value, key, label) {
 }
 
 /**
- * Reject unsupported component-role/state fields in the SELECTED raw lineage,
- * before an independently versioned Core can normalize them out of existence.
- * This is not a second policy grammar: Core validates supported engine fields.
- * The released baseline has no componentIcons runtime API; legacy slot contract
- * documentation is neither a runtime implementation nor role participation.
+ * Validate the own-data shape of role/state intent before a separately versioned
+ * Core can erase it. Membership in supplied size/appearance contracts and the
+ * shared IconName vocabulary remains Core's responsibility. Role/state keys
+ * never depend on which component declaration was imported first.
  * @param {any} theme @param {any[]} [lineage]
  */
 export function assertSupportedIconFields(theme, lineage = []) {
+  /** @param {any} value @param {string} label */
+  const record = (value, label) => {
+    if (
+      !value ||
+      typeof value !== 'object' ||
+      Array.isArray(value) ||
+      ![Object.prototype, null].includes(Object.getPrototypeOf(value))
+    )
+      invalid(`${label} must be a plain object.`);
+    serializeIconData(value, label, {allowHidden: true});
+  };
+  /** @param {any} value @param {string[]} allowed @param {string} label */
+  const keys = (value, allowed, label) => {
+    record(value, label);
+    if (
+      Reflect.ownKeys(value).some(
+        key => typeof key !== 'string' || !allowed.includes(key),
+      )
+    )
+      invalid(`${label} contains an unsupported field.`);
+  };
+  /** @param {string} name @param {string} label */
+  const roleName = (name, label) => {
+    if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/u.test(name))
+      invalid(`${label} keys must use component-kebab-semantic-role names.`);
+  };
+  /** @param {any} value @returns {boolean} */
+  const name = value =>
+    typeof value === 'string' && value.length > 0 && value.trim() === value;
   for (const input of new Set([theme, ...lineage])) {
     if (!input || typeof input !== 'object') continue;
-    if (Object.hasOwn(input, 'componentIcons'))
-      invalid(
-        'componentIcons is not supported by this Icon engine. Component-role mappings must not be silently dropped.',
-      );
+    const mapping = dataField(input, 'componentIcons', 'componentIcons');
+    if (mapping !== undefined) {
+      record(mapping, 'componentIcons');
+      for (const [slot, descriptor] of Object.entries(
+        Object.getOwnPropertyDescriptors(mapping),
+      )) {
+        const icon = descriptor.value;
+        roleName(slot, 'componentIcons');
+        if (
+          icon !== undefined &&
+          icon !== null &&
+          (!name(icon) || icon.includes(':'))
+        )
+          invalid('componentIcons maps slots to shared IconName or null.');
+      }
+    }
     const policy = dataField(input, 'iconCapabilities', 'iconCapabilities');
-    if (policy && typeof policy === 'object') {
-      if (Object.hasOwn(policy, 'roleSizeOverrides'))
-        invalid(
-          'iconCapabilities.roleSizeOverrides is not supported by this Icon engine.',
-        );
+    if (policy !== undefined) {
+      keys(
+        policy,
+        ['contract', 'sizeOverrides', 'roleSizeOverrides', 'presentation'],
+        'iconCapabilities',
+      );
+      const sizes = dataField(
+        policy,
+        'roleSizeOverrides',
+        'iconCapabilities.roleSizeOverrides',
+      );
+      if (sizes !== undefined) {
+        record(sizes, 'iconCapabilities.roleSizeOverrides');
+        for (const [role, descriptor] of Object.entries(
+          Object.getOwnPropertyDescriptors(sizes),
+        )) {
+          const size = descriptor.value;
+          roleName(role, 'iconCapabilities.roleSizeOverrides');
+          if (size !== undefined && size !== null && !name(size))
+            invalid(
+              'iconCapabilities.roleSizeOverrides maps roles to admitted size names or null.',
+            );
+        }
+      }
       const presentation = dataField(
         policy,
         'presentation',
         'iconCapabilities.presentation',
       );
-      if (
-        presentation &&
-        typeof presentation === 'object' &&
-        Object.hasOwn(presentation, 'byState')
-      )
-        invalid(
-          'iconCapabilities.presentation.byState is not supported by this Icon engine.',
+      if (presentation !== undefined && presentation !== null) {
+        keys(
+          presentation,
+          ['default', 'bySize', 'byState'],
+          'iconCapabilities.presentation',
         );
+        const states = dataField(
+          presentation,
+          'byState',
+          'iconCapabilities.presentation.byState',
+        );
+        if (states !== undefined) {
+          record(states, 'iconCapabilities.presentation.byState');
+          for (const [state, descriptor] of Object.entries(
+            Object.getOwnPropertyDescriptors(states),
+          )) {
+            const request = descriptor.value;
+            if (
+              !name(state) ||
+              [...state].some(character => {
+                const code = character.charCodeAt(0);
+                return code < 32 || code === 127;
+              }) ||
+              ['__proto__', 'constructor', 'prototype'].includes(state)
+            )
+              invalid(
+                'Icon presentation states must be safe nonempty finite names.',
+              );
+            if (request === undefined) continue;
+            keys(
+              request,
+              ['appearance'],
+              'iconCapabilities.presentation.byState request',
+            );
+            if (request.appearance !== undefined && !name(request.appearance))
+              invalid(
+                'Icon state presentation accepts only an admitted appearance.',
+              );
+          }
+        }
+      }
     }
-    for (const field of ['iconCapabilities', '__iconContracts']) {
-      const value = dataField(input, field, field);
-      if (value !== undefined) serializeIconData(value, field);
-    }
+    const contracts = dataField(input, '__iconContracts', '__iconContracts');
+    if (contracts !== undefined)
+      serializeIconData(contracts, '__iconContracts');
     // Sources may contain React elements/functions. Check only the outer
     // descriptors here; their actual tree grammar belongs to Core defineTheme.
     dataField(input, 'icons', 'icons');
@@ -137,7 +230,12 @@ export function assertSupportedIconFields(theme, lineage = []) {
 /** @param {any} theme @returns {boolean} */
 export function hasIconCapabilityIntent(theme) {
   if (!theme || typeof theme !== 'object') return false;
-  for (const key of ['iconCapabilities', '__iconSources', '__iconContracts']) {
+  for (const key of [
+    'componentIcons',
+    'iconCapabilities',
+    '__iconSources',
+    '__iconContracts',
+  ]) {
     const descriptor = Object.getOwnPropertyDescriptor(theme, key);
     if (
       descriptor &&
@@ -213,10 +311,76 @@ export function assertRetainedIconInput(theme, inputs, core) {
   };
   const policyFields = new Set(),
     sizes = new Set(),
+    roleSizes = new Set(),
+    componentSlots = new Set(),
     sources = new Set();
+  let componentMapSeen = false,
+    roleSizeMapSeen = false;
   const policy = dataField(theme, 'iconCapabilities', 'iconCapabilities');
   for (const [index, input] of inputs.entries()) {
+    const mapping = dataField(input, 'componentIcons', 'componentIcons');
+    if (mapping !== undefined) {
+      const actual = dataField(theme, 'componentIcons', 'componentIcons');
+      if (!componentMapSeen) {
+        componentMapSeen = true;
+        requireRetained(actual !== undefined);
+      }
+      for (const [slot, descriptor] of Object.entries(
+        Object.getOwnPropertyDescriptors(mapping),
+      )) {
+        if (
+          !('value' in descriptor) ||
+          descriptor.value === undefined ||
+          componentSlots.has(slot)
+        )
+          continue;
+        componentSlots.add(slot);
+        requireRetained(
+          retains(
+            dataField(actual, slot, `componentIcons.${slot}`),
+            descriptor.value,
+          ),
+        );
+      }
+    }
     const authored = dataField(input, 'iconCapabilities', 'iconCapabilities');
+    const roles = dataField(
+      authored,
+      'roleSizeOverrides',
+      'iconCapabilities.roleSizeOverrides',
+    );
+    if (roles !== undefined) {
+      const actual = dataField(
+        policy,
+        'roleSizeOverrides',
+        'iconCapabilities.roleSizeOverrides',
+      );
+      if (!roleSizeMapSeen) {
+        roleSizeMapSeen = true;
+        requireRetained(actual !== undefined);
+      }
+      for (const [role, descriptor] of Object.entries(
+        Object.getOwnPropertyDescriptors(roles),
+      )) {
+        if (
+          !('value' in descriptor) ||
+          descriptor.value === undefined ||
+          roleSizes.has(role)
+        )
+          continue;
+        roleSizes.add(role);
+        requireRetained(
+          retains(
+            dataField(
+              actual,
+              role,
+              `iconCapabilities.roleSizeOverrides.${role}`,
+            ),
+            descriptor.value,
+          ),
+        );
+      }
+    }
     for (const field of ['contract', 'presentation']) {
       const value = dataField(authored, field, `iconCapabilities.${field}`);
       if (value === undefined || policyFields.has(field)) continue;

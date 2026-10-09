@@ -2,9 +2,9 @@
 
 /**
  * @file Icon consumer documentation
- * @input Semantic/direct artwork, independent requests and active theme defaults
- * @output Public props, sizing and accessible-name guidance
- * @position Builder-facing Icon reference; no component participation policy
+ * @input Semantic/direct artwork, independent requests and owner-declared role policy
+ * @output Public props, sizing, finite role/state boundaries and accessible-name guidance
+ * @position Builder-facing source contract; component participation remains owner-declared
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
@@ -57,14 +57,14 @@ export const docs = {
       name: 'size',
       type: 'IconSize',
       description:
-        'Built-in xsm/sm/md/lg or an admitted application icon-size name. An explicit value wins; otherwise the nearest owning-component default wins, then md. Explicit and standalone icons use active theme dimension overrides. Implicit built-in sizes inside existing components keep their released rem scaling; omitted overrides and built-in null clears keep that scaling too.',
+        'Built-in xsm/sm/md/lg or an admitted application icon-size name. An explicit value wins. In an explicitly participating component role, the theme roleSizeOverrides choice wins over the owner default; otherwise the nearest owning-component default wins, then md. Explicit and standalone icons use active theme dimension overrides. Implicit built-in sizes inside existing, nonparticipating components keep their released rem scaling; omitted overrides and built-in null clears keep that scaling too.',
       default: "Contextual; otherwise 'md'",
     },
     {
       name: 'appearance',
       type: 'IconAppearance',
       description:
-        'An admitted supplied-artwork appearance. Explicit intent wins over the theme default or per-size choice. Unsupported branches fall back to supplied artwork; ordinary direct SVG components do not receive this prop.',
+        "An admitted supplied-artwork appearance. Explicit intent wins over the participating role's effective-state choice, then per-size choice, then theme default. Unsupported branches fall back to supplied artwork; ordinary direct SVG components do not receive this prop.",
     },
     {
       name: 'weight',
@@ -102,6 +102,11 @@ export const docs = {
         guidance: true,
         description:
           "Override icons through the theme, not globally: defineTheme({icons: {close: <XMarkIcon />}}) scopes the swap to the active <Theme>, and extends shallow-merges it into derived themes. registerIcons() mutates a process-wide registry and warns in dev, so keep it for app bootstrap rather than making it a library's theming seam.",
+      },
+      {
+        guidance: true,
+        description:
+          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. No Core component is enrolled by this source contract. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
       },
       {
         guidance: true,
@@ -174,14 +179,14 @@ export const docsZh = {
       name: 'size',
       type: 'IconSize',
       description:
-        '内置 xsm/sm/md/lg 或应用声明的图标尺寸名称。显式值优先，其次为所属组件的默认值，最后为 md。显式尺寸和独立图标使用当前主题的尺寸覆盖；现有组件隐式提供的内置尺寸保留原有 rem 缩放。省略覆盖或将内置尺寸覆盖设为 null 时也保留原有缩放。',
+        '内置 xsm/sm/md/lg 或应用声明的图标尺寸名称。显式值优先；明确参与的组件角色先使用主题 roleSizeOverrides，再使用角色默认值。其他情况使用所属组件默认值，最后为 md。显式尺寸和独立图标使用当前主题的尺寸覆盖；未参与角色协议的现有组件隐式提供的内置尺寸保留原有 rem 缩放。省略覆盖或将内置尺寸覆盖设为 null 时也保留原有缩放。',
       default: "上下文默认值；否则为 'md'",
     },
     {
       name: 'appearance',
       type: 'IconAppearance',
       description:
-        '已声明的图标外观。显式请求优先于主题默认值或按尺寸设置的值；没有对应分支时使用提供的回退图形。普通直接 SVG 组件不会收到此属性。',
+        '已声明的图标外观。显式请求优先，其次为参与角色的有效状态、按最终尺寸设置的值、主题默认值。没有对应分支时使用提供的回退图形。普通直接 SVG 组件不会收到此属性。',
     },
     {
       name: 'weight',
@@ -213,6 +218,11 @@ export const docsZh = {
         guidance: true,
         description:
           'Use semantic icon names when available; they adapt to theme changes automatically.',
+      },
+      {
+        guidance: true,
+        description:
+          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. No Core component is enrolled by this source contract. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
       },
       {
         guidance: true,
@@ -280,6 +290,11 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          'Component source slots map to shared IconName or null through componentIcons. A {slot: true} declaration changes only source selection. Finite states participate only after the owner calls declareComponentIconRole with a typed defaultSize and exhaustive statePrecedence; the active theme validates the resolved size. getComponentIconState selects the first active state, or undefined. No Core component is enrolled by this source contract. Icon has no new slot, state, request or defaultSize props; role rendering stays private. See astryx docs icons for the focused contract.',
+      },
+      {
+        guidance: true,
+        description:
           'Pair icons with text labels for accessibility; icon-only elements need an accessible label.',
       },
       {
@@ -327,9 +342,9 @@ export const docsDense = {
   propDescriptions: {
     icon: 'Semantic icon name or SVG component. Valid names: close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, upload, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone. For others, pass an SVG component.',
     color: 'Color variant mapped to Astryx icon color tokens.',
-    size: "admitted icon size; explicit/standalone theme overrides apply; implicit existing-component built-ins and omitted/null overrides retain rem scaling; default context, then 'md'",
+    size: 'admitted icon size; explicit wins, then participating theme role size/owner default or legacy context, then md; nonparticipating implicit built-ins retain rem scaling',
     appearance:
-      'Admitted supplied-artwork appearance; explicit beats theme default/bySize; not forwarded to ordinary direct SVGs.',
+      'Admitted supplied-artwork appearance; explicit > participating effective state > bySize > default; not forwarded to ordinary direct SVGs.',
     weight:
       'Admitted exact/range artwork weight; explicit beats theme default/bySize; fractional range values preserved; not forwarded to ordinary direct SVGs.',
     label:

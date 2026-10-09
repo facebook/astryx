@@ -2,12 +2,14 @@
 
 /**
  * @file index.ts
- * @input Icon rendering, actual node registry reads and pure capability constructors
- * @output Released Icon APIs, independent presentation types and local adaptive authoring
+ * @input Icon rendering, actual node registry reads, capability constructors and owner slot declarations
+ * @output Released Icon APIs plus canonical source-only slots and finite role/state authoring
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  *
  * SYNC: When modified, update this header and /packages/core/src/Icon/Icon.doc.mjs
  */
+import type {IconName} from './globalIconRegistry';
+
 export {Icon, renderIconSlot} from './Icon';
 export {useIcon} from './useIcon';
 export type {IconProps, IconColor, IconSize, IconType} from './Icon';
@@ -55,3 +57,36 @@ export type {
 /** Explicit library contract declarations; this type never installs runtime capabilities. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Intentional declaration-merging map owned by contributing libraries.
 export interface IconCapabilityMap {}
+
+/** Canonical owner augmented by component libraries. `{slot: true}` stays source-only. */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- No Core component is enrolled by this infrastructure change.
+export interface ComponentIconSlotMap {}
+export type ComponentIconSlotName = keyof ComponentIconSlotMap & string;
+type FiniteStates<T> = T extends {
+  slot: true;
+  states: infer State extends string;
+}
+  ? string extends State
+    ? never
+    : State
+  : never;
+export type ComponentIconStateName<
+  Slot extends ComponentIconSlotName = ComponentIconSlotName,
+> = FiniteStates<ComponentIconSlotMap[Slot]>;
+export type ParticipatingComponentIconSlotName = {
+  [Slot in ComponentIconSlotName]: [
+    FiniteStates<ComponentIconSlotMap[Slot]>,
+  ] extends [never]
+    ? never
+    : Slot;
+}[ComponentIconSlotName];
+export type ComponentIconMap = [ComponentIconSlotName] extends [never]
+  ? Record<string, never>
+  : Partial<Record<ComponentIconSlotName, IconName | null>>;
+export {getComponentIconName, getComponentIcon} from './globalIconRegistry';
+export {useComponentIconName, useComponentIcon} from './useIcon';
+export {
+  declareComponentIconRole,
+  getComponentIconState,
+} from './componentIconRoles';
+export type {ComponentIconRoleMetadata} from './componentIconRoles';

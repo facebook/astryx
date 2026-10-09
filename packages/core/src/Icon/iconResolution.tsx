@@ -2,13 +2,14 @@
 
 /**
  * @file iconResolution.tsx
- * @input Explicit independent Icon intent, local source contracts and active theme policy
+ * @input Independent Icon intent, private owner slot/state, local contracts and active theme policy
  * @output Supplied artwork, physical box selection and private fallback diagnostics
  * @position Private server-safe resolver; not part of the public Icon barrel
  */
 /* eslint-disable @astryx/no-hardcoded-i18n-string -- Private synchronous developer diagnostics, not rendered UI. */
 import type {ReactNode} from 'react';
 import type {IconType} from './Icon';
+import {getComponentIconRole} from './componentIconRoles';
 import {getRegisteredTheme} from '../theme/themeRegistry';
 import {warnOnce} from '../utils/devWarning';
 import {
@@ -41,6 +42,8 @@ import {
 type AxisOrigin =
   | 'explicit'
   | 'theme-size'
+  | 'theme-role'
+  | 'theme-state'
   | 'theme-default'
   | 'component'
   | 'standalone'
@@ -120,7 +123,12 @@ export function resolveIconWithContext(
   icon: ExtendedIconName | IconType,
   request: IconRequest = {},
   source?: IconRegistrySource,
-  context: {legacyContextSize?: unknown; renderNode?: boolean} = {},
+  context: {
+    legacyContextSize?: unknown;
+    slot?: string;
+    state?: unknown;
+    renderNode?: boolean;
+  } = {},
 ): IconResolution {
   const theme =
     typeof source === 'string' ? getRegisteredTheme(source) : source;
@@ -228,9 +236,25 @@ export function resolveIconWithContext(
   }
   const explicitSizeAdmitted =
     typeof raw.size === 'string' && Object.hasOwn(app.sizes, raw.size);
-  const implicitSize =
-    typeof context.legacyContextSize === 'string' &&
-    Object.hasOwn(app.sizes, context.legacyContextSize)
+  const role =
+    context.slot === undefined ? undefined : getComponentIconRole(context.slot);
+  const state =
+    role &&
+    typeof context.state === 'string' &&
+    role.states.includes(context.state)
+      ? context.state
+      : undefined;
+  const roleSize = role ? policy?.roleSizeOverrides?.[role.slot] : undefined;
+  const roleSizeAdmitted =
+    typeof roleSize === 'string' && Object.hasOwn(app.sizes, roleSize);
+  const implicitSize = role
+    ? roleSizeAdmitted
+      ? roleSize
+      : Object.hasOwn(app.sizes, role.defaultSize)
+        ? role.defaultSize
+        : 'md'
+    : typeof context.legacyContextSize === 'string' &&
+        Object.hasOwn(app.sizes, context.legacyContextSize)
       ? context.legacyContextSize
       : 'md';
   const finalSize = explicitSizeAdmitted ? (raw.size as string) : implicitSize;
@@ -239,19 +263,24 @@ export function resolveIconWithContext(
     raw.size ?? implicitSize,
     raw.size !== undefined
       ? 'explicit'
-      : context.legacyContextSize !== undefined &&
-          context.legacyContextSize !== null
-        ? 'component'
-        : 'standalone',
+      : roleSizeAdmitted
+        ? 'theme-role'
+        : role ||
+            (context.legacyContextSize !== undefined &&
+              context.legacyContextSize !== null)
+          ? 'component'
+          : 'standalone',
     raw.size === undefined || explicitSizeAdmitted,
   );
   size.selected = finalSize;
   const bySize = policy?.presentation?.bySize?.[finalSize];
+  const byState =
+    state === undefined ? undefined : policy?.presentation?.byState?.[state];
   const baseline = policy?.presentation?.default;
   const appearanceValue =
     raw.appearance !== undefined
       ? raw.appearance
-      : (bySize?.appearance ?? baseline?.appearance);
+      : (byState?.appearance ?? bySize?.appearance ?? baseline?.appearance);
   const weightValue =
     raw.weight !== undefined
       ? raw.weight
@@ -261,11 +290,13 @@ export function resolveIconWithContext(
     appearanceValue,
     raw.appearance !== undefined
       ? 'explicit'
-      : bySize?.appearance !== undefined
-        ? 'theme-size'
-        : baseline?.appearance !== undefined
-          ? 'theme-default'
-          : 'source-default',
+      : byState?.appearance !== undefined
+        ? 'theme-state'
+        : bySize?.appearance !== undefined
+          ? 'theme-size'
+          : baseline?.appearance !== undefined
+            ? 'theme-default'
+            : 'source-default',
     appearanceValue === undefined ||
       (typeof appearanceValue === 'string' &&
         app.appearances.includes(appearanceValue)),
@@ -343,6 +374,7 @@ export function resolveIconWithContext(
   }
   const builtIn = builtInIconDimensions[finalSize as BuiltInIconSize];
   const legacyDimension =
+    !role &&
     !explicitSizeAdmitted &&
     typeof context.legacyContextSize === 'string' &&
     Object.hasOwn(builtInIconDimensions, context.legacyContextSize) &&

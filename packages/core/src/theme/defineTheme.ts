@@ -6,8 +6,8 @@
  * Adaptations resolve against the effective root axes and components, retaining
  * authored component pins without repeating root typography defaults.
  *
- * @input Theme value declarations and explicit local Icon source/presentation contracts
- * @output A normalized theme with node read views and immutable productive source IR
+ * @input Theme declarations, local Icon contracts and component source/role/state policy
+ * @output A normalized theme with node read views, immutable source IR and component maps
  * @position Shared source/build authoring boundary; existing token/adaptation behavior is unchanged
  *
  * Two distribution modes:
@@ -45,6 +45,11 @@
 
 import type {ReactNode} from 'react';
 import type {IconName, NamespacedIconName} from '../Icon/globalIconRegistry';
+import type {ComponentIconMap} from '../Icon/index';
+import {
+  mergeComponentIconMaps,
+  validateComponentIconMap,
+} from '../Icon/componentIconMap';
 import {
   getIconSourceDefaults,
   isAdaptiveIconEntry,
@@ -359,7 +364,9 @@ export interface DefineThemeInput<
   components?: ComponentStyleMap;
   /** Artwork keyed by semantic name; bare adaptive trees bind to this theme's explicit contract. */
   icons?: ThemeIconOverrides<NoInfer<C>>;
-  /** Local physical sizes and default/per-size appearance/weight presentation. */
+  /** Component icon positions map to shared names; null suppresses, omission inherits. */
+  componentIcons?: ComponentIconMap;
+  /** Local dimensions, role sizes and default/size/state presentation; state selects appearance only. */
   iconCapabilities?: IconThemeCapabilitiesInput<C>;
   /**
    * Indicator overrides — replaces the components that draw stateful control
@@ -452,7 +459,9 @@ export interface DefinedTheme {
   components?: ComponentStyleMap;
   /** Actual node-valued registry read view, including adaptive source defaults. */
   icons?: ThemeIconNodes;
-  /** Normalized local presentation and dimension policy. */
+  /** Shared-name component source selection, including explicit null suppression. */
+  componentIcons?: ComponentIconMap;
+  /** Normalized local presentation, dimension and role sizing policy. */
   iconCapabilities?: IconThemeCapabilities;
   /** Productive immutable source IR for adaptive entries. @internal */
   __iconSources?: Readonly<Record<string, IconEntry>>;
@@ -683,6 +692,11 @@ export function defineTheme<
         : (ownIcons ?? base?.icons);
   }
 
+  const componentIcons = mergeComponentIconMaps(
+    validateComponentIconMap(getOwnIconData(base, 'componentIcons')),
+    validateComponentIconMap(getOwnIconData(input, 'componentIcons')),
+  );
+
   // Indicator overrides merge by name, like icons: a child theme replacing one
   // indicator keeps the ones its base replaced.
   const indicators =
@@ -702,6 +716,7 @@ export function defineTheme<
       : {}),
     components,
     icons,
+    ...(componentIcons ? {componentIcons} : {}),
     ...(iconCapabilities ? {iconCapabilities} : {}),
     ...(adaptive ? {__iconSources: sources} : {}),
     ...(contracts.length ? {__iconContracts: contracts} : {}),

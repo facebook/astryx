@@ -5,9 +5,9 @@
 /**
  * Theme Provider Component
  *
- * Applies tokens, region-owned artwork and safely inherited Icon presentation.
+ * Applies tokens, region-owned artwork and safely inherited Icon maps/role/state policy.
  * @input A defined theme, mode and children in the existing ThemeContext
- * @output Theme CSS/root lifecycle and a local effective Icon policy
+ * @output Theme CSS/root lifecycle and a descriptor-safe effective Icon policy
  * @position Theme provider; no additional Icon provider or global capability state
  * Themes are created with `defineTheme()` and applied via CSS:
  * - Token overrides set as CSS custom properties on [data-astryx-theme]
@@ -49,6 +49,11 @@ import {registerTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
 import {warnOnce} from '../utils/devWarning';
+import type {ComponentIconMap} from '../Icon/index';
+import {
+  mergeComponentIconMaps,
+  readComponentIconMap,
+} from '../Icon/componentIconMap';
 import {
   getIconThemeContracts,
   getOwnIconData,
@@ -88,17 +93,33 @@ function readThemeIconSurface(theme: DefinedTheme | undefined) {
   } catch {
     invalid();
   }
-  return {policy, contracts, invalid, isMalformed: () => malformed};
+  let rawComponentIcons: unknown;
+  try {
+    rawComponentIcons = getOwnIconData(theme, 'componentIcons');
+  } catch {
+    invalid();
+  }
+  const componentIcons = readComponentIconMap(rawComponentIcons, invalid);
+  return {
+    policy,
+    contracts,
+    rawComponentIcons,
+    componentIcons,
+    invalid,
+    isMalformed: () => malformed,
+  };
 }
 /** Clone descriptors rather than spreading foreign theme fields/getters. */
 function withThemeIconContext(
   theme: DefinedTheme,
   iconCapabilities: IconThemeCapabilities | undefined,
   contracts: ReadonlyArray<IconCapabilities> | undefined,
+  componentIcons: ComponentIconMap | undefined,
 ): DefinedTheme {
   const descriptors = Object.getOwnPropertyDescriptors(theme);
   delete descriptors.iconCapabilities;
   delete descriptors.__iconContracts;
+  delete descriptors.componentIcons;
   return Object.create(Object.getPrototypeOf(theme), {
     ...descriptors,
     ...(iconCapabilities
@@ -106,6 +127,9 @@ function withThemeIconContext(
       : {}),
     ...(contracts?.length
       ? {__iconContracts: {value: contracts, enumerable: true}}
+      : {}),
+    ...(componentIcons
+      ? {componentIcons: {value: componentIcons, enumerable: true}}
       : {}),
   }) as DefinedTheme;
 }
@@ -353,7 +377,7 @@ export function Theme({
         ? wrapperStyles.light
         : wrapperStyles.system;
 
-  // Only icon policy/contracts inherit. Source registry, compiled CSS and root
+  // Only icon maps/policy/contracts inherit. Source registry, compiled CSS and root
   // registration remain owned by this region's original theme.
   const parent = use(ThemeContext);
   const ctxValue = useMemo(() => {
@@ -378,6 +402,10 @@ export function Theme({
         return markIconThemePolicyMalformed();
       }
     };
+    const componentIcons = mergeComponentIconMaps(
+      outer.componentIcons,
+      own.componentIcons,
+    );
     const iconCapabilities = mergeIconThemeCapabilities(
       readPolicy(outer),
       readPolicy(own),
@@ -385,9 +413,15 @@ export function Theme({
     const effectiveTheme =
       !own.isMalformed() &&
       iconCapabilities === own.policy &&
-      contracts === own.contracts
+      contracts === own.contracts &&
+      componentIcons === own.rawComponentIcons
         ? theme
-        : withThemeIconContext(theme, iconCapabilities, contracts);
+        : withThemeIconContext(
+            theme,
+            iconCapabilities,
+            contracts,
+            componentIcons,
+          );
     return {theme: effectiveTheme, mode};
   }, [parent?.theme, theme, mode]);
 

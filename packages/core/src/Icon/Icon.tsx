@@ -4,7 +4,7 @@
 
 /**
  * @file Icon.tsx
- * @input Ordinary SVG components or semantic names with independent explicit size/appearance/weight
+ * @input Ordinary SVG components or semantic names, independent explicit intent and private owner transport
  * @output Exports Icon component, IconProps, IconColor, IconSize, IconType types
  * @position Core implementation; consumed by index.ts, tested by Icon.test.tsx
  *
@@ -22,7 +22,8 @@
  * - /packages/cli/assets/templates/blocks/components/Icon/ (showcase blocks)
  */
 
-import React, {type ComponentType, type SVGProps} from 'react';
+import React, {use, type ComponentType, type SVGProps} from 'react';
+import {ComponentIconContext} from './ComponentIconContext';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
@@ -260,12 +261,34 @@ export function Icon({
   ...props
 }: IconProps) {
   const legacyContextSize = useIconContextSize();
+  const ownedSlot = use(ComponentIconContext);
   const theme = useThemeDefinition();
+  // Public SVG `role` retains its accessibility meaning. None of these untyped
+  // caller fields can enter the private owner context or leak onto the glyph.
+  const svgProps: typeof props = Object.fromEntries(
+    Object.entries(props).filter(
+      ([key]) =>
+        ![
+          'state',
+          'defaultSize',
+          'iconRole',
+          'iconState',
+          '__iconRole',
+          '__iconState',
+          '__iconDefaultSize',
+        ].includes(key),
+    ),
+  );
   const resolution = resolveIconWithContext(
     icon,
     {size: sizeProp, appearance, weight},
     theme,
-    {legacyContextSize, renderNode: typeof icon === 'string'},
+    {
+      legacyContextSize,
+      slot: ownedSlot?.slot,
+      state: ownedSlot?.state,
+      renderNode: typeof icon === 'string',
+    },
   );
   const size = resolution.inspection.size.selected as IconSize;
   const {dimension, customDimension} = resolution.inspection;
@@ -273,18 +296,20 @@ export function Icon({
 
   if (typeof icon === 'string') {
     return (
-      <IconFromRegistry
-        resolvedIcon={resolution.node}
-        color={color}
-        size={size}
-        dimension={dimension}
-        customDimension={customDimension}
-        a11yProps={a11yProps}
-        className={className}
-        style={style}
-        xstyle={xstyle}
-        spanProps={props}
-      />
+      <ComponentIconContext value={null}>
+        <IconFromRegistry
+          resolvedIcon={resolution.node}
+          color={color}
+          size={size}
+          dimension={dimension}
+          customDimension={customDimension}
+          a11yProps={a11yProps}
+          className={className}
+          style={style}
+          xstyle={xstyle}
+          spanProps={svgProps}
+        />
+      </ComponentIconContext>
     );
   }
 
@@ -292,24 +317,26 @@ export function Icon({
   // requests are resolved/diagnosed but never forwarded as arbitrary SVG props.
   const IconComponent = icon;
   return (
-    <IconComponent
-      ref={ref}
-      {...a11yProps}
-      {...mergeProps(
-        themeProps('icon', {size, color}),
-        stylex.props(
-          styles.root,
-          colorStyles[color],
-          customDimension
-            ? iconDimensionStyles.svg(dimension)
-            : iconSizeStyles[size as BuiltInIconSize],
-          xstyle,
-        ),
-        className ?? undefined,
-        style,
-      )}
-      {...props}
-    />
+    <ComponentIconContext value={null}>
+      <IconComponent
+        ref={ref}
+        {...a11yProps}
+        {...mergeProps(
+          themeProps('icon', {size, color}),
+          stylex.props(
+            styles.root,
+            colorStyles[color],
+            customDimension
+              ? iconDimensionStyles.svg(dimension)
+              : iconSizeStyles[size as BuiltInIconSize],
+            xstyle,
+          ),
+          className ?? undefined,
+          style,
+        )}
+        {...svgProps}
+      />
+    </ComponentIconContext>
   );
 }
 

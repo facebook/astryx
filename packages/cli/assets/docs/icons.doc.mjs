@@ -2,9 +2,9 @@
 
 /**
  * @file Icons consumer reference
- * @input Semantic names, supplied artwork and local capability contracts
- * @output Theme-scoped fixed/adaptive icon authoring guidance
- * @position Builder-facing icons reference; no role or component enrollment API
+ * @input Semantic names, supplied artwork, local contracts and owner-declared roles
+ * @output Theme-scoped icon authoring and finite role/state consumer boundaries
+ * @position Builder-facing source contract; no component enrollment or internal transport API
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -133,6 +133,74 @@ export const brandTheme = defineTheme({
         {
           type: 'prose',
           text: 'Outside core, pass a fallback to `getExtendedIcon(key, fallback)` so the glyph renders with no theme.',
+        },
+      ],
+    },
+    {
+      id: 'component-role-state',
+      title: 'Component Role and State Contract',
+      category: 'foundations',
+      content: [
+        {
+          type: 'prose',
+          text: 'A component slot names a purpose, not artwork. Themes map owner-declared slots through componentIcons to a shared IconName or null; namespaced keys and SVGs belong in icons, not componentIcons. An omitted or undefined mapping uses the component fallback; null hides the glyph. Existing source-only slots declared as {slot: true} keep that behavior without joining role sizing or state presentation.',
+        },
+        {
+          type: 'prose',
+          text: 'A participating owner adds a finite states union to the canonical public ComponentIconSlotMap and explicitly calls declareComponentIconRole({slot, defaultSize, statePrecedence}). The defaultSize must be an icon-size name admitted by the owner’s type contract; the final active theme validates that size when it is resolved, not when the role is declared. Precedence lists every state exactly once, highest priority first. Broad string states do not participate. getComponentIconState(slot, conditions) selects the first declared state whose condition is true, or undefined when none is active. There is no shared state vocabulary; each role owns its meanings.',
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          label:
+            'Downstream owner declaration — source contract, not Core enrollment',
+          code: `import {declareComponentIconRole, getComponentIconState} from '@astryxdesign/core/Icon';
+
+declare module '@astryxdesign/core/Icon' {
+  interface ComponentIconSlotMap {
+    'document-action-leading': {slot: true; states: 'disabled' | 'selected'};
+  }
+}
+
+declareComponentIconRole({
+  slot: 'document-action-leading',
+  defaultSize: 'sm',
+  statePrecedence: ['disabled', 'selected'],
+});
+const state = getComponentIconState('document-action-leading', {
+  disabled: false,
+  selected: true,
+}); // 'selected'`,
+        },
+        {
+          type: 'prose',
+          text: 'For an explicitly participating renderer, iconCapabilities.roleSizeOverrides chooses an admitted size by role; per-key null clears an inherited choice and restores the owner default. The final size selects presentation.bySize, including weight. presentation.byState selects appearance only from the one effective state; it never selects size or weight. Appearance order is explicit Icon intent, effective-state choice, final-size choice, then theme default. Weight order is explicit intent, final-size choice, then default. presentation replaces as a whole; null clears it.',
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          label:
+            'Theme policy for the declared role and supplied artwork contract',
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
+import {icons, capabilities} from './icons'; // importable bound artwork registry
+
+export const brandTheme = defineTheme({
+  name: 'brand',
+  icons,
+  componentIcons: {'document-action-leading': 'search'},
+  iconCapabilities: {
+    contract: capabilities, // declares outline/filled supplied artwork
+    roleSizeOverrides: {'document-action-leading': 'md'},
+    presentation: {
+      default: {appearance: 'outline'},
+      byState: {selected: {appearance: 'filled'}},
+    },
+  },
+});`,
+        },
+        {
+          type: 'prose',
+          text: 'These declarations do not enroll a renderer on their own. This source contract adds no participating Core component; use a component’s own documentation to learn which role it renders. Public getComponentIconName(slot, fallback, source) and getComponentIcon(slot, fallback, source) keep their three-argument lookup contracts; useComponentIconName(slot, fallback) and useComponentIcon(slot, fallback) keep two arguments and return names or React nodes. There are no request/state arguments, public role renderer, provider, resolver or runtime registry operations. Icon retains only its independent size, appearance and weight intent; role/state transport is private.',
         },
       ],
     },

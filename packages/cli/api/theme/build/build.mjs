@@ -4,7 +4,7 @@
  * @file theme build API — compile standalone themes or one selected family.
  * @input JS/TS theme modules, build/check options, and the installed Core.
  * @output Generated artifacts preserving imported icons, library contract references,
- *   and source-owned adaptive data.
+ *   source-owned adaptive data and captured component-map/role/state policy.
  * @position CLI theme compiler; Icon provenance and lossless guards are private helpers.
  *
  * `themeBuild` and `themeBuildFamily` share the same loader, compiler,
@@ -1837,20 +1837,70 @@ function extractRegistryInfo(filePath, field) {
 }
 
 /**
- * Normalize only the Icon projection through Core's public defineTheme. CSS
- * inputs, legacy private-input checks and existing build receipts stay unchanged.
+ * Normalize the Icon and role/state projection through Core's public defineTheme.
+ * Captured per-field retention precedes emission; CSS inputs, legacy private-input
+ * checks and existing build receipts stay unchanged.
  * @param {any} theme @param {any[]} [inputs] @param {any} [ownInput] @returns {any}
  */
 function normalizeBuiltIconData(theme, inputs = [], ownInput) {
   assertSupportedIconFields(theme, inputs);
   if (!supportsIconCapabilities(_coreIconModule)) return theme;
+  /** @param {any} value @param {string} key @returns {any} */
+  const ownData = (value, key) =>
+    value && typeof value === 'object'
+      ? Object.getOwnPropertyDescriptor(value, key)?.value
+      : undefined;
+  // An inherited/built contributor can be sanitized by Core's tolerant read
+  // path before its child replaces the policy. Validate its actual authored C
+  // projection as own input too; this is normalization of selected data, not
+  // an export-presence or registration-support probe.
+  try {
+    for (const input of new Set([theme, ...inputs])) {
+      const policy = ownData(input, 'iconCapabilities');
+      const componentIcons = ownData(input, 'componentIcons');
+      if (
+        componentIcons !== undefined ||
+        ownData(policy, 'roleSizeOverrides') !== undefined ||
+        ownData(ownData(policy, 'presentation'), 'byState') !== undefined
+      ) {
+        const projection = {
+          componentIcons,
+          iconCapabilities: policy,
+        };
+        const normalizedContributor = _defineTheme({
+          name: theme.name,
+          extends: theme,
+          ...projection,
+        });
+        // Validate each captured contributor, even if an atomic child policy
+        // later replaces it. A correct winner cannot excuse earlier Core loss.
+        assertRetainedIconInput(
+          normalizedContributor,
+          [projection],
+          _coreIconModule,
+        );
+      }
+    }
+  } catch (error) {
+    if (error instanceof AstryxError) throw error;
+    throw new AstryxError(
+      error instanceof Error
+        ? error.message
+        : 'Icon role/state normalization failed.',
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
   assertRetainedIconInput(theme, inputs, _coreIconModule);
   const rawIntent = inputs.some(hasIconCapabilityIntent);
   const policyIntent = inputs.some(
-    input => input?.iconCapabilities !== undefined,
+    input => ownData(input, 'iconCapabilities') !== undefined,
   );
-  const ownContract = ownInput?.iconCapabilities?.contract !== undefined;
-  const ownAdaptive = hasIconCapabilityIntent({icons: ownInput?.icons});
+  const ownContract =
+    ownData(ownData(ownInput, 'iconCapabilities'), 'contract') !== undefined;
+  const ownAdaptive = hasIconCapabilityIntent({
+    icons: ownData(ownInput, 'icons'),
+  });
   if (
     (rawIntent && !hasIconCapabilityIntent(theme)) ||
     (policyIntent && theme.iconCapabilities === undefined) ||
@@ -1868,6 +1918,7 @@ function normalizeBuiltIconData(theme, inputs = [], ownInput) {
       name: theme.name,
       extends: theme,
       icons: theme.__iconSources ?? theme.icons,
+      componentIcons: ownData(theme, 'componentIcons'),
       iconCapabilities: theme.iconCapabilities,
     });
     assertSupportedIconFields(normalized);
@@ -1915,13 +1966,24 @@ function normalizeBuiltIconData(theme, inputs = [], ownInput) {
     const result = {...theme};
     for (const field of [
       'icons',
+      'componentIcons',
       'iconCapabilities',
       '__iconSources',
       '__iconContracts',
     ]) {
       if (field === 'icons' && normalized.__iconSources === undefined) continue;
       if (normalized[field] === undefined) delete result[field];
-      else result[field] = normalized[field];
+      else if (
+        field === 'iconCapabilities' &&
+        ownData(theme.iconCapabilities, 'sizeOverrides') === undefined &&
+        normalized.iconCapabilities.sizeOverrides !== undefined &&
+        Object.keys(normalized.iconCapabilities.sizeOverrides).length === 0
+      ) {
+        // A self-extension can manufacture an empty dimension map. It is not
+        // authored policy and must not change a standalone source snapshot.
+        const {sizeOverrides: _empty, ...policy} = normalized.iconCapabilities;
+        result[field] = policy;
+      } else result[field] = normalized[field];
     }
     assertSupportedIconFields(result);
     return result;
@@ -2748,6 +2810,7 @@ async function themeBuildInternal(
     interception && hasCoverageGap
       ? interception
           .unobservedIn(themeDef, [
+            'componentIcons',
             'iconCapabilities',
             '__iconContracts',
             '__iconSources',
@@ -2921,9 +2984,7 @@ async function themeBuildInternal(
       INPUT_ONLY_FIELDS.some(field => themeDef[field] !== undefined) ||
       ('localTokens' in themeDef &&
         themeDef.__localTokenLineage === undefined) ||
-      ((themeDef.iconCapabilities !== undefined ||
-        hasIconCapabilityIntent({icons: themeDef.icons})) &&
-        themeDef.__axes === undefined);
+      (hasIconCapabilityIntent(themeDef) && themeDef.__axes === undefined);
     if (needsResolution) {
       try {
         resolvedTheme = _defineTheme({...themeDef});

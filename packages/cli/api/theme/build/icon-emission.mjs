@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Lower normalized Icon engine data into self-contained theme artifacts.
+ * @file Lower normalized Icon source and role/state policy data into self-contained artifacts.
  * @input Core-validated source IR, exact contract contributors and proven imports.
  * @output JavaScript references to supplied artwork, shared contracts and node defaults.
  * @position Private CLI emitter; never normalizes grammar or samples renderer ranges.
@@ -153,12 +153,15 @@ export function lowerBuiltIconContracts(
       ' ?? ',
     );
   };
-  const fields = ['iconCapabilities', '__iconContracts']
+  const fields = ['componentIcons', 'iconCapabilities', '__iconContracts']
     .map(field => {
       if (theme[field] === undefined) return '';
       let encoded;
       if (field === '__iconContracts') encoded = values;
-      else if (theme[field].contract !== undefined) {
+      else if (
+        field === 'iconCapabilities' &&
+        theme[field].contract !== undefined
+      ) {
         const {contract, ...policy} = theme[field];
         encoded = `{...${serializeIconData(policy, field)}, contract: ${expression(contract)}}`;
       } else encoded = serializeIconData(theme[field], field);

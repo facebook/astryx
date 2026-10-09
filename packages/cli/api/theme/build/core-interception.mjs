@@ -2,7 +2,7 @@
 
 /**
  * @file Capture authored capability inputs as the selected theme lineage loads.
- * @input Installed Core namespaces, real defineTheme calls and capability metadata names.
+ * @input Installed Core namespaces, real defineTheme calls and capability/role-policy fields.
  * @output Private lineage evidence for compatibility, contributor provenance and family ancestry;
  *   readonly A call capture is independent of the legacy adaptation diagnostic lane.
  * @position CLI load-boundary recorder; never interprets capability grammar.
@@ -329,6 +329,7 @@ export function interceptCore(
       let changed = false;
       for (const field of [
         'icons',
+        'componentIcons',
         'iconCapabilities',
         '__iconSources',
         '__iconContracts',

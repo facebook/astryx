@@ -2,14 +2,16 @@
 
 /**
  * @file globalIconRegistry.tsx
- * @input Released global artwork overrides or an explicit theme source
- * @output ReactNode-valued registry reads with local adaptive source fallback
+ * @input Released global artwork overrides, explicit theme sources and source-only component slots
+ * @output ReactNode registry reads and compatible component name/artwork lookups
  * @position Server/client registry; global registration never admits capability contracts
  *
  * This module has NO 'use client' directive. Source binding and resolution are
  * synchronous, and normalized theme IR is kept separate from the node read view.
  */
 import type {ReactNode} from 'react';
+import type {ComponentIconSlotName} from './index';
+import {isComponentIconName} from './componentIconMap';
 import {defaultIcons} from './defaultIcons';
 import type {DefinedTheme} from '../theme/defineTheme';
 import {getRegisteredTheme} from '../theme/themeRegistry';
@@ -222,6 +224,43 @@ export function getExtendedIcon(
 ): ReactNode {
   return getIcon(name, source) ?? fallback;
 }
+/** Source-only slot lookup retains its three-argument caller contract. */
+export function getComponentIconName(
+  slot: ComponentIconSlotName,
+  fallback: IconName | null,
+  source?: IconRegistrySource,
+): IconName | null {
+  try {
+    const selected = getOwnIconData(
+      getOwnIconData(getTheme(source), 'componentIcons'),
+      slot,
+    );
+    if (selected === undefined) {
+      return fallback;
+    }
+    if (selected === null || isComponentIconName(selected)) {
+      return selected as IconName | null;
+    }
+    throw new Error('Malformed component icon mapping');
+  } catch {
+    warnOnce(
+      `icon-component-map:${slot}`,
+      'Icon',
+      'Malformed component icon mapping was ignored; using the component fallback.',
+    );
+    return fallback;
+  }
+}
+/** Name selection precedes shared artwork lookup; no new public request/state arguments. */
+export function getComponentIcon(
+  slot: ComponentIconSlotName,
+  fallback: IconName | null,
+  source?: IconRegistrySource,
+): ReactNode {
+  const name = getComponentIconName(slot, fallback, source);
+  return name === null ? null : getIcon(name, source);
+}
+
 /** @internal Testing-only reset clears artwork overrides, never contract snapshots. */
 export function resetIcons(): void {
   globalRegistry = {};

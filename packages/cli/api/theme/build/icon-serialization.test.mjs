@@ -2,7 +2,7 @@
 
 /**
  * @file Pure Icon packaging guards, without Core builds or registration.
- * @input Plain policy data, own descriptors and minimal constructor namespaces.
+ * @input Plain A/C policy data, own descriptors and minimal constructor namespaces.
  * @output Lossless encoding, selected-field rejection and exact cached witness checks.
  * @position Private CLI unit tests; native theme artifact coverage is separate.
  */
@@ -229,11 +229,20 @@ describe('two-constructor empty own-data witness', () => {
 
 describe('selected raw unsupported fields', () => {
   it.each([
-    ['component map', {componentIcons: {}}],
-    ['undefined component map', {componentIcons: undefined}],
+    [
+      'namespaced component map',
+      {componentIcons: {'fixture-leading': 'library:mark'}},
+    ],
+    ['bad slot name', {componentIcons: {bad: 'close'}}],
     ['null component map', {componentIcons: null}],
-    ['role sizes', {iconCapabilities: {roleSizeOverrides: {}}}],
-    ['state presentation', {iconCapabilities: {presentation: {byState: {}}}}],
+    [
+      'role size dimension',
+      {iconCapabilities: {roleSizeOverrides: {'fixture-leading': 20}}},
+    ],
+    [
+      'state weight',
+      {iconCapabilities: {presentation: {byState: {active: {weight: 600}}}}},
+    ],
   ])('rejects %s in raw, inherited and spread evidence', (_name, input) => {
     const plain = {name: 'plain'};
     for (const evidence of [[input], [{...input}]])
@@ -262,7 +271,7 @@ describe('selected raw unsupported fields', () => {
     expect(getter).not.toHaveBeenCalled();
   });
   it('does not scan an unrelated sibling and admits supported null/default/bySize data', () => {
-    const unused = {componentIcons: {}};
+    const unused = {componentIcons: null};
     const selected = {
       iconCapabilities: {
         sizeOverrides: {compact: null},
