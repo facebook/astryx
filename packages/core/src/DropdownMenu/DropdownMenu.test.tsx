@@ -2664,6 +2664,30 @@ describe('DropdownMenu press model', () => {
     }
   });
 
+  it('a menu a held finger opens keeps its trigger as the invoker until the finger lifts', () => {
+    // A release on the trigger is outside the `popover="auto"` menu, so the
+    // browser's light dismiss would close it; holding the invoker through
+    // the press exempts the trigger, as it does for a mouse press.
+    vi.useFakeTimers();
+    try {
+      const trigger = renderMenu();
+      fireEvent.pointerDown(trigger, touch);
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(trigger).toHaveAttribute('popovertarget');
+      fireEvent.pointerUp(trigger, touch);
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      expect(trigger).not.toHaveAttribute('popovertarget');
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('a tap on the trigger still opens through its click', () => {
     const trigger = renderMenu();
     fireEvent.pointerDown(trigger, touch);
