@@ -63,7 +63,7 @@ const meta: Meta<typeof Selector> = {
     },
     variant: {
       control: 'radio',
-      options: ['input', 'ghost'],
+      options: ['input', 'secondary', 'ghost'],
       description: 'Visual trigger style',
     },
     placement: {
@@ -875,6 +875,39 @@ export const GhostVariant: Story = {
           statusVariant="tooltip"
         />
         <Button label="Export" variant="ghost" />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
+// Secondary variant for nav composition beside secondary buttons
+export const SecondaryVariant: Story = {
+  render: () => {
+    const [platform, setPlatform] = useState<string | undefined>('all');
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          width: 'max-content',
+        }}>
+        <Button label="Share" variant="secondary" />
+        <Selector
+          label="Platform"
+          isLabelHidden
+          variant="secondary"
+          size="md"
+          options={[
+            {value: 'all', label: 'All platforms'},
+            {value: 'ios', label: 'iOS'},
+            {value: 'android', label: 'Android'},
+          ]}
+          value={platform}
+          onChange={setPlatform}
+        />
+        <Button label="Export" variant="secondary" />
       </div>
     );
   },
