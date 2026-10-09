@@ -775,10 +775,12 @@ export interface MultiSelectorProps<
    * trimmed query equals no option's label under the search's own matching
    * (case-insensitive). Picking it, or Enter with nothing highlighted, calls
    * `onChange` with the query appended to `value` and a `{type: 'create',
-   * query}` descriptor, then clears the search. The caller MUST add an option
-   * for the new value in that same update; the component does not mint
-   * options. Nothing is offered while `isLoading`. Setting this without
-   * `hasSearch` warns in development and offers nothing.
+   * query}` descriptor. The caller MUST add an option for the new value in
+   * that same update; the component does not mint options. Once `value`
+   * carries the new entry the search clears and the creation is announced.
+   * To refuse it, leave `value` without it: the typed text stays in the
+   * search to be corrected. Nothing is offered while `isLoading`. Setting
+   * this without `hasSearch` warns in development and offers nothing.
    * @default false
    */
   hasCreate?: boolean;
@@ -1580,16 +1582,22 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
   // Picking the create row: the typed text joins the value and the caller is
   // told it is a creation on the channel it already listens to, so adding the
-  // option and accepting the value are one update. The search is cleared so
-  // the option the caller adds is visible.
+  // option and accepting the value are one update. The search keeps the typed
+  // text until the caller accepts (below), so a name the caller refuses stays
+  // in the field to be corrected instead of having to be typed again (WCAG
+  // 3.3.7). A second pick of the same text while the first is unanswered is
+  // ignored.
+  const [pendingCreate, setPendingCreate] = useState<string | null>(null);
   const commitCreate = useCallback(
     (query: string) => {
+      if (query === pendingCreate) {
+        return;
+      }
       const newValue = optimisticValue.includes(query)
         ? optimisticValue
         : [...optimisticValue, query];
       onChange(newValue, {type: 'create', query});
-      setSearchQuery('');
-      announce(t('@astryx.multiSelector.optionCreated', {label: query}));
+      setPendingCreate(query);
       if (changeAction) {
         startTransition(async () => {
           setOptimisticValue(newValue);
@@ -1598,15 +1606,46 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       }
     },
     [
+      pendingCreate,
       optimisticValue,
       onChange,
       changeAction,
       startTransition,
       setOptimisticValue,
-      announce,
-      t,
     ],
   );
+
+  // A creation is answered once `value` carries the new entry (accepted: the
+  // search clears so the option the caller added is visible, and the creation
+  // is announced) or once it does not and no change action is still in
+  // flight (refused: the typed text stays, and nothing claims a creation).
+  // State derived from props is adjusted while rendering, as for `isGrid`.
+  const [createdOption, setCreatedOption] = useState<{label: string} | null>(
+    null,
+  );
+  if (pendingCreate != null) {
+    if (value.includes(pendingCreate)) {
+      setPendingCreate(null);
+      setCreatedOption({label: pendingCreate});
+      if (searchQuery.trim() === pendingCreate) {
+        setSearchQuery('');
+      }
+    } else if (optimisticValue === value) {
+      setPendingCreate(null);
+    }
+  }
+  const announcedCreationRef = useRef<{label: string} | null>(null);
+  useEffect(() => {
+    if (
+      createdOption != null &&
+      announcedCreationRef.current !== createdOption
+    ) {
+      announcedCreationRef.current = createdOption;
+      announce(
+        t('@astryx.multiSelector.optionCreated', {label: createdOption.label}),
+      );
+    }
+  }, [createdOption, announce, t]);
 
   // Route toggle: select-all sentinel → handleSelectAll, the create row →
   // commitCreate, everything else → handleToggle
