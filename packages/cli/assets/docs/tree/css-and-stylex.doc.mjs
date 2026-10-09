@@ -15,16 +15,6 @@ export const docs = {
   category: 'guide',
   description:
     'Core integration principle, plain CSS / CSS Modules, and StyleX typed-token imports.',
-  keywords: [
-    'CSS',
-    'CSS Modules',
-    'StyleX',
-    'tokens',
-    'custom properties',
-    'var()',
-    'colorVars',
-    'spacingVars',
-  ],
 
   sections: [
     {

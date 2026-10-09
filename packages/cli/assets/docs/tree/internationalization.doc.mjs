@@ -21,6 +21,7 @@ export const docs = {
     'RTL',
     'right-to-left',
     'language',
+    'catalog',
   ],
   slots: {
     guides: {title: 'Guides', accepts: {kinds: ['generic']}},

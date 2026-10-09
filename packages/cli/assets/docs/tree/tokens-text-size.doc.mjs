@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Geometric type scale: round(14 × 1.2^step). Base is 14px (--font-size-base).",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "textSize"
-  ],
   "sections": [
     {
       "title": "Font Size Tokens",

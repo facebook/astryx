@@ -16,13 +16,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "How to import and use token variables in StyleX styles.",
-  "keywords": [
-    "StyleX",
-    "import",
-    "colorVars",
-    "spacingVars",
-    "sizeVars"
-  ],
   "sections": [
     {
       "title": "Usage in StyleX",

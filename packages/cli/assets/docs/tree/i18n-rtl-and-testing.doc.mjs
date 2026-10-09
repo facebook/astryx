@@ -16,12 +16,9 @@ export const docs = {
   description:
     'Text direction (RTL), pseudo-locale testing, and contributor guidance for developers and translators.',
   keywords: [
-    'RTL',
-    'right-to-left',
     'dir',
     'pseudo locale',
     'testing',
-    'translation',
     'Crowdin',
     'logical properties',
   ],

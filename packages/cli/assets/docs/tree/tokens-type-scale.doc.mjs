@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Semantic tokens for headings, body, labels, code, supporting text, and display text. References font size and weight tokens. Override via typography.scale in defineTheme.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "typeScale"
-  ],
   "sections": [
     {
       "title": "Type Scale Tokens",

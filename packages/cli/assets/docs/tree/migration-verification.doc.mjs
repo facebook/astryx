@@ -19,7 +19,6 @@ export const docs = {
     'verification',
     'checklist',
     'AI prompt',
-    'migration',
     'keyboard navigation',
   ],
 

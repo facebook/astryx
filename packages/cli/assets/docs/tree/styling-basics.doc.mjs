@@ -16,10 +16,7 @@ export const docs = {
   description:
     'Overview of styling approaches, xstyle prop, Tailwind integration, className/style props, and rest props.',
   keywords: [
-    'xstyle',
-    'className',
     'style',
-    'Tailwind',
     'rest props',
     'data-testid',
     'ref',

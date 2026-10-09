@@ -18,8 +18,6 @@ export const docs = {
   keywords: [
     'setup',
     'theme',
-    'CSS',
-    'cascade layers',
     'reset',
     'smoke test',
     'layer audit',

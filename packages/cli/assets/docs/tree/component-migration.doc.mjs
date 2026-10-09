@@ -17,15 +17,9 @@ export const docs = {
   description:
     'Move the app frame first, map shadcn and Radix primitives to components, and wire up command palette, settings, and theme controls.',
   keywords: [
-    'AppShell',
-    'SideNav',
-    'TopNav',
-    'shadcn',
-    'Radix',
     'Button',
     'TextInput',
     'CommandPalette',
-    'migration',
   ],
 
   sections: [

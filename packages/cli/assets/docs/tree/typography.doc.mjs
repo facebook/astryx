@@ -21,6 +21,7 @@ export const docs = {
     'text',
     'weight',
     'line-height',
+    'display',
   ],
   slots: {
     guides: {title: 'Guides', accepts: {kinds: ['generic']}},

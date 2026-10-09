@@ -16,10 +16,7 @@ export const docs = {
   description:
     'Wrap your app in InternationalizationProvider, load a locale catalog, and swap languages at runtime.',
   keywords: [
-    'i18n',
-    'locale',
     'InternationalizationProvider',
-    'catalog',
     'quick start',
     'language swap',
   ],

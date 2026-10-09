@@ -25,6 +25,9 @@ export const docs = {
     'AppShell',
     'SideNav',
     'TopNav',
+    'hasDivider',
+    'MobileNav',
+    'contentWidth',
   ],
   blocks: [
     {

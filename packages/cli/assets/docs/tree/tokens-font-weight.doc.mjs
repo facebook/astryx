@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Font weight values for body, emphasis, and headings.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "fontWeight"
-  ],
   "sections": [
     {
       "title": "Font Weight Tokens",

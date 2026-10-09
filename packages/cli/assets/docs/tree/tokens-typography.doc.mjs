@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Font family stacks for body, code, and heading text.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "typography"
-  ],
   "sections": [
     {
       "title": "Font Family Tokens",

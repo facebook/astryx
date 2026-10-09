@@ -18,10 +18,6 @@ export const docs = {
   keywords: [
     'line height',
     'leading',
-    'type scale',
-    'display',
-    'heading',
-    'text',
     'defineTheme',
     'base',
     'ratio',

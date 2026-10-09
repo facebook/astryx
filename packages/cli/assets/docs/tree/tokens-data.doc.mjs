@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Colors for charts and graphs: one categorical accent per series, a neutral for labels and reference lines, and sequential ramps from 5 (darkest) to 1 (lightest) for ordered scales and heatmaps. Import their public StyleX variables from @astryxdesign/core/theme/dataTokens.stylex.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "data"
-  ],
   "sections": [
     {
       "title": "Data Visualization Tokens",

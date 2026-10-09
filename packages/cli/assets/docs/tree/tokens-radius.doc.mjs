@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Numeric scale based on a 4dp base unit. Tokens scale with the theme's radius multiplier; --radius-none and --radius-full are fixed.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "radius"
-  ],
   "sections": [
     {
       "title": "Radius Tokens",

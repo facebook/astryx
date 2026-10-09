@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "The keyboard focus ring, shared by every component that draws one. Override these to restyle focus across the system.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "focus"
-  ],
   "sections": [
     {
       "title": "Focus Tokens",

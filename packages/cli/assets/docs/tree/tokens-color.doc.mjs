@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Semantic colors for consistent theming. All colors use light-dark() for automatic mode switching.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "color"
-  ],
   "sections": [
     {
       "title": "Color Tokens",

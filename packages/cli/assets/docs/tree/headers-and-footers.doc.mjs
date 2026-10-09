@@ -19,7 +19,6 @@ export const docs = {
     'LayoutHeader',
     'LayoutFooter',
     'Toolbar',
-    'hasDivider',
     'defaultHasDividers',
     'pinned header',
     'pinned footer',

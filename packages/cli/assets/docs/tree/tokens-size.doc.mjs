@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Control heights for consistent sizing across buttons, inputs, and selectors.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "size"
-  ],
   "sections": [
     {
       "title": "Size Tokens",

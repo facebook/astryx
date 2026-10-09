@@ -19,9 +19,7 @@ export const docs = {
     'best practices',
     'accessibility',
     'heading levels',
-    'display',
     'font-size',
-    'line-height',
   ],
 
   sections: [

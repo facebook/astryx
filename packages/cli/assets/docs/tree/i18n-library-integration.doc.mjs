@@ -23,7 +23,6 @@ export const docs = {
     'LinguiJS',
     'overrides',
     'useTranslator',
-    'Catalog',
   ],
 
   sections: [

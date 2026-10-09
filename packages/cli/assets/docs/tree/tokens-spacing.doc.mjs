@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Spacing scale used for padding, gap, and margin. Component gap props map spacing steps to these tokens.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "spacing"
-  ],
   "sections": [
     {
       "title": "Spacing Tokens",

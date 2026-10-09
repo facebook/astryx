@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Elevation shadows (low to med to high) and inset shadows for input state rings.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "shadow"
-  ],
   "sections": [
     {
       "title": "Shadow Tokens",

@@ -16,10 +16,8 @@ export const docs = {
   description:
     'The Tailwind v4 bridge, cascade layer order, and utility-class usage backed by system tokens.',
   keywords: [
-    'Tailwind',
     'tailwind-theme.css',
     'utility classes',
-    'cascade layers',
     'preflight',
   ],
 

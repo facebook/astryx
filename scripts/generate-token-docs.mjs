@@ -10,7 +10,10 @@
  *   packages/core/src/theme/domainTokens/dataTokens.ts (data visualization) and
  *   packages/core/src/theme/syntax/tokens.ts (code syntax).
  *
- * Each token is written once, in its category's guide. A token reference
+ * The namespace carries the topic's search keywords; a guide adds none of
+ * its own, so search indexes each guide by its title, description, and text,
+ * as it indexed the topic's sections. Each token is written once, in its
+ * category's guide. A token reference
  * (`{type: 'token-ref', topic: 'tokens', section: 'Color Tokens'}`) resolves
  * through the tokens namespace to the guide that holds the table.
  *
@@ -295,7 +298,6 @@ for (const group of groups) {
     placement: {parent: 'namespace:tokens', slot: 'guides', order},
     category: 'foundations',
     description: group.description,
-    keywords: ['design tokens', 'css variables', group.key],
     sections: [section],
   };
 
@@ -364,7 +366,6 @@ const usageDoc = {
   category: 'foundations',
   description:
     'How to import and use token variables in StyleX styles.',
-  keywords: ['StyleX', 'import', 'colorVars', 'spacingVars', 'sizeVars'],
   sections: [
     {
       title: 'Usage in StyleX',

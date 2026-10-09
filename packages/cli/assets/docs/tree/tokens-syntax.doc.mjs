@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Code highlighting colors used by CodeBlock. Each defaults to a palette token, so syntax colors follow the theme; defineTheme({syntax}) sets a syntax theme instead.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "syntax"
-  ],
   "sections": [
     {
       "title": "Syntax Tokens",

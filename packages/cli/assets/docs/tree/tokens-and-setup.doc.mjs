@@ -16,10 +16,6 @@ export const docs = {
   description:
     'Using design tokens in custom styles and configuring a StyleX compiler for swizzled components.',
   keywords: [
-    'design tokens',
-    'var()',
-    'colorVars',
-    'spacingVars',
     'StyleX setup',
     'swizzle',
     'webpack',

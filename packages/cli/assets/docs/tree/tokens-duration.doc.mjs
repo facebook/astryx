@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "duration"
-  ],
   "sections": [
     {
       "title": "Duration Tokens",

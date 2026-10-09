@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Border width for card and input borders.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "border"
-  ],
   "sections": [
     {
       "title": "Border Tokens",

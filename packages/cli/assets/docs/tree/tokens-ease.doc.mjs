@@ -18,11 +18,6 @@ export const docs = {
   },
   "category": "foundations",
   "description": "Easing curves for animations and transitions.",
-  "keywords": [
-    "design tokens",
-    "css variables",
-    "ease"
-  ],
   "sections": [
     {
       "title": "Easing Tokens",
