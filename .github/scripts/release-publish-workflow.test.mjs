@@ -12,6 +12,9 @@ const workflow = yaml.parse(
 const ci = yaml.parse(
   fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8'),
 );
+const lint = yaml.parse(
+  fs.readFileSync(path.join(ROOT, '.github/workflows/lint.yml'), 'utf8'),
+);
 const stable = workflow.jobs.publish;
 const canary = workflow.jobs.canary;
 const step = (job, name) =>
@@ -101,6 +104,34 @@ describe('stable and canary publication authority', () => {
     ).run;
     expect(scope).toContain('chore/sync-v*-to-main');
     expect(scope).toContain('stable package-version change on main');
+
+    const lintScope = step(
+      lint.jobs.lint,
+      'Detect the release-sync branch contract',
+    ).run;
+    expect(lintScope).toContain('chore/sync-v*-to-main');
+    expect(lintScope).toContain("grep -Eq '^[0-9]+\\.[0-9]+\\.[0-9]+$'");
+    expect(step(lint.jobs.lint, 'Check Changeset coverage').if).toBe(
+      "github.event_name == 'pull_request' && steps.release-sync-scope.outputs.required != 'true'",
+    );
+    const requiredLintValidation = step(
+      lint.jobs.lint,
+      'Validate release sync in required lint',
+    );
+    expect(requiredLintValidation.if).toBe(
+      "github.event_name == 'pull_request' && steps.release-sync-scope.outputs.required == 'true'",
+    );
+    for (const command of [
+      'git show origin/main:scripts/release/active-release.mjs',
+      'git show origin/main:scripts/lib/workspace-globs.mjs',
+      'validate-sync',
+      '--base origin/main',
+      '--release-ref "v$VERSION"',
+      '--active-branches "$ACTIVE_BRANCHES"',
+    ]) {
+      expect(requiredLintValidation.run).toContain(command);
+    }
+
     const validation = step(
       sync,
       'Validate published bytes and consumed-only Changeset sync',

@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: josephfarina
-approved_at: 2026-10-07
+approved_at: 2026-10-09
 phase: accepted
 owners: [josephfarina, cixzhang]
 affects_architecture: [architecture:cli-surface]
@@ -37,8 +37,10 @@ access to the Core original.
 - **FR1 — A template declares its own replacement.** An integration template MAY
   set `replaces` in its own metadata to an existing Core template id. No
   package-level map declares replacements (`spec:AST-039/FR11`). The field is part
-  of the strict template metadata object, so CLIs before 0.7.0 reject it; an
-  integration that uses it MUST declare `@astryxdesign/cli >=0.7.0`.
+  of the strict template metadata object, so stable CLIs before 0.6.4 reject it;
+  an integration that uses it MUST declare an `@astryxdesign/cli` peer range whose
+  lowest admitted version is at least 0.6.4, the first stable release that applies
+  it (DEC-7).
 - **FR2 — A valid replacement owns default discovery.** When one valid declaration
   applies, unqualified template lookup and default template projections MUST use the
   integration template for the Core id. The integration template MUST remain
@@ -130,13 +132,11 @@ access to the Core original.
 
 ### Platform support
 
-- Minimum supported CLI for an integration that declares `replaces`:
-  `@astryxdesign/cli >=0.7.0`. Earlier stable CLIs parse template metadata strictly:
-  they reject the field, print one warning, and withhold the package's templates and
-  doc topics, while its components still load.
-- The replacement implementation may ship for forward validation before 0.7.0, but
-  remains pre-publication while no supported integration package may declare the
-  field. Stable 0.6.x conflict responses retain their warning-only shape. The
+- Minimum supported CLI for an integration whose template declares `replaces`:
+  `@astryxdesign/cli >=0.6.4`. Earlier stable CLIs parse template metadata strictly:
+  they reject the field, print one warning, drop that template, and withhold the
+  package's doc topics, while its other templates and its components still load.
+- Stable 0.6.x conflict responses retain their warning-only shape. The
   replacement-specific conflict schema becomes eligible for an explicit, complete
   projection update at 0.7.0; version alone does not activate it.
 - Component replacement: `@astryxdesign/cli >=0.6.7` is both the minimum supported CLI
@@ -156,19 +156,19 @@ Project reports invalid contributions while retaining other valid contribution k
 and valid template or component siblings.
 
 The field is optional, and valid templates keep their selection behavior when it is
-absent. Replacement declarations remain pre-publication throughout 0.6.x because an
-integration package that uses one MUST require `@astryxdesign/cli >=0.7.0`; no valid
-latest-stable integration consumer can rely on that path yet. Replacement selection
-and mutable catalog membership therefore do not create a released victim. The
-optional `TemplateListEntry.replaces` field is additive.
+absent. Stable releases from 0.6.4 apply a declared replacement, and an integration
+package that uses one requires `@astryxdesign/cli >=0.6.4`, a range that excludes
+every stable release that rejects the field. Template winners are mutable catalog
+data, so replacement selection does not create a released victim. The optional
+`TemplateListEntry.replaces` field is additive.
 
 The released `IntegrationTemplateConflict` response is different: existing same-id
 conflicts are already stable. Final 0.6.x preserves their warning-only shape. The
 required `relationship` field and `severity: 'info'` value remain staged for a
-deliberate complete projection update at or after 0.7.0, when replacement packages
-become supported. A package-version bump alone leaves the warning-only projection in
-place. Under `spec:AST-017/FR1`, FR2, FR5, FR7, and FR9–FR13, this pre-publication
-capability plus the compatibility gate is a `[feat]` patch, not a breaking minor.
+deliberate complete projection update at or after 0.7.0. A package-version bump
+alone leaves the warning-only projection in place. Under `spec:AST-017/FR1`, FR2,
+FR5, FR7, and FR9–FR13, the capability plus its compatibility gate is a `[feat]`
+patch, not a breaking minor.
 
 Component discovery reads `replaces` from each valid component doc, and one resolver
 decides component replacement, precedence, and findings. Component detail, batch
@@ -187,7 +187,7 @@ replacement is a `[feat]` patch.
 
 | Contract   | Verification                                                                             | Representative states                                                                                                 | Mutation or failure expectation                                                                                     |
 | ---------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| FR1, FR6   | Template parser and discovery tests plus a released-CLI consumer run                     | field present, field absent, 0.6.3 CLI                                                                                | a replacement is honored from anywhere but the template's own metadata                                              |
+| FR1, FR6   | Template parser and discovery tests, floor-table test, released-CLI consumer run         | field present, field absent, published 0.6.3 and 0.6.4 CLIs, peer range at and below the floor                        | a replacement is honored from anywhere but the template's own metadata, or verify accepts a range below the floor   |
 | FR2, FR3   | Template API/CLI and real consumer-app tests                                             | target id, own id, Core package, integration package                                                                  | lookup becomes ambiguous or the Core original is unreachable                                                        |
 | FR4, FR7   | Doctor and discovery tests plus a 0.6.x response-shape fixture                           | missing local/source, missing target, wrong kind, duplicate, same-id rejection, pre-publication replacement           | invalid metadata activates a replacement, Doctor reports success, or a 0.6.x conflict gains staged fields           |
 | FR5        | Multi-integration and autolink tests                                                     | configured order, explicit versus autolinked, invalid loser                                                           | file/display order chooses the winner or invalid autolinking disables explicit intent                               |
@@ -238,11 +238,12 @@ to discovery later.
 
 Put `replaces` in the integration template's own metadata. Every integration item
 keeps its per-item metadata in its own descriptor (`spec:AST-039/FR11`), and doc
-topics already declare replacement with the same field. The cost: a CLI older than
-0.7.0 rejects the unknown field and withholds the package's templates and doc
-topics, where the manifest map let it fall back to own-id access. Integration
-themes in 0.7.0 already need a 0.7.0 CLI, so this adds no new kind of break;
-integrations that use `replaces` declare `@astryxdesign/cli >=0.7.0`.
+topics already declare replacement with the same field. The cost: a stable CLI
+before 0.6.4 rejects the unknown field, drops that template, and withholds the
+package's doc topics, where the manifest map let it fall back to own-id access.
+Integration themes, section ids, and namespace docs already need a 0.6.4 CLI, so
+this adds no new kind of break; integrations that use `replaces` declare the CLI
+floor in DEC-7.
 
 Rejected: `templateReplacements` in the manifest (DEC-1). It is a central catalog of
 per-item data, which `spec:AST-039/FR11` forbids for every kind.
@@ -251,6 +252,7 @@ per-item data, which `spec:AST-039/FR11` forbids for every kind.
 
 **Reference:** `spec:AST-035/DEC-4`
 **Decider:** `josephfarina`, `2026-09-29`
+**Superseded in part by:** `spec:AST-035/DEC-7`, `2026-10-09`
 
 Integration-template replacement is not a fully published API before the supported
 0.7.0 integration-package boundary. Shipping its implementation in final 0.6.x is
@@ -300,6 +302,22 @@ learns one set of rules for both kinds, and no two component surfaces can disagr
 about the winner.
 
 Rejected: per-surface resolution — component, search, and swizzle would drift apart.
+
+### DEC-7 — The template replacement floor is the first release that applies it
+
+**Reference:** `spec:AST-035/DEC-7`
+**Decider:** `josephfarina`, `2026-10-09`
+
+An integration whose template sets `replaces` declares an `@astryxdesign/cli` peer
+range that starts at 0.6.4, in place of DEC-4's `>=0.7.0`. Published 0.6.4 through
+0.6.7 apply FR2 and FR3 to a declared replacement, and published 0.6.3 and earlier
+reject the field. A floor that no published release satisfies makes npm leave the
+CLI uninstalled in an app that installs the package. From 0.6.4, the `replaces`
+declaration, replacement selection, and the optional list projection are published
+surfaces under `spec:AST-017/FR24`; the expanded conflict fields stay
+pre-publication until the projection change of FR7 and FR8 at or after 0.7.0.
+
+Rejected: keeping `>=0.7.0` until 0.7.0 ships, because npm removes the CLI from apps on 0.6.x that install such a package.
 
 ## Open questions
 

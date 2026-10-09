@@ -73,7 +73,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Note: published 0.6.5 and earlier reject `keywords` and drop that template, and published 0.6.3 and earlier also hide your doc topics. In 0.6.3 to 0.6.5, `template --list` and `search` print one warning, and `docs` and `build` say nothing. Declare the CLI floor that `integration verify` names as an optional peer ({@link generic:versioning}); verify fails with `keywords_needs_cli` until you do.',
+          text: 'Note: `keywords` needs `@astryxdesign/cli` 0.6.6 or later. A stable CLI before 0.6.6 rejects the field and drops that template, and one before 0.6.4 also hides your doc topics: `template --list` and `search` print one warning, and `docs` and `build` say nothing. Declare the CLI floor as an optional peer ({@link generic:versioning}); `integration verify` fails until you do.',
         },
       ],
     },

@@ -1,5 +1,19 @@
 # @xds/theme-matcha
 
+# 0.6.7
+
+#### New Features
+
+- Each theme package now exports `/fonts.css` beside `/built` and `/theme.css`. Import it when the theme uses non-system fonts.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @josephfarina
+
+---
+
 # 0.6.6
 
 #### New Features

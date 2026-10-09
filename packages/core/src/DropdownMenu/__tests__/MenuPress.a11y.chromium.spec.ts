@@ -294,6 +294,22 @@ test.describe('DropdownMenu press model (Chromium)', () => {
     expect(activations).toEqual([]);
   });
 
+  test('touch: a menu a held finger opens stays open when that finger lifts on the trigger', async ({
+    page,
+  }) => {
+    const activations = collectActivations(page);
+    const cdp = await enableTouch(page);
+    await mount(page, MENU_STORY);
+    await touch.start(cdp, await center(page, TRIGGER));
+    const menu = page.getByRole('menu');
+    // The long-press delay opens the menu with the finger still down.
+    await expect(menu).toBeVisible();
+    await touch.end(cdp);
+    await page.waitForTimeout(400);
+    await expect(menu).toBeVisible();
+    expect(activations).toEqual([]);
+  });
+
   test('touch: a vertical pan in an overflowing menu scrolls it and acts on nothing', async ({
     page,
   }) => {

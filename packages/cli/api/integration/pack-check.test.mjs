@@ -1025,9 +1025,11 @@ describe('integrationPackCheck', () => {
     expect(await codes()).toContain('replaces_needs_cli');
     peer('^0.6.0');
     expect(await codes()).toContain('replaces_needs_cli');
-    // `replaces` still needs 0.7.0.
-    peer('>=0.6.4');
+    // Published 0.6.3 rejects `replaces`; published 0.6.4 applies it.
+    peer('>=0.6.3');
     expect(await codes()).toContain('replaces_needs_cli');
+    peer('>=0.6.4');
+    expect(await codes()).not.toContain('replaces_needs_cli');
     peer('>=0.7.0');
     expect(await codes()).not.toContain('replaces_needs_cli');
   }, 120_000);
@@ -1062,6 +1064,12 @@ describe('integrationPackCheck', () => {
     expect(await codes()).toContain('keywords_needs_cli');
     peer('^0.6.0');
     expect(await codes()).toContain('keywords_needs_cli');
+    // Published 0.6.4 and 0.6.5 drop a template that sets `keywords`;
+    // published 0.6.6 reads it.
+    peer('>=0.6.5');
+    expect(await codes()).toContain('keywords_needs_cli');
+    peer('>=0.6.6');
+    expect(await codes()).not.toContain('keywords_needs_cli');
     peer('>=0.7.0');
     expect(await codes()).not.toContain('keywords_needs_cli');
   }, 120_000);

@@ -1,5 +1,131 @@
 # @xds/core
 
+# 0.6.7
+
+#### New Features
+
+- `Item` gains swipe actions for touch, per `spec:AST-057`. `swipeActions` declares, per side, the verbs a sideways drag uncovers as `ItemSwipeAction[]` (`{id?, label, icon?, onActivate, isDisabled?, variant?: 'neutral' | 'accent' | 'destructive', hasRemoval?}`, outermost last); `swipeBehavior` is `reveal` (the row rests open with every entry a real button; a long drag or a fling fires the outermost) or `commit` (the row slides out and the outermost fires; nothing rests). After an entry fires the row springs back, or holds out when the entry has `hasRemoval`. A mouse never starts the drag, a mostly vertical drag stays the scroller's, a resting row closes on a pointer outside it. Available on a row whose role permits interactive descendants (a `listitem`, a role-less row); `ListItem` passes both props through. No element is added to a row: its root translates and its panels counter-translate. `List` clips its rows in the inline axis (`overflow-inline: clip`). Types `ItemSwipeAction`, `ItemSwipeActions`, `ItemSwipeActionVariant` and `ItemSwipeBehavior` are exported.
+- Drawer is a container, like Dialog. A new `padding` prop takes a spacing step, and a theme's `padding` on `drawer` pads the drawer's scrolling content area through container tokens instead of padding the panel. The padded content area publishes its inset, so a Section that is the drawer's only child, and bleed children such as Table and Divider, align against it, and a Layout inside picks the value up for its header, content, and footer regions. With neither set, the inset is `--spacing-4`, as in Dialog; pass `padding={0}` for a full-bleed content area. The block-end safe-area inset is preserved in every mode.
+- An option can carry a secondary action; `MultiSelector` renders it in a grid.
+  `SelectorOptionData` and `SearchableItem` gain `action?: ReactNode`: one node the caller renders and names — an `IconButton`, a `Button`, a menu trigger. In `MultiSelector`, once any option carries one the popup is a `role="grid"` whose rows pair the option with its action: Up/Down move rows, the inline-end arrow reaches the action (following RTL), Enter fires it, pointer and touch press it directly, and pressing it never changes the selection. The trigger advertises `aria-haspopup="grid"`. Nothing changes for options without an action. `Selector` and the typeahead panel do not render the key yet and warn in development when an item carries one.
+- `useTableRowExpansion` accepts `panelVariant`, and the detail panel now sits on the surface behind the table by default instead of on a wash of its own. (#5995)
+  The panel row painted `--color-background-muted` unconditionally, and being a `<tr>` the plugin builds itself, nothing a caller rendered could reach it.
+
+  The panel is the row's continuation, not a surface of its own, so it now takes whatever the table sits on — the same thing the row does. That keeps the plugin unopinionated about the table's background: a table on a `Card` no longer stacks a third surface, and a striped table no longer paints a band in the same token as its own stripe, which read as a data row rather than as a detail.
+
+  `panelVariant: 'muted'` keeps the wash for the case that wanted it — a bare table with no card, no dividers and no striping, where nothing else separates the panel from the data around it.
+
+  **This changes the default appearance.** A table relying on the wash gets it back with `panelVariant: 'muted'`; in dark themes there is nothing to get back, because `--color-background-muted` is a low-alpha near-black that is close to invisible over a dark card — dark has effectively been rendering `transparent` all along.
+
+- `useTableRowExpansion` accepts `hasRowClickExpansion`, so a row opens when you click anywhere on it and not only on its chevron. (#5995)
+  `useTableTreeData` has had this since it shipped, under the same name and with the same behaviour. The detail-panel plugin is the other half of the same pair — one expands into child rows, one expands into a panel — and a caller who moved between them lost whole-row clicking without anything saying why. There was no way to add it back either: a click handler on the row has to know not to fire on a checkbox, a link or the end of a text drag, and none of that is reachable from the outside.
+
+  Off by default, and pointer-only when on. The chevron button stays the accessible control, so keyboard and assistive-tech users are unaffected — this adds a shortcut for a mouse, not a second way to operate the table. Clicks that land on interactive cell content, clicks that end a text selection, and clicks on rows `getIsItemExpandable` has ruled out all pass through untouched. The chevron already stops propagation, so it does not toggle twice.
+
+  Collapsed rows are wired up as well as expanded ones, which is most of the point: the row you want to click is the one that has not opened yet.
+
+#### Fixes
+
+- A BottomSheet drag writes its transform straight to the sheet once per input sample and renders nothing in between (React state changes when the drag begins and ends, and when its layout split changes). Measured in Chromium: 4 commits for a 24-sample drag, down from 49. The release still animates from wherever the finger left the sheet.
+- BottomSheet hands a touch to the sheet at the scroll edge of the box under the finger, not the body's alone. Content that scrolls inside the body (a pinned header and footer around a scrolling middle, a grid) never moved the body's `scrollTop`, so every pull down over that scrolled box dragged the sheet and the box could not be scrolled back by hand. From the box's top the pull still drags the sheet.
+- BottomSheet no longer blocks pinch-zoom. A pinch that started on an open sheet (its handle, its content, or across both) did nothing, because the sheet claimed every touch gesture: `touch-action: none` on the sheet and handle, `pan-y` on the content. The sheet now leaves pinch to the browser (`pinch-zoom`, and `pan-y pinch-zoom` on the content), and a second finger (on the handle, on the content, or off the sheet, whichever lands first) ends any sheet drag in flight or about to start, so the page zooms and the sheet stays at its detent. One-finger drag and scroll are unchanged.
+- A BottomSheet release is judged where the sheet would coast to at the finger's speed, not where the finger left it: a medium throw dismisses from short of the dismiss line and a gentle throw lands on the next detent instead of snapping back, the release speed is read over the finger's last 100ms rather than its last two samples, and a finger that rests before lifting releases no throw. A nudge under 48px still projects nothing.
+- A DropdownMenu opened by a mouse press returns focus to its trigger when it closes, instead of to the control that was focused before the press.
+  A mouse opens the menu on press-down, before the browser's own mousedown has focused the trigger, so the popover remembered the previously focused control and handed focus back there on Escape or after a pick. The trigger now takes focus as the press opens the menu, the state a click-open already had; keyboard opens, taps and the menu's own behavior are unchanged.
+- A field status shown with `statusVariant="tooltip"` is now announced to screen readers when it appears or changes, the same way the attached and detached message boxes are: errors assertively, warnings and successes politely.
+  Before, the tooltip placement only described the control, so a screen-reader user was not told that a validation message had appeared until they left and re-entered the field. This affects every input that offers the tooltip placement. The attached and detached placements are unchanged and are still announced once.
+- FileInput: invoke changeAction and update optimistic state on clear and file selection
+- swizzle: rewrite every .stylex import to a deep path
+  `astryx swizzle Button` (and any component that imports a `.stylex` module from outside its own directory) emitted an import that collapsed to the directory barrel — e.g. `@astryxdesign/core/utils` instead of `@astryxdesign/core/utils/interactionOverlay.stylex`. The barrel does not re-export those StyleX symbols, so the swizzled file could not compile.
+
+  `rewriteImports` now gives every `*.stylex` module the deep subpath. The exports generator (`scripts/sync-exports.js`) adds 16 specific subpath exports for the `.stylex` modules swizzled components actually reference across directories:
+
+  `DateInput/tokens.stylex`, `Icon/IconSize.stylex`, `Indicator/indicator.markers.stylex`, `Layer/layerAnimations.stylex`, `Layer/layerTextReset.stylex`, `Layer/layerViewportInset.stylex`, `Layout/container.stylex`, `Layout/edgeCompensation.stylex`, `Layout/padding.stylex`, `NavItem/navItemStyles.stylex`, `Selector/selectorPresentation.stylex`, `Stack/stack.stylex`, `Stack/stackItem.stylex`, `Text/text.stylex`, `utils/focusOutline.stylex`, `utils/interactionOverlay.stylex`
+
+  These are public API additions. Each module already ships in the npm tarball (in `dist/`); only the exports map entry is new. No wildcard — a future cross-directory `.stylex` import needs a deliberate entry in `STATIC_EXPORTS`. Precedent: `./theme/dataTokens.stylex` (AST-066 FR2).
+
+- Keep grouped-row custom headers full-width while pinning their 16px disclosure button, and expose expansion state on the button. (#6251)
+- Keep grouped-row collapse chevrons pinned without shrinking custom headers, and increase them from 12px to 16px (#6222)
+- Keep layer portals inside their nearest dialog
+- Markdown: read an indented table with its own columns
+  `Markdown` no longer adds an empty first column to a table whose rows are indented, such as `  | a | b |`. The indentation before a row's first pipe used to read as a cell of its own.
+- Markdown: keep a definition-shaped line whose label is over 999 characters
+  `Markdown` no longer drops a line shaped like a link reference definition whose label holds more than 999 characters. CommonMark allows no such definition, so the line now shows as text, as a reference with that label already did.
+- Markdown: end a code block left open at the end of a message on its last line of code
+  When a message ended inside a code block that was never closed, `Markdown` read the message's final line ending as one more, empty line of code, unlike a closed code block and unlike the streamed render of the same message. A real blank line before the end is still code, and while a message streams, an open code block now shows the blank lines already written instead of adding them later.
+- Markdown: keep a quoted blank line at the end of a code block left open
+  A code block left open inside a block quote keeps a blank quoted line at its end as code, as CommonMark reads it. Only the document's own final line ending is left out of an open code block.
+- Markdown: keep two lists apart while streaming when their bullets or indentation differ
+  While a message streamed, `Markdown` joined two lists a blank line apart whenever both were bulleted, or both numbered with the same delimiter — even when their bullets (`-` then `*`) or indentation differed, where the finished document shows two lists. The streamed render now keeps them apart, as the finished document does.
+- MobileNav no longer blocks pinch-zoom while it is open. The open nav covers the whole viewport and declared `touch-action: none` (with `pan-y` on its content), so a pinch anywhere on screen did nothing. It now declares `pinch-zoom` (and `pan-y pinch-zoom` on the content): pans are still kept from reaching the page behind, and a pinch zooms the page.
+- MultiSelector: name the listbox of a bottom sheet without search from the component's label, so screen readers announce it
+- Added a `@astryx.richTextEditor.*` catalog namespace to the shared message catalog, so the RichText editor's toolbar labels, block-format options, link dialog, and Tab escape hint can be translated and overridden through `InternationalizationProvider`. The editor's character counter now announces through the existing `@astryx.textArea.characters*` messages, so it is translated in every locale TextArea already ships.
+- In a collapsed SideNav, pressing a SideNavHeading menu trigger right after hovering it now keeps the hover-opened menu open, as the click guard intends. The browser was dismissing the menu on the press because the trigger sat outside the panel; the collapsed trigger is now the panel's native invoker, the same wiring TopNavMenu uses.
+- Keep editable content from toggling tree and expansion rows
+  The shared click guard that row-expansion and tree-data use to decide whether a row click should toggle missed `[contenteditable]` elements. Clicking or typing inside editable content in a row toggled it. Restored the exclusion with tests on both paths.
+- Whole-row-click expansion reuses the shared clickable-container guards instead of its own selector list. (#5995)
+  `useTableRowExpansion` and `useTableTreeData` each carried a hand-rolled copy of "did this click belong to something else" — the same nine selectors, written twice. `useClickableContainer` already owns that rule for every clickable surface in the system, and its `INTERACTIVE_SELECTORS` list is the fuller one: it also covers `role="link"`, `radio`, `switch`, `tab`, `menuitem`, `option`, `combobox`, `listbox`, `slider`, `spinbutton` and `[data-pressable-container]`, and it excludes `[aria-readonly="true"]`.
+
+  Both plugins now call the hook's `hasInteractiveAncestor` and `hasTextSelection`, newly exported for containers that cannot use the hook itself — a `<tr>` assembled inside `transformBodyRow` has no ref to hand it.
+
+  Two behaviour changes fall out of sharing, both fixes:
+
+- Turn only the chevron glyph in `useTableRowExpansion`, not the button beneath it. (#5995)
+  The rotation was on the `<button>`, which is the hit target and carries the hover chip, so opening a row swung that rounded rectangle and its highlight a quarter turn along with the arrow — most visible mid-animation, where the chip passes through a diamond. A finished 90° turn on a 24px rounded square lands back on itself, which is why this only shows up in motion.
+
+  The transform now sits on the glyph and the button stays put. The two transitions move onto `--duration-fast` and `--ease-standard` in the same pass, matching what `TableRow` already uses for its own hover transition.
+
+- Draw the row divider below a `useTableRowExpansion` detail panel rather than above it. (#5995)
+  An expanded row and its panel are one unit, but the divider was landing between them: the row drew its own bottom border, which put a line between the row and the detail it had just opened, and the panel drew none, so it ran flush into the next row. Both halves of that are backwards — the pair was split down the middle and then fused to the row below.
+
+  The expanded row now gives up its border and the panel takes one. On a table with no row dividers the suppression removes a border that was never there and the panel's is never applied, so neither side has to consult the divider mode; only the panel does, to know whether to draw at all. The panel row carries `tableRowMarker`, which is how `TableCell` scopes its "no trailing line under the last row" rule, so an expanded last row still ends the table cleanly.
+
+- Start the `useTableRowExpansion` detail panel at the first column rather than at the row edge. (#5995)
+  The panel is one cell spanning the whole row with a flat `20px` inline padding, so its content began under the chevron — a column to the left of every label it describes.
+
+  It now indents by the chevron column's fixed width plus the inline padding a cell of that density gives its own content, read off the table context so it follows `density`, and written as a logical property so RTL mirrors it. It is not configurable: a panel starting anywhere else reads as a misalignment rather than as a choice.
+
+  The chevron column's width cannot be a token reference — the layout does arithmetic on it — but it is the pixel value of `--spacing-10`, which is how the indent spells it. A test pins the two together so a change to the scale cannot silently unalign them.
+
+- `Table` zebra striping counts data rows only, so expanding a row no longer inverts the stripe of every row below it. (#5995)
+  A row-expansion detail panel is appended as a sibling `<tr>` in the same `<tbody>`, and striping is `:nth-child(even)` — so the panel took a stripe turn of its own and pushed every row after it onto the opposite one. Opening a single row repainted half the table.
+
+  The stripe now counts `:nth-child(even of :not([data-expansion-panel]))`. A panel is not a row and is not counted as one, so the data rows keep their parity whatever is open.
+
+  `of S` has been Baseline since 2023, inside Astryx's support floor (AST-013). Below it the stripe rule is dropped rather than misapplied: an unstriped table, not a mis-striped one.
+
+  Tables without the row-expansion plugin are unaffected — nothing else in the system emits `data-expansion-panel`.
+
+- Table columns without an explicit width now keep a compact readability floor and use the existing horizontal Scroll region when their combined minimums do not fit.
+
+#### Documentation
+
+- The README's CDN template command and the icon and token hints in the DropdownMenu item and Indicator docs name the scoped `npx @astryxdesign/cli`, which runs this CLI whether or not it is installed. Bare `npx astryx` fetches an unrelated npm package until the CLI is a dependency.
+- align statusVariant documentation and test coverage across ComplexSelector, Tokenizer, and Typeahead
+
+#### Other Changes
+
+- A click on a composed control the short list missed — a `role="tab"`, a segmented `role="radio"`, a `Slider` in a cell — no longer toggles the row underneath it.
+- The text-selection guard is scoped to the row instead of asking the document for any selection at all. Text selected elsewhere on the page no longer makes every row in the table inert.
+
+  The walk also stops at the row rather than climbing to `document.body`, so an interactive ancestor of the whole table cannot suppress row clicks.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @cixzhang
+- @ernestt
+- @humbertovirtudes
+- @imdreamrunner
+- @josephfarina
+- @Lee-Dongwook
+- @ManoharPaturi
+- @vjeux
+
+---
+
 # 0.6.6
 
 #### New Features

@@ -90,7 +90,7 @@ export default {
           label: 'package.json',
           code: `{
   "peerDependencies": {
-    "@astryxdesign/cli": ">=0.7.0"
+    "@astryxdesign/cli": ">=0.6.4"
   },
   "peerDependenciesMeta": {
     "@astryxdesign/cli": {
