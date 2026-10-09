@@ -9,6 +9,7 @@ import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
 import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {buildVegaLiteConfig, VegaChart, type AnySpec} from '@astryxdesign/vega';
 import {Heading} from '@astryxdesign/core/Text';
+import {useCssLengthInPixels} from './chartThemingUtils';
 
 const meta: Meta<typeof VegaChart> = {
   title: 'Lab/ChartTheming/Vega',
@@ -52,7 +53,7 @@ function VegaThemeExample() {
   const {token} = useTheme();
   const [generation, setGeneration] = useState(0);
   const latestView = useRef<unknown>(null);
-  const radius = Number.parseFloat(token('--radius-element')) || 0;
+  const radius = useCssLengthInPixels(token('--radius-element'));
   const categoryColor = token('--color-data-categorical-blue');
 
   const config = useMemo(() => {
@@ -88,6 +89,7 @@ function VegaThemeExample() {
       <div
         {...stylex.props(styles.chart)}
         data-category-color={categoryColor}
+        data-radius={radius}
         data-view-generation={generation}>
         <VegaChart
           aria-label="Quarterly revenue: Q1 128, Q2 156, Q3 143, Q4 184"
@@ -151,6 +153,7 @@ export const SerializedCanvasConfig: Story = {
     await waitFor(() => {
       expect(Number(wrapper.dataset.viewGeneration)).toBeGreaterThan(0);
       expect(wrapper.dataset.categoryColor).toBe('#005A4E');
+      expect(Number(wrapper.dataset.radius)).toBeGreaterThan(5);
       expect(wrapper.querySelector('canvas')).not.toBeNull();
     });
     const firstGeneration = Number(wrapper.dataset.viewGeneration);

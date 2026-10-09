@@ -127,15 +127,29 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Use Astryx icons for chart controls such as filtering, downloading, zooming, or changing display options. An icon-only control needs an accessible name, and unfamiliar actions need visible supporting text or a tooltip. Legend symbols remain renderer-owned chart marks so they can match the series shape, line, pattern, and color.',
+          text: 'Use `Button` for chart actions with visible text and `IconButton` for familiar icon-only actions. Import `IconButton` from `@astryxdesign/core/IconButton` and render its glyph with `Icon` from `@astryxdesign/core/Icon`. `label` is the accessible name; add `tooltip` when sighted people may not recognize the action. If no semantic Astryx icon fits, pass a product-owned SVG component through `Icon` instead of rendering an unstyled SVG directly in the control.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          code: `import {Icon} from '@astryxdesign/core/Icon';
+import {IconButton} from '@astryxdesign/core/IconButton';
+
+// DownloadGlyph is a product-owned SVG component.
+<IconButton
+  icon={<Icon icon={DownloadGlyph} />}
+  label="Download quarterly performance chart"
+  tooltip="Download chart"
+  variant="ghost"
+/>`,
         },
         {
           type: 'prose',
-          text: 'Use spacing tokens for application chrome around the plot. Plot margins, tick gaps, hit geometry, and data-density decisions stay local to the renderer. A compact treatment still needs readable labels and usable pointer and touch targets.',
+          text: 'Use spacing tokens for application chrome around the plot. In StyleX code, import `spacingVars` from `@astryxdesign/core/theme/tokens.stylex`; current names use the numeric step scale such as `--spacing-2`, `--spacing-3`, and `--spacing-4`, not a `100` or `400` scale. Resolve the same verified tokens with `token()` when a non-CSS API needs concrete spacing. Plot margins, tick gaps, hit geometry, and data-density decisions stay local to the renderer. A compact treatment still needs readable labels and usable pointer and touch targets.',
         },
         {
           type: 'prose',
-          text: 'Color cannot be the only way to distinguish a series or state. Combine it with a direct label, marker shape, line style, pattern, border, or another cue that survives the renderer and export path.',
+          text: 'Color cannot be the only way to distinguish a series or state. Combine it with a direct label, marker shape, line style, pattern, border, or another cue. Apply the same cue to the plotted mark, legend key, tooltip or direct label, and exported form; a legend-only shape does not distinguish otherwise identical marks in the plot.',
         },
         {
           type: 'prose',
@@ -193,6 +207,14 @@ function resetSeriesColor(series: StoredSeries): StoredSeries {
   const {color: _removed, ...automatic} = series;
   return automatic;
 }`,
+        },
+        {
+          type: 'prose',
+          text: 'Astryx does not define a persisted color grammar. The Storybook picker example accepts normalized opaque six-digit sRGB hex (`#RRGGBB`), but that is an example rather than an Astryx storage contract. A product that accepts alpha, named colors, functional syntax, or wider color spaces must document and normalize its own JSON-safe format.',
+        },
+        {
+          type: 'prose',
+          text: 'Treat saved chart settings as untrusted input. Allow only the product’s curated token IDs, validate custom colors before resolution, version the product-owned envelope, and define how invalid or unknown series recover. Do not pass an invalid stored string to CSS, Canvas, or a renderer.',
         },
       ],
     },
@@ -263,7 +285,7 @@ export function SeriesMark() {
         },
         {
           type: 'prose',
-          text: 'Do not construct `var(--color-data-*)` strings by hand. The theme-override guarantee also requires Astryx’s supported layered StyleX build boundary; a bare unlayered transform can outrank layered theme overrides.',
+          text: 'Do not construct `var(--color-data-*)` strings by hand. Theme overrides also require Astryx’s layered StyleX build boundary; follow the **Vite Setup** section of the `@astryxdesign/build` README before using these imports in a new app. A bare unlayered transform can outrank layered theme overrides.',
         },
       ],
     },
@@ -279,21 +301,40 @@ export function SeriesMark() {
 import {useEffect, useRef} from 'react';
 import {useTheme} from '@astryxdesign/core/theme';
 
+function cssLengthToPixels(value: string): number {
+  const probe = document.createElement('div');
+  probe.style.blockSize = '0';
+  probe.style.inlineSize = value;
+  probe.style.position = 'fixed';
+  probe.style.visibility = 'hidden';
+  if (!probe.style.inlineSize) return 0;
+  document.body.appendChild(probe);
+  const pixels = probe.getBoundingClientRect().width;
+  probe.remove();
+  return Number.isFinite(pixels) ? pixels : 0;
+}
+
 export function CanvasSeries() {
   const ref = useRef<HTMLCanvasElement>(null);
   const {token} = useTheme();
   const color = token('--color-data-categorical-blue');
   const fontFamily = token('--font-family-body');
   const fontSize = token('--text-supporting-size');
-  const radius = Number.parseFloat(token('--radius-element')) || 0;
+  const radius = token('--radius-element');
 
   useEffect(() => {
     const context = ref.current?.getContext('2d');
     if (!context) return;
+    const radiusPixels = cssLengthToPixels(radius);
     context.clearRect(0, 0, 320, 160);
     context.fillStyle = color;
     context.beginPath();
-    context.roundRect(32, 32, 64, 112, [radius, radius, 0, 0]);
+    context.roundRect(32, 32, 64, 112, [
+      radiusPixels,
+      radiusPixels,
+      0,
+      0,
+    ]);
     context.fill();
     context.fillStyle = token('--color-text-secondary');
     context.font = \`\${fontSize} \${fontFamily}\`;
@@ -305,7 +346,11 @@ export function CanvasSeries() {
         },
         {
           type: 'prose',
-          text: 'Use concrete values for Canvas, library option objects, serialized configuration, workers, SSR, and export. Resolve typography and radius tokens the same way. The product owns any further parsing or conversion required by its renderer.',
+          text: 'Token resolvers return concrete CSS values, but a concrete value can still include a unit such as `rem`. Preserve the token string when an API accepts CSS syntax, as `context.font` does. When an API requires numeric pixels, convert supported units deliberately; `Number.parseFloat` alone is not safe for `rem`, `em`, percentages, or calculated lengths. The product owns that conversion for its renderer.',
+        },
+        {
+          type: 'prose',
+          text: 'Choose one coherent accessibility path for Canvas. A concise chart may use `role="img"` with an accessible name and description. If a complete adjacent table or text summary is the primary alternative, the Canvas may be `aria-hidden="true"`; label the surrounding figure and keep the alternative in the accessibility tree. Do not attach ARIA descriptions to an `aria-hidden` Canvas.',
         },
       ],
     },
@@ -331,6 +376,10 @@ JSON.stringify(exportConfig);`,
           type: 'prose',
           text: 'Server rendering and export require an explicit theme and light or dark mode. Do not infer a client’s system preference. A worker should receive only the concrete values it uses. When the product changes theme or mode, send a fresh payload; do not send hooks, document-dependent CSS references, callbacks, or the full theme object.',
         },
+        {
+          type: 'prose',
+          text: 'Define an export’s logical dimensions, pixel ratio, background transparency, format, filename, locale, and mode explicitly. Paint the background when the file must be opaque, and verify that patterns, labels, borders, and typography survive the exported output.',
+        },
       ],
     },
     {
@@ -339,7 +388,7 @@ JSON.stringify(exportConfig);`,
       content: [
         {
           type: 'prose',
-          text: 'Recharts passes the demonstrated bar, grid, axis, tooltip, and legend paint values to live SVG or HTML properties. Use Astryx variables for those verified properties. This example does not imply that every Recharts prop or future release accepts CSS references.',
+          text: 'Recharts passes the demonstrated bar, grid, axis, tooltip, and legend text values to live SVG or HTML properties. Use Astryx variables for those verified properties. This example does not imply that every Recharts prop or future release accepts CSS references.',
         },
         {
           type: 'code',
@@ -348,6 +397,7 @@ JSON.stringify(exportConfig);`,
 import {
   colorVars,
   radiusVars,
+  shadowVars,
   typographyVars,
   typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
@@ -355,6 +405,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Legend,
   Tooltip,
   XAxis,
   YAxis,
@@ -381,16 +432,37 @@ export function RevenueChart({data}) {
           background: colorVars['--color-background-card'],
           borderColor: colorVars['--color-border'],
           borderRadius: radiusVars['--radius-element'],
+          boxShadow: shadowVars['--shadow-med'],
           color: colorVars['--color-text-primary'],
+        }}
+      />
+      <Legend
+        wrapperStyle={{
+          color: colorVars['--color-text-secondary'],
+          fontFamily: typographyVars['--font-family-body'],
+          fontSize: typeScaleVars['--text-supporting-size'],
         }}
       />
       <Bar
         dataKey="revenue"
         fill={dataVars['--color-data-categorical-blue']}
+        isAnimationActive={false}
       />
     </BarChart>
   );
 }`,
+        },
+        {
+          type: 'prose',
+          text: "`ResponsiveContainer` needs a parent with a definite height. Keep that height and chart margins renderer-owned; use Astryx spacing tokens only for chrome around the plot. Use `radiusVars['--radius-element']` for CSS-valued tooltip radius. If a Recharts geometry prop needs a number, resolve and deliberately convert the CSS length as shown in the Canvas section. This fixed example disables series animation; if motion communicates meaningful change, connect it to the product’s reduced-motion handling.",
+        },
+        {
+          type: 'prose',
+          text: 'The default Recharts legend mainly mirrors series color. When a pattern, marker shape, or dash style carries series identity, pass a product-owned renderer through `Legend.content` and draw the same cue in each legend key. Keep SVG pattern IDs unique across the plot and legend.',
+        },
+        {
+          type: 'prose',
+          text: '`accessibilityLayer`, `title`, and `desc` improve the chart’s keyboard and descriptive surface, but they do not automatically expose every data value or interaction. If people need exact values, provide a visible table or concise text summary, or another tested equivalent. Avoid repeating the same long description in both the chart and its alternative.',
         },
       ],
     },
@@ -400,7 +472,15 @@ export function RevenueChart({data}) {
       content: [
         {
           type: 'prose',
-          text: 'Configuration-driven renderers need concrete, serializable values rather than retained CSS references. The existing Astryx Vega package accepts the active theme resolver and produces a Vega-Lite configuration for the current theme. This example demonstrates the current integration; it is not a compatibility guarantee for future Vega releases.',
+          text: '`@astryxdesign/vega` is experimental and currently published only through the `@canary` tag. Pin an exact version and read the package README before adopting it. Pass only specs the product authors or reviews: Vega specs can evaluate expressions and load URLs, so user-, document-, or model-generated specs need the interpreter and restricted-loader boundary described in that README.',
+        },
+        {
+          type: 'prose',
+          text: 'Configuration-driven renderers need concrete, serializable values rather than retained CSS references. `buildVegaLiteConfig(token)` resolves Astryx colors and font families and supplies the current axis, legend, mark, range, title, padding, and view defaults. It does not create HTML tooltip chrome, apply product-specific mark radii, or manage renderer interaction state. Pass the result through `compileOptions.config`; do not copy the same object into `spec.config`.',
+        },
+        {
+          type: 'prose',
+          text: 'Check the text roles your spec enables. In this version, an enabled axis title needs explicit `config.axis.titleColor` and `config.axis.titleFont`; a chart title also needs `config.title.font` when it should use the theme font. Resolve those values with `token()` and verify the rendered chart in light and dark mode.',
         },
         {
           type: 'code',
@@ -429,7 +509,7 @@ export function VegaRevenueChart({spec, values}: {
     <VegaChart
       aria-label="Quarterly revenue"
       compileOptions={{config}}
-      data={{table: values}}
+      data={{table: [...values]}}
       spec={spec}
       viewOptions={{renderer: 'canvas'}}
     />
@@ -438,7 +518,19 @@ export function VegaRevenueChart({spec, values}: {
         },
         {
           type: 'prose',
-          text: 'The current `VegaChart` wrapper rebuilds its View when compile configuration changes. A product that owns zoom, selection, hover, or signal state must restore supported state after that rebuild or document the reset. Do not describe this transition as preserving renderer state.',
+          text: '`token` follows the nearest Astryx `Theme`. To switch modes on the same page, keep `mode` in product state and update `<Theme theme={productTheme} mode={mode}>`. Keep the chart at the same component position instead of keying it by mode.',
+        },
+        {
+          type: 'prose',
+          text: 'A Vega-Lite tooltip encoding defines tooltip data, not themed HTML tooltip chrome. If the product supplies an HTML tooltip through `viewOptions.tooltip`, keep that handler stable and style its surface with Astryx background, border, text, radius, typography, spacing, and shadow tokens.',
+        },
+        {
+          type: 'prose',
+          text: '`VegaChart.data` initializes named datasets only when a View is created. Changing `values` alone does not update the live View. For live data, capture the View with `onReady`, call `view.data(name, tuples)`, and then call `view.runAsync()`.',
+        },
+        {
+          type: 'prose',
+          text: '`VegaChart` rebuilds its View when the value of `spec`, `compileOptions`, `parseConfig`, `parseOptions`, or `viewOptions` changes. `onReady` receives each new View. Keep product-owned zoom, selection, and signal state outside the View and reapply supported state there; otherwise tell people that the mode switch resets it.',
         },
       ],
     },
@@ -446,6 +538,10 @@ export function VegaRevenueChart({spec, values}: {
       id: 'update-existing-renderers',
       title: 'Update existing renderer instances on theme changes',
       content: [
+        {
+          type: 'prose',
+          text: '`useTheme().mode` reports the effective light or dark mode, while the owning `<Theme mode={mode}>` provider controls it. Keep one source of truth; do not add a second chart-only mode prop that can drift from the provider.',
+        },
         {
           type: 'prose',
           text: 'Keep the chart in the same component position and update its existing props, options, Canvas state, signals, uniforms, or buffers. Do not key the chart by theme or mode only to force a remount.',
@@ -474,6 +570,10 @@ export function VegaRevenueChart({spec, values}: {
         },
         {
           type: 'prose',
+          text: 'The examples above demonstrate value transport and theme updates. They are not a complete chart editor and do not demonstrate persistence migrations, invalid-input recovery, localized or right-to-left layouts, every empty or error state, or complete non-color identity. Use the checklist below for those product-owned behaviors.',
+        },
+        {
+          type: 'prose',
           text: 'Consider proposing a shared API only after multiple products repeat the same saved-choice model, picker projection, validation, or renderer conversion. Bring those concrete use cases and migration needs with the proposal.',
         },
       ],
@@ -484,7 +584,7 @@ export function VegaRevenueChart({spec, values}: {
       content: [
         {
           type: 'prose',
-          text: 'High-contrast and forced-colors modes may replace authored chart paints. Preserve meaning through labels, shapes, patterns, line styles, borders, and system-recognizable controls instead of trying to force exact brand colors through the user’s contrast settings.',
+          text: 'Forced-colors handling differs by renderer. Browsers may replace DOM and SVG paints, but Canvas and GPU pixels are not reliably remapped. Test each renderer separately. Preserve meaning with labels, patterns, line styles, borders, and text alternatives whether paints are remapped or not. If the product redraws Canvas for forced colors, resolve the chosen system-derived colors to concrete values before drawing or export.',
         },
         {
           type: 'list',

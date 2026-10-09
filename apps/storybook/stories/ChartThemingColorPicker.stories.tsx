@@ -6,7 +6,11 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {expect, fireEvent, userEvent, waitFor, within} from 'storybook/test';
 import {Button, Card, Stack, Text} from '@astryxdesign/core';
 import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
-import {colorVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {
+  colorVars,
+  radiusVars,
+  spacingVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
 import {Heading} from '@astryxdesign/core/Text';
 
 const meta: Meta = {
@@ -29,16 +33,16 @@ const styles = stylex.create({
     alignItems: 'center',
     display: 'flex',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacingVars['--spacing-2'],
   },
   chart: {
     alignItems: 'end',
     backgroundColor: colorVars['--color-background-muted'],
     borderRadius: radiusVars['--radius-container'],
     display: 'flex',
-    gap: 16,
+    gap: spacingVars['--spacing-4'],
     height: 220,
-    padding: 24,
+    padding: spacingVars['--spacing-6'],
   },
   bar: (color: string, height: number) => ({
     backgroundColor: color,

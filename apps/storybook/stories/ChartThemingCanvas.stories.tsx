@@ -7,6 +7,7 @@ import {expect, waitFor} from 'storybook/test';
 import {Button, Card, Stack, Text} from '@astryxdesign/core';
 import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
 import {Heading} from '@astryxdesign/core/Text';
+import {useCssLengthInPixels} from './chartThemingUtils';
 
 const meta: Meta = {
   title: 'Lab/ChartTheming/Canvas',
@@ -49,7 +50,7 @@ function NativeCanvasChart() {
   const color = token('--color-data-categorical-blue');
   const fontFamily = token('--font-family-body');
   const fontSize = token('--text-supporting-size');
-  const radius = Number.parseFloat(token('--radius-element')) || 0;
+  const radius = useCssLengthInPixels(token('--radius-element'));
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -137,7 +138,7 @@ export const RuntimeThemeSwitch: Story = {
     await waitFor(() => {
       expect(canvas.dataset.color).toBe('#005A4E');
       expect(canvas.dataset.fontFamily).not.toBe('');
-      expect(Number(canvas.dataset.radius)).toBeGreaterThan(0);
+      expect(Number(canvas.dataset.radius)).toBeGreaterThan(5);
       initialDrawCount = Number(canvas.dataset.drawCount);
       expect(initialDrawCount).toBeGreaterThan(0);
       expect(sampledBarPixel(canvas)).toEqual([0, 90, 78, 255]);

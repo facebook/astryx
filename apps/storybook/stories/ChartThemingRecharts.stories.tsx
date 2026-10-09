@@ -7,10 +7,12 @@ import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {Button, Card, Stack, Text} from '@astryxdesign/core';
 import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
 import {Heading} from '@astryxdesign/core/Text';
+import {useCssLengthInPixels} from './chartThemingUtils';
 import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 import {
   colorVars,
   radiusVars,
+  shadowVars,
   typographyVars,
   typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
@@ -86,7 +88,7 @@ function ThemeAwareRechartsExample({
   useThemeRadius?: boolean;
 } = {}) {
   const {token} = useTheme();
-  const themeRadius = Number.parseFloat(token('--radius-element')) || 0;
+  const themeRadius = useCssLengthInPixels(token('--radius-element'));
   const barRadius = useThemeRadius ? themeRadius : 0;
 
   return (
@@ -132,6 +134,7 @@ function ThemeAwareRechartsExample({
                   background: colorVars['--color-background-card'],
                   borderColor: colorVars['--color-border'],
                   borderRadius: radiusVars['--radius-element'],
+                  boxShadow: shadowVars['--shadow-med'],
                   color: colorVars['--color-text-primary'],
                   fontFamily: typographyVars['--font-family-body'],
                   fontSize: typeScaleVars['--text-supporting-size'],
@@ -318,7 +321,7 @@ export const ThemeTokens: Story = {
         ?.getAttribute('data-bar-radius'),
     );
     expect(Number.isFinite(radius)).toBe(true);
-    expect(radius).toBeGreaterThanOrEqual(0);
+    expect(radius).toBeGreaterThan(5);
   },
 };
 
