@@ -486,6 +486,7 @@ function validateReleaseSync({
   headChangesets,
   releaseOutputs,
   headOutputs,
+  releaseRenames = new Set(),
   cutManifests = new Map(),
   baseManifests = new Map(),
   releaseManifests = new Map(),
@@ -495,26 +496,41 @@ function validateReleaseSync({
   const planned = new Set(plan.changesets.map(entry => entry.path));
   for (const entry of entries) {
     const [status, ...files] = entry.split('\t');
-    if (!status || files.length !== 1 || !files[0]) {
+    const isRename = status?.startsWith('R');
+    const expectedPaths = isRename ? 2 : 1;
+    if (
+      !status ||
+      files.length !== expectedPaths ||
+      files.some(file => !file)
+    ) {
       errors.push(`invalid sync diff entry: ${entry}`);
       continue;
     }
-    const file = files[0];
-    if (file.startsWith('.changeset/')) {
-      if (status !== 'D' || !planned.has(file))
-        errors.push(`release sync may only delete frozen Changesets: ${file}`);
-    } else if (isPackageManifestPath(file)) {
-      if (!releaseManifests.has(file))
-        errors.push(
-          `release sync changed an unplanned package manifest: ${file}`,
-        );
-    } else if (
-      !isReleaseOutputPath(file) &&
-      !/^\.github\/pages\/assets\/(?:manifest\.json|reset\.css|astryx\.css|theme\.css)$/.test(
-        file,
-      )
-    ) {
-      errors.push(`release sync contains a non-bookkeeping path: ${file}`);
+    if (isRename && !releaseRenames.has(files.join('\t'))) {
+      errors.push(
+        `release sync rename does not match published branch: ${files.join(' -> ')}`,
+      );
+      continue;
+    }
+    for (const file of files) {
+      if (file.startsWith('.changeset/')) {
+        if (status !== 'D' || !planned.has(file))
+          errors.push(
+            `release sync may only delete frozen Changesets: ${file}`,
+          );
+      } else if (isPackageManifestPath(file)) {
+        if (!releaseManifests.has(file))
+          errors.push(
+            `release sync changed an unplanned package manifest: ${file}`,
+          );
+      } else if (
+        !isReleaseOutputPath(file) &&
+        !/^\.github\/pages\/assets\/(?:manifest\.json|reset\.css|astryx\.css|theme\.css)$/.test(
+          file,
+        )
+      ) {
+        errors.push(`release sync contains a non-bookkeeping path: ${file}`);
+      }
     }
   }
   for (const file of planned) {
@@ -717,6 +733,23 @@ function main() {
       base,
       'HEAD',
     ]);
+    const releaseDiff = git(root, [
+      'diff',
+      '--name-status',
+      '--find-renames',
+      plan.cutSha,
+      releaseRef,
+    ]);
+    const releaseRenames = new Set(
+      releaseDiff
+        .split('\n')
+        .filter(Boolean)
+        .map(entry => entry.split('\t'))
+        .filter(
+          ([status, ...files]) => status?.startsWith('R') && files.length === 2,
+        )
+        .map(([, ...files]) => files.join('\t')),
+    );
     const releaseOutputs = releaseOutputMapAtRef(root, plan, releaseRef);
     const releaseManifestFiles = releaseOutputPathsAtRef(
       root,
@@ -744,6 +777,7 @@ function main() {
         ),
         releaseOutputs,
         headOutputs: currentOutputMap(root, releaseOutputs.keys()),
+        releaseRenames,
         cutManifests,
         baseManifests,
         releaseManifests,

@@ -419,6 +419,34 @@ describe('post-release bookkeeping sync', () => {
     ).toEqual([]);
   });
 
+  it('accepts only published release-output renames', () => {
+    const from = 'packages/cli/assets/codemods/transforms/next/transform.mjs';
+    const to = 'packages/cli/assets/codemods/transforms/v0.6.6/transform.mjs';
+    const entries = [
+      'D\t.changeset/frozen.md',
+      `M\t${manifestPath}`,
+      'M\tpackages/core/CHANGELOG.md',
+      `R100\t${from}\t${to}`,
+    ];
+    const releaseOutputs = new Map([
+      ['packages/core/CHANGELOG.md', digest('e')],
+      [to, digest('g')],
+    ]);
+    const headOutputs = new Map(releaseOutputs);
+
+    expect(
+      sync({
+        entries,
+        releaseOutputs,
+        headOutputs,
+        releaseRenames: new Set([`${from}\t${to}`]),
+      }),
+    ).toEqual([]);
+    expect(sync({entries, releaseOutputs, headOutputs})).toContain(
+      `release sync rename does not match published branch: ${from} -> ${to}`,
+    );
+  });
+
   it('rejects wholesale release-manifest copies that erase newer main fields', () => {
     expect(
       sync({headManifests: new Map([[manifestPath, releaseManifest]])}),
