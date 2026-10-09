@@ -140,7 +140,7 @@ export const docs = {
             'An unknown field in `astryx.integration.mjs` is ignored with an `unknown_manifest_key` warning, and the rest of the manifest still loads.',
             'A named export that the CLI does not know is ignored with no warning, so `debug` and `gapReport` are safe to add.',
             'A stable CLI before 0.7.0 prints each `{@link ...}` as written.',
-            'A stable CLI before 0.7.0 rejects a template that sets `replaces` or `keywords`, drops that template, and can hide every doc topic your package ships.',
+            'Published 0.6.3 and earlier reject a template that sets `replaces` or `keywords`, drop that template, and hide every doc topic your package ships. Published 0.6.4 and 0.6.5 still drop a template that sets `keywords`.',
             'A stable CLI before 0.6.4 cannot read a docs section, a section `id`, or a theme folder that `integration add theme` writes. It can then hide every doc topic your package ships.',
             'Stable 0.6.3 still loads your components, but 0.6.0 cannot read the component docs that `integration add component` writes: `component AcmeCarousel` fails there.',
           ],
