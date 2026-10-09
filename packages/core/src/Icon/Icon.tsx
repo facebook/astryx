@@ -4,7 +4,7 @@
 
 /**
  * @file Icon.tsx
- * @input Ordinary SVG components or semantic names with independent explicit size/appearance/weight
+ * @input Ordinary/adapted SVG components or names with independent size/appearance/weight intent
  * @output Exports Icon component, IconProps, IconColor, IconSize, IconType types
  * @position Core implementation; consumed by index.ts, tested by Icon.test.tsx
  *
@@ -288,9 +288,9 @@ export function Icon({
     );
   }
 
-  // Ordinary SVG components keep their exact SVGProps contract. Presentation
-  // requests are resolved/diagnosed but never forwarded as arbitrary SVG props.
-  const IconComponent = icon;
+  // Ordinary SVG components keep their exact SVGProps contract. Only a recognized
+  // adapter gets validated library props; caller SVG escape hatches still win.
+  const IconComponent = resolution.component ?? icon;
   return (
     <IconComponent
       ref={ref}
@@ -308,6 +308,7 @@ export function Icon({
         className ?? undefined,
         style,
       )}
+      {...resolution.mappedProps}
       {...props}
     />
   );

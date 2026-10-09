@@ -2,8 +2,8 @@
 
 /**
  * @file Icons consumer reference
- * @input Semantic names, supplied artwork and local capability contracts
- * @output Theme-scoped fixed/adaptive icon authoring guidance
+ * @input Semantic names, supplied artwork and typed local icon-library adapters
+ * @output Theme-scoped fixed/adaptive artwork and safe direct-adapter guidance
  * @position Builder-facing icons reference; no role or component enrollment API
  */
 
@@ -177,6 +177,58 @@ export const brandTheme = defineTheme({
         {
           type: 'prose',
           text: 'Explicit sizes and standalone md use active theme dimension overrides. Implicit built-in sizes in existing components keep their released rem box; omitted overrides and built-in null clears retain rem scaling. Custom icon-size names have canonical contract dimensions and do not extend control size props. Application type augmentation does not install runtime capabilities. `getIcon`, `getExtendedIcon`, and `useIcon` still return React nodes without extra request arguments; ordinary direct SVGs do not receive appearance or weight.',
+        },
+      ],
+    },
+    {
+      title: 'Direct Library Adapters',
+      category: 'foundations',
+      content: [
+        {
+          type: 'prose',
+          text: 'Use createIconAdapter once when a direct library export should follow theme presentation. Its local contract narrows each request, and propNames declares the primitive library props the mapper may return (appearance and weight are the defaults). Ordinary direct SVG components remain fixed. With no supported intent the wrapped component uses its own default without calling the mapper. Keep the contract, mapper, component and adapted export in an importable library module; compile it alongside the theme package. Functions stay imports, not generated function text.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'product-icons.tsx — adapt a supplied library component',
+          code: `import {createIconAdapter, defineIconCapabilities} from '@astryxdesign/core/Icon';
+import {ProductIconImpl} from './artwork.js';
+
+export const capabilities = defineIconCapabilities({
+  appearances: ['outline', 'filled'],
+  weights: {range: {min: 100, max: 900}},
+});
+const adaptProductIcon = createIconAdapter({
+  capabilities,
+  propNames: ['glyphStyle', 'thickness'],
+  resolveProps(request) {
+    return {glyphStyle: request.appearance, thickness: request.weight};
+  },
+});
+export const ProductIcon = adaptProductIcon(ProductIconImpl);`,
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Use the same library contract with a theme',
+          code: `import {Icon} from '@astryxdesign/core/Icon';
+import {defineTheme, Theme} from '@astryxdesign/core/theme';
+import {capabilities, ProductIcon} from './product-icons.js';
+
+const brandTheme = defineTheme({
+  name: 'brand',
+  iconCapabilities: {
+    contract: capabilities,
+    presentation: {default: {appearance: 'filled', weight: 525.5}},
+  },
+});
+
+<Theme theme={brandTheme}><Icon icon={ProductIcon} /></Theme>;`,
+        },
+        {
+          type: 'prose',
+          text: 'ProductIconImpl must support optional primitive glyphStyle and thickness props as well as SVGProps. The .js imports refer to the compiled modules. A mapper cannot change source selection, color, accessibility, events, refs, styles or children. Unsupported explicit appearance or weight warns once in development; unsupported theme choices silently use the library default. Invalid mapping results safely render that default. Missing size support is normal fallback, not a warning. Consumer SVG, ref, event and styling props retain their normal precedence.',
         },
       ],
     },

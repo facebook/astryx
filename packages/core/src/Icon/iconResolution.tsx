@@ -2,8 +2,8 @@
 
 /**
  * @file iconResolution.tsx
- * @input Explicit independent Icon intent, local source contracts and active theme policy
- * @output Supplied artwork, physical box selection and private fallback diagnostics
+ * @input Explicit independent Icon intent, local registry/adapter contracts and active theme policy
+ * @output Supplied artwork, safe library mapped props, box selection and private diagnostics
  * @position Private server-safe resolver; not part of the public Icon barrel
  */
 /* eslint-disable @astryx/no-hardcoded-i18n-string -- Private synchronous developer diagnostics, not rendered UI. */
@@ -30,6 +30,7 @@ import {
   type IconRequest,
   type IconThemeCapabilities,
 } from './iconCapabilities';
+import {getIconAdapter, selectIconAdapter} from './iconAdapters';
 import {
   getIconEntryContract,
   isAdaptiveIconEntry,
@@ -55,7 +56,12 @@ export interface IconAxisInspection {
   provenance: AxisOrigin;
 }
 export interface IconDiagnostic {
-  code: 'unadmitted' | 'unsupported' | 'malformed-entry' | 'malformed-policy';
+  code:
+    | 'unadmitted'
+    | 'unsupported'
+    | 'malformed-entry'
+    | 'malformed-policy'
+    | 'malformed-adapter';
   axis?: 'size' | 'appearance' | 'weight';
   value?: unknown;
   provenance?: AxisOrigin;
@@ -63,7 +69,8 @@ export interface IconDiagnostic {
 }
 export interface IconInspection {
   source: {
-    kind: 'fixed' | 'adaptive' | 'ordinary-direct' | 'missing';
+    kind:
+      'fixed' | 'adaptive' | 'ordinary-direct' | 'adapted-direct' | 'missing';
     provenance: string;
     name?: string;
     themeName?: string;
@@ -80,6 +87,9 @@ export interface IconInspection {
 export interface IconResolution {
   node: ReactNode;
   component?: IconType;
+  mappedProps?: Readonly<
+    Record<string, string | number | boolean | null | undefined>
+  >;
   inspection: IconInspection;
 }
 const diagnosticObjects = new WeakMap<object, number>();
@@ -150,7 +160,8 @@ export function resolveIconWithContext(
     provenance = selected.provenance;
     diagnostics.push(...selected.diagnostics);
   }
-  const sourceContract = getIconEntryContract(entry);
+  const adapter = typeof icon === 'string' ? undefined : getIconAdapter(icon);
+  const sourceContract = adapter?.capabilities ?? getIconEntryContract(entry);
   const sourceContracts = sourceContract ? [sourceContract] : [];
   let themeContracts: ReadonlyArray<IconCapabilities> = [];
   let policy: IconThemeCapabilities | undefined;
@@ -283,6 +294,7 @@ export function resolveIconWithContext(
     weightValue === undefined || admitsIconWeight(app, weightValue),
   );
   const adaptive = isAdaptiveIconEntry(entry) || isAdaptiveIconTree(entry);
+  let mappedProps: IconResolution['mappedProps'];
   let node: ReactNode = entry as ReactNode;
   if (adaptive) {
     const selection = selectAdaptiveIcon(
@@ -314,11 +326,52 @@ export function resolveIconWithContext(
       }
       inspection.fallback ||= selected.fallback;
     }
+  } else if (adapter) {
+    const selection = selectIconAdapter(
+      adapter,
+      {
+        size: finalSize,
+        appearance: appearance.admitted
+          ? (appearanceValue as string | undefined)
+          : undefined,
+        weight: weight.admitted
+          ? (weightValue as string | number | undefined)
+          : undefined,
+      },
+      explicitSizeAdmitted,
+    );
+    mappedProps = selection.mappedProps;
+    size.supported = selection.sizeSupported;
+    for (const [inspection, supported] of [
+      [appearance, selection.appearanceSupported],
+      [weight, selection.weightSupported],
+    ] as const) {
+      inspection.supported = supported;
+      if (
+        supported &&
+        (typeof inspection.requested === 'string' ||
+          typeof inspection.requested === 'number')
+      ) {
+        inspection.selected = inspection.requested;
+      }
+      if (selection.malformed && inspection.requested !== undefined) {
+        inspection.fallback = true;
+        inspection.omitted = inspection.requested;
+        delete inspection.selected;
+      }
+    }
+    if (selection.malformed) {
+      diagnostics.push({
+        code: 'malformed-adapter',
+        message:
+          'Malformed icon adapter mapping was ignored; using the supplied component default.',
+      });
+    }
   }
-  // Fixed artwork supports box sizing. Adaptive artwork reports a missing
-  // supplied size branch independently, without warning about normal fallback.
-  size.supported = adaptive ? size.supported : true;
-  if (adaptive) {
+  // Source-local size support is independent from physical box sizing. A missing
+  // supplied size capability/artwork takes normal fallback without a warning.
+  size.supported = adaptive || adapter ? size.supported : true;
+  if (adaptive || adapter) {
     size.fallback ||= !size.supported;
   }
   for (const [name, inspection] of [
@@ -359,7 +412,9 @@ export function resolveIconWithContext(
   const sourceInfo: IconInspection['source'] = {
     kind:
       typeof icon !== 'string'
-        ? 'ordinary-direct'
+        ? adapter
+          ? 'adapted-direct'
+          : 'ordinary-direct'
         : entry === undefined
           ? 'missing'
           : adaptive
@@ -379,6 +434,7 @@ export function resolveIconWithContext(
   return {
     node,
     ...(typeof icon !== 'string' ? {component: icon} : {}),
+    ...(mappedProps ? {mappedProps} : {}),
     inspection: {
       source: sourceInfo,
       size,
