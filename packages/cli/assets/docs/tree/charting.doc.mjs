@@ -35,7 +35,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Use the whole guide when people can customize a chart, save their choices, or render the same chart through multiple technologies.',
+          text: 'Use the whole guide when people can customize a chart, save their choices, or show the same chart with more than one renderer, such as Recharts, Vega-Lite, or Canvas.',
         },
         {
           type: 'prose',
