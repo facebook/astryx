@@ -1,0 +1,1 @@
+The producer exited before writing the declared static entry.

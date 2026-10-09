@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/facebook/astryx/blob/main/internal/vibe-tests/schema/vibe-artifact-v2.schema.json",
+  "title": "VibeArtifactV2",
+  "description": "Delivery-agnostic producer-to-evaluator artifact contract for Astryx vibe tests.",
+  "type": "object",
+  "required": [
+    "schema",
+    "schemaVersion",
+    "artifactId",
+    "prompt",
+    "producer",
+    "versions",
+    "source",
+    "view",
+    "integrity",
+    "network",
+    "provenance"
+  ],
+  "properties": {
+    "schema": {"const": "VibeArtifactV2"},
+    "schemaVersion": {"const": 2},
+    "artifactId": {"$ref": "#/$defs/nonEmptyString"},
+    "prompt": {
+      "type": "object",
+      "required": ["id", "digest"],
+      "properties": {
+        "id": {"$ref": "#/$defs/nonEmptyString"},
+        "digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "producer": {
+      "type": "object",
+      "required": ["kind", "runner", "deliveryMode"],
+      "properties": {
+        "kind": {"enum": ["component-adapter", "project", "hosted"]},
+        "runner": {"$ref": "#/$defs/nonEmptyString"},
+        "deliveryMode": {"enum": ["static", "build", "serve", "url"]}
+      },
+      "additionalProperties": false
+    },
+    "versions": {"$ref": "#/$defs/versions"},
+    "source": {"$ref": "#/$defs/source"},
+    "view": {"$ref": "#/$defs/view"},
+    "integrity": {
+      "type": "object",
+      "required": ["sourceTree", "viewInput"],
+      "properties": {
+        "sourceTree": {"$ref": "#/$defs/digest"},
+        "viewInput": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "network": {
+      "type": "object",
+      "required": ["mode", "allowedOrigins"],
+      "properties": {
+        "mode": {"enum": ["deny", "record", "replay"]},
+        "allowedOrigins": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/httpsOrigin"},
+          "uniqueItems": true
+        },
+        "receipt": {"$ref": "#/$defs/bundlePath"}
+      },
+      "additionalProperties": false
+    },
+    "states": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {"$ref": "#/$defs/state"}
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["execution"],
+      "properties": {
+        "execution": {"$ref": "execution-provenance-v1.schema.json"},
+        "transcript": {"$ref": "#/$defs/bundlePath"},
+        "usage": {"$ref": "#/$defs/bundlePath"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"view": {"properties": {"kind": {"const": "static"}}}}
+      },
+      "then": {
+        "properties": {
+          "producer": {"properties": {"deliveryMode": {"const": "static"}}}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"view": {"properties": {"kind": {"const": "build"}}}}
+      },
+      "then": {
+        "properties": {
+          "producer": {"properties": {"deliveryMode": {"const": "build"}}}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"view": {"properties": {"kind": {"const": "serve"}}}}
+      },
+      "then": {
+        "properties": {
+          "producer": {"properties": {"deliveryMode": {"const": "serve"}}}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"view": {"properties": {"kind": {"const": "url"}}}}
+      },
+      "then": {
+        "properties": {
+          "producer": {"properties": {"deliveryMode": {"const": "url"}}}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nonEmptyString": {"type": "string", "minLength": 1},
+    "digest": {
+      "type": "object",
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "value": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "bundlePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?:\\.|(?!/)(?![A-Za-z]:[\\\\/])(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//).+)$"
+    },
+    "httpsOrigin": {
+      "type": "string",
+      "pattern": "^https://[^/?#@]+(?::[0-9]+)?$"
+    },
+    "versions": {
+      "type": "object",
+      "required": [
+        "producerContract",
+        "evaluator",
+        "capturePolicy",
+        "metricSet",
+        "judgePrompt"
+      ],
+      "properties": {
+        "producerContract": {"$ref": "#/$defs/nonEmptyString"},
+        "evaluator": {"$ref": "#/$defs/nonEmptyString"},
+        "capturePolicy": {"$ref": "#/$defs/nonEmptyString"},
+        "metricSet": {"$ref": "#/$defs/nonEmptyString"},
+        "judgePrompt": {"$ref": "#/$defs/nonEmptyString"}
+      },
+      "additionalProperties": false
+    },
+    "baseline": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "digest"],
+          "properties": {
+            "kind": {"const": "empty"},
+            "digest": {
+              "allOf": [
+                {"$ref": "#/$defs/digest"},
+                {
+                  "properties": {
+                    "value": {
+                      "const": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "root", "digest"],
+          "properties": {
+            "kind": {"enum": ["bundle-tree", "git-tree"]},
+            "root": {"$ref": "#/$defs/bundlePath"},
+            "digest": {"$ref": "#/$defs/digest"}
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "required": ["root", "baseline"],
+      "properties": {
+        "root": {"$ref": "#/$defs/bundlePath"},
+        "baseline": {"$ref": "#/$defs/baseline"},
+        "entryHints": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/bundlePath"},
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "argv": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "install": {
+      "type": "object",
+      "required": ["argv", "lockfile", "frozen"],
+      "properties": {
+        "argv": {"$ref": "#/$defs/argv"},
+        "lockfile": {"$ref": "#/$defs/bundlePath"},
+        "frozen": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "view": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "root", "entry"],
+          "properties": {
+            "kind": {"const": "static"},
+            "root": {"$ref": "#/$defs/bundlePath"},
+            "entry": {"$ref": "#/$defs/bundlePath"}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "cwd", "argv", "output", "entry"],
+          "properties": {
+            "kind": {"const": "build"},
+            "cwd": {"$ref": "#/$defs/bundlePath"},
+            "argv": {"$ref": "#/$defs/argv"},
+            "output": {"$ref": "#/$defs/bundlePath"},
+            "entry": {"$ref": "#/$defs/bundlePath"},
+            "install": {"$ref": "#/$defs/install"}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "cwd", "argv"],
+          "properties": {
+            "kind": {"const": "serve"},
+            "cwd": {"$ref": "#/$defs/bundlePath"},
+            "argv": {"$ref": "#/$defs/argv"},
+            "readinessPath": {"type": "string", "pattern": "^/(?!/).*$"}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "url"],
+          "properties": {
+            "kind": {"const": "url"},
+            "url": {"type": "string", "format": "uri", "pattern": "^https://"}
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "state": {
+      "type": "object",
+      "required": ["name", "navigation"],
+      "properties": {
+        "name": {"$ref": "#/$defs/nonEmptyString"},
+        "navigation": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["kind", "value"],
+              "properties": {
+                "kind": {"const": "query"},
+                "value": {"type": "string", "pattern": "^\\?.+"}
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": ["kind", "value"],
+              "properties": {
+                "kind": {"const": "fragment"},
+                "value": {"type": "string", "pattern": "^#.+"}
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

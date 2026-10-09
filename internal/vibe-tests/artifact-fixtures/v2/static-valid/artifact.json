@@ -1,0 +1,72 @@
+{
+  "schema": "VibeArtifactV2",
+  "schemaVersion": 2,
+  "artifactId": "fixture-static-valid",
+  "prompt": {
+    "id": "fixture-prompt",
+    "digest": {
+      "algorithm": "sha256",
+      "value": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  },
+  "producer": {
+    "kind": "project",
+    "runner": "fixture-runner",
+    "deliveryMode": "static"
+  },
+  "versions": {
+    "producerContract": "v2-fixture",
+    "evaluator": "v2-fixture",
+    "capturePolicy": "v1-fixture",
+    "metricSet": "v1-fixture",
+    "judgePrompt": "v1-fixture"
+  },
+  "source": {
+    "root": "site",
+    "baseline": {
+      "kind": "empty",
+      "digest": {
+        "algorithm": "sha256",
+        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "entryHints": ["site/index.html"]
+  },
+  "view": {
+    "kind": "static",
+    "root": "site",
+    "entry": "site/index.html"
+  },
+  "integrity": {
+    "sourceTree": {
+      "algorithm": "sha256",
+      "value": "8526665a772ec9da100940808a22676b4dfd6d0d8d6e9065dba416bfd8a16405"
+    },
+    "viewInput": {
+      "algorithm": "sha256",
+      "value": "8526665a772ec9da100940808a22676b4dfd6d0d8d6e9065dba416bfd8a16405"
+    }
+  },
+  "network": {
+    "mode": "deny",
+    "allowedOrigins": []
+  },
+  "states": [
+    {
+      "name": "filtered",
+      "navigation": {"kind": "query", "value": "?filter=active"}
+    },
+    {
+      "name": "details",
+      "navigation": {"kind": "fragment", "value": "#details"}
+    }
+  ],
+  "provenance": {
+    "execution": {
+      "schemaVersion": 1,
+      "executor": {"harness": "fixture", "model": "fixture"},
+      "execution": {"status": "succeeded"},
+      "usage": {"complete": false}
+    }
+  }
+}
