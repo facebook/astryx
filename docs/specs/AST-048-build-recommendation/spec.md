@@ -7,7 +7,7 @@ authority: current
 archive_reason: null
 superseded_by: null
 approved_by: josephfarina
-approved_at: 2026-10-01
+approved_at: 2026-10-09
 phase: accepted
 owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
@@ -321,7 +321,7 @@ callers for a policy change they did not ask for.
 ### DEC-6 — The source and the workspace say what is missing
 
 **Reference:** `spec:AST-048/DEC-6`
-**Decider:** `josephfarina (proposed)`, `2026-10-09`
+**Decider:** `josephfarina`, `2026-10-09`
 
 The source a command writes is the only authority on what it imports, and the
 package.json files from the target directory up to the workspace root are the
@@ -339,7 +339,7 @@ looks like an import, which counts imports inside comments and strings.
 ### DEC-7 — One runnable command, or none
 
 **Reference:** `spec:AST-048/DEC-7`
-**Decider:** `josephfarina (proposed)`, `2026-10-09`
+**Decider:** `josephfarina`, `2026-10-09`
 
 A builder or an agent copies the install command and runs it, so it is one
 command in the project's own package manager that reaches that package manager
@@ -358,7 +358,7 @@ conflict the receipt reports.
 ### DEC-8 — Every recommended template says what it needs
 
 **Reference:** `spec:AST-048/DEC-8`
-**Decider:** `josephfarina (proposed)`, `2026-10-09`
+**Decider:** `josephfarina`, `2026-10-09`
 
 The builder chooses among the start and its alternatives (DEC-3), and what a
 template needs is part of that choice, so each one carries the receipt's fields
@@ -370,7 +370,7 @@ until it is scaffolded.
 ### DEC-9 — Readiness reports and never fails
 
 **Reference:** `spec:AST-048/DEC-9`
-**Decider:** `josephfarina (proposed)`, `2026-10-09`
+**Decider:** `josephfarina`, `2026-10-09`
 
 A missing package is the next step after a scaffold, not a failure of it, so
 neither command's exit status depends on readiness, and callers keep reading
