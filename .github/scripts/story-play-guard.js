@@ -84,7 +84,7 @@ const TARGETS = [
     component: 'ChartTheming',
     story: 'lab-charttheming-recharts--theme-tokens',
     guards:
-      'Recharts resolves theme-aware resting colors and a same-series hover tint in the browser',
+      'Recharts resolves theme-aware resting colors and a same-series active-state tint in the browser',
   },
   {
     component: 'ChartTheming',

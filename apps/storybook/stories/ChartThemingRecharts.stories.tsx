@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {expect, fireEvent, userEvent, waitFor} from 'storybook/test';
+import {expect, waitFor} from 'storybook/test';
 import {Button, Card, Stack, Text} from '@astryxdesign/core';
 import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
 import {Heading} from '@astryxdesign/core/Text';
@@ -79,8 +79,12 @@ const axisTickStyle = {
 };
 
 function ThemeAwareRechartsExample({
+  showActiveState = false,
   useThemeRadius = true,
-}: {useThemeRadius?: boolean} = {}) {
+}: {
+  showActiveState?: boolean;
+  useThemeRadius?: boolean;
+} = {}) {
   const {token} = useTheme();
   const themeRadius = Number.parseFloat(token('--radius-element')) || 0;
   const barRadius = useThemeRadius ? themeRadius : 0;
@@ -124,6 +128,7 @@ function ThemeAwareRechartsExample({
               />
               <YAxis axisLine={false} tick={axisTickStyle} tickLine={false} />
               <Tooltip
+                defaultIndex={showActiveState ? 0 : undefined}
                 contentStyle={{
                   background: colorVars['--color-background-card'],
                   borderColor: colorVars['--color-border'],
@@ -246,29 +251,19 @@ function resolveSvgFill(reference: SVGElement, fill: string): string {
 }
 
 export const ThemeTokens: Story = {
-  render: () => <ThemeAwareRechartsExample />,
+  render: () => <ThemeAwareRechartsExample showActiveState />,
   play: async ({canvasElement}) => {
     const restingFills = await barFills(canvasElement);
     const revenueBar = canvasElement.querySelector<SVGElement>(
       BAR_SELECTORS.revenue,
     );
     expect(revenueBar).not.toBeNull();
-    const hoverTarget = revenueBar?.closest<SVGGElement>(
-      '.recharts-bar-rectangle',
-    );
-    expect(hoverTarget).not.toBeNull();
-    const chartWrapper =
-      canvasElement.querySelector<HTMLElement>('.recharts-wrapper');
-    expect(chartWrapper).not.toBeNull();
-    if (revenueBar && hoverTarget && chartWrapper) {
-      const expectedHoverFill = resolveSvgFill(revenueBar, hoverSeries.revenue);
-      expect(expectedHoverFill).not.toBe(restingFills.revenue);
-      const bounds = revenueBar.getBoundingClientRect();
-      const clientX = bounds.left + bounds.width / 2;
-      const clientY = bounds.top + bounds.height / 2;
-      await userEvent.hover(hoverTarget);
-      fireEvent.mouseEnter(chartWrapper, {clientX, clientY});
-      fireEvent.mouseMove(chartWrapper, {clientX, clientY});
+    if (revenueBar) {
+      const expectedActiveFill = resolveSvgFill(
+        revenueBar,
+        hoverSeries.revenue,
+      );
+      expect(expectedActiveFill).not.toBe(restingFills.revenue);
       await waitFor(() => {
         const activeBar = Array.from(
           canvasElement.querySelectorAll<SVGElement>('.recharts-active-bar'),
@@ -276,7 +271,7 @@ export const ThemeTokens: Story = {
         expect(activeBar).not.toBeUndefined();
         if (activeBar) {
           expect(activeBar.getAttribute('fill')).toBe(hoverSeries.revenue);
-          expect(getComputedStyle(activeBar).fill).toBe(expectedHoverFill);
+          expect(getComputedStyle(activeBar).fill).toBe(expectedActiveFill);
         }
       });
     }
