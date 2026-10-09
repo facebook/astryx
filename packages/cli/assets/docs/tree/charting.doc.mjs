@@ -631,7 +631,7 @@ export function useVegaLiteThemeConfig(): Config {
         },
         {
           type: 'prose',
-          text: 'Treat Vega and Vega-Lite specs as executable input: expressions can run and data entries can load URLs. Pass only specs the product authors or reviews. For untrusted specs, use the public [Vega expression interpreter](https://github.com/vega/vega-interpreter) and restrict external loading through Vega’s [loader API](https://vega.github.io/vega/docs/api/loader/).',
+          text: 'Treat Vega and Vega-Lite specs as executable input: expressions can run and data entries can load URLs. Pass only specs the product authors or reviews. For untrusted specs, use Vega’s public [expression interpreter](https://github.com/vega/vega/tree/main/packages/vega-interpreter) and [loader](https://github.com/vega/vega/tree/main/packages/vega-loader) packages to avoid generated functions and restrict external loading.',
         },
         {
           type: 'prose',
