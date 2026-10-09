@@ -34,10 +34,10 @@ import {
 const OUTPUT = path.resolve('test-results/richtext-markdown-parity');
 
 const STORY = {
-  sideBySide: 'lab-richtexteditor--markdown-parity',
-  toggle: 'lab-richtexteditor--markdown-parity-toggle',
-  overlay: 'lab-richtexteditor--markdown-parity-overlay',
-  longDocument: 'lab-richtexteditor--markdown-parity-long-document',
+  sideBySide: 'richtext-richtexteditor--markdown-parity',
+  toggle: 'richtext-richtexteditor--markdown-parity-toggle',
+  overlay: 'richtext-richtexteditor--markdown-parity-overlay',
+  longDocument: 'richtext-richtexteditor--markdown-parity-long-document',
 } as const;
 
 /** The exemptions the repository's Storybook axe audit already makes. */
@@ -315,7 +315,7 @@ test('a rule at either edge of the document adds no outer margin', async ({
 }) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page.locator('textarea').fill('---\n\nBetween the rules.\n\n---');
@@ -542,7 +542,7 @@ test('task items own their checkboxes, keep link tab order, and toggle by keyboa
 }) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page
@@ -825,7 +825,7 @@ test('code blocks wrap long lines at phone width and copy from the keyboard', as
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.setViewportSize(PHONE);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   const token = 'x'.repeat(160);
@@ -938,7 +938,7 @@ for (const globals of [
   test(`list markers cycle by depth (${globals})`, async ({page}) => {
     await page.setViewportSize(DESKTOP);
     await page.goto(
-      `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
+      `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
       {waitUntil: 'load'},
     );
     const depths = Array.from({length: 9}, (_, depth) => depth);
@@ -1044,7 +1044,7 @@ test('struck text is a deletion around its other marks, and stays one while edit
 }) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page
@@ -1275,7 +1275,7 @@ for (const globals of [
 test('edited code is colored again as it changes', async ({page}) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page.locator('textarea').fill('```ts\nlet value = 1;\n```');
@@ -1313,7 +1313,7 @@ test('bold italic text is emphasis and strong in the editor and the view', async
 }) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page.locator('textarea').fill('Keep ***both*** and **bold** here.');
@@ -1334,7 +1334,7 @@ test('nested numbered lists keep their start in the editor and the view', async 
 }) => {
   await page.setViewportSize(DESKTOP);
   await page.goto(
-    `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
     {waitUntil: 'load'},
   );
   await page
@@ -1381,7 +1381,7 @@ for (const viewport of [PHONE, {width: 1280, height: 900}] as const) {
     }) => {
       await page.setViewportSize(viewport);
       await page.goto(
-        `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
+        `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;${globals}`,
         {waitUntil: 'load'},
       );
       for (const columnCount of [2, 20]) {
@@ -1853,7 +1853,7 @@ for (const direction of ['ltr', 'rtl'] as const) {
   }) => {
     await page.setViewportSize(DESKTOP);
     await page.goto(
-      `${storybook.origin}/iframe.html?id=lab-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:${direction}`,
+      `${storybook.origin}/iframe.html?id=richtext-richtexteditor--markdown-serializers&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:${direction}`,
       {waitUntil: 'load'},
     );
     await page
