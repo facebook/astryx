@@ -23,7 +23,15 @@ verified_by:
     packages/core/src/Selector/Selector.test.tsx,
     packages/cli/api/theme/build/build.test.mjs,
   ]
-deciding_specs: []
+deciding_specs:
+  [
+    spec:AST-054/DEC-2,
+    spec:AST-054/DEC-3,
+    spec:AST-054/DEC-4,
+    spec:AST-054/DEC-5,
+    spec:AST-054/DEC-9,
+    spec:AST-054/DEC-10,
+  ]
 ---
 
 # Icon resolution and component slots
@@ -34,7 +42,17 @@ deciding_specs: []
 {
   "scope": "global",
   "triggers": {
-    "component-slots": ["INV1", "INV2", "INV3", "INV6", "INV7", "INV10"]
+    "component-slots": [
+      "INV1",
+      "INV2",
+      "INV3",
+      "INV6",
+      "INV7",
+      "INV8",
+      "INV10",
+      "INV11",
+      "INV12"
+    ]
   }
 }
 ```
@@ -74,31 +92,55 @@ outcome for any existing component.
 `IconName` is the closed set of shared semantic icon names, such as `check`,
 `close`, and `chevronDown`. Existing extension keys coexist with that set.
 
-The general resolver chooses artwork in this order:
+The general resolver chooses one registry source in this order:
 
 1. the active theme's `icons[name]` entry;
 2. a process-wide `registerIcons()` entry; and
 3. a matching entry in `defaultIcons`.
 
+Each source entry may be fixed or adaptive under the grouped capability contract. A
+selected entry is atomic: missing branches never merge from another source. An exact
+size branch is optional; when absent, the root branch renders in the resolved box.
+Authored registry entries are validated before theme use. If malformed untyped,
+hand-assembled, or incompatible built data reaches runtime, an active-theme entry
+warns once in development, remains inspectable, and is skipped so process-wide then
+built-in precedence continues. A malformed process-wide entry follows the same
+reporting and skips to the built-in default. Production emits no
+capability-mismatch console warnings.
+
 This record does not change which shared or extension keys the general resolver
-accepts. Theme application owns how the active theme is selected. Theme
-authoring owns how `icons` is normalized and inherited. The Icon component
-contract owns its public source modes, rendering, size, color, and accessibility.
+accepts. Theme application owns how the active theme is selected. Theme authoring
+owns how fixed/adaptive `icons` entries are normalized and inherited. The Icon
+component contract owns its public source modes, rendering, independent presentation
+requests, size, color, and accessibility.
 
 ### Typed component-owned slots
 
 A component icon slot names a stable purpose inside one component. It does not
-name artwork.
+name artwork. A metadata-bearing slot may additionally declare the finite state
+labels that its owner can report; the component still owns when those states change.
 
-The public `@astryxdesign/core/Icon` subpath owns an augmentable map:
+The public `@astryxdesign/core/Icon` subpath owns one augmentable map. Its released
+`true` value stays valid and stateless. Metadata-bearing values opt a role into theme
+role-size and one-effective-state appearance:
 
 ```ts
-// Public @astryxdesign/core/Icon module
+// Conceptual public shape; role names and state literals come from their owners.
 export interface ComponentIconSlotMap {
   'selector-selected-option': true;
+  'example-component-role': {
+    states: 'examplePrimary' | 'exampleFallback';
+  };
 }
 
+type StatesOf<T> = T extends {states: infer State extends string}
+  ? State
+  : never;
+
 export type ComponentIconSlotName = keyof ComponentIconSlotMap & string;
+export type ComponentIconStateName = StatesOf<
+  ComponentIconSlotMap[keyof ComponentIconSlotMap]
+>;
 
 export type ComponentIconMap = Partial<
   Record<ComponentIconSlotName, IconName | null>
@@ -106,17 +148,23 @@ export type ComponentIconMap = Partial<
 ```
 
 The interface must be declared in the public module that consumers augment. An
-interface declared only in an implementation file and re-exported from the
-public subpath will not widen the type used by consumers. Runtime resolver code
-imports the map from its public owner.
+interface declared only in an implementation file and re-exported from the public
+subpath will not widen the type used by consumers. Runtime resolver code imports the
+map from its public owner. Existing slot augmentations whose value is `true` continue
+to type-check, contribute no `ComponentIconStateName`, and keep only their source
+mapping behavior.
 
 External component packages add their slots by augmenting the same public
 `@astryxdesign/core/Icon` module. A slot uses
 `<component-kebab>-<semantic-role>`. The role describes why the icon exists, not
-its current shape or direction.
+its current shape or direction. Every metadata-bearing role also provides generated
+owner metadata containing its component/family default size and a deterministic
+precedence over only its declared states. It reports zero or one effective state.
+Exact helper and field spellings may vary without changing this map contract.
 
-`defineTheme({componentIcons})` maps a component slot to a shared `IconName` or
-to `null`. It is separate from `defineTheme({icons})`:
+`defineTheme({componentIcons})` maps every component slot to a shared `IconName` or
+to `null`. It is separate from `defineTheme({icons})` and from role presentation
+metadata:
 
 ```ts
 defineTheme({
@@ -131,20 +179,38 @@ defineTheme({
 ```
 
 The slot map says which shared meaning a component role uses. The icon map says
-which artwork draws that shared meaning.
+which artwork draws that shared meaning. Metadata never changes the
+`IconName | null` source contract.
 
 ### Component slot precedence
 
-A component resolves an icon-bearing role in this order:
+A component resolves an icon-bearing role's source in this order:
 
 1. a consumer-provided instance prop, when the component exposes one;
 2. the nearest active theme's `componentIcons[slot]` entry; and
 3. the component's declared fallback `IconName | null`.
 
-`undefined` means “use the next fallback.” `null` means “render no icon.” A
-mapped `IconName` continues through shared icon resolution.
+`undefined` means “use the next fallback.” `null` means “render no icon.” A mapped
+`IconName` continues through shared icon resolution. Existing `selectedIcon` and
+`pressedIcon` props remain explicit consumer source overrides; without one, the
+normal role source remains selected.
 
-Shared resolver modules apply this order consistently:
+For a metadata-bearing role, the owning component evaluates active conditions in
+its declared precedence and sends zero or one effective `ComponentIconStateName`
+to Icon capability resolution. There is no multi-state appearance merge. A `true`
+role sends no state and receives no role-size override or state appearance. Source
+resolution never becomes a state-transition resolver.
+
+Only a metadata-bearing role participates in role-size geometry. Its final resolved
+size uses the active theme's dimension, and the owner sizes the role's wrapper and
+glyph from that same resolution. An undeclared or `true` role remains
+nonparticipating: any legacy implicit `IconDefaultSizeContext` default its owner
+provides keeps the released dimension for its built-in size name, and neither custom
+size names nor role-size overrides flow into that context. A consumer's explicit
+admitted `Icon size` remains authoritative and resolves through the active theme even
+inside a nonparticipating owner.
+
+Shared resolver modules apply source order consistently:
 
 - `getComponentIconName(slot, fallback, source)` resolves the slot to a shared
   `IconName | null`;
@@ -152,12 +218,15 @@ Shared resolver modules apply this order consistently:
   artwork; and
 - the client hook resolves the same slot and fallback from the active theme.
 
-Components use these resolvers instead of reading `componentIcons` directly.
-The resolver does not own a component's slot name, fallback, or rendering rules.
+Components use these resolvers instead of reading `componentIcons` directly. The
+resolver does not own a component's slot name, fallback, state transition, or
+rendering rules. Request-aware resolution then applies the shared Icon capability
+sequence from `spec:AST-054/DEC-5` without changing source precedence.
 
-This record defines the meaning of an active theme's `componentIcons` map. The
-theme-authoring architecture owns `DefineThemeInput`, normalization, and
-`extends`. Theme compilation owns preserving the normalized map in built output.
+This record defines the meaning of an active theme's `componentIcons` map and role
+metadata. Theme authoring owns capability and role-size normalization and
+inheritance. Theme compilation owns preserving the normalized maps and generated
+metadata in built output. Theme application owns active-theme selection.
 
 ## Known deviations
 
@@ -178,27 +247,47 @@ This record does not choose the migration design or timeline.
   purposes.
 - **INV2 — Slots are typed and owner-declared.** Every Core slot is listed in
   `ComponentIconSlotMap`. External packages extend that map instead of adding
-  unowned Core strings.
+  unowned Core strings. A value of `true` stays stateless and nonparticipating;
+  metadata-bearing values own finite literal state vocabularies.
 - **INV3 — Slots map to shared meanings.** A `componentIcons` value is an
-  `IconName` or `null`, never concrete artwork.
+  `IconName` or `null`, never concrete artwork or state presentation.
 - **INV4 — Null suppresses a slot.** `componentIcons[slot] = null` intentionally
   renders no icon. An absent mapping uses the component fallback.
 - **INV5 — Every slot declares a fallback.** The owning component declares one
   `IconName | null`; themes do not need to repeat defaults.
 - **INV6 — Resolution order is stable.** Instance content wins over theme slot
   mapping. Slot mapping chooses a shared name before the shared registry chooses
-  artwork.
+  artwork. Capability presentation resolves only after one source is selected. A
+  malformed theme or process entry is reported and skipped without changing normal
+  remaining precedence; selected valid entries never merge nested branches.
 - **INV7 — Component slots do not grow the shared name set.** Adding a slot does
   not widen `IconName`.
-- **INV8 — Component behavior stays with the component.** State changes,
-  transforms, placement, size, color, and accessibility remain owned by the
-  component that renders the slot.
+- **INV8 — Component structure stays with the component.** Source, state
+  transitions, transforms, placement, color, interaction, and accessibility remain
+  owned by the component that renders the slot. A metadata-bearing role may receive
+  a theme default size and theme appearance for its one effective state; its owner
+  applies the final active-theme geometry to both wrapper and glyph. Component or
+  family policy never supplies appearance or weight.
 - **INV9 — Theme lifecycle stays single-owned.** This record defines what a
-  `componentIcons` entry means. Theme authoring owns its normalization and
-  inheritance; theme application owns active-theme selection.
+  `componentIcons` entry and role declaration mean. Theme authoring owns capability
+  and role-size normalization and inheritance; theme application owns active-theme
+  selection.
 - **INV10 — Existing keys coexist.** Shipped slots and extension keys remain
   supported until a separate compatibility decision changes them. New Core slots
   use `ComponentIconSlotMap` and `componentIcons`.
+- **INV11 — State participation is explicit and singular.** Only a
+  metadata-bearing map value contributes to `ComponentIconStateName`, role-size
+  overrides, and state appearance. Its declared precedence contains only its own
+  finite state literals and reports zero or one effective state. There is no
+  multi-state presentation merge. Undeclared and `true` roles admit neither role-size
+  overrides nor custom size names through their implicit component context.
+- **INV12 — Participation preserves its baseline and isolates legacy geometry.** A
+  metadata-bearing role's contract-default path is pixel-equivalent to the same role
+  without metadata; admitted theme role-size or dimension rules then apply to one
+  shared wrapper/glyph geometry result. A legacy nonparticipating implicit context
+  keeps its released built-in dimension even when the active theme redefines that
+  size name. Undeclared components, `true` roles, and themes without icon-capability
+  fields keep their established bytes and pixels.
 
 This record does not own:
 
@@ -220,24 +309,43 @@ each slot locally.
 A component `.doc.mjs` theming entry records:
 
 - the slot name;
-- its fallback `IconName | null`; and
-- a short description of the role and whether `null` may hide it.
+- its fallback `IconName | null`;
+- a short description of the role and whether `null` may hide it; and
+- whether the slot is `true` and stateless or metadata-bearing.
 
-A component spec records behavior that a theme author must understand, such as
-state-dependent rendering, placement, accessibility ownership, and compatibility
-requirements. It does not copy the general resolution algorithm.
+Generated owner metadata for a metadata-bearing role records its component/family
+default size, finite literal state vocabulary, and deterministic precedence. The
+same declaration drives public state types, theme validation, inspection, visual
+inventory, runtime resolution, and built output. The inventory marks every `true` role
+stateless/nonparticipating and shows, for each metadata-bearing role and theme, source
+mode, component/family and resolved size, active-theme dimension, shared wrapper/glyph
+geometry, finite state vocabulary and precedence, effective state, appearance, and
+weight. Nonparticipating baseline evidence records the released implicit context
+dimension and proves that custom names and role-size overrides do not enter it. A
+component spec records behavior a theme author must understand, including state
+transitions, source overrides, placement, accessibility ownership, default-pixel
+compatibility, and structural exceptions. It does not copy the general resolution
+algorithm or choose theme appearance/weight.
 
 Consumer icon props remain documented as component API. They are not listed as
 `componentIcons` slots unless the component also promises a separate stable
-theme-level role.
+theme-level role. Existing `selectedIcon` and `pressedIcon` props stay source
+overrides, not state-presentation declarations.
 
 ## Change coupling
 
 - Adding a Core slot updates `ComponentIconSlotMap` in the public
   `@astryxdesign/core/Icon` module, its owning component source, local docs,
-  resolver tests, and component tests.
+  resolver tests, and component tests. A `true` value requires only source mapping;
+  a metadata-bearing value also supplies generated default-size/state/precedence
+  metadata, inventory coverage, type tests, and conformance fixtures.
 - Adding a package-owned slot augments the public `@astryxdesign/core/Icon`
-  module from that package and adds the same owner-local docs and tests.
+  module from that package and adds the same owner-local docs and tests. Existing
+  `true` augmentations remain valid and stateless.
+- Changing a metadata-bearing role's state vocabulary, precedence, default size, or
+  shared wrapper/glyph geometry updates its generated types, theme validation,
+  runtime/built parity, visual inventory, and nonparticipating pixel-baseline/context-
+  isolation fixture together.
 - Changing a slot fallback or precedence is a compatibility change because a
   theme may omit the slot and rely on the old result.
 - Renaming, removing, or reinterpreting a shipped slot or extension key requires
@@ -255,40 +363,66 @@ theme-level role.
 
 ## Owning code
 
-- The public `@astryxdesign/core/Icon` subpath owns `ComponentIconSlotMap` and
-  the public slot types that consumers augment.
+- The public `@astryxdesign/core/Icon` subpath owns `ComponentIconSlotMap`,
+  `ComponentIconSlotName`, conditional `ComponentIconStateName`, and the public slot
+  types that consumers augment.
+- Generated component-role metadata owns each participating role's component/family
+  default size, finite state vocabulary, and deterministic precedence. Tooling
+  projects it into one visual inventory and conformance surface; it does not invent
+  role semantics.
 - `packages/core/src/Icon/globalIconRegistry.tsx` owns `getIcon`,
   `getExtendedIcon`, `getComponentIconName`, and `getComponentIcon`.
 - `packages/core/src/Icon/useIcon.ts` owns active-theme client resolution for
   shared names and component slots.
 - The Icon component and its component contract own public source modes,
-  rendering, size, color, and accessibility. Components resolve their semantic
-  slots before passing the result to Icon.
-- `architecture:theme-authoring-contract` owns `DefineThemeInput`, normalized
-  theme data, and `extends`, including integration of the separate
+  rendering, presentation requests, size, color, and accessibility. Components
+  resolve their semantic slots and effective state before passing the result to Icon.
+- `architecture:theme-authoring-contract` owns `DefineThemeInput`, normalized theme
+  data, capability/role-size inheritance, and integration of the separate
   `componentIcons` map.
 - `architecture:theme-application` owns active-theme selection and lookup.
-- `architecture:theme-compilation` owns preserving normalized theme data in built
-  output.
-- Each component owns its slot meaning, fallback, state-dependent rendering,
-  accessibility, and consumer override behavior.
+- `architecture:theme-compilation` owns preserving normalized theme and role metadata
+  in built output.
+- Each component owns its slot meaning, fallback, state transitions, placement,
+  accessibility, and consumer source-override behavior.
 - CLI and docsite tooling expose owner-declared slot metadata without inventing
   new slot semantics.
 
 ## Deciding specs
 
-None. This record consolidates the existing shared registry behavior and the
-approved typed component-slot model.
+- `spec:AST-054/DEC-2` owns active-theme dimensions for explicit, standalone,
+  and metadata-bearing role sizes while preserving released geometry in legacy
+  nonparticipating implicit contexts.
+- `spec:AST-054/DEC-3` owns malformed-entry diagnostics and non-throwing
+  source-local fallback: a malformed runtime registry entry is reported and skipped
+  so normal precedence continues.
+- `spec:AST-054/DEC-4` keeps component/family policy structural: source,
+  component-default size, and state transitions, never appearance or weight.
+- `spec:AST-054/DEC-5` places slot source/effective-state resolution before the
+  shared size, appearance, and weight sequence without changing one-argument reads.
+- `spec:AST-054/DEC-9` keeps `true` valid, admits metadata-bearing role values,
+  derives state names conditionally, and limits each role to one effective state.
+- `spec:AST-054/DEC-10` assigns per-role size inheritance, generated visual
+  inventory, and conformance to the shared declarations.
+
+## Known conformance and verification gaps
+
+Metadata-bearing slot values, conditional state types, generated default-size/state
+metadata, one-effective-state resolution, visual inventory, and conformance enforcement
+are accepted but unshipped. The implemented baseline remains `true` slot values,
+`componentIcons` name/null mapping, fixed registry entries, and shipped extension-key
+compatibility.
 
 ## Verification
 
-| Invariant        | Evidence                                                        | Failure signal                                                                      |
-| ---------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| INV1, INV3, INV6 | Registry resolver tests and one rendered component fixture      | A component slot resolves concrete artwork directly or skips shared icon resolution |
-| INV2, INV5       | Type tests plus component `.doc.mjs` metadata checks            | A Core slot is an untyped string or has no owner/fallback                           |
-| INV4             | Resolver and component tests with `componentIcons[slot] = null` | A null mapping falls through and still renders an icon                              |
-| INV7             | Shared-name type and registry snapshot tests                    | Adding a component slot widens `IconName`                                           |
-| INV8             | Representative Selector and component-owner tests               | A theme must know component rendering details to replace artwork                    |
-| INV9             | Theme-authoring, application, and compilation owner tests       | This record invents a second normalization or active-theme path                     |
-| INV10            | Shipped-key compatibility fixtures and new-slot negative tests  | A shipped key stops working without a separate compatibility decision               |
-| Documentation    | Component metadata and generated CLI/docsite fixtures           | A themeable slot cannot be discovered with its owner, fallback, and purpose         |
+| Invariant         | Evidence                                                                                                    | Failure signal                                                                                                                     |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV3, INV6  | Registry resolver tests and rendered fixed/adaptive component fixtures                                      | A component slot resolves concrete artwork directly, skips shared icon resolution, or capability presentation changes source order |
+| INV2, INV5, INV11 | Public type, `true`/metadata augmentation, owner-metadata, and component-doc fixtures                       | A slot is untyped, `true` gains states/context geometry, metadata states escape, or role metadata is incomplete                    |
+| INV4              | Resolver and component tests with `componentIcons[slot] = null`                                             | A null mapping falls through and still renders an icon                                                                             |
+| INV7              | Shared-name type and registry snapshot tests                                                                | Adding a component slot widens `IconName`                                                                                          |
+| INV8              | Representative role/state browser, geometry, and accessibility fixtures                                     | Component ownership moves, policy supplies appearance/weight, states merge, or participating geometry splits                       |
+| INV9              | Theme-authoring, application, and compilation owner tests                                                   | This record invents a second normalization or active-theme path                                                                    |
+| INV10             | Shipped-key and unresolved-namespaced-key compatibility fixtures                                            | A shipped key changes outcome without a separate compatibility decision                                                            |
+| INV12             | Participating/nonparticipating pixels, redefined built-ins, context isolation, and shared geometry fixtures | Legacy pixels change, custom/role values leak, or participating wrapper/glyph geometry splits                                      |
+| Documentation     | Generated CLI/docsite metadata, visual inventory snapshots, and shared-path conformance fixtures            | A role is undiscoverable, inventory differs from runtime, or a component bypasses shared resolution without a conformance failure  |

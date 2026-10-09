@@ -36,6 +36,12 @@ deciding_specs:
     spec:AST-012/DEC-3,
     spec:AST-012/DEC-5,
     spec:AST-017/DEC-1,
+    spec:AST-054/DEC-1,
+    spec:AST-054/DEC-2,
+    spec:AST-054/DEC-4,
+    spec:AST-054/DEC-8,
+    spec:AST-054/DEC-9,
+    spec:AST-054/DEC-10,
   ]
 ---
 
@@ -58,7 +64,8 @@ deciding_specs:
       "INV10",
       "INV12",
       "INV14",
-      "INV15"
+      "INV15",
+      "INV16"
     ]
   }
 }
@@ -216,9 +223,11 @@ but acceptance alone is best effort, not a compatibility promise.
 - **INV14 — Extensible axes need a theme-independent fallback.** A prop axis may
   be theme-extensible only when it is visual and an unavailable custom value has
   one safe, deterministic baseline that does not depend on the active theme.
-  `Heading.type` qualifies because required `Heading.level` provides that
-  baseline. `Icon.size` does not: no missing custom size can be inferred without
-  silently changing geometry, alignment, or composition. Behavioral, structural,
+  `Heading.type` qualifies because required `Heading.level` provides that baseline.
+  Icon-only size names use the distinct grouped capability contract from
+  `spec:AST-054/DEC-1` and `spec:AST-054/DEC-2`: every admitted name has one
+  canonical application dimension under every theme. They do not make arbitrary
+  component size axes open to module augmentation. Behavioral, structural,
   placement, directional, and state-machine axes remain closed regardless. A
   theme may redefine an existing value on a closed axis, but it may not add one.
 - **INV15 — Conditional styling does not create conditional API.** Adaptation
@@ -231,6 +240,19 @@ but acceptance alone is best effort, not a compatibility promise.
   unchanged and tightens automatically when the shared contract becomes
   authoritative; it is not a permanent adaptation exemption or an extension
   point.
+- **INV16 — Icon capability presentation is a qualified non-CSS surface.** The
+  grouped application contract admits icon-only dimensions, supplied artwork
+  appearances, and supplied exact/range weights. An explicit consumer Icon size,
+  standalone omitted size after it resolves to `md`, and a metadata-bearing role's
+  final size use the active-theme or canonical dimension. A legacy nonparticipating
+  component's implicit `IconDefaultSizeContext` keeps its released built-in geometry;
+  custom names and role-size overrides do not flow into that context. A participating
+  owner applies one final geometry result to wrapper and glyph. Theme `default` and
+  `bySize` may choose appearance and weight after final size; `byState` may choose
+  appearance only for one effective metadata-bearing role state. This presentation
+  does not create CSS target properties, component-owned visual defaults, per-role
+  appearance/weight objects, or participation for `true` slot entries. Public Icon
+  requests remain independent and authoritative.
 
 ## Approved deprecated-surface removal window
 
@@ -313,7 +335,14 @@ how themes become output, or the design rationale for a component's appearance.
   and every ineligible axis stays closed. A focused component test covers the
   custom value with no matching active theme rule. `extensibleAxes.test.ts`
   checks only the structural wiring: the public map, `themeProps()` reflection,
-  and consumer metadata.
+  and consumer metadata. Icon-only capability names instead follow the grouped
+  application contract and canonical-dimension validation in `spec:AST-054`.
+- Changing Icon capability presentation updates its grouped contract, Icon and role
+  metadata, normalized theme fields, dimension eligibility and nonparticipating context
+  isolation, generated public types/docs/inspection, visual inventory, and runtime/
+  build/server parity together. A participating role proves one wrapper/glyph geometry
+  result. A state rule may choose appearance only; final size is the only theme weight
+  selector.
 - Adding a property to a target's `guaranteedProperties` records its purpose and
   scope, proves a rational observable effect on the owned anatomy part, and adds
   representative compiler/runtime coverage. Catalog membership alone does not add
@@ -361,6 +390,10 @@ how themes become output, or the design rationale for a component's appearance.
   tests prove whether an axis may be open and whether its fallback is safe.
 - Family contracts own shared target semantics when multiple components adopt
   one part contract.
+- `spec:AST-054` capability declarations and generated role/state metadata own the
+  non-CSS Icon presentation vocabulary. The generated visual inventory and
+  conformance checks consume those declarations; they do not infer participation
+  from CSS targets or component source.
 
 ## Deciding specs
 
@@ -371,21 +404,30 @@ how themes become output, or the design rationale for a component's appearance.
 - `spec:AST-017/DEC-1` owns published compatibility classification and migration:
   compatibility-path removal is breaking. This record owns the exact deprecated
   theming cohort and its approved 0.7.0 removal window.
+- `spec:AST-054/DEC-1` and `spec:AST-054/DEC-2` own grouped icon capabilities and
+  safe canonical dimensions for icon-only size names.
+- `spec:AST-054/DEC-4` keeps family policy structural.
+  `spec:AST-054/DEC-8` assigns default/final-size appearance and weight plus
+  appearance-only effective-state presentation to themes.
+- `spec:AST-054/DEC-9` limits role-size/state presentation to metadata-bearing
+  `ComponentIconSlotMap` values, and `spec:AST-054/DEC-10` owns their theme
+  inheritance, inventory, and conformance projection.
 
 ## Verification
 
-| Invariant    | Evidence                                                                                                                                                                                                                                  | Failure signal                                                                                                                                                                                                                                         |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| INV1         | Cross-package target/documentation inventory                                                                                                                                                                                              | An exported target in a participating package is invisible to metadata or CLI validation                                                                                                                                                               |
-| INV2, INV3   | Bidirectional anatomy-disposition/target check                                                                                                                                                                                            | A current target has no semantic part owner, anatomy mechanically creates targets, or `none` silently becomes future policy                                                                                                                            |
-| INV4, INV5   | Component review plus rendered DOM inspection                                                                                                                                                                                             | Public target lands on non-painting plumbing or aliases a child primitive without distinct semantics                                                                                                                                                   |
-| INV6         | `themingTargets.test.ts` and `extensibleAxes.test.ts`                                                                                                                                                                                     | State/variant is invisible to the owner target or becomes an unnecessary parallel target                                                                                                                                                               |
-| INV7, INV8   | Existing property fixtures (partial; gaps below)                                                                                                                                                                                          | A declared property is missing evidence, or an unlisted counterpart is treated as implied                                                                                                                                                              |
-| INV9         | API docs and compatibility review                                                                                                                                                                                                         | Generic property acceptance is presented as a supported compatibility promise                                                                                                                                                                          |
-| INV10, INV11 | Existing registry/public-var/runtime tests (partial; gaps below)                                                                                                                                                                          | A public semantic var bypasses admission, or a consumer must write a private var to reach promised behavior                                                                                                                                            |
-| INV12, INV13 | Runtime alias emission, `legacyNames`/`deprecatedFor` metadata, labeled discovery, exact-replacement diagnostics, canonical maintained-theme/template inventory, copyable-example exclusion, migration mapping, and family-owner fixtures | An alias disappears before 0.7.0, lacks its exact replacement warning, appears in a copyable new example, the approved mapping is incomplete, canonical targets change, legacy metadata survives removal without an owner, or ownership stays implicit |
-| INV14        | Component contract, owner review, focused no-match fallback test, and structural `extensibleAxes.test.ts` coverage                                                                                                                        | An ineligible axis opens, a missing rule changes behavior unpredictably, or the map/reflection/docs wiring drifts                                                                                                                                      |
-| INV15        | Shared root/adaptation component-validation fixtures covering finite, open, enrolled, and unresolved domains                                                                                                                              | Root and adaptation disagree, a valid open value requires a root style, a rule conditionally enrolls a custom value, or unresolved behavior becomes adaptation-specific                                                                                |
+| Invariant    | Evidence                                                                                                                                                                                                                                  | Failure signal                                                                                                                                                                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1         | Cross-package target/documentation inventory                                                                                                                                                                                              | An exported target in a participating package is invisible to metadata or CLI validation                                                                                                                                                                    |
+| INV2, INV3   | Bidirectional anatomy-disposition/target check                                                                                                                                                                                            | A current target has no semantic part owner, anatomy mechanically creates targets, or `none` silently becomes future policy                                                                                                                                 |
+| INV4, INV5   | Component review plus rendered DOM inspection                                                                                                                                                                                             | Public target lands on non-painting plumbing or aliases a child primitive without distinct semantics                                                                                                                                                        |
+| INV6         | `themingTargets.test.ts` and `extensibleAxes.test.ts`                                                                                                                                                                                     | State/variant is invisible to the owner target or becomes an unnecessary parallel target                                                                                                                                                                    |
+| INV7, INV8   | Existing property fixtures (partial; gaps below)                                                                                                                                                                                          | A declared property is missing evidence, or an unlisted counterpart is treated as implied                                                                                                                                                                   |
+| INV9         | API docs and compatibility review                                                                                                                                                                                                         | Generic property acceptance is presented as a supported compatibility promise                                                                                                                                                                               |
+| INV10, INV11 | Existing registry/public-var/runtime tests (partial; gaps below)                                                                                                                                                                          | A public semantic var bypasses admission, or a consumer must write a private var to reach promised behavior                                                                                                                                                 |
+| INV12, INV13 | Runtime alias emission, `legacyNames`/`deprecatedFor` metadata, labeled discovery, exact-replacement diagnostics, canonical maintained-theme/template inventory, copyable-example exclusion, migration mapping, and family-owner fixtures | An alias disappears before 0.7.0, lacks its exact replacement warning, appears in a copyable new example, the approved mapping is incomplete, canonical targets change, legacy metadata survives removal without an owner, or ownership stays implicit      |
+| INV14        | Component contract, owner review, focused no-match fallback test, and structural `extensibleAxes.test.ts` coverage                                                                                                                        | An ineligible axis opens, a missing rule changes behavior unpredictably, or the map/reflection/docs wiring drifts                                                                                                                                           |
+| INV15        | Shared root/adaptation component-validation fixtures covering finite, open, enrolled, and unresolved domains                                                                                                                              | Root and adaptation disagree, a valid open value requires a root style, a rule conditionally enrolls a custom value, or unresolved behavior becomes adaptation-specific                                                                                     |
+| INV16        | Icon capability, role-metadata, legacy-context, inventory, and parity fixtures                                                                                                                                                            | Icon sizes use ordinary open-axis fallback, eligible theme geometry fails, legacy pixels change, values leak, participating geometry splits, state selects weight, `true` participates, presentation becomes CSS target policy, or runtime/inventory drifts |
 
 Known conformance and verification gaps:
 
@@ -419,6 +461,10 @@ Known conformance and verification gaps:
 - Runtime/build private-variable rejection and media-surface derived expansion are
   separate compiler conformance gaps owned and specified by
   `architecture:theme-compilation`.
+- INV16's grouped Icon capability surface, generated role metadata, inventory, and
+  conformance enforcement are accepted but unshipped. Existing Icon target styling,
+  fixed sizes, and nonparticipating component behavior remain the implemented
+  baseline.
 
 ### Migration work from the 2026-08-30 audit
 

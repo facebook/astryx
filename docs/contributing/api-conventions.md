@@ -250,15 +250,20 @@ contract props after `rest` so spread order cannot change semantics.
 ## Open visual vocabularies and closed axes
 
 The [component theming surface](../architecture/component-theming-surface.md#boundaries-and-invariants)
-admits a theme-extensible prop axis only when it is visual and an unavailable
-custom value has one safe, deterministic baseline independent of the active
-theme. `Heading.type` qualifies because required `Heading.level` supplies that
-baseline. `Icon.size` does not: choosing a fallback size would silently change
-geometry, alignment, or composition.
+admits a theme-extensible prop axis only when it is visual and an unavailable custom
+value has one safe, deterministic baseline independent of the active theme.
+`Heading.type` qualifies because required `Heading.level` supplies that baseline.
 
-Behavioral, structural, placement, directional, and state-machine axes stay
-closed. A theme may redefine an existing value on a closed axis, but it may not
-add one.
+Icon-only sizes follow a separate grouped application capability contract under
+[`spec:AST-054/DEC-1`](../specs/AST-054-icon-capabilities/spec.md#dec-1--themes-use-one-grouped-capability-contract)
+and
+[`spec:AST-054/DEC-2`](../specs/AST-054-icon-capabilities/spec.md#dec-2--size-names-are-overridable-tokens-with-safe-defaults).
+Every admitted Icon size has one canonical application dimension under every theme.
+That exception does not make arbitrary component size axes open to module augmentation
+or authorize a theme to guess fallback geometry.
+
+Behavioral, structural, placement, directional, and state-machine axes stay closed.
+A theme may redefine an existing value on a closed axis, but it may not add one.
 
 An admitted theme-extensible vocabulary uses a public `*Map` interface in the
 component subpath barrel. Derive the prop type from its keys.
@@ -285,6 +290,32 @@ and theming metadata.
 Do not assume a nested `theme.components.button.variants` shape. Follow the current
 [theme authoring contract](../architecture/theme-authoring-contract.md) for
 component target and style-key overrides.
+
+## Icon capability APIs
+
+Use the grouped Icon capability model only for supplied artwork choices that vary by
+size, appearance, or weight. The normative behavior, precedence, diagnostics, and
+inheritance stay in [`spec:AST-054`](../specs/AST-054-icon-capabilities/spec.md), the
+[Icon contract](../../packages/core/src/Icon/Icon.spec.md), and the
+[component-slot architecture](../architecture/icon-resolution-and-component-slots.md).
+Do not reproduce that policy in a component proposal.
+
+Before approving an Icon capability API, verify that:
+
+- public Icon `size`, `appearance`, and `weight` requests are optional, independent,
+  and caller-owned; a component does not expose appearance/weight it can derive;
+- a registry integration or direct adapter binds one grouped contract, an adapted
+  export remains `IconType`-compatible through opaque Astryx metadata, and an ordinary
+  direct component receives no presentation props;
+- `ComponentIconSlotMap` remains the role owner, `true` remains stateless and
+  nonparticipating, and metadata-bearing roles declare a finite state vocabulary plus
+  precedence that reports zero or one effective state;
+- component/family policy owns source, default size, state transitions, placement,
+  interaction, and accessibility, but never appearance or weight; existing
+  `selectedIcon` and `pressedIcon` props remain explicit source overrides; and
+- type, authoring, runtime, inspection, inventory, build, and server evidence matches
+  the exact AST-054 failure matrix, keeps production quiet, and preserves default
+  pixels and unresolved namespaced-key outcomes.
 
 ## Slots and composition
 
@@ -428,6 +459,11 @@ out of architecture records.
 - An eligible theme-extensible visual value is a closed union, an axis opens
   without a safe theme-independent fallback, or a behavioral, structural,
   placement, directional, or state-machine axis is opened to augmentation.
+- An Icon integration splits size/appearance/weight into unrelated capability
+  declarations, omits a canonical custom-size dimension or adaptive-branch default,
+  forwards presentation props to an ordinary direct component, lets state choose
+  weight, gives a `true` role metadata behavior, or bypasses generated role inventory
+  and shared resolution.
 - `BaseProps` is applied to a component without one stable contract element, or
   accepted DOM props never reach that element.
 - `xstyle`, `className`, `style`, a ref, or an event handler is dropped or
