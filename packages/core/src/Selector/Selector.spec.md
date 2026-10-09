@@ -60,6 +60,8 @@ connection between the closed trigger and its selection surface.
 - `isReadOnly` is additive and defaults to `false`. It preserves the selected
   value, focus, and form participation while removing selection-surface and
   editing affordances. `isDisabled` takes precedence when both are set.
+- `secondary` is an additive trigger variant. `input` remains the default;
+  existing `input` and `ghost` callers keep their released behavior.
 - `spec:AST-004/DEC-1` governs the state-derived indicator-space behavior in FR3.
 
 ## Ownership boundary
@@ -87,15 +89,15 @@ connection between the closed trigger and its selection surface.
 This table names semantic concepts reviewers need. Prop syntax, complete defaults,
 and examples remain in `Selector.doc.mjs`.
 
-| Concept                | Closed values or states                | Meaning                                                  | Availability by variant/orientation/state | Default    | Owner    | Stability | Invalid-value behavior          |
-| ---------------------- | -------------------------------------- | -------------------------------------------------------- | ----------------------------------------- | ---------- | -------- | --------- | ------------------------------- |
-| trigger variant        | `input`, `ghost`                       | Form-field or toolbar presentation                       | All trigger states                        | `input`    | Selector | released  | TypeScript rejects other values |
-| size                   | `sm`, `md`, `lg`                       | Trigger and option-row density                           | All presentations                         | `md`       | Selector | released  | TypeScript rejects other values |
-| selected-mark position | `start`, `end`                         | Logical edge containing a rendered selection mark        | Every option row                          | `end`      | Selector | released  | TypeScript rejects other values |
-| presentation           | `popover`, `bottom-sheet`, `adaptive`  | Anchored pointer surface or modal compact-touch surface  | All trigger variants                      | `adaptive` | Selector | released  | TypeScript rejects other values |
-| popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox`  | Selector | released  | No separate role prop is public |
-| option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither    | Selector | released  | Unknown states are not emitted  |
-| read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`    | Caller   | additive  | Boolean normalization           |
+| Concept                | Closed values or states                | Meaning                                                  | Availability by variant/orientation/state | Default    | Owner    | Stability                      | Invalid-value behavior          |
+| ---------------------- | -------------------------------------- | -------------------------------------------------------- | ----------------------------------------- | ---------- | -------- | ------------------------------ | ------------------------------- |
+| trigger variant        | `input`, `secondary`, `ghost`          | Form-field or button-aligned toolbar presentation        | All trigger states                        | `input`    | Selector | released; `secondary` additive | TypeScript rejects other values |
+| size                   | `sm`, `md`, `lg`                       | Trigger and option-row density                           | All presentations                         | `md`       | Selector | released                       | TypeScript rejects other values |
+| selected-mark position | `start`, `end`                         | Logical edge containing a rendered selection mark        | Every option row                          | `end`      | Selector | released                       | TypeScript rejects other values |
+| presentation           | `popover`, `bottom-sheet`, `adaptive`  | Anchored pointer surface or modal compact-touch surface  | All trigger variants                      | `adaptive` | Selector | released                       | TypeScript rejects other values |
+| popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox`  | Selector | released                       | No separate role prop is public |
+| option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither    | Selector | released                       | Unknown states are not emitted  |
+| read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`    | Caller   | additive                       | Boolean normalization           |
 
 ## Behavioral and layout contract
 
@@ -182,13 +184,21 @@ These requirements describe shipped behavior on current `main`.
 
 No current design spec is linked.
 
-| Anatomy or state                 | Current representation requirement                                                                 | Representation authority   | Hierarchy role          | Component contract |
-| -------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------- | ----------------------- | ------------------ |
-| selected mark and option spacing | Empty resolved marks collapse; visible marks retain space, so row label geometry may vary by state | `spec:AST-004/DEC-1`       | supporting              | FR3                |
-| input versus ghost trigger       | none recorded                                                                                      | existing released behavior | form or toolbar control | Public concepts    |
+| Anatomy or state                 | Current representation requirement                                                                                        | Representation authority | Hierarchy role              | Component contract |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------ | --------------------------- | ------------------ |
+| selected mark and option spacing | Empty resolved marks collapse; visible marks retain space, so row label geometry may vary by state                        | `spec:AST-004/DEC-1`     | supporting                  | FR3                |
+| trigger variants                 | `input` reads as a form field; `secondary` matches adjacent secondary `Button`s; `ghost` matches adjacent ghost `Button`s | `component:Selector/DD1` | form or peer action control | Public concepts    |
 
 The first row implements the state-derived spacing decision in
 `spec:AST-004/DEC-1`.
+
+### Design decisions
+
+<!-- design-decisions:v1 -->
+
+| ID  | Decision                                                                        | Intent or reason                                                                                                                          | Applies to                                           | Allowed variation                                                                               |
+| --- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| DD1 | A `secondary` Selector matches the visual role of adjacent secondary `Button`s. | A mixed toolbar or navigation area reads as one action hierarchy instead of making the Selector look like a form field or a ghost action. | The secondary trigger at rest and through its states | Themes may choose exact tokens while preserving parity with their secondary `Button` treatment. |
 
 ### Theming anatomy
 
