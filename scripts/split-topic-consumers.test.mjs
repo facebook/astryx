@@ -2,7 +2,7 @@
 
 /**
  * @file Every repo consumer that lists or reads doc topics by name still finds
- * a topic after it is split into a docs-tree namespace (spec:AST-046 FR13): a
+ * a topic after it is split into a docs-tree namespace: a
  * root namespace answers `astryx docs <name>` as the flat topic did, so no
  * list, generated file, or check may treat it as missing. The docsite's own
  * page check lives in apps/docsite (route-resolution.test.ts); the theme

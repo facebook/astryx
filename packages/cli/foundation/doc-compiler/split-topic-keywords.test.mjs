@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file A topic split into a namespace of guides indexes each term once
- * (spec:AST-046 FR13: each piece of content appears once). Below the CLI's own
+ * @file A topic split into a namespace of guides indexes each term once, a
+ * policy of the docs split itself (no spec clause states it). Below the CLI's own
  * root namespaces (every one but `cli`, its command and API reference), a
  * guide's search keywords are its own: none repeats a keyword its namespace,
  * a sibling, or a guide of another split topic declares. A term several

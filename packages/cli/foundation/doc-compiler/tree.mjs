@@ -749,7 +749,7 @@ export function treeDocFiles(dir = TREE_DOCS_DIR) {
  * with `astryx docs <name>`, as a flat topic is, though no topic file has its
  * name. Read from the namespace files' text, without loading them, so a
  * synchronous caller (the agent docs block) lists them beside the flat topics.
- * A topic split into a namespace (FR13) keeps its name in every such list.
+ * A topic split into a namespace keeps its name in every such list.
  * @param {string} [dir]
  * @returns {string[]}
  */
