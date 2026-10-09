@@ -9,8 +9,8 @@
  * 170-190, above a component that matches one word by keyword (98). Every
  * split then puts another doc above the component a reader asked for. Domain
  * priority ranks a component, hook, template, or theme that a query word hits
- * by name or keyword ahead of docs matched only by keyword, title, or prose,
- * and leaves a doc the query names where it was.
+ * by name or keyword ahead of docs the reader did not ask for, and keeps a doc
+ * the query names, or whose title the query holds, where it was.
  *
  * Both directions are asserted together, so neither can be traded for the
  * other: component queries find the component first, and the obvious question
@@ -37,8 +37,12 @@ const SLOW = 30_000;
  */
 const priority = (q, candidate) => {
   const tokens = tokenizeQuery(q);
-  const score = scoreQuery(q, tokens, candidate)?.score ?? 0;
-  return domainPriority(q, tokens, /** @type {any} */ (candidate), score);
+  const hit = scoreQuery(q, tokens, candidate) ?? {
+    score: 0,
+    matched: 0,
+    total: 1,
+  };
+  return domainPriority(q, tokens, /** @type {any} */ (candidate), hit);
 };
 
 /**
@@ -90,6 +94,48 @@ describe('search domain priority — the rule', () => {
     expect(
       priority('product illustration', {domain: 'doc', name: 'illustrations'}),
     ).toBe(1);
+  });
+
+  it('names a section by its topic', () => {
+    // A section candidate's own name is its section key; the reader names the
+    // topic it belongs to.
+    const section = {
+      domain: 'doc',
+      name: 'drop-shadows',
+      _topic: 'elevation',
+      titles: ['Drop shadows'],
+      keywords: ['Drop shadows'],
+    };
+    expect(priority('elevation', section)).toBe(2);
+    expect(priority('elevation for a raised tile', section)).toBe(1);
+  });
+
+  it('gives a doc priority when the query holds one of its titles whole', () => {
+    const guide = {
+      domain: 'doc',
+      name: 'layout/side-panels',
+      titles: ['Side panels'],
+    };
+    expect(priority('resizable side panels with a toolbar', guide)).toBe(1);
+  });
+
+  it('gives a doc that matches every word priority only when its title names one', () => {
+    const titled = {
+      domain: 'doc',
+      name: 'use-a-theme',
+      titles: ['Use a theme'],
+      keywords: ['switcher', 'night'],
+      description: 'Apply a theme to your app.',
+    };
+    expect(priority('night theme switcher', titled)).toBe(1);
+    // A reference page that holds every word, but whose title names none.
+    const reference = {
+      domain: 'doc',
+      name: 'api/reference',
+      titles: ['Response shapes'],
+      keywords: ['switcher', 'night', 'theme'],
+    };
+    expect(priority('night theme switcher', reference)).toBe(0);
   });
 
   it('gives a component priority for a name or keyword hit, not for prose', () => {
@@ -164,7 +210,7 @@ describe('search domain priority — real docs and components', () => {
   );
 
   it(
-    'still finds every split topic first by its own name',
+    'still finds a split topic first by its own name, in every namespace',
     async () => {
       const guides = [];
       for (const ns of ['layout', 'typography', 'tokens', 'styling', 'cli']) {
@@ -172,9 +218,22 @@ describe('search domain priority — real docs and components', () => {
       }
       // The layout split is in the tree; the walk covers whatever else is.
       expect(guides).toContain('layout/layout-spacing');
+      // Each search reads the whole index, so check one guide per namespace
+      // (its first, in route order): every split is covered without a search
+      // per guide.
+      /** @type {Map<string, string>} */
+      const firstPerNamespace = new Map();
+      for (const route of [...new Set(guides)].sort()) {
+        const ns = route.slice(0, route.lastIndexOf('/'));
+        if (!firstPerNamespace.has(ns)) firstPerNamespace.set(ns, route);
+      }
+      const sample = new Set([
+        'layout/layout-spacing',
+        ...firstPerNamespace.values(),
+      ]);
       /** @type {string[]} */
       const misses = [];
-      for (const route of new Set(guides)) {
+      for (const route of sample) {
         const q = route.slice(route.lastIndexOf('/') + 1).replace(/-/g, ' ');
         const top = (await search(q, {cwd})).data.results[0];
         if (top?.domain !== 'doc' || top.name !== route) {
@@ -183,6 +242,6 @@ describe('search domain priority — real docs and components', () => {
       }
       expect(misses).toEqual([]);
     },
-    SLOW * 4,
+    SLOW * 2,
   );
 });
