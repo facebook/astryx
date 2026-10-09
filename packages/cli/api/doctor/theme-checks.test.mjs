@@ -172,7 +172,7 @@ describe('the released themes check', () => {
       label: 'Theme packages',
       status: 'warn',
       message: 'No @astryxdesign/theme-* packages are installed.',
-      fix: expect.stringContaining('theme add neutral --import'),
+      fix: expect.stringContaining('theme add neutral`.'),
     });
 
     installThemePackage(dir, 'neutral');
@@ -183,7 +183,7 @@ describe('the released themes check', () => {
       status: 'warn',
       message:
         'Theme package(s) installed (@astryxdesign/theme-neutral) but no theme appears wired.',
-      fix: expect.stringContaining('theme add <slug> --import'),
+      fix: expect.stringContaining('theme add <slug>`.'),
     });
     expect(unwired.fix).not.toContain('ASTRYX_THEME');
 

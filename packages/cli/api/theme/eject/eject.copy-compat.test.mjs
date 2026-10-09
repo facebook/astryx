@@ -25,9 +25,7 @@ const RELEASED_COPY_FILES = [
 const EJECT_FILES = [
   RELEASED_COPY_FILES[0],
   'oceanTheme.doc.mjs',
-  ...RELEASED_COPY_FILES.slice(1).filter(
-    file => file !== 'oceanTheme.doc.mjs',
-  ),
+  ...RELEASED_COPY_FILES.slice(1).filter(file => file !== 'oceanTheme.doc.mjs'),
 ];
 const FONT_BYTES = Buffer.concat([
   Buffer.from('wOF2'),

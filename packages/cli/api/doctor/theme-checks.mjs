@@ -478,7 +478,7 @@ export function checkThemes(cwd, appChecks) {
       label,
       status: 'warn',
       message: 'No @astryxdesign/theme-* packages are installed.',
-      fix: `Install a theme, e.g. \`npm install @astryxdesign/theme-neutral\`, then add it to the app with \`${run} theme add neutral --import\`.`,
+      fix: `Install a theme, e.g. \`npm install @astryxdesign/theme-neutral\`, then add it to the app with \`${run} theme add neutral\`.`,
     };
   }
   const names = packages.join(', ');
@@ -488,7 +488,7 @@ export function checkThemes(cwd, appChecks) {
       label,
       status: 'warn',
       message: `Theme package(s) installed (${names}) but no theme appears wired.`,
-      fix: `Add one to the app with \`${run} theme add <slug> --import\`.`,
+      fix: `Add one to the app with \`${run} theme add <slug>\`.`,
     };
   }
   return {
