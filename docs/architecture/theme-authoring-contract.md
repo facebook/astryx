@@ -123,7 +123,11 @@ an explicit object replaces the inherited presentation atomically, and
 `presentation: null` resets to contract/source defaults. `roleSizeOverrides` merges
 per role; an absent key inherits, a size replaces that role, and `null` clears it.
 The nearest dimension override wins without removing the capability set's canonical
-default. Public helper and field spellings shown in examples are conceptual;
+default for explicit consumer sizes, standalone `md`, and metadata-bearing role final
+sizes. Theme normalization does not reinterpret a legacy nonparticipating component's
+implicit `IconDefaultSizeContext`: its released built-in dimension remains component-
+owned, and neither custom size names nor role-size overrides are injected into that
+context. Public helper and field spellings shown in examples are conceptual;
 `spec:AST-054/OQ1` owns their final names and module paths. Renaming them does not
 change these normalization, validation, or inheritance semantics.
 
@@ -178,11 +182,15 @@ change these normalization, validation, or inheritance semantics.
 - **INV13 — Icon capability normalization is exact and source-independent.** Theme
   `default` and `bySize` presentation may choose admitted appearance and weight;
   final size selects the only theme weight. `byState` is keyed by conditional
-  `ComponentIconStateName` and may choose appearance only. Fixed entries remain
-  valid; adaptive entry trees are atomic and every branch has a supplied default.
-  Malformed contracts, conflicting custom-size defaults, invalid ranges, missing
-  branch defaults, and unadmitted theme values fail before theme use. Untyped
-  consumer-request fallback remains runtime behavior and is not theme authoring.
+  `ComponentIconStateName` and may choose appearance only. Dimension overrides apply
+  to explicit consumer sizes, standalone `md`, and metadata-bearing role final sizes;
+  they do not rewrite legacy nonparticipating implicit context geometry. Role-size
+  overrides target metadata-bearing roles only, and custom size names are not
+  component-context defaults. Fixed entries remain valid; adaptive entry trees are
+  atomic and every branch has a supplied default. Malformed contracts, conflicting
+  custom-size defaults, invalid ranges, missing branch defaults, and unadmitted theme
+  values fail before theme use. Untyped consumer-request fallback remains runtime
+  behavior and is not theme authoring.
 
 This record does not own:
 
@@ -233,11 +241,13 @@ public surface belongs to
   `from`/exclusive `below` width edges, authored rule order, root-only local-name
   enrollment, and source/built extension parity.
 - An Icon capability change updates grouped contract composition, fixed/adaptive
-  entry normalization, canonical and overridden dimensions, presentation validation,
-  role-size validation, exact inheritance, theme template exposure, generated
-  public types/docs/inspection, and runtime/static/server parity together. Invalid
-  authoring fails before either output path. An unsupported explicit runtime request
-  follows `spec:AST-054/DEC-3`; it is not accepted as malformed theme input.
+  entry normalization, canonical and overridden dimensions, explicit/standalone/
+  metadata-bearing dimension eligibility, nonparticipating implicit-context isolation,
+  presentation validation, role-size validation, exact inheritance, theme template
+  exposure, generated public types/docs/inspection, and runtime/static/server parity
+  together. Invalid authoring fails before either output path. An unsupported explicit
+  runtime request follows `spec:AST-054/DEC-3`; it is not accepted as malformed theme
+  input.
 - Presentation objects replace atomically rather than deep-merge. Role-size maps
   merge per key and allow `null` to clear only that inherited role. A `true` role
   cannot receive role size or state appearance, and `byState` cannot contain weight.
@@ -300,16 +310,16 @@ and theme inheritance remain the implemented baseline.
 
 ## Verification
 
-| Invariant                | Evidence                                                                                                                                | Failure signal                                                                                                                                                                  |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV5         | `defineTheme.test.ts` plus representative runtime/build parity                                                                          | Runtime and build interpret one input differently, or generated values beat explicit tokens                                                                                     |
-| INV3, INV4               | extension and invalid-base tests, including flattened capability/presentation/role-size fixtures                                        | Child themes require a base stylesheet, lose normalized Icon data, or silently accept a non-theme base                                                                          |
-| INV6                     | component merge tests across base/generated/explicit rules                                                                              | Restating one property drops inherited component styles                                                                                                                         |
-| INV7                     | `onMediaTokens.test.ts` and generated surface-rule tests                                                                                | A child loses inherited surface customization or surface precedence changes                                                                                                     |
-| INV8                     | AST-006 runtime/static validator and source/built inheritance tests                                                                     | A valid name fails because of its prefix, ownership follows spelling, or lineage/reference/collision/cycle checks diverge                                                       |
-| INV10                    | `themeAdaptations.test.ts` and CLI build fixtures                                                                                       | Width metadata, rule order, or child re-resolution diverges across source and built themes                                                                                      |
-| INV11                    | `DefineThemeInput`/output diff plus runtime/build fixtures                                                                              | Validation-only data enters the normalized theme, or productive input loses construction validation                                                                             |
-| INV12                    | Core theme export diff, constructed-value evidence, and current-consumer callsite                                                       | A theme `define*` helper only checks input and returns that exact input unchanged                                                                                               |
-| INV13                    | Capability composition, adaptive-entry, presentation, role-size, inheritance, and exact diagnostics fixtures across source/built themes | Conflicting defaults compose, malformed branches reach render, state selects weight, presentation deep-merges, `true` receives role policy, or runtime/build validation differs |
-| Theme/Core compatibility | Maintained theme source/build against the minimum Core in its currently supported peer/dependency range                                 | A theme update silently requires newer in-range Core or bypasses the `spec:AST-017` path                                                                                        |
-| Authoring projection     | `scripts/check-theme-template.test.mjs`                                                                                                 | A supported authoring concept is missing or misstated in the template                                                                                                           |
+| Invariant                | Evidence                                                                                                                        | Failure signal                                                                                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| INV1, INV2, INV5         | `defineTheme.test.ts` plus representative runtime/build parity                                                                  | Runtime and build interpret one input differently, or generated values beat explicit tokens                                                                        |
+| INV3, INV4               | extension and invalid-base tests, including flattened capability/presentation/role-size fixtures                                | Child themes require a base stylesheet, lose normalized Icon data, or silently accept a non-theme base                                                             |
+| INV6                     | component merge tests across base/generated/explicit rules                                                                      | Restating one property drops inherited component styles                                                                                                            |
+| INV7                     | `onMediaTokens.test.ts` and generated surface-rule tests                                                                        | A child loses inherited surface customization or surface precedence changes                                                                                        |
+| INV8                     | AST-006 runtime/static validator and source/built inheritance tests                                                             | A valid name fails because of its prefix, ownership follows spelling, or lineage/reference/collision/cycle checks diverge                                          |
+| INV10                    | `themeAdaptations.test.ts` and CLI build fixtures                                                                               | Width metadata, rule order, or child re-resolution diverges across source and built themes                                                                         |
+| INV11                    | `DefineThemeInput`/output diff plus runtime/build fixtures                                                                      | Validation-only data enters the normalized theme, or productive input loses construction validation                                                                |
+| INV12                    | Core theme export diff, constructed-value evidence, and current-consumer callsite                                               | A theme `define*` helper only checks input and returns that exact input unchanged                                                                                  |
+| INV13                    | Capability, entry, presentation, role-size, geometry-boundary, inheritance, and diagnostics fixtures across source/built themes | Defaults conflict, invalid data reaches render, theme geometry crosses the participation boundary, state selects weight, replacement deep-merges, or paths diverge |
+| Theme/Core compatibility | Maintained theme source/build against the minimum Core in its currently supported peer/dependency range                         | A theme update silently requires newer in-range Core or bypasses the `spec:AST-017` path                                                                           |
+| Authoring projection     | `scripts/check-theme-template.test.mjs`                                                                                         | A supported authoring concept is missing or misstated in the template                                                                                              |

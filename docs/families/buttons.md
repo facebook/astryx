@@ -36,6 +36,7 @@ contributing: []
 deciding_specs:
   [
     spec:AST-002/DEC-1,
+    spec:AST-054/DEC-2,
     spec:AST-054/DEC-4,
     spec:AST-054/DEC-8,
     spec:AST-054/DEC-9,
@@ -147,10 +148,18 @@ Membership follows public responsibility, not an import of Button or a rendered
   axis MUST map `sm`, `md`, and `lg` to the same control-height contract. An
   icon-only member is square at the resolved control size. Button and IconButton
   MUST provide the structural Icon default `sm` for `sm` and `md` controls and `md`
-  for `lg` controls. `component:Icon/FR5` owns explicit, theme-role, family, and
-  standalone size precedence. The default theme and omitted capability fields MUST
-  preserve this family mapping and its pixels. Label weight, pressed state, loading,
-  or icon replacement MUST NOT change the outer control dimensions.
+  for `lg` controls. Until a Button-family role opts into metadata-bearing
+  participation, its wrapper and context-default glyph keep the released 16px/20px
+  family geometry even when a theme redefines the built-in `sm` or `md` Icon dimension;
+  custom size names and role-size overrides do not enter `IconDefaultSizeContext`. An
+  explicit child Icon size remains authoritative and resolves through the active theme;
+  on this legacy path it changes the child only and does not reinterpret the released
+  wrapper. After metadata opt-in, FR13 requires wrapper and glyph to use that final
+  resolution together. The default theme and omitted capability fields MUST preserve
+  the family mapping and pixels on both paths. `component:Icon/FR5` owns the explicit,
+  participating-role, legacy-context, and standalone dimension behavior. Label weight,
+  pressed state, loading, or icon replacement MUST NOT change the outer control
+  dimensions.
 - **FR8 — Elevation belongs to the painted surface.** A standalone member that
   paints its visible surface owns its resting elevation. A connected group that
   paints one continuous surface owns one shared elevation and its members paint
@@ -182,7 +191,9 @@ Membership follows public responsibility, not an import of Button or a rendered
   icon role declares only the finite states that role can report and one deterministic
   precedence. The member reports zero or one effective state while retaining
   ownership of source, transitions, transforms, placement, color, interaction, and
-  accessibility. The theme may choose appearance for that state and default/final-
+  accessibility. It resolves one final Icon size and active-theme dimension, then
+  sizes its icon wrapper and glyph from that same result, including when an explicit
+  child size wins. The theme may choose appearance for that state and default/final-
   size appearance and weight; family policy MUST NOT choose appearance or weight.
   Existing `pressedIcon` values remain explicit caller source overrides. A `true`
   role stays stateless and receives neither role-size override nor state appearance.
@@ -241,24 +252,29 @@ transparency question is solved; the shadow may provide the floating boundary,
 and any later fill or outline treatment requires separate visual review.
 
 FR13's metadata-bearing role/state participation and theme role-size/state-appearance
-path are accepted but unshipped. The existing Button/IconButton size mapping,
-ToggleButton `pressedIcon` source override, geometry, and default pixels remain the
-implemented baseline.
+path are accepted but unshipped. The existing Button/IconButton `sm`/`md` wrapper and
+implicit Icon dimensions, ToggleButton `pressedIcon` source override, geometry, and
+default pixels remain the implemented nonparticipating baseline. Opt-in implementation
+must replace the role's wrapper and glyph geometry together from one final resolution;
+it must not reinterpret the legacy implicit context in place.
 
 ## Verification map
 
-| Contract  | Verification                                                                                                                                          | Representative members and states                                                                              | Mutation or failure expectation                                                                                                 |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3   | role/name, keyboard, callback, disabled, and disabled-reason tests                                                                                    | text Button, IconButton, ToggleButton, link mode, member/group disabled                                        | a member loses its name, keyboard path, or invokes while disabled                                                               |
-| FR4–FR6   | `ToggleButton.test.tsx`: callback/Action order and cancellation, callback-only no-pending path, Action-only settlement, and optimistic re-click tests | standalone ToggleButton with either/both callbacks; Button fire-once Action                                    | callback is dropped, an empty Action reports busy, cancellation is bypassed, or stale state wins                                |
-| FR7       | unit plus real-browser geometry and Icon role-size cascade checks                                                                                     | all control sizes; explicit/theme/family Icon sizes; text/icon-only; pressed/unpressed; loading                | family heights diverge, icon-only stops being square, state shifts outer size, or default-theme pixels change                   |
-| FR8–FR10  | data attribute, theme metadata, and computed-shadow tests                                                                                             | standalone Button/IconButton/ToggleButton; connected and spaced groups; every elevation tier                   | shadow lands on the wrong box, state changes depth, or public/theme/rendered values disagree                                    |
-| FR11–FR12 | group semantics, propagation, DOM, keyboard, and rendered-surface tests; `ToggleButton.test.tsx` group ownership cases                                | single/multiple selection with member callbacks/Actions and delayed parent acceptance; connected/spaced groups | member callback or Action competes with group state, or surface ownership is conflated                                          |
-| FR13      | generated Button-role metadata, public state types, visual inventory, default-pixel snapshots, and browser source/state presentation checks           | `true` and metadata roles; pressed/disabled/loading; explicit source override; default/final-size theme weight | family chooses appearance/weight, state changes weight, roles merge states, source override loses, or inventory/runtime diverge |
+| Contract  | Verification                                                                                                                                          | Representative members and states                                                                              | Mutation or failure expectation                                                                                                                        |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR1–FR3   | role/name, keyboard, callback, disabled, and disabled-reason tests                                                                                    | text Button, IconButton, ToggleButton, link mode, member/group disabled                                        | a member loses its name, keyboard path, or invokes while disabled                                                                                      |
+| FR4–FR6   | `ToggleButton.test.tsx`: callback/Action order and cancellation, callback-only no-pending path, Action-only settlement, and optimistic re-click tests | standalone ToggleButton with either/both callbacks; Button fire-once Action                                    | callback is dropped, an empty Action reports busy, cancellation is bypassed, or stale state wins                                                       |
+| FR7       | unit plus real-browser geometry and Icon role-size cascade checks                                                                                     | all control sizes; themed explicit size; legacy context; participating geometry; context isolation; key states | control geometry diverges, theme dimension misses, legacy pixels change, values leak, shared geometry splits, or state shifts size                     |
+| FR8–FR10  | data attribute, theme metadata, and computed-shadow tests                                                                                             | standalone Button/IconButton/ToggleButton; connected and spaced groups; every elevation tier                   | shadow lands on the wrong box, state changes depth, or public/theme/rendered values disagree                                                           |
+| FR11–FR12 | group semantics, propagation, DOM, keyboard, and rendered-surface tests; `ToggleButton.test.tsx` group ownership cases                                | single/multiple selection with member callbacks/Actions and delayed parent acceptance; connected/spaced groups | member callback or Action competes with group state, or surface ownership is conflated                                                                 |
+| FR13      | role metadata, public states, inventory, pixel/context snapshots, and browser source/state/geometry checks                                            | `true`/metadata roles; key states; explicit source/size; custom names; themed dimension/weight                 | family chooses presentation, state changes weight, roles merge states, overrides lose, values leak, participating geometry splits, or inventory drifts |
 
 ## Decision links
 
 - `spec:AST-002/DEC-1` — public API admission is explicit and evidence-backed.
+- `spec:AST-054/DEC-2` — active-theme Icon dimensions apply to explicit,
+  standalone, and metadata-bearing role paths without rewriting legacy implicit
+  Button-family geometry.
 - `spec:AST-054/DEC-4` — Button-family Icon defaults are structural source,
   size, and transition policy only.
 - `spec:AST-054/DEC-8` — themes own default/final-size appearance and weight plus

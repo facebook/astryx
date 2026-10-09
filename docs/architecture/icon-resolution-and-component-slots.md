@@ -25,6 +25,7 @@ verified_by:
   ]
 deciding_specs:
   [
+    spec:AST-054/DEC-2,
     spec:AST-054/DEC-3,
     spec:AST-054/DEC-4,
     spec:AST-054/DEC-5,
@@ -200,6 +201,15 @@ to Icon capability resolution. There is no multi-state appearance merge. A `true
 role sends no state and receives no role-size override or state appearance. Source
 resolution never becomes a state-transition resolver.
 
+Only a metadata-bearing role participates in role-size geometry. Its final resolved
+size uses the active theme's dimension, and the owner sizes the role's wrapper and
+glyph from that same resolution. An undeclared or `true` role remains
+nonparticipating: any legacy implicit `IconDefaultSizeContext` default its owner
+provides keeps the released dimension for its built-in size name, and neither custom
+size names nor role-size overrides flow into that context. A consumer's explicit
+admitted `Icon size` remains authoritative and resolves through the active theme even
+inside a nonparticipating owner.
+
 Shared resolver modules apply source order consistently:
 
 - `getComponentIconName(slot, fallback, source)` resolves the slot to a shared
@@ -255,8 +265,9 @@ This record does not choose the migration design or timeline.
 - **INV8 — Component structure stays with the component.** Source, state
   transitions, transforms, placement, color, interaction, and accessibility remain
   owned by the component that renders the slot. A metadata-bearing role may receive
-  a theme default size and theme appearance for its one effective state. Component
-  or family policy never supplies appearance or weight.
+  a theme default size and theme appearance for its one effective state; its owner
+  applies the final active-theme geometry to both wrapper and glyph. Component or
+  family policy never supplies appearance or weight.
 - **INV9 — Theme lifecycle stays single-owned.** This record defines what a
   `componentIcons` entry and role declaration mean. Theme authoring owns capability
   and role-size normalization and inheritance; theme application owns active-theme
@@ -268,11 +279,15 @@ This record does not choose the migration design or timeline.
   metadata-bearing map value contributes to `ComponentIconStateName`, role-size
   overrides, and state appearance. Its declared precedence contains only its own
   finite state literals and reports zero or one effective state. There is no
-  multi-state presentation merge.
-- **INV12 — Default pixels do not depend on participation.** A metadata-bearing
-  role's contract-default path is pixel-equivalent to the same role without metadata.
-  Undeclared components, `true` roles, and themes without icon-capability fields keep
-  their established bytes and pixels.
+  multi-state presentation merge. Undeclared and `true` roles admit neither role-size
+  overrides nor custom size names through their implicit component context.
+- **INV12 — Participation preserves its baseline and isolates legacy geometry.** A
+  metadata-bearing role's contract-default path is pixel-equivalent to the same role
+  without metadata; admitted theme role-size or dimension rules then apply to one
+  shared wrapper/glyph geometry result. A legacy nonparticipating implicit context
+  keeps its released built-in dimension even when the active theme redefines that
+  size name. Undeclared components, `true` roles, and themes without icon-capability
+  fields keep their established bytes and pixels.
 
 This record does not own:
 
@@ -303,11 +318,14 @@ default size, finite literal state vocabulary, and deterministic precedence. The
 same declaration drives public state types, theme validation, inspection, visual
 inventory, runtime resolution, and built output. The inventory marks every `true` role
 stateless/nonparticipating and shows, for each metadata-bearing role and theme, source
-mode, component/family and resolved size, finite state vocabulary and precedence,
-effective state, appearance, and weight. A component spec records behavior a theme
-author must understand, including state transitions, source overrides, placement,
-accessibility ownership, default-pixel compatibility, and structural exceptions. It
-does not copy the general resolution algorithm or choose theme appearance/weight.
+mode, component/family and resolved size, active-theme dimension, shared wrapper/glyph
+geometry, finite state vocabulary and precedence, effective state, appearance, and
+weight. Nonparticipating baseline evidence records the released implicit context
+dimension and proves that custom names and role-size overrides do not enter it. A
+component spec records behavior a theme author must understand, including state
+transitions, source overrides, placement, accessibility ownership, default-pixel
+compatibility, and structural exceptions. It does not copy the general resolution
+algorithm or choose theme appearance/weight.
 
 Consumer icon props remain documented as component API. They are not listed as
 `componentIcons` slots unless the component also promises a separate stable
@@ -324,9 +342,10 @@ overrides, not state-presentation declarations.
 - Adding a package-owned slot augments the public `@astryxdesign/core/Icon`
   module from that package and adds the same owner-local docs and tests. Existing
   `true` augmentations remain valid and stateless.
-- Changing a metadata-bearing role's state vocabulary, precedence, or default size
-  updates its generated types, theme validation, runtime/built parity, visual
-  inventory, and nonparticipating pixel-baseline fixture together.
+- Changing a metadata-bearing role's state vocabulary, precedence, default size, or
+  shared wrapper/glyph geometry updates its generated types, theme validation,
+  runtime/built parity, visual inventory, and nonparticipating pixel-baseline/context-
+  isolation fixture together.
 - Changing a slot fallback or precedence is a compatibility change because a
   theme may omit the slot and rely on the old result.
 - Renaming, removing, or reinterpreting a shipped slot or extension key requires
@@ -371,6 +390,9 @@ overrides, not state-presentation declarations.
 
 ## Deciding specs
 
+- `spec:AST-054/DEC-2` owns active-theme dimensions for explicit, standalone,
+  and metadata-bearing role sizes while preserving released geometry in legacy
+  nonparticipating implicit contexts.
 - `spec:AST-054/DEC-3` owns malformed-entry diagnostics and non-throwing
   source-local fallback: a malformed runtime registry entry is reported and skipped
   so normal precedence continues.
@@ -393,14 +415,14 @@ compatibility.
 
 ## Verification
 
-| Invariant         | Evidence                                                                                                    | Failure signal                                                                                                                      |
-| ----------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV3, INV6  | Registry resolver tests and rendered fixed/adaptive component fixtures                                      | A component slot resolves concrete artwork directly, skips shared icon resolution, or capability presentation changes source order  |
-| INV2, INV5, INV11 | Public type tests, `true`/metadata augmentation fixtures, generated owner metadata, and component docs      | A Core slot is untyped, `true` gains states, metadata states escape the public union, or a role lacks fallback/default/precedence   |
-| INV4              | Resolver and component tests with `componentIcons[slot] = null`                                             | A null mapping falls through and still renders an icon                                                                              |
-| INV7              | Shared-name type and registry snapshot tests                                                                | Adding a component slot widens `IconName`                                                                                           |
-| INV8              | Representative role/state browser and accessibility fixtures                                                | Theme policy moves source/transitions/placement/color/interaction/a11y, component policy chooses appearance/weight, or states merge |
-| INV9              | Theme-authoring, application, and compilation owner tests                                                   | This record invents a second normalization or active-theme path                                                                     |
-| INV10             | Shipped-key and unresolved-namespaced-key compatibility fixtures                                            | A shipped key changes outcome without a separate compatibility decision                                                             |
-| INV12             | Metadata-bearing versus nonparticipating pixel baselines across default theme and omitted capability fields | Participation, a `true` role, or an omitted theme field changes established bytes or pixels                                         |
-| Documentation     | Generated CLI/docsite metadata, visual inventory snapshots, and shared-path conformance fixtures            | A role is undiscoverable, inventory differs from runtime, or a component bypasses shared resolution without a conformance failure   |
+| Invariant         | Evidence                                                                                                    | Failure signal                                                                                                                     |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV3, INV6  | Registry resolver tests and rendered fixed/adaptive component fixtures                                      | A component slot resolves concrete artwork directly, skips shared icon resolution, or capability presentation changes source order |
+| INV2, INV5, INV11 | Public type, `true`/metadata augmentation, owner-metadata, and component-doc fixtures                       | A slot is untyped, `true` gains states/context geometry, metadata states escape, or role metadata is incomplete                    |
+| INV4              | Resolver and component tests with `componentIcons[slot] = null`                                             | A null mapping falls through and still renders an icon                                                                             |
+| INV7              | Shared-name type and registry snapshot tests                                                                | Adding a component slot widens `IconName`                                                                                          |
+| INV8              | Representative role/state browser, geometry, and accessibility fixtures                                     | Component ownership moves, policy supplies appearance/weight, states merge, or participating geometry splits                       |
+| INV9              | Theme-authoring, application, and compilation owner tests                                                   | This record invents a second normalization or active-theme path                                                                    |
+| INV10             | Shipped-key and unresolved-namespaced-key compatibility fixtures                                            | A shipped key changes outcome without a separate compatibility decision                                                            |
+| INV12             | Participating/nonparticipating pixels, redefined built-ins, context isolation, and shared geometry fixtures | Legacy pixels change, custom/role values leak, or participating wrapper/glyph geometry splits                                      |
+| Documentation     | Generated CLI/docsite metadata, visual inventory snapshots, and shared-path conformance fixtures            | A role is undiscoverable, inventory differs from runtime, or a component bypasses shared resolution without a conformance failure  |
