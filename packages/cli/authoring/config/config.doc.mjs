@@ -15,8 +15,8 @@ export const doc = {
   description:
     'The optional astryx.config.* file at your project root. Declares which ' +
     'integrations to load, where to route issue links, post-codemod hooks, local ' +
-    'debug-log and gap-report handlers, and experimental layout components. All ' +
-    'optional; {} is valid.',
+    'debug-log and gap-report handlers, a discover source, and experimental ' +
+    'layout components. All optional; {} is valid.',
   appliesTo: 'astryx.config.{ts,mjs,js}',
   fields: [
     {
@@ -29,7 +29,9 @@ export const doc = {
     {
       name: 'issuesUrl',
       type: 'string',
-      description: 'URL that "report an issue" affordances link to.',
+      description:
+        "Where reports about Core go: `astryx gap-report` routes a Core report here when no handler is loaded, gapReport handlers receive it as `report.target.issuesUrl`, and `astryx swizzle` prints it as the feedback link for a Core component. A report or swizzle for an integration's component uses that integration's own issuesUrl, never this one. An absolute URL; a value that is not a URL makes the config invalid.",
+      default: "'https://github.com/facebook/astryx/issues/new'",
     },
     {
       name: 'hooks',
@@ -40,7 +42,7 @@ export const doc = {
           name: 'hooks.postCodemod',
           type: 'PostCodemodHook[]',
           description:
-            'Commands run after an upgrade applies codemods (e.g. re-run your formatter). Each hook returns a command to execute, or null to skip.',
+            'Commands to run after `astryx upgrade` changes files (e.g. re-run your formatter). Each hook is an object `{name?, buildCommand}`: buildCommand gets `{packageDir, files}` and returns `{command, args?, options?}` to run, or null to skip. A dry run prints each command instead of running it.',
         },
       ],
     },
@@ -77,7 +79,7 @@ export const doc = {
           name: 'experimental.xle.components',
           type: 'Record<string, XleComponent>',
           description:
-            'Custom components the layout expander (XLE) may emit, keyed by tag.',
+            'Custom components the deprecated layout expander (`astryx layout`) may emit, keyed by component name. A `{kpi-card}` hint imports `KpiCard` from its `from` path.',
         },
       ],
     },
@@ -90,6 +92,7 @@ export const doc = {
     {
       label: 'Send every command run somewhere of your own',
       code:
+        "import {appendFileSync} from 'node:fs';\n\n" +
         'export default {\n' +
         '  debug: event => appendFileSync("runs.ndjson", JSON.stringify(event) + "\\n"),\n' +
         '};',
@@ -98,7 +101,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: 'The config is validated at load with a strict schema: unknown keys are errors, so a typo fails fast rather than being silently ignored.',
+      text: 'The config is validated at load with a strict schema: an unknown key, a misspelled one included, or a value of the wrong type makes the whole file invalid. `astryx gap-report`, `astryx discover`, and `astryx upgrade` stop with the error, and `astryx doctor` reports it as a warning. Reads such as `component`, `docs`, `search`, `template`, and `theme` carry on silently as if there were no config and no integrations, and no debug handler runs, so run `astryx doctor` after editing the file.',
     },
   ],
 };

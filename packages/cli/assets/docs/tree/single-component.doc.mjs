@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/components/describe-the-component/single-component`:
+ * @file `astryx docs cli/integrations/building-blocks/components/describe-the-component/single-component`:
  * write and maintain the default ComponentDoc for one public component.
  */
 
@@ -61,9 +61,8 @@ export default {
           ],
         },
         {
-          type: 'reference',
-          target: 'schema:component-doc',
-          presentation: 'summary',
+          type: 'prose',
+          text: 'Every field is in {@link schema:component-doc}.',
         },
       ],
     },

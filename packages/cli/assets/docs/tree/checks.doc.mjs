@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/checks`: what each package check
+ * @file `astryx docs cli/integrations/ship/checks`: what each package check
  * proves, what fails and what only warns, and one command to run them all.
  */
 
@@ -112,7 +112,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: '`integration pack --check`, the name this check had in 0.6, still runs it and prints a note; it will be removed in a later release. The options and exit codes are in {@link command:integration verify}.',
+          text: '`integration pack --check`, the name this check had before published 0.6.5, still runs it and prints a note; it will be removed in a later release. The options and exit codes are in {@link command:integration verify}.',
         },
       ],
     },

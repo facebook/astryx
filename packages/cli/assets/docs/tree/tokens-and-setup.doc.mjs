@@ -117,7 +117,7 @@ export default stylexPlugin({
           type: 'list',
           style: 'unordered',
           items: [
-            'Symptom of a missing compiler: swizzled component renders with no styles, but no build or runtime error.',
+            "Symptom of a missing compiler: importing a swizzled component throws an error that starts `Unexpected 'stylex.create' call at runtime`, and the page does not render.",
             'A Babel config turns off SWC in Next.js; skip it if you need `next/font`.',
             'Pure theming (defineTheme + astryx theme build) needs NO StyleX compiler; only swizzled/authored StyleX source does.',
           ],

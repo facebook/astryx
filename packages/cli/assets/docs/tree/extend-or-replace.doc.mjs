@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/docs/extend-or-replace`: take over an
- * existing topic with `replaces`, merge sections into one with `extends`, and
- * check overlaps with Core topics.
+ * @file `astryx docs cli/integrations/building-blocks/docs/extend-or-replace`:
+ * take over an existing topic with `replaces`, merge sections into one with
+ * `extends`, and check overlaps with Core topics.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -87,7 +87,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: 'severity:     [info]\ntopic:        acme-getting-started\nrelationship: replaces\ncoreTopic:    getting-started\nmessage:      Intentional override: "acme-getting-started" replaces the Core topic "getting-started".\n\nseverity:     [fail]\ntopic:        tokens\nrelationship: accidental\ncoreTopic:    tokens\nmessage:      Accidental conflict: "tokens" is already a Core topic. Rename it, declare replaces: \'tokens\' to take it over, or declare extends: \'tokens\' to merge sections.',
+          code: 'severity:     [info]\ntopic:        acme-getting-started\nrelationship: replaces\ncoreTopic:    getting-started\nmessage:      Intentional override: "acme-getting-started" replaces the Core topic "getting-started".\n\nseverity:     [fail]\ntopic:        color\nrelationship: accidental\ncoreTopic:    color\nmessage:      Accidental conflict: "color" is already a Core topic. Rename it, declare replaces: \'color\' to take it over, or declare extends: \'color\' to merge sections.',
         },
         {
           type: 'list',

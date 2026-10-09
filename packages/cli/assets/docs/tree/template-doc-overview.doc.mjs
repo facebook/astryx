@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/templates/document-the-template/template-doc-overview`:
+ * @file `astryx docs cli/integrations/building-blocks/templates/document-the-template/template-doc-overview`:
  * the source and doc file pair, the fields every template doc shares, and how
  * to check what Astryx lists.
  */
@@ -54,22 +54,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'These fields apply to every page and block. The page, block, and replacement guides add the fields unique to each.',
+          text: 'The fields below apply to every page and block. The page, block, and replacement guides add the fields unique to each.',
         },
         {
-          type: 'reference',
-          target: 'schema:template-doc',
-          projection: {
-            fields: [
-              'type',
-              'name',
-              'displayName',
-              'description',
-              'keywords',
-              'isReady',
-            ],
-          },
-          presentation: 'full',
+          type: 'prose',
+          text: 'Every field is in {@link schema:template-doc}.',
         },
         {
           type: 'list',
@@ -84,7 +73,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Note: `keywords` needs `@astryxdesign/cli` 0.7.0 or later. A stable CLI before 0.7.0 rejects the field, drops that template, and hides your doc topics: `template --list` and `search` print one warning, and `docs` and `build` say nothing. Declare the CLI floor as an optional peer ({@link generic:versioning}); `integration verify` fails until you do.',
+          text: 'Note: published 0.6.5 and earlier reject `keywords` and drop that template, and published 0.6.3 and earlier also hide your doc topics. In 0.6.3 to 0.6.5, `template --list` and `search` print one warning, and `docs` and `build` say nothing. Declare the CLI floor that `integration verify` names as an optional peer ({@link generic:versioning}); verify fails with `keywords_needs_cli` until you do.',
         },
       ],
     },

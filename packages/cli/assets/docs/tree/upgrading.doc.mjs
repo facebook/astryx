@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/upgrading`: update an integration
+ * @file `astryx docs cli/integrations/ship/upgrading`: update an integration
  * package for each Astryx release, and the command apps run to upgrade with
  * it.
  */
@@ -57,7 +57,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: 'Integrations: @acme/astryx-widgets\n1 codemod to run\nApplying integration codemods...\n  Rename AcmeCarousel delay to interval (v0.7.0, @acme/astryx-widgets)\n[ok]     [ok] src/Hero.tsx',
+          code: 'Integrations: @acme/astryx-widgets\n3 codemods to run\nApplying integration codemods...\n  Rename AcmeCarousel delay to interval (v0.7.0, @acme/astryx-widgets)\n[ok]     [ok] src/Hero.tsx',
         },
         {
           type: 'list',

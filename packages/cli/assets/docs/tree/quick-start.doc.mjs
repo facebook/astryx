@@ -34,17 +34,18 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'An integration starts as a normal npm package. Make a folder for it, create a package.json inside that folder, give the package a name, then install the Astryx CLI and Core for development.',
+          text: 'An integration starts as a normal npm package. Make a folder for it, create a package.json inside that folder, give the package a name, make it an ES module, then install the Astryx CLI and Core for development.',
         },
         {
           type: 'code',
           lang: 'bash',
-          code: "mkdir acme-widgets && cd acme-widgets\nnpm init -y\nnpm pkg set name=@acme/astryx-widgets\nnpm pkg set 'exports={}' --json\nnpm install -D @astryxdesign/cli @astryxdesign/core",
+          code: "mkdir acme-widgets && cd acme-widgets\nnpm init -y\nnpm pkg set name=@acme/astryx-widgets type=module\nnpm pkg set 'exports={}' --json\nnpm install -D @astryxdesign/cli @astryxdesign/core",
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
+            'Set `"type": "module"`: the `.js` files the CLI generates, such as a built theme, are ES modules, and Node fails to load them in a package marked `"type": "commonjs"`, which `npm init -y` writes on npm 11.',
             'Start with `"exports": {}`: each component and template you add then writes the public import that `integration verify` resolves.',
             'Run the CLI as `npx astryx`, which runs the `@astryxdesign/cli` you installed as a devDependency.',
             'Component commands read Core, so they need `@astryxdesign/core` installed.',
@@ -226,21 +227,8 @@ export const docs = {
           text: 'The file tells the CLI where this package keeps its integration items. Edit it only when you want a custom root or another optional setting. Paths are relative to package.json, and later adds keep a custom path you already set.',
         },
         {
-          type: 'reference',
-          target: 'schema:integration',
-          projection: {
-            fields: [
-              'providerId',
-              'components',
-              'templates',
-              'codemods',
-              'docs',
-              'themes',
-              'agentDocs',
-              'issuesUrl',
-            ],
-          },
-          presentation: 'full',
+          type: 'prose',
+          text: 'Every field is in {@link schema:integration}.',
         },
         {
           type: 'heading',

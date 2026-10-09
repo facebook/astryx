@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/templates/document-the-template/replace-a-core-template`:
+ * @file `astryx docs cli/integrations/building-blocks/templates/document-the-template/replace-a-core-template`:
  * deliberately replace one Core template through template metadata.
  */
 
@@ -67,10 +67,8 @@ export default {
 };`,
         },
         {
-          type: 'reference',
-          target: 'schema:template-doc',
-          projection: {fields: ['replaces']},
-          presentation: 'full',
+          type: 'prose',
+          text: 'Every field is in {@link schema:template-doc}.',
         },
         {
           type: 'prose',
@@ -84,7 +82,7 @@ export default {
       content: [
         {
           type: 'prose',
-          text: 'Declare the CLI floor from the field above as an optional peer ({@link generic:versioning}).',
+          text: 'Declare the CLI floor that `integration verify` names as an optional peer ({@link generic:versioning}).',
         },
         {
           type: 'code',
@@ -103,7 +101,7 @@ export default {
         },
         {
           type: 'prose',
-          text: '`integration verify` reports `replaces_needs_cli` when that peer is missing or too old. Without it, an older CLI drops that template and hides your doc topics.',
+          text: '`integration verify` reports `replaces_needs_cli` when that peer is missing or too old. Without it, published 0.6.3 and earlier drop that template and hide your doc topics.',
         },
       ],
     },

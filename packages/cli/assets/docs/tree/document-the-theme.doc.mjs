@@ -50,7 +50,7 @@ export default {
         },
         {
           type: 'prose',
-          text: 'Keep the section short: how to install the package, run `theme add --import`, apply the generated module ({@link generic:use-a-theme-in-an-app}), and customize with `extends`. When the theme uses a custom font, name the families and the optional exported font stylesheet that `theme add --import` imports ({@link generic:fonts-and-assets}). Extend `theme` rather than a topic another package replaces, or an app that lists that package first drops your section.',
+          text: 'Keep the section short: how to install the package, run `theme add --import`, apply the generated module ({@link generic:use-a-theme-in-an-app}), and customize with `extends`. When the theme uses a custom font, name the families and the optional exported font stylesheet that `theme add --import` imports ({@link generic:fonts-and-assets}). Extend `theme` rather than a topic another package replaces, or an app that loads that package after yours drops your section.',
         },
       ],
     },

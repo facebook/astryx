@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/versioning`: version an integration
+ * @file `astryx docs cli/integrations/ship/versioning`: version an integration
  * package, know which changes break apps, declare peer ranges, keep apps on
  * older CLIs working, and match codemod folders to versions.
  */
@@ -109,8 +109,8 @@ export const docs = {
             ],
             [
               '`@astryxdesign/cli`',
-              'You ship a docs section, a placed guide, a template that sets `replaces` or `keywords`, a doc section with an `id`, or a theme',
-              '`>=0.7.0` when you ship a template that sets `replaces` or `keywords`, otherwise `>=0.6.4`. Optional in `peerDependenciesMeta`',
+              'You ship a docs section, a placed guide, a template that sets `replaces` or `keywords`, a component that sets `replaces`, a doc section with an `id`, or a theme',
+              '`>=0.7.0` when you ship a template that sets `replaces` or `keywords`, `>=0.6.7` when a component sets `replaces`, otherwise `>=0.6.4`. Optional in `peerDependenciesMeta`',
             ],
           ],
         },
@@ -139,10 +139,10 @@ export const docs = {
           items: [
             'An unknown field in `astryx.integration.mjs` is ignored with an `unknown_manifest_key` warning, and the rest of the manifest still loads.',
             'A named export that the CLI does not know is ignored with no warning, so `debug` and `gapReport` are safe to add.',
-            'A stable CLI before 0.7.0 prints each `{@link ...}` as written.',
-            'A stable CLI before 0.7.0 rejects a template that sets `replaces` or `keywords`, drops that template, and can hide every doc topic your package ships.',
-            'A stable CLI before 0.6.4 cannot read a docs section, a section `id`, or a theme folder that `integration add theme` writes. It can then hide every doc topic your package ships.',
-            'Stable 0.6.3 still loads your components, but 0.6.0 cannot read the component docs that `integration add component` writes: `component AcmeCarousel` fails there.',
+            'Published 0.6.3 and earlier print each `{@link ...}` as written.',
+            'Published 0.6.3 and earlier reject a template that sets `replaces` or `keywords`, drop that template, and hide every doc topic your package ships. Published 0.6.4 and 0.6.5 still drop a template that sets `keywords`.',
+            'Published 0.6.3 and earlier cannot read a docs section, a section `id`, or a theme folder that `integration add theme` writes. They can then hide every doc topic your package ships.',
+            'Published 0.6.2 and 0.6.3 still load your components, but published 0.6.0 and 0.6.1 cannot read the component docs that `integration add component` writes: `component AcmeCarousel` fails there.',
           ],
         },
         {

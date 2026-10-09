@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/codemods`: add codemods to an
+ * @file `astryx docs cli/integrations/building-blocks/codemods`: add codemods to an
  * integration package, and know which of them `astryx upgrade` runs in an app.
  */
 
@@ -82,7 +82,7 @@ export default {
         },
         {
           type: 'prose',
-          text: "`type: 'code'` rewrites the app's source files that match `fileExtensions`. `type: 'config'` rewrites the app's `astryx.config` file instead, and runs before code codemods. `title` shows in the upgrade output, and `api.jscodeshift` is a jscodeshift instance for the file. Every field is in {@link generic:authoring}.",
+          text: "`type: 'code'` rewrites the app's source files that match `fileExtensions`. `type: 'config'` rewrites the app's `astryx.config` file instead, and runs before code codemods. `title` shows in the upgrade output, and `api.jscodeshift` is a jscodeshift instance for the file. Every field is in {@link schema:codemod}.",
         },
       ],
     },
@@ -124,7 +124,7 @@ npx astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets --apply`,
           type: 'code',
           lang: 'text',
           code: `Integrations: @acme/astryx-widgets
-1 codemod to run (dry run)
+3 codemods to run (dry run)
 Applying integration codemods...
   Rename AcmeCarousel delay to interval (v0.7.0, @acme/astryx-widgets)
 !     ~ src/Hero.tsx (would change)`,

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/templates/build-the-template/package-and-test/verify-packed-template`:
+ * @file `astryx docs cli/integrations/building-blocks/templates/build-the-template/package-and-test/verify-packed-template`:
  * what `integration verify` checks for templates, and what it leaves to the
  * app test.
  */

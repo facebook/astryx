@@ -31,14 +31,14 @@ export const doc = {
       name: 'name',
       type: 'string',
       description:
-        'Stable identifier for block templates; change `displayName`, not `name`, to edit their visible label. For page templates it is a human-readable label, while the existing template-directory/CLI slug owns the default registry path.',
+        "Stable identifier for block templates; change `displayName`, not `name`, to edit their visible label in the gallery. For page templates it is a human-readable label, while the existing template-directory/CLI slug owns the default registry path. `astryx template --list` and `astryx search` print `name` as the label of both, and `astryx template <id>` finds a template by its id, never by `name`: an integration template's id is its path under the templates folder without the `.doc.*` suffix.",
       required: true,
     },
     {
       name: 'displayName',
       type: 'string',
       description:
-        "Human-readable label for the gallery/CLI. Spaces out block names that mirror a PascalCase component ('ChatMessageMetadata' → 'Chat Message Metadata').",
+        "Human-readable label for the gallery. The CLI prints `name` instead; `astryx template --list --json` also returns an integration template's `displayName`. Spaces out block names that mirror a PascalCase component ('ChatMessageMetadata' → 'Chat Message Metadata').",
       required: true,
     },
     {
@@ -56,13 +56,13 @@ export const doc = {
       name: 'keywords',
       type: 'string[]',
       description:
-        "Search keywords for CLI discovery: the ideas, domains, and other names a builder might use for what the template serves (e.g. ['monitoring', 'uptime', 'on-call'] for a service-health dashboard). Lowercase. `astryx search` matches them as it matches the description and `astryx build` ranks page templates on them, so keep them out of `description`. Integration templates need @astryxdesign/cli 0.7.0 or later: earlier CLIs reject the field, drop that template, and hide the package's doc topics.",
+        "Search keywords for CLI discovery: the ideas, domains, and other names a builder might use for what the template serves (e.g. ['monitoring', 'uptime', 'on-call'] for a service-health dashboard). Lowercase. `astryx search` matches them as it matches the description and `astryx build` ranks page templates on them, so keep them out of `description`. Published @astryxdesign/cli 0.6.6 and later read the field; 0.6.5 and earlier reject it and drop that template, and 0.6.3 and earlier also hide the package's doc topics. `astryx integration verify` fails a package with such a template until it declares an `@astryxdesign/cli` peer of `>=0.7.0`.",
     },
     {
       name: 'replaces',
       type: 'string',
       description:
-        "Integration templates only: the exact id of the Core template this one replaces for unqualified lookup. Find it with `astryx --json template --list --package @astryxdesign/core`; the Core original stays selectable with `--package @astryxdesign/core`. A page replaces only a Core page and a block only a Core block. Needs @astryxdesign/cli 0.7.0 or later: earlier CLIs reject the field, drop that template, and hide the package's doc topics.",
+        "Integration templates only: the exact id of the Core template this one replaces for unqualified lookup. Find it with `astryx --json template --list --package @astryxdesign/core`; the Core original stays selectable with `--package @astryxdesign/core`. A page replaces only a Core page and a block only a Core block. Published @astryxdesign/cli 0.6.4 and later read the field; 0.6.3 and earlier reject it, drop that template, and hide the package's doc topics. `astryx integration verify` fails a package with such a template until it declares an `@astryxdesign/cli` peer of `>=0.7.0`.",
     },
     {
       name: 'isReady',

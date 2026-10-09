@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/components/component-imports`: make an
+ * @file `astryx docs cli/integrations/building-blocks/components/component-imports`: make an
  * integration component's documented import resolve from the packed package.
  */
 
@@ -43,7 +43,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: '`integration verify` installs the packed package in a temporary app, resolves each documented import, and checks that the module exports the documented component name.',
+          text: '`integration verify` unpacks the packed package into a temporary app, resolves each documented import, and checks that the module exports the documented component name. Its `--json` output names each failure by code.',
         },
         {
           type: 'code',
