@@ -1674,6 +1674,31 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # ContextMenuItem opens from a pointer gesture after the trigger renders.
+      # The focused selector wait binds axe to the open menu rather than letting
+      # the trigger's first frame satisfy generic Storybook readiness.
+      - name: Run ContextMenuItem audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ContextMenuItem:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output context-menu-item-a11y-report.json \
+            --components ContextMenuItem \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+
+      - name: Upload ContextMenuItem audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ContextMenuItem:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: context-menu-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: context-menu-item-a11y-report.json
+          retention-days: 30
+          if-no-files-found: error
+
       # The CheckboxList and CheckboxListItem component audits grade the same
       # option rows: interactive row paint, focus, busy, disabled, read-only,
       # status, narrow, forced-colors, and RTL states from exact-head Chromium

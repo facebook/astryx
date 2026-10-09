@@ -6,6 +6,7 @@ import {Kbd} from '@astryxdesign/core/Kbd';
 import {
   DocumentDuplicateIcon,
   PencilIcon,
+  ShareIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
@@ -52,6 +53,7 @@ export const States: Story = {
             }
             onClick={() => {}}
           />
+          <ContextMenuItem icon={ShareIcon} label="Share" onClick={() => {}} />
           <ContextMenuItem
             icon={DocumentDuplicateIcon}
             label="Duplicate"

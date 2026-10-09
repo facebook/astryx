@@ -66,6 +66,12 @@ function evaluateInFixture(fn, arg) {
 const page = {
   goto: async url => { requestedUrl = url; },
   addStyleTag: async () => {},
+  waitForSelector: async selector => {
+    if (process.env.A11Y_TEST_SCENARIO === 'selector-missing') {
+      throw new Error('selector did not become visible: ' + selector);
+    }
+    return {};
+  },
   evaluate: async (fn, arg) => evaluateInFixture(fn, arg),
   close: async () => {},
 };
@@ -88,7 +94,12 @@ Module._load = function(request, parent, isMain) {
 };
 `;
 
-function runFixture(scenario, indexContent, components = 'core/Button') {
+function runFixture(
+  scenario,
+  indexContent,
+  components = 'core/Button',
+  readySelector = null,
+) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'a11y-cli-fixture-'));
   const storybook = path.join(dir, 'storybook');
   const output = path.join(dir, 'report.json');
@@ -111,6 +122,9 @@ function runFixture(scenario, indexContent, components = 'core/Button') {
         components,
         '--port',
         String(port),
+        ...(readySelector == null
+          ? []
+          : ['--ready-selector', readySelector]),
       ],
       {
         cwd: REPO_ROOT,
@@ -161,6 +175,31 @@ describe.sequential('accessibility-audit CLI readiness', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('✓ Audited: Button / Fixture');
     expect(result.report.auditedStoryKeys).toHaveLength(1);
+  });
+
+  it('waits for a focused readiness selector and records it in the report', () => {
+    const result = runFixture(
+      'delayed',
+      VALID_INDEX,
+      'core/Button',
+      '[role="menu"]',
+    );
+    expect(result.status).toBe(0);
+    expect(result.report.readySelector).toBe('[role="menu"]');
+  });
+
+  it('fails closed when a focused readiness selector stays absent', () => {
+    const result = runFixture(
+      'selector-missing',
+      VALID_INDEX,
+      'core/Button',
+      '[role="menu"]',
+    );
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      'selector did not become visible: [role="menu"]',
+    );
+    expect(result.report).toBeNull();
   });
 
   it('routes a11y contract fixtures to canonical owners and legacy aliases', () => {
