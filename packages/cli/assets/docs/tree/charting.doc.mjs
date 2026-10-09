@@ -418,8 +418,7 @@ JSON.stringify(exportConfig);`,
         {
           type: 'code',
           lang: 'tsx',
-          code: `import * as stylex from '@stylexjs/stylex';
-import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
+          code: `import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 import {
   colorVars,
   radiusVars,
@@ -437,10 +436,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-
-const styles = stylex.create({
-  chart: {height: 320, width: '100%'},
-});
 
 type RevenueDatum = {
   quarter: string;
@@ -467,59 +462,60 @@ export function RevenueChart({data}: RevenueChartProps) {
   };
 
   return (
-    <div {...stylex.props(styles.chart)}>
+    <div style={{height: 320, width: '100%'}}>
       <ResponsiveContainer>
         <BarChart
-      accessibilityLayer
-      data={data}
-      desc="Quarterly revenue"
-      title="Quarterly performance">
-      <CartesianGrid stroke={colorVars['--color-border']} />
-      <XAxis
-        axisLine={{stroke: colorVars['--color-border-emphasized']}}
-        dataKey="quarter"
-        tick={tick}
-        tickLine={{stroke: colorVars['--color-border-emphasized']}}
-      />
-      <YAxis
-        axisLine={{stroke: colorVars['--color-border-emphasized']}}
-        tick={tick}
-        tickLine={{stroke: colorVars['--color-border-emphasized']}}
-      />
-      <Tooltip
-        contentStyle={{
-          background: colorVars['--color-background-card'],
-          borderColor: colorVars['--color-border'],
-          borderRadius: radiusVars['--radius-element'],
-          boxShadow: shadowVars['--shadow-med'],
-          color: colorVars['--color-text-primary'],
-        }}
-        cursor={{
-          fill: colorVars['--color-tint-hover'],
-          fillOpacity: 0.05,
-        }}
-      />
-      <Legend
-        formatter={value => (
-          <span style={{color: colorVars['--color-text-secondary']}}>
-            {value}
-          </span>
-        )}
-        wrapperStyle={{
-          fontFamily: typographyVars['--font-family-body'],
-          fontSize: typeScaleVars['--text-supporting-size'],
-        }}
-      />
-      <Bar
-        activeBar={{
-          fill: revenueHover,
-          stroke: colorVars['--color-text-primary'],
-          strokeWidth: 2,
-        }}
-        dataKey="revenue"
-        fill={revenueColor}
-        isAnimationActive={false}
-      />
+          accessibilityLayer
+          data={data}
+          desc="Quarterly revenue"
+          title="Quarterly performance">
+          <CartesianGrid stroke={colorVars['--color-border']} />
+          <XAxis
+            axisLine={{stroke: colorVars['--color-border-emphasized']}}
+            dataKey="quarter"
+            tick={tick}
+            tickLine={{stroke: colorVars['--color-border-emphasized']}}
+          />
+          <YAxis
+            axisLine={{stroke: colorVars['--color-border-emphasized']}}
+            tick={tick}
+            tickLine={{stroke: colorVars['--color-border-emphasized']}}
+          />
+          <Tooltip
+            contentStyle={{
+              background: colorVars['--color-background-card'],
+              borderColor: colorVars['--color-border'],
+              borderRadius: radiusVars['--radius-element'],
+              boxShadow: shadowVars['--shadow-med'],
+              color: colorVars['--color-text-primary'],
+            }}
+            itemStyle={{color: colorVars['--color-text-primary']}}
+            cursor={{
+              fill: colorVars['--color-tint-hover'],
+              fillOpacity: 0.05,
+            }}
+          />
+          <Legend
+            formatter={value => (
+              <span style={{color: colorVars['--color-text-secondary']}}>
+                {value}
+              </span>
+            )}
+            wrapperStyle={{
+              fontFamily: typographyVars['--font-family-body'],
+              fontSize: typeScaleVars['--text-supporting-size'],
+            }}
+          />
+          <Bar
+            activeBar={{
+              fill: revenueHover,
+              stroke: colorVars['--color-text-primary'],
+              strokeWidth: 2,
+            }}
+            dataKey="revenue"
+            fill={revenueColor}
+            isAnimationActive={false}
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>
