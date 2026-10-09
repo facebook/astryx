@@ -398,7 +398,7 @@ export function NativeDateField({
 
   const commitValue = useCallback(
     (newValue: string) => {
-      if (isEffectivelyDisabled) {
+      if (isEffectivelyDisabled || isBusy) {
         return;
       }
       // The same edit can arrive twice — React's synthetic change and the
@@ -435,7 +435,7 @@ export function NativeDateField({
         fireChange(parsedISO);
       }
     },
-    [value, fireChange, isDateDisabled, isEffectivelyDisabled, locale],
+    [value, fireChange, isDateDisabled, isEffectivelyDisabled, isBusy, locale],
   );
 
   const handleChange = useCallback(

@@ -224,6 +224,17 @@ describe('DateInput nativePicker', () => {
     expect(getInput()).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
     expect(screen.getByText('March 21, 2026')).toBeInTheDocument();
+
+    fireEvent.change(getInput(), {target: {value: '2026-03-22'}});
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(changeAction).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('March 21, 2026')).toBeInTheDocument();
+
+    await act(async () => resolveAction());
+
+    fireEvent.change(getInput(), {target: {value: '2026-03-22'}});
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(changeAction).toHaveBeenNthCalledWith(2, '2026-03-22');
     await act(async () => resolveAction());
   });
 
