@@ -3258,6 +3258,33 @@ describe('SideNav collapse ownership', () => {
     expect(screen.getByRole('navigation').style.width).toBe('320px');
   });
 
+  it('expands to the pre-drag width after a drag-to-collapse', async () => {
+    const user = userEvent.setup();
+    render(
+      <SideNav
+        collapsible
+        resizable={{defaultWidth: 300, autoSaveId: AUTO_SAVE_ID}}>
+        Content
+      </SideNav>,
+    );
+
+    // A real drag passes through every width on its way below the threshold.
+    const hitArea = screen.getByTestId('astryx-sidenav-resize-handle')
+      .firstElementChild as HTMLElement;
+    fireEvent.pointerDown(hitArea, {pointerId: 1, clientX: 300});
+    for (const clientX of [280, 250, 220, 190, 20]) {
+      fireEvent.pointerMove(hitArea, {pointerId: 1, clientX});
+    }
+    expectCollapsed(true);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')).toEqual({
+      size: 300,
+      isCollapsed: true,
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Expand sidebar'}));
+    expect(screen.getByRole('navigation').style.width).toBe('300px');
+  });
+
   it('reports one collapse change per toggle', async () => {
     const user = userEvent.setup();
     const onCollapsedChange = vi.fn();

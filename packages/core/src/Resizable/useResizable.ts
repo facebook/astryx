@@ -152,7 +152,10 @@ export interface ResizableRegion {
   isCollapsed: boolean;
   /** Collapse the region (if collapsible). */
   collapse: () => void;
-  /** Expand from collapsed state. */
+  /**
+   * Expand to the size the region had before it collapsed. After a
+   * drag-to-collapse, that is the size from before the drag began.
+   */
   expand: () => void;
   /** Resize to a specific pixel value. */
   resize: (size: number) => void;
@@ -870,6 +873,24 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     collapsible &&
     (isControlled ? controlledIsCollapsed : uncontrolledIsCollapsed);
   const dragStartSizeRef = useRef(size);
+  // The expanded size a drag started from, even when it started collapsed. A
+  // drag passes through every width on its way below the threshold, and the
+  // last of them is not a width the user chose, so a drag that ends collapsed
+  // restores this one instead.
+  const dragRestoreSizeRef = useRef(size);
+
+  // Set when a drag asks to collapse. The render that follows applies it only
+  // if the collapse took effect: a controlled owner that refused it keeps the
+  // width where the drag left it.
+  const [dragCollapseRestoreSize, setDragCollapseRestoreSize] = useState<
+    number | null
+  >(null);
+  if (dragCollapseRestoreSize != null) {
+    setDragCollapseRestoreSize(null);
+    if (isCollapsed) {
+      setChosenSize(dragCollapseRestoreSize);
+    }
+  }
 
   // Mirrors isCollapsed so the callbacks below read the live value instead of
   // the one their last render captured. Two cases reach them from a stale
@@ -972,6 +993,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     // cannot move the bound out from under the pointer.
     gestureBasisRef.current = liveBasis;
     dragStartSizeRef.current = isCollapsedRef.current ? 0 : size;
+    dragRestoreSizeRef.current = size;
   }, [size, liveBasis]);
 
   const onResizeMove = useCallback(
@@ -979,6 +1001,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
       const raw = dragStartSizeRef.current + delta;
       if (collapsible && raw < collapsedSize) {
         if (!isCollapsedRef.current) {
+          setDragCollapseRestoreSize(dragRestoreSizeRef.current);
           setCollapsed(true);
           onCollapseChange?.(true);
           onSizeChange?.(0);
