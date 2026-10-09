@@ -240,6 +240,16 @@ and references from other packages are an open question (OQ2).
   no page. The docsite build MUST fail when a slug is both a page and a
   redirect, or both a flat topic and a namespace page.
 
+- **FR15 — A new guide is findable when it ships.** A change to the CLI's
+  docs that adds a topic or guide, or changes one's title or keywords, MUST
+  record what `astryx search` returns for its title, the singular and plural
+  forms of its title, each of its keywords, and at least three phrases a reader
+  would type for the task it answers, chosen before the results are read. The
+  doc MUST be the first result for its title and among the first three results
+  for every other recorded query. When a query misses, the change MUST change
+  the doc's title or keywords, or name the search rule that keeps the doc out;
+  search MUST be fixed before the doc ships.
+
 ### Platform support
 
 - Supported feature/engine floor: every supported CLI runtime.
@@ -289,6 +299,7 @@ Phase 1 changes these surfaces:
 | FR12          | `docs()` tests, the graph walk, and search tests                              | the level and its children in list order; a topic's Up, Previous, and Next; a flat topic hit's parent; an integration's flat topic                                    | A flat topic without a home, a topic whose name changes, or a level that lists a placed guide                                                                                            |
 | FR13          | Split tests over the topic before and after, the graph walk, and search tests | each old section key read through the namespace; a link and a token reference to the old topic; a `--dense` read; the topic list and a search for one section         | A dropped, merged, or copied section; a changed title or `id`; a reference left on the old identity; a name listed twice; a section found twice                                          |
 | FR14          | Docsite page-generation and route-resolution tests                            | a split namespace; a nested namespace; a package-page namespace; a namespace with a `category`, and one whose guides are all foundations docs; the Unorganized level  | An old address that stops resolving or lands in another sidebar group, a permanent guide redirect, a guide page on a non-package namespace, or a slug that is both a page and a redirect |
+| FR15          | The change's recorded search results                                          | a new topic or guide; a changed title or keyword; the title in singular and plural; each keyword; three reader phrases                                                | A new topic or guide with no recorded search, or a recorded query that does not find it in the first three                                                                               |
 
 ## Decision log
 
