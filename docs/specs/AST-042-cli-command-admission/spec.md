@@ -236,6 +236,40 @@ option, which gives equivalent read-only lookups different automation contracts;
 requiring a new system record for every subcommand exclusion, which defeats the tiered
 bar.
 
+### DEC-5 — Incompatible fixes use `[breaking]` until Changesets carry a classification
+
+**Reference:** `spec:AST-042/DEC-5`
+**Decider:** `josephfarina` (proposed), `2026-10-09`
+
+`check:changesets` reads only a Changeset's tag, and while the packages are 0.x it
+admits a minor bump only for `[breaking]`. An incompatible fix takes the
+incompatible version tier, so until Changesets gain a machine-readable
+classification, its Changeset uses `[breaking]` with a minor bump and names its
+`IFIX-*` and `CLN-*` ids. The record keeps the classification: the change is a
+correction under `spec:AST-017` FR32, not a generic removal, and the tag only
+carries the version tier that `spec:AST-017` FR7 gives it. `check:changesets` and
+the Changeset coverage gate stay as they are.
+
+Rejected: `[fix]` with a minor bump, which `check:changesets` refuses while the
+packages are 0.x; and a classification field in the release gates, which changes
+how every package releases inside a records change.
+
+### DEC-6 — `IFIX-0006` needs no patch transition
+
+**Reference:** `spec:AST-042/DEC-6`
+**Decider:** `josephfarina` (proposed), `2026-10-09`
+
+`spec:AST-017` FR34 has a patch keep the old behavior while it ships the corrected
+path and a warning, when that is safe. For `IFIX-0006` the warning already exists:
+every affected run prints `[error]` lines that name each private variable and the
+fix, and the correction changes only the exit status, with output and files
+identical. A transition patch adds nothing a user can act on, so the correction
+ships in the scheduled minor through `CLN-0012`.
+
+Rejected: a patch that prints one more warning line before the minor, which
+repeats the `[error]` lines and delays the correction by a release; and an option
+that keeps exit 0, which makes a documented failure optional.
+
 ## Deprecation and cleanup records
 
 ### DEP-0006 — Deprecate the `astryx layout` command group
@@ -430,7 +464,7 @@ bar.
 | reproducer    | With the latest stable CLI, `astryx theme build` on a theme whose component override sets `--_button-radius` prints `[error] Component "button" ... sets private var "--_button-radius"` and `1 private var error(s)`, writes its outputs, and exits 0                                                                                                                                                                   |
 | affected      | Build scripts and CI steps that run `theme build` on a theme that sets a private variable. They start to fail until the theme uses public properties                                                                                                                                                                                                                                                                     |
 | matrix        | Human output, `--json`, `--check`, several files, and `--family`: exit 0 before, exit 1 after. Standard output, standard error, JSON receipts, warnings, generated files, and `--check` results are unchanged                                                                                                                                                                                                            |
-| coexistence   | No option keeps exit 0. Every affected run already prints the `[error]` lines that name each private variable and the fix, and the outputs keep being written                                                                                                                                                                                                                                                            |
+| coexistence   | No option keeps exit 0. Every affected run already prints the `[error]` lines that name each private variable and the fix, and the outputs keep being written (DEC-6)                                                                                                                                                                                                                                                    |
 | migration     | Non-mechanical: replace each private variable with the public property that the component exposes for it. The right property depends on the design intent                                                                                                                                                                                                                                                                |
 | codemod       | None, for the same reason                                                                                                                                                                                                                                                                                                                                                                                                |
 | downstream    | Every first-party theme package builds with no private-variable error and exits 0                                                                                                                                                                                                                                                                                                                                        |
