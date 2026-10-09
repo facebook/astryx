@@ -19,9 +19,14 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as http from 'node:http';
 import type {chromium as PlaywrightChromium, Page} from 'playwright';
-import {getResultsDir, ensureDir, writeJson} from './utils.js';
+import {
+  getResultsDir,
+  ensureDir,
+  writeJson,
+  serveStatic,
+  enumeratePreviews,
+} from './utils.js';
 
 const VIEWPORTS = {
   desktop: {width: 1280, height: 800},
@@ -51,58 +56,6 @@ function parseArgs(): {iterations: string[]; prompts?: string[]} {
   }
 
   return {iterations, prompts};
-}
-
-/**
- * Serve a directory of static files on a random port.
- * Returns the base URL and a close function.
- */
-function serveStatic(
-  dir: string,
-): Promise<{url: string; close: () => Promise<void>}> {
-  return new Promise((resolve, reject) => {
-    const server = http.createServer((req, res) => {
-      const urlPath = decodeURIComponent(req.url || '/');
-      const filePath = path.join(dir, urlPath);
-
-      if (!fs.existsSync(filePath)) {
-        res.writeHead(404);
-        res.end('Not found');
-        return;
-      }
-
-      const ext = path.extname(filePath).toLowerCase();
-      const contentTypes: Record<string, string> = {
-        '.html': 'text/html',
-        '.css': 'text/css',
-        '.js': 'application/javascript',
-        '.png': 'image/png',
-        '.svg': 'image/svg+xml',
-        '.json': 'application/json',
-      };
-
-      const content = fs.readFileSync(filePath);
-      res.writeHead(200, {'Content-Type': contentTypes[ext] || 'text/plain'});
-      res.end(content);
-    });
-
-    server.listen(0, '127.0.0.1', () => {
-      const addr = server.address();
-      if (!addr || typeof addr === 'string') {
-        reject(new Error('Failed to get server address'));
-        return;
-      }
-      resolve({
-        url: `http://127.0.0.1:${addr.port}`,
-        close: () =>
-          new Promise<void>(r => {
-            server.close(() => r());
-          }),
-      });
-    });
-
-    server.on('error', reject);
-  });
 }
 
 /**
@@ -145,53 +98,8 @@ async function main() {
         continue;
       }
 
-      // Read the preview manifest to find all HTML files
-      const manifestPath = path.join(previewsDir, 'manifest.json');
-      const previewFiles: Array<{
-        promptId: string;
-        target: string;
-        path: string;
-      }> = [];
-
-      if (fs.existsSync(manifestPath)) {
-        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-        for (const [promptId, targets] of Object.entries(manifest)) {
-          if (prompts && !prompts.includes(promptId)) {
-            continue;
-          }
-          for (const [target, relPath] of Object.entries(
-            targets as Record<string, string>,
-          )) {
-            const fullPath = path.join(iterDir, relPath);
-            if (fs.existsSync(fullPath)) {
-              previewFiles.push({promptId, target, path: fullPath});
-            }
-          }
-        }
-      } else {
-        // No manifest — scan for HTML files directly
-        const scanDir = (dir: string) => {
-          if (!fs.existsSync(dir)) {
-            return;
-          }
-          for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
-            if (entry.isDirectory()) {
-              scanDir(path.join(dir, entry.name));
-            } else if (entry.name.endsWith('.html')) {
-              const promptId = path.basename(
-                path.dirname(path.join(dir, entry.name)),
-              );
-              const target = path.basename(entry.name, '.html');
-              previewFiles.push({
-                promptId,
-                target,
-                path: path.join(dir, entry.name),
-              });
-            }
-          }
-        };
-        scanDir(previewsDir);
-      }
+      // Read the preview manifest (or scan) to find all HTML files
+      const previewFiles = enumeratePreviews(iterDir, prompts);
 
       if (previewFiles.length === 0) {
         console.error(`  ⚠ No preview HTML files found for ${iterationId}`);
