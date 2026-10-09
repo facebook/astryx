@@ -35,7 +35,11 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'This guide is useful for dashboard and report builders, spreadsheet-style chart editors, reusable templates, and products that render charts through more than one technology. A static chart with no end-user color controls can use the token mapping and ignore the editor guidance.',
+          text: 'Use the whole guide when people can customize a chart, save their choices, or render the same chart through multiple technologies.',
+        },
+        {
+          type: 'prose',
+          text: 'For a fixed chart with no color controls, use the token and renderer guidance and skip the sections about color pickers and saved choices.',
         },
       ],
     },
