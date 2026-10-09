@@ -3,9 +3,16 @@
 /**
  * @file Active release branch authority and receipt validation.
  *
+ * A release branch releases the fixed-group version main declared at its cut
+ * (spec:AST-017 FR47); main publishes canaries only and its versions never move
+ * backward (FR46, FR50).
+ *
  * @input  .release marker/plan files, release refs, expected branch/head inputs
  * @output fail-closed validation receipts bound to branch + commit + plan digest
  * @position single authority used by release CI, stable publishing, and branch cleanup
+ *
+ * CI copies this file and lib/workspace-globs.mjs alone as trusted policy, so
+ * it imports nothing else at module load.
  */
 
 import crypto from 'node:crypto';
@@ -39,6 +46,15 @@ function canonicalJson(value) {
       .join(',')}}`;
   }
   return JSON.stringify(value);
+}
+
+/** Order two X.Y.Z versions; null when either is not X.Y.Z. */
+function compareVersions(a, b) {
+  if (!VERSION_RE.test(a ?? '') || !VERSION_RE.test(b ?? '')) return null;
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < 3; i += 1) if (pa[i] !== pb[i]) return pa[i] - pb[i];
+  return 0;
 }
 
 function computePlanDigest(plan) {
@@ -220,21 +236,33 @@ function validateReleaseState({
     }
     if (current.size !== plan.changesets.length)
       errors.push('cut Changeset set differs from the recorded plan');
-  } else {
-    if (current.size !== 0)
-      errors.push('versioned release must consume every branch Changeset');
-    for (const {manifest, file} of publishablePackages(root)) {
-      if (manifest.version !== marker.version)
-        errors.push(
-          `${path.relative(root, file)} is ${manifest.version}, expected ${marker.version}`,
-        );
-    }
+  } else if (current.size !== 0) {
+    errors.push('versioned release must consume every branch Changeset');
+  }
+  // FR47: the branch releases the version main declared at the cut, before and
+  // after its Changesets are consumed.
+  for (const {manifest, file} of publishablePackages(root)) {
+    if (manifest.version !== marker.version)
+      errors.push(
+        `${path.relative(root, file)} is ${manifest.version}, expected ${marker.version}`,
+      );
   }
   return errors;
 }
 
 function git(root, args) {
   return execFileSync('git', args, {cwd: root, encoding: 'utf8'}).trim();
+}
+
+/** The highest local stable vX.Y.Z tag, or null when none exists. */
+function latestStableVersion(root) {
+  const versions = git(root, ['tag', '--list', 'v*'])
+    .split('\n')
+    .filter(Boolean)
+    .map(tag => tag.slice(1))
+    .filter(version => VERSION_RE.test(version))
+    .sort((a, b) => compareVersions(a, b));
+  return versions.at(-1) ?? null;
 }
 
 function fileDigestAtRef(root, ref, file) {
@@ -288,7 +316,13 @@ function releaseOutputMapAtRef(root, plan, releaseRef) {
 
 function jsonAtRef(root, ref, file) {
   try {
-    return JSON.parse(git(root, ['show', `${ref}:${file}`]));
+    return JSON.parse(
+      execFileSync('git', ['show', `${ref}:${file}`], {
+        cwd: root,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }),
+    );
   } catch {
     return null;
   }
@@ -434,49 +468,75 @@ const VERSION_DEPENDENCY_FIELDS = [
   'optionalDependencies',
   'peerDependencies',
 ];
+const EXACT_SPEC_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 
-function expectedSyncedManifest({file, cut, base, release}) {
-  if (!cut || !base || !release)
-    return {error: `release sync cannot read manifest history: ${file}`};
+function patchSuccessor(version) {
+  if (!VERSION_RE.test(version ?? '')) return null;
+  const [major, minor, patch] = version.split('.').map(Number);
+  return `${major}.${minor}.${patch + 1}`;
+}
 
+/**
+ * FR50 — the version main declares after syncing a release: the higher of
+ * main's version and the released version's patch successor. Main declares
+ * the next patch by default and keeps an owner's higher bump.
+ *
+ * @param {string} mainVersion  main's fixed-group version at the sync base
+ * @param {string} releaseVersion  the published version
+ * @returns {string|null}
+ */
+function syncedMainVersion(mainVersion, releaseVersion) {
+  const next = patchSuccessor(releaseVersion);
+  const order = compareVersions(mainVersion, next);
+  if (next === null || order === null) return null;
+  return order >= 0 ? mainVersion : next;
+}
+
+/**
+ * A main manifest after sync: fixed-group members carry `version`, and every
+ * exact internal pin on a fixed-group package points at it, the way
+ * sync-internal-deps keeps them. Nothing else changes.
+ */
+function syncedManifest(base, {version, fixedNames}) {
+  const expected = structuredClone(base);
+  if (fixedNames.has(base.name)) expected.version = version;
+  for (const field of VERSION_DEPENDENCY_FIELDS) {
+    for (const [name, spec] of Object.entries(expected[field] ?? {})) {
+      if (fixedNames.has(name) && EXACT_SPEC_RE.test(spec))
+        expected[field][name] = version;
+    }
+  }
+  return expected;
+}
+
+/**
+ * The release bump may change a published manifest's version and internal
+ * pins only.
+ */
+function releaseManifestChangeError({file, cut, release}) {
+  if (!cut || !release)
+    return `release sync cannot read manifest history: ${file}`;
   const releaseFromCut = structuredClone(cut);
   releaseFromCut.version = release.version;
-  const expected = structuredClone(base);
-  expected.version = release.version;
-
   for (const field of VERSION_DEPENDENCY_FIELDS) {
     const cutValues = cut[field] ?? {};
     const releaseValues = release[field] ?? {};
-    const names = new Set([
+    for (const name of new Set([
       ...Object.keys(cutValues),
       ...Object.keys(releaseValues),
-    ]);
-    for (const name of names) {
+    ])) {
       if (canonicalJson(cutValues[name]) === canonicalJson(releaseValues[name]))
         continue;
       if (!name.startsWith('@astryxdesign/'))
-        return {
-          error: `published manifest contains a non-version release change: ${file} ${field}.${name}`,
-        };
+        return `published manifest contains a non-version release change: ${file} ${field}.${name}`;
       releaseFromCut[field] ??= {};
       if (releaseValues[name] === undefined) delete releaseFromCut[field][name];
       else releaseFromCut[field][name] = releaseValues[name];
-
-      if (
-        canonicalJson(base[field]?.[name]) === canonicalJson(cutValues[name])
-      ) {
-        expected[field] ??= {};
-        if (releaseValues[name] === undefined) delete expected[field][name];
-        else expected[field][name] = releaseValues[name];
-      }
     }
   }
-
-  if (canonicalJson(releaseFromCut) !== canonicalJson(release))
-    return {
-      error: `published manifest contains a non-version release change: ${file}`,
-    };
-  return {expected};
+  return canonicalJson(releaseFromCut) === canonicalJson(release)
+    ? null
+    : `published manifest contains a non-version release change: ${file}`;
 }
 
 function validateReleaseSync({
@@ -487,9 +547,11 @@ function validateReleaseSync({
   releaseOutputs,
   headOutputs,
   releaseRenames = new Set(),
+  releaseVersion,
+  fixedNames = new Set(),
   cutManifests = new Map(),
-  baseManifests = new Map(),
   releaseManifests = new Map(),
+  baseManifests = new Map(),
   headManifests = new Map(),
 }) {
   const errors = [];
@@ -519,9 +581,9 @@ function validateReleaseSync({
             `release sync may only delete frozen Changesets: ${file}`,
           );
       } else if (isPackageManifestPath(file)) {
-        if (!releaseManifests.has(file))
+        if (!baseManifests.has(file))
           errors.push(
-            `release sync changed an unplanned package manifest: ${file}`,
+            `release sync changed an unknown package manifest: ${file}`,
           );
       } else if (
         !isReleaseOutputPath(file) &&
@@ -553,23 +615,116 @@ function validateReleaseSync({
       errors.push(`release sync output differs from published branch: ${file}`);
   }
   for (const [file, release] of releaseManifests) {
-    const result = expectedSyncedManifest({
+    const error = releaseManifestChangeError({
       file,
       cut: cutManifests.get(file),
-      base: baseManifests.get(file),
       release,
     });
-    if (result.error) {
-      errors.push(result.error);
+    if (error) errors.push(error);
+  }
+
+  // FR50: every main manifest moves to one synced version, never backward.
+  const mainVersions = new Set(
+    [...baseManifests.values()]
+      .filter(manifest => manifest && fixedNames.has(manifest.name))
+      .map(manifest => manifest.version),
+  );
+  if (mainVersions.size !== 1) {
+    errors.push(
+      `release sync needs one fixed-group version on main; found ${[...mainVersions].join(', ') || 'none'}`,
+    );
+    return errors;
+  }
+  const [mainVersion] = mainVersions;
+  const version = syncedMainVersion(mainVersion, releaseVersion);
+  if (version === null) {
+    errors.push(
+      `release sync cannot order main ${mainVersion} after release ${releaseVersion}`,
+    );
+    return errors;
+  }
+  for (const [file, base] of baseManifests) {
+    if (!base) continue;
+    const head = headManifests.get(file);
+    if (!head) {
+      errors.push(`release sync removed a package manifest: ${file}`);
       continue;
     }
-    const head = headManifests.get(file);
-    if (!head || head.version !== release.version)
-      errors.push(`release sync manifest has the wrong version: ${file}`);
-    if (canonicalJson(head) !== canonicalJson(result.expected))
+    const expected = syncedManifest(base, {version, fixedNames});
+    if (canonicalJson(head) === canonicalJson(expected)) continue;
+    if (
+      fixedNames.has(base.name) &&
+      compareVersions(head.version, base.version) < 0
+    )
+      errors.push(
+        `release sync moves main backward: ${file} ${base.version} -> ${head.version}`,
+      );
+    else if (head.version !== expected.version)
+      errors.push(
+        `release sync manifest has the wrong version: ${file} is ${head.version}, expected ${expected.version}`,
+      );
+    else
       errors.push(`release sync changed non-version manifest fields: ${file}`);
   }
   return errors;
+}
+
+/**
+ * FR46 — main's fixed-group version on a pull request into main.
+ *
+ * Main carries a malleable plan until cut. It may move up or down, but always
+ * remains one plain version strictly above the newest stable release.
+ *
+ * @param {object} input
+ * @param {string[]} input.fixed  trusted fixed-group package names
+ * @param {string} input.releasedVersion  newest stable vX.Y.Z tag, without v
+ * @param {Map<string, object|null>} input.headManifests  name -> manifest at head
+ * @param {boolean} [input.allowBootstrapEqual]  one-time landing bridge when trusted main predates this validator
+ * @returns {string[]}
+ */
+function validateMainVersions({
+  fixed,
+  releasedVersion,
+  headManifests,
+  allowBootstrapEqual = false,
+}) {
+  const errors = [];
+  if (!VERSION_RE.test(releasedVersion ?? ''))
+    errors.push('main version check needs the newest stable vX.Y.Z tag');
+  const headVersions = new Set();
+  for (const name of fixed) {
+    const head = headManifests.get(name);
+    if (!head || !isStableReleasePackage(head)) continue;
+    if (!VERSION_RE.test(head.version ?? '')) {
+      errors.push(`${name} is ${head.version}; main declares an X.Y.Z version`);
+      continue;
+    }
+    headVersions.add(head.version);
+  }
+  if (headVersions.size !== 1) {
+    errors.push(
+      `the fixed group must declare one version on main; found ${[...headVersions].sort().join(', ') || 'none'}`,
+    );
+    return errors;
+  }
+  const [declaredVersion] = headVersions;
+  const order = VERSION_RE.test(releasedVersion ?? '')
+    ? compareVersions(declaredVersion, releasedVersion)
+    : null;
+  if (order < 0 || (order === 0 && !allowBootstrapEqual))
+    errors.push(
+      `main declares ${declaredVersion}; it must stay strictly above newest stable v${releasedVersion}`,
+    );
+  return errors;
+}
+
+function packageManifestsByName(read, root) {
+  const manifests = new Map();
+  for (const dir of expandWorkspaceDirs(root)) {
+    const manifest = read(path.relative(root, path.join(dir, 'package.json')));
+    if (manifest?.name) manifests.set(manifest.name, manifest);
+  }
+  return manifests;
 }
 
 function parseArgs(argv) {
@@ -605,6 +760,52 @@ function versionTagExists(root, version) {
   }
 }
 
+/**
+ * FR47/FR49 — the fixed-group version main declared at `ref`.
+ *
+ * @param {string} root
+ * @param {string} ref
+ * @returns {{version: string|null, errors: string[]}}
+ */
+function declaredVersionAtRef(root, ref) {
+  const config = jsonAtRef(root, ref, '.changeset/config.json');
+  if (!config)
+    return {
+      version: null,
+      errors: [`${ref} has no readable .changeset/config.json`],
+    };
+  const fixed = new Set((config.fixed ?? []).flat());
+  const versions = new Map();
+  for (const dir of expandWorkspaceDirs(root)) {
+    const file = path.relative(root, path.join(dir, 'package.json'));
+    const manifest = jsonAtRef(root, ref, file);
+    if (!manifest || !fixed.has(manifest.name)) continue;
+    if (!isStableReleasePackage(manifest)) continue;
+    if (!versions.has(manifest.version)) versions.set(manifest.version, []);
+    versions.get(manifest.version).push(manifest.name);
+  }
+  if (versions.size !== 1)
+    return {
+      version: null,
+      errors: [
+        `the fixed group at ${ref} must declare one version; found ${
+          [...versions.entries()]
+            .map(([v, names]) => `${v} (${names.join(', ')})`)
+            .join('; ') || 'none'
+        }`,
+      ],
+    };
+  const [version] = versions.keys();
+  if (!VERSION_RE.test(version))
+    return {
+      version: null,
+      errors: [
+        `the fixed group at ${ref} declares ${version}, which is not X.Y.Z`,
+      ],
+    };
+  return {version, errors: []};
+}
+
 function writeAuthority(root, values, refresh) {
   const version = required(values, 'version');
   const branch = required(values, 'branch');
@@ -616,6 +817,12 @@ function writeAuthority(root, values, refresh) {
   )
     throw new Error(
       'version, branch, and cut SHA do not form a valid release identity',
+    );
+  const declared = declaredVersionAtRef(root, cutSha);
+  if (declared.errors.length) throw new Error(declared.errors.join('\n'));
+  if (declared.version !== version)
+    throw new Error(
+      `main declares ${declared.version} at the cut, so the release is ${declared.version}, not ${version}`,
     );
   const dir = path.join(root, RELEASE_DIR);
   const markerPath = path.join(dir, MARKER_FILE);
@@ -661,10 +868,20 @@ function writeAuthority(root, values, refresh) {
   );
 }
 
-function main() {
+async function main() {
   const {command, values} = parseArgs(process.argv.slice(2));
   const root = path.resolve(values.root ?? ROOT);
   if (command === 'create' || command === 'refresh') {
+    // FR48/FR49: admission runs where the plan is made. Loaded here so the
+    // trusted CI copy of this file needs no other module.
+    const {admitRelease} = await import('./release-inputs.mjs');
+    const admission = admitRelease(root, {
+      version: required(values, 'version'),
+    });
+    if (admission.problems.length)
+      throw new Error(
+        `release admission refused ${values.version}:\n${admission.problems.join('\n')}`,
+      );
     writeAuthority(root, values, command === 'refresh');
     return;
   }
@@ -704,6 +921,25 @@ function main() {
         files: raw ? raw.split('\n').length : 0,
       }),
     );
+    return;
+  }
+  if (command === 'validate-main-version') {
+    const base = required(values, 'base');
+    const config = jsonAtRef(root, base, '.changeset/config.json');
+    if (!config)
+      throw new Error(`cannot read trusted fixed group from ${base}`);
+    const releasedVersion = latestStableVersion(root);
+    const errors = validateMainVersions({
+      fixed: (config.fixed ?? []).flat(),
+      releasedVersion,
+      allowBootstrapEqual: values['allow-bootstrap-equal'] === 'true',
+      headManifests: packageManifestsByName(file => {
+        const absolute = path.join(root, file);
+        return fs.existsSync(absolute) ? readJson(absolute) : null;
+      }, root),
+    });
+    if (errors.length) throw new Error(errors.join('\n'));
+    console.log(JSON.stringify({base, releasedVersion, valid: true}));
     return;
   }
   if (command === 'validate-sync') {
@@ -761,12 +997,25 @@ function main() {
       plan.cutSha,
       releaseManifestFiles,
     );
-    const baseManifests = manifestMapAtRef(root, base, releaseManifestFiles);
     const releaseManifests = manifestMapAtRef(
       root,
       releaseRef,
       releaseManifestFiles,
     );
+    // FR50 covers every package manifest on main, not only those the release
+    // bump touched: sync advances main's declared version everywhere.
+    const mainManifestFiles = git(root, [
+      'ls-tree',
+      '-r',
+      '--name-only',
+      base,
+      '--',
+      'packages',
+    ])
+      .split('\n')
+      .filter(isPackageManifestPath);
+    const baseManifests = manifestMapAtRef(root, base, mainManifestFiles);
+    const baseConfig = jsonAtRef(root, base, '.changeset/config.json');
     errors.push(
       ...validateReleaseSync({
         entries: raw ? raw.split('\n') : [],
@@ -778,10 +1027,12 @@ function main() {
         releaseOutputs,
         headOutputs: currentOutputMap(root, releaseOutputs.keys()),
         releaseRenames,
+        releaseVersion: marker.version,
+        fixedNames: new Set((baseConfig?.fixed ?? []).flat()),
         cutManifests,
-        baseManifests,
         releaseManifests,
-        headManifests: currentManifestMap(root, releaseManifestFiles),
+        baseManifests,
+        headManifests: currentManifestMap(root, mainManifestFiles),
       }),
     );
     if (errors.length) throw new Error(errors.join('\n'));
@@ -799,7 +1050,7 @@ function main() {
   }
   if (command !== 'validate')
     throw new Error(
-      'command must be create, refresh, list-active, inspect-ref, validate-diff, validate-sync, or validate',
+      'command must be create, refresh, list-active, inspect-ref, validate-diff, validate-main-version, validate-sync, or validate',
     );
 
   const marker = readJson(path.join(root, RELEASE_DIR, MARKER_FILE));
@@ -843,22 +1094,25 @@ function main() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  try {
-    main();
-  } catch (error) {
+  main().catch(error => {
     console.error(`release authority validation failed: ${error.message}`);
     process.exit(1);
-  }
+  });
 }
 
 export {
   buildMarker,
   buildPlan,
   canonicalJson,
+  compareVersions,
   computePlanDigest,
+  declaredVersionAtRef,
+  syncedMainVersion,
   isStableReleasePackage,
+  latestStableVersion,
   listActiveBranches,
   validateIdentity,
+  validateMainVersions,
   validateRefMarker,
   validateReleaseDiff,
   validateReleaseState,

@@ -709,21 +709,25 @@ slugs and docs routes, are data and may change.
 
 ### Version Bumps
 
-- **0.x (current): bump follows the category.** We track standard semver for the `0.x.y` range, where a minor bump is the stable breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`). A `[breaking]` change bumps the **minor** (`0.x.y → 0.(x+1).0`). A change confined to a surface that was explicitly marked experimental before its first stable publication uses `[experimental]` and bumps the **patch**, even when that experimental API changes incompatibly. Every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) also bumps the patch. If stable defaults, behavior, props, imports, CLI commands, or machine schemas break, the change remains `[breaking]`. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` enforces the coupling both ways.
-- All publishable packages are a `fixed` group, so a single change co-bumps them to the same version. Only genuinely-affected packages get a changelog entry — the rest get a clean version-only bump.
-- **Main targets a patch by default, and `[breaking]` waits for a scheduled minor.** Because the packages are a fixed group, one `[breaking]` entry moves every package to a new minor — so `pnpm check:changesets` refuses one while main is on its patch default. There are two ways forward, and the refusal prints both:
-  - **Keep the release patch-compatible** (the usual answer): leave the released surface working and deprecate it instead. Ship the replacement, keep the old usage equivalent, and take the patch bump; the removal lands once a minor is scheduled.
-  - **Wait for the scheduled minor**: minors are scheduled for a specific day. A release owner adds `.release/target.json` with the target version and that day, and from then until the release your `[breaking]` changeset can land. Removing that file afterwards is part of normal post-release setup, and an expired date stops admitting breaking changes on its own.
+- **Main declares the next version.** The fixed group's version in main's `package.json` files is the next planned release, for example `0.7.0` while `0.6.7` is the latest stable release. Main publishes only canaries of it (`0.7.0-canary.<sha>`). Before the cut, a release owner may raise or lower the plan—`0.7.0` to `0.6.8`, for example—but it must remain strictly above the newest stable `vX.Y.Z` tag. After a release, sync uses the higher of the current plan and the released version's patch successor. CI refuses a declaration at or below newest stable or a split fixed group.
+- **0.x: the category states the tier a change needs.** We track standard semver for the `0.x.y` range, where a minor is the stable breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`). A `[breaking]` Changeset declares `minor`: it can ship only in a minor release. A change confined to a surface that was explicitly marked experimental before its first stable publication uses `[experimental]` and declares `patch`, even when that experimental API changes incompatibly. Every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) also declares `patch`. If stable defaults, behavior, props, imports, CLI commands, or machine schemas break, the change remains `[breaking]`. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` enforces the coupling both ways. A Changeset's bump never chooses the release version.
+- All publishable packages are a `fixed` group, so they release together at one version. Only genuinely-affected packages get a changelog entry.
+- **Pull requests to main check Changeset format, not the release.** `pnpm check:changesets` and the coverage check run on every pull request; neither compares your Changeset with a release version, so a `[breaking]` Changeset can merge while main declares a patch.
+- **The release branch admits Changesets against the declared version.** If main declares the patch after the latest stable release (`0.6.7` after `0.6.6`), the release refuses an incompatible Changeset. There are two ways forward, and the refusal prints both:
+  - **Keep the release patch-compatible** (the usual answer): leave the released surface working and deprecate it instead. Ship the replacement, keep the old usage equivalent, and let the removal ship in a minor release.
+  - **Plan the minor**: a release owner bumps main's version to the minor (`0.7.0`) before the cut. A release that declares `0.7.0` consumes a `[breaking]` Changeset into `0.7.0` changelogs; it does not move to `0.8.0`.
 
-  As a contributor you never author that file or decide the schedule — say what you intend in the PR and a maintainer handles it. The rule is `spec:AST-017` FR46–FR50.
+  As a contributor you never change the declared version — say what you intend in the PR and a maintainer handles it. The rule is `spec:AST-017` FR46–FR50.
 
 ### How a release is cut
 
+A release branch `release/vX.Y.Z` is cut from main, where `X.Y.Z` is the version main declares at that commit. On that branch only:
+
 ```bash
-pnpm version-packages   # changeset version + scripts/format-changelogs.mjs
+pnpm version-packages   # changelogs at the declared version + codemod promotion + formatting
 ```
 
-`format-changelogs.mjs` rewrites each just-bumped package CHANGELOG into the doc-site format (h1 version, `#### <Category>` sections in canonical order, and a `#### Contributors` section aggregated from the changeset `@handle`s). It's idempotent and has a `--check` mode for CI drift detection.
+`scripts/release/version-packages.mjs` admits the pending Changesets against the declared version, writes their changelog entries under it, and deletes them; it never changes a package version. `format-changelogs.mjs` then rewrites each package CHANGELOG into the doc-site format (h1 version, `#### <Category>` sections in canonical order, and a `#### Contributors` section aggregated from the changeset `@handle`s). It's idempotent and has a `--check` mode for CI drift detection. After publication, syncing the release back to main carries the changelogs, removes the consumed Changesets, and moves main to the release's next patch unless an owner already set it higher; main's versions never move backward.
 
 ## Finding Something to Work On
 

@@ -275,28 +275,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect and require the release-sync branch contract
+      - name: Detect the release-sync branch contract
         id: release-sync-scope
         env:
           SYNC_BRANCH: ${{ github.head_ref }}
         run: |
           set -eu
-          git fetch origin main
-          BASE_VERSION=$(git show origin/main:packages/core/package.json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).version))")
-          HEAD_VERSION=$(node -p "require('./packages/core/package.json').version")
           case "$SYNC_BRANCH" in
             chore/sync-v*-to-main)
               VERSION=${SYNC_BRANCH#chore/sync-v}
               VERSION=${VERSION%-to-main}
               printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
-              test "$HEAD_VERSION" = "$VERSION"
               echo 'required=true' >> "$GITHUB_OUTPUT"
               ;;
             *)
-              if [ "$HEAD_VERSION" != "$BASE_VERSION" ]; then
-                echo 'A stable package-version change on main must use chore/sync-vX.Y.Z-to-main and pass release-sync.'
-                exit 1
-              fi
               echo 'required=false' >> "$GITHUB_OUTPUT"
               ;;
           esac

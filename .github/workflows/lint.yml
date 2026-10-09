@@ -48,6 +48,35 @@ jobs:
               >> "$GITHUB_OUTPUT"
           fi
 
+      # Main declares the next planned version (spec:AST-017 FR46). An owner may
+      # raise or lower it before cut, but it must remain strictly above the newest
+      # stable tag and keep the fixed group together. This runs in required lint,
+      # not the optional release-sync context, so every main pull request is gated.
+      - name: Keep main's declared version above latest stable
+        if: github.event_name == 'pull_request'
+        run: |
+          set -eu
+          git fetch origin main 'refs/tags/v*:refs/tags/v*'
+          TRUSTED_POLICY="$RUNNER_TEMP/main-version-policy"
+          mkdir -p "$TRUSTED_POLICY/scripts/release" "$TRUSTED_POLICY/scripts/lib"
+          git show origin/main:scripts/release/active-release.mjs \
+            > "$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          git show origin/main:scripts/lib/workspace-globs.mjs \
+            > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
+          VALIDATOR="$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          ALLOW_BOOTSTRAP_EQUAL=false
+          if ! grep -q 'validate-main-version' "$VALIDATOR"; then
+            # Main's trusted policy predates this command; the candidate's copy
+            # applies only while this command is landing. Current main still
+            # equals the newest tag until the separate owner bump lands next.
+            VALIDATOR="$GITHUB_WORKSPACE/scripts/release/active-release.mjs"
+            ALLOW_BOOTSTRAP_EQUAL=true
+          fi
+          node "$VALIDATOR" validate-main-version \
+            --root "$GITHUB_WORKSPACE" \
+            --base origin/main \
+            --allow-bootstrap-equal "$ALLOW_BOOTSTRAP_EQUAL"
+
       # Release-sync PRs copy already-published generated outputs and consume the
       # frozen Changesets. They cannot add a new Changeset, so the required lint
       # context runs the trusted release-sync validator instead.

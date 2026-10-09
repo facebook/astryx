@@ -15,15 +15,18 @@
 # Two jobs, selected by trigger:
 #   - publish (stable): workflow_dispatch only. Publishes the `latest` dist-tag.
 #     The release flow is:
-#       1. Cut and mark one release/vX.Y.Z branch from exact window-time main.
-#       2. Target the generated Version Packages PR to that branch.
+#       1. Cut and mark one release/vX.Y.Z branch from exact window-time main;
+#          X.Y.Z is the version main's package.json declares at that commit.
+#       2. Target the generated Version Packages PR to that branch. It writes
+#          changelogs under that version and never moves it.
 #       3. Run the final exact-head release checks, tag the merged bump commit,
 #          and dispatch this workflow from that immutable tag with the recorded
 #          release branch and head. Stable publication from main is rejected.
 #     Version-gated and idempotent: any version already on the registry is
 #     skipped, so re-running (or a `dry-run` first) is safe.
-#   - canary: push to main only. Publishes 0.x.y-canary.<short-sha> to the
-#     `canary` dist-tag on every push to main:
+#   - canary: push to main only. Main declares the next planned version, so
+#     this publishes <declared>-canary.<short-sha> to the `canary` dist-tag on
+#     every push to main:
 #       npm install @astryxdesign/core@canary
 #
 # Why both jobs live here instead of in deploy.yml:
@@ -215,8 +218,9 @@ jobs:
         run: |
           set -eu
           SHORT_SHA="${GITHUB_SHA:0:7}"
-          BASE_VERSION=$(node -p "require('./packages/core/package.json').version")
-          CANARY_VERSION="${BASE_VERSION}-canary.${SHORT_SHA}"
+          # Main's package.json carries the next planned version.
+          DECLARED_VERSION=$(node -p "require('./packages/core/package.json').version")
+          CANARY_VERSION="${DECLARED_VERSION}-canary.${SHORT_SHA}"
 
           echo "Publishing canary ${CANARY_VERSION}"
 

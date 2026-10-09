@@ -8,8 +8,11 @@
  * pre-1.0.
  */
 
-import {describe, it, expect} from 'vitest';
-import {validateChangeset} from './check-changesets.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {afterEach, describe, it, expect} from 'vitest';
+import {checkRepository, validateChangeset} from './check-changesets.mjs';
 
 const ctx = {
   pre1: true,
@@ -140,5 +143,82 @@ describe('validateChangeset — 0.x semver coupling', () => {
       ctx,
     );
     expect(problems.some(p => /private\/ignored/.test(p))).toBe(true);
+  });
+});
+
+describe('checkRepository — main pull requests check format, not the release', () => {
+  const roots = [];
+  afterEach(() => {
+    for (const root of roots.splice(0))
+      fs.rmSync(root, {recursive: true, force: true});
+  });
+
+  function mainCheckout(version, changesets) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-main-cs-'));
+    roots.push(root);
+    const put = (file, text) => {
+      fs.mkdirSync(path.dirname(path.join(root, file)), {recursive: true});
+      fs.writeFileSync(path.join(root, file), text);
+    };
+    put('pnpm-workspace.yaml', "packages:\n  - 'packages/*'\n");
+    put(
+      'packages/core/package.json',
+      JSON.stringify({name: '@astryxdesign/core', version}),
+    );
+    put(
+      '.changeset/config.json',
+      JSON.stringify({fixed: [['@astryxdesign/core']], ignore: []}),
+    );
+    for (const [name, text] of Object.entries(changesets))
+      put(`.changeset/${name}.md`, text);
+    return root;
+  }
+
+  it('accepts a [breaking] Changeset while main declares a patch (FR46)', () => {
+    // Main at 0.6.7 is the next patch after 0.6.6. Release admission happens
+    // on the release branch; main's check reads no release version or tag.
+    const root = mainCheckout('0.6.7', {
+      'remove-thing': cs(
+        `'@astryxdesign/core': minor`,
+        '[breaking] Remove the old thing\n@person',
+      ),
+    });
+    const result = checkRepository(root);
+    expect(result.problems).toEqual([]);
+    expect(result.files).toEqual(['remove-thing.md']);
+  });
+
+  it('accepts the same Changeset on a pre-bumped minor main', () => {
+    const root = mainCheckout('0.7.0', {
+      'remove-thing': cs(
+        `'@astryxdesign/core': minor`,
+        '[breaking] Remove the old thing\n@person',
+      ),
+    });
+    expect(checkRepository(root).problems).toEqual([]);
+  });
+
+  it('still refuses malformed Changesets on main', () => {
+    const root = mainCheckout('0.6.7', {
+      'no-category': cs(`'@astryxdesign/core': patch`, 'Something\n@person'),
+      'wrong-bump': cs(
+        `'@astryxdesign/core': patch`,
+        '[breaking] Remove the old thing\n@person',
+      ),
+    });
+    const {problems} = checkRepository(root);
+    expect(problems.join('\n')).toMatch(
+      /no-category\.md: body must start with a \[category\] tag/,
+    );
+    expect(problems.join('\n')).toMatch(
+      /wrong-bump\.md: .* is a \[breaking\] change but declares "patch"/,
+    );
+  });
+
+  it('ignores any leftover schedule file', () => {
+    const root = mainCheckout('0.6.7', {});
+    fs.mkdirSync(path.join(root, '.release'));
+    fs.writeFileSync(path.join(root, '.release/target.json'), 'not json');
+    expect(checkRepository(root).problems).toEqual([]);
   });
 });
