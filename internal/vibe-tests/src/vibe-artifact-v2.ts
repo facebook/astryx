@@ -8,6 +8,9 @@
  *   shared evaluator described by AST-067.
  */
 
+import {createHash} from 'node:crypto';
+import fs, {type Stats} from 'node:fs';
+import path from 'node:path';
 import type {ExecutionProvenanceV1} from './provenance';
 import {parseExecutionProvenanceV1} from './provenance';
 
@@ -32,7 +35,8 @@ export interface VibeArtifactVersionsV2 {
 export interface VibeArtifactProducerV2 {
   kind: VibeArtifactProducerKindV2;
   runner: string;
-  deliveryMode: VibeArtifactViewKindV2;
+  /** Producer-defined delivery identity, independent from the materialized view. */
+  deliveryMode: string;
 }
 
 export interface VibeArtifactEmptyBaselineV2 {
@@ -141,7 +145,8 @@ export type VibeMaterializationFailureCodeV2 =
   | 'digest_mismatch'
   | 'missing_entry'
   | 'build_failed'
-  | 'unsupported_view';
+  | 'unsupported_view'
+  | 'unexpected_error';
 
 export interface VibeMaterializationFailureV2 {
   code: VibeMaterializationFailureCodeV2;
@@ -176,31 +181,9 @@ export const EMPTY_TREE_SHA256_V2 =
   'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 
 const SHA256 = /^[a-f0-9]{64}$/;
+const DELIVERY_MODE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+const DELIVERY_MODE_MAX_LENGTH = 64;
 const WINDOWS_ABSOLUTE_PATH = /^[a-zA-Z]:[\\/]/;
-const SHELL_EXECUTABLES = new Set([
-  'bash',
-  'cmd',
-  'cmd.exe',
-  'csh',
-  'dash',
-  'fish',
-  'ksh',
-  'powershell',
-  'powershell.exe',
-  'pwsh',
-  'sh',
-  'tcsh',
-  'zsh',
-]);
-const EVAL_EXECUTABLES = new Set([
-  'node',
-  'node.exe',
-  'perl',
-  'php',
-  'python',
-  'python3',
-  'ruby',
-]);
 
 function fail(field: string, message: string): never {
   throw new VibeArtifactValidationError(message, field);
@@ -237,6 +220,21 @@ function requiredString(
   }
   if (/\p{Cc}/u.test(value)) {
     fail(`${field}.${key}`, 'must not contain control characters');
+  }
+  return value;
+}
+
+function requiredDeliveryMode(
+  object: Record<string, unknown>,
+  key: string,
+  field: string,
+): string {
+  const value = requiredString(object, key, field);
+  if (value.length > DELIVERY_MODE_MAX_LENGTH || !DELIVERY_MODE.test(value)) {
+    fail(
+      `${field}.${key}`,
+      `must be a lowercase kebab-case identifier of at most ${DELIVERY_MODE_MAX_LENGTH} characters`,
+    );
   }
   return value;
 }
@@ -304,6 +302,144 @@ export function assertBundlePathV2(value: string, field = '$'): void {
   }
 }
 
+export class VibeArtifactTreeDigestError extends Error {
+  constructor(
+    readonly code: 'unsafe_path' | 'missing_entry',
+    message: string,
+  ) {
+    super(message);
+    this.name = 'VibeArtifactTreeDigestError';
+  }
+}
+
+function treePathInside(root: string, candidate: string): boolean {
+  return candidate === root || candidate.startsWith(`${root}${path.sep}`);
+}
+
+function treeRootPath(bundleRoot: string, relativeRoot: string): string {
+  assertBundlePathV2(relativeRoot, 'tree root');
+  const resolvedBundle = path.resolve(bundleRoot);
+  const absoluteRoot = path.resolve(bundleRoot, ...relativeRoot.split('/'));
+  if (!treePathInside(resolvedBundle, absoluteRoot)) {
+    throw new VibeArtifactTreeDigestError(
+      'unsafe_path',
+      `${relativeRoot} escapes the bundle root`,
+    );
+  }
+
+  let stats: Stats;
+  try {
+    stats = fs.lstatSync(absoluteRoot);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new VibeArtifactTreeDigestError(
+        'missing_entry',
+        `${relativeRoot} does not exist in the bundle`,
+      );
+    }
+    throw error;
+  }
+  if (stats.isSymbolicLink()) {
+    throw new VibeArtifactTreeDigestError(
+      'unsafe_path',
+      `${relativeRoot} uses a symlink, which is not portable in a bundle`,
+    );
+  }
+  if (!stats.isDirectory()) {
+    throw new VibeArtifactTreeDigestError(
+      'missing_entry',
+      `${relativeRoot} is not a directory`,
+    );
+  }
+
+  const realBundle = fs.realpathSync(bundleRoot);
+  const realRoot = fs.realpathSync(absoluteRoot);
+  if (!treePathInside(realBundle, realRoot)) {
+    throw new VibeArtifactTreeDigestError(
+      'unsafe_path',
+      `${relativeRoot} resolves outside the bundle root`,
+    );
+  }
+  return absoluteRoot;
+}
+
+function collectTreeFilesV2(
+  bundleRoot: string,
+  absoluteDirectory: string,
+  relativeDirectory: string,
+  files: {absolute: string; relative: string}[],
+): void {
+  for (const entry of fs.readdirSync(absoluteDirectory, {
+    withFileTypes: true,
+  })) {
+    const absolute = path.join(absoluteDirectory, entry.name);
+    const relative = relativeDirectory
+      ? `${relativeDirectory}/${entry.name}`
+      : entry.name;
+    if (entry.isSymbolicLink()) {
+      let detail = 'uses a dangling symlink';
+      try {
+        const realBundle = fs.realpathSync(bundleRoot);
+        const realTarget = fs.realpathSync(absolute);
+        detail = treePathInside(realBundle, realTarget)
+          ? 'uses a symlink, which is not portable in a bundle'
+          : 'uses a symlink that escapes the bundle root';
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          throw error;
+        }
+      }
+      throw new VibeArtifactTreeDigestError(
+        'unsafe_path',
+        `${relative} ${detail}`,
+      );
+    }
+    if (entry.isDirectory()) {
+      collectTreeFilesV2(bundleRoot, absolute, relative, files);
+    } else if (entry.isFile()) {
+      files.push({absolute, relative});
+    } else {
+      throw new VibeArtifactTreeDigestError(
+        'unsafe_path',
+        `${relative} is not a regular file or directory`,
+      );
+    }
+  }
+}
+
+function compareUtf8(left: string, right: string): number {
+  return Buffer.compare(Buffer.from(left, 'utf8'), Buffer.from(right, 'utf8'));
+}
+
+/**
+ * Hash a portable authored tree.
+ *
+ * The canonical byte stream contains one record per regular file. POSIX-relative
+ * paths are encoded as UTF-8 and sorted by those bytes. Each record is
+ * `path + NUL + lowercase hex SHA-256(file bytes) + LF`; the tree digest is the
+ * SHA-256 of the concatenated records. Empty trees therefore use
+ * EMPTY_TREE_SHA256_V2. Symlinks and non-regular filesystem entries are rejected.
+ */
+export function sha256TreeV2(bundleRoot: string, relativeRoot: string): string {
+  const absoluteRoot = treeRootPath(bundleRoot, relativeRoot);
+  const files: {absolute: string; relative: string}[] = [];
+  collectTreeFilesV2(bundleRoot, absoluteRoot, '', files);
+
+  const digest = createHash('sha256');
+  for (const file of files.sort((left, right) =>
+    compareUtf8(left.relative, right.relative),
+  )) {
+    const fileDigest = createHash('sha256')
+      .update(fs.readFileSync(file.absolute))
+      .digest('hex');
+    digest.update(Buffer.from(file.relative, 'utf8'));
+    digest.update(Buffer.from([0]));
+    digest.update(fileDigest, 'ascii');
+    digest.update(Buffer.from([10]));
+  }
+  return digest.digest('hex');
+}
+
 function requiredBundlePath(
   object: Record<string, unknown>,
   key: string,
@@ -329,7 +465,7 @@ function requireWithin(
   }
 }
 
-function validateArgv(value: unknown, field: string): void {
+function validateArgvShape(value: unknown, field: string): void {
   if (!Array.isArray(value) || value.length === 0) {
     fail(field, 'must be a non-empty argv array');
   }
@@ -343,18 +479,8 @@ function validateArgv(value: unknown, field: string): void {
       fail(`${field}[${index}]`, 'must be a non-empty single-line string');
     }
   }
-
-  const executable = value[0] as string;
-  const basename = executable.split(/[\\/]/u).at(-1)?.toLowerCase() ?? '';
-  if (SHELL_EXECUTABLES.has(basename)) {
-    fail(field, 'must not invoke a shell or command parser');
-  }
-  if (
-    EVAL_EXECUTABLES.has(basename) &&
-    ['-c', '-e'].includes((value[1] as string | undefined) ?? '')
-  ) {
-    fail(field, 'must not reinterpret authored command text');
-  }
+  // Shell/eval policy is evaluator-owned because it must be enforced after
+  // launcher resolution in the isolated materialization sandbox (AST-067 PR 5).
 }
 
 function validateVersions(value: unknown): void {
@@ -426,7 +552,7 @@ function validateSource(value: unknown): void {
 function validateInstall(value: unknown, cwd: string): void {
   const install = objectAt(value, '$.view.install');
   exactKeys(install, ['argv', 'lockfile', 'frozen'], '$.view.install');
-  validateArgv(install.argv, '$.view.install.argv');
+  validateArgvShape(install.argv, '$.view.install.argv');
   const lockfile = requiredBundlePath(install, 'lockfile', '$.view.install');
   requireWithin(cwd, lockfile, '$.view.install.lockfile', '$.view.cwd');
   if (install.frozen !== true) {
@@ -468,7 +594,7 @@ function validateView(value: unknown): VibeArtifactViewKindV2 {
       '$.view',
     );
     const cwd = requiredBundlePath(view, 'cwd', '$.view');
-    validateArgv(view.argv, '$.view.argv');
+    validateArgvShape(view.argv, '$.view.argv');
     const output = requiredBundlePath(view, 'output', '$.view');
     const entry = requiredBundlePath(view, 'entry', '$.view');
     requireWithin(cwd, output, '$.view.output', '$.view.cwd');
@@ -479,7 +605,7 @@ function validateView(value: unknown): VibeArtifactViewKindV2 {
   } else if (kind === 'serve') {
     exactKeys(view, ['kind', 'cwd', 'argv', 'readinessPath'], '$.view');
     requiredBundlePath(view, 'cwd', '$.view');
-    validateArgv(view.argv, '$.view.argv');
+    validateArgvShape(view.argv, '$.view.argv');
     const readinessPath = optionalString(view, 'readinessPath', '$.view');
     if (
       readinessPath !== undefined &&
@@ -562,13 +688,28 @@ function validateStates(value: unknown): void {
       'value',
       `${field}.navigation`,
     );
-    if (kind === 'query' && !navigationValue.startsWith('?')) {
-      fail(`${field}.navigation.value`, 'query navigation must begin with ?');
+    if (kind === 'query') {
+      if (!navigationValue.startsWith('?') || navigationValue.length === 1) {
+        fail(
+          `${field}.navigation.value`,
+          'query navigation must begin with ? and contain a query',
+        );
+      }
+      const query = new URLSearchParams(navigationValue.slice(1));
+      if ([...query.keys()].some(key => key.startsWith('__vibe_'))) {
+        fail(
+          `${field}.navigation.value`,
+          'query navigation must not set evaluator-reserved __vibe_ keys',
+        );
+      }
     }
-    if (kind === 'fragment' && !navigationValue.startsWith('#')) {
+    if (
+      kind === 'fragment' &&
+      (!navigationValue.startsWith('#') || navigationValue.length === 1)
+    ) {
       fail(
         `${field}.navigation.value`,
-        'fragment navigation must begin with #',
+        'fragment navigation must begin with # and contain a fragment',
       );
     }
   }
@@ -629,19 +770,11 @@ export function parseVibeArtifactV2(input: unknown): VibeArtifactV2 {
     'hosted',
   ] as const);
   requiredString(producer, 'runner', '$.producer');
-  const deliveryMode = enumString(producer, 'deliveryMode', '$.producer', [
-    'static',
-    'build',
-    'serve',
-    'url',
-  ] as const);
+  requiredDeliveryMode(producer, 'deliveryMode', '$.producer');
 
   validateVersions(value.versions);
   validateSource(value.source);
-  const viewKind = validateView(value.view);
-  if (deliveryMode !== viewKind) {
-    fail('$.producer.deliveryMode', 'must match $.view.kind');
-  }
+  validateView(value.view);
 
   const integrity = objectAt(value.integrity, '$.integrity');
   exactKeys(integrity, ['sourceTree', 'viewInput'], '$.integrity');

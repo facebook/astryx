@@ -12,7 +12,7 @@
   "producer": {
     "kind": "project",
     "runner": "fixture-runner",
-    "deliveryMode": "static"
+    "deliveryMode": "static-html"
   },
   "versions": {
     "producerContract": "v2-fixture",

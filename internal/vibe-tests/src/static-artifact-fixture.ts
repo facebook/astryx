@@ -8,14 +8,14 @@
  *   wired into the existing vibe-test command.
  */
 
-import {createHash} from 'node:crypto';
-import fs from 'node:fs';
+import fs, {type Stats} from 'node:fs';
 import path from 'node:path';
 import type {
   VibeArtifactV2,
   VibeMaterializationFailureCodeV2,
   VibeMaterializationReceiptV2,
 } from './vibe-artifact-v2';
+import {sha256TreeV2, VibeArtifactTreeDigestError} from './vibe-artifact-v2';
 
 class StaticArtifactFixtureError extends Error {
   constructor(
@@ -61,12 +61,38 @@ function lexicalBundlePath(bundleRoot: string, relativePath: string): string {
 
 function existingBundlePath(bundleRoot: string, relativePath: string): string {
   const absolute = lexicalBundlePath(bundleRoot, relativePath);
-  if (!fs.existsSync(absolute)) {
+  let stats: Stats;
+  try {
+    stats = fs.lstatSync(absolute);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new StaticArtifactFixtureError(
+        'missing_entry',
+        `${relativePath} does not exist in the bundle`,
+      );
+    }
+    throw error;
+  }
+
+  if (stats.isSymbolicLink()) {
+    let detail = 'uses a dangling symlink';
+    try {
+      const realRoot = fs.realpathSync(bundleRoot);
+      const realTarget = fs.realpathSync(absolute);
+      detail = inside(realRoot, realTarget)
+        ? 'uses a symlink, which is not portable in a bundle'
+        : 'uses a symlink that escapes the bundle root';
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
+    }
     throw new StaticArtifactFixtureError(
-      'missing_entry',
-      `${relativePath} does not exist in the bundle`,
+      'unsafe_path',
+      `${relativePath} ${detail}`,
     );
   }
+
   const realRoot = fs.realpathSync(bundleRoot);
   const realPath = fs.realpathSync(absolute);
   if (!inside(realRoot, realPath)) {
@@ -76,70 +102,6 @@ function existingBundlePath(bundleRoot: string, relativePath: string): string {
     );
   }
   return absolute;
-}
-
-function collectTreeFiles(
-  bundleRoot: string,
-  absoluteDirectory: string,
-  relativeDirectory: string,
-  files: {absolute: string; relative: string}[],
-): void {
-  for (const entry of fs
-    .readdirSync(absoluteDirectory, {withFileTypes: true})
-    .sort((left, right) => left.name.localeCompare(right.name))) {
-    const absolute = path.join(absoluteDirectory, entry.name);
-    const relative = relativeDirectory
-      ? `${relativeDirectory}/${entry.name}`
-      : entry.name;
-    if (entry.isSymbolicLink()) {
-      const realRoot = fs.realpathSync(bundleRoot);
-      const realTarget = fs.realpathSync(absolute);
-      const detail = inside(realRoot, realTarget)
-        ? 'uses a symlink, which is not portable in a fixture bundle'
-        : 'uses a symlink that escapes the bundle root';
-      throw new StaticArtifactFixtureError(
-        'unsafe_path',
-        `${relative} ${detail}`,
-      );
-    }
-    if (entry.isDirectory()) {
-      collectTreeFiles(bundleRoot, absolute, relative, files);
-    } else if (entry.isFile()) {
-      files.push({absolute, relative});
-    } else {
-      throw new StaticArtifactFixtureError(
-        'unsafe_path',
-        `${relative} is not a regular file or directory`,
-      );
-    }
-  }
-}
-
-export function sha256TreeV2(bundleRoot: string, relativeRoot: string): string {
-  const absoluteRoot = existingBundlePath(bundleRoot, relativeRoot);
-  const rootStats = fs.lstatSync(absoluteRoot);
-  if (!rootStats.isDirectory()) {
-    throw new StaticArtifactFixtureError(
-      'missing_entry',
-      `${relativeRoot} is not a directory`,
-    );
-  }
-
-  const files: {absolute: string; relative: string}[] = [];
-  collectTreeFiles(bundleRoot, absoluteRoot, '', files);
-  const digest = createHash('sha256');
-  for (const file of files.sort((left, right) =>
-    left.relative.localeCompare(right.relative),
-  )) {
-    const fileDigest = createHash('sha256')
-      .update(fs.readFileSync(file.absolute))
-      .digest('hex');
-    digest.update(file.relative);
-    digest.update('\0');
-    digest.update(fileDigest);
-    digest.update('\n');
-  }
-  return digest.digest('hex');
 }
 
 export function materializeStaticArtifactFixtureV2(
@@ -195,10 +157,13 @@ export function materializeStaticArtifactFixtureV2(
       primaryFailure: null,
     };
   } catch (error) {
-    if (error instanceof StaticArtifactFixtureError) {
+    if (
+      error instanceof StaticArtifactFixtureError ||
+      error instanceof VibeArtifactTreeDigestError
+    ) {
       return failure(artifact, error.code, error.message);
     }
     const message = error instanceof Error ? error.message : String(error);
-    return failure(artifact, 'missing_entry', message);
+    return failure(artifact, 'unexpected_error', message);
   }
 }

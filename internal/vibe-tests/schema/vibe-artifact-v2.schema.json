@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/facebook/astryx/blob/main/internal/vibe-tests/schema/vibe-artifact-v2.schema.json",
   "title": "VibeArtifactV2",
-  "description": "Delivery-agnostic producer-to-evaluator artifact contract for Astryx vibe tests.",
+  "description": "Delivery-agnostic producer-to-evaluator artifact contract for Astryx vibe tests. Canonical tree digests sort POSIX-relative UTF-8 path bytes and hash records of path + NUL + lowercase hex SHA-256(file bytes) + LF.",
   "type": "object",
   "required": [
     "schema",
@@ -36,7 +36,13 @@
       "properties": {
         "kind": {"enum": ["component-adapter", "project", "hosted"]},
         "runner": {"$ref": "#/$defs/nonEmptyString"},
-        "deliveryMode": {"enum": ["static", "build", "serve", "url"]}
+        "deliveryMode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+          "description": "Producer-defined delivery identity, independent from view.kind."
+        }
       },
       "additionalProperties": false
     },
@@ -47,8 +53,14 @@
       "type": "object",
       "required": ["sourceTree", "viewInput"],
       "properties": {
-        "sourceTree": {"$ref": "#/$defs/digest"},
-        "viewInput": {"$ref": "#/$defs/digest"}
+        "sourceTree": {
+          "$ref": "#/$defs/digest",
+          "description": "SHA-256 produced by sha256TreeV2 over source.root. Paths are POSIX-relative UTF-8 bytes sorted by byte order; each record is path + NUL + lowercase hex SHA-256(file bytes) + LF."
+        },
+        "viewInput": {
+          "$ref": "#/$defs/digest",
+          "description": "Digest of the declared view inputs. PR 1 materializes static views by applying sha256TreeV2 to view.root; later evaluator phases define non-static scopes."
+        }
       },
       "additionalProperties": false
     },
@@ -82,48 +94,6 @@
       "additionalProperties": false
     }
   },
-  "allOf": [
-    {
-      "if": {
-        "properties": {"view": {"properties": {"kind": {"const": "static"}}}}
-      },
-      "then": {
-        "properties": {
-          "producer": {"properties": {"deliveryMode": {"const": "static"}}}
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {"view": {"properties": {"kind": {"const": "build"}}}}
-      },
-      "then": {
-        "properties": {
-          "producer": {"properties": {"deliveryMode": {"const": "build"}}}
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {"view": {"properties": {"kind": {"const": "serve"}}}}
-      },
-      "then": {
-        "properties": {
-          "producer": {"properties": {"deliveryMode": {"const": "serve"}}}
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {"view": {"properties": {"kind": {"const": "url"}}}}
-      },
-      "then": {
-        "properties": {
-          "producer": {"properties": {"deliveryMode": {"const": "url"}}}
-        }
-      }
-    }
-  ],
   "$defs": {
     "nonEmptyString": {"type": "string", "minLength": 1},
     "digest": {
@@ -173,6 +143,7 @@
               "allOf": [
                 {"$ref": "#/$defs/digest"},
                 {
+                  "type": "object",
                   "properties": {
                     "value": {
                       "const": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -213,7 +184,8 @@
     "argv": {
       "type": "array",
       "minItems": 1,
-      "items": {"type": "string", "minLength": 1}
+      "items": {"type": "string", "minLength": 1},
+      "description": "Structural argv only. The PR 5 shared evaluator resolves launchers and enforces the AST-067 shell/eval command policy inside its isolated sandbox."
     },
     "install": {
       "type": "object",
