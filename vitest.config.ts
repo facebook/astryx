@@ -4,7 +4,7 @@
  * @file vitest.config.ts
  * @input Uses vitest/config, @vitejs/plugin-react
  * @output Vitest configuration with jsdom, coverage, test setup, and the two
- *   test projects (`ui`, `node`)
+ *   test projects (`ui`, `node`), including the generated icon inventory's UI tests
  * @position Root test config and the actual test entry point. The two projects
  *   under `test.projects` decide which files run where via their per-project
  *   include lists. The root-level `test` options (globals, environment,
@@ -123,6 +123,7 @@ export default defineConfig({
             'packages/charts/src/**/*.test.{ts,tsx,mjs}',
             'packages/richtext/src/**/*.test.{ts,tsx,mjs}',
             'packages/vega/src/**/*.test.{ts,tsx,mjs}',
+            'apps/storybook/stories/icon-role-inventory/*.test.tsx',
           ],
         },
       },

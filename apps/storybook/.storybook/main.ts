@@ -2,7 +2,7 @@
 
 /**
  * @input Workspace source entries, Storybook's Vite config, Astryx StyleX plugin.
- * @output Storybook config with Vite and StyleX aliases from one package table.
+ * @output Storybook config with generated icon-role inventory and Vite/StyleX workspace aliases.
  * @position Storybook configuration; keeps workspace packages usable unbuilt.
  */
 
@@ -14,6 +14,7 @@ import type {StorybookConfig} from '@storybook/react-vite';
 // pnpm dev` working from a cold clone (#5128) and matches what this app's
 // tsconfig already resolves for typecheck.
 import {astryxStylex} from '../../../packages/build/src/vite.ts';
+import {iconRoleInventory} from './icon-role-inventory.mjs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -173,6 +174,7 @@ const config: StorybookConfig = {
         },
       },
       plugins: [
+        iconRoleInventory(rootDir),
         {
           name: 'astryx-color-scheme',
           transformIndexHtml() {

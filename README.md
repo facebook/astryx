@@ -69,6 +69,11 @@ Then use it as `npm run astryx -- component --list`. This avoids path errors whe
 
 ## Packages
 
+The proposed generated icon role/state review surface lives in Storybook; see
+[its review and check guide](apps/storybook/README.md#generated-icon-role-review).
+Its visual inventory tests run in the root Vitest `ui` project, while source
+conformance and built-theme data checks use the existing Node lanes.
+
 | Package                                    | Description                                                                                          | README                             |
 | ------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ---------------------------------- |
 | [`@astryxdesign/core`](packages/core)      | Components, theme system, and utilities                                                              | [README](packages/core/README.md)  |
