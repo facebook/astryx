@@ -148,8 +148,17 @@ Theme inheritance is deterministic:
   role, and `null` clears it so component/family default size applies; and
 - runtime themes and built themes flatten these rules identically.
 
-The nearest active theme dimension override wins. Without one, the application
+The nearest active theme dimension override wins for an explicit consumer `Icon size`,
+for standalone omitted size after it resolves to `md`, and for the final resolved size
+of a metadata-bearing participating role. Without an override, the application
 capability set's canonical dimension applies.
+
+A legacy nonparticipating component's implicit `IconDefaultSizeContext` default is a
+released geometry path, not a theme dimension request. It keeps the released dimension
+for its built-in size name even when the active theme redefines that name, until the
+component opts into metadata-bearing role participation. Custom size names and role-size
+overrides never enter that implicit context. An explicit `Icon size` inside the same
+component remains a consumer request and follows the active-theme dimension rule above.
 
 ### Adaptive entries
 
@@ -256,9 +265,20 @@ the one effective state label to appearance.
 
 A component opts into role sizing and state presentation only through a
 metadata-bearing map value. Undeclared roles and `true` roles do not participate in
-those capabilities. The `componentIcons` contract maps every approved slot, including
-a `true` role, to `IconName | null` before icon entry resolution; it does not become a
-state-transition resolver.
+those capabilities. When present, their component-owned implicit
+`IconDefaultSizeContext` defaults retain released built-in dimensions; theme custom
+size names and role-size overrides do not flow into that context. This restriction
+does not block a consumer from passing an explicit admitted `Icon size`, which still
+resolves through the active theme.
+The `componentIcons` contract maps every approved slot, including a `true` role, to
+`IconName | null` before icon entry resolution; it does not become a state-transition
+resolver.
+
+A metadata-bearing participating role resolves one final size and active-theme
+dimension. The owning component must use that same geometry result for both its
+icon wrapper and the glyph; after participation it cannot retain a component-default
+wrapper while the glyph uses a different explicit, role, or theme dimension. Legacy
+nonparticipating wrapper behavior remains unchanged.
 
 A component/family policy may choose source, provide or derive default size from
 component inputs, and define state transitions. Every owned role reuses that policy
@@ -293,11 +313,16 @@ icons use this sequence:
    override for a metadata-bearing role, component/family default, then standalone
    `md`. Theme-authored dimensions and role overrides must be admitted before theme
    use. An untyped consumer size outside the application contract is ignored, emits
-   one deduplicated development warning,
-   and continues through the remaining size cascade. The resolved size's nearest
-   theme dimension override or canonical dimension defines the box. An exact
-   size-artwork branch is used when present; otherwise the root branch renders in the
-   resolved box.
+   one deduplicated development warning, and continues through the remaining size
+   cascade. Dimension lookup then follows the request's existing ownership path:
+   an explicit consumer size, standalone `md`, or metadata-bearing role final size uses
+   the nearest active-theme override or canonical dimension; a legacy nonparticipating
+   component's implicit `IconDefaultSizeContext` default uses its released built-in
+   dimension. Custom names and role-size overrides do not enter that implicit context.
+   A participating component sizes wrapper and glyph from the same final size and
+   active-theme dimension. This distinction selects the dimension for the one resolved
+   size; it does not add another size axis. An exact size-artwork branch is used when
+   present; otherwise the root branch renders in the resolved box.
 3. **Appearance request.** Appearance resolves explicit `Icon appearance`, theme
    appearance for the one effective state, theme `default` plus matching `bySize`
    appearance, then the selected adaptive branch or adapter default.
@@ -396,7 +421,9 @@ geometry to imitate a missing appearance or weight.
 - **FR3 — Every admitted size has a safe canonical dimension.** `xsm`, `sm`, `md`,
   and `lg` retain 12px, 16px, 20px, and 24px defaults. Added names declare one
   application-wide default; nearest theme overrides may replace dimensions but not
-  remove names.
+  remove names. Theme dimensions apply to explicit consumer sizes, standalone `md`,
+  and metadata-bearing role final sizes; they do not rewrite a legacy
+  nonparticipating component's implicit released geometry.
 - **FR4 — Weight supports exact and continuous libraries.** A contract declares
   exact numeric/named values or one numeric range. An admitted number reaches the
   integration unchanged. Astryx defines no universal scale or mapping.
@@ -435,11 +462,15 @@ geometry to imitate a missing appearance or weight.
   runtime fallback.
 - **FR14 — Structure and default pixels remain compatible.** Undeclared components,
   `true` roles, and themes that omit capability fields are byte- and pixel-compatible.
-  A participating component's contract-default path is pixel-equivalent to its
-  nonparticipating baseline. Opt-in theme presentation may choose supplied artwork
-  without changing box geometry, color, alignment, accessibility, interaction,
-  direction, state transitions, placement, focus, or style-prop precedence except an
-  explicit theme dimension/role-size rule.
+  A legacy nonparticipating component's implicit `IconDefaultSizeContext` keeps its
+  released built-in dimension when a theme redefines that size name; custom names and
+  role-size overrides never flow into that context. A participating component's
+  contract-default path is pixel-equivalent to its nonparticipating baseline, and its
+  wrapper and glyph use one shared final geometry result, including when an explicit
+  child size wins. Legacy nonparticipating wrapper behavior remains compatible. Opt-in
+  theme presentation may choose supplied artwork without changing box geometry, color,
+  alignment, accessibility, interaction, direction, state transitions, placement,
+  focus, or style-prop precedence except an explicit theme dimension/role-size rule.
 - **FR15 — Resolution is synchronous and environment-independent.** Equivalent
   server/client and runtime/built inputs select the same supplied version without
   DOM measurement, computed styles, browser globals, network requests, or mutable
@@ -458,8 +489,14 @@ geometry to imitate a missing appearance or weight.
   leakage.
 - **FR19 — Metadata-bearing role size has stable precedence and inheritance.** Size
   resolves explicit request, theme override for a metadata-bearing role,
-  component/family default, then `md`. A `true` role has no role-size override. Role
-  maps merge per key through theme inheritance; `null` clears one inherited override.
+  component/family default, then `md`. Explicit requests, standalone `md`, and a
+  metadata-bearing role's final size use the active-theme or canonical dimension. A
+  `true` or undeclared role has no role-size override; any component-owned implicit
+  context its owner supplies retains released built-in dimensions and admits no
+  custom context default. Role maps merge per key through theme inheritance; `null`
+  clears one inherited override. A participating component applies one final size
+  and dimension to both wrapper and glyph, including when an explicit child size
+  wins; this requirement does not rewrite legacy nonparticipating wrapper behavior.
 - **FR20 — Metadata-bearing roles own a finite typed state vocabulary.** A
   `ComponentIconSlotMap` value of `true` stays stateless and contributes no state.
   Metadata-bearing values declare literals; public `ComponentIconStateName` and theme
@@ -479,7 +516,9 @@ geometry to imitate a missing appearance or weight.
 - **FR23 — Participation and conformance are explicit.** Only metadata-bearing
   `ComponentIconSlotMap` values opt into role size and state appearance; `true`
   remains valid and nonparticipating. Checks flag undeclared states, shared-path
-  bypass, hardcoded visual state, dropped role size, missing inventory coverage, or a
+  bypass, hardcoded visual state, dropped role size, a participating role whose
+  wrapper and glyph do not share its final resolution, custom-name or role-size
+  leakage into a nonparticipating context, missing inventory coverage, or a
   contract-default result that differs from the nonparticipating pixel baseline.
 
 ### Platform support
@@ -517,9 +556,13 @@ and consumer documentation each retain their existing ownership boundary while
 implementing the requirements assigned here.
 
 Ordinary direct exports, undeclared components, and `true` roles remain
-nonparticipants. Product libraries participate by adapting exports once;
-metadata-bearing component roles participate with a pixel-equivalent contract-default
-path.
+nonparticipants. Any legacy implicit `IconDefaultSizeContext` geometry they provide
+keeps released built-in dimensions even when a theme redefines the same size name;
+custom names and role-size overrides do not enter that context. An explicit child
+`Icon size` remains a consumer request and resolves through the active theme.
+Product libraries participate by adapting exports once; metadata-bearing component
+roles participate with a pixel-equivalent contract-default path and one shared
+wrapper/glyph geometry result.
 
 ## Verification
 
@@ -529,9 +572,9 @@ path.
 | FR6, FR8–FR11    | Resolver and diagnostic matrix tests                       | untyped consumer size; missing size artwork; unresolved namespaced key; fixed/ordinary/adapted sources; explicit/theme adapter mismatch; malformed registry  | render throws, size fallback changes, namespaced behavior changes, policy warns, explicit mismatch is silent, or root branch uses wrong box |
 | FR7, FR12        | Family, slot, hook, shared-default, and programmatic tests | `true` slot augmentation; metadata-bearing slot; derived Button size; documented exception; slot-to-name order; active-theme hook; old/request-aware reads   | `true` stops typechecking or participates, roles repeat defaults, hook differs, explicit intent loses, or compatibility read changes        |
 | FR13, FR18, FR21 | Authoring/build/adapter parity tests                       | source/built; absent/replace/null presentation; unadmitted theme size/role; per-role clear; explicit/theme unsupported adapter axis; malformed mapping       | invalid authoring reaches render, inherited field leaks through atomic replacement, warning provenance changes, or equivalent themes differ |
-| FR14, FR16–FR20  | Browser presentation and accessibility evidence            | omitted-field baseline; `true` role; metadata-bearing role; role sizes; selected/pressed/disabled/loading; source overrides; direction/focus                 | baseline or `true` pixels change, state affects weight, structure/a11y changes, or source override breaks                                   |
+| FR14, FR16–FR20  | Browser presentation and accessibility evidence            | baseline; redefined built-ins; `true`/metadata roles; explicit/custom/role sizes; key states                                                                 | legacy pixels change, values leak, shared geometry splits, state changes weight, or structure/a11y/source overrides regress                 |
 | FR22             | Generated inventory snapshots against runtime              | `true` role marked stateless; metadata-bearing role; conditional state union; declared precedence; default/resolved size; effective state; appearance/weight | `true` gains states, public union includes nonmetadata, or inventory/theme/runtime state differs                                            |
-| FR23             | Static/generated conformance fixtures                      | undeclared component; legacy `true` augmentation; metadata bypass; hardcoded state; missing inventory; baseline-pixel divergence                             | `true` stops typechecking, nonparticipant changes, bypass passes, or compatible override is rejected                                        |
+| FR23             | Static/generated conformance fixtures                      | undeclared/`true`; bypass/hardcoding; context isolation; shared geometry; inventory/baseline                                                                 | participation leaks, legacy pixels change, shared geometry splits, bypass passes, or a compatible override rejects                          |
 
 ## Decision log
 
@@ -554,8 +597,11 @@ one universal weight scale.
 **Decider:** `rubyycheung`, `2026-10-02`
 
 `xsm`, `sm`, `md`, and `lg` keep 12px, 16px, 20px, and 24px defaults and
-may be deliberately overridden. Every added size has one canonical application
-default under any theme.
+may be deliberately overridden for explicit consumer sizes, standalone `md`, and the
+final size of a metadata-bearing participating role. Every added size has one canonical
+application default under any theme. A legacy nonparticipating component's implicit
+`IconDefaultSizeContext` keeps its released built-in dimension until that component
+opts in; theme custom names and role-size overrides do not enter that context.
 
 Rejected: removing admitted names, undefined theme-switch results, and fallback to
 an unrelated size name.
@@ -642,9 +688,11 @@ The approved `ComponentIconSlotMap` owns role names and keeps `true` as a valid
 stateless, nonparticipating value. Metadata-bearing values own finite literal state
 vocabularies. Public `ComponentIconStateName` and theme `byState` keys conditionally
 derive as their union. Each participating role declares precedence over only its own
-states, reports zero or one effective state, and may receive a size-only theme
-override. Explicit caller source overrides remain compatible; component behavior and
-structure remain component-owned.
+states, reports zero or one effective state, may receive a size-only theme override,
+and applies its final active-theme geometry to both wrapper and glyph. Explicit caller
+source and size overrides remain compatible; component behavior and structure remain
+component-owned. Nonparticipating implicit contexts receive neither custom size names
+nor role-size overrides.
 
 Rejected: a competing role map, multi-state appearance merging, and theme-owned state
 transitions.
