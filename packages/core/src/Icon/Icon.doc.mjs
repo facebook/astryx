@@ -2,8 +2,8 @@
 
 /**
  * @file Icon consumer documentation
- * @input Semantic/direct artwork, independent requests and active theme defaults
- * @output Public props, sizing and accessible-name guidance
+ * @input Fixed/adaptive artwork, opt-in direct adapters and independent theme requests
+ * @output Public props, safe adapter usage, sizing and accessible-name guidance
  * @position Builder-facing Icon reference; no component participation policy
  */
 
@@ -90,7 +90,7 @@ export const docs = {
   },
   usage: {
     description:
-      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.',
+      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Semantic names use active-theme artwork. Ordinary direct SVG components stay fixed; library exports adapted with createIconAdapter can receive supported theme presentation.',
     anatomy,
     bestPractices: [
       {
@@ -102,6 +102,11 @@ export const docs = {
         guidance: true,
         description:
           "Override icons through the theme, not globally: defineTheme({icons: {close: <XMarkIcon />}}) scopes the swap to the active <Theme>, and extends shallow-merges it into derived themes. registerIcons() mutates a process-wide registry and warns in dev, so keep it for app bootstrap rather than making it a library's theming seam.",
+      },
+      {
+        guidance: true,
+        description:
+          'Adapt a library export once with createIconAdapter when it should follow theme appearance or weight. Only declared primitive library props are mapped; without supported intent its own default renders. Ordinary direct SVG components remain fixed.',
       },
       {
         guidance: true,
@@ -207,12 +212,17 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.',
+      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Semantic names use active-theme artwork. Ordinary direct SVG components stay fixed; library exports adapted with createIconAdapter can receive supported theme presentation.',
     bestPractices: [
       {
         guidance: true,
         description:
           'Use semantic icon names when available; they adapt to theme changes automatically.',
+      },
+      {
+        guidance: true,
+        description:
+          'Adapt a library export once with createIconAdapter when it should follow theme appearance or weight. Only declared primitive library props are mapped; without supported intent its own default renders. Ordinary direct SVG components remain fixed.',
       },
       {
         guidance: true,
@@ -264,7 +274,7 @@ export const docsDense = {
     'Renders icons w/ Astryx design system colors + sizes. Supports direct SVG icon components + semantic icon names that adapt to active theme.',
   usage: {
     description:
-      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.',
+      'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Semantic names use active-theme artwork. Ordinary direct SVG components stay fixed; library exports adapted with createIconAdapter can receive supported theme presentation.',
     anatomy,
     bestPractices: [
       {
@@ -276,6 +286,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Override icons via theme, not globally: defineTheme({icons: {close: <XMarkIcon />}}) scopes the swap to the active <Theme>; extends shallow-merges into derived themes. registerIcons() mutates a global registry and warns in dev: app bootstrap only, not a library theming seam.',
+      },
+      {
+        guidance: true,
+        description:
+          'Adapt a library export once with createIconAdapter when it should follow theme appearance or weight. Only declared primitive library props are mapped; without supported intent its own default renders. Ordinary direct SVG components remain fixed.',
       },
       {
         guidance: true,
