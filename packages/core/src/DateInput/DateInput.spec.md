@@ -34,21 +34,21 @@ system_specs: [spec:AST-043]
 
 # DateInput component contract
 
-This draft is an observational record of shipped behavior. It does not approve a
-new public API, default, compatibility promise, ownership boundary, or visual
-direction.
+This draft records shipped behavior plus one objective conformance fix already settled
+by `family:input-fields/FR6`. It does not approve a new public API, default,
+compatibility promise, ownership boundary, or visual direction.
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                  |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | None changes. DateInput remains a controlled ISO-date field with typed, Calendar-popover, bottom-sheet, and native-picker surfaces.                                                                       |
-| Behavior                | `presentation` selects the picker surface; an omitted value remains `adaptive-native`; `presentation` wins over deprecated `nativePicker`; every committed path emits the same controlled ISO-date value. |
-| End-user impact         | People can type or pick one date using a surface suited to the primary pointer while preserving labels, constraints, validation, status, and disabled explanations.                                       |
-| Builder impact          | None. Existing props, defaults, types, and migration behavior remain unchanged.                                                                                                                           |
-| Compatibility/readiness | Observational draft only. Released defaults and controlled ownership are preserved; exact-head browser evidence remains part of audit review rather than product authority.                               |
-| Review checks           | Reject a surface-mapping change, lost constraint, callback-order change, unlabeled field, unreachable disabled reason, changed close behavior, or a theming target placed on the wrong owner.             |
-| Governing rules         | `spec:AST-043/FR1–FR5`; `family:input-fields/FR1–FR6, FR8–FR9`; `family:overlay-dismissal/FR1–FR7`, including its recorded BottomSheet adoption gap; the three architecture records linked above.         |
+| Area                    | Contract                                                                                                                                                                                                                      |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | API shape and defaults remain unchanged. The native-picker surface now follows the existing `changeAction` order, optimistic-value, and busy-feedback contract.                                                               |
+| Behavior                | `presentation` selects the picker surface; an omitted value remains `adaptive-native`; `presentation` wins over deprecated `nativePicker`; every committed path emits the same controlled ISO-date value and action feedback. |
+| End-user impact         | People can type or pick one date using a surface suited to the primary pointer; native-picker saves now run instead of being silently dropped.                                                                                |
+| Builder impact          | Existing native DateInput `changeAction` handlers now run after `onChange` and receive optimistic busy feedback. No API or migration work is required.                                                                        |
+| Compatibility/readiness | Compatible patch correction under the current input-field family rule. Released defaults and controlled ownership are preserved; exact-head browser evidence remains audit evidence rather than product authority.            |
+| Review checks           | Reject a surface-mapping change, lost constraint, callback-order change, unlabeled field, unreachable disabled reason, changed close behavior, or a theming target placed on the wrong owner.                                 |
+| Governing rules         | `spec:AST-043/FR1–FR5`; `family:input-fields/FR1–FR6, FR8–FR9`; `family:overlay-dismissal/FR1–FR7`, including its recorded BottomSheet adoption gap; the three architecture records linked above.                             |
 
 This table is a review projection; the body below is authoritative only after this
 record becomes `current`.
@@ -62,7 +62,8 @@ browser/OS date picker selected by the public presentation contract.
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: observational only; no public or rendered behavior changes
+- Compatibility class: compatible patch; no API shape or default changes, and the native
+  surface now adopts the existing `changeAction` contract instead of dropping it
 - Controlled/uncontrolled behavior: unchanged; DateInput remains controlled by
   `value`, with `undefined` representing no selected date
 - Migration decision: `spec:AST-043/DEC-1` and `spec:AST-043/DEC-2` own the

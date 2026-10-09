@@ -1699,6 +1699,33 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # DateInput's open-state audit story uses a play function to open the
+      # popover. Restricting this focused pass to that story lets the selector
+      # wait bind axe to the Calendar dialog without making every DateInput story
+      # require an open overlay.
+      - name: Run DateInput audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output date-input-a11y-report.json \
+            --components DateInput \
+            --stories core-dateinput--open-calendar-audit \
+            --ready-selector '[role="dialog"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+
+      - name: Upload DateInput audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: date-input-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: date-input-a11y-report.json
+          retention-days: 30
+          if-no-files-found: error
+
       # The CheckboxList and CheckboxListItem component audits grade the same
       # option rows: interactive row paint, focus, busy, disabled, read-only,
       # status, narrow, forced-colors, and RTL states from exact-head Chromium

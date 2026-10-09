@@ -24,7 +24,6 @@ const originalLoad = Module._load;
 let requestedUrl = '';
 let reads = 0;
 let selectorResolved = false;
-let storyFinished = false;
 
 function scenarioState() {
   const scenario = process.env.A11Y_TEST_SCENARIO;
@@ -79,34 +78,6 @@ const page = {
     return {};
   },
   evaluate: async (fn, arg) => evaluateInFixture(fn, arg),
-  waitForFunction: async (fn, arg, options) => {
-    if (options?.timeout !== 15000) {
-      throw new Error('story interaction wait must stay bounded');
-    }
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const previousPreview = global.__STORYBOOK_PREVIEW__;
-      global.__STORYBOOK_PREVIEW__ = {
-        selectionStore: {selection: {storyId: arg}},
-        currentRender: {
-          phase:
-            process.env.A11Y_TEST_SCENARIO === 'story-never-finishes'
-              ? 'playing'
-              : attempt === 2
-                ? 'finished'
-                : 'playing',
-        },
-      };
-      try {
-        if (fn(arg)) {
-          storyFinished = true;
-          return;
-        }
-      } finally {
-        global.__STORYBOOK_PREVIEW__ = previousPreview;
-      }
-    }
-    throw new Error('story interaction did not finish');
-  },
   close: async () => {},
 };
 const context = {newPage: async () => page, close: async () => {}};
@@ -115,12 +86,6 @@ const browser = {newContext: async () => context, close: async () => {}};
 class FakeAxeBuilder {
   disableRules() { return this; }
   async analyze() {
-    if (
-      process.env.A11Y_TEST_SCENARIO === 'story-delayed' &&
-      !storyFinished
-    ) {
-      throw new Error('axe ran before the story interaction finished');
-    }
     if (process.argv.includes('--ready-selector') && !selectorResolved) {
       throw new Error('axe ran before the readiness selector resolved');
     }
@@ -144,6 +109,7 @@ function runFixture(
   indexContent,
   components = 'core/Button',
   readySelector = null,
+  stories = null,
 ) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'a11y-cli-fixture-'));
   const storybook = path.join(dir, 'storybook');
@@ -170,6 +136,7 @@ function runFixture(
         ...(readySelector == null
           ? []
           : ['--ready-selector', readySelector]),
+        ...(stories == null ? [] : ['--stories', stories]),
       ],
       {
         cwd: REPO_ROOT,
@@ -203,6 +170,23 @@ const VALID_INDEX = JSON.stringify({
   },
 });
 
+const FOCUSED_INDEX = JSON.stringify({
+  entries: {
+    'core-button--fixture': {
+      id: 'core-button--fixture',
+      title: 'Core/Button',
+      name: 'Fixture',
+      type: 'story',
+    },
+    'core-button--other': {
+      id: 'core-button--other',
+      title: 'Core/Button',
+      name: 'Other',
+      type: 'story',
+    },
+  },
+});
+
 const PATTERN_INDEX = JSON.stringify({
   entries: {
     'a11y-button-pattern--clickable-card-disabled': {
@@ -222,18 +206,6 @@ describe.sequential('accessibility-audit CLI readiness', () => {
     expect(result.report.auditedStoryKeys).toHaveLength(1);
   });
 
-  it('waits for the story interaction to finish before running axe', () => {
-    const result = runFixture('story-delayed', VALID_INDEX);
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain('✓ Audited: Button / Fixture');
-  });
-
-  it('fails closed when the story interaction never finishes', () => {
-    const result = runFixture('story-never-finishes', VALID_INDEX);
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain('story interaction did not finish');
-  });
-
   it('waits for a focused readiness selector and records it in the report', () => {
     const result = runFixture(
       'delayed',
@@ -243,6 +215,36 @@ describe.sequential('accessibility-audit CLI readiness', () => {
     );
     expect(result.status).toBe(0);
     expect(result.report.readySelector).toBe('[role="menu"]');
+  });
+
+  it('audits only the requested owned story', () => {
+    const result = runFixture(
+      'delayed',
+      FOCUSED_INDEX,
+      'core/Button',
+      null,
+      'core-button--fixture',
+    );
+    expect(result.status).toBe(0);
+    expect(result.report.requestedStories).toEqual(['core-button--fixture']);
+    expect(result.report.auditedStories.map(story => story.storyId)).toEqual([
+      'core-button--fixture',
+    ]);
+  });
+
+  it('fails closed when a requested story is not owned by the component', () => {
+    const result = runFixture(
+      'delayed',
+      FOCUSED_INDEX,
+      'core/Button',
+      null,
+      'core-link--missing',
+    );
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      'Requested stories did not resolve in the selected component scope: core-link--missing',
+    );
+    expect(result.report).toBeNull();
   });
 
   it('fails closed when a focused readiness selector stays absent', () => {

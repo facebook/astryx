@@ -297,7 +297,11 @@ export function NativeDateField({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
-  const isEffectivelyDisabled = isDisabled || isBusy;
+  // Keep the OS picker mounted and focusable while its own Action is pending.
+  // Native TimeInput follows the same pattern: commit guards block duplicates,
+  // while aria-busy and the Spinner communicate the save without detaching the
+  // platform picker from its input.
+  const isEffectivelyDisabled = isDisabled || isLoading;
 
   // Disabled-reason tooltip, same contract as the other two surfaces: a
   // disabled control swallows pointer events, so the listeners attach to the
@@ -639,7 +643,7 @@ export function NativeDateField({
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
         {!isInputValid ? t('@astryx.dateInput.invalidDate') : ''}
       </VisuallyHidden>
-      {hasClear && value !== undefined && !isEffectivelyDisabled && (
+      {hasClear && value !== undefined && !isEffectivelyDisabled && !isBusy && (
         <InputClearButton
           label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}

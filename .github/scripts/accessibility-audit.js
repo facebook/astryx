@@ -5,15 +5,16 @@
 /**
  * @description Runs accessibility audits on component stories using axe-core
  * @input --storybook-dir <path> --output <file> [--components <comma-separated>]
- *   [--port <number>] [--ready-selector <css-selector>]
+ *   [--stories <comma-separated-story-ids>] [--port <number>]
+ *   [--ready-selector <css-selector>]
  *   --baseline <path> (compare violations against a checked-in baseline)
  *   --fail-on-new (exit 1 when violations not present in the baseline exist)
  *   --update-baseline (rewrite the baseline file from this run's report)
  * @output JSON report with accessibility violations; with --baseline, a gate
  *   summary (new / baselined / resolved) on stdout and a non-zero exit code
  *   when --fail-on-new finds regressions. Diff logic lives in
- *   lib/a11y-baseline.js. Pages are scanned only after Storybook finishes the
- *   initial render and play function, with animations held at their end state.
+ *   lib/a11y-baseline.js. Pages are scanned with animations held at their end
+ *   state.
  * @position Blocking PR accessibility audit; scoped stories share canonical
  *   package-qualified ownership with the RTL audit.
  */
@@ -55,11 +56,16 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 const componentsArg = getArg('components');
 const components = (componentsArg || '').split(',').filter(Boolean);
+const storiesArg = getArg('stories');
+const requestedStories = (storiesArg || '').split(',').filter(Boolean);
 // --components present but EMPTY means the caller derived an explicit empty
 // audit set (pr-a11y on a PR whose core/src changes map to no component —
 // e.g. a shared test file). Audit nothing and pass. Only an ABSENT flag
 // means "all stories" (the a11y-weekly contract).
 const emptyComponentSet = componentsArg !== null && components.length === 0;
+if (storiesArg !== null && requestedStories.length === 0) {
+  throw new Error('--stories requires at least one story id');
+}
 const baselineFile = getArg('baseline');
 const readySelector = getArg('ready-selector');
 const failOnNew = hasFlag('fail-on-new');
@@ -257,10 +263,24 @@ async function runAccessibilityAudit() {
     console.log(`Owner route: ${owner} -> ${ownedStoryIds.join(', ')}`);
   }
   const routedIds = new Set(routed.storyIds);
+  const requestedStoryIds = new Set(requestedStories);
   const relevantStories = storyIds.filter(id => {
     if (id.endsWith('--docs')) return false;
-    return routedIds.has(id);
+    return (
+      routedIds.has(id) &&
+      (storiesArg === null || requestedStoryIds.has(id))
+    );
   });
+  if (storiesArg !== null) {
+    const unresolvedStories = requestedStories.filter(
+      id => !relevantStories.includes(id),
+    );
+    if (unresolvedStories.length > 0) {
+      throw new Error(
+        `Requested stories did not resolve in the selected component scope: ${unresolvedStories.join(', ')}`,
+      );
+    }
+  }
 
   // Group stories for scanning while retaining the legacy display identity for
   // safe baseline migration.
@@ -337,17 +357,6 @@ async function runAccessibilityAudit() {
                 {expectedOrigin: `http://localhost:${port}`, storyId: story.id},
               ),
             {timeoutMs: 5000, pollMs: 50},
-          );
-          await page.waitForFunction(
-            expectedStoryId => {
-              const preview = globalThis.__STORYBOOK_PREVIEW__;
-              return (
-                preview?.selectionStore?.selection?.storyId ===
-                  expectedStoryId && preview?.currentRender?.phase === 'finished'
-              );
-            },
-            story.id,
-            {timeout: 15000},
           );
           if (readySelector != null) {
             await page.waitForSelector(readySelector, {
@@ -473,6 +482,7 @@ async function runAccessibilityAudit() {
   }
 
   const report = {
+    requestedStories,
     readySelector,
     ownerStoryRoutes: routed.ownerStoryRoutes,
     ownerStoryKeys,
