@@ -28,6 +28,7 @@
     "generate:i18n-runtime": "node scripts/generate-i18n-runtime.mjs",
     "check:i18n-runtime": "node scripts/generate-i18n-runtime.mjs --check",
     "check:i18n-catalog": "node scripts/check-i18n-catalog.mjs",
+    "check:contract": "node scripts/check-contract.mjs",
     "check:sync": "node scripts/check-sync.js",
     "generate:data-tokens": "node scripts/generate-data-tokens.mjs",
     "check:data-tokens": "node scripts/generate-data-tokens.mjs --check",
