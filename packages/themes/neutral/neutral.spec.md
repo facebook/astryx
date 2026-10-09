@@ -173,14 +173,14 @@ explicit maintenance command MUST discover every palette family, mode, and stop
 referenced by Neutral's theme source, resolve each one from the committed full
 palette, and regenerate the selected-stop module without changing token mappings.
 A non-writing check MUST compare the complete generated module with the committed
-file and fail on missing, extra, stale, or invalid references. Normal theme builds
-MUST check this invariant but MUST NOT regenerate or adopt palette values.
+file and fail on missing, extra, stale, or invalid references. Theme verification
+MUST fail when the committed module differs from this deterministic projection.
+Normal theme builds MUST NOT regenerate or adopt palette values.
 
-The checked-in module currently contains 104 entries, while `neutralTheme.ts`
-references 95. The nine extras are superseded light-mode stops left behind when
-#6171 changed those mappings. The first supported regeneration MUST remove those
-nine unused private entries while preserving every referenced value, the complete
-authoring palette, all token mappings, rendered output, and public APIs.
+The selected-stop module MUST contain exactly the palette stops referenced by
+Neutral's theme source. Removing an unreferenced private entry preserves every
+referenced value, the complete authoring palette, all token mappings, rendered
+output, and public APIs.
 
 ## Verification map
 
@@ -283,15 +283,15 @@ explicit theme-local values.
 **Decider:** `rubyycheung`, `2026-09-30`
 
 Neutral's selected-stop module is generated from two existing sources of truth:
-the family, mode, and stop references used by `neutralTheme.ts`, and the exact
-values in `neutralPalettes.generated.ts`. Regeneration copies only those selected
+the family, mode, and stop references used by Neutral's theme source, and the exact
+values in the committed full palette. Regeneration copies only those selected
 values into the runtime artifact. It neither chooses mappings nor regenerates the
 full palette.
 
 The generator has an explicit write mode for maintainers and a non-writing check
-for CI. The check compares the entire expected artifact, so a missing, extra,
-invalid, or stale selected reference fails before package output is accepted.
-Normal theme builds run the check rather than silently changing committed source.
+for verification. The check compares the entire expected artifact, so a missing,
+extra, invalid, or stale selected reference fails before package output is
+accepted. Normal theme builds never rewrite committed palette source.
 
 Rejected: importing the complete palette at runtime, maintaining a second manual
 selection manifest, or treating token-mapping assertions as proof that copied

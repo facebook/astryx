@@ -6,6 +6,8 @@
   "scripts": {
     "build": "pnpm -F @astryxdesign/build build && pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/lab build && pnpm -F @astryxdesign/charts build && pnpm -F @astryxdesign/richtext build && pnpm -F @astryxdesign/vega build && pnpm -F @astryxdesign/theme-neutral build && pnpm -F @astryxdesign/theme-matcha build && pnpm -F @astryxdesign/theme-stone build && pnpm -F @astryxdesign/theme-gothic build && pnpm -F @astryxdesign/theme-chocolate build && pnpm -F @astryxdesign/theme-y2k build && pnpm -F @astryxdesign/theme-butter build && pnpm -F @astryxdesign/theme-probe build && pnpm bundle:cli-themes && pnpm -F @astryxdesign/cli sync:api-types",
     "bundle:cli-themes": "node scripts/generate-cli-themes.mjs",
+    "generate:neutral-palette-refs": "node scripts/generate-neutral-palette-refs.mjs",
+    "check:neutral-palette-refs": "node scripts/generate-neutral-palette-refs.mjs --check",
     "dev": "pnpm -F @astryxdesign/storybook dev",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -13,7 +15,7 @@
     "test:a11y-contract": "playwright test --config playwright.config.ts --project chromium",
     "test:docsite-browser": "playwright test --config apps/docsite/playwright.config.ts",
     "check:package-boundaries": "node scripts/check-package-boundaries.js",
-    "check:repo": "pnpm check:visual-owner && pnpm check:sync && pnpm check:knowledge && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits && pnpm check:cli-structure && pnpm check:use-client && pnpm check:portable-scripts && pnpm check:i18n-runtime && pnpm check:i18n-catalog && pnpm check:cldr-weekdays && pnpm check:fixtures && pnpm check:setup-contract",
+    "check:repo": "pnpm check:visual-owner && pnpm check:sync && pnpm check:neutral-palette-refs && pnpm check:knowledge && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits && pnpm check:cli-structure && pnpm check:use-client && pnpm check:portable-scripts && pnpm check:i18n-runtime && pnpm check:i18n-catalog && pnpm check:cldr-weekdays && pnpm check:fixtures && pnpm check:setup-contract",
     "check:visual-owner": "node scripts/check-visual-workflow-owner.mjs",
     "check:fixtures": "node internal/vibe-tests/scripts/fixture-suite.mjs verify",
     "generate:cldr-weekdays": "node scripts/generate-cldr-weekdays.mjs",
