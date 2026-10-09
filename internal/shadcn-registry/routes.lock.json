@@ -1991,6 +1991,16 @@
       "aliases": []
     },
     {
+      "name": "example-drawer-header-with-close-button",
+      "path": "examples/drawer-header/with-close-button",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-header-with-subtitle-and-end-content",
+      "path": "examples/drawer-header/with-subtitle-and-end-content",
+      "aliases": []
+    },
+    {
       "name": "example-drawer-mobile-the-56px-page-reveal-default",
       "path": "examples/drawer/mobile-the-56px-page-reveal-default",
       "aliases": []
@@ -4248,6 +4258,11 @@
     {
       "name": "showcase-divider-variants",
       "path": "showcases/divider/variants",
+      "aliases": []
+    },
+    {
+      "name": "showcase-drawer-header-default",
+      "path": "showcases/drawer-header/default",
       "aliases": []
     },
     {
