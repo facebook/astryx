@@ -22,7 +22,7 @@ import {
 } from '@astryxdesign/a11y-spec/storybook';
 
 const STORYBOOK_DIR = process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR;
-const STORY = 'lab-richtexteditor--with-toolbar';
+const STORY = 'richtext-richtexteditor--with-toolbar';
 
 let storybook: StaticServer;
 

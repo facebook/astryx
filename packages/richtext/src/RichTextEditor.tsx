@@ -11,7 +11,7 @@
  *   top toolbar slot, configurable editable-surface minimum height, and distinct
  *   read-only and disabled states that follow prop changes, RichTextEditorProps,
  *   RichTextEditorStatus, RichTextEditorStatusType, RichTextEditorSize
- * @position Experimental (richtext) implementation; consumed by the package index.ts and
+ * @position @astryxdesign/richtext implementation; consumed by the package index.ts and
  *   re-exported from @astryxdesign/richtext. Tested by RichTextEditor.test.tsx.
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -20,11 +20,8 @@
  * - /packages/richtext/src/index.ts (exports if types change)
  * - /apps/storybook/stories/RichTextEditor.stories.tsx (storybook stories)
  *
- * NOTE: This is an EXPERIMENTAL component in @astryxdesign/richtext (published only under
- * the `@canary` dist-tag, never as stable `latest`). It is the initial landing for the
- * OSS Lexical editor RFC; the goal is graduation to @astryxdesign/core after the
- * Component Specification Protocol. `lexical` and `@lexical/*` are OPTIONAL peer
- * dependencies — install them to use this component.
+ * NOTE: `lexical` and `@lexical/*` are OPTIONAL peer dependencies — install them to
+ * use this component.
  */
 
 import {
@@ -469,9 +466,8 @@ export interface RichTextEditorProps extends Omit<
 
 /**
  * A WYSIWYG rich-text editor built on Lexical, styled with Astryx design
- * tokens. Experimental — ships from `@astryxdesign/richtext` (canary). `lexical` and
- * `@lexical/*` are optional peer dependencies — install them to use this
- * component.
+ * tokens. Ships from `@astryxdesign/richtext`. `lexical` and `@lexical/*` are
+ * optional peer dependencies — install them to use this component.
  *
  * The editor is intentionally minimal and extensible: pass `toolbar`, `nodes`,
  * and `plugins` to layer richer behaviour (formatting, mentions, hover cards)

@@ -23,7 +23,7 @@ import {MarkdownPluginsImportExport as MarkdownPluginsImportExportStory} from '.
 import {MarkdownPluginsSandbox} from './RichTextEditor.markdownPlugins';
 
 const meta: Meta<typeof RichTextEditor> = {
-  title: 'Lab/RichTextEditor',
+  title: 'RichText/RichTextEditor',
   component: RichTextEditor,
   tags: ['autodocs'],
   argTypes: {

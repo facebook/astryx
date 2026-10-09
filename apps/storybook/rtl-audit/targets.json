@@ -467,7 +467,7 @@
   },
   {
     "component": "richtext/RichTextEditor",
-    "storyId": "lab-richtexteditor--error-status",
+    "storyId": "richtext-richtexteditor--error-status",
     "dims": ["D4"],
     "selectors": {
       "overlay": ".astryx-rich-text-editor > div:first-child > div:last-child",
@@ -476,7 +476,7 @@
   },
   {
     "component": "richtext/RichTextEditorToolbar",
-    "storyId": "lab-richtexteditor--with-toolbar",
+    "storyId": "richtext-richtexteditor--with-toolbar",
     "dims": ["D2"],
     "selectors": {
       "prev": "[role=\"group\"][aria-label=\"Formatting actions\"] button:first-of-type",
@@ -485,12 +485,12 @@
   },
   {
     "component": "richtext/RichTextEditorAutoLinkPlugin",
-    "storyId": "lab-richtexteditor--with-auto-link",
+    "storyId": "richtext-richtexteditor--with-auto-link",
     "dims": []
   },
   {
     "component": "richtext/RichTextView",
-    "storyId": "lab-richtexteditor--markdown-serializers",
+    "storyId": "richtext-richtexteditor--markdown-serializers",
     "dims": []
   },
   {

@@ -708,20 +708,20 @@ describe('audited package and story routing', () => {
     const routes = buildStoryComponentRoutes({
       stories: [
         {
-          id: 'lab-richtexteditor--default',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--default',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--with-toolbar',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--with-toolbar',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--with-auto-link',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--with-auto-link',
+          title: 'RichText/RichTextEditor',
         },
         {
-          id: 'lab-richtexteditor--markdown-serializers',
-          title: 'Lab/RichTextEditor',
+          id: 'richtext-richtexteditor--markdown-serializers',
+          title: 'RichText/RichTextEditor',
         },
       ],
       targets,
@@ -730,10 +730,10 @@ describe('audited package and story routing', () => {
     const owners = richTextComponents.map(component => `richtext/${component}`);
     expect(unresolvedComponentFilters(routes, owners)).toEqual([]);
     expect(storyIdsForComponentFilters(routes, owners)).toEqual([
-      'lab-richtexteditor--default',
-      'lab-richtexteditor--with-toolbar',
-      'lab-richtexteditor--with-auto-link',
-      'lab-richtexteditor--markdown-serializers',
+      'richtext-richtexteditor--default',
+      'richtext-richtexteditor--with-toolbar',
+      'richtext-richtexteditor--with-auto-link',
+      'richtext-richtexteditor--markdown-serializers',
     ]);
   });
 

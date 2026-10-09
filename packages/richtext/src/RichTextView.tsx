@@ -10,7 +10,7 @@
  * @output Exports RichTextView component and RichTextViewProps
  * @position Read-only renderer for serialized Lexical editor state, exposed to
  *   assistive technology as document content rather than a form field;
- *   experimental (richtext), exported from @astryxdesign/richtext
+ *   exported from @astryxdesign/richtext
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/richtext/src/RichTextEditor.test.tsx

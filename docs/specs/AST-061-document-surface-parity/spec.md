@@ -42,7 +42,8 @@ reflows no line; only editing affordances appear or disappear.
 - Which editor engine serves document editing, and the stored value an editor
   reads and writes. This record governs how the surfaces render the same
   document, not which surface a product chooses to edit documents with.
-- RichText's release channel. RichText stays canary-only.
+- RichText's release channel. The release policy and the package's
+  Changesets decide it, not this record.
 - Equivalent internal implementations remain valid when they satisfy this
   contract, except the character reference decoder, which DEC-5 makes one
   shared public function.
