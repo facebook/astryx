@@ -759,7 +759,16 @@ function useLayerImplementation(
         // hosted away from its trigger then still takes its sequential focus
         // order (and its popover nesting) from the trigger rather than from
         // its own DOM position. Browsers without the option ignore it.
-        popover.showPopover({source: triggerRef.current ?? undefined});
+        // `source` is declared as an `HTMLElement`. A caller-rendered icon
+        // trigger is an `SVGElement`, whose dictionary conversion throws
+        // before the popover opens. Omitting the option for it still anchors
+        // the layer, because positioning reads the anchor-name pair, and only
+        // gives up the invoker's focus order.
+        const trigger =
+          triggerRef.current instanceof HTMLElement
+            ? triggerRef.current
+            : undefined;
+        popover.showPopover({source: trigger});
       });
     } else {
       popover.style.display = 'block';
