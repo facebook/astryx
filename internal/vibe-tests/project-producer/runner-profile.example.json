@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "sandbox": {
+    "root": "/isolated-run",
+    "projectDir": "/isolated-run/project"
+  },
+  "browserCommand": "screenshot <file-or-url> [output.png]",
+  "launcher": {
+    "command": "/path/to/isolation-launcher",
+    "args": [
+      "--private-root",
+      "{privateRoot}",
+      "--sandbox-root",
+      "{sandboxRoot}",
+      "--cwd",
+      "{runnerCwd}",
+      "--",
+      "{runnerCommand}",
+      "{runnerArgs}"
+    ]
+  },
+  "preflight": {
+    "command": "/bin/sh",
+    "args": ["-lc", "test -r input.txt && printf isolated"],
+    "cwd": "{sandboxProject}"
+  },
+  "runners": {
+    "example-agent": {
+      "harness": "example-agent",
+      "model": "example-model",
+      "command": "/path/to/agent-cli",
+      "args": [
+        "--workspace",
+        "{sandboxProject}",
+        "--task-file",
+        "{taskFile}",
+        "--json"
+      ],
+      "stdin": "prompt",
+      "versionArgs": ["--version"],
+      "limits": {
+        "maxModelSteps": 80
+      },
+      "transcript": {
+        "format": "jsonl",
+        "toolCalls": [
+          {
+            "recordsPath": "message.content",
+            "matches": [{"path": "kind", "equals": "tool-call"}],
+            "commandPath": "input.command"
+          }
+        ],
+        "usage": {
+          "matches": [{"path": "kind", "equals": "usage"}],
+          "inputTokensPath": "payload.inputTokens",
+          "outputTokensPath": "payload.outputTokens"
+        }
+      },
+      "audit": {
+        "rules": [
+          {
+            "label": "runner emitted its initialization receipt",
+            "source": "stdout",
+            "kind": "required",
+            "class": "strict",
+            "pattern": "initialization"
+          },
+          {
+            "label": "runner reported a non-fatal compatibility warning",
+            "source": "stderr",
+            "kind": "forbidden",
+            "class": "adjusted",
+            "pattern": "compatibility warning",
+            "flags": "i"
+          }
+        ]
+      }
+    }
+  }
+}

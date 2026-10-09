@@ -16,5 +16,11 @@ Every digest uses the canonical `sha256TreeV2` algorithm in
 bytes, then hash one `path + NUL + lowercase file SHA-256 + LF` record per
 regular file. Symlinks and non-regular entries are rejected.
 
+A `git-tree` baseline uses that same canonical byte stream over the regular files
+exported from exactly one baseline commit. Its digest is not a Git object ID and
+excludes modes, empty directories, untracked files, submodules, symlinks, and
+`.git` metadata, so identical tracked bytes hash identically in SHA-1 and SHA-256
+repositories.
+
 Command arrays are structural in PR 1. Launcher resolution and shell/eval policy
 belong to the isolated shared evaluator in AST-067 PR 5.

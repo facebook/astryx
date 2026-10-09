@@ -159,7 +159,10 @@
           "type": "object",
           "required": ["kind", "root", "digest"],
           "properties": {
-            "kind": {"enum": ["bundle-tree", "git-tree"]},
+            "kind": {
+              "enum": ["bundle-tree", "git-tree"],
+              "description": "bundle-tree names an arbitrary bundled baseline. git-tree names regular files exported from one Git baseline commit. Both digest the canonical sha256TreeV2 path-and-content byte stream; a git-tree digest is not a Git object ID and excludes modes, empty directories, untracked files, submodules, symlinks, and .git metadata."
+            },
             "root": {"$ref": "#/$defs/bundlePath"},
             "digest": {"$ref": "#/$defs/digest"}
           },

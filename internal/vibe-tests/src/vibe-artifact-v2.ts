@@ -45,6 +45,11 @@ export interface VibeArtifactEmptyBaselineV2 {
 }
 
 export interface VibeArtifactTreeBaselineV2 {
+  /**
+   * `bundle-tree` is a bundled arbitrary tree. `git-tree` is an exported
+   * snapshot of regular files tracked by one Git baseline commit. Both use the
+   * portable sha256TreeV2 byte stream; a git-tree digest is not a Git object ID.
+   */
   kind: 'bundle-tree' | 'git-tree';
   root: string;
   digest: VibeDigestV2;
@@ -438,6 +443,23 @@ export function sha256TreeV2(bundleRoot: string, relativeRoot: string): string {
     digest.update(Buffer.from([10]));
   }
   return digest.digest('hex');
+}
+
+/**
+ * Hash an exported Git baseline.
+ *
+ * The producer exports the regular files tracked by exactly one baseline commit
+ * into `relativeRoot`, without `.git` metadata, untracked files, submodules, or
+ * symlinks. The digest is the same portable path-and-content SHA-256 byte stream
+ * used by sha256TreeV2. It deliberately excludes Git object IDs, file modes, and
+ * empty directories so SHA-1 and SHA-256 repositories produce identical
+ * artifact digests for identical tracked bytes.
+ */
+export function sha256GitTreeBaselineV2(
+  bundleRoot: string,
+  relativeRoot: string,
+): string {
+  return sha256TreeV2(bundleRoot, relativeRoot);
 }
 
 function requiredBundlePath(
