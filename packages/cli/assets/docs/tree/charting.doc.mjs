@@ -1,15 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/components/charting`:
- * build theme-aware SVG, Canvas, GPU, exported, and third-party charts.
+ * @file `astryx docs cli/visualization/charting`: build theme-aware SVG, Canvas, GPU, exported, and third-party charts.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
 export const docs = {
   type: 'generic',
   name: 'charting',
-  placement: {parent: 'namespace:components', slot: 'guides', order: 90},
+  placement: {parent: 'namespace:visualization', slot: 'guides', order: 10},
   title: 'Theme chart components',
   category: 'guide',
   description:
@@ -40,6 +39,38 @@ export const docs = {
         {
           type: 'prose',
           text: 'For a fixed chart with no color controls, use the token and renderer guidance and skip the sections about color pickers and saved choices.',
+        },
+        {
+          type: 'prose',
+          text: 'For a new React app, install the public Astryx packages, the CLI used by this guide, and your renderer: `npm install @astryxdesign/core @astryxdesign/theme-neutral @stylexjs/stylex recharts && npm install -D @astryxdesign/cli`. Add `vega` and `vega-lite` when you use the Vega-Lite section. Existing Astryx apps can skip this setup.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          code: `import {useState} from 'react';
+import '@astryxdesign/core/reset.css';
+import '@astryxdesign/core/astryx.css';
+import '@astryxdesign/theme-neutral/theme.css';
+
+import {Theme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+
+export function App() {
+  const [mode, setMode] = useState<'light' | 'dark'>('light');
+  return (
+    <Theme theme={neutralTheme} mode={mode}>
+      {/* chart and a control that calls setMode */}
+    </Theme>
+  );
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'The prebuilt theme path above needs no Astryx source-build plugin. If your app compiles Astryx or product StyleX from source, follow the Vite setup in the public `@astryxdesign/build` README instead.',
+        },
+        {
+          type: 'prose',
+          text: 'Use `astryx docs tokens` to browse token names, `astryx docs icons` to browse semantic icons, and `astryx docs use-a-theme` for custom themes and server rendering.',
         },
       ],
     },
@@ -294,7 +325,7 @@ export function SeriesMark() {
         },
         {
           type: 'prose',
-          text: 'Do not construct `var(--color-data-*)` strings by hand. Custom theme overrides also require Astryx’s layered StyleX build boundary; follow the **Vite Setup** section of the `@astryxdesign/build` README before using these imports in a new app. A bare unlayered transform can outrank layered theme overrides.',
+          text: 'Do not construct `var(--color-data-*)` strings by hand. Importing the published token maps keeps the reference tied to Astryx’s public token names and lets CSS repaint it when the active theme changes.',
         },
       ],
     },
@@ -467,11 +498,64 @@ export function RevenueChart({data}) {
         },
         {
           type: 'prose',
-          text: 'The default Recharts legend mainly mirrors series color. When a pattern, marker shape, or dash style carries series identity, pass a product-owned renderer through `Legend.content` and draw the same cue in each legend key. Keep SVG pattern IDs unique across the whole document, not only between the plot and legend: `url(#id)` resolves document-wide. Derive IDs per chart instance, for example from React’s `useId`.',
+          text: 'The default Recharts legend mainly mirrors series color. When a pattern, marker shape, or dash style carries series identity, pass a renderer through `Legend.content` and draw the same cue in each legend key. For example, a line chart can use a solid Revenue line and a dashed Costs line in both places:',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          code: `import {Legend, Line} from 'recharts';
+
+const lineSeries = [
+  {key: 'revenue', label: 'Revenue', color: dataVars['--color-data-categorical-blue'], dash: undefined},
+  {key: 'costs', label: 'Costs', color: dataVars['--color-data-categorical-orange'], dash: '6 4'},
+] as const;
+
+function SeriesLegend() {
+  return (
+    <ul aria-label="Chart series">
+      {lineSeries.map(series => (
+        <li key={series.key}>
+          <svg aria-hidden="true" width="24" height="12">
+            <line
+              x1="0" x2="24" y1="6" y2="6"
+              stroke={series.color}
+              strokeDasharray={series.dash}
+              strokeWidth="2"
+            />
+          </svg>
+          {series.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+<Legend content={() => <SeriesLegend />} />
+{lineSeries.map(series => (
+  <Line
+    key={series.key}
+    dataKey={series.key}
+    name={series.label}
+    stroke={series.color}
+    strokeDasharray={series.dash}
+  />
+))}`,
+        },
+        {
+          type: 'prose',
+          text: 'If a tooltip also identifies series, use a custom `Tooltip.content` renderer to repeat the cue there; `contentStyle` changes only the default tooltip surface. Keep SVG pattern IDs unique across the whole document: `url(#id)` resolves document-wide, so derive pattern IDs per chart instance with React’s `useId`.',
+        },
+        {
+          type: 'prose',
+          text: 'SVG tick text uses `fill`; HTML legend and tooltip text use `color`. Keep separate style objects instead of reusing an HTML text style for axis ticks.',
         },
         {
           type: 'prose',
           text: '`accessibilityLayer`, `title`, and `desc` improve the chart’s keyboard and descriptive surface, but they do not automatically expose every data value or interaction. If people need exact values, provide a visible table or concise text summary, or another tested equivalent. Avoid repeating the same long description in both the chart and its alternative.',
+        },
+        {
+          type: 'prose',
+          text: 'For a visible exact-value alternative, use the public Astryx `Table` component or a semantic HTML table. Run `astryx component Table --dense` for the current columns and cell-rendering API.',
         },
       ],
     },
@@ -547,7 +631,7 @@ export function useVegaLiteThemeConfig(): Config {
         },
         {
           type: 'prose',
-          text: 'Treat Vega and Vega-Lite specs as executable input: expressions can run and data entries can load URLs. Pass only specs the product authors or reviews. User-, document-, or model-generated specs need the interpreter and restricted-loader boundaries described by Vega’s security guidance.',
+          text: 'Treat Vega and Vega-Lite specs as executable input: expressions can run and data entries can load URLs. Pass only specs the product authors or reviews. For untrusted specs, use the public [Vega expression interpreter](https://github.com/vega/vega-interpreter) and restrict external loading through Vega’s [loader API](https://vega.github.io/vega/docs/api/loader/).',
         },
         {
           type: 'prose',
