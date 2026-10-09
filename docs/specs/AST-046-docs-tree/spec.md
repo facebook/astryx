@@ -199,9 +199,10 @@ and references from other packages are an open question (OQ2).
   - The namespace takes the topic's name, so its route and `astryx docs <name>`
     are unchanged, and no flat topic keeps the name, so the name has one owner
     (FR4).
-  - Every section of the topic lands in exactly one guide, with its title and
-    its `id` unchanged; no section is dropped, merged into another, or copied
-    into two guides. No two guides below the namespace share a section key, so
+  - Every section of the topic lands in exactly one guide, with its title, its
+    `id`, and the key a reader addresses it by unchanged; when regrouping would
+    change a section's derived key, the section's `id` pins the old key. No
+    section is dropped, merged into another, or copied into two guides. No two guides below the namespace share a section key, so
     a section read names one guide (FR6).
   - Each guide answers one task or one decision a reader brings, and its title
     and summary name it. A guide is not a fragment cut at a size, and each
