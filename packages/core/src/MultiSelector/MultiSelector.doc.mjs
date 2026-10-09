@@ -63,6 +63,12 @@ const anatomy = [
       'Shared clear action shown in the search row while a query is present.',
   },
   {
+    name: 'Panel status message',
+    required: false,
+    description:
+      'Status message shown in the open panel when the caller renders the trigger, rendered by FieldStatus.',
+  },
+  {
     name: 'Option row',
     required: false,
     description:
@@ -338,7 +344,8 @@ export const docs = {
         {
           name: 'status',
           type: "{type: 'error' | 'warning' | 'success', message?: string}",
-          description: 'Validation status with an optional message.',
+          description:
+            'Validation status with an optional message. With renderTrigger, which renders no field, the message shows in the open panel under the search row (above the list without one) and describes the search input, which an error marks invalid; statusVariant does not apply there.',
         },
         {
           name: 'statusVariant',
@@ -395,7 +402,7 @@ export const docs = {
           name: 'renderTrigger',
           type: '(props: MultiSelectorRenderTriggerProps) => ReactNode',
           description:
-            "Render the control the panel hangs off — a glyph in a list row, a chip, an icon button — instead of the selector's own field and button. Spread the given props ({ref, id, onClick, onKeyDown, onFocus, aria-haspopup, aria-expanded, aria-controls, aria-busy}) onto it; the listbox is anchored to that control and named by `label`. The field chrome (Field, status, clear, spinner) is not rendered. Pair with handleRef to open from a keystroke elsewhere.",
+            "Render the control the panel hangs off — a glyph in a list row, a chip, an icon button — instead of the selector's own field and button. Spread the given props ({ref, id, onClick, onKeyDown, onFocus, aria-haspopup, aria-expanded, aria-controls, aria-busy}) onto it; the listbox is anchored to that control and named by `label`. The field chrome (Field, clear, spinner) is not rendered; a status message shows in the open panel instead. Pair with handleRef to open from a keystroke elsewhere.",
         },
         {
           name: 'handleRef',
@@ -516,13 +523,14 @@ export const docsZh = {
         isOptional: '将字段标记为可选。',
         isRequired: '将字段标记为必填。',
         isLoading: '在触发器中显示加载旋转器。',
-        status: '带可选消息的验证状态。',
+        status:
+          '带可选消息的验证状态。使用 renderTrigger 时不渲染字段，消息改为显示在打开的面板中（搜索行下方，无搜索时在列表上方），并描述搜索输入；error 类型会将其标记为无效。',
         statusVariant:
           '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
           '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
         renderTrigger:
-          '由调用方渲染面板的触发控件（替代选择器自带的字段和按钮）；将传入的属性展开到该控件上，列表框将锚定于它并由 label 命名。',
+          '由调用方渲染面板的触发控件（替代选择器自带的字段和按钮）；将传入的属性展开到该控件上，列表框将锚定于它并由 label 命名。状态消息改为显示在打开的面板中。',
         handleRef: '命令式句柄：open()、close()、toggle()、isOpen()。',
         onOpenChange: '面板每次打开或关闭时触发，无论由何种方式引起。',
         presentation:
@@ -664,13 +672,14 @@ export const docsDense = {
         isOptional: 'marks optional',
         isRequired: 'marks required',
         isLoading: 'spinner in trigger',
-        status: 'validation status w/ optional message',
+        status:
+          'validation status w/ optional message; with renderTrigger shown in the open panel, describing the search input',
         statusVariant:
           'status message placement; ghost detaches attached by default; use tooltip for compact toolbars.',
         renderOption:
           'custom render fn per selectable option; not dividers/sections/select-all',
         renderTrigger:
-          'caller-rendered opener replacing the field+button; spread the given props; listbox anchored to it, named by label',
+          'caller-rendered opener replacing the field+button; spread the given props; listbox anchored to it, named by label; status message shows in the panel',
         handleRef: 'imperative open()/close()/toggle()/isOpen()',
         onOpenChange: 'fires on every open/close, whatever caused it',
         presentation:

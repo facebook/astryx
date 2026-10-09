@@ -24,6 +24,7 @@ import {
   MultiSelector,
   type MultiSelectorHandle,
   type MultiSelectorChange,
+  type MultiSelectorRenderTriggerProps,
 } from './MultiSelector';
 import {useRef} from 'react';
 import {Icon} from '../Icon';
@@ -4206,5 +4207,171 @@ describe('MultiSelector create row inside a grid', () => {
       type: 'create',
       query: 'Urgent',
     });
+  });
+});
+
+describe('MultiSelector renderTrigger — panel status', () => {
+  const OPTIONS = [
+    {value: 'bug', label: 'Bug'},
+    {value: 'feature', label: 'Feature'},
+  ];
+  const assertiveRegion = () =>
+    document.querySelector('[data-astryx-live-region="assertive"]');
+  const describedText = (element: HTMLElement) =>
+    document.getElementById(element.getAttribute('aria-describedby') ?? '')
+      ?.textContent ?? '';
+
+  it('shows the message under the search row, describing the search input, which an error marks invalid', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        status={{type: 'error', message: 'That name is taken'}}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Tags
+          </button>
+        )}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Tags'}));
+    const search = screen.getByRole('combobox', h);
+    expect(search).toHaveAttribute('aria-invalid', 'true');
+    expect(describedText(search)).toContain('That name is taken');
+    const message = screen.getByText('That name is taken');
+    // Under the search row, outside the list.
+    expect(
+      search.compareDocumentPosition(message) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByRole('listbox', h).contains(message)).toBe(false);
+  });
+
+  it('announces an error set while the panel is open, and a warning does not mark the field invalid', async () => {
+    const user = userEvent.setup();
+    const trigger = (props: MultiSelectorRenderTriggerProps) => (
+      <button type="button" {...props}>
+        Tags
+      </button>
+    );
+    const {rerender} = render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        renderTrigger={trigger}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Tags'}));
+    const search = screen.getByRole('combobox', h);
+    expect(search).not.toHaveAttribute('aria-describedby');
+
+    rerender(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        status={{type: 'error', message: 'Up to 5 labels per session'}}
+        renderTrigger={trigger}
+      />,
+    );
+    await waitFor(() => {
+      expect(assertiveRegion()?.textContent).toBe('Up to 5 labels per session');
+    });
+
+    rerender(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        status={{type: 'warning', message: 'Names are shared'}}
+        renderTrigger={trigger}
+      />,
+    );
+    expect(search).not.toHaveAttribute('aria-invalid');
+    expect(describedText(search)).toContain('Names are shared');
+  });
+
+  it('without search, the listbox that takes focus is described by the message', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        status={{type: 'warning', message: 'Names are shared'}}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Tags
+          </button>
+        )}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Tags'}));
+    const listbox = screen.getByRole('listbox', h);
+    expect(describedText(listbox)).toContain('Names are shared');
+    const message = screen.getByText('Names are shared');
+    expect(
+      message.compareDocumentPosition(listbox) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('shows the message in the bottom sheet, and nothing while the panel is closed', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        presentation="bottom-sheet"
+        status={{type: 'error', message: 'That name is taken'}}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Tags
+          </button>
+        )}
+      />,
+    );
+    expect(screen.queryByText('That name is taken')).toBeNull();
+    await user.click(screen.getByRole('button', {name: 'Tags'}));
+    const sheet = await screen.findByRole('dialog', {name: 'Labels'});
+    expect(within(sheet).getByText('That name is taken')).toBeInTheDocument();
+    expect(within(sheet).getByRole('combobox')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
+
+  it('leaves the field path alone: the message stays in the Field, not the panel', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        status={{type: 'error', message: 'That name is taken'}}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    expect(screen.getAllByText('That name is taken')).toHaveLength(1);
+    expect(screen.getByRole('combobox', h)).not.toHaveAttribute(
+      'aria-describedby',
+    );
   });
 });
