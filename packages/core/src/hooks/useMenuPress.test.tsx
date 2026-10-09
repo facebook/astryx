@@ -31,6 +31,7 @@ interface HarnessProps {
   hitTest?: (x: number, y: number) => Element | null;
   getScroller?: () => HTMLElement | null;
   onHighlight?: (row: HTMLElement | null) => void;
+  touchOpen?: 'tap' | 'press';
 }
 
 function Harness({
@@ -40,6 +41,7 @@ function Harness({
   hitTest,
   getScroller,
   onHighlight,
+  touchOpen,
 }: HarnessProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -64,6 +66,7 @@ function Harness({
     hitTest,
     getScroller,
     onHighlight,
+    touchOpen,
   });
   return (
     <>
@@ -458,6 +461,84 @@ describe('useMenuPress — the trigger', () => {
   it('marks the menu root as carrying the press model', () => {
     render(<Harness />);
     expect(screen.getByRole('menu')).toHaveAttribute('data-astryx-menu-press');
+  });
+});
+
+describe('useMenuPress — a finger that opens on the press (touchOpen: press)', () => {
+  it('a finger press on the trigger opens the menu at once; its tap neither toggles it nor acts', () => {
+    const onOpenChange = vi.fn();
+    const onSelect = vi.fn();
+    render(
+      <Harness
+        touchOpen="press"
+        onOpenChange={onOpenChange}
+        onSelect={onSelect}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    const isNotCancelled = fireEvent.pointerDown(trigger, touch());
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    // The press is cancelled so the finger's compatibility mouse events do
+    // not follow it onto the trigger when it lifts.
+    expect(isNotCancelled).toBe(false);
+    fireEvent.pointerUp(trigger, touch());
+    fireEvent.click(trigger, {detail: 1});
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('the press continues as a slide onto a row, picked on release', () => {
+    const onSelect = vi.fn();
+    render(<Harness touchOpen="press" onSelect={onSelect} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, touch());
+    fireEvent.pointerMove(row('B'), touch());
+    expect(row('B')).toHaveFocus();
+    fireEvent.pointerUp(row('B'), touch());
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith('B');
+  });
+
+  it('the browser taking the press before the finger reaches the menu closes it again', () => {
+    const onDismiss = vi.fn();
+    render(<Harness touchOpen="press" onDismiss={onDismiss} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, touch());
+    fireEvent.pointerCancel(trigger, touch());
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it('once the finger is in the menu, the browser taking the gesture (a scroll of the menu) keeps it', () => {
+    const onDismiss = vi.fn();
+    render(<Harness touchOpen="press" onDismiss={onDismiss} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, touch());
+    fireEvent.pointerMove(row('A'), touch());
+    fireEvent.pointerCancel(row('A'), touch());
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it('does not hold the page still or wait for a hold: a scroll can still start on the trigger', () => {
+    vi.useFakeTimers();
+    const onOpenChange = vi.fn();
+    render(<Harness touchOpen="press" onOpenChange={onOpenChange} />);
+    const trigger = screen.getByRole('button', {name: 'Open'});
+    fireEvent.pointerDown(trigger, {...touch(), clientX: 10, clientY: 10});
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(MENU_PRESS_LONG_PRESS_MS);
+    });
+    // One open, from the press; no second one from a long press, and no
+    // document touchmove preventer: the browser still decides whether this
+    // finger scrolls the page.
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
+    const scrollMove = new Event('touchmove', {
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(scrollMove);
+    expect(scrollMove.defaultPrevented).toBe(false);
   });
 });
 

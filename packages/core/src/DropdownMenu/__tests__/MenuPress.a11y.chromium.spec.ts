@@ -7,8 +7,9 @@
  * @output Browser evidence for the menu press model: the row under the
  *   release acts once, the highlight follows the pointer, a release outside
  *   closes under a mouse and not under a finger, a touch pan in an
- *   overflowing menu cancels the gesture, a pen behaves like a finger, and
- *   Escape after a press-open returns focus to the trigger
+ *   overflowing menu cancels the gesture, a pen behaves like a finger,
+ *   Escape after a press-open returns focus to the trigger, and on a phone a
+ *   finger's press opens a `touchOpen="press"` menu at once
  * @position Real-engine proof for module:DropdownMenu/useMenuPress — the
  *   paths jsdom cannot exercise (hit testing, touch synthesis, scrolling)
  */
@@ -383,6 +384,97 @@ test.describe('DropdownMenu press model (Chromium)', () => {
     await page.waitForTimeout(300);
     await expect(page.getByRole('menu')).toBeVisible();
     expect(activations).toEqual(['Duplicate clicked']);
+  });
+});
+
+test.describe('DropdownMenu touchOpen="press" on a phone (Chromium)', () => {
+  const PRESS_STORY = 'core-dropdownmenu--touch-open-press';
+
+  async function mountPhone(page: Page): Promise<CDPSession> {
+    await page.setViewportSize({width: 390, height: 844});
+    const cdp = await enableTouch(page);
+    await mount(page, PRESS_STORY);
+    return cdp;
+  }
+
+  async function isMenuOpen(page: Page): Promise<boolean> {
+    return page.evaluate(() => {
+      const menu = document.querySelector('[role="menu"]');
+      return menu?.closest('[popover]')?.matches(':popover-open') ?? false;
+    });
+  }
+
+  test('a finger press opens the menu before it lifts; the tap leaves it open and acts on nothing', async ({
+    page,
+  }) => {
+    const activations = collectActivations(page);
+    const cdp = await mountPhone(page);
+    await touch.start(cdp, await center(page, TRIGGER));
+    // Well inside the 500 ms a held finger takes to open a menu.
+    await expect.poll(async () => isMenuOpen(page), {timeout: 250}).toBe(true);
+    await touch.end(cdp);
+    await page.waitForTimeout(400);
+    expect(await isMenuOpen(page)).toBe(true);
+    await expect(page.getByRole('menu')).toBeVisible();
+    expect(activations).toEqual([]);
+  });
+
+  test('the press continues as a slide onto a row, picked once on release', async ({
+    page,
+  }) => {
+    const activations = collectActivations(page);
+    const cdp = await mountPhone(page);
+    const trigger = await center(page, TRIGGER);
+    await touch.start(cdp, trigger);
+    await expect.poll(async () => isMenuOpen(page), {timeout: 250}).toBe(true);
+    const row = await center(page, 'menuitem', 'Design system');
+    await touch.slide(cdp, trigger, row);
+    expect(await activeRowName(page)).toBe('Design system');
+    await touch.end(cdp);
+    await expect.poll(() => activations).toEqual(['Design system clicked']);
+    await expect(page.getByRole('menu')).toBeHidden();
+    await page.waitForTimeout(400);
+    expect(activations).toEqual(['Design system clicked']);
+  });
+
+  test('on a trigger that lets the page pan, a scroll that starts on it closes the menu again', async ({
+    page,
+  }) => {
+    const cdp = await mountPhone(page);
+    // Give the page room to scroll without moving the centered story (an
+    // absolutely positioned spacer extends the scrollable area only), and
+    // let a pan start on the trigger.
+    await page.evaluate(() => {
+      const spacer = document.createElement('div');
+      spacer.style.position = 'absolute';
+      spacer.style.insetBlockStart = '0';
+      spacer.style.insetInlineStart = '0';
+      spacer.style.inlineSize = '1px';
+      spacer.style.blockSize = '4000px';
+      document.body.append(spacer);
+    });
+    await page.locator(TRIGGER).evaluate(control => {
+      (control as HTMLElement).style.touchAction = 'auto';
+    });
+    // The compositor reads touch-action from its last commit: let one land
+    // before the finger does.
+    await page.evaluate(
+      async () =>
+        new Promise<void>(resolve =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    const trigger = await center(page, TRIGGER);
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+    await touch.start(cdp, trigger);
+    await expect.poll(async () => isMenuOpen(page), {timeout: 250}).toBe(true);
+    await touch.slide(cdp, trigger, {x: trigger.x, y: trigger.y - 120}, 8);
+    await touch.end(cdp);
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(
+      scrollBefore,
+    );
+    expect(await isMenuOpen(page)).toBe(false);
   });
 });
 

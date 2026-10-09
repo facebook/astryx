@@ -251,3 +251,72 @@ describe('menuPressStep — the trigger', () => {
     expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
   });
 });
+
+describe('menuPressStep — a finger that opens on the press (touchOpen: press)', () => {
+  const pressOnTrigger = (time = 0, touchOpen: 'tap' | 'press' = 'press') =>
+    ({...downOnTrigger('touch', time), touchOpen}) as const;
+
+  it('Idle → Open: a finger on the trigger opens the menu at once, tentatively', () => {
+    const {gesture, last} = run([pressOnTrigger()]);
+    expect(gesture).toEqual({
+      phase: 'open',
+      pointerType: 'touch',
+      openedAt: 0,
+      isTentative: true,
+    });
+    expect(last).toEqual({type: 'open'});
+  });
+
+  it('Idle → TriggerPress: with tap (the default) a finger still waits for its tap or a hold', () => {
+    const {gesture, last} = run([pressOnTrigger(0, 'tap')]);
+    expect(gesture.phase).toBe('triggerPress');
+    expect(last).toEqual({type: 'none'});
+  });
+
+  it('Open → Idle: a cancel before the finger reaches the menu withdraws the open', () => {
+    // The browser took the press for a scroll or a pinch: the menu that
+    // opened under it closes again, and no click follows a cancelled pointer.
+    const {gesture, last} = run([pressOnTrigger(), {type: 'cancel'}]);
+    expect(gesture.phase).toBe('idle');
+    expect(last).toEqual({type: 'settle', stray: false, dismiss: true});
+  });
+
+  it('Open → Tracking → Idle: once the finger is in the menu, a cancel keeps the menu', () => {
+    const {last} = run([pressOnTrigger(), move('A', true), {type: 'cancel'}]);
+    expect(last).toEqual({type: 'settle', stray: false, dismiss: false});
+  });
+
+  it('Open → Acted: a slide from the trigger onto a row acts on that row', () => {
+    const {last} = run([
+      pressOnTrigger(0),
+      move('B', true, 50),
+      up('B', {time: 60}),
+    ]);
+    expect(last).toEqual({type: 'act', row: 'B'});
+  });
+
+  it('Open → Idle: a quick lift on the trigger acts on nothing, keeps the menu and swallows the click', () => {
+    const {gesture, last} = run([
+      pressOnTrigger(0),
+      up(null, {
+        isInMenu: false,
+        isOnTrigger: true,
+        time: MENU_PRESS_SETTLE_MS - 1,
+      }),
+    ]);
+    expect(gesture.phase).toBe('idle');
+    expect(last).toEqual({type: 'settle', stray: true, dismiss: false});
+  });
+
+  it('a mouse is unaffected: its press opens as before and a cancel keeps the menu', () => {
+    const {gesture, last} = run([
+      {...downOnTrigger('mouse'), touchOpen: 'press'},
+    ]);
+    expect(gesture).toEqual({phase: 'open', pointerType: 'mouse', openedAt: 0});
+    expect(last).toEqual({type: 'open'});
+    expect(
+      run([{...downOnTrigger('mouse'), touchOpen: 'press'}, {type: 'cancel'}])
+        .last,
+    ).toEqual({type: 'settle', stray: false, dismiss: false});
+  });
+});

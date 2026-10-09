@@ -27,8 +27,11 @@
  *   window; a click with `detail === 0` (a keyboard's or a screen reader's)
  *   always passes.
  * - A mouse press on the trigger opens the menu at once; a finger held on the
- *   trigger opens it after the long-press delay. The settle rule decides
- *   whether the opening gesture's release may act (see menuPressGesture.ts).
+ *   trigger opens it after the long-press delay — or at once, on a trigger
+ *   that asks for `touchOpen: 'press'`, withdrawn again if the browser takes
+ *   that press for a scroll before the finger reaches the menu. The settle
+ *   rule decides whether the opening gesture's release may act (see
+ *   menuPressGesture.ts).
  * - `pointercancel`, a second pointer, or the window losing focus end the
  *   gesture with nothing acting; the model never re-implements scrolling.
  * - While a press is tracked in an overflowing menu, a pointer resting near
@@ -169,11 +172,12 @@ export interface UseMenuPressOptions {
    */
   itemSelector: string;
   /**
-   * A mouse pressed the trigger, or a finger has rested on it for the
-   * long-press delay: open the menu under the held pointer. Return whether
-   * it opened; a `false` (the press closed an open menu instead) ends the
-   * gesture. The click the trigger receives for this same gesture is reported
-   * by {@link UseMenuPressReturn.isTriggerClickFromPress} so the caller can
+   * A mouse pressed the trigger, a finger did on a trigger with `touchOpen:
+   * 'press'`, or a finger has rested on it for the long-press delay: open the
+   * menu under the held pointer. Return whether it opened; a `false` (the
+   * press closed an open menu instead) ends the gesture. The click the
+   * trigger receives for this same gesture is reported by
+   * {@link UseMenuPressReturn.isTriggerClickFromPress} so the caller can
    * leave it alone.
    */
   onTriggerPress?: (pointerType: MenuPressPointerType) => boolean;
@@ -190,7 +194,11 @@ export interface UseMenuPressOptions {
    * exactly as its own click would.
    */
   onActivate?: (row: HTMLElement, release: PointerEvent) => void;
-  /** A MOUSE was released outside the menu with nothing acting: close it. */
+  /**
+   * Close the menu: a MOUSE was released outside it with nothing acting, or
+   * the browser took a finger's press-open (`touchOpen: 'press'`) for a
+   * scroll or a pinch before the finger reached the menu.
+   */
   onDismiss?: () => void;
   /**
    * The element to scroll while a tracked pointer rests near its edge.
@@ -205,6 +213,17 @@ export interface UseMenuPressOptions {
   hitTest?: (x: number, y: number) => Element | null;
   /** @default 500 */
   longPressDelayMs?: number;
+  /**
+   * How a finger opens the menu from its trigger. `'tap'`: through the
+   * trigger's own click when the finger lifts, or with the finger down after
+   * the long-press delay. `'press'`: at once on press-down, as a mouse press
+   * does, for a trigger that is not inside a scrolling region; the press then
+   * continues as a drag onto a row. The page is not held still: if the
+   * browser takes the press for a scroll or a pinch before the finger
+   * reaches the menu, the menu closes again through `onDismiss`.
+   * @default 'tap'
+   */
+  touchOpen?: 'tap' | 'press';
   /** Whether the model is live. @default true */
   isEnabled?: boolean;
 }
@@ -215,7 +234,10 @@ export interface UseMenuPressReturn {
     onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
     [MENU_PRESS_MARKER]: '';
   };
-  /** Spread onto the trigger: a mouse press opens; a held finger opens. */
+  /**
+   * Spread onto the trigger: a mouse press opens; a held finger opens, or a
+   * finger's press with `touchOpen: 'press'`.
+   */
   triggerProps: {
     onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
@@ -750,7 +772,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
 
   const handleTriggerPointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
-      const {isEnabled = true} = optionsRef.current;
+      const {isEnabled = true, touchOpen = 'tap'} = optionsRef.current;
       if (event.pointerId === ignoredPointerIdRef.current) {
         ignoredPointerIdRef.current = null;
         return;
@@ -766,10 +788,19 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
         // Control-click is the context menu's on macOS.
         return;
       }
+      const isFingerPressOpen =
+        pointerType !== 'mouse' && touchOpen === 'press';
+      if (isFingerPressOpen) {
+        // The press itself opens the menu, so the compatibility mouse events
+        // a finger fires when it lifts must not follow it onto the trigger:
+        // their mousedown would take focus back from the opened menu.
+        // Scrolling is governed by touch-action and is unaffected.
+        event.preventDefault();
+      }
       const native = event.nativeEvent;
       attach(native.pointerId);
       lastPointerEventRef.current = native;
-      if (pointerType !== 'mouse') {
+      if (pointerType !== 'mouse' && !isFingerPressOpen) {
         longPressApiRef.current?.start({x: native.clientX, y: native.clientY});
       }
       step(
@@ -779,6 +810,7 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
           pointerType,
           row: null,
           time: Date.now(),
+          touchOpen,
         },
         native,
       );
@@ -806,11 +838,11 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
   }, []);
 
   const cancel = useCallback(() => {
-    if (gestureRef.current.phase !== 'idle') {
-      step({type: 'cancel'});
-    }
+    // The host closed the menu under the gesture. End it with no effect of
+    // its own: in particular, a tentative open is not "withdrawn" by asking
+    // the host to close a menu that is already closing.
     endGesture();
-  }, [endGesture, step]);
+  }, [endGesture]);
 
   useEffect(() => {
     // Install the gesture counter's listeners before the first press.
