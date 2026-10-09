@@ -146,6 +146,13 @@ const glyphStyles = stylex.create({
 });
 
 const toolbarScrollStyles = stylex.create({
+  // The row scrolls when it runs out of room, so a control keeps its own
+  // width. A Selector's field may shrink, which squeezes its label to a
+  // sliver, so it sits in a slot that may not.
+  fixedSlot: {
+    display: 'flex',
+    flexShrink: 0,
+  },
   actions: {
     flex: '1 1 0%',
     width: 0,
@@ -907,17 +914,19 @@ export function RichTextEditorToolbar({
               aria-label={t('@astryx.richTextEditor.toolbar.historyDivider')}
               xstyle={toolbarDividerStyles.vertical}
             />
-            <Selector
-              label={t('@astryx.richTextEditor.toolbar.blockFormat')}
-              isLabelHidden
-              variant="ghost"
-              size={size}
-              value={blockType}
-              options={blockOptions}
-              startIcon={icon(blockType)}
-              isDisabled={!isEditable}
-              onChange={value => setBlock(value as BlockType)}
-            />
+            <div {...stylex.props(toolbarScrollStyles.fixedSlot)}>
+              <Selector
+                label={t('@astryx.richTextEditor.toolbar.blockFormat')}
+                isLabelHidden
+                variant="ghost"
+                size={size}
+                value={blockType}
+                options={blockOptions}
+                startIcon={icon(blockType)}
+                isDisabled={!isEditable}
+                onChange={value => setBlock(value as BlockType)}
+              />
+            </div>
             <Divider
               orientation="vertical"
               aria-label={t('@astryx.richTextEditor.toolbar.formatDivider')}
