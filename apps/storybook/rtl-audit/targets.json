@@ -185,6 +185,15 @@
     "dims": []
   },
   {
+    "component": "ContextMenuItem",
+    "storyId": "core-contextmenuitem--states",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-dropdown-menu-item .astryx-icon",
+      "next": "[data-testid=\"context-menu-item-end-content\"]"
+    }
+  },
+  {
     "component": "DropdownMenu",
     "storyId": "core-dropdownmenu--alignment-end",
     "dims": ["D4"],
