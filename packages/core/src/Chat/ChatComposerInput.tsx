@@ -182,6 +182,13 @@ export type ChatComposerTrigger = {
   loadingText?: string;
   /** Accessible label for the menu. @default 'Suggestions' */
   menuLabel?: string;
+  /**
+   * Whether the search query can span multiple words and include punctuation (e.g. for
+   * multi-word mentions like "@María José García", "@Robert Downey Jr.", or candidate browsing).
+   * When false, the trigger query ends on whitespace.
+   * @default false
+   */
+  hasMultiWordQuery?: boolean;
 };
 
 export interface ChatComposerInputProps extends Omit<

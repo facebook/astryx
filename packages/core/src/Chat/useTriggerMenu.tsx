@@ -38,7 +38,7 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, groupItems} from '../utils';
+import {mergeProps, groupItems, isImeKeyEvent} from '../utils';
 import type {SearchableItem} from '../Typeahead/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -74,7 +74,7 @@ export interface UseTriggerMenuReturn {
   state: TriggerMenuState;
   /** Call on every input event to check for trigger activation */
   handleInput: () => void;
-  /** Call on keydown \u2014 returns true if the event was consumed */
+  /** Call on keydown — returns true if the event was consumed */
   handleKeyDown: (e: React.KeyboardEvent) => boolean;
   /** Render the trigger menu popover */
   renderMenu: () => ReactNode;
@@ -191,6 +191,8 @@ function getTextBeforeCursor(editable: HTMLDivElement): string | null {
   return null;
 }
 
+const MAX_MULTI_WORD_QUERY_LENGTH = 64;
+
 function findActiveTrigger(
   textBeforeCursor: string,
   triggers: ChatComposerTrigger[],
@@ -199,19 +201,45 @@ function findActiveTrigger(
   query: string;
   triggerStart: number;
 } | null {
+  const anyHasMultiWord = triggers.some(t => t.hasMultiWordQuery);
+
   for (let i = textBeforeCursor.length - 1; i >= 0; i--) {
     const char = textBeforeCursor[i];
 
-    if (char === ' ' || char === '\n') {
+    if (char === '\n') {
+      return null;
+    }
+
+    if (!anyHasMultiWord && (char === ' ' || char === '\t')) {
       return null;
     }
 
     for (const trigger of triggers) {
       if (char === trigger.character) {
         const prevChar = i > 0 ? textBeforeCursor[i - 1] : null;
-        if (prevChar === null || prevChar === ' ' || prevChar === '\n') {
+        if (
+          prevChar === null ||
+          prevChar === ' ' ||
+          prevChar === '\n' ||
+          prevChar === '\t'
+        ) {
           const query = textBeforeCursor.slice(i + 1);
-          return {trigger, query, triggerStart: i};
+
+          if (trigger.hasMultiWordQuery) {
+            if (query.length > MAX_MULTI_WORD_QUERY_LENGTH) {
+              return null;
+            }
+            return {trigger, query, triggerStart: i};
+          } else {
+            if (
+              query.includes(' ') ||
+              query.includes('\t') ||
+              query.includes('\n')
+            ) {
+              return null;
+            }
+            return {trigger, query, triggerStart: i};
+          }
         }
       }
     }
@@ -278,6 +306,12 @@ export function useTriggerMenu(
 
   const triggerStartRef = useRef<number>(-1);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRequestIdRef = useRef<number>(0);
+  const dismissedRef = useRef<{
+    character: string;
+    triggerStart: number;
+    dismissedQuery: string;
+  } | null>(null);
   const anchorSpanRef = useRef<HTMLSpanElement | null>(null);
 
   const removeAnchorSpan = useCallback(() => {
@@ -289,6 +323,7 @@ export function useTriggerMenu(
 
   const popover = usePopover({
     onHide: useCallback(() => {
+      searchRequestIdRef.current++;
       removeAnchorSpan();
       setState(prev => ({
         ...prev,
@@ -323,6 +358,7 @@ export function useTriggerMenu(
       clearTimeout(searchTimeoutRef.current);
       searchTimeoutRef.current = null;
     }
+    searchRequestIdRef.current++;
     // Cancel any in-flight search on the active trigger's searchSource
     const trigger = state.activeTrigger;
     if (trigger?.searchSource) {
@@ -331,6 +367,15 @@ export function useTriggerMenu(
     removeAnchorSpan();
     popover.hide();
     triggerStartRef.current = -1;
+    setState(prev => ({
+      ...prev,
+      isActive: false,
+      activeTrigger: null,
+      query: '',
+      items: [],
+      highlightedIndex: 0,
+      isLoading: false,
+    }));
   }, [popover, state.activeTrigger, removeAnchorSpan]);
 
   // Anchor the popover to the cursor position (not the entire input).
@@ -395,14 +440,19 @@ export function useTriggerMenu(
         searchTimeoutRef.current = null;
       }
 
+      const requestId = ++searchRequestIdRef.current;
+
       const doSearch = () => {
         if (trigger.searchSource) {
-          // Use SearchSource \u2014 cancel previous, then search
+          // Use SearchSource — cancel previous, then search
           trigger.searchSource.cancel?.();
           setState(prev => ({...prev, isLoading: true}));
           const result = trigger.searchSource.search(query);
           Promise.resolve(result).then(
             items => {
+              if (requestId !== searchRequestIdRef.current) {
+                return;
+              }
               setState(prev => ({
                 ...prev,
                 items,
@@ -411,6 +461,9 @@ export function useTriggerMenu(
               }));
             },
             () => {
+              if (requestId !== searchRequestIdRef.current) {
+                return;
+              }
               setState(prev => ({
                 ...prev,
                 items: [],
@@ -490,6 +543,7 @@ export function useTriggerMenu(
 
     const textBefore = getTextBeforeCursor(editable);
     if (textBefore === null) {
+      dismissedRef.current = null;
       if (state.isActive) {
         reset();
       }
@@ -498,6 +552,7 @@ export function useTriggerMenu(
 
     const found = findActiveTrigger(textBefore, triggers);
     if (!found) {
+      dismissedRef.current = null;
       if (state.isActive) {
         reset();
       }
@@ -506,7 +561,24 @@ export function useTriggerMenu(
 
     const {trigger, query, triggerStart} = found;
 
-    if (!state.isActive || state.activeTrigger !== trigger) {
+    // After Escape, keep the menu hidden while that same query keeps growing
+    if (
+      dismissedRef.current &&
+      dismissedRef.current.character === trigger.character &&
+      dismissedRef.current.triggerStart === triggerStart
+    ) {
+      if (query.startsWith(dismissedRef.current.dismissedQuery)) {
+        return;
+      }
+      dismissedRef.current = null;
+    } else {
+      dismissedRef.current = null;
+    }
+
+    if (
+      !state.isActive ||
+      state.activeTrigger?.character !== trigger.character
+    ) {
       triggerStartRef.current = triggerStart;
       setState(prev => ({
         ...prev,
@@ -519,7 +591,7 @@ export function useTriggerMenu(
       searchItems(trigger, query);
       popover.show();
     } else if (state.query !== query) {
-      setState(prev => ({...prev, query}));
+      setState(prev => ({...prev, query, activeTrigger: trigger}));
       searchItems(trigger, query);
     }
   }, [
@@ -534,9 +606,48 @@ export function useTriggerMenu(
     popover,
   ]);
 
+  // Multi-word queries with no matches hide the menu unless an explicit emptySearchText was provided.
+  const hasEmptySearchContent =
+    state.activeTrigger?.emptySearchText !== undefined ||
+    state.activeTrigger?.emptySearchResultsText !== undefined;
+
+  const isMultiWordEmpty =
+    state.activeTrigger?.hasMultiWordQuery &&
+    state.items.length === 0 &&
+    !state.isLoading &&
+    !hasEmptySearchContent;
+
+  const isMenuVisible = state.isActive && !isMultiWordEmpty;
+  const isNavigable =
+    isMenuVisible && !state.isLoading && state.items.length > 0;
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent): boolean => {
-      if (!state.isActive || !popover.isOpen) {
+      // Never intercept IME composition keystrokes (e.g. Enter committing candidates)
+      if (isImeKeyEvent(e.nativeEvent)) {
+        return false;
+      }
+
+      if (!state.isActive) {
+        return false;
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (state.activeTrigger) {
+          dismissedRef.current = {
+            character: state.activeTrigger.character,
+            triggerStart: triggerStartRef.current,
+            dismissedQuery: state.query,
+          };
+        }
+        reset();
+        return true;
+      }
+
+      // If the menu is not visible, still loading a newer query, or has no settled rows,
+      // do not swallow navigation or selection keys (allows caret movement and normal typing).
+      if (!isNavigable) {
         return false;
       }
 
@@ -575,20 +686,17 @@ export function useTriggerMenu(
           }
           return false;
         }
-        case 'Escape': {
-          e.preventDefault();
-          reset();
-          return true;
-        }
         default:
           return false;
       }
     },
     [
       state.isActive,
+      state.activeTrigger,
+      state.query,
       state.highlightedIndex,
       state.items,
-      popover.isOpen,
+      isNavigable,
       selectItem,
       reset,
     ],
@@ -609,19 +717,15 @@ export function useTriggerMenu(
     getOptionId: getItemId,
   });
 
-  // ARIA props for the editable element. Of the attributes the trigger menu
-  // needs, only aria-expanded forces the role: aria-controls and
-  // aria-haspopup are global, and aria-activedescendant is allowed on
-  // textbox too. So the element becomes a combobox exactly when triggers are
-  // configured and there is an expanded state to report; with no triggers it
-  // stays a plain textbox. aria-multiline runs the other way — ARIA 1.2
-  // supports it on textbox but not on combobox — so it rides the textbox
-  // branch. Emitting it on the combobox branch is a critical
-  // aria-allowed-attr violation (#4681).
+  // ARIA props for the editable element. Combobox attributes
+  // (aria-expanded/haspopup/controls/activedescendant) are only valid on
+  // role="combobox", so we only switch to that role — and only emit those
+  // attributes — when triggers are actually configured. With no triggers the
+  // element stays a plain role="textbox".
   const hasTriggers = (triggers?.length ?? 0) > 0;
   const ariaProps: UseTriggerMenuReturn['ariaProps'] = !hasTriggers
     ? {role: 'textbox', 'aria-multiline': 'true'}
-    : state.isActive && popover.isOpen
+    : isMenuVisible
       ? {
           role: 'combobox',
           'aria-expanded': true as const,
@@ -639,12 +743,30 @@ export function useTriggerMenu(
         };
 
   const renderMenu = useCallback((): ReactNode => {
-    const trigger = state.activeTrigger;
+    const activeTrigger = state.activeTrigger;
+    if (!activeTrigger) {
+      return null;
+    }
+
+    const hasEmptyContent =
+      activeTrigger.emptySearchText !== undefined ||
+      activeTrigger.emptySearchResultsText !== undefined;
+
+    const shouldHideMultiWordEmpty =
+      activeTrigger.hasMultiWordQuery &&
+      state.items.length === 0 &&
+      !state.isLoading &&
+      !hasEmptyContent;
+
+    if (shouldHideMultiWordEmpty) {
+      return null;
+    }
+
     const emptyText =
-      trigger?.emptySearchText ??
-      trigger?.emptySearchResultsText ??
+      activeTrigger.emptySearchText ??
+      activeTrigger.emptySearchResultsText ??
       'No results';
-    const loadingText = trigger?.loadingText ?? 'Searching\u2026';
+    const loadingText = activeTrigger.loadingText ?? 'Searching\u2026';
 
     let listContent: ReactNode;
     if (state.isLoading) {
@@ -677,8 +799,8 @@ export function useTriggerMenu(
                 styles.item,
                 idx === state.highlightedIndex && styles.itemHighlighted,
               )}>
-              {trigger?.renderItem ? (
-                trigger.renderItem(item)
+              {activeTrigger.renderItem ? (
+                activeTrigger.renderItem(item)
               ) : (
                 <span {...stylex.props(styles.itemLabel)}>{item.label}</span>
               )}
@@ -707,7 +829,7 @@ export function useTriggerMenu(
         id={listboxId}
         role="listbox"
         aria-label={
-          trigger?.menuLabel ?? t('@astryx.chatTriggerMenu.suggestions')
+          activeTrigger.menuLabel ?? t('@astryx.chatTriggerMenu.suggestions')
         }
         {...mergeProps(
           themeProps('trigger-menu'),
