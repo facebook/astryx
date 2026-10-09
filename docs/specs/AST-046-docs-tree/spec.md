@@ -3,11 +3,11 @@ schema_version: 4
 template_version: 2
 kind: system-spec
 id: spec:AST-046
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: josephfarina
+approved_at: 2026-10-08
 phase: implementing
 owners: [josephfarina]
 affects_architecture: [architecture:cli-surface]
@@ -329,7 +329,7 @@ Rejected: a later phase for integration namespaces.
 ### DEC-5 — A split keeps the topic's name and every released read
 
 **Reference:** `spec:AST-046/DEC-5`
-**Decider:** pending
+**Decider:** `josephfarina`, `2026-10-08`
 
 A long topic gets short guides without a breaking change. The `docs` command's
 response schemas are a contract (`spec:AST-017/FR45`), and a split moves no
@@ -347,7 +347,7 @@ copy; the name has two owners and lists and search show the content twice.
 ### DEC-6 — A section read on a namespace resolves through its guides
 
 **Reference:** `spec:AST-046/DEC-6`
-**Decider:** pending
+**Decider:** `josephfarina`, `2026-10-08`
 
 A released `astryx docs <topic> <section>` command keeps working after its
 topic becomes a namespace. A section that exactly one guide holds is
@@ -362,7 +362,7 @@ match.
 ### DEC-7 — The docsite shows a root namespace as one page
 
 **Reference:** `spec:AST-046/DEC-7`
-**Decider:** pending
+**Decider:** `josephfarina`, `2026-10-08`
 
 A person reading the docsite keeps one full page per topic, at the same address
 and in the same sidebar group, however the CLI splits it; an agent reads the
