@@ -76,10 +76,13 @@ function manifestInvocations() {
   /** @param {any[]} commands */
   const walk = commands => {
     for (const command of commands) {
-      invocations.push([
+      const args = [
         ...command.name.split(' '),
         ...command.arguments.filter((/** @type {any} */ a) => a.required).map(() => 'x'),
-      ]);
+      ];
+      // integration init runs a real install without --no-install.
+      if (command.name === 'integration init') args.push('--no-install');
+      invocations.push(args);
       walk(command.subcommands ?? []);
     }
   };

@@ -37,6 +37,9 @@ import {assertContributionVisible} from '../../foundation/integrations/contribut
 import {
   docsTreeCliProblem,
   withDocsTreeCli,
+  withCorePeer,
+  checkPeerDepsShape,
+  checkPeerDepsMetaShape,
 } from '../../foundation/integrations/cli-requirement.mjs';
 import {discoverIntegrationDocs} from '../../foundation/discovery/docs-discovery.mjs';
 import {findIntegrationComponentDoc} from '../../foundation/discovery/component-discovery.mjs';
@@ -286,12 +289,29 @@ async function addComponent(name, options) {
     {path: docFile, contents: docContents, createOnly: true},
     {path: sourceFile, contents: sourceContents, createOnly: true},
   ];
-  const pkgUpdate = packageJsonUpdate(
+  let pkgUpdate = packageJsonUpdate(
     packageFile,
     rootPath,
     path.basename(manifestFile),
     [{subpath: extensionlessPath, target: sourcePath}],
   );
+  // Component contributions compose Core components in real integrations.
+  // Write the Core peer on the first component add when no peer exists yet.
+  {
+    const coreExpected =
+      pkgUpdate?.expectedOriginal ?? fs.readFileSync(packageFile);
+    const coreText = pkgUpdate?.contents ?? coreExpected.toString('utf-8');
+    const coreCurrent = JSON.parse(coreText);
+    const corePeerResult = withCorePeer(coreCurrent, packageDir);
+    if (corePeerResult != null) {
+      pkgUpdate = {
+        contents:
+          JSON.stringify(corePeerResult.pkg, null, 2) +
+          (coreText.endsWith('\n') ? '\n' : ''),
+        expectedOriginal: coreExpected,
+      };
+    }
+  }
   if (pkgUpdate != null) {
     plans.push({
       path: packageFile,
@@ -539,6 +559,14 @@ async function addDoc(name, options) {
       pkgUpdate?.expectedOriginal ?? fs.readFileSync(packageFile);
     const text = pkgUpdate?.contents ?? expectedOriginal.toString('utf-8');
     const current = JSON.parse(text);
+    const peerShapeErrDoc = checkPeerDepsShape(current);
+    if (peerShapeErrDoc) {
+      throw new AstryxError(peerShapeErrDoc, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
+    }
+    const metaShapeErrDoc = checkPeerDepsMetaShape(current);
+    if (metaShapeErrDoc) {
+      throw new AstryxError(metaShapeErrDoc, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
+    }
     if (docsTreeCliProblem(current) != null) {
       pkgUpdate = {
         contents:
@@ -699,12 +727,29 @@ async function addTemplate(name, options) {
     {path: specFile, contents: specContents, createOnly: true},
     {path: sourceFile, contents: sourceContents, createOnly: true},
   ];
-  const pkgUpdate = packageJsonUpdate(
+  let pkgUpdate = packageJsonUpdate(
     packageFile,
     rootPath,
     path.basename(manifestFile),
     [{subpath: extensionlessPath, target: sourcePath}],
   );
+  // Template contributions compose Core components in real integrations.
+  // Write the Core peer on the first template add when no peer exists yet.
+  {
+    const coreExpected =
+      pkgUpdate?.expectedOriginal ?? fs.readFileSync(packageFile);
+    const coreText = pkgUpdate?.contents ?? coreExpected.toString('utf-8');
+    const coreCurrent = JSON.parse(coreText);
+    const corePeerResult = withCorePeer(coreCurrent, packageDir);
+    if (corePeerResult != null) {
+      pkgUpdate = {
+        contents:
+          JSON.stringify(corePeerResult.pkg, null, 2) +
+          (coreText.endsWith('\n') ? '\n' : ''),
+        expectedOriginal: coreExpected,
+      };
+    }
+  }
   if (pkgUpdate != null) {
     plans.push({
       path: packageFile,

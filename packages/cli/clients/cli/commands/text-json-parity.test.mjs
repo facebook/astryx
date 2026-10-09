@@ -376,6 +376,16 @@ const CASES = [
     skipFieldChecks: true,
   },
   {
+    name: 'integration init',
+    args: ['integration', 'init', '--dry-run'],
+  },
+  {
+    name: 'integration init',
+    args: ['integration', 'init', '--no-install'],
+    cwd: '__TMP__',
+    skipFieldChecks: true,
+  },
+  {
     name: 'integration add',
     args: ['integration', 'add', 'component', 'TestComp', '--dry-run'],
     // Needs a valid integration project to work; errors without one.
