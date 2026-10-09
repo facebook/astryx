@@ -257,15 +257,18 @@ export const ThemeTokens: Story = {
       '.recharts-bar-rectangle',
     );
     expect(hoverTarget).not.toBeNull();
-    if (revenueBar && hoverTarget) {
+    const chartWrapper =
+      canvasElement.querySelector<HTMLElement>('.recharts-wrapper');
+    expect(chartWrapper).not.toBeNull();
+    if (revenueBar && hoverTarget && chartWrapper) {
       const expectedHoverFill = resolveSvgFill(revenueBar, hoverSeries.revenue);
       expect(expectedHoverFill).not.toBe(restingFills.revenue);
       const bounds = revenueBar.getBoundingClientRect();
+      const clientX = bounds.left + bounds.width / 2;
+      const clientY = bounds.top + bounds.height / 2;
       await userEvent.hover(hoverTarget);
-      fireEvent.mouseOver(hoverTarget, {
-        clientX: bounds.left + bounds.width / 2,
-        clientY: bounds.top + bounds.height / 2,
-      });
+      fireEvent.mouseEnter(chartWrapper, {clientX, clientY});
+      fireEvent.mouseMove(chartWrapper, {clientX, clientY});
       await waitFor(() => {
         const activeBar = Array.from(
           canvasElement.querySelectorAll<SVGElement>('.recharts-active-bar'),
