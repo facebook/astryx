@@ -53,6 +53,7 @@ import {
   colorVars,
   radiusVars,
   sizeVars,
+  spacingVars,
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
@@ -72,7 +73,7 @@ import {
 
 const styles = stylex.create({
   wrapper: {
-    gap: 8,
+    gap: spacingVars['--spacing-2'],
   },
   iconButton: {
     display: 'flex',

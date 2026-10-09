@@ -93,7 +93,7 @@ export const docs = {
     },
     {
       name: 'dateConstraints',
-      type: 'Array<(date: Date) => boolean>',
+      type: 'ReadonlyArray<(date: Date) => boolean>',
       description:
         'Array of custom constraint functions that disable specific dates.',
     },
@@ -407,7 +407,7 @@ export const docsZh = {
     },
     {
       name: 'dateConstraints',
-      type: 'Array<(date: Date) => boolean>',
+      type: 'ReadonlyArray<(date: Date) => boolean>',
       description: '自定义约束函数数组，用于禁用特定日期。',
     },
     {
@@ -438,6 +438,12 @@ export const docsZh = {
       name: 'labelTooltip',
       type: 'string',
       description: '通过标签末尾的信息图标显示的提示文本。',
+    },
+    {
+      name: 'hasClear',
+      type: 'boolean',
+      description: '有日期值时显示清除按钮。点击后清除日期。',
+      default: 'false',
     },
     {
       name: 'numberOfMonths',
@@ -472,6 +478,12 @@ export const docsZh = {
       description:
         "已弃用：请使用 presentation（'touch'='adaptive-native'、'always'='native'、'never'='adaptive-bottom-sheet'）。仍按已发布行为工作；同时设置时以 presentation 为准。",
       default: "'touch'",
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        '字段宽度（数字按像素处理，字符串按原样使用，例如 “100%”）。统一调整标签、控件和状态消息的宽度。',
     },
     {
       name: 'xstyle',
