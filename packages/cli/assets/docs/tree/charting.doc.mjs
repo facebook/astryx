@@ -85,7 +85,7 @@ export const docs = {
       content: [
         {
           type: 'table',
-          headers: ['Chart role', 'Astryx source'],
+          headers: ['Visualization role', 'Astryx source'],
           rows: [
             ['Series fill or stroke', 'Categorical or scale data tokens'],
             [
@@ -105,13 +105,16 @@ export const docs = {
               'Tooltip or popover surface',
               'Background, border, text, `--radius-element`, and shadow tokens',
             ],
-            ['Chart container', '`--radius-container` when it owns a surface'],
             [
-              'Chart controls and toolbar icons',
+              'Container surface',
+              '`--radius-container` when it owns a surface',
+            ],
+            [
+              'Toolbar icons and controls',
               'Astryx `Icon` or `IconButton`, semantic foreground tokens, and established icon sizes',
             ],
             [
-              'Chart chrome spacing',
+              'Toolbar, legend, and tooltip spacing',
               'Spacing tokens for toolbar, legend, tooltip, and control gaps; renderer-owned plot geometry',
             ],
             ['Focus', 'Focus outline tokens'],
