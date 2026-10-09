@@ -207,7 +207,6 @@ const KNOWN_OVER_BUDGET = {
   'template --list': 147 * 1024,
   'template --list --type page': 17 * 1024,
   'theme targets': 24 * 1024,
-  'theme build <15 themes>': 9 * 1024,
   'template Nope': 29 * 1024,
 };
 
