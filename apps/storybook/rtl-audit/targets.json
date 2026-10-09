@@ -130,6 +130,18 @@
     }
   },
   {
+    "component": "DateInput",
+    "storyId": "core-dateinput--default",
+    "dims": ["D2"],
+    "setup": {
+      "click": "[role=\"combobox\"]"
+    },
+    "selectors": {
+      "prev": "button[aria-label=\"Previous month\"]",
+      "next": "button[aria-label=\"Next month\"]"
+    }
+  },
+  {
     "component": "Carousel",
     "storyId": "core-carousel--default",
     "dims": ["D3"],

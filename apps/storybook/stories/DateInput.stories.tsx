@@ -441,6 +441,7 @@ export const WithSuccessStatus: Story = {
 };
 
 export const AllVariations: Story = {
+  tags: ['visual-theme-matrix'],
   render: () => {
     const [value1, setValue1] = useState<ISODateString | undefined>(undefined);
     const [value2, setValue2] = useState<ISODateString | undefined>(
@@ -509,6 +510,20 @@ export const AllVariations: Story = {
         />
       </div>
     );
+  },
+  play: async ({canvasElement}) => {
+    const input =
+      canvasElement.querySelector<HTMLInputElement>('[role="combobox"]');
+    if (input == null) {
+      throw new Error('DateInput audit fixture is missing its combobox');
+    }
+    input.click();
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+    if (input.getAttribute('aria-expanded') !== 'true') {
+      throw new Error('DateInput audit fixture did not open its calendar');
+    }
   },
 };
 
