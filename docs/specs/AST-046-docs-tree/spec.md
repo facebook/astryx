@@ -45,9 +45,12 @@ each integration ships, and gives every other doc a home in a generated
 Unorganized level; later phases move those docs into real sections.
 
 A long flat topic can become a namespace of short guides, so a reader loads only
-the guide that answers. The split keeps every read a released command makes:
-the name, each section, each reference, and each address on the docsite still
-lead to the same content (FR13, FR6, FR14).
+the guide that answers. The split keeps the unambiguous reads a released
+command makes inside the topic's own package: the name, each section read by
+its key or by a title only one guide matches, each reference, and each address
+on the docsite still lead to the same content (FR13, FR6, FR14). A title
+fragment that matches sections in two guides asks instead of guessing (FR6),
+and references from other packages are an open question (OQ2).
 
 ## Non-goals
 
@@ -109,19 +112,23 @@ lead to the same content (FR13, FR6, FR14).
   breadcrumb, and either its slots with their children or its content.
 - **FR6 — A section read names one section.** A section argument on a typed
   doc MUST fail with `ERR_UNKNOWN_SECTION` and name the doc. On a namespace,
-  the read `astryx docs <namespace> <section>` MUST return that section when
-  exactly one guide below the namespace, at any depth, has it, found the way a
-  topic's section read finds it: first by its key (its `id`, else the key its
-  title derives), then by its title. A key match in exactly one guide answers
-  even when another guide's title also matches; otherwise a title match in
-  exactly one guide answers. The response MUST be the one a section read of
-  that guide returns (`docs.detail.section`), so a section read that worked on
-  a topic before it became a namespace (FR13) returns the same shape. When no
-  guide has the section, or more than one does at the same step, the read MUST
-  fail with `ERR_UNKNOWN_SECTION`, the error a topic's unknown section gives;
-  its suggestions MUST name the route of each guide that has it, or of every
-  guide below the namespace when none does. An unknown route MUST fail with `ERR_UNKNOWN_TOPIC` and suggest
-  the children of the deepest namespace the route reaches.
+  the read `astryx docs <namespace> <section>` MUST take, from each guide below
+  the namespace at any depth, the section that guide's own section read
+  returns for the query; within one guide, that read decides between the
+  guide's sections, as it does on any topic. Across guides the read MUST then
+  decide in two steps: when the section returned by exactly one guide has the
+  query as its key (its `id`, or the key its title derives), that section
+  answers, even when other guides return a section too; otherwise, when
+  exactly one guide returns a section, that section answers. The response MUST
+  be the one a section read of that guide returns (`docs.detail.section`), so
+  an unambiguous section read that worked on a topic before it became a
+  namespace (FR13) returns the same section in the same shape. When no guide
+  returns a section, or more than one does at the step that decides, the read
+  MUST fail with `ERR_UNKNOWN_SECTION`, the error a topic's unknown section
+  gives; its suggestions MUST name the route of each guide that returned a
+  section, or of every guide below the namespace when none did. An unknown
+  route MUST fail with `ERR_UNKNOWN_TOPIC` and suggest the children of the
+  deepest namespace the route reaches.
 - **FR7 — The topic list names the tree.** `astryx docs --json` MUST list each
   top-level namespace in `meta.namespaces`, so `data` stays the topic list, and
   every entry in it reads as a topic. The text view MUST show the namespaces first,
@@ -185,7 +192,8 @@ lead to the same content (FR13, FR6, FR14).
   each. A topic keeps its own name as its route, so no name changes; a read of
   it offers Up to the level and Previous and Next among its topics, as any tree
   node does. Placing a topic in a real section takes it out of the level.
-- **FR13 — A flat topic becomes a namespace without breaking a read.** A
+- **FR13 — A flat topic becomes a namespace without breaking an unambiguous
+  read.** A
   provider's flat topic MAY become a namespace of guides only when every rule
   below holds for the result:
   - The namespace takes the topic's name, so its route and `astryx docs <name>`
@@ -254,7 +262,8 @@ Phase 1 changes these surfaces:
 - `cli-integrations` moves to `cli/integrations`, and every reference moves
   with it;
 - every flat topic sits in the generated Unorganized level, as FR12 states;
-- a flat topic that becomes a namespace keeps every read, as FR13 states;
+- a flat topic that becomes a namespace keeps its unambiguous reads inside
+  its own package, as FR13 and FR6 state;
 - the docsite reads the tree through `docs()`: each root namespace is one page
   and its guides' slugs redirect into it (FR14); the `cli` namespace's guides
   keep their own pages, and `/docs/cli-integrations` redirects to the first of
@@ -328,15 +337,18 @@ the tree in the same change as the CLI's.
 
 Rejected: a later phase for integration namespaces.
 
-### DEC-5 — A split keeps the topic's name and every released read
+### DEC-5 — A split keeps the topic's name and its unambiguous reads
 
 **Reference:** `spec:AST-046/DEC-5`
 **Decider:** `josephfarina`, `2026-10-08`
 
 A long topic gets short guides without a breaking change. The `docs` command's
 response schemas are a contract (`spec:AST-017/FR45`), and a split moves no
-content, so it keeps every released read of the topic working even where FR45
-would let a route stop resolving. The namespace takes the topic's name, so its
+content, so it keeps the topic's unambiguous released reads working inside its
+own package, even where FR45 would let a route stop resolving. The one
+deliberate exception is a title fragment that matches sections in two guides,
+which asks instead of guessing (DEC-6); references from other packages are an
+open question (OQ2). The namespace takes the topic's name, so its
 route and every command that opens it stay the same;
 sections keep their titles and ids, so section reads and links keep resolving;
 each piece of content appears once, so a reader never weighs two copies. A
@@ -352,8 +364,9 @@ copy; the name has two owners and lists and search show the content twice.
 **Decider:** `josephfarina`, `2026-10-08`
 
 A released `astryx docs <topic> <section>` command keeps working after its
-topic becomes a namespace. A section that exactly one guide holds is
-unambiguous. Any other case fails with the error an unknown section already
+topic becomes a namespace when its section is unambiguous: its exact key, or a
+title fragment that only one guide's read matches. Each guide's own read
+decides between that guide's sections, as a topic's read does. Any other case fails with the error an unknown section already
 gives, naming the guides, so the reader is one step from the answer.
 
 Rejected: failing every section argument on a namespace; it breaks released
