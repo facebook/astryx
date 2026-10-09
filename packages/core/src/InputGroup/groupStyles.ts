@@ -19,6 +19,8 @@ const IS_LAST_ITEM = ':not(:has(~ *:not([popover]):not(template):not(dialog)))';
 // inside an input's own implementation. Keep the visual adaptation on direct
 // children so internal clear, calendar, and disclosure actions stay unchanged.
 const DIRECT_INPUT_GROUP_ADDON = ':where(.astryx-input-group > *)';
+const DIRECT_INPUT_GROUP_ADDON_FOCUS_VISIBLE =
+  ':where(.astryx-input-group > *):focus-visible';
 const DIRECT_INPUT_GROUP_ADDON_NOT_FIRST =
   ':where(.astryx-input-group > *):not(:first-child)';
 const DIRECT_INPUT_GROUP_ADDON_WITH_MEMBER_AFTER =
@@ -45,6 +47,11 @@ export const groupStyles = stylex.create({
     height: {
       default: null,
       [DIRECT_INPUT_GROUP_ADDON]: '100%',
+    },
+    // Keep the keyboard ring above the adjacent group member at the shared edge.
+    zIndex: {
+      default: null,
+      [DIRECT_INPUT_GROUP_ADDON_FOCUS_VISIBLE]: 2,
     },
   },
   inGroup: {
