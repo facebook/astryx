@@ -475,6 +475,10 @@ export function RevenueChart({data}) {
           boxShadow: shadowVars['--shadow-med'],
           color: colorVars['--color-text-primary'],
         }}
+        cursor={{
+          fill: colorVars['--color-tint-hover'],
+          fillOpacity: 0.05,
+        }}
       />
       <Legend
         wrapperStyle={{
@@ -543,7 +547,7 @@ function SeriesLegend() {
         },
         {
           type: 'prose',
-          text: 'If a tooltip also identifies series, use a custom `Tooltip.content` renderer to repeat the cue there; `contentStyle` changes only the default tooltip surface. Keep SVG pattern IDs unique across the whole document: `url(#id)` resolves document-wide, so derive pattern IDs per chart instance with React’s `useId`.',
+          text: 'Set `Tooltip.cursor` explicitly. Recharts otherwise paints its own opaque gray category band; using the Astryx hover tint at low opacity matches the subtle overlay used by Astryx surfaces. If a tooltip also identifies series, use a custom `Tooltip.content` renderer to repeat the cue there; `contentStyle` changes only the default tooltip surface. Keep SVG pattern IDs unique across the whole document: `url(#id)` resolves document-wide, so derive pattern IDs per chart instance with React’s `useId`.',
         },
         {
           type: 'prose',

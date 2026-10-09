@@ -139,6 +139,10 @@ function ThemeAwareRechartsExample({
                   fontFamily: typographyVars['--font-family-body'],
                   fontSize: typeScaleVars['--text-supporting-size'],
                 }}
+                cursor={{
+                  fill: colorVars['--color-tint-hover'],
+                  fillOpacity: 0.05,
+                }}
                 labelStyle={{color: colorVars['--color-text-primary']}}
               />
               <Legend
