@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {expect} from 'storybook/test';
+import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
 import {IconButton} from '@astryxdesign/core/IconButton';
@@ -28,7 +28,7 @@ const meta: Meta<typeof MultiSelector> = {
     description: {control: 'text'},
     placeholder: {control: 'text'},
     size: {control: 'radio', options: ['sm', 'md', 'lg']},
-    variant: {control: 'radio', options: ['input', 'ghost']},
+    variant: {control: 'radio', options: ['input', 'secondary', 'ghost']},
     presentation: {
       control: 'radio',
       options: ['popover', 'bottom-sheet', 'adaptive'],
@@ -395,6 +395,60 @@ export const GhostVariant: Story = {
     );
   },
   decorators: [Story => <Story />],
+};
+
+// Secondary variant for toolbar composition beside secondary buttons
+export const SecondaryVariant: Story = {
+  render: () => {
+    const [columns, setColumns] = useState<string[]>(['Name', 'Email']);
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          width: 'max-content',
+        }}>
+        <Button label="Refresh" variant="secondary" />
+        <MultiSelector
+          label="Columns"
+          isLabelHidden
+          variant="secondary"
+          size="md"
+          width={180}
+          options={['Name', 'Email', 'Role', 'Status', 'Created']}
+          value={columns}
+          onChange={setColumns}
+          triggerDisplay="labels"
+          placeholder="Columns"
+        />
+        <Button label="Export" variant="secondary" />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('combobox', {name: 'Columns'});
+    const root = canvasElement.querySelector<HTMLElement>(
+      '.astryx-multi-selector[data-variant="secondary"]',
+    );
+    if (root == null) {
+      throw new Error('Secondary MultiSelector root not found');
+    }
+    const widthBefore = root.getBoundingClientRect().width;
+    expect(widthBefore).toBeCloseTo(180, 0);
+
+    await userEvent.click(trigger);
+    const listbox = within(document.body).getByRole('listbox');
+    await userEvent.click(within(listbox).getByRole('option', {name: /Role/}));
+    await waitFor(() =>
+      expect(root.getBoundingClientRect().width).toBeCloseTo(widthBefore, 0),
+    );
+    await userEvent.keyboard('{Escape}');
+    trigger.blur();
+  },
 };
 
 // Status variants

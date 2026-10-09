@@ -146,8 +146,9 @@ export const docs = {
           name: 'statusVariant',
           type: "'attached' | 'detached' | 'tooltip'",
           description:
-            'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment; detached when variant is ghost); detached floats below as a separate element with spacing; tooltip reveals the message in an info-tip button.',
-          default: "'attached'",
+            'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment; detached when variant is secondary or ghost); detached floats below as a separate element with spacing; tooltip reveals the message in an info-tip button.',
+          default:
+            "'attached' for input selectors; 'detached' for secondary and ghost selectors",
         },
         {
           name: 'size',
@@ -157,9 +158,9 @@ export const docs = {
         },
         {
           name: 'variant',
-          type: "'input' | 'ghost'",
+          type: "'input' | 'secondary' | 'ghost'",
           description:
-            'Visual trigger style. Input is the bordered form treatment; ghost matches toolbar buttons.',
+            'Visual trigger style. Input is the bordered form treatment; secondary is borderless and neutral-filled to match secondary buttons; ghost is borderless and transparent to match ghost buttons.',
           default: "'input'",
         },
         {
@@ -218,7 +219,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use variant="ghost" with a startIcon when the selector is triggered from a toolbar. Use alignment="end" when a wide surface should align its end edge to the trigger.',
+          'Use variant="secondary" beside secondary buttons, or variant="ghost" beside ghost buttons; add a startIcon when it helps identify the trigger. Use alignment="end" when a wide surface should align its end edge to the trigger.',
       },
       {
         guidance: true,
@@ -270,7 +271,7 @@ export const docsDense = {
   group: 'Selector',
   category: 'Form Controls',
   description:
-    'Input/ghost trigger + dialog-popover shell for rich custom selectors. Content gets value/onChange/close/state; content owns semantics. Use focus hooks and evaluate custom content against WCAG 2.2.',
+    'Input/secondary/ghost trigger + dialog-popover shell for rich custom selectors. Content gets value/onChange/close/state; content owns semantics. Use focus hooks and evaluate custom content against WCAG 2.2.',
   usage: {
     anatomy,
     description:
@@ -330,7 +331,8 @@ export const docsDense = {
     changeAction: 'Async action after onChange; drives optimistic value/busy.',
     children: 'Render custom dialog content from (value,onChange,close,state).',
     triggerLabel: 'Closed trigger label/content.',
-    variant: 'input for forms; ghost for toolbar triggers.',
+    variant:
+      'input for forms; secondary beside secondary buttons; ghost beside ghost buttons.',
     startIcon: 'Leading trigger icon.',
     placement: 'Popup placement.',
     alignment: 'Popup alignment.',
@@ -339,7 +341,7 @@ export const docsDense = {
     handleRef: 'Imperative open/close/toggle handle.',
     onOpenChange: 'Notified on every open and close, whatever caused it.',
     statusVariant:
-      'How status message is placed: attached overlaps below input (detached for ghost); detached floats below w/ spacing; tooltip shows on status icon.',
+      'How status message is placed: attached overlaps below input (detached for secondary and ghost); detached floats below w/ spacing; tooltip shows on status icon.',
     accessibility:
       'Custom content must provide its own accessible structure. Use focus hooks and evaluate against WCAG 2.2.',
   },

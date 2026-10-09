@@ -312,7 +312,8 @@ export const docs = {
       type: "'attached' | 'detached' | 'tooltip'",
       description:
         'How the status message is placed relative to the input. attached overlaps directly below the bordered input and is only valid for the input variant; secondary and ghost selectors detach attached status messages by default. Use tooltip for compact toolbar controls.',
-      default: "'attached' for input selectors; 'detached' for secondary and ghost selectors",
+      default:
+        "'attached' for input selectors; 'detached' for secondary and ghost selectors",
     },
     {
       name: 'renderOption',

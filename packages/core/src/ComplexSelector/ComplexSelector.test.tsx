@@ -259,6 +259,46 @@ describe('ComplexSelector', () => {
     ).toHaveLength(2);
   });
 
+  it('applies distinct trigger chrome to the secondary variant', () => {
+    const {rerender} = render(
+      <ComplexSelector
+        label="View options"
+        value={['name']}
+        variant="input"
+        data-testid="view-options">
+        {() => <div>Columns</div>}
+      </ComplexSelector>,
+    );
+    const inputClasses = screen.getByTestId('view-options').className;
+
+    rerender(
+      <ComplexSelector
+        label="View options"
+        value={['name']}
+        variant="secondary"
+        data-testid="view-options">
+        {() => <div>Columns</div>}
+      </ComplexSelector>,
+    );
+    const secondary = screen.getByTestId('view-options');
+    const secondaryClasses = secondary.className;
+    expect(secondary).toHaveAttribute('data-variant', 'secondary');
+
+    rerender(
+      <ComplexSelector
+        label="View options"
+        value={['name']}
+        variant="ghost"
+        data-testid="view-options">
+        {() => <div>Columns</div>}
+      </ComplexSelector>,
+    );
+    const ghostClasses = screen.getByTestId('view-options').className;
+
+    expect(secondaryClasses).not.toBe(inputClasses);
+    expect(secondaryClasses).not.toBe(ghostClasses);
+  });
+
   it('supports end-aligned popup positioning', () => {
     render(
       <ComplexSelector label="View options" value={[]} alignment="end">
@@ -718,22 +758,25 @@ describe('ComplexSelector onOpenChange', () => {
       );
     });
 
-    it('forces detached when variant="ghost" even if statusVariant="attached"', () => {
-      const {container} = render(
-        <ComplexSelector
-          label="Filter"
-          value={[]}
-          variant="ghost"
-          status={{type: 'error', message: 'Required'}}
-          statusVariant="attached">
-          {() => <button type="button">Apply</button>}
-        </ComplexSelector>,
-      );
-      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
-        'data-variant',
-        'detached',
-      );
-    });
+    it.each(['secondary', 'ghost'] as const)(
+      'forces detached when variant="%s" even if statusVariant="attached"',
+      variant => {
+        const {container} = render(
+          <ComplexSelector
+            label="Filter"
+            value={[]}
+            variant={variant}
+            status={{type: 'error', message: 'Required'}}
+            statusVariant="attached">
+            {() => <button type="button">Apply</button>}
+          </ComplexSelector>,
+        );
+        expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+          'data-variant',
+          'detached',
+        );
+      },
+    );
 
     it('renders no message box for statusVariant="tooltip"', () => {
       const {container} = render(

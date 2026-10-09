@@ -50,6 +50,18 @@ const TARGETS = [
     guards: 'compact trigger variants match their size tokens',
   },
   {
+    component: 'MultiSelector',
+    story: 'core-multiselector--secondary-variant',
+    guards:
+      'the secondary trigger keeps its explicit 180px inline size while selected labels change',
+  },
+  {
+    component: 'ComplexSelector',
+    story: 'core-complexselector--secondary-variant',
+    guards:
+      'the secondary trigger keeps its explicit 190px inline size while the selected value changes',
+  },
+  {
     component: 'Code',
     story: 'core-code--colors',
     guards:
