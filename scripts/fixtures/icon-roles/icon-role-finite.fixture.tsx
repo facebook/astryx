@@ -36,7 +36,7 @@ declare module '@astryxdesign/core/Icon' {
 export type ParticipatingSlots = Assert<
   Equal<
     ParticipatingComponentIconSlotName,
-    'consumer-finite-leading' | 'consumer-finite-trailing'
+    'button-leading' | 'consumer-finite-leading' | 'consumer-finite-trailing'
   >
 >;
 export type LeadingStates = Assert<
@@ -46,7 +46,10 @@ export type LeadingStates = Assert<
   >
 >;
 export type AllStates = Assert<
-  Equal<ComponentIconStateName, 'selected' | 'disabled' | 'busy' | 'idle'>
+  Equal<
+    ComponentIconStateName,
+    'selected' | 'disabled' | 'busy' | 'idle' | 'pressed' | 'loading'
+  >
 >;
 export const role: ComponentIconRoleMetadata = declareComponentIconRole({
   slot: 'consumer-finite-leading',

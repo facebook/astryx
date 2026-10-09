@@ -6,7 +6,7 @@
  * @file IconEngine.stories.tsx
  * @input Bound supplied artwork and default/per-size theme dimensions
  * @output Browser-ready geometry, nested-theme and fractional-weight examples
- * @position A-only Icon evidence hooks; existing Button stays nonparticipating
+ * @position Icon engine evidence hooks; Button-role geometry lives in ButtonIconRole.stories.tsx
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
@@ -156,14 +156,25 @@ function Geometry() {
         </Case>
         <Case id="legacy-implicit">
           <Button
-            label="Implicit existing component"
+            label="Nested Icon keeps the implicit context"
+            size="sm"
+            icon={
+              <span>
+                <Icon icon="search" />
+              </span>
+            }
+          />
+        </Case>
+        <Case id="button-role-implicit">
+          <Button
+            label="Participating role default"
             size="sm"
             icon={<Icon icon="search" />}
           />
         </Case>
-        <Case id="legacy-explicit">
+        <Case id="button-role-explicit">
           <Button
-            label="Explicit existing component"
+            label="Explicit size"
             size="sm"
             icon={<Icon icon="search" size="md" />}
           />
@@ -236,7 +247,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'Supplied outline/filled artwork, fractional weights and non-CSS dimensions. Existing Button is a legacy compatibility control, not a participating consumer. The play hooks check actual browser boxes; screenshots and release approval are separate evidence.',
+          'Supplied outline/filled artwork, fractional weights and non-CSS dimensions. A direct Icon in Button participates in the button-leading role and uses the theme dimension; an Icon nested inside other Button icon content keeps the released implicit context. The play hooks check actual browser boxes; screenshots and release approval are separate evidence.',
       },
     },
   },
@@ -255,7 +266,8 @@ export const GeometryAndArtwork: StoryObj = {
       ['custom-size', 18],
       ['fractional', 28],
       ['ordinary', 28],
-      ['legacy-explicit', 28],
+      ['button-role-implicit', 24],
+      ['button-role-explicit', 28],
       ['nested-md', 36],
     ] as const) {
       assertBox(canvasElement, id, expected);

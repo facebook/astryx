@@ -8,7 +8,7 @@
  * @position First real consumer of the component icon role/state infrastructure;
  *   jsdom evidence only — real-browser boxes live in ButtonIconRole.stories.tsx
  */
-import React, {act, createRef, type SVGProps} from 'react';
+import React, {act, createRef, useState, type SVGProps} from 'react';
 import {renderToString} from 'react-dom/server';
 import {hydrateRoot} from 'react-dom/client';
 import {
@@ -232,8 +232,8 @@ describe('button-leading role declaration', () => {
     const noInventedState: IconThemeCapabilitiesInput<typeof contract> = {
       presentation: {
         byState: {
-          // @ts-expect-error Button reports no hover state; CSS owns hover.
-          hovered: {appearance: 'filled'},
+          // @ts-expect-error Button reports no focus state; CSS owns focus.
+          focused: {appearance: 'filled'},
         },
       },
     };
@@ -572,7 +572,7 @@ describe('effective state appearance', () => {
   it('ToggleButton changes appearance on press while box and weight stay fixed', async () => {
     const user = userEvent.setup();
     function Harness() {
-      const [isPressed, setIsPressed] = React.useState(false);
+      const [isPressed, setIsPressed] = useState(false);
       return (
         <Theme theme={roleSizeTheme}>
           <ToggleButton

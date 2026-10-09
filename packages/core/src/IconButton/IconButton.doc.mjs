@@ -20,7 +20,7 @@ export const docs = {
     {
       name: 'icon',
       type: 'ReactNode',
-      description: 'Icon element rendered inside the button. An Astryx Icon with no explicit size defaults to sm for sm/md buttons and md for lg buttons.',
+      description: 'Icon element rendered inside the button. An Astryx Icon with no explicit size defaults to sm for sm/md buttons and md for lg buttons. A direct Icon follows the theme\'s `button-leading` icon role, just like Button; the button stays square at its size.',
       required: true,
       slotElements: [{__element: 'Icon', props: {icon: 'check'}}],
     },
@@ -137,7 +137,7 @@ export const docsDense = {
   },
   propDescriptions: {
     label: 'accessible label; used as aria-label, not rendered as visible text',
-    icon: 'icon element rendered inside button; unsized Astryx Icon defaults to sm for sm/md buttons and md for lg',
+    icon: 'icon element rendered inside button; unsized Astryx Icon defaults to sm for sm/md buttons and md for lg; a direct Icon follows the theme button-leading role',
     variant: 'visual style variant',
     size: 'size variant',
     elevation: 'resting shadow depth: none|low|med|high; raise for a floating action button (FAB)',

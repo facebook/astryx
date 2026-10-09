@@ -91,7 +91,7 @@ export const docs = {
     {
       name: 'pressedIcon',
       type: 'ReactNode',
-      description: 'Icon shown when pressed. Falls back to icon if not provided.',
+      description: 'Icon shown when pressed. Falls back to icon if not provided. A pressed button also reports the pressed state, so a direct Icon can switch to the theme\'s pressed appearance without a pressedIcon; a pressedIcon you pass always wins as the source.',
       slotElements: [
         {
           __element: 'Icon',

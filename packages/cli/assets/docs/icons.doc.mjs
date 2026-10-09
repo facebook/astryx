@@ -4,7 +4,7 @@
  * @file Icons consumer reference
  * @input Semantic names, supplied artwork, local contracts and owner-declared roles
  * @output Theme-scoped icon authoring and finite role/state consumer boundaries
- * @position Builder-facing source contract; no component enrollment or internal transport API
+ * @position Builder-facing source contract; names Core's one participating role, no internal transport API
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -200,7 +200,7 @@ export const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'These declarations do not enroll a renderer on their own. This source contract adds no participating Core component; use a component’s own documentation to learn which role it renders. Public getComponentIconName(slot, fallback, source) and getComponentIcon(slot, fallback, source) keep their three-argument lookup contracts; useComponentIconName(slot, fallback) and useComponentIcon(slot, fallback) keep two arguments and return names or React nodes. There are no request/state arguments, public role renderer, provider, resolver or runtime registry operations. Icon retains only its independent size, appearance and weight intent; role/state transport is private.',
+          text: 'These declarations do not enroll a renderer on their own. In Core, only the Button family participates: Button, IconButton and ToggleButton render a direct Icon in the `button-leading` role, which reports disabled, pressed or loading. Use a component’s own documentation to learn which role it renders. Public getComponentIconName(slot, fallback, source) and getComponentIcon(slot, fallback, source) keep their three-argument lookup contracts; useComponentIconName(slot, fallback) and useComponentIcon(slot, fallback) keep two arguments and return names or React nodes. There are no request/state arguments, public role renderer, provider, resolver or runtime registry operations. Icon retains only its independent size, appearance and weight intent; role/state transport is private.',
         },
       ],
     },
