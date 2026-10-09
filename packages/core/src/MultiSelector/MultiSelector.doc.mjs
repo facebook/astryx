@@ -183,7 +183,7 @@ export const docs = {
           name: 'options',
           type: 'MultiSelectorOptionType[]',
           description:
-            'Array of items: strings, objects with value/label/icon/disabled, dividers, or sections.',
+            'Array of items: strings, objects with value/label/icon/disabled, dividers, or sections. An option may carry `action`: one node — an IconButton, a Button, a menu trigger — the caller renders and names. Once any option does, the popup is a grid whose rows pair the option with its action: Up/Down move rows, the inline-end arrow reaches the action, Enter fires it, pointer and touch press it directly, and pressing it never changes the selection.',
           required: true,
         },
         {
@@ -194,8 +194,9 @@ export const docs = {
         },
         {
           name: 'onChange',
-          type: '(value: string[]) => void',
-          description: 'Callback fired when the selection changes.',
+          type: '(value: string[], change?: MultiSelectorChange) => void',
+          description:
+            'Called when the selection changes. A creation (hasCreate) arrives with `{type: "create", query}` as the second argument and the query appended to value; the caller adds the matching option in that same update. Every other change passes no descriptor, so a one-argument handler keeps working.',
           required: true,
         },
         {
@@ -277,6 +278,13 @@ export const docs = {
           description:
             'Content shown in the dropdown panel when a search query matches no options, and announced in a polite live region at the same time. The announcement is the text this content renders, read from the DOM, so an element is announced as written and aria-hidden parts are left out of both.',
           default: "'No results found'",
+        },
+        {
+          name: 'hasCreate',
+          type: 'boolean',
+          description:
+            'With hasSearch, offers a `Create "<query>"` row first in the list when the typed text equals no option label under the search’s case-insensitive matching. Picking it, or Enter with nothing highlighted, calls onChange with the query appended to value and a `{type: "create", query}` descriptor, then clears the search; the caller must add an option for the new value in that update. Nothing is offered while isLoading. Without hasSearch it warns in development and offers nothing.',
+          default: 'false',
         },
         {
           name: 'isDisabled',
@@ -384,6 +392,24 @@ export const docs = {
           default: 'false',
         },
         {
+          name: 'renderTrigger',
+          type: '(props: MultiSelectorRenderTriggerProps) => ReactNode',
+          description:
+            "Render the control the panel hangs off — a glyph in a list row, a chip, an icon button — instead of the selector's own field and button. Spread the given props ({ref, id, onClick, onKeyDown, onFocus, aria-haspopup, aria-expanded, aria-controls, aria-busy}) onto it; the listbox is anchored to that control and named by `label`. The field chrome (Field, status, clear, spinner) is not rendered. Pair with handleRef to open from a keystroke elsewhere.",
+        },
+        {
+          name: 'handleRef',
+          type: 'React.Ref<MultiSelectorHandle>',
+          description:
+            'Imperative handle with open(), close(), toggle() and isOpen(). Prefer it over mirroring open state in the parent; the selector owns its visibility.',
+        },
+        {
+          name: 'onOpenChange',
+          type: '(isOpen: boolean) => void',
+          description:
+            'Called whenever the panel opens or closes, however it happened: the trigger, the keyboard, a light dismiss, Escape, or the handle.',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -476,6 +502,8 @@ export const docsZh = {
         searchPlaceholder: '搜索输入的占位文本。',
         emptyText: '没有可显示的选项时，下拉面板中显示的内容。',
         emptySearchText: '搜索查询未匹配到任何选项时，下拉面板中显示的内容。',
+        hasCreate:
+          '配合 hasSearch：当输入的文本与任何选项标签都不匹配时，在列表首行提供“创建 "<query>"”行；选中后通过 onChange 以 {type: "create", query} 描述符报告，调用方需在同一次更新中添加该选项。',
         isDisabled: '禁用选择器。',
         isReadOnly:
           '将选择器设为只读：保留当前值、焦点顺序和表单提交，但移除选择面板、清除操作和展开指示器。与 isDisabled 不同，只读控件不会变暗；两者同时设置时 isDisabled 优先。',
@@ -493,6 +521,10 @@ export const docsZh = {
           '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
           '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
+        renderTrigger:
+          '由调用方渲染面板的触发控件（替代选择器自带的字段和按钮）；将传入的属性展开到该控件上，列表框将锚定于它并由 label 命名。',
+        handleRef: '命令式句柄：open()、close()、toggle()、isOpen()。',
+        onOpenChange: '面板每次打开或关闭时触发，无论由何种方式引起。',
         presentation:
           '选项列表的呈现方式：锚定弹出框、底部抽屉，或根据紧凑触控屏自适应。',
         xstyle: '布局自定义的 StyleX 样式，必须是 stylex.create() 值。',
@@ -619,6 +651,8 @@ export const docsDense = {
         searchPlaceholder: 'search placeholder',
         emptyText: 'panel content when there are no options',
         emptySearchText: 'panel content when the query matches nothing',
+        hasCreate:
+          'with hasSearch: first row is Create "<query>" when no option label matches; reported through onChange with a {type: "create", query} descriptor; caller adds the option',
         isDisabled: 'disables selector',
         isReadOnly:
           'read-only: preserves values, focus + form submission; removes menu, clear + disclosure',
@@ -635,6 +669,10 @@ export const docsDense = {
           'status message placement; ghost detaches attached by default; use tooltip for compact toolbars.',
         renderOption:
           'custom render fn per selectable option; not dividers/sections/select-all',
+        renderTrigger:
+          'caller-rendered opener replacing the field+button; spread the given props; listbox anchored to it, named by label',
+        handleRef: 'imperative open()/close()/toggle()/isOpen()',
+        onOpenChange: 'fires on every open/close, whatever caused it',
         presentation:
           'popover, bottom-sheet, or compact-touch adaptive presentation',
         xstyle: 'StyleX layout styles; stylex.create() only',

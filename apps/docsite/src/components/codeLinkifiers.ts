@@ -19,7 +19,7 @@
  * append it to LINKIFIERS.
  */
 
-import {docTopics} from '../generated/docsRegistry';
+import {docRedirects, docTopics} from '../generated/docsRegistry';
 import {components} from '../generated/componentRegistry';
 
 /** Returns an href for a code span it recognizes, or null to pass. */
@@ -46,10 +46,14 @@ const docTopic: CodeLinkifier = code => {
   if (topic == null) {
     return '/docs';
   }
-  // A docs-tree guide (`cli/integrations`) has a flat page named after its
-  // route, with "/" as "-", until the site renders the tree itself.
+  // A docs-tree guide has a slug named after its route, with "/" as "-": its
+  // own page (`cli/integrations/quick-start`), or a redirect to its section on
+  // its namespace's page (`layout/scaffold` -> /docs/layout#scaffold).
   const slug = topic.replaceAll('/', '-');
-  return KNOWN_TOPICS.has(slug) ? `/docs/${slug}` : null;
+  if (KNOWN_TOPICS.has(slug)) {
+    return `/docs/${slug}`;
+  }
+  return docRedirects[slug] ?? null;
 };
 
 /** Every documented component and hook name; each has a /components page. */

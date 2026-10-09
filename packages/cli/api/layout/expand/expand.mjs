@@ -88,6 +88,7 @@ function buildBlockModules(doc, blocks) {
 }
 
 /**
+ * @deprecated DEP-0006: Use `build`, `template`, and `docs layout` instead. Removal in CLN-0006.
  * `astryx layout expand "<expr>" [path]`
  *
  * @param {string} expression

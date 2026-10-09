@@ -19,7 +19,10 @@ export const doc = {
     'It copies from the locally resolved @astryxdesign/core (or the owning integration) ' +
     'package source, rewriting imports that escape the component directory to the owner ' +
     "package's subpaths and flagging whether any copied file uses StyleX. With no name " +
-    '(or list) it returns the swizzlable component names instead.',
+    '(or list) it returns the swizzlable component names instead. An integration ' +
+    'component that replaces a Core component is what that Core name copies; ' +
+    "options.package '@astryxdesign/core' copies the original. The list names Core " +
+    'components, including one an integration component replaces.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'swizzle(component?: string, options?: SwizzleOptions): Promise<SwizzleListResponse | SwizzleCopyResponse>',
@@ -48,7 +51,7 @@ export const doc = {
       name: 'options.package',
       type: 'string',
       description:
-        'Owning package to copy from when the name is provided by more than one.',
+        "Owning package to copy from when the name is provided by more than one. Use '@astryxdesign/core' to copy an original replaced by an integration component.",
     },
     {
       name: 'options.list',

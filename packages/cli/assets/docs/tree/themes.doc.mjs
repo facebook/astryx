@@ -23,11 +23,11 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: 'A theme is an editable `defineTheme` source with a generated color palette. An integration ships a theme the same way a standalone theme package does: an app installs the package, applies the theme with `<Theme>`, and customizes it with `extends`. An integration theme and a standalone theme package are the same shape.',
+      text: 'A theme contribution has editable `defineTheme` source plus a built module and production CSS. `integration add theme` scaffolds the source and declares the package exports; `theme build` writes the built outputs. An app installs the package, runs `theme add --import`, applies the theme from its generated app module, and customizes it with `extends` instead of copying source.',
     },
     {
       type: 'prose',
-      text: 'These guides cover authoring a theme inside an integration — scaffold it, generate its palette, define its tokens, ship its fonts, and document it. Using a theme, applying and extending it, is the same for every theme; see {@link generic:theme}.',
+      text: 'These guides cover the whole path: scaffold the source, generate its palette, define and build the theme, ship fonts and assets, run `integration verify`, and document how apps add and extend it. Applying a theme, including mode and SSR, works the same for every theme; see {@link generic:use-a-theme}.',
     },
   ],
   slots: {

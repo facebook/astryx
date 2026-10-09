@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Theme descriptor discovery shared by Project, theme list/add, and
+ * @file Theme descriptor discovery shared by Project, theme list/add/eject, and
  * integration validation.
  *
  * A theme root contains one directory per lower-kebab slug. Each directory has
@@ -22,6 +22,7 @@ import * as path from 'node:path';
 import {lowerDoc} from '../doc-compiler/compile.mjs';
 import {packageSource} from '../doc-compiler/source.mjs';
 import {CLI_ROOT} from '../fs/paths.mjs';
+import {LOCAL_THEME_ROOT} from '../config/theme-state.mjs';
 import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 
 export const BUNDLED_THEME_PACKAGE = '@astryxdesign/cli';
@@ -62,13 +63,27 @@ function sourceParser() {
  * @property {boolean} maintained
  * @property {string} entry
  * @property {string} exportName
- * @property {string[]} files what `theme add` copies, relative to sourceDir,
+ * @property {string[]} files what `theme eject` copies, relative to sourceDir,
  *   entry first
- * @property {string} package
+ * @property {string} package package exposed for discovery and --package selection
+ * @property {string} [importPackage] package that owns built imports when it differs from the selector package
+ * @property {string} [packageDir] absolute package/project directory
+ * @property {Record<string, unknown>|null} [packageExports] parsed package exports
+ * @property {'bundled'|'package'|'local'} source
  * @property {string} sourceDir absolute directory holding this theme's files
  * @property {boolean} bundled
  * @property {string} docPath absolute descriptor path
  */
+
+/**
+ * The package written to the app record and used for built imports. Bundled
+ * themes keep the released CLI package as their selector while importing from
+ * their standalone theme package.
+ * @param {DiscoveredTheme} theme
+ */
+export function themeImportPackage(theme) {
+  return theme.importPackage ?? theme.package;
+}
 
 /**
  * Resolve one authored relative path without allowing POSIX or Windows escape
@@ -198,6 +213,15 @@ function moduleSpecifiers(file, jscodeshift) {
   });
 
   return specifiers;
+}
+
+/**
+ * Every module a theme source file imports or re-exports, as written.
+ * @param {string} file
+ * @returns {string[]}
+ */
+export function themeFileImports(file) {
+  return moduleSpecifiers(file, sourceParser());
 }
 
 /**
@@ -1007,12 +1031,75 @@ export function isThemeFolder(folder) {
 /**
  * The files one theme folder ships: every regular file below it except
  * {@link isIgnoredThemeEntry} entries. What pack-check requires and what
- * `theme add` copies.
+ * `theme eject` copies.
  * @param {string} folder absolute path
  * @returns {string[]} sorted POSIX paths relative to the folder
  */
 export function listThemeFiles(folder) {
   return listThemeFolder(folder).files;
+}
+
+/**
+ * @typedef {object} UnmigratedThemeCopy
+ * @property {string} slug
+ * @property {string} sourceDir
+ * @property {string} entry
+ * @property {string} exportName
+ * @property {string} descriptor
+ */
+
+/**
+ * Recognize the shape released `theme add` copied before local descriptors
+ * existed. Keep this narrow so an unrelated broken folder still follows the
+ * ordinary discovery error path.
+ * @param {string} folder
+ * @returns {UnmigratedThemeCopy|null}
+ */
+function unmigratedThemeCopy(folder) {
+  const slug = path.basename(folder);
+  if (!THEME_SLUG_RE.test(slug)) return null;
+  const listing = listThemeFolder(folder);
+  if (
+    listing.symlinks.length > 0 ||
+    listing.files.some(file => file.endsWith(THEME_DOC_SUFFIX))
+  ) {
+    return null;
+  }
+  const sources = listing.files.filter(
+    file => !file.includes('/') && THEME_SOURCE_RE.test(file),
+  );
+  if (sources.length !== 1) return null;
+  const entry = sources[0];
+  const exportName = entry.replace(/\.(?:mjs|js|mts|ts|tsx|jsx)$/u, '');
+  return {
+    slug,
+    sourceDir: folder,
+    entry,
+    exportName,
+    descriptor: `${exportName}${THEME_DOC_SUFFIX}`,
+  };
+}
+
+/**
+ * Source copies left by the released `theme add`, before it copied a
+ * descriptor. Commands skip these until the next-release project codemod adds
+ * the same-stem descriptor.
+ * @param {string} projectDir
+ * @param {string} [owner]
+ * @returns {UnmigratedThemeCopy[]}
+ */
+export function discoverUnmigratedThemeCopies(
+  projectDir,
+  owner = LOCAL_THEME_ROOT,
+) {
+  const root = path.resolve(projectDir, owner);
+  if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) return [];
+  return fs
+    .readdirSync(root, {withFileTypes: true})
+    .filter(entry => entry.isDirectory() && !isIgnoredThemeEntry(entry.name))
+    .map(entry => unmigratedThemeCopy(path.join(root, entry.name)))
+    .filter(copy => copy !== null)
+    .sort((a, b) => a.slug.localeCompare(b.slug));
 }
 
 /** @param {string[]} files */
@@ -1021,8 +1108,7 @@ function quoted(files) {
 }
 
 /**
- * The files `theme add` has always copied after a bundled theme's entry, in
- * copy order. SYNC: scripts/generate-cli-themes.mjs bundles these.
+ * The files `theme eject` copies after a bundled theme's entry, in copy order. SYNC: scripts/generate-cli-themes.mjs bundles these.
  * @param {string} id the theme's export name without `Theme`
  */
 function bundledThemeArtifacts(id) {
@@ -1037,9 +1123,9 @@ function bundledThemeArtifacts(id) {
 }
 
 /**
- * The files `theme add` copies, entry first. A bundled theme's descriptor is
- * the CLI's own metadata and stays behind; an integration theme copies its
- * whole directory.
+ * The files `theme eject` copies, entry first. Every ejected theme keeps its
+ * same-stem descriptor so the local themes root remains discoverable without a
+ * catalog. An integration theme copies its complete directory.
  * @param {string[]} files every regular file in the theme directory, sorted
  * @param {string} entry
  * @param {string} descriptor
@@ -1047,13 +1133,12 @@ function bundledThemeArtifacts(id) {
  * @param {boolean} bundled
  */
 function copiedThemeFiles(files, entry, descriptor, exportName, bundled) {
-  const rest = files.filter(
-    file => file !== entry && !(bundled && file === descriptor),
-  );
-  if (!bundled) return [entry, ...rest];
+  const rest = files.filter(file => file !== entry && file !== descriptor);
+  if (!bundled) return [entry, descriptor, ...rest];
   const order = bundledThemeArtifacts(exportName.replace(/Theme$/u, ''));
   return [
     entry,
+    descriptor,
     ...order.filter(file => rest.includes(file)),
     ...rest.filter(file => !order.includes(file)),
   ];
@@ -1063,14 +1148,15 @@ function copiedThemeFiles(files, entry, descriptor, exportName, bundled) {
  * Discover and validate one theme root.
  * @param {string} themeRoot absolute root containing one directory per slug
  * @param {string} owner package that owns the root
- * @param {{bundled?: boolean}} [options] a bundled root is the CLI's own; its
- *   sources are checked by the CLI's tests rather than on every read
+ * @param {{bundled?: boolean, allowUnmigrated?: boolean}} [options] a bundled root is the CLI's own; its
+ *   sources are checked by the CLI's tests rather than on every read. A local
+ *   root may skip released source copies until `astryx upgrade` adds descriptors.
  * @returns {DiscoveredTheme[]}
  */
 export function discoverThemeDirectory(
   themeRoot,
   owner,
-  {bundled = false} = {},
+  {bundled = false, allowUnmigrated = false} = {},
 ) {
   if (!fs.existsSync(themeRoot) || !fs.statSync(themeRoot).isDirectory()) {
     throw new Error(
@@ -1140,6 +1226,13 @@ export function discoverThemeDirectory(
       file.endsWith(THEME_DOC_SUFFIX),
     );
     const docs = descriptors.filter(file => !file.includes('/'));
+    if (
+      allowUnmigrated &&
+      descriptors.length === 0 &&
+      unmigratedThemeCopy(sourceDir)
+    ) {
+      continue;
+    }
     if (docs.length !== 1) {
       const detail =
         docs.length > 1
@@ -1254,6 +1347,7 @@ export function discoverThemeDirectory(
         bundled,
       ),
       package: owner,
+      source: bundled ? 'bundled' : 'package',
       sourceDir,
       bundled,
       docPath,
@@ -1366,8 +1460,32 @@ export function discoverBundledThemes() {
     THEMES_DIR,
     BUNDLED_THEME_PACKAGE,
     {bundled: true},
-  );
+  ).map(theme => ({
+    ...theme,
+    importPackage: `@astryxdesign/theme-${theme.slug}`,
+    source: /** @type {const} */ ('bundled'),
+  }));
   return bundledThemeCache.map(theme => ({...theme, files: [...theme.files]}));
+}
+
+/**
+ * Discover authored themes in the app's conventional local themes root.
+ * @param {string} projectDir
+ * @param {string} [owner]
+ * @returns {DiscoveredTheme[]}
+ */
+export function discoverLocalThemes(projectDir, owner = LOCAL_THEME_ROOT) {
+  const root = path.resolve(projectDir, owner);
+  if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) return [];
+  return discoverThemeDirectory(root, owner, {allowUnmigrated: true}).map(
+    theme => ({
+      ...theme,
+      package: owner,
+      packageDir: projectDir,
+      packageExports: null,
+      source: /** @type {const} */ ('local'),
+    }),
+  );
 }
 
 /**
@@ -1376,5 +1494,12 @@ export function discoverBundledThemes() {
  */
 export async function discoverIntegrationThemes(integration) {
   if (!integration.themes) return [];
-  return discoverThemeDirectory(integration.themes, integration.name);
+  return discoverThemeDirectory(integration.themes, integration.name).map(
+    theme => ({
+      ...theme,
+      packageDir: integration.__packageDir,
+      packageExports: integration.__packageExports,
+      source: /** @type {const} */ ('package'),
+    }),
+  );
 }

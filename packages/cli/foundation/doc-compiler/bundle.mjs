@@ -118,10 +118,61 @@ export async function compileDocs(project, {lang = null} = {}) {
       );
     }
   }
+  // Guides placed in a namespace, lowered, so a token reference to the
+  // namespace (a flat topic split into guides, such as `tokens`) reads them
+  // in placement order as one topic, as the docs API does.
+  /** @type {Map<string, Array<{order: number, node: CompiledReferenceNode}>>} */
+  const placedGuides = new Map();
+  for (const input of inputs) {
+    if (
+      input.root !== 'tree' ||
+      (await treeDocType(input.file)) !== 'generic'
+    ) {
+      continue;
+    }
+    const topic = await loadTopicInput(
+      {
+        name: input.name,
+        package: input.owner,
+        path: input.file,
+        extensions: [],
+        tree: true,
+      },
+      lang,
+    );
+    if ('error' in topic.base || 'overlayError' in topic.base) continue;
+    const parent = /^namespace:(.+)$/u.exec(
+      topic.base.doc?.placement?.parent ?? '',
+    )?.[1];
+    if (!parent) continue;
+    try {
+      const node = lowerReferenceTopic(topic);
+      const list = placedGuides.get(parent.toLowerCase()) ?? [];
+      list.push({order: topic.base.doc.placement.order ?? 0, node});
+      placedGuides.set(parent.toLowerCase(), list);
+    } catch {
+      // Reported where the guide itself is compiled below.
+    }
+  }
   /** @param {string} name */
   const lowerTarget = async name => {
     const target = catalog.resolve(name);
-    return target ? (topics.get(target.name.toLowerCase()) ?? null) : null;
+    if (target) return topics.get(target.name.toLowerCase()) ?? null;
+    const guides = placedGuides.get(name.toLowerCase());
+    if (!guides) return null;
+    const ordered = [...guides].sort((a, b) => a.order - b.order);
+    /** @type {Record<string, string>} */
+    const sourceTitles = {};
+    for (const {node} of ordered) {
+      for (const [key, title] of Object.entries(node.sourceTitles)) {
+        sourceTitles[key] ??= title;
+      }
+    }
+    return /** @type {any} */ ({
+      id: name,
+      doc: {sections: ordered.flatMap(({node}) => node.doc.sections)},
+      sourceTitles,
+    });
   };
 
   /** @type {Array<CompiledDocNode | CompiledReferenceNode>} */

@@ -13,7 +13,8 @@ export default {
   componentsUsed: [
     'Drawer',
     'Button',
-    'Section',
+    'Layout',
+    'LayoutContent',
     'HStack',
     'DrawerHeader',
     'Text',

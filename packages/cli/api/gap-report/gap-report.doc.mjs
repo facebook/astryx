@@ -15,6 +15,7 @@ export const doc = {
   summary:
     'Report a missing or hard-to-use design-system capability to the package that owns it.',
   description:
+    'Routes the report to the package that owns the gap: options.package when given, else the integration whose component replaces the named Core component, else the one package that provides the component, else Core. ' +
     'Sends a gap report to every configured handler: the project config handler first, then each integration handler in config order. ' +
     'Each handler has 30 s to finish, and its output goes to stderr. Public handlers run only with confirmPublic; internal handlers always run. ' +
     "With no handler, it files a GitHub issue for the owning package only with confirmPublic (without it nothing is sent), or returns the package's issues URL when that is not on GitHub. " +
@@ -60,7 +61,7 @@ export const doc = {
       name: 'options.package',
       type: 'string',
       description:
-        'Package that owns the gap: @astryxdesign/core, or a loaded integration by package name or config entry. Overrides automatic owner routing; required when more than one package provides the component.',
+        'Package that owns the gap: @astryxdesign/core, or a loaded integration by package name or config entry. Overrides automatic owner routing, which picks the integration whose component replaces the named Core component, else the one package that provides it, else Core; required when more than one package provides the component.',
     },
     {
       name: 'options.confirmPublic',

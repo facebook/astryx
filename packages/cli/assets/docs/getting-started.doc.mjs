@@ -6,8 +6,7 @@ export const docs = {
   name: 'getting-started',
   title: 'Getting Started',
   category: 'guide',
-  description:
-    'Add the design system to your project and start building.',
+  description: 'Add the design system to your project and start building.',
   keywords: ['quick start', 'setup', 'install'],
 
   sections: [
@@ -32,7 +31,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Give it a look',
-          code: "Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list` and start from the closest available theme with `theme add <slug>`; the list includes bundled themes and themes from installed integrations, with each owner shown. Use `--package` if owners share a slug. The command copies the theme in as editable source. If none fit, run `npx @astryxdesign/cli theme template` and fill in the annotated template it writes. Default to neutral if I have no preference, and show me the result before moving on.",
+          code: 'Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list`, install the closest theme package, and run `theme add <slug> --import`; use `--package` when owners share a slug. Import `themes` and `defaultThemeSlug` from the generated module once and pass `themes[defaultThemeSlug]` to `<Theme>`. Customize with `defineTheme({extends: importedTheme, ...})`. Use `theme eject` only when I ask for an independent source fork. Default to neutral if I have no preference, and show me the result before moving on.',
         },
       ],
     },
@@ -66,31 +65,52 @@ export const docs = {
       ],
     },
     {
-      title: 'Add the theme CSS',
+      title: 'Add base CSS and a theme',
       content: [
         {
           type: 'prose',
-          text: 'Import the reset stylesheet and a theme in your global CSS file. Themes provide all design tokens (colors, spacing, radius, typography) as CSS custom properties.',
+          text: 'Import the reset and base styles in your global CSS. Then run `astryx theme add neutral --import`; the generated app module imports the theme’s production CSS and font CSS.',
         },
         {
           type: 'code',
           lang: 'css',
           label: 'globals.css',
           code: `@import '@astryxdesign/core/reset.css';
-@import '@astryxdesign/core/astryx.css';
-@import '@astryxdesign/theme-neutral/theme.css';`,
+@import '@astryxdesign/core/astryx.css';`,
         },
         {
           type: 'prose',
           text: 'Run `astryx theme list` to see every theme.',
         },
         {
-          type: 'prose',
-          text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. Before building screens, read the two cascade layer sections of {@link generic:migration}.',
+          type: 'code',
+          lang: 'tsx',
+          label: 'App root',
+          code: `import {Theme} from '@astryxdesign/core';
+import {themes, defaultThemeSlug} from './astryx-themes';
+
+<Theme theme={themes[defaultThemeSlug]}><App /></Theme>`,
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            '`@astryxdesign/theme-neutral`: muted and minimal; a good starting point',
+            '`@astryxdesign/theme-butter`: warm, golden tones with blue accents',
+            '`@astryxdesign/theme-chocolate`: rich chocolate and caramel tones',
+            '`@astryxdesign/theme-gothic`: dark-only theme with ink and noir influences',
+            '`@astryxdesign/theme-matcha`: earthy greens and botanical tones',
+            '`@astryxdesign/theme-stone`: warm neutrals inspired by sandstone',
+            '`@astryxdesign/theme-y2k`: playful early-2000s pop aesthetic',
+          ],
         },
         {
           type: 'prose',
-          text: 'Run {@link generic:theme} for the full theming guide.',
+          text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. Before building screens, read the two cascade layer sections of {@link generic:migration-setup}.',
+        },
+        {
+          type: 'prose',
+          text: 'Run {@link generic:use-a-theme} for the full theming guide.',
         },
       ],
     },
@@ -123,7 +143,7 @@ export default function Page() {
       content: [
         {
           type: 'prose',
-          text: 'Astryx components support various styling solutions, from plain CSS and `className` to Tailwind and CSS-in-JS. See {@link generic:styling} for the full guide. Astryx also has a deep integration with [StyleX](https://stylexjs.com/), an atomic CSS-in-JS library: create styles with `stylex.create()` and pass them to components with the `xstyle` prop.',
+          text: 'Astryx components support various styling solutions, from plain CSS and `className` to Tailwind and CSS-in-JS. See {@link namespace:styling} for the full guide. Astryx also has a deep integration with [StyleX](https://stylexjs.com/), an atomic CSS-in-JS library: create styles with `stylex.create()` and pass them to components with the `xstyle` prop.',
         },
         {
           type: 'code',
@@ -150,12 +170,36 @@ const overrides = stylex.create({
           type: 'table',
           headers: ['Example', 'Stack', 'Path'],
           rows: [
-            ['Next.js', 'Next.js + theme CSS', '[apps/example-nextjs](https://github.com/facebook/astryx/tree/main/apps/example-nextjs)'],
-            ['Next.js + StyleX', 'Next.js + StyleX for custom styles', '[apps/example-nextjs-stylex](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-stylex)'],
-            ['Next.js + Tailwind', 'Next.js + Tailwind bridge', '[apps/example-nextjs-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-tailwind)'],
-            ['Next.js Source', 'Next.js importing from source', '[apps/example-nextjs-source](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-source)'],
-            ['Vite', 'Vite', '[apps/example-vite](https://github.com/facebook/astryx/tree/main/apps/example-vite)'],
-            ['Vite + Tailwind', 'Vite + Tailwind bridge', '[apps/example-vite-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-vite-tailwind)'],
+            [
+              'Next.js',
+              'Next.js + theme CSS',
+              '[apps/example-nextjs](https://github.com/facebook/astryx/tree/main/apps/example-nextjs)',
+            ],
+            [
+              'Next.js + StyleX',
+              'Next.js + StyleX for custom styles',
+              '[apps/example-nextjs-stylex](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-stylex)',
+            ],
+            [
+              'Next.js + Tailwind',
+              'Next.js + Tailwind bridge',
+              '[apps/example-nextjs-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-tailwind)',
+            ],
+            [
+              'Next.js Source',
+              'Next.js importing from source',
+              '[apps/example-nextjs-source](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-source)',
+            ],
+            [
+              'Vite',
+              'Vite',
+              '[apps/example-vite](https://github.com/facebook/astryx/tree/main/apps/example-vite)',
+            ],
+            [
+              'Vite + Tailwind',
+              'Vite + Tailwind bridge',
+              '[apps/example-vite-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-vite-tailwind)',
+            ],
           ],
         },
         {
@@ -186,7 +230,7 @@ pnpm dev`,
         },
         {
           type: 'prose',
-          text: 'Then discover what\'s available:',
+          text: "Then discover what's available:",
         },
         {
           type: 'code',

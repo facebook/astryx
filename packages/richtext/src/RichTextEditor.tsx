@@ -57,6 +57,7 @@ import {
 import type {BaseProps} from '@astryxdesign/core';
 import {useInputStatusIcon} from '@astryxdesign/core/hooks';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
+import {useTranslator} from '@astryxdesign/core/i18n';
 import {mergeProps, themeProps, type SizeValue} from '@astryxdesign/core/utils';
 import {useSize} from '@astryxdesign/core/SizeContext';
 
@@ -73,6 +74,13 @@ import {MarkdownShortcutPlugin} from '@lexical/react/LexicalMarkdownShortcutPlug
 import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
 import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
 import {HorizontalRuleExtension} from '@lexical/extension';
+import {TextSemanticsExtension} from './textSemantics';
+import {TableColumnFloorPlugin} from './TableColumnFloorPlugin';
+import {CodeBlockHeaderPlugin} from './CodeBlockHeaderPlugin';
+import {CodeSyntaxPlugin} from './CodeSyntaxPlugin';
+import {MarkdownExtensionsPlugin} from './MarkdownExtensionsPlugin';
+import type {RichTextMarkdownExtension} from './markdownExtensions';
+import {TaskCheckboxPlugin} from './TaskCheckboxPlugin';
 import {type Transformer} from '@lexical/markdown';
 export type {Transformer} from '@lexical/markdown';
 import {$generateHtmlFromNodes} from '@lexical/html';
@@ -205,7 +213,14 @@ const styles = stylex.create({
     alignItems: 'center',
   },
   disabled: {
-    cursor: 'not-allowed',
+    // Per #5335: `default`, not `not-allowed`. A disabled control already
+    // carries its own visual treatment, and `not-allowed` is unpaintable on
+    // the part of the library sealed behind `pointer-events: none`, so the
+    // library cannot promise it consistently.
+    cursor: {
+      default: 'default',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   counter: {
     display: 'flex',
@@ -231,13 +246,6 @@ const editorBodySizeStyles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
   },
 });
-
-/**
- * Default screen-reader hint advertising the Tab escape. Overridable (or
- * suppressible) via the `tabEscapeHint` prop for localization.
- */
-const DEFAULT_TAB_ESCAPE_HINT =
-  'Press Escape then Tab to move focus out of the editor.';
 
 /**
  * Fraction of `maxLength` at which the character counter begins announcing
@@ -424,15 +432,24 @@ export interface RichTextEditorProps extends Omit<
    * the serialization APIs added in later phases.
    */
   transformers?: ReadonlyArray<Transformer>;
+  /**
+   * Markdown plugins whose nodes this surface draws, each adopted with
+   * `createRichTextExtension` (spec:AST-064). A plugin node renders exactly as
+   * core `Markdown` renders it, and one whose plugin is not given here shows
+   * its source. Pass the extensions the content was converted with. Create
+   * them in a client module: they hold the plugins' functions, so they are not
+   * serializable props.
+   */
+  markdownExtensions?: ReadonlyArray<RichTextMarkdownExtension>;
   /** Whether to automatically focus the editor on mount. @default false */
   hasAutoFocus?: boolean;
   /**
    * Screen-reader hint describing how to move focus out of the editor, since
    * Tab is bound to indentation (press Escape, then Tab). Rendered visually
    * hidden and referenced from the editor's `aria-describedby`. Override it
-   * to localize the text, or pass an empty string to omit the hint entirely
+   * to change the text, or pass an empty string to omit the hint entirely
    * (e.g. when the host app provides its own instructions).
-   * @default 'Press Escape then Tab to move focus out of the editor.'
+   * @default 'Press Escape then Tab to move focus out of the editor.', translated for the active locale
    */
   tabEscapeHint?: string;
   /**
@@ -501,8 +518,9 @@ export const RichTextEditor = forwardRef<
     plugins,
     hasMarkdownShortcuts = true,
     transformers = DEFAULT_TRANSFORMERS,
+    markdownExtensions,
     hasAutoFocus = false,
-    tabEscapeHint = DEFAULT_TAB_ESCAPE_HINT,
+    tabEscapeHint: tabEscapeHintFromProps,
     maxLength,
     namespace = 'astryx-editor',
     xstyle,
@@ -513,6 +531,9 @@ export const RichTextEditor = forwardRef<
   ref: Ref<RichTextEditorRef>,
 ) {
   const size = useSize(sizeProp, 'md');
+  const t = useTranslator();
+  const tabEscapeHint =
+    tabEscapeHintFromProps ?? t('@astryx.richTextEditor.tabEscapeHint');
   const inputID = useId();
   const labelID = useId();
   const descriptionID = useId();
@@ -557,8 +578,9 @@ export const RichTextEditor = forwardRef<
       theme: themeRef.current,
       editable,
       nodes: nodes ? [...DEFAULT_NODES, ...nodes] : [...DEFAULT_NODES],
-      // Horizontal rules select on click and show their selection.
-      dependencies: [HorizontalRuleExtension],
+      // Horizontal rules select on click and show their selection; struck
+      // text is a deletion.
+      dependencies: [HorizontalRuleExtension, TextSemanticsExtension],
       // `undefined` (not `null`) leaves Lexical's default initializer in place,
       // which seeds the empty document with one paragraph — what
       // LexicalComposer did when no `editorState` was given. `null` would mean
@@ -675,6 +697,7 @@ export const RichTextEditor = forwardRef<
               />
               <HistoryPlugin />
               <ListPlugin />
+              <TaskCheckboxPlugin isReadOnly={isReadOnly || isDisabled} />
               <LinkPlugin />
               {/* Tab keeps its editor meaning inside a table (indent, and
                   Escape then Tab to leave the editor); arrow keys move
@@ -686,6 +709,15 @@ export const RichTextEditor = forwardRef<
                 hasTabHandler={false}
                 hasHorizontalScroll
               />
+              <TableColumnFloorPlugin />
+              <CodeBlockHeaderPlugin />
+              <CodeSyntaxPlugin />
+              {markdownExtensions != null && markdownExtensions.length > 0 ? (
+                <MarkdownExtensionsPlugin
+                  extensions={markdownExtensions}
+                  transformers={markdownTransformers}
+                />
+              ) : null}
               <TabIndentationPlugin />
               <TabFocusEscapePlugin />
               {hasMarkdownShortcuts && (
@@ -729,8 +761,12 @@ export const RichTextEditor = forwardRef<
           <VisuallyHidden aria-live="polite">
             {charCount >= maxLength * COUNTER_WARNING_THRESHOLD
               ? charCount > maxLength
-                ? `${charCount - maxLength} characters over limit`
-                : `${maxLength - charCount} characters remaining`
+                ? t('@astryx.textArea.charactersOverLimit', {
+                    count: charCount - maxLength,
+                  })
+                : t('@astryx.textArea.charactersRemaining', {
+                    count: maxLength - charCount,
+                  })
               : ''}
           </VisuallyHidden>
         </div>

@@ -16,25 +16,25 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: 'Check the marked release branch or capture a main baseline candidate'
+        description: 'Run the canonical check on exact main or a marked release branch, or capture a main baseline candidate'
         type: choice
         options: [capture, release-check]
         default: capture
         required: true
       release-branch:
-        description: 'Marked release/vX.Y.Z branch; required for release-check'
+        description: 'Exact branch to check: main before a cut, or marked release/vX.Y.Z after the bump'
         type: string
         required: false
       release-version:
-        description: 'Exact X.Y.Z version recorded by the active marker; required for release-check'
+        description: 'Exact X.Y.Z version recorded by the active marker; required only for a marked release branch'
         type: string
         required: false
       expected-head:
-        description: 'Exact full release branch SHA; required for release-check'
+        description: 'Exact full main or release branch SHA; required for release-check'
         type: string
         required: false
       plan-digest:
-        description: 'Exact SHA-256 digest recorded by the active marker; required for release-check'
+        description: 'Exact SHA-256 digest recorded by the active marker; required only for a marked release branch'
         type: string
         required: false
 
@@ -68,8 +68,8 @@ jobs:
       spec_only: ${{ steps.scope.outputs.spec_only }}
       tooling_only: ${{ steps.scope.outputs.tooling_only }}
       release_bump: ${{ steps.scope.outputs.release_bump }}
-      release_branch: ${{ steps.release-authority.outputs.branch }}
-      release_head: ${{ steps.release-authority.outputs.head }}
+      release_branch: ${{ steps.release-authority.outputs.branch || steps.main-authority.outputs.branch }}
+      release_head: ${{ steps.release-authority.outputs.head || steps.main-authority.outputs.head }}
       release_plan_digest: ${{ steps.release-authority.outputs.planDigest }}
     steps:
       - uses: actions/checkout@v7
@@ -79,14 +79,14 @@ jobs:
 
       - name: Fetch active release refs
         if: >-
-          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check') ||
+          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && inputs['release-branch'] != 'main') ||
           (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v'))
         run: git fetch origin '+refs/heads/release/v*:refs/remotes/origin/release/v*'
 
       - name: Validate active release authority
         id: release-authority
         if: >-
-          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check') ||
+          (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && inputs['release-branch'] != 'main') ||
           (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v'))
         env:
           RELEASE_BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs['release-branch'] || github.base_ref }}
@@ -122,6 +122,35 @@ jobs:
             ARGS+=(--remote-head "$REMOTE_HEAD")
           fi
           node "$VALIDATOR" "${ARGS[@]}"
+
+      - name: Validate exact main pre-cut authority
+        id: main-authority
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          inputs.operation == 'release-check' &&
+          inputs['release-branch'] == 'main'
+        env:
+          EXPECTED_HEAD: ${{ inputs['expected-head'] }}
+        run: |
+          set -eu
+          if [ "$GITHUB_REF" != 'refs/heads/main' ]; then
+            echo 'Main pre-cut checks must be dispatched from main.'
+            exit 1
+          fi
+          if ! [[ "$EXPECTED_HEAD" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'Main pre-cut checks require an exact full expected head.'
+            exit 1
+          fi
+          if [ "$GITHUB_SHA" != "$EXPECTED_HEAD" ]; then
+            echo 'Checked-out main commit does not match expected head.'
+            exit 1
+          fi
+          REMOTE_HEAD=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+          if [ -z "$REMOTE_HEAD" ] || [ "$REMOTE_HEAD" != "$EXPECTED_HEAD" ]; then
+            echo 'Main moved before checks began; dispatch again for its new head.'
+            exit 1
+          fi
+          printf 'branch=main\nhead=%s\n' "$EXPECTED_HEAD" >> "$GITHUB_OUTPUT"
 
       - name: Fetch base branch
         if: github.event_name == 'pull_request'
@@ -1158,6 +1187,16 @@ jobs:
             --project chromium \
             --output empty-state-announcement-output
 
+      # Table merges a consumer min-width with its column floors through CSS
+      # max(). jsdom keeps any string, so only a real engine shows whether the
+      # emitted declaration parses; an invalid one drops the floors entirely.
+      - name: Run Table min-width contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/Table/__tests__/TableMinWidth.a11y.chromium.spec.ts \
+            --project chromium \
+            --output table-min-width-output
+
       # The RichTextEditor "Markdown parity" stories render one Markdown
       # document with core Markdown and RichTextEditor and measure where each
       # block lands; geometry, the read/edit switch and the scroll anchor only
@@ -1189,7 +1228,7 @@ jobs:
             # with the base. If the base cannot be fetched, run the evidence.
             if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
               if git diff --name-only "$BASE_SHA" HEAD \
-                | grep -qE '^(apps/storybook/stories/RichTextEditor\.(markdownParity|stories)|packages/richtext/src/__tests__/MarkdownParitySandbox)'; then
+                | grep -qE '^(apps/storybook/stories/RichTextEditor\.(markdownParity|stories)|packages/richtext/src/__tests__/(MarkdownParitySandbox|RichTextView|RichTextEditorToolbar))'; then
                 should_run=true
               fi
             else
@@ -1201,8 +1240,12 @@ jobs:
             echo "Markdown, RichText, and the parity sandbox are not in PR scope; skipping parity evidence."
             exit 0
           fi
+          # The RichTextView typography and RichText toolbar layout specs share
+          # this scope, so they ride the same gate and output directory.
           pnpm exec playwright test \
             packages/richtext/src/__tests__/MarkdownParitySandbox.a11y.chromium.spec.ts \
+            packages/richtext/src/__tests__/RichTextView.a11y.chromium.spec.ts \
+            packages/richtext/src/__tests__/RichTextEditorToolbar.a11y.chromium.spec.ts \
             --project chromium \
             --output richtext-markdown-parity-output
 
@@ -1242,6 +1285,99 @@ jobs:
           path: test-results/outline-focus-evidence/
           retention-days: 30
           if-no-files-found: ignore
+
+      # The toggle-button contract's pressed state, keyboard and pointer round
+      # trips, aborted press, focus, and unavailable state are accessibility-tree
+      # and engine facts that jsdom cannot observe. Run the contract's own
+      # fixture proof and the ToggleButton binding whenever the PR scope names
+      # ToggleButton or the contract changes. Its own --output directory; the
+      # JSON report is the head-bound record, uploaded immediately after.
+      - name: Run ToggleButton accessibility contract
+        id: toggle-button-contract
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: toggle-button-contract/report.json
+        run: |
+          should_run=false
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,core/ToggleButton,*) should_run=true ;;
+          esac
+          # The contract belongs to no package, so compare file names with the
+          # base. If the base cannot be fetched, run the evidence.
+          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
+            if git diff --name-only "$BASE_SHA" HEAD \
+              | grep -qE '^internal/a11y-spec/src/patterns/toggle-button'; then
+              should_run=true
+            fi
+          else
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "ToggleButton and its contract are not in PR scope; skipping toggle-button evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/toggle-button.chromium.spec.ts \
+            packages/core/src/ToggleButton/__tests__/ToggleButton.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output toggle-button-contract-output
+
+      - name: Upload ToggleButton accessibility contract evidence
+        if: ${{ !cancelled() && steps.toggle-button-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: toggle-button-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: toggle-button-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
+      # The landmark contract's role, name, and repeated-label outcomes are
+      # accessibility-tree facts that jsdom cannot observe. Run the contract's
+      # own fixture proof and the Layout regions binding whenever Layout source,
+      # the binding's stories, or the contract changes. Its own --output
+      # directory; the JSON report is the head-bound record, uploaded next.
+      - name: Run Landmark accessibility contract
+        id: landmark-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: landmark-contract/report.json
+        run: |
+          should_run=false
+          # Layout and the contract are matched by file name so every Layout
+          # region component is covered. If the base cannot be fetched, run.
+          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
+            if git diff --name-only "$BASE_SHA" HEAD \
+              | grep -qE '^(internal/a11y-spec/src/patterns/landmark|packages/core/src/Layout/|apps/storybook/stories/LayoutLandmarkA11y)'; then
+              should_run=true
+            fi
+          else
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "Layout and the landmark contract are not in PR scope; skipping landmark evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/landmark.chromium.spec.ts \
+            packages/core/src/Layout/__tests__/Layout.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output landmark-contract-output
+
+      - name: Upload Landmark accessibility contract evidence
+        if: ${{ !cancelled() && steps.landmark-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: landmark-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: landmark-contract/
+          retention-days: 30
+          if-no-files-found: warn
 
       # The Schedule time grid owns scroll geometry — pinned header and gutter
       # alignment under classic scrollbars, inline scroll ownership, keyboard
@@ -1363,6 +1499,35 @@ jobs:
             test-results/chat-message-list-audit-evidence/
           retention-days: 30
           if-no-files-found: ignore
+
+      # CommandPaletteFooter's default and replacement branches live inside the
+      # parent dialog. Its owned stories keep those branches routable so exact-
+      # head Chromium can measure semantics, theme reach, RTL order, and reflow.
+      - name: Run CommandPaletteFooter audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteFooter:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output command-palette-footer-a11y-report.json \
+            --components CommandPaletteFooter \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+          pnpm exec playwright test \
+            packages/core/src/CommandPalette/__tests__/CommandPaletteFooter.a11y.chromium.spec.ts \
+            --project chromium
+
+      - name: Upload CommandPaletteFooter audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] CommandPaletteFooter:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: command-palette-footer-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: |
+            command-palette-footer-a11y-report.json
+            test-results/command-palette-footer-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
 
       # CollapsibleGroup's shared Collapsible story previously left the audit
       # owner with no routable browser fixture. Its dedicated matrix now emits
@@ -1506,6 +1671,31 @@ jobs:
           path: |
             chat-tokenized-text-a11y-report.json
             test-results/chat-tokenized-text-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # ContextMenuItem opens from a pointer gesture after the trigger renders.
+      # The focused selector wait binds axe to the open menu rather than letting
+      # the trigger's first frame satisfy generic Storybook readiness.
+      - name: Run ContextMenuItem audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ContextMenuItem:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output context-menu-item-a11y-report.json \
+            --components ContextMenuItem \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+
+      - name: Upload ContextMenuItem audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ContextMenuItem:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: context-menu-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: context-menu-item-a11y-report.json
           retention-days: 30
           if-no-files-found: error
 
@@ -2178,12 +2368,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Require complete exact-head release branch checks
+      - name: Require complete exact-head canonical checks
         uses: actions/github-script@v9
         env:
           RELEASE_NEEDS: ${{ toJSON(needs) }}
           RELEASE_BRANCH: ${{ inputs['release-branch'] }}
           EXPECTED_HEAD: ${{ inputs['expected-head'] }}
+          CHECKED_HEAD: ${{ needs.check-scope.outputs.release_head }}
           PLAN_DIGEST: ${{ needs.check-scope.outputs.release_plan_digest }}
         with:
           script: |
@@ -2196,19 +2387,36 @@ jobs:
             const branch = process.env.RELEASE_BRANCH;
             const expectedHead = process.env.EXPECTED_HEAD;
             if (context.ref !== `refs/heads/${branch}`) {
-              throw new Error('Release checks must run from the marked release branch.');
+              throw new Error('Canonical release checks must run from the requested branch.');
             }
             if (context.sha !== expectedHead) {
-              throw new Error('Checked-out release commit does not match expected head.');
+              throw new Error('Checked-out commit does not match expected head.');
             }
             const {data} = await github.rest.git.getRef({...context.repo, ref: `heads/${branch}`});
             if (data.object.sha !== expectedHead) {
-              throw new Error('Release branch moved during checks; dispatch release-check again for its new head.');
+              throw new Error(`${branch} moved during checks; dispatch release-check again for its new head.`);
+            }
+            if (branch === 'main') {
+              if (process.env.CHECKED_HEAD !== expectedHead) {
+                throw new Error('Main authority check did not bind the expected head.');
+              }
+              await core.summary
+                .addHeading('Main pre-cut checks complete')
+                .addRaw(`Exact head: ${expectedHead}\n\n`)
+                .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. A release may cut only while main still points to this exact head.')
+                .write();
+              return;
+            }
+            if (!branch.startsWith('release/v')) {
+              throw new Error('Post-bump release checks require a marked release branch.');
+            }
+            if (!/^[0-9a-f]{64}$/.test(process.env.PLAN_DIGEST)) {
+              throw new Error('Post-bump release checks require the active plan digest.');
             }
             await core.summary
               .addHeading('Release checks complete')
               .addRaw(`Branch: ${branch}\n\n`)
               .addRaw(`Exact head: ${expectedHead}\n\n`)
               .addRaw(`Plan digest: ${process.env.PLAN_DIGEST}\n\n`)
-              .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. Main movement is not release input. This receipt is reusable only for this exact branch, head, and plan digest; any cherry-pick requires a new run.')
+              .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. Main movement is not release input. This receipt is reusable only for this exact branch, head, and plan digest; any branch revision requires a new run.')
               .write();

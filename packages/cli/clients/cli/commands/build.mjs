@@ -169,6 +169,7 @@ export function registerBuild(program) {
       const full = {
         fields: [
           'name',
+          'package',
           'domain',
           'displayName',
           'score',
@@ -220,11 +221,12 @@ export function registerBuild(program) {
             start,
             verbose
               ? {
-                  fields: ['name', 'displayName', 'description', 'command'],
+                  fields: ['name', 'package', 'displayName', 'description', 'command'],
                   format: {command: formatCliCommand},
                 }
-              : brief(['name', 'description', 'command']),
+              : brief(['name', 'package', 'description', 'command']),
           ),
+          ...(start.notes ?? []).map(note => text(note)),
         );
         if (start.alternatives.length) {
           out.push(
@@ -234,7 +236,7 @@ export function registerBuild(program) {
             ),
             records(
               start.alternatives,
-              verbose ? full : brief(['name', 'description', 'command']),
+              verbose ? full : brief(['name', 'package', 'description', 'command']),
             ),
           );
         }
@@ -249,7 +251,7 @@ export function registerBuild(program) {
                 'Page templates keyword search matched, best first.',
               )
             : text(
-                `Keyword search matched these page templates: ${pages.map(p => p.name).join(', ')}.`,
+                `Keyword search matched these page templates: ${pages.map(p => `${p.name} (${p.package})`).join(', ')}.`,
               ),
         );
         if (verbose) out.push(records(pages, full));
@@ -262,7 +264,7 @@ export function registerBuild(program) {
           ),
           records(
             shown(blocks),
-            verbose ? full : brief(['name', 'description']),
+            verbose ? full : brief(['name', 'package', 'description']),
           ),
         );
       }
@@ -275,7 +277,7 @@ export function registerBuild(program) {
           ? [
               records(
                 shown(domain),
-                verbose ? full : brief(['name', 'description']),
+                verbose ? full : brief(['name', 'package', 'description']),
               ),
             ]
           : []),

@@ -15,16 +15,17 @@ export const doc = {
   namespace: 'cli/api',
   description:
     'The single JSON envelope every command emits under --json. Success is ' +
-    '{ apiVersion, type, data, meta? }; failure is { apiVersion, error, code, ' +
+    '{ apiVersion, type, package?, data, meta? }; failure is { apiVersion, error, code, ' +
     'suggestions? }. Discriminate by checking whether `error` is present.',
   appliesTo: 'astryx --json',
   fields: [
     {
       name: 'Success envelope',
-      type: '{ apiVersion: number; type: string; data: unknown; meta?: Record<string, unknown> }',
+      type: '{ apiVersion: number; type: string; package?: string; data: unknown; meta?: Record<string, unknown> }',
       description:
         'Emitted for every successful command in --json mode: a type ' +
-        'discriminator, its data payload, and an optional meta sidecar.',
+        'discriminator, the package that owns what the response is about, ' +
+        'its data payload, and an optional meta sidecar.',
       fields: [
         {
           name: 'apiVersion',
@@ -43,6 +44,18 @@ export const doc = {
           required: true,
         },
         {
+          name: 'package',
+          type: 'string',
+          description:
+            'The npm package that owns the one thing the response is about: ' +
+            '`@astryxdesign/core` for a Core component, hook, or template, ' +
+            '`@astryxdesign/cli` for a doc the CLI ships, or the integration ' +
+            'package that contributed it. Absent when the response lists ' +
+            'things from more than one package; each listed item then names ' +
+            'its own `package`.',
+          example: "'@astryxdesign/core'",
+        },
+        {
           name: 'data',
           type: 'unknown',
           description: "The command's payload; its shape depends on `type`.",
@@ -52,7 +65,7 @@ export const doc = {
           name: 'meta',
           type: 'Record<string, unknown>',
           description:
-            'Optional sidecar, emitted as a sibling of data (never merged in).',
+            'Optional sidecar, emitted as a sibling of data (never merged in). A `deprecations` field is an array of `{id, replacements}` entries; each stable lifecycle id names the replacement commands without changing the command data.',
         },
       ],
     },
@@ -119,6 +132,7 @@ export const doc = {
       code: `{
   "apiVersion": 1,
   "type": "component.detail",
+  "package": "@astryxdesign/core",
   "data": { "name": "Button" }
 }`,
     },

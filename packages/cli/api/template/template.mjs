@@ -46,6 +46,7 @@ export {
   findRelatedBlocks,
   findShowcase,
   extractComponents,
+  pkgOf,
 } from '../../foundation/discovery/template-adapter.mjs';
 
 /**

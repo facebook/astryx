@@ -674,6 +674,39 @@ pnpm changeset:new --category fix --summary "…" --pr 2717 --contributor yourha
 > `minor`; `[experimental]` and every other category must be `patch`), or
 > declaring a `major` bump while 0.x.
 
+#### When CI requires one
+
+Every pull request runs `scripts/release/changeset-coverage.mjs`, the same
+classifier the release coverage audit runs over a release's commits. It fails
+when the pull request changes something a published package ships and no
+Changeset it adds or edits names that package:
+
+- package source, such as `packages/*/src` of a published package;
+- CLI behavior and output under `packages/cli` (`api`, `clients`,
+  `foundation`, `authoring`, `assets`);
+- shipped documentation: `packages/cli/assets/docs`, `*.doc.mjs`, and a
+  package README;
+- consumer-facing `package.json` fields such as `exports`, `bin`, and
+  dependency or peer ranges.
+
+Stories, the sandbox, tests, fixtures, snapshots, spec records, generated
+CHANGELOGs, private and canary-only packages (`lab`, `charts`, `richtext`,
+`vega`), the docsite app, CI, and repository tooling never reach a consumer and
+need no Changeset. The failure names the package and the command to run, for
+example `pnpm changeset:new --packages @astryxdesign/cli --category docs`. Run
+the check locally with
+`node scripts/release/changeset-coverage.mjs pr --base origin/main --explain`.
+
+The same check compares the CLI's machine-readable ids with the latest
+release: response `type` values, response fields, golden JSON fields, and
+`astryx doctor` check ids. Removing or renaming a released one breaks scripts
+that read it. Restore it, or classify the removal in a `@astryxdesign/cli`
+Changeset: a `[breaking]` entry that names the id, or a paragraph beginning
+`Compatibility:` that names the id and says why consumers of the latest
+release keep working. Name an id the way the failure prints it, such as
+`themes` or `DoctorCheck.fix`. Catalog values inside those responses, such as template
+slugs and docs routes, are data and may change.
+
 ### Version Bumps
 
 - **0.x (current): bump follows the category.** We track standard semver for the `0.x.y` range, where a minor bump is the stable breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`). A `[breaking]` change bumps the **minor** (`0.x.y → 0.(x+1).0`). A change confined to a surface that was explicitly marked experimental before its first stable publication uses `[experimental]` and bumps the **patch**, even when that experimental API changes incompatibly. Every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) also bumps the patch. If stable defaults, behavior, props, imports, CLI commands, or machine schemas break, the change remains `[breaking]`. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` enforces the coupling both ways.

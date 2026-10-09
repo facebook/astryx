@@ -11,7 +11,7 @@
 import {useState} from 'react';
 import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
-import {Section} from '@astryxdesign/core/Section';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
 export default function DrawerStart() {
@@ -25,12 +25,16 @@ export default function DrawerStart() {
         onOpenChange={setIsOpen}
         label="Navigation"
         side="start">
-        <DrawerHeader title="Navigation" onOpenChange={setIsOpen} />
-        <Section padding={4}>
-          <Text type="body">
-            The start edge follows the page's writing direction.
-          </Text>
-        </Section>
+        <Layout
+          header={<DrawerHeader title="Navigation" onOpenChange={setIsOpen} />}
+          content={
+            <LayoutContent>
+              <Text type="body">
+                The start edge follows the page's writing direction.
+              </Text>
+            </LayoutContent>
+          }
+        />
       </Drawer>
     </>
   );

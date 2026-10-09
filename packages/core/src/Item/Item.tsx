@@ -19,6 +19,8 @@
 import {useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
+  fontWeightVars,
+  typographyVars,
   colorVars,
   radiusVars,
   spacingVars,
@@ -37,6 +39,13 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {useMediaQuery} from '../hooks/useMediaQuery';
+import {usePressFeedback} from '../hooks/usePressFeedback';
+import {
+  useSwipeAction,
+  type SwipeBehavior,
+  type SwipeSide,
+} from './useSwipeAction';
 
 // =============================================================================
 // Types
@@ -44,6 +53,56 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 
 export type ItemAlign = 'center' | 'start';
 export type ItemDensity = 'compact' | 'balanced' | 'spacious';
+
+/**
+ * How a swipe action looks: ordinary, the one you mean, the dangerous one.
+ * Three flavours of verb, not a status set.
+ */
+export type ItemSwipeActionVariant = 'neutral' | 'accent' | 'destructive';
+
+/** One verb a sideways drag uncovers. Every field is known before the gesture begins. */
+export interface ItemSwipeAction {
+  id?: string;
+  /**
+   * The verb's name, and the button's accessible name while the row rests
+   * open. Names the state the verb reaches ("Unread"), since the gesture
+   * already supplies the verb.
+   */
+  label: string;
+  /** Drawn above the label. */
+  icon?: ReactNode;
+  /**
+   * Fires at activation: a tap on a resting entry, the full-swipe
+   * accelerator, or a `commit` release. May return a Promise; the row
+   * waits for nothing.
+   */
+  onActivate: () => void | Promise<void>;
+  isDisabled?: boolean;
+  /** @default 'accent' */
+  variant?: ItemSwipeActionVariant;
+  /**
+   * After this action fires the row holds out at the edge it travelled
+   * toward instead of springing back. Only that: not a promise the caller
+   * removes the row, not an animation, not a timing rule.
+   * @default false
+   */
+  hasRemoval?: boolean;
+}
+
+export interface ItemSwipeActions {
+  /** Uncovered by a drag toward the inline end (rightward in LTR); outermost last. */
+  leading?: ItemSwipeAction[];
+  /** Uncovered by a drag toward the inline start (leftward in LTR); outermost last. */
+  trailing?: ItemSwipeAction[];
+}
+
+/**
+ * `reveal`: past half the panel the row rests open with every entry a real
+ * button; a long drag or a fling fires the outermost. `commit`: a release
+ * past the commit point slides the row out and fires the outermost entry;
+ * nothing rests, and the panel is presentational.
+ */
+export type ItemSwipeBehavior = SwipeBehavior;
 
 export interface ItemProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element. */
@@ -187,6 +246,32 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   isDisabled?: boolean;
 
   /**
+   * Swipe actions for touch: the verbs a sideways drag uncovers on each side,
+   * declared as data so the row paints the panel from them. A coarse pointer
+   * drags the row aside and uncovers the side's panel; a mouse never starts
+   * the drag, and a mostly vertical drag stays the scroller's. The gesture is
+   * a touch accelerator and never a row's only path to a verb: a verb
+   * reachable only by swipe is unreachable by keyboard and by mouse, so every
+   * entry must also be reachable through the row's own content (a menu or a
+   * button in `endContent`).
+   *
+   * Available on a row whose role permits interactive descendants — a
+   * `listitem`, a row with no role — and not served on one whose role forbids
+   * them (`option`, `menuitem*`, a row that is the enlarged target of a native
+   * radio). The element containing the rows clips in the inline axis
+   * (`overflow-inline: clip`): `List` does; any other host does it once.
+   */
+  swipeActions?: ItemSwipeActions;
+
+  /**
+   * What a swipe does: `reveal` rests the row open with every entry tappable
+   * and fires the outermost on a long drag; `commit` slides the row out and
+   * fires the outermost on release. `commit` fits one entry per side.
+   * @default 'reveal'
+   */
+  swipeBehavior?: ItemSwipeBehavior;
+
+  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -209,6 +294,22 @@ const ARIA_SELECTED_ROLES = new Set([
   'rowheader',
   'treeitem',
 ]);
+
+/**
+ * Roles whose content model permits interactive descendants, so a swipe
+ * panel's buttons may live inside the row. A row with no role at all
+ * qualifies too; `option`, the `menuitem*` roles and the rest do not.
+ */
+const SWIPE_ROLES = new Set(['listitem']);
+
+/** The travel a drag writes on the row root, in physical px (see useSwipeAction). */
+const SWIPE_TRAVEL = 'var(--_item-swipe-travel, 0px)';
+/** +1 when the inline end is to the right, -1 under RTL; written beside the travel. */
+const SWIPE_DIR = 'var(--_item-swipe-dir, 1)';
+/** The settle clock, `0s` while the finger drives the row. */
+const SWIPE_DURATION = 'var(--_item-swipe-duration, 0s)';
+/** The travel measured toward the inline end. */
+const SWIPE_LOGICAL_TRAVEL = `calc(${SWIPE_TRAVEL} * ${SWIPE_DIR})`;
 
 // =============================================================================
 // Styles
@@ -356,6 +457,107 @@ const styles = stylex.create({
     display: 'flex',
     marginInlineStart: 'auto',
   },
+  // Swipe actions. The root translates by the drag's travel and settles on
+  // the clock the gesture writes; `pan-y` lets the browser keep scrolling the
+  // list while the row owns horizontal movement. The hover transition keeps
+  // its own clock beside the transform's.
+  swipeRoot: {
+    isolation: 'isolate',
+    touchAction: 'pan-y',
+    transform: `translate3d(${SWIPE_TRAVEL}, 0, 0)`,
+    transitionProperty: 'background-color, transform',
+    transitionDuration: `${durationVars['--duration-fast-min']}, ${SWIPE_DURATION}`,
+    transitionTimingFunction: `${easeVars['--ease-standard']}, ease-out`,
+  },
+  // A side's panel: an out-of-flow child of the root at the inline start or
+  // end, counter-translated so it appears fixed in the space the row
+  // vacates, and exactly as wide as the travel toward its side — a padded box
+  // at `width: 0` would still paint its padding, so the panel has none; its
+  // entries carry their own. Not a pixel of it shows at rest.
+  swipePanel: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 0,
+    display: 'flex',
+    alignItems: 'stretch',
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+    borderRadius: 'inherit',
+    transform: `translate3d(calc(-1 * ${SWIPE_TRAVEL}), 0, 0)`,
+    transitionProperty: 'transform, width',
+    transitionDuration: `${SWIPE_DURATION}, ${SWIPE_DURATION}`,
+    transitionTimingFunction: 'ease-out, ease-out',
+  },
+  swipePanelLeading: {
+    insetInlineStart: 0,
+    justifyContent: 'flex-start',
+    width: `max(0px, ${SWIPE_LOGICAL_TRAVEL})`,
+  },
+  swipePanelTrailing: {
+    insetInlineEnd: 0,
+    justifyContent: 'flex-end',
+    width: `max(0px, calc(-1 * ${SWIPE_LOGICAL_TRAVEL}))`,
+  },
+  // The entries at their natural width; the panel clips them to the travel.
+  // The outermost entry is the last, at the panel's outer edge: on the leading
+  // side that is the inline start, so the row of entries runs in reverse.
+  swipeEntries: {
+    display: 'flex',
+    flexShrink: 0,
+    height: '100%',
+    // The entries sit on the surface, not on the panel's own colour: the
+    // neutral variant is translucent and would otherwise take the outermost
+    // entry's colour through it.
+    backgroundColor: colorVars['--color-background-surface'],
+  },
+  swipeEntriesLeading: {
+    flexDirection: 'row-reverse',
+  },
+  swipeEntry: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacingVars['--spacing-1'],
+    minWidth: 72,
+    height: '100%',
+    paddingInline: spacingVars['--spacing-3'],
+    boxSizing: 'border-box',
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    appearance: 'none',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    whiteSpace: 'nowrap',
+  },
+  swipeEntryDisabled: {
+    opacity: 0.5,
+  },
+});
+
+// A verb's colour: ordinary, the one you mean, the dangerous one. The panel
+// wears its outermost entry's, so a slide-out fills the row with it.
+const swipeVariantStyles = stylex.create({
+  neutral: {
+    backgroundColor: colorVars['--color-neutral'],
+    color: colorVars['--color-text-primary'],
+  },
+  accent: {
+    backgroundColor: colorVars['--color-accent'],
+    color: colorVars['--color-on-accent'],
+  },
+  destructive: {
+    backgroundColor: colorVars['--color-error'],
+    color: colorVars['--color-on-error'],
+  },
 });
 
 const dynamicStyles = stylex.create({
@@ -417,6 +619,8 @@ export function Item({
   isHighlighted = false,
   isSelected = false,
   isDisabled = false,
+  swipeActions,
+  swipeBehavior = 'reveal',
   xstyle,
   className,
   style,
@@ -424,6 +628,7 @@ export function Item({
   role,
   ...restProps
 }: ItemProps) {
+  const pressable = usePressFeedback();
   const LinkComponent = useLinkComponent();
 
   // Delegation mode: the row is an enlarged click/tap target for a nested
@@ -457,6 +662,59 @@ export function Item({
   // component means the root itself is the anchor, so the address rides it
   // and the invisible anchor below is not rendered.
   const isLinkRoot = typeof Component !== 'string' && href != null;
+
+  // Swipe actions exist where the row's role permits interactive descendants
+  // (a swipe panel's buttons are such descendants): a `listitem`, or no role
+  // at all. A root that is itself a link, a row whose role forbids them, and
+  // a row that is the enlarged target of a nested control are not served.
+  const leadingSwipe = swipeActions?.leading ?? [];
+  const trailingSwipe = swipeActions?.trailing ?? [];
+  const hasSwipe =
+    swipeActions != null &&
+    (leadingSwipe.length > 0 || trailingSwipe.length > 0) &&
+    !isDisabled &&
+    !isDelegate &&
+    !isLinkRoot &&
+    (role == null || SWIPE_ROLES.has(role));
+  useDevWarning(
+    'Item',
+    '`swipeBehavior="commit"` fires only the outermost entry of a side; the ' +
+      'other entries have no touch path. Give a committing side one entry, ' +
+      'or use `swipeBehavior="reveal"`.',
+    hasSwipe &&
+      swipeBehavior === 'commit' &&
+      (leadingSwipe.length > 1 || trailingSwipe.length > 1),
+  );
+  const swipeRootRef = useRef<HTMLElement | null>(null);
+  const leadingEntriesRef = useRef<HTMLDivElement | null>(null);
+  const trailingEntriesRef = useRef<HTMLDivElement | null>(null);
+  const isReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const outermost = (side: SwipeSide): ItemSwipeAction | undefined => {
+    const entries = side === 'leading' ? leadingSwipe : trailingSwipe;
+    return entries[entries.length - 1];
+  };
+  const swipe = useSwipeAction({
+    isEnabled: hasSwipe,
+    behavior: swipeBehavior,
+    sides: {
+      leading: leadingSwipe.length > 0,
+      trailing: trailingSwipe.length > 0,
+    },
+    measurePanel: side =>
+      (side === 'leading' ? leadingEntriesRef : trailingEntriesRef).current
+        ?.offsetWidth ?? 0,
+    fireOutermost: side => {
+      const entry = outermost(side);
+      if (entry == null || entry.isDisabled === true) {
+        return false;
+      }
+      void entry.onActivate();
+      return entry.hasRemoval === true;
+    },
+    isReducedMotion,
+    rootRef: swipeRootRef,
+  });
+  const isSwipeResting = swipe.state.phase === 'resting';
   const linkRootProps = isLinkRoot
     ? {
         // A disabled row keeps its place in the tree but goes nowhere.
@@ -615,11 +873,121 @@ export function Item({
   );
 
   const mergedRef = useMergedRefs(ref, containerRef);
+  const rootRef = useMergedRefs(
+    (isDelegate ? mergedRef : ref) as React.Ref<HTMLElement>,
+    hasSwipe ? swipeRootRef : undefined,
+  );
+
+  // The row's own primary, which the click the browser synthesizes after a
+  // drag must not fire.
+  const primaryOnClick = isDelegate
+    ? delegatedOnClick
+    : hasParentRole
+      ? onClick
+      : isInteractive
+        ? handleContainerClick
+        : undefined;
+  const rootOnClick =
+    hasSwipe && primaryOnClick != null
+      ? (event: React.MouseEvent<HTMLElement>) => {
+          if (swipe.shouldSuppressClick()) {
+            return;
+          }
+          primaryOnClick(event);
+        }
+      : primaryOnClick;
+
+  // A side's panel: entries as real buttons under `reveal`, presentational
+  // blocks under `commit`. Out of the accessibility tree and the tab order
+  // except while the row rests open, so the row keeps one tab stop and a
+  // pointer that can hover never meets it.
+  const renderSwipePanel = (side: SwipeSide, entries: ItemSwipeAction[]) => {
+    if (entries.length === 0) {
+      return null;
+    }
+    const outer = entries[entries.length - 1];
+    const isCommit = swipeBehavior === 'commit';
+    const isLive = isSwipeResting && !isCommit;
+    return (
+      <div
+        key={side}
+        data-swipe-panel={side}
+        inert={isLive ? undefined : true}
+        aria-hidden={isCommit ? true : undefined}
+        {...mergeProps(
+          themeProps('item-swipe-panel', {side}),
+          stylex.props(
+            styles.swipePanel,
+            side === 'leading'
+              ? styles.swipePanelLeading
+              : styles.swipePanelTrailing,
+            swipeVariantStyles[outer.variant ?? 'accent'],
+          ),
+        )}>
+        <div
+          ref={side === 'leading' ? leadingEntriesRef : trailingEntriesRef}
+          {...stylex.props(
+            styles.swipeEntries,
+            side === 'leading' && styles.swipeEntriesLeading,
+          )}>
+          {entries.map(entry => {
+            const variant = entry.variant ?? 'accent';
+            const content = (
+              <>
+                {entry.icon}
+                <span>{entry.label}</span>
+              </>
+            );
+            const entryStyle = stylex.props(
+              styles.swipeEntry,
+              swipeVariantStyles[variant],
+              entry.isDisabled === true && styles.swipeEntryDisabled,
+            );
+            if (isCommit) {
+              return (
+                <span
+                  key={entry.id ?? entry.label}
+                  {...mergeProps(
+                    themeProps('item-swipe-action', {variant}),
+                    entryStyle,
+                  )}>
+                  {content}
+                </span>
+              );
+            }
+            return (
+              <button
+                key={entry.id ?? entry.label}
+                type="button"
+                disabled={entry.isDisabled === true}
+                onClick={() =>
+                  swipe.activateEntry(() => {
+                    void entry.onActivate();
+                    return entry.hasRemoval === true;
+                  })
+                }
+                {...mergeProps(
+                  themeProps('item-swipe-action', {variant}),
+                  focusOutlineProps.focusVisible(
+                    styles.swipeEntry,
+                    swipeVariantStyles[variant],
+                    entry.isDisabled === true && styles.swipeEntryDisabled,
+                  ),
+                )}>
+                {content}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Component
-      ref={(isDelegate ? mergedRef : ref) as React.Ref<never>}
+      ref={rootRef as React.Ref<never>}
       {...restProps}
+      {...(hasSwipe ? swipe.handlers : undefined)}
       {...linkRootProps}
       aria-selected={(allowsAriaSelected && isSelected) || undefined}
       // aria-selected is invalid on roles that don't permit it (listitem, a
@@ -631,6 +999,7 @@ export function Item({
         (isSelected && !allowsAriaSelected ? true : undefined)
       }
       aria-disabled={isDisabled || undefined}
+      {...(isInteractive ? pressable : undefined)}
       {...mergeProps(
         themeProps('item', {density, align}),
         focusOutlineProps.focusWithin(
@@ -643,25 +1012,20 @@ export function Item({
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
           isDisabled && !hasParentRole && styles.disabled,
+          hasSwipe && styles.swipeRoot,
           xstyle,
         ),
         className,
         style,
       )}
       role={role}
-      onClick={
-        isDelegate
-          ? delegatedOnClick
-          : hasParentRole
-            ? onClick
-            : isInteractive
-              ? handleContainerClick
-              : undefined
-      }>
+      onClick={rootOnClick}>
       <ItemDescriptionContext
         value={hasRenderableDescription ? descriptionID : null}>
         {innerContent}
       </ItemDescriptionContext>
+      {hasSwipe && renderSwipePanel('leading', leadingSwipe)}
+      {hasSwipe && renderSwipePanel('trailing', trailingSwipe)}
     </Component>
   );
 }

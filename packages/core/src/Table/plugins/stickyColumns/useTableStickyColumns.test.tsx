@@ -17,7 +17,7 @@ import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Table} from '../../Table';
 import {useTableStickyColumns} from './useTableStickyColumns';
-import {pixel} from '../../columnUtils';
+import {pixel, proportional} from '../../columnUtils';
 import type {TableColumn} from '../../types';
 
 // =============================================================================
@@ -87,6 +87,60 @@ describe('useTableStickyColumns', () => {
     // name is first → offset 0; email follows → offset = name width (180px)
     expect(getHeader('Name').style.insetInlineStart).toBe('0px');
     expect(getHeader('Email').style.insetInlineStart).toBe('180px');
+  });
+
+  it('uses the width-less floor for cumulative pinned offsets', () => {
+    const widthLessColumns: TableColumn<Row>[] = [
+      {key: 'name', header: 'Name'},
+      {key: 'email', header: 'Email'},
+      {key: 'team', header: 'Team'},
+    ];
+
+    function Harness() {
+      const sticky = useTableStickyColumns<Row>({
+        startKeys: ['name', 'email'],
+      });
+      return (
+        <Table
+          data={data}
+          columns={widthLessColumns}
+          idKey="id"
+          plugins={{stickyColumns: sticky}}
+        />
+      );
+    }
+
+    render(<Harness />);
+    expect(getHeader('Name').style.insetInlineStart).toBe('0px');
+    expect(getHeader('Email').style.insetInlineStart).toBe('60px');
+  });
+
+  it('offsets a pinned column by the rendered width of a width-less neighbor', () => {
+    // At overflow the table sits at its minimum width (3 × 120px here), so the
+    // width-less Name column renders at 120px, not its own 60px floor.
+    const mixedColumns: TableColumn<Row>[] = [
+      {key: 'name', header: 'Name'},
+      {key: 'email', header: 'Email', width: proportional(1)},
+      {key: 'team', header: 'Team', width: proportional(1)},
+    ];
+
+    function Harness() {
+      const sticky = useTableStickyColumns<Row>({
+        startKeys: ['name', 'email'],
+      });
+      return (
+        <Table
+          data={data}
+          columns={mixedColumns}
+          idKey="id"
+          plugins={{stickyColumns: sticky}}
+        />
+      );
+    }
+
+    render(<Harness />);
+    expect(getHeader('Name').style.insetInlineStart).toBe('0px');
+    expect(getHeader('Email').style.insetInlineStart).toBe('120px');
   });
 
   it('pins an end column at inset-inline-end: 0', () => {

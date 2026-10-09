@@ -16,6 +16,7 @@ import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
 import {docs as chatDocs} from '../../../../packages/core/src/Chat/Chat.doc.mjs';
 import {docs as drawerDocs} from '../../../../packages/lab/src/Drawer/Drawer.doc.mjs';
+import {docs as drawerHeaderDocs} from '../../../../packages/lab/src/Drawer/DrawerHeader.doc.mjs';
 import docsiteConfig from '../../astryx.config.mjs';
 import {packages} from '../generated/packageRegistry';
 import {
@@ -1226,6 +1227,25 @@ describe('exampleRegistry', () => {
     expect(exampleRegistry.Drawer.map(example => example.name).sort()).toEqual(
       labels.slice(1).sort(),
     );
+  });
+
+  it('gives DrawerHeader a visible showcase and projects its docs into example blocks', () => {
+    const headerBlocks = blocks.filter(
+      block => block.exampleFor === 'DrawerHeader',
+    );
+    const labels = drawerHeaderDocs.examples!.map(example => example.label);
+    expect(headerBlocks).toHaveLength(labels.length + 1);
+    expect(
+      headerBlocks.every(block => block.sourcePackage === '@astryxdesign/lab'),
+    ).toBe(true);
+
+    // Like DialogHeader, the page leads with a rendered header rather than an
+    // empty preview; every authored example also runs live.
+    expect(headerBlocks.filter(block => block.isShowcase)).toHaveLength(1);
+    expect(showcaseRegistry.DrawerHeader).toBeTypeOf('function');
+    expect(
+      exampleRegistry.DrawerHeader.map(example => example.name).sort(),
+    ).toEqual([...labels].sort());
   });
 
   it('Button has multiple examples', () => {

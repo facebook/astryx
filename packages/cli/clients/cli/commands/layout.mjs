@@ -18,7 +18,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {jsonOut} from '../../../foundation/response/json.mjs';
+import {jsonOut, isJsonMode} from '../../../foundation/response/json.mjs';
 import {emit, section, text, list, record, code, WARN} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -58,6 +58,39 @@ import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
  * @property {'compact'|'outline'|'auto'} [form]
  * @property {boolean} [loose]
  */
+
+/**
+ * DEP-0006: the `astryx layout` command group is deprecated.
+ *
+ * Human mode: one stderr warning per invocation.
+ * JSON mode: `meta.deprecations` array in the response envelope.
+ */
+const LAYOUT_DEPRECATION = Object.freeze({
+  id: 'DEP-0006',
+  replacements: ['build', 'template', 'docs layout'],
+});
+
+function warnDeprecated() {
+  if (!isJsonMode()) {
+    console.error(
+      '[DEP-0006] astryx layout is deprecated and will be removed in a future minor release.\n' +
+      '  Use instead:\n' +
+      '    astryx build "<idea>"       choose the template to start from\n' +
+      '    astryx template <name>      scaffold it\n' +
+      '    astryx docs layout          layout guidance\n',
+    );
+  }
+}
+
+/**
+ * Add deprecation metadata to a JSON response before output.
+ * Canonical stdout (type, data) is unchanged; the metadata sits in `meta`.
+ * @param {{type: string, data: unknown}} result
+ * @returns {{type: string, data: unknown, meta: {deprecations: [typeof LAYOUT_DEPRECATION]}}}
+ */
+function withDeprecation(result) {
+  return {...result, meta: {deprecations: [LAYOUT_DEPRECATION]}};
+}
 
 /** The largest layout expression read from --file or stdin. */
 const MAX_EXPRESSION_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -143,6 +176,7 @@ export function registerLayout(program) {
   defineCommand(layoutCmd, layoutExpandCommand, {
     fn: layoutExpandFn,
     action: async (/** @type {string} */ expression, /** @type {string} */ targetPath, /** @type {LayoutExpandOptions} */ options) => {
+      warnDeprecated();
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
       if (!source || source.trim() === '') {
@@ -168,7 +202,7 @@ export function registerLayout(program) {
       // Expanding turns an expression into TSX — a transformation, not a
       // lookup. What it produced is in the output; there is no set to count.
       if (json) {
-        jsonOut(result);
+        jsonOut(withDeprecation(result));
         return NO_RESULT_SET;
       }
 
@@ -205,6 +239,7 @@ export function registerLayout(program) {
   defineCommand(layoutCmd, layoutCheckCommand, {
     fn: layoutCheckFn,
     action: async (/** @type {string} */ expression, /** @type {LayoutCheckOptions} */ options) => {
+      warnDeprecated();
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
       if (!source || source.trim() === '') {
@@ -234,7 +269,7 @@ export function registerLayout(program) {
       // A verdict on one expression: valid or not, with the errors that made
       // it so. Nothing was looked up.
       if (json) {
-        jsonOut(result);
+        jsonOut(withDeprecation(result));
         return NO_RESULT_SET;
       }
 
@@ -268,6 +303,7 @@ export function registerLayout(program) {
   defineCommand(layoutCmd, layoutGrammarCommand, {
     fn: layoutGrammarFn,
     action: async () => {
+      warnDeprecated();
       const json = program.opts().json || false;
       /** @type {LayoutGrammarResponse} */
       let result;
@@ -280,7 +316,7 @@ export function registerLayout(program) {
       // One document, the same one every time: the grammar cheatsheet.
       const answered = resultSet({count: 1, resultKind: 'doc'});
       if (json) {
-        jsonOut(result);
+        jsonOut(withDeprecation(result));
         return answered;
       }
       // The cheatsheet is a preformatted document — emit verbatim.

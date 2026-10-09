@@ -113,10 +113,16 @@ export const docs = {
       default: 'true',
     },
     {
+      name: 'markdownExtensions',
+      type: 'ReadonlyArray<RichTextMarkdownExtension>',
+      description:
+        'Markdown plugins whose nodes the editor draws, each adopted with createRichTextExtension. A plugin node renders exactly as core Markdown renders it and edits as one unit; a node whose plugin is not given here shows its source. Pass the extensions the content was converted with, and create them in a client module. RichTextView takes the same prop.',
+    },
+    {
       name: 'transformers',
       type: 'ReadonlyArray<Transformer>',
       description:
-        'Markdown transformers: the single source of truth for markdown behaviour. Defaults to thematic breaks, the standard @lexical/markdown TRANSFORMERS, hard line breaks (a line break typed with Shift+Enter exports as a backslash before the line ending, so it reads back as a line break), and GFM tables; a custom array replaces the default, thematic breaks and tables included. In Lexical the same array drives all three markdown operations (shortcut typing, markdown->state import, state->markdown export); this prop wires shortcut typing today and is the intended input for the serialization APIs added in later phases. Pass a custom array to support additional node types (e.g. transformers layered in via the nodes extension point) consistently across all three. Shortcut typing is only applied when hasMarkdownShortcuts is true.',
+        'Markdown transformers: the single source of truth for markdown behaviour. Defaults to thematic breaks, the standard @lexical/markdown TRANSFORMERS (with each nested list written at the content column of the item above it, so it reads back nested), hard line breaks (a line break typed with Shift+Enter exports as a backslash before the line ending, so it reads back as a line break), and GFM tables; a custom array replaces the default, thematic breaks and tables included. In Lexical the same array drives all three markdown operations (shortcut typing, markdown->state import, state->markdown export); this prop wires shortcut typing today and is the intended input for the serialization APIs added in later phases. Pass a custom array to support additional node types (e.g. transformers layered in via the nodes extension point) consistently across all three. Shortcut typing is only applied when hasMarkdownShortcuts is true.',
       default: 'TRANSFORMERS',
     },
     {
@@ -129,8 +135,9 @@ export const docs = {
       name: 'tabEscapeHint',
       type: 'string',
       description:
-        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Override to localize; pass "" to omit.',
-      default: "'Press Escape then Tab to move focus out of the editor.'",
+        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Translated for the active locale; override to change the text, or pass "" to omit.',
+      default:
+        "'Press Escape then Tab to move focus out of the editor.' (translated)",
     },
     {
       name: 'maxLength',
@@ -207,7 +214,12 @@ export const docs = {
       {
         guidance: true,
         description:
-          'To produce a defaultValue from Markdown without mounting an editor (e.g. on the server), use markdownToEditorStateJSON(markdown). Convert the other way with editorStateJSONToMarkdown(json). Both run headless via @lexical/headless and accept the same transformers/nodes options as the editor. The round trip keeps the Markdown as written: exporting unchanged content returns the input exactly, including indentation, escapes, character references, fence metadata, and constructs the editor shows as plain text, and an edit regenerates only the blocks it changed.',
+          'To produce a defaultValue from Markdown without mounting an editor (e.g. on the server), use markdownToEditorStateJSON(markdown). Convert the other way with editorStateJSONToMarkdown(json). Both run headless via @lexical/headless and accept the same transformers/nodes options as the editor. The round trip keeps the Markdown as written: exporting unchanged content returns the input exactly, including indentation, escapes, character references, fence metadata, and constructs the editor shows as plain text, and an edit regenerates only the blocks it changed. On the server or in Node, import them from @astryxdesign/richtext/markdown, which loads no React or client code.',
+      },
+      {
+        guidance: true,
+        description:
+          "To recognize a Markdown plugin made with createMarkdownPlugin, adopt it with createRichTextExtension(plugin) and pass the result in the extensions option of markdownToEditorStateJSON. Core's parser finds the plugin's syntax, and each node keeps its exact source, which is what it exports; base Markdown inside plugin source stays part of the node. A plugin that declares a transform is refused with a RichTextExtensionError, and so is a configuration that adopts one plugin twice. Without the extension, plugin syntax stays text. createRichTextExtension and the serializers are also exported from @astryxdesign/richtext/markdown for server code. Pass the same extensions to the markdownExtensions prop of RichTextEditor and RichTextView to draw the nodes: each renders as core Markdown renders it, edits as one unit (the caret steps over it; Backspace, cut, copy, and paste take it whole), and exports its exact source.",
       },
       {
         guidance: true,
@@ -227,7 +239,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG. A theme can restyle any glyph without forking the toolbar: registerIcons({'richtext:bold': <MyBoldIcon />}) from @astryxdesign/core/Icon. registerIcons now accepts arbitrary extension keys, and getExtendedIcon(key, fallback) resolves them; the same pattern any library can use to make its own icons theme-overridable.",
+          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG. A theme restyles any glyph without forking the toolbar by naming its key: defineTheme({icons: {'richtext:bold': <MyBoldIcon />}}). Undo and redo mirror under right-to-left direction, whichever glyph draws them.",
       },
       {
         guidance: false,

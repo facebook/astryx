@@ -100,7 +100,7 @@ describe('integration-contributed topics', () => {
       package: '@acme/widgets',
     });
     // The built-in topics keep their own owner.
-    expect(listed.data.find(t => t.topic === 'tokens').package).toBe('@astryxdesign/cli');
+    expect(listed.data.find(t => t.topic === 'color').package).toBe('@astryxdesign/cli');
 
     const detail = await docs('deploying', undefined, {cwd: tmpDir, full: true});
     expect(detail.type).toBe('docs.detail');
@@ -243,7 +243,7 @@ describe('integration-contributed topics', () => {
       const english = await docs('theme', undefined, {full: true});
       const englishTitles = english.data.sections.map(section => section.title);
       expect(englishTitles).toEqual(
-        expect.arrayContaining(['Available Themes', 'Theme Props']),
+        expect.arrayContaining(['Wrap your app in a theme', 'Dark mode']),
       );
       scaffold({
         'theme-internal.doc.mjs': topic({
@@ -251,12 +251,13 @@ describe('integration-contributed topics', () => {
           extends: 'theme',
           sections: [
             {
-              id: 'acme-available-themes',
-              title: 'Available Themes',
+              id: 'quick-start',
+              title: 'Wrap your app in a theme',
               content: [{type: 'prose', text: 'Acme themes.'}],
             },
             {
-              title: 'Theme Props',
+              id: 'light-dark-mode',
+              title: 'Dark mode',
               content: [{type: 'prose', text: 'Acme props.'}],
             },
           ],
@@ -271,7 +272,7 @@ describe('integration-contributed topics', () => {
       expect(extended.data.sections).toHaveLength(base.data.sections.length);
       expect(
         extended.data.sections.filter(
-          section => section.id === 'acme-available-themes',
+          section => section.id === 'quick-start',
         ),
       ).toHaveLength(1);
       expect(
@@ -330,7 +331,7 @@ describe('integration-contributed topics', () => {
   it("falls back to the CLI's own topics when the project config is unreadable", async () => {
     scaffold({'deploying.doc.mjs': topic()}, {config: 'export default {integrations: 42};\n'});
     const catalog = await loadDocsCatalog(tmpDir);
-    expect(catalog.resolve('tokens')).toBeTruthy();
+    expect(catalog.resolve('color')).toBeTruthy();
     expect(catalog.resolve('deploying')).toBeUndefined();
   }, SLOW);
 });

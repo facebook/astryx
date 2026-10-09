@@ -13,7 +13,7 @@ export const doc = {
   namespace: 'cli/commands',
   summary: 'Report a missing component or feature to the package that owns it',
   description:
-    'Reports a missing component, variant, layout, styling, accessibility, API, or documentation capability to the package that owns it: the --package you name, else the one package that provides the component, else Core. ' +
+    'Reports a missing component, variant, layout, styling, accessibility, API, or documentation capability to the package that owns it: the --package you name, else the integration whose component replaces it, else the one package that provides the component, else Core. ' +
     'Every configured handler receives the report: the project config handler first, then each integration handler in config order. Public handlers run only with --confirm-public; internal handlers always run. A failing handler does not stop the others. ' +
     "With no handler it files a GitHub issue for the owning package, only with --confirm-public (without it nothing is sent), or returns the package's issues URL when that is not on GitHub. " +
     'The report records whether an agent or a person ran it.',
@@ -49,7 +49,7 @@ export const doc = {
       flag: '--package <pkg>',
       param: 'options.package',
       description:
-        'Package that owns the gap: @astryxdesign/core or a loaded integration. Overrides automatic routing; needed when more than one package provides the component',
+        'Package that owns the gap: @astryxdesign/core or a loaded integration. Overrides automatic routing, which picks the integration whose component replaces the named Core component, else the one package that provides it, else Core; needed when more than one package provides the component',
     },
     {
       flag: '--confirm-public',

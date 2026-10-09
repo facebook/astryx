@@ -115,6 +115,11 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
+    // A row dragged aside for its swipe actions (Item.swipeActions) paints
+    // past the list's inline edge unless the list clips. `clip`, never
+    // `hidden`: hidden makes a scroll container, which fights the list's
+    // vertical scroller. (StyleX emits the physical longhand of this axis.)
+    overflowInline: 'clip',
   },
   withDividers: {
     gap: 0,

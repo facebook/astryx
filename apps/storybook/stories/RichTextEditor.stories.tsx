@@ -19,6 +19,8 @@ import {
   MarkdownParitySandbox,
   type MarkdownParitySandboxProps,
 } from './RichTextEditor.markdownParity';
+import {MarkdownPluginsImportExport as MarkdownPluginsImportExportStory} from './RichTextEditor.markdownPluginsImportExport';
+import {MarkdownPluginsSandbox} from './RichTextEditor.markdownPlugins';
 
 const meta: Meta<typeof RichTextEditor> = {
   title: 'Lab/RichTextEditor',
@@ -343,7 +345,8 @@ export const ImperativeRef = {
         </div>
         <pre
           style={{
-            background: '#f5f5f5',
+            background: 'var(--color-background-muted)',
+            color: 'var(--color-text-primary)',
             padding: 12,
             borderRadius: 6,
             fontSize: 13,
@@ -377,6 +380,31 @@ Supports **bold**, _italic_, and lists:
  *  4. Round-trip it back to Markdown with `editorStateJSONToMarkdown`
  *     so you can eyeball that Markdown -> JSON -> Markdown is stable.
  */
+/**
+ * One document with an inline and a block Markdown plugin node in core
+ * Markdown, RichTextView, and RichTextEditor (spec:AST-064): each node renders
+ * the same everywhere and edits as one unit. Copy a node into the editor
+ * given the plugins, or into the one that is not, which shows its source.
+ */
+export const MarkdownPlugins = {
+  name: 'Markdown plugins',
+  render: () => <MarkdownPluginsSandbox />,
+};
+
+/**
+ * Markdown with plugin syntax in, and out again (spec:AST-064). A mention
+ * plugin and a note-block plugin, adopted with createRichTextExtension, are
+ * recognized as RichText imports the Markdown; the exported Markdown sits
+ * beside the input, byte for byte. Nodes inside emphasis, strong, and
+ * strikethrough stay inside them, a note that starts on the line after a
+ * paragraph line becomes its own block, and a plugin with a transform is
+ * refused. Edit the text around the nodes and export to see them kept.
+ */
+export const MarkdownPluginsImportExport = {
+  name: 'Markdown plugins: import and export',
+  render: () => <MarkdownPluginsImportExportStory />,
+};
+
 export const MarkdownSerializers = {
   render: () => {
     const [markdown, setMarkdown] = useState<string>(SAMPLE_MARKDOWN);
@@ -386,7 +414,8 @@ export const MarkdownSerializers = {
     const roundTripped = editorStateJSONToMarkdown(json);
 
     const boxStyle = {
-      background: '#f5f5f5',
+      background: 'var(--color-background-muted)',
+      color: 'var(--color-text-primary)',
       padding: 12,
       borderRadius: 6,
       fontSize: 13,

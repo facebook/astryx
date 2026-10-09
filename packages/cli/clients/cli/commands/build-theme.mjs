@@ -33,24 +33,41 @@ import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, text, list, records, code} from '../formatters/index.mjs';
+import {
+  emit,
+  section,
+  text,
+  record,
+  records,
+  code,
+  list,
+} from '../formatters/index.mjs';
 import {logger} from '../../../api/logger.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
 import {themeAdd} from '../../../api/theme/add/add.mjs';
+import {themeRemove} from '../../../api/theme/remove/remove.mjs';
+import {themeUse} from '../../../api/theme/use/use.mjs';
+import {themeEject} from '../../../api/theme/eject/eject.mjs';
 import {themeTemplate} from '../../../api/theme/template/template.mjs';
-import {themeListAvailable} from '../../../api/theme/list/list.mjs';
+import {
+  themeListAvailable,
+  themeListCopySources,
+} from '../../../api/theme/list/list.mjs';
 import {themeTargets} from '../../../api/theme/targets/targets.mjs';
 import {
   serializePaletteCandidate,
   themePaletteGenerate,
 } from '../../../api/theme/palette/generate/generate.mjs';
 import {
+  importSpecifier,
+  printBatchTrailer,
+  printCompactTrailer,
   themeBuild,
   themeBuildFamily,
-  importSpecifier,
+  themeBuildForReport,
 } from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {NO_RESULT_SET, resultSet} from '../../../foundation/debug/index.mjs';
@@ -58,6 +75,9 @@ import {doc as themeGroup} from './theme.doc.mjs';
 import {doc as themeBuildCommand} from './theme-build.doc.mjs';
 import {doc as themeListCommand} from './theme-list.doc.mjs';
 import {doc as themeAddCommand} from './theme-add.doc.mjs';
+import {doc as themeRemoveCommand} from './theme-remove.doc.mjs';
+import {doc as themeUseCommand} from './theme-use.doc.mjs';
+import {doc as themeEjectCommand} from './theme-eject.doc.mjs';
 import {doc as themeTemplateCommand} from './theme-template.doc.mjs';
 import {doc as themeTargetsCommand} from './theme-targets.doc.mjs';
 import {doc as themePaletteGroup} from './theme-palette.doc.mjs';
@@ -65,6 +85,9 @@ import {doc as themePaletteGenerateCommand} from './theme-palette-generate.doc.m
 import {doc as themeBuildFn} from '../../../api/theme/themeBuild.doc.mjs';
 import {doc as themeListFn} from '../../../api/theme/themeListAvailable.doc.mjs';
 import {doc as themeAddFn} from '../../../api/theme/themeAdd.doc.mjs';
+import {doc as themeRemoveFn} from '../../../api/theme/themeRemove.doc.mjs';
+import {doc as themeUseFn} from '../../../api/theme/themeUse.doc.mjs';
+import {doc as themeEjectFn} from '../../../api/theme/themeEject.doc.mjs';
 import {doc as themeTemplateFn} from '../../../api/theme/themeTemplate.doc.mjs';
 import {doc as themeTargetsFn} from '../../../api/theme/themeTargets.doc.mjs';
 import {doc as themePaletteGenerateFn} from '../../../api/theme/themePaletteGenerate.doc.mjs';
@@ -85,13 +108,17 @@ function resolveCliBin() {
  * Resolves with the child's exit code; never rejects.
  *
  * @param {string} file - The theme file argument, as the user passed it.
- * @param {{out?: string, iconsSpecifier?: string}} options - Parsed command
- *   options that affect generated output.
+ * @param {{out?: string, iconsSpecifier?: string, detail?: string}} options -
+ *   Parsed command options that affect generated output, plus the detail
+ *   level the user chose.
  * @returns {Promise<number>}
  */
 function runThemeBuildOnceChild(file, options) {
   const cliBin = resolveCliBin();
-  const args = [cliBin, 'theme', 'build', file];
+  // A detail level the user chose applies to every rebuild.
+  const args = options.detail
+    ? [cliBin, '--detail', options.detail, 'theme', 'build', file]
+    : [cliBin, 'theme', 'build', file];
   if (options.out) args.push('--out', options.out);
   if (options.iconsSpecifier)
     args.push('--icons-specifier', options.iconsSpecifier);
@@ -115,7 +142,7 @@ function runThemeBuildOnceChild(file, options) {
  *
  * @param {Array<{file: string, filePath: string}>} entries - The theme file
  *   arguments as the user passed them, with their resolved absolute paths.
- * @param {{out?: string, iconsSpecifier?: string}} options - Parsed command options.
+ * @param {{out?: string, iconsSpecifier?: string, detail?: string}} options - Parsed command options, plus the detail level the user chose.
  * @returns {Promise<void>} Resolves when the watcher is stopped (Ctrl-C).
  */
 async function runThemeBuildWatch(entries, options) {
@@ -203,28 +230,174 @@ async function warnOnThemeIntegrationIssues(json) {
 }
 
 /**
- * Emit available themes as a bulleted list plus the `theme add` usage hint —
- * the human projection of a `theme.list` envelope. Each row names its owner so
- * duplicate slugs are distinguishable.
+ * Print `theme add --list`. Its JSON stays the released `theme.list`; its text
+ * names the commands of the current lifecycle stage (AST-050 FR12).
  * @param {import('../../../api/theme/theme.type.mjs').ThemeListEntry[]} themes
  */
-function printThemeList(themes) {
+function printThemeAddList(themes) {
+  const run = getCliInvocation();
+  // `theme list` shows what this project can add now. Themes in packages it
+  // has not installed are `discover`'s.
+  const more = text(
+    `More themes in packages you could add: ${run} discover theme`,
+  );
   if (themes.length === 0) {
-    emit(text('No themes are available in this project.'));
+    emit(text('No themes are available in this project.'), more);
     return;
   }
-  const run = getCliInvocation();
   emit(
     section('Themes'),
     list(
-      themes.map(t => {
-        const status = t.maintained ? 'maintained' : 'example';
-        const head = `${t.slug} (${status}, ${t.package})`;
-        return t.description ? [head, t.description] : head;
+      themes.map(theme => {
+        const status = theme.maintained ? 'maintained' : 'example';
+        const head = `${theme.slug} (${status}, ${theme.package})`;
+        return theme.description ? [head, theme.description] : head;
       }),
     ),
     text(
-      `Usage:\n  ${run} theme add <slug> [target-path]   Scaffold a theme file you own`,
+      `Import one: ${run} theme add <slug> --import [--package <package>]\n` +
+        `Fork source: ${run} theme eject <slug> [target-path]`,
+    ),
+    more,
+  );
+}
+
+/**
+ * Print every field in the `theme.list` entries. Duplicate slugs stay separate
+ * because each record names its owner.
+ * @param {import('../../../api/theme/theme.type.mjs').ThemeListEntry[]} themes
+ * @param {import('../../../api/theme/theme.type.mjs').ThemeUnmigratedCopy[]} [unmigratedCopies]
+ */
+function printThemeList(themes, unmigratedCopies = []) {
+  const run = getCliInvocation();
+  const more = text(
+    `More themes in packages you could add: ${run} discover theme`,
+  );
+  if (themes.length === 0) {
+    emit(text('No themes are available in this project.'), more);
+  } else {
+    emit(
+      section('Themes', `${themes.length} available`),
+      records(themes, {
+        fields: [
+          'slug',
+          'displayName',
+          'description',
+          'maintained',
+          'package',
+          'source',
+          'added',
+          'default',
+        ],
+        layout: 'stacked',
+        format: {
+          maintained: (/** @type {boolean} */ value) => (value ? 'yes' : 'no'),
+          added: (/** @type {boolean} */ value) => (value ? 'yes' : 'no'),
+          default: (/** @type {boolean} */ value) => (value ? 'yes' : 'no'),
+        },
+      }),
+      text(
+        `Import one: ${run} theme add <slug> --import [--package <package>]\n` +
+          `Fork source: ${run} theme eject <slug> [target-path]`,
+      ),
+      more,
+    );
+  }
+  if (unmigratedCopies.length > 0) {
+    emit(
+      section(
+        'Unmigrated theme copies',
+        `${unmigratedCopies.length} not listed as themes`,
+      ),
+      records(unmigratedCopies, {
+        fields: ['slug', 'path', 'source', 'descriptor'],
+        layout: 'stacked',
+      }),
+      text(`Migrate them: ${unmigratedCopies[0].upgradeCommand}`),
+    );
+  }
+}
+
+/**
+ * Print every `theme.app` receipt field and the one-time app wiring on the first
+ * add.
+ * @param {import('../../../api/theme/theme.type.mjs').ThemeAppResponse} result
+ */
+function printThemeApp(result) {
+  const {themes, default: defaultSlug, modulePath, change} = result.data;
+  if (result.package !== undefined) emit(record({package: result.package}));
+  emit(
+    section('App themes', `${themes.length} added`),
+    records(themes, {
+      fields: [
+        'slug',
+        'owner',
+        'module',
+        'stylesheet',
+        'fontStylesheet',
+        'source',
+      ],
+      layout: 'stacked',
+    }),
+    records(
+      [
+        {
+          default: defaultSlug,
+          modulePath,
+          action: change.action,
+          slug: change.slug,
+          changed: change.changed,
+          firstAdd: change.firstAdd,
+        },
+      ],
+      {
+        fields: [
+          'default',
+          'modulePath',
+          'action',
+          'slug',
+          'changed',
+          'firstAdd',
+        ],
+        layout: 'stacked',
+      },
+    ),
+  );
+  if (!change.firstAdd) return;
+  const stem = path.basename(modulePath, path.extname(modulePath));
+  emit(
+    text('Wire the generated module once in the app root:'),
+    code(
+      "import {Theme} from '@astryxdesign/core';\n" +
+        `import {themes, defaultThemeSlug} from './${stem}';\n\n` +
+        '<Theme theme={themes[defaultThemeSlug]}>\n  <App />\n</Theme>',
+    ),
+  );
+}
+
+/**
+ * Print every field in a source-fork receipt.
+ * @param {import('../../../api/theme/theme.type.mjs').ThemeEjectResponse} result
+ */
+function printThemeEject(result) {
+  const {data} = result;
+  emit(
+    section('Ejected theme'),
+    records([data], {
+      fields: [
+        'slug',
+        'displayName',
+        'maintained',
+        'package',
+        'outputDir',
+        'entry',
+        'exportName',
+        'files',
+      ],
+      layout: 'stacked',
+    }),
+    text(
+      `This is a local fork. Build it with ${getCliInvocation()} theme build ${path.join(data.outputDir, data.entry)}.`,
     ),
   );
 }
@@ -368,6 +541,13 @@ export function registerTheme(program) {
       /** @type {{out?: string, watch?: boolean, check?: boolean, iconsSpecifier?: string, family?: boolean, familyKey?: string}} */ options,
     ) => {
       const json = program.opts().json || false;
+      // The report is one line per theme unless the user asks for
+      // `--detail full`, which prints the install example and the font
+      // guidance: once for one theme, as it always has, and once for the whole
+      // batch rather than per theme.
+      const detailChosen = program.getOptionValueSource('detail') !== 'default';
+      const detail = detailChosen ? program.opts().detail : undefined;
+      const compact = detail !== 'full';
       const entries = files.map(file => ({
         file,
         filePath: path.resolve(process.cwd(), file),
@@ -443,7 +623,7 @@ export function registerTheme(program) {
             code: ERROR_CODES.ERR_THEME_INVALID,
           });
         }
-        await runThemeBuildWatch(entries, options);
+        await runThemeBuildWatch(entries, {...options, detail});
         return NO_RESULT_SET;
       }
 
@@ -480,20 +660,44 @@ export function registerTheme(program) {
         }
       }
 
+      // --json and --check keep their own output at every detail level.
+      const report = !json && !options.check && (entries.length > 1 || compact);
+      /** @type {import('../../../api/theme/build/build.mjs').ThemeBuildTrailer[]} */
+      const trailers = [];
+
       /** @type {Array<{file: string, receipt: import('../../../api/theme/theme.type.mjs').ThemeBuildResponse | import('../../../api/theme/theme.type.mjs').ThemeBuildCheckResponse | null}>} */
       const results = [];
       let stale = false;
       for (const entry of entries) {
         try {
-          const result = await themeBuild(
-            entry.file,
-            {
-              out: options.out,
-              check: options.check,
-              iconsSpecifier: options.iconsSpecifier,
-            },
-            {cwd: process.cwd()},
-          );
+          const buildOptions = {
+            out: options.out,
+            check: options.check,
+            iconsSpecifier: options.iconsSpecifier,
+          };
+          let result;
+          if (report) {
+            const built = await themeBuildForReport(
+              entry.file,
+              buildOptions,
+              {cwd: process.cwd()},
+              {compact},
+            );
+            result = built.receipt;
+            if (built.trailer) trailers.push(built.trailer);
+            if (compact && result?.type === 'theme.build') {
+              const {outputs, sizeKB, tokenCount, componentCount} = result.data;
+              emit(
+                text(
+                  `[ok] ${outputs.css} (${sizeKB} KB, ${tokenCount} token overrides, ${componentCount} component overrides)`,
+                ),
+              );
+            }
+          } else {
+            result = await themeBuild(entry.file, buildOptions, {
+              cwd: process.cwd(),
+            });
+          }
           results.push({file: entry.file, receipt: result ?? null});
           if (
             options.check &&
@@ -508,7 +712,10 @@ export function registerTheme(program) {
             /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
           // Stop at the first failure, as a shell loop under `set -e` does.
           // With several themes in flight the message alone rarely says which
-          // one broke, so name it.
+          // one broke, so name it. Themes already written keep their install
+          // and font guidance.
+          if (report && compact) printCompactTrailer(trailers);
+          else if (report) printBatchTrailer(trailers);
           return cliError(
             entries.length > 1 ? `${entry.file}: ${err.message}` : err.message,
             {suggestions: err.suggestions, code: err.code},
@@ -529,7 +736,14 @@ export function registerTheme(program) {
           };
           jsonOut(batch);
         }
-      } else if (entries.length > 1) {
+      } else {
+        if (report && compact) {
+          printCompactTrailer(trailers, {hint: !detailChosen});
+        } else if (report) {
+          printBatchTrailer(trailers);
+        }
+      }
+      if (!json && entries.length > 1) {
         emit(
           text(
             options.check
@@ -582,7 +796,7 @@ export function registerTheme(program) {
         return answered;
       }
 
-      printThemeList(result.data);
+      printThemeList(result.data, result.meta?.unmigratedCopies);
       return answered;
     },
   });
@@ -592,26 +806,22 @@ export function registerTheme(program) {
     action: async (
       /** @type {string | undefined} */ slug,
       /** @type {string | undefined} */ targetPath,
-      /** @type {{list?: boolean, overwrite?: boolean, package?: string}} */ options,
+      /** @type {{list?: boolean, overwrite?: boolean, import?: boolean, package?: string}} */ options,
     ) => {
       const json = program.opts().json || false;
-
-      // The CLI is non-interactive: never prompt to confirm an overwrite.
-      // Existing files require an explicit --overwrite; otherwise themeAdd's
-      // ERR_FILE_EXISTS guard rejects the write. `--list` (or a bare `theme add`
-      // with no slug) is the list affordance — route it to the list leaf.
-      /** @type {import('../../../api/theme/theme.type.mjs').ThemeListResponse | import('../../../api/theme/theme.type.mjs').ThemeAddResponse} */
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeListResponse | import('../../../api/theme/theme.type.mjs').ThemeAddResponse | import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
       let result;
       try {
         result =
           options.list || !slug
-            ? await themeListAvailable({
+            ? await themeListCopySources({
                 cwd: process.cwd(),
                 package: options.package,
               })
             : await themeAdd(slug, {
                 targetPath,
                 overwrite: options.overwrite,
+                import: options.import,
                 cwd: process.cwd(),
                 package: options.package,
               });
@@ -625,8 +835,6 @@ export function registerTheme(program) {
       }
 
       await warnOnThemeIntegrationIssues(json);
-      // `--list` (or no slug) browses all available themes; naming one copies it
-      // into the project, which is an effect with nothing to count.
       const answered =
         result.type === 'theme.list'
           ? resultSet({count: result.data.length, resultKind: 'theme'})
@@ -636,13 +844,15 @@ export function registerTheme(program) {
         jsonOut(result);
         return answered;
       }
-
       if (result.type === 'theme.list') {
-        printThemeList(result.data);
+        printThemeAddList(result.data);
+        return answered;
+      }
+      if (result.type === 'theme.app') {
+        printThemeApp(result);
         return answered;
       }
 
-      // theme.add — print where files landed + how to use the theme.
       const {
         displayName,
         outputDir,
@@ -657,19 +867,101 @@ export function registerTheme(program) {
       );
       emit(
         text(`[ok] Added ${displayName} theme from ${owner} to ${outputDir}/`),
-        list(files.map(f => `${outputDir}/${f}`)),
+        list(files.map(file => `${outputDir}/${file}`)),
         text(
           'Use it in your app (import path is relative to a file in src/ — adjust if yours lives elsewhere):',
         ),
         code(
-          `import { ${exportName} } from '${entryModule}';\n\n` +
+          "import { Theme } from '@astryxdesign/core';\n" +
+            `import { ${exportName} } from '${entryModule}';\n\n` +
             `<Theme theme={${exportName}}>\n  <App />\n</Theme>`,
         ),
         text(
           `This is your copy of the ${displayName} theme — edit ${entry} to make it your own.`,
         ),
       );
+      console.error(
+        `Warning: \`theme add\` source copying is deprecated (DEP-0005). Run \`${getCliInvocation()} theme eject ${result.data.slug}\` to fork source or \`${getCliInvocation()} theme add ${result.data.slug} --import\` to use the built theme.`,
+      );
       return answered;
+    },
+  });
+
+  defineCommand(theme, themeRemoveCommand, {
+    fn: themeRemoveFn,
+    action: async (/** @type {string} */ slug) => {
+      const json = program.opts().json || false;
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
+      let result;
+      try {
+        result = await themeRemove(slug, {cwd: process.cwd()});
+      } catch (e) {
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        return cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
+      }
+      await warnOnThemeIntegrationIssues(json);
+      if (json) jsonOut(result);
+      else printThemeApp(result);
+      return NO_RESULT_SET;
+    },
+  });
+
+  defineCommand(theme, themeUseCommand, {
+    fn: themeUseFn,
+    action: async (/** @type {string} */ slug) => {
+      const json = program.opts().json || false;
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
+      let result;
+      try {
+        result = await themeUse(slug, {cwd: process.cwd()});
+      } catch (e) {
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        return cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
+      }
+      await warnOnThemeIntegrationIssues(json);
+      if (json) jsonOut(result);
+      else printThemeApp(result);
+      return NO_RESULT_SET;
+    },
+  });
+
+  defineCommand(theme, themeEjectCommand, {
+    fn: themeEjectFn,
+    action: async (
+      /** @type {string} */ slug,
+      /** @type {string | undefined} */ targetPath,
+      /** @type {{overwrite?: boolean, package?: string}} */ options,
+    ) => {
+      const json = program.opts().json || false;
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeEjectResponse} */
+      let result;
+      try {
+        result = await themeEject(slug, {
+          targetPath,
+          overwrite: options.overwrite,
+          cwd: process.cwd(),
+          package: options.package,
+        });
+      } catch (e) {
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (e);
+        return cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
+      }
+      await warnOnThemeIntegrationIssues(json);
+      if (json) jsonOut(result);
+      else printThemeEject(result);
+      return NO_RESULT_SET;
     },
   });
 
@@ -773,7 +1065,14 @@ export function registerTheme(program) {
           `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}\n(key - component - props - states - className - deprecatedFor)`,
         ),
         records(targets, {
-          fields: ['key', 'component', 'props', 'states', 'className', 'deprecatedFor'],
+          fields: [
+            'key',
+            'component',
+            'props',
+            'states',
+            'className',
+            'deprecatedFor',
+          ],
           layout: 'inline',
           format: {
             deprecatedFor: (/** @type {string|null} */ v) =>

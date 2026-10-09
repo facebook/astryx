@@ -266,6 +266,7 @@ module.exports = {
   classifyChanges,
   isKnowledgeRecordPath,
   isNodeToolingPath,
+  isPackageReleasePath,
   isSpecRecordPath,
   parseNameStatus,
 };

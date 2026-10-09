@@ -163,7 +163,7 @@ describe('ComplexSelector', () => {
     );
   });
 
-  it('gives the popup clearance on both block edges, not just the leading one (#4803)', async () => {
+  it('gives the popup clearance on the edge facing the trigger, which a flip carries to the other side (#4803)', async () => {
     const user = userEvent.setup();
     render(
       <FruitComplexSelector
@@ -174,14 +174,15 @@ describe('ComplexSelector', () => {
     await user.click(screen.getByRole('button', {name: 'Fruit blend'}));
     const popup = document.querySelector('[popover]') as HTMLElement;
     expect(popup).not.toBeNull();
-    // Both edges, not just the leading one: the trailing edge is what faces
-    // the trigger when the same popup opens upward (placement="above") or is
-    // flipped by position-try-fallbacks. useLayer's `offset` sets both from
-    // the resolved placement; jsdom resolves neither the var indirection nor
-    // logical margins, so read the debug-mode declarations it emits.
+    // The clearance rides the edge facing the trigger and the viewport gutter
+    // the far edge; a position-try flip swaps the two with the area, so the
+    // gap survives opening upward (spec:AST-059 FR1, FR4). jsdom resolves
+    // neither the var indirection nor logical margins, so read the
+    // debug-mode declarations it emits.
     const blockStart = popup.style.getPropertyValue('--x-marginBlockStart');
     expect(blockStart).not.toBe('');
-    expect(popup.style.getPropertyValue('--x-marginBlockEnd')).toBe(blockStart);
+    expect(popup.style.getPropertyValue('--x-marginBlockEnd')).toBe('');
+    expect(popup.className).toContain('useLayer__styles.placementBelow');
   });
 
   it('runs changeAction through the provided onChange helper', async () => {
@@ -683,5 +684,70 @@ describe('ComplexSelector onOpenChange', () => {
     await user.click(trigger);
     act(() => handleRef.current?.open());
     expect(onOpenChange.mock.calls).toEqual([[true]]);
+  });
+
+  describe('statusVariant forwarding', () => {
+    it('defaults to attached (status renders with data-variant="attached")', () => {
+      const {container} = render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          status={{type: 'error', message: 'Required'}}>
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+        'data-variant',
+        'attached',
+      );
+    });
+
+    it('forwards statusVariant="detached" to the underlying Field status', () => {
+      const {container} = render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          status={{type: 'error', message: 'Required'}}
+          statusVariant="detached">
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+        'data-variant',
+        'detached',
+      );
+    });
+
+    it('forces detached when variant="ghost" even if statusVariant="attached"', () => {
+      const {container} = render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          variant="ghost"
+          status={{type: 'error', message: 'Required'}}
+          statusVariant="attached">
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+        'data-variant',
+        'detached',
+      );
+    });
+
+    it('renders no message box for statusVariant="tooltip"', () => {
+      const {container} = render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          status={{type: 'error', message: 'Required'}}
+          statusVariant="tooltip">
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      expect(
+        container.querySelector('.astryx-field-status'),
+      ).not.toBeInTheDocument();
+    });
   });
 });

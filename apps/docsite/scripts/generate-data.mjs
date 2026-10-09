@@ -26,6 +26,14 @@ import {createRequire} from 'node:module';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolveContentRoot} from './resolve-content-root.mjs';
 import {
+  GUIDE_NAMESPACE_PAGES,
+  GUIDE_PAGE_NAMESPACES,
+  mergeFlatTopics,
+  namespacePage,
+  routeSlug,
+  withoutResolvedTokens,
+} from './docs-pages.mjs';
+import {
   docs as readDocs,
   template as queryTemplates,
 } from '@astryxdesign/cli/api';
@@ -1681,17 +1689,42 @@ export const templateMetadataCount = ${templateMetadata.length};
 // ── 5. Docs Registry ──────────────────────────────────────────────────
 
 /**
- * Every guide in the CLI's docs tree, read through the CLI's public docs API:
- * walk down from each top-level namespace and read each guide by its route.
- * @returns {Promise<Array<{topic: string, title: string, description: string, category: string | null, sections: unknown[]}>>}
+ * The docsite pages of the CLI's docs tree, read through the CLI's public docs
+ * API. Every root namespace is one full page at its own slug (docs-pages.mjs),
+ * so splitting a flat topic into a namespace keeps its URL, sidebar spot and
+ * text; the guides under it redirect to their sections on that page. A root
+ * namespace in GUIDE_PAGE_NAMESPACES shows the pages GUIDE_NAMESPACE_PAGES
+ * lists, the same way one level down, and its other guides keep a page each.
  */
-async function docsTreeGuides() {
-  const guides = [];
-  // Every route the tree has. The site has a page only for a guide; a
-  // reference to any other route still opens it in `astryx docs`.
+async function docsTreePages() {
+  const pages = [];
+  const redirects = {};
+  // Every route the tree has. A reference to a route without a page of its
+  // own (a command or API doc) still opens it in `astryx docs`.
   const routes = [];
   const list = await readDocs();
-  const pending = (list.meta?.namespaces ?? []).map(entry => entry.topic);
+  const pending = [];
+  // Routes a page of a GUIDE_PAGE_NAMESPACES root holds, so their guides get
+  // no page of their own.
+  const held = new Set();
+  for (const {topic: root} of list.meta?.namespaces ?? []) {
+    if (GUIDE_PAGE_NAMESPACES.has(root)) {
+      pending.push(root);
+      for (const spec of GUIDE_NAMESPACE_PAGES.get(root) ?? []) {
+        for (const route of await treeRoutes(spec.route)) held.add(route);
+        const full = await namespacePage(readDocs, spec.route, spec);
+        if (!full) continue;
+        pages.push(full.page);
+        Object.assign(redirects, full.redirects);
+      }
+      continue;
+    }
+    routes.push(...(await treeRoutes(root)));
+    const full = await namespacePage(readDocs, root);
+    if (!full) continue;
+    pages.push(full.page);
+    Object.assign(redirects, full.redirects);
+  }
   while (pending.length > 0) {
     const route = pending.shift();
     routes.push(route);
@@ -1702,12 +1735,14 @@ async function docsTreeGuides() {
         if (child.kind !== 'namespace') routes.push(child.route);
         if (child.kind === 'namespace') {
           pending.push(child.route);
-        } else if (child.kind === 'generic' && child.route.includes('/')) {
-          // A flat topic in the Unorganized level keeps its own name, and the
-          // flat registry above already has its page.
+        } else if (
+          child.kind === 'generic' &&
+          child.route.includes('/') &&
+          !held.has(child.route)
+        ) {
           const doc = (await readDocs(child.route)).data;
-          guides.push({
-            topic: child.route.replaceAll('/', '-'),
+          pages.push({
+            topic: routeSlug(child.route),
             title: doc.title || child.title,
             description: doc.description || '',
             category: doc.category || null,
@@ -1717,7 +1752,27 @@ async function docsTreeGuides() {
       }
     }
   }
-  return {guides, routes};
+  return {pages, redirects, routes};
+}
+
+/**
+ * Every route at or below a docs-tree node.
+ * @param {string} route
+ * @returns {Promise<string[]>}
+ */
+async function treeRoutes(route) {
+  const read = await readDocs(route, undefined, {depth: 'all'});
+  const routes = [route];
+  const walk = slots => {
+    for (const slot of slots ?? []) {
+      for (const child of slot.children) {
+        routes.push(child.route);
+        walk(child.slots);
+      }
+    }
+  };
+  if (read.type === 'docs.node') walk(read.data.slots);
+  return routes;
 }
 
 async function generateDocsRegistry() {
@@ -1727,8 +1782,9 @@ async function generateDocsRegistry() {
   if (!fs.existsSync(DOCS_DIR)) {
     writeRegistry(
       'docsRegistry.ts',
-      `// Auto-generated — no docs found\nexport const docTopics = [];\nexport const docsCount = 0;\nexport const docsTreeRoutes = [];\n`,
+      `// Auto-generated — no docs found\nexport const docTopics = [];\nexport const docsCount = 0;\nexport const docsTreeRoutes = [];\nexport const docRedirects = {};\n`,
     );
+    fs.writeFileSync(path.join(OUT_DIR, 'docRedirects.json'), '{}\n');
     return {docTopics: [], docsCount: 0};
   }
 
@@ -1767,14 +1823,7 @@ async function generateDocsRegistry() {
       // the read runs from the CLI package. The docsite renders token tables
       // itself, so a resolved token reference is not copied into the registry.
       const read = await readDocs(topic, undefined, {cwd: CLI_ROOT});
-      sections = read.data.sections.map(section => ({
-        ...section,
-        content: section.content.map(block => {
-          if (block?.type !== 'token-ref') return block;
-          const {resolved: _resolved, ...authored} = block;
-          return authored;
-        }),
-      }));
+      sections = withoutResolvedTokens(read.data.sections);
     }
 
     docTopics.push({
@@ -1786,15 +1835,36 @@ async function generateDocsRegistry() {
     });
   }
 
+  // Flat topics shown on another topic's page, or kept only as data.
+  const merged = mergeFlatTopics(docTopics);
+  docTopics.splice(0, docTopics.length, ...merged.topics);
+
   // Guides the CLI's docs tree places (spec:AST-046) are not topic files: the
-  // CLI reads them only by route. Until the site renders the tree itself, each
-  // keeps a flat page whose slug is its route with "/" as "-", so
+  // CLI reads them only by route. A root namespace is one full page at its
+  // slug (a former flat topic keeps its URL), and each guide under it
+  // redirects to its section there. Guides under GUIDE_PAGE_NAMESPACES keep a
+  // flat page whose slug is the route with "/" as "-", so
   // `cli/integrations/quick-start` is /docs/cli-integrations-quick-start.
-  const tree = await docsTreeGuides();
-  for (const guide of tree.guides) {
-    docTopics.push(guide);
+  const tree = await docsTreePages();
+  for (const page of tree.pages) {
+    if (docTopics.some(topic => topic.topic === page.topic)) {
+      throw new Error(
+        `docs: "${page.topic}" is both a flat topic and a docs-tree page. Remove the flat topic file when its namespace replaces it.`,
+      );
+    }
+    docTopics.push(page);
   }
   const docsTreeRoutes = [...new Set(tree.routes)].sort();
+  const docRedirects = Object.fromEntries(
+    Object.entries({...merged.redirects, ...tree.redirects}).sort(([a], [b]) =>
+      a.localeCompare(b),
+    ),
+  );
+  for (const slug of Object.keys(docRedirects)) {
+    if (docTopics.some(topic => topic.topic === slug)) {
+      throw new Error(`docs: "${slug}" is both a page and a redirect.`);
+    }
+  }
 
   docTopics.sort((a, b) => a.topic.localeCompare(b.topic));
 
@@ -1819,6 +1889,8 @@ export interface DocSection {
   /** Stable key readers address the section by: astryx docs <topic> <id>. */
   id?: string;
   title: string;
+  /** The npm package that wrote the section, as the CLI's docs read names it. */
+  package?: string;
   content: ContentBlock[];
   previewType?: string;
   category?: string;
@@ -1841,11 +1913,20 @@ export const docTopics: DocTopic[] = ${JSON.stringify(docTopics, null, 2)};
 
 export const docsCount = ${docTopics.length};
 
-/** Every route of the CLI's docs tree. A guide has a page here; any other
- *  route (a namespace, a command or API doc) opens only in \`astryx docs\`. */
+/** Every route of the CLI's docs tree. A route with no page or redirect here
+ *  (a command or API doc) opens only in \`astryx docs\`. */
 export const docsTreeRoutes: string[] = ${JSON.stringify(docsTreeRoutes, null, 2)};
+
+/** Slugs that are not pages of their own, each to where its text is shown: a
+ *  guide under a namespace page, or a flat topic merged into another page.
+ *  next.config.mjs serves them as redirects. */
+export const docRedirects: Record<string, string> = ${JSON.stringify(docRedirects, null, 2)};
 `;
   writeRegistry('docsRegistry.ts', content);
+  fs.writeFileSync(
+    path.join(OUT_DIR, 'docRedirects.json'),
+    `${JSON.stringify(docRedirects, null, 2)}\n`,
+  );
   return {docTopics, docsCount: docTopics.length};
 }
 

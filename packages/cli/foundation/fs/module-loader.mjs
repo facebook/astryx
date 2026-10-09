@@ -6,8 +6,9 @@
  * Both config loading and integration loading need to (a) import a
  * user-authored module (`.ts` via jiti, `.mjs`/`.js` via native dynamic
  * import) and (b) find conventional files by basename in a fixed
- * load-precedence order. These helpers centralize that so the two callers stay
- * in lockstep. A module's stdout writes go to stderr while it loads, so
+ * load-precedence order. Generated theme artifacts also use a dedicated jiti
+ * path that resolves extensionless JSX/TSX registry imports. These helpers
+ * centralize that behavior so callers stay in lockstep. A module's stdout writes go to stderr while it loads, so
  * project code that prints cannot corrupt a `--json` envelope.
  *
  * `loadModuleWithParser` builds on these primitives to provide the single
@@ -111,6 +112,74 @@ async function withStdoutOnStderr(load) {
  */
 export async function importUserModule(file, {fresh = false} = {}) {
   return await withStdoutOnStderr(() => importModule(file, fresh));
+}
+
+const THEME_ARTIFACT_EXTENSIONS = [
+  '.js',
+  '.jsx',
+  '.ts',
+  '.tsx',
+  '.mjs',
+  '.cjs',
+  '.mts',
+  '.cts',
+];
+
+class ThemeArtifactNotFoundError extends Error {
+  code = 'ERR_THEME_ARTIFACT_NOT_FOUND';
+
+  /** @param {string} specifier @param {unknown} [cause] */
+  constructor(specifier, cause) {
+    super(`Theme artifact "${specifier}" does not resolve.`, {cause});
+    this.name = 'ThemeArtifactNotFoundError';
+  }
+}
+
+/** @param {unknown} error */
+function isMissingPackageExport(error) {
+  if (error == null || typeof error !== 'object' || !('code' in error)) {
+    return false;
+  }
+  return (
+    typeof error.code === 'string' &&
+    [
+      'ERR_MODULE_NOT_FOUND',
+      'ERR_PACKAGE_PATH_NOT_EXPORTED',
+      'MODULE_NOT_FOUND',
+    ].includes(error.code)
+  );
+}
+
+/**
+ * Load a generated theme artifact and its extensionless JS/JSX/TS/TSX graph.
+ * Package specifiers resolve from the consumer project, while relative paths
+ * resolve from that same project root.
+ * @param {string} specifier
+ * @param {string} cwd
+ * @returns {Promise<Record<string, unknown>>}
+ */
+export async function importThemeArtifact(specifier, cwd) {
+  const loader = createJiti(path.join(cwd, 'package.json'), {
+    moduleCache: false,
+    jsx: true,
+    interopDefault: true,
+    extensions: THEME_ARTIFACT_EXTENSIONS,
+  });
+  let target;
+  if (specifier.startsWith('.') || path.isAbsolute(specifier)) {
+    target = path.resolve(cwd, specifier);
+  } else {
+    try {
+      target = loader.resolve(specifier);
+    } catch (error) {
+      if (!isMissingPackageExport(error)) throw error;
+      throw new ThemeArtifactNotFoundError(specifier, error);
+    }
+  }
+  if (!fs.existsSync(target)) {
+    throw new ThemeArtifactNotFoundError(specifier);
+  }
+  return await withStdoutOnStderr(() => loader.import(target));
 }
 
 /**

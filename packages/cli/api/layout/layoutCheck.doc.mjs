@@ -20,7 +20,7 @@ export const doc = {
     'expression without generating any TSX, and echoes it back in both canonical surfaces ' +
     '(compact and outline). Validation failures are reported in the layout.check envelope ' +
     '(valid: false) with line/col and suggestions (not thrown) so callers can lint an ' +
-    'expression and surface fixes.',
+    'expression and surface fixes. **Deprecated (DEP-0006).** Use `build`, `template`, and `docs layout` instead. This function will be removed in a future minor release.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'layoutCheck(expression: string, options?: LayoutCheckOptions): Promise<LayoutCheckResponse>',

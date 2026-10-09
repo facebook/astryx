@@ -91,6 +91,9 @@ export const JSON_SUPPORTED = new Set([
   'theme build',
   'theme list',
   'theme add',
+  'theme remove',
+  'theme use',
+  'theme eject',
   'theme template',
   'theme targets',
   'theme palette generate',
@@ -359,14 +362,14 @@ export async function createProgram() {
     .addOption(
       new Option(
         '--detail <level>',
-        'Detail level for component, hook, and docs tree reads (e.g. docs cli/commands/build). Lists default to brief',
+        'Detail level for component, hook, and docs tree reads (e.g. docs cli/commands/build), and for theme build reports. Lists default to brief; theme build prints one line per built theme unless full, which adds the install example and font recipe',
       )
         .choices(['full', 'compact', 'brief'])
         .default('full'),
     )
     .option(
       '--json',
-      'Output as typed JSON. Success envelope: { apiVersion, type, data, meta? }. Error envelope: { apiVersion, error, code, suggestions? }.',
+      'Output as typed JSON. Success envelope: { apiVersion, type, package?, data, meta? }. Error envelope: { apiVersion, error, code, suggestions? }.',
     )
     .addHelpCommand('help', 'Show all commands')
     .action((options, cmd) => {

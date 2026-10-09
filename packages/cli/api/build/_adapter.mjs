@@ -2,7 +2,7 @@
 
 /**
  * @file The build subject's environment access: the page templates a project
- * can scaffold, and the components it can use.
+ * can scaffold, the components it can use, and the checked-in matcher weights.
  *
  * @input Template and component discovery for `cwd` — the CLI's own templates
  *   and Core's components, plus any that the project's configured integrations
@@ -16,9 +16,12 @@
  *   from the template subject's, components from search's.
  */
 
+import fs from 'node:fs';
+
 import {discoverTemplates} from '../template/template.mjs';
 import {componentKeywords} from '../search/search.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {analyzeTemplateNeeds} from '../../foundation/discovery/template-needs.mjs';
 
 /**
  * A page template the kit can recommend starting from.
@@ -27,8 +30,10 @@ import {findCoreDir} from '../../foundation/fs/paths.mjs';
  * @property {string} command `astryx template <id> --type page`, the command that selects exactly this template: an integration replacement is selected by the Core id it replaces, and `--type page` keeps a block with the same id from making it ambiguous. Search prints template commands the same way.
  * @property {string} displayName Human-facing name.
  * @property {string} description What the page is and how it is laid out.
+ * @property {string} package The npm package that owns this template.
  * @property {string} category The template's own `Family - Variant` label; empty when it declares none.
  * @property {string[]} keywords The ideas the page serves, as its own descriptor names them; empty when it declares none.
+ * @property {string} filePath Absolute path to the template source file on disk.
  */
 
 /**
@@ -63,8 +68,10 @@ export async function loadPageTemplates(cwd) {
       name: t.dirName,
       displayName: t.displayName || t.name,
       description: t.description || '',
+      package: t.package ?? '@astryxdesign/core',
       category: t.category || '',
       keywords: t.keywords ?? [],
+      filePath: t.filePath,
       // The id `template()` resolves back to this entry: an active replacement
       // owns the Core id it names, so that id selects it, not its own.
       command: `astryx template ${t.replaces ?? t.dirName} --type page`,
@@ -86,6 +93,80 @@ export async function loadComponents(cwd) {
   try {
     return await componentKeywords(coreDir, cwd);
   } catch {
+    return [];
+  }
+}
+
+/** @type {import('./kit/weights.mjs').WeightsFile | null | undefined} */
+let weights;
+
+/**
+ * The matcher weights checked in beside the kit (`kit/weights.json`), read
+ * once; null when the file is absent or unreadable.
+ * @returns {import('./kit/weights.mjs').WeightsFile | null}
+ */
+export function loadWeights() {
+  if (weights === undefined) {
+    try {
+      const file = JSON.parse(
+        fs.readFileSync(new URL('./kit/weights.json', import.meta.url), 'utf8'),
+      );
+      weights = isWeightsFile(file) ? file : null;
+    } catch {
+      weights = null;
+    }
+  }
+  return weights ?? null;
+}
+
+/**
+ * Whether a parsed weights file has the shape the kit reads: every row has a
+ * weight per candidate, every bias a number per candidate, and three blend
+ * numbers per member (the tables plus the ranker) and one for the shell.
+ * @param {any} file
+ * @returns {file is import('./kit/weights.mjs').WeightsFile}
+ */
+export function isWeightsFile(file) {
+  const n = Array.isArray(file?.candidates) ? file.candidates.length : 0;
+  return (
+    n > 0 &&
+    Array.isArray(file.tables) &&
+    file.tables.length > 0 &&
+    file.tables.every(
+      (/** @type {any} */ t) =>
+        Array.isArray(t?.words) &&
+        Array.isArray(t.rows) &&
+        t.rows.length === t.words.length &&
+        t.rows.every(
+          (/** @type {any} */ r) => typeof r === 'string' && r.length === n,
+        ) &&
+        Array.isArray(t.bias) &&
+        t.bias.length === n &&
+        t.bias.every((/** @type {any} */ b) => Number.isFinite(b)) &&
+        Number.isFinite(t.clip) &&
+        Number.isFinite(t.step),
+    ) &&
+    Array.isArray(file.blend) &&
+    file.blend.length === 3 * (file.tables.length + 1) + 1 &&
+    file.blend.every((/** @type {any} */ x) => Number.isFinite(x))
+  );
+}
+
+/**
+ * Analyze what a start template needs that the project lacks. The kit leaf
+ * calls this through the adapter rather than reading the file itself, because
+ * file access is environment access (architecture:cli-surface INV21).
+ *
+ * @param {PageTemplate} template
+ * @param {string} cwd Project directory
+ * @returns {string[]} Setup notes (empty when the template needs nothing).
+ */
+export function templateSetupNotes(template, cwd) {
+  try {
+    const source = fs.readFileSync(template.filePath, 'utf-8');
+    return analyzeTemplateNeeds(source, cwd).notes;
+  } catch {
+    // Best-effort: a read failure does not break the recommendation.
     return [];
   }
 }

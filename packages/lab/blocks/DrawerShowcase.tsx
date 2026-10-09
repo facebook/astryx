@@ -11,7 +11,7 @@
 import {useState} from 'react';
 import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
-import {Section} from '@astryxdesign/core/Section';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
 export default function DrawerShowcase() {
@@ -25,12 +25,16 @@ export default function DrawerShowcase() {
         onOpenChange={setIsOpen}
         label="Details"
         width={360}>
-        <DrawerHeader title="Details" onOpenChange={setIsOpen} />
-        <Section padding={4}>
-          <Text type="body">
-            Close with Escape, the scrim, or the close button.
-          </Text>
-        </Section>
+        <Layout
+          header={<DrawerHeader title="Details" onOpenChange={setIsOpen} />}
+          content={
+            <LayoutContent>
+              <Text type="body">
+                Close with Escape, the scrim, or the close button.
+              </Text>
+            </LayoutContent>
+          }
+        />
       </Drawer>
     </>
   );

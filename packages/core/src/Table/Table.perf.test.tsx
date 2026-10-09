@@ -518,6 +518,7 @@ describe('Table render performance', () => {
 
     it('should measure update performance', async () => {
       const data = createTestData(100);
+      let updates = 0;
 
       function TestComponent() {
         const [items, setItems] = useState(data);
@@ -526,13 +527,13 @@ describe('Table render performance', () => {
           <div>
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                updates++;
+                const name = `Updated ${updates}`;
                 setItems(prev =>
-                  prev.map((item, i) =>
-                    i === 50 ? {...item, name: 'Updated'} : item,
-                  ),
-                )
-              }>
+                  prev.map((item, i) => (i === 50 ? {...item, name} : item)),
+                );
+              }}>
               Update Row 50
             </button>
             <Table data={items} columns={testColumns} idKey="id" />
@@ -542,16 +543,26 @@ describe('Table render performance', () => {
 
       render(<TestComponent />);
 
-      const startTime = performance.now();
-      await act(async () => {
-        screen.getByRole('button').click();
-      });
-      const endTime = performance.now();
+      // CPU time, not elapsed time: on a loaded runner other work stretches
+      // elapsed time but not the time spent rendering. Each click renames the
+      // row again, so every round is a real update; the least of five after a
+      // warm-up is the update's own cost.
+      const updateCpuTime = async () => {
+        const started = process.cpuUsage();
+        await act(async () => {
+          screen.getByRole('button').click();
+        });
+        const used = process.cpuUsage(started);
+        return (used.user + used.system) / 1000;
+      };
+      await updateCpuTime();
+      let updateTime = Number.POSITIVE_INFINITY;
+      for (let round = 0; round < 5; round++) {
+        updateTime = Math.min(updateTime, await updateCpuTime());
+      }
+      console.log(`100 rows single update: ${updateTime.toFixed(2)}ms CPU`);
 
-      const updateTime = endTime - startTime;
-      console.log(`100 rows single update: ${updateTime.toFixed(2)}ms`);
-
-      // Update should be fast
+      expect(screen.getByText(`Updated ${updates}`)).toBeInTheDocument();
       expect(updateTime).toBeLessThan(100);
     });
   });

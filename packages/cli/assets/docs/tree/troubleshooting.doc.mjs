@@ -94,6 +94,10 @@ export const docs = {
               "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.7.0'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. A stable CLI before 0.7.0 rejects `replaces`, drops that template, and hides your doc topics.",
             ],
             [
+              '`component_replaces_needs_cli` (a warning): The package has a component that sets `replaces` but declares no @astryxdesign/cli peer, or a peer range that admits an earlier CLI.',
+              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.7'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json` to turn the replacement on. Until then the component keeps its own name and the Core component stays selected; a component named like its target stays ambiguous by that bare name.",
+            ],
+            [
               '`keywords_needs_cli`: The package has a template that sets `keywords` but declares no @astryxdesign/cli peer.',
               'The same fix as `replaces_needs_cli`: a stable CLI before 0.7.0 rejects `keywords`, drops that template, and hides your doc topics.',
             ],

@@ -48,6 +48,30 @@ jobs:
               >> "$GITHUB_OUTPUT"
           fi
 
+      # A change that ships to consumers names its package in a Changeset, and a
+      # released CLI JSON id cannot disappear unclassified. The release coverage
+      # audit runs the same classifier over the cut range, so the two agree.
+      - name: Check Changeset coverage
+        if: github.event_name == 'pull_request'
+        env:
+          MERGE_SHA: ${{ github.sha }}
+        run: |
+          set -eu
+          # The checked-out merge commit and its first parent (the base branch
+          # tip): exactly what this pull request lands.
+          git fetch --no-tags --depth=2 origin "$MERGE_SHA"
+          RELEASED=$(git ls-remote --tags --refs origin 'v*' \
+            | sed 's#.*refs/tags/##' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -V | tail -n 1)
+          if [ -z "$RELEASED" ]; then
+            echo 'No vX.Y.Z release tag found to compare CLI JSON ids against.'
+            exit 1
+          fi
+          git fetch --no-tags --depth=1 origin "+refs/tags/${RELEASED}:refs/tags/${RELEASED}"
+          node scripts/release/changeset-coverage.mjs pr \
+            --base "$MERGE_SHA^1" --head "$MERGE_SHA" --released "$RELEASED"
+
       - name: Skip full lint for lightweight docs
         if: steps.scope.outputs.docsite_only == 'true' || steps.scope.outputs.spec_only == 'true'
         run: echo "Lightweight documentation PR — skipping full lint"
@@ -62,6 +86,13 @@ jobs:
       - name: Check repository guardrails
         if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true'
         run: pnpm check:repo
+
+      # The CLI README's generated tables (commands, error codes, response
+      # types) ship to consumers. A merge from main can silently drop a
+      # generated row, so the merged result is checked against its sources.
+      - name: Check generated CLI README
+        if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true'
+        run: node packages/cli/scripts/generate-cli-readme.mjs --check
 
       - name: Run ESLint
         if: steps.scope.outputs.docsite_only != 'true' && steps.scope.outputs.spec_only != 'true'

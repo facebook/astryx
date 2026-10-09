@@ -4,7 +4,7 @@
 
 /**
  * @file Field.tsx
- * @input Uses React, HTMLAttributes, ReactNode, FieldLabel, IconType
+ * @input Uses React, HTMLAttributes, ReactNode, FieldLabel, IconType, useFieldStatusAnnouncement
  * @output Exports Field component, FieldProps
  * @position Core implementation; consumed by index.ts, tested by Field.test.tsx
  *
@@ -23,6 +23,7 @@ import type {SizeValue} from '../utils/types';
 import {FieldLabel} from './FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
 import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
+import {useFieldStatusAnnouncement} from '../FieldStatus/useFieldStatusAnnouncement';
 import {spacingVars, borderVars, sizeVars} from '../theme/tokens.stylex';
 import type {IconType} from '../Icon';
 import {mergeProps} from '../utils';
@@ -41,6 +42,11 @@ const styles = stylex.create({
     // detached/tooltip fields — whose input wrapper renders outside the
     // attached-status wrapper — compete with page-level stacking (#5689).
     isolation: 'isolate',
+    // The Field root is the flex/grid item a row actually sizes. With the
+    // automatic minimum it held a filter bar at its controls' intrinsic
+    // widths (a native input's ~20ch, a Selector's full value), so the row
+    // overflowed on phones; the reset lets the row shrink the whole field.
+    minWidth: 0,
   },
   containerGap: {
     gap: spacingVars['--spacing-1'],
@@ -262,7 +268,14 @@ export function Field({
   );
 
   // The 'tooltip' variant surfaces status through the input's on-field icon
-  // tooltip, so Field renders no message box for it.
+  // tooltip, so Field renders no message box for it. Without a FieldStatus
+  // nothing would speak the message, so Field announces it on the same
+  // channel and timing FieldStatus uses: placement changes where the message
+  // is shown, not whether a screen-reader user hears it.
+  useFieldStatusAnnouncement(
+    statusVariant === 'tooltip' ? status?.message : undefined,
+    status?.type,
+  );
   const statusNode =
     status?.message && statusVariant !== 'tooltip' ? (
       <FieldStatus

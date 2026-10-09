@@ -1,8 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState, useSyncExternalStore} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {Text} from '@astryxdesign/core';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {
   Schedule,
   createScheduleDayView,
@@ -315,6 +316,33 @@ export const List: Story = {
   },
 };
 
+/**
+ * The list in a right-to-left locale: its 24-hour time ranges read start
+ * first, right to left.
+ */
+export const RightToLeftLocale: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(focusDate);
+    const view = useMemo(() => createScheduleListView(), []);
+
+    return (
+      <InternationalizationProvider locale="he-IL">
+        <div dir="rtl">
+          <Schedule
+            view={view}
+            events={events}
+            categories={categories}
+            date={date}
+            focusDate={focusDate}
+            onChangeDate={setDate}
+            timezoneID="America/Los_Angeles"
+          />
+        </div>
+      </InternationalizationProvider>
+    );
+  },
+};
+
 export const AsyncLoader: Story = {
   render: () => {
     const [date, setDate] = useState<Instant>(focusDate);
@@ -592,6 +620,228 @@ export const EventPopover: Story = {
   },
 };
 
+const midnightEvents: CalendarEvent[] = [
+  createEventFromISO({
+    id: 'planning',
+    title: 'Planning',
+    category: 'Focus',
+    start: '2026-05-13T17:00:00.000Z',
+    end: '2026-05-13T18:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'late-sync',
+    title: 'Late sync',
+    category: 'Company',
+    start: '2026-05-13T22:00:00.000Z',
+    end: '2026-05-14T00:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'evening-review',
+    title: 'Evening review',
+    category: 'Design',
+    start: '2026-05-14T20:00:00.000Z',
+    end: '2026-05-15T00:00:00.000Z',
+  }),
+];
+
+/**
+ * Timed events that end exactly at midnight paint from their start to the
+ * bottom of their day.
+ */
+export const EventEndingAtMidnight: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const view = useMemo(
+      () => createScheduleWeeklyView({minHour: 16, maxHour: 24}),
+      [],
+    );
+
+    return (
+      <Schedule
+        view={view}
+        events={midnightEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
+// A fixed UTC month for the month view's overflow contract: Wednesday May 13
+// needs five levels (a three-day span sits on its third) and Friday May 15
+// needs four, so both trade their third level for "+N more"; the other days
+// fit and paint every chip.
+function monthFixtureEvent(
+  id: string,
+  title: string,
+  category: string,
+  day: number,
+  hour: number,
+): CalendarEvent {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return createEventFromISO({
+    id,
+    title,
+    category,
+    start: `2026-05-${pad(day)}T${pad(hour)}:00:00.000Z`,
+    end: `2026-05-${pad(day)}T${pad(hour + 1)}:00:00.000Z`,
+  });
+}
+
+const busyMonthEvents: CalendarEvent[] = [
+  createEventFromISO({
+    id: 'conference',
+    title: 'Design conference',
+    category: 'Design',
+    start: '2026-05-10',
+    end: '2026-05-13',
+  }),
+  createEventFromISO({
+    id: 'hack-week',
+    title: 'Hack week',
+    category: 'Launch',
+    start: '2026-05-10',
+    end: '2026-05-12',
+  }),
+  createEventFromISO({
+    id: 'offsite',
+    title: 'Team offsite',
+    category: 'Company',
+    start: '2026-05-11',
+    end: '2026-05-13',
+  }),
+  monthFixtureEvent('standup', 'Standup', 'Company', 13, 9),
+  monthFixtureEvent('incident-review', 'Incident review', 'Incident', 13, 11),
+  monthFixtureEvent('launch-check', 'Launch check', 'Launch', 13, 14),
+  monthFixtureEvent('planning', 'Planning', 'Company', 15, 9),
+  monthFixtureEvent('critique', 'Design critique', 'Design', 15, 10),
+  monthFixtureEvent('retro', 'Weekly retro', 'Retro', 15, 13),
+  monthFixtureEvent('focus', 'Focus block', 'Focus', 15, 15),
+  monthFixtureEvent('one-on-one', '1:1', 'Company', 5, 10),
+  createEventFromISO({
+    id: 'holiday',
+    title: 'Company holiday',
+    category: 'Holiday',
+    start: '2026-05-25',
+    end: '2026-05-25',
+  }),
+];
+
+/**
+ * A week row of the month paints at most three levels of chips. A busy day
+ * shows two and a "+N more" button that opens a popover listing every event
+ * of that day.
+ */
+// Test seam for the month-overflow browser contract: removes an event the way
+// a data refresh would, while a day's popover stays open. The events live in
+// one module-level store so the removal reaches every rendered copy of the
+// story.
+let monthOverflowEvents: ReadonlyArray<CalendarEvent> = busyMonthEvents;
+const monthOverflowListeners = new Set<() => void>();
+
+function subscribeToMonthOverflowEvents(listener: () => void): () => void {
+  monthOverflowListeners.add(listener);
+  return () => {
+    monthOverflowListeners.delete(listener);
+  };
+}
+
+function getMonthOverflowEvents(): ReadonlyArray<CalendarEvent> {
+  return monthOverflowEvents;
+}
+
+function removeMonthOverflowEvent(id: string): void {
+  monthOverflowEvents = monthOverflowEvents.filter(event => event.id !== id);
+  monthOverflowListeners.forEach(listener => listener());
+}
+
+export const MonthOverflow: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const monthEvents = useSyncExternalStore(
+      subscribeToMonthOverflowEvents,
+      getMonthOverflowEvents,
+      getMonthOverflowEvents,
+    );
+    const view = useMemo(() => createScheduleMonthlyView(), []);
+    useEffect(() => {
+      (
+        window as unknown as {
+          scheduleMonthOverflowStory?: {removeEvent: (id: string) => void};
+        }
+      ).scheduleMonthOverflowStory = {removeEvent: removeMonthOverflowEvent};
+    }, []);
+
+    return (
+      <Schedule
+        view={view}
+        events={monthEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
+// The month-overflow fixture with renderPopover (component:Schedule FR19–
+// FR20): chips with content open the month's one popover, the company
+// holiday has none and stays static text, and a busy day's list hands an
+// event to the same popover.
+export const MonthEventPopover: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const monthEvents = useSyncExternalStore(
+      subscribeToMonthOverflowEvents,
+      getMonthOverflowEvents,
+      getMonthOverflowEvents,
+    );
+    const view = useMemo(
+      () =>
+        createScheduleMonthlyView({
+          renderPopover: event =>
+            event.id === 'holiday' ? null : (
+              <div
+                data-event-details={event.id}
+                style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+                <Text type="label" weight="bold">
+                  {event.title}
+                </Text>
+                <Text type="supporting" color="secondary">
+                  {event.category ?? 'No category'} · {event.id}
+                </Text>
+              </div>
+            ),
+        }),
+      [],
+    );
+    useEffect(() => {
+      (
+        window as unknown as {
+          scheduleMonthOverflowStory?: {removeEvent: (id: string) => void};
+        }
+      ).scheduleMonthOverflowStory = {removeEvent: removeMonthOverflowEvent};
+    }, []);
+
+    return (
+      <Schedule
+        view={view}
+        events={monthEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
 export const ViewSelectorPlugin: Story = {
   render: () => {
     const views = useMemo(
@@ -636,6 +886,94 @@ export const ViewSelectorPlugin: Story = {
         onChangeDate={setDate}
         timezoneID="America/Los_Angeles"
         plugins={plugins}
+      />
+    );
+  },
+};
+
+// A fixed UTC week for the long-span contract (component:Schedule FR21): a
+// 48-hour offsite and an exactly-24-hour handoff are all-day spans; a
+// 23-hour-59-minute shift and an overnight deploy stay in the day columns;
+// Tuesday's standup and review keep their full column width; Saturday's
+// retreat has too long a title for its times to fit.
+const longSpanEvents: CalendarEvent[] = [
+  createEventFromISO({
+    id: 'offsite',
+    title: 'Offsite',
+    category: 'Company',
+    start: '2026-05-11T09:00:00.000Z',
+    end: '2026-05-13T09:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'handoff',
+    title: 'On-call handoff',
+    category: 'Incident',
+    start: '2026-05-14T08:00:00.000Z',
+    end: '2026-05-15T08:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'retreat',
+    title: 'Leadership planning retreat',
+    category: 'Company',
+    start: '2026-05-16T06:00:00.000Z',
+    end: '2026-05-17T06:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'shift',
+    title: 'Long shift',
+    category: 'Focus',
+    start: '2026-05-15T00:00:00.000Z',
+    end: '2026-05-15T23:59:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'deploy',
+    title: 'Late deploy',
+    category: 'Launch',
+    start: '2026-05-12T22:00:00.000Z',
+    end: '2026-05-13T02:00:00.000Z',
+  }),
+  fixtureEvent({
+    id: 'standup',
+    title: 'Standup',
+    category: 'Company',
+    day: 12,
+    start: [9],
+    end: [9, 30],
+  }),
+  fixtureEvent({
+    id: 'review',
+    title: 'Design review',
+    category: 'Design',
+    day: 12,
+    start: [10],
+    end: [11],
+  }),
+];
+
+export const LongTimedEvents: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const view = useMemo(
+      () =>
+        createScheduleWeeklyView({
+          renderPopover: event => (
+            <Text type="label" weight="bold">
+              {event.title}
+            </Text>
+          ),
+        }),
+      [],
+    );
+
+    return (
+      <Schedule
+        view={view}
+        events={longSpanEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
       />
     );
   },

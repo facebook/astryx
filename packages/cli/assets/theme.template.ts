@@ -131,7 +131,8 @@ export const myTheme = defineTheme({
    * values, and the rendered DOM is the final word.
    *
    * Reference: `astryx docs color` for what each semantic role means,
-   * `astryx docs tokens` for every colour token and its light/dark default.
+   * `astryx docs tokens/tokens-color` for every colour token and its light/dark
+   * default.
    */
   color: {accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard'},
 
@@ -183,8 +184,8 @@ export const myTheme = defineTheme({
   // A string applies to both colour modes; a [light, dark] tuple compiles to
   // CSS light-dark(). List only what you want to change.
   //
-  // `astryx docs tokens` PRINTS THE WHOLE TABLE — every token with its light
-  // and dark default. Read it before hand-writing colours: most of what you
+  // `astryx docs tokens/tokens-color` PRINTS THE WHOLE TABLE — every colour token
+  // with its light and dark default (`astryx docs tokens` lists every category). Read it before hand-writing colours: most of what you
   // want already has a semantic name, and the defaults tell you what you are
   // moving away from.
   //

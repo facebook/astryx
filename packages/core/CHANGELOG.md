@@ -1,5 +1,183 @@
 # @xds/core
 
+# 0.6.6
+
+#### New Features
+
+- Add a shared `upload` icon, and use it for FileInput's upload affordance instead of the directional `arrowUp`
+  Themes draw `upload` through `icons.upload`, separately from `arrowUp`, so sort arrows and every other `arrowUp` use stay unchanged. Every bundled theme and theme template draws `upload` in its own icon style. FileInput keeps its icon size, placement, color, and accessibility in both modes; a theme with no `upload` artwork shows the default upload-into-tray glyph there.
+
+  A complete `IconRegistry` may still omit `upload` in this release. The next minor makes it required, so add an `upload` entry to any registry you type as `IconRegistry`.
+
+- BottomSheet is a container, like Dialog. A new `padding` prop takes a spacing step, and a theme's `padding` on `bottom-sheet` now pads the sheet's content box through container tokens instead of padding the panel. The padded content box publishes its inset, so a Section that is the sheet's only child, and bleed children such as Table and Divider, align against it. With neither set, the content box stays unpadded as before.
+- `ComplexSelector` can hang off a control the caller renders.
+  A new `renderTrigger` render prop renders the control the popup hangs off — a glyph in a list row, a chip, an icon button — in place of the selector's own field and button. Spread the given props onto it; the popup is anchored to it, keeps its dialog label from `label`, opens on click or ArrowDown, and returns focus to the control on close. The existing `handleRef` and `onOpenChange` work unchanged beside it. Off by default; existing selectors are unchanged.
+- ContextMenu takes `triggerAs` (`div` | `span`) so a reference inside prose can own a context menu without breaking the text flow.
+- Export the canonical 56-token StyleX `dataVars` group for CSS-capable data visualization consumers.
+- Export `decodeMarkdownCharacterReferences` from `@astryxdesign/core/Markdown/parser` and `@astryxdesign/core/Markdown`
+  It decodes character references the way `Markdown` renders them — `&copy;`, `&#169;`, and `&#xA9;` become `©`; unknown names and references without their semicolon stay as written — using the same table `Markdown` uses. It works on plain text, so leave code and backslash-escaped references out. The parser subpath has no use-client boundary, so server code can call it.
+- Add `DropdownMenuGroup`, a titled `role="group"` of rows for compound-mode menus.
+  The `items` data API could title a group (`{type: 'section', title, items}`); a menu written with children — checkbox rows, radio groups, rows mounted only while open — could not. `DropdownMenuGroup` (also `ContextMenuGroup` and `BreadcrumbMenuGroup`) renders a `role="group"` named by its heading through `aria-labelledby`; the heading shares the data mode's typography and `astryx-dropdown-menu-section-heading` theme target, is not a menu item, and is skipped by arrow keys and typeahead. Existing menus are unchanged.
+- The message a component shows when a query matched nothing is now `emptySearchText` everywhere, and it takes a `ReactNode`.
+  `Selector`, `MultiSelector`, and `CommandPalette` already called it `emptySearchText` and already accepted a node. `Tokenizer`, `Typeahead`, `BaseTypeahead`, and each `ChatComposerInput` trigger called it `emptySearchResultsText` and accepted only a string — so the same product could offer a "no results, create one" row in one component and not in its neighbour, and a builder who learned one had to discover the other.
+
+  Nothing breaks. The type only widens, so every existing value stays valid, and `emptySearchResultsText` keeps working exactly as released. Set both and `emptySearchText` wins, with a development warning. Migration is the name alone.
+
+  Deprecation lifecycle (`spec:AST-017` FR28, FR31) — removal only in a later minor whose frozen manifest carries both ids of a pair:
+
+- The layer runtime owns the viewport inset: one gutter, one cap, one fallback order, and one place an app declares a floating bar.
+  Every anchored layer — Popover, DropdownMenu and its submenus, Typeahead, Tooltip, HoverCard, the selectors — now keeps the same gutter from each viewport edge (the spacing-4 step or the device safe-area inset, whichever is larger) and is capped to the viewport. Four components used to carry their own copies of that gutter, and they had drifted.
+- Add the first-party Markdown heading-links module.
+  `createMarkdownHeadingLinks()` is exported from `@astryxdesign/core/Markdown/plugins` and gives every built-in h1–h6 a collision-safe generated fragment plus an accessible inline trailing `#` copy button, including headings nested in blockquotes and lists. Its frozen, versioned entry carries the namespace and safe URL base across compatible Core package copies without module-local state. The heading row uses `useContainerReveal`: the button is hidden at fine-pointer rest, reveals on row hover or keyboard focus, and follows the canonical coarse/touch behavior. An unmodified tap, click, Enter, or Space copies the canonical URL without navigating, scrolling, or mutating the hash and briefly shows a check confirmation; failures stay silent. The same opaque plugin entry keeps Markdown-derived Outline aligned, supports Unicode NFKC slugs, an optional caller-owned namespace and safe permalink URL base, and leaves default Markdown plus custom heading renderers unchanged.
+- Markdown: nested lists draw a different marker at each depth
+  Bulleted lists cycle disc, circle, and square, and numbered lists cycle decimal, lower-alpha, and lower-roman, by how many lists of either kind enclose them, so each level can be told apart from the levels beside it. Numbering keeps each list's start and items. `List` and `ListItem` keep their public marker styles.
+- Markdown plugins: read what a plugin declares, and render one plugin node as Markdown does
+  `getMarkdownPluginCapabilities(plugin)`, from `@astryxdesign/core/Markdown/plugins`, reports whether a plugin declares syntax and whether it declares a transform, and nothing else; plugin entries stay opaque. `MarkdownPluginNodeRenderer`, from the new client-only `@astryxdesign/core/Markdown/plugin-renderer` subpath, renders one parsed extension node with the given plugins exactly as `Markdown` presents it — the plugin's renderer inside the same error boundary and suspense fallback, the same readable fallback text, and the same failure report — with no element of its own. `Markdown`'s own output is unchanged.
+- DropdownMenu takes a `trigger` render prop: hang a menu off any control.
+  `trigger` renders the control the menu opens from — an IconButton, a chip, an avatar, a list row — and hands it `DropdownMenuTriggerProps` to spread: the press model, the keyboard opens, the toggle click and the ARIA wiring. The menu is named by that control through `aria-labelledby`. `button` and `trigger` are mutually exclusive (a dev warning).
+- Menu arrows wrap and PageUp/PageDown page.
+  In `DropdownMenu`, `ContextMenu` and `DropdownMenuSubMenu`, ArrowDown on the last row wraps to the first and ArrowUp on the first to the last, as macOS menus do (`Selector` keeps clamping like a native select). PageDown and PageUp move to the last and first fully visible row of a scrolling menu, and pressed there again one viewport further, never wrapping. ArrowUp on the trigger opens the menu with the last row highlighted. The key that opened the menu no longer activates the first row through its auto-repeat, and typeahead ignores a key that is part of an input-method composition. `useListFocus` gains `hasPaging`.
+- DropdownMenuItem takes `href`: a menu row that navigates is a real link.
+  `DropdownMenuItem` (and a data-mode item) takes `href`, `target` and `rel`. The row renders as the anchor itself, with `role="menuitem"`, routed through `LinkProvider`, so a ⌘-click, Ctrl-click or middle click keeps the browser's meaning and skips `onClick`; a plain click runs `onClick`, closes the menu and navigates. The touch sheet renders the same item as a link row. `onClick` now receives the click event. Enter and Space in every menu synthesize a click that carries the key's modifiers.
+- DropdownMenu takes `menuMaxHeight` to lift the 300px cap for a menu that must fit its rows; the viewport still bounds it.
+- Menus and pickers act on the row under the pointer at release, and the highlight follows a held finger or mouse.
+  `DropdownMenu`, `ContextMenu`, `DropdownMenuSubMenu`, `Selector` and the menu bottom sheet share one press model, the one macOS and iOS menus use: the row under the pointer when it is released is the row that acts, and the highlight follows a held pointer across the rows. A finger that lands on one row and lifts on another acts on the second — once; the click the browser aims at the first row is swallowed. A mouse released outside a menu closes it; a finger released outside leaves it open. A menu whose rows fit declares `touch-action: none` so a slide stays a slide; one that scrolls lets the browser pan it and ends the gesture. Menu rows no longer paint a pressed look where hover does not exist. New public hook: `useMenuPress`.
+- A mouse opens a DropdownMenu on press and can drag straight into it; a finger held on the trigger opens it with the finger down.
+  A `DropdownMenu` trigger now opens its menu on a mouse press-down, and a drag from the trigger into the menu that lets go over a row picks it, as macOS menus do. The release of the opening press acts only after the pointer has entered the menu or the press has lasted about a third of a second, so a menu that opens under the pointer never picks a row nobody chose. Pressing the trigger of an open menu closes it without reopening in the same gesture. A tap still opens through its click; a finger held on the trigger for half a second opens the menu with the finger down, and a slide then picks. `useMenuPress` gains `onTriggerPress`, `triggerProps`, `isTriggerClickFromPress` and `longPressDelayMs`.
+- DropdownMenuSubMenu drills in on a phone instead of opening a flyout.
+  When a coarse pointer opened the menu, a sub-menu row replaces the menu's rows with its own and a "Back to <parent>" row, in the same box; Back, Escape or ArrowLeft return to the row. Works in compound and data mode, inside `DropdownMenu` and `ContextMenu`; `presentation` (`flyout` | `drill-in` | `adaptive`) overrides the policy.
+- `MultiSelector` can offer a `Create "<query>"` row for a search that matches nothing.
+  With `hasSearch`, the new `hasCreate` switch puts a `Create "<query>"` row first in the list when the trimmed query equals no option label under the search's own case-insensitive matching and the options have loaded. Picking it, or Enter with nothing highlighted, calls `onChange` with the query appended to the value and a second argument `{type: 'create', query}` (exported as `MultiSelectorChange`), then clears the search; the caller adds an option for the new value in that same update. Every other change passes no descriptor, so existing one-argument handlers are unchanged. `hasCreate` without `hasSearch` warns in development and offers nothing. Off by default.
+- `MultiSelector` can hang off a control the caller renders.
+  A new `renderTrigger` render prop renders the control the panel hangs off — a glyph in a list row, a chip, an icon button — in place of the selector's own field and button. Spread the given props onto it; the listbox is anchored to it, named by `label`, takes focus on open, and focus returns to the control on close. `handleRef` (`open`/`close`/`toggle`/`isOpen`, the `ComplexSelectorHandle` shape) and `onOpenChange` let the caller open the panel from a keystroke elsewhere and observe every open and close. All three are off by default; existing selectors are unchanged.
+- Sub-menu flyouts stay open while the pointer travels toward them, and a press on a sub-menu row opens it without ever closing the menu.
+  In `DropdownMenuSubMenu` the flyout now stays open while the mouse moves from the row toward the flyout inside the triangle to its near edge, and closes after the existing delay once the pointer has left both the row and that triangle, so a diagonal path to the flyout no longer folds it. A click or release on a sub-menu row opens its flyout; on an open one it confirms the flyout and moves focus into it instead of toggling it shut, as macOS sub-menu rows do. `useMenuHover` gains `flyoutRef` and passes the leave event to `onMouseLeave`.
+- Touch press model: under a coarse pointer the bare `:active` arm is dropped and a delegated, document-level controller paints the press the way a native list does — nothing for 150 ms, then the full pressed overlay on the next frame; cancelled with no fade by 10 px of travel or by a scroll claiming the gesture, and dead until a new touch; a tap shorter than the delay paints at the lift; the release fades over 200 ms, a real fade on every surface: the pressed overlay is the pressed token at `--astryx-press-alpha`, a registered custom property (`@property`, syntax `<number>`) the release arm animates 1 → 0, declared once by the shared overlay styles as `--_press-paint` and read by whatever paints it. The controller writes `data-astryx-press="on"|"fading"` on the nearest element marked `data-astryx-pressable`, which every Astryx surface that paints a press now carries; a mouse keeps `:active`. Public API for a local pressable: `usePressFeedback()` from `@astryxdesign/core/hooks` (returns the marker to spread; installs the controller on first mount) and `interactionOverlayStyles` from `@astryxdesign/core/utils` (compose one of its variants on the marked element). A press is themed through `--color-overlay-pressed`, which the hold, the flash and the fade all read.
+
+#### Fixes
+
+- Selector and MultiSelector announce the empty-state message they actually show, and announce it on every path that reaches one.
+  Two defects, one cause — the live region was fed from the props instead of from what rendered:
+- `Typeahead`, `Tokenizer`, and `PowerSearch` (which composes `Tokenizer`): clicking the search/combobox input after the dropdown closed without a blur now reopens it.
+  `BaseTypeahead` only ever opened its dropdown in response to a real `focus` event. Any flow that closes the dropdown while leaving the input focused — selecting a result (which re-focuses the input internally after clearing it), pressing Escape, or a composing component (`PowerSearch`'s token add/remove, e.g.) imperatively re-focusing the same input once it's done — dispatches no new `focus` event, since `focus()` is a no-op on an element that's already the active element. The input looked focused and clickable, but clicking it did nothing until the user clicked elsewhere first and back.
+
+  `BaseTypeahead` now also opens on click, specifically when the input was already focused before the click began (checked at `pointerdown`, before the browser's own default action moves focus — a click that itself just caused the input to gain focus is left to the existing focus path, so the two don't double-fire a bootstrap fetch on a single first click).
+
+  Only `Typeahead` and `Tokenizer` compose `BaseTypeahead` directly — `Selector`, `MultiSelector`, `CommandPalette`, and `DateTimeInput` use their own separate combobox implementations (which only follow `BaseTypeahead`'s conventions, not its code) and are unaffected by this change.
+
+  Fixes #6845.
+
+- Card: yield to a flex row or grid track instead of widening it to the card's content.
+  A card no longer holds its row or `1fr` grid track at its min-content width, so a long unbroken value (an ID, a hash) inside a card can no longer push side-by-side cards past a phone screen. Cards that fit are unchanged. Content that cannot wrap is clipped at the card edge, as it already was for cards with an explicit `width`; truncate such values with `Text maxLines={1}` and give wide content its own scroll region. An explicit `width` is now the card's preferred width in a row rather than a floor. To hold it, wrap the card in `StackItem` in a flex row, or set a consumer `minWidth` on the Card in Grid.
+- Chat: center inline tokens on the line box using 1lh and vertical-align top, fixing vertical misalignment against adjacent text and CJK characters.
+- Prevent disabled `ClickableCard` links from retaining an activatable destination.
+- Make Code's complete public API and theme target discoverable in component documentation.
+- Keep collapsible code blocks named and recoverable when header controls disappear, honor zero-pixel height limits, and document the public root ref.
+- Expose Collapsible open, disabled, position, and divided states to themes, and document grouped state ownership and root customization.
+- Preserve `CollapsibleGroup` context identity when a controlled string value is unchanged, avoiding unnecessary grouped-item rerenders.
+- Let CommandPaletteFooter wrap translated guidance on narrow screens, correct its composition example, and add owned audit coverage.
+- Field-based inputs (TextInput, Selector, DateInput, and the rest of the input family) can now be shrunk by their row: the Field root resets its automatic minimum size, so a filter bar of a search box and selectors no longer pushes past its container on phones
+- Defer a layer `show()` that arrives while another popover is mid show/hide, so a tooltip trigger regaining focus from a closing popover no longer throws `InvalidStateError`.
+- Markdown: read angle-bracket link destinations to their closing bracket
+  `Markdown` now reads an angle-bracket destination as CommonMark specifies: parentheses inside the brackets are part of the address, so `[a](<b(c>)` links to `b(c)`; an escaped bracket inside is part of it too, so `<b\>c>` is `b>c`; and a line ending inside the brackets makes the text no link. Unsafe schemes are refused as before.
+- Markdown keeps a backslash unless it escapes punctuation, and a backslash at the end of a line is a line break
+  `C:\Users\Ada` rendered as `C:UsersAda`: any character after a backslash swallowed it. As CommonMark specifies, a backslash now escapes only ASCII punctuation (`\*`, `\#`, `\\`, …); before a letter, digit, space, or other character it stays as written. A backslash at the end of a line is a hard line break. Image alt text follows the same rule.
+- Markdown: cap list and blockquote nesting, so deep input cannot crash rendering
+  `Markdown` now nests lists and blockquotes at most 100 levels deep, as it already caps emphasis; content nested deeper reads as text. A list or blockquote nested thousands of levels deep, as a crafted message can be, used to overflow the stack and throw while parsing.
+- Markdown: read a block quote marker as CommonMark does
+  `Markdown` now reads a line that starts with up to three spaces and `>` as a block quote, whether or not a space follows the `>`: `>quote`, `   > quote`, and `>>> nested` are quotes, as CommonMark specifies. These lines used to show as plain text with their `>` marks.
+- Markdown: start a new list when the bullet changes
+  `Markdown` now starts a new list when a bullet list's marker changes — `- a` then `* b` are two lists — as CommonMark specifies, and as ordered lists already did when their delimiter changes.
+- Markdown shows character references such as `&amp;`, `&copy;`, and `&#169;` as the characters they name
+  `Fish &amp; chips &copy; 2026` rendered with the references spelled out. Named references (every name in the HTML standard) and decimal or hexadecimal numeric references in text now render as their characters, as CommonMark specifies; inside inline code and code blocks they stay exactly as written. An unknown name or a reference without its closing `;` stays literal, and a decoded character is never read as Markdown syntax.
+- Markdown: close a code span only at a backtick string of the same length
+  `Markdown` now ends a code span at the next run of exactly as many backticks as opened it, never at part of a longer run, and reads runs of any length, as CommonMark specifies. `` `one`` two` `` is one code span holding ` `` `, and four or more backticks open and close spans too. A run with no closer of its length stays text.
+- Markdown makes a hard line break from two spaces or a backslash before a Windows (CRLF) line ending
+  Documents saved with CRLF line endings lost their hard line breaks: the carriage return sat between the trailing spaces or backslash and the line feed, so neither was recognized and the lines ran together. Both now break the line exactly as they do in an LF document, in paragraphs, links, and block quotes and while streaming; code spans, code blocks, and table cells are unchanged.
+- Markdown: read a code fence's language after spaces
+  `Markdown` now reads a fenced code block's language as the first word of its info string after any spaces, as CommonMark specifies, so `~~~ js` and ` ``` js ` are JavaScript blocks rather than blocks with no language. Fences written without a space read as before.
+- Markdown: give an image the plain text of its description as alt text
+  `Markdown` now reads an image's description as inline content and uses its plain text as the alt text, as CommonMark specifies, so ``![`a]b` *c*](u)`` has the alt `a]b c` rather than the raw source with its backticks and asterisks.
+- Markdown image alt text shows character references and escapes as the characters they name
+  `![Fish &amp; chips](…)` gave the image the alt text `Fish &amp; chips`, so a screen reader announced "amp". Alt text now resolves character references and backslash escapes the same way body text does, for inline, standalone, and reference-style images; an escaped `&` and unknown names stay literal.
+- Markdown: read an ATX heading indented up to three spaces as a heading
+  `Markdown` now reads a heading line indented by up to three spaces, such as `   # Title`, as a heading, as CommonMark specifies. Such lines used to show as plain text with their `#` marks, except at the very start of a streamed message.
+- Markdown: read a code fence indented up to three spaces as CommonMark does
+  `Markdown` now reads a code fence indented by up to three spaces as a code block, and a closing fence may be indented the same way, as CommonMark specifies. Each code line loses as much indentation as the opening fence has. A closing fence has only spaces or tabs after it, so a line such as ` ```js ` inside an open block stays part of the code. Such fences used to show as raw backticks or tildes in a paragraph, and an indented closing fence left the block open to the end of the document.
+- Markdown: show a link whose destination opens with `<` but is no angle-bracket destination as text
+  `Markdown` now shows `[a](<b>c>)`, `[a](<b)`, and `[link](<foo\>)` as text, as CommonMark specifies: a destination that opens with `<` must be one whole angle-bracket destination, with no line ending inside, even after a backslash. Such links used to fall back to a link to the whole text between the parentheses.
+- Markdown: keep lazy continuation lines fast in deeply nested input
+  `Markdown` no longer slows to seconds on a deeply nested blockquote or list followed by a lazy continuation line, as a crafted message can be: checking whether the line continues a paragraph now reuses what the parser already read at each level, and checking a long line for a thematic break no longer copies it. Lists and blockquotes nest at most exactly 100 levels deep.
+- Markdown: find link destinations in linear time
+  `Markdown` no longer searches the rest of the text for every link or image whose destination never closes, which made a message with many of them take seconds to render. Each parenthesis now pairs once per text, so such input renders in milliseconds; links read as before.
+- Markdown: decode character references and backslash escapes in link destinations, and close link text at an unescaped bracket
+  A link or image destination now reads as CommonMark specifies: `[x](https://a.com/?a=1&amp;b=2)` links to `https://a.com/?a=1&b=2`, `[x](a\)b)` links to `a)b`, and reference definitions decode the same way. The URL safety check runs on the decoded destination, so an encoded unsafe scheme such as `&#106;avascript:` is refused like the plain one. Link text and image alternative text close at the first unescaped `]`, so `[a\]b](u)` is a link with the text `a]b`.
+- Markdown: pair link text brackets as CommonMark does
+  `Markdown` now pairs the brackets of link text as CommonMark specifies: link text may hold balanced brackets, so `[a [b] c](u)` is one link; the innermost bracket makes the link, so `[a [b](u)` links only `b`; and a link inside link text wins, so `[a [b](u) c](v)` shows the outer brackets as text instead of nesting links.
+- Markdown: a code span in link text hides its brackets
+  `Markdown` no longer ends link text at a `]` inside a code span, since code spans bind tighter than links (CommonMark). ``[`a]b`](/u)`` links the code `a]b`, and ``[`[x](javascript:y)`](/rel)`` links the code `[x](javascript:y)` to `/rel` rather than reading a link inside the code.
+- Markdown links and images go to their destination when the source also gives them a title
+  `[notes](https://example.com/notes "Release notes")` linked to `https://example.com/notes "Release notes"` — an address that does not exist — and a titled image pointed at a source that could not load. A title after the destination, in double quotes, single quotes, or parentheses, is no longer part of the link or image address, and a destination in angle brackets may contain spaces. Content in any other shape keeps its meaning.
+- Markdown: keep content indented into a list item in the item after a blank line
+  `Markdown` now keeps lines indented to a list item's content in that item after a blank line, as CommonMark specifies: a nested list, a fenced code block, or another paragraph under a numbered step stays in the step, and the numbering continues after it. Such content used to end the list, so the sub-items showed as a separate list and a step's code block showed as raw text.
+- Markdown: a list that mixes task and plain items shows each task item's checkbox
+  In a list such as `- [x] Done`, `- Plain`, `- [ ] Open`, each task item now shows its own read-only checkbox, checked or open and named by its text, where its marker would be, and each plain item keeps its marker; the list stays one list. Before, the task items lost their checked state and showed bullets. Lists of only task items are unchanged.
+- Markdown: pair emphasis and strong markers by CommonMark's rules, so strong inside emphasis keeps its strong
+  Runs of `*` and `_` now pair as CommonMark specifies: by which side of a word they touch, by the nearest compatible opener, and by the rule of three. `*see **bold** more*` and `*see **bold***` render the bold inside the emphasis, `**bold *both***` renders the emphasis inside the strong, `__foo, __bar__, baz__` nests, and an escaped `\*` inside emphasis stays literal. Before, the first matching marker closed emphasis early and left stray `*` or `_` in the text. `***text***` still renders as strong around emphasis. Streaming closes an unfinished `**bold` before trailing spaces, so the partial text keeps its formatting.
+- Markdown: keep the indentation of a message's first line
+  `Markdown` now keeps the indentation of a message's first line, as it already did for every later line: two bullets indented by the same amount stay side by side, an indented numbered list keeps each item, and an indented table keeps its columns. A message that started with indented content used to render it differently from the same text after its first line.
+- Markdown: end a list at a thematic break
+  `Markdown` now reads a line such as `* * *` or `- - -` after a list item as a thematic break that ends the list, as CommonMark specifies, rather than as another item holding a nested list.
+- Markdown: check a line's trailing spaces in linear time
+  `Markdown` no longer slows to seconds on a line holding a long run of spaces before its last word, as a crafted message can: deciding whether trailing spaces make a hard line break now counts them from the end of the line instead of matching a pattern that retried from every space. Line breaks read as before.
+- A DropdownMenu returns focus to its trigger after a pointer dismissal, without painting a focus ring.
+  `DropdownMenu` used to blur its trigger after a pointer pick or an outside press, dropping focus to the page so the next arrow key went nowhere. Focus now returns to the trigger with the focus ring suppressed after pointer input, as the bottom-sheet presentation already did, and stays visible after a keyboard pick. A press outside that landed on a focusable control keeps focus there.
+- A nav or menu trigger disabled while a hover is in flight no longer opens its surface.
+  Hover intent schedules an open after a short delay. Disabling the trigger in that window left the scheduled open to land anyway, on a surface whose handlers were already inert — so it opened and nothing could dismiss it. The pending intent is now abandoned when the integration is disabled.
+- A Layout nested in AppShell content, or in any other Layout, no longer inherits the outer Layout's `padding`. Its header, panels, content, and footer keep their default inset (or the enclosing Card, Section, or Dialog padding) instead of rendering flush against the content edge. An explicit `padding` on the nested Layout still wins.
+- Restore Outline's visible keyboard focus indicator.
+- Refresh stale cached field entries when `PowerSearch` reopens an already-focused input after its search source changes (#6845).
+- Preserve consumer className on ToggleButton while retaining its theme classes.
+- Navigation URL safety: refuse a data URL with spaces before its media type
+  The shared URL safety check now ignores spaces after a URL's scheme before it compares the scheme, as a data URL's media type does, so `data: text/html,…` is refused like `data:text/html,…`. In Markdown this also refuses links, images, and angle autolinks whose destination decodes to that form, such as `data:&#32;text/html,…`. Accepted URLs are returned as before.
+- Let chat follow reach the bottom when browsers round scroll offsets.
+- Toolbar's center slot no longer clips its content, so focus rings, box-shadows, and the selected-tab indicator of a TabList in `centerContent` are drawn in full. Center content that cannot shrink and is wider than the space between the start and end slots now overflows it instead of being cut off.
+- Forward accepted DOM props such as `id`, `data-*`, and `onClick` to the Typeahead and Tokenizer root elements. Preserve existing ref, styling, and `data-testid` targets and Typeahead's built-in focus and edit behavior inside InputGroup.
+
+#### Other Changes
+
+- `emptyText` and `emptySearchText` accept a `ReactNode`, but the region spoke the value only when it was a string and announced the built-in default otherwise. A product that put a link or a "create one" row in the dead end showed one message and announced another, so the screen-reader user was told something the sighted user was not reading.
+- An empty result that arrived _after_ the keystroke — an async load landing with nothing that matches an active query — was never announced at all. The message sat on screen and the region stayed silent.
+
+  Both components now read the rendered message out of the DOM and announce that, from one place that watches the panel's state rather than the keystroke. An element is announced as written, text a child component generates is announced correctly, and anything marked `aria-hidden` is left out of the announcement exactly as it is left out of the screen. A loading panel still announces nothing.
+
+- deprecation `DEP-0001` / cleanup `CLN-0001` — `Tokenizer.emptySearchResultsText`
+- deprecation `DEP-0002` / cleanup `CLN-0002` — `Typeahead.emptySearchResultsText`
+- deprecation `DEP-0003` / cleanup `CLN-0003` — `BaseTypeahead.emptySearchResultsText`
+- deprecation `DEP-0004` / cleanup `CLN-0004` — `ChatComposerTrigger.emptySearchResultsText`
+- An explicit `width` on `Popover` and `menuWidth` on `DropdownMenu` or `Typeahead` render at their size up to the viewport. They used to be capped to the room beside the trigger, so a 352px menu opened from a control near a panel edge rendered 274px wide.
+- A layer that does not fit beside its trigger flips; one that fits on neither side keeps its size and slides into view while its trigger is on screen. Once the trigger has left the viewport the layer holds its position and size instead of chasing the edge.
+- An app that floats a persistent bar over a viewport edge — a phone navigation bar — declares it once, as `inset` on the `LayerProvider` it already mounts: `<LayerProvider inset={{blockEnd: 56}}>`. Every anchored layer then ends above the bar, and the toast viewport rises by the same amount, so one bar is declared once for both. Every edge defaults to zero, so nothing moves by default; an existing `toast.inset` keeps its meaning as the toast-only override.
+
+  One additive prop (`LayerProvider.inset`, type `LayerInset`); no other prop, type, or default changes. `spec:AST-059` holds the decisions; the `Core/Layer` stories show each behavior.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @Geervan
+- @HelloOjasMutreja
+- @imdreamrunner
+- @kentonquatman
+- @korkt-kim
+- @markselby9
+- @rubyycheung
+- @thedjpetersen
+- @vjeux
+
+---
+
 # 0.6.5
 
 #### New Features

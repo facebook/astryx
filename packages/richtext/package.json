@@ -3,7 +3,7 @@
   "displayName": "Rich Text",
   "version": "0.1.9",
   "private": true,
-  "description": "Astryx rich text \u2014 a Lexical-based rich text editor and viewer. Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
+  "description": "Astryx rich text — a Lexical-based rich text editor and viewer. Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -25,7 +25,7 @@
   ],
   "astryx": {
     "canaryOnly": true,
-    "_comment": "Published ONLY to the @canary dist-tag (see .github/workflows/release.yml). Never released as a stable `latest` release. `private: true` is intentional and must stay \u2014 it is npm\"s hard guarantee against an accidental stable publish."
+    "_comment": "Published ONLY to the @canary dist-tag (see .github/workflows/release.yml). Never released as a stable `latest` release. `private: true` is intentional and must stay — it is npm\"s hard guarantee against an accidental stable publish."
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -45,6 +45,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./markdown": {
+      "source": "./src/markdown.ts",
+      "types": "./dist/markdown.d.ts",
+      "default": "./dist/markdown.js"
+    },
     "./richtext.css": {
       "default": "./dist/richtext.css"
     }
@@ -63,7 +68,7 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.6.5",
+    "@astryxdesign/core": "0.6.6",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
     "lexical": "^0.46.0",

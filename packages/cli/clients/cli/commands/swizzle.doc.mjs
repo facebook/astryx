@@ -17,7 +17,10 @@ export const doc = {
   description:
     "Ejects a component's source from the resolved @astryxdesign/core (or its owning " +
     'integration) into your project for deep customization, rewriting imports that ' +
-    'escape the component directory. With no name it lists the swizzlable components.',
+    'escape the component directory. With no name it lists the swizzlable components. ' +
+    'An integration component that replaces a Core component is what that Core name ' +
+    'copies; --package @astryxdesign/core copies the original. --list lists Core ' +
+    'components, including one an integration replaces.',
   fn: 'swizzle',
   args: [{name: 'component', param: 'component', required: false}],
   options: [
@@ -30,12 +33,14 @@ export const doc = {
     {
       flag: '--package <pkg>',
       param: 'options.package',
-      description: 'Scope to a specific owning package',
+      description:
+        'Scope to a specific owning package. Use @astryxdesign/core to copy an original replaced by an integration component',
     },
     {
       flag: '--list',
       param: 'options.list',
-      description: 'List available components',
+      description:
+        'List the swizzlable Core components, including any that an integration component replaces',
     },
     {
       flag: '-f, --overwrite',
@@ -47,6 +52,10 @@ export const doc = {
   examples: [
     {label: 'List swizzlable components', cli: 'astryx swizzle --list'},
     {label: 'Eject a component', cli: 'astryx swizzle Button'},
+    {
+      label: 'Copy a replaced Core original',
+      cli: 'astryx swizzle SideNav --package @astryxdesign/core',
+    },
   ],
   exitCodes: [
     {code: 0, when: 'success'},

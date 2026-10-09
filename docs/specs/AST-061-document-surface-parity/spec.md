@@ -36,6 +36,7 @@ reflows no line; only editing affordances appear or disappear.
 - The Markdown dialect itself, and how RichText imports and exports Markdown
   source. This record governs what a supported construct looks like and means
   once rendered, not which source text produces it or how source round-trips.
+  The one exception is the character reference decoder that DEC-5 shares.
 - Collaboration, persistence, document hosting, and plugin adapters between
   Markdown plugins and the editor.
 - Which editor engine serves document editing, and the stored value an editor
@@ -43,7 +44,8 @@ reflows no line; only editing affordances appear or disappear.
   document, not which surface a product chooses to edit documents with.
 - RichText's release channel. RichText stays canary-only.
 - Equivalent internal implementations remain valid when they satisfy this
-  contract.
+  contract, except the character reference decoder, which DEC-5 makes one
+  shared public function.
 
 ## Requirements
 
@@ -71,8 +73,8 @@ reflows no line; only editing affordances appear or disappear.
 - **FR5 — Same structure.** Paragraph soft line breaks join into one line of
   flowing text; hard breaks break. A blockquote's lines continue one
   paragraph. Ordered and unordered lists nest by CommonMark indentation, show
-  one marker per item with the marker style of its depth, and indent each
-  level by the same amount. Task-list items, fenced code, tables, and
+  one marker per item with the marker style of its depth (DEC-6), and indent
+  each level by the same amount. Task-list items, fenced code, tables, and
   thematic breaks render as those structures, never as their literal source.
 - **FR6 — Same direction.** Content blocks lay out in the direction of the
   surrounding Internationalization provider on every surface. A surface does
@@ -84,7 +86,8 @@ reflows no line; only editing affordances appear or disappear.
   destination never contains its title; a title is exposed as the link's
   title. Named and numeric character references in text, such as `&copy;`
   and `&#169;`, render as the characters they name on every surface; inside
-  inline code and fenced code they stay literal.
+  inline code and fenced code they stay literal. Every surface decodes them
+  with the one decoder `Markdown` exports (DEC-5).
 - **FR8 — Same code block frame.** A fenced code block shows the same header,
   its language label and copy action, at the same height in read and edit
   mode, so the switch does not move the code. In edit mode the header sits
@@ -117,17 +120,24 @@ reflows no line; only editing affordances appear or disappear.
 a link title and FR7 names character references. `RichTextEditor` and
 `RichTextView` adopt FR2–FR10 for the
 constructs they render, and their default editor theme follows FR2 and FR3.
+`@astryxdesign/core/Markdown/parser` and `@astryxdesign/core/Markdown` export
+`decodeMarkdownCharacterReferences`, the DEC-5 decoder the RichText surfaces
+import with.
+`Markdown` draws disc and decimal markers at every depth, and RichText draws
+the second bulleted level as a disc; both adopt the DEC-6 marker cycle.
 
 ## Verification
 
-| Contract | Verification                                                                                    | Representative states                                                                                    | Mutation or failure expectation                                                                                     |
-| -------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| FR2–FR4  | Real-browser computed style and block geometry of the parity fixture on `Markdown` and RichText | 390px and 1440px; light and dark; default density                                                        | Restoring a hard-coded heading size or a different block margin moves a block past 2 px and fails                   |
-| FR5      | Real-browser structure and line counts of the parity fixture                                    | Nested lists at 2- and 3-space indentation; soft breaks; blockquote continuation                         | Flattening a nested list or turning a soft break into a line break fails                                            |
-| FR6      | Real-browser computed direction per block                                                       | Right-to-left provider with left-to-right text, and the reverse                                          | Per-block automatic direction fails                                                                                 |
-| FR7      | Semantic DOM of inline marks, links, and character references on every surface                  | Titled link, bare link, strong, emphasis, strikethrough; `&amp;`, `&copy;`, `&#169;` in text and in code | A title inside a destination, a styled span in place of a semantic element, or an undecoded reference in text fails |
-| FR8      | Real-browser code block header geometry in both modes                                           | Fenced code with an info string                                                                          | A header missing from one mode moves the code and fails                                                             |
-| FR9–FR10 | Real-browser read/edit switch of the parity fixture and a long document                         | Short document at the top; long document halfway down                                                    | A per-block shift beyond the constant offset, or an anchor block leaving the top of the view, fails                 |
+| Contract   | Verification                                                                                    | Representative states                                                                                                                                            | Mutation or failure expectation                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| FR2–FR4    | Real-browser computed style and block geometry of the parity fixture on `Markdown` and RichText | 390px and 1440px; light and dark; default density                                                                                                                | Restoring a hard-coded heading size or a different block margin moves a block past 2 px and fails                   |
+| FR5        | Real-browser structure and line counts of the parity fixture                                    | Nested lists at 2- and 3-space indentation; soft breaks; blockquote continuation                                                                                 | Flattening a nested list or turning a soft break into a line break fails                                            |
+| FR6        | Real-browser computed direction per block                                                       | Right-to-left provider with left-to-right text, and the reverse                                                                                                  | Per-block automatic direction fails                                                                                 |
+| FR7        | Semantic DOM of inline marks, links, and character references on every surface                  | Titled link, bare link, strong, emphasis, strikethrough; `&amp;`, `&copy;`, `&#169;` in text and in code                                                         | A title inside a destination, a styled span in place of a semantic element, or an undecoded reference in text fails |
+| FR7, DEC-5 | Shared conformance cases through `Markdown` rendering and RichText import                       | Named, decimal, and hexadecimal references; an unknown name; a missing semicolon; an invalid code point                                                          | A second reference table, or a decoder that changes an unknown name or an unterminated reference, fails             |
+| FR5, DEC-6 | Real-browser marker style per depth on both surfaces                                            | Bulleted and numbered lists nested 0–8 deep and of mixed types; starts of 0, −1, 26, 27, 3999, and 4000 at alpha and roman depths; right-to-left; light and dark | A level that draws another level's marker, or one surface differing from the other, fails                           |
+| FR8        | Real-browser code block header geometry in both modes                                           | Fenced code with an info string                                                                                                                                  | A header missing from one mode moves the code and fails                                                             |
+| FR9–FR10   | Real-browser read/edit switch of the parity fixture and a long document                         | Short document at the top; long document halfway down                                                                                                            | A per-block shift beyond the constant offset, or an anchor block leaving the top of the view, fails                 |
 
 ## Decision log
 
@@ -173,6 +183,46 @@ The language label tells a reader what the code is in both modes, and a
 header present in only one mode moves every line of code on the switch. The
 header is a frame around the document, not document content, so editing never
 reaches it.
+
+### DEC-5 — One decoder for character references
+
+**Reference:** `spec:AST-061/DEC-5`
+**Decider:** cixzhang, 2026-10-06
+
+`decodeMarkdownCharacterReferences(text)`, exported from the server-safe
+`@astryxdesign/core/Markdown/parser` subpath and from
+`@astryxdesign/core/Markdown`, returns `text` with every valid named or
+numeric character reference replaced by the characters it names, and a
+numeric reference to NUL, a surrogate, or a code point past U+10FFFF replaced
+by U+FFFD, as CommonMark specifies; an unknown name, a reference without its
+semicolon, and all other text stay as written.
+It works on plain text and knows nothing of Markdown: each caller decides
+where it applies, so backslash escapes and code stay literal. It is the
+decoder `Markdown` itself renders with: one implementation and one named
+reference table, private to `Markdown`, so the surfaces cannot drift apart.
+This is the narrow exception to this record's non-goals on import mechanism
+and equivalent internals; every other internal stays free, and no general
+HTML entity utility is exported.
+
+### DEC-6 — List markers cycle by depth
+
+**Reference:** `spec:AST-061/DEC-6`
+**Decider:** cixzhang, 2026-10-06
+
+A list's depth is the number of lists, bulleted or numbered, that enclose it;
+a top-level list has depth 0. A bulleted list draws disc, circle, or square
+markers when its depth modulo 3 is 0, 1, or 2; a numbered list writes its
+numbers as decimal, lower-alpha, or lower-roman the same way. The cycle
+repeats without end, so each level differs from the levels beside it and a
+reader can tell depth apart on every surface. Numbering keeps the list's
+start value and counts the same items; only how each number is written
+changes. Letters past `z` continue as `aa`, `ab`, and so on. A number outside
+its style's range — zero or a negative number under lower-alpha or
+lower-roman, as a start of 0 or below gives, or a number past 3999 under
+lower-roman — is written in decimal, as the CSS counter styles fall back; the
+start value and the items stay as written. Task list items show checkboxes
+instead of markers. Markers are presentation: the
+list keeps its list semantics, and the source does not change.
 
 ## Open questions
 

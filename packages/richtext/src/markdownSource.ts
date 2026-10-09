@@ -3,7 +3,8 @@
 /**
  * @file markdownSource.ts
  * @input Uses lexical (node state, root, node classes), @lexical/markdown
- *   ($convertFromMarkdownString / $convertToMarkdownString), and @lexical/code.
+ *   ($convertFromMarkdownString / $convertToMarkdownString), @lexical/code,
+ *   and the plugin node shielding and export in markdownExtensions.ts.
  * @output Exports importMarkdownKeepingSource and $exportMarkdownKeepingSource,
  *   the source-preserving Markdown import and export behind
  *   markdownToEditorStateJSON, editorStateJSONToMarkdown, and getMarkdown().
@@ -26,12 +27,9 @@
  * written instead.
  */
 
-import {
-  $convertFromMarkdownString,
-  $convertToMarkdownString,
-  type Transformer,
-} from '@lexical/markdown';
+import {$convertFromMarkdownString, type Transformer} from '@lexical/markdown';
 import {$isCodeNode} from '@lexical/code';
+import {$isListItemNode, $isListNode} from '@lexical/list';
 import {
   $createParagraphNode,
   $createTextNode,
@@ -45,8 +43,30 @@ import {
   type ElementNode,
   type LexicalEditor,
   type LexicalNode,
+  type NodeKey,
 } from 'lexical';
 import {isMarkedHardLineBreak} from './markdownHardLineBreak';
+import {normalizeListIndentation} from './markdownListIndentation';
+import {
+  $restoreCharacterReferences,
+  $restoreCodeSpans,
+  protectBackslashEscapes,
+  protectCharacterReferences,
+  protectCodeSpans,
+  protectLinkDestinationParentheses,
+  protectRefusedLinks,
+  $unwrapRefusedLinks,
+} from './markdownCharacterReferences';
+import {
+  $restoreExtensionSources,
+  absentCharacters,
+  extensionTextView,
+  shieldExtensionSources,
+  withExtensionExport,
+} from './markdownExtensions';
+import {$isRichTextExtensionNode} from './markdownExtensionNode';
+import {$convertToMarkdownKeepingTimeLinear} from './markdownSpaceRuns';
+import type {MarkdownPluginEntry} from '@astryxdesign/core/Markdown/plugins';
 
 /** The whitespace and content one chunk of Markdown source was split into. */
 export interface MarkdownChunk {
@@ -71,6 +91,11 @@ interface GroupRecord {
   readonly canonicalHash?: string;
   /** The line ending the group's source uses. */
   readonly lineEnding?: string;
+  /**
+   * The group right after this one in the source, recorded only when no
+   * blank line separates them (a thematic break written under a block).
+   */
+  readonly next?: string;
 }
 
 /**
@@ -84,6 +109,7 @@ interface SerializedGroupRecord {
   t?: string;
   h?: string;
   e?: string;
+  x?: string;
 }
 
 /** Facts about the whole imported document, kept on the root. */
@@ -116,6 +142,7 @@ function parseGroupRecord(value: unknown): GroupRecord | null {
     trailing: typeof serialized.t === 'string' ? serialized.t : '\n\n',
     canonicalHash: typeof serialized.h === 'string' ? serialized.h : '',
     lineEnding: typeof serialized.e === 'string' ? serialized.e : '\n',
+    ...(typeof serialized.x === 'string' ? {next: serialized.x} : {}),
   };
 }
 
@@ -135,6 +162,9 @@ function unparseGroupRecord(
       serialized.t = record.trailing;
     }
     serialized.h = record.canonicalHash;
+    if (record.next != null) {
+      serialized.x = record.next;
+    }
     if (record.lineEnding !== '\n') {
       serialized.e = record.lineEnding;
     }
@@ -162,12 +192,44 @@ const documentState = createState('astryxMdDocument', {
 
 const BLANK_LINE = /^[ \t]*\r?$/;
 const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})/;
+// A thematic break line (CommonMark 0.31), and the dash-only lines that
+// underline a paragraph line above them as a heading instead.
+const THEMATIC_BREAK_LINE = /^ {0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*\r?$/;
+const SETEXT_DASHES = /^ {0,3}-+[ \t]*\r?$/;
+// Lines that start a block other than a paragraph.
+const BLOCK_START =
+  /^ {0,3}(?:[-*+][ \t]|\d{1,9}[.)][ \t]|>|#{1,6}(?:[ \t]|\r?$)|\|)/;
 
 /**
  * Splits Markdown into chunks: runs of non-blank lines, with a fenced code
- * block kept whole across blank lines. Joining every chunk's leading, content,
- * and trailing text gives back the input exactly.
+ * block kept whole across blank lines, and a thematic break always a chunk of
+ * its own, so editing the block beside a rule never rewrites the rule
+ * (spec:AST-062 FR2). A dash-only line under paragraph lines underlines them
+ * instead, and stays with them. Joining every chunk's leading, content, and
+ * trailing text gives back the input exactly.
  */
+/**
+ * The chunks of `markdown` that cover the same lines as `like`, the chunks of
+ * text with the same line count. Rewriting indentation can move a line across
+ * a chunk boundary rule — a thematic break indented into a list item becomes
+ * a break of its own — so the chunks follow the authored text, not the rule.
+ */
+function sameLines(
+  markdown: string,
+  like: ReadonlyArray<MarkdownChunk>,
+): Array<MarkdownChunk> {
+  const lines = markdown.split('\n');
+  const lineEndings = (text: string) => text.split('\n').length - 1;
+  let line = 0;
+  return like.map(chunk => {
+    line += lineEndings(chunk.leading);
+    const count = lineEndings(chunk.content) + 1;
+    const content = lines.slice(line, line + count).join('\n');
+    line += count - 1 + lineEndings(chunk.trailing);
+    return {...chunk, content};
+  });
+}
+
 export function splitMarkdownChunks(markdown: string): Array<MarkdownChunk> {
   const lines = markdown.split('\n');
   const chunks: Array<MarkdownChunk> = [];
@@ -185,6 +247,8 @@ export function splitMarkdownChunks(markdown: string): Array<MarkdownChunk> {
   while (index < lines.length) {
     const start = index;
     let fence: string | null = null;
+    // Whether every line so far is paragraph text.
+    let isParagraph = true;
     while (index < lines.length) {
       const line = lines[index];
       if (fence != null) {
@@ -200,11 +264,25 @@ export function splitMarkdownChunks(markdown: string): Array<MarkdownChunk> {
       if (BLANK_LINE.test(line)) {
         break;
       }
+      const isRule =
+        THEMATIC_BREAK_LINE.test(line) &&
+        !(isParagraph && index > start && SETEXT_DASHES.test(line));
+      if (isRule && index > start) {
+        // The rule starts a chunk of its own.
+        break;
+      }
       const open = FENCE_OPEN.exec(line);
       if (open != null) {
         fence = open[1];
       }
+      if (open != null || BLOCK_START.test(line)) {
+        isParagraph = false;
+      }
       index++;
+      if (isRule) {
+        // And ends it.
+        break;
+      }
     }
     let content = lines.slice(start, index).join('\n');
     let trailing = '';
@@ -285,11 +363,16 @@ export function importMarkdownKeepingSource(
   editor: LexicalEditor,
   markdown: string,
   transformers: Array<Transformer>,
+  plugins: ReadonlyArray<MarkdownPluginEntry> = [],
 ): void {
   const importId = nextImportId();
   const byteOrderMark = markdown.startsWith('\uFEFF');
   const body = byteOrderMark ? markdown.slice(1) : markdown;
   const chunks = splitMarkdownChunks(body);
+  // Lexical reads the same chunks with list nesting spelled its way; the
+  // records keep the authored bytes. Only indentation changes, so each chunk
+  // is the same lines of the rewritten text.
+  const importChunks = sameLines(normalizeListIndentation(body), chunks);
   const lineEnding = lineEndingOf(body, '\n');
   editor.update(
     () => {
@@ -303,11 +386,40 @@ export function importMarkdownKeepingSource(
         const holder = $createParagraphNode();
         root.append(holder);
         // Lexical imports LF lines; the record keeps the authored endings.
-        $convertFromMarkdownString(
-          withoutCarriageReturns(chunk.content),
-          transformers,
-          holder,
+        // Adopted plugins' nodes, links core refuses (as their source text),
+        // then code spans, then backslash escapes and parentheses in
+        // link destinations, then character references go through as
+        // stand-ins: plugin nodes come back as extension nodes holding their
+        // source, escapes and parentheses as the literal characters,
+        // references decoded.
+        const shielded = shieldExtensionSources(
+          withoutCarriageReturns(importChunks[index]?.content ?? chunk.content),
+          plugins,
         );
+        // Links core refuses go first, on the source as written, so one whose
+        // text holds code (`[`x`](javascript:y)`) shows whole as core shows
+        // it; code spans next, so a safe link's code still reads as code.
+        const refused = protectRefusedLinks(shielded.markdown);
+        const code = protectCodeSpans(refused.markdown);
+        const escaped = protectBackslashEscapes(code.markdown);
+        const destinations = protectLinkDestinationParentheses(
+          escaped.markdown,
+        );
+        const referenced = protectCharacterReferences(destinations.markdown);
+        $convertFromMarkdownString(referenced.markdown, transformers, holder);
+        $restoreCharacterReferences(
+          holder,
+          new Map([
+            ...refused.standIns,
+            ...code.standIns,
+            ...escaped.standIns,
+            ...destinations.standIns,
+            ...referenced.standIns,
+          ]),
+        );
+        $restoreCodeSpans(holder, code.spans);
+        $unwrapRefusedLinks(holder);
+        $restoreExtensionSources(holder, shielded.standIns);
         $joinSoftLineBreaks(holder);
         for (const node of holder.getChildren()) {
           $setState(node, groupState, {group: `${importId}:${index}`});
@@ -317,6 +429,7 @@ export function importMarkdownKeepingSource(
         }
         holder.remove();
       });
+      $nestFollowingLists(root);
       if (root.getChildrenSize() === 0) {
         // Nothing to import: keep one empty paragraph, as Lexical does.
         root.append($createParagraphNode());
@@ -365,13 +478,50 @@ export function $joinSoftLineBreaks(element: ElementNode): void {
     // The spaces around a soft break are part of it.
     const previous = child.getPreviousSibling();
     if ($isTextNode(previous) && !previous.hasFormat('code')) {
-      previous.setTextContent(previous.getTextContent().replace(/[ \t]+$/, ''));
+      // Counted from the end: a pattern such as /[ \t]+$/ retries from every
+      // space in a long run that does not end the text, so its time grows
+      // with the square of the run.
+      const text = previous.getTextContent();
+      let end = text.length;
+      while (end > 0 && (text[end - 1] === ' ' || text[end - 1] === '\t')) {
+        end--;
+      }
+      previous.setTextContent(text.slice(0, end));
     }
     const next = child.getNextSibling();
     if ($isTextNode(next) && !next.hasFormat('code')) {
       next.setTextContent(next.getTextContent().replace(/^[ \t]+/, ''));
     }
     child.replace($createTextNode(' '));
+  }
+}
+
+/**
+ * Moves a list that begins nested right after another list into that list's
+ * last item. Lexical starts a new top-level list for an item of a different
+ * type (a bullet under `1. item`) and nests it there, while CommonMark nests
+ * it inside the item above; without this, writing it back would lose the
+ * nesting (spec:AST-061 FR5, spec:AST-062 FR3).
+ */
+export function $nestFollowingLists(root: ElementNode): void {
+  for (const node of root.getChildren()) {
+    const previous = node.getPreviousSibling();
+    if (!$isListNode(node) || !$isListNode(previous)) {
+      continue;
+    }
+    // Lexical keeps a nested list in an item of its own after its parent.
+    let first = node.getFirstChild();
+    while (
+      $isListItemNode(first) &&
+      first.getChildrenSize() === 1 &&
+      $isListNode(first.getFirstChild())
+    ) {
+      previous.append(first);
+      first = node.getFirstChild();
+    }
+    if (node.getChildrenSize() === 0) {
+      node.remove();
+    }
   }
 }
 
@@ -437,6 +587,9 @@ function $recordGroups(
         content + (covered[covered.length - 1]?.trailing ?? ''),
         '\n',
       ),
+      ...(!isLastGroup && !ENDS_WITH_BLANK_LINE.test(trailing)
+        ? {next: `${importId}:${nextChunk}`}
+        : {}),
     };
     group.forEach((node, position) => {
       $setState(
@@ -500,25 +653,46 @@ function $canonicalMarkdown(
   ) {
     return cached;
   }
-  const markdown = $convertToMarkdownString(transformers, childrenOf(nodes));
+  // Inline plugin nodes read as text inside the marks around them, so a mark
+  // put on or taken off a node alone changes the canonical form too.
+  const {placeholders, sources} = extensionPlaceholders(
+    descendants,
+    descendants.map(node => node.getTextContent()).join(''),
+  );
+  let markdown = $convertToMarkdownKeepingTimeLinear(
+    withExtensionExport(transformers),
+    childrenOf(
+      placeholders.size === 0
+        ? nodes
+        : nodes.map(node => markedView(node, null, placeholders)),
+    ),
+  );
+  for (const [placeholder, source] of sources) {
+    markdown = markdown.split(placeholder).join(source);
+  }
   const entry = {descendants, transformers, markdown, hash: hashOf(markdown)};
   canonicalCache.set(nodes[0], entry);
   return entry;
 }
 
-/** Line starts that would turn literal text into a block structure. */
+/**
+ * Line starts that would turn literal text into a block structure. Each match
+ * is the spaces before the marker, where the escape goes: block markers may
+ * follow up to three spaces (CommonMark 0.31), and a list item's continuation
+ * line adds its own indentation, so any spaces count.
+ */
 const LINE_START_SYNTAX: ReadonlyArray<RegExp> = [
-  // ATX heading, block quote, bullet list item.
-  /^#{1,6}(?=[ \t]|$)/,
-  /^>/,
-  /^[-+](?=[ \t]|$)/,
+  // Block quote or ATX heading marker.
+  /^ *(?=>|#{1,6}(?:[ \t]|$))/,
+  // Bullet list item.
+  /^ *(?=[-+](?:[ \t]|$))/,
   // Setext underline or thematic break made of `=` or `-`.
-  /^[=-](?=[=\- \t]*$)/,
+  /^ *(?=[=-][=\- \t]*$)/,
   // Table delimiter row.
-  /^[|:](?=[|:\- \t]*-[|:\- \t]*$)/,
+  /^ *(?=[|:][|:\- \t]*-[|:\- \t]*$)/,
 ];
 // An ordered list item escapes its delimiter, not its first character.
-const ORDERED_LIST_START = /^(\d{1,9})([.)])(?=[ \t]|$)/;
+const ORDERED_LIST_START = /^( *\d{1,9})(?=[.)](?:[ \t]|$))/;
 
 // Inline syntax Lexical's export leaves unescaped: link and image brackets and
 // character references.
@@ -561,13 +735,26 @@ export function absentToken(text: string): string {
 
 /**
  * A view of `node` whose text marks every character that needs a backslash
- * with `token`. Views delegate everything else to the node they wrap, so
- * Lexical's exporter reads them like the real tree without changing it.
+ * with `token` (none when `token` is null), and whose inline plugin nodes read
+ * as text holding their placeholders. Views delegate everything else to the
+ * node they wrap, so Lexical's exporter reads them like the real tree without
+ * changing it.
  */
-function markedView(node: LexicalNode, token: string): LexicalNode {
+function markedView(
+  node: LexicalNode,
+  token: string | null,
+  placeholders: ReadonlyMap<NodeKey, string>,
+): LexicalNode {
+  const placeholder = placeholders.get(node.getKey());
+  if (placeholder != null && $isRichTextExtensionNode(node)) {
+    return extensionTextView(node, placeholder);
+  }
   if ($isTextNode(node)) {
     if (node.hasFormat('code') || $isCodeNode(node.getParent())) {
       return node;
+    }
+    if (token == null) {
+      return Object.create(node) as typeof node;
     }
     let text = node
       .getTextContent()
@@ -575,10 +762,12 @@ function markedView(node: LexicalNode, token: string): LexicalNode {
     const previous = node.getPreviousSibling();
     if (previous == null || $isLineBreakNode(previous)) {
       const ordered = ORDERED_LIST_START.exec(text);
-      if (ordered != null) {
-        text = ordered[1] + token + text.slice(ordered[1].length);
-      } else if (LINE_START_SYNTAX.some(pattern => pattern.test(text))) {
-        text = token + text;
+      const start = LINE_START_SYNTAX.map(pattern => pattern.exec(text)).find(
+        match => match != null,
+      );
+      const before = ordered?.[1] ?? start?.[0];
+      if (before != null) {
+        text = before + token + text.slice(before.length);
       }
     }
     const view = Object.create(node) as typeof node;
@@ -586,12 +775,54 @@ function markedView(node: LexicalNode, token: string): LexicalNode {
     return view;
   }
   if ($isElementNode(node) && !$isCodeNode(node)) {
-    const children = node.getChildren().map(child => markedView(child, token));
+    // Read once: each read walks every child, so reading per child would
+    // cost the square of their number — a run of tabs is one node per tab.
+    const original = node.getChildren();
+    const children = original.map(child =>
+      markedView(child, token, placeholders),
+    );
+    // Each view's siblings are the views beside it, so a text view sees a
+    // plugin node's text view as text with formats, not as a gap.
+    children.forEach((child, index) => {
+      if (child !== original[index]) {
+        child.getPreviousSibling = <T extends LexicalNode>() =>
+          (children[index - 1] ?? null) as T | null;
+        child.getNextSibling = <T extends LexicalNode>() =>
+          (children[index + 1] ?? null) as T | null;
+      }
+    });
     const view = Object.create(node) as typeof node;
     view.getChildren = <T extends LexicalNode>() => children as Array<T>;
     return view;
   }
   return node;
+}
+
+/**
+ * A placeholder for each inline plugin node among `nodes`, absent from
+ * `text`, and the source each placeholder stands for.
+ */
+function extensionPlaceholders(
+  nodes: ReadonlyArray<LexicalNode>,
+  text: string,
+): {
+  readonly placeholders: ReadonlyMap<NodeKey, string>;
+  readonly sources: ReadonlyMap<string, string>;
+} {
+  const placeholders = new Map<NodeKey, string>();
+  const sources = new Map<string, string>();
+  const free = absentCharacters(text);
+  for (const node of nodes) {
+    if ($isRichTextExtensionNode(node) && node.isInline()) {
+      const placeholder = free.next().value;
+      if (placeholder == null) {
+        break;
+      }
+      placeholders.set(node.getKey(), placeholder);
+      sources.set(placeholder, node.getSource());
+    }
+  }
+  return {placeholders, sources};
 }
 
 /**
@@ -605,20 +836,36 @@ function $regeneratedMarkdown(
 ): string {
   // The token is absent from the plain export and from every text the views
   // mark, so each token in the marked export is one of the marks.
-  const token = absentToken(
-    canonical + nodes.map(node => node.getTextContent()).join(''),
+  const text = canonical + nodes.map(node => node.getTextContent()).join('');
+  const token = absentToken(text);
+  // Inline plugin nodes export as placeholders inside the text around them,
+  // so the marks around a node wrap it; each placeholder becomes the node's
+  // exact source afterwards.
+  const {placeholders, sources} = extensionPlaceholders(
+    descendantsOf(nodes),
+    text + token,
   );
-  const marked = $convertToMarkdownString(
-    transformers,
-    childrenOf(nodes.map(node => markedView(node, token))),
-  );
-  return marked.split(token).join('\\');
+  let marked = $convertToMarkdownKeepingTimeLinear(
+    withExtensionExport(transformers),
+    childrenOf(nodes.map(node => markedView(node, token, placeholders))),
+  )
+    .split(token)
+    .join('\\');
+  for (const [placeholder, source] of sources) {
+    marked = marked.split(placeholder).join(source);
+  }
+  return marked;
 }
 
 interface ExportPiece {
   readonly text: string;
   /** Recorded bytes after the piece, when they belong to this document. */
   readonly trailing: string | null;
+  /** Whether the piece is the group's recorded source, unchanged. */
+  readonly isAsWritten: boolean;
+  /** The piece's group, and the group that followed it in the source. */
+  readonly group: string | null;
+  readonly next: string | null;
 }
 
 const ENDS_WITH_BLANK_LINE = /\n[ \t]*\r?\n[ \t\r]*$/;
@@ -628,6 +875,47 @@ const ENDS_WITH_BLANK_LINE = /\n[ \t]*\r?\n[ \t\r]*$/;
  * new blocks in canonical form, all in the document's envelope. Reads the tree
  * without changing it, so it runs in a read of the live editor state.
  */
+/** Whether `text` is one thematic break line, as written. */
+function isRuleLine(text: string): boolean {
+  return !text.includes('\n') && THEMATIC_BREAK_LINE.test(text);
+}
+
+/**
+ * Whether the bytes recorded after `piece` still separate it from `next`.
+ * Bytes ending in a blank line separate any two blocks. A single line break
+ * only follows or precedes a thematic break (a rule is a chunk of its own),
+ * and it belongs to the block it follows:
+ *
+ * - after a rule as written, it stays whatever comes next, because no line
+ *   after a rule can join it;
+ * - between the same two blocks, both as written, it stays;
+ * - after a changed block, it stays only above the same rule as written when
+ *   that rule cannot underline the block as a heading (`***`, `___`, or
+ *   spaced dashes, not `---`).
+ *
+ * Everywhere else — next to a moved, inserted, deleted, or changed block — a
+ * blank line separates the two, so no block can join its neighbor.
+ */
+function keepsRecordedTrailing(piece: ExportPiece, next: ExportPiece): boolean {
+  // The last block's recorded trailing is empty: it separates nothing.
+  if (piece.trailing == null || !piece.trailing.includes('\n')) {
+    return false;
+  }
+  if (ENDS_WITH_BLANK_LINE.test(piece.trailing)) {
+    return true;
+  }
+  if (piece.isAsWritten && isRuleLine(piece.text)) {
+    return true;
+  }
+  if (piece.next == null || piece.next !== next.group || !next.isAsWritten) {
+    return false;
+  }
+  return (
+    piece.isAsWritten ||
+    (isRuleLine(next.text) && !SETEXT_DASHES.test(next.text))
+  );
+}
+
 export function $exportMarkdownKeepingSource(
   transformers: ReadonlyArray<Transformer>,
 ): string {
@@ -669,6 +957,9 @@ export function $exportMarkdownKeepingSource(
           ? record.content
           : withLineEnding(record.content, lineEnding),
         trailing: isOwn ? (record.trailing ?? null) : null,
+        isAsWritten: isOwn,
+        group: record.group,
+        next: record.next ?? null,
       });
       continue;
     }
@@ -683,6 +974,9 @@ export function $exportMarkdownKeepingSource(
         isOwn && record?.lineEnding != null ? record.lineEnding : lineEnding,
       ),
       trailing: isOwn ? (record?.trailing ?? null) : null,
+      isAsWritten: false,
+      group: record?.group ?? null,
+      next: isOwn ? (record?.next ?? null) : null,
     });
   }
   const separator = lineEnding + lineEnding;
@@ -692,10 +986,9 @@ export function $exportMarkdownKeepingSource(
   pieces.forEach((piece, position) => {
     output += piece.text;
     if (position < pieces.length - 1) {
-      output +=
-        piece.trailing != null && ENDS_WITH_BLANK_LINE.test(piece.trailing)
-          ? piece.trailing
-          : separator;
+      output += keepsRecordedTrailing(piece, pieces[position + 1])
+        ? (piece.trailing ?? '')
+        : separator;
     }
   });
   return output + (document?.trailing ?? '');

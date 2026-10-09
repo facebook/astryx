@@ -33,13 +33,13 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
+import {docs} from '../packages/cli/api/docs/docs.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const TEMPLATE = path.join(REPO_ROOT, 'packages/cli/assets/theme.template.ts');
 const THEME_SRC = path.join(REPO_ROOT, 'packages/core/src/theme');
 const CORE_SRC = path.join(REPO_ROOT, 'packages/core/src');
-const DOCS_DIR = path.join(REPO_ROOT, 'packages/cli/assets/docs');
 const NEUTRAL_PALETTE = path.join(
   REPO_ROOT,
   'packages/themes/neutral/src/neutralPalettes.ts',
@@ -160,13 +160,20 @@ function themingTargets() {
   return {targets, publicVars};
 }
 
-/** Doc topics `astryx docs <topic>` can print. */
-function docTopics() {
-  return fs
-    .readdirSync(DOCS_DIR)
-    .map(f => f.match(/^([\w-]+)\.doc\.mjs$/))
-    .filter(Boolean)
-    .map(m => m[1]);
+/**
+ * Whether `astryx docs <route>` prints something: a flat topic, or a node of
+ * the docs tree (a namespace such as `tokens`, or a guide such as
+ * `tokens/tokens-color`), resolved the way the command resolves it.
+ * @param {string} route
+ * @returns {Promise<boolean>}
+ */
+async function docsRouteExists(route) {
+  try {
+    await docs(route, undefined, {index: true});
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -364,14 +371,19 @@ describe('theme template stays in sync with the theme system', () => {
     ).toEqual([]);
   });
 
-  it('cites only doc topics that exist', () => {
-    const topics = new Set(docTopics());
+  it('cites only doc topics that exist', async () => {
     const cited = [
       ...new Set(
-        [...template.matchAll(/astryx docs ([a-z-]+)/g)].map(m => m[1]),
+        [...template.matchAll(/astryx docs ([a-z-]+(?:\/[a-z-]+)*)/g)].map(
+          m => m[1],
+        ),
       ),
     ];
-    const dead = cited.filter(t => !topics.has(t));
+    expect(cited.length).toBeGreaterThan(0);
+    const dead = [];
+    for (const route of cited) {
+      if (!(await docsRouteExists(route))) dead.push(route);
+    }
     expect(
       dead,
       `The template tells authors to run \`astryx docs ${dead.join('`, `astryx docs ')}\`, ` +

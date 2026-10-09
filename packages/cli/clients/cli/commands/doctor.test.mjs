@@ -14,7 +14,6 @@ import {
   checkNodeVersion,
   checkCoreInstalled,
   checkVersionAlignment,
-  checkThemes,
   checkConfig,
   checkAgentDocs,
   checkPeerDeps,
@@ -63,33 +62,6 @@ function installPkg(name, version = '1.0.0') {
   return dir;
 }
 
-/**
- * Mirror pnpm's layout: the real package lives under node_modules/.pnpm and
- * the entry in the scope directory is a symlink to it.
- */
-function installPkgPnpmStyle(name, version = '1.0.0') {
-  const realDir = path.join(
-    tmpDir,
-    'node_modules',
-    '.pnpm',
-    `${name.replace('/', '+')}@${version}`,
-    'node_modules',
-    ...name.split('/'),
-  );
-  fs.mkdirSync(realDir, {recursive: true});
-  fs.writeFileSync(
-    path.join(realDir, 'package.json'),
-    JSON.stringify({name, version, main: 'index.js'}),
-  );
-  fs.writeFileSync(path.join(realDir, 'index.js'), 'module.exports = {};');
-  const linkPath = path.join(tmpDir, 'node_modules', ...name.split('/'));
-  fs.mkdirSync(path.dirname(linkPath), {recursive: true});
-  // 'junction' keeps this working on Windows without elevated permissions;
-  // it is ignored on posix.
-  fs.symlinkSync(realDir, linkPath, 'junction');
-  return linkPath;
-}
-
 function find(checks, id) {
   return checks.find(c => c.id === id);
 }
@@ -128,29 +100,15 @@ describe('doctor — individual checks', () => {
     expect(res.status).toBe('info');
   });
 
-  it('themes: WARN when no theme packages installed', () => {
-    const res = checkThemes({cwd: tmpDir, configTheme: null});
-    expect(res.status).toBe('warn');
-  });
-
-  it('themes: WARN when theme installed but not wired', () => {
-    installPkg('@astryxdesign/theme-neutral', '0.0.14');
-    const res = checkThemes({cwd: tmpDir, configTheme: null});
-    expect(res.status).toBe('warn');
-    expect(res.message).toContain('@astryxdesign/theme-neutral');
-  });
-
-  it('themes: PASS when theme installed and wired via config', () => {
-    installPkg('@astryxdesign/theme-neutral', '0.0.14');
-    const res = checkThemes({cwd: tmpDir, configTheme: 'default'});
-    expect(res.status).toBe('pass');
-  });
-
-  it('themes: detects pnpm-style symlinked theme packages (#3530)', () => {
-    installPkgPnpmStyle('@astryxdesign/theme-neutral', '0.1.2');
-    const res = checkThemes({cwd: tmpDir, configTheme: 'default'});
-    expect(res.status).toBe('pass');
-    expect(res.message).toContain('@astryxdesign/theme-neutral');
+  it('app themes: reports unmanaged state as one INFO check', async () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"app"}\n');
+    const result = await runChecks({cwd: tmpDir});
+    const themeChecks = result.checks.filter(check =>
+      check.id.startsWith('theme-'),
+    );
+    expect(themeChecks).toEqual([
+      expect.objectContaining({id: 'theme-management', status: 'info'}),
+    ]);
   });
 
   it('config: INFO when no astryx.config.mjs', async () => {
@@ -210,7 +168,23 @@ describe('doctor — individual checks', () => {
   it('agent-docs: INFO when no docs present', () => {
     const res = checkAgentDocs({cwd: tmpDir});
     expect(res.status).toBe('info');
-    expect(res.fix).toContain('astryx init');
+    expect(res.fix).toContain('init --features agents');
+  });
+
+  // The npm package named `astryx` is not this CLI: a project without the
+  // `astryx` bin gets the scoped package in the fix, one with it keeps the bin.
+  it('agent-docs: the fix names the scoped package when the project has no local CLI', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}');
+    const res = checkAgentDocs({cwd: tmpDir});
+    expect(res.fix).toContain('`npx @astryxdesign/cli init --features agents`');
+  });
+
+  it('agent-docs: the fix keeps `npx astryx` when the project has a local CLI', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}');
+    fs.mkdirSync(path.join(tmpDir, 'node_modules', '.bin'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, 'node_modules', '.bin', 'astryx'), '');
+    const res = checkAgentDocs({cwd: tmpDir});
+    expect(res.fix).toContain('`npx astryx init --features agents`');
   });
 
   it('agent-docs: WARN when docs exist without XDS markers', () => {
@@ -226,6 +200,39 @@ describe('doctor — individual checks', () => {
     );
     const res = checkAgentDocs({cwd: tmpDir});
     expect(res.status).toBe('pass');
+  });
+
+  it('agent-docs: PASS from a subfolder, reading the project root', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"app"}');
+    fs.writeFileSync(
+      path.join(tmpDir, 'AGENTS.md'),
+      '<!-- ASTRYX:START -->\nstuff\n<!-- ASTRYX:END -->\n',
+    );
+    const src = path.join(tmpDir, 'src');
+    fs.mkdirSync(src);
+    const res = checkAgentDocs({cwd: src});
+    expect(res.status).toBe('pass');
+    expect(res.message).toBe(
+      `Astryx agent docs section present in ${path.join('..', 'AGENTS.md')}.`,
+    );
+  });
+
+  it('agent-docs: reads every file init can write, Hermes included', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'HERMES.md'),
+      '<!-- ASTRYX:START -->\nstuff\n<!-- ASTRYX:END -->\n',
+    );
+    expect(checkAgentDocs({cwd: tmpDir})).toMatchObject({
+      status: 'pass',
+      message: 'Astryx agent docs section present in HERMES.md.',
+    });
+  });
+
+  it('agent-docs: INFO names what it looked for and where', () => {
+    const res = checkAgentDocs({cwd: tmpDir});
+    expect(res.status).toBe('info');
+    expect(res.message).toContain('AGENTS.md, CLAUDE.md');
+    expect(res.message).toContain('HERMES.md');
   });
 
   it('peer-deps: INFO when core not installed', () => {

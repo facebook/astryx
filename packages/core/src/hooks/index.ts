@@ -100,6 +100,8 @@ export type {ImageSampleRegion, UseImageModeOptions} from './useImageMode';
 export {
   useClickableContainer,
   INTERACTIVE_SELECTORS,
+  hasInteractiveAncestor,
+  hasTextSelection,
 } from './useClickableContainer';
 export type {
   UseClickableContainerOptions,
@@ -123,6 +125,8 @@ export type {
 
 export {useLongPress} from './useLongPress';
 export type {UseLongPressOptions, UseLongPressHandlers} from './useLongPress';
+
+export {usePressFeedback} from './usePressFeedback';
 
 export {useDevWarning} from './useDevWarning';
 export {useIndicatorFocusRing} from './useIndicatorFocusRing';

@@ -23,6 +23,13 @@ import {
   type SerializedLexicalNode,
 } from 'lexical';
 import {DEFAULT_NODES} from './editorNodes';
+import {normalizeListIndentation} from './markdownListIndentation';
+import {
+  $restoreCharacterReferences,
+  $restoreCodeSpans,
+  protectCharacterReferences,
+  protectCodeSpans,
+} from './markdownCharacterReferences';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import {
   editorStateJSONToMarkdown,
@@ -30,6 +37,7 @@ import {
 } from './markdownSerializers';
 import {
   $joinSoftLineBreaks,
+  $nestFollowingLists,
   absentToken,
   splitMarkdownChunks,
 } from './markdownSource';
@@ -333,10 +341,109 @@ describe('Markdown source preservation (spec:AST-062)', () => {
     );
   });
 
+  it('keeps a rule beside an edited block as written (FR2)', () => {
+    const contents = (markdown: string) =>
+      splitMarkdownChunks(markdown).map(chunk => chunk.content);
+    // A thematic break is a chunk of its own.
+    expect(contents('- item\n---\n')).toEqual(['- item', '---']);
+    expect(contents('> quote\n***\nAfter\n')).toEqual([
+      '> quote',
+      '***',
+      'After',
+    ]);
+    expect(contents('- a\n- - -\n- b\n')).toEqual(['- a', '- - -', '- b']);
+    expect(contents('Para\n___\n')).toEqual(['Para', '___']);
+    // A dash-only line under paragraph lines underlines them instead, and a
+    // rule inside fenced code is code.
+    expect(contents('Title\nmore\n---\n')).toEqual(['Title\nmore\n---']);
+    expect(contents('```\n---\n```\n')).toEqual(['```\n---\n```']);
+    // Chunks still join back to the input exactly.
+    const crlf = '- item\r\n---\r\nAfter\r\n';
+    expect(
+      splitMarkdownChunks(crlf)
+        .map(chunk => chunk.leading + chunk.content + chunk.trailing)
+        .join(''),
+    ).toBe(crlf);
+    // A rule as written keeps the line break after it, whatever follows;
+    // the block above a `***` or `___` rule keeps its line break even when it
+    // changes, but above `---`, which could underline a paragraph as a
+    // heading, a changed block is set apart by a blank line.
+    const edit = (markdown: string, needles: ReadonlyArray<string>) =>
+      editAndExport(markdown, () => {
+        for (const needle of needles) {
+          $appendToTextContaining(needle, '!');
+        }
+      });
+    expect(edit('- item\n* * *\nAfter\n', ['After'])).toBe(
+      '- item\n* * *\nAfter!\n',
+    );
+    expect(edit('- item\n* * *\nAfter\n', ['item'])).toBe(
+      '- item!\n* * *\nAfter\n',
+    );
+    expect(edit('- item\n* * *\nAfter\n', ['item', 'After'])).toBe(
+      '- item!\n* * *\nAfter!\n',
+    );
+    expect(edit('Para\n___\nAfter\n', ['Para'])).toBe('Para!\n___\nAfter\n');
+    expect(edit('- item\n---\nAfter\n', ['item', 'After'])).toBe(
+      '- item!\n\n---\nAfter!\n',
+    );
+    // Blank lines stay blank lines.
+    expect(edit('- item\n\n* * *\n\nAfter\n', ['item'])).toBe(
+      '- item!\n\n* * *\n\nAfter\n',
+    );
+    // CRLF is kept as written.
+    expect(edit('- item\r\n* * *\r\nAfter\r\n', ['After'])).toBe(
+      '- item\r\n* * *\r\nAfter!\r\n',
+    );
+    // Consecutive rules, untouched, are byte for byte.
+    expect(edit('---\n***\n___\nText\n', ['Text'])).toBe(
+      '---\n***\n___\nText!\n',
+    );
+    // A block inserted after a rule follows its line break; a rule moved to
+    // the end is set apart from what now comes before it.
+    expect(
+      editAndExport('- item\n* * *\nAfter\n', () => {
+        const rule = $getRoot()
+          .getChildren()
+          .find(node => node.getType() === 'horizontalrule');
+        const inserted = $createParagraphNode().append($createTextNode('New'));
+        rule?.insertAfter(inserted);
+      }),
+    ).toBe('- item\n* * *\nNew\n\nAfter\n');
+    expect(
+      editAndExport('- item\n* * *\nAfter\n', () => {
+        const rule = $getRoot()
+          .getChildren()
+          .find(node => node.getType() === 'horizontalrule');
+        if (rule != null) {
+          $getRoot().append(rule);
+        }
+      }),
+    ).toBe('- item\n\nAfter\n\n* * *\n');
+    // A paragraph added after a rule that ended the document is set apart.
+    expect(
+      editAndExport('Para\n\n* * *\n', () => {
+        $getRoot().append(
+          $createParagraphNode().append($createTextNode('More')),
+        );
+      }),
+    ).toBe('Para\n\n* * *\n\nMore\n');
+    // Deleting the rule never joins the blocks it separated.
+    expect(
+      editAndExport('- item\n---\nAfter\n', () => {
+        $getRoot()
+          .getChildren()
+          .find(node => node.getType() === 'horizontalrule')
+          ?.remove();
+      }),
+    ).toBe('- item\n\nAfter\n');
+  });
+
   it('imports the same structure as importing the whole document at once', () => {
     // Node state aside, chunked import must build exactly the tree Lexical's
-    // own import builds, soft breaks joined: lazy continuation lines, loose
-    // lists, and line breaks all land in the same blocks.
+    // own import builds from the list-normalized document, soft breaks
+    // joined: lazy continuation lines, loose lists, and line breaks all land
+    // in the same blocks.
     const structureOf = (json: string): unknown =>
       JSON.parse(json, (key, value: unknown) =>
         key === '$' ? undefined : value,
@@ -351,10 +458,21 @@ describe('Markdown source preservation (spec:AST-062)', () => {
       });
       editor.update(
         () => {
-          $convertFromMarkdownString(
-            markdown.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n'),
-            [...DEFAULT_TRANSFORMERS],
+          // The import reads code spans and character references through
+          // stand-ins; the reference does too.
+          const code = protectCodeSpans(
+            normalizeListIndentation(
+              markdown.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n'),
+            ),
           );
+          const {markdown: protectedMarkdown, standIns} =
+            protectCharacterReferences(code.markdown);
+          $convertFromMarkdownString(protectedMarkdown, [
+            ...DEFAULT_TRANSFORMERS,
+          ]);
+          $restoreCharacterReferences($getRoot(), standIns);
+          $restoreCodeSpans($getRoot(), code.spans);
+          $nestFollowingLists($getRoot());
           $joinSoftLineBreaks($getRoot());
         },
         {discrete: true},

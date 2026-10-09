@@ -2,16 +2,18 @@
 
 /**
  * @file `astryx integration add theme` — scaffold one strongly typed,
- * same-stem source/descriptor pair into an integration package and declare the
- * themes root on first use.
+ * same-stem source/descriptor pair into an integration package, declare the
+ * themes root on first use, and add the built module and stylesheet exports.
  *
  * `--from <base>` forks an existing theme's source files as the starting point
  * instead of writing a blank `defineTheme` skeleton.
  */
 
 import * as fs from 'node:fs';
+import {isBuiltin} from 'node:module';
 import * as path from 'node:path';
 import {AstryxError} from '../error.mjs';
+import {CLI_ROOT} from '../../foundation/fs/paths.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {
   assertWithin,
@@ -21,6 +23,7 @@ import {
 import {
   discoverBundledThemes,
   discoverThemeDirectory,
+  themeFileImports,
 } from '../../foundation/discovery/theme-discovery.mjs';
 import {
   findLocalIntegrationManifestOrNull,
@@ -212,6 +215,77 @@ function rewriteThemeSource(
 /** @param {string} s */
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+}
+
+/** What every app that uses Astryx already has: Core, and React through Core's peers. */
+const APP_PROVIDED = new Set(['@astryxdesign/core', 'react', 'react-dom']);
+
+/**
+ * The npm package a module specifier names, or null for a relative path, an
+ * absolute path, or a Node built-in.
+ * @param {string} specifier
+ * @returns {string | null}
+ */
+function packageOfSpecifier(specifier) {
+  if (specifier.startsWith('.') || specifier.startsWith('/')) return null;
+  if (isBuiltin(specifier)) return null;
+  const parts = specifier.split('/');
+  return specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0];
+}
+
+/**
+ * The npm packages a fork's copied files import that its package does not
+ * declare yet, each at the range the bundled themes are built against (the
+ * CLI's own package.json). The fork depends on them at runtime, so an app that
+ * installs the package needs them too. Derived from the imports, not copied
+ * from a base's whole dependency list. Core and React are left out, since every
+ * Astryx app has them; so is a fork of the package's own theme, whose imports
+ * the package already resolves.
+ *
+ * @param {import('../../foundation/discovery/theme-discovery.mjs').DiscoveredTheme} base
+ * @param {Record<string, any>} pkg - The package's package.json.
+ * @returns {Record<string, string>} package name to range
+ */
+function forkDependencies(base, pkg) {
+  if (!base.bundled) return {};
+  /** @type {Record<string, any>} */
+  let cli;
+  try {
+    cli = JSON.parse(
+      fs.readFileSync(path.join(CLI_ROOT, 'package.json'), 'utf-8'),
+    );
+  } catch {
+    return {};
+  }
+  /** @type {Record<string, string>} */
+  const ranges = {
+    ...cli.devDependencies,
+    ...cli.peerDependencies,
+    ...cli.dependencies,
+  };
+  const declared = {
+    ...pkg.devDependencies,
+    ...pkg.peerDependencies,
+    ...pkg.dependencies,
+  };
+  /** @type {Record<string, string>} */
+  const needed = {};
+  for (const file of base.files) {
+    const code = /\.(?:[cm]?[jt]sx?)$/u.test(file);
+    if (!code || file.endsWith('.doc.mjs')) continue;
+    let specifiers;
+    try {
+      specifiers = themeFileImports(path.join(base.sourceDir, file));
+    } catch {
+      continue; // discovery already refuses a theme whose source does not parse
+    }
+    for (const specifier of specifiers) {
+      const name = packageOfSpecifier(specifier);
+      if (name == null || APP_PROVIDED.has(name) || name in declared) continue;
+      if (typeof ranges[name] === 'string') needed[name] = ranges[name];
+    }
+  }
+  return needed;
 }
 
 /**
@@ -454,10 +528,24 @@ export async function integrationAddTheme(name, options = {}) {
     ];
   }
 
+  const outputBase = projectPath(
+    path.relative(packageDir, path.join(themeDir, identity.slug)),
+  );
   let packageUpdate = packageJsonUpdate(
     packageFile,
     rootPath,
     path.basename(manifestFile),
+    [
+      {
+        subpath: `themes/${identity.slug}`,
+        target: `${outputBase}.js`,
+      },
+      {
+        subpath: `themes/${identity.slug}.css`,
+        target: `${outputBase}.css`,
+      },
+    ],
+    {createExports: true, sideEffects: ['**/*.css']},
   );
   // A CLI older than the one that reads typed theme descriptors rejects the
   // themes root and withholds the package's themes and docs. Declare the CLI
@@ -467,11 +555,27 @@ export async function integrationAddTheme(name, options = {}) {
       packageUpdate?.expectedOriginal ?? fs.readFileSync(packageFile);
     const text = packageUpdate?.contents ?? expectedOriginal.toString('utf-8');
     const current = JSON.parse(text);
-    if (themesCliProblem(current) != null) {
+    let next =
+      themesCliProblem(current) != null
+        ? withCliPeer(current, THEMES_CLI)
+        : current;
+    // A fork runs the base's imports: declare the packages they come from.
+    const forked = baseTheme ? forkDependencies(baseTheme, next) : {};
+    if (Object.keys(forked).length > 0) {
+      const dependencies = {...next.dependencies, ...forked};
+      next = {
+        ...next,
+        dependencies: Object.fromEntries(
+          Object.keys(dependencies)
+            .sort()
+            .map(name => [name, dependencies[name]]),
+        ),
+      };
+    }
+    if (next !== current) {
       packageUpdate = {
         contents:
-          JSON.stringify(withCliPeer(current, THEMES_CLI), null, 2) +
-          (text.endsWith('\n') ? '\n' : ''),
+          JSON.stringify(next, null, 2) + (text.endsWith('\n') ? '\n' : ''),
         expectedOriginal,
       };
     }

@@ -5,7 +5,7 @@
 /**
  * @description Runs accessibility audits on component stories using axe-core
  * @input --storybook-dir <path> --output <file> [--components <comma-separated>]
- *   [--port <number>]
+ *   [--port <number>] [--ready-selector <css-selector>]
  *   --baseline <path> (compare violations against a checked-in baseline)
  *   --fail-on-new (exit 1 when violations not present in the baseline exist)
  *   --update-baseline (rewrite the baseline file from this run's report)
@@ -61,6 +61,7 @@ const components = (componentsArg || '').split(',').filter(Boolean);
 // means "all stories" (the a11y-weekly contract).
 const emptyComponentSet = componentsArg !== null && components.length === 0;
 const baselineFile = getArg('baseline');
+const readySelector = getArg('ready-selector');
 const failOnNew = hasFlag('fail-on-new');
 const updateBaseline = hasFlag('update-baseline');
 
@@ -337,6 +338,12 @@ async function runAccessibilityAudit() {
               ),
             {timeoutMs: 5000, pollMs: 50},
           );
+          if (readySelector != null) {
+            await page.waitForSelector(readySelector, {
+              state: 'visible',
+              timeout: 5000,
+            });
+          }
 
           // Run axe-core accessibility analysis
           const results = await new AxeBuilder({ page })
@@ -455,6 +462,7 @@ async function runAccessibilityAudit() {
   }
 
   const report = {
+    readySelector,
     ownerStoryRoutes: routed.ownerStoryRoutes,
     ownerStoryKeys,
     auditedStories,

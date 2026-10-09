@@ -117,9 +117,9 @@ BottomSheet publishes the way Dialog does. Its Sheet panel is the overlay
 boundary owner, and its scrolling Content area is a container publisher that
 pads caller content and publishes the applied inset. The inset resolves from the
 `padding` prop on the public spacing scale, then the theme's `padding` properties
-on the `bottom-sheet` component. With neither, the Content area keeps its
-released default: no inset, and descendants see the boundary's reset values.
-This prop and theme property are BottomSheet's projection of container lowering.
+on the `bottom-sheet` component, then `--spacing-4` on every logical edge,
+matching Dialog. This prop and theme property are BottomSheet's projection of
+container lowering.
 
 Edge compensation is a two-sided geometry contract, not a token contract:
 

@@ -5,7 +5,7 @@
  */
 
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, text, records, code} from '../formatters/index.mjs';
+import {emit, section, text, records, code, record} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {template as templateApi} from '../../../api/template/template.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
@@ -111,6 +111,52 @@ export function registerTemplate(program) {
         case 'template.list': {
           const pages = result.data.filter(t => t.type === 'page');
           const blocks = result.data.filter(t => t.type === 'block');
+
+          // Bare `template` (no --list, no name) shows a grouped summary so a
+          // no-context agent or terminal doesn't receive 150 KB of catalog. The
+          // full catalog stays reachable via `template --list`.
+          if (!options.list && !name) {
+            /** @param {import('../../../api/template/template.type.mjs').TemplateListEntry[]} items */
+            const grouped = items => {
+              /** @type {Map<string, string[]>} */
+              const groups = new Map();
+              for (const t of items) {
+                const cat = t.category || 'Other';
+                const list = groups.get(cat);
+                if (list) {
+                  list.push(t.id);
+                } else {
+                  groups.set(cat, [t.id]);
+                }
+              }
+              /** @type {string[]} */
+              const lines = [];
+              for (const [cat, ids] of groups) {
+                lines.push(`${cat}: ${ids.join(', ')}`);
+              }
+              return lines.join('\n');
+            };
+            emit(
+              pages.length > 0 && section(`Page Templates (${pages.length})`),
+              pages.length > 0 && text(grouped(pages)),
+              blocks.length > 0 && section(`Block Templates (${blocks.length})`),
+              blocks.length > 0 && text(grouped(blocks)),
+              section('Usage'),
+              text(
+                [
+                  `${run} template <id>                  Show full source`,
+                  `${run} template <id> [target-path]     Scaffold page or block`,
+                  `${run} template <id> --skeleton        Layout reference`,
+                  `${run} template --list                 Full catalog with descriptions`,
+                  `${run} template --list --type block    List only blocks`,
+                  `${run} template --list --package <pkg> List from one package`,
+                  `${run} template --cdn                 CDN starter page, no build step`,
+                ].join('\n'),
+              ),
+            );
+            break;
+          }
+
           // Project each entry to its JSON-mirroring fields; the WIP marker is
           // folded into `name` (as before) and the package is shown only when it
           // isn't the built-in core package.
@@ -146,6 +192,7 @@ export function registerTemplate(program) {
         case 'template.skeleton': {
           const {template: tName, description, components, skeleton} = result.data;
           emit(
+            record({package: result.package}),
             text(
               `# ${tName}${description ? ' — ' + description : ''}\n` +
                 `# Components: ${components.join(', ')}`,
@@ -156,10 +203,12 @@ export function registerTemplate(program) {
         }
 
         case 'template.show': {
-          // Source must survive piping byte-for-byte, so the note about
-          // replaced demo media goes to stderr, in the copy receipt's words.
-          // (Text mode only: --json returned above with the count in data.)
+          // Source must survive piping byte-for-byte, so the package it comes
+          // from (cli-surface INV28) and the note about replaced demo media go
+          // to stderr, the note in the copy receipt's words. (Text mode only:
+          // --json returned above with both in the envelope.)
           const {source, demoMediaReplaced} = result.data;
+          console.error(`package: ${result.package}`);
           emit(code(source));
           if (demoMediaReplaced > 0) {
             console.error(
@@ -171,15 +220,17 @@ export function registerTemplate(program) {
         }
 
         case 'template.copy': {
-          const {outputDir, fileName, demoMediaReplaced} = result.data;
+          const {outputDir, fileName, demoMediaReplaced, notes} = result.data;
           const file = `${outputDir}/${fileName}`;
           emit(
             text(`Copied template to ${file}`),
+            record({package: result.package}),
             demoMediaReplaced > 0 &&
               text(
                 `Replaced ${demoMediaReplaced} Astryx demo media reference${demoMediaReplaced === 1 ? '' : 's'} in ${file}: ` +
                   'images now show a neutral placeholder and videos have an empty source. Supply your own media there.',
               ),
+            ...notes.map(/** @param {string} note */ note => text(note)),
           );
           break;
         }

@@ -17,9 +17,13 @@
 
 import {
   $convertFromMarkdownString,
-  $convertToMarkdownString,
+  CODE,
+  HEADING,
   TEXT_FORMAT_TRANSFORMERS,
   TEXT_MATCH_TRANSFORMERS,
+  LINK,
+  ORDERED_LIST,
+  QUOTE,
   TRANSFORMERS,
   type MultilineElementTransformer,
   type Transformer,
@@ -39,6 +43,14 @@ import {
 import type {ElementFormatType} from 'lexical';
 import {HARD_LINE_BREAK} from './markdownHardLineBreak';
 import {THEMATIC_BREAK} from './markdownThematicBreak';
+import {HEADING_MARKERS} from './markdownHeading';
+import {QUOTE_MARKERS} from './markdownQuote';
+import {LIST_EXPORT} from './markdownListExport';
+import {TASK_LIST} from './markdownTaskList';
+import {ORDERED_LIST_KEEPING_START} from './markdownOrderedList';
+import {LINK_KEEPING_DESTINATIONS} from './markdownLink';
+import {BACKTICK_CODE, TILDE_CODE} from './markdownCodeFence';
+import {$convertToMarkdownKeepingTimeLinear} from './markdownSpaceRuns';
 
 /**
  * Cells hold inline Markdown only, so they are imported and exported with the
@@ -46,21 +58,27 @@ import {THEMATIC_BREAK} from './markdownThematicBreak';
  */
 const CELL_TRANSFORMERS: Array<Transformer> = [
   ...TEXT_FORMAT_TRANSFORMERS,
-  ...TEXT_MATCH_TRANSFORMERS,
+  ...TEXT_MATCH_TRANSFORMERS.map(transformer =>
+    transformer === LINK ? LINK_KEEPING_DESTINATIONS : transformer,
+  ),
 ];
 
 type ColumnAlignment = 'left' | 'center' | 'right' | null;
 
 /**
- * Splits a row into trimmed cell sources: one leading pipe, trailing spaces,
- * and one trailing pipe are dropped, and the rest splits on unescaped pipes.
- * An escaped pipe stays escaped for the cell's inline import.
+ * Splits a row into trimmed cell sources: the row's indentation, one leading
+ * pipe, trailing spaces, and one trailing pipe are dropped, and the rest
+ * splits on unescaped pipes. An escaped pipe stays escaped for the cell's
+ * inline import.
  */
 function splitTableRow(line: string): Array<string> {
   let start = 0;
   let end = line.length;
-  if (line.startsWith('|')) {
-    start = 1;
+  while (start < end && (line[start] === ' ' || line[start] === '\t')) {
+    start++;
+  }
+  if (line[start] === '|') {
+    start++;
     while (start < end && line[start] === ' ') {
       start++;
     }
@@ -159,10 +177,32 @@ function $createCell(
 function cellMarkdown(cell: TableCellNode): string {
   // A cell is one line of Markdown, so paragraph breaks inside it become
   // spaces, and literal pipes are escaped to stay inside the cell.
-  return $convertToMarkdownString(CELL_TRANSFORMERS, cell)
-    .replace(/\s*\n+\s*/g, ' ')
+  return oneLine($convertToMarkdownKeepingTimeLinear(CELL_TRANSFORMERS, cell))
     .replace(/\|/g, '\\|')
     .trim();
+}
+
+/**
+ * `markdown` with each run of spaces that holds a line break made one space.
+ * Read line by line: a pattern matching optional spaces around line breaks
+ * retries from every space in a long run without a line break, so its time
+ * grows with the square of the run.
+ */
+function oneLine(markdown: string): string {
+  if (!markdown.includes('\n')) {
+    return markdown;
+  }
+  const lines = markdown.split('\n');
+  let joined = lines[0].trimEnd();
+  for (let index = 1; index < lines.length; index++) {
+    const isLast = index === lines.length - 1;
+    const line = isLast ? lines[index].trimStart() : lines[index].trim();
+    // A blank line is part of the run of spaces around it.
+    if (line !== '' || isLast) {
+      joined += ` ${line}`;
+    }
+  }
+  return joined;
 }
 
 /**
@@ -236,14 +276,34 @@ export const TABLE: MultilineElementTransformer = {
 };
 
 /**
- * The editor's default Markdown transformers: thematic breaks, Lexical's
- * standard set, hard line breaks for breaks typed in the editor, and GFM
- * tables. Thematic breaks come first so a line such as `* * *` is a rule
- * rather than a list item.
+ * The editor's default Markdown transformers: thematic breaks, list export
+ * that nests to each parent's content column, GFM task list items, Lexical's
+ * standard set (with `~~~` fences beside its backtick ones, both reading the
+ * opening line's info string as core does, its ordered list keeping each
+ * nested list's start, and its
+ * link writing an unbalanced destination's parentheses escaped), hard line
+ * breaks for breaks typed in the editor, and GFM tables. Thematic breaks come first so a line such as `* * *` is a rule
+ * rather than a list item, and task items before bullets so `- [ ] text` is a
+ * task rather than a bullet that starts with `[ ]`.
  */
 export const DEFAULT_TRANSFORMERS: ReadonlyArray<Transformer> = [
   THEMATIC_BREAK,
-  ...TRANSFORMERS,
+  LIST_EXPORT,
+  TASK_LIST,
+  TILDE_CODE,
+  ...TRANSFORMERS.map(transformer =>
+    transformer === ORDERED_LIST
+      ? ORDERED_LIST_KEEPING_START
+      : transformer === LINK
+        ? LINK_KEEPING_DESTINATIONS
+        : transformer === CODE
+          ? BACKTICK_CODE
+          : transformer === QUOTE
+            ? QUOTE_MARKERS
+            : transformer === HEADING
+              ? HEADING_MARKERS
+              : transformer,
+  ),
   HARD_LINE_BREAK,
   TABLE,
 ];

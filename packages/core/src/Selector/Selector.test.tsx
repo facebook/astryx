@@ -667,16 +667,15 @@ describe('Selector', () => {
       const popover = screen
         .getByRole('listbox', {hidden: true})
         .closest('[popover]') as HTMLElement;
-      // Both block edges, so the gap survives a position-try-fallbacks flip
-      // to the opposite side (#4803).
+      // The clearance rides the edge facing the trigger — the block end for
+      // placement="above" — and a position-try flip carries it to the other
+      // side with the area, so the gap survives the flip (#4803).
       await waitFor(() => {
-        expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe(
+        expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
           spacingVars['--spacing-1'],
         );
       });
-      expect(popover.style.getPropertyValue('--x-marginBlockEnd')).toBe(
-        spacingVars['--spacing-1'],
-      );
+      expect(popover.style.getPropertyValue('--x-marginBlockStart')).toBe('');
     });
 
     it('clears the trigger in search mode', async () => {
@@ -4613,5 +4612,70 @@ describe('Selector press model', () => {
     expect(screen.getByRole('listbox', h)).toHaveAttribute(
       'data-astryx-menu-press',
     );
+  });
+});
+
+describe('Selector in a narrow row', () => {
+  it('lets a row shrink a standalone selector instead of overflowing', () => {
+    const {container} = render(
+      <Selector
+        label="Status"
+        options={['Awaiting fulfillment', 'Shipped']}
+        value="Awaiting fulfillment"
+        onChange={() => {}}
+      />,
+    );
+    const root = container.querySelector('.astryx-field')!;
+    expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+
+  it('keeps an explicit width alongside the reset', () => {
+    const {container} = render(
+      <Selector
+        label="Qty"
+        options={['1', '2']}
+        value="1"
+        onChange={() => {}}
+        width={80}
+      />,
+    );
+    const root = container.querySelector('.astryx-field')!;
+    expect(root.getAttribute('style')).toContain('80');
+    expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+});
+
+describe('Selector and option actions (not adopted)', () => {
+  it('renders the option without the control and warns in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[
+            {
+              value: 'apple',
+              label: 'Apple',
+              action: <button type="button">Edit Apple</button>,
+            },
+          ]}
+          value={undefined}
+          onChange={() => {}}
+        />,
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+      expect(
+        screen.queryByRole('button', {name: 'Edit Apple', hidden: true}),
+      ).toBeNull();
+      expect(
+        screen.getByRole('option', {name: 'Apple', hidden: true}),
+      ).toBeInTheDocument();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(/Selector[\s\S]*action/),
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

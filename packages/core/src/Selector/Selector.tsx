@@ -79,12 +79,14 @@ import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {SelectorOption} from './SelectorOption';
 import {SelectorRowLayoutContext} from './SelectorRowLayoutContext';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
+import {warnOnce} from '../utils/devWarning';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -245,7 +247,13 @@ const styles = stylex.create({
       'background-image, background-color, color, opacity, transform',
     transform: {
       default: 'scale(1)',
-      ':active': 'scale(0.98)',
+      // A mouse press; under a coarse pointer the touch press model writes
+      // `data-astryx-press` instead (see interactionOverlay.stylex.ts).
+      ':active': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
   triggerGhostDisabled: {
@@ -253,6 +261,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
   triggerReadOnly: {
@@ -263,6 +272,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
 
@@ -854,6 +864,7 @@ export function Selector<T extends SelectorOptionType>(
   props: SelectorProps<T>,
 ) {
   const t = useTranslator();
+  const pressable = usePressFeedback();
   const {
     label,
     isLabelHidden = false,
@@ -984,6 +995,21 @@ export function Selector<T extends SelectorOptionType>(
     () => getSelectableOptions(options),
     [options],
   );
+
+  // `action` is declared on the shared option type for `MultiSelector`;
+  // this listbox has not adopted it, so it renders the option without the
+  // control and says so (spec:AST-058 FR9) rather than nesting a control in
+  // an option.
+  useEffect(() => {
+    if (selectableItems.some(item => item.action != null)) {
+      warnOnce(
+        'selector:option-action',
+        'Selector',
+        'An option carries `action`, which Selector does not render yet; the ' +
+          'option is shown without it. MultiSelector renders option actions.',
+      );
+    }
+  }, [selectableItems]);
 
   // Filter items by search query
   const filteredItems = useMemo(
@@ -1792,6 +1818,7 @@ export function Selector<T extends SelectorOptionType>(
         }}
         onClick={onTriggerClick}
         data-testid={testId}
+        {...pressable}
         {...mergeProps(
           themeProps('selector', {
             variant,

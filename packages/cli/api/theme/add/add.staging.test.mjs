@@ -4,16 +4,16 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import {themeAdd} from './add.mjs';
+import {themeEject} from '../eject/eject.mjs';
 import {listThemes} from '../_adapter.mjs';
 
 let tmpDir;
 let outsideDir;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-themeadd-staging-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-themeeject-staging-'));
   outsideDir = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'astryx-themeadd-outside-'),
+    path.join(os.tmpdir(), 'astryx-themeeject-outside-'),
   );
 });
 
@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 /**
- * Where `theme add` writes the first file of `slug`.
+ * Where `theme eject` writes the first file of `slug`.
  * @param {string} slug
  */
 function firstDestination(slug) {
@@ -36,14 +36,14 @@ function firstDestination(slug) {
 
 // Staging names are unpredictable and created exclusively, so an entry planted
 // at a predictable name beside the destination is never written through.
-describe('themeAdd staging writes stay inside the project', () => {
+describe('themeEject staging writes stay inside the project', () => {
   it('never writes through a link planted at a predictable staging name', async () => {
     const victim = path.join(outsideDir, 'victim.txt');
     fs.writeFileSync(victim, 'outside\n');
     const dest = firstDestination('stone');
     fs.symlinkSync(victim, `${dest}.${process.pid}.tmp`);
 
-    await themeAdd('stone', {cwd: tmpDir});
+    await themeEject('stone', {cwd: tmpDir});
 
     expect(fs.readFileSync(victim, 'utf-8')).toBe('outside\n');
     expect(fs.lstatSync(dest).isFile()).toBe(true);
@@ -53,7 +53,7 @@ describe('themeAdd staging writes stay inside the project', () => {
     const victim = path.join(outsideDir, 'created.txt');
     fs.symlinkSync(victim, `${firstDestination('stone')}.${process.pid}.tmp`);
 
-    await themeAdd('stone', {cwd: tmpDir});
+    await themeEject('stone', {cwd: tmpDir});
 
     expect(fs.existsSync(victim)).toBe(false);
   });
@@ -65,7 +65,7 @@ describe('themeAdd staging writes stay inside the project', () => {
     fs.symlinkSync(victim, dest);
 
     await expect(
-      themeAdd('stone', {cwd: tmpDir, overwrite: true}),
+      themeEject('stone', {cwd: tmpDir, overwrite: true}),
     ).rejects.toMatchObject({code: 'ERR_PATH_TRAVERSAL'});
     expect(fs.readFileSync(victim, 'utf-8')).toBe('outside\n');
     expect(fs.lstatSync(dest).isSymbolicLink()).toBe(true);
@@ -75,7 +75,7 @@ describe('themeAdd staging writes stay inside the project', () => {
     const victim = path.join(outsideDir, 'created.txt');
     fs.symlinkSync(victim, firstDestination('stone'));
 
-    await expect(themeAdd('stone', {cwd: tmpDir})).rejects.toMatchObject({
+    await expect(themeEject('stone', {cwd: tmpDir})).rejects.toMatchObject({
       code: 'ERR_PATH_TRAVERSAL',
     });
     expect(fs.existsSync(victim)).toBe(false);
