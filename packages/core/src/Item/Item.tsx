@@ -140,6 +140,13 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * keyboard access and the row adds no second tab stop; and only when no
    * interactive node sits in `startContent` or `endContent`, since a control
    * nested inside an anchor is invalid.
+   *
+   * `role="row"` is the one role that keeps the row's own control: inside a
+   * `grid`, the row renders its parts as `gridcell`s — the marker, the start
+   * content, the label with its description, the end content, and each swipe
+   * panel — and the label cell holds the invisible anchor or button, which
+   * `controlProps` reaches, so a grid's keyboard model can rove focus to it.
+   * `isSelected` is the row's `aria-selected`.
    * @default 'div'
    */
   as?: 'div' | 'li' | 'span' | React.ElementType;
@@ -338,9 +345,11 @@ const ARIA_SELECTED_ROLES = new Set([
 /**
  * Roles whose content model permits interactive descendants, so a swipe
  * panel's buttons may live inside the row. A row with no role at all
- * qualifies too; `option`, the `menuitem*` roles and the rest do not.
+ * qualifies too; `option`, the `menuitem*` roles and the rest do not. A
+ * grid's `row` qualifies through its cells: every child the row exposes is a
+ * `gridcell`, the panel included (see `isGridRow`).
  */
-const SWIPE_ROLES = new Set(['listitem']);
+const SWIPE_ROLES = new Set(['listitem', 'row']);
 
 /** The travel a drag writes on the row root, in physical px (see useSwipeAction). */
 const SWIPE_TRAVEL = 'var(--_item-swipe-travel, 0px)';
@@ -496,6 +505,17 @@ const styles = stylex.create({
     flex: '0 0 auto',
     display: 'flex',
     marginInlineStart: 'auto',
+  },
+  // A grid row's cells. The label cell takes the room the control took when
+  // it sat bare in the row; the control inside fills it.
+  labelCell: {
+    display: 'flex',
+    flex: 1,
+    minWidth: 0,
+  },
+  markerCell: {
+    display: 'flex',
+    flex: '0 0 auto',
   },
   // Swipe actions. The root translates by the drag's travel and settles on
   // the clock the gesture writes; `pan-y` lets the browser keep scrolling the
@@ -695,11 +715,16 @@ export function Item({
 
   const isInteractive = onClick != null || href != null || isDelegate;
   const {target, rel} = computeTargetAndRel(targetFromProps, relFromProps);
+  // A row of a grid: the parts render as `gridcell`s and the label cell keeps
+  // the row's own control, where a grid's roving focus lands.
+  const isGridRow = role === 'row';
   // The control the row renders, if any: the invisible anchor or button, or
   // the root itself when `as` made the root the link. A parent-role row and a
   // delegating row render none, so `controlProps` has nowhere to land there.
   const rendersControl =
-    !isDelegate && role == null && (href != null || onClick != null);
+    !isDelegate &&
+    (role == null || isGridRow) &&
+    (href != null || onClick != null);
   useDevWarning(
     'Item',
     '`controlProps` reaches the control the row renders for `onClick` or ' +
@@ -711,8 +736,10 @@ export function Item({
   );
   // When a semantic role is provided (e.g. "menuitem"), a parent component
   // handles keyboard access. Skip the invisible button/anchor and put
-  // onClick directly on the root element instead.
-  const hasParentRole = role != null;
+  // onClick directly on the root element instead. A grid's `row` is the
+  // exception: its cells hold the controls a grid's keyboard model moves
+  // between, so the row keeps its own.
+  const hasParentRole = role != null && !isGridRow;
   // The root is whatever `as` says it is. A caller that passed a link
   // component means the root itself is the anchor, so the address rides it
   // and the invisible anchor below is not rendered.
@@ -859,66 +886,87 @@ export function Item({
     onClick?.(e);
   };
 
+  // In a grid row every exposed child is a `gridcell`; elsewhere the parts
+  // sit bare in the row.
+  const cellRole = isGridRow ? 'gridcell' : undefined;
+  const labelControl =
+    hasParentRole || isDelegate ? (
+      // Delegation mode (and parent-role mode) put the label in a plain span:
+      // keyboard access lives on the nested control, so no invisible
+      // button/anchor is rendered and the row adds no second tab stop.
+      <span
+        {...stylex.props(
+          styles.content,
+          isInline && styles.inlineContent,
+          isDisabled && styles.disabledContent,
+        )}>
+        {labelAndDescription}
+      </span>
+    ) : href != null && !isLinkRoot ? (
+      <LinkComponent
+        {...controlProps}
+        href={href}
+        target={target}
+        rel={rel}
+        aria-disabled={isDisabled ? true : controlProps?.['aria-disabled']}
+        tabIndex={isDisabled ? -1 : controlProps?.tabIndex}
+        {...stylex.props(
+          styles.invisibleAnchor,
+          isInline && styles.inlineContent,
+          isDisabled && styles.disabledContent,
+        )}>
+        {labelAndDescription}
+      </LinkComponent>
+    ) : onClick != null ? (
+      <button
+        {...controlProps}
+        type="button"
+        onClick={onClick}
+        disabled={isDisabled}
+        {...stylex.props(
+          styles.invisibleButton,
+          isInline && styles.inlineContent,
+          isDisabled && styles.disabledContent,
+        )}>
+        {labelAndDescription}
+      </button>
+    ) : (
+      <span
+        {...stylex.props(
+          styles.content,
+          isInline && styles.inlineContent,
+          isDisabled && styles.disabledContent,
+        )}>
+        {labelAndDescription}
+      </span>
+    );
+
   const innerContent = (
     <>
-      {marker}
+      {marker != null && isGridRow ? (
+        <span role="gridcell" {...stylex.props(styles.markerCell)}>
+          {marker}
+        </span>
+      ) : (
+        marker
+      )}
       {startContent != null && (
-        <span {...stylex.props(styles.startContent)}>{startContent}</span>
+        <span role={cellRole} {...stylex.props(styles.startContent)}>
+          {startContent}
+        </span>
       )}
 
-      {hasParentRole || isDelegate ? (
-        // Delegation mode (and parent-role mode) put the label in a plain span:
-        // keyboard access lives on the nested control, so no invisible
-        // button/anchor is rendered and the row adds no second tab stop.
-        <span
-          {...stylex.props(
-            styles.content,
-            isInline && styles.inlineContent,
-            isDisabled && styles.disabledContent,
-          )}>
-          {labelAndDescription}
+      {isGridRow ? (
+        <span role="gridcell" {...stylex.props(styles.labelCell)}>
+          {labelControl}
         </span>
-      ) : href != null && !isLinkRoot ? (
-        <LinkComponent
-          {...controlProps}
-          href={href}
-          target={target}
-          rel={rel}
-          aria-disabled={isDisabled ? true : controlProps?.['aria-disabled']}
-          tabIndex={isDisabled ? -1 : controlProps?.tabIndex}
-          {...stylex.props(
-            styles.invisibleAnchor,
-            isInline && styles.inlineContent,
-            isDisabled && styles.disabledContent,
-          )}>
-          {labelAndDescription}
-        </LinkComponent>
-      ) : onClick != null ? (
-        <button
-          {...controlProps}
-          type="button"
-          onClick={onClick}
-          disabled={isDisabled}
-          {...stylex.props(
-            styles.invisibleButton,
-            isInline && styles.inlineContent,
-            isDisabled && styles.disabledContent,
-          )}>
-          {labelAndDescription}
-        </button>
       ) : (
-        <span
-          {...stylex.props(
-            styles.content,
-            isInline && styles.inlineContent,
-            isDisabled && styles.disabledContent,
-          )}>
-          {labelAndDescription}
-        </span>
+        labelControl
       )}
 
       {endContent != null && (
         <span
+          role={cellRole}
           {...stylex.props(
             styles.endContent,
             isDisabled && styles.disabledContent,
@@ -968,6 +1016,7 @@ export function Item({
     return (
       <div
         key={side}
+        role={cellRole}
         data-swipe-panel={side}
         inert={isLive ? undefined : true}
         aria-hidden={isCommit ? true : undefined}
