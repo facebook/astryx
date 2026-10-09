@@ -650,7 +650,7 @@ export function useVegaLiteThemeConfig(): Config {
         },
         {
           type: 'prose',
-          text: '`token` follows the nearest Astryx `Theme`. To switch modes on the same page, keep `mode` in product state and update `<Theme theme={productTheme} mode={mode}>`. Keep the chart at the same component position instead of keying it by mode.',
+          text: "`token` follows the nearest Astryx `Theme`; import the provider with `import {Theme} from '@astryxdesign/core/theme';`. To switch modes on the same page, keep `mode` in product state and update `<Theme theme={productTheme} mode={mode}>`. Keep the chart at the same component position instead of keying it by mode.",
         },
         {
           type: 'prose',
