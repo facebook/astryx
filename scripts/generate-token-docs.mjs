@@ -4,17 +4,23 @@
 /**
  * @file generate-token-docs.mjs
  * @description Generates the tokens namespace (tree/tokens.doc.mjs), one child
- *   guide per token category (tree/tokens-<key>.doc.mjs), the thin overview
- *   (tokens.doc.mjs), and a hand-written usage section, from the sources of
- *   truth: packages/core/src/theme/tokens.stylex.ts, plus the domain tokens in
+ *   guide per token category (tree/tokens-<key>.doc.mjs), and a hand-written
+ *   usage guide (tree/tokens-usage.doc.mjs), from the sources of truth:
+ *   packages/core/src/theme/tokens.stylex.ts, plus the domain tokens in
  *   packages/core/src/theme/domainTokens/dataTokens.ts (data visualization) and
  *   packages/core/src/theme/syntax/tokens.ts (code syntax).
  *
+ * Each token is written once, in its category's guide. A token reference
+ * (`{type: 'token-ref', topic: 'tokens', section: 'Color Tokens'}`) resolves
+ * through the tokens namespace to the guide that holds the table.
+ *
  * Run: node scripts/generate-token-docs.mjs
- * CI:  `node scripts/generate-token-docs.mjs --check` fails on drift.
+ * CI:  `node scripts/generate-token-docs.mjs --check` fails on drift, and on a
+ *      generated tokens guide (or its translation overlay) that no category
+ *      writes any more.
  */
 
-import {readFileSync, writeFileSync, existsSync} from 'node:fs';
+import {readFileSync, readdirSync, unlinkSync, writeFileSync} from 'node:fs';
 import {resolve, dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -29,7 +35,6 @@ const SYNTAX_TOKENS_SRC = resolve(
   ROOT,
   'packages/core/src/theme/syntax/tokens.ts',
 );
-const TOKENS_DOC = resolve(ROOT, 'packages/cli/assets/docs/token-tables.doc.mjs');
 const TREE_DIR = resolve(ROOT, 'packages/cli/assets/docs/tree');
 
 // ---------------------------------------------------------------------------
@@ -409,66 +414,13 @@ export const docs = ${JSON.stringify(usageDoc, null, 2)};
 const usagePath = resolve(TREE_DIR, `${usageSlug}.doc.mjs`);
 
 // ---------------------------------------------------------------------------
-// 5. Build the flat token-tables reference (for token-ref resolution)
-// ---------------------------------------------------------------------------
-
-// token-ref blocks in other docs (color, spacing, etc.) resolve topics
-// from the flat doc catalog. The tree children are not in that catalog.
-// Keep a flat doc with all sections so token-ref inlining keeps working.
-const flatSections = [];
-for (const group of groups) {
-  const pairs = extractDefaults(group.exportName, group.file);
-  if (pairs.length === 0) continue;
-  const rows = pairs.map(([name, value]) => group.formatRow(name, value));
-  const content = [
-    {type: 'prose', text: group.description},
-    {type: 'table', headers: group.headers, rows},
-  ];
-  const sec = {title: group.title, content};
-  if (group.previewType) sec.previewType = group.previewType;
-  flatSections.push(sec);
-}
-
-const flatOutput = `\
-// Copyright (c) Meta Platforms, Inc. and affiliates.
-
-// AUTO-GENERATED — do not edit manually.
-// Source: packages/core/src/theme/tokens.stylex.ts,
-//   dataTokens.stylex.ts, and syntax/tokens.ts
-// Run: node scripts/generate-token-docs.mjs
-// Total: ${totalTokens} tokens across ${groups.length} categories.
-//
-// This flat doc exists for token-ref resolution only; the user-facing
-// navigation lives in tree/tokens.doc.mjs (namespace) and its children.
-
-/** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
-
-export const docs = ${JSON.stringify(
-  {
-    name: 'token-tables',
-    title: 'Token Tables',
-    category: 'foundations',
-    description:
-      'Internal token reference used by token-ref blocks in other docs.',
-    keywords: ['design tokens', 'css variables', 'custom properties'],
-    sections: flatSections,
-  },
-  null,
-  2,
-)};
-`;
-
-const flatPath = TOKENS_DOC;
-
-// ---------------------------------------------------------------------------
-// 6. Write output (or check for drift)
+// 5. Write output (or check for drift)
 // ---------------------------------------------------------------------------
 
 const isCheck = process.argv.includes('--check');
 
 /** @type {Array<{path: string, output: string, label: string}>} */
 const allFiles = [
-  {path: flatPath, output: flatOutput, label: 'tokens.doc.mjs (token-ref source)'},
   {path: namespacePath, output: namespaceOutput, label: 'tree/tokens.doc.mjs (namespace)'},
   ...childFiles.map(f => ({
     path: f.path,
@@ -478,8 +430,40 @@ const allFiles = [
   {path: usagePath, output: usageOutput, label: `tree/${usageSlug}.doc.mjs (usage)`},
 ];
 
+// A generated tokens guide no category writes any more (a renamed or removed
+// category), or a translation overlay whose guide is gone: a reader would
+// still find it, so check mode fails on it and a write removes it.
+const written = new Set(allFiles.map(f => f.path));
+const treeFiles = readdirSync(TREE_DIR).filter(file =>
+  /^tokens(?:-[\w-]+)?\.doc(?:\.(?:dense|zh))?\.mjs$/.test(file),
+);
+const orphanGuides = treeFiles
+  .filter(file => /\.doc\.mjs$/.test(file))
+  .map(file => resolve(TREE_DIR, file))
+  .filter(
+    filePath =>
+      !written.has(filePath) &&
+      readFileSync(filePath, 'utf-8').includes('AUTO-GENERATED'),
+  );
+const orphans = [
+  ...orphanGuides,
+  ...treeFiles
+    .filter(file => /\.doc\.(?:dense|zh)\.mjs$/.test(file))
+    .map(file => resolve(TREE_DIR, file))
+    .filter(filePath => {
+      const base = filePath.replace(/\.doc\.(?:dense|zh)\.mjs$/, '.doc.mjs');
+      return orphanGuides.includes(base) || !treeFiles.includes(base.slice(TREE_DIR.length + 1));
+    }),
+];
+
 if (isCheck) {
   let failed = false;
+  for (const filePath of orphans) {
+    console.error(
+      `✗ ${filePath.slice(ROOT.length + 1)} is not written by any token category. Run: node scripts/generate-token-docs.mjs`,
+    );
+    failed = true;
+  }
   for (const {path: filePath, output, label} of allFiles) {
     let existing = '';
     try {
@@ -497,8 +481,12 @@ if (isCheck) {
   if (failed) process.exit(1);
   console.log(`✓ All token docs are up to date (${totalTokens} tokens, ${allFiles.length} files)`);
 } else {
-  for (const {path: filePath, output, label} of allFiles) {
+  for (const {path: filePath, output} of allFiles) {
     writeFileSync(filePath, output);
+  }
+  for (const filePath of orphans) {
+    unlinkSync(filePath);
+    console.log(`  removed ${filePath.slice(ROOT.length + 1)}`);
   }
   console.log(
     `✓ Generated ${allFiles.length} token doc files (${totalTokens} tokens)`,

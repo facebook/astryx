@@ -32,7 +32,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'token-tables',
+          topic: 'tokens',
           section: 'Color Tokens',
         },
       ],

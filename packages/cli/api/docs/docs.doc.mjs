@@ -168,7 +168,7 @@ export const doc = {
       label: 'A whole guide from the docs tree',
       code: "await docs('cli/integrations/quick-start');",
     },
-    {label: 'One section by key', code: "await docs('tokens', 'spacing');"},
+    {label: 'One section by key', code: "await docs('spacing', 'scale');"},
   ],
   command: 'docs',
   related: ['search', 'component', 'hook', 'template'],

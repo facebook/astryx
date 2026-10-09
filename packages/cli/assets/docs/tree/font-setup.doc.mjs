@@ -49,7 +49,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'token-tables',
+          topic: 'tokens',
           section: 'Font Family Tokens',
         },
       ],
@@ -99,7 +99,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'token-tables',
+          topic: 'tokens',
           section: 'Font Size Tokens',
         },
       ],
@@ -113,7 +113,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'token-tables',
+          topic: 'tokens',
           section: 'Font Weight Tokens',
         },
       ],

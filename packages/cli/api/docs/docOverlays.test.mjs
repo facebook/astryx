@@ -112,28 +112,39 @@ describe('reference doc overlays (#2182)', () => {
   }
 });
 
-describe('the reported defect: docs token-tables --dense (#2182)', () => {
+describe('the reported defect: docs tokens --dense (#2182)', () => {
   it('does not print the colour table under the Spacing heading', async () => {
-    const result = await docs('token-tables', null, {dense: true});
-    const spacing = result.data.sections.find(s => /spacing/i.test(s.title));
-    expect(spacing, 'token-tables docs should have a spacing section').toBeTruthy();
-
-    const text = JSON.stringify(spacing);
-    expect(
-      text.includes('--color-'),
-      `The "${spacing.title}" section of \`docs token-tables --dense\` contains ` +
-        `colour tokens. An agent reading this learns that spacing tokens are ` +
-        `named --color-*.`,
-    ).toBe(false);
-    expect(text).toContain('--spacing-');
+    // The spacing table lives in its own guide; the spacing topic shows it
+    // through a token reference to the tokens namespace. Both, read dense.
+    for (const topic of ['tokens/tokens-spacing', 'spacing']) {
+      const result = await docs(topic, null, {dense: true});
+      const spacing = result.data.sections.find(s =>
+        JSON.stringify(s).includes('--spacing-'),
+      );
+      expect(spacing, `${topic} --dense should show the spacing table`).toBeTruthy();
+      const text = JSON.stringify(spacing);
+      expect(
+        text.includes('--color-'),
+        `The "${spacing.title}" section of \`docs ${topic} --dense\` contains ` +
+          `colour tokens. An agent reading this learns that spacing tokens are ` +
+          `named --color-*.`,
+      ).toBe(false);
+    }
   });
 
   it('keeps every base section reachable, even without an overlay entry', async () => {
-    // The tokens overlay compresses only 6 of 13 sections. The other 7 must
-    // still render (in English), not vanish or absorb a neighbour's title.
-    const full = await docs('token-tables', null, {});
-    const dense = await docs('token-tables', null, {dense: true});
-    expect(dense.data.sections.length).toBe(full.data.sections.length);
+    // The tokens overlays compress 5 of 15 category tables. Read through the
+    // namespace, the other 10 must still render (in English), not vanish or
+    // absorb a neighbour's title.
+    const full = await docs('tokens', null, {depth: 'all', detail: 'full'});
+    const dense = await docs('tokens', null, {depth: 'all', detail: 'full', dense: true});
+    const titles = read =>
+      read.data.slots.flatMap(slot =>
+        slot.children.flatMap(child => (child.sections ?? []).map(s => s.title)),
+      );
+    expect(titles(dense).length).toBe(titles(full).length);
+    expect(titles(dense)).toContain('Color');
+    expect(titles(dense)).toContain('Font Size Tokens');
   });
 
   it('does not lose a section from docs theme --dense', async () => {

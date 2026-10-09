@@ -39,7 +39,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'token-tables',
+          topic: 'tokens',
           section: 'Duration Tokens',
         },
       ],
@@ -54,7 +54,7 @@ export const docs = {
         },
         {
           type: 'token-ref',
-          topic: 'token-tables',
+          topic: 'tokens',
           section: 'Easing Tokens',
         },
       ],
