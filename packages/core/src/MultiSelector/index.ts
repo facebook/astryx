@@ -18,6 +18,7 @@ export {
   type MultiSelectorRenderTriggerProps,
   type MultiSelectorHandle,
   type MultiSelectorChange,
+  type MultiSelectorCreateOption,
 } from './MultiSelector';
 export type {
   MultiSelectorOptionType,
