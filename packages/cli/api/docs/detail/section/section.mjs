@@ -126,10 +126,10 @@ async function sectionResponse({catalog, node, lang, entry}, sections, match) {
 
 /**
  * One section of a namespace (spec:AST-046 FR6): the section read of the one
- * guide below the namespace, at any depth, that has it. A guide whose section
- * key (its `id`, else the key its title derives) is the query answers first;
- * otherwise each guide is searched the way a topic's section read searches,
- * by key or title. No guide, or several, fail with ERR_UNKNOWN_SECTION, naming
+ * guide below the namespace, at any depth, that has it. Each guide answers
+ * with the section its own section read returns for the query; when that
+ * section's key (its `id`, else the key its title derives) is the query in
+ * some guides, those guides answer first. No guide, or several, fail with ERR_UNKNOWN_SECTION, naming
  * the guides to read instead.
  * @param {import('../../../../foundation/doc-compiler/tree.mjs').DocsTree} tree
  * @param {import('../../../../foundation/doc-compiler/tree.mjs').TreeNode} namespace
@@ -137,7 +137,12 @@ async function sectionResponse({catalog, node, lang, entry}, sections, match) {
  * @param {object} [options] as {@link section}
  * @returns {Promise<import('../../docs.type.mjs').DocsDetailSectionResponse>}
  */
-export async function namespaceSection(tree, namespace, sectionName, options = {}) {
+export async function namespaceSection(
+  tree,
+  namespace,
+  sectionName,
+  options = {},
+) {
   requireSectionName(sectionName);
   const guides = guidesBelow(tree, namespace);
   /** @type {Omit<GuideMatch, 'match'>[]} */
@@ -154,19 +159,37 @@ export async function namespaceSection(tree, namespace, sectionName, options = {
   /** @type {GuideMatch[]} */
   const found = [];
   for (const read of reads) {
-    const exact = read.sections.find(
-      s =>
-        sectionKey(s) === wanted ||
-        (derived !== '' && sectionTitleKey(sourceTitle(s)) === derived),
-    );
-    if (exact) byKey.push({...read, match: exact});
+    // The section the guide's own section read returns for this query, so the
+    // namespace read answers exactly what `astryx docs <guide> <section>` does.
     const {section: match} = findDocSection(read.sections, wanted);
-    if (match) found.push({...read, match});
+    if (!match) continue;
+    found.push({...read, match});
+    if (
+      sectionKey(match) === wanted ||
+      (derived !== '' && sectionTitleKey(sourceTitle(match)) === derived)
+    ) {
+      byKey.push({...read, match});
+    }
   }
   const matches = byKey.length > 0 ? byKey : found;
   const chosen = oneGuide(matches);
-  if (chosen) return sectionResponse(chosen.resolved, chosen.sections, chosen.match);
+  if (chosen)
+    return sectionResponse(chosen.resolved, chosen.sections, chosen.match);
 
+  if (guides.length === 0) {
+    // A namespace with no guide below it (a reference level such as cli/api)
+    // has no sections to read: name its children, as before.
+    throw new AstryxError(
+      `"${namespace.route}" has no sections. Open one of its children instead.`,
+      namespace.slots.flatMap(slot =>
+        slot.children.map(route => ({
+          name: route,
+          reason: tree.get(route)?.summary ?? '',
+        })),
+      ),
+      ERROR_CODES.ERR_UNKNOWN_SECTION,
+    );
+  }
   if (matches.length === 0) {
     throw new AstryxError(
       `Section "${sectionName}" is not in any guide under "${namespace.route}". Open one of its guides instead.`,
@@ -213,7 +236,8 @@ function guidesBelow(tree, namespace) {
         const child = tree.get(route);
         if (!child || child.parent !== parent.route) continue;
         if (child.kind === 'namespace') walk(child);
-        else if (child.kind === 'generic' && child.ref?.topicFile) guides.push(child);
+        else if (child.kind === 'generic' && child.ref?.topicFile)
+          guides.push(child);
       }
     }
   };
