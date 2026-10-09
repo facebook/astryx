@@ -110,7 +110,7 @@ export const docs = {
             [
               '`@astryxdesign/cli`',
               'You ship a docs section, a placed guide, a template that sets `replaces` or `keywords`, a doc section with an `id`, or a theme',
-              '`>=0.7.0` when you ship a template that sets `replaces` or `keywords`, otherwise `>=0.6.4`. Optional in `peerDependenciesMeta`',
+              '`>=0.6.6` when you ship a template that sets `keywords`, otherwise `>=0.6.4`. Optional in `peerDependenciesMeta`',
             ],
           ],
         },

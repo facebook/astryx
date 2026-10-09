@@ -91,7 +91,7 @@ export const docs = {
             ],
             [
               '`replaces_needs_cli`: The package has a template that sets `replaces` but declares no @astryxdesign/cli peer.',
-              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.7.0'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. A stable CLI before 0.7.0 rejects `replaces`, drops that template, and hides your doc topics.",
+              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.4'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. A stable CLI before 0.6.4 rejects `replaces`, drops that template, and hides your doc topics.",
             ],
             [
               '`component_replaces_needs_cli` (a warning): The package has a component that sets `replaces` but declares no @astryxdesign/cli peer, or a peer range that admits an earlier CLI.',
@@ -99,7 +99,7 @@ export const docs = {
             ],
             [
               '`keywords_needs_cli`: The package has a template that sets `keywords` but declares no @astryxdesign/cli peer.',
-              'The same fix as `replaces_needs_cli`: a stable CLI before 0.7.0 rejects `keywords`, drops that template, and hides your doc topics.',
+              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.6'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. A stable CLI before 0.6.6 rejects `keywords` and drops that template, and one before 0.6.4 also hides your doc topics.",
             ],
             [
               '`themes_need_cli`: The package ships a theme but declares no @astryxdesign/cli peer.',
@@ -143,7 +143,7 @@ export const docs = {
             ],
             [
               'Your docs section, templates, or themes are missing only in some apps',
-              'Those apps run a CLI too old to read them: a stable CLI before 0.7.0 for a template that sets `replaces` or `keywords`, or before 0.6.4 for a docs section or a theme. Update `@astryxdesign/cli` there, and keep your optional `@astryxdesign/cli` peer so npm warns about an old CLI.',
+              'Those apps run a CLI too old to read them: a stable CLI before 0.6.6 for a template that sets `keywords`, or before 0.6.4 for a template that sets `replaces`, a docs section, or a theme. Update `@astryxdesign/cli` there, and keep your optional `@astryxdesign/cli` peer so npm warns about an old CLI.',
             ],
           ],
         },
