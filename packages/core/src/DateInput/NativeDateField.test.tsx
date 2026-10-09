@@ -20,7 +20,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import {DateInput} from './DateInput';
 import type * as NativeDateSegments from './nativeDateSegments';
 import {
@@ -194,6 +194,34 @@ describe('DateInput nativePicker', () => {
     fireEvent.change(getInput(), {target: {value: '2026-03-21'}});
 
     expect(onChange).toHaveBeenCalledExactlyOnceWith('2026-03-21');
+  });
+
+  it('runs changeAction after onChange and exposes the pending state', async () => {
+    stubPointer(true);
+    const calls: string[] = [];
+    let resolveAction: () => void = () => {};
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          calls.push('changeAction');
+          resolveAction = resolve;
+        }),
+    );
+    const onChange = vi.fn(() => calls.push('onChange'));
+    render(
+      <DateInput
+        label="Date"
+        onChange={onChange}
+        changeAction={changeAction}
+      />,
+    );
+
+    fireEvent.change(getInput(), {target: {value: '2026-03-21'}});
+
+    expect(calls).toEqual(['onChange', 'changeAction']);
+    expect(changeAction).toHaveBeenCalledExactlyOnceWith('2026-03-21');
+    expect(getInput()).toHaveAttribute('aria-busy', 'true');
+    await act(async () => resolveAction());
   });
 
   it('fires onChange with undefined when the control is emptied', () => {
