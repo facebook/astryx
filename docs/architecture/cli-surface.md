@@ -150,13 +150,19 @@ and remains available through explicit Core package selection.
   a contribution root only with valid bytes behind it, and verifies visibility
   through the same discovery seam consumers use.
 - **INV16 — Authoring preserves package policy and local source wins while it is
-  being edited.** Writers never create `files` or `exports`; when either field
-  already exists, they add only the required manifest, root, or public subpath
-  and preserve every author-owned entry. Generated component and template export
-  keys are extensionless public subpaths even when they target authored `.ts` or
-  `.tsx` source. The integration beside the current package.json replaces the
-  same installed package in place, preserving its configured order while making
-  working bytes authoritative.
+  being edited.** Writers never create `files`; writers never create `exports`
+  on an existing package, with one exception: `add theme` may create an exports
+  map on an existing package containing only theme subpaths (AST-050 FR7;
+  tracked as a follow-up for INV16 alignment). A writer that creates a new
+  `package.json` (no file existed) may start it with an empty `exports` map,
+  because a new package has no consumers whose deep imports would become
+  private. When either field already exists, writers add only the required
+  manifest, root, or public subpath and preserve every author-owned entry.
+  Generated component and template export keys are extensionless public
+  subpaths even when they target authored `.ts` or `.tsx` source. The
+  integration beside the current package.json replaces the same installed
+  package in place, preserving its configured order while making working bytes
+  authoritative.
 - **INV17 — Pack verification examines the artifact consumers receive.**
   `integration verify` runs the package lifecycle through `npm pack`,
   compares the required file inventory with the actual tarball, extracts that
