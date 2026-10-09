@@ -21,6 +21,8 @@ import {
 } from '../__tests__/pressState';
 import {Badge} from '../Badge/Badge';
 import {ButtonGroup} from '../ButtonGroup';
+import {InputGroup} from '../InputGroup';
+import {TextInput} from '../TextInput';
 import {IconButton} from '../IconButton';
 import {InternationalizationProvider} from '../i18n';
 
@@ -37,6 +39,29 @@ describe('Button', () => {
   it('renders label as visible text', () => {
     render(<Button label="Click me" />);
     expect(screen.getByRole('button')).toHaveTextContent('Click me');
+  });
+
+  it('uses InputGroup end-cap geometry when rendered as an addon', () => {
+    const {rerender} = render(
+      <InputGroup label="Visibility">
+        <TextInput
+          label="Audience"
+          isLabelHidden
+          value="Members"
+          onChange={() => {}}
+        />
+        <Button label="Save" />
+      </InputGroup>,
+    );
+
+    expect(screen.getByRole('button', {name: 'Save'}).className).toContain(
+      'groupStyles.buttonAddon',
+    );
+
+    rerender(<Button label="Save" />);
+    expect(screen.getByRole('button', {name: 'Save'}).className).not.toContain(
+      'groupStyles.buttonAddon',
+    );
   });
 
   it('renders children instead of label when provided', () => {
