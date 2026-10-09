@@ -238,12 +238,13 @@ active-cycle registration sequence. `useFocusTrap` adapts an active trap with `o
 that stack.
 
 Tooltip, HoverCard, Dialog, Lab Drawer, Popover, DropdownMenu, Lightbox,
-MobileNav, and BottomSheetSwitcher all register with the shared stack. Tooltip
-and HoverCard report current DOM presence; Popover and DropdownMenu register
-through `useFocusTrap`; Dialog, Lightbox, MobileNav, BottomSheetSwitcher, and
-Lab Drawer additionally ask `shouldDismissOnCloseRequest()` before acting on
-native platform close requests. Other family members still use local Escape
-handling as listed in `family:overlay-dismissal`.
+MobileNav, BottomSheet, and BottomSheetSwitcher all register with the shared
+stack. Tooltip and HoverCard report current DOM presence; Popover and
+DropdownMenu register through `useFocusTrap`; Dialog, Lightbox, MobileNav,
+BottomSheet, BottomSheetSwitcher, and Lab Drawer additionally ask
+`shouldDismissOnCloseRequest()` before acting on native platform close
+requests. Other family members still use local Escape handling as listed in
+`family:overlay-dismissal`.
 
 Outside interaction is not coordinated by the shared stack. Current paths are
 independent:
