@@ -5,7 +5,7 @@
 /**
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, Field, Tooltip, useTooltip, VisuallyHidden
- * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring
+ * @output Exports Slider and its props; unfilled marks share the track token; modifier-only key presses do not restore the thumb focus ring; the text value reserves its widest reachable label so the track keeps its size
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -308,6 +308,24 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     flexShrink: 0,
   },
+  // Each value stacks its visible text on an inert sizer in one grid cell, so
+  // the cell is as wide as the widest label the sizer lists.
+  textValueSlot: {
+    display: 'inline-grid',
+  },
+  textValueText: {
+    gridRowStart: 1,
+    gridColumnStart: 1,
+  },
+  textValueSizer: {
+    gridRowStart: 1,
+    gridColumnStart: 1,
+    whiteSpace: 'pre',
+    height: 0,
+    overflow: 'hidden',
+    visibility: 'hidden',
+    pointerEvents: 'none',
+  },
   marksContainer: {
     position: 'absolute',
   },
@@ -406,6 +424,42 @@ function snapToStep(val: number, min: number, step: number): number {
     20, // toFixed() throws past 20 digits
   );
   return Number(snapped.toFixed(precision));
+}
+
+const RANGE_SEPARATOR = ' – ';
+
+/**
+ * Most steps the text value's sizer lists. Up to this many it covers every
+ * value the slider can reach, so a `formatValue` whose widest label falls
+ * mid-range still gets its room; longer ranges fall back to the endpoints,
+ * their neighbours, and evenly spaced steps between them.
+ */
+const TEXT_VALUE_SIZER_LIMIT = 200;
+
+/** Snapped values whose labels the text value reserves room for. */
+function getTextValueSizerValues(
+  min: number,
+  max: number,
+  step: number,
+): number[] {
+  const count = Math.ceil((max - min) / step);
+  if (!(step > 0) || !Number.isFinite(count) || count <= 0) {
+    return [min, max];
+  }
+  const indices: number[] = [];
+  if (count <= TEXT_VALUE_SIZER_LIMIT) {
+    for (let i = 0; i <= count; i++) {
+      indices.push(i);
+    }
+  } else {
+    for (let i = 0; i <= TEXT_VALUE_SIZER_LIMIT; i++) {
+      indices.push(Math.round((i * count) / TEXT_VALUE_SIZER_LIMIT));
+    }
+    indices.push(1, count - 1);
+  }
+  return indices.map(i =>
+    clamp(snapToStep(min + i * step, min, step), min, max),
+  );
 }
 
 function getPercent(val: number, min: number, max: number): number {
@@ -979,15 +1033,36 @@ export function Slider({ref, ...props}: SliderProps) {
     return {bottom: '0%', height: insetPosition(p)};
   })();
 
-  // Text value display
-  const textDisplay =
-    valueDisplay === 'text' ? (
-      <span {...stylex.props(styles.textValue)}>
-        {isRange
-          ? `${displayValue(values[0])} – ${displayValue(values[1])}`
-          : displayValue(values[0])}
+  // Text value display. The label sits in the same flex row as the track
+  // (which flex-grows), so a label that changes width while dragging resizes
+  // the track and shifts the thumb under the pointer. Each value lays out,
+  // hidden and inert beneath it, the labels the slider can reach, so the
+  // browser reserves the widest one and the track size stays put.
+  let textDisplay = null;
+  if (valueDisplay === 'text') {
+    const sizerText = [
+      ...new Set(getTextValueSizerValues(min, max, step).map(displayValue)),
+    ].join('\n');
+    const renderTextValue = (val: number) => (
+      <span {...stylex.props(styles.textValueSlot)}>
+        <span {...stylex.props(styles.textValueText)}>{displayValue(val)}</span>
+        <span aria-hidden="true" {...stylex.props(styles.textValueSizer)}>
+          {sizerText}
+        </span>
       </span>
-    ) : null;
+    );
+    textDisplay = (
+      <span {...stylex.props(styles.textValue)}>
+        {renderTextValue(values[0])}
+        {isRange && (
+          <>
+            {RANGE_SEPARATOR}
+            {renderTextValue(values[1])}
+          </>
+        )}
+      </span>
+    );
+  }
 
   return (
     <Field
