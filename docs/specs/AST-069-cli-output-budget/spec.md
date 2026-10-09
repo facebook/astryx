@@ -56,12 +56,12 @@ how a command with more to say stays inside its budget.
 - **FR2 — Four result kinds, four budgets.** The budget is in bytes. Tokens are
   shown only as a guide, at about four bytes per token.
 
-  | Kind   | What the result is                                                                                                                                                                                                                                                                       | Budget                                   | About        |
-  | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------ |
-  | Read   | One artifact or one docs-tree node: `component <name>` and its `--props` and `--blocks`, `docs <topic>`, `docs <topic> <section>`, `docs <route>`, `hook <name>`, `template <name> --skeleton`, `build`                                                                                  | 16 KiB (16,384 bytes) per named artifact | 4,100 tokens |
-  | List   | Artifacts or choices to pick from: `component` with no name, `--list`, `--category`; `docs` with no topic; `template --list`; `hook --list`; `search`; `swizzle --list`; `discover`; `theme list`; `theme targets`; `upgrade --list`; `gap-report --list-categories`; `help`; `manifest` | 12 KiB (12,288 bytes)                    | 3,100 tokens |
-  | Report | What a run did or checked: `theme build`, `init`, `upgrade`, `doctor`, and every command that writes files                                                                                                                                                                               | 4 KiB (4,096 bytes) per run              | 1,000 tokens |
-  | Error  | A run that fails                                                                                                                                                                                                                                                                         | 2 KiB (2,048 bytes)                      | 500 tokens   |
+  | Kind   | What the result is                                                                                     | Budget                                   | About        |
+  | ------ | ------------------------------------------------------------------------------------------------------ | ---------------------------------------- | ------------ |
+  | Read   | One named artifact or one docs-tree node: a component, a docs topic or section, a hook, a build start  | 16 KiB (16,384 bytes) per named artifact | 4,100 tokens |
+  | List   | Artifacts or choices to pick from: a catalog, a category, search results, an index, help, the manifest | 12 KiB (12,288 bytes)                    | 3,100 tokens |
+  | Report | What a run did or checked: a build, a check, a doctor run, and every command that writes files         | 4 KiB (4,096 bytes) per run              | 1,000 tokens |
+  | Error  | A run that fails                                                                                       | 2 KiB (2,048 bytes)                      | 500 tokens   |
 
   A read of several named artifacts gets the read budget once per artifact. A
   report's budget does not grow with the number of items the run covers: a run
@@ -70,9 +70,8 @@ how a command with more to say stays inside its budget.
 
 - **FR3 — Verbatim output is exempt.** Output that is the artifact itself
   MUST print whole, so it pipes byte for byte (`architecture:cli-surface`
-  INV28): `component <name> --source`, `component <name> --showcase`, a
-  template's source, and a generated file printed instead of written
-  (`theme palette generate` without `--out`). Its size is the artifact's size.
+  INV28): a component's source or showcase, a template's source, and a
+  generated file printed instead of written. Its size is the artifact's size.
 - **FR4 — More is one command away.** When a command's whole result does not
   fit its budget, the default MUST print the part most callers need and end
   with the command that prints more. A default MUST NOT drop anything silently:
@@ -91,22 +90,21 @@ how a command with more to say stays inside its budget.
 
 - **FR5 — A test holds every command to its budget.** A repository test MUST
   run every command's default on the golden inputs in process and fail when
-  its output exceeds the budget of its kind. A command over budget when it
-  enters the test is listed as an exception at its measured size, rounded up to
-  the next KiB. The test MUST fail when an exception's output grows past that
-  size, and MUST fail when an exception fits its budget, so the change that
-  brings a command under budget also removes its exception. A new command or
-  golden input enters without an exception. The test MUST fail when a command
-  in the manifest has no case, unless it is listed with its reason: it reads
-  the network, it packs a package, it needs a built theme package, or it is
-  deprecated and scheduled for removal.
+  its output exceeds the budget of its kind. A default over budget when it
+  enters the test is listed as an exception at its measured size. The test
+  MUST fail when an exception's output grows past that size, and MUST fail
+  when an exception fits its budget, so the change that brings a command under
+  budget also removes its exception. A new command or golden input enters
+  without an exception. The test MUST fail when a command in the manifest has
+  no case, unless the test names the reason it cannot run there, such as a
+  network read.
 - **FR6 — Golden inputs are real.** The golden inputs MUST be Core's own
   catalog (components, docs, templates, hooks, themes, and codemods) read from a
-  fresh consumer project, with fixtures for commands that need input files:
-  `theme build` on one theme, on a bundled theme, on a batch of 15 themes, and
-  on a theme family, and an empty integration package for the authoring
-  commands. Each read kind includes at least one large artifact, and
-  each failure the test covers is a name the catalog does not have.
+  fresh consumer project. A command that needs input files runs on fixtures
+  covering one input and a batch of many. Each read kind includes at least one
+  large artifact, and each failure the test covers is a name the catalog does
+  not have. Bytes are counted as UTF-8 over standard output and standard error
+  together.
 
 ### Platform support
 
@@ -120,10 +118,8 @@ how a command with more to say stays inside its budget.
 
 - `architecture:cli-surface` gains an invariant: every default text result fits
   the budget of its kind, held by the budget test.
-- These defaults exceed their budget on the golden inputs and start in the
-  test's exception list: `template --list` (with and without `--type page`),
-  `theme targets`, `theme build` over a batch of themes, and the error for an
-  unknown template name. Their owners bring each under budget and remove its
+- A default over its budget when the test is added starts as an exception at
+  its measured size. Its owner brings it under budget and removes the
   exception.
 - Doctor's docs size check is unchanged.
 
@@ -132,10 +128,10 @@ how a command with more to say stays inside its budget.
 | Contract | Verification                                         | Representative states                                                                                                                       | Mutation or failure expectation                                                        |
 | -------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | FR1–FR2  | `packages/cli/test/output-budget.test.mjs`           | every command's default on the golden inputs: a large and a small component, a batch read, a docs topic and tree node, lists, search, build | Output that grows past its kind's budget fails                                         |
-| FR3      | The same test's verbatim list, and review            | `--source`, `--showcase`, a template's source                                                                                               | A non-verbatim result listed as verbatim, or verbatim output that is cut, fails review |
+| FR3      | The same test's verbatim list, and review            | component source and showcase, template source                                                                                              | A non-verbatim result listed as verbatim, or verbatim output that is cut, fails review |
 | FR4      | Each adopting command's own tests, and review        | a paged list, a summarized report, an error with suggestions                                                                                | A default that leaves items out without a count and a command for the rest             |
 | FR5      | `packages/cli/test/output-budget.test.mjs`           | an exception that grows; an exception that fits its budget                                                                                  | Either fails                                                                           |
-| FR6      | The budget test's fixture project and theme fixtures | Core's catalog, one theme, a bundled theme, 15 themes, a family, unknown names                                                              | A golden input that no longer exists fails the run instead of passing as empty         |
+| FR6      | The budget test's fixture project and theme fixtures | Core's catalog, one input file, a batch of input files, unknown names                                                                       | A golden input that no longer exists fails the run instead of passing as empty         |
 
 ## Decision log
 
@@ -177,9 +173,9 @@ through the CLI.
 **Reference:** `spec:AST-069/DEC-4`
 **Decider:** proposed, awaiting `josephfarina`
 
-The test lands with the defaults that exceed their budget listed at their
-measured size, the same approach as `spec:AST-021/DEC-1`. A known gap cannot
-widen, and its exception cannot outlive its fix.
+A default over its budget is recorded at its measured size, the same approach
+as `spec:AST-021/DEC-1`. A known gap cannot widen, and its exception cannot
+outlive its fix.
 
 ## Open questions
 
