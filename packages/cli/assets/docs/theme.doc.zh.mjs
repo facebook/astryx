@@ -11,7 +11,7 @@ export const docsZh = {
       content: [
         {
           type: 'prose',
-          text: '安装主题包，用 `<Theme>` 包裹应用，选择浅色或深色模式。完整指南——可用主题、集成主题、深色模式、嵌套主题和生产构建——请参阅 {@link generic:use-a-theme}。',
+          text: "安装主题包，用 `<Theme>`（`import {Theme} from '@astryxdesign/core'`）包裹应用，选择浅色或深色模式。完整指南——可用主题、集成主题、深色模式、嵌套主题和生产构建——请参阅 {@link generic:use-a-theme}。",
         },
       ],
     },

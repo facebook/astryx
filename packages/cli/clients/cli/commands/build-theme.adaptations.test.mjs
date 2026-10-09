@@ -353,7 +353,7 @@ describe('theme build adaptations', () => {
     expect(rebuiltCss).toContain('light-dark(#111111, #eeeeee)');
     expect(rebuiltCss).toContain(':root { color-scheme: light dark; }');
     expect(`${rebuilt.stdout}${rebuilt.stderr}`).toContain(
-      'Font "Revision Webfont" is named by this theme but not loaded',
+      '[note] Fonts named but not loaded: "Revision Webfont".',
     );
   });
 

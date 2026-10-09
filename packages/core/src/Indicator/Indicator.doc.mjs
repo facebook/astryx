@@ -191,7 +191,7 @@ defineTheme({
       code: `// When the shape itself is wrong, hand the theme a component. It receives
 // {state, size, isDisabled, children} and nothing else.
 //
-// Use theme tokens, never raw values — run \`npx astryx docs tokens\` for the
+// Use theme tokens, never raw values — run \`npx @astryxdesign/cli docs tokens\` for the
 // full set. Color: --color-accent, --color-on-accent, --color-border,
 // --color-border-emphasized, --color-background-surface,
 // --color-background-muted. Radius: --radius-inner, --radius-full.
@@ -256,7 +256,7 @@ defineTheme({name: 'brand', indicators: {check: RadioIndicator}});`,
       {
         guidance: true,
         description:
-          'Use theme tokens for every color, radius, and border width in a replacement. Run `npx astryx docs tokens` for the set.',
+          'Use theme tokens for every color, radius, and border width in a replacement. Run `npx @astryxdesign/cli docs tokens` for the set.',
       },
       {
         guidance: true,
@@ -302,7 +302,7 @@ export const docsDense = {
       { guidance: true, description: "Prefer the canonical `components['checkbox-indicator']` override first. Replacing the component is the heavier path, for when the shape itself is wrong." },
       { guidance: true, description: 'Match the shipped replacement-content branch with `isRenderable(children)`, not `children != null` or `children ?? mark`. The helper is shallow: it excludes nullish values, booleans, and the empty string, while React elements and containers take the replacement path even when their descendants render nothing. The owner passes `children={isBusy && <Spinner/>}`, so a nullish check deletes the state mark whenever the value is `false` (#4893).' },
       { guidance: true, description: 'A replacement must set aria-hidden. The owner supplies role and accessible name; a visible indicator would be announced twice.' },
-      { guidance: true, description: 'Use theme tokens for every color, radius, and border width in a replacement. Run `npx astryx docs tokens` for the set.' },
+      { guidance: true, description: 'Use theme tokens for every color, radius, and border width in a replacement. Run `npx @astryxdesign/cli docs tokens` for the set.' },
       { guidance: true, description: 'Render a single root ELEMENT with the border-radius the focus ring should follow. The owner paints the standard ring onto the indicator at focus time (useIndicatorFocusRing) and outline picks up its radius; the ring is never missing (WCAG 2.4.7), only mis-shaped if the root lacks a radius. Do not draw a focus ring yourself.' },
       { guidance: false, description: 'Thread hover or pressed state in as props. Interaction state reaches an indicator through the owner\'s CSS ancestor marker.' },
       { guidance: false, description: 'Assume you are only mounted when selected. The host renders the indicator unconditionally and passes `state` in every state; that is what lets a replacement draw where the default draws nothing (a radio\'s empty circle on an unchosen row).' },

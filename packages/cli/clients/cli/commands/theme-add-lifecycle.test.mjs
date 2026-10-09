@@ -7,6 +7,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {runCli} from '../../../test-utils/run-cli.mjs';
+import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 
 let tmpDir;
 
@@ -35,10 +36,11 @@ describe('theme add compatibility lifecycle', () => {
     expect(result.stderr.match(/source copying is deprecated/g)).toHaveLength(
       1,
     );
-    expect(result.stderr).toContain('pnpm exec astryx theme eject neutral');
-    expect(result.stderr).toContain(
-      'pnpm exec astryx theme add neutral --import',
-    );
+    // The app has no CLI installed, so the commands name the scoped package.
+    const run = getCliInvocation(tmpDir);
+    expect(run).toMatch(/ @astryxdesign\/cli$/);
+    expect(result.stderr).toContain(`${run} theme eject neutral`);
+    expect(result.stderr).toContain(`${run} theme add neutral --import`);
     expect(fs.existsSync(path.join(tmpDir, 'src/themes/neutral'))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, 'src/astryx-themes.ts'))).toBe(
       false,
@@ -77,11 +79,12 @@ describe('theme add compatibility lifecycle', () => {
 
     const textResult = await runCli(['theme', 'add', '--list'], tmpDir);
     expect(textResult.status, textResult.stderr).toBe(0);
+    const run = getCliInvocation(tmpDir);
     expect(textResult.stdout).toContain(
-      'Import one: pnpm exec astryx theme add <slug> --import [--package <package>]',
+      `Import one: ${run} theme add <slug> --import [--package <package>]`,
     );
     expect(textResult.stdout).toContain(
-      'Fork source: pnpm exec astryx theme eject <slug> [target-path]',
+      `Fork source: ${run} theme eject <slug> [target-path]`,
     );
     expect(textResult.stdout).not.toContain('theme add <slug> [target-path]');
     expect(textResult.stderr).not.toContain('deprecated');

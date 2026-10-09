@@ -168,7 +168,23 @@ describe('doctor — individual checks', () => {
   it('agent-docs: INFO when no docs present', () => {
     const res = checkAgentDocs({cwd: tmpDir});
     expect(res.status).toBe('info');
-    expect(res.fix).toContain('astryx init');
+    expect(res.fix).toContain('init --features agents');
+  });
+
+  // The npm package named `astryx` is not this CLI: a project without the
+  // `astryx` bin gets the scoped package in the fix, one with it keeps the bin.
+  it('agent-docs: the fix names the scoped package when the project has no local CLI', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}');
+    const res = checkAgentDocs({cwd: tmpDir});
+    expect(res.fix).toContain('`npx @astryxdesign/cli init --features agents`');
+  });
+
+  it('agent-docs: the fix keeps `npx astryx` when the project has a local CLI', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}');
+    fs.mkdirSync(path.join(tmpDir, 'node_modules', '.bin'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, 'node_modules', '.bin', 'astryx'), '');
+    const res = checkAgentDocs({cwd: tmpDir});
+    expect(res.fix).toContain('`npx astryx init --features agents`');
   });
 
   it('agent-docs: WARN when docs exist without XDS markers', () => {

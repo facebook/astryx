@@ -93,7 +93,7 @@ export interface DropdownMenuCheckboxItemProps extends Omit<
   description?: ReactNode;
   /**
    * Icon to display before the label. Accepts a semantic icon name (see
-   * `npx astryx docs icons`) or a rendered node.
+   * `npx @astryxdesign/cli docs icons`) or a rendered node.
    */
   icon?: ReactNode | IconType;
   /**

@@ -113,7 +113,8 @@ describe('progressive reads', () => {
     expect(status).toBe(0);
     expect(stdout).toMatch(/^principles +\S/m);
     expect(widest(stdout)).toBeLessThanOrEqual(120);
-    expect(stdout).toContain('Usage: pnpm exec astryx docs <topic>');
+    // The repo root has no `astryx` bin, so the CLI names the scoped package.
+    expect(stdout).toMatch(/Usage: \S+(?: dlx)? (?:astryx|@astryxdesign\/cli) docs <topic>/);
   }, SLOW);
 
   it("prints a topic's section index with the keys to read by", async () => {
