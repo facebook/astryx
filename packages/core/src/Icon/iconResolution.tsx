@@ -2,7 +2,7 @@
 
 /**
  * @file iconResolution.tsx
- * @input Independent Icon intent, private owner slot/state, local contracts and active theme policy
+ * @input Independent Icon intent, private owner slot/state/default size, local contracts and active theme policy
  * @output Supplied artwork, physical box selection and private fallback diagnostics
  * @position Private server-safe resolver; not part of the public Icon barrel
  */
@@ -127,6 +127,7 @@ export function resolveIconWithContext(
     legacyContextSize?: unknown;
     slot?: string;
     state?: unknown;
+    defaultSize?: unknown;
     renderNode?: boolean;
   } = {},
 ): IconResolution {
@@ -247,11 +248,20 @@ export function resolveIconWithContext(
   const roleSize = role ? policy?.roleSizeOverrides?.[role.slot] : undefined;
   const roleSizeAdmitted =
     typeof roleSize === 'string' && Object.hasOwn(app.sizes, roleSize);
+  // An owner may refine its declared default per render (for example from its
+  // control size); only an admitted name replaces the role metadata default.
+  const ownerDefaultSize =
+    role &&
+    typeof context.defaultSize === 'string' &&
+    Object.hasOwn(app.sizes, context.defaultSize)
+      ? context.defaultSize
+      : role?.defaultSize;
   const implicitSize = role
     ? roleSizeAdmitted
       ? roleSize
-      : Object.hasOwn(app.sizes, role.defaultSize)
-        ? role.defaultSize
+      : ownerDefaultSize !== undefined &&
+          Object.hasOwn(app.sizes, ownerDefaultSize)
+        ? ownerDefaultSize
         : 'md'
     : typeof context.legacyContextSize === 'string' &&
         Object.hasOwn(app.sizes, context.legacyContextSize)

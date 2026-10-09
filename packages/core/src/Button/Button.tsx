@@ -4,13 +4,19 @@
 
 /**
  * @file Button.tsx
- * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator)
+ * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator), the private `button-leading` icon role
  * @output Exports Button component, ButtonProps, ButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
+ *
+ * A direct Astryx `<Icon>` passed as `icon` participates in the `button-leading`
+ * role: one effective state, the control-size default, and one theme-resolved
+ * box shared by the wrapper and the glyph. Any other icon content keeps the
+ * released fixed box and implicit Icon size context.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Button/Button.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Button/Button.test.tsx (tests for new/changed behavior)
+ * - /packages/core/src/Button/buttonIconRole.ts (icon role states and precedence)
  * - /packages/core/src/Button/index.ts (exports if types change)
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  * - /packages/cli/assets/templates/blocks/components/Button/ (showcase blocks)
@@ -18,7 +24,7 @@
  * Last synced props: label, variant, size, isDisabled, isLoading, isInterruptible, clickAction, icon, isIconOnly, width, children, tooltip, endContent, href, as, target, rel
  */
 
-import {useRef, useTransition, type ReactNode} from 'react';
+import {isValidElement, useRef, useTransition, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import type {Elevation, SizeValue} from '../utils/types';
 import * as stylex from '@stylexjs/stylex';
@@ -39,7 +45,21 @@ import {
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {IconDefaultSizeProvider} from '../Icon/IconDefaultSizeContext';
-import {iconBoxSizeStyles, type IconSize} from '../Icon/IconSize.stylex';
+import {
+  iconBoxSizeStyles,
+  iconDimensionStyles,
+  type IconSize,
+} from '../Icon/IconSize.stylex';
+import {Icon, type IconProps} from '../Icon/Icon';
+import {renderComponentIconSlot} from '../Icon/componentIconSlot';
+import {resolveIconWithContext} from '../Icon/iconResolution';
+import {useThemeDefinition} from '../theme/useTheme';
+import type {DefinedTheme} from '../theme/defineTheme';
+import {
+  BUTTON_LEADING_ICON_SLOT,
+  getButtonLeadingIconState,
+  type ButtonLeadingIconState,
+} from './buttonIconRole';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
@@ -250,6 +270,73 @@ const iconSizeByButtonSize = {
   md: 'sm',
   lg: 'md',
 } satisfies Record<ButtonSize, IconSize>;
+
+/**
+ * Renders Button's owned icon position.
+ *
+ * A direct Astryx `<Icon>` element is re-rendered through the shared role helper
+ * so it resolves as `button-leading`: explicit Icon size, then a theme
+ * role-size override, then the control-size default. The wrapper box comes
+ * from the same resolver inputs the glyph uses, so both paint one final
+ * dimension (family:buttons FR7). With no theme policy that is the released
+ * `sm`/`md` box, so default pixels do not change.
+ *
+ * Any other content (a raw SVG element, an emoji, an Icon nested in another
+ * element) is not a participating glyph: it keeps the released fixed box and
+ * the implicit IconDefaultSizeContext, and never receives role sizing or state.
+ */
+function renderLeadingIcon(
+  icon: ReactNode,
+  defaultSize: IconSize,
+  state: ButtonLeadingIconState | undefined,
+  theme: DefinedTheme | undefined,
+): ReactNode {
+  if (isValidElement<IconProps>(icon) && icon.type === Icon) {
+    const {icon: source, ...iconProps} = icon.props;
+    const {inspection} = resolveIconWithContext(
+      source,
+      {
+        size: iconProps.size,
+        appearance: iconProps.appearance,
+        weight: iconProps.weight,
+      },
+      theme,
+      {
+        legacyContextSize: defaultSize,
+        slot: BUTTON_LEADING_ICON_SLOT,
+        state,
+        defaultSize,
+        renderNode: false,
+      },
+    );
+    return (
+      <span
+        {...stylex.props(
+          styles.iconWrapper,
+          inspection.customDimension
+            ? iconDimensionStyles.box(inspection.dimension)
+            : iconBoxSizeStyles[inspection.size.selected as IconSize],
+        )}>
+        <IconDefaultSizeProvider value={defaultSize}>
+          {renderComponentIconSlot(
+            BUTTON_LEADING_ICON_SLOT,
+            source,
+            iconProps,
+            state,
+            defaultSize,
+          )}
+        </IconDefaultSizeProvider>
+      </span>
+    );
+  }
+  return (
+    <span {...stylex.props(styles.iconWrapper, iconBoxSizeStyles[defaultSize])}>
+      <IconDefaultSizeProvider value={defaultSize}>
+        {icon}
+      </IconDefaultSizeProvider>
+    </span>
+  );
+}
 
 export interface ButtonProps extends BaseProps<HTMLButtonElement> {
   /** Ref forwarded to the root element */
@@ -574,6 +661,7 @@ export function Button({
 }: ButtonProps): ReactNode {
   const pressFeedback = usePressFeedback();
   const t = useTranslator();
+  const theme = useThemeDefinition();
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
 
@@ -703,6 +791,18 @@ export function Button({
   );
 
   const iconSize = iconSizeByButtonSize[size];
+  // One effective icon state (family:buttons FR13). `pressed` reads the
+  // rendered `aria-pressed`, so ToggleButton (and any caller-rendered pressed
+  // button) reports exactly the value it exposes. Loading-induced inactivity
+  // is not `disabled`: explicit disabled and pending stay distinct (FR4).
+  const ariaPressed = props['aria-pressed'];
+  const iconState = icon
+    ? getButtonLeadingIconState({
+        disabled: visuallyDisabled,
+        pressed: ariaPressed === true || ariaPressed === 'true',
+        loading: isLoadingState,
+      })
+    : undefined;
 
   const buttonContent = (
     <>
@@ -725,14 +825,7 @@ export function Button({
               : loadingStyles.hiddenContent),
         )}
         aria-hidden={isLoadingState || undefined}>
-        {icon && (
-          <span
-            {...stylex.props(styles.iconWrapper, iconBoxSizeStyles[iconSize])}>
-            <IconDefaultSizeProvider value={iconSize}>
-              {icon}
-            </IconDefaultSizeProvider>
-          </span>
-        )}
+        {icon && renderLeadingIcon(icon, iconSize, iconState, theme)}
         {isIconOnly ? null : (
           <span {...stylex.props(styles.labelText)}>{children ?? label}</span>
         )}
