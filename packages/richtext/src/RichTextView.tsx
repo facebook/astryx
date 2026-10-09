@@ -23,6 +23,11 @@ import * as stylex from '@stylexjs/stylex';
 import {sharedEditorTheme} from './editorTheme';
 import type {BaseProps} from '@astryxdesign/core';
 import {mergeProps} from '@astryxdesign/core/utils';
+import {
+  colorVars,
+  typeScaleVars,
+  typographyVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 import {LexicalExtensionComposer} from '@lexical/react/LexicalExtensionComposer';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
@@ -54,6 +59,13 @@ const styles = stylex.create({
     // Holds the code block headers and task checkboxes drawn over the
     // content.
     position: 'relative',
+    // The document's body text, as core Markdown and the editor set it
+    // (spec:AST-061 FR2). Without it, blocks the theme leaves unsized —
+    // list items, quotes, table cells — take the host page's font.
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-body-size'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    color: colorVars['--color-text-primary'],
   },
 });
 

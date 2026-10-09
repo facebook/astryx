@@ -1228,7 +1228,7 @@ jobs:
             # with the base. If the base cannot be fetched, run the evidence.
             if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
               if git diff --name-only "$BASE_SHA" HEAD \
-                | grep -qE '^(apps/storybook/stories/RichTextEditor\.(markdownParity|stories)|packages/richtext/src/__tests__/MarkdownParitySandbox)'; then
+                | grep -qE '^(apps/storybook/stories/RichTextEditor\.(markdownParity|stories)|packages/richtext/src/__tests__/(MarkdownParitySandbox|RichTextView))'; then
                 should_run=true
               fi
             else
@@ -1240,8 +1240,11 @@ jobs:
             echo "Markdown, RichText, and the parity sandbox are not in PR scope; skipping parity evidence."
             exit 0
           fi
+          # The RichTextView typography spec shares this scope, so it rides the
+          # same gate and output directory.
           pnpm exec playwright test \
             packages/richtext/src/__tests__/MarkdownParitySandbox.a11y.chromium.spec.ts \
+            packages/richtext/src/__tests__/RichTextView.a11y.chromium.spec.ts \
             --project chromium \
             --output richtext-markdown-parity-output
 
