@@ -84,6 +84,10 @@ export const docs = {
           headers: ['Chart role', 'Astryx source'],
           rows: [
             ['Series fill or stroke', 'Categorical or scale data tokens'],
+            [
+              'Series identity beyond color',
+              'Renderer-owned shapes, patterns, dash styles, or direct labels with a text equivalent',
+            ],
             ['Grid', '`--color-border` or another verified structural token'],
             [
               'Axis and tick lines',
@@ -98,12 +102,40 @@ export const docs = {
               'Background, border, text, `--radius-element`, and shadow tokens',
             ],
             ['Chart container', '`--radius-container` when it owns a surface'],
+            [
+              'Chart controls and toolbar icons',
+              'Astryx `Icon` or `IconButton`, semantic foreground tokens, and established icon sizes',
+            ],
+            [
+              'Chart chrome spacing',
+              'Spacing tokens for toolbar, legend, tooltip, and control gaps; renderer-owned plot geometry',
+            ],
             ['Focus', 'Focus outline tokens'],
             [
               'Hover or active series',
               'The same series color mixed with `--color-tint-hover`, plus a non-color cue',
             ],
+            [
+              'Selected, muted, forecast, or disabled series',
+              'The same series identity plus a border, pattern, label, marker, or line-style change',
+            ],
           ],
+        },
+        {
+          type: 'prose',
+          text: 'Use Astryx icons for chart controls such as filtering, downloading, zooming, or changing display options. An icon-only control needs an accessible name, and unfamiliar actions need visible supporting text or a tooltip. Legend symbols remain renderer-owned chart marks so they can match the series shape, line, pattern, and color.',
+        },
+        {
+          type: 'prose',
+          text: 'Use spacing tokens for application chrome around the plot. Plot margins, tick gaps, hit geometry, and data-density decisions stay local to the renderer. A compact treatment still needs readable labels and usable pointer and touch targets.',
+        },
+        {
+          type: 'prose',
+          text: 'Color cannot be the only way to distinguish a series or state. Combine it with a direct label, marker shape, line style, pattern, border, or another cue that survives the renderer and export path.',
+        },
+        {
+          type: 'prose',
+          text: 'For Canvas or exported output, draw renderer-owned icon paths or images with concrete resolved colors. Do not serialize React icon components or document-dependent CSS references.',
         },
         {
           type: 'prose',
@@ -431,7 +463,8 @@ export function VegaRevenueChart({spec, values}: {
             'Astryx does not maintain adapters for the chart libraries shown here.',
             'Product-owned saved chart choices have no Astryx compatibility guarantee in this version.',
             'A color value does not certify the final chart as accessible.',
-            'The product owns automatic assignment, localization, validation, migrations, and document storage.',
+            'The product owns automatic assignment, validation, migrations, and document storage.',
+            'The product owns number and date formatting, localization, direction, and loading, empty, error, or unavailable-data states.',
             'The renderer integration owns responsive behavior, interaction state, performance, and third-party version compatibility.',
           ],
         },
@@ -446,14 +479,22 @@ export function VegaRevenueChart({spec, values}: {
       title: 'Verify your chart integration',
       content: [
         {
+          type: 'prose',
+          text: 'High-contrast and forced-colors modes may replace authored chart paints. Preserve meaning through labels, shapes, patterns, line styles, borders, and system-recognizable controls instead of trying to force exact brand colors through the user’s contrast settings.',
+        },
+        {
           type: 'list',
           style: 'unordered',
           items: [
-            'Render light mode, dark mode, and at least one custom theme.',
+            'Render light mode, dark mode, at least one custom theme, and supported high-contrast or forced-colors modes.',
             'Switch theme and mode without remounting the renderer when it supports live updates.',
             'Verify chart defaults, manual theme colors, custom colors, invalid stored input, and Reset separately when your product exposes those choices.',
-            'Make the chart understandable without relying on color alone.',
+            'Make the chart understandable without relying on color alone; check marker shapes, line styles, patterns, labels, and borders in grayscale and exported output.',
             'Check text and marks against the background where they actually appear.',
+            'Give every icon-only control an accessible name and keep its pointer and touch target usable at supported densities.',
+            'Exercise supported viewport sizes and density settings without clipping labels, legends, tooltips, or controls.',
+            'Test left-to-right and right-to-left layouts, long labels, and representative localized number and date formats.',
+            'Render loading, empty, error, and unavailable-data states outside the plotted data marks.',
             'Keep hover information available to keyboard and touch users.',
             'Provide a readable table or text summary when the visual chart cannot communicate the data by itself.',
             'Respect reduced-motion preferences and do not use animation as the only explanation of change.',
