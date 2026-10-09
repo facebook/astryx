@@ -312,8 +312,10 @@ An integration whose template sets `replaces` declares an `@astryxdesign/cli` pe
 range that starts at 0.6.4, in place of DEC-4's `>=0.7.0`. Published 0.6.4 through
 0.6.7 apply FR2 and FR3 to a declared replacement, and published 0.6.3 and earlier
 reject the field. A floor that no published release satisfies makes npm leave the
-CLI uninstalled in an app that installs the package. The conflict-schema boundary
-of FR7, FR8, and DEC-4 is unchanged.
+CLI uninstalled in an app that installs the package. From 0.6.4, the `replaces`
+declaration, replacement selection, and the optional list projection are published
+surfaces under `spec:AST-017/FR24`; the expanded conflict fields stay
+pre-publication until the projection change of FR7 and FR8 at or after 0.7.0.
 
 Rejected: keeping `>=0.7.0` until 0.7.0 ships, because npm removes the CLI from apps on 0.6.x that install such a package.
 
