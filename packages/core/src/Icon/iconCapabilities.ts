@@ -2,11 +2,15 @@
 
 /**
  * @file iconCapabilities.ts
- * @input Grouped library contracts, foreign own-data contributors and default/per-size presentation
+ * @input Grouped library contracts, foreign own-data contributors and size/role/state presentation
  * @output Immutable local snapshots, pure cached composition and sibling-safe theme policy
- * @position Server-safe Icon engine; no process-wide capability admission
+ * @position Server-safe Icon policy; role admission never depends on declaration import order
  */
-import type {IconCapabilityMap} from './index';
+import type {
+  IconCapabilityMap,
+  ComponentIconStateName,
+  ParticipatingComponentIconSlotName,
+} from './index';
 import {checkDeclarationValue} from '../theme/declarationBoundary';
 
 export type BuiltInIconSize = 'xsm' | 'sm' | 'md' | 'lg';
@@ -76,18 +80,27 @@ export interface IconPresentationPolicy<C = ApplicationContract> {
       readonly weight?: IconWeight | WeightsOf<C>;
     }
   >;
+  readonly byState?: PartialMap<
+    ComponentIconStateName,
+    {readonly appearance?: IconAppearance | AppearancesOf<C>}
+  >;
 }
 export interface IconThemeCapabilitiesInput<
   C extends IconCapabilities = Record<never, never>,
 > {
   readonly contract?: C;
   readonly sizeOverrides?: PartialMap<IconSize | SizesOf<C>, string | null>;
+  readonly roleSizeOverrides?: PartialMap<
+    ParticipatingComponentIconSlotName,
+    IconSize | SizesOf<C> | null
+  >;
   readonly presentation?: IconPresentationPolicy<C> | null;
 }
 /** Normalized read policy retains null inheritance-clearing markers. */
 export interface IconThemeCapabilities {
   readonly contract?: IconCapabilities;
   readonly sizeOverrides?: Readonly<Record<string, string | null>>;
+  readonly roleSizeOverrides?: Readonly<Record<string, string | null>>;
   readonly presentation?: {
     readonly default?: {
       readonly appearance?: string;
@@ -102,6 +115,7 @@ export interface IconThemeCapabilities {
         }
       >
     >;
+    readonly byState?: Readonly<Record<string, {readonly appearance?: string}>>;
   } | null;
 }
 export interface ApplicationIconCapabilities {
@@ -208,6 +222,15 @@ function validName(value: unknown): value is string {
     value.trim() === value &&
     value.length > 0 &&
     !['__proto__', 'constructor', 'prototype'].includes(value)
+  );
+}
+function validStateName(value: unknown): value is string {
+  return (
+    validName(value) &&
+    [...value].every(character => {
+      const code = character.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
   );
 }
 export function validateIconDimension(value: unknown): asserts value is string {
@@ -554,7 +577,7 @@ export function validateIconThemeCapabilities(
   requireRecord(input, 'theme iconCapabilities');
   requireKeys(
     input,
-    ['contract', 'sizeOverrides', 'presentation'],
+    ['contract', 'sizeOverrides', 'roleSizeOverrides', 'presentation'],
     'theme iconCapabilities',
   );
   if (input.contract !== undefined) {
@@ -576,9 +599,31 @@ export function validateIconThemeCapabilities(
       }
     }
   }
-  function validatePresentation(value: unknown): void {
+  // Role declarations may load after a theme. Validate data grammar and local
+  // capability admission here; selected-owner metadata is checked at resolution.
+  if (input.roleSizeOverrides !== undefined) {
+    requireRecord(input.roleSizeOverrides, 'roleSizeOverrides');
+    for (const slot of Object.getOwnPropertyNames(input.roleSizeOverrides)) {
+      const size = getOwnIconData(input.roleSizeOverrides, slot);
+      if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/.test(slot)) {
+        throw new Error('Icon: invalid role override name.');
+      }
+      if (
+        size !== undefined &&
+        size !== null &&
+        (typeof size !== 'string' || !Object.hasOwn(app.sizes, size))
+      ) {
+        throw new Error('Icon: unadmitted role size.');
+      }
+    }
+  }
+  function validatePresentation(value: unknown, state = false): void {
     requireRecord(value, 'presentation request');
-    requireKeys(value, ['appearance', 'weight'], 'presentation request');
+    requireKeys(
+      value,
+      state ? ['appearance'] : ['appearance', 'weight'],
+      'presentation request',
+    );
     if (
       value.appearance !== undefined &&
       !app.appearances.includes(value.appearance as string)
@@ -592,7 +637,7 @@ export function validateIconThemeCapabilities(
   if (input.presentation !== undefined && input.presentation !== null) {
     const policy = input.presentation;
     requireRecord(policy, 'presentation');
-    requireKeys(policy, ['default', 'bySize'], 'presentation');
+    requireKeys(policy, ['default', 'bySize', 'byState'], 'presentation');
     if (policy.default !== undefined) {
       validatePresentation(policy.default);
     }
@@ -603,6 +648,18 @@ export function validateIconThemeCapabilities(
           throw new Error('Icon: unadmitted presentation size.');
         }
         validatePresentation(value);
+      }
+    }
+    if (policy.byState !== undefined) {
+      requireRecord(policy.byState, 'byState');
+      for (const state of Object.getOwnPropertyNames(policy.byState)) {
+        const value = getOwnIconData(policy.byState, state);
+        if (!validStateName(state)) {
+          throw new Error('Icon: invalid theme state name.');
+        }
+        if (value !== undefined) {
+          validatePresentation(value, true);
+        }
       }
     }
   }
@@ -636,9 +693,43 @@ export function normalizeIconThemeCapabilities(
     value.contract === undefined
       ? undefined
       : defineIconCapabilities(value.contract);
+  // Copy admitted own C fields explicitly; nonenumerable data must not be erased.
+  const roleSizeOverrides = value.roleSizeOverrides;
+  const byState = value.presentation?.byState;
   const own = freezeCopy({
     ...value,
     ...(boundContract ? {contract: boundContract} : {}),
+    ...(roleSizeOverrides !== undefined
+      ? {
+          roleSizeOverrides: Object.fromEntries(
+            Object.getOwnPropertyNames(roleSizeOverrides).flatMap<
+              [string, string | null]
+            >(slot => {
+              const size = roleSizeOverrides[slot];
+              return size === undefined ? [] : [[slot, size]];
+            }),
+          ),
+        }
+      : {}),
+    ...(byState !== undefined
+      ? {
+          presentation: {
+            ...value.presentation,
+            byState: Object.fromEntries(
+              Object.getOwnPropertyNames(byState).flatMap<
+                [string, {appearance?: string}]
+              >(state => {
+                const entry = byState[state];
+                if (entry === undefined) {
+                  return [];
+                }
+                const appearance = entry.appearance;
+                return [[state, appearance === undefined ? {} : {appearance}]];
+              }),
+            ),
+          },
+        }
+      : {}),
   });
   const contracts = Object.freeze([
     ...new Set(
@@ -716,6 +807,14 @@ export function mergeIconThemeCapabilities(
       ? {presentation: inherited.presentation}
       : {}),
     sizeOverrides: {...inherited.sizeOverrides, ...own.sizeOverrides},
+    ...(inherited.roleSizeOverrides || own.roleSizeOverrides
+      ? {
+          roleSizeOverrides: {
+            ...inherited.roleSizeOverrides,
+            ...own.roleSizeOverrides,
+          },
+        }
+      : {}),
   });
   policyContracts.set(
     result,
@@ -780,7 +879,12 @@ export function readIconThemeCapabilities(
   for (const key of keys) {
     if (
       typeof key !== 'string' ||
-      !['contract', 'sizeOverrides', 'presentation'].includes(key)
+      ![
+        'contract',
+        'sizeOverrides',
+        'roleSizeOverrides',
+        'presentation',
+      ].includes(key)
     ) {
       invalid();
     }
@@ -788,6 +892,7 @@ export function readIconThemeCapabilities(
   const result: {
     contract?: IconCapabilities;
     sizeOverrides?: Record<string, string | null>;
+    roleSizeOverrides?: Record<string, string | null>;
     presentation?: NonNullable<IconThemeCapabilities['presentation']> | null;
   } = {};
   // eslint-disable-next-line @typescript-eslint/promise-function-async -- Runtime data is opaque synchronous metadata and is never awaited.
@@ -852,14 +957,33 @@ export function readIconThemeCapabilities(
     }
   });
   result.sizeOverrides = sizes;
-  const present = (value: unknown) => {
+  const roleOverrides = field(input, 'roleSizeOverrides');
+  if (roleOverrides !== undefined) {
+    const roleSizes: Record<string, string | null> = {};
+    map(roleOverrides, (slot, size) => {
+      if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/.test(slot)) {
+        invalid();
+      } else if (size === undefined) {
+        // Omitted optional entries leave the inherited role policy in place.
+      } else if (
+        size === null ||
+        (typeof size === 'string' && Object.hasOwn(app.sizes, size))
+      ) {
+        roleSizes[slot] = size;
+      } else {
+        invalid();
+      }
+    });
+    result.roleSizeOverrides = roleSizes;
+  }
+  const present = (value: unknown, state = false) => {
     const item: {appearance?: string; weight?: string | number} = {};
     try {
       if (!isRecord(value)) {
         throw new Error('Invalid presentation');
       }
       for (const key of Reflect.ownKeys(value)) {
-        if (key !== 'appearance' && key !== 'weight') {
+        if (key !== 'appearance' && (key !== 'weight' || state)) {
           invalid();
           continue;
         }
@@ -890,13 +1014,14 @@ export function readIconThemeCapabilities(
         throw new Error('Invalid presentation');
       }
       for (const key of Reflect.ownKeys(presentation)) {
-        if (key !== 'default' && key !== 'bySize') {
+        if (key !== 'default' && key !== 'bySize' && key !== 'byState') {
           invalid();
         }
       }
       const policy: {
         default?: ReturnType<typeof present>;
         bySize?: Record<string, ReturnType<typeof present>>;
+        byState?: Record<string, {appearance?: string}>;
       } = {};
       const baseline = field(presentation, 'default');
       if (baseline !== undefined) {
@@ -911,6 +1036,18 @@ export function readIconThemeCapabilities(
           invalid();
         }
       });
+      const states = field(presentation, 'byState');
+      if (states !== undefined) {
+        const statePolicy: Record<string, {appearance?: string}> = {};
+        map(states, (name, value) => {
+          if (!validStateName(name)) {
+            invalid();
+          } else if (value !== undefined) {
+            statePolicy[name] = present(value, true);
+          }
+        });
+        policy.byState = statePolicy;
+      }
       result.presentation = policy;
     } catch {
       invalid();

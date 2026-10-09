@@ -3,11 +3,12 @@
 /**
  * @file A-only native source, built, extending-built and family Icon parity.
  * @input Public Icon/getIcon rendering, sparse trees and supplied fractional renderers.
- * @output Imported identity, node-default snapshots, policy/null parity and unchanged CSS.
- * @position CLI artifact integration; requires freshly built workspace Core.
+ * @output Imported identity, node-default snapshots, policy/null parity and pre-write guards.
+ * @position CLI artifact integration; fixture-local imports select freshly built workspace Core.
  */
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {execFileSync} from 'node:child_process';
+import {createRequire} from 'node:module';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {themeBuild, themeBuildFamily} from './build.mjs';
@@ -18,6 +19,15 @@ beforeEach(() => {
     path.join(import.meta.dirname, '.tmp-icon-engine-'),
   );
   write('package.json', '{"type":"module"}\n');
+  const coreRoot = path.resolve(import.meta.dirname, '../../../../core');
+  const scope = path.join(directory, 'node_modules', '@astryxdesign');
+  fs.mkdirSync(scope, {recursive: true});
+  fs.symlinkSync(coreRoot, path.join(scope, 'core'), 'dir');
+  expect(
+    createRequire(path.join(directory, 'package.json')).resolve(
+      '@astryxdesign/core/Icon',
+    ),
+  ).toBe(path.join(coreRoot, 'dist/Icon/index.js'));
 });
 afterEach(() => fs.rmSync(directory, {recursive: true, force: true}));
 function write(file, source) {
@@ -95,10 +105,10 @@ function equivalent(source,built) {
 `;
 
 describe('A-only native Icon artifacts', () => {
-  it('captures unsupported intent through native CJS require of ESM Core before build/check writes', async () => {
+  it('rejects post-capture unsupported intent through native CJS require of ESM Core before build/check writes', async () => {
     write(
       'missed.cjs',
-      "const {defineTheme}=require('@astryxdesign/core/theme');module.exports=defineTheme({name:'missed-icons',tokens:{'--color-accent':'#123456'},componentIcons:{}});",
+      "const {defineTheme}=require('@astryxdesign/core/theme');module.exports={...defineTheme({name:'missed-icons',tokens:{'--color-accent':'#123456'}}),componentIcons:{'fixture-leading':'library:mark'}};",
     );
     write(
       'source.mjs',

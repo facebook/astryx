@@ -2,8 +2,8 @@
 
 /**
  * @file Selected Theme metadata erasure and unsupported intent guards.
- * @input A minimal two-constructor namespace and a capability-blind Theme normalizer.
- * @output Early build/check failure with untouched output sentinels, not namespace-name acceptance.
+ * @input Two real constructors and Theme normalizers that erase A or individual role/state fields.
+ * @output Early build/check failure with untouched outputs, including cleared selected ancestors.
  * @position Independent-peer CLI tests; constructors are real, registration is not probed.
  */
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
@@ -42,7 +42,15 @@ vi.mock('@astryxdesign/core/theme', async importActual => {
         ...theme.iconCapabilities,
         presentation: {...theme.iconCapabilities?.presentation},
       };
-      if (erasure.mode === 'sizeOverrides') delete policy.sizeOverrides;
+      if (erasure.mode === 'componentIcons') {
+        const {componentIcons: _mapping, ...rest} = theme;
+        return rest;
+      }
+      if (
+        erasure.mode === 'sizeOverrides' ||
+        erasure.mode === 'roleSizeOverrides'
+      )
+        delete policy[erasure.mode];
       else delete policy.presentation[erasure.mode];
       return {...theme, iconCapabilities: policy};
     },
@@ -122,24 +130,60 @@ describe('actual selected Icon metadata retention', () => {
     },
   );
   it.each([
-    'componentIcons:undefined',
     'componentIcons:{}',
+    'componentIcons:{"fixture-leading":"close"}',
     'iconCapabilities:{roleSizeOverrides:{}}',
+    'iconCapabilities:{roleSizeOverrides:{"fixture-leading":"sm"}}',
     'iconCapabilities:{presentation:{byState:{}}}',
   ])(
-    'rejects captured unsupported %s before erased data can reach output',
+    'rejects captured role/state %s even when the constructor witness passes',
     async field => {
       write(
         'source.mjs',
         `import {defineTheme} from '@astryxdesign/core/theme';export default defineTheme({name:'retention',tokens:{'--color-accent':'#123456'},${field}});`,
       );
-      await rejectsWithoutWrites('source.mjs', 'ERR_THEME_INVALID');
+      await rejectsWithoutWrites('source.mjs', 'ERR_CORE_INCOMPATIBLE');
+    },
+  );
+  it.each(
+    ['componentIcons', 'roleSizeOverrides', 'byState'].flatMap(field =>
+      [
+        'selected',
+        'raw',
+        'inherited',
+        'inherited-cleared',
+        'spread',
+        'built',
+      ].map(form => [field, form]),
+    ),
+  )(
+    'rejects partial %s erasure in %s data despite capability-aware constructors',
+    async (field, form) => {
+      erasure.mode = field;
+      const input = `name:'retention',tokens:{'--color-accent':'#123456'},componentIcons:{'fixture-leading':'close'},iconCapabilities:{contract,sizeOverrides:{sm:'31px'},roleSizeOverrides:{'fixture-leading':'sm'},presentation:{default:{weight:525.5},bySize:{sm:{weight:700.25}},byState:{active:{appearance:'filled'}}}}`;
+      let source;
+      if (form === 'selected')
+        source = `export default defineTheme({${input}});`;
+      if (form === 'raw') source = `export default {${input}};`;
+      if (form === 'inherited')
+        source = `const parent=defineTheme({${input}});export default defineTheme({name:'retention',extends:parent});`;
+      if (form === 'inherited-cleared')
+        source = `const parent=defineTheme({${input}});export default defineTheme({name:'retention',extends:parent,componentIcons:{'fixture-leading':null},iconCapabilities:{roleSizeOverrides:{'fixture-leading':null},presentation:null}});`;
+      if (form === 'spread')
+        source = `const parent=defineTheme({${input}});export default {...parent};`;
+      if (form === 'built')
+        source = `export default {${input},__built:true,__axes:{}};`;
+      write(
+        'source.mjs',
+        `import {defineTheme} from '@astryxdesign/core/theme';import {defineIconCapabilities} from '@astryxdesign/core/Icon';const contract=defineIconCapabilities({appearances:['outline','filled'],weights:{range:{min:100,max:900}}});${source}`,
+      );
+      await rejectsWithoutWrites('source.mjs', 'ERR_CORE_INCOMPATIBLE');
     },
   );
   it('retains forbidden ancestor evidence through spreads and a selected child', async () => {
     write(
       'source.mjs',
-      "import {defineTheme} from '@astryxdesign/core/theme';const parent=defineTheme({name:'ancestor',componentIcons:{}});export default {...defineTheme({name:'retention',extends:{...parent},tokens:{'--color-accent':'#123456'}})};",
+      "import {defineTheme} from '@astryxdesign/core/theme';const parent=defineTheme({name:'ancestor',componentIcons:{'fixture-leading':'library:mark'}});export default {...defineTheme({name:'retention',extends:{...parent},tokens:{'--color-accent':'#123456'}})};",
     );
     await rejectsWithoutWrites('source.mjs', 'ERR_THEME_INVALID');
   });

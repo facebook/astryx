@@ -301,26 +301,28 @@ export const myTheme = defineTheme({
   // icons: {check: <MyCheck />, close: <MyClose />},
 
   /**
-   * Optional non-CSS icon dimensions and presentation for a supplied contract.
-   * Import `libraryIconCapabilities` from your artwork module; construct it with
-   * defineIconCapabilities from '@astryxdesign/core/Icon'. Bind adaptive artwork
-   * with defineAdaptiveIcon(contract, {default: ..., byAppearance: ...}).
-   *
-   * `sizeOverrides` merge by name; null clears an inherited override. Explicit
-   * sizes and standalone md use these overrides; implicit built-in sizes in
-   * existing components retain their released rem box. Omitted/built-in null
-   * overrides retain rem scaling. Custom sizes have canonical contract dimensions.
-   * `presentation` replaces atomically; null clears it. Only default and bySize
-   * select appearance/weight, and explicit Icon props win. Import the registry
-   * itself for production builds and compile its module alongside the package;
-   * use --icons-specifier when its compiled path differs. JS/types carry this
-   * data, not CSS.
+   * Owner-declared icon positions map to shared IconName or null, never artwork.
+   * Undefined uses the component fallback; null suppresses the glyph. A source-only
+   * {slot: true} position does not participate in role sizing or state presentation.
+   * Reference: `astryx docs icons component-role-state`.
+   */
+  // componentIcons: {},
+
+  /**
+   * Non-CSS icon policy for a supplied contract from your artwork module.
+   * sizeOverrides: admitted size -> dimension|null (per-key inheritance clearing).
+   * roleSizeOverrides: explicitly participating role -> admitted size|null;
+   * null restores the owner's default. No Core role is enrolled by this template.
+   * presentation replaces as a whole; null clears it. default/bySize select
+   * appearance and weight; byState selects appearance ONLY for one owner state.
+   * Explicit Icon intent wins. JS/types carry this data, not CSS.
    * Reference: `astryx docs icons`.
    */
   // iconCapabilities: {
   //   contract: libraryIconCapabilities,
   //   sizeOverrides: {md: '24px'},
-  //   presentation: {default: {appearance: 'outline'}, bySize: {sm: {appearance: 'filled'}}},
+  //   roleSizeOverrides: {},
+  //   presentation: {default: {appearance: 'outline'}, bySize: {}, byState: {}},
   // },
 
   /**

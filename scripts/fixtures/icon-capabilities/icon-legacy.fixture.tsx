@@ -2,7 +2,7 @@
 
 /**
  * @file icon-legacy.fixture.tsx
- * @input Released Icon exports in a program without capability augmentation
+ * @input Released Icon exports and additive role authoring APIs without capability augmentation
  * @output Exact legacy signatures, fixed node reads, and closed application axes
  * @position Isolated external-consumer fixture for source and emitted declarations
  */
@@ -72,6 +72,12 @@ export type NoAdditionalRuntimeAPIs = Assert<
       | 'defineIconCapabilities'
       | 'defineAdaptiveIcon'
       | 'getApplicationIconCapabilities'
+      | 'getComponentIconName'
+      | 'getComponentIcon'
+      | 'useComponentIconName'
+      | 'useComponentIcon'
+      | 'declareComponentIconRole'
+      | 'getComponentIconState'
     >,
     never
   >

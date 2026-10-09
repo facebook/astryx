@@ -2,6 +2,9 @@
 
 /**
  * @file Drift guard for the shipped theme template.
+ * @input Live theme fields, including generic DefineThemeInput declarations, and template claims
+ * @output Source-only field, token, target, and documentation-reference alignment checks
+ * @position Regression guard for shipped consumer guidance; never builds Core
  *
  * `packages/cli/assets/theme.template.ts` is the annotated map of the theme
  * surface: every `defineTheme` field, the token families, the component
@@ -97,7 +100,7 @@ const tokensSrc = fs.readFileSync(
 /** Field names declared on `DefineThemeInput`. */
 function defineThemeFields() {
   const body = defineThemeSrc.match(
-    /export interface DefineThemeInput \{([\s\S]*?)\n\}/,
+    /export interface DefineThemeInput(?:<[^{}]*>)?\s*\{([\s\S]*?)\n\}/,
   );
   if (!body) throw new Error('DefineThemeInput not found in defineTheme.ts');
   return [...body[1].matchAll(/^ {2}(\w+)\??:/gm)].map(m => m[1]);
