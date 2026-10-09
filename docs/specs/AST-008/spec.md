@@ -316,8 +316,10 @@ assigned cleanup ids by this record.
 The replacement-first patch ships the working palette path, stable versioned
 instructions, AST-040 codemod, static declaration metadata, exact-source theme
 build or validation diagnostics, maintained-source migration, and old/new
-compatibility proof together. Maintained sources include the Playground, CLI docs
-and template, examples, stories, tests, and repository-owned themes. `defineTheme`,
+compatibility proof together. FR17's Playground and new-authoring guidance
+requirements apply immediately and do not wait for the replacement-first patch.
+The patch's maintained-source migration covers remaining uses of the three legacy
+surfaces in examples, stories, tests, and repository-owned themes. `defineTheme`,
 theme mounting, and rendered applications never emit deprecation warnings. Cleanup
 approval for one id does not authorize removal of another.
 
@@ -408,7 +410,7 @@ not become universal accessibility or contrast guarantees for isolated colors.
 | New candidate generated     | Adopted palettes and rendered output stay unchanged until an explicit review and save.                                    |
 | Adopted palette edited      | Under that authority, explicitly accepting the edit updates mapped roles coherently; unrelated literal values stay fixed. |
 | Playground color edit       | Explicit token editing remains; no accent edit silently expands into unrelated color tokens.                              |
-| Legacy surface before patch | Stable, fully supported, and unlabeled; maintained new-authoring guidance may recommend the palette workflow.             |
+| Legacy surface before patch | Stable, fully supported, and unlabeled; Playground and maintained new-authoring guidance follow FR17 immediately.         |
 | Replacement-first patch     | Replacement, guidance, migration, static metadata, diagnostics, source migration, and compatibility proof ship together.  |
 | Deprecated API used         | Normalization, token strings, inheritance, CSS, builds, and mounted behavior remain byte-equivalent.                      |
 | Migration run               | Proven uses preserve exact observables; uncertain dynamic, inherited, or adaptation-bearing cases remain unchanged.       |
