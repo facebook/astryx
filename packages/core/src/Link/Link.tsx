@@ -54,9 +54,12 @@ import {useTranslator} from '../i18n';
  */
 const styles = stylex.create({
   base: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-0-5'],
+    // `inline` (not `inline-flex`) so the anchor participates in the
+    // surrounding line boxes and an ancestor clamp (e.g. <Text maxLines>)
+    // can truncate it. An inline-flex box establishes its own formatting
+    // context, which an ancestor -webkit-line-clamp cannot reach —
+    // <Text maxLines={2}><Link>…</Link></Text> silently did nothing.
+    display: 'inline',
     fontFamily: 'inherit',
     fontSize: 'inherit',
     lineHeight: 'inherit',
@@ -85,6 +88,17 @@ const styles = stylex.create({
     padding: 0,
     pointerEvents: 'auto',
     position: 'relative',
+  },
+  /**
+   * Flex layout for the cases that need it: external links append an icon
+   * after the text (icon centering + gap), and the button-rendered form
+   * keeps its previous inline-flex layout. On plain anchors this is
+   * deliberately NOT applied — see the `base` display note.
+   */
+  flexLayout: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-0-5'],
   },
   hasUnderline: {
     textDecoration: 'underline',
@@ -335,6 +349,7 @@ export function Link({
   // render as a <button> with link styling for semantic correctness.
   const renderAsButton =
     role === 'button' || (role === 'inert' && href == null);
+  const isExternalWithIcon = isExternalLink && !renderAsButton;
 
   const sharedContent = (
     <>
@@ -347,7 +362,7 @@ export function Link({
         maxLines={maxLines}>
         {children}
       </Text>
-      {isExternalLink && !renderAsButton && (
+      {isExternalWithIcon && (
         <>
           <Icon icon="externalLink" size="xsm" color="inherit" />
           <VisuallyHidden>{newTabLabel}</VisuallyHidden>
@@ -373,6 +388,7 @@ export function Link({
           themeProps('link', {color}),
           focusOutlineProps.focusVisible(
             styles.base,
+            styles.flexLayout,
             styles.buttonReset,
             linkColorStyles[color],
             // The system's pressed overlay behind the text; the hover stays the
@@ -408,10 +424,11 @@ export function Link({
           themeProps('link', {color}),
           focusOutlineProps.focusVisible(
             styles.base,
+            isExternalWithIcon && styles.flexLayout,
             linkColorStyles[color],
             hasUnderline && styles.hasUnderline,
             isStandalone && styles.standalone,
-            styles.disabled,
+            isDisabled && styles.disabled,
             xstyle,
           ),
           className,
@@ -437,6 +454,7 @@ export function Link({
           themeProps('link', {color}),
           focusOutlineProps.focusVisible(
             styles.base,
+            isExternalWithIcon && styles.flexLayout,
             linkColorStyles[color],
             !isDisabled && interactionOverlayStyles.pressedBackgroundColor,
             hasUnderline && styles.hasUnderline,
