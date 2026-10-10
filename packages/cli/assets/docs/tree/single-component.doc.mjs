@@ -86,6 +86,15 @@ export default {
   ],
 },`,
         },
+        {
+          type: 'prose',
+          text: "Set `keywords` to the words people search for: synonyms and the task the component does, such as `keywords: ['slider', 'slideshow', 'rotating cards']`. `astryx search` ranks a match on a component's name or keywords above one in its description, so without keywords a search for the component's task can list Core components first. Check with the words a person would type:",
+        },
+        {
+          type: 'code',
+          lang: 'bash',
+          code: 'npx astryx search "rotating cards" --type component',
+        },
       ],
     },
     {

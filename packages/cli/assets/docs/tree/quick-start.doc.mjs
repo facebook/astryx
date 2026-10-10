@@ -173,7 +173,7 @@ export const docs = {
             ],
             [
               '`peerDependencies`',
-              '`@astryxdesign/cli`; add `@astryxdesign/core` when your code imports it',
+              '`@astryxdesign/core` when your code imports it; `@astryxdesign/cli`, optional, when you ship a feature that needs a newer CLI ({@link generic:versioning})',
               'The app supplies these packages for your integration.',
             ],
             [
