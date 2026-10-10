@@ -32,7 +32,6 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
-import {useRenamedProp} from '../hooks/useRenamedProp';
 import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isImeKeyEvent} from '../utils/ime';
@@ -141,18 +140,6 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * @default 'No results found'
    */
   emptySearchText?: ReactNode;
-
-  /**
-   * Text shown when no results found.
-   * @default 'No results found'
-   * @deprecated `DEP-0003`. Renamed to `emptySearchText`, which takes a
-   * `ReactNode` rather than a `string` — every existing value stays valid
-   * (`spec:AST-056` FR1, FR7). Still works exactly as released;
-   * `emptySearchText` wins when both are set. Removal is `CLN-0003`, in a
-   * later minor whose frozen manifest carries both ids (`spec:AST-017`
-   * FR31).
-   */
-  emptySearchResultsText?: string;
 
   /**
    * Whether the input is disabled.
@@ -464,7 +451,6 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   maxMenuItems = 10,
   menuWidth,
   minQueryLength = 1,
-  emptySearchResultsText: deprecatedEmptySearchResultsText,
   emptySearchText: emptySearchTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
@@ -499,13 +485,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const placeholder =
     placeholderFromProps ?? t('@astryx.typeahead.searchPlaceholder');
   const emptySearchText =
-    useRenamedProp<ReactNode>({
-      component: 'BaseTypeahead',
-      deprecated: 'emptySearchResultsText',
-      deprecatedValue: deprecatedEmptySearchResultsText,
-      replacement: 'emptySearchText',
-      value: emptySearchTextFromProps,
-    }) ?? t('@astryx.typeahead.emptySearchResults');
+    emptySearchTextFromProps ?? t('@astryx.typeahead.emptySearchResults');
   // The empty-state row carries the message visually, and the live region has
   // to speak the same words. `emptySearchText` takes a ReactNode, so they are
   // read off the rendered row after it renders rather than guessed from the

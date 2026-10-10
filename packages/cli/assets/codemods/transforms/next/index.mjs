@@ -7,4 +7,14 @@
  * this file into the resolved version folder.
  */
 
-export default [];
+import renameEmptySearchResultsText, {
+  meta as renameEmptySearchResultsTextMeta,
+} from './rename-empty-search-results-text.mjs';
+
+export default [
+  {
+    name: 'rename-empty-search-results-text',
+    transform: renameEmptySearchResultsText,
+    meta: renameEmptySearchResultsTextMeta,
+  },
+];

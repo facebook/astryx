@@ -238,7 +238,7 @@ describe('BaseTypeahead', () => {
         value={null}
         onChange={() => {}}
         debounceMs={0}
-        emptySearchResultsText="No matching frameworks"
+        emptySearchText="No matching frameworks"
       />,
     );
 

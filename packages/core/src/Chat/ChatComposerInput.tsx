@@ -69,7 +69,6 @@ import {Badge, type BadgeProps} from '../Badge';
 import {useChatComposerContext} from './ChatContext';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
-import {useDevWarning} from '../hooks/useDevWarning';
 
 // =============================================================================
 // Types
@@ -167,17 +166,6 @@ export type ChatComposerTrigger = {
    * @default 'No results'
    */
   emptySearchText?: ReactNode;
-  /**
-   * Text shown when no results found.
-   * @default 'No results'
-   * @deprecated `DEP-0004`. Renamed to `emptySearchText`, which takes a
-   * `ReactNode` rather than a `string` — every existing value stays valid
-   * (`spec:AST-056` FR1, FR7). Still works exactly as released;
-   * `emptySearchText` wins when both are set. Removal is `CLN-0004`, in a
-   * later minor whose frozen manifest carries both ids (`spec:AST-017`
-   * FR31).
-   */
-  emptySearchResultsText?: string;
   /** Text shown during async search. @default 'Searching\u2026' */
   loadingText?: string;
   /** Accessible label for the menu. @default 'Suggestions' */
@@ -606,30 +594,6 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   insertTextRef.current = insertText;
 
   // --- Trigger menu ---
-  // Each trigger's empty-result message was renamed (`spec:AST-056` FR1); the
-  // released key keeps working through the overlap and development says which
-  // one was read (`spec:AST-017` FR28).
-  // `!= null` matches the `??` the menu resolves with, so an explicit `null`
-  // counts as "not given" on both names and the warnings cannot claim a
-  // winner the render did not pick.
-  const triggersWithDeprecatedEmptyText =
-    triggers?.filter(trigger => trigger.emptySearchResultsText != null) ?? [];
-  const triggersWithBothEmptyTexts = triggersWithDeprecatedEmptyText.filter(
-    trigger => trigger.emptySearchText != null,
-  );
-  useDevWarning(
-    'ChatComposerInput',
-    'A trigger sets `emptySearchResultsText`, which is deprecated; use ' +
-      '`emptySearchText` instead. It still works exactly as released.',
-    triggersWithDeprecatedEmptyText.length > triggersWithBothEmptyTexts.length,
-  );
-  useDevWarning(
-    'ChatComposerInput',
-    'A trigger sets both `emptySearchResultsText` and `emptySearchText`; ' +
-      '`emptySearchText` wins. `emptySearchResultsText` is deprecated — ' +
-      'drop it.',
-    triggersWithBothEmptyTexts.length > 0,
-  );
   const triggerMenu = useTriggerMenu({
     triggers,
     editableRef,
