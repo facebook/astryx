@@ -53,15 +53,16 @@ Consumer migration instructions belong in consumer docs and release notes.
 | package          | `@astryxdesign/core`                                                                                                                                                                                |
 | surface          | `Grid` `columns={N}`, which renders exactly N equal tracks (`repeat(N, 1fr)`)                                                                                                                       |
 | old contract     | A numeric `columns` value is an explicit equal-width track count at every width                                                                                                                     |
-| replacement      | `columns={{count: N, isFixed: true}}` keeps exactly N tracks. It is not released, so replacement-first ordering needs it in a patch before the minor                                                |
+| replacement      | `columns={{count: N, isFixed: true}}` keeps exactly N tracks                                                                                                                                        |
 | direct authority | `component:Grid`, with `family:layout-primitives` representative matrix row "Grid / fixed columns". Owners: `cixzhang` (`component:Grid`); `cixzhang`, `imdreamrunner` (`family:layout-primitives`) |
 | warning          | Consumer docs and the release notes name `DEP-0010` and the fixed shape. No runtime warning (`spec:AST-017` FR29)                                                                                   |
 | migration        | Mechanical where the fixed count is wanted: rewrite `columns={N}` to `columns={{count: N, isFixed: true}}`. Keeping the number accepts the new reflow                                               |
 | codemod          | None yet. A preserving codemod is mechanical, but it would opt every caller out of the change it exists to deliver                                                                                  |
 | downstream       | In-repo fixed rows such as week rows use the fixed shape                                                                                                                                            |
+| transition       | waived by owner for 0.7.0 (2026-10-10)                                                                                                                                                              |
 | state            | `proposed`                                                                                                                                                                                          |
-| open decision    | This record is draft and lists new responsive behavior as a non-goal; the family matrix pins numeric columns as fixed. Both need an owner ruling, plus the patch that ships the fixed shape first   |
-| target plan      | `CLN-0019` in the next minor release after the fixed shape ships                                                                                                                                    |
+| open decision    | This record is draft and lists new responsive behavior as a non-goal; the family matrix pins numeric columns as fixed. Both need an owner ruling                                                    |
+| target plan      | `CLN-0019` in the next minor release                                                                                                                                                                |
 
 ### CLN-0019 — Numeric `columns` means at most N columns
 

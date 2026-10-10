@@ -91,22 +91,23 @@ CSS properties, or audit mechanics.
 
 ### DEP-0008 — Deprecate the default reveal motion of `useContainerReveal`
 
-| Field            | Value                                                                                                                                                                                                                                   |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| id               | `DEP-0008`                                                                                                                                                                                                                              |
-| cleanup          | `CLN-0017`                                                                                                                                                                                                                              |
-| package          | `@astryxdesign/core`                                                                                                                                                                                                                    |
-| surface          | Default timing of `useContainerReveal`: a tokenized opacity fade on reveal, conceal, and layout-preserved variants, and a deferred `position` reset on the non-layout-preserved reveal                                                  |
-| old contract     | Every variant fades with token duration and easing; the non-layout-preserved reveal resets `position` after the fade                                                                                                                    |
-| replacement      | Callers that want motion compose their own transition on the revealed content. `hoverDelay` remains the explicit pointer-intent gate                                                                                                    |
-| direct authority | No contract record owns `useContainerReveal`; this record owns the motion rule it applies. Owners: `ernestt`, `cixzhang`                                                                                                                |
-| warning          | Consumer docs and the release notes name `DEP-0008`. No runtime warning (`spec:AST-017` FR29)                                                                                                                                           |
-| migration        | Non-mechanical: a caller that wants the fade adds its own transition                                                                                                                                                                    |
-| codemod          | None: the fade has no prop to pin, and its tokenized timing is not caller source                                                                                                                                                        |
-| downstream       | Hook docs and stories show the immediate default and `hoverDelay`                                                                                                                                                                       |
-| state            | `proposed`                                                                                                                                                                                                                              |
-| open decision    | The motion rule that makes frequent triggers immediate is draft here; it needs an approved decision, a direct owner for the hook, and a ruling on whether the old fade needs an opt-in before the default changes (`spec:AST-017` FR28) |
-| target plan      | `CLN-0017` in the next minor release                                                                                                                                                                                                    |
+| Field            | Value                                                                                                                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id               | `DEP-0008`                                                                                                                                                                             |
+| cleanup          | `CLN-0017`                                                                                                                                                                             |
+| package          | `@astryxdesign/core`                                                                                                                                                                   |
+| surface          | Default timing of `useContainerReveal`: a tokenized opacity fade on reveal, conceal, and layout-preserved variants, and a deferred `position` reset on the non-layout-preserved reveal |
+| old contract     | Every variant fades with token duration and easing; the non-layout-preserved reveal resets `position` after the fade                                                                   |
+| replacement      | Callers that want motion compose their own transition on the revealed content. `hoverDelay` remains the explicit pointer-intent gate                                                   |
+| direct authority | No contract record owns `useContainerReveal`; this record owns the motion rule it applies. Owners: `ernestt`, `cixzhang`                                                               |
+| warning          | Consumer docs and the release notes name `DEP-0008`. No runtime warning (`spec:AST-017` FR29)                                                                                          |
+| migration        | Non-mechanical: a caller that wants the fade adds its own transition                                                                                                                   |
+| codemod          | None: the fade has no prop to pin, and its tokenized timing is not caller source                                                                                                       |
+| downstream       | Hook docs and stories show the immediate default and `hoverDelay`                                                                                                                      |
+| transition       | waived by owner for 0.7.0 (2026-10-10)                                                                                                                                                 |
+| state            | `proposed`                                                                                                                                                                             |
+| open decision    | The motion rule that makes frequent triggers immediate is draft here; it needs an approved decision and a direct owner for the hook                                                    |
+| target plan      | `CLN-0017` in the next minor release                                                                                                                                                   |
 
 ### CLN-0017 — `useContainerReveal` changes state immediately by default
 

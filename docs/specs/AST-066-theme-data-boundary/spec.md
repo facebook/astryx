@@ -540,8 +540,9 @@ this decision removes and make runtime/static ownership mode-dependent.
 | rollback      | Restore the raw default block in runtime and `theme build` output from the final-patch baseline                                                                                                                                                             |
 | harm of delay | Every theme keeps shipping a second global palette that survives without any consumer and can disagree with the canonical StyleX group                                                                                                                      |
 | harm of apply | CSS that reads a raw data variable without `dataVars` or an authored value paints with the variable unset until it migrates                                                                                                                                 |
+| transition    | waived by owner for 0.7.0 (2026-10-10)                                                                                                                                                                                                                      |
 | state         | `proposed`                                                                                                                                                                                                                                                  |
-| open decision | Whether a transition patch ships before the minor (`spec:AST-017` FR34)                                                                                                                                                                                     |
+| open decision | None beyond approving this proposed record and its cleanup                                                                                                                                                                                                  |
 
 ### CLN-0016 — Remove raw global data-color defaults from theme output
 

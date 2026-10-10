@@ -68,8 +68,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 | migration        | Mechanical: add `padding={0}` to a BottomSheet that sets no padding, unless its only child is a padded Section or a Layout                                          |
 | codemod          | `astryx upgrade` adds `padding={0}` before any spread, skips sheets whose only child is a core Section or Layout, and marks a nested padding-less Layout for review |
 | downstream       | In-repo sheets that supply their own inset pass `padding={0}`; consumer examples rely on the default inset                                                          |
+| transition       | waived by owner for 0.7.0 (2026-10-10)                                                                                                                              |
 | state            | `proposed`                                                                                                                                                          |
-| open decision    | This record is draft; it needs approval, and a ruling on whether the deprecated state ships in a patch before the minor (`spec:AST-017` FR28)                       |
+| open decision    | This record is draft and needs approval                                                                                                                             |
 | target plan      | `CLN-0018` in the next minor release                                                                                                                                |
 
 ### CLN-0018 — BottomSheet pads its Content area by default

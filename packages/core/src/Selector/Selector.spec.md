@@ -77,8 +77,9 @@ connection between the closed trigger and its selection surface.
 | migration        | Mechanical where the popover is wanted on every device: add `presentation="popover"`                                                                                |
 | codemod          | None by default: pinning `popover` everywhere would opt every caller out of the change. A preserving codemod is mechanical if an owner wants one                    |
 | downstream       | Guidance says to keep the default and pin `popover` only when product policy needs it                                                                               |
+| transition       | waived by owner for 0.7.0 (2026-10-10)                                                                                                                              |
 | state            | `proposed`                                                                                                                                                          |
-| open decision    | Current authority for the `MultiSelector` and `DropdownMenu` defaults, and whether the deprecated state ships in a patch before the minor (`spec:AST-017` FR28)     |
+| open decision    | Current authority for the `MultiSelector` and `DropdownMenu` defaults                                                                                               |
 | target plan      | `CLN-0020` in the next minor release                                                                                                                                |
 
 ### CLN-0020 — Selector, MultiSelector, and data-driven DropdownMenu default to `adaptive`
