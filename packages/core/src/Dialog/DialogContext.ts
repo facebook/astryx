@@ -15,6 +15,12 @@ export interface DialogContextValue {
   /** Whether the dialog is rendered inline for docs/showcases. */
   isInline: boolean;
   /**
+   * Whether the parent Dialog is currently open. Focus-managing children
+   * (DialogHeader) read this so a header mounted while the dialog is closed
+   * does not steal focus from the surrounding page.
+   */
+  isOpen?: boolean;
+  /**
    * Id the DialogHeader title should render with so the dialog can name
    * itself via aria-labelledby. The dialog detects the title element's
    * presence directly (via a callback ref), so it only emits aria-labelledby
