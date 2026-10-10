@@ -4,7 +4,7 @@
 
 /**
  * @file DateRangeInput.tsx
- * @input Uses React, Field, Calendar (range mode), usePopover
+ * @input Uses React, Field, Calendar (range mode), VisuallyHidden, usePopover
  * @output Exports DateRangeInput component, DateRangeInputProps
  * @position Core implementation; consumed by index.ts, tested by DateRangeInput.test.tsx
  *
@@ -47,6 +47,7 @@ import {
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {
   Calendar,
   type ISODateString,
@@ -503,6 +504,7 @@ export function DateRangeInput({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  const requiredID = useId();
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -537,6 +539,9 @@ export function DateRangeInput({
       // The tooltip variant renders no message box; describe the input by the
       // tooltip's content instead so the status is still announced.
       statusTooltipDescribedBy,
+      // A button cannot carry aria-required. Mirror the input-family pattern
+      // by describing it with localized, visually hidden required text.
+      isEffectivelyRequired ? requiredID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
@@ -599,7 +604,7 @@ export function DateRangeInput({
     [fireChange],
   );
 
-  const triggerAriaLabel = value
+  const triggerAriaLabel = optimisticValue
     ? `${label}: ${displayValue}`
     : `${label}: ${placeholder}`;
 
@@ -690,7 +695,6 @@ export function DateRangeInput({
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
           aria-label={triggerAriaLabel}
           aria-describedby={ariaDescribedBy}
-          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           aria-expanded={popover.isOpen}
@@ -713,6 +717,11 @@ export function DateRangeInput({
         {isBusy && <Spinner size="sm" />}
         {statusIcon}
       </div>
+      {isEffectivelyRequired && (
+        <VisuallyHidden id={requiredID}>
+          {t('@astryx.field.required')}
+        </VisuallyHidden>
+      )}
       {popover.render(
         <div {...stylex.props(styles.popoverLayout)}>
           {presets && presets.length > 0 && (
@@ -762,7 +771,7 @@ export function DateRangeInput({
           )}
           <Calendar
             mode="range"
-            value={value ?? undefined}
+            value={optimisticValue}
             onChange={handleRangeSelect}
             min={min}
             max={max}

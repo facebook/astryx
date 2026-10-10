@@ -9,6 +9,7 @@
  * SYNC: When DateRangeInput.tsx changes, update tests to match new behavior
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -121,7 +122,7 @@ describe('DateRangeInput', () => {
     expect(screen.getByText('Range')).toBeInTheDocument();
   });
 
-  it('sets aria-required when isRequired is true', () => {
+  it('announces required state from a valid button description', () => {
     render(
       <DateRangeInput
         label="Range"
@@ -131,13 +132,17 @@ describe('DateRangeInput', () => {
       />,
     );
     const trigger = getButton(/Range/);
-    expect(trigger).toHaveAttribute('aria-required', 'true');
+    expect(trigger).not.toHaveAttribute('aria-required');
+    const describedBy = trigger.getAttribute('aria-describedby');
+    expect(describedBy).not.toBeNull();
+    expect(document.getElementById(describedBy!)).toHaveTextContent('Required');
   });
 
-  it('does not set aria-required when isRequired is false', () => {
+  it('does not add a required description when isRequired is false', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
     const trigger = getButton(/Range/);
     expect(trigger).not.toHaveAttribute('aria-required');
+    expect(trigger).not.toHaveAttribute('aria-describedby');
   });
 
   it('disables trigger when isDisabled is true', () => {
@@ -169,6 +174,31 @@ describe('DateRangeInput', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
     const trigger = getButton(/Range/);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps the optimistic range in the trigger name while saving', async () => {
+    const optimisticRange = {
+      start: '2026-03-01',
+      end: '2026-03-07',
+    } as const;
+    render(
+      <DateRangeInput
+        label="Range"
+        value={null}
+        onChange={() => {}}
+        changeAction={async () => new Promise(() => {})}
+        presets={[{label: 'Last 7 days', getRange: () => optimisticRange}]}
+      />,
+    );
+    const trigger = getButton(/^Range:/);
+
+    fireEvent.click(getButton('Open calendar'));
+    fireEvent.click(getButton('Last 7 days'));
+
+    await waitFor(() => {
+      expect(trigger).toHaveTextContent(/Mar.*1.*Mar.*7/);
+    });
+    expect(trigger).toHaveAccessibleName(/Range:.*Mar.*1.*Mar.*7/);
   });
 
   it('renders status icon for error status', () => {
@@ -258,6 +288,38 @@ describe('DateRangeInput', () => {
   });
 
   describe('hasClear', () => {
+    it('shows no selected calendar days after clearing', async () => {
+      const user = userEvent.setup();
+      function ControlledDateRangeInput() {
+        const [controlledValue, setControlledValue] =
+          useState<DateRange | null>({
+            start: '2026-01-01',
+            end: '2026-01-03',
+          });
+        return (
+          <DateRangeInput
+            label="Range"
+            value={controlledValue}
+            onChange={setControlledValue}
+            min="2026-01-01"
+            max="2026-01-31"
+            numberOfMonths={1}
+          />
+        );
+      }
+      render(<ControlledDateRangeInput />);
+
+      await user.click(getButton('Open calendar'));
+      await user.click(getButton(/January 15, 2026/));
+      await user.click(getButton(/January 16, 2026/));
+      await user.click(getButton('Clear Range'));
+      await user.click(getButton('Open calendar'));
+
+      expect(
+        screen.queryAllByRole('gridcell', {selected: true, hidden: true}),
+      ).toHaveLength(0);
+    });
+
     it('shows clear button when hasClear is true and value exists', () => {
       const range: DateRange = {
         start: '2026-03-15',
