@@ -91,6 +91,7 @@ affects_consumer_docs: [release-process, templates]
       "FR48",
       "FR49",
       "FR50",
+      "FR51",
       "DEC-15",
       "DEC-16"
     ]
@@ -591,15 +592,28 @@ one removal merged ahead of the decision to allow it.
   FR11, and applicable registry identity contracts.
 - **FR46 — Main declares the next planned version.** The fixed package group's
   version in main's `package.json` files is the next planned release version. A
-  release owner may raise or lower it on main at any time before the cut, but the
-  declaration MUST remain a plain version strictly greater than the newest stable
-  `vX.Y.Z` tag. For example, after `v0.6.7`, changing `0.7.0` to `0.6.8` is valid;
-  changing it to `0.6.7` or lower is not. Main publishes only canaries, versioned
-  `<declared version>-canary.<commit>`. Pull-request checks on main compare the
-  declaration with the newest stable tag, refuse a version at or below that tag or
-  a split fixed group, validate a post-release sync under FR50, and validate each
-  Changeset's format, category, bump, and coverage. They do not derive the release
-  version from pending Changesets.
+  release owner may raise or lower it on main; before a cut that changes the release
+  being planned, and after a cut it changes only main's future plan because the release
+  branch remains bound to its cut declaration. While that cut is active and its stable
+  tag does not yet exist, the active cut version is an additional floor: main's
+  declaration may stay equal to it or rise, but MUST NOT be lowered below it. Once the
+  tag exists, the ordinary strict-above-stable rule applies except to FR50's trusted
+  merge-back path. The declaration MUST otherwise remain a plain
+  version strictly greater than the newest stable `vX.Y.Z` tag except for the trusted
+  release-return equality described by FR50–FR51. For example, after `v0.6.7`, changing
+  `0.7.0` to `0.6.8` is valid only when no pending `[breaking]` Changeset would become
+  inadmissible; the lowering pull request itself MUST be refused otherwise. Changing the
+  plan to `0.6.7` or lower is not valid. When main has not advanced before merge-back,
+  its unchanged release declaration equals the new stable tag from publication through
+  FR50 until FR51's required next-plan change. Main publishes only canaries, versioned
+  `<declared version>-canary.<commit>`, and MUST NOT publish a canary from that equality
+  state. Pull-request checks on main compare the declaration with the newest stable tag,
+  refuse a version at or below that tag or a split fixed group except for the trusted
+  release-return path, refuse a pending `[breaking]` Changeset while the declaration is
+  a patch, admit that category while the declaration is the minor successor, validate
+  merge-back under FR50 and the next-plan change under FR51, and validate every other
+  Changeset's format, category, bump, and coverage. Pending Changesets do not derive or
+  promote the release version.
 - **FR47 — A release branch releases the declared version.** A release branch's
   version is the fixed-group version declared at its cut commit. Admission, the
   release plan, Changeset consumption, changelog generation, and stable
@@ -629,18 +643,35 @@ one removal merged ahead of the decision to allow it.
   including a version that is already released. The latest stable release is the
   newest `vX.Y.Z` tag. A prerelease or canary identifier is publication metadata
   and is never a declared version or a base.
-- **FR50 — Post-release sync advances main to the next patch by default.** Syncing
-  a published release back to main carries its changelogs and generated release
-  outputs and deletes the Changesets it consumed. Each main package version
-  becomes the higher of main's current planned version and the patch successor of
-  the released version. Sync therefore raises a declaration that is now at or below
-  the release, keeps any higher plan—including a pre-cut reduction that remains
-  above the release—and never lowers the current main declaration. Planning a minor
-  remains an explicit owner change on main. A rejection names the declared version,
-  the latest stable release, and both ways forward — deprecate under FR28, or change
-  main to the minor successor under FR46 — and names no particular surface or
-  contributor as a special case, so a contributor who has never read this spec can
-  act on it.
+- **FR50 — The published release branch squashes back into current main.** After
+  branch-owned tag and stable publication are verified, one merge-back change applies a
+  squash projection of the exact published release branch onto then-current main. It
+  carries the branch's exact generated changelogs, release notes, promoted codemods,
+  and frozen Changeset deletions; it does not regenerate or copy those outputs
+  independently. Branch-only active lifecycle marker and plan files do not land on
+  main. Between cut and merge-back, main's declaration is whatever main currently
+  holds; the release branch cannot change it. The three-way merge MUST preserve that
+  declaration, every post-cut main commit, every post-cut Changeset byte, and every
+  unrelated newer main field; a conflict holds the merge for explicit resolution. A
+  trusted required check binds the merge-back to the immutable tag, release branch head,
+  and plan digest, proves the release-owned bytes and frozen deletions equal the branch,
+  proves post-cut preservation, and refuses every unrelated mutation. FR50 never chooses
+  or lowers the next plan. Merge-back preserves main's current declaration; when it
+  still equals the released version, this trusted path is the only exception to the
+  strict-above-stable rule and no canary publishes from that transient equality state.
+- **FR51 — The next plan is an owner change separate from merge-back.** Immediately
+  after FR50 lands, a separate pull request changes every fixed-group package version,
+  every generated exact internal pin, and the lockfile to the next planned version. The
+  default is the patch successor of the released version. The minor successor is used
+  only when Cindy explicitly names that minor as the next plan; pending `[breaking]`
+  Changesets are not that decision. This is the only allowed transition out of FR50's
+  equality state, so other main changes remain held until it lands. If main already
+  carries a newer owner plan, FR50 preserves it and no duplicate bump is required.
+  Afterward the plan is again strictly above the newest stable tag and remains malleable
+  under FR46 until the next cut. A rejection names the declared version, active cut,
+  latest stable release, and both ways forward — deprecate under FR28, or explicitly
+  plan the minor under FR46 — so a contributor who has never read this spec can act on
+  it.
 
 ### Platform support
 
@@ -703,8 +734,8 @@ than restating them:
   incompatible Changeset puts every published package in a minor release.
   `check-changesets.mjs` validates Changeset format on every pull request, and the
   release-branch tooling under [`scripts/release/`](../../../scripts/release/)
-  implements FR47–FR50 admission, versioning, and sync; none of these files may
-  narrow or widen the rule it implements.
+  implements FR47–FR51 admission, versioning, merge-back, and next-plan validation;
+  none of these files may narrow or widen the rule it implements.
 
 The direct current owner decides the intended product contract. This spec decides how
 that contract may change in a stable release. The public Release Process decides how
@@ -731,14 +762,20 @@ Public lifecycle classification remains in force with these operational effects:
 - exact-main release comparison rejects unclassified deltas.
 
 Main declares the next planned version, may raise or lower that plan above the newest
-stable tag until cut, and publishes canaries of it. Pull-request checks keep the fixed
-group together and strictly above newest stable while validating Changeset quality. A
-release branch releases the cut's declaration unchanged and admits incompatible work
-only when it is a minor; a pending `[breaking]` Changeset cannot choose its own
-release. Because the fixed package group publishes as one version, this admission gate
-prevents one unapproved removal from moving the whole release to a minor. It does not
-add a per-change approval path: lifecycle, cleanup, migration, and freeze requirements
-remain independently enforceable.
+stable tag, and publishes canaries of it. A lowering PR cannot strand pending
+`[breaking]` work on a patch plan: it is refused before main turns red. A release branch
+releases the cut's declaration unchanged and admits incompatible work only when it is a
+minor; the Changeset cannot choose that version itself. During an active cut before
+its tag, main may stay equal to the cut or rise but cannot be lowered below it. After
+publication, the branch's release-owned bytes squash back into current main without
+regenerating them, consuming post-cut work, or overwriting a newer declaration. When
+main still equals the released tag, merge-back is the trusted equality exception and
+publishes no canary. A separate owner change immediately follows and declares the next
+plan—patch successor by default, minor only when Cindy names it. Because the fixed
+package group publishes as one version, this admission gate prevents one unapproved
+removal from moving the whole release to a minor. It does not add a per-change approval
+path: lifecycle, cleanup, migration, and freeze requirements remain independently
+enforceable.
 
 These requirements alter no published package by themselves and need no Changeset.
 Authoring helpers, validators, metadata projections, compatibility snapshots, release
@@ -747,28 +784,30 @@ lands, maintainers apply its requirement in review and release approval.
 
 ## Verification
 
-| Contract  | Verification                                                                                                                                                                                          | Representative states                                                                                                                                                                         | Mutation or failure expectation                                                                                                                                                                                                                                       |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                                                                                      | released export, behavior, CLI command; unreleased and private surface                                                                                                                        | A change is labeled from diff size or possibility alone, or a released contract change is missed                                                                                                                                                                      |
-| FR4–FR6   | Old-usage type/runtime/CLI regression test                                                                                                                                                            | alias retained, deprecation warning, broad rewrite, low-adoption caller                                                                                                                       | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                                                                                     |
-| FR7–FR8   | `pnpm check:changesets` plus migration review                                                                                                                                                         | existing `[fix]`, `[feat]`, `[breaking]`, and `[experimental]` tags paired with compatible, deprecation, planned-removal, or incompatible-fix metadata                                        | A new lifecycle replaces an established tag, tag/metadata/bump diverge, an incompatible correction uses bare `[fix]`, or migration is unusable                                                                                                                        |
-| FR9–FR13  | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests                                                                      | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                                                                                                 | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                                                                                        |
-| FR12      | Minimum and representative supported-version tests plus manifest and release-note review                                                                                                              | retained range, narrowed range, adapter, coordinated upgrade                                                                                                                                  | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                                                                                                                                             |
-| FR14      | Help/manifest snapshots, public API and consumer docs, and focused contract tests                                                                                                                     | command, option, API/config, private rollout/test hook                                                                                                                                        | Supported behavior is hidden, an environment variable changes behavior, or automation lacks a documented API                                                                                                                                                          |
-| FR15      | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                                                                                                  | global invariant, scoped command group, single command, programmatic API                                                                                                                      | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                                                                                                                                            |
-| FR16–FR18 | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                                                                                          | known and new extension, partial result, text/JSON/API parity, independent concurrent calls                                                                                                   | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                                                                                                                                        |
-| FR19–FR20 | Proposal evidence with a regression fixture for the detection failure, plus composition and provenance tests                                                                                          | convention covers the case, detection fails, app plus two integrations, refusal, failing contribution, repeated load                                                                          | A key ships without a reproduced detection failure, a contribution displaces the app or applies twice, a part of the effective value has no inspectable source, or a failure silently weakens protection                                                              |
-| FR21–FR24 | Published-surface comparison, declaration/doc metadata checks, import-boundary checks, and Changeset classification review                                                                            | experimental prop object, experimental subpath, patch evolution, promotion, unpublished adjacent field, stable warning behavior, integration theme                                            | A prose-only marker excludes a stable API, adjacency falsely publishes a new field, an experimental export leaks through a stable path, a patch changes stable behavior, or a promoted API remains unprotected                                                        |
-| FR25–FR27 | Stable-surface inventory and experimental-boundary matrix                                                                                                                                             | package/API, CSS/token, CLI/config, persistence, build tooling, docs, whole Lab component                                                                                                     | An unmarked experiment changes stable defaults or a stable surface bypasses compatibility review                                                                                                                                                                      |
-| FR28–FR31 | Closed-schema deprecation/cleanup records; declaration/doc/build/CLI warning projections; old/new fixtures; dry-run/idempotence/migration tests; maintained-source and latest-stable upgrade evidence | whole component, prop/value, theme field/helper/token/target/source, CLI command, CLI option; old-only, new-only, both, static/dynamic/uncertain migration, text/JSON, development/production | A warning has no usable modernization route, production runtime changes for deprecation, maintained guidance teaches the old surface, a migration guesses, old behavior degrades early, cadence invents a wait, or one cleanup id covers multiple incompatible deltas |
-| FR32–FR35 | Latest-stable victim fixture, pre-existing authority, owner reviews, correction record, record-to-surface state mapping, and emergency attestation                                                    | victim-free `[fix]`, `[fix]` plus incompatible-fix metadata, coexistence, cleanup transition, critical-harm emergency                                                                         | A released victim uses bare `[fix]`, a new Changeset tag replaces metadata, a correction record disagrees with its public-surface state, or urgency bypasses migration                                                                                                |
-| FR36–FR40 | Minor plan, locked final-patch receipt, three-way delta classification, and separated release notes                                                                                                   | ordinary cadence, immediate pair, cleanup, release metadata, pre/post-lock compatible fix                                                                                                     | Cadence becomes eligibility, the final patch is recut for bookkeeping, a feature or incompatible fix enters the incidental-fix lane, or release notes merge cleanup with fixes                                                                                        |
-| FR41–FR44 | Schema validation, PR declaration, semantic stable/base/head comparisons, exact-main gate, and immutable publish/rollback receipt                                                                     | duplicate ids, missing evidence, route/schema removal, old-client metadata, partial publish, safe rollback                                                                                    | A label passes without semantics, a delta maps zero or multiple times, fixed-group membership drifts, or a release rebuilds under one identity                                                                                                                        |
-| FR45      | Docs route inventory, repository-reference checks, and Changeset review                                                                                                                               | catalog entry rename, former-route miss, stable command and JSON schema                                                                                                                       | Catalog routing is frozen as API, or a rename silently changes the contractual command or response schema                                                                                                                                                             |
-| FR46–FR47 | Main pull-request checks against the newest stable tag, canary version, and a release-versioning fixture on a pre-bumped branch                                                                       | owner increase, decrease that remains above newest stable, declaration equal to or below newest stable, split group, `[breaking]` Changeset on main, declared minor with `[breaking]`         | Main checks derive the version from pending Changesets or the previous main value, refuse an allowed pre-cut decrease, permit a declaration at or below newest stable, or consuming a Changeset moves the declared version                                            |
-| FR48      | Category and classification admission under each declared tier                                                                                                                                        | patch release with `[breaking]`, patch release with a deprecation, minor release with `[breaking]`                                                                                            | Incompatible work passes in a patch release, or a deprecation is refused in one                                                                                                                                                                                       |
-| FR49      | Malformed and inconsistent declaration fixtures                                                                                                                                                       | disagreeing group versions, canary identifier, release version unlike the cut manifest, already-released version, skipped version, no stable tag                                              | An untrustworthy or mismatched declaration is released                                                                                                                                                                                                                |
-| FR50      | Sync fixtures and assertions on the rejection text                                                                                                                                                    | main at or below the release, a reduced main plan still above the release, an owner plan ahead of the patch successor, a sync that lowers the current main declaration                        | A sync leaves main at or below the published version, lowers the current plan, overrides a higher plan, or a refusal omits the declared version or either remedy                                                                                                      |
+| Contract        | Verification                                                                                                                                                                                          | Representative states                                                                                                                                                                         | Mutation or failure expectation                                                                                                                                                                                                                                       |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3         | PR compatibility statement plus latest stable package inspection                                                                                                                                      | released export, behavior, CLI command; unreleased and private surface                                                                                                                        | A change is labeled from diff size or possibility alone, or a released contract change is missed                                                                                                                                                                      |
+| FR4–FR6         | Old-usage type/runtime/CLI regression test                                                                                                                                                            | alias retained, deprecation warning, broad rewrite, low-adoption caller                                                                                                                       | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                                                                                     |
+| FR7–FR8         | `pnpm check:changesets` plus migration review                                                                                                                                                         | existing `[fix]`, `[feat]`, `[breaking]`, and `[experimental]` tags paired with compatible, deprecation, planned-removal, or incompatible-fix metadata                                        | A new lifecycle replaces an established tag, tag/metadata/bump diverge, an incompatible correction uses bare `[fix]`, or migration is unusable                                                                                                                        |
+| FR9–FR13        | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests                                                                      | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                                                                                                 | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                                                                                        |
+| FR12            | Minimum and representative supported-version tests plus manifest and release-note review                                                                                                              | retained range, narrowed range, adapter, coordinated upgrade                                                                                                                                  | An in-range combination breaks under a nonbreaking label, or release coordination hides the affected package or migration                                                                                                                                             |
+| FR14            | Help/manifest snapshots, public API and consumer docs, and focused contract tests                                                                                                                     | command, option, API/config, private rollout/test hook                                                                                                                                        | Supported behavior is hidden, an environment variable changes behavior, or automation lacks a documented API                                                                                                                                                          |
+| FR15            | Full manifest-derived command matrix, supported-consumer evidence, and scope-specific contract tests                                                                                                  | global invariant, scoped command group, single command, programmatic API                                                                                                                      | A global control is a no-op for any command, has different meanings, or replaces a narrower owning surface                                                                                                                                                            |
+| FR16–FR18       | Boundary inventory, hostile side-effect probes, response snapshots, and concurrent API tests                                                                                                          | known and new extension, partial result, text/JSON/API parity, independent concurrent calls                                                                                                   | A route bypasses the guarantee, omitted work looks complete, or one invocation changes another                                                                                                                                                                        |
+| FR19–FR20       | Proposal evidence with a regression fixture for the detection failure, plus composition and provenance tests                                                                                          | convention covers the case, detection fails, app plus two integrations, refusal, failing contribution, repeated load                                                                          | A key ships without a reproduced detection failure, a contribution displaces the app or applies twice, a part of the effective value has no inspectable source, or a failure silently weakens protection                                                              |
+| FR21–FR24       | Published-surface comparison, declaration/doc metadata checks, import-boundary checks, and Changeset classification review                                                                            | experimental prop object, experimental subpath, patch evolution, promotion, unpublished adjacent field, stable warning behavior, integration theme                                            | A prose-only marker excludes a stable API, adjacency falsely publishes a new field, an experimental export leaks through a stable path, a patch changes stable behavior, or a promoted API remains unprotected                                                        |
+| FR25–FR27       | Stable-surface inventory and experimental-boundary matrix                                                                                                                                             | package/API, CSS/token, CLI/config, persistence, build tooling, docs, whole Lab component                                                                                                     | An unmarked experiment changes stable defaults or a stable surface bypasses compatibility review                                                                                                                                                                      |
+| FR28–FR31       | Closed-schema deprecation/cleanup records; declaration/doc/build/CLI warning projections; old/new fixtures; dry-run/idempotence/migration tests; maintained-source and latest-stable upgrade evidence | whole component, prop/value, theme field/helper/token/target/source, CLI command, CLI option; old-only, new-only, both, static/dynamic/uncertain migration, text/JSON, development/production | A warning has no usable modernization route, production runtime changes for deprecation, maintained guidance teaches the old surface, a migration guesses, old behavior degrades early, cadence invents a wait, or one cleanup id covers multiple incompatible deltas |
+| FR32–FR35       | Latest-stable victim fixture, pre-existing authority, owner reviews, correction record, record-to-surface state mapping, and emergency attestation                                                    | victim-free `[fix]`, `[fix]` plus incompatible-fix metadata, coexistence, cleanup transition, critical-harm emergency                                                                         | A released victim uses bare `[fix]`, a new Changeset tag replaces metadata, a correction record disagrees with its public-surface state, or urgency bypasses migration                                                                                                |
+| FR36–FR40       | Minor plan, locked final-patch receipt, three-way delta classification, and separated release notes                                                                                                   | ordinary cadence, immediate pair, cleanup, release metadata, pre/post-lock compatible fix                                                                                                     | Cadence becomes eligibility, the final patch is recut for bookkeeping, a feature or incompatible fix enters the incidental-fix lane, or release notes merge cleanup with fixes                                                                                        |
+| FR41–FR44       | Schema validation, PR declaration, semantic stable/base/head comparisons, exact-main gate, and immutable publish/rollback receipt                                                                     | duplicate ids, missing evidence, route/schema removal, old-client metadata, partial publish, safe rollback                                                                                    | A label passes without semantics, a delta maps zero or multiple times, fixed-group membership drifts, or a release rebuilds under one identity                                                                                                                        |
+| FR45            | Docs route inventory, repository-reference checks, and Changeset review                                                                                                                               | catalog entry rename, former-route miss, stable command and JSON schema                                                                                                                       | Catalog routing is frozen as API, or a rename silently changes the contractual command or response schema                                                                                                                                                             |
+| FR46–FR47       | Main pull-request checks against the newest stable tag and declared tier, canary version, and a release-versioning fixture on a pre-bumped branch                                                     | owner increase, allowed decrease, minor-to-patch decrease with pending `[breaking]`, equality/lower, split group, `[breaking]` on patch and minor plans                                       | Main derives the version from pending Changesets, permits equality/lower, admits `[breaking]` on a patch plan, refuses it on a minor plan, allows a lowering PR to strand pending breaking work, or consuming a Changeset moves the declared version                  |
+| FR46 active cut | Main pull-request check against the single active branch marker and its cut declaration                                                                                                               | no active cut, declaration above cut, declaration equal to cut before tag, declaration below cut, tagged equality on merge-back                                                               | A main PR lowers the declaration below an active untagged cut, equality is wrongly refused before the tag, or equality bypasses strict-above-stable outside trusted merge-back                                                                                        |
+| FR48            | Category and classification admission under each declared tier                                                                                                                                        | patch release with `[breaking]`, patch release with a deprecation, minor release with `[breaking]`                                                                                            | Incompatible work passes in a patch release, or a deprecation is refused in one                                                                                                                                                                                       |
+| FR49            | Malformed and inconsistent declaration fixtures                                                                                                                                                       | disagreeing group versions, canary identifier, release version unlike the cut manifest, already-released version, skipped version, no stable tag                                              | An untrustworthy or mismatched declaration is released                                                                                                                                                                                                                |
+| FR50            | Three-way squash merge-back fixtures bound to the immutable tag, branch head, and plan digest                                                                                                         | exact branch outputs, frozen deletion, branch-only marker exclusion, post-cut Changeset/manifest edit, newer main declaration, merge conflict, regenerated output                             | Merge-back differs from release bytes, lands lifecycle files, consumes post-cut work, overwrites a newer main declaration or unrelated field, or chooses a version                                                                                                    |
+| FR51            | Separate next-plan manifest/pin/lockfile fixtures plus canary routing assertions                                                                                                                      | default patch successor, explicitly named minor, pre-advanced main plan, equality, unrelated PR during equality, later decrease above stable                                                  | Equality publishes a canary or admits unrelated work, the default skips a patch, pending Changesets choose a minor, exact pins split, merge-back requires a duplicate bump for an existing newer plan, or later planning stops being malleable                        |
 
 ## Decision log
 
@@ -1039,38 +1078,53 @@ Rejected: treating every route-shaped positional value as stable CLI API. That w
 freeze documentation organization rather than protect the command and schema
 contracts readers and automation rely on.
 
-### DEC-15 — Main declares the version; the release branch admits work against it
+### DEC-15 — Main declares the plan; the release branch returns shipped bytes
 
 **Reference:** `spec:AST-017/DEC-15`
 **Decider:** `cixzhang`, `2026-10-09`
 
 Main's `package.json` carries the next planned version and main publishes only
-canaries of it. Before the cut, a release owner may raise or lower that plan while
-keeping it strictly above the newest stable tag. After each release, sync uses the
-higher of the current plan and the released version's patch successor; planning a
-minor remains an explicit owner change. Release tooling runs on a release branch,
-which takes the declared version unchanged; admission, versioning, changelogs, and
-stable publication happen there. Incompatible work is admissible only when the
-declared version is the minor successor of the latest stable release.
+canaries of it. A release owner may raise or lower that plan while keeping it strictly
+above the newest stable tag, but a lowering PR cannot make a pending `[breaking]`
+Changeset inadmissible. Release tooling runs on a release branch, which takes the cut
+declaration unchanged; admission, versioning, changelogs, and stable publication happen
+there. Later main planning cannot change that branch release.
 
-Declaring the version on main makes the shape of each release an owner decision taken
-before the cut without turning an early estimate into a one-way ratchet. The pull-request
-check requires the plan to be strictly greater than the newest stable tag; the cut
-additionally requires the patch or minor successor under FR48–FR49. This keeps canaries
-ahead of stable while allowing pre-cut plan adjustments and keeping main's pull-request
-checks independent of pending Changesets. Because the fixed group publishes one version,
-consuming a `[breaking]` Changeset on a branch that already declares the minor writes
-changelogs for that minor and never bumps again.
+After cut and before its tag exists, the active branch version is a second floor for
+main: a later plan may stay equal or rise, but cannot be lowered below the release in
+progress. After publication, a three-way squash projection returns the exact
+release-owned branch bytes to current main while preserving post-cut work and the
+declaration main holds. When that declaration still equals the release, merge-back is
+the sole trusted strict-above-stable exception and publishes no canary. A separate owner
+change immediately afterward declares the patch successor by default, or the minor
+successor only when Cindy names it. This keeps proof of what shipped distinct from the
+decision about what ships next.
 
-A `[breaking]` Changeset can merge while main declares a patch. The release that
-would carry it refuses it at admission until the work becomes a deprecation or an
-owner bumps main to the minor.
+Declaring the version on main makes release shape an owner decision without turning an
+early estimate into a one-way ratchet. Pull-request checks require the plan to be at
+least the active untagged cut, strictly greater than the newest stable tag outside
+trusted merge-back, and refuse a minor-to-patch lowering while pending breaking work
+exists. The cut additionally requires the patch or minor successor under FR48–FR49.
+FR50 preserves current main; FR51 advances it after merge-back. Because the fixed group
+publishes one version, consuming a `[breaking]` Changeset on a branch that already
+declares the minor writes changelogs for that minor and never bumps again.
+
+A `[breaking]` Changeset is admissible on main only while main already declares the
+minor successor. While main declares a patch, the pull-request gate holds it until the
+work becomes a compatible deprecation or Cindy explicitly plans the minor. The
+Changeset is evidence about the work, never authority to change the plan.
 
 Rejected: deriving the version from pending Changesets, because the entry being judged would be its own authorization.
 
 Rejected: a dated schedule file beside `package.json`, because two declarations of the next version can disagree.
 
-Rejected: a sync that sets main to the released version, because the declaration would no longer be strictly greater than the newest stable tag.
+Rejected: regenerating or copying release outputs into an independent sync change, because merge-back must prove the bytes came from the published branch.
+
+Rejected: folding the next-version bump into merge-back, because shipped-byte reconciliation and the next owner plan are separate decisions.
+
+Rejected: resetting a newer main declaration to the released version, because release-branch authority owns shipped outputs, not post-cut planning on main.
+
+Rejected: checking only the newest stable tag while an untagged cut is active, because main could be lowered below the release already in progress.
 
 ### DEC-16 — Deprecation acts at authoring surfaces, not production runtime
 
