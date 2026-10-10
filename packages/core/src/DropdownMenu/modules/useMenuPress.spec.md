@@ -85,7 +85,8 @@ adopter.
 - Compatibility class: additive public hook and types; behavior change inside
   the menu family
 - Migration decision: `module:DropdownMenu/useMenuPress/DEC-3`; proposed
-  `module:DropdownMenu/useMenuPress/DEC-4` (pending owner review)
+  `module:DropdownMenu/useMenuPress/DEC-4` and
+  `module:DropdownMenu/useMenuPress/DEC-9` (pending owner review)
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -161,7 +162,13 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **ORD1 — One press, innermost owner.** A `pointerdown` inside a menu is
   claimed by the innermost root carrying `data-astryx-menu-press` (a flyout
   before its parent); the outermost root decides what counts as "inside the
-  menu" for the release.
+  menu" for the release. Proposed (DEC-9): no root claims a press that begins
+  on a form control, a link or an editable element the menu hosts outside
+  every row (`input`, `textarea`, `select`, `button`, `label`, `a[href]`,
+  `[contenteditable]`, `[role="textbox"]`). That press is the browser's: it is
+  not tracked, its `pointerdown` is not cancelled and its click is not
+  swallowed, so a hosted field focuses under a finger and a hosted button's
+  own click acts. A control inside a row, of any state, belongs to the row.
 - **ORD2 — Release resolution.** Enabled row under the point → `act`; inside
   the menu or on the trigger with no row → `settle` (stray click swallowed,
   menu stays); outside → `settle` with `dismiss` only for a mouse.
@@ -236,6 +243,7 @@ owned by the item components.
 | FR1, FR3, AR2          | `Selector.test.tsx` press model suite                                                                                      | finger release over another option, finger/mouse release outside, listbox marker                                                                         | A listbox that takes focus, acts on the press option, or closes under a finger fails                                            |
 | FR4 (scroll)           | `MenuPress.a11y.chromium.spec.ts` (real Chromium)                                                                          | Chromium touch pan in an overflowing menu; touch-action by overflow; finger slide and its stray click                                                    | Not provable in jsdom; a pan that acts on a row, or a slide that acts on the press row, fails                                   |
 | FR8, FR9 (proposed)    | `menuPressGesture.test.ts` trigger states; `useMenuPress.test.tsx` trigger suite; `DropdownMenu.test.tsx` press-open cases | mouse opens at once, finger tap, held finger, settle before/after, cancel; press-open + drag-release, unsettled release, trigger toggle, held touch, tap | A menu that does not open on a mouse press, an unsettled release that acts, or a trigger that reopens in the same gesture fails |
+| ORD1 (proposed)        | `useMenuPress.test.tsx` hosted-controls suite; `DropdownMenu.test.tsx` press model suite                                   | a field under a finger, a button under a mouse, a button inside a row                                                                                    | A hosted control whose press is cancelled or whose click is swallowed, or a row control that leaves the model, fails            |
 
 ## Decision log
 
@@ -286,6 +294,21 @@ a separate meaning, such as reordering, scrubbing, or direct manipulation, is
 not eligible. Eligibility never causes adoption: each component contract names
 this module and the surfaces and claims it governs. The public hook's
 availability alone does not make a component an adopter.
+
+### DEC-9 (proposed) — A control the menu hosts beside its rows keeps the browser's press
+
+**Reference:** `module:DropdownMenu/useMenuPress/DEC-9`
+**Decider:** proposed by `vjeux`, `2026-10-10`; pending owner review
+
+A sub-menu may hold a form: a filter field above its rows, a button that
+creates the option a row would apply. The model tracks a press to pick a row;
+a press on such a control picks no row, so tracking it only takes the
+control's own press away: under a finger the cancelled `pointerdown` keeps the
+field from focusing, and the swallowed click never reaches the button. The
+model leaves those presses to the browser and keeps every press that lands on
+a row, a control inside one included. Rejected: an opt-out attribute each host
+puts on its controls (every host would have to know the model to keep a field
+working).
 
 ## Open questions
 
