@@ -170,9 +170,9 @@ a decision that they must remain unthemeable.
   and records that sheets retain local scrim and swipe behavior.
 - `spec:AST-025` owns effective scroll measurement, overflow and containment,
   automatic keyboard-owner selection, and focus continuity.
-- `family:overlay-dismissal` owns shared Escape and platform-close ordering and
-  records BottomSheet's current local-only adoption gap. This anatomy backfill
-  does not migrate that runtime behavior.
+- `family:overlay-dismissal` owns shared Escape and platform-close ordering. A
+  standalone BottomSheet registers with the shared stack while it is presented;
+  a switcher-hosted sheet is covered by BottomSheetSwitcher's registration.
 
 ## Verification map
 

@@ -3,7 +3,8 @@
 /**
  * @file BottomSheet.stories.tsx
  * @input BottomSheet, content primitives, and controlled story state
- * @output BottomSheet examples and native keyboard delegation browser fixtures
+ * @output BottomSheet examples plus keyboard delegation and nested-layer
+ *   Escape browser fixtures
  * @position Storybook coverage for BottomSheet presentation and interaction
  */
 
@@ -22,6 +23,7 @@ import {Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {TextArea} from '@astryxdesign/core/TextArea';
 import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Popover} from '@astryxdesign/core/Popover';
 
 const meta: Meta<typeof BottomSheet> = {
   title: 'Core/BottomSheet',
@@ -728,6 +730,58 @@ export const KeyboardDelegation: Story = {
           </Section>
         </BottomSheet>
         <Button label="After sheet" onClick={() => {}} />
+      </>
+    );
+  },
+};
+
+/** Escape closes only the top-most layer: a Popover opened inside the sheet first. */
+export const NestedPopover: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [hasScrim, setHasScrim] = useState(false);
+    const [purpose, setPurpose] = useState<'info' | 'form' | 'required'>(
+      'info',
+    );
+    return (
+      <>
+        <label>
+          Sheet purpose
+          <select
+            value={purpose}
+            onChange={event =>
+              setPurpose(event.target.value as 'info' | 'form' | 'required')
+            }>
+            {['info', 'form', 'required'].map(value => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
+        <CheckboxInput
+          label="Show scrim"
+          value={hasScrim}
+          onChange={setHasScrim}
+        />
+        <Button label="Open sheet" onClick={() => setIsOpen(true)} />
+        <BottomSheet
+          label="Reference"
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          hasScrim={hasScrim}
+          purpose={purpose}
+          height="tall"
+          snapPoints={['96px', '50%']}
+          padding={6}>
+          <Popover
+            label="Details"
+            hasAutoFocus={false}
+            content={<p>Nested information</p>}>
+            <Button label="About" />
+          </Popover>
+          <Button label="Close sheet" onClick={() => setIsOpen(false)} />
+        </BottomSheet>
       </>
     );
   },
