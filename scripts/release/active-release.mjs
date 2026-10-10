@@ -309,7 +309,7 @@ function releaseOutputMapAtRef(root, plan, releaseRef) {
   return new Map(
     releaseOutputPathsAtRef(root, plan, releaseRef)
       .filter(isReleaseOutputPath)
-      .filter(file => !isPackageManifestPath(file) && file !== 'pnpm-lock.yaml')
+      .filter(file => !isPackageManifestPath(file))
       .map(file => [file, fileDigestAtRef(root, releaseRef, file)]),
   );
 }
@@ -469,41 +469,61 @@ const VERSION_DEPENDENCY_FIELDS = [
   'peerDependencies',
 ];
 const EXACT_SPEC_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
-
 function patchSuccessor(version) {
   if (!VERSION_RE.test(version ?? '')) return null;
   const [major, minor, patch] = version.split('.').map(Number);
   return `${major}.${minor}.${patch + 1}`;
 }
 
-/**
- * FR50 — the version main declares after syncing a release: the higher of
- * main's version and the released version's patch successor. Main declares
- * the next patch by default and keeps an owner's higher bump.
- *
- * @param {string} mainVersion  main's fixed-group version at the sync base
- * @param {string} releaseVersion  the published version
- * @returns {string|null}
- */
-function syncedMainVersion(mainVersion, releaseVersion) {
-  const next = patchSuccessor(releaseVersion);
-  const order = compareVersions(mainVersion, next);
-  if (next === null || order === null) return null;
-  return order >= 0 ? mainVersion : next;
+function minorSuccessor(version) {
+  if (!VERSION_RE.test(version ?? '')) return null;
+  const [major, minor] = version.split('.').map(Number);
+  return `${major}.${minor + 1}.0`;
 }
 
 /**
- * A main manifest after sync: fixed-group members carry `version`, and every
- * exact internal pin on a fixed-group package points at it, the way
- * sync-internal-deps keeps them. Nothing else changes.
+ * FR51 — choose the next declaration after merge-back. Patch is the operational
+ * default. An owner-named value may select only the patch or minor successor;
+ * pending Changesets never choose or skip the plan.
  */
-function syncedManifest(base, {version, fixedNames}) {
+function nextPlannedVersion(releaseVersion, ownerVersion = null) {
+  const patch = patchSuccessor(releaseVersion);
+  const minor = minorSuccessor(releaseVersion);
+  if (patch === null || minor === null) return null;
+  if (ownerVersion === null) return patch;
+  return ownerVersion === patch || ownerVersion === minor ? ownerVersion : null;
+}
+
+/**
+ * Apply only the generated manifest delta from the published branch to current
+ * main. This preserves post-cut main fields while carrying an allowed release
+ * version or exact-internal-pin change byte-for-byte.
+ */
+function mergedReleaseManifest(base, cut, release, {mainVersion, fixedNames}) {
+  if (!base || !cut || !release) return null;
   const expected = structuredClone(base);
-  if (fixedNames.has(base.name)) expected.version = version;
+  if (cut.version !== release.version) expected.version = release.version;
   for (const field of VERSION_DEPENDENCY_FIELDS) {
-    for (const [name, spec] of Object.entries(expected[field] ?? {})) {
-      if (fixedNames.has(name) && EXACT_SPEC_RE.test(spec))
-        expected[field][name] = version;
+    const cutValues = cut[field] ?? {};
+    const releaseValues = release[field] ?? {};
+    for (const name of new Set([
+      ...Object.keys(cutValues),
+      ...Object.keys(releaseValues),
+    ])) {
+      if (canonicalJson(cutValues[name]) === canonicalJson(releaseValues[name]))
+        continue;
+      expected[field] ??= {};
+      if (releaseValues[name] === undefined) delete expected[field][name];
+      else expected[field][name] = releaseValues[name];
+    }
+  }
+  if (mainVersion) {
+    if (fixedNames.has(expected.name)) expected.version = mainVersion;
+    for (const field of VERSION_DEPENDENCY_FIELDS) {
+      for (const [name, spec] of Object.entries(expected[field] ?? {})) {
+        if (fixedNames.has(name) && EXACT_SPEC_RE.test(spec))
+          expected[field][name] = mainVersion;
+      }
     }
   }
   return expected;
@@ -515,7 +535,7 @@ function syncedManifest(base, {version, fixedNames}) {
  */
 function releaseManifestChangeError({file, cut, release}) {
   if (!cut || !release)
-    return `release sync cannot read manifest history: ${file}`;
+    return `release merge-back cannot read manifest history: ${file}`;
   const releaseFromCut = structuredClone(cut);
   releaseFromCut.version = release.version;
   for (const field of VERSION_DEPENDENCY_FIELDS) {
@@ -539,7 +559,7 @@ function releaseManifestChangeError({file, cut, release}) {
     : `published manifest contains a non-version release change: ${file}`;
 }
 
-function validateReleaseSync({
+function validateReleaseMergeBack({
   entries,
   plan,
   baseChangesets,
@@ -555,7 +575,15 @@ function validateReleaseSync({
   headManifests = new Map(),
 }) {
   const errors = [];
-  const planned = new Set(plan.changesets.map(entry => entry.path));
+  const planned = new Map(
+    plan.changesets.map(entry => [entry.path, entry.sha256]),
+  );
+  const releaseManifestPaths = new Set(releaseManifests.keys());
+  const releaseOutputPaths = new Set(releaseOutputs.keys());
+  const releaseRenamePaths = new Set(
+    [...releaseRenames].flatMap(rename => rename.split('\t')),
+  );
+
   for (const entry of entries) {
     const [status, ...files] = entry.split('\t');
     const isRename = status?.startsWith('R');
@@ -565,12 +593,12 @@ function validateReleaseSync({
       files.length !== expectedPaths ||
       files.some(file => !file)
     ) {
-      errors.push(`invalid sync diff entry: ${entry}`);
+      errors.push(`invalid merge-back diff entry: ${entry}`);
       continue;
     }
     if (isRename && !releaseRenames.has(files.join('\t'))) {
       errors.push(
-        `release sync rename does not match published branch: ${files.join(' -> ')}`,
+        `release merge-back rename does not match published branch: ${files.join(' -> ')}`,
       );
       continue;
     }
@@ -578,121 +606,169 @@ function validateReleaseSync({
       if (file.startsWith('.changeset/')) {
         if (status !== 'D' || !planned.has(file))
           errors.push(
-            `release sync may only delete frozen Changesets: ${file}`,
+            `release merge-back may only delete frozen Changesets: ${file}`,
           );
       } else if (isPackageManifestPath(file)) {
-        if (!baseManifests.has(file))
+        if (!releaseManifestPaths.has(file))
           errors.push(
-            `release sync changed an unknown package manifest: ${file}`,
+            `release merge-back changed a manifest not changed on the published branch: ${file}`,
           );
-      } else if (
-        !isReleaseOutputPath(file) &&
-        !/^\.github\/pages\/assets\/(?:manifest\.json|reset\.css|astryx\.css|theme\.css)$/.test(
-          file,
-        )
-      ) {
-        errors.push(`release sync contains a non-bookkeeping path: ${file}`);
+      } else if (isReleaseOutputPath(file)) {
+        if (!releaseOutputPaths.has(file) && !releaseRenamePaths.has(file))
+          errors.push(
+            `release merge-back changed an output not changed on the published branch: ${file}`,
+          );
+      } else {
+        errors.push(`release merge-back contains a non-release path: ${file}`);
       }
     }
   }
-  for (const file of planned) {
-    if (baseChangesets.has(file) && headChangesets.has(file))
-      errors.push(`release sync did not delete frozen Changeset: ${file}`);
+
+  for (const [file, digest] of planned) {
+    if (baseChangesets.get(file) !== digest)
+      errors.push(
+        `release merge-back cannot verify frozen Changeset on current main: ${file}`,
+      );
+    if (headChangesets.has(file))
+      errors.push(
+        `release merge-back did not delete frozen Changeset: ${file}`,
+      );
   }
   for (const [file, digest] of baseChangesets) {
     if (planned.has(file)) continue;
     if (headChangesets.get(file) !== digest)
-      errors.push(`release sync changed post-cut Changeset: ${file}`);
+      errors.push(`release merge-back changed post-cut Changeset: ${file}`);
   }
   for (const file of headChangesets.keys()) {
     if (!baseChangesets.has(file))
       errors.push(
-        `release sync added a Changeset instead of preserving main: ${file}`,
+        `release merge-back added a Changeset instead of preserving main: ${file}`,
       );
   }
   for (const [file, digest] of releaseOutputs) {
     if (headOutputs.get(file) !== digest)
-      errors.push(`release sync output differs from published branch: ${file}`);
-  }
-  for (const [file, release] of releaseManifests) {
-    const error = releaseManifestChangeError({
-      file,
-      cut: cutManifests.get(file),
-      release,
-    });
-    if (error) errors.push(error);
+      errors.push(
+        `release merge-back output differs from published branch: ${file}`,
+      );
   }
 
-  // FR50: every main manifest moves to one synced version, never backward.
-  const mainVersions = new Set(
+  const baseVersions = new Set(
     [...baseManifests.values()]
       .filter(manifest => manifest && fixedNames.has(manifest.name))
       .map(manifest => manifest.version),
   );
-  if (mainVersions.size !== 1) {
+  const mainVersion = baseVersions.size === 1 ? [...baseVersions][0] : null;
+  if (
+    mainVersion === null ||
+    compareVersions(mainVersion, releaseVersion) === null ||
+    compareVersions(mainVersion, releaseVersion) < 0
+  )
     errors.push(
-      `release sync needs one fixed-group version on main; found ${[...mainVersions].join(', ') || 'none'}`,
+      `release merge-back requires current main at or above published v${releaseVersion}; found ${[...baseVersions].sort().join(', ') || 'none'}`,
     );
-    return errors;
-  }
-  const [mainVersion] = mainVersions;
-  const version = syncedMainVersion(mainVersion, releaseVersion);
-  if (version === null) {
-    errors.push(
-      `release sync cannot order main ${mainVersion} after release ${releaseVersion}`,
-    );
-    return errors;
-  }
-  for (const [file, base] of baseManifests) {
-    if (!base) continue;
-    const head = headManifests.get(file);
-    if (!head) {
-      errors.push(`release sync removed a package manifest: ${file}`);
+
+  for (const [file, release] of releaseManifests) {
+    const cut = cutManifests.get(file);
+    const error = releaseManifestChangeError({file, cut, release});
+    if (error) {
+      errors.push(error);
       continue;
     }
-    const expected = syncedManifest(base, {version, fixedNames});
-    if (canonicalJson(head) === canonicalJson(expected)) continue;
-    if (
-      fixedNames.has(base.name) &&
-      compareVersions(head.version, base.version) < 0
-    )
+    const expected = mergedReleaseManifest(
+      baseManifests.get(file),
+      cut,
+      release,
+      {mainVersion, fixedNames},
+    );
+    const head = headManifests.get(file);
+    if (!expected || !head) {
+      errors.push(`release merge-back cannot read manifest history: ${file}`);
+    } else if (canonicalJson(head) !== canonicalJson(expected)) {
       errors.push(
-        `release sync moves main backward: ${file} ${base.version} -> ${head.version}`,
+        `release merge-back manifest differs from the published branch delta: ${file}`,
       );
-    else if (head.version !== expected.version)
+    }
+  }
+  for (const [file, base] of baseManifests) {
+    if (releaseManifestPaths.has(file)) continue;
+    const head = headManifests.get(file);
+    if (!head)
+      errors.push(`release merge-back removed a package manifest: ${file}`);
+    else if (canonicalJson(head) !== canonicalJson(base))
       errors.push(
-        `release sync manifest has the wrong version: ${file} is ${head.version}, expected ${expected.version}`,
+        `release merge-back changed a current-main manifest outside the published branch: ${file}`,
       );
-    else
-      errors.push(`release sync changed non-version manifest fields: ${file}`);
+  }
+
+  const headVersions = new Set(
+    [...headManifests.values()]
+      .filter(manifest => manifest && fixedNames.has(manifest.name))
+      .map(manifest => manifest.version),
+  );
+  if (
+    mainVersion === null ||
+    headVersions.size !== 1 ||
+    [...headVersions][0] !== mainVersion
+  )
+    errors.push(
+      `release merge-back must preserve main's declaration ${mainVersion ?? 'unknown'}; found ${[...headVersions].sort().join(', ') || 'none'}`,
+    );
+  if (mainVersion) {
+    for (const manifest of headManifests.values()) {
+      if (!manifest) continue;
+      for (const field of VERSION_DEPENDENCY_FIELDS) {
+        for (const [name, spec] of Object.entries(manifest[field] ?? {})) {
+          if (
+            fixedNames.has(name) &&
+            EXACT_SPEC_RE.test(spec) &&
+            spec !== mainVersion
+          )
+            errors.push(
+              `release merge-back changed ${manifest.name} ${field}.${name} to ${spec}; expected preserved main declaration ${mainVersion}`,
+            );
+        }
+      }
+    }
   }
   return errors;
 }
 
 /**
- * FR46 — main's fixed-group version on a pull request into main.
+ * FR46/FR51 — main's fixed-group version on a pull request into main.
  *
  * Main carries a malleable plan until cut. It may move up or down, but always
- * remains one plain version strictly above the newest stable release.
+ * remains one plain version strictly above the newest stable release. When the
+ * base still equals that release after merge-back, the first plan may only be
+ * its patch successor (default) or its owner-named minor successor.
  *
  * @param {object} input
  * @param {string[]} input.fixed  trusted fixed-group package names
  * @param {string} input.releasedVersion  newest stable vX.Y.Z tag, without v
+ * @param {string|null} [input.activeCutVersion]  single active untagged/ongoing cut
+ * @param {Map<string, object|null>} input.baseManifests  name -> manifest at base
  * @param {Map<string, object|null>} input.headManifests  name -> manifest at head
- * @param {boolean} [input.allowBootstrapEqual]  one-time landing bridge when trusted main predates this validator
  * @returns {string[]}
  */
 function validateMainVersions({
   fixed,
   releasedVersion,
+  activeCutVersion = null,
+  baseManifests = new Map(),
   headManifests,
-  allowBootstrapEqual = false,
 }) {
   const errors = [];
   if (!VERSION_RE.test(releasedVersion ?? ''))
     errors.push('main version check needs the newest stable vX.Y.Z tag');
   const headVersions = new Set();
+  const baseVersions = new Set();
   for (const name of fixed) {
+    const base = baseManifests.get(name);
+    if (
+      base &&
+      isStableReleasePackage(base) &&
+      VERSION_RE.test(base.version ?? '')
+    )
+      baseVersions.add(base.version);
     const head = headManifests.get(name);
     if (!head || !isStableReleasePackage(head)) continue;
     if (!VERSION_RE.test(head.version ?? '')) {
@@ -711,11 +787,80 @@ function validateMainVersions({
   const order = VERSION_RE.test(releasedVersion ?? '')
     ? compareVersions(declaredVersion, releasedVersion)
     : null;
-  if (order < 0 || (order === 0 && !allowBootstrapEqual))
+  if (order === null || order <= 0)
     errors.push(
       `main declares ${declaredVersion}; it must stay strictly above newest stable v${releasedVersion}`,
     );
+  if (
+    activeCutVersion !== null &&
+    compareVersions(declaredVersion, activeCutVersion) < 0
+  )
+    errors.push(
+      `main declares ${declaredVersion}; it must not fall below active cut v${activeCutVersion}`,
+    );
+  if (
+    order > 0 &&
+    baseVersions.size === 1 &&
+    [...baseVersions][0] === releasedVersion &&
+    nextPlannedVersion(releasedVersion, declaredVersion) === null
+  )
+    errors.push(
+      `main's first plan after v${releasedVersion} must be patch successor ${patchSuccessor(releasedVersion)} by default or owner-named minor ${minorSuccessor(releasedVersion)}; found ${declaredVersion}`,
+    );
+  const fixedNames = new Set(fixed);
+  for (const manifest of headManifests.values()) {
+    if (!manifest) continue;
+    for (const field of VERSION_DEPENDENCY_FIELDS) {
+      for (const [name, spec] of Object.entries(manifest[field] ?? {})) {
+        if (
+          fixedNames.has(name) &&
+          EXACT_SPEC_RE.test(spec) &&
+          spec !== declaredVersion
+        )
+          errors.push(
+            `${manifest.name} ${field}.${name} pins ${spec}; main declares ${declaredVersion}`,
+          );
+      }
+    }
+  }
   return errors;
+}
+
+function canaryEligibility({fixed, releasedVersion, manifests}) {
+  const versions = new Set(
+    [...manifests.values()]
+      .filter(
+        manifest =>
+          fixed.has(manifest.name) && isStableReleasePackage(manifest),
+      )
+      .map(manifest => manifest.version),
+  );
+  if (versions.size !== 1 || !VERSION_RE.test([...versions][0] ?? ''))
+    return {
+      errors: [
+        `canary needs one plain fixed-group version; found ${[...versions].sort().join(', ') || 'none'}`,
+      ],
+      publish: false,
+      declaredVersion: null,
+      releasedVersion,
+    };
+  const [declaredVersion] = versions;
+  const order = compareVersions(declaredVersion, releasedVersion);
+  if (order === null || order < 0)
+    return {
+      errors: [
+        `canary declaration ${declaredVersion} is below newest stable v${releasedVersion}`,
+      ],
+      publish: false,
+      declaredVersion,
+      releasedVersion,
+    };
+  return {
+    errors: [],
+    publish: order > 0,
+    declaredVersion,
+    releasedVersion,
+  };
 }
 
 function packageManifestsByName(read, root) {
@@ -923,26 +1068,79 @@ async function main() {
     );
     return;
   }
+  if (command === 'next-plan-version') {
+    const releaseVersion = required(values, 'released-version');
+    const ownerVersion = values['owner-version'] ?? null;
+    const version = nextPlannedVersion(releaseVersion, ownerVersion);
+    if (version === null)
+      throw new Error(
+        `next plan after v${releaseVersion} must be patch successor ${patchSuccessor(releaseVersion)} or owner-named minor ${minorSuccessor(releaseVersion)}`,
+      );
+    console.log(version);
+    return;
+  }
+  if (command === 'canary-eligibility') {
+    const config = readJson(path.join(root, '.changeset/config.json'));
+    const fixed = new Set((config.fixed ?? []).flat());
+    const manifests = packageManifestsByName(file => {
+      const absolute = path.join(root, file);
+      return fs.existsSync(absolute) ? readJson(absolute) : null;
+    }, root);
+    const releasedVersion = latestStableVersion(root);
+    const receipt = canaryEligibility({fixed, releasedVersion, manifests});
+    if (receipt.errors.length) throw new Error(receipt.errors.join('\n'));
+    if (process.env.GITHUB_OUTPUT)
+      fs.appendFileSync(
+        process.env.GITHUB_OUTPUT,
+        `publish=${receipt.publish}\ndeclared-version=${receipt.declaredVersion}\nreleased-version=${releasedVersion}\n`,
+      );
+    console.log(
+      JSON.stringify({
+        declaredVersion: receipt.declaredVersion,
+        releasedVersion,
+        publish: receipt.publish,
+      }),
+    );
+    return;
+  }
   if (command === 'validate-main-version') {
     const base = required(values, 'base');
     const config = jsonAtRef(root, base, '.changeset/config.json');
     if (!config)
       throw new Error(`cannot read trusted fixed group from ${base}`);
     const releasedVersion = latestStableVersion(root);
-    const errors = validateMainVersions({
-      fixed: (config.fixed ?? []).flat(),
-      releasedVersion,
-      allowBootstrapEqual: values['allow-bootstrap-equal'] === 'true',
-      headManifests: packageManifestsByName(file => {
-        const absolute = path.join(root, file);
-        return fs.existsSync(absolute) ? readJson(absolute) : null;
-      }, root),
-    });
+    const activeBranches = listActiveBranches(root);
+    const activeCutVersion =
+      activeBranches.length === 1
+        ? markerAtRef(root, `origin/${activeBranches[0]}`).version
+        : null;
+    const errors = [];
+    if (activeBranches.length > 1)
+      errors.push(
+        `main version check requires at most one active cut; found ${activeBranches.join(', ')}`,
+      );
+    errors.push(
+      ...validateMainVersions({
+        fixed: (config.fixed ?? []).flat(),
+        releasedVersion,
+        activeCutVersion,
+        baseManifests: packageManifestsByName(
+          file => jsonAtRef(root, base, file),
+          root,
+        ),
+        headManifests: packageManifestsByName(file => {
+          const absolute = path.join(root, file);
+          return fs.existsSync(absolute) ? readJson(absolute) : null;
+        }, root),
+      }),
+    );
     if (errors.length) throw new Error(errors.join('\n'));
-    console.log(JSON.stringify({base, releasedVersion, valid: true}));
+    console.log(
+      JSON.stringify({base, releasedVersion, activeCutVersion, valid: true}),
+    );
     return;
   }
-  if (command === 'validate-sync') {
+  if (command === 'validate-merge-back') {
     const base = required(values, 'base');
     const releaseRef = required(values, 'release-ref');
     const marker = markerAtRef(root, releaseRef);
@@ -951,7 +1149,7 @@ async function main() {
     );
     const errors = validateIdentity(marker, plan);
     if (releaseRef !== `v${marker.version}`)
-      errors.push('release sync must use the immutable version tag');
+      errors.push('release merge-back must use the immutable version tag');
     const releaseHead = git(root, ['rev-parse', releaseRef]);
     const branchHead = git(root, ['rev-parse', `origin/${marker.branch}`]);
     if (releaseHead !== branchHead)
@@ -961,7 +1159,9 @@ async function main() {
       .filter(Boolean)
       .sort();
     if (activeBranches.length !== 1 || activeBranches[0] !== marker.branch)
-      errors.push('release sync requires exactly the marked active branch');
+      errors.push(
+        'release merge-back requires exactly the marked active branch',
+      );
     const raw = git(root, [
       'diff',
       '--name-status',
@@ -1002,8 +1202,8 @@ async function main() {
       releaseRef,
       releaseManifestFiles,
     );
-    // FR50 covers every package manifest on main, not only those the release
-    // bump touched: sync advances main's declared version everywhere.
+    // FR50 validates every current-main manifest so the release branch delta
+    // cannot overwrite post-cut main fields or decide the next version.
     const mainManifestFiles = git(root, [
       'ls-tree',
       '-r',
@@ -1017,7 +1217,7 @@ async function main() {
     const baseManifests = manifestMapAtRef(root, base, mainManifestFiles);
     const baseConfig = jsonAtRef(root, base, '.changeset/config.json');
     errors.push(
-      ...validateReleaseSync({
+      ...validateReleaseMergeBack({
         entries: raw ? raw.split('\n') : [],
         plan,
         baseChangesets: changesetMapAtRef(root, base),
@@ -1050,7 +1250,7 @@ async function main() {
   }
   if (command !== 'validate')
     throw new Error(
-      'command must be create, refresh, list-active, inspect-ref, validate-diff, validate-main-version, validate-sync, or validate',
+      'command must be create, refresh, list-active, inspect-ref, validate-diff, next-plan-version, canary-eligibility, validate-main-version, validate-merge-back, or validate',
     );
 
   const marker = readJson(path.join(root, RELEASE_DIR, MARKER_FILE));
@@ -1103,11 +1303,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 export {
   buildMarker,
   buildPlan,
+  canaryEligibility,
   canonicalJson,
   compareVersions,
   computePlanDigest,
   declaredVersionAtRef,
-  syncedMainVersion,
+  nextPlannedVersion,
   isStableReleasePackage,
   latestStableVersion,
   listActiveBranches,
@@ -1116,7 +1317,7 @@ export {
   validateRefMarker,
   validateReleaseDiff,
   validateReleaseState,
-  validateReleaseSync,
+  validateReleaseMergeBack,
   versionTagExists,
   writeAuthority,
 };
