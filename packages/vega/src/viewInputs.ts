@@ -3,7 +3,7 @@
 /**
  * @file viewInputs.ts
  * @input The VegaChart props that own the Vega View lifecycle
- * @output The ViewInputs type plus latch/compare helpers VegaChart rebuilds on
+ * @output The ViewInputs type plus cycle-safe structural snapshot/compare helpers
  * @position Internal utility; used by VegaChart to decide when to rebuild
  *
  * SYNC: When modified, update /packages/vega/README.md
@@ -144,11 +144,23 @@ function matchesSnapshot(snapshot: unknown, value: unknown): boolean {
     return Object.is(snapshot[OPAQUE], value);
   }
   if (Array.isArray(snapshot)) {
-    return (
-      Array.isArray(value) &&
-      snapshot.length === value.length &&
-      snapshot.every((item, index) => matchesSnapshot(item, value[index]))
-    );
+    if (!Array.isArray(value) || snapshot.length !== value.length) {
+      return false;
+    }
+    for (let index = 0; index < snapshot.length; index++) {
+      const snapshotHasItem = Object.prototype.hasOwnProperty.call(
+        snapshot,
+        index,
+      );
+      const valueHasItem = Object.prototype.hasOwnProperty.call(value, index);
+      if (
+        snapshotHasItem !== valueHasItem ||
+        (snapshotHasItem && !matchesSnapshot(snapshot[index], value[index]))
+      ) {
+        return false;
+      }
+    }
+    return true;
   }
   if (isPlainObject(snapshot)) {
     if (!isPlainObject(value)) {
