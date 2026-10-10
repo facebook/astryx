@@ -118,7 +118,7 @@ describe('route resolution', () => {
 
   it('opens every CLI integration guide at its section on a full page', () => {
     for (const route of docsTreeRoutes) {
-      if (!route.startsWith('cli/integrations/')) continue;
+      if (!route.startsWith('cli/integrations/')) {continue;}
       const slug = route.replaceAll('/', '-');
       expect(pageBySlug.has(slug), slug).toBe(false);
       expect(docRedirects[slug], slug).toMatch(

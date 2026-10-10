@@ -134,6 +134,12 @@ export {
 } from './patterns/breadcrumb';
 
 export {
+  COMBOBOX_PATTERN,
+  type ComboboxPopupRole,
+  type ComboboxStateFacts,
+} from './patterns/combobox';
+
+export {
   LANDMARK_PATTERN,
   type LandmarkRole,
   type LandmarkStateFacts,

@@ -1376,6 +1376,55 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The combobox contract's accessible name and its popup and
+      # active-descendant relationships are accessibility-tree facts that jsdom
+      # cannot observe. Run the contract's own fixture proof and the Selector
+      # binding whenever the PR scope names Selector, or the contract or its
+      # audit story changes. Its own --output directory; the JSON report is the
+      # head-bound record, uploaded next.
+      - name: Run Combobox accessibility contract
+        id: combobox-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: combobox-contract/report.json
+        run: |
+          should_run=false
+          COMPONENTS=$(node .github/scripts/a11y-pr-scope.mjs analysis.json)
+          case ",${COMPONENTS}," in
+            *,core/Selector,*) should_run=true ;;
+          esac
+          # The contract belongs to no package, so compare file names with the
+          # base. If the base cannot be fetched, run the evidence.
+          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
+            if git diff --name-only "$BASE_SHA" HEAD \
+              | grep -qE '^(internal/a11y-spec/src/patterns/combobox|apps/storybook/stories/ComboboxA11y)'; then
+              should_run=true
+            fi
+          else
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "Selector and the combobox contract are not in PR scope; skipping combobox evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/combobox.chromium.spec.ts \
+            packages/core/src/Selector/__tests__/Selector.combobox.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output combobox-contract-output
+
+      - name: Upload Combobox accessibility contract evidence
+        if: ${{ !cancelled() && steps.combobox-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: combobox-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: combobox-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The Schedule time grid owns scroll geometry — pinned header and gutter
       # alignment under classic scrollbars, inline scroll ownership, keyboard
       # reach and its focus ring — none of which exists in jsdom. Every
