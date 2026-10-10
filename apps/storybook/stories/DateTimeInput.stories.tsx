@@ -242,6 +242,7 @@ export const WithClearButton: Story = {
  * final frame is the regression endpoint: an empty field with no selected day.
  */
 export const ClearedCalendarSelection: Story = {
+  tags: ['visual-baseline'],
   render: args => {
     const [value, setValue] = useState<ISODateTimeString | undefined>(
       '2026-03-15T09:00' as ISODateTimeString,
