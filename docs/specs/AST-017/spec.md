@@ -1054,12 +1054,13 @@ stable publication happen there. Incompatible work is admissible only when the
 declared version is the minor successor of the latest stable release.
 
 Declaring the version on main makes the shape of each release an owner decision taken
-before the cut without turning an early estimate into a one-way ratchet. Comparing the
-malleable plan with the newest stable tag keeps every declaration releasable and
-canaries ahead of stable while main's pull-request checks remain independent of pending
-Changesets. Because the fixed group publishes one version, consuming a `[breaking]`
-Changeset on a branch that already declares the minor writes changelogs for that minor
-and never bumps again.
+before the cut without turning an early estimate into a one-way ratchet. The pull-request
+check requires the plan to be strictly greater than the newest stable tag; the cut
+additionally requires the patch or minor successor under FR48–FR49. This keeps canaries
+ahead of stable while allowing pre-cut plan adjustments and keeping main's pull-request
+checks independent of pending Changesets. Because the fixed group publishes one version,
+consuming a `[breaking]` Changeset on a branch that already declares the minor writes
+changelogs for that minor and never bumps again.
 
 A `[breaking]` Changeset can merge while main declares a patch. The release that
 would carry it refuses it at admission until the work becomes a deprecation or an
