@@ -969,13 +969,27 @@
     "VStackBasic",
     "VStackShowcase"
   ],
-  "@astryxdesign/theme-butter/theme": ["butter"],
-  "@astryxdesign/theme-chocolate/theme": ["chocolate"],
-  "@astryxdesign/theme-gothic/theme": ["gothic"],
-  "@astryxdesign/theme-matcha/theme": ["matcha"],
-  "@astryxdesign/theme-neutral/theme": ["neutral"],
-  "@astryxdesign/theme-stone/theme": ["stone"],
-  "@astryxdesign/theme-y2k/theme": ["y2k"],
+  "@astryxdesign/theme-butter/theme": [
+    "butter"
+  ],
+  "@astryxdesign/theme-chocolate/theme": [
+    "chocolate"
+  ],
+  "@astryxdesign/theme-gothic/theme": [
+    "gothic"
+  ],
+  "@astryxdesign/theme-matcha/theme": [
+    "matcha"
+  ],
+  "@astryxdesign/theme-neutral/theme": [
+    "neutral"
+  ],
+  "@astryxdesign/theme-stone/theme": [
+    "stone"
+  ],
+  "@astryxdesign/theme-y2k/theme": [
+    "y2k"
+  ],
   "@astryxdesign/cli/command": [
     "blog",
     "build",
@@ -995,10 +1009,6 @@
     "integration add",
     "integration pack",
     "integration verify",
-    "layout",
-    "layout check",
-    "layout expand",
-    "layout grammar",
     "manifest",
     "search",
     "swizzle",
@@ -1040,9 +1050,6 @@
     "integrationPackCheck",
     "integrationTemplateConflicts",
     "isError",
-    "layoutCheck",
-    "layoutExpand",
-    "layoutGrammar",
     "listThemes",
     "parseResponse",
     "search",
@@ -1083,5 +1090,8 @@
     "template-doc",
     "theme-doc"
   ],
-  "@astryxdesign/cli/enum": ["error-codes", "response-types"]
+  "@astryxdesign/cli/enum": [
+    "error-codes",
+    "response-types"
+  ]
 }

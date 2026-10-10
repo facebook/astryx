@@ -70,13 +70,6 @@ describe('command exit codes', () => {
     },
   );
 
-  it('bare `astryx layout` exits 1 in both modes, as documented', async () => {
-    const doc = commandDocs.find((d) => d.name === 'layout');
-    expect(doc.exitCodes.find((e) => e.code === 1)?.when).toMatch(/^no subcommand/);
-    expect((await runCli(['layout'])).status).toBe(1);
-    expect((await runCli(['layout', '--json'])).status).toBe(1);
-  });
-
   it('`astryx discover` with a blank query exits 1 only when packages are discovered', async () => {
     const doc = commandDocs.find((d) => d.name === 'discover');
     expect(doc.exitCodes.find((e) => e.code === 1)?.when).toMatch(/blank query when packages are discovered/);

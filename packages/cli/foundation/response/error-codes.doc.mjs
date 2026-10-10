@@ -36,7 +36,7 @@ export const doc = {
     {
       value: 'ERR_INVALID_OPTION',
       description:
-        'An unknown option was passed, --json was given to a command without JSON output, or layout --form got a value other than compact, outline, or auto.',
+        'An unknown option was passed, --json was given to a command without JSON output.',
     },
     {
       value: 'ERR_INVALID_ARGUMENT',

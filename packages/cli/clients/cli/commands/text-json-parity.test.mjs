@@ -394,23 +394,6 @@ const CASES = [
     args: ['integration', 'pack', '--check'],
     skipFieldChecks: true,
   },
-  // ── Layout command: remove these cases when the layout command is deleted ──
-  {
-    name: 'layout check',
-    args: ['layout', 'check', 'Button'],
-    skipFieldChecks: true,
-  },
-  {
-    name: 'layout expand',
-    args: ['layout', 'expand', 'Button'],
-    skipFieldChecks: true,
-  },
-  {
-    name: 'layout grammar',
-    args: ['layout', 'grammar'],
-    skipFieldChecks: true,
-  },
-  // ── End layout cases ──
   {
     name: 'manifest',
     args: ['manifest'],
