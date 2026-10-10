@@ -9,5 +9,5 @@ The CLI must not define or read an Astryx-owned environment variable (spec:AST-0
 
 Classification: incompatible-fix. IFIX-0001 / CLN-0007.
 Authority: spec:AST-017 FR14 (current): "The CLI MUST NOT define or read an Astryx-owned environment variable."
-Released victim: published 0.6.5 reads ASTRYX_AGENT_ID, ASTRYX_AGENT_SESSION_ID, and ASTRYX_AGENT_METADATA to attribute debug events to an agent and its session.
+Released victim: published 0.6.5 and every later release read ASTRYX_AGENT_ID, ASTRYX_AGENT_SESSION_ID, and ASTRYX_AGENT_METADATA to attribute debug events to an agent and its session.
 Migration: set `AGENT` and `AGENT_SESSION_ID`, which the CLI already reads, instead of the Astryx-prefixed variants. ASTRYX_AGENT_METADATA has no replacement variable.
