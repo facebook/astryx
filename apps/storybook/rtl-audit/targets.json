@@ -130,6 +130,15 @@
     }
   },
   {
+    "component": "DateInput",
+    "storyId": "core-dateinput--clearable",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "button[aria-label=\"Open calendar\"]",
+      "next": "button[aria-label=\"Clear Event date\"]"
+    }
+  },
+  {
     "component": "Carousel",
     "storyId": "core-carousel--default",
     "dims": ["D3"],

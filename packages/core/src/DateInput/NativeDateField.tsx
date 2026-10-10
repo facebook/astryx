@@ -26,7 +26,15 @@
  * - /packages/core/src/DateInput/NativeDateField.test.tsx (tests)
  */
 
-import {useCallback, useEffect, useId, useRef, useState} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useCalendarConstraints} from '../Calendar';
 import type {DateInputProps} from './DateInput';
@@ -53,6 +61,7 @@ import {
   colorVars,
   radiusVars,
   sizeVars,
+  spacingVars,
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
@@ -72,7 +81,7 @@ import {
 
 const styles = stylex.create({
   wrapper: {
-    gap: 8,
+    gap: spacingVars['--spacing-2'],
   },
   iconButton: {
     display: 'flex',
@@ -245,6 +254,7 @@ export function NativeDateField({
   disabledMessage,
   value,
   onChange,
+  changeAction,
   isLoading = false,
   min,
   max,
@@ -284,6 +294,13 @@ export function NativeDateField({
   const mergedInputRef = useMergedRefs(ref, inputRef);
   const inputGroup = useInputGroup();
 
+  const [, startTransition] = useTransition();
+  const [optimisticValue, setOptimisticValue] = useOptimistic(value);
+  const isBusy = isLoading || optimisticValue !== value;
+  // Keep the OS picker mounted and focusable while its own Action is pending.
+  // Native TimeInput follows the same pattern: commit guards block duplicates,
+  // while aria-busy and the Spinner communicate the save without detaching the
+  // platform picker from its input.
   const isEffectivelyDisabled = isDisabled || isLoading;
 
   // Disabled-reason tooltip, same contract as the other two surfaces: a
@@ -341,7 +358,8 @@ export function NativeDateField({
 
   // The control's own value is always ISO — the only form it accepts, and
   // what the picker reads and writes. `format` rides on the overlay instead.
-  const nativeValue = value && ISO_DATE.test(value) ? value : '';
+  const nativeValue =
+    optimisticValue && ISO_DATE.test(optimisticValue) ? optimisticValue : '';
   const isInputValid = rejectedValue === null;
 
   const formatValue = useCallback(
@@ -362,9 +380,25 @@ export function NativeDateField({
   const overlayText = nativeValue ? formatValue(nativeValue) : placeholder;
   const showsOverlay = !!overlayText && !(isFocused && isSegmentEditable);
 
+  const fireChange = useCallback(
+    (newValue: ISODateString | undefined) => {
+      if (isBusy) {
+        return;
+      }
+      onChange?.(newValue);
+      if (changeAction) {
+        startTransition(async () => {
+          setOptimisticValue(newValue);
+          await changeAction(newValue);
+        });
+      }
+    },
+    [isBusy, onChange, changeAction, startTransition, setOptimisticValue],
+  );
+
   const commitValue = useCallback(
     (newValue: string) => {
-      if (isEffectivelyDisabled) {
+      if (isEffectivelyDisabled || isBusy) {
         return;
       }
       // The same edit can arrive twice — React's synthetic change and the
@@ -377,7 +411,7 @@ export function NativeDateField({
       if (!newValue) {
         setRejectedValue(null);
         if (value !== undefined) {
-          onChange?.(undefined);
+          fireChange(undefined);
         }
         return;
       }
@@ -398,10 +432,10 @@ export function NativeDateField({
       setRejectedValue(null);
       const parsedISO = plainDateToISO(parsed);
       if (parsedISO !== value) {
-        onChange?.(parsedISO);
+        fireChange(parsedISO);
       }
     },
-    [value, onChange, isDateDisabled, isEffectivelyDisabled, locale],
+    [value, fireChange, isDateDisabled, isEffectivelyDisabled, isBusy, locale],
   );
 
   const handleChange = useCallback(
@@ -486,8 +520,8 @@ export function NativeDateField({
   // focus-restore after a clear would pop the picker the tap just dismissed —
   // and on iOS that reads as the clear having done nothing.
   const handleClear = useCallback(() => {
-    onChange?.(undefined);
-  }, [onChange]);
+    fireChange(undefined);
+  }, [fireChange]);
 
   const openPicker = useCallback(() => {
     if (isEffectivelyDisabled) {
@@ -580,7 +614,7 @@ export function NativeDateField({
           aria-invalid={
             status?.type === 'error' || !isInputValid ? 'true' : undefined
           }
-          aria-busy={isLoading || undefined}
+          aria-busy={isBusy || undefined}
           {...stylex.props(
             styles.input,
             showsOverlay && styles.inputTextHidden,
@@ -609,14 +643,14 @@ export function NativeDateField({
       <VisuallyHidden as="div" role="alert" aria-live="assertive">
         {!isInputValid ? t('@astryx.dateInput.invalidDate') : ''}
       </VisuallyHidden>
-      {hasClear && value !== undefined && !isEffectivelyDisabled && (
+      {hasClear && value !== undefined && !isEffectivelyDisabled && !isBusy && (
         <InputClearButton
           label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
           iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
-      {isLoading && <Spinner size="sm" />}
+      {isBusy && <Spinner size="sm" />}
       {statusIcon}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

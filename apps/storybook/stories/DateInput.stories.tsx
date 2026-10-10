@@ -440,7 +440,39 @@ export const WithSuccessStatus: Story = {
   },
 };
 
+export const OpenCalendarAudit: Story = {
+  tags: ['visual-theme-matrix'],
+  render: args => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    return <DateInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Appointment date',
+    presentation: 'popover',
+  },
+  play: async ({canvasElement}) => {
+    const input =
+      canvasElement.querySelector<HTMLInputElement>('[role="combobox"]');
+    if (input == null) {
+      throw new Error('DateInput audit fixture is missing its combobox');
+    }
+    input.click();
+    await new Promise<void>(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+    if (input.getAttribute('aria-expanded') !== 'true') {
+      throw new Error('DateInput audit fixture did not open its calendar');
+    }
+    if (canvasElement.ownerDocument.querySelector('[role="dialog"]') == null) {
+      throw new Error('DateInput audit fixture rendered no Calendar dialog');
+    }
+  },
+};
+
 export const AllVariations: Story = {
+  tags: ['visual-theme-matrix'],
   render: () => {
     const [value1, setValue1] = useState<ISODateString | undefined>(undefined);
     const [value2, setValue2] = useState<ISODateString | undefined>(

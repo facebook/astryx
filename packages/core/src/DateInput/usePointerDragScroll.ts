@@ -43,7 +43,7 @@
  * - /packages/core/src/DateInput/DateInputTouch.test.tsx
  */
 
-import {useEffect, useRef} from 'react';
+import {useEffect} from 'react';
 
 /**
  * Movement below this stays a click. A mouse shifts a pixel or two under the

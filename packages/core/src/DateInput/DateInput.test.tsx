@@ -16,6 +16,7 @@ import {
   fireEvent,
   waitFor,
   within,
+  act,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
@@ -220,6 +221,34 @@ describe('DateInput', () => {
     fireEvent.change(input, {target: {value: '03/15/2026'}});
 
     expect(onChange).toHaveBeenCalledWith('2026-03-15');
+  });
+
+  it('runs changeAction after onChange for a typed date', async () => {
+    const calls: string[] = [];
+    let resolveAction: () => void = () => {};
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          calls.push('changeAction');
+          resolveAction = resolve;
+        }),
+    );
+    const onChange = vi.fn(() => calls.push('onChange'));
+    render(
+      <DateInput
+        label="Date"
+        onChange={onChange}
+        changeAction={changeAction}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+
+    expect(calls).toEqual(['onChange', 'changeAction']);
+    expect(changeAction).toHaveBeenCalledExactlyOnceWith('2026-03-15');
+    expect(input).toHaveAttribute('aria-busy', 'true');
+    await act(async () => resolveAction());
   });
 
   // --- P0: Text input respects min/max/dateConstraints ---
