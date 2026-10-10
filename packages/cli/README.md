@@ -611,14 +611,16 @@ Do not guess that version in ordinary feature PRs. Add new codemods to
 - leave `transforms/next/README.md` in place; it documents the staging area and
   is never promoted.
 
-During the Version Packages PR, `pnpm version-packages` runs
-`scripts/promote-codemod-next.mjs` after `changeset version`. The script copies
-all staged entries except the README into `transforms/v<new-core-version>/`,
-registers that version in `packages/cli/assets/codemods/registry.mjs`, and clears
-the promoted files from `next`.
+During the release branch's Version Packages PR, `pnpm version-packages` runs
+`scripts/promote-codemod-next.mjs` after it writes changelogs under the version
+already declared at the cut. The script copies all staged entries except the
+README into `transforms/v<declared-core-version>/`, registers that version in
+`packages/cli/assets/codemods/registry.mjs`, and clears the promoted files from
+`next`.
 
-This mirrors Changesets: feature PRs stage migration work without knowing the
-future release number; the release PR assigns the exact version.
+Feature PRs stage migration work without guessing a version. The marked release
+branch assigns the exact cut declaration; the later merge-back carries those
+exact promoted files to main without regenerating them.
 
 ## Integrations
 
