@@ -454,6 +454,7 @@ export function toEntry(pkg) {
   /** @type {Record<string, unknown>} */
   const entry = {
     name: pkg.name,
+    package: pkg.name,
     category: pkg.category,
     components: pkg.components,
     version: pkg.version,

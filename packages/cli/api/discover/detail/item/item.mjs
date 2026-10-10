@@ -39,6 +39,7 @@ export function item(packages, packageName, itemName, options = {}) {
       if (Array.isArray(names) && names.includes(itemName)) {
         return {
           type: 'discover.item',
+          package: packageName,
           data: {
             package: packageName,
             ...(pkg.version ? {version: pkg.version} : {}),
@@ -59,6 +60,7 @@ export function item(packages, packageName, itemName, options = {}) {
   const shown = version ?? defaultVersion(catalog);
   return {
     type: 'discover.item',
+    package: packageName,
     data: {
       package: packageName,
       ...(shown ? {version: shown} : {}),

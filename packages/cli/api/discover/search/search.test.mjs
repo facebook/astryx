@@ -142,6 +142,39 @@ describe('discover.search leaf — empty query (parity with api/search)', () => 
   });
 });
 
+describe('discover.search leaf — typo tolerance (parity with api/search)', () => {
+  it('a one-edit miss on a 5+ letter name returns results, not ERR_NOT_FOUND', async () => {
+    // 'Alphe' is one substitution from 'Alpha' (distance 1, both >= 5 chars)
+    const res = await search(packages, 'Alphe', {});
+    expect(res.type).toBe('discover.search');
+    expect(res.data.matches.map(m => m.component)).toContain('Alpha');
+  });
+
+  it('a two-edit miss on an 8+ letter name returns results', async () => {
+    // 'AlpheCard' vs 'AlphaCard' is distance 1, well above 5 chars
+    const res = await search(packages, 'AlpheCard', {});
+    expect(res.type).toBe('discover.search');
+    expect(res.data.matches.map(m => m.component)).toContain('AlphaCard');
+  });
+
+  it('a short word with distance 1 still throws (below min-length guard)', async () => {
+    // 'Betz' vs 'Beta' is distance 1, but both are only 4 chars (< 5)
+    await expect(search(packages, 'Betz', {})).rejects.toMatchObject({
+      code: 'ERR_NOT_FOUND',
+    });
+  });
+
+  it('includes catalog items in fuzzy matches too', async () => {
+    const items = [
+      {package: '@acme/charts', kind: 'component', name: 'Alphabets', installed: false},
+    ];
+    // 'Alphabel' vs 'Alphabets' is distance 2, both >= 8 chars
+    const res = await search(packages, 'Alphabel', {items});
+    expect(res.type).toBe('discover.search');
+    expect(res.data.matches.map(m => m.component)).toContain('Alphabets');
+  });
+});
+
 describe('discover.search leaf across every kind and source', () => {
   /** @type {any[]} */
   const items = [

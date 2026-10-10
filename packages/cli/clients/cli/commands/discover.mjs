@@ -436,6 +436,7 @@ export function registerDiscover(program) {
                 : detail === 'compact'
                   ? formatCompact(docs, docs.name, '')
                   : formatFull(docs);
+            console.error(`package: ${result.package}`);
             emit(code(md));
             break;
           }

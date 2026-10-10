@@ -40,6 +40,7 @@
  * An installed integration.
  * @typedef {object} DiscoverListEntry
  * @property {string} name
+ * @property {string} package The npm package — always equal to `name`.
  * @property {string} category
  * @property {string[]} components
  * @property {string} [version]
@@ -85,6 +86,7 @@
  * astryx --json discover @scope/name[@version]
  * @typedef {object} DiscoverDetailResponse
  * @property {'discover.detail'} type
+ * @property {string} package The npm package this result is about.
  * @property {DiscoverListEntry & {
  *   installed: boolean,
  *   installedVersion?: string,
@@ -105,6 +107,7 @@
  * astryx --json discover @scope/name/Component
  * @typedef {object} DiscoverDetailDocResponse
  * @property {'discover.detail.doc'} type
+ * @property {string} package The npm package that owns the component.
  * @property {import('@astryxdesign/cli/authoring').ComponentDoc} data
  */
 
@@ -113,6 +116,7 @@
  * installed component.
  * @typedef {object} DiscoverItemResponse
  * @property {'discover.item'} type
+ * @property {string} package The npm package that owns the item.
  * @property {{
  *   package: string,
  *   version?: string,
