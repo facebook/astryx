@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "version": "0.7.0",
+  "state": "draft",
+  "releaseOwner": "cixzhang",
+  "approval": {
+    "requiredRole": "release-owner",
+    "requiredApprover": "cixzhang",
+    "approvedBy": null,
+    "approvedAt": null
+  },
+  "finalPatchBaseline": {
+    "version": "0.6.8",
+    "tag": "v0.6.8",
+    "commit": "b5cec38ed997df1dc132a92830e549cb7a83a47a",
+    "release": "https://github.com/facebook/astryx/releases/tag/v0.6.8"
+  },
+  "cleanupItems": [
+    {
+      "lifecycleId": "DEP-0001",
+      "cleanupId": "CLN-0001",
+      "authority": "spec:AST-056/FR7",
+      "authorityPath": "docs/specs/AST-056-search-prop-shape/spec.md",
+      "surface": "@astryxdesign/core Tokenizer.emptySearchResultsText",
+      "migration": "Rename emptySearchResultsText to emptySearchText.",
+      "codemod": "rename-empty-search-results-text",
+      "downstreamProof": "Latest-stable old-name fixture plus positive, negative, and second-run codemod fixtures.",
+      "rollback": "Restore the deprecated alias with emptySearchText retaining precedence."
+    },
+    {
+      "lifecycleId": "DEP-0002",
+      "cleanupId": "CLN-0002",
+      "authority": "spec:AST-056/FR7",
+      "authorityPath": "docs/specs/AST-056-search-prop-shape/spec.md",
+      "surface": "@astryxdesign/core Typeahead.emptySearchResultsText",
+      "migration": "Rename emptySearchResultsText to emptySearchText.",
+      "codemod": "rename-empty-search-results-text",
+      "downstreamProof": "Latest-stable old-name fixture plus positive, negative, and second-run codemod fixtures.",
+      "rollback": "Restore the deprecated alias with emptySearchText retaining precedence."
+    },
+    {
+      "lifecycleId": "DEP-0003",
+      "cleanupId": "CLN-0003",
+      "authority": "spec:AST-056/FR7",
+      "authorityPath": "docs/specs/AST-056-search-prop-shape/spec.md",
+      "surface": "@astryxdesign/core BaseTypeahead.emptySearchResultsText",
+      "migration": "Rename emptySearchResultsText to emptySearchText.",
+      "codemod": "rename-empty-search-results-text",
+      "downstreamProof": "Latest-stable old-name fixture plus positive, negative, and second-run codemod fixtures.",
+      "rollback": "Restore the deprecated alias with emptySearchText retaining precedence."
+    },
+    {
+      "lifecycleId": "DEP-0004",
+      "cleanupId": "CLN-0004",
+      "authority": "spec:AST-056/FR7",
+      "authorityPath": "docs/specs/AST-056-search-prop-shape/spec.md",
+      "surface": "@astryxdesign/core ChatComposerTrigger.emptySearchResultsText",
+      "migration": "Rename the trigger key emptySearchResultsText to emptySearchText.",
+      "codemod": "rename-empty-search-results-text",
+      "downstreamProof": "Latest-stable old-name fixture plus positive, negative, and second-run codemod fixtures, including uncertain spread/computed-key TODO output.",
+      "rollback": "Restore the deprecated trigger key with emptySearchText retaining precedence."
+    }
+  ],
+  "compatibleFixes": [],
+  "releaseMetadataDeltas": [
+    "fixed-group versions and exact internal pins",
+    "generated changelogs and release notes",
+    "lockfile integrity",
+    "tag, provenance, digests, build timestamps, and source maps"
+  ],
+  "exactMainGates": [
+    "canonical full-scope release-check on the exact cut candidate",
+    "release visual regression",
+    "release accessibility",
+    "release RTL",
+    "final-patch-to-minor equivalence receipt with unclassifiedDeltas empty",
+    "human editorial approval of changelogs, release notes, and the required public blog"
+  ],
+  "releaseNotes": {
+    "cleanupSection": "List each approved cleanup separately from compatible fixes.",
+    "migrationSection": "Name the released old usage, replacement, cleanup id, and codemod or exact manual route.",
+    "compatibleFixesSection": "Keep compatible fixes separate from cleanup items."
+  },
+  "rollback": {
+    "strategy": "forward-fix",
+    "normal": "Restore compatibility aliases or the prior safe compatibility mode in a patch release.",
+    "criticalHarm": "Follow spec:AST-017/FR35 and never restore known harmful behavior."
+  },
+  "recovery": {
+    "partialPublication": "Resume the same immutable bytes and source identity.",
+    "failedGate": "Hold the cut, repair on the release branch through review, and rerun every affected exact-head gate.",
+    "manifestChange": "Any cleanup-item change after freeze invalidates this manifest and requires a new release-owner approval."
+  }
+}
