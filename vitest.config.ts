@@ -18,7 +18,7 @@
  * SYNC: When modified, update this header and root README.md
  */
 
-import path from 'node:path';
+// import path from 'node:path';
 import {configDefaults, defineConfig} from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
