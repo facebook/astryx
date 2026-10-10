@@ -104,7 +104,7 @@ CSS properties, or audit mechanics.
 | migration        | Non-mechanical: a caller that wants the fade adds its own transition                                                                                                                   |
 | codemod          | None: the fade has no prop to pin, and its tokenized timing is not caller source                                                                                                       |
 | downstream       | Hook docs and stories show the immediate default and `hoverDelay`                                                                                                                      |
-| transition       | waived by owner for 0.7.0 (2026-10-10)                                                                                                                                                 |
+| transition       | no prior transition                                                                                                                                                                    |
 | state            | `proposed`                                                                                                                                                                             |
 | open decision    | The motion rule that makes frequent triggers immediate is draft here; it needs an approved decision and a direct owner for the hook                                                    |
 | target plan      | `CLN-0017` in the next minor release                                                                                                                                                   |

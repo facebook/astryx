@@ -181,7 +181,7 @@ name a complete registry could leave out.
 | migration        | Non-mechanical: draw `upload` artwork in the registry's style                                                 |
 | codemod          | None: icon artwork is bespoke to each theme and cannot be synthesized                                         |
 | downstream       | The default registry, every bundled theme, and every CLI theme template supply `upload`                       |
-| transition       | waived by owner for 0.7.0 (2026-10-10)                                                                        |
+| transition       | no prior transition                                                                                           |
 | state            | `deprecated`                                                                                                  |
 | open decision    | None beyond listing `CLN-0021` in the minor plan                                                              |
 | target plan      | `CLN-0021` in the next minor release, as FR6 schedules                                                        |
