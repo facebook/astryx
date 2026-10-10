@@ -379,6 +379,7 @@ describe('createMarkdownFenceTransform', () => {
     );
     const pending = new Promise<never>(() => {});
     function Suspending(): never {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw pending;
     }
     const plugin = createFencePlugin('suspending-override-fences', () => (
