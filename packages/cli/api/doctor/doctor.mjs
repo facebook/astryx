@@ -347,6 +347,25 @@ export async function checkConfig(ctx) {
 }
 
 /**
+ * Why no integration is implicitly linked, from what actually loaded. A
+ * configured integration is named in astryx.config; the package's own manifest
+ * loads as itself (`__local`). Only the first may be described as named in
+ * astryx.config: a package with no config that loads its own manifest has no
+ * config file to name it.
+ *
+ * @param {Array<{name?: string, __local?: boolean}>} integrations loaded, none autolinked
+ * @returns {string}
+ */
+function describeNoImplicit(integrations) {
+  const own = integrations.filter(integration => integration.__local);
+  const configured = integrations.length - own.length;
+  const ownNames = own.map(integration => integration.name ?? 'this package').join(', ');
+  if (own.length === 0) return 'None — every loaded integration is named in astryx.config.';
+  if (configured === 0) return `None — the only loaded integration is this package's own manifest (${ownNames}).`;
+  return `None — every loaded integration is named in astryx.config or is this package's own manifest (${ownNames}).`;
+}
+
+/**
  * Check 6 — integrations that are loaded without an astryx.config entry.
  *
  * The CLI autolinks an installed dependency that ships an
@@ -396,7 +415,7 @@ export function checkImplicitIntegrations(ctx) {
       status: 'info',
       message:
         (ctx.integrations.length > 0
-          ? 'None — every loaded integration is named in astryx.config.'
+          ? describeNoImplicit(ctx.integrations)
           : unreadable
             ? 'None loaded.'
             : 'None — no installed dependency ships an astryx.integration.* manifest.') +

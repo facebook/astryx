@@ -26,7 +26,8 @@ import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
 import {addDocHelp, markReportsResult} from './lib/define-command.mjs';
 import {doc as manifestDoc} from './commands/manifest.doc.mjs';
-import {isAstryxInitialized} from '../../foundation/agent-docs/agent-docs.mjs';
+import {isAstryxInitialized, isAstryxPromptInReach} from '../../foundation/agent-docs/agent-docs.mjs';
+import {CLI_ROOT} from '../../foundation/fs/paths.mjs';
 import * as debug from '../../foundation/debug/index.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -280,6 +281,26 @@ const commands = [
 ];
 
 const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
+
+/**
+ * Is `cwd` inside the CLI's own source checkout while the CLI runs from it?
+ * An installed CLI always lives under `node_modules`; a CLI running from source
+ * does not, and its checkout is the pnpm workspace that holds it. Developing
+ * Astryx is not an app to set up, so the setup nudge stays quiet there.
+ * @param {string} cwd
+ * @returns {boolean}
+ */
+function inOwnSourceCheckout(cwd) {
+  if (CLI_ROOT.split(path.sep).includes('node_modules')) return false;
+  let checkout = CLI_ROOT;
+  while (!fs.existsSync(path.join(checkout, 'pnpm-workspace.yaml'))) {
+    const parent = path.dirname(checkout);
+    if (parent === checkout) return false;
+    checkout = parent;
+  }
+  const rel = path.relative(checkout, path.resolve(cwd));
+  return rel !== '..' && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel);
+}
 /** An integration package's manifest: the package is not an app to set up. */
 const INTEGRATION_MANIFEST_FILES = [
   'astryx.integration.ts',
@@ -531,8 +552,9 @@ export async function createProgram() {
 
   /**
    * Enforcement layer 3 — setup nudge. If this project hasn't run `astryx init`
-   * yet (no Astryx marker in any agent-doc file — see isAstryxInitialized), remind
-   * the user/agent that setup is missing.
+   * yet (no Astryx marker in any agent-doc file between the project and its
+   * repository root — see isAstryxPromptInReach), remind the user/agent that
+   * setup is missing.
    *
    * Uses `preAction` (not postAction) so it fires for EVERY valid command — even
    * ones whose action errors or calls process.exit (postAction is skipped then).
@@ -542,7 +564,8 @@ export async function createProgram() {
    * consumers parse stdout, not stderr — a stderr nudge would not reach them anyway.
    * The core/cli postinstall layers already nudge at install time regardless of
    * --json; a machine-readable nudge could later be an envelope field. Also skipped
-   * for the installer commands themselves and outside a project (no package.json).
+   * for the installer commands themselves, outside a project (no package.json),
+   * and inside the CLI's own source checkout when it runs from there.
    */
   program.hook('preAction', (thisCommand, actionCommand) => {
     try {
@@ -552,7 +575,8 @@ export async function createProgram() {
       if (!fs.existsSync(path.join(cwd, 'package.json'))) return; // not a project
       // An integration package is not an app: `init` is not its next step.
       if (INTEGRATION_MANIFEST_FILES.some(file => fs.existsSync(path.join(cwd, file)))) return;
-      if (isAstryxInitialized(cwd)) return; // already set up — stay quiet
+      if (inOwnSourceCheckout(cwd)) return; // developing Astryx itself, not an app
+      if (isAstryxPromptInReach(cwd)) return; // already set up — stay quiet
       // Same wording as the core/cli postinstall nudges. #4151's getCliInvocation()
       // renders the correct form for THIS project — scoped `npx @astryxdesign/cli`
       // one-off, or `<pm> astryx` when installed — never the bare `npx astryx` footgun.

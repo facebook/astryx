@@ -7,7 +7,7 @@
  * installed as a project dependency and the project hasn't run init yet, print a
  * one-line next-step so agents/humans discover it.
  *
- * Reuses the ONE setup check (isAstryxInitialized) from the dependency-free leaf
+ * Reuses the ONE setup check (isAstryxPromptInReach) from the dependency-free leaf
  * ../foundation/agent-docs/agent-doc-state.mjs — node builtins only, so it is
  * genuinely safe to load at install time (importing agent-docs.mjs would drag in
  * the full CLI module graph). Non-interactive, never fails the install, and
@@ -41,10 +41,10 @@ async function projectIsSetUp(root) {
     // Dep-free leaf (node builtins only) — safe to load mid-install. NOT
     // agent-docs.mjs, whose static graph (component discovery, package-manager
     // detection, …) isn't guaranteed importable yet during this postinstall.
-    const {isAstryxInitialized} = await import(
+    const {isAstryxPromptInReach} = await import(
       '../foundation/agent-docs/agent-doc-state.mjs'
     );
-    return isAstryxInitialized(root);
+    return isAstryxPromptInReach(root);
   } catch {
     return false; // best-effort — if the check can't load, fall through and nudge
   }
