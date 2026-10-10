@@ -13,10 +13,10 @@
  *   3. Every changeset body must credit at least one @contributor.
  *   4. Frontmatter packages must be real, publishable, non-ignored packages.
  *
- * It checks each Changeset's format and nothing about which release will carry
- * it. Main's package.json declares the next planned version, and only a release
- * branch admits Changesets against it (spec:AST-017 FR46-FR50; see
- * release-admission.mjs and release/version-packages.mjs).
+ * It also enforces the declared-tier admission gate on main (spec:AST-017
+ * FR46/FR48): while 0.x, a pending [breaking] Changeset is admissible only
+ * when the fixed group already declares the minor successor. The Changeset
+ * never promotes a patch plan into a minor.
  *
  * Exits 1 with a readable report on any violation. config.json and README.md
  * are skipped.
@@ -73,11 +73,11 @@ function isChangesetFile(name) {
  *
  * @param {string} file       display name (for messages)
  * @param {string} contents   raw changeset markdown
- * @param {object} ctx        {pre1, pubNames:Set, allNames:Set}
+ * @param {object} ctx        {pre1, pubNames:Set, allNames:Set, declaredTier, declaredVersion}
  * @returns {string[]}        list of human-readable problems (empty = valid)
  */
 function validateChangeset(file, contents, ctx) {
-  const {pre1, pubNames, allNames} = ctx;
+  const {pre1, pubNames, allNames, declaredTier, declaredVersion} = ctx;
   const problems = [];
 
   const fm = parseFrontmatter(contents);
@@ -92,6 +92,11 @@ function validateChangeset(file, contents, ctx) {
   // [category] — [breaking] -> minor, everything else -> patch.
   const parsed = parseEntry(fm.summary);
   const expected = parsed.category === 'breaking' ? 'minor' : 'patch';
+  if (pre1 && parsed.category === 'breaking' && declaredTier === 'patch')
+    problems.push(
+      `${file}: [breaking] cannot merge while main declares patch ${declaredVersion}. ` +
+        'Plan the minor first, or keep the change compatible through deprecation.',
+    );
 
   for (const [name, type] of Object.entries(fm.releases)) {
     if (!allNames.has(name)) {
@@ -143,11 +148,11 @@ function validateChangeset(file, contents, ctx) {
 }
 
 /**
- * Validate every pending Changeset at `root`. Reads no release version and no
- * tag: format, category, bump coupling, and package names only.
+ * Validate every pending Changeset at `root`. Reads the fixed group's declaration
+ * so a patch plan cannot admit [breaking] work.
  *
  * @param {string} root
- * @returns {{files: string[], problems: string[], pre1: boolean}}
+ * @returns {{files: string[], problems: string[], pre1: boolean, declaredVersion: string|null, declaredTier: string|null}}
  */
 function checkRepository(root) {
   const config = readConfig(root);
@@ -155,10 +160,26 @@ function checkRepository(root) {
   const pub = pkgs.filter(
     p => !p.private && !(config.ignore || []).includes(p.name),
   );
+  const pre1 = pub.every(p => /^0\./.test(String(p.version || '0')));
+  const fixedNames = new Set((config.fixed ?? []).flat());
+  const declaredVersions = new Set(
+    pub.filter(pkg => fixedNames.has(pkg.name)).map(pkg => pkg.version),
+  );
+  const declaredVersion =
+    declaredVersions.size === 1 ? [...declaredVersions][0] : null;
+  const declaredMatch = /^(\d+)\.(\d+)\.(\d+)$/.exec(declaredVersion ?? '');
+  const declaredTier =
+    pre1 && declaredMatch
+      ? Number(declaredMatch[3]) === 0
+        ? 'minor'
+        : 'patch'
+      : null;
   const ctx = {
     pubNames: new Set(pub.map(p => p.name)),
     allNames: new Set(pkgs.map(p => p.name)),
-    pre1: pub.every(p => /^0\./.test(String(p.version || '0'))),
+    pre1,
+    declaredTier,
+    declaredVersion,
   };
 
   const dir = path.join(root, '.changeset');
@@ -168,11 +189,18 @@ function checkRepository(root) {
     const contents = fs.readFileSync(path.join(dir, f), 'utf8');
     problems.push(...validateChangeset(f, contents, ctx));
   }
-  return {files, problems, pre1: ctx.pre1};
+  return {
+    files,
+    problems,
+    pre1: ctx.pre1,
+    declaredVersion,
+    declaredTier,
+  };
 }
 
 function main() {
-  const {files, problems, pre1} = checkRepository(ROOT);
+  const {files, problems, pre1, declaredVersion, declaredTier} =
+    checkRepository(ROOT);
   if (problems.length) {
     console.error(
       `\n✗ check:changesets found ${problems.length} problem(s):\n`,
@@ -183,7 +211,10 @@ function main() {
   }
 
   console.log(
-    `✓ check:changesets — ${files.length} changeset(s) valid${pre1 ? ' (0.x: [breaking] -> minor, [experimental] and other categories -> patch)' : ''}`,
+    `✓ check:changesets — ${files.length} changeset(s) valid${pre1 ? ' (0.x: [breaking] -> minor, [experimental] and other categories -> patch)' : ''}` +
+      (declaredTier
+        ? `; main declares ${declaredVersion} (${declaredTier} plan)`
+        : ''),
   );
 }
 
