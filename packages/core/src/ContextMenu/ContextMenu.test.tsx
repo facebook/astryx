@@ -426,6 +426,99 @@ describe('ContextMenu', () => {
   });
 });
 
+describe('ContextMenu outside dismissal', () => {
+  const finger = (pointerId: number) => ({pointerType: 'touch', pointerId});
+
+  // Holds a finger on the trigger until the long-press opens the menu. Only
+  // the long-press delay is faked.
+  function longPress(trigger: HTMLElement, pointerId: number) {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    try {
+      fireEvent.pointerDown(trigger, finger(pointerId));
+      fireEvent.touchStart(trigger, {touches: [{clientX: 20, clientY: 20}]});
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  }
+
+  // What a browser sends after a touch: the lift, then compatibility mouse
+  // events aimed at the element the finger held.
+  function lift(target: HTMLElement, pointerId: number) {
+    fireEvent.pointerUp(target, finger(pointerId));
+    fireEvent.touchEnd(target);
+    fireEvent.mouseDown(target);
+    fireEvent.mouseUp(target);
+    fireEvent.click(target);
+  }
+
+  function renderMenu(onOpenChange: (isOpen: boolean) => void) {
+    render(
+      <>
+        <ContextMenu
+          items={[{label: 'Cut'}, {label: 'Copy'}]}
+          data-testid="ctx"
+          onOpenChange={onOpenChange}>
+          <div>Long-press me</div>
+        </ContextMenu>
+        <button type="button">Outside</button>
+      </>,
+    );
+    return {
+      trigger: screen.getByTestId('ctx'),
+      outside: screen.getByRole('button', {name: 'Outside'}),
+    };
+  }
+
+  it('the long press that opened the menu does not close it, mid-hold or as it lifts', () => {
+    const onOpenChange = vi.fn<(isOpen: boolean) => void>();
+    const {trigger} = renderMenu(onOpenChange);
+    longPress(trigger, 1);
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    // iOS: a compatibility mousedown while the finger is still down.
+    fireEvent.mouseDown(trigger);
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    // Chromium: the compatibility events that follow the lift.
+    lift(trigger, 1);
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+  });
+
+  it('a long press that moves the open menu keeps it open as it lifts', () => {
+    const onOpenChange = vi.fn<(isOpen: boolean) => void>();
+    const {trigger} = renderMenu(onOpenChange);
+    fireEvent.contextMenu(trigger, {clientX: 50, clientY: 15, detail: 1});
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    longPress(trigger, 2);
+    lift(trigger, 2);
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+  });
+
+  it('a tap outside closes the menu; a scroll that starts outside leaves it open', () => {
+    const onOpenChange = vi.fn<(isOpen: boolean) => void>();
+    const {trigger, outside} = renderMenu(onOpenChange);
+    fireEvent.contextMenu(trigger, {clientX: 50, clientY: 15, detail: 1});
+    // The browser takes this finger for a scroll and cancels it.
+    fireEvent.pointerDown(outside, finger(3));
+    fireEvent.pointerCancel(outside, finger(3));
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    fireEvent.pointerDown(outside, finger(4));
+    lift(outside, 4);
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('a mouse press outside closes the menu', () => {
+    const onOpenChange = vi.fn<(isOpen: boolean) => void>();
+    const {trigger, outside} = renderMenu(onOpenChange);
+    fireEvent.contextMenu(trigger, {clientX: 50, clientY: 15, detail: 1});
+    fireEvent.pointerDown(outside, {pointerType: 'mouse', pointerId: 1});
+    fireEvent.mouseDown(outside);
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+});
+
 describe('ContextMenu items', () => {
   it('renders items with labels', () => {
     render(
