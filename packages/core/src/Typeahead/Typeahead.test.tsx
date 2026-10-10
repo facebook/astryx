@@ -239,7 +239,7 @@ describe('BaseTypeahead', () => {
         value={null}
         onChange={() => {}}
         debounceMs={0}
-        emptySearchResultsText="No results found"
+        emptySearchText="No results found"
       />,
     );
     const input = screen.getByRole('combobox');
@@ -260,7 +260,7 @@ describe('BaseTypeahead', () => {
         value={null}
         onChange={() => {}}
         debounceMs={0}
-        emptySearchResultsText="No results found"
+        emptySearchText="No results found"
       />,
     );
     const input = screen.getByRole('combobox');
@@ -2186,9 +2186,9 @@ describe('the value is bounded by the content lane', () => {
 });
 
 // `emptySearchResultsText` was renamed to `emptySearchText` and widened from
-// `string` to `ReactNode` (`spec:AST-056` FR1). It is a released prop with a
-// victim, so the replacement ships first and the old name keeps working
-// through the overlap (`spec:AST-017` FR28, FR29).
+// `string` to `ReactNode` (`spec:AST-056` FR1). The overlap ended in a minor
+// release (`CLN-0001`–`CLN-0004`, `spec:AST-017` FR31): the old name is no
+// longer part of the type and is no longer read.
 describe('emptySearchText rename', () => {
   function searchForNothing() {
     fireEvent.change(screen.getByRole('combobox'), {
@@ -2219,8 +2219,10 @@ describe('emptySearchText rename', () => {
       });
     });
 
-    it('keeps the deprecated name working, and says it is deprecated', async () => {
+    it('no longer reads the removed emptySearchResultsText (CLN-0002)', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      // The unknown prop reaches the root element, which React reports.
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       render(
         <Typeahead
           label="Fruit"
@@ -2228,47 +2230,21 @@ describe('emptySearchText rename', () => {
           value={null}
           onChange={() => {}}
           debounceMs={0}
+          // @ts-expect-error -- removed in the minor release (CLN-0002)
           emptySearchResultsText="Nothing ripe"
         />,
       );
       searchForNothing();
 
       await waitFor(() => {
-        expect(screen.getByText('Nothing ripe')).toBeInTheDocument();
+        expect(screen.getByText('No results found')).toBeInTheDocument();
       });
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Typeahead: `emptySearchResultsText` is deprecated; use `emptySearchText`',
-        ),
+      expect(screen.queryByText('Nothing ripe')).not.toBeInTheDocument();
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('is deprecated'),
       );
       warn.mockRestore();
-    });
-
-    it('lets the new name win when both are set, and warns', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      render(
-        <Typeahead
-          label="Fruit"
-          searchSource={fruitSource}
-          value={null}
-          onChange={() => {}}
-          debounceMs={0}
-          emptySearchResultsText="Old copy"
-          emptySearchText="New copy"
-        />,
-      );
-      searchForNothing();
-
-      await waitFor(() => {
-        expect(screen.getByText('New copy')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('Old copy')).not.toBeInTheDocument();
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Typeahead: `emptySearchResultsText` and `emptySearchText` are both set',
-        ),
-      );
-      warn.mockRestore();
+      error.mockRestore();
     });
   });
 
@@ -2298,14 +2274,16 @@ describe('emptySearchText rename', () => {
       });
     });
 
-    it('announces the deprecated name unchanged', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    it('no longer announces the removed emptySearchResultsText (CLN-0003)', async () => {
+      // The unknown prop reaches the root element, which React reports.
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       render(
         <BaseTypeahead
           searchSource={fruitSource}
           value={null}
           onChange={() => {}}
           debounceMs={0}
+          // @ts-expect-error -- removed in the minor release (CLN-0003)
           emptySearchResultsText="Nothing ripe"
         />,
       );
@@ -2314,9 +2292,13 @@ describe('emptySearchText rename', () => {
       await waitFor(() => {
         expect(
           document.querySelector('[data-astryx-live-region="polite"]'),
-        ).toHaveTextContent('Nothing ripe');
+        ).toHaveTextContent('No results found');
       });
-      warn.mockRestore();
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]')
+          ?.textContent,
+      ).not.toContain('Nothing ripe');
+      error.mockRestore();
     });
   });
 });

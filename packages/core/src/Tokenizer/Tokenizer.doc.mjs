@@ -181,13 +181,6 @@ export const docs = {
       default: "'No results found'",
     },
     {
-      name: 'emptySearchResultsText',
-      type: 'string',
-      description:
-        'Deprecated: renamed to emptySearchText, which takes a ReactNode rather than a string, so every existing value stays valid. Still works exactly as released; emptySearchText wins when both are set.',
-      default: "'No results found'",
-    },
-    {
       name: 'hasAutoFocus',
       type: 'boolean',
       description: 'Auto-focus the input on mount.',
@@ -534,13 +527,6 @@ export const docsZh = {
       default: "'No results found'",
     },
     {
-      name: 'emptySearchResultsText',
-      type: 'string',
-      description:
-        '已弃用：改名为 emptySearchText，其类型由 string 放宽为 ReactNode，原有取值全部仍然有效。仍按已发布行为工作；两者同时设置时以 emptySearchText 为准。',
-      default: "'No results found'",
-    },
-    {
       name: 'hasAutoFocus',
       type: 'boolean',
       description:
@@ -773,8 +759,6 @@ export const docsDense = {
     minQueryLength:
       'Min query length before searching. Menu stays closed below it, except the hasCreate entry.',
     emptySearchText: 'Content when the query matched nothing. ReactNode.',
-    emptySearchResultsText:
-      'deprecated, use emptySearchText (ReactNode). still works as released; emptySearchText wins if both set.',
     hasAutoFocus: 'Auto-focus input on mount.',
     size: 'Input+token size.',
     debounceMs: 'Search debounce delay ms. 0 for sync sources.',

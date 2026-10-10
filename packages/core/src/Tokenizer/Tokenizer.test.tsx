@@ -1760,9 +1760,9 @@ describe('Tokenizer end-lane reserve', () => {
 });
 
 // `emptySearchResultsText` was renamed to `emptySearchText` and widened from
-// `string` to `ReactNode` (`spec:AST-056` FR1). It is a released prop with a
-// victim, so the replacement ships first and the old name keeps working
-// through the overlap (`spec:AST-017` FR28, FR29).
+// `string` to `ReactNode` (`spec:AST-056` FR1). The overlap ended in a minor
+// release (`CLN-0001`–`CLN-0004`, `spec:AST-017` FR31): the old name is no
+// longer part of the type and is no longer read.
 describe('Tokenizer emptySearchText', () => {
   async function searchForNothing() {
     const input = screen.getByRole('combobox');
@@ -1845,33 +1845,6 @@ describe('Tokenizer emptySearchText', () => {
     ).not.toContain('→');
   });
 
-  it('treats an explicit null as not given, falling through to the old name', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    render(
-      <Tokenizer
-        label="People"
-        searchSource={userSource}
-        value={[]}
-        onChange={() => {}}
-        debounceMs={0}
-        emptySearchResultsText="Nobody found"
-        emptySearchText={null}
-      />,
-    );
-    await searchForNothing();
-
-    // `null` is what this prop's own `??` default already treats as absent,
-    // so the released name still supplies the message and the warning says
-    // only that it is deprecated.
-    await waitFor(() => {
-      expect(screen.getByText('Nobody found')).toBeInTheDocument();
-    });
-    expect(warn).not.toHaveBeenCalledWith(
-      expect.stringContaining('are both set'),
-    );
-    warn.mockRestore();
-  });
-
   it('falls through to the default when null is the only value given', async () => {
     render(
       <Tokenizer
@@ -1890,8 +1863,10 @@ describe('Tokenizer emptySearchText', () => {
     });
   });
 
-  it('keeps the deprecated name working, and says it is deprecated', async () => {
+  it('no longer reads the removed emptySearchResultsText (CLN-0001)', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // The unknown prop reaches the root element, which React reports.
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     render(
       <Tokenizer
         label="People"
@@ -1899,46 +1874,20 @@ describe('Tokenizer emptySearchText', () => {
         value={[]}
         onChange={() => {}}
         debounceMs={0}
+        // @ts-expect-error -- removed in the minor release (CLN-0001)
         emptySearchResultsText="Nobody found"
       />,
     );
     await searchForNothing();
 
     await waitFor(() => {
-      expect(screen.getByText('Nobody found')).toBeInTheDocument();
+      expect(screen.getByText('No results found')).toBeInTheDocument();
     });
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Tokenizer: `emptySearchResultsText` is deprecated; use `emptySearchText`',
-      ),
+    expect(screen.queryByText('Nobody found')).not.toBeInTheDocument();
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('is deprecated'),
     );
     warn.mockRestore();
-  });
-
-  it('lets the new name win when both are set, and warns', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    render(
-      <Tokenizer
-        label="People"
-        searchSource={userSource}
-        value={[]}
-        onChange={() => {}}
-        debounceMs={0}
-        emptySearchResultsText="Old copy"
-        emptySearchText="New copy"
-      />,
-    );
-    await searchForNothing();
-
-    await waitFor(() => {
-      expect(screen.getByText('New copy')).toBeInTheDocument();
-    });
-    expect(screen.queryByText('Old copy')).not.toBeInTheDocument();
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Tokenizer: `emptySearchResultsText` and `emptySearchText` are both set',
-      ),
-    );
-    warn.mockRestore();
+    error.mockRestore();
   });
 });

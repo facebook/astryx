@@ -1136,7 +1136,7 @@ describe('ChatComposerInput', () => {
 
     it('supports configurable empty/loading text', () => {
       const trigger = createMentionTrigger({
-        emptySearchResultsText: 'Nobody found',
+        emptySearchText: 'Nobody found',
         loadingText: 'Looking up...',
         menuLabel: 'People',
       });
@@ -1146,7 +1146,7 @@ describe('ChatComposerInput', () => {
 
     // A trigger's `emptySearchResultsText` was renamed to `emptySearchText`
     // and widened from `string` to `ReactNode` (`spec:AST-056` FR1). The
-    // released key keeps working through the overlap (`spec:AST-017` FR28).
+    // overlap ended in a minor release (`CLN-0004`, `spec:AST-017` FR31).
     it('renders an element emptySearchText when the query matched nothing', async () => {
       const user = userEvent.setup();
       const trigger = createMentionTrigger({
@@ -1166,10 +1166,11 @@ describe('ChatComposerInput', () => {
       });
     });
 
-    it('keeps the deprecated key working, and says it is deprecated', async () => {
+    it('no longer reads the removed emptySearchResultsText key (CLN-0004)', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const user = userEvent.setup();
       const trigger = createMentionTrigger({
+        // @ts-expect-error -- removed in the minor release (CLN-0004)
         emptySearchResultsText: 'Nobody found',
       });
       render(<ChatComposerInput triggers={[trigger]} />);
@@ -1178,60 +1179,11 @@ describe('ChatComposerInput', () => {
       await user.keyboard('@zzzzz');
 
       await waitFor(() => {
-        expect(screen.getByText('Nobody found')).toBeInTheDocument();
+        expect(screen.getByText('No results')).toBeInTheDocument();
       });
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'ChatComposerInput: A trigger sets `emptySearchResultsText`, which is deprecated',
-        ),
-      );
-      warn.mockRestore();
-    });
-
-    it('treats an explicit null key as not given, falling through to the old one', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const user = userEvent.setup();
-      const trigger = createMentionTrigger({
-        emptySearchResultsText: 'Nobody found',
-        emptySearchText: null,
-      });
-      render(<ChatComposerInput triggers={[trigger]} />);
-
-      await user.click(screen.getByRole('combobox'));
-      await user.keyboard('@zzzzz');
-
-      // The same meaning the typeahead family gives `null`: not given, so
-      // the released key still supplies the message and no warning claims a
-      // winner the menu did not pick.
-      await waitFor(() => {
-        expect(screen.getByText('Nobody found')).toBeInTheDocument();
-      });
+      expect(screen.queryByText('Nobody found')).not.toBeInTheDocument();
       expect(warn).not.toHaveBeenCalledWith(
-        expect.stringContaining('sets both'),
-      );
-      warn.mockRestore();
-    });
-
-    it('lets the new key win when a trigger sets both, and warns', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const user = userEvent.setup();
-      const trigger = createMentionTrigger({
-        emptySearchResultsText: 'Old copy',
-        emptySearchText: 'New copy',
-      });
-      render(<ChatComposerInput triggers={[trigger]} />);
-
-      await user.click(screen.getByRole('combobox'));
-      await user.keyboard('@zzzzz');
-
-      await waitFor(() => {
-        expect(screen.getByText('New copy')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('Old copy')).not.toBeInTheDocument();
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'ChatComposerInput: A trigger sets both `emptySearchResultsText` and `emptySearchText`',
-        ),
+        expect.stringContaining('is deprecated'),
       );
       warn.mockRestore();
     });
