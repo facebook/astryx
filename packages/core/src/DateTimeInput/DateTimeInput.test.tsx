@@ -9,6 +9,7 @@
  * SYNC: When DateTimeInput.tsx changes, update tests to match new behavior
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -595,6 +596,36 @@ describe('DateTimeInput', () => {
   });
 
   describe('hasClear', () => {
+    it('shows no selected calendar days after clearing', async () => {
+      const user = userEvent.setup();
+
+      function ControlledDateTimeInput() {
+        const [value, setValue] = useState<ISODateTimeString | undefined>(
+          '2026-01-01T09:00' as ISODateTimeString,
+        );
+        return (
+          <DateTimeInput
+            label="Meeting"
+            value={value}
+            onChange={setValue}
+            min={'2026-01-01T00:00' as ISODateTimeString}
+            max={'2026-01-31T23:59' as ISODateTimeString}
+            hasClear
+          />
+        );
+      }
+
+      render(<ControlledDateTimeInput />);
+      await user.click(getButton('Open calendar'));
+      await user.click(getButton(/January 15, 2026/));
+      await user.click(getButton('Clear Meeting'));
+      await user.click(getButton('Open calendar'));
+
+      expect(
+        screen.queryAllByRole('gridcell', {selected: true, hidden: true}),
+      ).toHaveLength(0);
+    });
+
     it('shows clear button when hasClear is true and value exists', () => {
       render(
         <DateTimeInput

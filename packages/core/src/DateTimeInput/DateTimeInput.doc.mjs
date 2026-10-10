@@ -289,6 +289,12 @@ export const docs = {
           'Text above the input describing what datetime is expected.',
       },
       {
+        name: 'Field surface',
+        required: true,
+        description:
+          'The shared field boundary containing both segments and their end controls.',
+      },
+      {
         name: 'Date input',
         required: true,
         description:
@@ -313,10 +319,22 @@ export const docs = {
           'A real input type=time for the default minute-precision native mode, a text/combobox time field when seconds, custom increments, or preset options are requested, or a read-only segment opening accessible time wheels under presentation="adaptive-bottom-sheet" on a coarse pointer.',
       },
       {
+        name: 'Clock icon',
+        required: true,
+        description:
+          'A leading time glyph that identifies the time segment on Astryx pointer surfaces.',
+      },
+      {
         name: 'Time options popover',
         required: false,
         description:
           "A list of preset times at the timeOptionInterval cadence. Setting the prop retains Astryx's text/combobox time field even when nativePicker otherwise selects native controls; the Astryx touch sheet uses wheels instead.",
+      },
+      {
+        name: 'Time option',
+        required: false,
+        description:
+          'One selectable preset time in the optional time-options popover.',
       },
       {
         name: 'Clear button',
