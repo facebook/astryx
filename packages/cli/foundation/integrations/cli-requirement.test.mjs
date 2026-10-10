@@ -6,6 +6,7 @@ import {semverCompare} from '../env/semver.mjs';
 import * as requirement from './cli-requirement.mjs';
 import {
   COMPONENT_REPLACES_CLI,
+  FAMILY_DEFAULT_CLI,
   KEYWORDS_CLI,
   NAMESPACE_DOCS_CLI,
   SECTION_IDS_CLI,
@@ -15,6 +16,7 @@ import {
   THEMES_CLI,
   lowestAdmitted,
   docsTreeCliProblem,
+  familyDefaultCliProblem,
   keywordsCliProblem,
   replacesCliProblem,
   sectionIdsCliProblem,
@@ -136,6 +138,62 @@ describe('keywordsCliProblem', () => {
         keywordsCliProblem({peerDependencies: {'@astryxdesign/cli': range}}),
       ).toContain('admits a stable CLI before 0.6.6');
     }
+  });
+});
+
+describe('familyDefaultCliProblem', () => {
+  // Published 0.6.4 through 0.6.7 reject a page's `isFamilyDefault` and drop
+  // the template; 0.6.3 and earlier also hide the package's doc topics. The
+  // floor is tied to the next patch slot.
+  it('asks a package that sets isFamilyDefault for a CLI from the floor', () => {
+    expect(familyDefaultCliProblem({name: '@acme/kit'})).toContain(
+      'sets `isFamilyDefault`',
+    );
+    expect(familyDefaultCliProblem({name: '@acme/kit'})).toContain(
+      `A stable CLI before ${FAMILY_DEFAULT_CLI} rejects the field and drops that template, and one before 0.6.4 also hides the package's doc topics.`,
+    );
+    for (const range of [`>=${FAMILY_DEFAULT_CLI}`, `^${FAMILY_DEFAULT_CLI}`]) {
+      expect(
+        familyDefaultCliProblem({
+          peerDependencies: {'@astryxdesign/cli': range},
+        }),
+      ).toBeNull();
+    }
+    for (const range of ['>=0.6.7', '>=0.6.6', '^0.6.4', '^0.6.0']) {
+      expect(
+        familyDefaultCliProblem({
+          peerDependencies: {'@astryxdesign/cli': range},
+        }),
+      ).toContain(`admits a stable CLI before ${FAMILY_DEFAULT_CLI}`);
+    }
+  });
+
+  it('is the release the field docs name', () => {
+    const read = (/** @type {string} */ file) =>
+      fs.readFileSync(new URL(file, import.meta.url), 'utf-8');
+    const schema = read('../../authoring/doctypes/template/template.doc.mjs');
+    const start = schema.indexOf("name: 'isFamilyDefault'");
+    const field = schema.slice(start, schema.indexOf("name: '", start + 1));
+    const type = read('../../authoring/doctypes/template/type.ts');
+    const end = type.indexOf('isFamilyDefault?:');
+    const comment = type.slice(type.lastIndexOf('/**', end), end);
+    for (const text of [field, comment]) {
+      const floors = [
+        ...text.matchAll(/@astryxdesign\/cli`? (\d+\.\d+\.\d+) or later/g),
+      ].map(match => match[1]);
+      expect(floors).toEqual([FAMILY_DEFAULT_CLI]);
+    }
+    const row = fs
+      .readFileSync(
+        new URL(
+          '../../assets/docs/tree/troubleshooting.doc.mjs',
+          import.meta.url,
+        ),
+        'utf-8',
+      )
+      .split('],')
+      .find(part => part.includes('`family_default_needs_cli`:'));
+    expect(row).toContain(`@astryxdesign/cli=>=${FAMILY_DEFAULT_CLI}'`);
   });
 });
 
@@ -319,6 +377,7 @@ describe('every feature check names its CLI floor', () => {
     docsTreeCliProblem: '0.6.4',
     replacesCliProblem: TEMPLATE_REPLACES_CLI,
     keywordsCliProblem: KEYWORDS_CLI,
+    familyDefaultCliProblem: FAMILY_DEFAULT_CLI,
     sectionIdsCliProblem: '0.6.4',
     themesCliProblem: '0.6.4',
   };
@@ -344,6 +403,9 @@ describe('every feature check names its CLI floor', () => {
       // Tied to the next patch slot: the first stable release that ships
       // component replacement.
       componentReplacesCliProblem: '0.6.7',
+      // Tied to the next patch slot: the first stable release that reads a
+      // page's `isFamilyDefault`.
+      familyDefaultCliProblem: '0.6.8',
       // Measured on published releases: 0.6.4 applies a template's
       // `replaces`, and 0.6.6 reads its `keywords`.
       replacesCliProblem: '0.6.4',

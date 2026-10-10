@@ -96,6 +96,21 @@ export interface BlockTemplateDoc extends BaseTemplateDoc {
 
 export interface PageTemplateDoc extends BaseTemplateDoc {
   type: 'page';
+  /** Whether this page is its family's default start. When `astryx build`
+   *  would start from another page in the family, it starts from this one
+   *  instead, unless the idea names what that page is built for: a word of
+   *  that page's variant (its `category` after `" - "`), its display name,
+   *  or a keyword no other page in the family carries, that this page's
+   *  variant, display name, and keywords lack; or two words of the idea that
+   *  that page's doc holds and this page's doc does not.
+   *  A family is the `category` text before `" - "` (`"Dashboard"`
+   *  for `"Dashboard - Analytics"`), so the field requires `category`. Set it
+   *  on at most one page per family. An integration's default replaces the
+   *  one Astryx ships; when two integrations declare one family, it has no
+   *  default. Integration templates need `@astryxdesign/cli` 0.6.8 or later:
+   *  earlier CLIs reject the field and drop that template, and CLIs before
+   *  0.6.4 also hide the package's doc topics. */
+  isFamilyDefault?: boolean;
 }
 
 /**

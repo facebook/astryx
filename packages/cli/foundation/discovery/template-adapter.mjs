@@ -105,6 +105,7 @@ export function effectiveTemplateDiscovery(templates) {
  * @property {string[]} [keywords]
  * @property {string} [category]
  * @property {boolean} [isReady]
+ * @property {boolean} [isFamilyDefault] whether a page declares itself its family's default start
  * @property {boolean} [scaffold]
  * @property {number} [aspectRatio]
  * @property {string} [exampleFor]
@@ -651,6 +652,7 @@ async function discoverPages() {
       category: doc?.category || '',
       keywords: doc?.keywords ?? [],
       isReady: doc?.isReady ?? true,
+      isFamilyDefault: doc?.isFamilyDefault === true,
       scaffold: doc?.scaffold ?? false,
       filePath: path.join(dirPath, 'page.tsx'),
       docPath,
@@ -1267,7 +1269,8 @@ export async function discoverIntegrationTemplatesForOne(integration) {
         template: id,
         message: `Template "${id}" is missing a "type" of "page" or "block". Stamp the default export with type: 'page' or type: 'block'.`,
       });
-      const declared = doc?.replaces ?? (await declaredReplacement(docPath, id));
+      const declared =
+        doc?.replaces ?? (await declaredReplacement(docPath, id));
       if (declared != null) {
         errors.push({
           code: 'invalid_template_replacement',
@@ -1291,6 +1294,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       keywords: doc?.keywords ?? [],
       category: doc?.category || '',
       isReady: doc?.isReady ?? true,
+      isFamilyDefault: doc?.type === 'page' && doc.isFamilyDefault === true,
       scaffold: doc?.scaffold ?? false,
       aspectRatio: doc?.type === 'block' ? doc.aspectRatio : undefined,
       exampleFor: doc?.type === 'block' ? doc.exampleFor : undefined,

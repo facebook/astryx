@@ -1,0 +1,6 @@
+---
+'@astryxdesign/cli': patch
+---
+
+[feat] `astryx build` starts a whole page from its family's default page. A page template's family is the text of its `category` before the spaced hyphen (`Table - Filtering` is in the Table family), and a page template declares itself its family's default with the new optional `isFamilyDefault` doc field. When build would start from a page whose family has a default, it starts from the default instead, unless the idea names what that page is built for: a word of its own variant, display name, or a keyword no other page in its family carries, or two words of the idea that page matches and the default does not. The displaced page leads the alternatives, and a page search matched by name keeps its place. The filterable table and the analytics dashboard are the defaults for tables and dashboards, so a plain table idea now starts from the filterable table. Parts, changes to an existing page, and app-shell starts are unchanged. An integration can declare a default for its own family or stand in for Astryx's; an integration page that sets the field needs `@astryxdesign/cli` 0.6.8 or later, and `integration verify` reports `family_default_needs_cli` otherwise.
+@josephfarina

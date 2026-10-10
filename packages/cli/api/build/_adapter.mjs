@@ -8,7 +8,7 @@
  *   and Core's components, plus any that the project's configured integrations
  *   contribute.
  * @output Ready page templates as `{name, displayName, description, category,
- *   keywords, command}`, where `command` is the `astryx template` command that
+ *   keywords, isFamilyDefault, command}`, where `command` is the `astryx template` command that
  *   selects exactly that template; components as `{name, keywords}`.
  * @position Beside build.mjs (api/build/). The kit leaf reads templates and
  *   components only through here, because a subject's `_adapter.mjs` is its
@@ -33,6 +33,7 @@ import {analyzeTemplateNeeds} from '../../foundation/discovery/template-needs.mj
  * @property {string} package The npm package that owns this template.
  * @property {string} category The template's own `Family - Variant` label; empty when it declares none.
  * @property {string[]} keywords The ideas the page serves, as its own descriptor names them; empty when it declares none.
+ * @property {boolean} isFamilyDefault Whether its own doc declares it the default start of its family (the `Family` of its category).
  * @property {string} filePath Absolute path to the template source file on disk.
  */
 
@@ -71,6 +72,7 @@ export async function loadPageTemplates(cwd) {
       package: t.package ?? '@astryxdesign/core',
       category: t.category || '',
       keywords: t.keywords ?? [],
+      isFamilyDefault: t.isFamilyDefault === true,
       filePath: t.filePath,
       // The id `template()` resolves back to this entry: an active replacement
       // owns the Core id it names, so that id selects it, not its own.

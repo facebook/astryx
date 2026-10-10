@@ -60,6 +60,16 @@
  * bare "existing" phrase that names a page ("existing reports dashboard with a
  * date filter") reads as the builder's own page.
  *
+ * Family defaults. A family's default page is the template whose own doc
+ * declares `isFamilyDefault` (an integration's declaration stands in for one
+ * that ships with Astryx). A whole page starts family first: the family of the
+ * template the matcher chose, then that family's default, unless the idea names
+ * what the chosen sibling is built for: a word of the sibling's own variant or
+ * display name, or of a keyword no other page of its family carries, that the
+ * default does not carry, or two matched terms the default did not match ("a
+ * grouped task list" keeps the grouped table; "a table of orders" starts from
+ * the family's default). See `familyStart`.
+ *
  * Family words come from the templates' own ids — a word in the ids of two or
  * more templates of one family, plus the family's name when a template carries
  * it — never from a list kept here or from synonyms, so an integration's
@@ -169,6 +179,12 @@ const NEW = /\bnew\b/;
  * explicit `Shell -` category (architecture:template-authoring/INV7).
  */
 const SHELL_FAMILY = 'Shell';
+
+/**
+ * The package that ships Astryx's own templates. A family default declared by
+ * an integration stands in for one declared here.
+ */
+const ASTRYX_PACKAGE = '@astryxdesign/core';
 
 /** A container phrase: "in a modal", "inside the side panel". */
 const CONTAINER_PHRASE =
@@ -326,6 +342,98 @@ function familyWordsOf(pages) {
     }
   }
   return familyOfWord;
+}
+
+/**
+ * Each family's default page: the ready template of the family whose own doc
+ * declares `isFamilyDefault`. An integration's declaration stands in for one
+ * that ships with Astryx; a family with two declarations from integrations, or
+ * with none, has no default. App chrome (the Shell family) has none either: the
+ * app shell is the kit's fallback, not a family's page.
+ * @param {PageTemplate[]} pages
+ * @returns {Map<string, PageTemplate>} each family's default page
+ */
+export function familyDefaults(pages) {
+  /** @type {Map<string, PageTemplate[]>} */
+  const declared = new Map();
+  for (const page of pages) {
+    const family = familyOf(page);
+    if (!page.isFamilyDefault || !family || family === SHELL_FAMILY) continue;
+    declared.set(family, [...(declared.get(family) ?? []), page]);
+  }
+  /** @type {Map<string, PageTemplate>} */
+  const defaults = new Map();
+  for (const [family, list] of declared) {
+    const integrations = list.filter(p => p.package !== ASTRYX_PACKAGE);
+    const pick = integrations.length > 0 ? integrations : list;
+    if (pick.length === 1) defaults.set(family, pick[0]);
+  }
+  return defaults;
+}
+
+/**
+ * What a sibling is built for, in words its family's default does not carry:
+ * the terms of the sibling's own variant and display name ("Grouped",
+ * "Tree Table") and of its keywords that no other page of its family carries
+ * ("expandable"), less the default's variant, display name and keywords and
+ * the families' own words ("table", "dashboard").
+ * @param {PageTemplate} page
+ * @param {PageTemplate} base its family's default
+ * @param {PageTemplate[]} family every page of the family
+ * @param {Map<string, string>} familyWords
+ * @returns {string[]}
+ */
+function siblingTerms(page, base, family, familyWords) {
+  const variant = (/** @type {PageTemplate} */ p) =>
+    p.category.split(' - ').slice(1).join(' - ');
+  const keywordTerms = (/** @type {PageTemplate} */ p) =>
+    (p.keywords ?? []).flatMap(k => terms(k));
+  const shared = new Set(
+    family.filter(p => p.name !== page.name).flatMap(keywordTerms),
+  );
+  const own = [
+    ...terms(`${variant(page)} ${page.displayName}`),
+    ...keywordTerms(page).filter(t => !shared.has(t)),
+  ];
+  const theirs = new Set(
+    terms(
+      [variant(base), base.displayName, ...(base.keywords ?? [])].join(' '),
+    ),
+  );
+  return [...new Set(own)].filter(t => !theirs.has(t) && !familyWords.has(t));
+}
+
+/**
+ * A whole page's start, family first: the family of the template the matcher
+ * chose, then that family's default page, unless the idea names what the chosen
+ * sibling is built for, in a word of its own variant or display name, or of a
+ * keyword no other page of its family carries, that the default does not carry,
+ * or in START_TERMS matched terms the default did not match. A family without a
+ * default keeps the matcher's template.
+ *
+ * @param {string} query
+ * @param {string} name the template the matcher chose
+ * @param {RankedPage[]} ranked
+ * @param {PageTemplate[]} pages
+ * @returns {{name: string, displaced: string | null, family: string}} the start,
+ *   and the sibling it displaced, if any
+ */
+export function familyStart(query, name, ranked, pages) {
+  const chosen = pages.find(p => p.name === name);
+  const family = chosen ? familyOf(chosen) : '';
+  const base = familyDefaults(pages).get(family);
+  if (!chosen || !base || base.name === name)
+    return {name, displaced: null, family};
+  const idea = new Set(terms(query));
+  const members = pages.filter(p => familyOf(p) === family);
+  const named = siblingTerms(chosen, base, members, familyWordsOf(pages));
+  if (named.some(t => idea.has(t))) return {name, displaced: null, family};
+  const matched = (/** @type {string} */ n) =>
+    ranked.find(r => r.name === n)?.matched ?? new Set();
+  const baseMatched = matched(base.name);
+  const own = [...matched(name)].filter(t => !baseMatched.has(t)).length;
+  if (own >= START_TERMS) return {name, displaced: null, family};
+  return {name: base.name, displaced: name, family};
 }
 
 /**

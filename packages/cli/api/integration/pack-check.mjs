@@ -30,6 +30,7 @@ import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs'
 import {
   componentReplacesCliProblem,
   docsTreeCliProblem,
+  familyDefaultCliProblem,
   keywordsCliProblem,
   replacesCliProblem,
   sectionIdsCliProblem,
@@ -1130,9 +1131,10 @@ export async function integrationPackCheck(options = {}) {
       }
     }
   }
-  // A template that sets `replaces` (spec:AST-035) or `keywords` needs a CLI
-  // that reads the field: an older CLI drops that template and can hide the
-  // package's docs. Each field has its own floor.
+  // A template that sets `replaces` (spec:AST-035), `keywords`, or
+  // `isFamilyDefault` (spec:AST-048) needs a CLI that reads the field: an
+  // older CLI drops that template and can hide the package's docs. Each field
+  // has its own floor.
   if (loaded.templates) {
     const found = await discoverIntegrationTemplatesForOne(loaded).catch(
       () => ({templates: [], errors: []}),
@@ -1150,6 +1152,17 @@ export async function integrationPackCheck(options = {}) {
     const keywordsProblem = setsKeywords ? keywordsCliProblem(pkg) : null;
     if (keywordsProblem != null) {
       issues.push(error('keywords_needs_cli', keywordsProblem));
+    }
+    const setsFamilyDefault = found.templates.some(
+      template =>
+        /** @type {{isFamilyDefault?: boolean}} */ (template)
+          .isFamilyDefault === true,
+    );
+    const familyDefaultProblem = setsFamilyDefault
+      ? familyDefaultCliProblem(pkg)
+      : null;
+    if (familyDefaultProblem != null) {
+      issues.push(error('family_default_needs_cli', familyDefaultProblem));
     }
   }
   // A component that sets `replaces` (spec:AST-035 FR10) is applied only when
