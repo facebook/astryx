@@ -515,36 +515,36 @@ that keeps exit 0, which makes a documented failure optional.
 | rollback  | Restore the released input handling and error code from the final-patch baseline                                                                                                                                                              |
 | state     | `pending` — lands only in a minor release, once `IFIX-0007` is approved and that release's frozen manifest lists `CLN-0013`                                                                                                                   |
 
-### IFIX-0008 — Validation exits 1 when there is nothing to validate
+### IFIX-0008 — `doctor integration validate` exits 1 when there is nothing to validate
 
-| Field         | Value                                                                                                                                                                                                                                                                     |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| id            | `IFIX-0008`                                                                                                                                                                                                                                                               |
-| cleanup       | `CLN-0014`                                                                                                                                                                                                                                                                |
-| package       | `@astryxdesign/cli`                                                                                                                                                                                                                                                       |
-| surface       | `doctor integration validate` and `integration verify` in a directory with no `package.json`                                                                                                                                                                              |
-| authority     | `spec:AST-017` FR17 (suppressed work is observable). Owners: `spec:AST-017`: `cixzhang`, `josephfarina`.                                                                                                                                                                  |
-| reproducer    | With the latest stable CLI, `astryx doctor integration validate` in a directory with no `package.json` prints that nothing was validated and exits 0. `astryx integration verify` there returns a success envelope with a `no_package` issue and exits 0                  |
-| affected      | A CI step that runs either command as a gate and passes although it found no package to check                                                                                                                                                                             |
-| matrix        | `doctor integration validate` with no `package.json`: text and `--json` exit 0 before, exit 1 after, with the same envelope. `integration verify` with no `package.json`: a success envelope with `no_package` and exit 0 before; `ERR_INVALID_ARGUMENT` and exit 1 after |
-| coexistence   | Not applicable: exit 0 when there is nothing to check is the defect                                                                                                                                                                                                       |
-| migration     | Run the command in a directory that has a `package.json`, or handle exit 1 for that case                                                                                                                                                                                  |
-| codemod       | None: a script adds the directory check or handles the failure itself                                                                                                                                                                                                     |
-| downstream    | No maintained source runs these commands in a directory without a `package.json`                                                                                                                                                                                          |
-| rollback      | Restore exit 0 and the success envelope for these runs from the final-patch baseline                                                                                                                                                                                      |
-| harm of delay | Each release lets a gate pass when there was nothing to check                                                                                                                                                                                                             |
-| harm of apply | A script that runs either command in a directory without a `package.json` fails until it checks the directory first                                                                                                                                                       |
-| state         | `proposed`                                                                                                                                                                                                                                                                |
+| Field         | Value                                                                                                                                                                                                           |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id            | `IFIX-0008`                                                                                                                                                                                                     |
+| cleanup       | `CLN-0014`                                                                                                                                                                                                      |
+| package       | `@astryxdesign/cli`                                                                                                                                                                                             |
+| surface       | `doctor integration validate` in a directory with no `package.json`                                                                                                                                             |
+| authority     | `spec:AST-017` FR17 (suppressed work is observable). Owners: `spec:AST-017`: `cixzhang`, `josephfarina`.                                                                                                        |
+| reproducer    | With the latest stable CLI, `astryx doctor integration validate` in a directory with no `package.json` prints that nothing was validated and exits 0                                                            |
+| affected      | A CI step that runs the command as a gate and passes although it found no package to check                                                                                                                      |
+| matrix        | `doctor integration validate` with no `package.json`: text and `--json` exit 0 before, exit 1 after, with the same envelope. `integration verify` is unchanged: it already exits 1 with a `no_package` envelope |
+| coexistence   | Not applicable: exit 0 when there is nothing to check is the defect                                                                                                                                             |
+| migration     | Run the command in a directory that has a `package.json`, or handle exit 1 for that case                                                                                                                        |
+| codemod       | None: a script adds the directory check or handles the failure itself                                                                                                                                           |
+| downstream    | No maintained source runs this command in a directory without a `package.json`                                                                                                                                  |
+| rollback      | Restore exit 0 for this run from the final-patch baseline                                                                                                                                                       |
+| harm of delay | Each release lets a gate pass when there was nothing to check                                                                                                                                                   |
+| harm of apply | A script that runs `doctor integration validate` in a directory without a `package.json` fails until it checks the directory first                                                                              |
+| state         | `proposed`                                                                                                                                                                                                      |
 
-### CLN-0014 — Fail validation with nothing to validate
+### CLN-0014 — Fail `doctor integration validate` with nothing to validate
 
-| Field     | Value                                                                                                                                                        |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| id        | `CLN-0014`                                                                                                                                                   |
-| lifecycle | `IFIX-0008`                                                                                                                                                  |
-| delta     | `doctor integration validate` exits 1 when nothing was validated, and `integration verify` fails with `ERR_INVALID_ARGUMENT` when it finds no `package.json` |
-| rollback  | Restore exit 0 and the success envelope for these runs from the final-patch baseline                                                                         |
-| state     | `pending` — lands only in a minor release, once `IFIX-0008` is approved and that release's frozen manifest lists `CLN-0014`                                  |
+| Field     | Value                                                                                                                       |
+| --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| id        | `CLN-0014`                                                                                                                  |
+| lifecycle | `IFIX-0008`                                                                                                                 |
+| delta     | `doctor integration validate` exits 1 when nothing was validated. `integration verify` is unchanged                         |
+| rollback  | Restore exit 0 for this run from the final-patch baseline                                                                   |
+| state     | `pending` — lands only in a minor release, once `IFIX-0008` is approved and that release's frozen manifest lists `CLN-0014` |
 
 ## Open questions
 
