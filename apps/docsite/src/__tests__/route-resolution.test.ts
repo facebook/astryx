@@ -104,6 +104,7 @@ describe('route resolution', () => {
         'cli-integrations',
         'cli-writing-docs',
         'internationalization',
+        'is-my-code-good',
         'layout',
         'migration',
         'principles',

@@ -102,7 +102,11 @@ const gradeRows = TEMPLATE_RUBRIC.grades.map(({grade, min, max, meaning}) => [
 export const docs = {
   type: 'generic',
   name: 'template-grading-rubric',
-  placement: {parent: 'namespace:write-good-templates', slot: 'guides', order: 10},
+  placement: {
+    parent: 'namespace:write-good-templates',
+    slot: 'guides',
+    order: 10,
+  },
   title: 'Full grading rubric',
   category: 'guide',
   description:
@@ -112,6 +116,10 @@ export const docs = {
       id: 'understand-the-score',
       title: 'Understand the score',
       content: [
+        {
+          type: 'prose',
+          text: 'Start with {@link generic:is-my-code-good} for the shared Astryx quality criteria.',
+        },
         {
           type: 'prose',
           text: `Template rubric ${TEMPLATE_RUBRIC.version} scores seven categories for 100 points. Aim for 100; ${TEMPLATE_RUBRIC.minimumGrade} (${TEMPLATE_RUBRIC.minimumScore}) is the publication floor, not the target. Each category below lists its weight. Never award points for anything you did not inspect.`,
