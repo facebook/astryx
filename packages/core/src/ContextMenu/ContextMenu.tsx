@@ -54,6 +54,7 @@ import {MenuBottomSheetActionList} from '../DropdownMenu/MenuBottomSheetActionLi
 import {renderDropdownItems} from '../DropdownMenu/renderDropdownItems';
 import {
   DropdownMenuContext,
+  DropdownMenuRootOpenContext,
   type DropdownMenuContextValue,
 } from '../DropdownMenu/DropdownMenuContext';
 import {
@@ -653,7 +654,9 @@ export function ContextMenu({
         style,
       )}>
       <DropdownMenuContext value={contextValue}>
-        {resolvedMenuContent}
+        <DropdownMenuRootOpenContext value={isOpen}>
+          {resolvedMenuContent}
+        </DropdownMenuRootOpenContext>
       </DropdownMenuContext>
     </div>
   );

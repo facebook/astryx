@@ -65,6 +65,30 @@ export interface DropdownMenuContextValue {
   menuLabel?: string;
 }
 
+/**
+ * Whether the root menu of this layer tree is open; internal companion to
+ * `DropdownMenuContext`, on its own unexported context so the public
+ * `DropdownMenuContextValue` surface stays unchanged. A sub-menu's hover
+ * intent must die with the menu: a hover-open scheduled on its trigger
+ * before the menu closed from elsewhere would otherwise fire into the
+ * hidden menu and reopen the flyout behind it (#6893). `null` means no
+ * signal, treated as open, matching providers that have no state to give.
+ * @internal
+ */
+export const DropdownMenuRootOpenContext = createLayerScopedContext<
+  boolean | null
+>(null);
+DropdownMenuRootOpenContext.displayName = 'DropdownMenuRootOpenContext';
+
+/**
+ * Whether the root menu backing these compound items is open. True when no
+ * provider gave a signal.
+ * @internal
+ */
+export function useDropdownMenuRootOpen(): boolean {
+  return use(DropdownMenuRootOpenContext) !== false;
+}
+
 export const DropdownMenuContext =
   createLayerScopedContext<DropdownMenuContextValue | null>(null);
 DropdownMenuContext.displayName = 'DropdownMenuContext';

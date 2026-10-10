@@ -1274,3 +1274,188 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
     expect(visibleRows()).toEqual(['Rename', 'Move to', 'Delete']);
   });
 });
+
+describe('DropdownMenuSubMenu light dismiss of the root menu (#6893)', () => {
+  // The browser closes the root `popover=\"auto\"` element itself on an outside
+  // tap; that path never reaches the submenu, whose flyout is
+  // `popover=\"manual\"`. Simulate it by hiding the root popover element
+  // directly, exactly what light dismiss does to it.
+  function lightDismissRootMenu() {
+    const menu = screen.getByRole('menu', {name: /Actions/, hidden: true});
+    const rootPopover = menu.closest<HTMLElement>('[popover]');
+    expect(rootPopover).not.toBeNull();
+    act(() => {
+      rootPopover!.hidePopover();
+    });
+  }
+
+  function getFlyoutPopover(name: RegExp) {
+    const flyout = screen.getByRole('menu', {name, hidden: true});
+    return flyout.closest<HTMLElement>('[popover]');
+  }
+
+  it('closes an open flyout when the root menu is light-dismissed', async () => {
+    const user = userEvent.setup();
+    render(<MoveMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    await user.click(trigger);
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+    const flyoutPopover = getFlyoutPopover(/Move to/);
+    expect(flyoutPopover).toHaveAttribute('popover-open', '');
+
+    lightDismissRootMenu();
+
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(flyoutPopover).not.toHaveAttribute('popover-open');
+  });
+
+  it('leaves the submenu collapsed when the menu reopens after a light dismiss', async () => {
+    const user = userEvent.setup();
+    render(<MoveMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    await user.click(trigger);
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    lightDismissRootMenu();
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(getFlyoutPopover(/Move to/)).not.toHaveAttribute('popover-open');
+  });
+
+  it('closes an open flyout when the root menu closes via controlled isMenuOpen', async () => {
+    const user = userEvent.setup();
+    function ControlledMenu() {
+      const [open, setOpen] = useState(true);
+      return (
+        <>
+          <DropdownMenu
+            button={{label: 'Actions'}}
+            isMenuOpen={open}
+            onOpenChange={setOpen}>
+            <DropdownMenuSubMenu label="Move to">
+              <DropdownMenuItem label="Folder A" onClick={() => {}} />
+            </DropdownMenuSubMenu>
+          </DropdownMenu>
+          <button type="button" onClick={() => setOpen(false)}>
+            close it
+          </button>
+        </>
+      );
+    }
+    render(<ControlledMenu />);
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    await user.click(trigger);
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+    const flyoutPopover = getFlyoutPopover(/Move to/);
+
+    await user.click(screen.getByRole('button', {name: /close it/}));
+
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(flyoutPopover).not.toHaveAttribute('popover-open');
+  });
+
+  it('closes flyouts nested two levels deep on light dismiss', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to">
+          <DropdownMenuSubMenu label="Deeper">
+            <DropdownMenuItem label="Leaf" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const first = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    await user.click(first);
+    await waitFor(() => {
+      expect(first).toHaveAttribute('aria-expanded', 'true');
+    });
+    const deeper = screen.getByRole('menuitem', {
+      name: /Deeper/,
+      hidden: true,
+    });
+    await user.click(deeper);
+    await waitFor(() => {
+      expect(deeper).toHaveAttribute('aria-expanded', 'true');
+    });
+    const firstPopover = getFlyoutPopover(/Move to/);
+    const deeperPopover = getFlyoutPopover(/Deeper/);
+
+    lightDismissRootMenu();
+
+    await waitFor(() => {
+      expect(first).toHaveAttribute('aria-expanded', 'false');
+    });
+    await waitFor(() => {
+      expect(deeper).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(firstPopover).not.toHaveAttribute('popover-open');
+    expect(deeperPopover).not.toHaveAttribute('popover-open');
+  });
+
+  // Regression for the stale hover timer: a hover over the submenu trigger
+  // schedules an open after the show delay. A press on the same trigger
+  // cancels its own scheduled hover-open (that is the click guard), so the
+  // way a timer is still pending at close time is a close that comes from
+  // elsewhere — here the root menu's light dismiss, the #6893 case. The
+  // close must cancel the scheduled hover-open: once the delay elapses the
+  // flyout stays closed instead of reopening behind the dismissed menu.
+  // Time is driven manually so the dismiss lands inside the show delay;
+  // auto-advancing timers would let the hover-open fire before it.
+  it('cancels a hover-open scheduled before the menu was closed from elsewhere', async () => {
+    vi.useFakeTimers();
+    try {
+      render(<MoveMenu />);
+      fireEvent.click(screen.getByRole('button', {name: /Actions/}));
+      const trigger = screen.getByRole('menuitem', {
+        name: /Move to/,
+        hidden: true,
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+      // Schedules the hover-open (default show delay 150ms).
+      fireEvent.mouseEnter(trigger);
+
+      // Close from elsewhere while the hover-open is still pending.
+      lightDismissRootMenu();
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+      // The scheduled delay passes; the flyout must stay closed.
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(getFlyoutPopover(/Move to/)).not.toHaveAttribute('popover-open');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

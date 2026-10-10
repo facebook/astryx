@@ -93,7 +93,9 @@ import {
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
+  DropdownMenuRootOpenContext,
   useDropdownMenuContext,
+  useDropdownMenuRootOpen,
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
@@ -430,13 +432,17 @@ export function DropdownMenuSubMenu(
   // Hover intent and the shared hover→click guard only: this level owns its own
   // click handling, roving focus and typeahead. popover="manual", so the
   // invoker wiring other consumers need does not apply. A drill-in row has no
-  // hover: a finger drives it, and a press opens it.
+  // hover: a finger drives it, and a press opens it. Hover is also gated on
+  // the root menu being open, so a hover-open scheduled before the menu
+  // closed from elsewhere is cancelled instead of firing into the hidden
+  // menu (#6893).
+  const isRootMenuOpen = useDropdownMenuRootOpen();
   const {triggerProps, contentProps, confirmHoverOpen} =
     useMenuHover<HTMLDivElement>({
       show: showLayer,
       hide: hideLayer,
       isOpen: isFlyoutOpen,
-      isEnabled: canOpen && !isDrillIn,
+      isEnabled: canOpen && !isDrillIn && isRootMenuOpen,
       // The safe triangle toward the flyout's near edge is built from the
       // flyout this component renders, not the hook's own list ref.
       flyoutRef: menuRef,
@@ -723,6 +729,10 @@ export function DropdownMenuSubMenu(
 
   const nestedContent = (
     <DropdownMenuContext value={nestedMenuContext}>
+      {/* Nested rows live in this level's flyout, a layer of their own where
+          the layer-scoped signal resets; re-provide it so their pending
+          hover intent dies with the root menu too. */}
+      <DropdownMenuRootOpenContext value={isRootMenuOpen}>
       {isDrillIn && (
         <DropdownMenuItem
           icon={
@@ -739,6 +749,7 @@ export function DropdownMenuSubMenu(
         />
       )}
       {children}
+      </DropdownMenuRootOpenContext>
     </DropdownMenuContext>
   );
 
