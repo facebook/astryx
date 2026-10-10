@@ -522,12 +522,25 @@ export function Typeahead<T extends SearchableItem>({
     [onChange],
   );
 
-  // Handle clear (explicit X button on token)
+  // Handle clear (explicit X button on token). Edit mode copied the label into
+  // the base's query, and the base only resets that query on a selection, so
+  // clearing the value has to empty it the way entering edit mode filled it
+  // (#7038): a native set plus a synthetic input event, which reaches the
+  // base's own change handler and its onChangeQuery.
   const handleClear = useCallback(() => {
+    const input = inputRef.current;
+    if (input && input.value !== '') {
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set;
+      nativeInputValueSetter?.call(input, '');
+      input.dispatchEvent(new Event('input', {bubbles: true}));
+    }
     setIsEditing(false);
     setEditingValue(null);
     onChange(null);
-    inputRef.current?.focus();
+    input?.focus();
   }, [onChange]);
 
   // Handle Escape during edit mode — restore token
