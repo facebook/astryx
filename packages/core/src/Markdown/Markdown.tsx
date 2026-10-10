@@ -221,9 +221,7 @@ function blockSourceLines(node: {
 }
 
 /** The stamps a default block element carries for its source lines. */
-function sourceLineAttributes(
-  lines: MarkdownSourceLines | undefined,
-):
+function sourceLineAttributes(lines: MarkdownSourceLines | undefined):
   | {
       readonly 'data-source-line': string;
       readonly 'data-source-line-end': string;
