@@ -29,6 +29,7 @@ modules:
     module:Markdown/headingLinks,
     module:Markdown/remark,
     module:Markdown/softBreaks,
+    module:Markdown/sourceLines,
   ]
 families: [family:navigation-destinations]
 design_specs: []
@@ -157,6 +158,10 @@ composition, and this component owns aggregate application and fallback.
 exactly as `Markdown` does. It decodes valid named and numeric references in
 plain text and leaves everything else as written; the named reference table
 stays private. `spec:AST-061/DEC-5` owns its contract.
+
+`module:Markdown/sourceLines` owns the opt-in source-line stamps on rendered
+blocks and the optional `sourceLines` prop that `components` block renderers
+receive while its plugin is installed; without it no renderer receives the prop.
 
 `getMarkdownPluginCapabilities(plugin)`, exported from the server-safe
 `@astryxdesign/core/Markdown/plugins` subpath, reports only whether an entry
