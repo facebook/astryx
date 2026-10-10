@@ -14,6 +14,7 @@ import * as stylex from '@stylexjs/stylex';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
+import {IconButton} from '../IconButton';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 import {rtlStyles} from '../utils';
 
@@ -1272,5 +1273,79 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'true'),
     );
     expect(visibleRows()).toEqual(['Rename', 'Move to', 'Delete']);
+  });
+
+  describe('a menu hung off a custom trigger', () => {
+    async function drillIntoMoveTo(triggerName: RegExp | string) {
+      const user = userEvent.setup();
+      const trigger = screen.getByRole('button', {name: triggerName});
+      await user.click(trigger);
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+      );
+      fireEvent.click(await waitFor(() => shownRow('Move to')), {detail: 1});
+      await waitFor(() => shownMenu('Move to'));
+      return visibleRows()[0];
+    }
+
+    it('names its Back row after the icon button it hangs off', async () => {
+      stubCompactTouch(false);
+      render(
+        <DropdownMenu
+          renderTrigger={props => (
+            <IconButton
+              icon="moreHorizontal"
+              label="Session actions"
+              {...props}
+            />
+          )}>
+          <DropdownMenuSubMenu label="Move to" presentation="drill-in">
+            <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      expect(await drillIntoMoveTo('Session actions')).toBe(
+        'Back to Session actions',
+      );
+    });
+
+    it('names its Back row after a text trigger', async () => {
+      stubCompactTouch(false);
+      render(
+        <DropdownMenu
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              Options
+            </button>
+          )}>
+          <DropdownMenuSubMenu label="Move to" presentation="drill-in">
+            <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      expect(await drillIntoMoveTo('Options')).toBe('Back to Options');
+    });
+
+    it('takes the name the caller gave the menu with aria-label', async () => {
+      stubCompactTouch(false);
+      render(
+        <DropdownMenu
+          aria-label="Row actions"
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              …
+            </button>
+          )}>
+          <DropdownMenuSubMenu label="Move to" presentation="drill-in">
+            <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      expect(shownMenuNamed('Row actions')).toBeDefined();
+      expect(await drillIntoMoveTo('…')).toBe('Back to Row actions');
+    });
+
+    const shownMenuNamed = (name: string) =>
+      screen.getAllByRole('menu', {name, ...h}).find(isShown);
   });
 });
