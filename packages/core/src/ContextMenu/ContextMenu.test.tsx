@@ -564,6 +564,36 @@ describe('ContextMenu dividers', () => {
 });
 
 describe('ContextMenu compound mode', () => {
+  it('keeps what is typed in a field the menu hosts beside its rows', async () => {
+    const user = userEvent.setup();
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <input aria-label="Filter" />
+            <DropdownMenuItem label="Cut" onClick={() => {}} />
+            <DropdownMenuItem label="Copy" onClick={() => {}} />
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'), {
+      clientX: 50,
+      clientY: 15,
+      detail: 1,
+    });
+    // Let the open's focus frame land before moving focus.
+    await waitFor(() =>
+      expect(document.activeElement?.closest('[role="menu"]')).not.toBeNull(),
+    );
+    const field = screen.getByRole('textbox', {name: 'Filter', hidden: true});
+    act(() => field.focus());
+    await user.keyboard('co py');
+    expect(field).toHaveValue('co py');
+    expect(field).toHaveFocus();
+  });
+
   it('renders menuContent as menu items', () => {
     render(
       <ContextMenu

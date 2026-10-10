@@ -90,6 +90,8 @@ import {
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
   activateMenuItem,
+  hostedControlOf,
+  isTextEntry,
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
@@ -410,6 +412,9 @@ export function DropdownMenuSubMenu(
     // Menus wrap.
     wrap: true,
     hasPaging: true,
+    // Arrows, Home and End leave a text field this level hosts only at its
+    // caret's edge.
+    hasCaretGuard: true,
     onEscape: () => close({focusTrigger: true}),
   });
   // A drilled-in list scrolls with the root menu, not on its own.
@@ -630,7 +635,14 @@ export function DropdownMenuSubMenu(
         close({focusTrigger: true});
         return;
       }
+      // A key pressed in a control this level hosts beside its rows is that
+      // control's (see DropdownMenu); a text field also keeps Left and Right.
+      const hosted = hostedControlOf(e.target, menuRef.current);
+      const isHostedText = hosted != null && isTextEntry(hosted);
       if (e.key === 'Enter' || e.key === ' ') {
+        if (hosted != null) {
+          return;
+        }
         e.preventDefault();
         // A held key's auto-repeat never activates.
         if (e.repeat) {
@@ -652,12 +664,12 @@ export function DropdownMenuSubMenu(
           ? window.getComputedStyle(menuRef.current).direction === 'rtl'
           : false;
       const closeKey = isRtl ? 'ArrowRight' : 'ArrowLeft';
-      if (e.key === closeKey) {
+      if (e.key === closeKey && !isHostedText) {
         e.preventDefault();
         close({focusTrigger: true});
         return;
       }
-      if (typeahead.onKeyDown(e)) {
+      if (!isHostedText && typeahead.onKeyDown(e)) {
         e.preventDefault();
         return;
       }

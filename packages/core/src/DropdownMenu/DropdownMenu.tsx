@@ -57,6 +57,8 @@ import {
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
   activateMenuItem,
+  hostedControlOf,
+  isTextEntry,
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
@@ -837,6 +839,9 @@ function DropdownMenuPopover({
     // a picker's list clamps instead.
     wrap: true,
     hasPaging: true,
+    // Arrows, Home and End leave a text field the menu hosts only at its
+    // caret's edge.
+    hasCaretGuard: true,
     onEscape: closeMenu,
   });
 
@@ -918,7 +923,14 @@ function DropdownMenuPopover({
       if (!ownsEvent(e)) {
         return;
       }
+      // A key pressed in a control the menu hosts beside its rows (a filter
+      // field, a create button) is that control's: it types, or presses the
+      // control. Tab and Escape still close the menu.
+      const hosted = hostedControlOf(e.target, listRef.current);
       if (e.key === 'Enter' || e.key === ' ') {
+        if (hosted != null) {
+          return;
+        }
         e.preventDefault();
         // The key that opened the menu, held down, auto-repeats into the menu
         // once focus has moved there; a repeat is never an activation.
@@ -945,14 +957,15 @@ function DropdownMenuPopover({
         closeMenu();
         return;
       }
-      // Type-to-focus next; if it consumed a printable key, stop here.
-      if (typeahead.onKeyDown(e)) {
+      // Type-to-focus next; if it consumed a printable key, stop here. Text
+      // typed into a hosted field is the field's.
+      if (!(hosted != null && isTextEntry(hosted)) && typeahead.onKeyDown(e)) {
         e.preventDefault();
         return;
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent, listRef],
   );
 
   const openAndFocus = useCallback(
