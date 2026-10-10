@@ -3299,6 +3299,44 @@ describe('SideNav collapse ownership', () => {
     ).not.toBeInTheDocument();
   });
 
+  // The honest-toggle fix under test comes from #5118.
+  it.each([
+    {name: 'a resizable nav', resizable: {defaultWidth: 300}, width: '300px'},
+    {name: 'a plain nav', resizable: false, width: ''},
+  ])(
+    'keeps the imperative collapse state honest for $name that cannot collapse',
+    ({resizable, width}) => {
+      const seen: (boolean | undefined)[] = [];
+
+      function Probe() {
+        const handleRef = useRef<SideNavImperativeCollapseHandle>(null);
+        return (
+          <>
+            <button
+              type="button"
+              data-testid="external-toggle"
+              onClick={() => {
+                handleRef.current?.getCollapseState()?.toggle();
+                seen.push(handleRef.current?.getCollapseState()?.isCollapsed);
+              }}>
+              toggle
+            </button>
+            <SideNav handleRef={handleRef} resizable={resizable}>
+              Content
+            </SideNav>
+          </>
+        );
+      }
+
+      render(<Probe />);
+      fireEvent.click(screen.getByTestId('external-toggle'));
+
+      // The nav cannot collapse, so the reported state must not claim it did.
+      expect(seen).toEqual([false]);
+      expect(screen.getByRole('navigation').style.width).toBe(width);
+    },
+  );
+
   it('lets resizable own collapse on its own', async () => {
     const user = userEvent.setup();
     const onCollapseChange = vi.fn();
