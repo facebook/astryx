@@ -21,7 +21,7 @@
  * visibility only.
  *
  * @input Authored component docs (src/X/X.doc.mjs) and template descriptors
- *   (the package's declared templates root, e.g. packages/lab/blocks)
+ *   (the package's declared templates root, e.g. packages/charts/blocks)
  * @output Per-component pairing of example labels to block names, plus
  *   structural findings (missing same-stem sources, descriptor load failures)
  * @position Shared by docsite reporting tests; no generator consumes this.

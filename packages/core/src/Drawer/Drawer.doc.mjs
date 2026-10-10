@@ -4,7 +4,7 @@
  * @file Drawer.doc.mjs
  * @input Drawer props, panel anatomy, DrawerHeader composition, overlay playground config, and story-aligned examples
  * @output Consumer documentation and examples for Drawer
- * @position CLI and docsite metadata; runnable docsite demos live in packages/lab/blocks
+ * @position CLI and docsite metadata; runnable docsite demos live in packages/cli/assets/templates/blocks/components/Drawer
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
@@ -40,6 +40,8 @@ const anatomy = [
 export const docs = {
   name: 'Drawer',
   displayName: 'Drawer',
+  // Keeps the registry route Drawer had as a canary-only Lab component.
+  registry: {aliases: ['lab/drawer']},
   group: 'Drawer',
   category: 'Overlay',
   keywords: [

@@ -3,35 +3,34 @@
 'use client';
 
 /**
- * @input A wide desktop budget and isFullWidthOnMobile
- * @output A Drawer that fills the viewport on mobile
- * @position Copyable Lab Drawer example
+ * @input Controlled open state and the logical start edge
+ * @output A Drawer that opens from the start side of the viewport
+ * @position Copyable Drawer example
  */
 
 import {useState} from 'react';
-import {Drawer, DrawerHeader} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/core/Drawer';
 import {Button} from '@astryxdesign/core/Button';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
-export default function DrawerFullWidthMobile() {
+export default function DrawerStart() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <Button label="Open wide drawer" onClick={() => setIsOpen(true)} />
+      <Button label="Open start drawer" onClick={() => setIsOpen(true)} />
       <Drawer
         isOpen={isOpen}
         onOpenChange={setIsOpen}
-        label="Wide panel"
-        width={560}
-        isFullWidthOnMobile>
+        label="Navigation"
+        side="start">
         <Layout
-          header={<DrawerHeader title="Wide panel" onOpenChange={setIsOpen} />}
+          header={<DrawerHeader title="Navigation" onOpenChange={setIsOpen} />}
           content={
             <LayoutContent>
               <Text type="body">
-                A wide panel on desktop, the full viewport width on mobile.
+                The start edge follows the page's writing direction.
               </Text>
             </LayoutContent>
           }

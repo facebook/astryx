@@ -1,19 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /** @type {import('@astryxdesign/cli/authoring').TemplateDoc} */
-export default {
+export const doc = {
   type: 'block',
-  name: 'With subtitle and end content',
-  displayName: 'With subtitle and end content',
+  name: 'With close button',
+  displayName: 'With close button',
   description:
-    'Add a subtitle under the title and put a status, such as a Badge, in endContent. The close button stays at the end of the row.',
+    'Pass onOpenChange to render a close button that calls it with false. Drawer renders no close button of its own, so this is the usual visible way to close.',
   exampleFor: 'DrawerHeader',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: [
     'Drawer',
     'DrawerHeader',
-    'Badge',
     'Button',
     'Layout',
     'LayoutContent',

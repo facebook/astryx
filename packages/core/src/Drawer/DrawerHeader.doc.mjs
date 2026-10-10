@@ -4,7 +4,7 @@
  * @file DrawerHeader.doc.mjs
  * @input DrawerHeader props, anatomy, theming targets, and examples
  * @output Consumer documentation for DrawerHeader, a sub-component of Drawer
- * @position CLI and docsite metadata for the Lab Drawer header
+ * @position CLI and docsite metadata for the Drawer header; runnable docsite demos live in packages/cli/assets/templates/blocks/components/DrawerHeader
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
@@ -13,6 +13,8 @@ export const docs = {
   name: 'DrawerHeader',
   subComponentOf: 'Drawer',
   displayName: 'Drawer Header',
+  // Keeps the registry route DrawerHeader had as a canary-only Lab component.
+  registry: {aliases: ['lab/drawer-header']},
   isHiddenFromOverview: true,
   description:
     'Header for drawers with a title, optional subtitle, close button, and start/end content slots. Same API as DialogHeader.',
@@ -113,7 +115,7 @@ export const docs = {
       label: 'With close button',
       code: `
 import {useState} from 'react';
-import {Drawer, DrawerHeader} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/core/Drawer';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 
 function Inspector() {
@@ -134,7 +136,7 @@ function Inspector() {
     {
       label: 'With subtitle and end content',
       code: `
-import {DrawerHeader} from '@astryxdesign/lab';
+import {DrawerHeader} from '@astryxdesign/core/Drawer';
 import {Badge} from '@astryxdesign/core/Badge';
 
 <DrawerHeader

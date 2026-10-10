@@ -5,13 +5,13 @@
 /**
  * @input Static header content: title, subtitle, a no-op close handler, and a divider
  * @output The DrawerHeader row at the top of a square-cornered, drawer-width panel, visible without opening an overlay
- * @position Lab DrawerHeader's docsite showcase. Drawer has no inline mode
+ * @position DrawerHeader's docsite showcase. Drawer has no inline mode
  *   like Dialog's isInline, so a plain panel stands in for the drawer; in an
  *   app, compose DrawerHeader in a Layout header slot inside a Drawer.
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {DrawerHeader} from '@astryxdesign/lab';
+import {DrawerHeader} from '@astryxdesign/core/Drawer';
 import {
   Layout,
   LayoutContent,

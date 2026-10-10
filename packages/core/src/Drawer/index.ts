@@ -4,7 +4,7 @@
  * @file index.ts
  * @input Drawer.tsx, DrawerHeader.tsx
  * @output Re-exports Drawer and DrawerHeader components and their prop types
- * @position Lab entry point for the Drawer directory
+ * @position Core entry point for the Drawer directory (`@astryxdesign/core/Drawer`)
  */
 
 export {Drawer} from './Drawer';

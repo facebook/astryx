@@ -5,11 +5,11 @@
 /**
  * @input Controlled open state for a modal Drawer
  * @output A DrawerHeader with a subtitle, a status badge in its end slot, and a close button
- * @position Copyable Lab DrawerHeader example
+ * @position Copyable DrawerHeader example
  */
 
 import {useState} from 'react';
-import {Drawer, DrawerHeader} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/core/Drawer';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Button} from '@astryxdesign/core/Button';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';

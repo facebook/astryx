@@ -3,34 +3,35 @@
 'use client';
 
 /**
- * @input Controlled open state for a modal Drawer
- * @output A single-trigger drawer with a scrim and the built-in close button
- * @position Lab Drawer's docsite showcase and copyable CLI block
+ * @input A wide desktop budget and isFullWidthOnMobile
+ * @output A Drawer that fills the viewport on mobile
+ * @position Copyable Drawer example
  */
 
 import {useState} from 'react';
-import {Drawer, DrawerHeader} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/core/Drawer';
 import {Button} from '@astryxdesign/core/Button';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
-export default function DrawerShowcase() {
+export default function DrawerFullWidthMobile() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <Button label="Open drawer" onClick={() => setIsOpen(true)} />
+      <Button label="Open wide drawer" onClick={() => setIsOpen(true)} />
       <Drawer
         isOpen={isOpen}
         onOpenChange={setIsOpen}
-        label="Details"
-        width={360}>
+        label="Wide panel"
+        width={560}
+        isFullWidthOnMobile>
         <Layout
-          header={<DrawerHeader title="Details" onOpenChange={setIsOpen} />}
+          header={<DrawerHeader title="Wide panel" onOpenChange={setIsOpen} />}
           content={
             <LayoutContent>
               <Text type="body">
-                Close with Escape, the scrim, or the close button.
+                A wide panel on desktop, the full viewport width on mobile.
               </Text>
             </LayoutContent>
           }
