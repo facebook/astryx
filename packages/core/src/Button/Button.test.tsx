@@ -9,6 +9,7 @@
  * SYNC: When Button.tsx changes, update tests to match new behavior
  */
 
+import {readFileSync} from 'node:fs';
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -21,6 +22,8 @@ import {
 } from '../__tests__/pressState';
 import {Badge} from '../Badge/Badge';
 import {ButtonGroup} from '../ButtonGroup';
+import {InputGroup} from '../InputGroup';
+import {TextInput} from '../TextInput';
 import {IconButton} from '../IconButton';
 import {InternationalizationProvider} from '../i18n';
 
@@ -37,6 +40,40 @@ describe('Button', () => {
   it('renders label as visible text', () => {
     render(<Button label="Click me" />);
     expect(screen.getByRole('button')).toHaveTextContent('Click me');
+  });
+
+  it('uses InputGroup end-cap geometry and keeps its keyboard ring above adjacent members', () => {
+    const {rerender} = render(
+      <InputGroup label="Visibility">
+        <TextInput
+          label="Audience"
+          isLabelHidden
+          value="Members"
+          onChange={() => {}}
+        />
+        <Button label="Save" />
+      </InputGroup>,
+    );
+
+    const addon = screen.getByRole('button', {name: 'Save'});
+    expect(addon.className).toContain('groupStyles.buttonAddon');
+
+    // jsdom cannot resolve this compound StyleX focus selector. Keep the
+    // direct-child keyboard stacking rule explicit at its definition instead.
+    const groupStylesSource = readFileSync(
+      'packages/core/src/InputGroup/groupStyles.ts',
+      'utf8',
+    );
+    expect(groupStylesSource).toContain(
+      "':where(.astryx-input-group > *):focus-visible'",
+    );
+    expect(groupStylesSource).toMatch(
+      /zIndex:\s*\{\s*default: null,\s*\[DIRECT_INPUT_GROUP_ADDON_FOCUS_VISIBLE\]: 2,/,
+    );
+
+    rerender(<Button label="Save" />);
+    const standalone = screen.getByRole('button', {name: 'Save'});
+    expect(standalone.className).not.toContain('groupStyles.buttonAddon');
   });
 
   it('renders children instead of label when provided', () => {

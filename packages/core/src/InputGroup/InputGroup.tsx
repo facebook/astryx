@@ -8,10 +8,8 @@
  * @output Exports InputGroup component with group label/description ARIA wiring
  * @position Groups input with prefix/suffix addons; consumed by index.ts
  *
- * Children (TextInput, NumberInput, TimeInput, DateInput, Typeahead,
- * Selector, MultiSelector) consume the InputGroup context
- * to remove their own border/radius so the group container provides
- * the unified border treatment.
+ * Compatible input children consume InputGroup context to remove competing
+ * border/radius geometry. Button addons consume it to join the same outer shape.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/InputGroup/InputGroup.doc.mjs
