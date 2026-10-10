@@ -1200,3 +1200,384 @@ describe('swipeActions', () => {
     }
   });
 });
+
+describe('controlProps', () => {
+  it('reaches the invisible button: states, relations, marks, key handling and the roving tabIndex', async () => {
+    const onKeyDown = vi.fn();
+    render(
+      <Item
+        label="Views"
+        onClick={vi.fn()}
+        controlProps={{
+          'aria-expanded': true,
+          'aria-haspopup': 'menu',
+          'aria-controls': 'views-menu',
+          'data-nav-id': 'row-1',
+          onKeyDown,
+          tabIndex: -1,
+        }}
+      />,
+    );
+    const control = screen.getByRole('button', {name: 'Views'});
+    expect(control).toHaveAttribute('aria-expanded', 'true');
+    expect(control).toHaveAttribute('aria-haspopup', 'menu');
+    expect(control).toHaveAttribute('aria-controls', 'views-menu');
+    expect(control).toHaveAttribute('data-nav-id', 'row-1');
+    expect(control).toHaveAttribute('tabindex', '-1');
+    // The root carries none of them.
+    const root = control.parentElement as HTMLElement;
+    expect(root).not.toHaveAttribute('aria-expanded');
+    expect(root).not.toHaveAttribute('data-nav-id');
+    fireEvent.keyDown(control, {key: 'ArrowDown'});
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    // The control is still the row's button: type and click are the row's.
+    expect(control).toHaveAttribute('type', 'button');
+  });
+
+  it('reaches the invisible anchor, and the row keeps the address, the target and the rel', () => {
+    render(
+      <Item
+        label="Message"
+        href="/m/1"
+        target="_blank"
+        controlProps={{
+          'aria-describedby': 'hint',
+          'data-nav-id': 'row-2',
+          tabIndex: 0,
+        }}
+      />,
+    );
+    const link = screen.getByRole('link', {name: 'Message'});
+    expect(link).toHaveAttribute('href', '/m/1');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(link).toHaveAttribute('aria-describedby', 'hint');
+    expect(link).toHaveAttribute('data-nav-id', 'row-2');
+    expect(link).toHaveAttribute('tabindex', '0');
+  });
+
+  it('gives a name of its own to the control, not the root', () => {
+    render(
+      <Item
+        label={<span aria-hidden="true">★</span>}
+        onClick={vi.fn()}
+        controlProps={{'aria-label': 'Star this message'}}
+      />,
+    );
+    expect(
+      screen.getByRole('button', {name: 'Star this message'}),
+    ).toBeInTheDocument();
+  });
+
+  it('a disabled row keeps its own tabIndex and aria-disabled over the caller\x27s', () => {
+    render(
+      <Item
+        label="Message"
+        href="/m/1"
+        isDisabled
+        controlProps={{tabIndex: 0, 'aria-disabled': false}}
+      />,
+    );
+    // A disabled anchor is out of the tab order and says so.
+    const link = screen.getByText('Message').closest('a') as HTMLElement;
+    expect(link).toHaveAttribute('tabindex', '-1');
+    expect(link).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('lands on the root when the root is the link', () => {
+    const LinkRoot = ({href, children, ...rest}: React.ComponentProps<'a'>) => (
+      <a href={href} {...rest}>
+        {children}
+      </a>
+    );
+    render(
+      <Item
+        as={LinkRoot}
+        role="menuitem"
+        label="Docs"
+        href="/docs"
+        controlProps={{'data-nav-id': 'row-3', 'aria-keyshortcuts': 'd'}}
+      />,
+    );
+    const root = screen.getByRole('menuitem', {name: 'Docs'});
+    expect(root.tagName).toBe('A');
+    expect(root).toHaveAttribute('data-nav-id', 'row-3');
+    expect(root).toHaveAttribute('aria-keyshortcuts', 'd');
+  });
+
+  it('warns in development, and lands nowhere, when the row renders no control', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const {unmount} = render(
+        <Item
+          role="menuitem"
+          label="Views"
+          onClick={vi.fn()}
+          controlProps={{'aria-expanded': true}}
+        />,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('controlProps'),
+      );
+      expect(screen.getByRole('menuitem')).not.toHaveAttribute('aria-expanded');
+      unmount();
+      warn.mockClear();
+      function Delegating() {
+        const inputRef = useRef<HTMLInputElement>(null);
+        return (
+          <Item
+            label="Pick"
+            interactiveRef={inputRef}
+            startContent={
+              <input ref={inputRef} type="checkbox" aria-label="Pick" />
+            }
+            controlProps={{'data-nav-id': 'x'}}
+          />
+        );
+      }
+      render(<Delegating />);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('controlProps'),
+      );
+      expect(document.querySelector('[data-nav-id]')).toBeNull();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('does not warn when the control is rendered', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <Item
+          label="Views"
+          onClick={vi.fn()}
+          controlProps={{'aria-expanded': false}}
+        />,
+      );
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});
+
+describe('role="row" (a grid row)', () => {
+  function renderGridRow(
+    props: Partial<React.ComponentProps<typeof Item>> = {},
+  ) {
+    render(
+      <div role="grid" aria-label="Inbox">
+        <Item
+          role="row"
+          data-testid="row"
+          marker={<span data-testid="marker">•</span>}
+          startContent={<input type="checkbox" aria-label="Select message" />}
+          label="Message one"
+          description="A snippet"
+          endContent={<button type="button">More</button>}
+          {...props}
+        />
+      </div>,
+    );
+    return screen.getByTestId('row');
+  }
+
+  it('renders every part as a gridcell, the label cell holding the link the controlProps reach', () => {
+    const row = renderGridRow({
+      href: '/m/1',
+      controlProps: {tabIndex: 0, 'data-nav-id': 'm-1'},
+    });
+    expect(row).toHaveAttribute('role', 'row');
+    const cells = Array.from(row.children);
+    expect(cells.length).toBe(4);
+    for (const cell of cells) {
+      expect(cell).toHaveAttribute('role', 'gridcell');
+    }
+    expect(screen.getByTestId('marker').closest('[role="gridcell"]')).toBe(
+      cells[0],
+    );
+    expect(
+      screen
+        .getByRole('checkbox', {name: 'Select message'})
+        .closest('[role="gridcell"]'),
+    ).toBe(cells[1]);
+    const link = screen.getByRole('link', {name: /Message one/});
+    expect(link.closest('[role="gridcell"]')).toBe(cells[2]);
+    // The anchor is a plain link inside its cell: no role of its own, and
+    // the grid's roving focus marks ride it.
+    expect(link).not.toHaveAttribute('role');
+    expect(link).toHaveAttribute('tabindex', '0');
+    expect(link).toHaveAttribute('data-nav-id', 'm-1');
+    expect(
+      screen.getByRole('button', {name: 'More'}).closest('[role="gridcell"]'),
+    ).toBe(cells[3]);
+  });
+
+  it('holds a button in the label cell for onClick, and fires it', async () => {
+    const onClick = vi.fn();
+    const user = userEvent.setup();
+    const row = renderGridRow({onClick});
+    const button = screen.getByRole('button', {name: /Message one/});
+    expect(button.closest('[role="gridcell"]')?.parentElement).toBe(row);
+    await user.click(button);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('a static row keeps the label in a cell with no control', () => {
+    const row = renderGridRow();
+    const cells = Array.from(row.children);
+    expect(cells.every(cell => cell.getAttribute('role') === 'gridcell')).toBe(
+      true,
+    );
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.getByText('Message one').closest('[role="gridcell"]')).toBe(
+      cells[2],
+    );
+  });
+
+  it('selection is the row\x27s aria-selected, never aria-current', () => {
+    const row = renderGridRow({href: '/m/1', isSelected: true});
+    expect(row).toHaveAttribute('aria-selected', 'true');
+    expect(row).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link')).not.toHaveAttribute('aria-selected');
+  });
+
+  it('a row with no parts beyond the label is one gridcell', () => {
+    render(
+      <div role="grid" aria-label="List">
+        <Item role="row" data-testid="row" label="Only" />
+      </div>,
+    );
+    const row = screen.getByTestId('row');
+    expect(row.children.length).toBe(1);
+    expect(row.firstElementChild).toHaveAttribute('role', 'gridcell');
+  });
+
+  it('does not warn about controlProps: the row renders its control', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      renderGridRow({href: '/m/1', controlProps: {tabIndex: -1}});
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('leaves every other role as before: no cells, no control', () => {
+    render(
+      <ul role="menu">
+        <Item
+          role="menuitem"
+          data-testid="row"
+          label="Views"
+          onClick={vi.fn()}
+          startContent={<span>i</span>}
+        />
+      </ul>,
+    );
+    const row = screen.getByTestId('row');
+    expect(
+      Array.from(row.children).some(c => c.getAttribute('role') === 'gridcell'),
+    ).toBe(false);
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+});
+
+describe('swipe actions in a grid row', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({
+      toFake: [
+        'setTimeout',
+        'clearTimeout',
+        'requestAnimationFrame',
+        'cancelAnimationFrame',
+        'Date',
+        'performance',
+      ],
+    });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function touch(
+    element: Element,
+    type: 'pointerDown' | 'pointerMove' | 'pointerUp',
+    x: number,
+    y = 10,
+  ) {
+    vi.advanceTimersByTime(50);
+    fireEvent[type](element, {
+      clientX: x,
+      clientY: y,
+      pointerId: 7,
+      pointerType: 'touch',
+    });
+  }
+  const settled = () => void act(() => vi.advanceTimersByTime(250));
+
+  it('is served under role="row": the panel is a gridcell, inert at rest and live with its buttons when the row rests open', () => {
+    const onActivate = vi.fn();
+    render(
+      <div role="grid" aria-label="Inbox">
+        <Item
+          role="row"
+          data-testid="row"
+          label="Message one"
+          href="/m/1"
+          startContent={<input type="checkbox" aria-label="Select" />}
+          swipeActions={{
+            trailing: [{label: 'Archive', onActivate, hasRemoval: true}],
+          }}
+        />
+      </div>,
+    );
+    const row = screen.getByTestId('row');
+    Object.defineProperty(row, 'clientWidth', {configurable: true, value: 300});
+    const panel = row.querySelector(
+      '[data-swipe-panel="trailing"]',
+    ) as HTMLElement;
+    expect(panel).toHaveAttribute('role', 'gridcell');
+    expect(panel).toHaveAttribute('inert');
+    // Every child of the row is a cell, the panel included.
+    expect(
+      Array.from(row.children).every(
+        c => c.getAttribute('role') === 'gridcell',
+      ),
+    ).toBe(true);
+    const entries = panel.firstElementChild as HTMLElement;
+    Object.defineProperty(entries, 'offsetWidth', {
+      configurable: true,
+      value: 72,
+    });
+    touch(row, 'pointerDown', 200);
+    touch(row, 'pointerMove', 180);
+    touch(row, 'pointerMove', 160);
+    touch(row, 'pointerMove', 140);
+    touch(row, 'pointerUp', 140);
+    settled();
+    expect(row.style.getPropertyValue('--_item-swipe-travel')).toBe('-72px');
+    expect(panel).not.toHaveAttribute('inert');
+    const archive = screen.getByRole('button', {name: 'Archive'});
+    expect(archive.closest('[role="gridcell"]')).toBe(panel);
+    fireEvent.click(archive);
+    expect(onActivate).toHaveBeenCalledTimes(1);
+  });
+
+  it('is not served under a role that forbids interactive descendants', () => {
+    render(
+      <ul role="listbox" aria-label="Options">
+        <Item
+          role="option"
+          data-testid="row"
+          label="Option"
+          swipeActions={{trailing: [{label: 'Archive', onActivate: vi.fn()}]}}
+        />
+      </ul>,
+    );
+    expect(
+      screen.getByTestId('row').querySelector('[data-swipe-panel]'),
+    ).toBeNull();
+  });
+});

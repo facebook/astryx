@@ -165,6 +165,18 @@ export const docs = {
             'Link URL. Makes the item a link via an invisible anchor element. A row whose root is already a link component (see `as`) carries the address on that root instead, and no invisible anchor is rendered.',
         },
         {
+          name: 'role',
+          type: 'string',
+          description:
+            "The row's ARIA role, on the root. With a role a parent owns keyboard access: the label sits in a plain span, no invisible button or anchor is rendered, and `onClick` goes on the root. `role=\"row\"` (a grid) is the exception: the row renders its parts as `gridcell`s (the marker, the start content, the label with its description, the end content, each swipe panel) and keeps its own control in the label cell, which `controlProps` reaches with the grid's roving `tabIndex` and marks; `isSelected` is the row's `aria-selected`; `swipeActions` stays available.",
+        },
+        {
+          name: 'controlProps',
+          type: 'ItemControlProps',
+          description:
+            "Attributes spread on the control the row renders for `onClick` or `href` (the invisible button or anchor the label sits in), the element keyboard focus lands on: a disclosure's `aria-expanded`, `aria-haspopup` and `aria-controls`, a toggle's `aria-pressed`, a name of its own through `aria-label` or `aria-labelledby`, a host's `data-*` marks, `onKeyDown`, a composite's roving `tabIndex`. Every other prop keeps landing on the root. A disabled row keeps its own `tabIndex={-1}` and `aria-disabled`. Where the root is the link (`as` is a link component) these land on the root. Ignored with a development warning where the row renders no control: a row with a `role`, or one with an `interactiveRef`. Accepts HTML attributes except the control's own `role`, `onClick`, `className`, `style` and children.",
+        },
+        {
           name: 'target',
           type: "'_blank' | '_self'",
           description:
@@ -254,6 +266,11 @@ export const docs = {
         guidance: true,
         description:
           'Give a swipe action a second home in the row (a menu or a button in endContent): the swipe is a touch accelerator, and a verb reachable only by swipe is unreachable by keyboard and by mouse.',
+      },
+      {
+        guidance: true,
+        description:
+          'Put a state or relation a screen reader must read with the row (aria-expanded, aria-haspopup, aria-controls, aria-pressed) in controlProps, so it lands on the control that takes focus; an aria-* attribute on the row itself lands on the root, where it is invalid or unread.',
       },
       {
         guidance: false,
