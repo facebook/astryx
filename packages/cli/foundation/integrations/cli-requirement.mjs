@@ -13,6 +13,9 @@
  *   `integration verify`, which requires it.
  */
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import {createRequire} from 'node:module';
 import {semverCompare} from '../env/semver.mjs';
 
 export const CLI_PACKAGE = '@astryxdesign/cli';
@@ -263,6 +266,36 @@ export function keywordsCliProblem(pkg) {
 }
 
 /**
+ * Check whether `peerDependencies` is a valid shape (absent, null, or a plain
+ * object). Returns an error message if invalid, or null if valid.
+ * @param {any} pkg
+ * @returns {string | null}
+ */
+export function checkPeerDepsShape(pkg) {
+  const pd = pkg.peerDependencies;
+  if (pd !== undefined && pd !== null &&
+      (typeof pd !== 'object' || Array.isArray(pd))) {
+    return `package.json peerDependencies must be an object, found ${Array.isArray(pd) ? 'array' : typeof pd}.`;
+  }
+  return null;
+}
+
+/**
+ * Check whether `peerDependenciesMeta` is a valid shape (absent, null, or a
+ * plain object). Returns an error message if invalid, or null if valid.
+ * @param {any} pkg
+ * @returns {string | null}
+ */
+export function checkPeerDepsMetaShape(pkg) {
+  const meta = pkg.peerDependenciesMeta;
+  if (meta !== undefined && meta !== null &&
+      (typeof meta !== 'object' || Array.isArray(meta))) {
+    return `package.json peerDependenciesMeta must be an object, found ${Array.isArray(meta) ? 'array' : typeof meta}.`;
+  }
+  return null;
+}
+
+/**
  * The package.json with a CLI peer of `>=floor`: optional, unless the package
  * already says otherwise. Call it only when the package's range admits a CLI
  * before `floor`, so a stricter range is never lowered.
@@ -271,6 +304,10 @@ export function keywordsCliProblem(pkg) {
  * @returns {any}
  */
 export function withCliPeer(pkg, floor) {
+  const shapeErr = checkPeerDepsShape(pkg);
+  if (shapeErr) return pkg;
+  const metaErr = checkPeerDepsMetaShape(pkg);
+  if (metaErr) return pkg;
   const meta = pkg.peerDependenciesMeta ?? {};
   return {
     ...pkg,
@@ -291,4 +328,76 @@ export function withCliPeer(pkg, floor) {
  */
 export function withDocsTreeCli(pkg) {
   return withCliPeer(pkg, NAMESPACE_DOCS_CLI);
+}
+
+/**
+ * The package.json of `name` as Node would resolve it from `packageDir`:
+ * the package's own node_modules, then each ancestor's, so a dependency a
+ * workspace hoisted to its root counts. Returns null when it is not
+ * installed there.
+ *
+ * Two parts of Node's lookup are deliberately left out. `require.resolve` of
+ * `<name>/package.json` throws when the package's exports map hides
+ * `./package.json` (Core's and the CLI's both do), and it also searches
+ * NODE_PATH and the global folders, which `pnpm exec` and `npx` point at
+ * their own installs, so a package that has not installed anything would
+ * look satisfied. The lookup reads the same ancestor directories Node lists,
+ * and only those.
+ *
+ * @param {string} packageDir absolute path to the package directory
+ * @param {string} name package name, e.g. `@astryxdesign/core`
+ * @returns {string | null} absolute path to its package.json
+ */
+export function resolveInstalledPackageJson(packageDir, name) {
+  const from = path.resolve(packageDir);
+  /** @type {Set<string>} */
+  const ancestorDirs = new Set();
+  for (let dir = from; ; dir = path.dirname(dir)) {
+    ancestorDirs.add(path.join(dir, 'node_modules'));
+    if (path.dirname(dir) === dir) break;
+  }
+  const lookup = createRequire(path.join(from, 'package.json')).resolve.paths(name) ?? [];
+  for (const dir of lookup) {
+    if (!ancestorDirs.has(dir)) continue;
+    const candidate = path.join(dir, ...name.split('/'), 'package.json');
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+/**
+ * Add a `@astryxdesign/core` peer dependency to the package when none exists.
+ * Reads the installed Core version (resolved the way Node resolves it from the
+ * package, so a hoisted install counts) and writes `^<version>`. Returns null
+ * when Core is already a peer, whatever its range (an empty string included),
+ * or when the installed version cannot be read. Skips silently when
+ * peerDependencies is not an object.
+ *
+ * @param {any} pkg package.json contents
+ * @param {string} packageDir absolute path to the package directory
+ * @returns {{pkg: any, version: string} | null} the updated pkg + version, or null
+ */
+export function withCorePeer(pkg, packageDir) {
+  const shapeErr = checkPeerDepsShape(pkg);
+  if (shapeErr) return null;
+  if (Object.hasOwn(pkg.peerDependencies ?? {}, '@astryxdesign/core')) return null;
+  const corePkgPath = resolveInstalledPackageJson(packageDir, '@astryxdesign/core');
+  if (corePkgPath == null) return null;
+  try {
+    const corePkg = JSON.parse(fs.readFileSync(corePkgPath, 'utf-8'));
+    const version = corePkg.version;
+    if (typeof version !== 'string') return null;
+    return {
+      pkg: {
+        ...pkg,
+        peerDependencies: {
+          ...(pkg.peerDependencies ?? {}),
+          '@astryxdesign/core': `^${version}`,
+        },
+      },
+      version,
+    };
+  } catch {
+    return null;
+  }
 }

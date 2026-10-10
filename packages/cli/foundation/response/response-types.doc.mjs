@@ -323,6 +323,11 @@ export const doc = {
 
     // integration authoring
     {
+      value: 'integration.init',
+      description:
+        'An init receipt: name, packageCreated, fieldsAdded, installed, dryRun, and notes (informational messages such as a missing exports map).',
+    },
+    {
       value: 'integration.add',
       description:
         'A contribution-writer receipt: kind, name, optional root {path, created}, integration-manifest path, every affected project-relative path, written, and dryRun.',

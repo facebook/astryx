@@ -57,6 +57,7 @@
  *   | 'ERR_AMBIGUOUS_COMPONENT'
  *   | 'ERR_AMBIGUOUS_THEME'
  *   | 'ERR_UNKNOWN_THEME'
+ *   | 'ERR_INSTALL_FAILED'
  *   | 'ERR_INTEGRATION_ROOT_CONFLICT'
  *   | 'ERR_INTEGRATION_EXPORT_CONFLICT'
  *   | 'ERR_UNKNOWN_PACKAGE'
@@ -151,6 +152,9 @@ export const ERROR_CODES = Object.freeze({
   ERR_UNKNOWN_THEME: 'ERR_UNKNOWN_THEME',
   /** An integration root already points somewhere other than the requested path. */
   ERR_INTEGRATION_ROOT_CONFLICT: 'ERR_INTEGRATION_ROOT_CONFLICT',
+
+  /** A package-manager install could not be started, exited non-zero, or timed out. */
+  ERR_INSTALL_FAILED: 'ERR_INSTALL_FAILED',
   /** A package export already maps a generated contribution subpath elsewhere. */
   ERR_INTEGRATION_EXPORT_CONFLICT: 'ERR_INTEGRATION_EXPORT_CONFLICT',
   /** No package matched the requested name (discover). */

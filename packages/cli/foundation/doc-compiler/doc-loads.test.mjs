@@ -52,6 +52,10 @@ const RUNNERS = {
     runs: 'the gap-report worker thread, and `gh issue create` as the GitHub fallback',
     sites: ['import(node:child_process)', 'worker_threads.Worker'],
   },
+  'api/integration/init.mjs': {
+    runs: 'the detected package manager to install @astryxdesign/cli and @astryxdesign/core as dev dependencies',
+    sites: ['child_process.spawnSync'],
+  },
   'api/integration/pack-check.mjs': {
     runs: "`npm pack`, `tar`, and a Node script that resolves the packed specifiers, to check a package as published, and the package's doc modules, to see which need a newer CLI",
     sites: ['child_process.spawnSync ×3', 'loadTopicModule'],
@@ -194,9 +198,11 @@ const RUNNERS = {
   'clients/cli/commands/integration.mjs': {
     runs: SELF_DOCS,
     sites: [
+      'import ../../../api/integration/init.doc.mjs',
       'import ../../../api/integration/integrationAdd.doc.mjs',
       'import ../../../api/integration/integrationPackCheck.doc.mjs',
       'import ./integration-add.doc.mjs',
+      'import ./integration-init.doc.mjs',
       'import ./integration-pack.doc.mjs',
       'import ./integration-verify.doc.mjs',
       'import ./integration.doc.mjs',

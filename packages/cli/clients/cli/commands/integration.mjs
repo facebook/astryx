@@ -3,6 +3,7 @@
 /** @file CLI bindings for integration authoring and package verification. */
 
 import {integrationAdd} from '../../../api/integration/add-contribution.mjs';
+import {integrationInit} from '../../../api/integration/init.mjs';
 import {integrationPackCheck} from '../../../api/integration/pack-check.mjs';
 import {jsonOut} from '../../../foundation/response/json.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
@@ -10,10 +11,18 @@ import {NO_RESULT_SET} from '../../../foundation/debug/index.mjs';
 import {emit, list, section, text} from '../formatters/index.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
+import {logger} from '../../../api/logger.mjs';
+import {
+  CLI_PACKAGE,
+  getCliInvocation,
+  getDlxPrefix,
+} from '../../../foundation/env/package-manager.mjs';
 import {doc as integrationGroup} from './integration.doc.mjs';
+import {doc as integrationInitCommand} from './integration-init.doc.mjs';
 import {doc as integrationAddCommand} from './integration-add.doc.mjs';
 import {doc as integrationVerifyCommand} from './integration-verify.doc.mjs';
 import {doc as integrationPackCommand} from './integration-pack.doc.mjs';
+import {doc as integrationInitFn} from '../../../api/integration/init.doc.mjs';
 import {doc as integrationAddFn} from '../../../api/integration/integrationAdd.doc.mjs';
 import {doc as integrationPackCheckFn} from '../../../api/integration/integrationPackCheck.doc.mjs';
 
@@ -100,6 +109,65 @@ export function registerIntegration(program) {
   // and lists the ones the group has, not the unknown option. Each subcommand
   // still parses its own options.
   integration.allowUnknownOption(true);
+
+  defineCommand(integration, integrationInitCommand, {
+    fn: integrationInitFn,
+    action: async (name, options) => {
+      const json = program.opts().json || false;
+      logger.setSilent(json);
+      try {
+        const receipt = await integrationInit(
+          {name: name || undefined, dryRun: options.dryRun, noInstall: options.install === false},
+          {cwd: process.cwd()},
+        );
+        if (json) {
+          jsonOut(receipt);
+          return NO_RESULT_SET;
+        }
+        const {data} = receipt;
+        const state = data.dryRun ? 'plan' : data.fieldsAdded.length > 0 || data.installed ? 'ok' : 'unchanged';
+        const blocks = [
+          section(
+            data.dryRun
+              ? 'integration package plan'
+              : data.packageCreated
+                ? 'integration package created'
+                : data.fieldsAdded.length > 0 || data.installed
+                  ? 'integration package updated'
+                  : 'integration package unchanged',
+          ),
+          text(`[${state}] ${data.name}`),
+          text(`packageCreated: ${data.packageCreated}`),
+          text(`installed: ${data.installed}`),
+          text(`dryRun: ${data.dryRun}`),
+        ];
+        if (data.fieldsAdded.length > 0) {
+          blocks.push(list(data.fieldsAdded.map(field => `${field} added`)));
+        }
+        if (data.installed) {
+          blocks.push(text('Dependencies installed.'));
+        }
+        if (data.notes.length > 0) {
+          blocks.push(list(data.notes));
+        }
+        if (!data.dryRun && (data.fieldsAdded.length > 0 || data.installed)) {
+          // After --no-install the CLI may not be in the package, so the bare
+          // `astryx` bin would make the runner fetch an unrelated registry
+          // package. The scoped one-off form always runs this CLI.
+          const cwd = process.cwd();
+          const invocation = options.install === false
+            ? `${getDlxPrefix(cwd)} ${CLI_PACKAGE}`
+            : getCliInvocation(cwd);
+          blocks.push(text(`Next: ${invocation} integration add component YourWidget`));
+        }
+        emit(...blocks);
+      } catch (err) {
+        const e = /** @type {import('../../../api/error.mjs').AstryxError} */ (err);
+        return cliError(e.message, {suggestions: e.suggestions, code: e.code});
+      }
+      return NO_RESULT_SET;
+    },
+  });
 
   defineCommand(integration, integrationAddCommand, {
     fn: integrationAddFn,

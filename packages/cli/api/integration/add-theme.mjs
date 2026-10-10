@@ -37,6 +37,9 @@ import {
   THEMES_CLI,
   themesCliProblem,
   withCliPeer,
+  withCorePeer,
+  checkPeerDepsShape,
+  checkPeerDepsMetaShape,
 } from '../../foundation/integrations/cli-requirement.mjs';
 import {stripCopyrightHeader} from '../../foundation/text/copyright-header.mjs';
 import {
@@ -555,6 +558,14 @@ export async function integrationAddTheme(name, options = {}) {
       packageUpdate?.expectedOriginal ?? fs.readFileSync(packageFile);
     const text = packageUpdate?.contents ?? expectedOriginal.toString('utf-8');
     const current = JSON.parse(text);
+    const peerShapeErrCli = checkPeerDepsShape(current);
+    if (peerShapeErrCli) {
+      throw new AstryxError(peerShapeErrCli, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
+    }
+    const metaShapeErrCli = checkPeerDepsMetaShape(current);
+    if (metaShapeErrCli) {
+      throw new AstryxError(metaShapeErrCli, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
+    }
     let next =
       themesCliProblem(current) != null
         ? withCliPeer(current, THEMES_CLI)
@@ -577,6 +588,24 @@ export async function integrationAddTheme(name, options = {}) {
         contents:
           JSON.stringify(next, null, 2) + (text.endsWith('\n') ? '\n' : ''),
         expectedOriginal,
+      };
+    }
+  }
+  // A theme needs Core at runtime. Write the Core peer on the first
+  // theme add when no peer exists yet.
+  {
+    const coreExpected =
+      packageUpdate?.expectedOriginal ?? fs.readFileSync(packageFile);
+    const coreText =
+      packageUpdate?.contents ?? coreExpected.toString('utf-8');
+    const coreCurrent = JSON.parse(coreText);
+    const corePeerResult = withCorePeer(coreCurrent, packageDir);
+    if (corePeerResult != null) {
+      packageUpdate = {
+        contents:
+          JSON.stringify(corePeerResult.pkg, null, 2) +
+          (coreText.endsWith('\n') ? '\n' : ''),
+        expectedOriginal: coreExpected,
       };
     }
   }
