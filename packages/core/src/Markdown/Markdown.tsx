@@ -147,6 +147,10 @@ export interface MarkdownInlinePlugin {
 export type MarkdownSource = CitationSource;
 
 export interface MarkdownComponents {
+  /**
+   * Renders every fenced code block that no semantic-fence plugin claims, and
+   * a claimed fence whose plugin renderer declines, throws, or suspends.
+   */
   code?: React.ComponentType<{code: string; language?: string}>;
   inlineCode?: React.ComponentType<{children: string}>;
   /**
@@ -1408,13 +1412,14 @@ function renderBlock(
       // Track codeblock content in cursor for accurate character counting
       cursor.offset += node.value.length;
       const language = getMarkdownAstLegacyCodeLanguage(node) ?? 'plaintext';
+      // A semantic-fence proposal claims its fence before the host's code
+      // renderer (spec:AST-036 FR17). The host renderer, or the default Code
+      // block without one, draws every unclaimed fence and is the fallback
+      // when the claiming renderer is absent, declines, throws, or suspends.
       const CodeBlockComp = components?.code;
-      if (CodeBlockComp) {
-        return (
-          <CodeBlockComp key={index} code={node.value} language={language} />
-        );
-      }
-      const fallback = (
+      const fallback = CodeBlockComp ? (
+        <CodeBlockComp key={index} code={node.value} language={language} />
+      ) : (
         <div
           key={index}
           {...mergeProps(
