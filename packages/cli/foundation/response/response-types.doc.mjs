@@ -50,11 +50,13 @@ export const doc = {
     },
     {
       value: 'component.detail.props',
-      description: "Just one component's props table (ComponentPropDoc[]). The envelope's package names the npm package that owns the component.",
+      description:
+        "Just one component's props table (ComponentPropDoc[]). The envelope's package names the npm package that owns the component.",
     },
     {
       value: 'component.detail.source',
-      description: "One component's source file, as {component, source}. The envelope's package names the npm package that owns the component.",
+      description:
+        "One component's source file, as {component, source}. The envelope's package names the npm package that owns the component.",
     },
     {
       value: 'component.detail.showcase',
@@ -86,7 +88,7 @@ export const doc = {
     {
       value: 'docs.detail.section',
       description:
-        'One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open its topic index and the sections before and after it). The envelope\'s package names the npm package that wrote the section.',
+        "One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open its topic index and the sections before and after it). The envelope's package names the npm package that wrote the section.",
     },
     {
       value: 'docs.node',
@@ -161,7 +163,7 @@ export const doc = {
     {
       value: 'swizzle.copy',
       description:
-        'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling. The envelope\'s package names the same owning package.',
+        "An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling. The envelope's package names the same owning package.",
     },
 
     // gap reports
@@ -194,7 +196,7 @@ export const doc = {
     {
       value: 'template.copy',
       description:
-        'A scaffold receipt: template id, output directory, written file name, file count, demoMediaReplaced (how many Astryx demo media references were replaced with placeholders), notes (setup notes naming what the template needs that the project lacks — missing packages, missing StyleX compiler; empty when satisfied), missingPackages (external package names the template imports that are not in the project), and installCommand (a ready-to-run install command with the detected package manager and workspace version ranges; null when nothing is missing). The envelope\'s package names the npm package that owns the template.',
+        "A scaffold receipt: template id, output directory, written file name, file count, demoMediaReplaced (how many Astryx demo media references were replaced with placeholders), notes (setup notes naming what the template needs that the project lacks — missing packages, missing StyleX compiler; empty when satisfied), missingPackages (external package names the template imports that are not in the project), and installCommand (a ready-to-run install command with the detected package manager and workspace version ranges; null when nothing is missing). The envelope's package names the npm package that owns the template.",
     },
 
     {
@@ -207,7 +209,7 @@ export const doc = {
     {
       value: 'hook.list',
       description:
-        'The hook catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry. The envelope\'s package is @astryxdesign/core, the only package that ships hooks.',
+        "The hook catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry. The envelope's package is @astryxdesign/core, the only package that ships hooks.",
     },
     {
       value: 'hook.detail',
@@ -264,7 +266,7 @@ export const doc = {
     {
       value: 'theme.targets',
       description:
-        'The whole themeable surface: the echoed filter, componentCount, and targets, one per theming target — {key, className, component, props, states, deprecatedFor?}, where props and states are its legal override keys and deprecatedFor names the canonical replacement key.',
+        'The whole themeable surface: the echoed filter, componentCount, and targets, one per theming target — {key, className, component, props, states}, where props and states are its legal override keys.',
     },
     {
       value: 'theme.palette.generate',

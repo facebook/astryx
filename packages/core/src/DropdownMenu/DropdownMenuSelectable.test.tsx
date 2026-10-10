@@ -88,8 +88,8 @@ describe('DropdownMenuCheckboxItem', () => {
     expect(row.querySelector('input[type="checkbox"]')).toBeNull();
     // The shared checkbox target, directly on the row — no wrapper, and no
     // menu-specific target added for it (main reached this element through
-    // `astryx-checkbox` too).
-    const marker = row.querySelector('.astryx-checkbox');
+    // `astryx-checkbox-indicator` too).
+    const marker = row.querySelector('.astryx-checkbox-indicator');
     expect(marker).toBeInTheDocument();
     expect(marker).toHaveAttribute('aria-hidden', 'true');
     expect(marker).toHaveAttribute('data-checked', 'checked');
@@ -142,21 +142,25 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
     // circle, so menu radios and RadioList radios theme together and a theme
     // never has to reach through a wrapper.
     const box = checked.querySelector('.astryx-dropdown-menu-radio');
-    expect(box).toHaveClass('astryx-radio');
+    expect(box).toHaveClass('astryx-radio-indicator');
     expect(box).toHaveAttribute('data-size', 'md');
     expect(box).toHaveAttribute('data-checked', 'checked');
-    expect(box?.querySelector('.astryx-radio-dot')).toBeInTheDocument();
+    expect(
+      box?.querySelector('.astryx-radio-indicator-dot'),
+    ).toBeInTheDocument();
 
     // The unchecked radio still draws its circle, without the dot.
     const unchecked = screen.getByRole('menuitemradio', {
       name: 'Oldest',
       hidden: true,
     });
-    const uncheckedIndicator = unchecked.querySelector('.astryx-radio');
+    const uncheckedIndicator = unchecked.querySelector(
+      '.astryx-radio-indicator',
+    );
     expect(uncheckedIndicator).toBeInTheDocument();
     expect(uncheckedIndicator).not.toHaveAttribute('data-checked');
     expect(
-      uncheckedIndicator?.querySelector('.astryx-radio-dot'),
+      uncheckedIndicator?.querySelector('.astryx-radio-indicator-dot'),
     ).not.toBeInTheDocument();
   });
 

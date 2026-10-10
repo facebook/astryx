@@ -191,10 +191,6 @@ export const docs = {
         states: ['disabled'],
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {
-        className: 'astryx-date-input-clear-icon',
-        deprecatedFor: 'input-clear-icon',
-      },
     ],
   },
   usage: {
@@ -488,10 +484,6 @@ export const docsZh = {
         states: ['disabled'],
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {
-        className: 'astryx-date-input-clear-icon',
-        deprecatedFor: 'input-clear-icon',
-      },
     ],
   },
 };

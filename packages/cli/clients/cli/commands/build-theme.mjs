@@ -1062,22 +1062,11 @@ export function registerTheme(program) {
       emit(
         section(
           'Theming targets',
-          `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}\n(key - component - props - states - className - deprecatedFor)`,
+          `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}\n(key - component - props - states - className)`,
         ),
         records(targets, {
-          fields: [
-            'key',
-            'component',
-            'props',
-            'states',
-            'className',
-            'deprecatedFor',
-          ],
+          fields: ['key', 'component', 'props', 'states', 'className'],
           layout: 'inline',
-          format: {
-            deprecatedFor: (/** @type {string|null} */ v) =>
-              v ? `deprecated; use ${v}` : '',
-          },
         }),
         text(
           [
