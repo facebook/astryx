@@ -75,6 +75,41 @@ const TARGETS = [
       'nested Theme/MediaTheme scope above a native modal with nonzero geometry',
   },
   {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-colorpicker--end-user-choices',
+    guards:
+      'Automatic, theme, custom, mode switching, and Reset preserve the documented chart-color intent',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-recharts--theme-tokens',
+    guards:
+      'Recharts resolves theme-aware resting colors and a same-series active-state tint in the browser',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-recharts--runtime-theme-switch',
+    guards:
+      'Recharts keeps its SVG and focused chart surface while authored data colors switch modes',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-recharts--square-bars',
+    guards:
+      'A chart can opt its bar geometry out of the theme radius without mutating the theme',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-canvas--runtime-theme-switch',
+    guards: 'Canvas redraws concrete theme colors on the same drawing surface',
+  },
+  {
+    component: 'ChartTheming',
+    story: 'lab-charttheming-vega--serialized-canvas-config',
+    guards:
+      'Vega receives serialized concrete values and explicitly rebuilds its View when config changes',
+  },
+  {
     component: 'ChatToolCalls',
     story: 'core-chattoolcalls--focused-grouped-detail',
     guards:
