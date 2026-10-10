@@ -8,7 +8,7 @@ export const docs = {
   displayName: 'Dropdown Menu Submenu',
   isHiddenFromOverview: true,
   description:
-    'A single menu row that reveals a nested flyout of its own items. The row adopts DropdownMenuItem semantics (label / icon / description / isDisabled); its children become the flyout content. Opens inline-end with viewport auto-flip; Right/Enter/Space opens and focuses the first item, Left/Escape closes and returns focus to the trigger (Right/Left swap in RTL). On a phone (a coarse pointer, decided when the menu opened) the row drills in instead: its rows replace the menu\'s rows in the same box, led by a Back row named "Back to <parent>", and Back, Escape or ArrowLeft return to the row. For data-driven menus, give a menu item a nested `items` array instead of using this component directly.',
+    'A single menu row that reveals a nested flyout of its own items. The row adopts DropdownMenuItem semantics (label / icon / description / isDisabled); its children become the flyout content. Opens inline-end with viewport auto-flip; Right/Enter/Space opens and focuses the first item, Left/Escape closes and returns focus to the trigger (Right/Left swap in RTL). On a phone (a coarse pointer, decided when the menu opened) the row drills in instead: its rows replace the menu\'s rows in the same box, led by a Back row named "Back to <parent>", and Back, Escape or ArrowLeft return to the row. Host attributes and DOM event handlers (aria-*, data-*, id) reach the trigger row, the element carrying role="menuitem" and aria-haspopup="menu". For data-driven menus, give a menu item a nested `items` array instead of using this component directly.',
   playground: {
     defaults: {label: 'Move to'},
   },
@@ -73,6 +73,12 @@ export const docs = {
       description:
         'StyleX styles for the trigger row. Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLElement>',
+      description:
+        'Ref forwarded to the trigger row, the element carrying role="menuitem" and aria-haspopup="menu".',
+    },
   ],
 };
 
@@ -95,5 +101,6 @@ export const docsDense = {
     presentation:
       "'flyout' beside the row | 'drill-in' replaces the rows + Back row | 'adaptive' (default) drills in on a coarse pointer",
     xstyle: 'StyleX styles for the trigger row',
+    ref: 'ref to the trigger row (role="menuitem")',
   },
 };
