@@ -56,7 +56,8 @@ import {themeProps} from '../utils/themeProps';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {devWarn} from '../utils/devWarning';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import tabListMessages from '../i18n/generated-locales/en/tabList.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 /**
@@ -413,7 +414,7 @@ export function TabList({
   [EDGE_COMP_ATTR]: _edgeCompAttr,
   ...restProps
 }: TabListProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(tabListMessages);
   const ariaLabel = ariaLabelFromProps ?? t('@astryx.tabList.label');
   const size = useSize(sizeProp, 'md');
   const hasScroll = overflow !== 'visible';

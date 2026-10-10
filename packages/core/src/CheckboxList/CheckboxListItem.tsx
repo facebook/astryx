@@ -27,7 +27,8 @@ import type {CheckboxInputProps} from '../CheckboxInput/CheckboxInput';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
 import {CheckboxListContext} from './CheckboxListContext';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import checkboxListMessages from '../i18n/generated-locales/en/checkboxList.generated';
 import {ItemDescriptionContext} from '../Item/ItemDescriptionContext';
 
 // =============================================================================
@@ -194,7 +195,7 @@ export function CheckboxListItem({
   onClick: onClickProp,
   ...restProps
 }: CheckboxListItemProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(checkboxListMessages);
   const ctx = use(CheckboxListContext);
 
   if (ctx && ctx.value !== undefined && value === undefined) {

@@ -68,7 +68,8 @@ import {
 import {Badge, type BadgeProps} from '../Badge';
 import {useChatComposerContext} from './ChatContext';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import chatMessages from '../i18n/generated-locales/en/chat.generated';
 import {useDevWarning} from '../hooks/useDevWarning';
 
 // =============================================================================
@@ -349,7 +350,7 @@ function serialize(node: Node): string {
 // =============================================================================
 
 export function ChatComposerInput(props: ChatComposerInputProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(chatMessages);
   const composerCtx = useChatComposerContext();
   const hasControlledValueProp = props.value !== undefined;
 

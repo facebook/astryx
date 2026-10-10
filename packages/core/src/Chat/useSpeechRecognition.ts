@@ -14,7 +14,9 @@
  */
 
 import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
-import {useLocale, useTranslator} from '../i18n';
+import {useLocale} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import chatMessages from '../i18n/generated-locales/en/chat.generated';
 
 // =============================================================================
 // Types
@@ -259,7 +261,7 @@ function getDefaultAudioContext(): AudioContext {
 export function useSpeechRecognition(
   options: UseSpeechRecognitionOptions = {},
 ): UseSpeechRecognitionReturn {
-  const t = useTranslator();
+  const t = useComponentTranslator(chatMessages);
   const providerLocale = useLocale();
   const {
     lang,

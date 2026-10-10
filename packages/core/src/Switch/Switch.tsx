@@ -4,7 +4,7 @@
 
 /**
  * @file Switch.tsx
- * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip, i18n (useTranslator)
+ * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip, i18n (useComponentTranslator)
  * @output Exports Switch component, SwitchProps, SwitchLabelPosition, SwitchLabelSpacing
  * @position Core implementation; consumed by index.ts, tested by Switch.test.tsx
  *
@@ -50,7 +50,8 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import switchMessages from '../i18n/generated-locales/en/switch.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {usePressFeedback} from '../hooks/usePressFeedback';
@@ -568,7 +569,7 @@ export function Switch({
   ref,
   ...rest
 }: SwitchProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(switchMessages);
   const id = useId();
   // The row is the pressable: the input, the track and the label all sit
   // inside it, and the pressed arms above read the row's scope marker.

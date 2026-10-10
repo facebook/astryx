@@ -67,8 +67,13 @@ import {
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import tokenizerMessages from '../i18n/generated-locales/en/tokenizer.generated';
+import typeaheadMessages from '../i18n/generated-locales/en/typeahead.generated';
 import {useRenamedProp} from '../hooks/useRenamedProp';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...tokenizerMessages, ...typeaheadMessages};
 
 // Re-export status types for convenience
 export type {
@@ -611,7 +616,7 @@ export function Tokenizer<T extends SearchableItem>({
     containerClassName,
     containerStyle,
   });
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const size = useSize(sizeProp, 'md');
   const generatedInputId = useId();
   const inputId = idProp ?? generatedInputId;

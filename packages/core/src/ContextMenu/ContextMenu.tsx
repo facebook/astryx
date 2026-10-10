@@ -81,7 +81,9 @@ import {mergeProps, isImeKeyEvent, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {StyleXStyles} from '../theme/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import contextMenuMessages from '../i18n/generated-locales/en/contextMenu.generated';
+import dropdownMenuMessages from '../i18n/generated-locales/en/dropdownMenu.generated';
 import type {
   DropdownMenuOption,
   DropdownMenuItemData,
@@ -94,6 +96,9 @@ import {
   useAdaptivePresentation,
   type AdaptivePresentation,
 } from '../hooks/useAdaptivePresentation';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...contextMenuMessages, ...dropdownMenuMessages};
 
 const LazyMenuBottomSheet = lazy(async () =>
   import('../DropdownMenu/MenuBottomSheet').then(module => ({
@@ -303,7 +308,7 @@ export function ContextMenu({
   'data-testid': testId,
   ...rest
 }: ContextMenuProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const label = labelFromProps ?? t('@astryx.contextMenu.label');
   const backLabel = t('@astryx.dropdownMenu.back');
   const resolvedPresentation = useAdaptivePresentation(presentation);

@@ -37,7 +37,12 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import chatMessages from '../i18n/generated-locales/en/chat.generated';
+import chatComposerDrawerMessages from '../i18n/generated-locales/en/chatComposerDrawer.generated';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...chatMessages, ...chatComposerDrawerMessages};
 
 export interface ChatComposerDrawerProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -253,7 +258,7 @@ export function ChatComposerDrawer({
   'data-testid': testId,
   ...htmlProps
 }: ChatComposerDrawerProps): React.ReactElement {
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const label = labelFromProps ?? t('@astryx.chat.composerDrawer.label');
   const [internalCollapsed, setInternalCollapsed] =
     useState(defaultIsCollapsed);

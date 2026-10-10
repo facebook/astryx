@@ -23,7 +23,8 @@ import {Text} from '../Text';
 import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
 import {mergeProps} from '../utils';
 import {useDevWarning} from '../hooks/useDevWarning';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import timestampMessages from '../i18n/generated-locales/en/timestamp.generated';
 import {useLocale} from '../i18n/useLocale';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -275,7 +276,7 @@ export function Timestamp({
   'data-testid': testId,
   ...rest
 }: TimestampProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(timestampMessages);
   const locale = useLocale();
   const timeRef = useRef<HTMLTimeElement>(null);
   const mergedTimeRef = useMergedRefs(ref, timeRef);

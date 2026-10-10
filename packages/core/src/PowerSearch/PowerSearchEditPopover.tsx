@@ -19,7 +19,8 @@ import {Selector} from '../Selector';
 import {HStack, VStack} from '../Stack';
 import {Icon} from '../Icon';
 import {TreeList, type TreeListItemData} from '../TreeList';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import powersearchMessages from '../i18n/generated-locales/en/powersearch.generated';
 import {isImeKeyEvent} from '../utils/ime';
 import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {
@@ -263,7 +264,7 @@ function NestedSubFilterRow({
   maxMenuItems,
   isReadOnly,
 }: NestedSubFilterRowProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(powersearchMessages);
   const fieldOptions = useMemo(
     () =>
       config.getVisibleFields().map(field => ({
@@ -396,7 +397,7 @@ function NestedEditor({
   maxMenuItems,
   isReadOnly,
 }: NestedEditorProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(powersearchMessages);
   const [subFilters, setSubFilters] = useState<EditablePartialFilter[]>(() => {
     if (partialFilter.value && partialFilter.value.type === 'nested') {
       return partialFilter.value.value.map(f => initEditableFilter(config, f));
@@ -660,7 +661,7 @@ export function PowerSearchEditPopover({
   maxMenuItems,
   isReadOnly = false,
 }: PowerSearchEditPopoverProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(powersearchMessages);
   const saveButtonLabel =
     saveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
   const [partialFilter, setPartialFilter] =

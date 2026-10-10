@@ -20,7 +20,8 @@ import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon, type IconColor, type IconName} from '../../../Icon';
 import {Tooltip} from '../../../Tooltip';
-import {useTranslator} from '../../../i18n';
+import {useComponentTranslator} from '../../../i18n/useComponentTranslator';
+import tableMessages from '../../../i18n/generated-locales/en/table.generated';
 import {warnOnce} from '../../../utils/devWarning';
 import {VisuallyHidden} from '../../../VisuallyHidden';
 import type {TableRowStatus, TableSemanticRowStatus} from '../../index';
@@ -201,7 +202,7 @@ const styles = stylex.create({
 export function useTableRowStatus<T extends Record<string, unknown>>(
   config: UseTableRowStatusConfig<T>,
 ): TablePlugin<T> {
-  const t = useTranslator();
+  const t = useComponentTranslator(tableMessages);
   const {getStatus} = config;
 
   return useMemo((): TablePlugin<T> => {
