@@ -49,7 +49,7 @@ export const docs = {
       name: 'options.onTriggerPress',
       type: '(pointerType: MenuPressPointerType) => boolean',
       description:
-        'A mouse pressed the trigger, or a finger rested on it for the long-press delay: open the menu under the held pointer and return whether it opened. Return false when the press closed an open menu instead.',
+        "A mouse pressed the trigger, a finger did with touchOpen 'press', or a finger rested on it for the long-press delay: open the menu under the held pointer and return whether it opened. Return false when the press closed an open menu instead.",
     },
     {
       name: 'options.onHighlight',
@@ -67,7 +67,7 @@ export const docs = {
       name: 'options.onDismiss',
       type: '() => void',
       description:
-        'A MOUSE was released outside the menu with nothing acting: close it. A finger released outside leaves the menu open, so this is never called then.',
+        "Close the menu: a MOUSE was released outside it with nothing acting, or the browser took a finger's press-open (touchOpen 'press') for a scroll or a pinch before the finger reached the menu. A finger released outside leaves the menu open, so this is never called then.",
     },
     {
       name: 'options.getScroller',
@@ -81,6 +81,13 @@ export const docs = {
       description:
         'How long a finger must rest on the trigger before the menu opens under it.',
       default: '500',
+    },
+    {
+      name: 'options.touchOpen',
+      type: "'tap' | 'press'",
+      description:
+        "How a finger opens the menu from its trigger. 'tap': through the trigger's own click when the finger lifts, or with the finger down after the long-press delay. 'press': at once on press-down, as a mouse press does, for a trigger that is not inside a scrolling region; the press then continues as a drag onto a row. The page is not held still: if the browser takes the press for a scroll or a pinch before the finger reaches the menu, the menu closes again through onDismiss.",
+      default: "'tap'",
     },
     {
       name: 'options.isEnabled',

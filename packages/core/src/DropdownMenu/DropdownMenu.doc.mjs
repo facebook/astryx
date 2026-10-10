@@ -242,6 +242,13 @@ export const docs = {
       default: "'start'",
     },
     {
+      name: 'touchOpen',
+      type: "'tap' | 'press'",
+      description:
+        "How a finger opens the popover menu from its trigger. 'tap' opens it through the trigger's click when the finger lifts, or with the finger still down after a long press. 'press' opens it on the finger's press-down, as a mouse press does, for a trigger that is not inside a scrolling region (a control in a fixed bar); the press then continues as a drag onto a row, picked on release. If the browser takes the press for a scroll before the finger reaches the menu, the menu closes again, so a trigger whose drag should pick a row declares touch-action: none or pinch-zoom. Ignored by the bottom-sheet presentation.",
+      default: "'tap'",
+    },
+    {
       name: 'onClick',
       type: '() => void',
       description:

@@ -370,6 +370,20 @@ interface DropdownMenuBaseProps extends BaseProps {
    */
   alignment?: LayerAlignment;
 
+  /**
+   * How a finger opens the popover menu from its trigger. `'tap'` opens it
+   * through the trigger's click when the finger lifts, or with the finger
+   * still down after a long press. `'press'` opens it on the finger's
+   * press-down, as a mouse press does, for a trigger that is not inside a
+   * scrolling region (a control in a fixed bar); the press then continues as
+   * a drag onto a row, picked on release. If the browser takes the press for
+   * a scroll before the finger reaches the menu, the menu closes again, so a
+   * trigger whose drag should pick a row declares `touch-action: none` or
+   * `pinch-zoom`. Ignored by bottom-sheet presentation.
+   * @default 'tap'
+   */
+  touchOpen?: 'tap' | 'press';
+
   'data-testid'?: string;
 }
 
@@ -464,6 +478,7 @@ function DropdownMenuBottomSheet({
   menuMaxHeight: _menuMaxHeight,
   placement: _placement,
   alignment: _alignment,
+  touchOpen: _touchOpen,
   className,
   style,
   xstyle,
@@ -696,6 +711,7 @@ function DropdownMenuPopover({
   hasChevron = true,
   placement = 'below',
   alignment = 'start',
+  touchOpen = 'tap',
   presentation: _presentation,
   className,
   style,
@@ -983,13 +999,17 @@ function DropdownMenuPopover({
     : popover.isOpen;
 
   // A mouse opens on press-down; a finger held on the trigger opens after
-  // the long-press delay. Pressing the trigger of an open menu closes it, and
-  // the click of that same gesture — reported by `isTriggerClickFromPress` —
-  // neither toggles nor reopens.
+  // the long-press delay, or on its press-down with `touchOpen="press"`.
+  // Pressing the trigger of an open menu closes it, and the click of that
+  // same gesture — reported by `isTriggerClickFromPress` — neither toggles
+  // nor reopens.
   const handleTriggerPress = useCallback(
     (pointerType: MenuPressPointerType): boolean => {
+      // Whether this press opens the menu by itself, rather than a finger's
+      // tap through its click.
+      const isPressOpen = pointerType === 'mouse' || touchOpen === 'press';
       if (isMenuOpenNow) {
-        if (pointerType !== 'mouse') {
+        if (!isPressOpen) {
           // A finger's tap toggles through its click, as it always did.
           return false;
         }
@@ -1013,7 +1033,8 @@ function DropdownMenuPopover({
         // The menu is `popover="auto"`: the browser's light dismiss would
         // read the release of this very press, on the trigger outside the
         // popover, as a dismissal — a mouse's release, and as much a
-        // finger's after the long-press delay opened the menu under it.
+        // finger's after the long-press delay or its own press-down
+        // (`touchOpen="press"`) opened the menu under it.
         // Holding the invoker relationship through the press exempts the
         // trigger, the way useKeepLayerOpenProps does for controls beside
         // an open layer.
@@ -1021,7 +1042,15 @@ function DropdownMenuPopover({
       }
       return didOpen;
     },
-    [isMenuOpenNow, isControlled, onClick, onOpenChange, openAndFocus, popover],
+    [
+      isMenuOpenNow,
+      isControlled,
+      onClick,
+      onOpenChange,
+      openAndFocus,
+      popover,
+      touchOpen,
+    ],
   );
 
   // The press model: the row under a release acts, the highlight follows a
@@ -1033,6 +1062,7 @@ function DropdownMenuPopover({
     itemSelector: MENU_ITEM_SELECTOR,
     onTriggerPress: handleTriggerPress,
     onDismiss: closeMenu,
+    touchOpen,
   });
   cancelMenuPressRef.current = menuPress.cancel;
 

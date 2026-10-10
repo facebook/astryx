@@ -1341,6 +1341,44 @@ export const CustomTrigger: Story = {
   },
 };
 
+// A control in a fixed bar owns its touch: no pan starts on it, so a finger
+// can press it and drag straight onto a row.
+const touchOpenStyles = stylex.create({
+  ownsTouch: {
+    touchAction: 'pinch-zoom',
+  },
+});
+
+export const TouchOpenPress: Story = {
+  name: 'Opens on a finger press (touchOpen)',
+  render: () => (
+    <DropdownMenu
+      button={{label: 'Spaces', xstyle: touchOpenStyles.ownsTouch}}
+      touchOpen="press">
+      <DropdownMenuItem
+        label="Personal"
+        onClick={() => console.log('Personal clicked')}
+      />
+      <DropdownMenuItem
+        label="Design system"
+        onClick={() => console.log('Design system clicked')}
+      />
+      <DropdownMenuItem
+        label="Infrastructure"
+        onClick={() => console.log('Infrastructure clicked')}
+      />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'With `touchOpen="press"` a finger opens the menu on its press-down, as a mouse press does, instead of on the tap that lifts. The press continues as a drag onto a row, picked on release, because this trigger declares `touch-action: pinch-zoom` and no pan starts on it. Use it for a trigger outside any scrolling region; if the browser takes a press for a scroll before the finger reaches the menu, the menu closes again.',
+      },
+    },
+  },
+};
+
 export const LinkRows: Story = {
   name: 'Rows that navigate (href)',
   render: () => (
