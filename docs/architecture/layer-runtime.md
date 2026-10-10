@@ -264,9 +264,9 @@ current `main`.
 ### Layer content boundary — AST-038 implementation projection
 
 [AST-038](../specs/AST-038-layer-text-boundary/spec.md) owns the reading baseline
-and surface/group boundary. This implementation resets layer-root text and whole
-React contexts carrying surface/group membership; structural CSS isolation is
-incomplete.
+and surface/group boundary. This implementation resets layer-root text, whole
+React contexts carrying surface/group membership, and named structural custom
+properties; structural CSS isolation covers only the channels it names.
 
 The shared private text baseline is applied in both `useLayer` renderers and the
 Dialog, Lightbox, MobileNav, BottomSheetPanel, and ToastViewport content roots.
@@ -293,10 +293,14 @@ isolation for Drawer is not implemented: the private Core boundary is not
 available across that package boundary. This is a remaining package-architecture
 gap, not a claim of complete provider isolation.
 
-Structural custom-property channels remain outside this implementation. A layer
-opened from supported `Step.children` content can contain an inner Stepper that
-still inherits the outer `--step-connector-gap`. React membership ends, but this
-connector-layout inheritance remains a structural isolation gap.
+The private structural reset sits beside the text baseline on the same content
+roots and stops each structural custom property it names by setting it to
+`initial`. It names `--step-connector-gap`, so an inner Stepper in a layer opened
+from `Step.children` content starts from the connector's 0px fallback; a value
+set on that Stepper, through its `stepper` target, or by a caller style on the
+layer root still applies. It never resets by prefix, so theme tokens and writing
+context keep inheriting. A structural channel it does not name still inherits
+into layer content.
 
 Existing component behavior checks cover membership exit, explicit inner owners,
 unrelated context continuity, and state/focus retention. Browser evidence covers
@@ -425,6 +429,9 @@ be updated only as that work ships.
   anchor/fixed/custom rendering, trigger source, and current same-gesture memory.
 - `Layer/layerHost.ts` owns safe inline versus nearest corrective portal placement.
 - `Layer/anchorName.ts` owns composition of anchor names on one trigger.
+- `Layer/layerTextReset.stylex.ts` owns the text baseline and
+  `Layer/layerStructureReset.stylex.ts` owns the named structural custom-property
+  reset applied on layer content roots.
 - `Layer/layerViewportInset.stylex.ts` owns the gutter and the viewport caps;
   `Layer/layerSlideRules.ts` owns the slide options' `@position-try` rules;
   `LayerProvider` publishes the declared inset through `LayerContext`, and

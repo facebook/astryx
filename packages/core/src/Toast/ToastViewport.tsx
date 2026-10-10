@@ -30,6 +30,7 @@ import {mergeProps} from '../utils';
 import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {ToastSurface} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
@@ -626,6 +627,7 @@ export function ToastViewport({
         {...mergeProps(
           stylex.props(
             layerTextReset.reset,
+            layerStructureReset.reset,
             styles.viewport,
             styles.viewportInlineSpan,
             posStyle,

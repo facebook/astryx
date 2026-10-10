@@ -4,7 +4,7 @@
 
 /**
  * @file Dialog.tsx
- * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext, layerTextReset
+ * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext, layerTextReset, layerStructureReset
  * @output Exports Dialog component, DialogProps, DialogVariant, DialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by Dialog.test.tsx
  *
@@ -35,6 +35,7 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
@@ -679,6 +680,7 @@ export function Dialog({
           themeProps('dialog', {variant}),
           stylex.props(
             layerTextReset.reset,
+            layerStructureReset.reset,
             styles.inlineWrapper,
             overlayPaddingReset.reset,
             standardSizing &&
@@ -714,6 +716,7 @@ export function Dialog({
         themeProps('dialog', {variant}),
         focusOutlineProps.focusVisible(
           layerTextReset.reset,
+          layerStructureReset.reset,
           styles.dialog,
           overlayPaddingReset.reset,
           isOpen && styles.open,

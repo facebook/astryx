@@ -32,6 +32,7 @@ import {addAnchorName, removeAnchorName} from './anchorName';
 import {currentGesture, currentGestureHasClicked} from './gestureCounter';
 import {resolveLayerPortalTarget} from './layerHost';
 import {layerTextReset} from './layerTextReset.stylex';
+import {layerStructureReset} from './layerStructureReset.stylex';
 import {layerViewportInset} from './layerViewportInset.stylex';
 import {layerInsetProperties} from './layerInset';
 import {
@@ -1196,6 +1197,7 @@ function useLayerImplementation(
 
       const stylexResult = stylex.props(
         layerTextReset.reset,
+        layerStructureReset.reset,
         styles.base,
         overlayPaddingReset.reset,
         viewportStyles,
@@ -1271,6 +1273,7 @@ function useLayerImplementation(
 
       const stylexResult = stylex.props(
         layerTextReset.reset,
+        layerStructureReset.reset,
         styles.base,
         overlayPaddingReset.reset,
         styles.fixed,
