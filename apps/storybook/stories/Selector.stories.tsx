@@ -7,6 +7,8 @@ import {Button} from '@astryxdesign/core/Button';
 import {InputGroup} from '@astryxdesign/core/InputGroup';
 import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
+import {Text} from '@astryxdesign/core/Text';
 import {RadioIndicator} from '@astryxdesign/core/Indicator';
 import {
   UserIcon,
@@ -167,6 +169,63 @@ export const BottomSheetPresentation: Story = {
         onChange={setValue}
         presentation="bottom-sheet"
       />
+    );
+  },
+};
+
+// The query Selector's default `adaptive` presentation resolves against.
+const COMPACT_TOUCH_QUERY = '(max-width: 768px) and (pointer: coarse)';
+
+const SHIPPING_OPTIONS = [
+  {value: 'standard', label: 'Standard', description: '5–7 business days'},
+  {value: 'express', label: 'Express', description: '2 business days'},
+  {value: 'overnight', label: 'Overnight', description: 'Next business day'},
+  {value: 'pickup', label: 'Store pickup', description: 'Ready in 2 hours'},
+];
+
+function ShippingSpeedField() {
+  const [value, setValue] = useState<string | undefined>('standard');
+  return (
+    <Selector
+      label="Shipping speed"
+      options={SHIPPING_OPTIONS}
+      value={value}
+      onChange={setValue}
+    />
+  );
+}
+
+export const AdaptiveByDefault: Story = {
+  name: 'Presentation / adaptive by default',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'No `presentation` prop. On a compact touch screen (768px or narrower with a coarse pointer) the options open in a bottom sheet; with a mouse, a trackpad, or a large touch screen they open in the anchored popover. The frame width alone does not switch the surface: open this story on a phone, or in device emulation with touch, to see the sheet.',
+      },
+    },
+  },
+  render: function Render() {
+    const isCompactTouch = useMediaQuery(COMPACT_TOUCH_QUERY);
+    return (
+      <div style={{display: 'grid', gap: 16}}>
+        <Text>
+          This device opens the default Selector in{' '}
+          {isCompactTouch ? 'a bottom sheet' : 'an anchored popover'}.
+        </Text>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 24}}>
+          {[320, 390, 560].map(width => (
+            <div
+              key={width}
+              style={{inlineSize: width, display: 'grid', gap: 8}}>
+              <Text type="supporting" color="secondary">
+                {width === 560 ? 'Wide frame' : `${width}px frame`}
+              </Text>
+              <ShippingSpeedField />
+            </div>
+          ))}
+        </div>
+      </div>
     );
   },
 };

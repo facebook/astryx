@@ -16,6 +16,8 @@ import {
   DropdownMenuSubMenu,
 } from '@astryxdesign/core/DropdownMenu';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
+import {Text} from '@astryxdesign/core/Text';
 import {
   PencilIcon,
   TrashIcon,
@@ -47,7 +49,7 @@ const meta: Meta<typeof DropdownMenu> = {
     },
     presentation: {
       control: 'select',
-      options: ['popover', 'bottom-sheet'],
+      options: ['adaptive', 'popover', 'bottom-sheet'],
       description: 'Surface used to present data-driven menu actions',
     },
     isMenuOpen: {
@@ -1121,6 +1123,53 @@ export const AdaptiveActionPresentation: Story = {
     if (trigger instanceof HTMLElement) {
       trigger.click();
     }
+  },
+};
+
+// The query DropdownMenu's default `adaptive` presentation resolves against.
+const COMPACT_TOUCH_QUERY = '(max-width: 768px) and (pointer: coarse)';
+
+export const AdaptiveByDefault: Story = {
+  name: 'Presentation / adaptive by default',
+  parameters: {
+    layout: 'padded',
+    docs: {
+      description: {
+        story:
+          'No `presentation` prop. On a compact touch screen (768px or narrower with a coarse pointer) the actions open in a bottom sheet; with a mouse, a trackpad, or a large touch screen they open in the anchored popover. The frame width alone does not switch the surface: open this story on a phone, or in device emulation with touch, to see the sheet.',
+      },
+    },
+  },
+  render: function Render() {
+    const isCompactTouch = useMediaQuery(COMPACT_TOUCH_QUERY);
+    return (
+      <div style={{display: 'grid', gap: 16}}>
+        <Text>
+          This device opens the default DropdownMenu in{' '}
+          {isCompactTouch ? 'a bottom sheet' : 'an anchored popover'}.
+        </Text>
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 24}}>
+          {[320, 390, 560].map(width => (
+            <div
+              key={width}
+              style={{inlineSize: width, display: 'grid', gap: 8}}>
+              <Text type="supporting" color="secondary">
+                {width === 560 ? 'Wide frame' : `${width}px frame`}
+              </Text>
+              <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+                <DropdownMenu
+                  button={{label: 'Project actions'}}
+                  items={PROJECT_ACTIONS.map(action => ({
+                    ...action,
+                    onClick: () => console.log(`${action.label} selected`),
+                  }))}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   },
 };
 

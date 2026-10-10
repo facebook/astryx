@@ -337,8 +337,8 @@ export const docs = {
       name: 'presentation',
       type: "'popover' | 'bottom-sheet' | 'adaptive'",
       description:
-        'How the option list is presented. adaptive uses a bottom sheet on compact touch screens and an anchored popover otherwise.',
-      default: "'popover'",
+        'How the option list is presented. The default, adaptive, uses a bottom sheet on compact touch screens and an anchored popover otherwise; set popover to stay anchored on phones.',
+      default: "'adaptive'",
     },
     {
       name: 'width',
@@ -402,7 +402,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use presentation="adaptive" when the selector should become a bottom sheet on compact touch screens.',
+          'Keep the default presentation ("adaptive") so the selector becomes a bottom sheet on compact touch screens; set presentation="popover" only when the list must stay anchored on phones.',
       },
       {
         guidance: false,
@@ -437,6 +437,47 @@ export const docs = {
     ],
     anatomy,
   },
+  examples: [
+    {
+      label: 'Checkout field that fits a phone',
+      code: `const [speed, setSpeed] = useState('standard');
+
+// No presentation prop: on a phone the options open in a bottom sheet with
+// full-width rows; with a mouse or on a large touch screen they open in the
+// anchored popover.
+<Card>
+  <VStack gap={3}>
+    <Selector
+      label="Shipping speed"
+      value={speed}
+      onChange={setSpeed}
+      options={[
+        {value: 'standard', label: 'Standard', description: '5–7 business days'},
+        {value: 'express', label: 'Express', description: '2 business days'},
+        {value: 'overnight', label: 'Overnight', description: 'Next business day'},
+        {value: 'pickup', label: 'Store pickup', description: 'Ready in 2 hours'},
+      ]}
+    />
+    <Text type="supporting" color="secondary">
+      Orders placed before 2 PM ship the same day.
+    </Text>
+  </VStack>
+</Card>`,
+    },
+    {
+      label: 'Keep the anchored popover on phones',
+      code: `// Pin the surface only when product policy needs it, for example a
+// toolbar control whose list must stay attached to the toolbar.
+<Selector
+  label="Sort by"
+  variant="ghost"
+  presentation="popover"
+  value={sort}
+  onChange={setSort}
+  options={['Newest', 'Oldest', 'Most active']}
+/>`,
+    },
+  ],
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */

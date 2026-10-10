@@ -14,6 +14,7 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MoreMenu} from './MoreMenu';
 import {DropdownMenu} from '../DropdownMenu/DropdownMenu';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -130,6 +131,48 @@ describe('MoreMenu', () => {
       expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce(),
     );
     expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+  });
+
+  describe('default presentation', () => {
+    // Answer only the shared adaptive query, so the test follows the policy
+    // DropdownMenu actually reads.
+    function stubCompactTouch() {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockImplementation((query: string) => ({
+          matches: query === COMPACT_TOUCH_PRESENTATION_QUERY,
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+    }
+
+    it('inherits the adaptive BottomSheet on compact touch', async () => {
+      stubCompactTouch();
+      const user = userEvent.setup();
+      render(<MoreMenu items={defaultItems} />);
+
+      await user.click(screen.getByRole('button', {name: 'More options'}));
+      await waitFor(() =>
+        expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce(),
+      );
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+    });
+
+    it('keeps an explicit popover anchored on compact touch', async () => {
+      stubCompactTouch();
+      const user = userEvent.setup();
+      render(<MoreMenu items={defaultItems} presentation="popover" />);
+
+      await user.click(screen.getByRole('button', {name: 'More options'}));
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    });
   });
 
   it('calls onClick when item is clicked', async () => {

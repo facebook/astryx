@@ -4,12 +4,12 @@
 export const doc = {
   type: 'block',
   exampleFor: 'DropdownMenu',
-  alsoExampleFor: ['BottomSheet', 'useMediaQuery'],
+  alsoExampleFor: ['BottomSheet'],
   name: 'DropdownMenu — Adaptive presentation',
   displayName: 'DropdownMenu — Adaptive presentation',
   description:
-    'Chooses a bottom sheet for compact touch surfaces and an anchored popover otherwise. The media query is product policy, while DropdownMenu owns both presentations.',
+    'Opens the actions in a bottom sheet on compact touch screens and in an anchored popover otherwise. This is the default adaptive presentation, so the call site needs no media query.',
   isReady: true,
   aspectRatio: 3 / 4,
-  componentsUsed: ['DropdownMenu', 'Stack', 'Text', 'useMediaQuery'],
+  componentsUsed: ['DropdownMenu', 'Stack', 'Text'],
 };

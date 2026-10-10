@@ -38,6 +38,7 @@ import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {spacingVars} from '../theme/tokens.stylex';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -350,6 +351,85 @@ describe('Selector', () => {
       await screen.findByRole('dialog', {name: 'Fruit'}),
     ).toBeInTheDocument();
     expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+  });
+
+  describe('default presentation', () => {
+    // Answer only the shared adaptive query, so the test follows the policy
+    // the component actually reads.
+    function stubCompactTouch() {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockImplementation((query: string) => ({
+          matches: query === COMPACT_TOUCH_PRESENTATION_QUERY,
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+    }
+
+    it('opens a bottom sheet on compact touch screens', async () => {
+      stubCompactTouch();
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} />);
+
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+      await user.click(trigger);
+      expect(
+        await screen.findByRole('dialog', {name: 'Fruit'}),
+      ).toBeInTheDocument();
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+    });
+
+    it('moves keyboard focus into the sheet and back to the trigger', async () => {
+      stubCompactTouch();
+      const onChange = vi.fn();
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+
+      const trigger = screen.getByRole('combobox');
+      trigger.focus();
+      await user.keyboard('{Enter}');
+      const dialog = await screen.findByRole('dialog', {name: 'Fruit'});
+      await waitFor(() => expect(screen.getByRole('listbox')).toHaveFocus());
+
+      await user.keyboard('{ArrowDown}{Enter}');
+      expect(onChange).toHaveBeenCalledOnce();
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      // jsdom runs no transitions; finish the sheet's exit by hand.
+      fireEvent.transitionEnd(dialog.querySelector('.astryx-bottom-sheet')!, {
+        propertyName: 'transform',
+      });
+      await waitFor(() => expect(trigger).toHaveFocus());
+    });
+
+    it('keeps the anchored popover without compact touch', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} />);
+
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+      await user.click(trigger);
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    });
+
+    it('keeps an explicit popover anchored on compact touch screens', async () => {
+      stubCompactTouch();
+      const user = userEvent.setup();
+      render(
+        <Selector label="Fruit" options={OPTIONS} presentation="popover" />,
+      );
+
+      await user.click(screen.getByRole('combobox'));
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    });
   });
 
   it('keeps adaptive presentation anchored without compact touch', async () => {

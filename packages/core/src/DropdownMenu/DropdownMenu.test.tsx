@@ -23,6 +23,7 @@ import {Divider} from '../Divider';
 import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -348,6 +349,105 @@ describe('DropdownMenu', () => {
     await user.click(screen.getByRole('button', {name: /Actions/}));
     expect(screen.getByRole('dialog', {name: 'Actions'})).toBeInTheDocument();
     expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+  });
+
+  describe('default presentation', () => {
+    // Answer only the shared adaptive query, so the test follows the policy
+    // the component actually reads.
+    function stubCompactTouch() {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockImplementation((query: string) => ({
+          matches: query === COMPACT_TOUCH_PRESENTATION_QUERY,
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+    }
+
+    it('opens data-driven menus in a BottomSheet on compact touch', async () => {
+      stubCompactTouch();
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Edit'}]} />,
+      );
+
+      await user.click(screen.getByRole('button', {name: /Actions/}));
+      expect(screen.getByRole('dialog', {name: 'Actions'})).toBeInTheDocument();
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+    });
+
+    it('returns keyboard focus to the trigger when the sheet closes', async () => {
+      stubCompactTouch();
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          items={[{label: 'Edit'}, {label: 'Share'}]}
+        />,
+      );
+
+      const trigger = screen.getByRole('button', {name: /Actions/});
+      trigger.focus();
+      await user.keyboard('{Enter}');
+      const sheet = screen.getByRole('dialog', {name: 'Actions'});
+      await waitFor(() =>
+        expect(sheet.contains(document.activeElement)).toBe(true),
+      );
+
+      await user.keyboard('{Escape}');
+      // jsdom runs no transitions; finish the sheet's exit by hand.
+      fireEvent.transitionEnd(sheet.querySelector('.astryx-bottom-sheet')!, {
+        propertyName: 'transform',
+      });
+      await waitFor(() => expect(trigger).toHaveFocus());
+    });
+
+    it('keeps data-driven menus anchored without compact touch', async () => {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Edit'}]} />,
+      );
+
+      await user.click(screen.getByRole('button', {name: /Actions/}));
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    });
+
+    it('keeps an explicit popover anchored on compact touch', async () => {
+      stubCompactTouch();
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          presentation="popover"
+          items={[{label: 'Edit'}]}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', {name: /Actions/}));
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    });
+
+    it('keeps compound menus anchored on compact touch', async () => {
+      stubCompactTouch();
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu button={{label: 'Actions'}}>
+          <DropdownMenuItem label="Edit" />
+        </DropdownMenu>,
+      );
+
+      await user.click(screen.getByRole('button', {name: /Actions/}));
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalledOnce();
+      expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
+    });
   });
 
   it('uses the shared menu BottomSheet frame', () => {
