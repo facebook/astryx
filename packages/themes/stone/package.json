@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/theme-stone",
-  "version": "0.6.7",
+  "version": "0.6.8",
   "displayName": "Stone Theme",
   "private": false,
   "description": "Warm stone and slate, earthy and understated, with just enough character to feel handcrafted.",
@@ -60,11 +60,11 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.6.7",
+    "@astryxdesign/core": "0.6.8",
     "react": ">=19"
   },
   "devDependencies": {
-    "@astryxdesign/cli": "0.6.7"
+    "@astryxdesign/cli": "0.6.8"
   },
   "module": "./dist/source.mjs"
 }
