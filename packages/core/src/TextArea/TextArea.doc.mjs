@@ -673,7 +673,8 @@ export const docsDense = {
     htmlName: 'HTML name attr for form submissions.',
     onFocus: 'Callback on focus.',
     onBlur: 'Callback on blur.',
-    autoComplete: 'Native autocomplete attr, forwarded unchanged. Does not affect the controlled value.',
+    autoComplete:
+      'Native autocomplete attr, forwarded unchanged. Does not affect the controlled value.',
     xstyle:
       'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
   },

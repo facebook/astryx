@@ -10,6 +10,8 @@ import transform, {
 const j = jscodeshift.withParser('tsx');
 const api = {jscodeshift: j, stats: () => {}, report: () => {}};
 
+const IMPORT = "import {defineTheme} from '@astryxdesign/core/theme';\n";
+
 function apply(source, filePath = 'theme.ts') {
   return transform({source, path: filePath}, api) ?? source;
 }
@@ -58,7 +60,7 @@ describe('migrate-deprecated-theme-surface', () => {
     'renames static target key %s to %s inside a components map',
     (oldKey, newKey) => {
       const output = apply(
-        `const theme = {components: {${JSON.stringify(oldKey)}: {base: {color: 'red'}}}};`,
+        `export default {name: 'brand', components: {${JSON.stringify(oldKey)}: {base: {color: 'red'}}}};`,
       );
 
       expect(output).not.toContain(`${JSON.stringify(oldKey)}:`);
@@ -67,7 +69,7 @@ describe('migrate-deprecated-theme-surface', () => {
   );
 
   it('renames root, mode, and adaptation component maps', () => {
-    const output = apply(`const theme = defineTheme({
+    const output = apply(`${IMPORT}const theme = defineTheme({
   components: {progressbar: {base: {color: 'red'}}},
   onDark: {components: {'statusdot': {base: {color: 'white'}}}},
   adaptations: {rules: [{value: {components: {'popover-surface': {base: {padding: 8}}}}}]},
@@ -80,7 +82,8 @@ describe('migrate-deprecated-theme-surface', () => {
   });
 
   it('renames a statically declared components variable used by defineTheme', () => {
-    const output = apply(`const components = {textarea: {base: {color: 'red'}}};
+    const output =
+      apply(`${IMPORT}const components = {textarea: {base: {color: 'red'}}};
 export const theme = defineTheme({name: 'brand', components});`);
     expect(output).toContain("'text-area':");
   });
@@ -90,8 +93,81 @@ export const theme = defineTheme({name: 'brand', components});`);
     expect(apply(input)).toBe(input);
   });
 
+  it('does not rewrite a default-exported application component registry', () => {
+    for (const input of [
+      `export default {components: {checkbox: Checkbox, textarea: TextArea}};`,
+      `export default {name: 'app', components: {checkbox: Checkbox}};`,
+      `const theme = {components: {checkbox: {base: {color: 'red'}}}};`,
+    ]) {
+      expect(apply(input)).toBe(input);
+    }
+  });
+
+  it('does not treat a defineTheme from another library as an Astryx theme', () => {
+    const input = `import {defineTheme} from 'other-ui';
+export default defineTheme({components: {checkbox: {base: {color: 'red'}}}});`;
+    expect(apply(input)).toBe(input);
+  });
+
+  it.each([
+    [
+      'an aliased defineTheme import',
+      `import {defineTheme as makeTheme} from '@astryxdesign/core';
+export default makeTheme({name: 'brand', components: {navicon: {base: {}}}});`,
+    ],
+    [
+      'a namespace defineTheme call',
+      `import * as astryx from '@astryxdesign/core/theme';
+export default astryx.defineTheme({components: {navicon: {base: {}}}});`,
+    ],
+    [
+      'a satisfies-typed theme object',
+      `import type {DefineThemeInput} from '@astryxdesign/core';
+export default {components: {navicon: {base: {}}}} satisfies DefineThemeInput;`,
+    ],
+    [
+      'an as-typed theme object',
+      `import type {DefineThemeInput} from '@astryxdesign/core';
+export default ({components: {navicon: {base: {}}}}) as DefineThemeInput;`,
+    ],
+    [
+      'an annotated theme variable',
+      `import type {DefineThemeInput} from '@astryxdesign/core';
+const brand: DefineThemeInput = {name: 'brand', components: {navicon: {base: {}}}};`,
+    ],
+  ])('recognizes %s', (_name, input) => {
+    const output = apply(input);
+    expect(output).toContain("'nav-icon':");
+    expect(output).not.toMatch(/navicon\s*:/);
+  });
+
+  it('renames a clear-icon alias with a TODO naming the owner scope it loses', () => {
+    const output = apply(
+      `export default {name: 'brand', components: {'selector-clear-icon': {base: {color: 'red'}}}};`,
+    );
+    expect(output).toContain("'input-clear-icon':");
+    expect(output).toContain(
+      'TODO(astryx upgrade): `selector-clear-icon` became `input-clear-icon`',
+    );
+    expect(output).toContain(
+      '.astryx-input-clear-icon:where(.astryx-selector *)',
+    );
+  });
+
+  it('flags two clear-icon aliases that collapse onto the shared target', () => {
+    const output = apply(`export default {name: 'brand', components: {
+  'selector-clear-icon': {base: {color: 'red'}},
+  'date-input-clear-icon': {base: {color: 'blue'}},
+}};`);
+    expect(output).toContain("'input-clear-icon':");
+    expect(output).toContain(
+      'merge deprecated theme target `date-input-clear-icon` into `input-clear-icon`',
+    );
+    expect(output).toContain("'date-input-clear-icon':");
+  });
+
   it('uses lexical scope when a theme components variable shadows a registry', () => {
-    const input = `const components = {checkbox: Checkbox};
+    const input = `${IMPORT}const components = {checkbox: Checkbox};
 function makeTheme() {
   const components = {textarea: {base: {color: 'red'}}};
   return defineTheme({components});
@@ -104,15 +180,15 @@ function makeTheme() {
   it('does not rename matching keys outside a components map or dynamic keys', () => {
     const input = `const labels = {progressbar: 'Progress'};
 const oldTarget = 'progressbar';
-const theme = {components: {[oldTarget]: {base: {color: 'red'}}}};`;
+const theme = {name: 'brand', components: {[oldTarget]: {base: {color: 'red'}}}};`;
     expect(apply(input)).toBe(input);
   });
 
   it('flags a static old/new collision instead of silently dropping either rule', () => {
-    const input = `const theme = {components: {
+    const input = `${IMPORT}const theme = defineTheme({name: 'brand', components: {
   progressbar: {base: {color: 'red'}},
   'progress-bar': {base: {backgroundColor: 'blue'}},
-}};`;
+}});`;
     const output = apply(input);
     expect(output).toContain('TODO(astryx upgrade)');
     expect(output).toContain('merge deprecated theme target `progressbar`');
@@ -183,6 +259,38 @@ const theme = {components: {[oldTarget]: {base: {color: 'red'}}}};`;
     expect(output).not.toContain('.primary');
   });
 
+  it('keeps the owner scope of clear-icon aliases in CSS without adding specificity', () => {
+    const output = apply(
+      `.astryx-selector-clear-icon:hover { color: red; }
+.astryx-date-range-input-clear-icon { color: blue; }`,
+      'theme.css',
+    );
+    expect(output).toContain(
+      '.astryx-input-clear-icon:where(.astryx-selector *):hover',
+    );
+    expect(output).toContain(
+      '.astryx-input-clear-icon:where(.astryx-date-range-input *)',
+    );
+    expect(output).not.toMatch(/-clear-icon(?!:where)/);
+  });
+
+  it('migrates bare classes that first shipped after 0.5.4', () => {
+    const output = apply('.astryx-heading.bold { color: red; }', 'theme.css');
+    expect(output).toContain('.astryx-heading:is([data-weight="bold"])');
+    expect(output).not.toMatch(/\.bold(?![a-z0-9_-])/);
+  });
+
+  it('flags a known bare class that has no 0.6 meaning on its target', () => {
+    const input = '.astryx-button.checked { color: red; }';
+    const output = apply(input, 'theme.css');
+    expect(output).toContain(
+      'TODO(astryx upgrade): Astryx 0.7 no longer emits',
+    );
+    expect(output).toContain('.checked had no known 0.6 meaning');
+    expect(output).toContain('.astryx-button.checked');
+    expect(apply(output, 'theme.css')).toBe(output);
+  });
+
   it('leaves unqualified and unknown consumer classes unchanged', () => {
     const input = `.primary { color: red; }
 .astryx-button.brand { color: blue; }`;
@@ -204,7 +312,7 @@ const theme = {components: {[oldTarget]: {base: {color: 'red'}}}};`;
   });
 
   it('is byte-idempotent after JavaScript and CSS migration', () => {
-    const js = `const theme = {components: {statusdot: {base: {color: 'red'}}}};`;
+    const js = `export default {name: 'brand', components: {statusdot: {base: {color: 'red'}}, 'selector-clear-icon': {base: {color: 'red'}}}};`;
     const css = '.astryx-textarea.sm {}';
     const jsOnce = apply(js);
     const cssOnce = apply(css, 'theme.css');

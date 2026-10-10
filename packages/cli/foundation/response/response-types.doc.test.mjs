@@ -14,7 +14,8 @@ import {doc} from './response-types.doc.mjs';
 import {runCli} from '../../test-utils/run-cli.mjs';
 
 /** @param {string} type */
-const describedAs = (type) => doc.members.find((m) => m.value === type)?.description ?? '';
+const describedAs = type =>
+  doc.members.find(m => m.value === type)?.description ?? '';
 
 /** @param {string} text @param {string} field */
 const names = (text, field) => new RegExp(`(^|\\W)${field}(\\W|$)`).test(text);
@@ -27,7 +28,7 @@ const names = (text, field) => new RegExp(`(^|\\W)${field}(\\W|$)`).test(text);
 function fieldsOf(value, depth = 2) {
   const out = new Set();
   const visit = (/** @type {unknown} */ v, /** @type {number} */ d) => {
-    if (Array.isArray(v)) return v.forEach((item) => visit(item, d));
+    if (Array.isArray(v)) return v.forEach(item => visit(item, d));
     if (!v || typeof v !== 'object' || d < 0) return;
     for (const [key, child] of Object.entries(v)) {
       out.add(key);
@@ -40,7 +41,10 @@ function fieldsOf(value, depth = 2) {
 
 /** @param {string[]} args @param {string} [cwd] */
 async function data(args, cwd) {
-  const {status, stdout} = await runCli(['--json', ...args], cwd ? {cwd} : undefined);
+  const {status, stdout} = await runCli(
+    ['--json', ...args],
+    cwd ? {cwd} : undefined,
+  );
   expect(status, stdout).toBe(0);
   return JSON.parse(stdout);
 }
@@ -48,7 +52,7 @@ async function data(args, cwd) {
 /** @param {string} type @param {Iterable<string>} fields */
 function expectNamed(type, fields) {
   const text = describedAs(type);
-  const missing = [...fields].filter((f) => !names(text, f));
+  const missing = [...fields].filter(f => !names(text, f));
   expect(missing, `${type} omits`).toEqual([]);
 }
 
@@ -99,8 +103,13 @@ describe('response-types EnumDoc names every field', () => {
   it('search, across component, hook, template, and doc results', async () => {
     const mixed = await data(['search', 'dashboard', '--limit', '50']);
     const docsOnly = await data(['search', 'tokens', '--type', 'doc']);
-    expect(new Set(mixed.data.results.map((r) => r.domain))).toContain('template');
-    expectNamed('search', new Set([...fieldsOf(mixed.data), ...fieldsOf(docsOnly.data)]));
+    expect(new Set(mixed.data.results.map(r => r.domain))).toContain(
+      'template',
+    );
+    expectNamed(
+      'search',
+      new Set([...fieldsOf(mixed.data), ...fieldsOf(docsOnly.data)]),
+    );
   });
 
   it('build.kit, including the hint a thin kit carries', async () => {
@@ -118,17 +127,32 @@ describe('response-types EnumDoc names every field', () => {
   });
 
   it('gap-report.file, including each delivery', async () => {
-    const res = await data(['gap-report', 'Button', '--category', 'docs_gap', '--reason', 'probe']);
+    const res = await data([
+      'gap-report',
+      'Button',
+      '--category',
+      'docs_gap',
+      '--reason',
+      'probe',
+    ]);
     expect(res.type).toBe('gap-report.file');
     expect(res.data.deliveries.length).toBeGreaterThan(0);
     expectNamed('gap-report.file', fieldsOf(res.data));
   });
 
   it('theme.build, including notices', async () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-response-types-'));
-    fs.writeFileSync(path.join(cwd, 'package.json'), '{"name":"app","version":"1.0.0"}');
+    const cwd = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'astryx-response-types-'),
+    );
+    fs.writeFileSync(
+      path.join(cwd, 'package.json'),
+      '{"name":"app","version":"1.0.0"}',
+    );
     await data(['theme', 'template', 'starter.ts'], cwd);
-    const res = await data(['theme', 'build', 'starter.ts', '--out', 'starter.css'], cwd);
+    const res = await data(
+      ['theme', 'build', 'starter.ts', '--out', 'starter.css'],
+      cwd,
+    );
     expect(res.type).toBe('theme.build');
     expectNamed('theme.build', fieldsOf(res.data));
   });

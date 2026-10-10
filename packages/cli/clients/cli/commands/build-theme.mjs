@@ -1065,13 +1065,7 @@ export function registerTheme(program) {
           `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}\n(key - component - props - states - className)`,
         ),
         records(targets, {
-          fields: [
-            'key',
-            'component',
-            'props',
-            'states',
-            'className',
-          ],
+          fields: ['key', 'component', 'props', 'states', 'className'],
           layout: 'inline',
         }),
         text(

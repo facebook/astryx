@@ -18,8 +18,12 @@ describe('astryx theme targets', () => {
 
     expect(status).toBe(0);
     // Inline layout: key  component - props - states - className
-    expect(stdout).toMatch(/^switch\s+Switch - size - checked, disabled - astryx-switch$/m);
-    expect(stdout).toMatch(/^switch-thumb\s+Switch - size - checked - astryx-switch-thumb$/m);
+    expect(stdout).toMatch(
+      /^switch\s+Switch - size - checked, disabled - astryx-switch$/m,
+    );
+    expect(stdout).toMatch(
+      /^switch-thumb\s+Switch - size - checked - astryx-switch-thumb$/m,
+    );
     expect(stdout).toMatch(/4 across 1 component/);
   });
 

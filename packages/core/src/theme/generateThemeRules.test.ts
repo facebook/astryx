@@ -1116,7 +1116,7 @@ describe('derived var expansion', () => {
       name: 'test-derived-textarea',
       components: {
         'text-area': {
-          base: {paddingInline: 'var(--eps-input-padding-x)'},
+          base: {paddingInline: 'var(--app-input-padding-x)'},
         },
       },
     });

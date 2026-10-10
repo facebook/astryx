@@ -7,30 +7,49 @@ export const docs = {
   displayName: 'Hover Card',
   group: 'HoverCard',
   category: 'Overlay',
-  keywords: ["hovercard","hover card","popover","tooltip","preview card","flyout","overlay","hover popup"],
+  keywords: [
+    'hovercard',
+    'hover card',
+    'popover',
+    'tooltip',
+    'preview card',
+    'flyout',
+    'overlay',
+    'hover popup',
+  ],
   playground: {
     defaults: {
-      content: {__element: 'Text', props: {type: 'body'}, children: 'Additional details shown on hover.'},
-      children: {__element: 'Link', props: {href: '#'}, children: 'Hover for details'},
+      content: {
+        __element: 'Text',
+        props: {type: 'body'},
+        children: 'Additional details shown on hover.',
+      },
+      children: {
+        __element: 'Link',
+        props: {href: '#'},
+        children: 'Hover for details',
+      },
     },
   },
   theming: {
-    targets: [
-      {className: 'astryx-hover-card'},
-    ],
+    targets: [{className: 'astryx-hover-card'}],
     vars: [
-      {name: '--_hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)', private: true},
+      {
+        name: '--_hovercard-radius',
+        description: 'Border radius of the hover card',
+        default: 'var(--radius-container)',
+        private: true,
+      },
     ],
-    derived: [
-      {property: 'borderRadius', vars: ['--_hovercard-radius']},
-    ],
+    derived: [{property: 'borderRadius', vars: ['--_hovercard-radius']}],
   },
   components: [
     {
       name: 'HoverCard',
       displayName: 'Hover Card',
       description:
-        'Component wrapper for hover card display: a richer, larger overlay triggered on hover or focus.',      props: [
+        'Component wrapper for hover card display: a richer, larger overlay triggered on hover or focus.',
+      props: [
         {
           name: 'children',
           type: 'ReactNode',
@@ -41,18 +60,26 @@ export const docs = {
           type: 'ReactNode',
           description: 'Hover card content.',
           required: true,
-          slotElements: [{__element: 'Text', props: {type: 'body'}, children: 'Content text'}],
+          slotElements: [
+            {
+              __element: 'Text',
+              props: {type: 'body'},
+              children: 'Content text',
+            },
+          ],
         },
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: "Position relative to the anchor element. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).",
+          description:
+            "Position relative to the anchor element. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).",
           default: "'above'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: "Alignment along the placement axis. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).",
+          description:
+            "Alignment along the placement axis. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).",
           default: "'center'",
         },
         {
@@ -107,7 +134,8 @@ export const docs = {
         {
           name: 'isDefaultOpen',
           type: 'boolean',
-          description: 'Whether the hover card should be shown on mount. Still dismissible.',
+          description:
+            'Whether the hover card should be shown on mount. Still dismissible.',
         },
         {
           name: 'isOpen',
@@ -118,22 +146,75 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'HoverCard shows additional information when the user hovers or focuses a trigger element. Use it for profile cards, link summaries, or inline definitions where the user needs more context without navigating away.',
+    description:
+      'HoverCard shows additional information when the user hovers or focuses a trigger element. Use it for profile cards, link summaries, or inline definitions where the user needs more context without navigating away.',
     bestPractices: [
-      { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
-      { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
-      { guidance: true, description: 'Use the hook API (useHoverCard) when you need more control over timing or placement.' },
-      { guidance: true, description: 'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.' },
-      { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
-      { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
-      { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: true, description: 'Prefer placing HoverCard in a block context rather than directly in a <p>, heading, or link. Those placements are supported when necessary through a corrective portal, but the DOM and tab order may differ.' },
+      {
+        guidance: true,
+        description:
+          'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a dashed underline on text triggers so users know the element is hoverable.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use the hook API (useHoverCard) when you need more control over timing or placement.',
+      },
+      {
+        guidance: true,
+        description:
+          'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a hover card when a simple Tooltip or Popover would suffice.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.',
+      },
+      {
+        guidance: true,
+        description:
+          'Prefer placing HoverCard in a block context rather than directly in a <p>, heading, or link. Those placements are supported when necessary through a corrective portal, but the DOM and tab order may differ.',
+      },
     ],
     anatomy: [
-      {name: 'Trigger', required: true, description: 'The element that opens the hover card on hover or focus: a button, link, or inline text.'},
-      {name: 'Card', required: true, description: 'The floating overlay with the preview content, anchored to the trigger.'},
-      {name: 'Body', required: true, description: 'The main content area: profile info, link summary, or any rich content.'},
-      {name: 'Actions', required: false, description: 'Optional buttons inside the card for follow-up actions like Follow or Message.'},
+      {
+        name: 'Trigger',
+        required: true,
+        description:
+          'The element that opens the hover card on hover or focus: a button, link, or inline text.',
+      },
+      {
+        name: 'Card',
+        required: true,
+        description:
+          'The floating overlay with the preview content, anchored to the trigger.',
+      },
+      {
+        name: 'Body',
+        required: true,
+        description:
+          'The main content area: profile info, link summary, or any rich content.',
+      },
+      {
+        name: 'Actions',
+        required: false,
+        description:
+          'Optional buttons inside the card for follow-up actions like Follow or Message.',
+      },
     ],
   },
 };
@@ -143,15 +224,16 @@ export const docsZh = {
   name: 'HoverCard',
   displayName: 'Hover Card',
   theming: {
-    targets: [
-      {className: 'astryx-hover-card'},
-    ],
+    targets: [{className: 'astryx-hover-card'}],
     vars: [
-      {name: '--_hovercard-radius', description: 'Border radius of the hover card', default: 'var(--radius-container)', private: true},
+      {
+        name: '--_hovercard-radius',
+        description: 'Border radius of the hover card',
+        default: 'var(--radius-container)',
+        private: true,
+      },
     ],
-    derived: [
-      {property: 'borderRadius', vars: ['--_hovercard-radius']},
-    ],
+    derived: [{property: 'borderRadius', vars: ['--_hovercard-radius']}],
   },
   components: [
     {
@@ -174,13 +256,15 @@ export const docsZh = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: '相对于锚点元素的位置。逻辑值：start/end 根据弹出层自身继承的方向解析（RTL 镜像）。',
+          description:
+            '相对于锚点元素的位置。逻辑值：start/end 根据弹出层自身继承的方向解析（RTL 镜像）。',
           default: "'above'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: '沿放置轴的对齐方式。逻辑值：start/end 根据弹出层自身继承的方向解析（RTL 镜像）。',
+          description:
+            '沿放置轴的对齐方式。逻辑值：start/end 根据弹出层自身继承的方向解析（RTL 镜像）。',
           default: "'center'",
         },
         {
@@ -241,16 +325,49 @@ export const docsZh = {
     },
   ],
   usage: {
-    description: 'HoverCard shows additional information when the user hovers or focuses a trigger element. Use it for profile cards, link summaries, or inline definitions where the user needs more context without navigating away.',
+    description:
+      'HoverCard shows additional information when the user hovers or focuses a trigger element. Use it for profile cards, link summaries, or inline definitions where the user needs more context without navigating away.',
     bestPractices: [
-      { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
-      { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
-      { guidance: true, description: 'Use the hook API (useHoverCard) when you need more control over timing or placement.' },
-      { guidance: true, description: 'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.' },
-      { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
-      { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
-      { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: true, description: 'Prefer placing HoverCard in a block context rather than directly in a <p>, heading, or link. Those placements are supported when necessary through a corrective portal, but the DOM and tab order may differ.' },
+      {
+        guidance: true,
+        description:
+          'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a dashed underline on text triggers so users know the element is hoverable.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use the hook API (useHoverCard) when you need more control over timing or placement.',
+      },
+      {
+        guidance: true,
+        description:
+          'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a hover card when a simple Tooltip or Popover would suffice.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.',
+      },
+      {
+        guidance: true,
+        description:
+          'Prefer placing HoverCard in a block context rather than directly in a <p>, heading, or link. Those placements are supported when necessary through a corrective portal, but the DOM and tab order may differ.',
+      },
     ],
   },
 };
@@ -260,35 +377,74 @@ export const docsDense = {
   description:
     'Hover/focus triggered overlay for displaying rich, interactive content anchored to trigger element.',
   usage: {
-    description: 'HoverCard shows additional info on hover/focus. Use for profile cards, link summaries, inline definitions.',
+    description:
+      'HoverCard shows additional info on hover/focus. Use for profile cards, link summaries, inline definitions.',
     bestPractices: [
-      { guidance: true, description: 'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.' },
-      { guidance: true, description: 'Provide a dashed underline on text triggers so users know the element is hoverable.' },
-      { guidance: true, description: 'Use the hook API (useHoverCard) when you need more control over timing or placement.' },
-      { guidance: true, description: 'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.' },
-      { guidance: false, description: 'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.' },
-      { guidance: false, description: 'Use a hover card when a simple Tooltip or Popover would suffice.' },
-      { guidance: false, description: 'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.' },
-      { guidance: true, description: 'Prefer a block context over a direct <p>, heading, or link placement. Those placements work when necessary through a corrective portal, but DOM/tab order may differ.' },
+      {
+        guidance: true,
+        description:
+          'Keep content supplementary; hover cards should enhance understanding without blocking the primary workflow.',
+      },
+      {
+        guidance: true,
+        description:
+          'Provide a dashed underline on text triggers so users know the element is hoverable.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use the hook API (useHoverCard) when you need more control over timing or placement.',
+      },
+      {
+        guidance: true,
+        description:
+          'Leave touchTrigger on auto so a tap opens the card on triggers that do nothing else, and stays out of the way on triggers that perform an action.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place critical actions or required information inside a hover card; users may miss content that only appears on hover.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a hover card when a simple Tooltip or Popover would suffice.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a HoverCard for content the user must interact with; it disappears when the cursor leaves.',
+      },
+      {
+        guidance: true,
+        description:
+          'Prefer a block context over a direct <p>, heading, or link placement. Those placements work when necessary through a corrective portal, but DOM/tab order may differ.',
+      },
     ],
   },
   components: [
     {
       name: 'HoverCard',
       displayName: 'Hover Card',
-      description: 'Component wrapper for hover card overlay; richer overlay triggered on hover/focus.',
+      description:
+        'Component wrapper for hover card overlay; richer overlay triggered on hover/focus.',
       propDescriptions: {
         children: 'Trigger element; must accept ref.',
         content: 'Hover card content.',
-        placement: 'Position relative to anchor element. Logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
-        alignment: 'Alignment along placement axis. Logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
+        placement:
+          "Position relative to anchor element. Logical: start/end follow the popover's inherited direction (RTL mirrors).",
+        alignment:
+          "Alignment along placement axis. Logical: start/end follow the popover's inherited direction (RTL mirrors).",
         delay: 'Show delay in ms.',
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger hover card.',
-        touchTrigger: 'Tap behavior where there is no hover. auto = tap opens unless the trigger acts (button/link/control); tap = always opens; none = never on touch. Tap-opened cards close on a tap outside.',
+        touchTrigger:
+          'Tap behavior where there is no hover. auto = tap opens unless the trigger acts (button/link/control); tap = always opens; none = never on touch. Tap-opened cards close on a tap outside.',
         isEnabled: 'Enable/disable hover + focus triggers.',
-        label: 'Accessible name for the popup. With label: named role="dialog"; without: role="group".',
-        onOpenChange: 'Callback when visibility changes; true=shown, false=hidden.',
+        label:
+          'Accessible name for the popup. With label: named role="dialog"; without: role="group".',
+        onOpenChange:
+          'Callback when visibility changes; true=shown, false=hidden.',
         hasHoverIndication: 'Dashed underline on trigger element.',
         isDefaultOpen: 'Show hover card on mount. Still dismissible.',
       },
