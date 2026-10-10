@@ -26,8 +26,12 @@ const a = <Tokenizer label="People" emptySearchResultsText="Nobody found" />;
 const b = <Typeahead label="Fruit" emptySearchResultsText={copy.empty} />;
 const c = <BaseTypeahead emptySearchResultsText={'None'} />;`);
 
-      expect(output).toContain('<Tokenizer label="People" emptySearchText="Nobody found" />');
-      expect(output).toContain('<Typeahead label="Fruit" emptySearchText={copy.empty} />');
+      expect(output).toContain(
+        '<Tokenizer label="People" emptySearchText="Nobody found" />',
+      );
+      expect(output).toContain(
+        '<Typeahead label="Fruit" emptySearchText={copy.empty} />',
+      );
       expect(output).toContain("<BaseTypeahead emptySearchText={'None'} />");
       expect(output).not.toContain('emptySearchResultsText');
     });
