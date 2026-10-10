@@ -333,6 +333,9 @@ export function ContextMenu({
   // Element focused before the menu opened, restored when it closes so focus
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
+  // Fingers that went down outside the open menu; each closes it if it lifts
+  // without the browser cancelling it (a tap, not a scroll).
+  const outsideTouchesRef = useRef(new Set<number>());
   const sheetHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const [isOpen, setIsOpen] = useState(false);
@@ -432,23 +435,47 @@ export function ContextMenu({
       ),
   });
 
-  // Dismiss on any click outside the menu. We use popover="manual" (not
-  // "auto") because the native light-dismiss treats the mouseup from the
-  // opening right-click as a dismiss event. Handling it ourselves via
-  // mousedown avoids that race.
+  // Dismiss on a press outside the menu. The menu is popover="manual" (not
+  // "auto") because native light dismiss reads the release of the opening
+  // right-click as a dismissal, so the press is read here, from pointer
+  // events: a touch's compatibility mouse events (the mousedown iOS sends
+  // while a long press is still held, the one Chromium sends as it lifts)
+  // have no pointer event of their own, so the press that opened the menu
+  // never closes it. A mouse or pen press outside closes the menu at once; a
+  // finger closes it on a tap, lifted rather than cancelled, so a scroll that
+  // starts outside leaves it open, as before.
   useEffect(() => {
     if (!isOpen || usesBottomSheet) {
       return;
     }
-    const handleClickOutside = (e: MouseEvent) => {
+    const outsideTouches = outsideTouchesRef.current;
+    const handlePointerDown = (e: PointerEvent) => {
       const menu = listRef.current;
-      if (menu && !menu.contains(e.target as Node)) {
+      if (menu == null || menu.contains(e.target as Node)) {
+        return;
+      }
+      if (e.pointerType === 'touch') {
+        outsideTouches.add(e.pointerId);
+        return;
+      }
+      closeMenu();
+    };
+    const handlePointerUp = (e: PointerEvent) => {
+      if (outsideTouches.delete(e.pointerId)) {
         closeMenu();
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
+    const handlePointerCancel = (e: PointerEvent) => {
+      outsideTouches.delete(e.pointerId);
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerCancel);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      outsideTouches.clear();
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerCancel);
     };
   }, [isOpen, closeMenu, listRef, usesBottomSheet]);
 
@@ -539,6 +566,9 @@ export function ContextMenu({
         document.activeElement instanceof HTMLElement
           ? document.activeElement
           : focusEl;
+      // A finger held on the trigger while the menu was open is now the long
+      // press that moved it, not a tap outside it.
+      outsideTouchesRef.current.clear();
       if (usesBottomSheet) {
         updateOpenState(true);
       } else {

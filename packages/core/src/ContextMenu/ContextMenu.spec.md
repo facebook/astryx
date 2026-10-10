@@ -91,6 +91,7 @@ Consumer props, content modes, and presentation policy remain documented in
 | FR6 | With `triggerAs="span"` the Trigger area MUST be an inline element that owns a box, so the cursor anchor measures from the trigger's own rect on every invocation path. Every invocation path (right-click, Shift+F10, long-press) and the `context-menu` target's placement are unchanged.                                                                                                                      | `component:ContextMenu/DEC-1`                                                                                  | Accepted; verified in jsdom                        |
 | FR7 | Sub-menu rows follow `component:DropdownMenu` FR12 inside the pointer menu: ContextMenu mounts the same drill-in view stack, named after its `label`, so a sub-menu drills in on a phone here too.                                                                                                                                                                                                               | `component:DropdownMenu/DEC-2`                                                                                 | Proposed; verified in jsdom                        |
 | FR8 | In the pointer menu ArrowDown on the last enabled row wraps to the first and ArrowUp on the first to the last; PageDown and PageUp page as in DropdownMenu FR6; a held key's auto-repeat does not activate; typeahead matches the row's label element alone.                                                                                                                                                     | Proposed in this change; `ContextMenu.test.tsx` keyboard case; shared `useListFocus` and `useTypeahead` suites | Proposed; verified in jsdom, pending owner review  |
+| FR9 | A press outside the Pointer menu surface MUST close it: a mouse or pen press at once, a finger on a tap (lifted, not cancelled), while a scroll that starts outside leaves it open. The touch's compatibility mouse events (a `mousedown` sent mid-hold or as the finger lifts) MUST NOT close it, so the long press that opens the menu never closes it.                                                        | `architecture:interaction-modality` INV4; tests                                                                | Proposed; pending owner review                     |
 
 ### Allowed variation
 
@@ -188,8 +189,8 @@ anchor is positioning infrastructure rather than consumer anatomy.
   long-press, pointer, touch, and adaptive-presentation boundaries; this draft
   changes none of them.
 - `architecture:layer-runtime` owns the current context-mode `useLayer` host and
-  cursor-anchor positioning. ContextMenu currently retains local outside-click
-  and Escape listeners; touch hosting delegates to BottomSheet.
+  cursor-anchor positioning. ContextMenu currently retains local outside-press
+  (FR9) and Escape listeners; touch hosting delegates to BottomSheet.
 - `family:overlay-dismissal` owns shared Escape and platform-close ordering and
   records ContextMenu and BottomSheet as current local-only adoption gaps. This
   anatomy backfill does not migrate either path.
@@ -206,6 +207,7 @@ anchor is positioning infrastructure rather than consumer anatomy.
 | FR6                 | `ContextMenu.test.tsx` keyboard case; shared `useListFocus` and `useTypeahead` suites             | wrap at both ends                             | Clamping arrows fail.                                                                              | `audit:ContextMenu/behavior` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                     | Canonical anatomy and current target          | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.              | `audit:ContextMenu/theming`  |
 | FR6, AR1            | `ContextMenu.test.tsx` "inline trigger (triggerAs)" suite                                         | `span` in a paragraph, default `div`          | A block trigger inside prose, or a lost invocation path, fails.                                    | `audit:ContextMenu/behavior` |
+| FR9                 | `ContextMenu.test.tsx` outside dismissal suite; `ContextMenuLongPress.a11y.chromium.spec.ts`      | long press and lift, tap, scroll, mouse       | A long press closed by its own lift or compat `mousedown`, or a scroll that closes, fails.         | `audit:ContextMenu/behavior` |
 
 ## Decision log
 
