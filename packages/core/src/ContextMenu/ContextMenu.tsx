@@ -3,8 +3,8 @@
 
 /**
  * @file ContextMenu.tsx
- * @input Uses React, StyleX, useLayer, BottomSheet, useListFocus, and the
- *   shared menu-presentation resolver
+ * @input Uses React, StyleX, useLayer, shared layer dismissal, BottomSheet,
+ *   useListFocus, and the shared menu-presentation resolver
  * @output Exports ContextMenu with cursor-popover and touch-sheet presentations
  * @position Core implementation; consumed by index.ts
  *
@@ -50,6 +50,8 @@ import {Button} from '../Button';
 import {Heading} from '../Heading';
 import {Icon} from '../Icon';
 import {useLayer} from '../Layer/useLayer';
+import {LayerDepthProvider} from '../Layer/LayerDepthContext';
+import {useLayerDismissal} from '../Layer/useLayerDismissal';
 import {MenuBottomSheetActionList} from '../DropdownMenu/MenuBottomSheetActionList';
 import {renderDropdownItems} from '../DropdownMenu/renderDropdownItems';
 import {
@@ -77,7 +79,7 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, isImeKeyEvent, rtlStyles} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {StyleXStyles} from '../theme/types';
 import {themeProps} from '../utils/themeProps';
@@ -300,6 +302,11 @@ export function ContextMenu({
   style,
   xstyle,
   triggerXstyle,
+  onContextMenu: onContextMenuProp,
+  onTouchStart: onTouchStartProp,
+  onTouchMove: onTouchMoveProp,
+  onTouchEnd: onTouchEndProp,
+  onTouchCancel: onTouchCancelProp,
   'data-testid': testId,
   ...rest
 }: ContextMenuProps) {
@@ -333,7 +340,6 @@ export function ContextMenu({
   // Element focused before the menu opened, restored when it closes so focus
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
-  const sheetHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const [isOpen, setIsOpen] = useState(false);
   const [submenuPath, setSubmenuPath] = useState<ContextMenuItemData[]>([]);
@@ -393,15 +399,14 @@ export function ContextMenu({
     [closeMenu],
   );
 
-  useEffect(() => {
-    if (!isOpen || submenuPath.length === 0) {
-      return;
-    }
-    const frame = requestAnimationFrame(() => {
-      sheetHeadingRef.current?.focus({preventScroll: true});
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [isOpen, submenuPath.length]);
+  const setSheetHeadingRef = useCallback(
+    (node: HTMLHeadingElement | null) => {
+      if (node && isOpen && submenuPath.length > 0) {
+        node.focus({preventScroll: true});
+      }
+    },
+    [isOpen, submenuPath.length],
+  );
 
   const {
     listRef,
@@ -416,7 +421,14 @@ export function ContextMenu({
     // Menus wrap from the last row to the first and back.
     wrap: true,
     hasPaging: true,
-    onEscape: closeMenu,
+  });
+
+  // Join the shared stack so an Escape press dismisses exactly one top-most
+  // surface. BottomSheet owns its own dismissal path.
+  useLayerDismissal({
+    isActive: isOpen && !usesBottomSheet,
+    onDismiss: closeMenu,
+    getContainer: () => listRef.current,
   });
 
   // Typeahead over the enabled menu items, matched on each row's LABEL alone.
@@ -451,32 +463,6 @@ export function ContextMenu({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen, closeMenu, listRef, usesBottomSheet]);
-
-  // Dismiss on Escape from anywhere while open. The menu div's own onKeyDown
-  // only fires when focus is inside the menu; a document-level listener is
-  // kept as a reliable fallback Escape path (e.g. if focus has moved out of
-  // the menu). Guards against IME composition-cancel.
-  useEffect(() => {
-    if (!isOpen || usesBottomSheet) {
-      return;
-    }
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') {
-        return;
-      }
-      if (isImeKeyEvent(e)) {
-        // Ignore Escape that is committing/cancelling an IME composition;
-        // see utils/ime.ts for why.
-        return;
-      }
-      e.preventDefault();
-      closeMenu();
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen, closeMenu, usesBottomSheet]);
 
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -583,7 +569,12 @@ export function ContextMenu({
   // `contextmenu` event on long-press, so a context menu is otherwise
   // unreachable on touch. Open the menu at the touch point once the press is
   // held long enough (see useLongPress for timer/move-cancel/cleanup logic).
-  const longPressHandlers = useLongPress({
+  const {
+    onTouchStart: handleLongPressTouchStart,
+    onTouchMove: handleLongPressTouchMove,
+    onTouchEnd: handleLongPressTouchEnd,
+    onTouchCancel: handleLongPressTouchCancel,
+  } = useLongPress({
     disabled: isDisabled,
     onLongPress: useCallback(
       (point: {x: number; y: number}) => {
@@ -597,6 +588,45 @@ export function ContextMenu({
       [openAtLocalPoint, getAnchorBaseRect],
     ),
   });
+
+  // ContextMenu owns invocation and long-press cleanup. Consumer handlers are
+  // notified too, but preventing their default does not cancel component-owned
+  // behavior that the public API does not promise as cancelable.
+  const handleTriggerContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      handleContextMenu(event);
+      onContextMenuProp?.(event);
+    },
+    [handleContextMenu, onContextMenuProp],
+  );
+  const handleTriggerTouchStart = useCallback(
+    (event: React.TouchEvent<HTMLElement>) => {
+      handleLongPressTouchStart(event);
+      onTouchStartProp?.(event);
+    },
+    [handleLongPressTouchStart, onTouchStartProp],
+  );
+  const handleTriggerTouchMove = useCallback(
+    (event: React.TouchEvent<HTMLElement>) => {
+      handleLongPressTouchMove(event);
+      onTouchMoveProp?.(event);
+    },
+    [handleLongPressTouchMove, onTouchMoveProp],
+  );
+  const handleTriggerTouchEnd = useCallback(
+    (event: React.TouchEvent<HTMLElement>) => {
+      handleLongPressTouchEnd();
+      onTouchEndProp?.(event);
+    },
+    [handleLongPressTouchEnd, onTouchEndProp],
+  );
+  const handleTriggerTouchCancel = useCallback(
+    (event: React.TouchEvent<HTMLElement>) => {
+      handleLongPressTouchCancel();
+      onTouchCancelProp?.(event);
+    },
+    [handleLongPressTouchCancel, onTouchCancelProp],
+  );
 
   const popoverXstyle = menuWidth
     ? styles.popoverCustomWidth(menuWidth)
@@ -684,7 +714,7 @@ export function ContextMenu({
             />
           )}
           <Heading
-            ref={sheetHeadingRef}
+            ref={setSheetHeadingRef}
             level={3}
             tabIndex={-1}
             xstyle={[
@@ -713,8 +743,11 @@ export function ContextMenu({
       <TriggerElement
         ref={useMergedRefs(ref, triggerRef)}
         {...triggerProps}
-        onContextMenu={handleContextMenu}
-        {...longPressHandlers}
+        onContextMenu={handleTriggerContextMenu}
+        onTouchStart={handleTriggerTouchStart}
+        onTouchMove={handleTriggerTouchMove}
+        onTouchEnd={handleTriggerTouchEnd}
+        onTouchCancel={handleTriggerTouchCancel}
         data-testid={testId}
         {...stylex.props(
           styles.trigger,
@@ -747,7 +780,7 @@ export function ContextMenu({
           </LazyMenuBottomSheet>
         </Suspense>
       ) : (
-        layer.render(renderedMenu, {
+        layer.render(<LayerDepthProvider>{renderedMenu}</LayerDepthProvider>, {
           placement: 'below',
           alignment: 'start',
           xstyle: [popoverXstyle, layerAnimations.below],

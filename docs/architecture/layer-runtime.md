@@ -16,6 +16,7 @@ applies_to:
     packages/core/src/Dialog/,
     packages/lab/src/Drawer/,
     packages/core/src/DropdownMenu/,
+    packages/core/src/ContextMenu/,
     packages/core/src/Tooltip/,
     packages/core/src/HoverCard/,
     packages/core/src/Toast/,
@@ -34,6 +35,7 @@ verified_by:
     packages/core/src/Layer/layerDismissalInvariants.test.tsx,
     packages/core/src/Popover/Popover.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
+    packages/core/src/ContextMenu/ContextMenu.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenuSubMenu.test.tsx,
     packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx,
     packages/core/src/hooks/useFocusTrap.test.tsx,
@@ -237,8 +239,8 @@ contract. The current shared stack registers present layers with `close` or
 active-cycle registration sequence. `useFocusTrap` adapts an active trap with `onEscape` into
 that stack.
 
-Tooltip, HoverCard, Dialog, Lab Drawer, Popover, DropdownMenu, Lightbox,
-MobileNav, and BottomSheetSwitcher all register with the shared stack. Tooltip
+Tooltip, HoverCard, Dialog, Lab Drawer, Popover, DropdownMenu, ContextMenu,
+Lightbox, MobileNav, and BottomSheetSwitcher all register with the shared stack. Tooltip
 and HoverCard report current DOM presence; Popover and DropdownMenu register
 through `useFocusTrap`; Dialog, Lightbox, MobileNav, BottomSheetSwitcher, and
 Lab Drawer additionally ask `shouldDismissOnCloseRequest()` before acting on

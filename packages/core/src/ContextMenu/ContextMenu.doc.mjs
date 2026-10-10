@@ -144,6 +144,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'triggerXstyle',
+      type: 'StyleXStyles | StyleXStyles[]',
+      description:
+        'Styles applied to the trigger wrapper. Accepts `stylex.create()` values, not inline style objects.',
+    },
+    {
       name: 'triggerAs',
       type: "'div' | 'span'",
       description:

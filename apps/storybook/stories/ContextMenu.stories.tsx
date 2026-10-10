@@ -87,6 +87,46 @@ export const Default: Story = {
   ),
 };
 
+export const PointerPresentation: Story = {
+  name: 'Presentation / pointer menu',
+  tags: ['visual-theme-matrix'],
+  render: () => (
+    <ContextMenu
+      data-testid="pointer-context-menu"
+      label="Document actions"
+      items={[
+        {label: 'Edit', icon: PencilIcon, onClick: () => {}},
+        {
+          label: 'Duplicate',
+          icon: DocumentDuplicateIcon,
+          onClick: () => {},
+        },
+        {type: 'divider'},
+        {
+          label: 'Delete',
+          icon: TrashIcon,
+          variant: 'destructive',
+          onClick: () => {},
+        },
+      ]}>
+      <div {...stylex.props(triggerStyles.area)}>
+        Right-click for document actions
+      </div>
+    </ContextMenu>
+  ),
+  play: async ({canvasElement}) => {
+    canvasElement
+      .querySelector('[data-testid="pointer-context-menu"]')
+      ?.dispatchEvent(
+        new MouseEvent('contextmenu', {
+          bubbles: true,
+          clientX: 40,
+          clientY: 40,
+        }),
+      );
+  },
+};
+
 export const WithIcons: Story = {
   render: () => (
     <ContextMenu
