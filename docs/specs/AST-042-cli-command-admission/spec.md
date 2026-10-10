@@ -289,7 +289,7 @@ that keeps exit 0, which makes a documented failure optional.
 | downstream       | Maintained agent-docs teach `build` as the front door. The layout guide (`astryx docs layout`) is unaffected.                                                                                                                                                  |
 | direct authority | `spec:AST-042` (CLI command admission and programmatic parity)                                                                                                                                                                                                 |
 | state            | `deprecated`                                                                                                                                                                                                                                                   |
-| target plan      | `CLN-0006` removal in the next scheduled minor                                                                                                                                                                                                                 |
+| target plan      | `CLN-0006` removal in the next minor release                                                                                                                                                                                                                   |
 
 ### CLN-0006 — Remove the `astryx layout` command group
 
@@ -299,7 +299,7 @@ that keeps exit 0, which makes a documented failure optional.
 | lifecycle | `DEP-0006`                                                                                                                                                       |
 | delta     | Remove command registration, API exports (`layoutExpand`, `layoutCheck`, `layoutGrammar`), CLI bindings, command docs, tests, and the `layout.*` response types. |
 | rollback  | Re-register the command group with the same API, response types, and tests from the final-patch baseline.                                                        |
-| state     | `pending` — lands only when a minor is scheduled and `CLN-0006` appears in its frozen manifest                                                                   |
+| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0006`                                                                                 |
 
 ### DEP-0005 — Deprecate the copy default of `astryx theme add`
 
