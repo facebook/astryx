@@ -219,6 +219,49 @@ describe('MultiSelector', () => {
     expect(screen.getByLabelText('Fruit')).toBeInTheDocument();
   });
 
+  it('applies distinct trigger chrome to the secondary variant', () => {
+    const {rerender} = render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        variant="input"
+        data-testid="selector"
+      />,
+    );
+    const inputClasses = screen.getByTestId('selector').className;
+
+    rerender(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        variant="secondary"
+        data-testid="selector"
+      />,
+    );
+    const secondary = screen.getByTestId('selector');
+    const secondaryClasses = secondary.className;
+    expect(secondary).toHaveAttribute('data-variant', 'secondary');
+
+    rerender(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        variant="ghost"
+        data-testid="selector"
+      />,
+    );
+    const ghostClasses = screen.getByTestId('selector').className;
+
+    expect(secondaryClasses).not.toBe(inputClasses);
+    expect(secondaryClasses).not.toBe(ghostClasses);
+  });
+
   it('renders custom option content with renderOption', async () => {
     const user = userEvent.setup();
     render(
@@ -2392,26 +2435,29 @@ describe('MultiSelector statusVariant forwarding', () => {
     ).not.toBeNull();
   });
 
-  it('detaches attached status by default for the ghost variant', () => {
-    const {container} = render(
-      <MultiSelector
-        label="Fruit"
-        options={['Apple', 'Banana']}
-        value={[]}
-        onChange={() => {}}
-        variant="ghost"
-        status={{type: 'error', message: 'Required'}}
-      />,
-    );
-    expect(container.querySelector('.astryx-multi-selector')).toHaveAttribute(
-      'data-variant',
-      'ghost',
-    );
-    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
-      'data-variant',
-      'detached',
-    );
-  });
+  it.each(['secondary', 'ghost'] as const)(
+    'detaches attached status by default for the %s variant',
+    variant => {
+      const {container} = render(
+        <MultiSelector
+          label="Fruit"
+          options={['Apple', 'Banana']}
+          value={[]}
+          onChange={() => {}}
+          variant={variant}
+          status={{type: 'error', message: 'Required'}}
+        />,
+      );
+      expect(container.querySelector('.astryx-multi-selector')).toHaveAttribute(
+        'data-variant',
+        variant,
+      );
+      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+        'data-variant',
+        'detached',
+      );
+    },
+  );
 
   it('uses a status tooltip for ghost multi-selectors when requested', () => {
     const {container} = render(

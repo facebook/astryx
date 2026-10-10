@@ -605,7 +605,7 @@ describe('Selector', () => {
     const inputDropdownClass = screen.getByRole('listbox', h).className;
     unmount();
 
-    render(
+    const ghostRender = render(
       <Selector
         label="Ghost fruit"
         options={OPTIONS}
@@ -616,10 +616,24 @@ describe('Selector', () => {
     );
     await user.click(screen.getByRole('combobox'));
     const ghostDropdownClass = screen.getByRole('listbox', h).className;
+    ghostRender.unmount();
+
+    render(
+      <Selector
+        label="Secondary fruit"
+        options={OPTIONS}
+        value="Banana"
+        variant="secondary"
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const secondaryDropdownClass = screen.getByRole('listbox', h).className;
 
     // The bordered input gets one extra StyleX rule for its border-width
-    // correction; the borderless ghost keeps the base menu inset.
+    // correction; the borderless secondary/ghost keep the base menu inset.
     expect(inputDropdownClass).not.toBe(ghostDropdownClass);
+    expect(secondaryDropdownClass).toBe(ghostDropdownClass);
   });
 
   it('does not apply selected-item overlay offset when placement is explicit', async () => {
@@ -3077,6 +3091,48 @@ describe('Selector statusVariant forwarding', () => {
       'data-variant',
       'detached',
     );
+  });
+
+  it('detaches attached status by default for the secondary variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        variant="secondary"
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-selector')).toHaveAttribute(
+      'data-variant',
+      'secondary',
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+
+  it('paints the secondary trigger with its own trigger style', () => {
+    const inputRender = render(
+      <Selector label="Fruit" options={['Apple', 'Banana']} value="Banana" />,
+    );
+    const inputTriggerClass =
+      inputRender.container.querySelector('.astryx-selector')!.className;
+    inputRender.unmount();
+
+    const secondaryRender = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value="Banana"
+        variant="secondary"
+      />,
+    );
+    // The neutral-filled secondary trigger must not reuse the bordered
+    // input trigger's classes; it carries the secondary trigger style.
+    expect(
+      secondaryRender.container.querySelector('.astryx-selector')!.className,
+    ).not.toBe(inputTriggerClass);
   });
 
   it('uses a status tooltip for ghost selectors when requested', () => {

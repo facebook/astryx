@@ -6,7 +6,7 @@
  * @file Selector.tsx
  * @input Uses React, StyleX, adaptive selection surfaces, theme-resolved
  *   indicators, Field, and InputGroup context
- * @output Exports Selector with content-derived option-mark layout and token-sized single-line triggers
+ * @output Exports Selector with input, secondary, and ghost trigger treatments, content-derived option-mark layout, and token-sized single-line triggers
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
@@ -256,6 +256,37 @@ const styles = stylex.create({
       '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
+  // Secondary is ghost's chrome with the resting fill of a secondary
+  // button (`--color-neutral`): no border, no shadow, content width, so a
+  // selector in a nav reads as the sibling of the secondary buttons and
+  // segmented controls beside it instead of as a form field. The hover and
+  // pressed answers still come from the shared interaction overlay, layered
+  // over the fill via backgroundImage.
+  triggerSecondary: {
+    width: 'auto',
+    borderWidth: 0,
+    lineHeight: `max(${spacingVars['--spacing-5']}, 20px, 1rem)`,
+    backgroundColor: colorVars['--color-neutral'],
+    boxShadow: {
+      default: 'none',
+      ':hover:not(:focus-within):where(:not(:disabled,[aria-disabled="true"]))':
+        {
+          '@media (hover: hover)': 'none',
+        },
+      ':focus-within': 'none',
+    },
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    transitionProperty:
+      'background-image, background-color, color, opacity, transform',
+    transform: {
+      default: 'scale(1)',
+      ':active': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-astryx-press="on"]': 'scale(0.98)',
+    },
+  },
   triggerGhostDisabled: {
     backgroundImage: 'none',
     transform: {
@@ -307,7 +338,7 @@ const styles = stylex.create({
   },
   dropdownInput: {
     // The input trigger's text inset includes its border. Mirror that extra
-    // pixel in the menu; the borderless ghost variant needs no correction.
+    // pixel in the menu; the borderless secondary/ghost variants need no correction.
     paddingInline: `calc(${spacingVars['--spacing-1']} + ${borderVars['--border-width']})`,
   },
   // Scroll ownership by the browser's own signal, as the menus declare it: a
@@ -507,7 +538,7 @@ const STATUS_BUTTON_LABEL_KEY: Record<SelectorStatusType, string> = {
 
 export type SelectorSize = 'sm' | 'md' | 'lg';
 
-export type SelectorVariant = 'input' | 'ghost';
+export type SelectorVariant = 'input' | 'secondary' | 'ghost';
 
 export type SelectorPresentation = AdaptivePresentation;
 
@@ -625,6 +656,9 @@ interface SelectorPropsBase<
   /**
    * Visual style of the selector trigger.
    * - 'input': bordered input-style trigger for forms
+   * - 'secondary': borderless, neutral-filled trigger matching secondary
+   *   buttons, for navs and toolbars where the selector sits beside
+   *   secondary actions
    * - 'ghost': borderless trigger matching ghost buttons, for toolbars
    * @default 'input'
    */
@@ -641,7 +675,7 @@ interface SelectorPropsBase<
    * - 'attached': message overlaps directly below the bordered input (input variant only)
    * - 'detached': message floats below as a separate element with spacing
    * - 'tooltip': message is exposed from the on-field status icon
-   * @default 'attached' for input selectors; 'detached' for ghost selectors
+   * @default 'attached' for input selectors; 'detached' for secondary/ghost selectors
    */
   statusVariant?: FieldStatusVariant;
 
@@ -917,7 +951,7 @@ export function Selector<T extends SelectorOptionType>(
   const hasClear = hasClearProp === true;
   const size = useSize(sizeProp, 'md');
   const effectiveStatusVariant =
-    variant === 'ghost' && statusVariant === 'attached'
+    variant !== 'input' && statusVariant === 'attached'
       ? 'detached'
       : statusVariant;
   const isEffectivelyReadOnly = isReadOnly && !isDisabled;
@@ -1364,7 +1398,7 @@ export function Selector<T extends SelectorOptionType>(
         {...themeProps('selector-search')}
         xstyle={
           surface.activePresentation === 'popover' &&
-          variant !== 'ghost' &&
+          variant === 'input' &&
           styles.searchRowInput
         }
         // When hasSearch is set, focus moves into this input on open, so it —
@@ -1707,7 +1741,7 @@ export function Selector<T extends SelectorOptionType>(
           styles.dropdown,
           listboxHasOverflow ? styles.touchPanY : styles.touchNone,
           surface.activePresentation === 'popover' &&
-            variant !== 'ghost' &&
+            variant === 'input' &&
             styles.dropdownInput,
         )}>
         {renderOptions()}
@@ -1745,7 +1779,7 @@ export function Selector<T extends SelectorOptionType>(
         styles.dropdown,
         listboxHasOverflow ? styles.touchPanY : styles.touchNone,
         surface.activePresentation === 'popover' &&
-          variant !== 'ghost' &&
+          variant === 'input' &&
           styles.dropdownInput,
         surface.activePresentation === 'popover' &&
           !isPositioned &&
@@ -1832,25 +1866,26 @@ export function Selector<T extends SelectorOptionType>(
             styles.triggerContainer,
             sizeStyles[size],
             variant === 'ghost' && styles.triggerGhost,
-            variant === 'ghost' && interactionOverlayStyles.backgroundImage,
-            variant === 'ghost' && focusOutlineStyles.focusWithin,
+            variant === 'secondary' && styles.triggerSecondary,
+            variant !== 'input' && interactionOverlayStyles.backgroundImage,
+            variant !== 'input' && focusOutlineStyles.focusWithin,
             surface.isTriggerFocusRingSuppressed &&
               selectorPresentationStyles.pointerRestoredFocus,
             isDisabled && inputWrapperStyles.disabled,
             isEffectivelyReadOnly && styles.triggerReadOnly,
-            variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
-            variant === 'ghost' &&
+            variant !== 'input' && isDisabled && styles.triggerGhostDisabled,
+            variant !== 'input' &&
               isEffectivelyReadOnly &&
               styles.triggerGhostReadOnly,
             !selectedItem && styles.triggerPlaceholder,
-            variant !== 'ghost' &&
+            variant === 'input' &&
               status &&
               inputStatusBorderStyles[status.type],
-            variant !== 'ghost' &&
+            variant === 'input' &&
               status &&
               !isDisabled &&
               inputStatusHoverShadowStyles[status.type],
-            variant !== 'ghost' && inputGroup && groupStyles.inGroup,
+            variant === 'input' && inputGroup && groupStyles.inGroup,
             inputGroup && styles.triggerInGroup,
             xstyle,
           ),
