@@ -44,7 +44,8 @@ import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {useTranslator} from '../i18n/useTranslator';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import paginationMessages from '../i18n/generated-locales/en/pagination.generated';
 import type {PaginationVariantMap} from './index';
 
 // =============================================================================
@@ -385,7 +386,7 @@ export function Pagination({
   const [, startTransition] = useTransition();
 
   // Resolve system strings once per render. Prop overrides win.
-  const t = useTranslator();
+  const t = useComponentTranslator(paginationMessages);
   const label = labelFromProps ?? t('@astryx.pagination.label');
   const firstLabel = t('@astryx.pagination.first');
   const lastLabel = t('@astryx.pagination.last');

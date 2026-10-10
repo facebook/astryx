@@ -27,7 +27,8 @@ import {useCommandPaletteContext} from './CommandPaletteContext';
 import {useDialogContext} from '../Dialog/DialogContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import commandPaletteMessages from '../i18n/generated-locales/en/commandPalette.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 const styles = stylex.create({
@@ -174,7 +175,7 @@ export function CommandPaletteInput({
   style,
   ...props
 }: CommandPaletteInputProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(commandPaletteMessages);
   const placeholder =
     placeholderFromProps ?? t('@astryx.commandPalette.input.placeholder');
   const ctx = useCommandPaletteContext();

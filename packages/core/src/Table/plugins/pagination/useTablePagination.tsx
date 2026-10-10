@@ -22,7 +22,8 @@ import {spacingVars} from '../../../theme/tokens.stylex';
 import {Pagination} from '../../../Pagination';
 import type {PaginationProps} from '../../../Pagination';
 import type {TablePlugin} from '../../types';
-import {useTranslator} from '../../../i18n';
+import {useComponentTranslator} from '../../../i18n/useComponentTranslator';
+import tableMessages from '../../../i18n/generated-locales/en/table.generated';
 
 // =============================================================================
 // Styles
@@ -197,7 +198,7 @@ export interface UseTablePaginationConfig {
 export function useTablePagination<T extends Record<string, unknown>>(
   config: UseTablePaginationConfig,
 ): TablePlugin<T> {
-  const t = useTranslator();
+  const t = useComponentTranslator(tableMessages);
   const {
     page,
     onPageChange,

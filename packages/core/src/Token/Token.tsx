@@ -39,7 +39,8 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import tokenMessages from '../i18n/generated-locales/en/token.generated';
 import type {TokenColorMap} from './index';
 
 // =============================================================================
@@ -305,7 +306,7 @@ export function Token({
   // document controller once, so the token's output stays a pure function
   // of its props.
   const pressable = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(tokenMessages);
   const LinkComponent = useLinkComponent();
   const role = useInteractiveRole({href, onClick, isDisabled});
 

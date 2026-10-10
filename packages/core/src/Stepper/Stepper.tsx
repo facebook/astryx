@@ -41,7 +41,8 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import stepperMessages from '../i18n/generated-locales/en/stepper.generated';
 import {
   StepperContext,
   StepperInternalContext,
@@ -246,7 +247,7 @@ export function Stepper({
   ref,
   ...rest
 }: StepperProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(stepperMessages);
   const label = labelFromProps ?? t('@astryx.stepper.label');
   const minimumStepWidth =
     horizontalOptions?.minimumStepWidth ?? DEFAULT_MIN_STEP_WIDTH;

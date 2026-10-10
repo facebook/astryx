@@ -49,7 +49,8 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps, rtlStyles} from '../utils';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import carouselMessages from '../i18n/generated-locales/en/carousel.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 /**
@@ -338,7 +339,7 @@ export function Carousel({
   'data-testid': testId,
   ...htmlProps
 }: CarouselProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(carouselMessages);
   const ariaLabel = ariaLabelFromProps ?? t('@astryx.carousel.label');
   const scrollElRef = useRef<HTMLElement | null>(null);
   const startButtonRef = useRef<HTMLButtonElement>(null);
