@@ -25,6 +25,65 @@ function assertiveRegion(): HTMLElement | null {
 }
 
 describe('useAnnounce', () => {
+  it.each(['polite', 'assertive'] as const)(
+    'cancels every queued %s write when cleared',
+    politeness => {
+      vi.useFakeTimers();
+      try {
+        const {result} = renderHook(() => useAnnounce());
+        result.current('First', politeness);
+        result.current('Second', politeness);
+        const region =
+          politeness === 'polite' ? politeRegion()! : assertiveRegion()!;
+        const write = vi.spyOn(region, 'textContent', 'set');
+        result.current('', politeness);
+        act(() => {
+          vi.advanceTimersByTime(50);
+        });
+        expect(write.mock.calls).toEqual([['']]);
+        write.mockRestore();
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it('preserves multiple same-frame announcements until explicitly cleared', () => {
+    vi.useFakeTimers();
+    try {
+      const {result} = renderHook(() => useAnnounce());
+      result.current('First');
+      result.current('Second');
+      const write = vi.spyOn(politeRegion()!, 'textContent', 'set');
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+      expect(write.mock.calls).toEqual([['First'], ['Second']]);
+      write.mockRestore();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cancels queued writes on reset', () => {
+    vi.useFakeTimers();
+    try {
+      const {result} = renderHook(() => useAnnounce());
+      result.current('Saved');
+      result.current('Failed', 'assertive');
+      const polite = politeRegion()!;
+      const assertive = assertiveRegion()!;
+      __resetLiveRegionsForTest();
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+      expect(polite.textContent).toBe('');
+      expect(assertive.textContent).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('mounts empty polite and assertive live regions on first announce', async () => {
     const {result} = renderHook(() => useAnnounce());
     // Regions do not exist until first use.
