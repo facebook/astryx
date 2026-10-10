@@ -30,6 +30,7 @@ deciding_specs:
     spec:AST-005/DEC-1,
     spec:AST-012/DEC-1,
     spec:AST-012/DEC-2,
+    spec:AST-071/DEC-1,
   ]
 ---
 
@@ -135,6 +136,11 @@ guidance owns the process used to propose and test APIs.
 - **INV14 — Shared breakpoint names keep one meaning.** Components that accept a
   theme width point use `sm`/`md`/`lg`/`xl`/`2xl` from the active Theme. A
   `below` boundary is exclusive, so equality belongs to the wider side.
+- **INV15 — A part's styling inputs come as a set.** Styling for an element other
+  than the root is accepted as `<part>Xstyle`, `<part>ClassName`, and
+  `<part>Style` together, reaching that element and composing as INV6 describes.
+  No public prop accepts StyleX styles for an element that cannot also take a
+  class name and inline styles, following `spec:AST-071/DEC-1`.
 
 This record applies to stable public packages. Lab components are not stable
 public promises until promotion.
@@ -189,6 +195,8 @@ public promises until promotion.
   destination-safety decision.
 - `spec:AST-012/DEC-1` and `spec:AST-012/DEC-2` — components reuse the fixed
   theme width names and inclusive-`from`/exclusive-`below` edge meanings.
+- `spec:AST-071/DEC-1` — every styling input works from every styling system,
+  so a part's styling inputs come as a set.
 
 Transition Action sequencing and pending behavior belong to their component or
 family contract. This record links that owner once it is current; it does not
@@ -206,6 +214,7 @@ copy the component matrix.
 | INV11                   | Public-API admission review plus owning theming/component tests              | A public semantic custom property exposes derivable or unsupported implementation detail                                 |
 | INV12, INV13            | Generated declaration/export/behavior inventory plus canonical-owner mapping | A reachable supporting type or behavior is called internal, or mechanical evidence is treated as permission to accept it |
 | INV14                   | `AppShell.test.tsx`                                                          | A component hardcodes a divergent point or treats equality as below                                                      |
+| INV15                   | Public-API review of the generated declaration inventory                     | A part or StyleX-typed styling prop ships without class-name and inline-style counterparts on the same element           |
 | Consumer-doc projection | `docPropReferences.test.ts` and `docPropLiterals.test.ts`                    | Docs name a nonexistent prop or omit public literal choices                                                              |
 
 Known verification gaps:
