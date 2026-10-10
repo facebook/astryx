@@ -54,7 +54,7 @@ function LocaleDateExamples({locale}: {locale: Locale}) {
         </Text>
         <Calendar
           mode="single"
-          value={value}
+          value={value ?? null}
           onChange={setValue}
           focusDate="2026-08-01"
         />

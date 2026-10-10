@@ -189,7 +189,7 @@ interface CalendarSingleProps extends CalendarBaseProps {
   mode?: 'single';
 
   /** Selected date in ISO format (YYYY-MM-DD) */
-  value?: ISODateString;
+  value?: ISODateString | null;
 
   /** Default value for uncontrolled mode */
   defaultValue?: ISODateString;
@@ -203,7 +203,7 @@ interface CalendarRangeProps extends CalendarBaseProps {
   mode: 'range';
 
   /** Selected date range */
-  value?: DateRange;
+  value?: DateRange | null;
 
   /** Default value for uncontrolled mode */
   defaultValue?: DateRange;
@@ -282,7 +282,8 @@ export function Calendar({ref, ...props}: CalendarProps) {
   const [pendingFocus, setPendingFocus] = useState<ISODateString | null>(null);
 
   // Determine effective value
-  const effectiveValue = value !== undefined ? value : internalValue;
+  const effectiveValue =
+    (value !== undefined ? value : internalValue) ?? undefined;
 
   // Focus date state (which month is visible). Falls back to today, clamped
   // into the min/max window so a window that doesn't contain today doesn't

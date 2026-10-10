@@ -26,6 +26,8 @@ import {InputGroupText} from '../InputGroup/InputGroupText';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {InternationalizationProvider} from '../i18n';
+import {useState} from 'react';
+import type {ISODateString} from '../utils';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -564,6 +566,34 @@ describe('DateInput', () => {
   // Full popover interaction is tested in the browser via Storybook.
 
   describe('hasClear', () => {
+    it('shows no selected calendar days after clearing', async () => {
+      const user = userEvent.setup();
+      function ControlledDateInput() {
+        const [value, setValue] = useState<ISODateString | undefined>(
+          '2026-01-01',
+        );
+        return (
+          <DateInput
+            label="Date"
+            value={value}
+            onChange={setValue}
+            min="2026-01-01"
+            max="2026-01-31"
+            hasClear
+          />
+        );
+      }
+
+      render(<ControlledDateInput />);
+      await user.click(getButton('Open calendar'));
+      await user.click(getButton(/January 15, 2026/));
+      await user.click(getButton('Clear Date'));
+      await user.click(getButton('Open calendar'));
+      expect(
+        screen.queryAllByRole('gridcell', {selected: true, hidden: true}),
+      ).toHaveLength(0);
+    });
+
     it('shows clear button when hasClear is true and value exists', () => {
       render(
         <DateInput

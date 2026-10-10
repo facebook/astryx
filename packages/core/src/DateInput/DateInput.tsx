@@ -884,7 +884,7 @@ function PointerDateField({
         <Calendar
           handleRef={calendarRef}
           mode="single"
-          value={optimisticValue}
+          value={optimisticValue ?? null}
           onChange={handleDateSelect}
           min={min}
           max={max}

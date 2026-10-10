@@ -9,6 +9,7 @@
  * SYNC: When DateRangeInput.tsx changes, update tests to match new behavior
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -258,6 +259,35 @@ describe('DateRangeInput', () => {
   });
 
   describe('hasClear', () => {
+    it('shows no selected calendar days after clearing', async () => {
+      const user = userEvent.setup();
+      function ControlledDateRangeInput() {
+        const [value, setValue] = useState<DateRange | null>({
+          start: '2026-01-01',
+          end: '2026-01-03',
+        });
+        return (
+          <DateRangeInput
+            label="Range"
+            value={value}
+            onChange={setValue}
+            min="2026-01-01"
+            max="2026-01-31"
+            numberOfMonths={1}
+          />
+        );
+      }
+      render(<ControlledDateRangeInput />);
+      await user.click(getButton('Open calendar'));
+      await user.click(getButton(/January 15, 2026/));
+      await user.click(getButton(/January 16, 2026/));
+      await user.click(getButton('Clear Range'));
+      await user.click(getButton('Open calendar'));
+      expect(
+        screen.queryAllByRole('gridcell', {selected: true, hidden: true}),
+      ).toHaveLength(0);
+    });
+
     it('shows clear button when hasClear is true and value exists', () => {
       const range: DateRange = {
         start: '2026-03-15',
