@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-09-07
 owners: [cixzhang, imdreamrunner]
-review_triggers: [public-api, layout, theming]
+review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
   [
     packages/core/src/Banner/Banner.test.tsx,
@@ -26,7 +26,7 @@ architecture:
     architecture:theme-compilation,
   ]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-009]
 ---
 
 # Banner component contract
@@ -39,12 +39,10 @@ separately targetable surface. The status and content targets remain unchanged.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`
-- Compatibility class: additive public theming target; no existing target,
-  runtime default, DOM, prop, or behavior changes
+- Released default preserved: `no` — Banner no longer derives a live-region role from visual status
+- Compatibility class: breaking accessibility-semantic correction; visual output, DOM structure, props, theming targets, and interaction behavior are unchanged
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: none; new themes use `banner-frame` for frame-specific
-  overrides
+- Migration decision: announce async outcomes in their transition handler with `useAnnounce`; add an explicit `role="status"` only for a persistent semantic mirror, and reserve `role="alert"` for genuinely urgent interruption
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -77,15 +75,16 @@ prop vocabulary or extensibility rule changes.
 The requirements below describe the current implementation and its additive
 frame target contract.
 
-| ID  | Invariant                                                                                                                                                                                                                                                            | Basis                                          | Contract state           |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------ |
-| FR1 | The current render places `banner` on the colored status surface, which is Banner's primary painted surface and reflects `container` and `status`.                                                                                                                   | Current source, public docs, and tests         | Current behavior         |
-| FR2 | The Banner frame receives the public ref, role, supported DOM props, `xstyle`, `className`, and `style`; it also paints the selected `boxShadow`.                                                                                                                    | Current source and tests                       | Current behavior         |
-| FR3 | An elevated `card` frame also paints the whole-banner radius. A `section` frame remains square. A non-elevated frame does not receive the frame-radius style.                                                                                                        | Current source and elevation tests             | Current behavior         |
-| FR4 | Card shape is split across surface owners: the status surface owns all corners without visible content or the top corners with visible content; the content surface owns the bottom corners.                                                                         | Current source                                 | Current behavior         |
-| FR5 | Theme-authored `borderRadius` on `banner` currently writes the private `--_banner-radius` variable on the Status surface only. CSS inheritance does not carry that value upward to the frame or sideways to the Content surface, so both keep their fallback radius. | Current compiler output and CSS inheritance    | Current reachability gap |
-| FR6 | The Banner frame exposes `banner-frame` and reflects `container` and `elevation`. The existing `banner` target remains on the Status surface rather than moving to the outermost DOM element.                                                                        | Owner decision; current source and tests       | Current behavior         |
-| FR7 | `banner-frame` is additive. The existing `banner`, `banner-icon`, `banner-description`, and `banner-content` targets and their current axes remain unchanged.                                                                                                        | Current target inventory; compatibility policy | Current behavior         |
+| ID  | Invariant                                                                                                                                                                                                                                                                                                            | Basis                                                  | Contract state           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------ |
+| FR1 | The current render places `banner` on the colored status surface, which is Banner's primary painted surface and reflects `container` and `status`.                                                                                                                                                                   | Current source, public docs, and tests                 | Current behavior         |
+| FR2 | The Banner frame receives the public ref, role, supported DOM props, `xstyle`, `className`, and `style`; it also paints the selected `boxShadow`.                                                                                                                                                                    | Current source and tests                               | Current behavior         |
+| FR3 | An elevated `card` frame also paints the whole-banner radius. A `section` frame remains square. A non-elevated frame does not receive the frame-radius style.                                                                                                                                                        | Current source and elevation tests                     | Current behavior         |
+| FR4 | Card shape is split across surface owners: the status surface owns all corners without visible content or the top corners with visible content; the content surface owns the bottom corners.                                                                                                                         | Current source                                         | Current behavior         |
+| FR5 | Theme-authored `borderRadius` on `banner` currently writes the private `--_banner-radius` variable on the Status surface only. CSS inheritance does not carry that value upward to the frame or sideways to the Content surface, so both keep their fallback radius.                                                 | Current compiler output and CSS inheritance            | Current reachability gap |
+| FR6 | The Banner frame exposes `banner-frame` and reflects `container` and `elevation`. The existing `banner` target remains on the Status surface rather than moving to the outermost DOM element.                                                                                                                        | Owner decision; current source and tests               | Current behavior         |
+| FR7 | `banner-frame` is additive. The existing `banner`, `banner-icon`, `banner-description`, and `banner-content` targets and their current axes remain unchanged.                                                                                                                                                        | Current target inventory; compatibility policy         | Current behavior         |
+| FR8 | `status` controls visual meaning only and MUST NOT derive `role`, `aria-live`, or an announcement. Standard DOM props MAY provide an explicit persistent role. Async outcomes MUST announce from the transition handler through `useAnnounce`; `role="alert"` is reserved for genuinely urgent interruptive content. | Accessibility Checklist §Announcements; owner decision | Current behavior         |
 
 ### Allowed variation
 
@@ -122,8 +121,17 @@ runtime work.
 
 ## Accessibility contract
 
-This contract does not change Banner's current status roles, announcements,
-focus handoff, disclosure controls, or accessible control names.
+`status` communicates visual category through color and icon; it does not choose
+announcement urgency. Banner renders no live-region role by default. A caller may
+provide `role="status"` through the standard DOM surface when the visible banner
+is intentionally a persistent semantic mirror. Async outcomes use `useAnnounce`
+from the transition handler, which writes into a previously mounted live region;
+a Banner mounted together with its message is not a reliable announcement.
+`role="alert"` remains available as an explicit native role, but is reserved for
+genuinely urgent content that should interrupt current speech.
+
+Dismissal focus handoff, disclosure controls, and accessible control names remain
+unchanged.
 
 ## Design relationships
 
@@ -174,13 +182,14 @@ the visible frame that owns whole-banner elevation and silhouette.
 
 ## Verification map
 
-| Contract            | Verification                                                   | Representative states                                  | Mutation or failure expectation                                                                                  | Audit section           |
-| ------------------- | -------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| FR1, FR7            | `Banner.test.tsx` and `themingTargets.test.ts`                 | Status surface, content surface, current target axes   | Moving, removing, or changing an existing target breaks current assertions.                                      | `audit:Banner/theming`  |
-| FR2, FR3, FR4       | `Banner.test.tsx` plus current source inspection               | Flat/elevated card and elevated section                | Frame, status surface, content surface, shadow, or radius ownership changes from the recorded state.             | `audit:Banner/surfaces` |
-| FR5                 | Compiler output plus browser/computed-style evidence           | Card with and without content; elevated card           | `banner.borderRadius` unexpectedly reaches the frame/content, or docs claim that the current route already does. | `audit:Banner/radius`   |
-| FR6, FR7            | Implementation PR target, compiler, probe, and component tests | Card/section across none, low, med, and high elevation | `banner-frame` is absent, uses another name, misses an axis, or moves the existing `banner` target.              | `audit:Banner/theming`  |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                  | Eight anatomy entries and five current targets         | Missing, extra, prefixed, stale, or unclaimed current mappings fail validation.                                  | `audit:Banner/theming`  |
+| Contract            | Verification                                                   | Representative states                                               | Mutation or failure expectation                                                                                                         | Audit section           |
+| ------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| FR1, FR7            | `Banner.test.tsx` and `themingTargets.test.ts`                 | Status surface, content surface, current target axes                | Moving, removing, or changing an existing target breaks current assertions.                                                             | `audit:Banner/theming`  |
+| FR2, FR3, FR4       | `Banner.test.tsx` plus current source inspection               | Flat/elevated card and elevated section                             | Frame, status surface, content surface, shadow, or radius ownership changes from the recorded state.                                    | `audit:Banner/surfaces` |
+| FR5                 | Compiler output plus browser/computed-style evidence           | Card with and without content; elevated card                        | `banner.borderRadius` unexpectedly reaches the frame/content, or docs claim that the current route already does.                        | `audit:Banner/radius`   |
+| FR6, FR7            | Implementation PR target, compiler, probe, and component tests | Card/section across none, low, med, and high elevation              | `banner-frame` is absent, uses another name, misses an axis, or moves the existing `banner` target.                                     | `audit:Banner/theming`  |
+| FR8                 | `Banner.test.tsx`, consumer docs, Accessibility Checklist A6   | Default info/success/warning/error; explicit status and alert roles | A visual status creates a live region, an explicit role is dropped, or docs tell builders to announce by conditionally mounting Banner. | `audit:Banner/a11y`     |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                  | Eight anatomy entries and five current targets                      | Missing, extra, prefixed, stale, or unclaimed current mappings fail validation.                                                         | `audit:Banner/theming`  |
 
 ## Decision log
 
@@ -198,6 +207,22 @@ surface.
 
 `frame` names the public visual role. `root` is rejected because it describes DOM
 placement and would imply that the target must remain on the outermost element.
+
+### DEC-2 — Visual status does not infer announcement urgency
+
+**Reference:** `component:Banner/DEC-2`
+
+**Decider:** cixzhang, 2026-09-24
+
+Banner status selects color and icon only. It does not assign `role="status"` or
+`role="alert"`. Async outcomes announce through `useAnnounce` from the transition
+handler so the message reaches a persistent live region rather than one mounted
+with its content. An explicit native role remains available through BaseProps for
+a persistent semantic mirror or the rare genuinely urgent alert.
+
+Rejected: deriving alert urgency from `warning` or `error`. Severity and urgency
+are independent, and a static error present on first paint is not an event that
+should interrupt screen-reader output.
 
 ## Open questions
 
