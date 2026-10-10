@@ -78,24 +78,23 @@ Options:
 
 <!-- BEGIN GENERATED: commands -->
 
-| Command       | Description                                                                                                                                                                                           |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `blog`        | Read the Astryx blog from the published feed                                                                                                                                                          |
-| `build`       | Build a page: the template to start from, or the workflow playbook (no query)                                                                                                                         |
-| `component`   | List components or print component docs                                                                                                                                                               |
-| `discover`    | Browse and search integrations: the ones you have and the ones you could add                                                                                                                          |
-| `docs`        | Print reference docs                                                                                                                                                                                  |
-| `doctor`      | Diagnose Astryx projects and integration packages                                                                                                                                                     |
-| `gap-report`  | Report a missing component or feature to the package that owns it                                                                                                                                     |
-| `hook`        | List hooks or print hook docs                                                                                                                                                                         |
-| `init`        | Initialize the design system in your project                                                                                                                                                          |
-| `integration` | Author and verify an Astryx integration package                                                                                                                                                       |
-| `layout`      | Generate XDS layouts from compressed expressions (XLE/XLO) [DEPRECATED: DEP-0006: Use `astryx build` to start from a template, `astryx template` to scaffold, and `astryx docs layout` for guidance.] |
-| `search`      | Search components, hooks, docs, templates, and themes in one ranked list                                                                                                                              |
-| `swizzle`     | Copy component source for customization                                                                                                                                                               |
-| `template`    | List, show, or scaffold page and block templates                                                                                                                                                      |
-| `theme`       | Add, switch, build, and author themes                                                                                                                                                                 |
-| `upgrade`     | Update your code after upgrading Astryx, and refresh ShadCN-copied components                                                                                                                         |
+| Command       | Description                                                                   |
+| ------------- | ----------------------------------------------------------------------------- |
+| `blog`        | Read the Astryx blog from the published feed                                  |
+| `build`       | Build a page: the template to start from, or the workflow playbook (no query) |
+| `component`   | List components or print component docs                                       |
+| `discover`    | Browse and search integrations: the ones you have and the ones you could add  |
+| `docs`        | Print reference docs                                                          |
+| `doctor`      | Diagnose Astryx projects and integration packages                             |
+| `gap-report`  | Report a missing component or feature to the package that owns it             |
+| `hook`        | List hooks or print hook docs                                                 |
+| `init`        | Initialize the design system in your project                                  |
+| `integration` | Author and verify an Astryx integration package                               |
+| `search`      | Search components, hooks, docs, templates, and themes in one ranked list      |
+| `swizzle`     | Copy component source for customization                                       |
+| `template`    | List, show, or scaffold page and block templates                              |
+| `theme`       | Add, switch, build, and author themes                                         |
+| `upgrade`     | Update your code after upgrading Astryx, and refresh ShadCN-copied components |
 
 <!-- END GENERATED: commands -->
 <!-- Generated by scripts/generate-cli-readme.mjs from `astryx manifest`. Run `pnpm -F @astryxdesign/cli readme`. -->
@@ -165,7 +164,7 @@ if (isError(result)) {
 | `ERR_UNKNOWN`                     | Fallback for any error without a more specific code.                                                                                                     |
 | `ERR_UNKNOWN_COMMAND`             | A top-level command name was not recognized (e.g. `astryx bogus`).                                                                                       |
 | `ERR_UNKNOWN_SUBCOMMAND`          | A subcommand under a command group was not recognized (e.g. `astryx theme bogus`).                                                                       |
-| `ERR_INVALID_OPTION`              | An unknown option was passed, --json was given to a command without JSON output, or layout --form got a value other than compact, outline, or auto.      |
+| `ERR_INVALID_OPTION`              | An unknown option was passed, --json was given to a command without JSON output.                                                                         |
 | `ERR_INVALID_ARGUMENT`            | An argument or option value is invalid: wrong type, out of range, an unknown choice, an extra argument, or a conflicting combination.                    |
 | `ERR_MISSING_ARGUMENT`            | A required argument or option value was omitted.                                                                                                         |
 | `ERR_INVALID_LANG`                | `--lang` was given a value outside its choices (en, zh, dense).                                                                                          |
@@ -482,9 +481,6 @@ Every response has a `type` discriminant. The full set is below (generated from 
 | `integration.template-conflicts`  | validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking Core template-id conflicts as {id, severity: warning, integrationPackage, integrationType, integrationName, coreMatches, message, command}.                                                                                                                                                                                                                                                                                                                                               |
 | `integration.component-conflicts` | validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and non-blocking conflicts where an integration component name is also owned by Core; each conflict includes the exact package-qualified command.                                                                                                                                                                                                                                                                                                                                                          |
 | `integration.doc-conflicts`       | validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` \| `error`) and `relationship` (`replaces` \| `extends` \| `accidental`).                                                                                                                                                                                                                                                                                                                                                                  |
-| `layout.expand`                   | The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, written (the output path, or null when nothing was written), and demoMediaReplaced (count of demo media placeholders). Carries `meta.deprecations` with DEP-0006 and its replacement commands.                                                                                                                                                                                                                                                                          |
-| `layout.check`                    | The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline). Carries `meta.deprecations` with DEP-0006 and its replacement commands.                                                                                                                                                                                                                                                                                                                                            |
-| `layout.grammar`                  | The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry. Carries `meta.deprecations` with DEP-0006 and its replacement commands.                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 <!-- END GENERATED: response-types -->
 <!-- Generated by scripts/generate-cli-readme.mjs from the response-types EnumDoc. Run `pnpm -F @astryxdesign/cli readme`. -->
