@@ -40,15 +40,26 @@ afterEach(() => {
 
 describe('CommandPaletteItem', () => {
   it('renders children', () => {
-    render(
-      <CommandPaletteItem value="test">Test Item</CommandPaletteItem>,
-    );
+    render(<CommandPaletteItem value="test">Test Item</CommandPaletteItem>);
     expect(screen.getByText('Test Item')).toBeInTheDocument();
   });
 
   it('has option role', () => {
     render(<CommandPaletteItem value="test">Item</CommandPaletteItem>);
     expect(screen.getByRole('option')).toBeInTheDocument();
+  });
+
+  it('preserves the consumer id when used standalone', () => {
+    render(
+      <CommandPaletteItem id="my-command-palette-item" value="test">
+        Item
+      </CommandPaletteItem>,
+    );
+
+    expect(screen.getByRole('option')).toHaveAttribute(
+      'id',
+      'my-command-palette-item',
+    );
   });
 
   it('calls onSelect when clicked', () => {
@@ -158,9 +169,7 @@ describe('CommandPaletteItem', () => {
   });
 
   it('sets data-value attribute', () => {
-    render(
-      <CommandPaletteItem value="my-value">Item</CommandPaletteItem>,
-    );
+    render(<CommandPaletteItem value="my-value">Item</CommandPaletteItem>);
     expect(screen.getByRole('option')).toHaveAttribute(
       'data-value',
       'my-value',

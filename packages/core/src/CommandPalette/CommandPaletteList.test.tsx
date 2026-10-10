@@ -31,6 +31,19 @@ describe('CommandPaletteList', () => {
     expect(screen.getByRole('listbox')).toBeInTheDocument();
   });
 
+  it('preserves the consumer id when used standalone', () => {
+    render(
+      <CommandPaletteList id="custom-commands">
+        <div>Item</div>
+      </CommandPaletteList>,
+    );
+
+    expect(screen.getByRole('listbox')).toHaveAttribute(
+      'id',
+      'custom-commands',
+    );
+  });
+
   it('has default aria-label', () => {
     render(
       <CommandPaletteList>
