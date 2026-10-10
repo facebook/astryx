@@ -5,7 +5,7 @@
 /**
  * @file BaseTypeahead.tsx
  * @input Uses React, StyleX, usePopover, TypeaheadItem
- * @output Exports BaseTypeahead with focused-input menu reactivation
+ * @output Exports BaseTypeahead; focus bootstraps a replaced search source
  * @position Core implementation; used by Typeahead and Tokenizer
  *
  * Pure combobox engine: input, search, keyboard navigation, dropdown.
@@ -629,6 +629,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // in the closure are stale (a selection cleared them) and shouldn't
   // be re-shown.
   const resultsGenRef = useRef(0);
+  // The generation at which the current searchSource took over. Results
+  // populated before it (resultsGenRef below this) came from a replaced
+  // source: they can never be re-shown, so focus bootstraps the new source.
+  const sourceGenRef = useRef(0);
 
   // Results still arriving from a replaced source must not land in the new
   // one's menu.
@@ -636,7 +640,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   if (prevSearchSourceRef.current !== searchSource) {
     prevSearchSourceRef.current.cancel?.();
     prevSearchSourceRef.current = searchSource;
-    searchGenRef.current++;
+    sourceGenRef.current = ++searchGenRef.current;
   }
 
   // Layer for dropdown
@@ -908,11 +912,21 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Shared by handleFocus and handleClick: bootstrap entries if none are
   // loaded yet, or re-show cached results that haven't been invalidated by
   // a selection since (comparing the two generation refs catches that).
+  // Results cached from a replaced search source count as none, so focusing
+  // an empty field bootstraps the new source instead of opening nothing.
+  // Results a selection invalidated still keep the menu closed when the
+  // selection returns focus to the input.
   const openIfEligible = useCallback(() => {
     if (isDisabled) {
       return;
     }
-    if (hasEntriesOnFocus && results.length === 0 && query.length === 0) {
+    const hasResultsFromCurrentSource =
+      results.length > 0 && resultsGenRef.current >= sourceGenRef.current;
+    if (
+      hasEntriesOnFocus &&
+      !hasResultsFromCurrentSource &&
+      query.length === 0
+    ) {
       void performBootstrap();
     } else if (
       results.length > 0 &&
