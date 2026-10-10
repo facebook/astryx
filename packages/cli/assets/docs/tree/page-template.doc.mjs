@@ -16,8 +16,9 @@ export const docs = {
   },
   title: 'Page template',
   category: 'guide',
+  keywords: ['family default', 'default page', 'build start page'],
   description:
-    'Help people find a page: give it a category for `astryx search` and template listings, and flag a sparse starting shell as a scaffold.',
+    'Help people find a page: give it a category for `astryx search` and template listings, mark the page a family starts from, and flag a sparse starting shell as a scaffold.',
   sections: [
     {
       id: 'start-from-the-generated-page-doc',
@@ -52,7 +53,7 @@ export default {
           type: 'reference',
           target: 'schema:template-doc',
           projection: {
-            fields: ['category', 'scaffold'],
+            fields: ['category', 'isFamilyDefault', 'scaffold'],
           },
           presentation: 'full',
         },
@@ -61,9 +62,14 @@ export default {
           style: 'unordered',
           items: [
             'Set `category` to the most specific supported `{Group} - {Variant}` value. Its words become search terms for `astryx search`, and it appears in the JSON template list.',
+            "Set `isFamilyDefault: true` on the general page of its family (the `category` text before ' - '). `astryx build` starts from it in place of another page in the family unless the idea names what that page is built for: a word of its variant, display name, or a keyword only it carries in the family, that the default lacks. One page per family. Your default replaces the one Astryx ships for that family; leave it unset when your page is one variant among several.",
             'Set `scaffold: true` only for a deliberately sparse starting shell. The JSON template list reports it, so tools and galleries can tell a scaffold from a finished page.',
             "Fields that only Astryx's own gallery reads, such as `isHiddenFromOverview`, have no effect on integration templates.",
           ],
+        },
+        {
+          type: 'prose',
+          text: 'Note: `isFamilyDefault` needs `@astryxdesign/cli` 0.6.8 or later. A stable CLI before 0.6.8 rejects the field and drops that template, and one before 0.6.4 also hides your doc topics. Declare the CLI floor as an optional peer ({@link generic:versioning}); `integration verify` fails until you do.',
         },
       ],
     },

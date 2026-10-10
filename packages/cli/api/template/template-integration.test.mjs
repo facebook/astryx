@@ -139,6 +139,40 @@ describe('integration template discovery', () => {
     expect(kit.data.start?.name).toBe('observatory');
   });
 
+  it("lets an integration's family default stand in for Astryx's in build", async () => {
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'ledger', {
+      kind: 'page',
+      body: "export default {type: 'page', name: 'Ledger Table', description: 'Entries as rows with running totals.', category: 'Table - Ledger', isFamilyDefault: true};\n",
+    });
+
+    const plain = await build('vendors table with contact and status', {cwd: tmpDir});
+    if (plain.type !== 'build.kit') throw new Error(plain.type);
+    expect(plain.data.start?.name).toBe('ledger');
+    const named = await build('grouped table of tasks by owner', {cwd: tmpDir});
+    if (named.type !== 'build.kit') throw new Error(named.type);
+    expect(named.data.start?.name).toBe('table-grouped');
+  });
+
+  it('starts a plain idea in an integration family from the default it declares', async () => {
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'roster', {
+      kind: 'page',
+      body: "export default {type: 'page', name: 'Team Roster', description: 'People as rows with role and team.', category: 'Roster - People', keywords: ['team members', 'staff directory'], isFamilyDefault: true};\n",
+    });
+    writeTemplate(pkgDir, 'roster-seating', {
+      kind: 'page',
+      body: "export default {type: 'page', name: 'Seating Roster', description: 'People placed on an office floor plan.', category: 'Roster - Seating', keywords: ['floor plan', 'desks']};\n",
+    });
+
+    const plain = await build('team roster with roles', {cwd: tmpDir});
+    if (plain.type !== 'build.kit') throw new Error(plain.type);
+    expect(plain.data.start?.name).toBe('roster');
+    const named = await build('seating roster for the office', {cwd: tmpDir});
+    if (named.type !== 'build.kit') throw new Error(named.type);
+    expect(named.data.start?.name).toBe('roster-seating');
+  });
+
   it('preserves integration block showcase metadata in list output', async () => {
     const pkgDir = installWidgets(tmpDir);
     writeTemplate(pkgDir, 'chart-showcase', {

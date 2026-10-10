@@ -78,7 +78,7 @@ export const docs = {
               "The `exports` map has no entry for it. Run `npm pkg set 'exports[./components/AcmeCarousel]=./components/AcmeCarousel.tsx'`, or `'exports[./templates/acme-dashboard]=./templates/acme-dashboard.tsx'` for a template.",
             ],
             [
-              '`component_import_unresolvable`: `…but a consumer cannot resolve it: Cannot find package \'@acme/old-name\'`',
+              "`component_import_unresolvable`: `…but a consumer cannot resolve it: Cannot find package '@acme/old-name'`",
               "You renamed the package after the add wrote each doc's `import`. Change `import` in every component doc to the new name.",
             ],
             [
@@ -100,6 +100,10 @@ export const docs = {
             [
               '`keywords_needs_cli`: The package has a template that sets `keywords` but declares no @astryxdesign/cli peer.',
               "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.6'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. A stable CLI before 0.6.6 rejects `keywords` and drops that template, and one before 0.6.4 also hides your doc topics.",
+            ],
+            [
+              '`family_default_needs_cli`: The package has a page template that sets `isFamilyDefault` but declares no @astryxdesign/cli peer.',
+              "Run `npm pkg set 'peerDependencies.@astryxdesign/cli=>=0.6.8'` and `npm pkg set 'peerDependenciesMeta.@astryxdesign/cli.optional=true' --json`. A stable CLI before 0.6.8 rejects `isFamilyDefault` and drops that template, and one before 0.6.4 also hides your doc topics.",
             ],
             [
               '`themes_need_cli`: The package ships a theme but declares no @astryxdesign/cli peer.',
@@ -143,7 +147,7 @@ export const docs = {
             ],
             [
               'Your docs section, templates, or themes are missing only in some apps',
-              'Those apps run a CLI too old to read them: a stable CLI before 0.6.6 for a template that sets `keywords`, or before 0.6.4 for a template that sets `replaces`, a docs section, or a theme. Update `@astryxdesign/cli` there, and keep your optional `@astryxdesign/cli` peer so npm warns about an old CLI.',
+              'Those apps run a CLI too old to read them: a stable CLI before 0.6.8 for a page that sets `isFamilyDefault`, before 0.6.6 for a template that sets `keywords`, or before 0.6.4 for a template that sets `replaces`, a docs section, or a theme. Update `@astryxdesign/cli` there, and keep your optional `@astryxdesign/cli` peer so npm warns about an old CLI.',
             ],
           ],
         },

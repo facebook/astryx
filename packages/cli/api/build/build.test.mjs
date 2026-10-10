@@ -344,6 +344,25 @@ describe('build kit — every page starts from a template', () => {
     expect(r.data.directMatch).toBe(false);
   });
 
+  it("starts a plain family idea from the family's default and offers the sibling next", async () => {
+    const r = await build('vendors table with contact and status', {cwd: REPO});
+    if (r.type !== 'build.kit') throw new Error(r.type);
+    expect(r.data.start).toMatchObject({name: 'table-filter', basis: 'closest'});
+    expect(r.data.start?.alternatives[0]?.name).toBe('table-collapsible');
+    expect(r.data.start?.reason).toMatch(/Table family's default page: the idea names nothing `table-collapsible` is built for/);
+  });
+
+  it('keeps a sibling when the idea names what it is built for', async () => {
+    for (const [idea, name] of [
+      ['grouped table of tasks by owner', 'table-grouped'],
+      ['tree table of folders and files', 'table-tree'],
+    ]) {
+      const r = await build(idea, {cwd: REPO});
+      if (r.type !== 'build.kit') throw new Error(r.type);
+      expect(r.data.start?.name).toBe(name);
+    }
+  });
+
   it('does not start from a direct match that is not ready yet, and says so', async () => {
     const r = await build('incident console', {cwd: REPO});
     expect(r.type).toBe('build.kit');
@@ -541,7 +560,9 @@ describe('build kit — every page starts from a template', () => {
 
   it('starts a page the words describe from its template', async () => {
     for (const [idea, name] of [
-      ['a weekly report of sales by region', 'dashboard-scorecard'],
+      // A plain report names nothing the scorecard is built for, so it starts
+      // from the Dashboard family's default (spec:AST-048/FR23).
+      ['a weekly report of sales by region', 'dashboard'],
       ['a pricing page with three plans and a comparison table', 'table-comparison'],
     ]) {
       const r = await build(idea, {cwd: REPO});

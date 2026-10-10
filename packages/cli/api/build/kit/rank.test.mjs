@@ -3,13 +3,20 @@
 /**
  * @file Tests for build's page ranker: long ideas, head nouns, family bases,
  * rare-word weighting, keywords, family words taken from the templates
- * themselves, and parts told from pages by the system's own components.
+ * themselves, parts told from pages by the system's own components, and family
+ * defaults declared by the templates.
  */
 
 import {describe, it, expect} from 'vitest';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {ideaKind, pickStart, rankPages} from './rank.mjs';
+import {
+  familyDefaults,
+  familyStart,
+  ideaKind,
+  pickStart,
+  rankPages,
+} from './rank.mjs';
 import {loadComponents, loadPageTemplates} from '../_adapter.mjs';
 
 // api/build/kit/ -> up 5 = repo root (has packages/core and the templates).
@@ -375,5 +382,117 @@ describe('pickStart on parts and edits (spec:AST-048/FR3)', () => {
     expect(
       await start('saved drafts in a modal with resume and delete row actions'),
     ).toBe('settings-dialog');
+  });
+});
+
+describe('family defaults (spec:AST-048/FR23, FR24)', () => {
+  /**
+   * @param {string} name
+   * @param {string} category
+   * @param {object} [extra]
+   */
+  const member = (name, category, extra = {}) => ({
+    ...page(name, category, `${name} page.`),
+    package: '@astryxdesign/core',
+    isFamilyDefault: false,
+    ...extra,
+  });
+  const catalog = [
+    member('roster', 'Roster - Basic', {isFamilyDefault: true}),
+    member('roster-map', 'Roster - Map', {displayName: 'Map Roster'}),
+    member('roster-tree', 'Roster - Tree', {
+      description: 'Teams nested under managers, with reporting lines.',
+    }),
+    member('roster-cards', 'Roster - Cards', {keywords: ['seating plan']}),
+    member('shell-top-nav', 'Shell - Top Nav', {isFamilyDefault: true}),
+    member('gallery-grid', 'Gallery - Grid'),
+    member('gallery-strip', 'Gallery - Strip'),
+  ];
+  /** @param {string} query @param {string} chosen @param {object[]} [pages] */
+  const start = (query, chosen, pages = catalog) =>
+    familyStart(query, chosen, rankPages(query, pages), pages);
+
+  it('takes each family default from the template that declares it', () => {
+    const defaults = familyDefaults(catalog);
+    expect(defaults.get('Roster')?.name).toBe('roster');
+    // App chrome is the kit's fallback, not a family's page.
+    expect(defaults.has('Shell')).toBe(false);
+    // A family no template declares has no default.
+    expect(defaults.has('Gallery')).toBe(false);
+  });
+
+  it("lets an integration's declaration stand in for Astryx's, and two integrations leave none", () => {
+    const one = [
+      ...catalog,
+      member('roster-acme', 'Roster - Acme', {
+        isFamilyDefault: true,
+        package: '@acme/widgets',
+      }),
+    ];
+    expect(familyDefaults(one).get('Roster')?.name).toBe('roster-acme');
+    const two = [
+      ...one,
+      member('roster-other', 'Roster - Other', {
+        isFamilyDefault: true,
+        package: '@other/kit',
+      }),
+    ];
+    expect(familyDefaults(two).has('Roster')).toBe(false);
+  });
+
+  it('starts a plain idea from the default, and keeps a sibling the idea names', () => {
+    expect(start('a roster of team members', 'roster-map')).toEqual({
+      name: 'roster',
+      displaced: 'roster-map',
+      family: 'Roster',
+    });
+    // "map" is the sibling's own variant and display word.
+    expect(start('a roster map of offices', 'roster-map')).toEqual({
+      name: 'roster-map',
+      displaced: null,
+      family: 'Roster',
+    });
+  });
+
+  it('keeps a sibling the idea names by a keyword no other page of its family carries', () => {
+    expect(start('a roster seating plan', 'roster-cards')).toMatchObject({
+      name: 'roster-cards',
+      displaced: null,
+    });
+    expect(start('a roster of people', 'roster-cards')).toMatchObject({
+      name: 'roster',
+      displaced: 'roster-cards',
+    });
+  });
+
+  it('keeps a sibling that matched two words of the idea the default did not', () => {
+    expect(
+      start('a roster with managers and reporting lines', 'roster-tree'),
+    ).toMatchObject({name: 'roster-tree', displaced: null});
+    expect(start('a roster with managers', 'roster-tree')).toMatchObject({
+      name: 'roster',
+      displaced: 'roster-tree',
+    });
+  });
+
+  it('leaves the default, a family without one, and an unknown template alone', () => {
+    expect(start('a roster of team members', 'roster')).toMatchObject({
+      name: 'roster',
+      displaced: null,
+    });
+    expect(start('a photo grid', 'gallery-strip')).toMatchObject({
+      name: 'gallery-strip',
+      displaced: null,
+    });
+    expect(start('a roster', 'not-a-template')).toMatchObject({
+      name: 'not-a-template',
+      displaced: null,
+    });
+  });
+
+  it('declares one default for the shipped tables and dashboards', async () => {
+    const defaults = familyDefaults(await loadPageTemplates(REPO));
+    expect(defaults.get('Table')?.name).toBe('table-filter');
+    expect(defaults.get('Dashboard')?.name).toBe('dashboard');
   });
 });

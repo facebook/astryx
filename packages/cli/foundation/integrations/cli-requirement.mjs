@@ -57,6 +57,18 @@ export const KEYWORDS_CLI = '0.6.6';
 export const COMPONENT_REPLACES_CLI = '0.6.7';
 
 /**
+ * The first stable CLI release that reads a page template's
+ * `isFamilyDefault` (spec:AST-048). Published 0.6.4 through 0.6.7 reject the
+ * field and drop that template but keep the package's doc topics; 0.6.3 and
+ * earlier also hide them.
+ *
+ * Tied to the next patch slot: it must equal the first stable release that
+ * reads the field. If that slot moves, change this constant and its row in
+ * the floor table test together.
+ */
+export const FAMILY_DEFAULT_CLI = '0.6.8';
+
+/**
  * The first stable CLI release that reads typed theme descriptors, the theme
  * folder `integration add theme` writes. Published 0.6.3 rejects a themes root
  * with no `manifest.json` catalog and withholds the package's themes and doc
@@ -71,7 +83,8 @@ export const THEMES_CLI = '0.6.4';
  */
 export const SECTION_IDS_CLI = '0.6.4';
 
-const VERSION_RE = /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+const VERSION_RE =
+  /^v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
 /**
  * A version or partial version as MAJOR.MINOR.PATCH, a wildcard part as 0.
@@ -259,6 +272,24 @@ export function keywordsCliProblem(pkg) {
     'has a template that sets `keywords`',
     "rejects the field and drops that template, and one before 0.6.4 also hides the package's doc topics",
     KEYWORDS_CLI,
+  );
+}
+
+/**
+ * Why a package with a page template that sets `isFamilyDefault` would lose
+ * that template on an older CLI, or null when its declared CLI range admits
+ * only CLIs that read the field. Published 0.6.4 through 0.6.7 reject the
+ * field and drop that template; 0.6.3 and earlier also hide the package's doc
+ * topics.
+ * @param {any} pkg package.json
+ * @returns {string | null}
+ */
+export function familyDefaultCliProblem(pkg) {
+  return cliRangeProblem(
+    pkg,
+    'has a page template that sets `isFamilyDefault`',
+    "rejects the field and drops that template, and one before 0.6.4 also hides the package's doc topics",
+    FAMILY_DEFAULT_CLI,
   );
 }
 

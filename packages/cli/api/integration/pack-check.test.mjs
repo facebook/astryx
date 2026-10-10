@@ -1074,6 +1074,40 @@ describe('integrationPackCheck', () => {
     expect(await codes()).not.toContain('keywords_needs_cli');
   }, 120_000);
 
+  it('fails a package with a page that sets isFamilyDefault on a CLI range that rejects the field', async () => {
+    writePackage({
+      manifest: "export default {templates: './templates'};\n",
+      themes: false,
+    });
+    fs.mkdirSync(path.join(tmpDir, 'templates'), {recursive: true});
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-health.doc.mjs'),
+      "export default {type: 'page', name: 'acme-health', description: 'Status tiles.', category: 'Dashboard - Monitoring', isFamilyDefault: true};\n",
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'templates', 'acme-health.tsx'),
+      'export default function AcmeHealth() { return null; }\n',
+    );
+    const file = path.join(tmpDir, 'package.json');
+    const peer = (/** @type {string | undefined} */ range) => {
+      const pkg = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      if (range == null) delete pkg.peerDependencies;
+      else pkg.peerDependencies = {'@astryxdesign/cli': range};
+      fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+    };
+    const codes = async () =>
+      (await integrationPackCheck({cwd: tmpDir})).data.issues.map(
+        (/** @type {{code: string}} */ issue) => issue.code,
+      );
+
+    peer(undefined);
+    expect(await codes()).toContain('family_default_needs_cli');
+    peer('>=0.6.7');
+    expect(await codes()).toContain('family_default_needs_cli');
+    peer('>=0.6.8');
+    expect(await codes()).not.toContain('family_default_needs_cli');
+  }, 120_000);
+
   it('passes when package.json has no files field', async () => {
     writePackage({files: undefined});
     const result = await integrationPackCheck({cwd: tmpDir});
