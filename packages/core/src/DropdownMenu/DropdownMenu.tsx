@@ -149,13 +149,15 @@ const styles = stylex.create({
     overscrollBehavior: 'contain',
   },
   // Scroll ownership by the browser's own signal. A menu whose rows fit keeps
-  // every finger: a slide over its rows stays a slide. One that scrolls lets
-  // the browser pan it vertically and cancel the press when it does.
-  touchNone: {
-    touchAction: 'none',
+  // every one-finger move: a slide over its rows stays a slide. One that
+  // scrolls lets the browser pan it vertically and cancel the press when it
+  // does. Both leave a two-finger pinch to the browser, so the page stays
+  // zoomable over an open menu; `pinch-zoom` admits no one-finger pan.
+  touchPinchZoom: {
+    touchAction: 'pinch-zoom',
   },
-  touchPanY: {
-    touchAction: 'pan-y',
+  touchPanYPinchZoom: {
+    touchAction: 'pan-y pinch-zoom',
     overscrollBehavior: 'contain',
   },
   // The menu's lower block cap rides on the layer box too, so the layer's
@@ -1260,7 +1262,7 @@ function DropdownMenuPopover({
               styles.dropdown,
               resolvedMaxHeight != null &&
                 dynamicStyles.menuMaxHeight(resolvedMaxHeight),
-              hasOverflow ? styles.touchPanY : styles.touchNone,
+              hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
               hasOverflow && styles.scrollable,
               xstyle,
             ),

@@ -190,11 +190,11 @@ const flyoutStyles = stylex.create({
     overscrollBehavior: 'contain',
   },
   // Scroll ownership by the browser's own signal; see DropdownMenu.
-  touchNone: {
-    touchAction: 'none',
+  touchPinchZoom: {
+    touchAction: 'pinch-zoom',
   },
-  touchPanY: {
-    touchAction: 'pan-y',
+  touchPanYPinchZoom: {
+    touchAction: 'pan-y pinch-zoom',
     overscrollBehavior: 'contain',
   },
   popoverViewport: {
@@ -825,7 +825,9 @@ export function DropdownMenuSubMenu(
                 themeProps('dropdown-menu'),
                 stylex.props(
                   flyoutStyles.menu,
-                  hasOverflow ? flyoutStyles.touchPanY : flyoutStyles.touchNone,
+                  hasOverflow
+                    ? flyoutStyles.touchPanYPinchZoom
+                    : flyoutStyles.touchPinchZoom,
                   hasOverflow && flyoutStyles.scrollable,
                 ),
               )}>
