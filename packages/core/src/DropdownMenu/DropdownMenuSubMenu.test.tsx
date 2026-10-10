@@ -194,6 +194,44 @@ describe('DropdownMenuSubMenu', () => {
     expect(trigger).toHaveFocus();
   });
 
+  it('a field the flyout hosts keeps what is typed and its Left key', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to">
+          <input aria-label="Folder name" />
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
+      ).toHaveFocus();
+    });
+    trigger.focus();
+    await user.keyboard('{ArrowRight}');
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menuitem', {name: 'Folder A', hidden: true}),
+      ).toHaveFocus();
+    });
+    const field = screen.getByRole('textbox', {
+      name: 'Folder name',
+      hidden: true,
+    });
+    act(() => field.focus());
+    await user.keyboard('fa{ArrowLeft}');
+    expect(field).toHaveValue('fa');
+    expect(field).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('mirrors its indicator and keyboard directions under RTL', async () => {
     const user = userEvent.setup();
     const {className: mirrorClassName} = stylex.props(rtlStyles.mirror);

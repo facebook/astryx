@@ -15,6 +15,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSubMenu,
 } from '@astryxdesign/core/DropdownMenu';
+import {Button} from '@astryxdesign/core/Button';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   PencilIcon,
@@ -1426,4 +1428,36 @@ export const SubmenuAdaptiveFixture: Story = {
       </DropdownMenu>
     </div>
   ),
+};
+
+// A menu that hosts a field and a button beside its rows: the field keeps
+// what is typed and the button its own keys, while the rows keep the menu's.
+export const HostedField: Story = {
+  render: () => {
+    const [query, setQuery] = useState('');
+    const [created, setCreated] = useState(0);
+    return (
+      <>
+        <DropdownMenu button={{label: 'Labels'}}>
+          <TextInput
+            label="Filter labels"
+            isLabelHidden
+            value={query}
+            onChange={setQuery}
+          />
+          <Button
+            label="Create label"
+            variant="ghost"
+            onClick={() => setCreated(count => count + 1)}
+          />
+          <DropdownMenuItem label="Bug" onClick={() => console.log('Bug')} />
+          <DropdownMenuItem
+            label="Feature"
+            onClick={() => console.log('Feature')}
+          />
+        </DropdownMenu>
+        <output data-testid="created">{created}</output>
+      </>
+    );
+  },
 };

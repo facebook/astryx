@@ -20,6 +20,7 @@ import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {DropdownMenuGroup} from './DropdownMenuGroup';
 import {Divider} from '../Divider';
+import {Button} from '../Button';
 import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -3351,5 +3352,91 @@ describe('DropdownMenu keyboard', () => {
     expect(onClick).not.toHaveBeenCalled();
     fireEvent.keyDown(item('Edit'), {key: 'Enter'});
     expect(onClick).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('DropdownMenu keys in a control the menu hosts', () => {
+  function renderMenu() {
+    const onCreate = vi.fn<() => void>();
+    const onPick = vi.fn<(label: string) => void>();
+    render(
+      <DropdownMenu button={{label: 'Labels'}}>
+        <input aria-label="Filter labels" />
+        <Button label="Create label" onClick={onCreate} />
+        <DropdownMenuItem label="Bug" onClick={() => onPick('Bug')} />
+        <DropdownMenuItem label="Feature" onClick={() => onPick('Feature')} />
+      </DropdownMenu>,
+    );
+    return {onCreate, onPick};
+  }
+  const field = () =>
+    screen.getByRole<HTMLInputElement>('textbox', {
+      name: 'Filter labels',
+      hidden: true,
+    });
+  const row = (name: string) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+  const trigger = () => screen.getByRole('button', {name: /Labels/});
+
+  async function open(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(trigger());
+    // A pointer open focuses the menu in a frame; let it land first.
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menu', {name: 'Labels', hidden: true}),
+      ).toHaveFocus(),
+    );
+  }
+
+  it('typing, Space and Home stay in a hosted field', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await open(user);
+    act(() => field().focus());
+    await user.keyboard('bu g');
+    expect(field()).toHaveValue('bu g');
+    expect(field()).toHaveFocus();
+    await user.keyboard('{Home}');
+    expect(field()).toHaveFocus();
+    expect(field().selectionStart).toBe(0);
+  });
+
+  it('ArrowDown leaves a hosted field for the first row only from the end of its text', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await open(user);
+    act(() => field().focus());
+    await user.keyboard('x{ArrowLeft}{ArrowDown}');
+    expect(field()).toHaveFocus();
+    await user.keyboard('{End}{ArrowDown}');
+    expect(row('Bug')).toHaveFocus();
+  });
+
+  it('Enter and Space press a hosted button, and no row acts', async () => {
+    const user = userEvent.setup();
+    const {onCreate, onPick} = renderMenu();
+    await open(user);
+    act(() =>
+      screen.getByRole('button', {name: 'Create label', hidden: true}).focus(),
+    );
+    await user.keyboard('{Enter}');
+    expect(onCreate).toHaveBeenCalledTimes(1);
+    await user.keyboard(' ');
+    expect(onCreate).toHaveBeenCalledTimes(2);
+    expect(onPick).not.toHaveBeenCalled();
+  });
+
+  it('Escape in a hosted field still closes the menu, and typeahead still roves the rows', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await open(user);
+    act(() => row('Bug').focus());
+    await user.keyboard('f');
+    expect(row('Feature')).toHaveFocus();
+    act(() => field().focus());
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(trigger()).toHaveAttribute('aria-expanded', 'false'),
+    );
   });
 });
