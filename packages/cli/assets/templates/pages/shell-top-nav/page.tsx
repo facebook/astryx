@@ -101,7 +101,7 @@ const CATEGORY_TILES = [
 function MegaItems({items}: {items: MegaItem[]}) {
   return (
     <Stack xstyle={styles.megaItems}>
-      <Grid columns={2} gap={2}>
+      <Grid columns={{count: 2, isFixed: true}} gap={2}>
         {items.map(item => (
           <TopNavMegaMenuItem
             key={item.name}

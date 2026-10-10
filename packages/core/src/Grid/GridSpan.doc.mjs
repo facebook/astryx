@@ -19,7 +19,8 @@ export const docs = {
     {
       name: 'columns',
       type: "number | 'full'",
-      description: "Columns to span; use `'full'` to span the entire row.",
+      description:
+        "Columns to span; use `'full'` to span the entire row. Inside a numeric `columns={N}` Grid that has dropped to fewer columns than the span (for example on a phone), the item spans the whole row instead of adding columns. Spans in `{count, isFixed: true}` and `{minWidth}` grids are exact.",
     },
     {
       name: 'rows',

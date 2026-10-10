@@ -227,7 +227,10 @@ export function SiteFooter({year}: {year: number}) {
   return (
     <Section role="contentinfo" padding={6} xstyle={styles.siteFooter}>
       <VStack gap={4} xstyle={styles.stack}>
-        <Grid columns={5} align="center" xstyle={[styles.row, styles.navRow]}>
+        <Grid
+          columns={{count: 5, isFixed: true}}
+          align="center"
+          xstyle={[styles.row, styles.navRow]}>
           {astryxLogo}
           <GridSpan columns={3}>
             <HStack
@@ -246,7 +249,10 @@ export function SiteFooter({year}: {year: number}) {
 
         <Divider />
 
-        <Grid columns={4} align="center" xstyle={[styles.row, styles.legalRow]}>
+        <Grid
+          columns={{count: 4, isFixed: true}}
+          align="center"
+          xstyle={[styles.row, styles.legalRow]}>
           {metaOpenSourceLink}
           <GridSpan columns={2}>
             <HStack

@@ -128,7 +128,7 @@ function ImageGallery({
       <AspectRatio ratio={4 / 5}>
         <img style={heroImage} src={heroSrc} alt={PRODUCT.name} />
       </AspectRatio>
-      <Grid columns={3} gap={2}>
+      <Grid columns={{count: 3, isFixed: true}} gap={2}>
         {thumbnails.map((src, i) => (
           <AspectRatio key={i} ratio={1}>
             <SelectableCard

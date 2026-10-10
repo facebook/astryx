@@ -36,7 +36,7 @@ export default function LightboxGallery() {
 
   return (
     <>
-      <Grid columns={2} gap={2} style={{width: 136}}>
+      <Grid columns={{count: 2, isFixed: true}} gap={2} style={{width: 136}}>
         {PHOTOS.map((photo, i) => (
           <Thumbnail
             key={photo.src}

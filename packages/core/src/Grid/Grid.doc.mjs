@@ -27,9 +27,11 @@ export const docs = {
   usage: {
     anatomy,
     description:
-      'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
+      'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Numeric and `{minWidth}` columns reflow to the available width: `columns={3}` shows three columns on a desktop and one on a phone. `{count: N, isFixed: true}` keeps exactly N columns.',
     bestPractices: [
-      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size: `columns={{minWidth: 280}}`.' },
+      { guidance: true, description: '`columns={N}` means *at most* N columns: the grid keeps N equal columns while each can stay at least 12rem wide and drops to fewer — one full-width column on a phone — when the container is narrower. No breakpoint props are needed.' },
+      { guidance: true, description: 'Use `columns={{count: N, isFixed: true}}` only for small tiles that must stay side by side at every width (a 7-day calendar row, a 2×2 swatch picker).' },
+      { guidance: true, description: 'Use `columns={{minWidth, max}}` when the item needs a different minimum than 12rem: `columns={{minWidth: 280, max: 4}}`.' },
       { guidance: true, description: 'Cap the column count with `max` to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
@@ -41,6 +43,10 @@ export const docs = {
     targets: [
       {className: 'astryx-grid', visualProps: ['align', 'columns', 'gap', 'justify']},
       {className: 'astryx-grid-span'},
+    ],
+    vars: [
+      {name: '--_grid-span', description: "GridSpan's numeric column span (e.g. `span 2`), read by a class-level grid-column so the placement can change inside the parent grid's container query.", default: 'unset (set only by a numeric span)', private: true},
+      {name: '--_grid-span-narrow', description: 'Placement a GridSpan takes when its numeric `columns={N}` grid is too narrow to hold the span: `1 / -1` on those grids, invalid on every other grid so their spans stay exact.', default: 'initial (1 / -1 on numeric columns grids)', private: true},
     ],
   },
   playground: {
@@ -54,12 +60,12 @@ export const docs = {
       ],
     },
   },
-  description: 'Grid container with fixed or responsive columns.',
+  description: 'Grid container whose columns reflow to the available width.',
   props: [
     {
       name: 'columns',
-      type: "number | {minWidth: number, max?: number, repeat?: 'fill' | 'fit'}",
-      description: 'Column configuration. Use a number for fixed columns (e.g. `columns={3}`). Use an object for responsive columns: `minWidth` sets the minimum column width in px, `repeat` controls track behavior (`"fill"` preserves empty tracks for consistent widths, `"fit"` collapses empty tracks so items stretch; defaults to `"fill"`), and `max` caps the maximum number of columns.',
+      type: "number | {count: number, isFixed?: boolean} | {minWidth: number, max?: number, repeat?: 'fill' | 'fit'}",
+      description: 'Column configuration. A number is the maximum column count (e.g. `columns={3}`): columns stay at least 12rem wide, so the grid shows fewer columns in narrow containers and a single full-width column on a phone. `{count: N, isFixed: true}` keeps exactly N columns at every width. Use an object for responsive columns: `minWidth` sets the minimum column width in px, `repeat` controls track behavior (`"fill"` preserves empty tracks for consistent widths, `"fit"` collapses empty tracks so items stretch; defaults to `"fill"`), and `max` caps the maximum number of columns.',
     },
     {
       name: 'width',
@@ -122,6 +128,55 @@ export const docs = {
   components: [
     {name: 'GridSpan'},
   ],
+  examples: [
+    {
+      label: 'Stat tiles: up to four across, fewer when narrow, one per row on a phone',
+      code: `
+function StatTiles() {
+  const stats = [
+    {label: 'Active users', value: '12,480'},
+    {label: 'Conversion', value: '4.2%'},
+    {label: 'Revenue', value: '$84,210'},
+    {label: 'Churn', value: '1.8%'},
+  ];
+  return (
+    // At most 4 columns. Each stays at least 12rem wide, so a 1440px page
+    // shows 4, a 768px tablet 3, and a 390px phone 1 full-width tile per row.
+    <Grid columns={4} gap={4}>
+      {stats.map(stat => (
+        <Card key={stat.label} padding={4}>
+          <VStack gap={1}>
+            <Text type="supporting" color="secondary">
+              {stat.label}
+            </Text>
+            <Heading level={3}>{stat.value}</Heading>
+          </VStack>
+        </Card>
+      ))}
+    </Grid>
+  );
+}
+`,
+    },
+    {
+      label: 'Week row: seven fixed columns at every width',
+      code: `
+function WeekRow() {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return (
+    // Small tiles that must stay side by side opt out of "at most N".
+    <Grid columns={{count: 7, isFixed: true}} gap={1}>
+      {days.map(day => (
+        <Center key={day} paddingBlock={2}>
+          <Text type="supporting">{day}</Text>
+        </Center>
+      ))}
+    </Grid>
+  );
+}
+`,
+    },
+  ],
 };
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
@@ -129,9 +184,11 @@ export const docsZh = {
   usage: {
     anatomy,
     description:
-      'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
+      'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Numeric and `{minWidth}` columns reflow to the available width: `columns={3}` shows three columns on a desktop and one on a phone. `{count: N, isFixed: true}` keeps exactly N columns.',
     bestPractices: [
-      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size: `columns={{minWidth: 280}}`.' },
+      { guidance: true, description: '`columns={N}` means *at most* N columns: the grid keeps N equal columns while each can stay at least 12rem wide and drops to fewer — one full-width column on a phone — when the container is narrower. No breakpoint props are needed.' },
+      { guidance: true, description: 'Use `columns={{count: N, isFixed: true}}` only for small tiles that must stay side by side at every width (a 7-day calendar row, a 2×2 swatch picker).' },
+      { guidance: true, description: 'Use `columns={{minWidth, max}}` when the item needs a different minimum than 12rem: `columns={{minWidth: 280, max: 4}}`.' },
       { guidance: true, description: 'Cap the column count with `max` to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
@@ -146,9 +203,11 @@ export const docsDense = {
   description: 'CSS Grid-based layout w/ responsive column support.',
   usage: {
     anatomy,
-    description: 'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Supports fixed column counts and responsive columns that reflow based on available width.',
+    description: 'A CSS grid layout container for arranging children in rows and columns. Use Grid for card galleries, dashboards, and any multi-column layout. Numeric and `{minWidth}` columns reflow to the available width: `columns={3}` shows three columns on a desktop and one on a phone. `{count: N, isFixed: true}` keeps exactly N columns.',
     bestPractices: [
-      { guidance: true, description: 'Use responsive columns for layouts that should adapt to screen size: columns={{minWidth: 280}}.' },
+      { guidance: true, description: 'columns={N} = at most N cols; drops to fewer when a col would be <12rem (1 col on phone). No breakpoints needed.' },
+      { guidance: true, description: 'columns={{count: N, isFixed: true}} = exactly N cols at every width; only for small tiles (calendar row).' },
+      { guidance: true, description: 'columns={{minWidth, max}} for a custom minimum: columns={{minWidth: 280, max: 4}}.' },
       { guidance: true, description: 'Cap the column count with max to prevent rows from getting too wide on large screens.' },
       { guidance: true, description: 'Use repeat: \'fill\' (the default) for consistent item widths. Use \'fit\' when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },

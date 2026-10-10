@@ -517,7 +517,10 @@ function DefaultMegaMenu({
           <div {...stylex.props(styles.panelContent)}>
             {/* Menu items section */}
             {items != null && (
-              <Grid columns={2} gap={2} xstyle={styles.menuWrapper}>
+              <Grid
+                columns={{count: 2, isFixed: true}}
+                gap={2}
+                xstyle={styles.menuWrapper}>
                 {items}
               </Grid>
             )}

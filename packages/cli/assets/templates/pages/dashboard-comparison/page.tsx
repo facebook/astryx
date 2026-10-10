@@ -445,7 +445,7 @@ function MetricCard({metric}: {metric: Metric}) {
           </HStack>
         </VStack>
         <MiniSparkline data={metric.spark} color={sparkColor} />
-        <Grid columns={2} gap={2}>
+        <Grid columns={{count: 2, isFixed: true}} gap={2}>
           <DeltaValue label="d/d" value={metric.deltas.dd} />
           <DeltaValue label="w/w" value={metric.deltas.ww} />
           <DeltaValue label="m/m" value={metric.deltas.mm} />

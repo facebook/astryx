@@ -287,6 +287,11 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--_field-status-overlap',
   '--_codeblock-gutter-width',
   '--_tab-indicator-bottom',
+  // GridSpan placement inside a numeric Grid: the span value and the
+  // full-row fallback the parent grid publishes. Layout behavior, not a
+  // themeable property.
+  '--_grid-span',
+  '--_grid-span-narrow',
   // Hit-area outset on a ::after overlay, and whether that overlay is
   // generated at all — `inset` and `content` on a pseudo-element are not
   // properties a theme author sets on the component.

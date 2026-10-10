@@ -326,7 +326,7 @@ export function BaseStylesPanel({
         <Text type="label" color="secondary">
           Preset
         </Text>
-        <Grid columns={4} gap={2}>
+        <Grid columns={{count: 4, isFixed: true}} gap={2}>
           {Object.keys(UNIFIED_PRESETS).map(key => {
             const isSelected = activePreset === key;
             const gap =

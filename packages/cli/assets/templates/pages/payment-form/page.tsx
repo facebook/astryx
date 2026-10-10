@@ -572,7 +572,7 @@ export default function PaymentFormPage() {
                                 : undefined
                             }
                           />
-                          <Grid columns={3} gap={3}>
+                          <Grid columns={{count: 3, isFixed: true}} gap={3}>
                             <Selector
                               size="lg"
                               label="Expiry Month"

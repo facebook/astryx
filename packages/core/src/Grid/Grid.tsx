@@ -31,7 +31,14 @@ export type GridAlignment = 'start' | 'center' | 'end' | 'stretch';
 /**
  * Column configuration for Grid.
  *
- * - `number` — fixed equal-width columns (e.g. `columns={3}`)
+ * - `number` — **at most** N equal columns (e.g. `columns={3}`). The grid
+ *   keeps N columns while each column can stay at least 12rem wide, and
+ *   drops to fewer (down to one full-width column on a phone) when the
+ *   container is narrower. Zero extra props for a phone-safe grid.
+ * - `{count, isFixed: true}` — exactly `count` equal columns at every width
+ *   (`repeat(count, 1fr)`, the track list numeric columns produced before
+ *   they became "at most N"). Use it for small tiles that must stay side by
+ *   side, such as a 7-column calendar row.
  * - `object` — responsive columns based on minimum child width:
  *   - `minWidth` — minimum width (px) for each column track
  *   - `repeat` — `'fill'` (default) preserves empty tracks for consistent widths;
@@ -44,9 +51,23 @@ export type GridAlignment = 'start' | 'center' | 'end' | 'stretch';
 export type GridColumns =
   | number
   | {
+      /** Column count. */
+      count: number;
+      /**
+       * `true` keeps exactly `count` columns at every container width.
+       * Omitted or `false` behaves like the numeric form (at most `count`).
+       */
+      isFixed?: boolean;
+      minWidth?: never;
+      max?: never;
+      repeat?: never;
+    }
+  | {
       minWidth: number;
       max?: number;
       repeat?: 'fill' | 'fit';
+      count?: never;
+      isFixed?: never;
     };
 
 export interface GridProps extends BaseProps<HTMLDivElement> {
@@ -54,7 +75,8 @@ export interface GridProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
    * Column configuration.
-   * - `number` — fixed equal-width columns
+   * - `number` — at most N equal columns; fewer when the container is narrow
+   * - `{count, isFixed: true}` — exactly N columns at every width
    * - `{minWidth, max?, repeat?}` — responsive columns
    *
    * @see GridColumns
@@ -139,6 +161,24 @@ export interface GridProps extends BaseProps<HTMLDivElement> {
 const baseStyles = stylex.create({
   grid: {
     display: 'grid',
+    // A GridSpan child reads this from its own parent grid (see GridSpan.tsx).
+    // Only an "at most N" grid lets a span fall back to a full row; every
+    // other grid clears the value so a span inside it keeps its exact span,
+    // even when it sits inside an outer "at most N" grid.
+    '--_grid-span-narrow': 'initial',
+  },
+  // Numeric `columns={N}` drops to fewer tracks when narrow. A GridSpan child
+  // then needs the grid's width to stop spanning tracks that are gone, so
+  // such a grid becomes a named inline-size query container, but only when
+  // it has a GridSpan child: a plain grid keeps its intrinsic width wherever
+  // it is placed.
+  capped: {
+    '--_grid-span-narrow': '1 / -1',
+    containerName: 'astryx-grid',
+    containerType: {
+      default: null,
+      ':has(> .astryx-grid-span)': 'inline-size',
+    },
   },
 });
 
@@ -327,7 +367,7 @@ const spacingVarNames: Record<SpacingStep, string> = {
  * overflowing it.
  */
 function buildCappedTemplate(
-  minWidth: number,
+  minWidth: number | string,
   maxCols: number,
   repeatMode: 'auto-fill' | 'auto-fit',
   gap: SpacingStep | undefined,
@@ -348,16 +388,48 @@ function buildCappedTemplate(
     : `calc(100% / ${maxCols})`;
 
   // Track min caps the count; track max stays 1fr so present columns fill.
-  const trackMin = `min(100%, max(${minWidth}px, ${perColumn}))`;
+  const floor = typeof minWidth === 'number' ? `${minWidth}px` : minWidth;
+  const trackMin = `min(100%, max(${floor}, ${perColumn}))`;
 
   return `repeat(${repeatMode}, minmax(${trackMin}, 1fr))`;
 }
 
 /**
+ * Narrowest a column of a numeric `columns={N}` grid may get before the grid
+ * drops to fewer columns. 12rem keeps a card title, a metric label, or a
+ * form field readable, and scales with the user's root font size.
+ */
+const NUMERIC_COLUMN_FLOOR = '12rem';
+
+/**
+ * Track list for a numeric column count: at most `count` equal columns.
+ */
+function buildNumericTemplate(
+  count: number,
+  gap: SpacingStep | undefined,
+  columnGap: SpacingStep | undefined,
+): string {
+  if (count === 1) {
+    // "At most one" is one column; keep the released track list.
+    return 'repeat(1, 1fr)';
+  }
+  // auto-fill (not auto-fit) so a wide grid with fewer items than `count`
+  // keeps its empty tracks and items keep the width of 1/count, as before.
+  return buildCappedTemplate(
+    NUMERIC_COLUMN_FLOOR,
+    count,
+    'auto-fill',
+    gap,
+    columnGap,
+  );
+}
+
+/**
  * Grid component for CSS Grid-based layouts.
  *
- * Supports fixed-column and responsive layouts via the `columns` prop:
- * - `columns={3}` — fixed 3-column grid
+ * Supports capped, fixed, and responsive layouts via the `columns` prop:
+ * - `columns={3}` — at most 3 columns (fewer when narrow; one on a phone)
+ * - `columns={{count: 7, isFixed: true}}` — exactly 7 columns at every width
  * - `columns={{minWidth: 280}}` — responsive auto-fill (consistent widths)
  * - `columns={{minWidth: 280, repeat: 'fit'}}` — responsive auto-fit (stretch)
  * - `columns={{minWidth: 280, max: 4}}` — responsive, capped at 4 columns
@@ -393,7 +465,18 @@ export function Grid({
   // Determine grid-template-columns value
   let gridTemplateColumns: string;
 
-  if (typeof columns === 'object' && columns != null) {
+  if (typeof columns === 'object' && columns != null && columns.count != null) {
+    const count = columns.count;
+    if (!(count > 0)) {
+      gridTemplateColumns = '1fr';
+    } else if (columns.isFixed === true) {
+      // Exactly `count` columns at every width: the released numeric track
+      // list, unchanged, so existing fixed grids can opt back in verbatim.
+      gridTemplateColumns = `repeat(${count}, 1fr)`;
+    } else {
+      gridTemplateColumns = buildNumericTemplate(count, gap, columnGap);
+    }
+  } else if (typeof columns === 'object' && columns != null) {
     // Responsive API: columns={{minWidth, max?, repeat?}}
     const repeatMode = columns.repeat === 'fit' ? 'auto-fit' : 'auto-fill';
 
@@ -410,8 +493,8 @@ export function Grid({
       gridTemplateColumns = `repeat(${repeatMode}, minmax(${columns.minWidth}px, 1fr))`;
     }
   } else if (typeof columns === 'number' && columns > 0) {
-    // Fixed columns mode
-    gridTemplateColumns = `repeat(${columns}, 1fr)`;
+    // At most N columns: capped auto-fill with a readable floor
+    gridTemplateColumns = buildNumericTemplate(columns, gap, columnGap);
   } else {
     // Default to 1 column if nothing specified
     gridTemplateColumns = '1fr';
@@ -435,12 +518,25 @@ export function Grid({
     }),
   };
 
+  // "At most N" grids (N > 1) are the ones that can have fewer tracks than a
+  // GridSpan child spans.
+  const numericCount =
+    typeof columns === 'number'
+      ? columns
+      : typeof columns === 'object' &&
+          columns != null &&
+          columns.count != null &&
+          columns.isFixed !== true
+        ? columns.count
+        : 0;
+  const isCapped = numericCount > 1;
+
   // For themeProps, extract numeric columns value for variant tracking
   const columnsVariant =
     typeof columns === 'number'
       ? columns
-      : typeof columns === 'object'
-        ? undefined
+      : typeof columns === 'object' && columns != null && columns.count != null
+        ? columns.count
         : undefined;
 
   return (
@@ -450,6 +546,7 @@ export function Grid({
         themeProps('grid', {columns: columnsVariant, gap, align, justify}),
         stylex.props(
           baseStyles.grid,
+          isCapped && baseStyles.capped,
           dynamicStyles.templateColumns(gridTemplateColumns),
           rowHeight != null && dynamicStyles.autoRows(rowHeight),
           gap != null && gapStyles[gap],

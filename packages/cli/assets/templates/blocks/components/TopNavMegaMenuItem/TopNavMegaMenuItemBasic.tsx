@@ -8,7 +8,7 @@ import {BoltIcon, CircleStackIcon} from '@heroicons/react/24/outline';
 
 export default function TopNavMegaMenuItemBasic() {
   return (
-    <Grid columns={2} gap={2}>
+    <Grid columns={{count: 2, isFixed: true}} gap={2}>
       <TopNavMegaMenuItem
         title="Edge Functions"
         description="Run serverless code at the network edge"
