@@ -48,48 +48,19 @@ jobs:
               >> "$GITHUB_OUTPUT"
           fi
 
-      # Main declares the next planned version (spec:AST-017 FR46). An owner may
-      # raise or lower it before cut, but it must remain strictly above the newest
-      # stable tag and keep the fixed group together. This runs in required lint,
-      # not the optional release-sync context, so every main pull request is gated.
-      - name: Keep main's declared version above latest stable
+      # Merge-back is the one trusted path allowed to leave main equal to the
+      # newest stable tag (spec:AST-017 FR50). Detect it before the ordinary
+      # version guard so required lint can route to the stronger validator.
+      - name: Detect the release merge-back branch contract
         if: github.event_name == 'pull_request'
-        run: |
-          set -eu
-          git fetch origin main 'refs/tags/v*:refs/tags/v*'
-          TRUSTED_POLICY="$RUNNER_TEMP/main-version-policy"
-          mkdir -p "$TRUSTED_POLICY/scripts/release" "$TRUSTED_POLICY/scripts/lib"
-          git show origin/main:scripts/release/active-release.mjs \
-            > "$TRUSTED_POLICY/scripts/release/active-release.mjs"
-          git show origin/main:scripts/lib/workspace-globs.mjs \
-            > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
-          VALIDATOR="$TRUSTED_POLICY/scripts/release/active-release.mjs"
-          ALLOW_BOOTSTRAP_EQUAL=false
-          if ! grep -q 'validate-main-version' "$VALIDATOR"; then
-            # Main's trusted policy predates this command; the candidate's copy
-            # applies only while this command is landing. Current main still
-            # equals the newest tag until the separate owner bump lands next.
-            VALIDATOR="$GITHUB_WORKSPACE/scripts/release/active-release.mjs"
-            ALLOW_BOOTSTRAP_EQUAL=true
-          fi
-          node "$VALIDATOR" validate-main-version \
-            --root "$GITHUB_WORKSPACE" \
-            --base origin/main \
-            --allow-bootstrap-equal "$ALLOW_BOOTSTRAP_EQUAL"
-
-      # Release-sync PRs copy already-published generated outputs and consume the
-      # frozen Changesets. They cannot add a new Changeset, so the required lint
-      # context runs the trusted release-sync validator instead.
-      - name: Detect the release-sync branch contract
-        if: github.event_name == 'pull_request'
-        id: release-sync-scope
+        id: release-merge-back-scope
         env:
-          SYNC_BRANCH: ${{ github.head_ref }}
+          MERGE_BRANCH: ${{ github.head_ref }}
         run: |
           required=false
-          case "$SYNC_BRANCH" in
-            chore/sync-v*-to-main)
-              VERSION=${SYNC_BRANCH#chore/sync-v}
+          case "$MERGE_BRANCH" in
+            chore/merge-v*-to-main)
+              VERSION=${MERGE_BRANCH#chore/merge-v}
               VERSION=${VERSION%-to-main}
               if printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
                 required=true
@@ -98,13 +69,31 @@ jobs:
           esac
           echo "required=$required" >> "$GITHUB_OUTPUT"
 
-      - name: Validate release sync in required lint
-        if: github.event_name == 'pull_request' && steps.release-sync-scope.outputs.required == 'true'
-        env:
-          SYNC_BRANCH: ${{ github.head_ref }}
+      # Every ordinary main PR must keep the declaration above stable. The
+      # separate FR51 next-plan PR exits merge-back equality; no bootstrap or
+      # generic equality exception exists.
+      - name: Keep main's declared version above latest stable
+        if: github.event_name == 'pull_request' && steps.release-merge-back-scope.outputs.required != 'true'
         run: |
           set -eu
-          VERSION=${SYNC_BRANCH#chore/sync-v}
+          git fetch origin main 'refs/tags/v*:refs/tags/v*' '+refs/heads/release/v*:refs/remotes/origin/release/v*'
+          TRUSTED_POLICY="$RUNNER_TEMP/main-version-policy"
+          mkdir -p "$TRUSTED_POLICY/scripts/release" "$TRUSTED_POLICY/scripts/lib"
+          git show origin/main:scripts/release/active-release.mjs \
+            > "$TRUSTED_POLICY/scripts/release/active-release.mjs"
+          git show origin/main:scripts/lib/workspace-globs.mjs \
+            > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
+          node "$TRUSTED_POLICY/scripts/release/active-release.mjs" validate-main-version \
+            --root "$GITHUB_WORKSPACE" \
+            --base origin/main
+
+      - name: Validate release merge-back in required lint
+        if: github.event_name == 'pull_request' && steps.release-merge-back-scope.outputs.required == 'true'
+        env:
+          MERGE_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -eu
+          VERSION=${MERGE_BRANCH#chore/merge-v}
           VERSION=${VERSION%-to-main}
           git fetch origin main 'refs/tags/v*:refs/tags/v*' '+refs/heads/release/v*:refs/remotes/origin/release/v*'
           TRUSTED_POLICY="$RUNNER_TEMP/release-policy"
@@ -115,7 +104,7 @@ jobs:
             > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
           VALIDATOR="$TRUSTED_POLICY/scripts/release/active-release.mjs"
           ACTIVE_BRANCHES=$(node "$VALIDATOR" list-active --root "$GITHUB_WORKSPACE")
-          node "$VALIDATOR" validate-sync \
+          node "$VALIDATOR" validate-merge-back \
             --root "$GITHUB_WORKSPACE" \
             --base origin/main \
             --release-ref "v$VERSION" \
@@ -125,7 +114,7 @@ jobs:
       # released CLI JSON id cannot disappear unclassified. The release coverage
       # audit runs the same classifier over the cut range, so the two agree.
       - name: Check Changeset coverage
-        if: github.event_name == 'pull_request' && steps.release-sync-scope.outputs.required != 'true'
+        if: github.event_name == 'pull_request' && steps.release-merge-back-scope.outputs.required != 'true'
         env:
           MERGE_SHA: ${{ github.sha }}
         run: |

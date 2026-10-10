@@ -16,13 +16,14 @@ import {afterEach, describe, expect, it} from 'vitest';
 import {
   buildMarker,
   buildPlan,
+  canaryEligibility,
   declaredVersionAtRef,
   latestStableVersion,
-  syncedMainVersion,
+  nextPlannedVersion,
   validateMainVersions,
   validateReleaseDiff,
+  validateReleaseMergeBack,
   validateReleaseState,
-  validateReleaseSync,
   writeAuthority,
 } from './active-release.mjs';
 
@@ -425,7 +426,7 @@ describe('active release branch authority', () => {
   });
 });
 
-describe('post-release bookkeeping sync (FR50)', () => {
+describe('published release merge-back (FR50)', () => {
   const digest = value => value.repeat(64).slice(0, 64);
   const corePath = 'packages/core/package.json';
   const themePath = 'packages/themes/neutral/package.json';
@@ -458,21 +459,12 @@ describe('post-release bookkeeping sync (FR50)', () => {
       [labPath, lab(labPin)],
     ]);
   const plan = {
-    changesets: [
-      {path: '.changeset/frozen.md', sha256: digest('a')},
-      {path: '.changeset/already-consumed.md', sha256: digest('b')},
-    ],
+    changesets: [{path: '.changeset/frozen.md', sha256: digest('a')}],
   };
 
-  function sync({release = '0.7.0', base, head, ...overrides}) {
-    return validateReleaseSync({
-      entries: [
-        'D\t.changeset/frozen.md',
-        `M\t${corePath}`,
-        `M\t${themePath}`,
-        `M\t${labPath}`,
-        'M\tpackages/core/CHANGELOG.md',
-      ],
+  function mergeBack({release = '0.7.0', base, head, ...overrides}) {
+    return validateReleaseMergeBack({
+      entries: ['D\t.changeset/frozen.md', 'M\tpackages/core/CHANGELOG.md'],
       plan,
       baseChangesets: new Map([
         ['.changeset/frozen.md', digest('a')],
@@ -483,77 +475,80 @@ describe('post-release bookkeeping sync (FR50)', () => {
       headOutputs: new Map([['packages/core/CHANGELOG.md', digest('e')]]),
       releaseVersion: release,
       fixedNames,
+      cutManifests: new Map(),
+      releaseManifests: new Map(),
       baseManifests: base,
       headManifests: head,
       ...overrides,
     });
   }
 
-  it('advances main from the released version to its patch successor', () => {
-    expect(sync({base: mainAt('0.7.0'), head: mainAt('0.7.1')})).toEqual([]);
-  });
-
-  it('rejects a sync that leaves main declaring the published version', () => {
-    expect(sync({base: mainAt('0.7.0'), head: mainAt('0.7.0')})).toContain(
-      `release sync manifest has the wrong version: ${corePath} is 0.7.0, expected 0.7.1`,
+  it('returns exact published outputs while leaving main at the released version', () => {
+    expect(mergeBack({base: mainAt('0.7.0'), head: mainAt('0.7.0')})).toEqual(
+      [],
     );
   });
 
-  it("preserves an owner's higher bump and refuses to roll it back", () => {
-    // Main was bumped to plan 0.8.0 while 0.7.0 was releasing.
-    expect(sync({base: mainAt('0.8.0'), head: mainAt('0.8.0')})).toEqual([]);
-    expect(sync({base: mainAt('0.8.0'), head: mainAt('0.7.1')})).toEqual(
+  it('rejects folding the next plan into merge-back', () => {
+    expect(
+      mergeBack({base: mainAt('0.7.0'), head: mainAt('0.7.1'), entries: []}),
+    ).toEqual(
       expect.arrayContaining([
-        `release sync moves main backward: ${corePath} 0.8.0 -> 0.7.1`,
-        `release sync moves main backward: ${themePath} 0.8.0 -> 0.7.1`,
+        `release merge-back changed a current-main manifest outside the published branch: ${corePath}`,
+        "release merge-back must preserve main's declaration 0.7.0; found 0.7.1",
       ]),
     );
-    expect(sync({base: mainAt('0.8.0'), head: mainAt('0.7.0')})).toContain(
-      `release sync moves main backward: ${corePath} 0.8.0 -> 0.7.0`,
-    );
   });
 
-  it('keeps an owner bump that is exactly the patch successor', () => {
-    expect(sync({base: mainAt('0.7.1'), head: mainAt('0.7.1')})).toEqual([]);
-  });
-
-  it('raises a main that is behind the release past it, never to it', () => {
+  it('preserves a newer main plan that landed before merge-back', () => {
     expect(
-      sync({release: '0.6.7', base: mainAt('0.6.6'), head: mainAt('0.6.8')}),
+      mergeBack({base: mainAt('0.7.1'), head: mainAt('0.7.1'), entries: []}),
     ).toEqual([]);
+  });
+
+  it('rejects resetting a newer main plan to the released version', () => {
     expect(
-      sync({release: '0.6.7', base: mainAt('0.6.6'), head: mainAt('0.6.7')}),
-    ).toContain(
-      `release sync manifest has the wrong version: ${corePath} is 0.6.7, expected 0.6.8`,
+      mergeBack({base: mainAt('0.7.1'), head: mainAt('0.7.0'), entries: []}),
+    ).toEqual(
+      expect.arrayContaining([
+        `release merge-back changed a current-main manifest outside the published branch: ${corePath}`,
+        "release merge-back must preserve main's declaration 0.7.1; found 0.7.0",
+      ]),
     );
   });
 
-  it('repins exact internal pins everywhere and leaves private versions alone', () => {
-    const head = mainAt('0.7.1');
-    expect(head.get(labPath).version).toBe('0.1.9');
-    expect(sync({base: mainAt('0.7.0'), head})).toEqual([]);
+  it('rejects a main declaration below the published release', () => {
     expect(
-      sync({base: mainAt('0.7.0'), head: mainAt('0.7.1', '0.7.0')}),
-    ).toContain(`release sync changed non-version manifest fields: ${labPath}`);
+      mergeBack({base: mainAt('0.6.9'), head: mainAt('0.6.9'), entries: []}),
+    ).toContain(
+      'release merge-back requires current main at or above published v0.7.0; found 0.6.9',
+    );
   });
 
-  it('is idempotent once main is synced', () => {
+  it('preserves a newer main declaration while applying a published manifest delta', () => {
+    const base = mainAt('0.7.1');
+    base.set(themePath, {...theme('0.7.1'), scripts: {test: 'post-cut'}});
+    const head = structuredClone(base);
     expect(
-      sync({
-        entries: [],
-        baseChangesets: new Map([['.changeset/post-cut.md', digest('c')]]),
-        base: mainAt('0.7.1'),
-        head: mainAt('0.7.1'),
+      mergeBack({
+        base,
+        head,
+        entries: [
+          'D\t.changeset/frozen.md',
+          `M\t${themePath}`,
+          'M\tpackages/core/CHANGELOG.md',
+        ],
+        cutManifests: new Map([[themePath, theme('0.6.9')]]),
+        releaseManifests: new Map([[themePath, theme('0.7.0')]]),
       }),
     ).toEqual([]);
   });
 
   it('accepts only published release-output renames', () => {
     const from = 'packages/cli/assets/codemods/transforms/next/transform.mjs';
-    const to = 'packages/cli/assets/codemods/transforms/v0.6.6/transform.mjs';
+    const to = 'packages/cli/assets/codemods/transforms/v0.7.0/transform.mjs';
     const entries = [
       'D\t.changeset/frozen.md',
-      `M\t${corePath}`,
       'M\tpackages/core/CHANGELOG.md',
       `R100\t${from}\t${to}`,
     ];
@@ -564,46 +559,54 @@ describe('post-release bookkeeping sync (FR50)', () => {
     const headOutputs = new Map(releaseOutputs);
 
     expect(
-      sync({
+      mergeBack({
         entries,
         releaseOutputs,
         headOutputs,
         releaseRenames: new Set([`${from}\t${to}`]),
         base: mainAt('0.7.0'),
-        head: mainAt('0.7.1'),
+        head: mainAt('0.7.0'),
       }),
     ).toEqual([]);
     expect(
-      sync({
+      mergeBack({
         entries,
         releaseOutputs,
         headOutputs,
         base: mainAt('0.7.0'),
-        head: mainAt('0.7.1'),
+        head: mainAt('0.7.0'),
       }),
     ).toContain(
-      `release sync rename does not match published branch: ${from} -> ${to}`,
+      `release merge-back rename does not match published branch: ${from} -> ${to}`,
     );
   });
 
-  it('rejects any other manifest change, including wholesale tag copies', () => {
-    const head = mainAt('0.7.1');
-    head.set(corePath, {...core('0.7.1'), scripts: {build: 'changed'}});
-    expect(sync({base: mainAt('0.7.0'), head})).toContain(
-      `release sync changed non-version manifest fields: ${corePath}`,
-    );
-    const copied = mainAt('0.7.1');
-    copied.set(corePath, {...core('0.7.1'), files: ['dist']});
-    expect(sync({base: mainAt('0.7.0'), head: copied})).toContain(
-      `release sync changed non-version manifest fields: ${corePath}`,
-    );
-  });
-
-  it('rejects a release bump that changed more than versions and pins', () => {
+  it('rejects unlisted manifests, lifecycle files, and non-release paths', () => {
     expect(
-      sync({
+      mergeBack({
         base: mainAt('0.7.0'),
-        head: mainAt('0.7.1'),
+        head: mainAt('0.7.0'),
+        entries: [
+          `M\t${corePath}`,
+          'M\t.release/active.json',
+          'M\tpackages/core/src/Button/Button.tsx',
+        ],
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        `release merge-back changed a manifest not changed on the published branch: ${corePath}`,
+        'release merge-back contains a non-release path: .release/active.json',
+        'release merge-back contains a non-release path: packages/core/src/Button/Button.tsx',
+      ]),
+    );
+  });
+
+  it('rejects a published manifest with non-version release changes', () => {
+    expect(
+      mergeBack({
+        base: mainAt('0.7.0'),
+        head: mainAt('0.7.0'),
+        entries: [`M\t${corePath}`],
         cutManifests: new Map([[corePath, core('0.7.0')]]),
         releaseManifests: new Map([
           [corePath, {...core('0.7.0'), sideEffects: false}],
@@ -614,31 +617,32 @@ describe('post-release bookkeeping sync (FR50)', () => {
     );
   });
 
-  it('rejects changes to post-cut Changesets and non-bookkeeping paths', () => {
+  it('rejects changed post-cut Changesets and missing frozen bytes', () => {
     expect(
-      sync({
+      mergeBack({
         base: mainAt('0.7.0'),
-        head: mainAt('0.7.1'),
-        entries: [
-          'M\t.changeset/post-cut.md',
-          'M\tpackages/core/src/Button/Button.tsx',
-        ],
+        head: mainAt('0.7.0'),
+        entries: ['M\t.changeset/post-cut.md'],
+        baseChangesets: new Map([
+          ['.changeset/frozen.md', digest('z')],
+          ['.changeset/post-cut.md', digest('c')],
+        ]),
         headChangesets: new Map([['.changeset/post-cut.md', digest('f')]]),
       }),
     ).toEqual(
       expect.arrayContaining([
-        'release sync may only delete frozen Changesets: .changeset/post-cut.md',
-        'release sync contains a non-bookkeeping path: packages/core/src/Button/Button.tsx',
-        'release sync changed post-cut Changeset: .changeset/post-cut.md',
+        'release merge-back may only delete frozen Changesets: .changeset/post-cut.md',
+        'release merge-back cannot verify frozen Changeset on current main: .changeset/frozen.md',
+        'release merge-back changed post-cut Changeset: .changeset/post-cut.md',
       ]),
     );
   });
 
   it('rejects missing frozen deletions and exact-output drift', () => {
     expect(
-      sync({
+      mergeBack({
         base: mainAt('0.7.0'),
-        head: mainAt('0.7.1'),
+        head: mainAt('0.7.0'),
         headChangesets: new Map([
           ['.changeset/frozen.md', digest('a')],
           ['.changeset/post-cut.md', digest('c')],
@@ -647,17 +651,61 @@ describe('post-release bookkeeping sync (FR50)', () => {
       }),
     ).toEqual(
       expect.arrayContaining([
-        'release sync did not delete frozen Changeset: .changeset/frozen.md',
-        'release sync output differs from published branch: packages/core/CHANGELOG.md',
+        'release merge-back did not delete frozen Changeset: .changeset/frozen.md',
+        'release merge-back output differs from published branch: packages/core/CHANGELOG.md',
       ]),
     );
   });
 
-  it('computes the synced version as max(main, released patch successor)', () => {
-    expect(syncedMainVersion('0.7.0', '0.7.0')).toBe('0.7.1');
-    expect(syncedMainVersion('0.8.0', '0.7.0')).toBe('0.8.0');
-    expect(syncedMainVersion('0.6.6', '0.6.7')).toBe('0.6.8');
-    expect(syncedMainVersion('0.7.0-canary.1', '0.7.0')).toBeNull();
+  it('defaults the separate next plan to patch and admits only an explicit minor', () => {
+    expect(nextPlannedVersion('0.7.0')).toBe('0.7.1');
+    expect(nextPlannedVersion('0.7.0', '0.7.1')).toBe('0.7.1');
+    expect(nextPlannedVersion('0.7.0', '0.8.0')).toBe('0.8.0');
+    expect(nextPlannedVersion('0.7.0', '0.7.2')).toBeNull();
+    expect(nextPlannedVersion('0.7.0-canary.1')).toBeNull();
+  });
+});
+
+describe('canary eligibility during release merge-back (FR46)', () => {
+  const fixed = new Set(['@astryxdesign/core', '@astryxdesign/cli']);
+  const at = (core, cli = core) =>
+    new Map([
+      ['@astryxdesign/core', {name: '@astryxdesign/core', version: core}],
+      ['@astryxdesign/cli', {name: '@astryxdesign/cli', version: cli}],
+    ]);
+
+  it('publishes above stable and suppresses the transient equal state', () => {
+    expect(
+      canaryEligibility({
+        fixed,
+        releasedVersion: '0.6.8',
+        manifests: at('0.6.9'),
+      }),
+    ).toMatchObject({errors: [], publish: true, declaredVersion: '0.6.9'});
+    expect(
+      canaryEligibility({
+        fixed,
+        releasedVersion: '0.6.8',
+        manifests: at('0.6.8'),
+      }),
+    ).toMatchObject({errors: [], publish: false, declaredVersion: '0.6.8'});
+  });
+
+  it('refuses a lower or split declaration instead of silently skipping', () => {
+    expect(
+      canaryEligibility({
+        fixed,
+        releasedVersion: '0.6.8',
+        manifests: at('0.6.7'),
+      }).errors,
+    ).toContain('canary declaration 0.6.7 is below newest stable v0.6.8');
+    expect(
+      canaryEligibility({
+        fixed,
+        releasedVersion: '0.6.8',
+        manifests: at('0.6.8', '0.6.9'),
+      }).errors[0],
+    ).toMatch(/canary needs one plain fixed-group version/);
   });
 });
 
@@ -683,12 +731,12 @@ describe('main pull requests keep the declared version above newest stable (FR46
     base,
     head,
     releasedVersion = '0.6.7',
-    allowBootstrapEqual = false,
+    activeCutVersion = null,
   ) =>
     validateMainVersions({
       fixed,
       releasedVersion,
-      allowBootstrapEqual,
+      activeCutVersion,
       baseManifests: base,
       headManifests: head,
     });
@@ -698,10 +746,35 @@ describe('main pull requests keep the declared version above newest stable (FR46
     expect(check(at('0.6.8'), at('0.7.0'))).toEqual([]);
   });
 
-  it('allows only the one-time equal-version bootstrap while the validator lands', () => {
-    expect(check(at('0.6.7'), at('0.6.7'), '0.6.7', true)).toEqual([]);
-    expect(check(at('0.6.7'), at('0.6.6'), '0.6.7', true)).toContain(
-      'main declares 0.6.6; it must stay strictly above newest stable v0.6.7',
+  it('allows equality with an untagged active cut but refuses lowering below it', () => {
+    expect(check(at('0.6.8'), at('0.6.8'), '0.6.7', '0.6.8')).toEqual([]);
+    expect(check(at('0.6.8'), at('0.6.9'), '0.6.7', '0.6.8')).toEqual([]);
+    expect(check(at('0.6.8'), at('0.6.7'), '0.6.6', '0.6.8')).toContain(
+      'main declares 0.6.7; it must not fall below active cut v0.6.8',
+    );
+    expect(check(at('0.6.8'), at('0.6.8'), '0.6.8', '0.6.8')).toContain(
+      'main declares 0.6.8; it must stay strictly above newest stable v0.6.8',
+    );
+  });
+
+  it('admits only patch or minor successor as the first plan after merge-back', () => {
+    expect(check(at('0.6.7'), at('0.6.8'))).toEqual([]);
+    expect(check(at('0.6.7'), at('0.7.0'))).toEqual([]);
+    expect(check(at('0.6.7'), at('0.6.9'))).toContain(
+      "main's first plan after v0.6.7 must be patch successor 0.6.8 by default or owner-named minor 0.7.0; found 0.6.9",
+    );
+  });
+
+  it('requires every exact internal pin to follow the separate next plan', () => {
+    const head = at('0.6.8');
+    head.set('@astryxdesign/lab', {
+      name: '@astryxdesign/lab',
+      version: '0.1.9',
+      private: true,
+      peerDependencies: {'@astryxdesign/core': '0.6.7'},
+    });
+    expect(check(at('0.6.7'), head)).toContain(
+      '@astryxdesign/lab peerDependencies.@astryxdesign/core pins 0.6.7; main declares 0.6.8',
     );
   });
 

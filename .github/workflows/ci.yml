@@ -267,28 +267,28 @@ jobs:
           path: release-bump-receipt.json
           retention-days: 30
 
-  release-sync:
-    name: release-sync
+  release-merge-back:
+    name: release-merge-back
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     # Match the stable publisher so byte parity covers the same packed manifest.
     runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:
-      - name: Checkout sync candidate
+      - name: Checkout merge-back candidate
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Detect the release-sync branch contract
-        id: release-sync-scope
+      - name: Detect the release-merge-back branch contract
+        id: release-merge-back-scope
         env:
-          SYNC_BRANCH: ${{ github.head_ref }}
+          MERGE_BRANCH: ${{ github.head_ref }}
         run: |
           set -eu
-          case "$SYNC_BRANCH" in
-            chore/sync-v*-to-main)
-              VERSION=${SYNC_BRANCH#chore/sync-v}
+          case "$MERGE_BRANCH" in
+            chore/merge-v*-to-main)
+              VERSION=${MERGE_BRANCH#chore/merge-v}
               VERSION=${VERSION%-to-main}
               printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
               echo 'required=true' >> "$GITHUB_OUTPUT"
@@ -299,7 +299,7 @@ jobs:
           esac
 
       - name: Fetch release authority and trusted validator
-        if: steps.release-sync-scope.outputs.required == 'true'
+        if: steps.release-merge-back-scope.outputs.required == 'true'
         run: |
           set -eu
           git fetch origin main 'refs/tags/v*:refs/tags/v*' '+refs/heads/release/v*:refs/remotes/origin/release/v*'
@@ -310,36 +310,36 @@ jobs:
           git show origin/main:scripts/lib/workspace-globs.mjs \
             > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
 
-      - name: Validate published bytes and consumed-only Changeset sync
-        if: steps.release-sync-scope.outputs.required == 'true'
+      - name: Validate published bytes and consumed-only Changeset merge-back
+        if: steps.release-merge-back-scope.outputs.required == 'true'
         env:
-          SYNC_BRANCH: ${{ github.head_ref }}
+          MERGE_BRANCH: ${{ github.head_ref }}
         run: |
           set -eu
-          VERSION=${SYNC_BRANCH#chore/sync-v}
+          VERSION=${MERGE_BRANCH#chore/merge-v}
           VERSION=${VERSION%-to-main}
           printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
           VALIDATOR="$RUNNER_TEMP/release-policy/scripts/release/active-release.mjs"
           ACTIVE_BRANCHES=$(node "$VALIDATOR" list-active --root "$GITHUB_WORKSPACE")
-          node "$VALIDATOR" validate-sync \
+          node "$VALIDATOR" validate-merge-back \
             --root "$GITHUB_WORKSPACE" \
             --base origin/main \
             --release-ref "v$VERSION" \
             --active-branches "$ACTIVE_BRANCHES"
 
       - name: Setup Node and pnpm for published-byte verification
-        if: steps.release-sync-scope.outputs.required == 'true'
+        if: steps.release-merge-back-scope.outputs.required == 'true'
         uses: ./.github/actions/setup
         with:
           install: 'false'
 
       - name: Verify immutable tag package bytes match npm
-        if: steps.release-sync-scope.outputs.required == 'true'
+        if: steps.release-merge-back-scope.outputs.required == 'true'
         env:
-          SYNC_BRANCH: ${{ github.head_ref }}
+          MERGE_BRANCH: ${{ github.head_ref }}
         run: |
           set -eu
-          VERSION=${SYNC_BRANCH#chore/sync-v}
+          VERSION=${MERGE_BRANCH#chore/merge-v}
           VERSION=${VERSION%-to-main}
           TAG_ROOT="$RUNNER_TEMP/release-tag"
           git worktree add --detach "$TAG_ROOT" "v$VERSION"
