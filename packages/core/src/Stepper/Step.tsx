@@ -63,7 +63,8 @@ import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {BaseProps} from '../BaseProps';
 import {Icon} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import stepMessages from '../i18n/generated-locales/en/step.generated';
 import {useStepperInternalContext} from './StepperContext';
 import {stepMarker} from './stepper.stylex';
 import type {StepStatus} from './StepStatus';
@@ -1003,7 +1004,7 @@ export function Step({
   ...rest
 }: StepProps) {
   const pressable = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(stepMessages);
   const ctx = useStepperInternalContext();
   const {
     activeStep,

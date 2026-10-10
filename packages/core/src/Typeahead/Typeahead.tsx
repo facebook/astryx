@@ -68,7 +68,8 @@ import {
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import typeaheadMessages from '../i18n/generated-locales/en/typeahead.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
@@ -420,7 +421,7 @@ export function Typeahead<T extends SearchableItem>({
     containerClassName,
     containerStyle,
   });
-  const t = useTranslator();
+  const t = useComponentTranslator(typeaheadMessages);
   const size = useSize(sizeProp, 'md');
   const generatedInputId = useId();
   const inputId = idProp ?? generatedInputId;

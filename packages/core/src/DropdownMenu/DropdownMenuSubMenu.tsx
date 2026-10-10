@@ -122,7 +122,12 @@ import {
 } from './DropdownMenuContext';
 import {focusMenuItemOnHover} from './menuItemHover';
 import {DropdownMenuItem} from './DropdownMenuItem';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import dropdownMenuMessages from '../i18n/generated-locales/en/dropdownMenu.generated';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...dropdownMenuMessages, ...spinnerMessages};
 
 // The flyout's own lower cap on the placement axis; the viewport cap under
 // it and the inline gutter beside it are the layer runtime's (spec:AST-059).
@@ -502,7 +507,7 @@ export function DropdownMenuSubMenu(
     ...rest
   } = props;
 
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const menuCtx = useDropdownMenuContext();
   const rootSurface = use(DropdownMenuSurfaceContext);
   const rootHasRegions = use(MenuRegionsContext);

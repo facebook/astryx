@@ -33,7 +33,8 @@ import {mergeProps} from '../utils';
 import {composeEventHandlers} from '../utils/composeEventHandlers';
 import {AvatarGroupContext} from './AvatarGroupContext';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import avatarGroupMessages from '../i18n/generated-locales/en/avatarGroup.generated';
 import {useListFocus} from '../hooks/useListFocus';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -123,7 +124,7 @@ export function AvatarGroup({
   ref,
   ...props
 }: AvatarGroupProps): ReactNode {
-  const t = useTranslator();
+  const t = useComponentTranslator(avatarGroupMessages);
   const ariaLabel = ariaLabelFromProps ?? t('@astryx.avatarGroup.label');
   const numericSize = resolveSize(size);
   const overlap = Math.round(numericSize * OVERLAP_RATIO);

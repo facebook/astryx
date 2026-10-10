@@ -3,7 +3,7 @@
 
 /**
  * @file AvatarGroupOverflow.tsx
- * @input Uses React, StyleX, AvatarGroupContext, i18n (useTranslator)
+ * @input Uses React, StyleX, AvatarGroupContext, i18n (useComponentTranslator)
  * @output Exports AvatarGroupOverflow for overflow indicator
  * @position Slot component used inside AvatarGroup
  *
@@ -32,7 +32,8 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import avatarGroupMessages from '../i18n/generated-locales/en/avatarGroup.generated';
 
 const BORDER_WIDTH = 2;
 const OVERFLOW_FONT_RATIO = 0.35;
@@ -160,7 +161,7 @@ export function AvatarGroupOverflow({
   ...rest
 }: AvatarGroupOverflowProps): ReactNode {
   const pressable = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(avatarGroupMessages);
   const group = useAvatarGroup();
   const size = group?.size ?? 'md';
   const shape = group?.shape ?? 'circle';

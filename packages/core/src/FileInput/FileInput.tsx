@@ -64,10 +64,15 @@ import {
 } from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import fileInputMessages from '../i18n/generated-locales/en/fileInput.generated';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 import type {TranslatorFn} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...fileInputMessages, ...spinnerMessages};
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
     return `${bytes} B`;
@@ -478,7 +483,7 @@ export function FileInput({
     containerClassName,
     containerStyle,
   });
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const generatedID = useId();
   const id = idProp ?? generatedID;
   const descriptionID = useId();

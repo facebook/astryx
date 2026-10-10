@@ -46,7 +46,11 @@ import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {Icon} from '../Icon';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import dateInputMessages from '../i18n/generated-locales/en/dateInput.generated';
+import dateTimeInputMessages from '../i18n/generated-locales/en/dateTimeInput.generated';
+import timeInputMessages from '../i18n/generated-locales/en/timeInput.generated';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 import {colorVars, sizeVars, spacingVars} from '../theme/tokens.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
@@ -68,6 +72,14 @@ import {
 } from '../utils';
 import {chainEventHandlers} from '../utils/chainEventHandlers';
 import type {TimeInputProps} from './TimeInput';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {
+  ...dateInputMessages,
+  ...dateTimeInputMessages,
+  ...timeInputMessages,
+  ...spinnerMessages,
+};
 
 const sizeStyles = stylex.create({
   sm: {height: sizeVars['--size-element-sm'], minWidth: 120},
@@ -237,7 +249,7 @@ export function TouchTimeField({
     onClick: onClickProp,
     ...controlProps
   } = rest;
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');

@@ -12,7 +12,8 @@
 import React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Token} from '../Token';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import powersearchMessages from '../i18n/generated-locales/en/powersearch.generated';
 import {useLocale} from '../i18n/useLocale';
 import {fontWeightVars} from '../theme/tokens.stylex';
 import {formatFilterValue} from './formatFilterValue';
@@ -44,7 +45,7 @@ export function PowerSearchToken({
   isDisabled,
 }: PowerSearchTokenProps) {
   const config = useInternalConfig(configProp);
-  const t = useTranslator();
+  const t = useComponentTranslator(powersearchMessages);
   const locale = useLocale();
 
   const fieldLabel = field.label;

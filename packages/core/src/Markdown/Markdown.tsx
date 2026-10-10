@@ -92,7 +92,9 @@ import {
   headingLinksHeadingStyle,
 } from './plugins/HeadingLinksRenderer';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator, type TranslatorFn} from '../i18n';
+import type {TranslatorFn} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import markdownMessages from '../i18n/generated-locales/en/markdown.generated';
 
 type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
 type RenderExtensionNode = MarkdownExtensionNode;
@@ -2121,7 +2123,7 @@ export function Markdown<
   'data-testid': testId,
   ...props
 }: MarkdownProps<Plugins>): React.ReactElement {
-  const t = useTranslator();
+  const t = useComponentTranslator(markdownMessages);
   const LinkComponent = useLinkComponent();
   // Links read the caller's handler when clicked, so a handler recreated on
   // every caller render does not invalidate the memoized document below.

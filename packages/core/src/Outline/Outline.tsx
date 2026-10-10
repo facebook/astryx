@@ -45,7 +45,8 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import outlineMessages from '../i18n/generated-locales/en/outline.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 export type {OutlineItem} from './types';
@@ -325,7 +326,7 @@ export function Outline({
   ...props
 }: OutlineProps) {
   const pressable = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(outlineMessages);
   const label = labelFromProps ?? t('@astryx.outline.label');
   const rootRef = useRef<HTMLElement | null>(null);
   const LinkComponent = useLinkComponent();

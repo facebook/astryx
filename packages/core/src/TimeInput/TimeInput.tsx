@@ -79,7 +79,9 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useTooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import timeInputMessages from '../i18n/generated-locales/en/timeInput.generated';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {NativeTimeSegment} from '../DateTimeInput/NativeTimeSegment';
@@ -176,6 +178,9 @@ export type {
   InputStatus as TimeInputStatus,
   InputStatusType as TimeInputStatusType,
 } from '../Field';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...timeInputMessages, ...spinnerMessages};
 
 export interface TimeInputProps extends Omit<
   FieldInputBaseProps<HTMLInputElement>,
@@ -446,7 +451,7 @@ function TimeField({
     onKeyDown: onKeyDownProp,
     ...controlProps
   } = rest;
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');

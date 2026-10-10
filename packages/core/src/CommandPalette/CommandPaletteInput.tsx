@@ -33,7 +33,8 @@ import {
   getInteractionModality,
   useInteractionModalityTracking,
 } from '../utils/interactionModality';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import commandPaletteMessages from '../i18n/generated-locales/en/commandPalette.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
@@ -182,7 +183,7 @@ export function CommandPaletteInput({
   style,
   ...props
 }: CommandPaletteInputProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(commandPaletteMessages);
   const placeholder =
     placeholderFromProps ?? t('@astryx.commandPalette.input.placeholder');
   const ctx = useCommandPaletteContext();

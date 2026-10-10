@@ -48,7 +48,12 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import thumbnailMessages from '../i18n/generated-locales/en/thumbnail.generated';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...thumbnailMessages, ...spinnerMessages};
 
 export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -342,7 +347,7 @@ export function Thumbnail({
   ...props
 }: ThumbnailProps) {
   const pressable = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
 
   // Track the exact src that failed (rather than a boolean) so a changed src
   // gets a fresh load attempt instead of the stale error.
