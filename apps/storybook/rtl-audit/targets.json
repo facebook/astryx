@@ -422,6 +422,18 @@
     }
   },
   {
+    "component": "ComplexSelector",
+    "storyId": "core-complexselector--controlled-toolbar-trigger",
+    "dims": ["D4"],
+    "setup": {
+      "click": "button[aria-haspopup=\"dialog\"]"
+    },
+    "selectors": {
+      "overlay": ".astryx-complex-selector-popup",
+      "overlayRoot": "button[aria-haspopup=\"dialog\"]"
+    }
+  },
+  {
     "component": "SideNav",
     "storyId": "core-sidenav--default",
     "dims": ["D2"],
