@@ -372,6 +372,72 @@ describe('markdownSourceLinesPlugin', () => {
     expect(seen).toEqual(['card:3-3', 'chart:7-9']);
   });
 
+  it('keeps the lines when a claimed fence falls back to the host code renderer or the default code block', () => {
+    type DiagramNode = MarkdownExtensionNode<
+      'diagrams',
+      'diagram',
+      {readonly code: string},
+      'block'
+    >;
+    const diagrams = (render: () => null | never) =>
+      createMarkdownPlugin<'diagrams', DiagramNode>({
+        name: 'diagrams',
+        apiVersion: 1,
+        transform: createMarkdownFenceTransform({
+          languages: ['diagram'],
+          createNode: ({code}) => ({
+            type: 'extension',
+            plugin: 'diagrams',
+            name: 'diagram',
+            display: 'block',
+            data: {code},
+          }),
+        }),
+        renderers: {diagram: {render, toText: node => node.data.code}},
+      });
+    const declining = diagrams(() => null);
+    const throwing = diagrams(() => {
+      throw new Error('broken diagram');
+    });
+    const source =
+      'Intro\n\n```diagram\na --> b\n```\n\n```ts\nconst x = 1;\n```';
+    const hostLines: [string | undefined, MarkdownSourceLines | undefined][] =
+      [];
+    const HostCode: NonNullable<MarkdownComponents['code']> = ({
+      code,
+      language,
+      sourceLines,
+    }) => {
+      hostLines.push([language, sourceLines]);
+      return <pre>{code}</pre>;
+    };
+
+    const {unmount} = render(
+      <Markdown
+        plugins={[declining, markdownSourceLinesPlugin]}
+        components={{code: HostCode}}>
+        {source}
+      </Markdown>,
+    );
+    expect(hostLines).toEqual([
+      ['diagram', {start: 3, end: 5}],
+      ['ts', {start: 7, end: 9}],
+    ]);
+    unmount();
+
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {container} = render(
+      <Markdown plugins={[throwing, markdownSourceLinesPlugin]}>
+        {source}
+      </Markdown>,
+    );
+    expect(stamps(container, '[data-source-line="3"]')).toEqual(['3-5']);
+    expect(
+      container.querySelector('[data-source-line="3"] pre')?.textContent,
+    ).toContain('a --> b');
+    warning.mockRestore();
+  });
+
   it('records lines on canonical block nodes only with the plugin', () => {
     const withLines = parseMarkdownAst(NESTED, {
       plugins: [markdownSourceLinesPlugin],
