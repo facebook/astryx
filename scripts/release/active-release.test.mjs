@@ -33,7 +33,7 @@ const NEXT_HEAD = '3'.repeat(40);
 const BRANCH = 'release/v0.6.5';
 const roots = [];
 
-function fixture({withChangeset = false} = {}) {
+function fixture({withChangeset = false, changesetText = null} = {}) {
   const root = fs.mkdtempSync(
     path.join(os.tmpdir(), 'astryx-release-authority-'),
   );
@@ -52,7 +52,8 @@ function fixture({withChangeset = false} = {}) {
   if (withChangeset) {
     fs.writeFileSync(
       path.join(root, '.changeset/in-cut.md'),
-      "---\n'@astryxdesign/core': patch\n---\n\n[fix] Included\n@person\n",
+      changesetText ??
+        "---\n'@astryxdesign/core': patch\n---\n\n[fix] Included\n@person\n",
     );
   }
   const plan = buildPlan({root, version: '0.6.5', branch: BRANCH, cutSha: CUT});
@@ -114,6 +115,56 @@ afterEach(() => {
     fs.rmSync(root, {recursive: true, force: true});
 });
 
+describe('generated cut-time release description', () => {
+  it('freezes the authoring data already present in each Changeset', () => {
+    const changesetText = `---
+'@astryxdesign/core': minor
+'@astryxdesign/cli': minor
+---
+
+[breaking] Remove the old surface
+
+The old surface stops working; use the replacement.
+
+Migration: run the upgrade command.
+
+@person @other
+`;
+    const {plan} = fixture({withChangeset: true, changesetText});
+
+    expect(plan.schemaVersion).toBe(2);
+    expect(plan.changesets).toEqual([
+      {
+        path: '.changeset/in-cut.md',
+        sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+        packages: [
+          {name: '@astryxdesign/core', bump: 'minor'},
+          {name: '@astryxdesign/cli', bump: 'minor'},
+        ],
+        category: 'breaking',
+        headline: 'Remove the old surface',
+        contributors: ['person', 'other'],
+        body:
+          'The old surface stops working; use the replacement.\n\n' +
+          'Migration: run the upgrade command.',
+      },
+    ]);
+  });
+
+  it('fails closed when frozen authoring data is incomplete', () => {
+    const state = fixture({withChangeset: true});
+    const plan = {
+      ...state.plan,
+      changesets: [{...state.plan.changesets[0], headline: ''}],
+    };
+    const marker = buildMarker(plan);
+
+    expect(validate({...state, plan, marker})).toContain(
+      'plan has no headline for .changeset/in-cut.md',
+    );
+  });
+});
+
 describe('one branch per release lifecycle', () => {
   const identity = cutSha => ({
     version: '0.6.5',
@@ -131,7 +182,7 @@ describe('one branch per release lifecycle', () => {
 
     fs.writeFileSync(
       path.join(root, '.changeset/authorized-revision.md'),
-      'authorized revision',
+      "---\n'@astryxdesign/core': patch\n---\n\n[fix] Authorized revision\n@person\n",
     );
     writeAuthority(root, values, true);
     const revised = JSON.parse(
