@@ -61,6 +61,9 @@ Every knowledge record declares `authority: draft | current | archived`.
   normative design assets. When an eligible approver is also the PR author, they
   comment `/approve-spec <full-head-sha>`. Any new commit invalidates that
   approval.
+- A configured review app may relay an eligible owner's exact-head decision;
+  the gate counts it as that owner's command. `.github/REVIEW_GATE.md`
+  describes the relay.
 - Only `current` documents guide implementation and review.
 - A specification describes durable ideal behavior independently of any one pull
   request. Pull requests and issues may appear only as clearly non-authoritative
