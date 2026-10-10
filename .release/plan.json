@@ -6,11 +6,15 @@
   "changesets": [
     {
       "path": ".changeset/appshell-preserve-breakpoint-state.md",
-      "sha256": "08433d75fc916e2c7aba06ba75449687549cd7eed010f0de8051fa0e81f57751"
+      "sha256": "4e9863922338d6e7a9bb14849ccbc847d3f8a2bc09391fc2f0f973c99f766baa"
     },
     {
       "path": ".changeset/calm-colors-guide.md",
-      "sha256": "ba069d557efbdfb62ea7824365838080dae2b4df6f3cbfb0e8b6359845fc2166"
+      "sha256": "822bb7f03aa3c34b4df7a6cda71a445edaba4bb95779eb0f36f143a45dc42fcd"
+    },
+    {
+      "path": ".changeset/column-resize-coarse-pointer-keyboard.md",
+      "sha256": "d18417d965899c7655d0d6c1b2b02a08548fad2190fd1edca14b11d3e4f31cbf"
     },
     {
       "path": ".changeset/column-resize-hover-affordance.md",
@@ -18,47 +22,51 @@
     },
     {
       "path": ".changeset/daterangeinput-audit-semantics.md",
-      "sha256": "21c856e5b3bfa6562782f2dc57bcb2f36f1a3a55f53e9d6652b4ccda9c041821"
+      "sha256": "735226758fef5023ac6f5da8b234f44509c9a7cce1ebdc8e2e351d413301013a"
     },
     {
       "path": ".changeset/datetimeinput-controlled-empty-calendar.md",
-      "sha256": "c93d499f032c8d4a93e8c845f659b2f07a12260ab76e044f3d6c4fb64e603cd2"
+      "sha256": "ff45bfa7f92c3a26d72b3b445dc44baa53123895056d44dc7f9388e0eabbb2c1"
     },
     {
       "path": ".changeset/dropdown-menu-held-finger-lift.md",
-      "sha256": "c17b05ba44c77bf52581723a75a5a9eff5f20a226cd60f8044dd1f007f9373f2"
+      "sha256": "e05342e4bc2f2c15f3ae45b6ac643b9579fb2648e4d383a693361827b790bb77"
     },
     {
       "path": ".changeset/dropdown-menu-item-host-attributes.md",
-      "sha256": "ee4a9656e65f87e6b63a603ec42443776ddc6c6d6704edceb8cf0df329489150"
+      "sha256": "0f9c61592393d6fa94e52a69446d4d493ce5c9a9c77e2b8706aa05d6f3c47323"
     },
     {
       "path": ".changeset/dropdown-menu-link-row-no-drag.md",
-      "sha256": "810d6bf8f45e9a4b2a0af0a8bb3026d6b4103bea6a37b9481a8a2c79d2e1fe75"
+      "sha256": "bda03f51f0eacced361d063206e1d688194c8e30dec4d01780ea195616eb2038"
     },
     {
       "path": ".changeset/kbd-text-contrast-wcag-aa.md",
-      "sha256": "fff25257049eead0258de8de9c10ee450f338e0b55ddd85649756ddadc77e2a6"
+      "sha256": "e651aad352c72010f25b62eeefec9894b6489a0239fb2cb6d4c866da67f13d47"
     },
     {
       "path": ".changeset/layer-stops-stepper-connector-gap.md",
-      "sha256": "5fb7bd13749e2d5350f7a4780144d85a3dec44fa5cfc0fa3617a9b9919096b7c"
+      "sha256": "d070742930304cbba9272f6a926d0e7ca88c0b20566b6a8f51ae9353af976d1b"
     },
     {
       "path": ".changeset/markdown-fence-claims-before-code.md",
-      "sha256": "1df4db314896033fd50c47ffdca72e5ff7e667dddcb1ab7085e0988aff9a8d26"
+      "sha256": "7007d9db13429b8339ad3c45089f2af798d45c93c0103317bf4caf4a1c83d824"
     },
     {
       "path": ".changeset/markdown-source-lines.md",
-      "sha256": "accd70a7250dbfef66bd1acc6a11505dcbb9f8136e1e3170f5cebd472bcb8252"
+      "sha256": "8636d9cbd55d1f1a0624e2703e1815999e70a7f0c0a9a3a10a91c568bf2fc00c"
     },
     {
       "path": ".changeset/table-resize-handle-overshoot.md",
-      "sha256": "0958fd5e4df995bb7093714a6bbc87f6f8c050d78cd2cb77157952e312ebe6e8"
+      "sha256": "b603974ae36064977f3aa4de7756833eceb9ccb40078af6f0518f5b7f7897755"
+    },
+    {
+      "path": ".changeset/table-sticky-resize-position-collision.md",
+      "sha256": "a2f8ab96a348b1a0363ff3ed9d701af8c87c26b7cf1d188b6ee4264ef0427e69"
     },
     {
       "path": ".changeset/template-replaces-keywords-cli-floor.md",
-      "sha256": "4c5022939acd7141b9de39208fbadc2ee95cb61c4ccc16bff09a2b36303c5643"
+      "sha256": "b313d1bb12e3814ff453aeb30630ae62863a816897b442006055abbf191f33fb"
     }
   ]
 }
