@@ -271,3 +271,13 @@ export {
 // into its own canary-only package, @astryxdesign/richtext, so it can be canaried
 // independently by an adopting application. Import it from there:
 //   import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';
+
+// InputMask — masked text input for fixed-shape values (RFC facebook/astryx#4946)
+// Formats while typing through a `#`-digit pattern (phone, ZIP, SSN, card, …);
+// value and onChange carry raw digits only.
+export {
+  InputMask,
+  type InputMaskProps,
+  type InputMaskSize,
+  type MaskProp,
+} from './InputMask';
