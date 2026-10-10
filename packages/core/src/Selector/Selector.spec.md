@@ -62,6 +62,36 @@ connection between the closed trigger and its selection surface.
   editing affordances. `isDisabled` takes precedence when both are set.
 - `spec:AST-004/DEC-1` governs the state-derived indicator-space behavior in FR3.
 
+### DEP-0011 — Deprecate the `popover` default presentation
+
+| Field            | Value                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id               | `DEP-0011`                                                                                                                                                          |
+| cleanup          | `CLN-0020`                                                                                                                                                          |
+| package          | `@astryxdesign/core`                                                                                                                                                |
+| surface          | Default `presentation` of `Selector`, `MultiSelector`, and `DropdownMenu` with `items` (and `MoreMenu`, which forwards to it): the anchored popover on every device |
+| old contract     | With no `presentation`, the option or action list opens in an anchored, non-modal popover on every device                                                           |
+| replacement      | `presentation="popover"` keeps the anchored popover on every device; `adaptive` is released and already accepted                                                    |
+| direct authority | `component:Selector` DEC-1. Owners: `cixzhang`, `imdreamrunner`. `MultiSelector` and `DropdownMenu` have no current contract that sets this default                 |
+| warning          | Consumer docs and the release notes name `DEP-0011` and `presentation="popover"`. No runtime warning (`spec:AST-017` FR29)                                          |
+| migration        | Mechanical where the popover is wanted on every device: add `presentation="popover"`                                                                                |
+| codemod          | None by default: pinning `popover` everywhere would opt every caller out of the change. A preserving codemod is mechanical if an owner wants one                    |
+| downstream       | Guidance says to keep the default and pin `popover` only when product policy needs it                                                                               |
+| transition       | no prior transition                                                                                                                                                 |
+| state            | `proposed`                                                                                                                                                          |
+| open decision    | Current authority for the `MultiSelector` and `DropdownMenu` defaults                                                                                               |
+| target plan      | `CLN-0020` in the next minor release                                                                                                                                |
+
+### CLN-0020 — Selector, MultiSelector, and data-driven DropdownMenu default to `adaptive`
+
+| Field     | Value                                                                                                                                                                                                                                           |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id        | `CLN-0020`                                                                                                                                                                                                                                      |
+| lifecycle | `DEP-0011`                                                                                                                                                                                                                                      |
+| delta     | With no `presentation`, a compact coarse-pointer screen opens a modal bottom sheet (trigger `aria-haspopup="dialog"`, focus moves in and returns on close); every other device keeps the anchored popover. Compound DropdownMenus are unchanged |
+| rollback  | Restore the `popover` default from the final-patch baseline                                                                                                                                                                                     |
+| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0020`                                                                                                                                                                |
+
 ## Ownership boundary
 
 **Owns**

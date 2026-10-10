@@ -87,6 +87,38 @@ No repository design decision has approved this record yet. It distills motion
 intent from the public Design Conventions wiki without copying duration values,
 CSS properties, or audit mechanics.
 
+## Deprecation and cleanup records
+
+### DEP-0008 — Deprecate the default reveal motion of `useContainerReveal`
+
+| Field            | Value                                                                                                                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id               | `DEP-0008`                                                                                                                                                                             |
+| cleanup          | `CLN-0017`                                                                                                                                                                             |
+| package          | `@astryxdesign/core`                                                                                                                                                                   |
+| surface          | Default timing of `useContainerReveal`: a tokenized opacity fade on reveal, conceal, and layout-preserved variants, and a deferred `position` reset on the non-layout-preserved reveal |
+| old contract     | Every variant fades with token duration and easing; the non-layout-preserved reveal resets `position` after the fade                                                                   |
+| replacement      | Callers that want motion compose their own transition on the revealed content. `hoverDelay` remains the explicit pointer-intent gate                                                   |
+| direct authority | No contract record owns `useContainerReveal`; this record owns the motion rule it applies. Owners: `ernestt`, `cixzhang`                                                               |
+| warning          | Consumer docs and the release notes name `DEP-0008`. No runtime warning (`spec:AST-017` FR29)                                                                                          |
+| migration        | Non-mechanical: a caller that wants the fade adds its own transition                                                                                                                   |
+| codemod          | None: the fade has no prop to pin, and its tokenized timing is not caller source                                                                                                       |
+| downstream       | Hook docs and stories show the immediate default and `hoverDelay`                                                                                                                      |
+| transition       | no prior transition                                                                                                                                                                    |
+| state            | `proposed`                                                                                                                                                                             |
+| open decision    | The motion rule that makes frequent triggers immediate is draft here; it needs an approved decision and a direct owner for the hook                                                    |
+| target plan      | `CLN-0017` in the next minor release                                                                                                                                                   |
+
+### CLN-0017 — `useContainerReveal` changes state immediately by default
+
+| Field     | Value                                                                                                                                                   |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id        | `CLN-0017`                                                                                                                                              |
+| lifecycle | `DEP-0008`                                                                                                                                              |
+| delta     | All four variants change state with zero duration; the exit `position` delay is removed. `hoverDelay`, focus, and coarse-pointer behavior are unchanged |
+| rollback  | Restore the tokenized duration, easing, and exit delay from the final-patch baseline                                                                    |
+| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0017`                                                                        |
+
 ## Open questions
 
 - **OQ1 — Reference transitions.** Which component interactions should be the

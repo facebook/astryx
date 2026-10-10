@@ -44,6 +44,36 @@ layout, targets, or public API.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
+### DEP-0010 — Deprecate the fixed meaning of numeric `Grid` `columns`
+
+| Field            | Value                                                                                                                                                                                               |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id               | `DEP-0010`                                                                                                                                                                                          |
+| cleanup          | `CLN-0019`                                                                                                                                                                                          |
+| package          | `@astryxdesign/core`                                                                                                                                                                                |
+| surface          | `Grid` `columns={N}`, which renders exactly N equal tracks (`repeat(N, 1fr)`)                                                                                                                       |
+| old contract     | A numeric `columns` value is an explicit equal-width track count at every width                                                                                                                     |
+| replacement      | `columns={{count: N, isFixed: true}}` keeps exactly N tracks                                                                                                                                        |
+| direct authority | `component:Grid`, with `family:layout-primitives` representative matrix row "Grid / fixed columns". Owners: `cixzhang` (`component:Grid`); `cixzhang`, `imdreamrunner` (`family:layout-primitives`) |
+| warning          | Consumer docs and the release notes name `DEP-0010` and the fixed shape. No runtime warning (`spec:AST-017` FR29)                                                                                   |
+| migration        | Mechanical where the fixed count is wanted: rewrite `columns={N}` to `columns={{count: N, isFixed: true}}`. Keeping the number accepts the new reflow                                               |
+| codemod          | None yet. A preserving codemod is mechanical, but it would opt every caller out of the change it exists to deliver                                                                                  |
+| downstream       | In-repo fixed rows such as week rows use the fixed shape                                                                                                                                            |
+| transition       | no prior transition                                                                                                                                                                                 |
+| state            | `proposed`                                                                                                                                                                                          |
+| open decision    | This record is draft and lists new responsive behavior as a non-goal; the family matrix pins numeric columns as fixed. Both need an owner ruling                                                    |
+| target plan      | `CLN-0019` in the next minor release                                                                                                                                                                |
+
+### CLN-0019 — Numeric `columns` means at most N columns
+
+| Field     | Value                                                                                                                                                                                                 |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id        | `CLN-0019`                                                                                                                                                                                            |
+| lifecycle | `DEP-0010`                                                                                                                                                                                            |
+| delta     | A numeric `columns` value renders up to N columns of at least 12rem and fewer when the grid is narrower; a `GridSpan` in such a grid takes the full row once the grid has fewer columns than it spans |
+| rollback  | Restore `repeat(N, 1fr)` for numeric `columns` from the final-patch baseline                                                                                                                          |
+| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0019`                                                                                                                      |
+
 ## Ownership boundary
 
 **Owns**

@@ -519,6 +519,41 @@ The release uses a breaking 0.x minor with regeneration and consumer diagnostics
 Rejected: a legacy global-data mode. It would keep new artifacts on the behavior
 this decision removes and make runtime/static ownership mode-dependent.
 
+## Deprecation and cleanup records
+
+### IFIX-0009 — Themes stop emitting raw global data-color defaults
+
+| Field         | Value                                                                                                                                                                                                                                                       |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id            | `IFIX-0009`                                                                                                                                                                                                                                                 |
+| cleanup       | `CLN-0016`                                                                                                                                                                                                                                                  |
+| package       | `@astryxdesign/core`, `@astryxdesign/cli`                                                                                                                                                                                                                   |
+| surface       | The unscoped raw `:root` block of canonical data-color defaults that `Theme` runtime and `theme build` (standalone and family) emit for every theme                                                                                                         |
+| authority     | FR6 (concrete themes emit only explicitly authored data values), FR7 (theme build never emits raw global data defaults), and FR12 (availability follows StyleX use). Owners: `spec:AST-066`: `cixzhang`                                                     |
+| reproducer    | With the latest stable packages, a theme that authors no data colors emits every canonical data default in an unscoped root block, in runtime CSS and in `theme build` output                                                                               |
+| affected      | CSS that reads a raw data-color custom property directly, relying on a theme to define it, without compiling a `dataVars` consumer; and stale generated theme CSS checked into an app                                                                       |
+| matrix        | Theme with no authored data colors: every canonical default before; none after. Authored override: emitted before and after, scoped to its theme. StyleX `dataVars` consumers: same painted values before and after. Global `color-scheme` rules: unchanged |
+| coexistence   | The public `dataVars` group carries the canonical values before and after, so a consumer that reads `dataVars` gets the same values on both                                                                                                                 |
+| migration     | Read data colors through the public `dataVars` group, or author the needed values in the theme. Regenerate built theme CSS                                                                                                                                  |
+| codemod       | `astryx upgrade` runs a validator that reports direct raw consumers and stale generated CSS; the rewrite depends on whether the consumer compiles StyleX                                                                                                    |
+| downstream    | Maintained docs and templates read data colors through `dataVars`                                                                                                                                                                                           |
+| rollback      | Restore the raw default block in runtime and `theme build` output from the final-patch baseline                                                                                                                                                             |
+| harm of delay | Every theme keeps shipping a second global palette that survives without any consumer and can disagree with the canonical StyleX group                                                                                                                      |
+| harm of apply | CSS that reads a raw data variable without `dataVars` or an authored value paints with the variable unset until it migrates                                                                                                                                 |
+| transition    | no prior transition                                                                                                                                                                                                                                         |
+| state         | `proposed`                                                                                                                                                                                                                                                  |
+| open decision | None beyond approving this proposed record and its cleanup                                                                                                                                                                                                  |
+
+### CLN-0016 — Remove raw global data-color defaults from theme output
+
+| Field     | Value                                                                                                                                              |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id        | `CLN-0016`                                                                                                                                         |
+| lifecycle | `IFIX-0009`                                                                                                                                        |
+| delta     | Runtime and built themes emit only authored data values, scoped to their theme. Explicit layer order and global `color-scheme` rules are unchanged |
+| rollback  | Restore the raw default block from the final-patch baseline                                                                                        |
+| state     | `pending` — lands only in a minor release, once `IFIX-0009` is approved and that release's frozen manifest lists `CLN-0016`                        |
+
 ## Open questions
 
 None.
