@@ -13,7 +13,11 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import type {ComponentProps, ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Markdown} from './Markdown';
-import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
+import type {
+  MarkdownComponents,
+  MarkdownInlinePlugin,
+  MarkdownSourceLines,
+} from './Markdown';
 import type {ParseOptions} from './index';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
@@ -977,6 +981,7 @@ describe('Markdown', () => {
     expectTypeOf<MathRendererProps>().toEqualTypeOf<{
       value: string;
       display: 'inline' | 'block';
+      sourceLines?: MarkdownSourceLines;
     }>();
     expectTypeOf<ParseOptions>().toMatchTypeOf<{math?: boolean}>();
   });
