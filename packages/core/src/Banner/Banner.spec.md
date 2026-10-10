@@ -48,6 +48,35 @@ separately targetable surface. The status and content targets remain unchanged.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
+### DEP-0007 — Deprecate live-region roles derived from `status`
+
+| Field            | Value                                                                                                                                                                                                                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id               | `DEP-0007`                                                                                                                                                                                                                                                                         |
+| cleanup          | `CLN-0015`                                                                                                                                                                                                                                                                         |
+| package          | `@astryxdesign/core`                                                                                                                                                                                                                                                               |
+| surface          | Default ARIA role of `Banner`: `role="alert"` for `warning` and `error`, `role="status"` for `info` and `success`, derived from `status` when the caller passes no `role`                                                                                                          |
+| old contract     | Visual `status` selects the live-region role of the Banner root                                                                                                                                                                                                                    |
+| replacement      | A caller that announces an async outcome calls `useAnnounce` from the transition that produced it. A caller whose Banner is a persistent semantic mirror passes `role="status"`; genuinely urgent content passes `role="alert"`. Both explicit roles already reach the Banner root |
+| direct authority | `component:Banner`. Owners: `cixzhang`, `imdreamrunner`                                                                                                                                                                                                                            |
+| warning          | Consumer docs and the release notes name `DEP-0007` and the explicit `role` that keeps the released semantics. No runtime warning (`spec:AST-017` FR29)                                                                                                                            |
+| migration        | Mechanical where the released semantics are wanted: add `role="alert"` to `warning` and `error` Banners and `role="status"` to `info` and `success` Banners that pass no `role`. Moving an async announcement to `useAnnounce` is a caller decision                                |
+| codemod          | Preserving: adds the released role to Banners with a static `status` and no `role`                                                                                                                                                                                                 |
+| downstream       | Maintained docs teach `useAnnounce` for async outcomes and explicit `role` for persistent mirrors                                                                                                                                                                                  |
+| state            | `proposed`                                                                                                                                                                                                                                                                         |
+| open decision    | Banner FR and DEC entries that make `status` visual-only, and whether the deprecated state ships in a patch before the minor (`spec:AST-017` FR28)                                                                                                                                 |
+| target plan      | `CLN-0015` in the next minor release                                                                                                                                                                                                                                               |
+
+### CLN-0015 — Banner renders no live-region role by default
+
+| Field     | Value                                                                                                                                                                      |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id        | `CLN-0015`                                                                                                                                                                 |
+| lifecycle | `DEP-0007`                                                                                                                                                                 |
+| delta     | `Banner` renders no `role` and no `aria-live` unless the caller passes `role`. Visual status styling, icons, theming targets, and explicit `role` forwarding are unchanged |
+| rollback  | Restore the `status`-to-role map from the final-patch baseline                                                                                                             |
+| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0015`                                                                                           |
+
 ## Ownership boundary
 
 **Owns**

@@ -164,6 +164,37 @@ the one key a complete registry may omit.
 Rejected: a permanently optional `upload`, because it would be the only shared
 name a complete registry could leave out.
 
+## Deprecation and cleanup records
+
+### DEP-0012 — Deprecate complete `IconRegistry` types that omit `upload`
+
+| Field            | Value                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------- |
+| id               | `DEP-0012`                                                                                                    |
+| cleanup          | `CLN-0021`                                                                                                    |
+| package          | `@astryxdesign/core`                                                                                          |
+| surface          | The public `IconRegistry` type accepting a complete registry that omits `upload`                              |
+| old contract     | A complete registry typed as `IconRegistry` may omit `upload`; the omitted entry resolves the default artwork |
+| replacement      | Add an `upload` entry in the registry's own style; `IconRegistry` already accepts it                          |
+| direct authority | FR6 and DEC-3. Owners: `spec:AST-032`: `cixzhang`, `imdreamrunner`                                            |
+| warning          | Consumer docs and the release notes name `DEP-0012`. No runtime warning (`spec:AST-017` FR29)                 |
+| migration        | Non-mechanical: draw `upload` artwork in the registry's style                                                 |
+| codemod          | None: icon artwork is bespoke to each theme and cannot be synthesized                                         |
+| downstream       | The default registry, every bundled theme, and every CLI theme template supply `upload`                       |
+| state            | `deprecated`                                                                                                  |
+| open decision    | None beyond listing `CLN-0021` in the minor plan                                                              |
+| target plan      | `CLN-0021` in the next minor release, as FR6 schedules                                                        |
+
+### CLN-0021 — `IconRegistry` requires `upload`
+
+| Field     | Value                                                                                                        |
+| --------- | ------------------------------------------------------------------------------------------------------------ |
+| id        | `CLN-0021`                                                                                                   |
+| lifecycle | `DEP-0012`                                                                                                   |
+| delta     | `IconRegistry` is `Record<IconName, ReactNode>`: a complete registry that omits `upload` fails to type-check |
+| rollback  | Restore the transitional optional `upload` from the final-patch baseline                                     |
+| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0021`                             |
+
 ## Open questions
 
 None.
