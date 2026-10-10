@@ -31,7 +31,8 @@ import type {BaseProps} from '../BaseProps';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import selectorMessages from '../i18n/generated-locales/en/selector.generated';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {usePopover} from '../Popover/usePopover';
@@ -423,7 +424,7 @@ export function ComplexSelector<Value>({
   onClick: onClickProp,
   ...props
 }: ComplexSelectorProps<Value>) {
-  const t = useTranslator();
+  const t = useComponentTranslator(selectorMessages);
   const pressable = usePressFeedback();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');

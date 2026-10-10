@@ -27,7 +27,8 @@ import {useChatComposerContext} from './ChatContext';
 import type {BaseProps} from '../BaseProps';
 import {composeEventHandlers, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import chatSendButtonMessages from '../i18n/generated-locales/en/chatSendButton.generated';
 
 // =============================================================================
 // Types
@@ -78,7 +79,7 @@ const styles = stylex.create({
  * ```
  */
 export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
-  const t = useTranslator();
+  const t = useComponentTranslator(chatSendButtonMessages);
   const context = useChatComposerContext();
 
   const {

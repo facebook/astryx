@@ -193,7 +193,9 @@ import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {stableClassName} from '../naming';
-import {useLocale, useTranslator} from '../i18n';
+import {useLocale} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import dateInputMessages from '../i18n/generated-locales/en/dateInput.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface DateInputProps extends Omit<
@@ -495,7 +497,7 @@ function PointerDateField({
   ref,
   ...rest
 }: DateInputProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(dateInputMessages);
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =

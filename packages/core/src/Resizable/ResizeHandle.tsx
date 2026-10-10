@@ -48,7 +48,8 @@ import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {mergeProps, rtlStyles} from '../utils';
 import type {ResizableProps} from './useResizable';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import resizableMessages from '../i18n/generated-locales/en/resizable.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 const KEYBOARD_STEP = 10;
@@ -391,7 +392,7 @@ export function ResizeHandle({
   ref,
   ...props
 }: ResizeHandleProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(resizableMessages);
   const label = labelFromProps ?? t('@astryx.resizable.handle.label');
   const handleRef = useRef<HTMLDivElement>(null);
   // The pointer that owns the in-flight drag, plus the values its deltas are

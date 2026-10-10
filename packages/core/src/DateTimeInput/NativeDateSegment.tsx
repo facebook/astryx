@@ -29,7 +29,9 @@ import {hasEditableDateSegments} from '../DateInput/nativeDateSegments';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {Icon} from '../Icon';
-import {useLocale, useTranslator} from '../i18n';
+import {useLocale} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import dateInputMessages from '../i18n/generated-locales/en/dateInput.generated';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {
   focusOutlineStyles,
@@ -79,7 +81,7 @@ export function NativeDateSegment({
   statusType,
   ariaDescribedBy,
 }: NativeDateSegmentProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(dateInputMessages);
   const locale = useLocale();
   const isTouchPointer = useMediaQuery('(pointer: coarse)');
   const internalInputRef = useRef<HTMLInputElement | null>(null);

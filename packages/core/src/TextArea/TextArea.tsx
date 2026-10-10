@@ -56,7 +56,8 @@ import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {characterCount} from '../utils/characters';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import textAreaMessages from '../i18n/generated-locales/en/textArea.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 const COUNTER_WARNING_THRESHOLD = 0.8;
@@ -407,7 +408,7 @@ export function TextArea({
   ...rest
 }: TextAreaProps) {
   const size = useSize(sizeProp, 'md');
-  const t = useTranslator();
+  const t = useComponentTranslator(textAreaMessages);
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const announce = useAnnounce();
   const id = useId();

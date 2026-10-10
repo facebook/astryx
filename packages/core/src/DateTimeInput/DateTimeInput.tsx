@@ -95,7 +95,11 @@ import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {useLocale, useTranslator} from '../i18n';
+import {useLocale} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import dateInputMessages from '../i18n/generated-locales/en/dateInput.generated';
+import dateTimeInputMessages from '../i18n/generated-locales/en/dateTimeInput.generated';
+import timeInputMessages from '../i18n/generated-locales/en/timeInput.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
@@ -108,6 +112,13 @@ import {
   type PickerPresentation,
 } from '../utils/inputPresentation';
 import {useDevWarning} from '../hooks/useDevWarning';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {
+  ...dateInputMessages,
+  ...dateTimeInputMessages,
+  ...timeInputMessages,
+};
 export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
 };
@@ -628,7 +639,7 @@ function PointerDateTimeField({
 }: DateTimeInputProps & {
   nativeMode?: 'off' | 'adaptive' | 'forced' | 'legacy';
 }) {
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const locale = useLocale();
   const usesNativePicker = nativeMode !== 'off';
   // `forced` (`presentation="native"`, FR2): no Astryx fallback. `adaptive`

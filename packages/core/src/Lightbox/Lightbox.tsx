@@ -43,7 +43,8 @@ import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import lightboxMessages from '../i18n/generated-locales/en/lightbox.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 /**
@@ -321,7 +322,7 @@ export function Lightbox({
   onKeyDown: onKeyDownProp,
   ...props
 }: LightboxProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(lightboxMessages);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const mergedDialogRef = useMergedRefs(ref, dialogRef);
   const containerRef = useRef<HTMLDivElement>(null);

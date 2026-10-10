@@ -91,11 +91,17 @@ import {stableClassName} from '../naming';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import inputMessages from '../i18n/generated-locales/en/input.generated';
+import selectorMessages from '../i18n/generated-locales/en/selector.generated';
+import textInputMessages from '../i18n/generated-locales/en/textInput.generated';
 import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {SelectorBottomSheet} from './SelectorBottomSheet';
 import {useSelectorPresentation} from './useSelectorPresentation';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...inputMessages, ...selectorMessages, ...textInputMessages};
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -863,7 +869,7 @@ function filterOptionsByQuery(
 export function Selector<T extends SelectorOptionType>(
   props: SelectorProps<T>,
 ) {
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const pressable = usePressFeedback();
   const {
     label,

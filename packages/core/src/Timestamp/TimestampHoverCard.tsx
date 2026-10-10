@@ -30,7 +30,8 @@ import {HoverCard} from '../HoverCard';
 import {IconButton} from '../IconButton';
 import {Icon} from '../Icon';
 import {useClipboard} from '../hooks/useClipboard';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import timestampMessages from '../i18n/generated-locales/en/timestamp.generated';
 import {themeProps} from '../utils/themeProps';
 import {
   colorVars,
@@ -117,7 +118,7 @@ const COPY_FEEDBACK_MS = 1500;
  * of this machinery.
  */
 function CopyButton({value}: {value: string}) {
-  const t = useTranslator();
+  const t = useComponentTranslator(timestampMessages);
   const {copy, isCopied: copied} = useClipboard({
     announce: t('@astryx.timestamp.copied'),
     resetAfterMs: COPY_FEEDBACK_MS,

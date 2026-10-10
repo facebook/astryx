@@ -30,7 +30,8 @@ import {
 import {Button} from '../Button';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {rtlStyles} from '../utils';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import popoverMessages from '../i18n/generated-locales/en/popover.generated';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {mergeProps} from '../utils/mergeProps';
@@ -401,7 +402,7 @@ function usePopoverImplementation(
     isModal = true,
   } = options;
 
-  const t = useTranslator();
+  const t = useComponentTranslator(popoverMessages);
   const closeButtonLabel =
     closeButtonLabelFromProps ?? t('@astryx.popover.close');
 

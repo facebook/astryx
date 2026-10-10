@@ -36,7 +36,8 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import chatMessageMessages from '../i18n/generated-locales/en/chatMessage.generated';
 
 export interface ChatMessageProps extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLElement>;
@@ -177,7 +178,7 @@ export function ChatMessage({
   ref,
   ...rest
 }: ChatMessageProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(chatMessageMessages);
   const listContext = useChatListContext();
   const density = densityProp ?? listContext?.density ?? 'balanced';
 

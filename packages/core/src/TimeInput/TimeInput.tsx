@@ -73,7 +73,8 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useTooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import timeInputMessages from '../i18n/generated-locales/en/timeInput.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {NativeTimeSegment} from '../DateTimeInput/NativeTimeSegment';
@@ -409,7 +410,7 @@ function TimeField({
   ref,
   nativeMode = 'off',
 }: TimeInputProps & {nativeMode?: 'off' | 'adaptive' | 'forced' | 'legacy'}) {
-  const t = useTranslator();
+  const t = useComponentTranslator(timeInputMessages);
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');

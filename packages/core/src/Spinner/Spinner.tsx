@@ -4,7 +4,7 @@
 
 /**
  * @file Spinner.tsx
- * @input Uses React, i18n (useTranslator), StyleX, SVG rendering
+ * @input Uses React, i18n (useComponentTranslator), StyleX, SVG rendering
  * @output Exports Spinner component, SpinnerProps, SpinnerSize, SpinnerShade types
  * @position Core implementation of spinner loading indicator
  *
@@ -22,7 +22,8 @@ import {colorVars, durationVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
 import {mergeProps} from '../utils';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
@@ -509,7 +510,7 @@ export function Spinner({
   const arcLength = circumference * ARC_FRACTION;
   const hasLabel = label != null;
   const labelId = useId();
-  const t = useTranslator();
+  const t = useComponentTranslator(spinnerMessages);
 
   // When a visible string label renders (and no explicit aria-label is set),
   // name the status element from the visible Text via aria-labelledby instead

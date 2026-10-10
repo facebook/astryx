@@ -71,7 +71,8 @@ import {composeEventHandlers, isRenderable, mergeProps} from '../utils';
 import type {Elevation} from '../utils/types';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import bannerMessages from '../i18n/generated-locales/en/banner.generated';
 import type {BannerStatusMap, BannerContainerMap} from './index';
 
 // =============================================================================
@@ -469,7 +470,7 @@ export function Banner({
   onPointerDownCapture,
   ...rest
 }: BannerProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(bannerMessages);
   const [isDismissed, setIsDismissed] = useState(false);
   // The disclosure state machine is the shared one — Banner owns no collapse
   // state of its own. `collapsible={false}` disables it, and that is what

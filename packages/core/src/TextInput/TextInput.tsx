@@ -111,7 +111,8 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import textInputMessages from '../i18n/generated-locales/en/textInput.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 export type TextInputType = 'text' | 'password' | 'email';
@@ -314,7 +315,7 @@ export function TextInput({
   ref,
   ...rest
 }: TextInputProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(textInputMessages);
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const size = useSize(sizeProp, 'md');
 

@@ -25,7 +25,8 @@ import {
 import {Badge} from '../Badge';
 import {Button} from '../Button';
 import {HoverCard} from '../HoverCard';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import chatMessages from '../i18n/generated-locales/en/chat.generated';
 
 // =============================================================================
 // Types
@@ -89,7 +90,7 @@ export function ChatPastedTextToken({
   text,
   onExpand,
 }: ChatPastedTextTokenProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(chatMessages);
   const label = formatLabel(text);
 
   const cardContent = (

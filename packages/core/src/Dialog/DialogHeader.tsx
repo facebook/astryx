@@ -28,7 +28,8 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useDialogContext} from './DialogContext';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import dialogMessages from '../i18n/generated-locales/en/dialog.generated';
 
 const styles = stylex.create({
   container: {
@@ -159,7 +160,7 @@ export function DialogHeader({
   ref,
   ...rest
 }: DialogHeaderProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(dialogMessages);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const dialogContext = useDialogContext();
   const shouldAutoFocus = dialogContext?.isInline !== true;

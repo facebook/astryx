@@ -4,7 +4,7 @@
 
 /**
  * @file Button.tsx
- * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator)
+ * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useComponentTranslator)
  * @output Exports Button component, ButtonProps, ButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
  *
@@ -52,7 +52,8 @@ import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import buttonMessages from '../i18n/generated-locales/en/button.generated';
 import type {ButtonVariantMap} from './index';
 
 /**
@@ -573,7 +574,7 @@ export function Button({
   ...props
 }: ButtonProps): ReactNode {
   const pressFeedback = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(buttonMessages);
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
 

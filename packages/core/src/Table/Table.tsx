@@ -33,7 +33,8 @@ import type {
   TableRenderProps,
 } from './types';
 import type {StyleXStyles} from '../theme/types';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import tableMessages from '../i18n/generated-locales/en/table.generated';
 
 // =============================================================================
 // Table Types
@@ -150,7 +151,7 @@ function TableScrollWrapper({
   beforeTable?: React.ReactNode;
   afterTable?: React.ReactNode;
 }) {
-  const t = useTranslator();
+  const t = useComponentTranslator(tableMessages);
   const label = t('@astryx.table.label');
   const {getViewportProps, getContentProps, state} = useScrollableArea({
     axis: 'inline',

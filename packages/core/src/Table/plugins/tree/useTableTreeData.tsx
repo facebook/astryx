@@ -4,7 +4,7 @@
 
 /**
  * @file useTableTreeData.tsx
- * @input React, StyleX, Icon, Table types, theme tokens, i18n (useTranslator)
+ * @input React, StyleX, Icon, Table types, theme tokens, i18n (useComponentTranslator)
  * @output Exports useTableTreeData hook + config/meta types
  * @position Tree plugin; consumed by Table via plugins prop.
  *   Pairs with useTableTreeState (owns expansion state + flattening).
@@ -53,7 +53,8 @@ import type {
   BodyRowRenderProps,
   HeaderCellRenderProps,
 } from '../../types';
-import {useTranslator} from '../../../i18n';
+import {useComponentTranslator} from '../../../i18n/useComponentTranslator';
+import tableTreeMessages from '../../../i18n/generated-locales/en/tableTree.generated';
 
 // =============================================================================
 // Types
@@ -322,7 +323,7 @@ function TreeExpander({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
-  const t = useTranslator();
+  const t = useComponentTranslator(tableTreeMessages);
   return (
     <button
       type="button"
@@ -370,7 +371,7 @@ function TreeExpandAllToggle({
   onExpandAll: () => void;
   onCollapseAll: () => void;
 }) {
-  const t = useTranslator();
+  const t = useComponentTranslator(tableTreeMessages);
   const allExpanded = isAllExpanded === true;
   return (
     <button

@@ -43,7 +43,8 @@ import {ResizeHandle} from '../Resizable/ResizeHandle';
 import {themeProps} from '../utils/themeProps';
 import {SizeProvider} from '../SizeContext/SizeContext';
 import {useDevWarning} from '../hooks/useDevWarning';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import sideNavMessages from '../i18n/generated-locales/en/sideNav.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
@@ -421,7 +422,7 @@ export function SideNav({
   handleRef,
   ...props
 }: SideNavProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(sideNavMessages);
   // Parse collapsible prop
   const collapsibleConfig = typeof collapsible === 'object' ? collapsible : {};
   const hasCollapseButton = collapsibleConfig.hasButton ?? true;
