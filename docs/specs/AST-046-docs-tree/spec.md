@@ -158,7 +158,9 @@ and references from other packages are an open question (OQ2).
   one. A typed doc MUST also match by its own name, and a doc part by each
   identifier it defines or names in code (`assertResponse`,
   `ERR_UNKNOWN_SECTION`). A docs-only search (`--type doc`) MUST NOT need
-  `@astryxdesign/core`, because `astryx docs` does not.
+  `@astryxdesign/core`, because `astryx docs` does not. Matching a query word
+  against a word of a title, a name, or a route segment MUST treat the singular
+  and plural forms of a word as the same word.
 - **FR11 — Integrations join the tree.** A configured integration MAY ship
   namespace docs, and guides with `placement`, in its docs directory. The tree
   MUST read them beside the CLI's own, identify each node by the integration's
@@ -238,6 +240,17 @@ and references from other packages are an open question (OQ2).
   no page. The docsite build MUST fail when a slug is both a page and a
   redirect, or both a flat topic and a namespace page.
 
+- **FR15 — A new guide is findable when it ships.** A change to the CLI's
+  docs that adds a topic or guide, or changes one's title or keywords, MUST
+  record what `astryx search` returns for its title, the singular and plural
+  forms of its title, each of its keywords, and at least three phrases a reader
+  would type for the task it answers, chosen before the results are read. The
+  doc MUST be the first result for its title and among the first three results
+  for every other recorded query. When a query misses, the change MUST either
+  change the doc's title or keywords until every recorded query meets these
+  ranks, or name the search rule that keeps the doc out; a named rule MUST be
+  fixed before the doc ships.
+
 ### Platform support
 
 - Supported feature/engine floor: every supported CLI runtime.
@@ -282,11 +295,12 @@ Phase 1 changes these surfaces:
 | FR5, FR6, FR7 | `docs()` dispatcher tests and CLI runs                                        | `cli`, `cli/api`, one function, the placed guide and its sections, the old name, a typo route; a section on a namespace that one guide, no guide, and two guides hold | A namespace that inlines grandchildren, a lost section read, a section read that picks one of two guides, or a wrong error code                                                          |
 | FR8           | Doctor tests                                                                  | this repo; a fixture tree with a broken placement                                                                                                                     | A broken tree or an unplaced CLI doc that passes                                                                                                                                         |
 | FR9           | Real-tree tests and the route inventory                                       | every command, function, schema, and enum doc; every exported API function                                                                                            | A CLI typed doc without its route, or a route inventory row the tree contradicts                                                                                                         |
-| FR10          | Search tests and CLI runs                                                     | a guide section; a typed doc by its own name; an error code; a topic hit; no core installed                                                                           | A section hit whose command reads the whole topic, or a docs-only search that needs core                                                                                                 |
+| FR10          | Search tests and CLI runs                                                     | a guide section; a typed doc by its own name; an error code; a topic hit; no core installed; a title word and a route segment queried in singular and in plural       | A section hit whose command reads the whole topic, a docs-only search that needs core, or a singular or plural query that misses a doc its other form finds                              |
 | FR11          | Integration tree tests                                                        | a namespace and two placed guides from a package whose provider id differs from its name; a broken link; a claim on the `cli` route                                   | A node named by the package name, a broken link that passes either doctor, or an integration that takes a CLI route                                                                      |
 | FR12          | `docs()` tests, the graph walk, and search tests                              | the level and its children in list order; a topic's Up, Previous, and Next; a flat topic hit's parent; an integration's flat topic                                    | A flat topic without a home, a topic whose name changes, or a level that lists a placed guide                                                                                            |
 | FR13          | Split tests over the topic before and after, the graph walk, and search tests | each old section key read through the namespace; a link and a token reference to the old topic; a `--dense` read; the topic list and a search for one section         | A dropped, merged, or copied section; a changed title or `id`; a reference left on the old identity; a name listed twice; a section found twice                                          |
 | FR14          | Docsite page-generation and route-resolution tests                            | a split namespace; a nested namespace; a package-page namespace; a namespace with a `category`, and one whose guides are all foundations docs; the Unorganized level  | An old address that stops resolving or lands in another sidebar group, a permanent guide redirect, a guide page on a non-package namespace, or a slug that is both a page and a redirect |
+| FR15          | The change's recorded search results                                          | a new topic or guide; a changed title or keyword; the title in singular and plural; each keyword; three reader phrases                                                | A new topic or guide with no recorded search, a title query that does not find it first, or another recorded query that does not find it in the first three                              |
 
 ## Decision log
 
