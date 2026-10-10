@@ -24,6 +24,7 @@ import {
   MultiSelector,
   type MultiSelectorHandle,
   type MultiSelectorChange,
+  type MultiSelectorCreateOption,
 } from './MultiSelector';
 import {useRef} from 'react';
 import {Icon} from '../Icon';
@@ -4206,5 +4207,157 @@ describe('MultiSelector create row inside a grid', () => {
       type: 'create',
       query: 'Urgent',
     });
+  });
+});
+
+describe('MultiSelector renderCreateOption', () => {
+  const OPTIONS = [
+    {value: 'bug', label: 'Bug'},
+    {value: 'feature', label: 'Feature'},
+  ];
+
+  it('renders the caller content in the create row, which stays a plain option', async () => {
+    const user = userEvent.setup();
+    const renderCreateOption = vi.fn(({label}: MultiSelectorCreateOption) => (
+      <>
+        <span data-testid="swatch" aria-hidden="true">
+          ●
+        </span>
+        {label}
+      </>
+    ));
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasCreate
+        renderCreateOption={renderCreateOption}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    await user.type(screen.getByRole('combobox', h), 'Urgent');
+
+    // Named by its rendered text; the aria-hidden swatch is left out.
+    const row = screen.getByRole('option', {name: 'Create "Urgent"', ...h});
+    expect(within(row).getByTestId('swatch')).toBeInTheDocument();
+    expect(row).toHaveAttribute('aria-selected', 'false');
+    expect(row.querySelector('input[type="checkbox"]')).toBeNull();
+    expect(renderCreateOption).toHaveBeenLastCalledWith({
+      query: 'Urgent',
+      label: 'Create "Urgent"',
+    });
+  });
+
+  it('is picked as before, and renderOption still never sees it', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const renderOption = vi.fn((option: {value: string; label?: string}) => (
+      <span>{`row:${option.label}`}</span>
+    ));
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+        hasSearch
+        hasCreate
+        renderOption={renderOption}
+        renderCreateOption={({query}) => <span>{`New label ${query}`}</span>}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    await user.type(screen.getByRole('combobox', h), 'Bu');
+
+    const options = screen.getAllByRole('option', h);
+    expect(options.map(option => option.textContent)).toEqual([
+      'New label Bu',
+      'row:Bug',
+    ]);
+    expect(
+      renderOption.mock.calls.every(
+        ([option]) => option.value === 'bug' || option.value === 'feature',
+      ),
+    ).toBe(true);
+
+    await user.click(options[0]);
+    expect(onChange).toHaveBeenCalledWith(['Bu'], {
+      type: 'create',
+      query: 'Bu',
+    });
+  });
+
+  it('announces the text the content renders when the row is the only result', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasCreate
+        renderCreateOption={({query}) => (
+          <>
+            <span aria-hidden="true">●</span>
+            {`New label “${query}”`}
+          </>
+        )}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    await user.type(screen.getByRole('combobox', h), 'Urgent');
+    // The region says what the row says, not the default label it replaced.
+    await waitFor(() => {
+      expect(politeRegion()?.textContent).toBe('New label “Urgent”');
+    });
+  });
+
+  it('renders the same content in the bottom sheet', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+        hasCreate
+        presentation="bottom-sheet"
+        renderCreateOption={({query}) => <span>{`New label ${query}`}</span>}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const sheet = await screen.findByRole('dialog', {name: 'Labels'});
+    await user.type(within(sheet).getByRole('combobox'), 'Urgent');
+    expect(within(sheet).getByRole('option')).toHaveTextContent(
+      'New label Urgent',
+    );
+  });
+
+  it('warns in development when set without hasCreate', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+          hasSearch
+          renderCreateOption={({label}) => label}
+        />,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /MultiSelector[\s\S]*renderCreateOption[\s\S]*hasCreate/,
+        ),
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

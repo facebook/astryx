@@ -287,6 +287,12 @@ export const docs = {
           default: 'false',
         },
         {
+          name: 'renderCreateOption',
+          type: '(createOption: MultiSelectorCreateOption) => ReactNode',
+          description:
+            'Content for the hasCreate row in place of its default `Create "<query>"` text, such as a swatch of the colour the new option will get beside that text. Receives {query, label}: the trimmed query and the default text. The row stays a plain option and renderOption never sees it; its accessible name, and the announcement when it is the only result, are the text this content renders. Without hasCreate it warns in development.',
+        },
+        {
           name: 'isDisabled',
           type: 'boolean',
           description: 'Disables the selector.',
@@ -504,6 +510,8 @@ export const docsZh = {
         emptySearchText: '搜索查询未匹配到任何选项时，下拉面板中显示的内容。',
         hasCreate:
           '配合 hasSearch：当输入的文本与任何选项标签都不匹配时，在列表首行提供“创建 "<query>"”行；选中后通过 onChange 以 {type: "create", query} 描述符报告，调用方需在同一次更新中添加该选项。',
+        renderCreateOption:
+          'hasCreate 行的内容，替代默认的“创建 "<query>"”文本，例如在文本旁显示新选项将获得的颜色。接收 {query, label}：去除首尾空格的查询和默认文本。该行仍是普通选项，renderOption 不会收到它；其无障碍名称以及作为唯一结果时的播报都是该内容渲染出的文本。未设置 hasCreate 时在开发环境中发出警告。',
         isDisabled: '禁用选择器。',
         isReadOnly:
           '将选择器设为只读：保留当前值、焦点顺序和表单提交，但移除选择面板、清除操作和展开指示器。与 isDisabled 不同，只读控件不会变暗；两者同时设置时 isDisabled 优先。',
@@ -653,6 +661,8 @@ export const docsDense = {
         emptySearchText: 'panel content when the query matches nothing',
         hasCreate:
           'with hasSearch: first row is Create "<query>" when no option label matches; reported through onChange with a {type: "create", query} descriptor; caller adds the option',
+        renderCreateOption:
+          'content for the hasCreate row instead of Create "<query>"; gets {query, label}; stays a plain option; its rendered text is its name and announcement; warns without hasCreate',
         isDisabled: 'disables selector',
         isReadOnly:
           'read-only: preserves values, focus + form submission; removes menu, clear + disclosure',

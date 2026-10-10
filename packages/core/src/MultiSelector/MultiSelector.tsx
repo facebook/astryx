@@ -556,6 +556,16 @@ export type MultiSelectorChange = {
   query: string;
 };
 
+/**
+ * What `renderCreateOption` receives for the create row `hasCreate` offers.
+ */
+export interface MultiSelectorCreateOption {
+  /** The trimmed query, which picking the row appends to `value`. */
+  query: string;
+  /** The row's default content: the localized `Create "<query>"` text. */
+  label: string;
+}
+
 export interface MultiSelectorSelectedItem {
   value: string;
   label: string;
@@ -784,6 +794,29 @@ export interface MultiSelectorProps<
   hasCreate?: boolean;
 
   /**
+   * Content for the create row `hasCreate` offers, in place of its default
+   * `Create "<query>"` text: a swatch of the colour the new option will get,
+   * say, beside that text. Receives the trimmed query and the default text,
+   * so the row keeps its words in every locale. The row stays a plain
+   * option (no checkbox, never selected, picked as before), and
+   * `renderOption` still never sees it. Its accessible name is the text this
+   * content renders, and when it is the only result that text, `aria-hidden`
+   * parts left out, is what the live region announces. Setting this without
+   * `hasCreate` warns in development.
+   *
+   * @example
+   * ```
+   * renderCreateOption={({label}) => (
+   *   <>
+   *     <span aria-hidden="true" style={{color: nextColor}}>●</span>
+   *     {label}
+   *   </>
+   * )}
+   * ```
+   */
+  renderCreateOption?: (createOption: MultiSelectorCreateOption) => ReactNode;
+
+  /**
    * How to display selected items in the trigger.
    * - 'count': "3 selected"
    * - 'labels': "Name, Email, +3"
@@ -1006,6 +1039,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   emptyText: emptyTextFromProps,
   emptySearchText: emptySearchTextFromProps,
   hasCreate = false,
+  renderCreateOption,
   triggerDisplay = 'count',
   formatValue,
   maxBadges = 3,
@@ -1052,6 +1086,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const searchId = useId();
   // Read by the live region above so it speaks what this element renders.
   const emptyStateRef = useRef<HTMLDivElement>(null);
+  // The create row, read the same way when its content is the caller's.
+  const createRowRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
@@ -1134,6 +1170,22 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       );
     }
   }, [hasCreate, hasSearch]);
+
+  // Content for a row that is never offered renders nothing; say so too.
+  const hasCreateOptionContent = renderCreateOption != null;
+  useEffect(() => {
+    if (
+      hasCreateOptionContent &&
+      !hasCreate &&
+      process.env.NODE_ENV !== 'production'
+    ) {
+      devWarn(
+        'MultiSelector',
+        '`renderCreateOption` needs `hasCreate`: it renders the create row, ' +
+          'and without `hasCreate` no create row is offered.',
+      );
+    }
+  }, [hasCreate, hasCreateOptionContent]);
 
   // Announce selection-count changes politely (comboboxes-7 announce path).
   // Toggling options / select-all previously produced no audible feedback.
@@ -1421,10 +1473,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         if (nextCreateQuery != null) {
           // The create row is the one result on screen, so the panel is not
           // empty and the rendered-message route below stays silent; say the
-          // row.
-          announce(
-            t('@astryx.multiSelector.createOption', {query: nextCreateQuery}),
-          );
+          // row. Caller content is announced from the row itself once it has
+          // rendered (below), so the region says what the row says.
+          if (!hasCreateOptionContent) {
+            announce(
+              t('@astryx.multiSelector.createOption', {query: nextCreateQuery}),
+            );
+          }
           return;
         }
         // The empty panel is announced from the rendered message below, not
@@ -1435,7 +1490,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       }
       announce(t('@astryx.multiSelector.resultCount', {count}));
     },
-    [announce, isLoading, selectableItems, getCreateQuery, t],
+    [
+      announce,
+      isLoading,
+      selectableItems,
+      getCreateQuery,
+      hasCreateOptionContent,
+      t,
+    ],
   );
 
   // The panel's empty message is role="presentation" — role="listbox" permits
@@ -1461,6 +1523,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const isPanelEmpty =
     surface.isOpen && !isLoading && realItemCount === 0 && !hasCreateRow;
   useAnnounceRenderedText(emptyStateRef, isPanelEmpty, searchQuery);
+  // A create row carrying caller content is named by the text it renders,
+  // so that text, not the default label, is what the region says when the
+  // row is the only result (`spec:AST-056` AR1).
+  const isCreateRowAlone =
+    surface.isOpen &&
+    hasCreateOptionContent &&
+    hasCreateRow &&
+    realItemCount === 0;
+  useAnnounceRenderedText(createRowRef, isCreateRowAlone, searchQuery);
 
   // Handle toggle
   // Clear all selected values. Shared by the clear button and the keyboard
@@ -1863,7 +1934,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       const isHighlighted = flatIndex === highlightedIndex;
       const isSelectAll = item.value === SELECT_ALL_VALUE;
       // The create row is a plain labelled option: no checkbox, never
-      // selected, and the caller's `renderOption` does not see it.
+      // selected, and the caller's `renderOption` does not see it. Its
+      // content is the default label or what `renderCreateOption` returns.
       const isCreate = isCreateValue(item.value);
       const isSelected = isSelectAll
         ? allEnabledSelected
@@ -1893,16 +1965,25 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         </div>
       );
 
+      let rowContent: ReactNode;
+      if (isCreate && renderCreateOption != null) {
+        rowContent = renderCreateOption({
+          query: item.value.slice(CREATE_VALUE_PREFIX.length),
+          label: item.label ?? '',
+        });
+      } else if (renderOption && !isSelectAll && !isCreate) {
+        rowContent = renderOption(item);
+      } else {
+        rowContent = (
+          <span {...stylex.props(styles.itemLabel)}>
+            {item.label ?? item.value}
+          </span>
+        );
+      }
       const content = (
         <>
           {indicatorPosition === 'start' && checkbox}
-          {renderOption && !isSelectAll && !isCreate ? (
-            renderOption(item)
-          ) : (
-            <span {...stylex.props(styles.itemLabel)}>
-              {item.label ?? item.value}
-            </span>
-          )}
+          {rowContent}
           {indicatorPosition === 'end' && checkbox}
         </>
       );
@@ -1915,6 +1996,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       return (
         <div
           key={item.value}
+          ref={isCreate ? createRowRef : undefined}
           id={getItemId(flatIndex)}
           role={isGrid ? 'row' : 'option'}
           aria-selected={isSelected}
@@ -1999,6 +2081,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       highlightedCell,
       getActionCellId,
       renderOption,
+      renderCreateOption,
       indicatorPosition,
       highlightedIndex,
       optimisticValue,

@@ -63,6 +63,8 @@ behavior.
   creation; a one-argument handler keeps working. When `hasCreate` is omitted,
   DOM, styling, targets, keyboard behavior, announcements, and the callback's
   calls are unchanged.
+- `renderCreateOption` is additive and absent by default; without it the create
+  row renders and announces its `Create "<query>"` text exactly as before.
 - Controlled/uncontrolled behavior: unchanged. Open state stays owned by the
   component; `handleRef` drives it and `onOpenChange` reports it.
 - Migration decision: none
@@ -108,6 +110,7 @@ syntax and examples remain in `MultiSelector.doc.mjs`.
 | read-only state | `false`, `true`                 | Preserves and submits values without selection affordance                                           | Closed trigger                                              | `false` | Caller | additive  | Boolean normalization                                        |
 | anchored mode   | `renderTrigger` absent, present | Caller-rendered control replaces Field shell and Trigger; panel anchored to it and named by `label` | Pointer popup and Touch sheet                               | absent  | Caller | additive  | Render prop must return the control carrying the given props |
 | create row      | `hasCreate` `false`, `true`     | First row minting the typed query, reported through `onChange` as `{type: 'create', query}`         | Search mode, query matching no option label, options loaded | `false` | Caller | additive  | Without `hasSearch`: development warning, nothing offered    |
+| create content  | absent, present                 | Caller content in place of the create row's text (`renderCreateOption`), given `{query, label}`     | Create row                                                  | absent  | Caller | additive  | Without `hasCreate`: development warning, nothing rendered   |
 
 ## Behavioral and layout contract
 
@@ -124,6 +127,7 @@ syntax and examples remain in `MultiSelector.doc.mjs`.
 | FR9           | With `hasSearch` and `hasCreate`, once options have loaded, a `Create "<query>"` row leads the list when the trimmed query equals no option label under the search's own case-insensitive matching. Picking it, or Enter with nothing highlighted, calls `onChange` with the query appended to the value and a `{type: 'create', query}` descriptor, clears the search, and announces the creation; every other change passes no descriptor. The row has no checkbox, is never selected, is excluded from select-all and from `renderOption`, and is announced instead of the empty message when it is the only result. While `isLoading`, no row is offered and Enter commits nothing. `hasCreate` without `hasSearch` warns in development and offers nothing.                                                                                                                                                                               | `spec:AST-056` FR5 / DEC-3, `component:Tokenizer` `hasCreate`, docs, and tests                    | Proposed; awaiting owner approval                  |
 | option action | `action` absent, present                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | The option's secondary control as one node; the popup is a grid of rows pairing option and action | Pointer popup and Touch sheet                      | absent | Caller | additive | `null` is none; a control without a name warns in development |
 | FR10          | Once any declared option — at any depth of sections, before any query filters it — carries an `action`, the popup is a `role="grid"` and stays one while mounted; the trigger advertises `aria-haspopup="grid"` (the bottom sheet keeps `dialog`). Each option, the select-all row included, is a `role="row"` carrying the option's id, `aria-selected` and `aria-disabled`, with exactly two `gridcell` children: the option's content, then its action or an empty cell. A section is a `rowgroup` named by its title. Pressing the option cell toggles; pressing the action fires the caller's control and nothing else. Up/Down move rows onto the option cell; the inline-end arrow moves to the action cell and the inline-start arrow back, following visual direction under RTL; Enter on the action cell activates the control. `aria-activedescendant` names the row or the action cell. No control inside the popup is a tab stop. | `spec:AST-058` FR1–FR8, AR1–AR4                                                                   | Proposed; awaiting owner approval                  |
+| FR11          | With `renderCreateOption`, the create row's content is what it returns for `{query, label}`, the trimmed query and the default `Create "<query>"` text, in place of that text. The row keeps FR9's behavior: no checkbox, never selected, picked by click or Enter, never passed to `renderOption`. Its accessible name is its rendered text, and when it is the only result the polite live region announces that text with `aria-hidden` parts left out. `renderCreateOption` without `hasCreate` warns in development.                                                                                                                                                                                                                                                                                                                                                                                                                      | DEC-3, `spec:AST-056` AR1, docs, and tests                                                        | Proposed; awaiting owner approval                  |
 
 ### Allowed variation
 
@@ -181,7 +185,9 @@ so an anchor that cannot take focus still leaves a keyboard path.
 The create row is a `role="option"` with `aria-selected="false"` and no
 checkbox indicator. When it is the only result, the polite live region
 announces its label rather than the empty-search message, so what is announced
-matches what is on screen; picking it announces the creation.
+matches what is on screen; picking it announces the creation. With
+`renderCreateOption`, the row's name and that announcement are the text the
+caller's content renders.
 
 ## Design relationships
 
@@ -300,6 +306,7 @@ empty-state content remains one shared tree.
 | FR9                 | `MultiSelector.test.tsx` "hasCreate" suite; `CreateRow.a11y.chromium.spec.ts` appear/disappear cycle                                     | Create row offered, committed by click/Enter with descriptor, skipped on a case-insensitive exact match, offered for a label the filter cannot surface, absent while loading, beside select-all; toggle without descriptor; warning without search | The row appears while loading or for an existing label, reports without a descriptor, keeps the search text, is silently inert without search, or the live region says "no results" beside a create row.                                                                       | `audit:MultiSelector/accessibility` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                            | Canonical anatomy and current local targets                                                                                                                                                                                                        | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                                                                                                                                                                     | `audit:MultiSelector/theming`       |
 | FR10                | `MultiSelector.test.tsx` "option actions (grid)" suite; `OptionActions.a11y.chromium.spec.ts`; `Selector.test.tsx` non-adoption case     | No action; `action: null`; action inside a section; filtered out; removed later; options after loading; click cell vs action; disabled option with action; arrows LTR/RTL; search Left/Right; hover; Tab; unnamed control                          | A grid with no declared action, a listbox with one, a role that follows the filtered view, a row with other than two cells, a `group` in a grid, a toggle on an action press, an action unreachable by arrow, a tab stop inside the popup, or an action absent at rest, fails. | `audit:MultiSelector/accessibility` |
+| FR11                | `MultiSelector.test.tsx` "renderCreateOption" suite                                                                                      | Caller content beside an aria-hidden swatch; only result; partial matches with `renderOption`; picked by click; bottom sheet; without `hasCreate`                                                                                                  | The row drops the caller content, gains a checkbox, reaches `renderOption`, announces the default label over the rendered text, or is silently inert without `hasCreate`.                                                                                                      | `audit:MultiSelector/accessibility` |
 
 Existing component tests directly assert the Trigger, Indicator icon, Search row,
 Option row, Section heading, Empty state, and Pointer popup targets. Presentation
@@ -336,6 +343,18 @@ owner evidence rather than new MultiSelector targets.
   row while loading (mints duplicates); a diacritic-folding duplicate rule
   beside a case-only filter (hides `Café` from `CAFE` and refuses to create
   it — the two rules widen together under `spec:AST-056` FR4 or not at all).
+
+  **Decider:** pending owner review
+
+- **DEC-3 — The create row's content is a render prop of its own.** A product
+  that deals each new option a colour shows that colour on the create row
+  before the option exists, and only the caller knows it. `renderCreateOption`
+  receives the query and the default text, so the row keeps its words in
+  every locale, and its name follows `renderOption` and `renderTrigger`.
+  `hasCreate` stays the one switch (`spec:AST-056` FR5). Rejected: calling
+  `renderOption` for the create row (every existing `renderOption` would
+  receive a synthetic option it never handled); an icon-only prop (fits one
+  glyph, not a row a product words its own way).
 
   **Decider:** pending owner review
 
