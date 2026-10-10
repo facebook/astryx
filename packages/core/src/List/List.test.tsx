@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {rulesDeclaredFor} from '../__tests__/pressState';
 import {List} from './List';
@@ -957,7 +957,7 @@ describe('List and swipe actions', () => {
     expect(rules.some(r => /overflow[-a-z]*: hidden/.test(r))).toBe(false);
   });
 
-  it('passes swipeActions and swipeBehavior through to the row unchanged', () => {
+  it('passes swipeActions and swipeBehavior through to the row unchanged', async () => {
     render(
       <List>
         <ListItem
@@ -971,8 +971,12 @@ describe('List and swipe actions', () => {
     const row = screen.getByTestId('row');
     expect(row.tagName).toBe('LI');
     expect(row.parentElement).toBe(screen.getByRole('list'));
-    const panel = row.querySelector('[data-swipe-panel="trailing"]');
-    expect(panel).not.toBeNull();
+    // The panel arrives with the lazily loaded swipe layer.
+    const panel = await waitFor(() => {
+      const found = row.querySelector('[data-swipe-panel="trailing"]');
+      expect(found).not.toBeNull();
+      return found;
+    });
     // Commit: presentational.
     expect(panel).toHaveAttribute('aria-hidden', 'true');
   });
