@@ -283,7 +283,7 @@ export const docs = {
           name: 'hasCreate',
           type: 'boolean',
           description:
-            'With hasSearch, offers a `Create "<query>"` row first in the list when the typed text equals no option label under the search’s case-insensitive matching. Picking it, or Enter with nothing highlighted, calls onChange with the query appended to value and a `{type: "create", query}` descriptor, then clears the search; the caller must add an option for the new value in that update. Nothing is offered while isLoading. Without hasSearch it warns in development and offers nothing.',
+            'With hasSearch, offers a `Create "<query>"` row first in the list when the typed text equals no option label under the search’s case-insensitive matching. Picking it, or Enter with nothing highlighted, calls onChange with the query appended to value and a `{type: "create", query}` descriptor; the caller must add an option for the new value in that update. Once value carries the new entry the search clears and the creation is announced; to refuse it, leave value without it and the typed text stays to be corrected. Nothing is offered while isLoading. Without hasSearch it warns in development and offers nothing.',
           default: 'false',
         },
         {
