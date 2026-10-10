@@ -17,6 +17,7 @@ verified_by:
     packages/core/src/CheckboxInput/CheckboxInput.test.tsx,
     packages/core/src/Divider/Divider.test.tsx,
     packages/core/src/Field/Field.test.tsx,
+    packages/core/src/FieldStatus/FieldStatus.test.tsx,
     packages/core/src/Icon/Icon.test.tsx,
     packages/core/src/Text/Text.test.tsx,
     scripts/check-knowledge.mjs,
@@ -63,6 +64,9 @@ behavior.
   creation; a one-argument handler keeps working. When `hasCreate` is omitted,
   DOM, styling, targets, keyboard behavior, announcements, and the callback's
   calls are unchanged.
+- With `renderTrigger`, a `status` message now shows in the open panel; before,
+  `status` was ignored in that mode. Without `renderTrigger`, the field path
+  is unchanged.
 - Controlled/uncontrolled behavior: unchanged. Open state stays owned by the
   component; `handleRef` drives it and `onOpenChange` reports it.
 - Migration decision: none
@@ -85,6 +89,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   Field's current `field` target; omitted when MultiSelector is inside InputGroup.
 - Shared clear actions — rendered by Field's InputClearButton and themed through
   Field's current `input-clear-button` target.
+- The panel status message — rendered by FieldStatus and themed through
+  FieldStatus's current `field-status` target.
 - Option checkbox presentation — rendered by CheckboxInput and themed through
   CheckboxInput's current `checkbox-indicator` target.
 - Public option dividers — rendered by Divider and themed through Divider's
@@ -108,6 +114,7 @@ syntax and examples remain in `MultiSelector.doc.mjs`.
 | read-only state | `false`, `true`                 | Preserves and submits values without selection affordance                                           | Closed trigger                                              | `false` | Caller | additive  | Boolean normalization                                        |
 | anchored mode   | `renderTrigger` absent, present | Caller-rendered control replaces Field shell and Trigger; panel anchored to it and named by `label` | Pointer popup and Touch sheet                               | absent  | Caller | additive  | Render prop must return the control carrying the given props |
 | create row      | `hasCreate` `false`, `true`     | First row minting the typed query, reported through `onChange` as `{type: 'create', query}`         | Search mode, query matching no option label, options loaded | `false` | Caller | additive  | Without `hasSearch`: development warning, nothing offered    |
+| panel status    | message absent, present         | With `renderTrigger`, the `status` message shows in the open panel and describes its search input   | Pointer popup and Touch sheet                               | absent  | Caller | additive  | Without a message or `renderTrigger`, the panel shows none   |
 
 ## Behavioral and layout contract
 
@@ -120,10 +127,11 @@ syntax and examples remain in `MultiSelector.doc.mjs`.
 | FR5           | Pointer popup and Touch sheet are separate surface anatomy rows, but both host the same `panelContent` tree; the Touch sheet additionally renders its Heading. Changing presentation does not create a second search, option, divider, section, or empty-state content model.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Current source and tests                                                                          | Verified current behavior; no normalization        |
 | FR6           | `multi-selector-clear-icon` remains a deprecated compatibility alias for `input-clear-icon`; it is not a current target and does not claim a separate anatomy part.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Current public target metadata                                                                    | Verified current compatibility state               |
 | FR7           | While `isReadOnly` is true, selected values remain focusable and form-submittable, while the selection surface, clear action, disclosure indicator, and every value-change path are unavailable.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `spec:AST-011`, docs, and tests                                                                   | Accepted read-only behavior                        |
-| FR8           | With `renderTrigger`, the caller-rendered control receives `ref`, `id`, `onClick`, `onKeyDown`, `onFocus`, `aria-haspopup`, `aria-expanded`, `aria-controls`, and `aria-busy`; the panel is anchored to it, focus returns to it on close, the listbox is named by `label`, and the listbox takes focus and owns the keyboard on open. No Field, status, clear action, spinner, or indicator renders. `handleRef` exposes `open`, `close`, `toggle`, `isOpen`; `onOpenChange` fires on every open and close.                                                                                                                                                                                                                                                                                                                                                                                                                                    | DEC-1, docs, and tests                                                                            | Proposed; awaiting owner approval                  |
+| FR8           | With `renderTrigger`, the caller-rendered control receives `ref`, `id`, `onClick`, `onKeyDown`, `onFocus`, `aria-haspopup`, `aria-expanded`, `aria-controls`, and `aria-busy`; the panel is anchored to it, focus returns to it on close, the listbox is named by `label`, and the listbox takes focus and owns the keyboard on open. No Field, clear action, spinner, or indicator renders; a `status` message shows in the panel (FR11). `handleRef` exposes `open`, `close`, `toggle`, `isOpen`; `onOpenChange` fires on every open and close.                                                                                                                                                                                                                                                                                                                                                                                              | DEC-1, docs, and tests                                                                            | Proposed; awaiting owner approval                  |
 | FR9           | With `hasSearch` and `hasCreate`, once options have loaded, a `Create "<query>"` row leads the list when the trimmed query equals no option label under the search's own case-insensitive matching. Picking it, or Enter with nothing highlighted, calls `onChange` with the query appended to the value and a `{type: 'create', query}` descriptor, clears the search, and announces the creation; every other change passes no descriptor. The row has no checkbox, is never selected, is excluded from select-all and from `renderOption`, and is announced instead of the empty message when it is the only result. While `isLoading`, no row is offered and Enter commits nothing. `hasCreate` without `hasSearch` warns in development and offers nothing.                                                                                                                                                                               | `spec:AST-056` FR5 / DEC-3, `component:Tokenizer` `hasCreate`, docs, and tests                    | Proposed; awaiting owner approval                  |
 | option action | `action` absent, present                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | The option's secondary control as one node; the popup is a grid of rows pairing option and action | Pointer popup and Touch sheet                      | absent | Caller | additive | `null` is none; a control without a name warns in development |
 | FR10          | Once any declared option — at any depth of sections, before any query filters it — carries an `action`, the popup is a `role="grid"` and stays one while mounted; the trigger advertises `aria-haspopup="grid"` (the bottom sheet keeps `dialog`). Each option, the select-all row included, is a `role="row"` carrying the option's id, `aria-selected` and `aria-disabled`, with exactly two `gridcell` children: the option's content, then its action or an empty cell. A section is a `rowgroup` named by its title. Pressing the option cell toggles; pressing the action fires the caller's control and nothing else. Up/Down move rows onto the option cell; the inline-end arrow moves to the action cell and the inline-start arrow back, following visual direction under RTL; Enter on the action cell activates the control. `aria-activedescendant` names the row or the action cell. No control inside the popup is a tab stop. | `spec:AST-058` FR1–FR8, AR1–AR4                                                                   | Proposed; awaiting owner approval                  |
+| FR11          | With `renderTrigger` and a `status` message, the open panel shows the message through FieldStatus's detached variant, under the search row or, without search, above the list, whatever `statusVariant` says. The search input carries `aria-describedby` naming the message and, for an error, `aria-invalid="true"`; without search the listbox or grid carries the `aria-describedby`. FieldStatus announces the message when it appears or changes: assertively for an error, politely otherwise. Without `renderTrigger` the message stays in the Field and the panel shows none.                                                                                                                                                                                                                                                                                                                                                         | DEC-3, `component:FieldStatus`, docs, and tests                                                   | Proposed; awaiting owner approval                  |
 
 ### Allowed variation
 
@@ -176,7 +184,10 @@ With `renderTrigger`, the caller's control carries `aria-haspopup`, `aria-expand
 and `aria-controls` for the listbox, the listbox carries `aria-label` from
 `label` instead of `aria-labelledby` the trigger, and the listbox is the
 focused element that owns arrow, Enter, Escape, and typeahead keys while open,
-so an anchor that cannot take focus still leaves a keyboard path.
+so an anchor that cannot take focus still leaves a keyboard path. A `status`
+message in that mode shows in the panel and describes the search input, or
+the listbox without search; an error marks the search input `aria-invalid`,
+and FieldStatus announces the message.
 
 The create row is a `role="option"` with `aria-selected="false"` and no
 checkbox indicator. When it is the only result, the polite live region
@@ -197,6 +208,7 @@ matches what is on screen; picking it announces the creation.
 | Search row                    | Provides query entry at the top of the shared panel content.                                      | Current source and public docs | Supporting        | FR2, FR3, FR5      |
 | Search icon                   | Presents the search affordance through Icon.                                                      | Icon component                 | Supporting        | FR2, FR4           |
 | Search clear button           | Clears a present query through the shared field clear action.                                     | Field component                | Supporting        | FR2, FR4           |
+| Panel status message          | Says what needs attention beside the search row when no Field renders.                            | FieldStatus component          | Supporting        | FR8, FR11          |
 | Option row                    | Presents one option or the select-all choice and owns row interaction/state.                      | Current source and public docs | Prominent         | FR2, FR3           |
 | Option checkbox indicator     | Presents the option's selected, unselected, or indeterminate state through CheckboxInput.         | CheckboxInput component        | Supporting        | FR2, FR4           |
 | Option divider                | Separates adjacent groups when a public divider entry is present in the options data.             | Divider component              | Supporting        | FR2, FR4           |
@@ -246,6 +258,12 @@ empty-state content remains one shared tree.
     "delegatesTo": {
       "owner": "component:Field",
       "target": "input-clear-button"
+    }
+  },
+  "Panel status message": {
+    "delegatesTo": {
+      "owner": "component:FieldStatus",
+      "target": "field-status"
     }
   },
   "Option row": {"target": "multi-selector-option"},
@@ -300,6 +318,7 @@ empty-state content remains one shared tree.
 | FR9                 | `MultiSelector.test.tsx` "hasCreate" suite; `CreateRow.a11y.chromium.spec.ts` appear/disappear cycle                                     | Create row offered, committed by click/Enter with descriptor, skipped on a case-insensitive exact match, offered for a label the filter cannot surface, absent while loading, beside select-all; toggle without descriptor; warning without search | The row appears while loading or for an existing label, reports without a descriptor, keeps the search text, is silently inert without search, or the live region says "no results" beside a create row.                                                                       | `audit:MultiSelector/accessibility` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                            | Canonical anatomy and current local targets                                                                                                                                                                                                        | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                                                                                                                                                                     | `audit:MultiSelector/theming`       |
 | FR10                | `MultiSelector.test.tsx` "option actions (grid)" suite; `OptionActions.a11y.chromium.spec.ts`; `Selector.test.tsx` non-adoption case     | No action; `action: null`; action inside a section; filtered out; removed later; options after loading; click cell vs action; disabled option with action; arrows LTR/RTL; search Left/Right; hover; Tab; unnamed control                          | A grid with no declared action, a listbox with one, a role that follows the filtered view, a row with other than two cells, a `group` in a grid, a toggle on an action press, an action unreachable by arrow, a tab stop inside the popup, or an action absent at rest, fails. | `audit:MultiSelector/accessibility` |
+| FR11                | `MultiSelector.test.tsx` "renderTrigger — panel status" suite                                                                            | Error and warning with search; set while open; without search; bottom sheet; closed panel; field path unchanged                                                                                                                                    | The message is missing from the panel, renders in the field path or while closed, is not named by `aria-describedby`, misses `aria-invalid` on an error, or is not announced.                                                                                                  | `audit:MultiSelector/accessibility` |
 
 Existing component tests directly assert the Trigger, Indicator icon, Search row,
 Option row, Section heading, Empty state, and Pointer popup targets. Presentation
@@ -336,6 +355,17 @@ owner evidence rather than new MultiSelector targets.
   row while loading (mints duplicates); a diacritic-folding duplicate rule
   beside a case-only filter (hides `Café` from `CAFE` and refuses to create
   it — the two rules widen together under `spec:AST-056` FR4 or not at all).
+
+  **Decider:** pending owner review
+
+- **DEC-3 — With `renderTrigger`, `status` shows in the panel.** A
+  caller-rendered trigger leaves no Field to carry the message, so a change
+  the caller refuses had nowhere to be said; the panel is where the person is
+  typing when it happens. Reusing `status` keeps one prop for one message in
+  both modes, and FieldStatus keeps one look and one announcement rule.
+  Rejected: a `panelStatus` prop beside `status` (two props for one message,
+  each dead in one mode); the message on the caller's trigger (often a glyph
+  with no room for text).
 
   **Decider:** pending owner review
 
