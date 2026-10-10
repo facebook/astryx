@@ -461,7 +461,6 @@ const INV21_KNOWN_GAPS = new Map([
   ['template/show/show.mjs', new Set(['fs', 'discovery'])],
   ['template/skeleton/skeleton.mjs', new Set(['fs', 'discovery'])],
   ['template/template.mjs', new Set(['discovery'])],
-  ['theme/add/add.mjs', new Set(['fs'])],
   ['theme/build/build.mjs', new Set(['fs', 'discovery'])],
   ['theme/palette/generate/generate.mjs', new Set(['fs'])],
   ['theme/targets/targets.mjs', new Set(['discovery'])],

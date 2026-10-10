@@ -127,7 +127,7 @@ describe('search() API — filters', () => {
     expect(data.results.map(r => r.name)).toContain('neutral');
     for (const r of data.results) {
       expect(r.domain).toBe('theme');
-      expect(r.command).toBe(`astryx theme add --import ${r.name}`);
+      expect(r.command).toBe(`astryx theme add ${r.name}`);
     }
   });
 

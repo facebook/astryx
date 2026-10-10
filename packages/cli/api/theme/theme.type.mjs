@@ -13,9 +13,8 @@
  * astryx --json theme build <a> <b> …         -> theme.build.batch
  * astryx --json theme list                    -> theme.list
  * astryx --json theme add --list              -> theme.list
- * astryx --json theme add <slug>              -> theme.add
- * astryx --json theme add <slug> --import    -> theme.app
- * astryx --json theme remove/use <slug>      -> theme.app
+ * astryx --json theme add <slug> [--import]   -> theme.app
+ * astryx --json theme remove/use <slug>       -> theme.app
  * astryx --json theme eject <slug>            -> theme.eject
  * astryx --json theme template                -> theme.template
  * astryx --json theme targets [filter]        -> theme.targets
@@ -84,14 +83,6 @@
  */
 
 /**
- * astryx --json theme add <slug> [path]
- * @typedef {object} ThemeAddResponse
- * @property {'theme.add'} type
- * @property {{slug: string, displayName: string, maintained: boolean, package: string, outputDir: string, entry: string, exportName: string, files: string[]}} data
- * @property {{deprecations: Array<{id: 'DEP-0005', replacements: string[]}>}} meta additive lifecycle guidance; every released data field is unchanged
- */
-
-/**
  * One built theme imported by the generated app module.
  * @typedef {object} ThemeAppEntry
  * @property {string} slug
@@ -103,7 +94,7 @@
  */
 
 /**
- * astryx --json theme add <slug> --import / remove / use
+ * astryx --json theme add <slug> [--import] / remove / use
  * @typedef {object} ThemeAppResponse
  * @property {'theme.app'} type
  * @property {string} [package] npm package that owns the theme `theme add`

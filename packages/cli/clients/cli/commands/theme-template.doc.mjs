@@ -19,7 +19,7 @@ export const doc = {
     'Writes theme.template.ts: the annotated reference for the whole theme surface, covering every ' +
     'defineTheme field, the token families, the component override syntax, and how a theme is ' +
     'consumed, naming the CLI command that prints the authoritative reference for each. Read ' +
-    'it, copy what you need into your own theme file, delete it. Use `theme add <slug> --import` to ' +
+    'it, copy what you need into your own theme file, delete it. Use `theme add <slug>` to ' +
     'use an installed built theme, extend that theme for ordinary customization, or use ' +
     '`theme eject <slug>` for a complete source fork. Leaves an existing file untouched unless --overwrite.',
   fn: 'themeTemplate',

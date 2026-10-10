@@ -21,12 +21,12 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Install the integration, then run `theme add --import` with its slug and package. The command records the package owner and regenerates one app theme module that imports the built theme, production CSS, and optional font CSS. Plain `theme add` still copies source while that default is deprecated.',
+          text: 'Install the integration, then run `theme add` with its slug and package. The command records the package owner and regenerates one app theme module that imports the built theme, production CSS, and optional font CSS. Use `theme eject` only to copy source into an independent local fork.',
         },
         {
           type: 'code',
           lang: 'bash',
-          code: 'npm install @acme/astryx-widgets\nnpx astryx theme add ocean --import --package @acme/astryx-widgets',
+          code: 'npm install @acme/astryx-widgets\nnpx astryx theme add ocean --package @acme/astryx-widgets',
         },
         {
           type: 'code',

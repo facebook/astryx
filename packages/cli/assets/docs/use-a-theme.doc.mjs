@@ -19,7 +19,7 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Install and add a theme',
-          code: 'npm install @astryxdesign/theme-neutral\nastryx theme add neutral --import',
+          code: 'npm install @astryxdesign/theme-neutral\nastryx theme add neutral',
         },
         {
           type: 'code',
@@ -35,7 +35,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: '`theme add --import` records an installed package theme and regenerates `src/astryx-themes.ts` or `.js` with its built module, production CSS, and optional font CSS. In a project without `src`, the module is at the project root. The first imported theme becomes the default. `theme use <slug>` changes that default, and `theme remove <slug>` removes a non-default theme.',
+          text: '`theme add` records an installed package theme and regenerates `src/astryx-themes.ts` or `.js` with its built module, production CSS, and optional font CSS. In a project without `src`, the module is at the project root. The first imported theme becomes the default. `theme use <slug>` changes that default, and `theme remove <slug>` removes a non-default theme.',
         },
         {
           type: 'prose',
@@ -58,11 +58,11 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Before the upgrade runs, theme commands skip a descriptor-less copy in `src/themes`. `theme list` and doctor name it as unmigrated and show the upgrade command. A script that meant to copy source now runs `theme eject` with the same arguments. A script that meant to make the app use a theme runs `theme add --import`.',
+          text: 'Before the upgrade runs, theme commands skip a descriptor-less copy in `src/themes`. `theme list` and doctor name it as unmigrated and show the upgrade command. A script that meant to copy source now runs `theme eject` with the same arguments. A script that meant to make the app use a theme runs `theme add`.',
         },
         {
           type: 'prose',
-          text: '`ASTRYX_THEME` is no longer read. Run `theme add <slug> --import` and `theme use <slug>` to choose the default in a generated app theme module. When that module exists, component metadata reads its recorded default theme. Without the module, the released `package.json#astryx.theme` lookup keeps its meaning.',
+          text: '`ASTRYX_THEME` is no longer read. Run `theme add <slug>` and `theme use <slug>` to choose the default in a generated app theme module. When that module exists, component metadata reads its recorded default theme. Without the module, the released `package.json#astryx.theme` lookup keeps its meaning.',
         },
       ],
     },
@@ -71,24 +71,24 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Install the theme package you want with `npm install @astryxdesign/theme-{name}`, then import its slug with `theme add <slug> --import`. The CLI imports the package\'s built outputs for you.',
+          text: 'Install the theme package you want with `npm install @astryxdesign/theme-{name}`, then import its slug with `theme add <slug>`. The CLI imports the package\'s built outputs for you.',
         },
         {
           type: 'table',
           headers: ['Theme', 'Add command', 'Description'],
           rows: [
-            ['Neutral', 'astryx theme add neutral --import', 'Muted, minimal aesthetic with Figtree typography. A good starting point.'],
-            ['Butter', 'astryx theme add butter --import', 'Golden, buttery surfaces with blue accents; Sarina + Outfit type.'],
-            ['Chocolate', 'astryx theme add chocolate --import', 'Warm brown tones and cozy beige; Fraunces + Albert Sans type.'],
-            ['Gothic', 'astryx theme add gothic --import', 'Dark-only atmospheric theme; deep blue-gray surfaces, distressed display type.'],
-            ['Matcha', 'astryx theme add matcha --import', 'Earthy greens; DM Sans + Playwrite US Trad type.'],
-            ['Stone', 'astryx theme add stone --import', 'Warm stone and slate tones; Montserrat + Figtree type.'],
-            ['Y2K', 'astryx theme add y2k --import', 'Playful Y2K pop; periwinkle body, holographic accents, Poppins + Crimson Text.'],
+            ['Neutral', 'astryx theme add neutral', 'Muted, minimal aesthetic with Figtree typography. A good starting point.'],
+            ['Butter', 'astryx theme add butter', 'Golden, buttery surfaces with blue accents; Sarina + Outfit type.'],
+            ['Chocolate', 'astryx theme add chocolate', 'Warm brown tones and cozy beige; Fraunces + Albert Sans type.'],
+            ['Gothic', 'astryx theme add gothic', 'Dark-only atmospheric theme; deep blue-gray surfaces, distressed display type.'],
+            ['Matcha', 'astryx theme add matcha', 'Earthy greens; DM Sans + Playwrite US Trad type.'],
+            ['Stone', 'astryx theme add stone', 'Warm stone and slate tones; Montserrat + Figtree type.'],
+            ['Y2K', 'astryx theme add y2k', 'Playful Y2K pop; periwinkle body, holographic accents, Poppins + Crimson Text.'],
           ],
         },
         {
           type: 'prose',
-          text: 'Every first-party package exports its built theme at `@astryxdesign/theme-{name}/built`, production CSS at `/theme.css`, and font loading CSS at `/fonts.css`. `theme add --import` writes those imports into the generated app module.',
+          text: 'Every first-party package exports its built theme at `@astryxdesign/theme-{name}/built`, production CSS at `/theme.css`, and font loading CSS at `/fonts.css`. `theme add` writes those imports into the generated app module.',
         },
       ],
     },
@@ -113,11 +113,11 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Install, inspect, and add',
-          code: 'npm install @astryxdesign/core @acme/brand-integration\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx theme add ocean --import --package @acme/brand-integration',
+          code: 'npm install @astryxdesign/core @acme/brand-integration\nastryx theme list --package @acme/brand-integration\nastryx docs brand-theme\nastryx theme add ocean --package @acme/brand-integration',
         },
         {
           type: 'prose',
-          text: '`theme add --import` keeps the owner package in the app record and imports its built module, stylesheet, and optional font stylesheet. Package updates continue to reach the app. Run `theme eject ocean --package @acme/brand-integration` only to copy the source and descriptor into `src/themes/ocean` as an independent local fork.',
+          text: '`theme add` keeps the owner package in the app record and imports its built module, stylesheet, and optional font stylesheet. Package updates continue to reach the app. Run `theme eject ocean --package @acme/brand-integration` only to copy the source and descriptor into `src/themes/ocean` as an independent local fork.',
         },
       ],
     },
@@ -186,7 +186,7 @@ export const docs = {
           type: 'list',
           style: 'do',
           items: [
-            'Use `theme add --import` for production apps; it wires the built module and CSS.',
+            'Use `theme add` for production apps; it wires the built module and CSS.',
             'Import `themes` and `defaultThemeSlug` from the generated module once, and keep that wiring in development too.',
             'While you edit a local theme, run `astryx theme build --watch` so its built files stay current.',
             'Run `astryx theme build` for custom themes to get the built artifacts.',

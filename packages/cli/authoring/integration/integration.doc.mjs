@@ -58,7 +58,7 @@ export const doc = {
       name: 'themes',
       type: 'string',
       description:
-        'The folder that holds your themes, relative to package.json, with one folder per theme. Each theme folder has the theme source and a matching .doc.mjs file with the same name. Installed themes show up in `astryx theme list`; `theme add --import` imports their built package exports, and `theme eject` creates an editable local fork.',
+        'The folder that holds your themes, relative to package.json, with one folder per theme. Each theme folder has the theme source and a matching .doc.mjs file with the same name. Installed themes show up in `astryx theme list`; `theme add` imports their built package exports, and `theme eject` creates an editable local fork.',
       example: "'./themes'",
     },
     {
