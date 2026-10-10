@@ -249,9 +249,9 @@ export const docs = {
     },
     {
       name: 'variant',
-      type: "'input' | 'ghost'",
+      type: "'input' | 'secondary' | 'ghost'",
       description:
-        'Visual trigger style. input is the bordered input treatment for forms; ghost is borderless and matches ghost buttons for toolbar usage.',
+        'Visual trigger style. input is the bordered input treatment for forms; secondary is borderless and neutral-filled, matching secondary buttons for navs and toolbars; ghost is borderless and transparent, matching ghost buttons for toolbar usage.',
       default: "'input'",
     },
     {
@@ -311,8 +311,8 @@ export const docs = {
       name: 'statusVariant',
       type: "'attached' | 'detached' | 'tooltip'",
       description:
-        'How the status message is placed relative to the input. attached overlaps directly below the bordered input and is only valid for the input variant; ghost selectors detach attached status messages by default. Use tooltip for compact toolbar controls.',
-      default: "'attached' for input selectors; 'detached' for ghost selectors",
+        'How the status message is placed relative to the input. attached overlaps directly below the bordered input and is only valid for the input variant; secondary and ghost selectors detach attached status messages by default. Use tooltip for compact toolbar controls.',
+      default: "'attached' for input selectors; 'detached' for secondary and ghost selectors",
     },
     {
       name: 'renderOption',
@@ -397,7 +397,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use variant="ghost" when a selector sits in a toolbar with ghost buttons. If validation status is needed there, prefer statusVariant="tooltip" so the toolbar height stays compact.',
+          'Use variant="secondary" when a selector sits in a nav or toolbar beside secondary buttons or a segmented control, so it shares their neutral fill instead of reading as a form field. Use variant="ghost" when a selector sits in a toolbar with ghost buttons. If validation status is needed there, prefer statusVariant="tooltip" so the toolbar height stays compact.',
       },
       {
         guidance: true,
@@ -534,7 +534,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use variant="ghost" in toolbars with ghost buttons; prefer statusVariant="tooltip" for compact validation status.',
+          'Use variant="secondary" in navs/toolbars beside secondary buttons; use variant="ghost" in toolbars with ghost buttons; prefer statusVariant="tooltip" for compact validation status.',
       },
       {
         guidance: false,
