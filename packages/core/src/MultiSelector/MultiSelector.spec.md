@@ -63,6 +63,8 @@ behavior.
   creation; a one-argument handler keeps working. When `hasCreate` is omitted,
   DOM, styling, targets, keyboard behavior, announcements, and the callback's
   calls are unchanged.
+- `footer` is additive and absent by default; without it the panel's DOM,
+  styling, targets, and Tab behavior are unchanged.
 - Controlled/uncontrolled behavior: unchanged. Open state stays owned by the
   component; `handleRef` drives it and `onOpenChange` reports it.
 - Migration decision: none
@@ -77,7 +79,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - Indicator icon, Search row, Option row, Section heading, Empty state, and
   Pointer popup presentation through the other six current MultiSelector targets.
 - One shared panel-content tree containing optional search, option, divider,
-  section, and empty-state content regardless of which presentation hosts it.
+  section, empty-state, and footer content regardless of which presentation
+  hosts it.
 
 **Does not own / non-goals**
 
@@ -96,6 +99,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 - The Touch sheet panel — rendered by BottomSheet and themed through
   BottomSheet's current `bottom-sheet` target.
 - Arbitrary ReactNode start content supplied by the caller.
+- Arbitrary ReactNode footer content supplied by the caller.
 - Shared layer lifecycle, positioning, and dismissal behavior.
 
 ## Public concepts
@@ -108,6 +112,7 @@ syntax and examples remain in `MultiSelector.doc.mjs`.
 | read-only state | `false`, `true`                 | Preserves and submits values without selection affordance                                           | Closed trigger                                              | `false` | Caller | additive  | Boolean normalization                                        |
 | anchored mode   | `renderTrigger` absent, present | Caller-rendered control replaces Field shell and Trigger; panel anchored to it and named by `label` | Pointer popup and Touch sheet                               | absent  | Caller | additive  | Render prop must return the control carrying the given props |
 | create row      | `hasCreate` `false`, `true`     | First row minting the typed query, reported through `onChange` as `{type: 'create', query}`         | Search mode, query matching no option label, options loaded | `false` | Caller | additive  | Without `hasSearch`: development warning, nothing offered    |
+| panel footer    | `footer` absent, present        | Caller content under the list, outside the listbox, continuing the panel's Tab order                | Pointer popup and Touch sheet                               | absent  | Caller | additive  | `null`, `undefined`, or a boolean renders no footer          |
 
 ## Behavioral and layout contract
 
@@ -123,7 +128,8 @@ syntax and examples remain in `MultiSelector.doc.mjs`.
 | FR8           | With `renderTrigger`, the caller-rendered control receives `ref`, `id`, `onClick`, `onKeyDown`, `onFocus`, `aria-haspopup`, `aria-expanded`, `aria-controls`, and `aria-busy`; the panel is anchored to it, focus returns to it on close, the listbox is named by `label`, and the listbox takes focus and owns the keyboard on open. No Field, status, clear action, spinner, or indicator renders. `handleRef` exposes `open`, `close`, `toggle`, `isOpen`; `onOpenChange` fires on every open and close.                                                                                                                                                                                                                                                                                                                                                                                                                                    | DEC-1, docs, and tests                                                                            | Proposed; awaiting owner approval                  |
 | FR9           | With `hasSearch` and `hasCreate`, once options have loaded, a `Create "<query>"` row leads the list when the trimmed query equals no option label under the search's own case-insensitive matching. Picking it, or Enter with nothing highlighted, calls `onChange` with the query appended to the value and a `{type: 'create', query}` descriptor, clears the search, and announces the creation; every other change passes no descriptor. The row has no checkbox, is never selected, is excluded from select-all and from `renderOption`, and is announced instead of the empty message when it is the only result. While `isLoading`, no row is offered and Enter commits nothing. `hasCreate` without `hasSearch` warns in development and offers nothing.                                                                                                                                                                               | `spec:AST-056` FR5 / DEC-3, `component:Tokenizer` `hasCreate`, docs, and tests                    | Proposed; awaiting owner approval                  |
 | option action | `action` absent, present                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | The option's secondary control as one node; the popup is a grid of rows pairing option and action | Pointer popup and Touch sheet                      | absent | Caller | additive | `null` is none; a control without a name warns in development |
-| FR10          | Once any declared option — at any depth of sections, before any query filters it — carries an `action`, the popup is a `role="grid"` and stays one while mounted; the trigger advertises `aria-haspopup="grid"` (the bottom sheet keeps `dialog`). Each option, the select-all row included, is a `role="row"` carrying the option's id, `aria-selected` and `aria-disabled`, with exactly two `gridcell` children: the option's content, then its action or an empty cell. A section is a `rowgroup` named by its title. Pressing the option cell toggles; pressing the action fires the caller's control and nothing else. Up/Down move rows onto the option cell; the inline-end arrow moves to the action cell and the inline-start arrow back, following visual direction under RTL; Enter on the action cell activates the control. `aria-activedescendant` names the row or the action cell. No control inside the popup is a tab stop. | `spec:AST-058` FR1–FR8, AR1–AR4                                                                   | Proposed; awaiting owner approval                  |
+| FR10          | Once any declared option — at any depth of sections, before any query filters it — carries an `action`, the popup is a `role="grid"` and stays one while mounted; the trigger advertises `aria-haspopup="grid"` (the bottom sheet keeps `dialog`). Each option, the select-all row included, is a `role="row"` carrying the option's id, `aria-selected` and `aria-disabled`, with exactly two `gridcell` children: the option's content, then its action or an empty cell. A section is a `rowgroup` named by its title. Pressing the option cell toggles; pressing the action fires the caller's control and nothing else. Up/Down move rows onto the option cell; the inline-end arrow moves to the action cell and the inline-start arrow back, following visual direction under RTL; Enter on the action cell activates the control. `aria-activedescendant` names the row or the action cell. No control within grid rows is a tab stop. | `spec:AST-058` FR1–FR8, AR1–AR4                                                                   | Proposed; awaiting owner approval                  |
+| FR11          | With `footer`, the shared panel content ends with a divider and the footer, outside the listbox or grid and outside the list's scroll container, in both presentations. A forward Tab from the search input with no query, from its clear button, from the trigger that owns the keyboard, or from the listbox that owns it moves focus to the footer's first focusable control and keeps the panel open; in the Pointer popup, Tab from its last focusable control and Escape from anywhere in it close the panel. A press inside the footer is not a light dismiss. A footer with no focusable control leaves Tab as it is without one.                                                                                                                                                                                                                                                                                                      | DEC-3, docs, and tests                                                                            | Proposed; awaiting owner approval                  |
 
 ### Allowed variation
 
@@ -132,7 +138,8 @@ syntax and examples remain in `MultiSelector.doc.mjs`.
   uses the Touch sheet and its Heading; `presentation="adaptive"` selects between
   those existing branches from current modality and viewport behavior.
 - Search row, Option divider, Section heading, Empty state, select-all Option row,
-  and both clear actions are optional under their documented prop and data conditions.
+  Panel footer, and both clear actions are optional under their documented prop
+  and data conditions.
 - Semantic names and icon component types render through Icon. Arbitrary ReactNode
   start content renders directly and stays caller-owned.
 - Trigger text, labels, badges, and custom option content may vary inside the
@@ -183,6 +190,9 @@ checkbox indicator. When it is the only result, the polite live region
 announces its label rather than the empty-search message, so what is announced
 matches what is on screen; picking it announces the creation.
 
+The footer sits outside the listbox or grid, so its controls are never options:
+arrow keys never reach them, Tab does, and they keep their own roles and names.
+
 ## Design relationships
 
 | Anatomy or state              | Design requirement                                                                                | Representation authority       | Hierarchy role    | Component contract |
@@ -202,6 +212,7 @@ matches what is on screen; picking it announces the creation.
 | Option divider                | Separates adjacent groups when a public divider entry is present in the options data.             | Divider component              | Supporting        | FR2, FR4           |
 | Section heading               | Labels a visible group of option rows.                                                            | Current source and public docs | Supporting        | FR2, FR3           |
 | Empty state                   | Presents no-options or no-results content when the panel has no selectable rows to show.          | Current source and public docs | Prominent         | FR2, FR3           |
+| Panel footer                  | Ends the shared panel content with caller controls under the list.                                | Caller-supplied content        | Supporting        | FR11               |
 | Pointer popup                 | Paints the anchored pointer surface around the shared panel content.                              | Current source and public docs | Prominent         | FR3, FR5           |
 | Touch sheet heading           | Names the bottom-sheet presentation above the shared panel content.                               | Text component                 | Prominent         | FR4, FR5           |
 | Touch sheet                   | Paints the BottomSheet surface around the same shared panel content.                              | BottomSheet component          | Prominent         | FR4, FR5           |
@@ -209,8 +220,8 @@ matches what is on screen; picking it announces the creation.
 The seven current MultiSelector targets remain on their shipped visible elements.
 Nested shared primitives keep their own owners. The Pointer popup and Touch sheet
 are intentionally separate rows because they use different surface owners; the
-Touch sheet adds a Heading owned by Text. Search, option, divider, section, and
-empty-state content remains one shared tree.
+Touch sheet adds a Heading owned by Text. Search, option, divider, section,
+empty-state, and footer content remains one shared tree.
 
 ### Theming anatomy
 
@@ -260,6 +271,11 @@ empty-state content remains one shared tree.
   },
   "Section heading": {"target": "multi-selector-section-heading"},
   "Empty state": {"target": "multi-selector-empty-state"},
+  "Panel footer": {
+    "none": {
+      "reason": "intentional: Arbitrary ReactNode footer content is caller-owned and receives no MultiSelector target."
+    }
+  },
   "Pointer popup": {"target": "multi-selector-popup"},
   "Touch sheet heading": {
     "delegatesTo": {"owner": "component:Text", "target": "heading"}
@@ -299,7 +315,8 @@ empty-state content remains one shared tree.
 | FR8                 | `MultiSelector.test.tsx` "trigger render prop" suite                                                                                     | External trigger closed/open; handle open/close; disabled; listbox focus                                                                                                                                                                           | Field chrome renders with a trigger, the control lacks disclosure state, the listbox is unnamed, or the handle opens a disabled selector.                                                                                                                                      | `audit:MultiSelector/accessibility` |
 | FR9                 | `MultiSelector.test.tsx` "hasCreate" suite; `CreateRow.a11y.chromium.spec.ts` appear/disappear cycle                                     | Create row offered, committed by click/Enter with descriptor, skipped on a case-insensitive exact match, offered for a label the filter cannot surface, absent while loading, beside select-all; toggle without descriptor; warning without search | The row appears while loading or for an existing label, reports without a descriptor, keeps the search text, is silently inert without search, or the live region says "no results" beside a create row.                                                                       | `audit:MultiSelector/accessibility` |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                            | Canonical anatomy and current local targets                                                                                                                                                                                                        | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                                                                                                                                                                     | `audit:MultiSelector/theming`       |
-| FR10                | `MultiSelector.test.tsx` "option actions (grid)" suite; `OptionActions.a11y.chromium.spec.ts`; `Selector.test.tsx` non-adoption case     | No action; `action: null`; action inside a section; filtered out; removed later; options after loading; click cell vs action; disabled option with action; arrows LTR/RTL; search Left/Right; hover; Tab; unnamed control                          | A grid with no declared action, a listbox with one, a role that follows the filtered view, a row with other than two cells, a `group` in a grid, a toggle on an action press, an action unreachable by arrow, a tab stop inside the popup, or an action absent at rest, fails. | `audit:MultiSelector/accessibility` |
+| FR10                | `MultiSelector.test.tsx` "option actions (grid)" suite; `OptionActions.a11y.chromium.spec.ts`; `Selector.test.tsx` non-adoption case     | No action; `action: null`; action inside a section; filtered out; removed later; options after loading; click cell vs action; disabled option with action; arrows LTR/RTL; search Left/Right; hover; Tab; unnamed control                          | A grid with no declared action, a listbox with one, a role that follows the filtered view, a row with other than two cells, a `group` in a grid, a toggle on an action press, an action unreachable by arrow, a tab stop within grid rows, or an action absent at rest, fails. | `audit:MultiSelector/accessibility` |
+| FR11                | `MultiSelector.test.tsx` "footer" suite; `PanelFooter.a11y.chromium.spec.ts`                                                             | Popover with and without search; Tab from search, clear button, trigger, and last footer control; Shift+Tab back; Escape; press; bottom sheet                                                                                                      | The footer lands inside the listbox, a Tab skips it or leaves the panel open past it, Escape inside it does nothing, a press inside it dismisses or toggles, or the sheet omits it.                                                                                            | `audit:MultiSelector/accessibility` |
 
 Existing component tests directly assert the Trigger, Indicator icon, Search row,
 Option row, Section heading, Empty state, and Pointer popup targets. Presentation
@@ -336,6 +353,18 @@ owner evidence rather than new MultiSelector targets.
   row while loading (mints duplicates); a diacritic-folding duplicate rule
   beside a case-only filter (hides `Café` from `CAFE` and refuses to create
   it — the two rules widen together under `spec:AST-056` FR4 or not at all).
+
+  **Decider:** pending owner review
+
+- **DEC-3 — The footer is caller content outside the list.** A picker that
+  applies options also offers the way to where they are managed, and that
+  control is not an option: it neither toggles nor takes `aria-selected`. One
+  `footer` node under the list, in both presentations, keeps it out of the
+  listbox and in view while the list scrolls, and Tab reaches it from
+  wherever the panel's keyboard focus is, so a keyboard user gets there too.
+  Rejected: a footer option row (pressing a row toggles it, so a door inside
+  it would toggle as well); an option `action` (belongs to one row);
+  `emptyText` (shows only when nothing matches).
 
   **Decider:** pending owner review
 

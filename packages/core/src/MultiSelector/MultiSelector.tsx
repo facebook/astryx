@@ -282,6 +282,10 @@ const styles = stylex.create({
   listbox: {
     outline: 'none',
   },
+  // Caller content under the list; the divider above it separates it.
+  footer: {
+    padding: spacingVars['--spacing-1'],
+  },
 
   // Popover container (for anchor positioning)
   popover: {
@@ -771,6 +775,19 @@ export interface MultiSelectorProps<
   emptySearchText?: ReactNode;
 
   /**
+   * Content at the foot of the panel, under the list: a door to where the
+   * options are managed, say. It sits outside the listbox, so its controls
+   * are never options, and stays in view while the list scrolls; both
+   * presentations render it. Tab continues from the panel's keyboard focus
+   * (the search field, or the trigger or listbox that owns the keys) into
+   * its controls, and in the popover Tab past its last control closes the
+   * panel, as Tab out of the search field does. A press inside it is not a
+   * light dismiss: close the panel through `handleRef` when a control
+   * should.
+   */
+  footer?: ReactNode;
+
+  /**
    * With `hasSearch`, offer a `Create "<query>"` row first in the list when the
    * trimmed query equals no option's label under the search's own matching
    * (case-insensitive). Picking it, or Enter with nothing highlighted, calls
@@ -1005,6 +1022,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   searchPlaceholder: searchPlaceholderFromProps,
   emptyText: emptyTextFromProps,
   emptySearchText: emptySearchTextFromProps,
+  footer,
   hasCreate = false,
   triggerDisplay = 'count',
   formatValue,
@@ -1055,6 +1073,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const triggerRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
   const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -1668,6 +1687,64 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     ),
   });
 
+  // The footer's controls continue the panel's Tab order: a forward Tab from
+  // the panel's keyboard focus lands on the first of them and keeps the panel
+  // open, where Tab otherwise closes it.
+  const focusFooter = useCallback((): boolean => {
+    const control =
+      footerRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    if (control == null) {
+      return false;
+    }
+    control.focus();
+    return true;
+  }, []);
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      if (
+        event.key === 'Tab' &&
+        !event.shiftKey &&
+        surface.isOpen &&
+        focusFooter()
+      ) {
+        // This Tab is consumed here. The popover's focus trap wraps Tab
+        // from whatever holds focus when its document listener runs, which
+        // is now the footer's control: a lone control is also the last one,
+        // and the trap would send focus straight back to the top.
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      onKeyDown(event);
+    },
+    [onKeyDown, surface.isOpen, focusFooter],
+  );
+  // Escape closes the panel from the footer as from anywhere else in it. In
+  // the popover, Tab past the footer's last control leaves the panel the way
+  // Tab out of the search field does: it closes. The bottom sheet is a modal
+  // dialog, which keeps Tab inside it.
+  const handleFooterKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'Escape') {
+        onKeyDown(event);
+        return;
+      }
+      if (
+        event.key !== 'Tab' ||
+        event.shiftKey ||
+        surface.activePresentation === 'bottom-sheet'
+      ) {
+        return;
+      }
+      const controls =
+        footerRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (controls != null && event.target === controls[controls.length - 1]) {
+        onKeyDown(event);
+      }
+    },
+    [onKeyDown, surface.activePresentation],
+  );
+
   // Highlight scrolling (and its hover/keyboard split) lives in useMultiCombobox.
 
   // Build trigger display content
@@ -1771,7 +1848,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         onValueChange={handleSearchChange}
         onContainerKeyDown={e => {
           // The clear (✕) button lives inside the row, after the input in DOM
-          // order. When it is focused and the user tabs forward there is
+          // order. When it is focused and the user tabs forward, Tab moves on
+          // to the footer's controls if there are any, and otherwise there is
           // nothing else in the popup, so dismiss it (Shift+Tab returns to the
           // input natively). Key events originating on the input are handled on
           // the input below; ignore them here so we don't double-dismiss.
@@ -1779,7 +1857,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             return;
           }
           if (e.key === 'Tab' && !e.shiftKey) {
-            onKeyDown(e);
+            handleKeyDown(e);
           }
         }}
         onKeyDown={e => {
@@ -1831,9 +1909,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           }
           // Tab: when a query is showing the clear (✕) button, forward-tab
           // moves focus to it (keeping the popup open) so the affordance is
-          // keyboard-reachable. Every other Tab dismisses the popup as usual.
+          // keyboard-reachable. Without a query, forward-tab moves on to the
+          // footer's controls if there are any. Every other Tab dismisses the
+          // popup as usual.
           if (e.key === 'Tab' && (e.shiftKey || !hasQuery)) {
-            onKeyDown(e);
+            handleKeyDown(e);
           }
         }}
         placeholder={searchPlaceholder}
@@ -1848,6 +1928,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     searchPlaceholder,
     handleSearchChange,
     onKeyDown,
+    handleKeyDown,
     surface.isOpen,
     highlightedIndex,
     activeDescendantId,
@@ -2179,7 +2260,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const listboxOwnsKeyboard =
     surface.activePresentation === 'bottom-sheet' || hasExternalTrigger;
 
-  const panelContent = hasSearch ? (
+  const listContent = hasSearch ? (
     <div>
       {renderSearch()}
       <Divider />
@@ -2212,11 +2293,30 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           : listboxLabelProps)}
         aria-activedescendant={activeDescendantId}
         tabIndex={listboxOwnsKeyboard ? 0 : undefined}
-        onKeyDown={listboxOwnsKeyboard ? onKeyDown : undefined}
+        onKeyDown={listboxOwnsKeyboard ? handleKeyDown : undefined}
         {...stylex.props(styles.listbox)}>
         {renderOptions()}
       </div>
     </div>
+  );
+
+  // The footer follows the list, outside both the listbox and the list's
+  // scroll container, so its controls are never options and stay in view.
+  // `false` from a `condition && <Door />` expression is no footer.
+  const hasFooter = footer != null && typeof footer !== 'boolean';
+  const panelContent = hasFooter ? (
+    <div>
+      {listContent}
+      <Divider />
+      <div
+        ref={footerRef}
+        onKeyDown={handleFooterKeyDown}
+        {...stylex.props(styles.footer)}>
+        {footer}
+      </div>
+    </div>
+  ) : (
+    listContent
   );
 
   let selectionSurface: ReactNode = null;
@@ -2249,7 +2349,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     'aria-required': isEffectivelyRequired ? 'true' : undefined,
     'aria-invalid': status?.type === 'error' ? 'true' : undefined,
     'aria-busy': isBusy || undefined,
-    onKeyDown,
+    onKeyDown: handleKeyDown,
     onFocus: event => {
       onFocus?.(event);
       surface.onTriggerFocus(event);
@@ -2282,7 +2382,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       },
       id: triggerId,
       onClick: isEffectivelyReadOnly ? undefined : onTriggerClick,
-      onKeyDown: isEffectivelyReadOnly ? undefined : onKeyDown,
+      onKeyDown: isEffectivelyReadOnly ? undefined : handleKeyDown,
       onFocus: event => {
         onFocus?.(event);
         surface.onTriggerFocus(event);

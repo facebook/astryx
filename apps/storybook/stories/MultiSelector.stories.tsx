@@ -784,6 +784,43 @@ export const CreateFromQuery: Story = {
   },
 };
 
+export const PanelFooter: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['bug']);
+    const [managed, setManaged] = useState(0);
+    return (
+      <>
+        <MultiSelector
+          label="Labels"
+          options={[
+            {value: 'bug', label: 'Bug'},
+            {value: 'feature', label: 'Feature'},
+            {value: 'docs', label: 'Docs'},
+            {value: 'design', label: 'Design review'},
+            {value: 'p0', label: 'P0'},
+            {value: 'p1', label: 'P1'},
+            {value: 'p2', label: 'P2'},
+            {value: 'later', label: 'Later'},
+          ]}
+          value={value}
+          onChange={setValue}
+          hasSearch
+          triggerDisplay="badges"
+          footer={
+            <Button
+              label="Manage labels"
+              variant="ghost"
+              onClick={() => setManaged(count => count + 1)}
+            />
+          }
+          isDefaultOpen
+        />
+        <output data-testid="manage-count">{managed}</output>
+      </>
+    );
+  },
+};
+
 export const RowActions: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>(['feature']);
