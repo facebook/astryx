@@ -289,10 +289,10 @@ export const docs = {
           'Text above the input describing what datetime is expected.',
       },
       {
-        name: 'Field surface',
+        name: 'Segment row',
         required: true,
         description:
-          'The shared field boundary containing both segments and their end controls.',
+          'The unbordered layout row that holds the two bordered segments and wraps them when its container is narrow.',
       },
       {
         name: 'Date input',
@@ -322,7 +322,7 @@ export const docs = {
         name: 'Clock icon',
         required: true,
         description:
-          'A leading time glyph that identifies the time segment on Astryx pointer surfaces.',
+          'The time glyph shown as a leading identifier on the Astryx pointer field and as the picker affordance in native and touch-sheet time segments.',
       },
       {
         name: 'Time options popover',

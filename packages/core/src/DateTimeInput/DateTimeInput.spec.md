@@ -36,7 +36,7 @@ system_specs: [spec:AST-043]
 | Public contract         | One controlled ISO date-time value presented through coordinated date and time segments; `presentation` selects Astryx, native, or adaptive picker surfaces.                                              |
 | Behavior                | Date and time changes emit one combined value; clear emits `undefined`; controlled empty state remains empty in every rendered picker.                                                                    |
 | End-user impact         | People selecting a date and time see one value reflected consistently in the closed field and the active picker, including after clearing.                                                                |
-| Builder impact          | None. This draft records the released surface; the clear repair adds no prop, value, or migration.                                                                                                        |
+| Builder impact          | None.                                                                                                                                                                                                     |
 | Compatibility/readiness | Released defaults and deprecated `nativePicker` behavior remain unchanged. The presentation matrix is governed by current `spec:AST-043`; component-local observations remain draft pending owner review. |
 | Review checks           | Reject competing picker selection, date/time output that is not one valid combined value, presentation precedence drift, lost per-segment fallback, or broken segment accessibility.                      |
 | Governing rules         | `spec:AST-043`, `family:input-fields`, `family:overlay-dismissal`, and objective platform accessibility standards.                                                                                        |
@@ -53,8 +53,8 @@ or pointer-adaptive combinations of those surfaces.
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: observational documentation plus a compatible state-correction;
-  no public prop, value, default, callback, role, or export changes
+- Compatibility class: no public surface change; existing types, defaults,
+  callbacks, roles, and exports remain stable
 - Controlled/uncontrolled behavior: DateTimeInput remains controlled; `undefined`
   represents no committed date-time value
 - Migration decision: none; picker presentation and deprecated `nativePicker`
@@ -98,15 +98,15 @@ Consumer migration instructions belong in consumer docs and release notes.
 Draft requirements identify their basis so observed code is not mistaken for an
 intentional decision.
 
-| ID  | Candidate invariant                                                                                                                                                                                                                       | Basis                                                                 | Draft review state                           |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------- |
-| FR1 | DateTimeInput MUST reflect one controlled date-time value across its visible segments and active picker, and MUST NOT reveal a competing selected date after the parent accepts a clear.                                                  | Public docs, controlled component seam, current source, focused tests | Verified observation; owner approval pending |
-| FR2 | Every committed date or time change MUST emit one valid combined ISO date-time value; clearing MUST emit `undefined`; changing time while no date is committed MUST emit nothing.                                                         | Public types, docs, current source, focused tests                     | Verified observation; owner approval pending |
-| FR3 | `presentation`, deprecated `nativePicker`, precedence, pointer adaptation, forced surfaces, and per-segment native fallbacks MUST follow `spec:AST-043` FR1–FR4.                                                                          | `spec:AST-043`                                                        | Inherited current authority                  |
-| FR4 | When `changeAction` is present, every value-change path MUST call `onChange` first, show the proposed controlled value optimistically, and contribute to one busy state until the controlled value accepts or replaces it.                | `family:input-fields/FR6`                                             | Inherited current authority                  |
-| FR5 | The two pointer segments MAY share one row only while both retain their intrinsic minimum; below that container threshold they MUST wrap into separate full-width rows without clipping or overlapping end controls.                      | Public docs, current source, focused layout tests                     | Verified observation; owner approval pending |
-| FR6 | Date-time bounds and date constraints MUST prevent invalid commits. Native controls MAY receive platform hints, but JavaScript validation remains the final commit boundary; calendar-only options MAY be unavailable on native surfaces. | Public docs, current source, focused presentation tests               | Verified observation; owner approval pending |
-| FR7 | A preset-time listbox MUST remain optional, preserve typed entry, expose one selected option independently from keyboard highlight, and limit offered values to the selected date's effective minimum and maximum.                        | Public docs, current source, focused interaction tests                | Verified observation; owner approval pending |
+| ID  | Candidate invariant                                                                                                                                                                                                                       | Basis                                                                 | Draft review state                                     |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------ |
+| FR1 | DateTimeInput MUST reflect one controlled date-time value across its visible segments and active picker, and MUST NOT reveal a competing selected date after the parent accepts a clear.                                                  | Public docs, controlled component seam, current source, focused tests | Verified observation; owner approval pending           |
+| FR2 | Every committed date or time change MUST emit one valid combined ISO date-time value; clearing MUST emit `undefined`; changing time while no date is committed MUST emit nothing.                                                         | Public types, docs, current source, focused tests                     | Verified observation; owner approval pending           |
+| FR3 | `presentation`, deprecated `nativePicker`, precedence, pointer adaptation, forced surfaces, and per-segment native fallbacks MUST follow `spec:AST-043` FR1–FR4.                                                                          | `spec:AST-043`                                                        | Inherited current authority                            |
+| FR4 | When `changeAction` is present, every value-change path MUST call `onChange` first, show the proposed controlled value optimistically, and contribute to one busy state until the controlled value accepts or replaces it.                | `family:input-fields/FR6`                                             | Inherited current authority                            |
+| FR5 | The two pointer segments share one row while each retains its intrinsic basis; when the container is narrower, flex wrapping moves them into separate full-width rows.                                                                    | Public docs, current source, focused layout tests                     | Verify rendered geometry; class-level behavior covered |
+| FR6 | Date-time bounds and date constraints MUST prevent invalid commits. Native controls MAY receive platform hints, but JavaScript validation remains the final commit boundary; calendar-only options MAY be unavailable on native surfaces. | Public docs, current source, focused presentation tests               | Verified observation; owner approval pending           |
+| FR7 | A preset-time listbox MUST remain optional, preserve typed entry, expose one selected option independently from keyboard highlight, and limit offered values to the selected date's effective minimum and maximum.                        | Public docs, current source, focused interaction tests                | Verified observation; owner approval pending           |
 
 ### Allowed variation
 
@@ -161,13 +161,13 @@ durable constraints and their verification target.
 
 ## Design relationships
 
-| Anatomy or state     | Design requirement                                        | Representation authority                        | Hierarchy role | Component contract |
-| -------------------- | --------------------------------------------------------- | ----------------------------------------------- | -------------- | ------------------ |
-| Field surface        | Presents one coherent date-time input boundary.           | `family:input-fields`                           | Prominent      | FR1, FR5           |
-| Date segment         | Presents date text and access to the active date picker.  | Current source and public docs                  | Prominent      | FR1–FR3, AR1–AR3   |
-| Time segment         | Presents time text and access to the active time surface. | Current source and public docs                  | Prominent      | FR1–FR3, AR1–AR3   |
-| Picker surfaces      | Collect date and time without becoming competing values.  | `spec:AST-043` and composed component contracts | Supporting     | FR1–FR3            |
-| Busy/disabled/status | Uses shared input-family representations.                 | `family:input-fields`                           | Supporting     | FR4, AR4           |
+| Anatomy or state     | Design requirement                                                 | Representation authority                        | Hierarchy role | Component contract |
+| -------------------- | ------------------------------------------------------------------ | ----------------------------------------------- | -------------- | ------------------ |
+| Segment row          | Groups the two bordered segments and wraps them as one layout row. | Current source and public docs                  | Prominent      | FR1, FR5           |
+| Date segment         | Presents date text and access to the active date picker.           | Current source and public docs                  | Prominent      | FR1–FR3, AR1–AR3   |
+| Time segment         | Presents time text and access to the active time surface.          | Current source and public docs                  | Prominent      | FR1–FR3, AR1–AR3   |
+| Picker surfaces      | Collect date and time without becoming competing values.           | `spec:AST-043` and composed component contracts | Supporting     | FR1–FR3            |
+| Busy/disabled/status | Uses shared input-family representations.                          | `family:input-fields`                           | Supporting     | FR4, AR4           |
 
 The component implements design requirements without copying their rationale.
 An unsettled representation remains a human decision; principles do not let an
@@ -182,7 +182,7 @@ agent invent the answer.
   "Label": {
     "delegatesTo": {"owner": "component:Field", "target": "field-label"}
   },
-  "Field surface": {"target": "date-time-input"},
+  "Segment row": {"target": "date-time-input"},
   "Date input": {"target": "date-time-input-date-segment"},
   "Calendar icon": {"target": "date-time-input-toggle-icon"},
   "Date picker": {
@@ -220,13 +220,14 @@ leading clock glyph uses `date-time-input-clock-icon`.
 
 ## Verification map
 
-| Contract            | Verification                                                                            | Representative states                                         | Mutation or failure expectation                                                                 | Audit section                     |
-| ------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------- |
-| FR1–FR2             | `DateTimeInput.test.tsx`                                                                | empty, calendar selection, typed date/time, clear             | A stale Calendar selection, partial output, or invalid mutation makes a public-state test fail. | `audit:DateTimeInput/behavior`    |
-| FR3, FR6            | `Presentation.test.tsx`, `NativePickerSegments.test.tsx`, `DateTimeInputTouch.test.tsx` | forced, adaptive, legacy, native fallback, constrained commit | A substituted surface, precedence drift, or invalid commit makes a presentation test fail.      | `audit:DateTimeInput/surfaces`    |
-| FR4, AR4            | `DateTimeInput.test.tsx`, `DateTimeInputTouch.test.tsx`                                 | pending, loading, disabled reason                             | Mutation during busy/disabled state or stale optimistic output makes a state test fail.         | `audit:DateTimeInput/state`       |
-| FR5, FR7, AR1–AR3   | `DateTimeInput.test.tsx`, exact-head browser accessibility and RTL jobs                 | narrow container, popovers, time options, keyboard/focus      | Clipping, wrong role/name/state, or lost keyboard/focus behavior fails unit or browser checks.  | `audit:DateTimeInput/interaction` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`, `themingTargets.test.ts`                                 | root, segments, icons, listbox, options                       | Missing, undocumented, or wrongly placed targets fail knowledge or target checks.               | `audit:DateTimeInput/theming`     |
+| Contract            | Verification                                                                            | Representative states                                         | Mutation or failure expectation                                                                                                      | Audit section                     |
+| ------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| FR1–FR2             | `DateTimeInput.test.tsx`                                                                | empty, calendar selection, typed date/time, clear             | A stale Calendar selection, partial output, or invalid mutation makes a public-state test fail.                                      | `audit:DateTimeInput/behavior`    |
+| FR3, FR6            | `Presentation.test.tsx`, `NativePickerSegments.test.tsx`, `DateTimeInputTouch.test.tsx` | forced, adaptive, legacy, native fallback, constrained commit | A substituted surface, precedence drift, or invalid commit makes a presentation test fail.                                           | `audit:DateTimeInput/surfaces`    |
+| FR4, AR4            | `DateTimeInput.test.tsx`, `DateTimeInputTouch.test.tsx`                                 | pending, loading, disabled reason                             | Mutation during busy/disabled state or stale optimistic output makes a state test fail.                                              | `audit:DateTimeInput/state`       |
+| FR5                 | `DateTimeInput.test.tsx`                                                                | intrinsic row, narrow-container wrap classes                  | Removing the intrinsic basis or wrap styles makes the class-level layout assertions fail; rendered geometry remains review evidence. | `audit:DateTimeInput/layout`      |
+| FR7, AR1–AR3        | `DateTimeInput.test.tsx`, `DateTimeInputTouch.test.tsx`                                 | popovers, time options, keyboard/focus                        | Wrong role, name, state, keyboard behavior, or focus behavior makes a focused interaction test fail.                                 | `audit:DateTimeInput/interaction` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`, `themingTargets.test.ts`                                 | root, segments, icons, listbox, options                       | Missing, undocumented, or wrongly placed targets fail knowledge or target checks.                                                    | `audit:DateTimeInput/theming`     |
 
 ## Decision log
 
