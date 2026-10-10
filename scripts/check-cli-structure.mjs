@@ -48,6 +48,20 @@ const CLI = path.join(REPO_ROOT, 'packages/cli');
 const DOCTYPES = path.join(CLI, 'authoring/doctypes');
 const API = path.join(CLI, 'api');
 
+/**
+ * `path.relative()` returns backslash-separated paths on Windows. The
+ * known-gap allowlists below are keyed on the forward-slash paths every
+ * contributor's own diff and the CONTRIBUTING doc actually show, so a raw
+ * `path.relative()` result used as a Map key misses on Windows even for an
+ * already-allowlisted file, turning every known gap into a fresh error.
+ * @param {string} base
+ * @param {string} filePath
+ * @returns {string}
+ */
+function posixRelative(base, filePath) {
+  return path.relative(base, filePath).split(path.sep).join('/');
+}
+
 /** `base/` holds the shared leaf types (SlotDoc, ExampleDoc, ...) that other
  *  doc-types compose. It is not a doc kind: nothing parses a "base doc". */
 const DOCTYPE_EXEMPT = new Set(['base']);
@@ -274,7 +288,7 @@ function checkEnvironmentImports(label, files, baseDir, knownGaps) {
   let checked = 0;
   for (const filePath of files) {
     checked++;
-    const rel = path.relative(baseDir, filePath);
+    const rel = posixRelative(baseDir, filePath);
     const sources = importSources(filePath);
     /** @type {Set<string>} */
     const found = new Set();
@@ -426,7 +440,7 @@ function isApiExempt(filePath) {
   if (adapterExemptions.has(filePath)) return true;
   const bn = path.basename(filePath);
   if (bn.endsWith('.type.mjs')) return true;
-  const rel = path.relative(API, filePath);
+  const rel = posixRelative(API, filePath);
   return rel === 'index.mjs' || rel === 'error.mjs' || rel === 'logger.mjs';
 }
 
@@ -534,7 +548,7 @@ const INV23_KNOWN_GAPS = new Map([
 let inv23Count = 0;
 for (const filePath of handlerFiles) {
   inv23Count++;
-  const rel = path.relative(HANDLER_DIR, filePath);
+  const rel = posixRelative(HANDLER_DIR, filePath);
   const src = fs.readFileSync(filePath, 'utf8');
   /** @type {Set<string>} */
   const found = new Set();
