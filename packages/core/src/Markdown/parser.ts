@@ -4079,20 +4079,32 @@ function stampSourceRanges(
     // `\r` included, since the parser reads it as part of the line too and a
     // range that dropped it would slice to something that re-parses
     // differently.
-    const start: {offset?: number; line?: number} = {};
-    const end: {offset?: number; line?: number} = {};
-    if (withOffsets) {
-      start.offset = lineStart(startLine);
-      end.offset = lineStart(endLine) + lines[endLine].length;
+    // Each point is built as one literal so a parse without source lines
+    // produces exactly the `{offset}` points it always has.
+    let position: MarkdownAstPosition;
+    if (documentLineOf == null) {
+      position = {
+        start: {offset: lineStart(startLine)},
+        end: {offset: lineStart(endLine) + lines[endLine].length},
+      };
+    } else if (withOffsets) {
+      position = {
+        start: {
+          offset: lineStart(startLine),
+          line: documentLineOf(startLine) + 1,
+        },
+        end: {
+          offset: lineStart(endLine) + lines[endLine].length,
+          line: documentLineOf(endLine) + 1,
+        },
+      };
+    } else {
+      position = {
+        start: {line: documentLineOf(startLine) + 1},
+        end: {line: documentLineOf(endLine) + 1},
+      };
     }
-    if (documentLineOf != null) {
-      start.line = documentLineOf(startLine) + 1;
-      end.line = documentLineOf(endLine) + 1;
-    }
-    blocks[i] = withMarkerShapeOf(blocks[i], {
-      ...blocks[i],
-      position: {start, end},
-    });
+    blocks[i] = withMarkerShapeOf(blocks[i], {...blocks[i], position});
   }
 }
 
