@@ -31,6 +31,10 @@ interface HarnessProps {
   hitTest?: (x: number, y: number) => Element | null;
   getScroller?: () => HTMLElement | null;
   onHighlight?: (row: HTMLElement | null) => void;
+  /** Render a filter field, a button, and a row carrying an inner button. */
+  hasHostedControls?: boolean;
+  onHostedButton?: () => void;
+  onRowButton?: () => void;
 }
 
 function Harness({
@@ -40,6 +44,9 @@ function Harness({
   hitTest,
   getScroller,
   onHighlight,
+  hasHostedControls = false,
+  onHostedButton,
+  onRowButton,
 }: HarnessProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -81,6 +88,20 @@ function Harness({
         Open
       </button>
       <div ref={menuRef} role="menu" tabIndex={-1} {...press.menuProps}>
+        {hasHostedControls && (
+          <>
+            <input aria-label="Filter" />
+            <button type="button" onClick={onHostedButton}>
+              Create
+            </button>
+            <div role="menuitem" tabIndex={-1} onClick={() => onSelect?.('E')}>
+              E
+              <button type="button" onClick={onRowButton}>
+                Edit E
+              </button>
+            </div>
+          </>
+        )}
         {['A', 'B', 'C'].map(label => (
           <div
             key={label}
@@ -192,6 +213,54 @@ describe('useMenuPress — tracking inside the menu', () => {
     expect(clicks[0].metaKey).toBe(true);
     expect(clicks[0].shiftKey).toBe(true);
     expect(clicks[0].detail).toBe(0);
+  });
+});
+
+describe('useMenuPress — controls the menu hosts beside its rows', () => {
+  const control = (name: string) => screen.getByRole('button', {name});
+
+  it('a mouse press on a hosted button is not tracked, so its click acts', () => {
+    const onHostedButton = vi.fn();
+    const onSelect = vi.fn();
+    render(
+      <Harness
+        hasHostedControls
+        onHostedButton={onHostedButton}
+        onSelect={onSelect}
+      />,
+    );
+    fireEvent.pointerDown(control('Create'), mouse());
+    fireEvent.pointerUp(control('Create'), mouse());
+    fireEvent.click(control('Create'), {detail: 1});
+    expect(onHostedButton).toHaveBeenCalledTimes(1);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('a finger on a hosted field is not cancelled, so the field can focus', () => {
+    render(<Harness hasHostedControls />);
+    const field = screen.getByRole('textbox', {name: 'Filter'});
+    // fireEvent returns false when a handler called preventDefault.
+    expect(fireEvent.pointerDown(field, touch())).toBe(true);
+    fireEvent.pointerUp(field, touch());
+    expect(fireEvent.click(field, {detail: 1})).toBe(true);
+  });
+
+  it('a button inside a row still belongs to the row', () => {
+    const onRowButton = vi.fn();
+    const onSelect = vi.fn();
+    render(
+      <Harness
+        hasHostedControls
+        onRowButton={onRowButton}
+        onSelect={onSelect}
+      />,
+    );
+    expect(fireEvent.pointerDown(control('Edit E'), touch())).toBe(false);
+    fireEvent.pointerUp(control('Edit E'), touch());
+    fireEvent.click(control('Edit E'), {detail: 1});
+    // The row acts once, from the release; the stray click is swallowed.
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith('E');
   });
 });
 

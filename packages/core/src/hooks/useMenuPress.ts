@@ -31,6 +31,9 @@
  *   whether the opening gesture's release may act (see menuPressGesture.ts).
  * - `pointercancel`, a second pointer, or the window losing focus end the
  *   gesture with nothing acting; the model never re-implements scrolling.
+ * - A press on a form control, a link or an editable element that the menu
+ *   hosts outside every row (a filter field above the rows, a form a sub-menu
+ *   holds) is left to the browser: the field focuses and the button clicks.
  * - While a press is tracked in an overflowing menu, a pointer resting near
  *   the top or bottom edge scrolls the menu toward that edge.
  *
@@ -72,6 +75,30 @@ const AUTOSCROLL_INTERVAL_MS = 16;
 
 const FOCUSABLE_ROW_SELECTOR =
   '[tabindex], a[href], button, input, select, textarea, [contenteditable]';
+// Controls a menu may host beside its rows. A press on one of them outside
+// every row is the browser's.
+const HOSTED_CONTROL_SELECTOR =
+  'input, textarea, select, button, label, a[href], [contenteditable]:not([contenteditable="false"]), [role="textbox"]';
+// A row of any state: a control inside a disabled row still belongs to it.
+const ANY_ROW_SELECTOR =
+  '[role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"]';
+
+/**
+ * Whether `target` sits in a control the menu hosts outside every row, so the
+ * press is the browser's rather than the model's.
+ */
+function isHostedControlPress(
+  target: Element | null,
+  menu: HTMLElement,
+  itemSelector: string,
+): boolean {
+  const control = target?.closest(HOSTED_CONTROL_SELECTOR);
+  if (control == null || !menu.contains(control)) {
+    return false;
+  }
+  const row = control.closest(`${itemSelector}, ${ANY_ROW_SELECTOR}`);
+  return row == null || !menu.contains(row);
+}
 const INNER_CONTROL_SELECTOR = 'a[href], button, [tabindex]';
 
 // =============================================================================
@@ -721,6 +748,12 @@ export function useMenuPress(options: UseMenuPressOptions): UseMenuPressReturn {
       // its parent menu, and both would otherwise track the same pointer.
       const target = event.target as Element | null;
       if (target?.closest(MENU_PRESS_ROOT_SELECTOR) !== menu) {
+        return;
+      }
+      // A field or a button the menu hosts beside its rows keeps the
+      // browser's own press: not tracked, not cancelled, its click not
+      // swallowed.
+      if (isHostedControlPress(target, menu, optionsRef.current.itemSelector)) {
         return;
       }
       if (pointerType !== 'mouse') {

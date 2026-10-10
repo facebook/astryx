@@ -36,7 +36,7 @@ export const docs = {
       name: 'options.itemSelector',
       type: 'string',
       description:
-        'Selector matching the ENABLED rows. A pointer over anything else inside the menu (a divider, a heading, a disabled row) highlights nothing.',
+        'Selector matching the ENABLED rows. A pointer over anything else inside the menu (a divider, a heading, a disabled row) highlights nothing. A press that begins on a form control, a link or an editable element the menu hosts outside every row (a filter field, a button) is left to the browser: not tracked, so the field focuses and the button clicks.',
       required: true,
     },
     {
@@ -159,7 +159,8 @@ export const docsDense = {
   paramDescriptions: {
     options: 'config.',
     'options.menuRef': 'menu / listbox root.',
-    'options.itemSelector': 'selector for ENABLED rows; anything else clears.',
+    'options.itemSelector':
+      'selector for ENABLED rows; anything else clears; a hosted field or button outside every row keeps the browser press.',
     'options.triggerRef': 'the control that opens the menu.',
     'options.onTriggerPress':
       'mouse press / held finger on trigger: open, return whether it opened (false = the press closed it).',

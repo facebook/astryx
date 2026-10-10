@@ -20,6 +20,7 @@ import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {DropdownMenuGroup} from './DropdownMenuGroup';
 import {Divider} from '../Divider';
+import {Button} from '../Button';
 import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -2599,6 +2600,43 @@ describe('DropdownMenu press model', () => {
 
   const item = (name: string) =>
     screen.getByRole('menuitem', {name, hidden: true});
+
+  it('a field and a button the menu hosts beside its rows keep their own press', async () => {
+    const onCreate = vi.fn<() => void>();
+    const onPick = vi.fn<(label: string) => void>();
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Labels'}}>
+        <input aria-label="Filter labels" />
+        <Button label="Create label" onClick={onCreate} />
+        <DropdownMenuItem label="Bug" onClick={() => onPick('Bug')} />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Labels/}));
+    const field = screen.getByRole('textbox', {
+      name: 'Filter labels',
+      hidden: true,
+    });
+    // Under a finger the field's press is not cancelled, so it can focus.
+    expect(fireEvent.pointerDown(field, touch)).toBe(true);
+    fireEvent.pointerUp(field, touch);
+
+    const create = screen.getByRole('button', {
+      name: 'Create label',
+      hidden: true,
+    });
+    fireEvent.pointerDown(create, mouse);
+    fireEvent.pointerUp(create, mouse);
+    fireEvent.click(create, {detail: 1});
+    expect(onCreate).toHaveBeenCalledTimes(1);
+    expect(onPick).not.toHaveBeenCalled();
+
+    // The rows keep the press model: the release acts, once.
+    fireEvent.pointerDown(item('Bug'), touch);
+    fireEvent.pointerUp(item('Bug'), touch);
+    fireEvent.click(item('Bug'), {detail: 1});
+    expect(onPick).toHaveBeenCalledTimes(1);
+  });
 
   it('a finger that lands on one row and lifts on another acts on the second, once', async () => {
     const onPick = vi.fn();

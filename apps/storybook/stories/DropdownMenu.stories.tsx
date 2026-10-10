@@ -15,6 +15,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSubMenu,
 } from '@astryxdesign/core/DropdownMenu';
+import {Button} from '@astryxdesign/core/Button';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   PencilIcon,
@@ -1426,4 +1428,35 @@ export const SubmenuAdaptiveFixture: Story = {
       </DropdownMenu>
     </div>
   ),
+};
+
+// A menu that hosts controls beside its rows: the checkbox takes a tap and
+// the button its own click, while the rows keep the press model.
+export const HostedControls: Story = {
+  render: () => {
+    const [showArchived, setShowArchived] = useState(false);
+    const [created, setCreated] = useState(0);
+    return (
+      <>
+        <DropdownMenu button={{label: 'Labels'}}>
+          <CheckboxInput
+            label="Show archived"
+            value={showArchived}
+            onChange={setShowArchived}
+          />
+          <Button
+            label="Create label"
+            variant="ghost"
+            onClick={() => setCreated(count => count + 1)}
+          />
+          <DropdownMenuItem label="Bug" onClick={() => console.log('Bug')} />
+          <DropdownMenuItem
+            label="Feature"
+            onClick={() => console.log('Feature')}
+          />
+        </DropdownMenu>
+        <output data-testid="created">{created}</output>
+      </>
+    );
+  },
 };
