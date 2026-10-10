@@ -4,7 +4,7 @@
 
 /**
  * @file useTableSortable.tsx
- * @input React, types, Icon, theme tokens, i18n (useTranslator)
+ * @input React, types, Icon, theme tokens, i18n (useComponentTranslator)
  * @output Exports useTableSortable hook and sort-related types
  * @position Sortable plugin; consumed by Table via plugins prop
  *
@@ -19,7 +19,9 @@ import {colorVars, spacingVars, radiusVars} from '../../../theme/tokens.stylex';
 import {focusOutlineProps} from '../../../utils/focusOutline.stylex';
 import {Icon} from '../../../Icon';
 import {resolveContextActions} from '../../tableContextMenu';
-import {useTranslator, type TranslatorFn} from '../../../i18n';
+import type {TranslatorFn} from '../../../i18n';
+import {useComponentTranslator} from '../../../i18n/useComponentTranslator';
+import tableMessages from '../../../i18n/generated-locales/en/table.generated';
 import type {
   TablePlugin,
   HeaderCellRenderProps,
@@ -246,7 +248,7 @@ function SortHeaderButton<T extends Record<string, unknown>>({
   children: ReactNode;
   configRef: React.RefObject<UseTableSortableConfig>;
 }) {
-  const t = useTranslator();
+  const t = useComponentTranslator(tableMessages);
   const config = configRef.current;
   const sortKey = resolveSortKey(column) ?? '';
   const entryIndex = config.sort.findIndex(e => e.sortKey === sortKey);
@@ -378,7 +380,7 @@ export function useTableSortable<
   T extends Record<string, unknown>,
   TSortKey extends string = string,
 >(config: UseTableSortableConfig<TSortKey>): TablePlugin<T> {
-  const t = useTranslator();
+  const t = useComponentTranslator(tableMessages);
   const configRef = useRef(config);
   configRef.current = config;
 

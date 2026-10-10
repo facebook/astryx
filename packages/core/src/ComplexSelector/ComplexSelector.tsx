@@ -39,7 +39,9 @@ import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import selectorMessages from '../i18n/generated-locales/en/selector.generated';
+import spinnerMessages from '../i18n/generated-locales/en/spinner.generated';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {usePopover} from '../Popover/usePopover';
@@ -62,6 +64,9 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {usePressFeedback} from '../hooks/usePressFeedback';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {...selectorMessages, ...spinnerMessages};
 
 const styles = stylex.create({
   triggerContainer: {
@@ -540,7 +545,7 @@ export function ComplexSelector<Value>({
         controlClassName != null ||
         controlStyle != null),
   );
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const pressable = usePressFeedback();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
