@@ -23,7 +23,6 @@
  */
 
 import {
-  use,
   useCallback,
   useEffect,
   useId,
@@ -49,7 +48,11 @@ import {useInputStatusIcon, useMergedRefs} from '../hooks';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
-import {useTranslator, InternationalizationContext} from '../i18n';
+import {useLocale} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import calendarMessages from '../i18n/generated-locales/en/calendar.generated';
+import dateInputMessages from '../i18n/generated-locales/en/dateInput.generated';
+import dateTimeInputMessages from '../i18n/generated-locales/en/dateTimeInput.generated';
 import {SegmentedControl, SegmentedControlItem} from '../SegmentedControl';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
@@ -105,6 +108,13 @@ import {
   monthIndexOf,
 } from '../DateInput/monthGeometry';
 import type {DateTimeInputProps, ISODateTimeString} from './DateTimeInput';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {
+  ...calendarMessages,
+  ...dateInputMessages,
+  ...dateTimeInputMessages,
+};
 
 function splitDateTime(dt: ISODateTimeString | undefined): {
   date: ISODateString | undefined;
@@ -473,9 +483,9 @@ export function TouchDateTimeField({
   ref,
   ...rest
 }: DateTimeInputProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
-  const {locale} = use(InternationalizationContext);
+  const locale = useLocale();
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateTimeInput.placeholder');
   const timePlaceholder =

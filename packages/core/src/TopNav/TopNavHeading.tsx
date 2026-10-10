@@ -40,7 +40,8 @@ import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import topNavMessages from '../i18n/generated-locales/en/topNav.generated';
 
 // =============================================================================
 // Styles
@@ -328,7 +329,7 @@ export function TopNavHeading({
   ref,
   ...props
 }: TopNavHeadingProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(topNavMessages);
   const LinkComponent = useLinkComponent(as);
   // When the logo is wrapped in a link it needs its own accessible name (the
   // logo image itself is decorative). Prefer an explicit logoLabel, fall back

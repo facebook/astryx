@@ -59,7 +59,8 @@ import {warnOnce} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import typeaheadMessages from '../i18n/generated-locales/en/typeahead.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
@@ -495,7 +496,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   ref,
   ...rest
 }: BaseTypeaheadProps<T>) {
-  const t = useTranslator();
+  const t = useComponentTranslator(typeaheadMessages);
   const placeholder =
     placeholderFromProps ?? t('@astryx.typeahead.searchPlaceholder');
   const emptySearchText =

@@ -40,7 +40,8 @@ import {
 import {ToastSurface} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import toastMessages from '../i18n/generated-locales/en/toast.generated';
 import {layerInsetProperties} from '../Layer/layerInset';
 import type {LayerInset} from '../Layer/LayerContext';
 
@@ -338,7 +339,7 @@ export function ToastViewport({
   isTopLayer = true,
   children,
 }: ToastViewportProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(toastMessages);
   const [toasts, setToasts] = useState<ToastEntry[]>([]);
   const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
   const toastsRef = useRef(toasts);

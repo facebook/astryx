@@ -58,7 +58,8 @@ import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import {themeProps} from '../utils/themeProps';
 import {truncateCharacters} from '../utils/characters';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import powersearchMessages from '../i18n/generated-locales/en/powersearch.generated';
 import {useLocale} from '../i18n/useLocale';
 import type {Locale} from '../i18n/types';
 import type {
@@ -585,7 +586,7 @@ export function PowerSearch({
   const size = useSize(sizeProp, 'md');
   const config = useInternalConfig(configProp);
   const searchSource = usePowerSearchSource(config, maxSearchResults);
-  const t = useTranslator();
+  const t = useComponentTranslator(powersearchMessages);
   const locale = useLocale();
   const label = labelFromProps ?? t('@astryx.powersearch.label');
   const placeholder =

@@ -90,7 +90,9 @@ import type {
 } from '../utils/dateTypes';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
-import {useLocale, useTranslator} from '../i18n';
+import {useLocale} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import calendarMessages from '../i18n/generated-locales/en/calendar.generated';
 
 /** Imperative handle for Calendar handleRef */
 
@@ -227,7 +229,7 @@ export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
  * ```
  */
 export function Calendar({ref, ...props}: CalendarProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(calendarMessages);
   const locale = useLocale();
   const {
     handleRef,
@@ -1035,7 +1037,7 @@ function DayCell({
   onDayClick,
   onDayHover,
 }: DayCellProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(calendarMessages);
   const locale = useLocale();
   const pressable = usePressFeedback();
   const {date, isOutside, dayNumber} = day;

@@ -59,7 +59,8 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import fileInputMessages from '../i18n/generated-locales/en/fileInput.generated';
 import type {TranslatorFn} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -454,7 +455,7 @@ export function FileInput({
   ref,
   ...rest
 }: FileInputProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(fileInputMessages);
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();

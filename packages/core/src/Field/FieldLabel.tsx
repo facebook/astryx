@@ -4,7 +4,7 @@
 
 /**
  * @file FieldLabel.tsx
- * @input Uses React, Icon, IconType, useTranslator, FormLayoutContext
+ * @input Uses React, Icon, IconType, useComponentTranslator, FormLayoutContext
  * @output Exports FieldLabel component, FieldLabelProps
  * @position Core label implementation; used by Field, CheckboxInput, Switch
  *
@@ -30,7 +30,8 @@ import {
 } from '../theme/tokens.stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Tooltip} from '../Tooltip';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import fieldMessages from '../i18n/generated-locales/en/field.generated';
 import {themeProps} from '../utils/themeProps';
 import {useInputContainer} from '../hooks';
 import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
@@ -211,7 +212,7 @@ export function FieldLabel({
   ref,
   ...rest
 }: FieldLabelProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(fieldMessages);
   const {defaultOptionality} = use(FormLayoutContext);
 
   // A form-level `defaultOptionality` means "only the exception is marked": a

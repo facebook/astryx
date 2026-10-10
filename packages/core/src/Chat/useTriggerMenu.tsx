@@ -41,7 +41,8 @@ import {
 import {mergeProps, groupItems} from '../utils';
 import type {SearchableItem} from '../Typeahead/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import chatTriggerMenuMessages from '../i18n/generated-locales/en/chatTriggerMenu.generated';
 import type {ChatComposerTrigger, ChatComposerToken} from './ChatComposerInput';
 
 // =============================================================================
@@ -256,7 +257,7 @@ function deleteTriggerText(
 export function useTriggerMenu(
   options: UseTriggerMenuOptions,
 ): UseTriggerMenuReturn {
-  const t = useTranslator();
+  const t = useComponentTranslator(chatTriggerMenuMessages);
   const {
     triggers,
     editableRef,

@@ -31,7 +31,8 @@ import {
   type SideNavImperativeCollapseHandle,
 } from './SideNavCollapseContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import sideNavCollapseButtonMessages from '../i18n/generated-locales/en/sideNavCollapseButton.generated';
 import type {ElementSize} from '../SizeContext/SizeContext';
 
 // =============================================================================
@@ -138,7 +139,7 @@ export function SideNavCollapseButton({
   onClick: onClickProp,
   ...props
 }: SideNavCollapseButtonProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(sideNavCollapseButtonMessages);
   const {isCollapsed, toggle, isCollapsible} = useSideNavCollapseState(
     collapsible,
     handleRef,

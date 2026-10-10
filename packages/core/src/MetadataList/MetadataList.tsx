@@ -4,7 +4,7 @@
 
 /**
  * @file MetadataList.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens, MetadataListContext, i18n (useTranslator)
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, MetadataListContext, i18n (useComponentTranslator)
  * @output Exports MetadataList component, MetadataListProps, MetadataListColumns types
  * @position Core implementation; consumed by index.ts, tested by MetadataList.test.tsx
  *
@@ -31,7 +31,8 @@ import {
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import metadataListMessages from '../i18n/generated-locales/en/metadataList.generated';
 
 // =============================================================================
 // Types
@@ -208,7 +209,7 @@ export function MetadataList({
   const labelConfig = label ?? (isMultiColumn ? LABEL_TOP : LABEL_START);
   const [isShowAll, setIsShowAll] = useState(false);
   const contentId = useId();
-  const t = useTranslator();
+  const t = useComponentTranslator(metadataListMessages);
 
   const contextValue = useMemo(
     () => ({

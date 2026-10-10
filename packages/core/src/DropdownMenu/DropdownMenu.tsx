@@ -92,7 +92,8 @@ import {mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import dropdownMenuMessages from '../i18n/generated-locales/en/dropdownMenu.generated';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 
 // The menu's own lower cap on the placement axis; the viewport cap underneath
@@ -470,7 +471,7 @@ function DropdownMenuBottomSheet({
   'data-testid': testId,
   ...rest
 }: DropdownMenuDataProps & {presentation: 'bottom-sheet'}) {
-  const t = useTranslator();
+  const t = useComponentTranslator(dropdownMenuMessages);
   const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
   const backLabel = t('@astryx.dropdownMenu.back');
   const buttonRef = useRef<HTMLElement>(null);
@@ -703,7 +704,7 @@ function DropdownMenuPopover({
   'data-testid': testId,
   ...props
 }: DropdownMenuProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(dropdownMenuMessages);
   const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
 
   const items = ('items' in props ? props.items : undefined) ?? [];

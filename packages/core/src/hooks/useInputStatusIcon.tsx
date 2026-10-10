@@ -39,7 +39,8 @@ import {Icon, type IconName, type IconSize} from '../Icon';
 import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
 import type {InputStatus, InputStatusType} from '../Field/types';
 import {useTooltip} from '../Tooltip';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import inputMessages from '../i18n/generated-locales/en/input.generated';
 import {radiusVars} from '../theme/tokens.stylex';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -140,7 +141,7 @@ export function useInputStatusIcon({
   isInGroup = false,
   size = 'md',
 }: UseInputStatusIconOptions): UseInputStatusIconReturn {
-  const t = useTranslator();
+  const t = useComponentTranslator(inputMessages);
   const isTooltipVariant = statusVariant === 'tooltip';
   const hasTooltip = isTooltipVariant && !!status?.message;
 

@@ -33,7 +33,8 @@ import {mergeProps} from '../utils';
 import {isSafeUrl} from '../utils/safeUrl';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import citationMessages from '../i18n/generated-locales/en/citation.generated';
 import {renderIconSlot} from '../Icon';
 
 export interface CitationSource {
@@ -188,7 +189,7 @@ export function Citation({
   'data-testid': testId,
   ...rest
 }: CitationProps): React.ReactElement {
-  const t = useTranslator();
+  const t = useComponentTranslator(citationMessages);
   const title = source.title ?? String(number);
   const href =
     source.url != null && isSafeUrl(source.url) ? source.url : undefined;
