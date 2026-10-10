@@ -5,7 +5,7 @@
 /**
  * @file Dialog.tsx
  * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext, layerTextReset,
- *   layerStructureReset, modalOutlet
+ *   layerStructureReset, modalOutlet, interactionModality
  * @output Exports Dialog component, DialogProps, DialogVariant, DialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by Dialog.test.tsx
  *
@@ -15,6 +15,10 @@
  * Fullscreen dialogs add safe-area protection to the default padding fallback
  * while preserving explicit prop/theme padding overrides, and fade in without
  * the centered-dialog translate/scale motion.
+ *
+ * Initial focus and the focus returned on close follow the last input
+ * (docs/architecture/interaction-modality.md INV1): the shared focus indicator
+ * is hidden after a pointer press and shown after a key press.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Dialog/Dialog.doc.mjs (props table, features, implementation notes)
@@ -66,8 +70,38 @@ import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
 import type {DialogVariantMap} from './index';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+/**
+ * Move focus programmatically so its ring follows the last input. Dialog does
+ * not render the element that opened it or the consumer's autofocus target, so
+ * the browser's focus option is the one way to reach them.
+ */
+function focusForLastInput(element: HTMLElement): void {
+  // A text-entry field paints its own focus treatment to show where typing
+  // goes, and an extra blur there can run validation or mark it touched.
+  const isTextEntry =
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement ||
+    element.isContentEditable;
+  if (isTextEntry || getInteractionModality() !== 'pointer') {
+    element.focus();
+    return;
+  }
+  // Focusing the element that already has focus does nothing, so a ring the
+  // browser already drew would stay. WebKit draws one when showModal() or its
+  // native close moves focus itself, so clear that focus first.
+  if (element.matches(':focus-visible')) {
+    element.blur();
+  }
+  element.focus({focusVisible: false});
+}
+
 /**
  * Calculate a directional translate offset for dialog entry animation.
  * Returns a normalized vector from the trigger element toward the viewport
@@ -502,6 +536,8 @@ export function Dialog({
   // for directional animation origin and focus restoration on close.
   const triggerElementRef = useRef<HTMLElement | null>(null);
 
+  useInteractionModalityTracking();
+
   // Derive dismissal behavior from purpose
   const allowEscape = purpose !== 'required';
   const allowBackdropClick = purpose === 'info';
@@ -540,7 +576,7 @@ export function Dialog({
         const autofocusTarget =
           dialog.querySelector<HTMLElement>('[data-autofocus]');
         if (autofocusTarget) {
-          autofocusTarget.focus();
+          focusForLastInput(autofocusTarget);
         }
       }
     } else {
@@ -548,7 +584,9 @@ export function Dialog({
         dialog.close();
       }
       // Return focus to the element that opened the dialog
-      triggerElementRef.current?.focus();
+      if (triggerElementRef.current) {
+        focusForLastInput(triggerElementRef.current);
+      }
       triggerElementRef.current = null;
     }
   }, [isOpen, isInline]);
