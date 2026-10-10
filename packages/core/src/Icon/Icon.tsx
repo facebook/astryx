@@ -4,7 +4,7 @@
 
 /**
  * @file Icon.tsx
- * @input Uses ReactSVGProps, icon components or semantic icon names
+ * @input Ordinary SVG components or semantic names with independent explicit size/appearance/weight
  * @output Exports Icon component, IconProps, IconColor, IconSize, IconType types
  * @position Core implementation; consumed by index.ts, tested by Icon.test.tsx
  *
@@ -26,19 +26,21 @@ import React, {type ComponentType, type SVGProps} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
-import {useThemeName} from '../theme/useTheme';
-import {getIcon} from './globalIconRegistry';
+import {useThemeDefinition} from '../theme/useTheme';
+import {resolveIconWithContext} from './iconResolution';
 import type {IconName, NamespacedIconName} from './globalIconRegistry';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-import {useIconSize} from './IconDefaultSizeContext';
+import {useIconContextSize} from './IconDefaultSizeContext';
 import {
   iconBoxSizeStyles,
   iconSizeStyles,
-  type IconSize,
+  iconDimensionStyles,
+  type IconSize as BuiltInIconSize,
 } from './IconSize.stylex';
+import type {IconSize, IconAppearance, IconWeight} from './iconCapabilities';
 
-export type {IconSize} from './IconSize.stylex';
+export type {IconSize} from './iconCapabilities';
 
 // =============================================================================
 // Styles
@@ -164,6 +166,10 @@ export interface IconProps extends Omit<
    * by an owning Astryx component for its icon slot, then falls back to 'md'.
    */
   size?: IconSize;
+  /** Explicit supplied-artwork appearance; independent from size and numeric weight. */
+  appearance?: IconAppearance;
+  /** Exact supplied weight or an unchanged finite number inside a declared range. */
+  weight?: IconWeight;
   /**
    * Accessible name for the icon. Set this only when the icon is MEANINGFUL on
    * its own — a standalone status glyph or an icon-only indicator with no
@@ -244,6 +250,8 @@ export function Icon({
   icon,
   color = 'inherit',
   size: sizeProp,
+  appearance,
+  weight,
   label,
   ref,
   className,
@@ -251,18 +259,26 @@ export function Icon({
   xstyle,
   ...props
 }: IconProps) {
-  const size = useIconSize(sizeProp);
-  // Derive ARIA from `label`: decorative (aria-hidden) by default, or a
-  // meaningful image (role="img" + aria-label) when `label` is non-empty.
+  const legacyContextSize = useIconContextSize();
+  const theme = useThemeDefinition();
+  const resolution = resolveIconWithContext(
+    icon,
+    {size: sizeProp, appearance, weight},
+    theme,
+    {legacyContextSize, renderNode: typeof icon === 'string'},
+  );
+  const size = resolution.inspection.size.selected as IconSize;
+  const {dimension, customDimension} = resolution.inspection;
   const a11yProps = getIconA11yProps(label);
 
-  // String mode: resolve from icon registry, wrap in styled span
   if (typeof icon === 'string') {
     return (
       <IconFromRegistry
-        name={icon}
+        resolvedIcon={resolution.node}
         color={color}
         size={size}
+        dimension={dimension}
+        customDimension={customDimension}
         a11yProps={a11yProps}
         className={className}
         style={style}
@@ -272,26 +288,21 @@ export function Icon({
     );
   }
 
-  // Component mode: render SVG component directly with ref forwarding
+  // Ordinary SVG components keep their exact SVGProps contract. Presentation
+  // requests are resolved/diagnosed but never forwarded as arbitrary SVG props.
   const IconComponent = icon;
   return (
     <IconComponent
       ref={ref}
-      // Derived a11y (decorative default or meaningful `label`) is spread
-      // BEFORE {...props} so an explicit aria-hidden/role/aria-label from the
-      // consumer still wins as an escape hatch.
       {...a11yProps}
-      // The styling props (className, style, xstyle) are handled here so they
-      // COMPOSE with the internal classes/styles instead of clobbering them:
-      // xstyle folds into stylex.props, and className/style merge via
-      // mergeProps. The remaining rest props keep their prior last-spread
-      // precedence as escape hatches.
       {...mergeProps(
         themeProps('icon', {size, color}),
         stylex.props(
           styles.root,
           colorStyles[color],
-          iconSizeStyles[size],
+          customDimension
+            ? iconDimensionStyles.svg(dimension)
+            : iconSizeStyles[size as BuiltInIconSize],
           xstyle,
         ),
         className ?? undefined,
@@ -312,31 +323,32 @@ Icon.displayName = 'Icon';
  * Internal component that resolves a semantic icon name from the registry
  * and renders it in a styled span with proper sizing.
  *
- * Extracted as a separate component so getIcon is only called
- * when the icon prop is a string.
+ * The public wrapper resolves caller intent once. This private renderer keeps
+ * the released registry span, accessibility and style/ref ownership unchanged.
  */
 function IconFromRegistry({
-  name,
+  resolvedIcon,
   color,
   size,
+  dimension,
+  customDimension,
   a11yProps,
   className,
   style,
   xstyle,
   spanProps,
 }: {
-  name: IconName | NamespacedIconName;
+  resolvedIcon: React.ReactNode;
   color: IconColor;
   size: IconSize;
+  dimension: string;
+  customDimension: boolean;
   a11yProps: {role: 'img'; 'aria-label': string} | {'aria-hidden': 'true'};
   className?: string;
   style?: React.CSSProperties;
   xstyle?: StyleXStyles;
   spanProps?: Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>;
 }) {
-  const themeName = useThemeName();
-  const resolvedIcon = getIcon(name, themeName);
-
   if (resolvedIcon == null) {
     return null;
   }
@@ -362,7 +374,9 @@ function IconFromRegistry({
         stylex.props(
           styles.span,
           colorStyles[color],
-          iconBoxSizeStyles[size],
+          customDimension
+            ? iconDimensionStyles.box(dimension)
+            : iconBoxSizeStyles[size as BuiltInIconSize],
           xstyle,
         ),
         className ?? undefined,

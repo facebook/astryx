@@ -318,6 +318,29 @@ export const myTheme = defineTheme({
   // icons: {check: <MyCheck />, close: <MyClose />},
 
   /**
+   * Optional non-CSS icon dimensions and presentation for a supplied contract.
+   * Import `libraryIconCapabilities` from your artwork module; construct it with
+   * defineIconCapabilities from '@astryxdesign/core/Icon'. Bind adaptive artwork
+   * with defineAdaptiveIcon(contract, {default: ..., byAppearance: ...}).
+   *
+   * `sizeOverrides` merge by name; null clears an inherited override. Explicit
+   * sizes and standalone md use these overrides; implicit built-in sizes in
+   * existing components retain their released rem box. Omitted/built-in null
+   * overrides retain rem scaling. Custom sizes have canonical contract dimensions.
+   * `presentation` replaces atomically; null clears it. Only default and bySize
+   * select appearance/weight, and explicit Icon props win. Import the registry
+   * itself for production builds and compile its module alongside the package;
+   * use --icons-specifier when its compiled path differs. JS/types carry this
+   * data, not CSS.
+   * Reference: `astryx docs icons`.
+   */
+  // iconCapabilities: {
+  //   contract: libraryIconCapabilities,
+  //   sizeOverrides: {md: '24px'},
+  //   presentation: {default: {appearance: 'outline'}, bySize: {sm: {appearance: 'filled'}}},
+  // },
+
+  /**
    * Replace the small components that DRAW control state — the checkbox box,
    * the radio dot, the mark on a chosen option — by indicator name rather than
    * per call site. Replacing `check` re-skins every single-selection mark in

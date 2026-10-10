@@ -5,7 +5,10 @@
 /**
  * Theme Provider Component
  *
- * Applies theme tokens and sets color-scheme for light-dark() to work.
+ * Applies tokens, region-owned artwork and safely inherited Icon presentation.
+ * @input A defined theme, mode and children in the existing ThemeContext
+ * @output Theme CSS/root lifecycle and a local effective Icon policy
+ * @position Theme provider; no additional Icon provider or global capability state
  * Themes are created with `defineTheme()` and applied via CSS:
  * - Token overrides set as CSS custom properties on [data-astryx-theme]
  * - Component overrides scoped via @scope'd CSS selectors on stable Astryx
@@ -46,6 +49,66 @@ import {registerTheme} from './themeRegistry';
 import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
 import {warnOnce} from '../utils/devWarning';
+import {
+  getIconThemeContracts,
+  getOwnIconData,
+  markIconThemePolicyMalformed,
+  mergeIconThemeCapabilities,
+  readIconThemeCapabilities,
+  readIconThemeContractList,
+  type IconCapabilities,
+  type IconThemeCapabilities,
+} from '../Icon/iconCapabilities';
+
+/** @internal Safely retain local contracts and malformed-policy evidence across providers. */
+function readThemeIconSurface(theme: DefinedTheme | undefined) {
+  let malformed = false;
+  const invalid = () => {
+    malformed = true;
+  };
+  let policy: unknown;
+  let contracts: ReadonlyArray<IconCapabilities> | undefined;
+  try {
+    policy = getOwnIconData(theme, 'iconCapabilities');
+  } catch {
+    invalid();
+  }
+  try {
+    const value = getOwnIconData(theme, '__iconContracts');
+    if (value !== undefined) {
+      contracts = readIconThemeContractList(value, invalid);
+    } else {
+      const own = getIconThemeContracts(
+        policy as IconThemeCapabilities | undefined,
+      );
+      if (own.length) {
+        contracts = own;
+      }
+    }
+  } catch {
+    invalid();
+  }
+  return {policy, contracts, invalid, isMalformed: () => malformed};
+}
+/** Clone descriptors rather than spreading foreign theme fields/getters. */
+function withThemeIconContext(
+  theme: DefinedTheme,
+  iconCapabilities: IconThemeCapabilities | undefined,
+  contracts: ReadonlyArray<IconCapabilities> | undefined,
+): DefinedTheme {
+  const descriptors = Object.getOwnPropertyDescriptors(theme);
+  delete descriptors.iconCapabilities;
+  delete descriptors.__iconContracts;
+  return Object.create(Object.getPrototypeOf(theme), {
+    ...descriptors,
+    ...(iconCapabilities
+      ? {iconCapabilities: {value: iconCapabilities, enumerable: true}}
+      : {}),
+    ...(contracts?.length
+      ? {__iconContracts: {value: contracts, enumerable: true}}
+      : {}),
+  }) as DefinedTheme;
+}
 
 /**
  * Theme provider props
@@ -290,8 +353,43 @@ export function Theme({
         ? wrapperStyles.light
         : wrapperStyles.system;
 
-  // Memoize the context value to prevent unnecessary re-renders
-  const ctxValue = useMemo(() => ({theme, mode}), [theme, mode]);
+  // Only icon policy/contracts inherit. Source registry, compiled CSS and root
+  // registration remain owned by this region's original theme.
+  const parent = use(ThemeContext);
+  const ctxValue = useMemo(() => {
+    const outer = readThemeIconSurface(parent?.theme);
+    const own = readThemeIconSurface(theme);
+    const contracts = outer.contracts?.length
+      ? Object.freeze([
+          ...new Set([...outer.contracts, ...(own.contracts ?? [])]),
+        ])
+      : own.contracts;
+    const readPolicy = (surface: ReturnType<typeof readThemeIconSurface>) => {
+      try {
+        const policy = readIconThemeCapabilities(
+          surface.policy,
+          contracts ?? [],
+          surface.invalid,
+        );
+        return surface.isMalformed()
+          ? markIconThemePolicyMalformed(policy)
+          : policy;
+      } catch {
+        return markIconThemePolicyMalformed();
+      }
+    };
+    const iconCapabilities = mergeIconThemeCapabilities(
+      readPolicy(outer),
+      readPolicy(own),
+    );
+    const effectiveTheme =
+      !own.isMalformed() &&
+      iconCapabilities === own.policy &&
+      contracts === own.contracts
+        ? theme
+        : withThemeIconContext(theme, iconCapabilities, contracts);
+    return {theme: effectiveTheme, mode};
+  }, [parent?.theme, theme, mode]);
 
   return (
     <ThemeContext value={ctxValue}>

@@ -6,6 +6,10 @@
  * Adaptations resolve against the effective root axes and components, retaining
  * authored component pins without repeating root typography defaults.
  *
+ * @input Theme value declarations and explicit local Icon source/presentation contracts
+ * @output A normalized theme with node read views and immutable productive source IR
+ * @position Shared source/build authoring boundary; existing token/adaptation behavior is unchanged
+ *
  * Two distribution modes:
  * - Unbuilt: Theme generates CSS and injects a <style> tag at runtime
  * - Built: `astryx theme build` pre-compiles to a CSS file; Theme just
@@ -41,14 +45,27 @@
 
 import type {ReactNode} from 'react';
 import type {IconName, NamespacedIconName} from '../Icon/globalIconRegistry';
+import {
+  getIconSourceDefaults,
+  isAdaptiveIconEntry,
+  isAdaptiveIconTree,
+  prepareIconEntries,
+  type IconEntry,
+} from '../Icon/adaptiveIcons';
+import {
+  defineIconCapabilities,
+  getApplicationIconCapabilities,
+  getOwnIconData,
+  normalizeIconThemeCapabilities,
+  type IconCapabilities,
+  type IconThemeCapabilities,
+  type IconThemeCapabilitiesInput,
+} from '../Icon/iconCapabilities';
 
-/**
- * Icon overrides a theme may declare: any built-in semantic name, plus the
- * namespaced keys components and libraries own (`'richtext:bold'`).
- */
-type ThemeIconOverrides = Partial<
-  Record<IconName | NamespacedIconName, ReactNode>
->;
+/** Authored artwork may be fixed or bound to a library-local adaptive contract. */
+export type ThemeIconOverrides<C extends IconCapabilities = IconCapabilities> =
+  Partial<Record<IconName | NamespacedIconName, IconEntry<C>>>;
+type ThemeIconNodes = Partial<Record<IconName | NamespacedIconName, ReactNode>>;
 import type {IndicatorRegistry} from '../Indicator/types';
 import type {TypographyConfig} from './types';
 import {
@@ -183,7 +200,9 @@ export type StyleOverrides = Record<string, string | Record<string, string>>;
 export type ComponentStyleMap = Record<string, Record<string, StyleOverrides>>;
 
 /** Input to defineTheme */
-export interface DefineThemeInput {
+export interface DefineThemeInput<
+  C extends IconCapabilities = Record<never, never>,
+> {
   /** Theme name — used for data-astryx-theme attribute and identification */
   name: string;
 
@@ -338,8 +357,10 @@ export interface DefineThemeInput {
    * ```
    */
   components?: ComponentStyleMap;
-  /** Icon registry — maps semantic icon names to React nodes */
-  icons?: ThemeIconOverrides;
+  /** Artwork keyed by semantic name; bare adaptive trees bind to this theme's explicit contract. */
+  icons?: ThemeIconOverrides<NoInfer<C>>;
+  /** Local physical sizes and default/per-size appearance/weight presentation. */
+  iconCapabilities?: IconThemeCapabilitiesInput<C>;
   /**
    * Indicator overrides — replaces the components that draw stateful control
    * visuals with the theme's own, by name.
@@ -429,8 +450,14 @@ export interface DefinedTheme {
   localTokens?: Record<string, string>;
   /** Component style overrides */
   components?: ComponentStyleMap;
-  /** Icon registry */
-  icons?: ThemeIconOverrides;
+  /** Actual node-valued registry read view, including adaptive source defaults. */
+  icons?: ThemeIconNodes;
+  /** Normalized local presentation and dimension policy. */
+  iconCapabilities?: IconThemeCapabilities;
+  /** Productive immutable source IR for adaptive entries. @internal */
+  __iconSources?: Readonly<Record<string, IconEntry>>;
+  /** Explicit shared contract snapshot identities used by source/build transport. @internal */
+  __iconContracts?: ReadonlyArray<IconCapabilities>;
   /** Indicator overrides for stateful control visuals, keyed by name */
   indicators?: IndicatorRegistry;
   /** Whether this theme has been pre-compiled by theme build CLI */
@@ -530,7 +557,9 @@ function describeBadBase(value: unknown): string {
  * that are merged into the token map. Explicit `tokens` entries take
  * precedence over generated values.
  */
-export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
+export function defineTheme<
+  const C extends IconCapabilities = Record<never, never>,
+>(input: DefineThemeInput<C>): ResolvedDefinedTheme {
   // Pre-seed from the base theme when `extends` is provided (lowest precedence).
   // A base that is not a theme is refused rather than ignored: `extends` used
   // to inherit nothing when its value was undefined, which is what a named
@@ -601,11 +630,58 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
     components,
   );
 
-  // Icons — input icons override base icons
-  const icons =
-    input.icons && base?.icons
-      ? {...base.icons, ...input.icons}
-      : (input.icons ?? base?.icons);
+  // Bind authored trees only to an explicit local contract, never global state.
+  // Whole entry replacement is atomic across theme extension.
+  const rawPolicy = getOwnIconData(input, 'iconCapabilities');
+  const rawContract = getOwnIconData(rawPolicy, 'contract');
+  const contract =
+    rawContract === undefined
+      ? undefined
+      : defineIconCapabilities(rawContract as IconCapabilities);
+  const baseSources = prepareIconEntries(
+    base?.__iconSources ?? base?.icons,
+    base?.iconCapabilities?.contract,
+  );
+  const ownSources = prepareIconEntries(input.icons, contract);
+  const contracts = Object.freeze([
+    ...new Set(
+      [
+        ...(base?.__iconContracts ?? []),
+        ...baseSources.contracts,
+        ...ownSources.contracts,
+        ...(base?.iconCapabilities?.contract
+          ? [base.iconCapabilities.contract]
+          : []),
+        ...(contract ? [contract] : []),
+      ].map(defineIconCapabilities),
+    ),
+  ]);
+  getApplicationIconCapabilities(...contracts);
+  const iconCapabilities = normalizeIconThemeCapabilities(
+    rawPolicy,
+    base?.iconCapabilities,
+    {contracts},
+  );
+  const sources = Object.freeze({
+    ...baseSources.entries,
+    ...ownSources.entries,
+  });
+  const adaptive = Object.values(sources).some(
+    entry => isAdaptiveIconEntry(entry) || isAdaptiveIconTree(entry),
+  );
+  // Preserve the released fixed-only map identity. Adaptive IR gets a separate,
+  // actual node-valued default read view rather than a ReactNode cast.
+  let icons: ThemeIconNodes | undefined;
+  if (adaptive) {
+    icons = getIconSourceDefaults(sources);
+  } else {
+    // Every entry has been validated as fixed; preserve the authored read-map identity.
+    const ownIcons = input.icons as ThemeIconNodes | undefined;
+    icons =
+      ownIcons && base?.icons
+        ? {...base.icons, ...ownIcons}
+        : (ownIcons ?? base?.icons);
+  }
 
   // Indicator overrides merge by name, like icons: a child theme replacing one
   // indicator keeps the ones its base replaced.
@@ -626,6 +702,9 @@ export function defineTheme(input: DefineThemeInput): ResolvedDefinedTheme {
       : {}),
     components,
     icons,
+    ...(iconCapabilities ? {iconCapabilities} : {}),
+    ...(adaptive ? {__iconSources: sources} : {}),
+    ...(contracts.length ? {__iconContracts: contracts} : {}),
     indicators,
     __inputTokens:
       base?.__inputTokens || input.tokens
