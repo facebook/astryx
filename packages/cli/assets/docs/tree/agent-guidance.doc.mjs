@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/agent-guidance`: add short lines of
+ * @file `astryx docs cli/integrations/building-blocks/configuration/agent-guidance`: add short lines of
  * guidance that apps put in front of their AI agents, within the limits.
  */
 
@@ -121,7 +121,7 @@ export default {
           lang: 'bash',
           code: `npx astryx init --features agents
 # Or: --from takes the Core version the app had before
-npx astryx upgrade --from 0.7.0 --apply`,
+npx astryx upgrade --from <version> --apply`,
         },
         {
           type: 'code',

@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/docs`: the guides to writing docs for an
- * integration package, which join the same docs tree as the CLI's own
- * (spec:AST-046, spec:AST-047).
+ * @file `astryx docs cli/integrations/building-blocks/docs`: the guides to
+ * writing docs for an integration package, which join the same docs tree as
+ * the CLI's own (spec:AST-046, spec:AST-047).
  */
 
 /** @type {import('@astryxdesign/cli/authoring').NamespaceDoc} */

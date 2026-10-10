@@ -155,7 +155,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'If a swizzled component renders with no styles and no error, a missing compiler is almost always why. See the StyleX Build Setup section of {@link generic:tokens-and-setup} for bundler config examples.',
+          text: "If importing a swizzled component throws an error that starts `Unexpected 'stylex.create' call at runtime` and the page does not render, the app is missing a StyleX compiler. See the StyleX Build Setup section of {@link generic:tokens-and-setup} for bundler config examples.",
         },
       ],
     },

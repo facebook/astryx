@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/building-blocks/templates/grade-template-with-agent`:
+ * @file `astryx docs cli/integrations/building-blocks/templates/write-good-templates/grade-template-with-agent`:
  * give an agent the canonical rubric and require a reproducible template grade.
  */
 

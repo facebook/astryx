@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/templates/document-the-template/template-doc-overview`:
+ * @file `astryx docs cli/integrations/building-blocks/templates/document-the-template/template-doc-overview`:
  * the source and doc file pair, the fields every template doc shares, and how
  * to check what Astryx lists.
  */
@@ -54,22 +54,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'These fields apply to every page and block. The page, block, and replacement guides add the fields unique to each.',
+          text: 'The fields below apply to every page and block. The page, block, and replacement guides add the fields unique to each.',
         },
         {
-          type: 'reference',
-          target: 'schema:template-doc',
-          projection: {
-            fields: [
-              'type',
-              'name',
-              'displayName',
-              'description',
-              'keywords',
-              'isReady',
-            ],
-          },
-          presentation: 'full',
+          type: 'prose',
+          text: 'Every field is in {@link schema:template-doc}.',
         },
         {
           type: 'list',

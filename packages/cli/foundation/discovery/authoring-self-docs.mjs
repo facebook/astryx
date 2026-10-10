@@ -192,7 +192,7 @@ export function buildAuthoringReferenceDoc(docs) {
     title: 'Authoring Reference',
     category: 'guide',
     description:
-      'Every file an integration author writes, field by field: the integration manifest, astryx.config, codemods, identity, and each doc type.',
+      'Every file an integration author writes, field by field: the integration manifest, astryx.config, codemods, identity, and each doc type. The step-by-step guides are under `astryx docs cli/integrations`.',
     sections: docs.map(selfDocSection),
   });
 }

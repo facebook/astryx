@@ -1,8 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/docs/links`: link one doc to another by
- * identity, link the CLI's docs, and fix a link that names no doc.
+ * @file `astryx docs cli/integrations/building-blocks/docs/links`: link one doc
+ * to another by identity, link the CLI's docs, and fix a link that names no
+ * doc.
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -36,7 +37,7 @@ export const docs = {
           type: 'list',
           style: 'unordered',
           items: [
-            'The kind is `generic` for a topic or guide, `namespace` for a docs section, and `command` or `function` for a CLI command or API function.',
+            'The kind is `generic` for a topic or guide, `namespace` for a docs section, `command` or `function` for a CLI command or API function, and `schema` or `enum` for a schema or a fixed set of values.',
             'A link to a component or a template does not resolve. Write its name in backticks instead, such as `AcmeCarousel`.',
             'Inside backticks or a code block, link syntax prints as written.',
           ],
@@ -89,7 +90,7 @@ export const docs = {
           style: 'unordered',
           items: [
             'The warning keeps exit code 0, so read the report before you ship; see {@link generic:check-your-docs}.',
-            'A stable CLI before 0.7.0 does not read links: it prints each one as written. See {@link generic:versioning}.',
+            'Published 0.6.4 and later read links. An older CLI, such as published 0.6.3, prints each one as written; see {@link generic:versioning}.',
           ],
         },
       ],

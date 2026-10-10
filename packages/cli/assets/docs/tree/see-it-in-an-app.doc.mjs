@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file `astryx docs cli/integrations/components/see-it-in-an-app`: inspect an
+ * @file `astryx docs cli/integrations/building-blocks/components/see-it-in-an-app`: inspect an
  * integration component from an app that installs the package.
  */
 
@@ -33,7 +33,9 @@ npx astryx search carousel`,
         {
           type: 'code',
           lang: 'text',
-          code: `# AcmeCarousel
+          code: `package: @acme/astryx-widgets
+
+# AcmeCarousel
 
 Cycles through slides one at a time. Use it for a small set of related cards.
 

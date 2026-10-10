@@ -36,5 +36,9 @@ export const docs = {
       type: 'prose',
       text: 'An integration can also replace a built-in template or doc. To start, install `@astryxdesign/cli` and open {@link generic:quick-start}.',
     },
+    {
+      type: 'prose',
+      text: 'Every field of every file you write for an integration is in {@link generic:authoring}.',
+    },
   ],
 };
