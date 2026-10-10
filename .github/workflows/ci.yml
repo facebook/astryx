@@ -631,6 +631,9 @@ jobs:
     needs: [check-scope]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
     runs-on: 2-core-ubuntu-arm
+    # The full Node project reaches ~25 minutes on this runner. An omitted
+    # budget has cut the process off before Vitest can print its summary.
+    timeout-minutes: 35
     permissions:
       contents: read
     steps:

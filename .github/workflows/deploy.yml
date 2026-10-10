@@ -62,6 +62,9 @@ jobs:
 
   test-node:
     runs-on: 2-core-ubuntu-arm
+    # Match the PR lane's explicit budget: the full Node project reaches the
+    # runner's cutoff when this falls back to its implicit limit.
+    timeout-minutes: 35
     permissions:
       contents: read
     steps:

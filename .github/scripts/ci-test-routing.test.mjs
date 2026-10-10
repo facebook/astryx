@@ -17,7 +17,9 @@
  * Both now run the projects as parallel lanes joined by `test`. That only
  * holds if every project has a lane in every workflow: a third project added
  * to the config with no job to run it would be collected by nobody and fail
- * nothing — the first failure again, one level up.
+ * nothing — the first failure again, one level up. Each Node lane also carries
+ * an explicit budget above its measured runtime so an implicit runner cutoff
+ * cannot terminate a healthy suite before Vitest reports its result.
  */
 
 import fs from 'node:fs';
@@ -181,6 +183,10 @@ describe.each(Object.entries(WORKFLOWS))(
           `${job} uses unknown runner label "${label}"`,
         ).toBe(true);
       }
+    });
+
+    it('gives the full Node project explicit runtime headroom', () => {
+      expect(workflow.jobs['test-node']['timeout-minutes']).toBe(35);
     });
 
     if (scopeConditional) {
