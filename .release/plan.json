@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "version": "0.6.8",
+  "branch": "release/v0.6.8",
+  "cutSha": "83965ddf9b328795eae4fbf1673dba03a2d8d7eb",
+  "changesets": [
+    {
+      "path": ".changeset/appshell-preserve-breakpoint-state.md",
+      "sha256": "4e9863922338d6e7a9bb14849ccbc847d3f8a2bc09391fc2f0f973c99f766baa"
+    },
+    {
+      "path": ".changeset/calm-colors-guide.md",
+      "sha256": "822bb7f03aa3c34b4df7a6cda71a445edaba4bb95779eb0f36f143a45dc42fcd"
+    },
+    {
+      "path": ".changeset/column-resize-coarse-pointer-keyboard.md",
+      "sha256": "d18417d965899c7655d0d6c1b2b02a08548fad2190fd1edca14b11d3e4f31cbf"
+    },
+    {
+      "path": ".changeset/column-resize-hover-affordance.md",
+      "sha256": "266f31a3d43ab44f7217e184383d253faeb925b2ba258ca3c80cb2fd15715be7"
+    },
+    {
+      "path": ".changeset/daterangeinput-audit-semantics.md",
+      "sha256": "735226758fef5023ac6f5da8b234f44509c9a7cce1ebdc8e2e351d413301013a"
+    },
+    {
+      "path": ".changeset/datetimeinput-controlled-empty-calendar.md",
+      "sha256": "ff45bfa7f92c3a26d72b3b445dc44baa53123895056d44dc7f9388e0eabbb2c1"
+    },
+    {
+      "path": ".changeset/dropdown-menu-held-finger-lift.md",
+      "sha256": "e05342e4bc2f2c15f3ae45b6ac643b9579fb2648e4d383a693361827b790bb77"
+    },
+    {
+      "path": ".changeset/dropdown-menu-item-host-attributes.md",
+      "sha256": "0f9c61592393d6fa94e52a69446d4d493ce5c9a9c77e2b8706aa05d6f3c47323"
+    },
+    {
+      "path": ".changeset/dropdown-menu-link-row-no-drag.md",
+      "sha256": "bda03f51f0eacced361d063206e1d688194c8e30dec4d01780ea195616eb2038"
+    },
+    {
+      "path": ".changeset/kbd-text-contrast-wcag-aa.md",
+      "sha256": "e651aad352c72010f25b62eeefec9894b6489a0239fb2cb6d4c866da67f13d47"
+    },
+    {
+      "path": ".changeset/layer-stops-stepper-connector-gap.md",
+      "sha256": "d070742930304cbba9272f6a926d0e7ca88c0b20566b6a8f51ae9353af976d1b"
+    },
+    {
+      "path": ".changeset/markdown-fence-claims-before-code.md",
+      "sha256": "7007d9db13429b8339ad3c45089f2af798d45c93c0103317bf4caf4a1c83d824"
+    },
+    {
+      "path": ".changeset/markdown-source-lines.md",
+      "sha256": "8636d9cbd55d1f1a0624e2703e1815999e70a7f0c0a9a3a10a91c568bf2fc00c"
+    },
+    {
+      "path": ".changeset/table-resize-handle-overshoot.md",
+      "sha256": "b603974ae36064977f3aa4de7756833eceb9ccb40078af6f0518f5b7f7897755"
+    },
+    {
+      "path": ".changeset/table-sticky-resize-position-collision.md",
+      "sha256": "a2f8ab96a348b1a0363ff3ed9d701af8c87c26b7cf1d188b6ee4264ef0427e69"
+    },
+    {
+      "path": ".changeset/template-replaces-keywords-cli-floor.md",
+      "sha256": "b313d1bb12e3814ff453aeb30630ae62863a816897b442006055abbf191f33fb"
+    }
+  ]
+}
