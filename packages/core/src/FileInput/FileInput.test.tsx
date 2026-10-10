@@ -178,6 +178,33 @@ describe('FileInput', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLInputElement));
   });
 
+  it('preserves a caller-provided id on the native input and its label', () => {
+    render(
+      <FileInput
+        id="resume-upload"
+        label="Resume"
+        value={null}
+        onChange={() => {}}
+      />,
+    );
+
+    const input = fileInputEl();
+    expect(input).toHaveAttribute('id', 'resume-upload');
+    expect(screen.getByText('Resume').closest('label')).toHaveAttribute(
+      'for',
+      'resume-upload',
+    );
+    expect(screen.getByLabelText('Resume', {selector: 'input'})).toBe(input);
+  });
+
+  it('uses a generated id when the caller id is empty', () => {
+    render(<FileInput id="" label="Resume" value={null} onChange={() => {}} />);
+
+    const input = fileInputEl();
+    expect(input.id).not.toBe('');
+    expect(screen.getByLabelText('Resume', {selector: 'input'})).toBe(input);
+  });
+
   it('visually hides label when isLabelHidden is true', () => {
     render(
       <FileInput

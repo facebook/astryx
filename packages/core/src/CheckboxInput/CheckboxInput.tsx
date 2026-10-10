@@ -311,6 +311,7 @@ const dynamicWidthStyles = stylex.create({
  * ```
  */
 export function CheckboxInput({
+  id: _id,
   label,
   isLabelHidden = false,
   description,
@@ -340,7 +341,8 @@ export function CheckboxInput({
   // The row is the pressable: the overlay's pressed arm reads the row's
   // scope marker, the way the indicator's hover tint does.
   const pressable = usePressFeedback();
-  const id = useId();
+  const generatedId = useId();
+  const id = _id || generatedId;
   const descriptionID = useId();
   const statusMessageID = useId();
   // Announce the effective required state (form default included) while the
