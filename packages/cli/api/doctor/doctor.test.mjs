@@ -1122,3 +1122,31 @@ describe('doctor says why it skipped and what it checked', () => {
     );
   });
 });
+
+describe('no Astryx-owned environment variables (spec:AST-017 FR14)', () => {
+  it('no source file reads an ASTRYX_* env var', () => {
+    const cliDir = path.resolve(REPO, 'packages/cli');
+    const SKIP = new Set(['node_modules', 'dist', 'coverage']);
+    const ENV_READ = /process\.env(?:\.|\[\s*['"`])ASTRYX_/;
+    /** @type {string[]} */
+    const hits = [];
+    /** @param {string} dir */
+    const walk = dir => {
+      for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+        if (SKIP.has(entry.name)) continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!/\.[cm]?[jt]sx?$/.test(entry.name)) continue;
+        if (/\.test\.|\.d\.[cm]?ts$/.test(entry.name)) continue;
+        if (ENV_READ.test(fs.readFileSync(full, 'utf8'))) {
+          hits.push(path.relative(cliDir, full));
+        }
+      }
+    };
+    walk(cliDir);
+    expect(hits).toEqual([]);
+  });
+});
