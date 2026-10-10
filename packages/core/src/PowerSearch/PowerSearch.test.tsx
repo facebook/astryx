@@ -32,8 +32,40 @@ import {TestIcon} from '../__tests__/TestIcon';
 const originalMatches = HTMLElement.prototype.matches;
 const popoverOpenState = new WeakMap<HTMLElement, boolean>();
 
+// Fires once synchronously on observe(), same as the real thing does for an
+// already-visible element and as the jsdom-wide polyfill in
+// internal/test-utils/src/setup.ts models it — useLayer's own show() relies
+// on that first firing to know its anchor already has a box (#5398), so a
+// no-op observe() here leaves any layer permanently waiting to open.
 class MockResizeObserver {
-  observe() {}
+  #callback: ResizeObserverCallback;
+  constructor(callback: ResizeObserverCallback) {
+    this.#callback = callback;
+  }
+  observe(target: Element) {
+    this.#callback(
+      [
+        {
+          target,
+          contentRect: {
+            width: 1,
+            height: 1,
+            top: 0,
+            left: 0,
+            right: 1,
+            bottom: 1,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          },
+          borderBoxSize: [],
+          contentBoxSize: [],
+          devicePixelContentBoxSize: [],
+        },
+      ],
+      this,
+    );
+  }
   unobserve() {}
   disconnect() {}
 }
