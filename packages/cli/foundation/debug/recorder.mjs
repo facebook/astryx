@@ -64,6 +64,43 @@ const SIGNAL_EXIT_CODES = {SIGINT: 130, SIGTERM: 143, SIGHUP: 129};
  */
 export const MAX_CAPTURED_OUTPUT = 32 * 1024;
 
+/**
+ * Raw text the tee holds per stream, in UTF-16 code units, before `finish`
+ * scrubs it and cuts it at MAX_CAPTURED_OUTPUT bytes. A unit is at least one
+ * byte, so the window reaches well past the cap, and a secret that crosses the
+ * cap is held whole for the scrubber.
+ */
+export const CAPTURE_WINDOW = 4 * MAX_CAPTURED_OUTPUT;
+
+/**
+ * Bytes kept clear of the end of the scrubbed text when output ran past the
+ * window. The window's edge is a raw cut, so a secret crossing it can survive
+ * scrubbing unrecognized, and it does so at the very end of the text. Nothing
+ * within this many bytes of the end is kept, so a secret has to be longer
+ * than this for any of it to reach a handler.
+ */
+export const CAPTURE_GUARD = 16 * 1024;
+
+/**
+ * The leading `maxBytes` bytes of `text`, never splitting a character.
+ *
+ * The cap counts bytes but `String.slice` counts UTF-16 units, so slicing by
+ * the byte budget would overshoot on any non-ASCII output. Cutting the buffer
+ * instead can land mid-sequence, so back off over the trailing continuation
+ * bytes rather than emitting a replacement character.
+ *
+ * @param {string} text
+ * @param {number} maxBytes
+ * @returns {string}
+ */
+function sliceToBytes(text, maxBytes) {
+  const buf = Buffer.from(text, 'utf8');
+  if (buf.length <= maxBytes) return text;
+  let end = maxBytes;
+  while (end > 0 && (buf[end] & 0xc0) === 0x80) end--;
+  return buf.subarray(0, end).toString('utf8');
+}
+
 /** @type {import('./event.mjs').InFlightEvent | null} */
 let _event = null;
 /**
@@ -90,12 +127,20 @@ let _startedAt = 0;
 let _cliVersion;
 
 /**
- * Captured stdout/stderr, and the originals to restore.
- * @type {{chunks: string[], bytes: number}}
+ * A captured stream: the raw text held so far (at most CAPTURE_WINDOW units),
+ * how many units that is, whether anything written was left out, and the true
+ * byte total the command wrote.
+ *
+ * @typedef {{chunks: string[], held: number, overflow: boolean, bytes: number}} OutputSink
  */
-const _stdout = {chunks: [], bytes: 0};
-/** @type {{chunks: string[], bytes: number}} */
-const _stderr = {chunks: [], bytes: 0};
+
+/**
+ * Captured stdout/stderr, and the originals to restore.
+ * @type {OutputSink}
+ */
+const _stdout = {chunks: [], held: 0, overflow: false, bytes: 0};
+/** @type {OutputSink} */
+const _stderr = {chunks: [], held: 0, overflow: false, bytes: 0};
 /** @type {null | {out: typeof process.stdout.write, err: typeof process.stderr.write}} */
 let _originalWrites = null;
 
@@ -119,7 +164,7 @@ function captureOutput() {
 
   /**
    * @param {NodeJS.WriteStream} stream
-   * @param {{chunks: string[], bytes: number}} sink
+   * @param {OutputSink} sink
    * @param {Function} original
    */
   const tee = (stream, sink, original) =>
@@ -128,7 +173,24 @@ function captureOutput() {
         try {
           const text = typeof chunk === 'string' ? chunk : String(chunk);
           sink.bytes += Buffer.byteLength(text);
-          if (sink.bytes <= MAX_CAPTURED_OUTPUT) sink.chunks.push(text);
+          // Hold raw text up to the window and do nothing more here. Scrubbing,
+          // and the cut at the cap, wait for `finish`, which runs them only
+          // when a handler exists.
+          const room = CAPTURE_WINDOW - sink.held;
+          if (text.length <= room) {
+            sink.chunks.push(text);
+            sink.held += text.length;
+          } else {
+            // A copy, not `text.slice`: a slice can keep the whole write
+            // alive behind it, which here is the command's largest output.
+            if (room > 0) {
+              sink.chunks.push(
+                Buffer.from(text.slice(0, room), 'utf16le').toString('utf16le'),
+              );
+            }
+            sink.held = CAPTURE_WINDOW;
+            sink.overflow = true;
+          }
         } catch {
           /* a chunk we cannot stringify is simply not captured */
         }
@@ -149,14 +211,29 @@ function releaseOutput() {
 }
 
 /**
- * @param {{chunks: string[], bytes: number}} sink
+ * A stream as its event carries it: the held text scrubbed, then cut at the
+ * cap. Scrubbing comes first because the patterns need a whole token, or a
+ * private key's END line, and a cut can leave a piece none of them match.
+ *
+ * @param {OutputSink} sink
+ * @param {import('./redact.mjs').Redactor} redact
  * @returns {string}
  */
-function collected(sink) {
-  const text = sink.chunks.join('');
-  return sink.bytes > MAX_CAPTURED_OUTPUT
-    ? `${text.slice(0, MAX_CAPTURED_OUTPUT)}\n…[truncated, ${sink.bytes} bytes total]`
-    : text;
+function collected(sink, redact) {
+  const text = scrubText(sink.chunks.join(''), redact);
+  if (sink.bytes <= MAX_CAPTURED_OUTPUT) return text;
+  let limit = MAX_CAPTURED_OUTPUT;
+  if (sink.overflow) {
+    limit = Math.min(limit, Buffer.byteLength(text) - CAPTURE_GUARD);
+  }
+  const kept = limit > 0 ? sliceToBytes(text, limit) : '';
+  return `${kept}\n…[truncated, ${sink.bytes} bytes total]`;
+}
+
+/** Let go of the held text: it has been read, or nothing will read it. */
+function dropHeldOutput() {
+  _stdout.chunks.length = 0;
+  _stderr.chunks.length = 0;
 }
 
 /**
@@ -632,11 +709,21 @@ export function finish({exitCode} = {}) {
     // a handler. Nothing to do, and nothing was paid for: the environment probe
     // below never runs.
     const handlers = effectiveHandlers();
-    if (handlers.length === 0) return;
+    if (handlers.length === 0) {
+      dropHeldOutput();
+      return;
+    }
 
     _event.env = captureEnv({cliVersion: _cliVersion});
-    _event.output.stdout = collected(_stdout);
-    _event.output.stderr = collected(_stderr);
+    // Captured output echoes back paths and argument values, so it gets the
+    // same rules as everything else, applied by collected() before the cut.
+    // The per-value length clamp does not apply here — MAX_CAPTURED_OUTPUT
+    // already bounds it, and clipping an answer at 2KB would defeat the point
+    // of keeping it.
+    const outputRedact = createRedactor({maxLength: Number.MAX_SAFE_INTEGER});
+    _event.output.stdout = collected(_stdout, outputRedact);
+    _event.output.stderr = collected(_stderr, outputRedact);
+    dropHeldOutput();
     _event.output.stdoutBytes = _stdout.bytes;
     _event.output.stderrBytes = _stderr.bytes;
     _event.output.truncated =
@@ -670,8 +757,6 @@ export function finish({exitCode} = {}) {
     }
 
     const redact = createRedactor();
-    // Same rules, but no length clamp — see the output note below.
-    const settingsRedact = createRedactor({maxLength: Number.MAX_SAFE_INTEGER});
     /** @type {import('./event.mjs').DebugEvent} */
     const sealed = {
       ..._event,
@@ -693,15 +778,8 @@ export function finish({exitCode} = {}) {
       globalOptions: /** @type {Record<string, unknown>} */ (
         redact(_event.globalOptions)
       ),
-      // Captured output echoes back paths and argument values, so it gets the
-      // same treatment. The per-value length clamp does not apply here —
-      // MAX_CAPTURED_OUTPUT already bounds it, and clipping an answer at 2KB
-      // would defeat the point of keeping it.
-      output: {
-        ..._event.output,
-        stdout: scrubText(_event.output.stdout, settingsRedact),
-        stderr: scrubText(_event.output.stderr, settingsRedact),
-      },
+      // Scrubbed by collected(), before the cut.
+      output: {..._event.output},
       error: _event.error
         ? {
             ..._event.error,
@@ -797,8 +875,12 @@ export function resetRecorder() {
   }
   releaseOutput();
   _stdout.chunks.length = 0;
+  _stdout.held = 0;
+  _stdout.overflow = false;
   _stdout.bytes = 0;
   _stderr.chunks.length = 0;
+  _stderr.held = 0;
+  _stderr.overflow = false;
   _stderr.bytes = 0;
   _event = null;
   _projectHandler = null;
