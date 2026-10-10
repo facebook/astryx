@@ -31,7 +31,10 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {resolvePublishedCdnVersion} from './lib/cdn-version.mjs';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../..',
+);
 const CLI = path.join(ROOT, 'packages/cli/clients/cli/bin/astryx.mjs');
 const PAGE = 'cdn.template.html';
 const ATTEMPTS = 2;
@@ -50,11 +53,15 @@ fs.writeFileSync(
   path.join(tmpDir, 'package.json'),
   JSON.stringify({name: 'cdn-smoke', private: true}),
 );
-const scaffold = spawnSync(process.execPath, [CLI, '--json', 'template', '--cdn'], {
-  cwd: tmpDir,
-  encoding: 'utf8',
-  timeout: 60_000,
-});
+const scaffold = spawnSync(
+  process.execPath,
+  [CLI, '--json', 'template', '--cdn'],
+  {
+    cwd: tmpDir,
+    encoding: 'utf8',
+    timeout: 60_000,
+  },
+);
 if (scaffold.status !== 0 || !fs.existsSync(pagePath)) {
   fail(`astryx template --cdn (exit ${scaffold.status})`, scaffold.stderr);
   process.exit(1);
@@ -63,9 +70,9 @@ const pinned = JSON.parse(scaffold.stdout).data.version;
 console.log(`scaffolded ${PAGE} pinned to ${pinned}`);
 
 // ── 2. Point the page at a version that is actually on the CDN ───────────────
-// The pin is the version in this checkout, which is unpublished for the whole
-// life of a release PR (`changeset version` bumps package.json before npm has
-// the tarball). Gating every PR on that would make the release PR unmergeable,
+// The pin is the owner-declared version in this checkout. It can remain
+// unpublished throughout next-plan and release-branch PRs; branch consolidation
+// writes changelogs without bumping package.json. Gating every PR on that exact
 // so on an unpublished pin we re-point the page at npm's stable `latest`
 // dist-tag and still assert the recipe. Registry `versions` keys are not a
 // version-ordered API: the final key can be a canary that esm.sh has not built.
@@ -78,7 +85,9 @@ if (rendered == null) {
   process.exit(1);
 }
 if (rendered !== pinned) {
-  console.log(`  note  ${pinned} is not published yet — rendering against ${rendered}`);
+  console.log(
+    `  note  ${pinned} is not published yet — rendering against ${rendered}`,
+  );
   fs.writeFileSync(
     pagePath,
     fs.readFileSync(pagePath, 'utf8').replaceAll(`@${pinned}`, `@${rendered}`),
@@ -153,7 +162,10 @@ for (const [label, entries] of [
   if (entries.length === 0) {
     console.log(`  ok    no ${label}s`);
   } else {
-    fail(`${entries.length} ${label}(s)`, entries.map(e => `        ${e}`).join('\n'));
+    fail(
+      `${entries.length} ${label}(s)`,
+      entries.map(e => `        ${e}`).join('\n'),
+    );
   }
 }
 if (result.button) {
