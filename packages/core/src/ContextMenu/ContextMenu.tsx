@@ -141,6 +141,8 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
     userSelect: 'none',
     WebkitTouchCallout: 'none',
+    // A pointer open focuses the menu itself; the rows carry the highlight.
+    outline: 'none',
   },
   // Scroll ownership by the browser's own signal; see DropdownMenu.
   touchNone: {
@@ -526,7 +528,12 @@ export function ContextMenu({
   // what makes the menu context-relative: it scrolls with the content and the
   // browser auto-flips it against the viewport edges via CSS anchor positioning.
   const openAtLocalPoint = useCallback(
-    (localX: number, localY: number, focusEl: HTMLElement | null) => {
+    (
+      localX: number,
+      localY: number,
+      focusEl: HTMLElement | null,
+      modality: 'keyboard' | 'pointer',
+    ) => {
       positionRef.current = {x: localX, y: localY};
       const anchorEl = cursorAnchorRef.current;
       if (anchorEl) {
@@ -543,10 +550,21 @@ export function ContextMenu({
         updateOpenState(true);
       } else {
         layer.show();
-        requestAnimationFrame(() => focusFirst());
+        // A keyboard-invoked open (Shift+F10, the Menu key) lands on the
+        // first enabled row per the APG menu pattern. A right-click or a
+        // long press focuses the menu itself (tabIndex={-1}), so no row is
+        // lit as if pre-selected; arrows, typeahead and Escape still reach
+        // the menu's key handler. DropdownMenu opens from its trigger the
+        // same way. The menu is also the fallback when no row can focus.
+        requestAnimationFrame(() => {
+          if (modality === 'keyboard' && focusFirst()) {
+            return;
+          }
+          listRef.current?.focus();
+        });
       }
     },
-    [layer, focusFirst, updateOpenState, usesBottomSheet],
+    [layer, focusFirst, listRef, updateOpenState, usesBottomSheet],
   );
 
   // The box the cursor anchor's offsets are measured from: the trigger, which
@@ -574,7 +592,12 @@ export function ContextMenu({
       const localX = isKeyboardInvoked || !rect ? 0 : e.clientX - rect.left;
       const localY =
         isKeyboardInvoked || !rect ? (rect?.height ?? 0) : e.clientY - rect.top;
-      openAtLocalPoint(localX, localY, e.currentTarget as HTMLElement);
+      openAtLocalPoint(
+        localX,
+        localY,
+        e.currentTarget as HTMLElement,
+        isKeyboardInvoked ? 'keyboard' : 'pointer',
+      );
     },
     [isDisabled, openAtLocalPoint, getAnchorBaseRect],
   );
@@ -592,6 +615,7 @@ export function ContextMenu({
           rect ? point.x - rect.left : point.x,
           rect ? point.y - rect.top : point.y,
           triggerRef.current,
+          'pointer',
         );
       },
       [openAtLocalPoint, getAnchorBaseRect],

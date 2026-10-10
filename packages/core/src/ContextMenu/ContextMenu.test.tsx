@@ -1065,6 +1065,75 @@ describe('ContextMenu press model', () => {
   });
 });
 
+describe('ContextMenu open focus', () => {
+  const ITEMS = [{label: 'Cut'}, {label: 'Copy'}, {label: 'Paste'}];
+  const menu = () => screen.getByRole('menu', {hidden: true});
+  const item = (name: string) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+  // A right-click carries the pointer's position; a keyboard-invoked
+  // contextmenu (Shift+F10, the Menu key) reports (0, 0) with no detail.
+  const rightClick = {clientX: 50, clientY: 15, detail: 1};
+
+  it('a right-click opens with the menu focused and no row highlighted', async () => {
+    render(
+      <ContextMenu items={ITEMS}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'), rightClick);
+    await waitFor(() => expect(menu()).toHaveFocus());
+    expect(document.activeElement?.getAttribute('role')).toBe('menu');
+  });
+
+  it('a long press opens with the menu focused and no row highlighted', async () => {
+    // Only the long-press delay is faked; the open's focus frame stays real.
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    try {
+      render(
+        <ContextMenu items={ITEMS} data-testid="ctx">
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+      fireEvent.touchStart(screen.getByTestId('ctx'), {
+        touches: [{clientX: 20, clientY: 20}],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+    await waitFor(() => expect(menu()).toHaveFocus());
+    expect(document.activeElement?.getAttribute('role')).toBe('menu');
+  });
+
+  it('after a pointer open, ArrowDown reaches the first row', async () => {
+    render(
+      <ContextMenu items={ITEMS}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'), rightClick);
+    await waitFor(() => expect(menu()).toHaveFocus());
+    fireEvent.keyDown(menu(), {key: 'ArrowDown'});
+    expect(item('Cut')).toHaveFocus();
+  });
+
+  it('a keyboard-invoked open still focuses the first row', async () => {
+    render(
+      <ContextMenu items={ITEMS}>
+        <button type="button">Target</button>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByRole('button', {name: 'Target'}), {
+      clientX: 0,
+      clientY: 0,
+      detail: 0,
+    });
+    await waitFor(() => expect(item('Cut')).toHaveFocus());
+  });
+});
+
 describe('ContextMenuGroup', () => {
   it('carries the group semantics through the alias, not just the component', async () => {
     // Three public surfaces alias this component at once. An alias that
