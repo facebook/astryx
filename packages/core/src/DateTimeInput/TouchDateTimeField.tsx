@@ -54,6 +54,7 @@ import {SegmentedControl, SegmentedControlItem} from '../SegmentedControl';
 import {useSize} from '../SizeContext/SizeContext';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
+import {useFieldInputStyling} from '../Field/fieldParts';
 import {
   colorVars,
   fontWeightVars,
@@ -79,6 +80,8 @@ import {
   parseISOTime,
   type ISOTimeString,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
+import {joinAriaIDs} from '../utils/inputAria';
 import {
   DATE_FORMAT_LONG,
   DATE_FORMAT_MONTH_YEAR,
@@ -467,12 +470,28 @@ export function TouchDateTimeField({
   numberOfMonths: _numberOfMonths,
   weekStartsOn: weekStartsOnProp = 0,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  ...restProps
 }: DateTimeInputProps) {
+  const {rest, container} = useFieldInputStyling('DateTimeInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onClick: onClickProp,
+    onKeyDown: onKeyDownProp,
+    ...controlProps
+  } = rest;
   const t = useTranslator();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const {locale} = use(InternationalizationContext);
@@ -483,7 +502,15 @@ export function TouchDateTimeField({
   const resolvedTimeLabel =
     timeLabel ?? t('@astryx.dateTimeInput.timeSuffix', {label});
   const size = useSize(sizeProp, 'md');
-  const dateInputId = useId();
+  const generatedID = useId();
+  const dateInputId = idProp ?? generatedID;
+  const fieldLabelID = useId();
+  // A caller aria-labelledby names the date input together with the field's
+  // own label.
+  const controlLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(fieldLabelID, ariaLabelledByProp)
+      : undefined;
   const timeInputId = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -518,6 +545,7 @@ export function TouchDateTimeField({
       status?.message ? statusMessageID : null,
       statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -1236,10 +1264,12 @@ export function TouchDateTimeField({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={dateInputId}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -1260,16 +1290,15 @@ export function TouchDateTimeField({
         ref={el => {
           disabledMessageTooltip.ref(el);
         }}
-        {...rest}
         {...mergeProps(
           themeProps('date-time-input', {
             size,
             status: status?.type ?? null,
             disabled: isDisabled ? 'disabled' : null,
           }),
-          stylex.props(styles.touchRow, xstyle),
-          className,
-          style,
+          stylex.props(styles.touchRow, controlXstyle),
+          controlClassName,
+          controlStyle,
         )}>
         <div
           onClick={event => {
@@ -1315,6 +1344,7 @@ export function TouchDateTimeField({
             />
           </button>
           <input
+            {...controlProps}
             ref={mergedDateInputRef}
             id={dateInputId}
             type="text"
@@ -1323,8 +1353,13 @@ export function TouchDateTimeField({
             readOnly
             inputMode="none"
             onChange={() => {}}
-            onClick={() => openSheet('date')}
-            onKeyDown={event => handleInputKeyDown(event, 'date')}
+            onClick={chainEventHandlers(() => openSheet('date'), onClickProp)}
+            onKeyDown={chainEventHandlers(
+              (event: React.KeyboardEvent<HTMLInputElement>) =>
+                handleInputKeyDown(event, 'date'),
+              onKeyDownProp,
+            )}
+            aria-labelledby={controlLabelledBy}
             placeholder={placeholder}
             disabled={isEffectivelyDisabled && !showsDisabledMessage}
             aria-disabled={showsDisabledMessage ? 'true' : undefined}

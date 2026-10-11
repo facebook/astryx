@@ -4,6 +4,8 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {DateTimeInput} from '@astryxdesign/core/DateTimeInput';
+import {FormLayout} from '@astryxdesign/core/FormLayout';
+import {Text} from '@astryxdesign/core/Text';
 import type {ISODateTimeString} from '@astryxdesign/core/DateTimeInput';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
@@ -619,4 +621,99 @@ export const ThemedSegments: Story = {
       </Theme>
     );
   },
+};
+
+// The StylingParts fields are uncontrolled demos; nothing reads their value.
+const noop = () => {};
+const CONTROL_STYLE = {outline: '2px dashed #c800ff', outlineOffset: 3};
+const CONTAINER_STYLE = {
+  backgroundColor: 'rgba(0, 150, 255, 0.16)',
+  padding: 8,
+  borderRadius: 8,
+};
+
+/**
+ * Where each styling part lands (family:input-fields FR10). The dashed outline
+ * is `controlStyle` on the visual control box. The blue tint is
+ * `containerStyle` on the Field box; in a `horizontal-labels` FormLayout and
+ * inside InputGroup no Field box renders, so there it has no effect (and warns
+ * in development).
+ */
+export const StylingParts: Story = {
+  render: () => (
+    <div style={{display: 'grid', gap: 24, maxWidth: 360}}>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">controlStyle</Text>
+        <div data-parts-row="control-popover" style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="popover"</Text>
+          <DateTimeInput
+            onChange={noop}
+            label="Starts"
+            presentation="popover"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div data-parts-row="control-native" style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="native"</Text>
+          <DateTimeInput
+            onChange={noop}
+            label="Starts"
+            presentation="native"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="control-bottom-sheet"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="bottom-sheet"</Text>
+          <DateTimeInput
+            onChange={noop}
+            label="Starts"
+            presentation="bottom-sheet"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="control-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <DateTimeInput
+              onChange={noop}
+              label="Starts"
+              controlStyle={CONTROL_STYLE}
+            />
+          </FormLayout>
+        </div>
+      </div>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">containerStyle and controlStyle</Text>
+        <div
+          data-parts-row="container-popover"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="popover"</Text>
+          <DateTimeInput
+            onChange={noop}
+            label="Starts"
+            presentation="popover"
+            containerStyle={CONTAINER_STYLE}
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="container-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <DateTimeInput
+              onChange={noop}
+              label="Starts"
+              containerStyle={CONTAINER_STYLE}
+              controlStyle={CONTROL_STYLE}
+            />
+          </FormLayout>
+        </div>
+      </div>
+    </div>
+  ),
 };
