@@ -129,7 +129,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: '`from` is missing (and neither `list` nor `registry` is set); `list` and `registry` are both set; `registry` is combined with `from`, `force`, `codemod`, `skipCodemod`, `integration` or `installDeps`; an `integration` specifier is invalid or not installed; or astryx.config fails to load or validate and no pending config codemod repairs it',
+      when: '`from` is missing (and neither `list` nor `registry` is set); `list` and `registry` are both set; `list` is combined with `from`, `force`, `apply`, `path` (non-default), `codemod`, `skipCodemod`, `integration` or `installDeps`; `registry` is combined with `from`, `force`, `codemod`, `skipCodemod`, `integration` or `installDeps`; an `integration` specifier is invalid or not installed; or astryx.config fails to load or validate and no pending config codemod repairs it',
     },
     {code: 'ERR_INVALID_VERSION', when: '`from` is not a valid semver string'},
     {code: 'ERR_PATH_TRAVERSAL', when: '`path` resolves outside cwd'},

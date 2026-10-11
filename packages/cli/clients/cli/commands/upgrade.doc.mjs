@@ -90,7 +90,7 @@ export const doc = {
       flag: '--list',
       param: 'options.list',
       description:
-        'List available codemods and do nothing else. Every other flag is ignored, except --registry, which is refused (exit 1)',
+        'List available codemods and do nothing else. Every other flag is refused, as is --registry (exit 1)',
       default: false,
     },
   ],

@@ -61,7 +61,7 @@ export const doc = {
       flag: '--list-categories',
       param: 'options.listCategories',
       description:
-        'List valid report categories without filing; the component and the other gap-report options are ignored',
+        'List valid report categories without filing; the component and the other gap-report options are refused with ERR_INVALID_ARGUMENT',
     },
   ],
   examples: [
