@@ -80,8 +80,15 @@ export type TypeaheadSize = 'sm' | 'md' | 'lg';
 
 export interface TypeaheadProps<T extends SearchableItem> extends Omit<
   FieldInputBaseProps<HTMLInputElement>,
-  'onChange'
+  'onChange' | 'onKeyDown'
 > {
+  /**
+   * Key handler. Runs after the built-in key handling, so it observes every key
+   * and cannot cancel navigation, selection, or token editing. It receives keys
+   * on the combobox input and on the field's other controls (the clear button
+   * and tokens).
+   */
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
   /** Ref forwarded to the combobox input. */
   ref?: React.Ref<HTMLInputElement>;
   /** Accessible label (required). */
@@ -596,6 +603,14 @@ export function Typeahead<T extends SearchableItem>({
         ref={useMergedRefs(wrapperRef, disabledMessageTooltip.ref)}
         onClick={handleWrapperClick}
         onBlur={handleBlur}
+        // Keys on the field's other controls (clear button, tokens) reach a
+        // consumer onKeyDown here; keys on the input reach it through
+        // TrailingKeyDownContext after the built-in handling.
+        onKeyDown={event => {
+          if (event.target !== inputRef.current) {
+            onKeyDown?.(event);
+          }
+        }}
         {...mergeProps(
           themeProps('typeahead', {size, status: status?.type}),
           stylex.props(

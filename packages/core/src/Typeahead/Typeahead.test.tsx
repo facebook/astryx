@@ -2357,7 +2357,7 @@ describe('Typeahead consumer key handler order', () => {
 });
 
 describe('Typeahead consumer key handler target', () => {
-  it('does not run onKeyDown for keys on the clear button', () => {
+  it('still runs onKeyDown for keys on the clear button', () => {
     const onKeyDown = vi.fn();
     render(
       <Typeahead
@@ -2371,6 +2371,21 @@ describe('Typeahead consumer key handler target', () => {
     fireEvent.keyDown(screen.getByRole('button', {name: /clear/i}), {
       key: 'Enter',
     });
-    expect(onKeyDown).not.toHaveBeenCalled();
+    expect(onKeyDown).toHaveBeenCalledOnce();
+  });
+
+  it('runs onKeyDown once for a key on the input', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'a'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
   });
 });

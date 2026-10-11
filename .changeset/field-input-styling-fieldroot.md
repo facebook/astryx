@@ -10,7 +10,8 @@ Migration: rename root `xstyle`/`className`/`style` to the part they styled befo
 Not rewritten by the codemod, so update by hand:
 - `ref` and `id`, plus `data-*` (except Typeahead and Tokenizer `data-testid`, which marked the control surface), `aria-*`, and DOM event handlers such as `onClick`, previously landed on the outer Field (or were dropped by RadioList and Slider). They now land on the primary semantic control. Update code that measured, queried, or listened on the outer field, and wrap the component in your own element when you need an outer boundary.
 - Typeahead and Tokenizer refs are now `HTMLInputElement`.
-- A consumer `onKeyDown` on Typeahead or Tokenizer still runs after the built-in key handling and cannot cancel it, but it now runs on the combobox input, so it no longer fires for keys on the clear button or tokens.
+- A consumer `onKeyDown` on Typeahead or Tokenizer still runs after the built-in key handling, cannot cancel it, and still fires for keys on the clear button and tokens; for keys on the input it now runs on the combobox input itself.
+- RadioList and Slider used to drop DOM event handlers; they now run after the component's own handling, so a Slider `onPointerDown`, `onKeyDown`, `onFocus`, or `onBlur` that never fired before now fires (on the thumb, or on the group in range mode).
 - Tokenizer's `onFocus`/`onBlur` keep their meaning: focus entering or leaving the field.
 - Styling passed through a wrapper's own props or a spread is not rewritten and now fails type-checking at that callsite.
 

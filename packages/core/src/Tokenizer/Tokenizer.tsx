@@ -112,8 +112,15 @@ export interface TokenizerHandle {
 
 export interface TokenizerProps<T extends SearchableItem> extends Omit<
   FieldInputBaseProps<HTMLInputElement>,
-  'onChange' | 'onFocus' | 'onBlur'
+  'onChange' | 'onFocus' | 'onBlur' | 'onKeyDown'
 > {
+  /**
+   * Key handler. Runs after the built-in key handling, so it observes every key
+   * and cannot cancel navigation, selection, or token editing. It receives keys
+   * on the combobox input and on the field's other controls (the clear button
+   * and tokens).
+   */
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
   /** Accessible label (required). */
   label: string;
   /** Visually hide the label. @default false */
@@ -959,6 +966,14 @@ export function Tokenizer<T extends SearchableItem>({
       onClick={handleWrapperClick}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
+      // Keys on the field's other controls (clear button, tokens) reach a
+      // consumer onKeyDown here; keys on the input reach it through
+      // TrailingKeyDownContext after the built-in handling.
+      onKeyDown={event => {
+        if (event.target !== inputRef.current) {
+          onKeyDown?.(event);
+        }
+      }}
       {...mergeProps(
         themeProps('tokenizer', {
           size,
