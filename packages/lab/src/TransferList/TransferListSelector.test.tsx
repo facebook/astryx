@@ -557,10 +557,10 @@ describe('TransferListSelector', () => {
     expect(
       screen.getByText('Choose the columns shown in the table.'),
     ).toBeVisible();
-    expect(screen.getByTestId('column-selector')).toHaveAttribute(
-      'data-size',
-      'sm',
-    );
+    // data-testid lands on the trigger button inside the control box.
+    expect(
+      screen.getByTestId('column-selector').closest('.astryx-complex-selector'),
+    ).toHaveAttribute('data-size', 'sm');
     expect(
       screen.getByRole('button', {name: 'Table columns'}),
     ).toHaveTextContent('Customize columns');

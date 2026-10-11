@@ -93,9 +93,9 @@ type TransferListSelectorShellProp =
   | 'size'
   | 'width'
   | 'placement'
-  | 'xstyle'
-  | 'className'
-  | 'style'
+  | 'controlXstyle'
+  | 'controlClassName'
+  | 'controlStyle'
   | 'data-testid';
 
 type TransferListContentProp =
