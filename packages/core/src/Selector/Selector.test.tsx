@@ -2485,7 +2485,11 @@ describe('Selector', () => {
         />,
       );
 
-      const container = screen.getByTestId('fruit-selector');
+      // data-testid lands on the trigger; the reason tooltip anchors to the
+      // control box around it.
+      const container = screen
+        .getByTestId('fruit-selector')
+        .closest('.astryx-selector') as HTMLElement;
       const tooltip = screen.getByRole('tooltip', h);
       expect(tooltip).toHaveTextContent('You need the Editor role');
 

@@ -736,19 +736,15 @@ export function PowerSearchEditPopover({
 
   const handleValueChange = useCallback(
     (value: FilterValue, shouldSave?: boolean) => {
-      setPartialFilter(prev => {
-        const updated = {...prev, value};
-        if (shouldSave && updated.field && updated.operator && updated.value) {
-          onSave({
-            field: updated.field,
-            operator: updated.operator,
-            value: updated.value,
-          });
-        }
-        return updated;
-      });
+      setPartialFilter(prev => ({...prev, value}));
+      // Saved from the handler, not inside the state updater: React may call
+      // an updater more than once (StrictMode does), which would save twice.
+      const {field, operator} = partialFilter;
+      if (shouldSave && field && operator && value) {
+        onSave({field, operator, value});
+      }
     },
-    [onSave],
+    [partialFilter, onSave],
   );
 
   const handleSave = useCallback(() => {
