@@ -28,22 +28,26 @@ function trigger(): HTMLElement {
   return el;
 }
 
+// A required value callback the tests do not observe.
+const noop = () => {};
+
 describe('DateRangeInput FR10 styling contract', () => {
   it('has no root styling props and has the container* and control* parts', () => {
     expectFieldInputProps<DateRangeInputProps>();
   });
 
   it('rejects root xstyle, className, and style at compile time', () => {
+    const req = {value: null, onChange: noop};
     const typeOnly = () => (
       <>
         {/* Control: the same element without root styling compiles. */}
-        <DateRangeInput label="L" controlClassName="x" containerClassName="y" />
+        <DateRangeInput {...req} label="L" controlClassName="x" />
         {/* @ts-expect-error -- root className is not a DateRangeInput prop (FR10) */}
-        <DateRangeInput label="L" className="x" />
+        <DateRangeInput {...req} label="L" className="x" />
         {/* @ts-expect-error -- root style is not a DateRangeInput prop (FR10) */}
-        <DateRangeInput label="L" style={{margin: 1}} />
+        <DateRangeInput {...req} label="L" style={{margin: 1}} />
         {/* @ts-expect-error -- root xstyle is not a DateRangeInput prop (FR10) */}
-        <DateRangeInput label="L" xstyle={{}} />
+        <DateRangeInput {...req} label="L" xstyle={{}} />
       </>
     );
     void typeOnly;
@@ -51,13 +55,17 @@ describe('DateRangeInput FR10 styling contract', () => {
 });
 
 describeFieldInputParts('DateRangeInput', {
-  renderMember: props => <DateRangeInput label="Stay" {...props} />,
+  renderMember: props => (
+    <DateRangeInput value={null} onChange={noop} label="Stay" {...props} />
+  ),
   getControl: trigger,
 });
 
 describe('DateRangeInput FR10 details', () => {
   it('points the label at the trigger when the caller sets id', () => {
-    render(<DateRangeInput label="Stay" id="stay" />);
+    render(
+      <DateRangeInput value={null} onChange={noop} label="Stay" id="stay" />,
+    );
     expect(trigger().id).toBe('stay');
     expect(document.querySelector('label[for="stay"]')).not.toBeNull();
   });
@@ -65,6 +73,8 @@ describe('DateRangeInput FR10 details', () => {
   it("adds a caller's aria-describedby to the component's own", () => {
     render(
       <DateRangeInput
+        value={null}
+        onChange={noop}
         label="Stay"
         description="Check-in to check-out"
         aria-describedby="caller-desc"
@@ -79,7 +89,12 @@ describe('DateRangeInput FR10 details', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const {container} = render(
       <FormLayout direction="horizontal-labels">
-        <DateRangeInput label="Stay" controlClassName="fr10-control" />
+        <DateRangeInput
+          value={null}
+          onChange={noop}
+          label="Stay"
+          controlClassName="fr10-control"
+        />
       </FormLayout>,
     );
     const box = container.querySelector('.fr10-control');
@@ -91,7 +106,14 @@ describe('DateRangeInput FR10 details', () => {
 
   it('runs a caller onClick after the trigger opens the calendar', () => {
     const onClick = vi.fn();
-    render(<DateRangeInput label="Stay" onClick={onClick} />);
+    render(
+      <DateRangeInput
+        value={null}
+        onChange={noop}
+        label="Stay"
+        onClick={onClick}
+      />,
+    );
     fireEvent.click(trigger());
     expect(onClick).toHaveBeenCalledOnce();
     expect(trigger()).toHaveAttribute('aria-expanded', 'true');
@@ -99,7 +121,12 @@ describe('DateRangeInput FR10 details', () => {
 
   it('does not let a caller onClick cancel opening the calendar', () => {
     render(
-      <DateRangeInput label="Stay" onClick={event => event.preventDefault()} />,
+      <DateRangeInput
+        value={null}
+        onChange={noop}
+        label="Stay"
+        onClick={event => event.preventDefault()}
+      />,
     );
     fireEvent.click(trigger());
     expect(trigger()).toHaveAttribute('aria-expanded', 'true');

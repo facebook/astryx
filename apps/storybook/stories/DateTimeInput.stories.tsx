@@ -623,6 +623,8 @@ export const ThemedSegments: Story = {
   },
 };
 
+// The StylingParts fields are uncontrolled demos; nothing reads their value.
+const noop = () => {};
 const CONTROL_STYLE = {outline: '2px dashed #c800ff', outlineOffset: 3};
 const CONTAINER_STYLE = {
   backgroundColor: 'rgba(0, 150, 255, 0.16)',
@@ -645,6 +647,7 @@ export const StylingParts: Story = {
         <div data-parts-row="control-popover" style={{display: 'grid', gap: 4}}>
           <Text type="supporting">presentation="popover"</Text>
           <DateTimeInput
+            onChange={noop}
             label="Starts"
             presentation="popover"
             controlStyle={CONTROL_STYLE}
@@ -653,6 +656,7 @@ export const StylingParts: Story = {
         <div data-parts-row="control-native" style={{display: 'grid', gap: 4}}>
           <Text type="supporting">presentation="native"</Text>
           <DateTimeInput
+            onChange={noop}
             label="Starts"
             presentation="native"
             controlStyle={CONTROL_STYLE}
@@ -663,6 +667,7 @@ export const StylingParts: Story = {
           style={{display: 'grid', gap: 4}}>
           <Text type="supporting">presentation="bottom-sheet"</Text>
           <DateTimeInput
+            onChange={noop}
             label="Starts"
             presentation="bottom-sheet"
             controlStyle={CONTROL_STYLE}
@@ -673,7 +678,11 @@ export const StylingParts: Story = {
           style={{display: 'grid', gap: 4}}>
           <Text type="supporting">horizontal-labels FormLayout</Text>
           <FormLayout direction="horizontal-labels">
-            <DateTimeInput label="Starts" controlStyle={CONTROL_STYLE} />
+            <DateTimeInput
+              onChange={noop}
+              label="Starts"
+              controlStyle={CONTROL_STYLE}
+            />
           </FormLayout>
         </div>
       </div>
@@ -684,6 +693,7 @@ export const StylingParts: Story = {
           style={{display: 'grid', gap: 4}}>
           <Text type="supporting">presentation="popover"</Text>
           <DateTimeInput
+            onChange={noop}
             label="Starts"
             presentation="popover"
             containerStyle={CONTAINER_STYLE}
@@ -696,6 +706,7 @@ export const StylingParts: Story = {
           <Text type="supporting">horizontal-labels FormLayout</Text>
           <FormLayout direction="horizontal-labels">
             <DateTimeInput
+              onChange={noop}
               label="Starts"
               containerStyle={CONTAINER_STYLE}
               controlStyle={CONTROL_STYLE}

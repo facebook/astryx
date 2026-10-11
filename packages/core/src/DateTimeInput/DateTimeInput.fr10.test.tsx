@@ -66,6 +66,9 @@ function control(selector: string): HTMLElement {
   return el;
 }
 
+// A required value callback the tests do not observe.
+const noop = () => {};
+
 describe('DateTimeInput FR10 styling contract', () => {
   it('has no root styling props and has the container* and control* parts', () => {
     expectFieldInputProps<DateTimeInputProps>();
@@ -75,13 +78,18 @@ describe('DateTimeInput FR10 styling contract', () => {
     const typeOnly = () => (
       <>
         {/* Control: the same element without root styling compiles. */}
-        <DateTimeInput label="L" controlClassName="x" containerClassName="y" />
+        <DateTimeInput
+          onChange={noop}
+          label="L"
+          controlClassName="x"
+          containerClassName="y"
+        />
         {/* @ts-expect-error -- root className is not a DateTimeInput prop (FR10) */}
-        <DateTimeInput label="L" className="x" />
+        <DateTimeInput onChange={noop} label="L" className="x" />
         {/* @ts-expect-error -- root style is not a DateTimeInput prop (FR10) */}
-        <DateTimeInput label="L" style={{margin: 1}} />
+        <DateTimeInput onChange={noop} label="L" style={{margin: 1}} />
         {/* @ts-expect-error -- root xstyle is not a DateTimeInput prop (FR10) */}
-        <DateTimeInput label="L" xstyle={{}} />
+        <DateTimeInput onChange={noop} label="L" xstyle={{}} />
       </>
     );
     void typeOnly;
@@ -92,7 +100,12 @@ for (const [surface, presentation, selector] of SURFACES) {
   describe(`${surface} surface`, () => {
     describeFieldInputParts('DateTimeInput', {
       renderMember: props => (
-        <DateTimeInput label="Due" presentation={presentation} {...props} />
+        <DateTimeInput
+          onChange={noop}
+          label="Due"
+          presentation={presentation}
+          {...props}
+        />
       ),
       getControl: () => control(selector),
       inGroup: false,
@@ -102,7 +115,12 @@ for (const [surface, presentation, selector] of SURFACES) {
   describe(`DateTimeInput (${surface}) FR10 details`, () => {
     it('names the control from its label when the caller sets id', () => {
       render(
-        <DateTimeInput label="Due" presentation={presentation} id="due" />,
+        <DateTimeInput
+          onChange={noop}
+          label="Due"
+          presentation={presentation}
+          id="due"
+        />,
       );
       expect(control(selector).id).toBe('due');
       expect(document.querySelector('label[for="due"]')).not.toBeNull();
@@ -111,6 +129,7 @@ for (const [surface, presentation, selector] of SURFACES) {
     it("adds a caller's aria-describedby to the component's own", () => {
       render(
         <DateTimeInput
+          onChange={noop}
           label="Due"
           description="Pick a weekday"
           presentation={presentation}
@@ -129,6 +148,7 @@ for (const [surface, presentation, selector] of SURFACES) {
       const {container} = render(
         <FormLayout direction="horizontal-labels">
           <DateTimeInput
+            onChange={noop}
             label="Due"
             presentation={presentation}
             controlClassName="fr10-control"
@@ -148,7 +168,12 @@ describe('DateTimeInput FR10 handler composition', () => {
   it('runs a caller onClick after the pointer field opens its calendar', () => {
     const onClick = vi.fn();
     render(
-      <DateTimeInput label="Due" presentation="popover" onClick={onClick} />,
+      <DateTimeInput
+        onChange={noop}
+        label="Due"
+        presentation="popover"
+        onClick={onClick}
+      />,
     );
     const input = screen.getByRole('combobox', {name: 'Due'});
     fireEvent.click(input);
@@ -160,6 +185,7 @@ describe('DateTimeInput FR10 handler composition', () => {
     const onKeyDown = vi.fn();
     render(
       <DateTimeInput
+        onChange={noop}
         label="Due"
         presentation="popover"
         onKeyDown={onKeyDown}
@@ -173,6 +199,7 @@ describe('DateTimeInput FR10 handler composition', () => {
     const onClick = vi.fn();
     render(
       <DateTimeInput
+        onChange={noop}
         label="Due"
         presentation="bottom-sheet"
         onClick={onClick}
@@ -188,6 +215,7 @@ describe('DateTimeInput FR10 handler composition', () => {
     const seen: {key: string; defaultPrevented: boolean}[] = [];
     render(
       <DateTimeInput
+        onChange={noop}
         label="Due"
         presentation="popover"
         onKeyDown={event =>
@@ -203,7 +231,14 @@ describe('DateTimeInput FR10 handler composition', () => {
 
   it('runs a caller onBlur on the native field', () => {
     const onBlur = vi.fn();
-    render(<DateTimeInput label="Due" presentation="native" onBlur={onBlur} />);
+    render(
+      <DateTimeInput
+        onChange={noop}
+        label="Due"
+        presentation="native"
+        onBlur={onBlur}
+      />,
+    );
     const input = control('input[type="date"]');
     fireEvent.focus(input);
     fireEvent.blur(input);

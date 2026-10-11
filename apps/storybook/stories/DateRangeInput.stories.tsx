@@ -458,6 +458,8 @@ export const ThemedIcons: Story = {
   },
 };
 
+// The StylingParts fields are uncontrolled demos; nothing reads their value.
+const noop = () => {};
 const CONTROL_STYLE = {outline: '2px dashed #c800ff', outlineOffset: 3};
 const CONTAINER_STYLE = {
   backgroundColor: 'rgba(0, 150, 255, 0.16)',
@@ -481,14 +483,24 @@ export const StylingParts: Story = {
           data-parts-row="control-standalone"
           style={{display: 'grid', gap: 4}}>
           <Text type="supporting">Standalone</Text>
-          <DateRangeInput label="Stay" controlStyle={CONTROL_STYLE} />
+          <DateRangeInput
+            value={null}
+            onChange={noop}
+            label="Stay"
+            controlStyle={CONTROL_STYLE}
+          />
         </div>
         <div
           data-parts-row="control-form-layout"
           style={{display: 'grid', gap: 4}}>
           <Text type="supporting">horizontal-labels FormLayout</Text>
           <FormLayout direction="horizontal-labels">
-            <DateRangeInput label="Stay" controlStyle={CONTROL_STYLE} />
+            <DateRangeInput
+              value={null}
+              onChange={noop}
+              label="Stay"
+              controlStyle={CONTROL_STYLE}
+            />
           </FormLayout>
         </div>
       </div>
@@ -499,6 +511,8 @@ export const StylingParts: Story = {
           style={{display: 'grid', gap: 4}}>
           <Text type="supporting">Standalone</Text>
           <DateRangeInput
+            value={null}
+            onChange={noop}
             label="Stay"
             containerStyle={CONTAINER_STYLE}
             controlStyle={CONTROL_STYLE}
@@ -510,6 +524,8 @@ export const StylingParts: Story = {
           <Text type="supporting">horizontal-labels FormLayout</Text>
           <FormLayout direction="horizontal-labels">
             <DateRangeInput
+              value={null}
+              onChange={noop}
               label="Stay"
               containerStyle={CONTAINER_STYLE}
               controlStyle={CONTROL_STYLE}

@@ -19,6 +19,7 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {TimeInput, type TimeInputProps} from './TimeInput';
+import type {ISOTimeString} from '../utils';
 import {FormLayout} from '../FormLayout';
 import {expectFieldInputProps} from '../Field/fieldInputFamily.testing';
 import {describeFieldInputParts} from '../Field/fieldInputFamily.render-testing';
@@ -183,7 +184,7 @@ describe('TimeInput FR10 handler composition', () => {
       <TimeInput
         label="Start"
         presentation="text-input"
-        value="09:00"
+        value={'09:00' as ISOTimeString}
         onChange={onChange}
         onKeyDown={event =>
           seen.push({key: event.key, defaultPrevented: event.defaultPrevented})
