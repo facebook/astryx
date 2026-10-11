@@ -755,10 +755,14 @@ export function PowerSearch({
         return;
       }
 
-      // An "empty" operator filter has no value to edit: commit it as the
-      // editor's save would, the way adding one does, instead of opening it.
+      // An "empty" operator filter has no value for the built-in editor to
+      // edit: commit it as that editor's save would, the way adding one does,
+      // instead of opening it. A consumer's `empty` Editor override still opens.
       const operator = config.getOperator(filter.field, filter.operator);
-      if (operator?.value.type === 'empty') {
+      if (
+        operator?.value.type === 'empty' &&
+        componentOverrides?.empty?.Editor == null
+      ) {
         const newFilters = [...filters];
         newFilters[index] = {
           field: filter.field,
@@ -780,7 +784,15 @@ export function PowerSearch({
         },
       });
     },
-    [filters, isReadOnly, isDisabled, config, onChange, setPopoverState],
+    [
+      filters,
+      isReadOnly,
+      isDisabled,
+      config,
+      componentOverrides,
+      onChange,
+      setPopoverState,
+    ],
   );
 
   // Handle popover save

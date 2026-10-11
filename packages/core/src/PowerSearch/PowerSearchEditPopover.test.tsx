@@ -1067,3 +1067,46 @@ describe('empty-operator choices inside PowerSearch', () => {
     expect(getEditPopoverText(container)).toBe('');
   });
 });
+
+describe('empty-operator token with an Editor override', () => {
+  it('opens the consumer empty Editor instead of committing', () => {
+    const onChange = vi.fn();
+    const EmptyEditor = ({onCancel}: {onCancel: () => void}) => (
+      <div data-testid="custom-empty-editor">
+        <button type="button" onClick={onCancel}>
+          Close custom
+        </button>
+      </div>
+    );
+    const overrideConfig: PowerSearchConfig = {
+      name: 'test-empty-override',
+      fields: [
+        {
+          key: 'title',
+          label: 'Title',
+          operators: [
+            {key: 'contains', label: 'contains', value: {type: 'string'}},
+            {key: 'is_empty', label: 'is empty', value: {type: 'empty'}},
+          ],
+        },
+      ],
+    };
+    render(
+      <PowerSearch
+        config={overrideConfig}
+        filters={[
+          {field: 'title', operator: 'is_empty', value: {type: 'empty'}},
+        ]}
+        onChange={onChange}
+        components={{empty: {Editor: EmptyEditor}}}
+      />,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText(/Title: is empty/));
+      flushRAF();
+    });
+
+    expect(screen.getByTestId('custom-empty-editor')).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
