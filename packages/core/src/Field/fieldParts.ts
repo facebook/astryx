@@ -28,6 +28,8 @@ import {useDevWarning} from '../hooks/useDevWarning';
 export type FieldInputForbiddenStyleProp = 'xstyle' | 'className' | 'style';
 
 /** Styling for the Field box (label, control, and status together). */
+// A prop mixin for Field-composed inputs, not a component props type.
+// eslint-disable-next-line @astryx/require-base-props, @astryx/require-ref-prop
 export interface FieldContainerStyleProps {
   /**
    * StyleX styles for the field container (the Field box around the label,
@@ -43,6 +45,8 @@ export interface FieldContainerStyleProps {
 }
 
 /** Styling for the visual control box (border, background, icons, end controls). */
+// A prop mixin for Field-composed inputs, not a component props type.
+// eslint-disable-next-line @astryx/require-base-props, @astryx/require-ref-prop
 export interface FieldControlStyleProps {
   /**
    * StyleX styles for the visual control box: the element that paints the
