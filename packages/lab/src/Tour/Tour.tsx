@@ -29,7 +29,7 @@
  * - /packages/lab/src/Tour/index.ts (exports if types change)
  */
 
-import {useCallback, useEffect, useMemo, useState, type ReactNode} from 'react';
+import {useCallback, useMemo, useState, type ReactNode} from 'react';
 import {
   TourContext,
   type TourDismissSource,
@@ -108,13 +108,16 @@ export function Tour({
     };
   }, []);
 
-  // Reset to the first step whenever the tour is (re)started, so a dismissed
-  // tour begins from the top next time isActive flips back on.
-  useEffect(() => {
+  // Reset to the first step when the tour is deactivated, so a dismissed tour
+  // begins from the top next time isActive flips back on. Adjusted during
+  // render, so no commit carries the old step past deactivation.
+  const [wasActive, setWasActive] = useState(isActive);
+  if (wasActive !== isActive) {
+    setWasActive(isActive);
     if (!isActive) {
       setActiveStepIndex(0);
     }
-  }, [isActive]);
+  }
 
   const stepCount = stepIds.length;
 

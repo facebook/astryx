@@ -2,6 +2,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {Profiler} from 'react';
 import {Lightbox} from './Lightbox';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {InternationalizationProvider} from '../i18n';
@@ -674,5 +675,43 @@ describe('Lightbox', () => {
       fireEvent.click(screen.getByRole('img', {hidden: true}));
       expect(onOpenChange).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('Lightbox zoom reset timing', () => {
+  it('shows the next image unzoomed in the same commit that changes it', () => {
+    const media = [
+      {src: '/a.jpg', alt: 'Image A'},
+      {src: '/b.jpg', alt: 'Image B'},
+    ];
+    const frames: string[] = [];
+    const onRender = () =>
+      frames.push(
+        screen
+          .queryByRole('button', {name: 'Zoom'})
+          ?.getAttribute('aria-pressed') ?? '',
+      );
+    render(
+      <Profiler id="lightbox" onRender={onRender}>
+        <Lightbox isOpen={true} onOpenChange={() => {}} media={media} hasZoom />
+      </Profiler>,
+    );
+    fireEvent.keyDown(screen.getByRole('button', {name: 'Zoom'}), {
+      key: 'Enter',
+    });
+    expect(screen.getByRole('button', {name: 'Zoom'})).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    frames.length = 0;
+    fireEvent.click(screen.getByRole('button', {name: /next/i}));
+
+    expect(frames.length).toBeGreaterThan(0);
+    expect(frames).not.toContain('true');
+    expect(screen.getByRole('button', {name: 'Zoom'})).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 });

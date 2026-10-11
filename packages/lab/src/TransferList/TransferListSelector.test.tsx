@@ -9,7 +9,7 @@
  * SYNC: When TransferListSelector.tsx behavior changes, update this test.
  */
 
-import {useState} from 'react';
+import {Profiler, useState} from 'react';
 import {afterAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
   fireEvent,
@@ -601,5 +601,44 @@ describe('TransferListSelector', () => {
     expect(popover?.getAttribute('style')).toContain(
       'position-area: self-block-end span-self-inline-end',
     );
+  });
+});
+
+describe('TransferListSelector draft reset timing', () => {
+  it('replaces a staged draft in the same commit as an external value change', async () => {
+    const user = userEvent.setup();
+    const frames: boolean[] = [];
+    const onRender = () =>
+      frames.push(
+        screen.queryByRole('button', {name: 'Remove Owner', ...hidden}) != null,
+      );
+    const ui = (value: string[]) => (
+      <Profiler id="selector" onRender={onRender}>
+        <TransferListSelector
+          label="Visible fields"
+          options={OPTIONS}
+          value={value}
+          onChange={() => {}}
+          commitBehavior="staged"
+        />
+      </Profiler>
+    );
+    const view = render(ui(['name', 'status']));
+    await openSelector();
+    await user.click(
+      screen.getByRole('button', {name: 'Add Owner', ...hidden}),
+    );
+    expect(
+      screen.getByRole('button', {name: 'Remove Owner', ...hidden}),
+    ).toBeInTheDocument();
+
+    frames.length = 0;
+    view.rerender(ui(['name']));
+
+    expect(frames.length).toBeGreaterThan(0);
+    expect(frames).not.toContain(true);
+    expect(
+      screen.getByRole('button', {name: 'Add Owner', ...hidden}),
+    ).toBeInTheDocument();
   });
 });
