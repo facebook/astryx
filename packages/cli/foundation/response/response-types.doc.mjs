@@ -335,7 +335,7 @@ export const doc = {
     {
       value: 'integration.validate',
       description:
-        'The validation result: validated (false when no integration manifest was found, so nothing was checked and the empty issues list proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
+        'The validation result: validated (false when nothing was validated: with no package.json the issues list carries one no_package error so the command exits 1, and with a package.json but no integration manifest the issues list is empty and proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
     },
     {
       value: 'integration.template-conflicts',
