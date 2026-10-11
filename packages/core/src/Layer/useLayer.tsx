@@ -458,6 +458,21 @@ function isPopoverOperationInFlight(doc: Document): boolean {
   return (popoverOperationsByDocument.get(doc) ?? 0) > 0;
 }
 
+/**
+ * The trigger to pass as the popover's invoker `source`, or `undefined` when
+ * the option cannot take it. `showPopover({source})` accepts only an HTML
+ * element and throws a TypeError for any other element, so a layer whose
+ * trigger is an SVG element (an `<svg>` icon, a shape in a chart) would never
+ * open. The check reads the trigger's own window, so an HTML trigger in
+ * another document keeps its source.
+ */
+function invokerSource(trigger: Element | null): HTMLElement | undefined {
+  const view = trigger?.ownerDocument.defaultView;
+  return view != null && trigger instanceof view.HTMLElement
+    ? trigger
+    : undefined;
+}
+
 interface ContextLayerMount {
   /** Null means the marker's parent is safe and the layer stays inline. */
   portalTarget: HTMLElement | null;
@@ -760,7 +775,7 @@ function useLayerImplementation(
         // hosted away from its trigger then still takes its sequential focus
         // order (and its popover nesting) from the trigger rather than from
         // its own DOM position. Browsers without the option ignore it.
-        popover.showPopover({source: triggerRef.current ?? undefined});
+        popover.showPopover({source: invokerSource(triggerRef.current)});
       });
     } else {
       popover.style.display = 'block';

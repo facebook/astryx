@@ -733,6 +733,113 @@ describe('useLayer', () => {
     });
   });
 
+  describe('the invoker source', () => {
+    /**
+     * Mirror the Popover API's option conversion: `source` must be an HTML
+     * element, from any document, and any other element throws before the
+     * popover shows.
+     */
+    function installSourceCheckingShowPopover(
+      view: Window & typeof globalThis = window,
+    ) {
+      const showSpy = vi.fn(function (
+        this: HTMLElement,
+        options?: ShowPopoverOptions,
+      ) {
+        const source: Element | undefined = options?.source;
+        const sourceView = source?.ownerDocument.defaultView;
+        if (
+          source != null &&
+          !(sourceView != null && source instanceof sourceView.HTMLElement)
+        ) {
+          throw new TypeError(
+            "Failed to execute 'showPopover' on 'HTMLElement': Failed to read the 'source' property from 'ShowPopoverOptions': Failed to convert value to 'HTMLElement'.",
+          );
+        }
+        this.dataset.open = 'true';
+      });
+      view.HTMLElement.prototype.showPopover = showSpy;
+      return showSpy;
+    }
+
+    function SvgTriggerHarness({
+      isShape,
+      onReady,
+      onShow,
+    }: {
+      isShape: boolean;
+      onReady: (show: () => void) => void;
+      onShow: () => void;
+    }) {
+      const layer = useLayer({mode: 'context', onShow});
+      onReady(layer.show);
+      // The trigger ref is typed for HTML elements; an SVG trigger casts.
+      const ref = layer.ref as unknown as React.RefCallback<SVGElement>;
+      return (
+        <>
+          <svg ref={isShape ? undefined : ref} role="img" aria-label="Chart">
+            <path ref={isShape ? ref : undefined} d="M0 0H10V10Z" />
+          </svg>
+          {layer.render(<span>Layer content</span>)}
+        </>
+      );
+    }
+
+    it.each([
+      ['an <svg> element', false],
+      ['a shape inside an <svg>', true],
+    ])(
+      'opens a layer whose trigger is %s, without passing it as the source',
+      (_, isShape) => {
+        const showSpy = installSourceCheckingShowPopover();
+        const onShow = vi.fn();
+        let show = () => {};
+        const {container} = render(
+          <SvgTriggerHarness
+            isShape={isShape}
+            onReady={value => (show = value)}
+            onShow={onShow}
+          />,
+        );
+
+        act(() => show());
+
+        expect(showSpy).toHaveBeenCalledExactlyOnceWith({source: undefined});
+        expect(container.querySelector('[popover]')).toHaveAttribute(
+          'data-open',
+          'true',
+        );
+        expect(onShow).toHaveBeenCalledOnce();
+      },
+    );
+
+    it('keeps an HTML trigger in another document as the source', () => {
+      const frame = document.createElement('iframe');
+      document.body.append(frame);
+      try {
+        const frameWindow = frame.contentWindow as Window & typeof globalThis;
+        const showSpy = installSourceCheckingShowPopover(frameWindow);
+        const container = frameWindow.document.body.appendChild(
+          frameWindow.document.createElement('div'),
+        );
+        const {unmount} = render(<ContextLayerHarness />, {container});
+        const trigger = container.querySelector('button') as HTMLElement;
+        // An element of the frame's window, not of the test's.
+        expect(trigger).not.toBeInstanceOf(HTMLElement);
+
+        fireEvent.click(trigger);
+
+        // Compared by identity: a deep comparison does not walk a node from
+        // another window.
+        expect(showSpy).toHaveBeenCalledOnce();
+        expect(showSpy.mock.calls[0]?.[0]?.source).toBe(trigger);
+        unmount();
+      } finally {
+        frame.remove();
+      }
+    });
+  });
+
   describe('show() while another popover is mid show/hide', () => {
     /**
      * Mirror the Popover API's re-entrancy rule: hiding a popover hands focus
