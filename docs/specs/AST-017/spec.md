@@ -515,10 +515,9 @@ one removal merged ahead of the decision to allow it.
 - **FR37 — Every minor has an owner-named target and a manifest generated at the
   cut.** The owner names the target version on `main` (FR46). The minor's breaking set
   is the set of `[breaking]` Changesets merged for it. At the cut the release generates
-  its manifest from those Changesets — each removal with its replacement, migration,
-  codemod, and rollback, plus the separately listed compatible fixes — and freezes it
-  with the cut for release notes and audit. The manifest describes; it never gates a
-  merge. The release fails closed on any incompatible delta between the final patch and
+  its manifest from the consumed Changesets as authored (FR41) — the breaking ones are
+  the minor's migration inventory, the rest its compatible fixes — and freezes it with
+  the cut for release notes and audit. The manifest describes; it never gates a merge. The release fails closed on any incompatible delta between the final patch and
   the minor that no merged `[breaking]` Changeset describes (FR39, FR43). Operational
   runbooks may add execution detail but cannot authorize or widen the breaking set.
 - **FR38 — The final patch is the paired minor's locked baseline.** Publish the final
@@ -543,13 +542,14 @@ one removal merged ahead of the decision to allow it.
   disclosed compatible delta; do not recut the final patch solely for bookkeeping.
   CI MUST independently prove patch eligibility. Release notes separate cleanup from
   compatible fixes.
-- **FR41 — Release artifacts use closed schemas.** The cut-time manifest (FR37)
-  carries, per `[breaking]` Changeset, the package, the old usage, the replacement, the
-  migration or `none` with its reason, the codemod when one exists, and rollback; the
-  separately listed compatible fixes; release-metadata deltas; and the baseline
-  receipts. The equivalence receipt carries final and candidate digests plus
-  `unclassifiedDeltas`. Unknown fields and one delta mapped more or less than once
-  fail.
+- **FR41 — Release artifacts use closed schemas and invent no fields.** The cut-time
+  manifest (FR37) freezes each consumed Changeset exactly as authored — path, content
+  digest, packages, category, headline, contributors, and body — and derives breaking
+  versus compatible from the category; editorial text is generated from the body, never
+  from parallel fields a human must backfill. It also carries the release-metadata
+  deltas and the baseline receipts. The equivalence receipt carries final and candidate
+  digests plus `unclassifiedDeltas`. Unknown fields and one delta mapped more or less
+  than once fail.
 - **FR42 — Contributors declare compatibility intent once.** The Changeset is the
   declaration: its tag and body state whether the change is compatible, a deprecation
   with its replacement and migration, or a `[breaking]` change with its migration.
@@ -1169,9 +1169,9 @@ a later minor. The one mechanical gate is the pull-request check that fails a
 `[breaking]` Changeset while `main` declares a patch version and admits it while
 `main` declares a minor. Everything else — lifecycle records, cleanup ids, the release
 manifest, transition rows, migration-evidence cells — is description: the manifest is
-generated at the cut from the merged `[breaking]` Changesets and frozen with the cut
-as the minor's migration and rollback inventory, and the cut fails closed on any
-incompatible final-patch-to-minor delta that no such Changeset describes.
+generated at the cut from the consumed Changesets exactly as authored and frozen with
+the cut as the minor's migration inventory, and the cut fails closed on any
+incompatible final-patch-to-minor delta that no `[breaking]` Changeset describes.
 
 Rejected: a lifecycle record and frozen manifest that every removal had to appear in
 before merging, which duplicated the Changeset and made bookkeeping the blocker; a
