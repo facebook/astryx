@@ -766,3 +766,63 @@ describe('narrow-width layout (#4761)', () => {
     }
   });
 });
+
+describe('value save', () => {
+  const enumConfig: PowerSearchConfig = {
+    name: 'test-enum',
+    fields: [
+      {
+        key: 'status',
+        label: 'Status',
+        operators: [
+          {
+            key: 'is',
+            label: 'is',
+            value: {
+              type: 'enum',
+              values: [
+                {value: 'open', label: 'Open'},
+                {value: 'closed', label: 'Closed'},
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  function Harness({
+    onSave,
+  }: {
+    onSave: (filter: PowerSearchFilter | null) => void;
+  }) {
+    const config = useInternalConfig(enumConfig);
+    return (
+      <PowerSearchEditPopover
+        config={config}
+        filter={{field: 'status', operator: 'is', value: undefined}}
+        mode="create"
+        onSave={onSave}
+        onCancel={() => {}}
+      />
+    );
+  }
+
+  it('saves exactly once when a value that saves on choice is picked', () => {
+    const onSave = vi.fn();
+    render(
+      <React.StrictMode>
+        <Harness onSave={onSave} />
+      </React.StrictMode>,
+    );
+    fireEvent.click(screen.getByRole('combobox', {name: 'Value'}));
+    fireEvent.click(screen.getByRole('option', {name: 'Closed', hidden: true}));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith({
+      field: 'status',
+      operator: 'is',
+      value: {type: 'enum', value: 'closed'},
+    });
+  });
+});
