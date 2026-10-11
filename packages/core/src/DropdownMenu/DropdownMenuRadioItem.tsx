@@ -17,8 +17,9 @@
  * The round radio visual is the shared radio indicator, decorative
  * (aria-hidden) — the row owns the checked state, and menu radios pick up the
  * same `radio` theming (and any theme replacement) as RadioList. A group with
- * `indicator="check"` draws the shared `check` indicator instead, at the
- * inline end of the chosen row, as Selector marks its chosen option. This row keeps
+ * `indicator="check"` renders the shared `check` indicator instead, at the
+ * row's inline end in the row's state, as Selector marks its options: the
+ * default check draws on the chosen row only. This row keeps
  * the marker box: its size is derived from the menu's item size and it swaps to
  * the inline-end of the row on coarse-pointer (touch) devices via CSS `order`.
  */
@@ -157,7 +158,8 @@ export function DropdownMenuRadioItem({
   const RadioControl = useIndicator('radio');
   const CheckControl = useIndicator('check');
   const isCheckMark = groupCtx.indicator === 'check';
-  // The check draws nothing on an unchosen row; the radio draws its circle.
+  // Rendered on every row in its state: the default check draws nothing on an
+  // unchosen row, the radio (or a theme's replacement check) may.
   const Mark = isCheckMark ? CheckControl : RadioControl;
 
   const handleClick = useCallback(() => {

@@ -4,9 +4,10 @@
  * @file DropdownMenuRadioCheck.a11y.chromium.spec.ts
  * @input The `Core/DropdownMenu` RadioGroupCheckMark story in a built
  *   Storybook, real mouse and keyboard input.
- * @output Real-engine proof that a radio group with `indicator="check"` draws
- *   a visible check at the inline end of its chosen row, no mark on the other
- *   rows, and keeps its menuitemradio semantics.
+ * @output Real-engine proof that a radio group with `indicator="check"` draws,
+ *   with the default check indicator, a visible check at the inline end of its
+ *   chosen row and no mark on the other rows, and keeps its menuitemradio
+ *   semantics.
  * @position Run with `pnpm test:a11y-contract`; jsdom has no layout to show
  *   where the mark sits.
  */

@@ -863,7 +863,7 @@ export const RadioGroupCheckMark: Story = {
     docs: {
       description: {
         story:
-          'A radio group with `indicator="check"`: the chosen row carries the single-selection check mark at its inline end, as Selector marks its chosen option, and the other rows draw no mark. The rows stay `menuitemradio` with `aria-checked`.',
+          'A radio group with `indicator="check"`: each row renders the theme\'s single-selection check indicator at its inline end, as Selector marks its options. With the default check only the chosen row shows a mark. The rows stay `menuitemradio` with `aria-checked`.',
       },
     },
   },

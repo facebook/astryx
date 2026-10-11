@@ -66,11 +66,14 @@ export interface DropdownMenuRadioGroupProps extends Omit<
   hasCloseOnSelect?: boolean;
   /**
    * The mark the group's rows draw for the chosen option. `radio` draws the
-   * radio circle on every row. `check` draws the single-selection check mark
-   * (the theme's `check` indicator, as Selector marks its chosen option) at
-   * the inline end of the chosen row, and nothing on the others. The rows
-   * stay `menuitemradio` with `aria-checked` either way. `ContextMenuRadioGroup`
-   * is this component under another name, so it takes the prop too.
+   * radio circle on every row. `check` renders the theme's single-selection
+   * `check` indicator (the mark Selector puts on its chosen option) at the
+   * inline end of every row, in that row's state: the default check draws on
+   * the chosen row only, and a theme whose `check` draws an unchecked state
+   * (a radio, say) shows it on every row. The rows stay `menuitemradio` with
+   * `aria-checked` either way. `ContextMenuRadioGroup` and
+   * `BreadcrumbMenuRadioGroup` are this component under other names, so they
+   * take the prop too.
    * @default 'radio'
    */
   indicator?: DropdownMenuRadioIndicator;

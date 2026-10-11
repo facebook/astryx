@@ -66,7 +66,7 @@ export const docs = {
       type: "'radio' | 'check'",
       default: "'radio'",
       description:
-        "The mark the rows draw for the chosen option. 'radio' draws the radio circle on every row; 'check' draws the single-selection check mark (the theme's check indicator, as Selector marks its chosen option) at the inline end of the chosen row and nothing on the others. The rows stay menuitemradio with aria-checked either way. ContextMenuRadioGroup, the same component under another name, takes it too.",
+        "The mark the rows draw for the chosen option. 'radio' draws the radio circle on every row; 'check' renders the theme's single-selection check indicator (the mark Selector puts on its chosen option) at the inline end of every row, in that row's state: the default check draws on the chosen row only, and a theme whose check draws an unchecked state (a radio, say) shows it on every row. The rows stay menuitemradio with aria-checked either way. ContextMenuRadioGroup and BreadcrumbMenuRadioGroup, the same component under other names, take it too.",
     },
     {
       name: 'children',
@@ -89,7 +89,7 @@ export const docsZh = {
       '组的无障碍名称，作为 aria-label 应用，以便屏幕阅读器将单选项作为命名集合朗读，例如“Sort by”。必需。当名称已作为可见元素存在时，可改用 aria-labelledby（通过基础属性）。',
     hasCloseOnSelect: '选择某值是否关闭菜单。默认关闭。',
     indicator:
-      "各行标记所选项的方式。'radio' 在每一行绘制单选圆圈；'check' 在所选行的行尾绘制单选勾号（主题的 check 指示器，与 Selector 标记所选项相同），其余行不绘制。两种方式下各行都保持 menuitemradio 和 aria-checked。默认 'radio'。",
+      "各行标记所选项的方式。'radio' 在每一行绘制单选圆圈；'check' 在每一行的行尾按该行状态渲染主题的单选 check 指示器（与 Selector 标记所选项相同）：默认勾号只在所选行绘制，而主题若把 check 换成会绘制未选状态的指示器（例如单选圆圈），则每一行都会显示它。两种方式下各行都保持 menuitemradio 和 aria-checked。ContextMenuRadioGroup 和 BreadcrumbMenuRadioGroup 是同一组件的别名，同样支持该属性。默认 'radio'。",
     children: '组成该组的 DropdownMenuRadioItem。',
   },
 };
@@ -105,7 +105,7 @@ export const docsDense = {
     label: 'accessible group name (applied as aria-label); required',
     hasCloseOnSelect: 'close menu on select (default true)',
     indicator:
-      "'radio' circles on every row (default) | 'check' mark at the chosen row's inline end",
+      "'radio' circles on every row (default) | 'check': the theme's check indicator at each row's inline end (default check: chosen row only); also on ContextMenuRadioGroup, BreadcrumbMenuRadioGroup",
     children: 'the DropdownMenuRadioItems',
   },
 };

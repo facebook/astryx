@@ -17,6 +17,9 @@ import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuCheckboxItem} from './DropdownMenuCheckboxItem';
 import {DropdownMenuRadioGroup} from './DropdownMenuRadioGroup';
 import {DropdownMenuRadioItem} from './DropdownMenuRadioItem';
+import {defineTheme} from '../theme/defineTheme';
+import {Theme} from '../theme/Theme';
+import {RadioIndicator} from '../Indicator';
 
 beforeEach(() => {
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
@@ -201,6 +204,41 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
     expect(row('Oldest')).toHaveAttribute('aria-checked', 'true');
     expect(mark('Oldest')).toHaveClass('astryx-icon');
     expect(mark('Newest')).toBeNull();
+  });
+
+  it('indicator="check" under a theme whose check draws an unchecked state shows it on every row', async () => {
+    const user = userEvent.setup();
+    const theme = defineTheme({
+      name: 'menu-radio-check-swap-test',
+      indicators: {check: RadioIndicator},
+    });
+    render(
+      <Theme theme={theme}>
+        <DropdownMenu button={{label: 'Sort'}}>
+          <DropdownMenuRadioGroup
+            value="newest"
+            onChange={() => {}}
+            label="Sort by"
+            indicator="check">
+            <DropdownMenuRadioItem value="newest" label="Newest" />
+            <DropdownMenuRadioItem value="oldest" label="Oldest" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      </Theme>,
+    );
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const rows = screen.getAllByRole('menuitemradio', {hidden: true});
+    // Every row renders the theme's check, a radio here, carrying the menu
+    // target; only the chosen one is filled.
+    for (const row of rows) {
+      const mark = row.querySelector('.astryx-dropdown-menu-radio');
+      expect(mark).toHaveClass('astryx-radio');
+    }
+    const filled = rows.filter(
+      row => row.querySelector('.astryx-radio-dot') != null,
+    );
+    expect(filled).toHaveLength(1);
+    expect(filled[0]).toHaveAccessibleName('Newest');
   });
 
   it('calls onChange with the selected value', async () => {
