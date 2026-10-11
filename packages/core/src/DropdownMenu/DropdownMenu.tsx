@@ -70,7 +70,7 @@ import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {useMenuOverflow} from './useMenuOverflow';
 import {MenuRegionsContext} from './menuRegionsContext';
-import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
+import {getFocusableElements} from '../hooks/useFocusTrap';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
@@ -107,14 +107,17 @@ const MENU_MAX_BLOCK_SIZE = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBloc
 const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSizeFallback})`;
 const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
 
-/** The elements Tab reaches inside a header or footer region, in order. */
+/**
+ * The elements Tab reaches inside a header or footer region, in order. Hidden
+ * controls (`hidden`, `display: none`, `visibility: hidden`, inert or
+ * aria-hidden subtrees) are not reachable, judged by the popover focus trap's
+ * own test so the two never disagree about where Tab can go.
+ */
 function tabbablesIn(region: HTMLElement | null): HTMLElement[] {
   if (region == null) {
     return [];
   }
-  return Array.from(
-    region.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  ).filter(element => element.tabIndex >= 0);
+  return getFocusableElements(region).filter(element => element.tabIndex >= 0);
 }
 
 const styles = stylex.create({

@@ -3467,6 +3467,115 @@ describe('DropdownMenu header and footer', () => {
     await waitFor(() => expect(hasRing()).toBe(true));
   });
 
+  describe('with only hidden controls in a region', () => {
+    async function openHidden(
+      header: React.ReactNode,
+      footer: React.ReactNode,
+    ) {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          button={{label: 'Labels'}}
+          header={header}
+          footer={footer}>
+          <DropdownMenuItem label="Bug" />
+          <DropdownMenuSubMenu label="Move to">
+            <DropdownMenuItem label="Folder A" />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      const trigger = screen.getByRole('button', {name: /Labels/});
+      await user.click(trigger);
+      const menu = screen.getByRole('menu', {name: 'Labels', hidden: true});
+      await waitFor(() => expect(menu).toHaveFocus());
+      const hide = vi.mocked(HTMLElement.prototype.hidePopover);
+      hide.mockClear();
+      return {user, trigger, menu, hide};
+    }
+
+    it.each([
+      [
+        'hidden',
+        <button key="h" type="button" hidden>
+          Gone
+        </button>,
+      ],
+      [
+        'display: none',
+        <button key="d" type="button" style={{display: 'none'}}>
+          Gone
+        </button>,
+      ],
+      [
+        'visibility: hidden',
+        <button key="v" type="button" style={{visibility: 'hidden'}}>
+          Gone
+        </button>,
+      ],
+    ])(
+      'treats a %s footer control as unreachable: Tab from the menu closes it',
+      async (_label, control) => {
+        const {menu, hide} = await openHidden(null, control);
+        fireEvent.keyDown(menu, {key: 'Tab'});
+        expect(hide).toHaveBeenCalled();
+      },
+    );
+
+    it('treats a hidden header control as unreachable: Shift+Tab from a row closes the menu', async () => {
+      const {menu, hide} = await openHidden(
+        <input aria-label="Filter labels" hidden />,
+        null,
+      );
+      fireEvent.keyDown(menu, {key: 'ArrowDown'});
+      const row = screen.getByRole('menuitem', {name: 'Bug', hidden: true});
+      await waitFor(() => expect(row).toHaveFocus());
+      fireEvent.keyDown(row, {key: 'Tab', shiftKey: true});
+      expect(hide).toHaveBeenCalled();
+    });
+
+    it('Tab past the last visible footer control closes, ignoring a hidden one after it', async () => {
+      const {hide} = await openHidden(
+        null,
+        <>
+          <button type="button">Create label</button>
+          <button type="button" style={{display: 'none'}}>
+            Gone
+          </button>
+        </>,
+      );
+      const create = screen.getByRole('button', {
+        name: 'Create label',
+        hidden: true,
+      });
+      act(() => create.focus());
+      fireEvent.keyDown(create, {key: 'Tab'});
+      expect(hide).toHaveBeenCalled();
+    });
+
+    it('Tab from an open sub-menu closes the menu when the footer holds only hidden controls', async () => {
+      const {user, hide} = await openHidden(
+        null,
+        <button type="button" hidden>
+          Gone
+        </button>,
+      );
+      const subTrigger = screen.getByRole('menuitem', {
+        name: /Move to/,
+        hidden: true,
+      });
+      act(() => subTrigger.focus());
+      await user.keyboard('{ArrowRight}');
+      const folder = screen.getByRole('menuitem', {
+        name: 'Folder A',
+        hidden: true,
+      });
+      await waitFor(() => expect(folder).toHaveFocus());
+      fireEvent.keyDown(folder, {key: 'Tab'});
+      expect(subTrigger).toHaveAttribute('aria-expanded', 'false');
+      expect(hide).toHaveBeenCalled();
+    });
+  });
+
   describe('with a sub-menu open', () => {
     async function openFlyout() {
       const user = userEvent.setup();
