@@ -468,6 +468,7 @@ export function ComplexSelector<Value>({
   id,
   onClick: onClickProp,
   onKeyDown: onKeyDownProp,
+  'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: ComplexSelectorProps<Value>) {
   const {rest, container} = useFieldInputStyling('ComplexSelector', restProps, {
@@ -662,6 +663,7 @@ export function ComplexSelector<Value>({
       // Base props reach the caller's control, the primary semantic control
       // in this mode; the selector's own wiring below wins over them.
       ...rest,
+      'aria-describedby': ariaDescribedByProp,
       ref: mergeRefs<HTMLElement>(el => {
         popover.triggerRef(el);
         triggerRef.current = el;
@@ -723,7 +725,11 @@ export function ComplexSelector<Value>({
           aria-haspopup="dialog"
           aria-expanded={isOpen}
           aria-controls={contentId}
-          aria-describedby={ariaDescribedBy}
+          // A caller's description is kept alongside the field's own.
+          aria-describedby={
+            [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
+            undefined
+          }
           aria-labelledby={labelId}
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}

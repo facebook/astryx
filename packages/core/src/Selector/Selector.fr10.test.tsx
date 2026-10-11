@@ -47,6 +47,25 @@ describeFieldInputParts('Selector', {
 });
 
 describe('Selector FR10 targets', () => {
+  it('keeps a caller aria-describedby alongside the field description', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        description="Pick one"
+        aria-describedby="caller-help"
+      />,
+    );
+    const ids = (
+      screen.getByRole('combobox').getAttribute('aria-describedby') ?? ''
+    ).split(' ');
+    expect(ids).toContain('caller-help');
+    expect(
+      ids.map(id => document.getElementById(id)?.textContent ?? '').join(' '),
+    ).toContain('Pick one');
+  });
+
   it('puts control* on the bordered control box around the trigger, not on the trigger or the popup', () => {
     render(
       <Selector

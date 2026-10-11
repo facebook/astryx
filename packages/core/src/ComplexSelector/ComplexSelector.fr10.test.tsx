@@ -51,6 +51,28 @@ describeFieldInputParts('ComplexSelector', {
 });
 
 describe('ComplexSelector FR10 targets', () => {
+  it('keeps a caller aria-describedby alongside the field description', () => {
+    render(
+      <ComplexSelector
+        label="Fruit"
+        value={VALUE}
+        onChange={() => {}}
+        description="Pick one"
+        aria-describedby="caller-help">
+        {content}
+      </ComplexSelector>,
+    );
+    const ids = (
+      screen
+        .getByRole('button', {name: 'Fruit'})
+        .getAttribute('aria-describedby') ?? ''
+    ).split(' ');
+    expect(ids).toContain('caller-help');
+    expect(
+      ids.map(id => document.getElementById(id)?.textContent ?? '').join(' '),
+    ).toContain('Pick one');
+  });
+
   it('puts control* on the bordered control box around the trigger, not on the trigger or the popup', () => {
     render(
       <ComplexSelector

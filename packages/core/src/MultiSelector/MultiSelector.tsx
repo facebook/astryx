@@ -1081,6 +1081,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   onClick,
   onFocus,
   onKeyDown: onKeyDownProp,
+  'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: MultiSelectorProps<T>) {
   const {rest, container} = useFieldInputStyling('MultiSelector', restProps, {
@@ -2342,7 +2343,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const triggerSharedProps: React.HTMLAttributes<HTMLElement> = {
     ...rest,
     id: triggerId,
-    'aria-describedby': ariaDescribedBy,
+    // A caller's description is kept alongside the field's own.
+    'aria-describedby':
+      [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
+      undefined,
     'aria-labelledby': ariaLabelledBy,
     'aria-required': isEffectivelyRequired ? 'true' : undefined,
     'aria-invalid': status?.type === 'error' ? 'true' : undefined,
@@ -2371,6 +2375,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       // Base props reach the caller's control, the primary semantic control
       // in this mode; the selector's own wiring below wins over them.
       ...rest,
+      'aria-describedby': ariaDescribedByProp,
       ref: mergeRefs<HTMLElement>(el => {
         popover.triggerRef(el);
         triggerRef.current = el;

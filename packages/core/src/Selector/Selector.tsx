@@ -937,6 +937,7 @@ export function Selector<T extends SelectorOptionType>(
     ref,
     onFocus,
     onKeyDown: onKeyDownProp,
+    'aria-describedby': ariaDescribedByProp,
     hasClear: hasClearProp,
     id,
     ...restProps
@@ -1832,7 +1833,10 @@ export function Selector<T extends SelectorOptionType>(
   const triggerSharedProps: React.HTMLAttributes<HTMLElement> = {
     ...rest,
     id: triggerId,
-    'aria-describedby': ariaDescribedBy,
+    // A caller's description is kept alongside the field's own.
+    'aria-describedby':
+      [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
+      undefined,
     'aria-labelledby': ariaLabelledBy,
     'aria-required': isEffectivelyRequired ? 'true' : undefined,
     'aria-invalid': status?.type === 'error' ? 'true' : undefined,
