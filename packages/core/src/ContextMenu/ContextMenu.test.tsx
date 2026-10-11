@@ -518,6 +518,23 @@ describe('ContextMenu outside dismissal', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 
+  it('a pen closes the menu on a tap outside, as a finger does, and a cancelled pen press leaves it open', () => {
+    const onOpenChange = vi.fn<(isOpen: boolean) => void>();
+    const {trigger, outside} = renderMenu(onOpenChange);
+    fireEvent.contextMenu(trigger, {clientX: 50, clientY: 15, detail: 1});
+    const pen = (pointerId: number) => ({pointerType: 'pen', pointerId});
+    // A pen press the browser takes for a scroll: the menu stays open.
+    fireEvent.pointerDown(outside, pen(7));
+    fireEvent.mouseDown(outside);
+    fireEvent.pointerCancel(outside, pen(7));
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    // A pen tap: the press alone keeps the menu, its lift closes it.
+    fireEvent.pointerDown(outside, pen(8));
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    fireEvent.pointerUp(outside, pen(8));
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
   it('a tap outside closes the menu even when the host re-renders mid-tap with an inline onOpenChange', () => {
     const calls: boolean[] = [];
     // A new inline handler on every render gives the menu's close a new

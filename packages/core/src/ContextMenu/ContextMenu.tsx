@@ -333,9 +333,9 @@ export function ContextMenu({
   // Element focused before the menu opened, restored when it closes so focus
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
-  // Fingers that went down outside the open menu; each closes it if it lifts
-  // without the browser cancelling it (a tap, not a scroll).
-  const outsideTouchesRef = useRef(new Set<number>());
+  // Fingers and pens that went down outside the open menu; each closes it if
+  // it lifts without the browser cancelling it (a tap, not a scroll).
+  const outsidePressesRef = useRef(new Set<number>());
   // The latest closeMenu, for the outside-press listeners (see below).
   const closeMenuRef = useRef<() => void>(() => {});
   const sheetHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -440,47 +440,48 @@ export function ContextMenu({
   // Dismiss on a press outside the menu. The menu is popover="manual" (not
   // "auto") because native light dismiss reads the release of the opening
   // right-click as a dismissal, so the press is read here, from pointer
-  // events: a touch's compatibility mouse events (the mousedown iOS sends
-  // while a long press is still held, the one Chromium sends as it lifts)
+  // events: a touch's compatibility mouse events (the mousedown Chromium sends
+  // as a long press lifts, or one sent while it is still held)
   // have no pointer event of their own, so the press that opened the menu
-  // never closes it. A mouse or pen press outside closes the menu at once; a
-  // finger closes it on a tap, lifted rather than cancelled, so a scroll that
-  // starts outside leaves it open, as before.
+  // never closes it. A mouse press outside closes the menu at once; a finger
+  // or a pen closes it on a tap, lifted rather than cancelled, so a scroll
+  // that starts outside leaves it open, as before. A pen goes with the finger
+  // because the menu press model (useMenuPress) groups them.
   //
   // The listeners read the latest `closeMenu` through a ref, so they are
   // installed once per open: a caller's inline `onOpenChange` gives
   // `closeMenu` a new identity on every render, and re-installing them would
-  // forget a finger recorded between its press and its lift.
+  // forget a press recorded between its down and its lift.
   closeMenuRef.current = closeMenu;
   useEffect(() => {
     if (!isOpen || usesBottomSheet) {
       return;
     }
-    const outsideTouches = outsideTouchesRef.current;
+    const outsidePresses = outsidePressesRef.current;
     const handlePointerDown = (e: PointerEvent) => {
       const menu = listRef.current;
       if (menu == null || menu.contains(e.target as Node)) {
         return;
       }
-      if (e.pointerType === 'touch') {
-        outsideTouches.add(e.pointerId);
+      if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+        outsidePresses.add(e.pointerId);
         return;
       }
       closeMenuRef.current();
     };
     const handlePointerUp = (e: PointerEvent) => {
-      if (outsideTouches.delete(e.pointerId)) {
+      if (outsidePresses.delete(e.pointerId)) {
         closeMenuRef.current();
       }
     };
     const handlePointerCancel = (e: PointerEvent) => {
-      outsideTouches.delete(e.pointerId);
+      outsidePresses.delete(e.pointerId);
     };
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('pointerup', handlePointerUp);
     document.addEventListener('pointercancel', handlePointerCancel);
     return () => {
-      outsideTouches.clear();
+      outsidePresses.clear();
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('pointercancel', handlePointerCancel);
@@ -576,7 +577,7 @@ export function ContextMenu({
           : focusEl;
       // A finger held on the trigger while the menu was open is now the long
       // press that moved it, not a tap outside it.
-      outsideTouchesRef.current.clear();
+      outsidePressesRef.current.clear();
       if (usesBottomSheet) {
         updateOpenState(true);
       } else {
