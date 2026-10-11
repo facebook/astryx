@@ -81,7 +81,12 @@ import {SelectorRowLayoutContext} from './SelectorRowLayoutContext';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {warnOnce} from '../utils/devWarning';
 import {useSize} from '../SizeContext/SizeContext';
-import type {BaseProps} from '../BaseProps';
+import {
+  useFieldInputStyling,
+  type FieldInputBaseProps,
+} from '../Field/fieldParts';
+import {composeEventHandlers} from '../utils/composeEventHandlers';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -526,11 +531,17 @@ export interface SelectorStatus {
 
 interface SelectorPropsBase<
   T extends SelectorOptionType = SelectorOptionType,
-> extends Omit<BaseProps, 'onChange' | 'defaultValue'> {
+> extends Omit<FieldInputBaseProps, 'onChange' | 'defaultValue'> {
   /**
    * Label text for the selector (always rendered for accessibility).
    */
   label: string;
+
+  /**
+   * Ref to the trigger button: the element that carries the combobox role,
+   * the accessible name, and the value.
+   */
+  ref?: React.Ref<HTMLButtonElement>;
 
   /**
    * Whether to visually hide the label (still accessible to screen readers).
@@ -897,16 +908,26 @@ export function Selector<T extends SelectorOptionType>(
     placement,
     presentation = 'popover',
     isDefaultOpen = false,
-    'data-testid': testId,
     width,
-    xstyle,
-    className,
-    style,
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+    controlXstyle,
+    controlClassName,
+    controlStyle,
+    ref,
+    onClick,
     onFocus,
+    onKeyDown: onKeyDownProp,
     hasClear: hasClearProp,
     id,
-    ...rest
+    ...restProps
   } = props as SelectorPropsClearable<T>;
+  const {rest, container} = useFieldInputStyling('Selector', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
   const searchPlaceholder =
@@ -940,6 +961,10 @@ export function Selector<T extends SelectorOptionType>(
   // shorter inner button makes every size's selected row land too low.
   const anchorRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement>(null);
+  const triggerButtonRef = useMergedRefs<HTMLButtonElement>(
+    triggerRef as React.Ref<HTMLButtonElement>,
+    ref,
+  );
   const searchRef = useRef<HTMLInputElement>(null);
   const inputGroup = useInputGroup();
 
@@ -1314,6 +1339,22 @@ export function Selector<T extends SelectorOptionType>(
     },
     onDismiss: surface.hide,
   });
+
+  // The trigger button owns its click so a consumer `onClick`, which lands on
+  // the button, composes after the built-in toggle. A press elsewhere in the
+  // control box (padding, start icon, chevron) still opens the surface.
+  const handleTriggerButtonClick = useCallback(() => {
+    onTriggerClick();
+  }, [onTriggerClick]);
+  const handleControlBoxClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (triggerRef.current?.contains(event.target as Node)) {
+        return;
+      }
+      onTriggerClick();
+    },
+    [onTriggerClick],
+  );
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -1794,11 +1835,11 @@ export function Selector<T extends SelectorOptionType>(
     'aria-required': isEffectivelyRequired ? 'true' : undefined,
     'aria-invalid': status?.type === 'error' ? 'true' : undefined,
     'aria-busy': isBusy || undefined,
-    onKeyDown: handleTriggerKeyDown,
-    onFocus: event => {
-      onFocus?.(event);
-      surface.onTriggerFocus(event);
-    },
+    // Component first: the built-in keyboard model and focus bookkeeping
+    // always run; a consumer handler sees what they leave uncancelled.
+    onKeyDown: composeEventHandlers(handleTriggerKeyDown, onKeyDownProp),
+    onFocus: composeEventHandlers(surface.onTriggerFocus, onFocus),
+    onClick: composeEventHandlers(handleTriggerButtonClick, onClick),
     tabIndex: isDisabled && !showsDisabledMessage ? -1 : 0,
     ...stylex.props(
       styles.trigger,
@@ -1818,8 +1859,7 @@ export function Selector<T extends SelectorOptionType>(
           // compose, so attaching unconditionally is safe.
           disabledMessageTooltip.ref(el);
         }}
-        onClick={onTriggerClick}
-        data-testid={testId}
+        onClick={handleControlBoxClick}
         {...pressable}
         {...mergeProps(
           themeProps('selector', {
@@ -1854,10 +1894,10 @@ export function Selector<T extends SelectorOptionType>(
               inputStatusHoverShadowStyles[status.type],
             variant !== 'ghost' && inputGroup && groupStyles.inGroup,
             inputGroup && styles.triggerInGroup,
-            xstyle,
+            controlXstyle,
           ),
-          className,
-          style,
+          controlClassName,
+          controlStyle,
         )}>
         {startIcon &&
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
@@ -1871,7 +1911,7 @@ export function Selector<T extends SelectorOptionType>(
         )}
         <button
           {...triggerSharedProps}
-          ref={triggerRef as React.Ref<HTMLButtonElement>}
+          ref={triggerButtonRef}
           type="button"
           // The read-only trigger stays a combobox even when hasSearch is set:
           // no search input is rendered in that state, and preserving the role
@@ -2014,7 +2054,8 @@ export function Selector<T extends SelectorOptionType>(
       }
       statusVariant={effectiveStatusVariant}
       labelTooltip={labelTooltip}
-      width={width}>
+      width={width}
+      {...container}>
       {selectorContent}
     </Field>
   );

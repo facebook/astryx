@@ -27,7 +27,14 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import type {BaseProps} from '../BaseProps';
+import {
+  useFieldInputStyling,
+  type FieldInputBaseProps,
+  type FieldPartStyleProps,
+} from '../Field/fieldParts';
+import {useDevWarning} from '../hooks/useDevWarning';
+import {mergeRefs} from '../utils/mergeRefs';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import {Field, inputWrapperStyles, type FieldStatusVariant} from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -199,14 +206,31 @@ export type ComplexSelectorVariant = 'input' | 'ghost';
 
 export type ComplexSelectorSize = 'sm' | 'md' | 'lg';
 
+const RENDER_TRIGGER_PARTS_MESSAGE =
+  '`container*` and `control*` styling props have no effect with `renderTrigger`: ' +
+  'no Field box or control box renders. Style the control you render instead.';
+
 /**
  * Props the `renderTrigger` render prop hands to the control the caller
  * renders.
  * Spread them onto that control: it becomes the popup's anchor, the element
  * focus returns to, and the control that announces the popup's state.
  */
-export interface ComplexSelectorRenderTriggerProps {
-  /** Attaches the control as the popup's anchor and focus-return target. */
+export interface ComplexSelectorRenderTriggerProps extends Omit<
+  FieldInputBaseProps,
+  | keyof FieldPartStyleProps
+  | 'id'
+  | 'onClick'
+  | 'onKeyDown'
+  | 'aria-haspopup'
+  | 'aria-expanded'
+  | 'aria-controls'
+  | 'aria-busy'
+> {
+  /**
+   * Attaches the control as the popup's anchor and focus-return target, and
+   * forwards it to the selector's own `ref`.
+   */
   ref: (element: HTMLElement | null) => void;
   /** The id the field would have given its own button. */
   id: string;
@@ -256,11 +280,16 @@ export interface ComplexSelectorStatus {
 }
 
 export interface ComplexSelectorProps<Value> extends Omit<
-  BaseProps<HTMLDivElement>,
+  FieldInputBaseProps,
   'children' | 'onChange'
 > {
   /** Label text for accessibility and the field label. */
   label: string;
+  /**
+   * Ref to the trigger: the button that opens the popup and carries the
+   * accessible name — or, with `renderTrigger`, the caller's control.
+   */
+  ref?: React.Ref<HTMLElement>;
   /** Current controlled value. */
   value: Value;
   /** Called when custom content commits a new value. */
@@ -358,7 +387,7 @@ export interface ComplexSelectorProps<Value> extends Omit<
   onOpenChange?: (isOpen: boolean) => void;
   /** StyleX styles for the popup content container. */
   contentXstyle?: StyleXStyles;
-  /** Test ID for the trigger container. */
+  /** Test ID for the trigger button. */
   'data-testid'?: string;
 }
 
@@ -416,13 +445,34 @@ export function ComplexSelector<Value>({
   renderTrigger,
   onOpenChange,
   contentXstyle,
-  xstyle,
-  className,
-  style,
-  'data-testid': testId,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
+  ref,
+  id,
   onClick: onClickProp,
-  ...props
+  onKeyDown: onKeyDownProp,
+  ...restProps
 }: ComplexSelectorProps<Value>) {
+  const {rest, container} = useFieldInputStyling('ComplexSelector', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  useDevWarning(
+    'ComplexSelector',
+    RENDER_TRIGGER_PARTS_MESSAGE,
+    renderTrigger != null &&
+      (containerXstyle != null ||
+        containerClassName != null ||
+        containerStyle != null ||
+        controlXstyle != null ||
+        controlClassName != null ||
+        controlStyle != null),
+  );
   const t = useTranslator();
   const pressable = usePressFeedback();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -432,7 +482,9 @@ export function ComplexSelector<Value>({
       ? 'detached'
       : statusVariant;
 
-  const triggerId = useId();
+  const generatedTriggerId = useId();
+  // A caller's `id` lands on the trigger, so the label wiring must use it.
+  const triggerId = id ?? generatedTriggerId;
   const labelId = useId();
   const contentId = useId();
   const descriptionId = useId();
@@ -446,6 +498,12 @@ export function ComplexSelector<Value>({
       .join(' ') || undefined;
 
   const triggerRef = useRef<HTMLElement>(null);
+
+  const triggerButtonRef = useMergedRefs<HTMLButtonElement>(
+    triggerRef as React.Ref<HTMLButtonElement>,
+
+    ref,
+  );
 
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -487,6 +545,29 @@ export function ComplexSelector<Value>({
   const close = useCallback(() => {
     popover.hide();
   }, [popover]);
+
+  const handleTriggerKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      if (event.key === 'ArrowDown' && !isOpen && !isDisabled) {
+        event.preventDefault();
+        popover.show();
+      }
+    },
+    [isDisabled, isOpen, popover],
+  );
+
+  // A press elsewhere in the control box (padding, start icon, chevron) opens
+  // the popup; the button's own click is composed on the button so a
+  // consumer `onClick` runs after the built-in toggle.
+  const handleControlBoxClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (triggerRef.current?.contains(event.target as Node)) {
+        return;
+      }
+      handleTriggerClick();
+    },
+    [handleTriggerClick],
+  );
 
   useImperativeHandle(
     handleRef,
@@ -555,18 +636,16 @@ export function ComplexSelector<Value>({
     // on it. No Field, no status, no chevron — the caller owns the control;
     // the selector owns the popup, its anchor, and focus return.
     const triggerProps: ComplexSelectorRenderTriggerProps = {
-      ref: el => {
+      // Base props reach the caller's control, the primary semantic control
+      // in this mode; the selector's own wiring below wins over them.
+      ...rest,
+      ref: mergeRefs<HTMLElement>(el => {
         popover.triggerRef(el);
         triggerRef.current = el;
-      },
+      }, ref),
       id: triggerId,
-      onClick: handleTriggerClick,
-      onKeyDown: event => {
-        if (event.key === 'ArrowDown' && !isOpen && !isDisabled) {
-          event.preventDefault();
-          popover.show();
-        }
-      },
+      onClick: composeEventHandlers(handleTriggerClick, onClickProp),
+      onKeyDown: composeEventHandlers(handleTriggerKeyDown, onKeyDownProp),
       'aria-haspopup': 'dialog',
       'aria-expanded': isOpen,
       'aria-controls': contentId,
@@ -584,10 +663,8 @@ export function ComplexSelector<Value>({
     <>
       <div
         ref={popover.triggerRef}
-        data-testid={testId}
         {...pressable}
-        {...props}
-        onClick={composeEventHandlers(onClickProp, handleTriggerClick)}
+        onClick={handleControlBoxClick}
         {...mergeProps(
           themeProps('complex-selector', {
             variant,
@@ -609,14 +686,15 @@ export function ComplexSelector<Value>({
             variant === 'ghost' && isDisabled && styles.triggerGhostDisabled,
             isDisabled && styles.disabled,
             triggerLabel == null && styles.placeholder,
-            xstyle,
+            controlXstyle,
           ),
-          className,
-          style,
+          controlClassName,
+          controlStyle,
         )}>
         {isRenderable(startIconSlot) && startIconSlot}
         <button
-          ref={triggerRef as React.Ref<HTMLButtonElement>}
+          {...rest}
+          ref={triggerButtonRef}
           id={triggerId}
           type="button"
           aria-haspopup="dialog"
@@ -628,12 +706,10 @@ export function ComplexSelector<Value>({
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           disabled={isDisabled}
-          onKeyDown={event => {
-            if (event.key === 'ArrowDown' && !isOpen && !isDisabled) {
-              event.preventDefault();
-              popover.show();
-            }
-          }}
+          // Component first: the built-in toggle and ArrowDown opening always
+          // run; a consumer handler sees what they leave uncancelled.
+          onClick={composeEventHandlers(handleTriggerClick, onClickProp)}
+          onKeyDown={composeEventHandlers(handleTriggerKeyDown, onKeyDownProp)}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>
@@ -683,7 +759,8 @@ export function ComplexSelector<Value>({
       }
       statusVariant={effectiveStatusVariant}
       labelTooltip={labelTooltip}
-      width={width}>
+      width={width}
+      {...container}>
       {selectorContent}
     </Field>
   );
