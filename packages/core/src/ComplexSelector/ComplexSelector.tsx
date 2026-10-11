@@ -498,12 +498,7 @@ export function ComplexSelector<Value>({
       .join(' ') || undefined;
 
   const triggerRef = useRef<HTMLElement>(null);
-
-  const triggerButtonRef = useMergedRefs<HTMLButtonElement>(
-    triggerRef as React.Ref<HTMLButtonElement>,
-
-    ref,
-  );
+  const triggerButtonRef = useMergedRefs<HTMLElement>(triggerRef, ref);
 
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);

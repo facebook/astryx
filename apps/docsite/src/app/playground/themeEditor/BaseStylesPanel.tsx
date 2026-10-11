@@ -419,7 +419,7 @@ export function BaseStylesPanel({
                 isLabelHidden
                 size="sm"
                 placeholder="Custom"
-                xstyle={styles.fullWidthField}
+                controlXstyle={styles.fullWidthField}
                 options={FONT_OPTIONS}
                 value={fontValue(token)}
                 onChange={(val: string) => onTokenChange(token, val)}
@@ -432,7 +432,7 @@ export function BaseStylesPanel({
               isLabelHidden
               size="sm"
               placeholder="Default"
-              xstyle={styles.fullWidthField}
+              controlXstyle={styles.fullWidthField}
               options={[
                 ...RATIO_OPTIONS.map(opt => ({
                   value: String(opt.value),
