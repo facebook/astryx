@@ -147,10 +147,6 @@ export const docs = {
         visualProps: ['variant', 'size', 'status'],
         states: ['disabled', 'readonly'],
       },
-      {
-        className: 'astryx-multi-selector-clear-icon',
-        deprecatedFor: 'input-clear-icon',
-      },
       {className: 'astryx-multi-selector-empty-state'},
       {className: 'astryx-multi-selector-search'},
       {className: 'astryx-multi-selector-section-heading'},
@@ -183,7 +179,7 @@ export const docs = {
           name: 'options',
           type: 'MultiSelectorOptionType[]',
           description:
-            'Array of items: strings, objects with value/label/icon/disabled, dividers, or sections.',
+            'Array of items: strings, objects with value/label/icon/disabled, dividers, or sections. An option may carry `action`: one node — an IconButton, a Button, a menu trigger — the caller renders and names. Once any option does, the popup is a grid whose rows pair the option with its action: Up/Down move rows, the inline-end arrow reaches the action, Enter fires it, pointer and touch press it directly, and pressing it never changes the selection.',
           required: true,
         },
         {

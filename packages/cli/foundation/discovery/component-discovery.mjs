@@ -696,18 +696,20 @@ export function discoverIntegrationComponents(integration) {
 /**
  * Load and validate every discovered integration component independently.
  * Invalid metadata or a missing same-stem source removes only that component;
- * callers can report the returned errors while retaining valid siblings.
+ * callers can report the returned errors while retaining valid siblings. A
+ * component whose doc sets `replaces` carries the value as written; the
+ * component replacement resolver decides what it means.
  *
  * @param {{name: string, components?: string, issuesUrl?: string}} integration
  * @returns {Promise<{
- *   components: Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null}>,
+ *   components: Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null, replaces?: unknown}>,
  *   discovered: Array<{name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>,
  *   errors: Array<{name: string, message: string}>,
  * }>}
  */
 export async function discoverValidIntegrationComponents(integration) {
   const discovered = discoverIntegrationComponents(integration);
-  /** @type {Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null}>} */
+  /** @type {Array<{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null, replaces?: unknown}>} */
   const components = [];
   /** @type {Array<{name: string, message: string}>} */
   const errors = [];
@@ -721,11 +723,15 @@ export async function discoverValidIntegrationComponents(integration) {
       continue;
     }
     try {
-      await loadComponentDoc(record.docPath);
-      components.push(
+      const doc = await loadComponentDoc(record.docPath);
+      const valid =
         /** @type {{name: string, package: string, docPath: string, sourcePath: string, issuesUrl: string|undefined, group: string|null}} */ (
           record
-        ),
+        );
+      components.push(
+        doc != null && typeof doc === 'object' && doc.replaces !== undefined
+          ? {...valid, replaces: doc.replaces}
+          : valid,
       );
     } catch (err) {
       errors.push({

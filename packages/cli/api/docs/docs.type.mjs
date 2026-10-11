@@ -49,6 +49,7 @@
  * astryx --json docs <topic> --index
  * @typedef {object} DocsIndexResponse
  * @property {'docs.index'} type
+ * @property {string} package the npm package that owns the topic
  * @property {DocsIndex} data
  */
 
@@ -56,8 +57,10 @@
  * astryx --json docs <topic>
  * @typedef {object} DocsDetailResponse
  * @property {'docs.detail'} type
- * @property {DocsReadDoc & {links: DocsLinks}} data
- *   the whole doc, and the moves from it
+ * @property {string} package the npm package that owns the topic
+ * @property {Omit<DocsReadDoc, 'sections'> & {sections: DocsDetailSection[], links: DocsLinks}} data
+ *   the whole doc, each section naming the package that wrote it, and the
+ *   moves from it
  */
 
 /**
@@ -66,6 +69,12 @@
  * stable ReferenceContentBlock kinds.
  * @typedef {Omit<import('@astryxdesign/cli/authoring').ReferenceSection, 'content'>
  *   & {content: import('@astryxdesign/cli/authoring').ReferenceContentBlock[]}} DocsReadSection
+ */
+
+/**
+ * A section of a whole-topic read: the read section, naming the package that
+ * wrote it.
+ * @typedef {DocsReadSection & {package: string}} DocsDetailSection
  */
 
 /**
@@ -115,7 +124,8 @@
  */
 
 /**
- * @typedef {object} DocsIndexSection
+ * One section of a topic's index, before it names its package.
+ * @typedef {object} DocsIndexEntry
  * @property {string} id stable key; pass it as the section argument
  * @property {string} title
  * @property {string} summary the section's first line of text, at most 240
@@ -123,9 +133,17 @@
  */
 
 /**
+ * One section of a topic's index, naming the package that wrote it: the
+ * topic's own, or the extension's that contributed it.
+ * @typedef {DocsIndexEntry & {package: string}} DocsIndexSection
+ */
+
+/**
  * astryx --json docs <topic> <section>
  * @typedef {object} DocsDetailSectionResponse
  * @property {'docs.detail.section'} type
+ * @property {string} package the npm package that wrote the section: the
+ *   topic's own, or the extension's that contributed it
  * @property {DocsReadSection & {links: DocsLinks}} data
  *   the section, and the moves from it: up to its topic's index, and across to
  *   the sections before and after it
@@ -135,6 +153,7 @@
  * astryx --json docs <route>, for a namespace or a typed doc in the docs tree
  * @typedef {object} DocsNodeResponse
  * @property {'docs.node'} type
+ * @property {string} package the package that owns the node
  * @property {DocsNode} data
  */
 
@@ -180,6 +199,7 @@
  * @typedef {object} DocsNodeChild
  * @property {string} route pass it to `astryx docs` to go one level down
  * @property {string} name the last segment of its route
+ * @property {string} package the package that owns the child
  * @property {string} kind
  * @property {string} title
  * @property {string} summary

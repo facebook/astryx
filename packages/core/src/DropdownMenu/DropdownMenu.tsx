@@ -1001,13 +1001,22 @@ function DropdownMenuPopover({
         }
         return false;
       }
+      // The press opens the menu before the browser's own mousedown has
+      // focused the trigger (a held finger never does), so the popover would
+      // remember whatever was focused BEFORE the press as the element to hand
+      // focus back to when it closes. Focusing the trigger first gives the
+      // popover the state a click-open already has: the trigger is where
+      // Escape or a pick returns focus (the APG menu-button pattern).
+      buttonRef.current?.focus({preventScroll: true});
       const didOpen = openAndFocus('pointer', true);
-      if (didOpen && pointerType === 'mouse') {
+      if (didOpen) {
         // The menu is `popover="auto"`: the browser's light dismiss would
         // read the release of this very press, on the trigger outside the
-        // popover, as a dismissal. Holding the invoker relationship through
-        // the press exempts the trigger, the way useKeepLayerOpenProps does
-        // for controls beside an open layer.
+        // popover, as a dismissal — a mouse's release, and as much a
+        // finger's after the long-press delay opened the menu under it.
+        // Holding the invoker relationship through the press exempts the
+        // trigger, the way useKeepLayerOpenProps does for controls beside
+        // an open layer.
         holdInvokerThroughPress(buttonRef.current, popover.id);
       }
       return didOpen;

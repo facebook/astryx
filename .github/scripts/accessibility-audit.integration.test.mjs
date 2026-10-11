@@ -23,6 +23,7 @@ const Module = require('node:module');
 const originalLoad = Module._load;
 let requestedUrl = '';
 let reads = 0;
+let selectorResolved = false;
 
 function scenarioState() {
   const scenario = process.env.A11Y_TEST_SCENARIO;
@@ -66,6 +67,16 @@ function evaluateInFixture(fn, arg) {
 const page = {
   goto: async url => { requestedUrl = url; },
   addStyleTag: async () => {},
+  waitForSelector: async (selector, options) => {
+    if (process.env.A11Y_TEST_SCENARIO === 'selector-missing') {
+      throw new Error('selector did not become visible: ' + selector);
+    }
+    if (options?.state !== 'visible') {
+      throw new Error('readiness selector must wait for visible state');
+    }
+    selectorResolved = true;
+    return {};
+  },
   evaluate: async (fn, arg) => evaluateInFixture(fn, arg),
   close: async () => {},
 };
@@ -74,7 +85,12 @@ const browser = {newContext: async () => context, close: async () => {}};
 
 class FakeAxeBuilder {
   disableRules() { return this; }
-  async analyze() { return {violations: []}; }
+  async analyze() {
+    if (process.argv.includes('--ready-selector') && !selectorResolved) {
+      throw new Error('axe ran before the readiness selector resolved');
+    }
+    return {violations: []};
+  }
 }
 
 Module._load = function(request, parent, isMain) {
@@ -88,7 +104,13 @@ Module._load = function(request, parent, isMain) {
 };
 `;
 
-function runFixture(scenario, indexContent, components = 'core/Button') {
+function runFixture(
+  scenario,
+  indexContent,
+  components = 'core/Button',
+  readySelector = null,
+  stories = null,
+) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'a11y-cli-fixture-'));
   const storybook = path.join(dir, 'storybook');
   const output = path.join(dir, 'report.json');
@@ -111,6 +133,10 @@ function runFixture(scenario, indexContent, components = 'core/Button') {
         components,
         '--port',
         String(port),
+        ...(readySelector == null
+          ? []
+          : ['--ready-selector', readySelector]),
+        ...(stories == null ? [] : ['--stories', stories]),
       ],
       {
         cwd: REPO_ROOT,
@@ -144,6 +170,23 @@ const VALID_INDEX = JSON.stringify({
   },
 });
 
+const FOCUSED_INDEX = JSON.stringify({
+  entries: {
+    'core-button--fixture': {
+      id: 'core-button--fixture',
+      title: 'Core/Button',
+      name: 'Fixture',
+      type: 'story',
+    },
+    'core-button--other': {
+      id: 'core-button--other',
+      title: 'Core/Button',
+      name: 'Other',
+      type: 'story',
+    },
+  },
+});
+
 const PATTERN_INDEX = JSON.stringify({
   entries: {
     'a11y-button-pattern--clickable-card-disabled': {
@@ -161,6 +204,61 @@ describe.sequential('accessibility-audit CLI readiness', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('✓ Audited: Button / Fixture');
     expect(result.report.auditedStoryKeys).toHaveLength(1);
+  });
+
+  it('waits for a focused readiness selector and records it in the report', () => {
+    const result = runFixture(
+      'delayed',
+      VALID_INDEX,
+      'core/Button',
+      '[role="menu"]',
+    );
+    expect(result.status).toBe(0);
+    expect(result.report.readySelector).toBe('[role="menu"]');
+  });
+
+  it('audits only the requested owned story', () => {
+    const result = runFixture(
+      'delayed',
+      FOCUSED_INDEX,
+      'core/Button',
+      null,
+      'core-button--fixture',
+    );
+    expect(result.status).toBe(0);
+    expect(result.report.requestedStories).toEqual(['core-button--fixture']);
+    expect(result.report.auditedStories.map(story => story.storyId)).toEqual([
+      'core-button--fixture',
+    ]);
+  });
+
+  it('fails closed when a requested story is not owned by the component', () => {
+    const result = runFixture(
+      'delayed',
+      FOCUSED_INDEX,
+      'core/Button',
+      null,
+      'core-link--missing',
+    );
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      'Requested stories did not resolve in the selected component scope: core-link--missing',
+    );
+    expect(result.report).toBeNull();
+  });
+
+  it('fails closed when a focused readiness selector stays absent', () => {
+    const result = runFixture(
+      'selector-missing',
+      VALID_INDEX,
+      'core/Button',
+      '[role="menu"]',
+    );
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      'selector did not become visible: [role="menu"]',
+    );
+    expect(result.report).toBeNull();
   });
 
   it('routes a11y contract fixtures to canonical owners and legacy aliases', () => {

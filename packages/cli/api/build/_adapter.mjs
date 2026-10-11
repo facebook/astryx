@@ -21,6 +21,7 @@ import fs from 'node:fs';
 import {discoverTemplates} from '../template/template.mjs';
 import {componentKeywords} from '../search/search.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {analyzeTemplateNeeds} from '../../foundation/discovery/template-needs.mjs';
 
 /**
  * A page template the kit can recommend starting from.
@@ -29,8 +30,10 @@ import {findCoreDir} from '../../foundation/fs/paths.mjs';
  * @property {string} command `astryx template <id> --type page`, the command that selects exactly this template: an integration replacement is selected by the Core id it replaces, and `--type page` keeps a block with the same id from making it ambiguous. Search prints template commands the same way.
  * @property {string} displayName Human-facing name.
  * @property {string} description What the page is and how it is laid out.
+ * @property {string} package The npm package that owns this template.
  * @property {string} category The template's own `Family - Variant` label; empty when it declares none.
  * @property {string[]} keywords The ideas the page serves, as its own descriptor names them; empty when it declares none.
+ * @property {string} filePath Absolute path to the template source file on disk.
  */
 
 /**
@@ -65,8 +68,10 @@ export async function loadPageTemplates(cwd) {
       name: t.dirName,
       displayName: t.displayName || t.name,
       description: t.description || '',
+      package: t.package ?? '@astryxdesign/core',
       category: t.category || '',
       keywords: t.keywords ?? [],
+      filePath: t.filePath,
       // The id `template()` resolves back to this entry: an active replacement
       // owns the Core id it names, so that id selects it, not its own.
       command: `astryx template ${t.replaces ?? t.dirName} --type page`,
@@ -145,4 +150,23 @@ export function isWeightsFile(file) {
     file.blend.length === 3 * (file.tables.length + 1) + 1 &&
     file.blend.every((/** @type {any} */ x) => Number.isFinite(x))
   );
+}
+
+/**
+ * Analyze what a start template needs that the project lacks. The kit leaf
+ * calls this through the adapter rather than reading the file itself, because
+ * file access is environment access (architecture:cli-surface INV21).
+ *
+ * @param {PageTemplate} template
+ * @param {string} cwd Project directory
+ * @returns {string[]} Setup notes (empty when the template needs nothing).
+ */
+export function templateSetupNotes(template, cwd) {
+  try {
+    const source = fs.readFileSync(template.filePath, 'utf-8');
+    return analyzeTemplateNeeds(source, cwd).notes;
+  } catch {
+    // Best-effort: a read failure does not break the recommendation.
+    return [];
+  }
 }

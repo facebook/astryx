@@ -72,6 +72,10 @@ beforeAll(() => {
       dependencies: {'@acme/kit': '^1.0.0'},
     }),
   );
+  // The consumer has the CLI installed, so the reads' hints run its `astryx`
+  // bin; a project without one gets the scoped package instead.
+  fs.mkdirSync(path.join(project, 'node_modules', '.bin'), {recursive: true});
+  fs.writeFileSync(path.join(project, 'node_modules', '.bin', 'astryx'), '');
   write('package.json', JSON.stringify({name: '@acme/kit', version: '1.2.3'}));
   write(
     'astryx.integration.mjs',
@@ -165,6 +169,7 @@ describe('golden reads of integration docs', () => {
     ['docs-index.txt', ['docs', 'acme-guide', '--index']],
     ['docs-section.json', ['docs', 'acme-guide', 'colors', '--json']],
     ['search.json', ['search', 'zorblax', '--json']],
+    ['theme-add-list.json', ['theme', 'add', '--list', '--json']],
   ])('%s', async (name, args) => {
     await expect(astryx(args)).toMatchFileSnapshot(path.join(GOLDEN, name));
   });

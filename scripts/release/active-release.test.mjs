@@ -16,9 +16,14 @@ import {afterEach, describe, expect, it} from 'vitest';
 import {
   buildMarker,
   buildPlan,
+  canaryEligibility,
+  declaredVersionAtRef,
+  latestStableVersion,
+  nextPlannedVersion,
+  validateMainVersions,
   validateReleaseDiff,
+  validateReleaseMergeBack,
   validateReleaseState,
-  validateReleaseSync,
   writeAuthority,
 } from './active-release.mjs';
 
@@ -56,6 +61,37 @@ function fixture({withChangeset = false} = {}) {
   return {root, plan, marker};
 }
 
+function git(root, ...args) {
+  return execFileSync('git', args, {cwd: root, encoding: 'utf8'}).trim();
+}
+
+/**
+ * A committed fixture whose fixed group declares `version` at the cut commit,
+ * the way main's package.json does at a release cut.
+ */
+function cutFixture(version = '0.6.5') {
+  const state = fixture({withChangeset: true});
+  const {root} = state;
+  fs.writeFileSync(
+    path.join(root, '.changeset/config.json'),
+    JSON.stringify({fixed: [['@astryxdesign/core']]}),
+  );
+  fs.writeFileSync(
+    path.join(root, 'packages/core/package.json'),
+    JSON.stringify({name: '@astryxdesign/core', version}, null, 2),
+  );
+  fs.writeFileSync(
+    path.join(root, '.changeset/in-cut.md'),
+    "---\n'@astryxdesign/core': patch\n---\n\n[fix] Included\n@person\n",
+  );
+  git(root, 'init', '-q');
+  git(root, 'config', 'user.name', 'Release Test');
+  git(root, 'config', 'user.email', 'release@example.com');
+  git(root, 'add', '.');
+  git(root, 'commit', '-qm', 'cut');
+  return {...state, cutSha: git(root, 'rev-parse', 'HEAD')};
+}
+
 function validate(state, overrides = {}) {
   return validateReleaseState({
     ...state,
@@ -79,14 +115,15 @@ afterEach(() => {
 });
 
 describe('one branch per release lifecycle', () => {
-  const values = {
+  const identity = cutSha => ({
     version: '0.6.5',
     branch: BRANCH,
-    'cut-sha': CUT,
-  };
+    'cut-sha': cutSha,
+  });
 
   it('allows an explicit plan revision only within the same active identity', () => {
-    const {root} = fixture({withChangeset: true});
+    const {root, cutSha} = cutFixture();
+    const values = identity(cutSha);
     writeAuthority(root, values, false);
     const original = JSON.parse(
       fs.readFileSync(path.join(root, '.release/active.json'), 'utf8'),
@@ -107,18 +144,29 @@ describe('one branch per release lifecycle', () => {
         {...values, version: '0.6.6', branch: 'release/v0.6.6'},
         true,
       ),
-    ).toThrow('release refresh cannot change version');
+    ).toThrow(
+      /main declares 0\.6\.5 at the cut|release refresh cannot change version/,
+    );
+    git(root, 'commit', '-qm', 'later', '--allow-empty');
     expect(() =>
-      writeAuthority(root, {...values, 'cut-sha': HEAD}, true),
+      writeAuthority(
+        root,
+        {...values, 'cut-sha': git(root, 'rev-parse', 'HEAD')},
+        true,
+      ),
     ).toThrow('release refresh cannot change cutSha');
   });
 
   it('never revives or recreates a closed branch lifecycle', () => {
-    const {root} = fixture();
+    const {root, cutSha} = cutFixture();
+    const values = identity(cutSha);
     writeAuthority(root, values, false);
     const markerPath = path.join(root, '.release/active.json');
     const marker = JSON.parse(fs.readFileSync(markerPath, 'utf8'));
-    fs.writeFileSync(markerPath, `${JSON.stringify({...marker, state: 'closed'})}\n`);
+    fs.writeFileSync(
+      markerPath,
+      `${JSON.stringify({...marker, state: 'closed'})}\n`,
+    );
 
     expect(() => writeAuthority(root, values, true)).toThrow(
       'marker state must be active',
@@ -129,19 +177,49 @@ describe('one branch per release lifecycle', () => {
   });
 
   it('requires a new version when the immutable tag already exists', () => {
-    const {root} = fixture();
-    execFileSync('git', ['init', '-q'], {cwd: root});
-    execFileSync('git', ['config', 'user.name', 'Release Test'], {cwd: root});
-    execFileSync('git', ['config', 'user.email', 'release@example.com'], {
-      cwd: root,
-    });
-    execFileSync('git', ['add', '.'], {cwd: root});
-    execFileSync('git', ['commit', '-qm', 'fixture'], {cwd: root});
-    execFileSync('git', ['tag', 'v0.6.5'], {cwd: root});
+    const {root, cutSha} = cutFixture();
+    git(root, 'tag', 'v0.6.5');
 
-    expect(() => writeAuthority(root, values, false)).toThrow(
+    expect(() => writeAuthority(root, identity(cutSha), false)).toThrow(
       'use a new release branch and version',
     );
+  });
+
+  it("binds the release version to main's declared version at the cut", () => {
+    // A pre-bumped main that declares 0.7.0 cuts 0.7.0. Nothing may compute a
+    // different version from the pending Changesets.
+    const {root, cutSha} = cutFixture('0.7.0');
+    expect(declaredVersionAtRef(root, cutSha)).toEqual({
+      version: '0.7.0',
+      errors: [],
+    });
+    expect(() =>
+      writeAuthority(
+        root,
+        {version: '0.8.0', branch: 'release/v0.8.0', 'cut-sha': cutSha},
+        false,
+      ),
+    ).toThrow(
+      'main declares 0.7.0 at the cut, so the release is 0.7.0, not 0.8.0',
+    );
+    expect(() =>
+      writeAuthority(
+        root,
+        {version: '0.6.5', branch: BRANCH, 'cut-sha': cutSha},
+        false,
+      ),
+    ).toThrow('main declares 0.7.0 at the cut');
+    expect(fs.existsSync(path.join(root, '.release/active.json'))).toBe(false);
+
+    writeAuthority(
+      root,
+      {version: '0.7.0', branch: 'release/v0.7.0', 'cut-sha': cutSha},
+      false,
+    );
+    const marker = JSON.parse(
+      fs.readFileSync(path.join(root, '.release/active.json'), 'utf8'),
+    );
+    expect(marker.version).toBe('0.7.0');
   });
 });
 
@@ -348,85 +426,384 @@ describe('active release branch authority', () => {
   });
 });
 
-describe('post-release bookkeeping sync', () => {
+describe('published release merge-back (FR50)', () => {
   const digest = value => value.repeat(64).slice(0, 64);
+  const corePath = 'packages/core/package.json';
+  const themePath = 'packages/themes/neutral/package.json';
+  const labPath = 'packages/lab/package.json';
+  const fixedNames = new Set([
+    '@astryxdesign/core',
+    '@astryxdesign/theme-neutral',
+  ]);
+  const core = version => ({
+    name: '@astryxdesign/core',
+    version,
+    exports: {'.': './dist/index.js', './fonts.css': './dist/fonts.css'},
+    files: ['dist', 'fonts.css'],
+  });
+  const theme = version => ({
+    name: '@astryxdesign/theme-neutral',
+    version,
+    peerDependencies: {'@astryxdesign/core': version, react: '^19.0.0'},
+  });
+  const lab = pin => ({
+    name: '@astryxdesign/lab',
+    version: '0.1.9',
+    private: true,
+    peerDependencies: {'@astryxdesign/core': pin},
+  });
+  const mainAt = (version, labPin = version) =>
+    new Map([
+      [corePath, core(version)],
+      [themePath, theme(version)],
+      [labPath, lab(labPin)],
+    ]);
   const plan = {
-    changesets: [
-      {path: '.changeset/frozen.md', sha256: digest('a')},
-      {path: '.changeset/already-consumed.md', sha256: digest('b')},
-    ],
+    changesets: [{path: '.changeset/frozen.md', sha256: digest('a')}],
   };
 
-  function sync(overrides = {}) {
-    return validateReleaseSync({
-      entries: [
-        'D\t.changeset/frozen.md',
-        'M\tpackages/core/package.json',
-        'M\tpackages/core/CHANGELOG.md',
-      ],
+  function mergeBack({release = '0.7.0', base, head, ...overrides}) {
+    return validateReleaseMergeBack({
+      entries: ['D\t.changeset/frozen.md', 'M\tpackages/core/CHANGELOG.md'],
       plan,
       baseChangesets: new Map([
         ['.changeset/frozen.md', digest('a')],
         ['.changeset/post-cut.md', digest('c')],
       ]),
       headChangesets: new Map([['.changeset/post-cut.md', digest('c')]]),
-      releaseOutputs: new Map([
-        ['packages/core/package.json', digest('d')],
-        ['packages/core/CHANGELOG.md', digest('e')],
-      ]),
-      headOutputs: new Map([
-        ['packages/core/package.json', digest('d')],
-        ['packages/core/CHANGELOG.md', digest('e')],
-      ]),
+      releaseOutputs: new Map([['packages/core/CHANGELOG.md', digest('e')]]),
+      headOutputs: new Map([['packages/core/CHANGELOG.md', digest('e')]]),
+      releaseVersion: release,
+      fixedNames,
+      cutManifests: new Map(),
+      releaseManifests: new Map(),
+      baseManifests: base,
+      headManifests: head,
       ...overrides,
     });
   }
 
-  it('accepts consumed-only deletion, exact outputs, and idempotent reruns', () => {
-    expect(sync()).toEqual([]);
+  it('returns exact published outputs while leaving main at the released version', () => {
+    expect(mergeBack({base: mainAt('0.7.0'), head: mainAt('0.7.0')})).toEqual(
+      [],
+    );
+  });
+
+  it('rejects folding the next plan into merge-back', () => {
     expect(
-      sync({
-        entries: [],
-        baseChangesets: new Map([['.changeset/post-cut.md', digest('c')]]),
+      mergeBack({base: mainAt('0.7.0'), head: mainAt('0.7.1'), entries: []}),
+    ).toEqual(
+      expect.arrayContaining([
+        `release merge-back changed a current-main manifest outside the published branch: ${corePath}`,
+        "release merge-back must preserve main's declaration 0.7.0; found 0.7.1",
+      ]),
+    );
+  });
+
+  it('preserves a newer main plan that landed before merge-back', () => {
+    expect(
+      mergeBack({base: mainAt('0.7.1'), head: mainAt('0.7.1'), entries: []}),
+    ).toEqual([]);
+  });
+
+  it('rejects resetting a newer main plan to the released version', () => {
+    expect(
+      mergeBack({base: mainAt('0.7.1'), head: mainAt('0.7.0'), entries: []}),
+    ).toEqual(
+      expect.arrayContaining([
+        `release merge-back changed a current-main manifest outside the published branch: ${corePath}`,
+        "release merge-back must preserve main's declaration 0.7.1; found 0.7.0",
+      ]),
+    );
+  });
+
+  it('rejects a main declaration below the published release', () => {
+    expect(
+      mergeBack({base: mainAt('0.6.9'), head: mainAt('0.6.9'), entries: []}),
+    ).toContain(
+      'release merge-back requires current main at or above published v0.7.0; found 0.6.9',
+    );
+  });
+
+  it('preserves a newer main declaration while applying a published manifest delta', () => {
+    const base = mainAt('0.7.1');
+    base.set(themePath, {...theme('0.7.1'), scripts: {test: 'post-cut'}});
+    const head = structuredClone(base);
+    expect(
+      mergeBack({
+        base,
+        head,
+        entries: [
+          'D\t.changeset/frozen.md',
+          `M\t${themePath}`,
+          'M\tpackages/core/CHANGELOG.md',
+        ],
+        cutManifests: new Map([[themePath, theme('0.6.9')]]),
+        releaseManifests: new Map([[themePath, theme('0.7.0')]]),
       }),
     ).toEqual([]);
   });
 
-  it('rejects changes to post-cut Changesets and non-bookkeeping paths', () => {
+  it('accepts only published release-output renames', () => {
+    const from = 'packages/cli/assets/codemods/transforms/next/transform.mjs';
+    const to = 'packages/cli/assets/codemods/transforms/v0.7.0/transform.mjs';
+    const entries = [
+      'D\t.changeset/frozen.md',
+      'M\tpackages/core/CHANGELOG.md',
+      `R100\t${from}\t${to}`,
+    ];
+    const releaseOutputs = new Map([
+      ['packages/core/CHANGELOG.md', digest('e')],
+      [to, digest('g')],
+    ]);
+    const headOutputs = new Map(releaseOutputs);
+
     expect(
-      sync({
+      mergeBack({
+        entries,
+        releaseOutputs,
+        headOutputs,
+        releaseRenames: new Set([`${from}\t${to}`]),
+        base: mainAt('0.7.0'),
+        head: mainAt('0.7.0'),
+      }),
+    ).toEqual([]);
+    expect(
+      mergeBack({
+        entries,
+        releaseOutputs,
+        headOutputs,
+        base: mainAt('0.7.0'),
+        head: mainAt('0.7.0'),
+      }),
+    ).toContain(
+      `release merge-back rename does not match published branch: ${from} -> ${to}`,
+    );
+  });
+
+  it('rejects unlisted manifests, lifecycle files, and non-release paths', () => {
+    expect(
+      mergeBack({
+        base: mainAt('0.7.0'),
+        head: mainAt('0.7.0'),
         entries: [
-          'M\t.changeset/post-cut.md',
+          `M\t${corePath}`,
+          'M\t.release/active.json',
           'M\tpackages/core/src/Button/Button.tsx',
         ],
-        headChangesets: new Map([['.changeset/post-cut.md', digest('f')]]),
       }),
     ).toEqual(
       expect.arrayContaining([
-        'release sync may only delete frozen Changesets: .changeset/post-cut.md',
-        'release sync contains a non-bookkeeping path: packages/core/src/Button/Button.tsx',
-        'release sync changed post-cut Changeset: .changeset/post-cut.md',
+        `release merge-back changed a manifest not changed on the published branch: ${corePath}`,
+        'release merge-back contains a non-release path: .release/active.json',
+        'release merge-back contains a non-release path: packages/core/src/Button/Button.tsx',
       ]),
     );
   });
 
-  it('rejects missing frozen deletions and release-output drift', () => {
+  it('rejects a published manifest with non-version release changes', () => {
     expect(
-      sync({
+      mergeBack({
+        base: mainAt('0.7.0'),
+        head: mainAt('0.7.0'),
+        entries: [`M\t${corePath}`],
+        cutManifests: new Map([[corePath, core('0.7.0')]]),
+        releaseManifests: new Map([
+          [corePath, {...core('0.7.0'), sideEffects: false}],
+        ]),
+      }),
+    ).toContain(
+      `published manifest contains a non-version release change: ${corePath}`,
+    );
+  });
+
+  it('rejects changed post-cut Changesets and missing frozen bytes', () => {
+    expect(
+      mergeBack({
+        base: mainAt('0.7.0'),
+        head: mainAt('0.7.0'),
+        entries: ['M\t.changeset/post-cut.md'],
+        baseChangesets: new Map([
+          ['.changeset/frozen.md', digest('z')],
+          ['.changeset/post-cut.md', digest('c')],
+        ]),
+        headChangesets: new Map([['.changeset/post-cut.md', digest('f')]]),
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        'release merge-back may only delete frozen Changesets: .changeset/post-cut.md',
+        'release merge-back cannot verify frozen Changeset on current main: .changeset/frozen.md',
+        'release merge-back changed post-cut Changeset: .changeset/post-cut.md',
+      ]),
+    );
+  });
+
+  it('rejects missing frozen deletions and exact-output drift', () => {
+    expect(
+      mergeBack({
+        base: mainAt('0.7.0'),
+        head: mainAt('0.7.0'),
         headChangesets: new Map([
           ['.changeset/frozen.md', digest('a')],
           ['.changeset/post-cut.md', digest('c')],
         ]),
-        headOutputs: new Map([
-          ['packages/core/package.json', digest('f')],
-          ['packages/core/CHANGELOG.md', digest('e')],
-        ]),
+        headOutputs: new Map([['packages/core/CHANGELOG.md', digest('f')]]),
       }),
     ).toEqual(
       expect.arrayContaining([
-        'release sync did not delete frozen Changeset: .changeset/frozen.md',
-        'release sync output differs from published branch: packages/core/package.json',
+        'release merge-back did not delete frozen Changeset: .changeset/frozen.md',
+        'release merge-back output differs from published branch: packages/core/CHANGELOG.md',
       ]),
     );
+  });
+
+  it('defaults the separate next plan to patch and admits only an explicit minor', () => {
+    expect(nextPlannedVersion('0.7.0')).toBe('0.7.1');
+    expect(nextPlannedVersion('0.7.0', '0.7.1')).toBe('0.7.1');
+    expect(nextPlannedVersion('0.7.0', '0.8.0')).toBe('0.8.0');
+    expect(nextPlannedVersion('0.7.0', '0.7.2')).toBeNull();
+    expect(nextPlannedVersion('0.7.0-canary.1')).toBeNull();
+  });
+});
+
+describe('canary eligibility during release merge-back (FR46)', () => {
+  const fixed = new Set(['@astryxdesign/core', '@astryxdesign/cli']);
+  const at = (core, cli = core) =>
+    new Map([
+      ['@astryxdesign/core', {name: '@astryxdesign/core', version: core}],
+      ['@astryxdesign/cli', {name: '@astryxdesign/cli', version: cli}],
+    ]);
+
+  it('publishes above stable and suppresses the transient equal state', () => {
+    expect(
+      canaryEligibility({
+        fixed,
+        releasedVersion: '0.6.8',
+        manifests: at('0.6.9'),
+      }),
+    ).toMatchObject({errors: [], publish: true, declaredVersion: '0.6.9'});
+    expect(
+      canaryEligibility({
+        fixed,
+        releasedVersion: '0.6.8',
+        manifests: at('0.6.8'),
+      }),
+    ).toMatchObject({errors: [], publish: false, declaredVersion: '0.6.8'});
+  });
+
+  it('refuses a lower or split declaration instead of silently skipping', () => {
+    expect(
+      canaryEligibility({
+        fixed,
+        releasedVersion: '0.6.8',
+        manifests: at('0.6.7'),
+      }).errors,
+    ).toContain('canary declaration 0.6.7 is below newest stable v0.6.8');
+    expect(
+      canaryEligibility({
+        fixed,
+        releasedVersion: '0.6.8',
+        manifests: at('0.6.8', '0.6.9'),
+      }).errors[0],
+    ).toMatch(/canary needs one plain fixed-group version/);
+  });
+});
+
+describe('newest stable release selection', () => {
+  it('selects the highest vX.Y.Z tag and ignores non-release tags', () => {
+    const {root} = cutFixture('0.7.0');
+    for (const tag of ['v0.6.5', 'v0.6.7', 'v0.6.6', 'canary-0.8.0'])
+      git(root, 'tag', tag);
+    expect(latestStableVersion(root)).toBe('0.6.7');
+  });
+});
+
+describe('main pull requests keep the declared version above newest stable (FR46)', () => {
+  const fixed = ['@astryxdesign/core', '@astryxdesign/cli'];
+  const at = (core, cli = core) =>
+    new Map([
+      ['@astryxdesign/core', {name: '@astryxdesign/core', version: core}],
+      ['@astryxdesign/cli', {name: '@astryxdesign/cli', version: cli}],
+    ]);
+  // `base` is passed deliberately as a red arm: a check that compares against
+  // previous main would reject the first case instead of comparing with v0.6.7.
+  const check = (
+    base,
+    head,
+    releasedVersion = '0.6.7',
+    activeCutVersion = null,
+  ) =>
+    validateMainVersions({
+      fixed,
+      releasedVersion,
+      activeCutVersion,
+      baseManifests: base,
+      headManifests: head,
+    });
+
+  it('accepts a planned-version decrease that stays above newest stable', () => {
+    expect(check(at('0.7.0'), at('0.6.8'))).toEqual([]);
+    expect(check(at('0.6.8'), at('0.7.0'))).toEqual([]);
+  });
+
+  it('allows equality with an untagged active cut but refuses lowering below it', () => {
+    expect(check(at('0.6.8'), at('0.6.8'), '0.6.7', '0.6.8')).toEqual([]);
+    expect(check(at('0.6.8'), at('0.6.9'), '0.6.7', '0.6.8')).toEqual([]);
+    expect(check(at('0.6.8'), at('0.6.7'), '0.6.6', '0.6.8')).toContain(
+      'main declares 0.6.7; it must not fall below active cut v0.6.8',
+    );
+    expect(check(at('0.6.8'), at('0.6.8'), '0.6.8', '0.6.8')).toContain(
+      'main declares 0.6.8; it must stay strictly above newest stable v0.6.8',
+    );
+  });
+
+  it('admits only patch or minor successor as the first plan after merge-back', () => {
+    expect(check(at('0.6.7'), at('0.6.8'))).toEqual([]);
+    expect(check(at('0.6.7'), at('0.7.0'))).toEqual([]);
+    expect(check(at('0.6.7'), at('0.6.9'))).toContain(
+      "main's first plan after v0.6.7 must be patch successor 0.6.8 by default or owner-named minor 0.7.0; found 0.6.9",
+    );
+  });
+
+  it('requires every exact internal pin to follow the separate next plan', () => {
+    const head = at('0.6.8');
+    head.set('@astryxdesign/lab', {
+      name: '@astryxdesign/lab',
+      version: '0.1.9',
+      private: true,
+      peerDependencies: {'@astryxdesign/core': '0.6.7'},
+    });
+    expect(check(at('0.6.7'), head)).toContain(
+      '@astryxdesign/lab peerDependencies.@astryxdesign/core pins 0.6.7; main declares 0.6.8',
+    );
+  });
+
+  it('refuses equality, a lower version, a split group, and a prerelease', () => {
+    expect(check(at('0.7.0'), at('0.6.7'))).toContain(
+      'main declares 0.6.7; it must stay strictly above newest stable v0.6.7',
+    );
+    expect(check(at('0.7.0'), at('0.6.6'))).toContain(
+      'main declares 0.6.6; it must stay strictly above newest stable v0.6.7',
+    );
+    expect(check(at('0.6.8'), at('0.7.0', '0.6.8'))).toContain(
+      'the fixed group must declare one version on main; found 0.6.8, 0.7.0',
+    );
+    expect(check(at('0.6.8'), at('0.7.0-canary.abc'))[0]).toMatch(
+      /main declares an X\.Y\.Z version/,
+    );
+    expect(check(at('0.6.8'), at('0.7.0'), null)).toContain(
+      'main version check needs the newest stable vX.Y.Z tag',
+    );
+  });
+
+  it('accepts a package new to main', () => {
+    expect(
+      check(
+        new Map([
+          ['@astryxdesign/core', at('0.7.0').get('@astryxdesign/core')],
+        ]),
+        at('0.7.0'),
+      ),
+    ).toEqual([]);
   });
 });

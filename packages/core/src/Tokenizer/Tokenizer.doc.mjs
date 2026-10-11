@@ -114,9 +114,9 @@ export const docs = {
     },
     {
       name: 'statusVariant',
-      type: "'attached' | 'detached'",
+      type: "'attached' | 'detached' | 'tooltip'",
       description:
-        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip reveals the message in an info-tip button.',
       default: "'attached'",
     },
     {
@@ -463,9 +463,9 @@ export const docsZh = {
     },
     {
       name: 'statusVariant',
-      type: "'attached' | 'detached'",
+      type: "'attached' | 'detached' | 'tooltip'",
       description:
-        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 在状态图标的提示气泡中显示消息。',
       default: "'attached'",
     },
     {
@@ -760,7 +760,7 @@ export const docsDense = {
     htmlName: 'HTML name attr; one hidden input per selected item id.',
     status: 'Validation status w/ type+message for error/warning/success.',
     statusVariant:
-      'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip shows on status icon.',
     isLabelHidden: 'Visually hides label; keeps a11y.',
     description: 'Helper text below label.',
     isRequired: 'Marks field required.',

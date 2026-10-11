@@ -57,6 +57,7 @@ import {
 import type {BaseProps} from '@astryxdesign/core';
 import {useInputStatusIcon} from '@astryxdesign/core/hooks';
 import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
+import {useTranslator} from '@astryxdesign/core/i18n';
 import {mergeProps, themeProps, type SizeValue} from '@astryxdesign/core/utils';
 import {useSize} from '@astryxdesign/core/SizeContext';
 
@@ -212,7 +213,14 @@ const styles = stylex.create({
     alignItems: 'center',
   },
   disabled: {
-    cursor: 'not-allowed',
+    // Per #5335: `default`, not `not-allowed`. A disabled control already
+    // carries its own visual treatment, and `not-allowed` is unpaintable on
+    // the part of the library sealed behind `pointer-events: none`, so the
+    // library cannot promise it consistently.
+    cursor: {
+      default: 'default',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   counter: {
     display: 'flex',
@@ -238,13 +246,6 @@ const editorBodySizeStyles = stylex.create({
     paddingBlock: spacingVars['--spacing-2'],
   },
 });
-
-/**
- * Default screen-reader hint advertising the Tab escape. Overridable (or
- * suppressible) via the `tabEscapeHint` prop for localization.
- */
-const DEFAULT_TAB_ESCAPE_HINT =
-  'Press Escape then Tab to move focus out of the editor.';
 
 /**
  * Fraction of `maxLength` at which the character counter begins announcing
@@ -446,9 +447,9 @@ export interface RichTextEditorProps extends Omit<
    * Screen-reader hint describing how to move focus out of the editor, since
    * Tab is bound to indentation (press Escape, then Tab). Rendered visually
    * hidden and referenced from the editor's `aria-describedby`. Override it
-   * to localize the text, or pass an empty string to omit the hint entirely
+   * to change the text, or pass an empty string to omit the hint entirely
    * (e.g. when the host app provides its own instructions).
-   * @default 'Press Escape then Tab to move focus out of the editor.'
+   * @default 'Press Escape then Tab to move focus out of the editor.', translated for the active locale
    */
   tabEscapeHint?: string;
   /**
@@ -519,7 +520,7 @@ export const RichTextEditor = forwardRef<
     transformers = DEFAULT_TRANSFORMERS,
     markdownExtensions,
     hasAutoFocus = false,
-    tabEscapeHint = DEFAULT_TAB_ESCAPE_HINT,
+    tabEscapeHint: tabEscapeHintFromProps,
     maxLength,
     namespace = 'astryx-editor',
     xstyle,
@@ -530,6 +531,9 @@ export const RichTextEditor = forwardRef<
   ref: Ref<RichTextEditorRef>,
 ) {
   const size = useSize(sizeProp, 'md');
+  const t = useTranslator();
+  const tabEscapeHint =
+    tabEscapeHintFromProps ?? t('@astryx.richTextEditor.tabEscapeHint');
   const inputID = useId();
   const labelID = useId();
   const descriptionID = useId();
@@ -757,8 +761,12 @@ export const RichTextEditor = forwardRef<
           <VisuallyHidden aria-live="polite">
             {charCount >= maxLength * COUNTER_WARNING_THRESHOLD
               ? charCount > maxLength
-                ? `${charCount - maxLength} characters over limit`
-                : `${maxLength - charCount} characters remaining`
+                ? t('@astryx.textArea.charactersOverLimit', {
+                    count: charCount - maxLength,
+                  })
+                : t('@astryx.textArea.charactersRemaining', {
+                    count: maxLength - charCount,
+                  })
               : ''}
           </VisuallyHidden>
         </div>

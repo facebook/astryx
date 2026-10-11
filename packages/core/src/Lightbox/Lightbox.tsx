@@ -4,7 +4,7 @@
 
 /**
  * @file Lightbox.tsx
- * @input Uses React, native dialog, StyleX, IconButton, theme tokens, layerTextReset
+ * @input Uses React, native dialog, StyleX, IconButton, theme tokens, layerTextReset, layerStructureReset
  * @output Exports Lightbox component, LightboxProps, LightboxMedia
  * @position Core implementation; consumed by index.ts
  *
@@ -38,6 +38,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
@@ -621,6 +622,7 @@ export function Lightbox({
         themeProps('lightbox'),
         stylex.props(
           layerTextReset.reset,
+          layerStructureReset.reset,
           styles.dialog,
           overlayPaddingReset.reset,
           xstyle,

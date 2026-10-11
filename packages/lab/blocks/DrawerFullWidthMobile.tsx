@@ -11,7 +11,7 @@
 import {useState} from 'react';
 import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
-import {Section} from '@astryxdesign/core/Section';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
 export default function DrawerFullWidthMobile() {
@@ -26,12 +26,16 @@ export default function DrawerFullWidthMobile() {
         label="Wide panel"
         width={560}
         isFullWidthOnMobile>
-        <DrawerHeader title="Wide panel" onOpenChange={setIsOpen} />
-        <Section padding={4}>
-          <Text type="body">
-            A wide panel on desktop, the full viewport width on mobile.
-          </Text>
-        </Section>
+        <Layout
+          header={<DrawerHeader title="Wide panel" onOpenChange={setIsOpen} />}
+          content={
+            <LayoutContent>
+              <Text type="body">
+                A wide panel on desktop, the full viewport width on mobile.
+              </Text>
+            </LayoutContent>
+          }
+        />
       </Drawer>
     </>
   );

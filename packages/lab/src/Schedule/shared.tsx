@@ -11,7 +11,8 @@
 
 import {type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {Locale} from '@astryxdesign/core/i18n';
+import {useScrollableArea} from '@astryxdesign/core/hooks';
+import {getLocaleDirection, type Locale} from '@astryxdesign/core/i18n';
 import {
   borderVars,
   colorVars,
@@ -27,7 +28,6 @@ import {HStack} from '@astryxdesign/core/Stack';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {
   plainDateFromInstant,
-  plainDateIsAfter,
   plainDateIsBefore,
   plainDateToInstant,
   type PlainDate,
@@ -48,6 +48,12 @@ const DEFAULT_EVENT_CATEGORY: ScheduleCategory = {
   label: 'Event',
   color: 'blue',
 };
+
+// Month week rows are 128px. A chip level starts below the day number and the
+// next one a chip's height plus a gap further down, so three levels fit in a
+// row in every shipped theme.
+const MONTH_CHIP_TOP = 30;
+const MONTH_LEVEL_PITCH = 29;
 
 export function ScheduleFrame({
   title,
@@ -189,6 +195,44 @@ export function ScheduleRangeMonthTitle({
   );
 }
 
+/**
+ * A painted time or time range, isolated in the locale's direction: it lays
+ * out as one unit whatever the layout direction, so "9:00 AM" never paints as
+ * "AM 9:00" and a right-to-left locale's range still reads start first.
+ */
+export function ScheduleTime({children}: {children: ReactNode}) {
+  const {locale} = useScheduleContext();
+  return <bdi dir={getLocaleDirection(locale)}>{children}</bdi>;
+}
+
+/**
+ * The content of a Schedule view's popover. Only the content scrolls, inside
+ * the surface: the popover's hidden fallback close sits one pixel below the
+ * surface, so a scroller around the whole popover would count that pixel as
+ * overflow and paint a scrollbar on content that fits, and would clip the
+ * surface's shadow. Taller content scrolls in a named group that joins the
+ * tab order only while it overflows, so the keyboard reaches all of it; a
+ * group, not a region, so no popover adds a landmark.
+ */
+export function SchedulePopoverBody({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  const {getViewportProps, getContentProps} = useScrollableArea({
+    axis: 'block',
+    keyboardAccess: {owner: 'viewport', label},
+  });
+  return (
+    <div
+      {...getViewportProps<HTMLDivElement>({xstyle: styles.eventPopoverBody})}>
+      <div {...getContentProps<HTMLDivElement>()}>{children}</div>
+    </div>
+  );
+}
+
 export function EventPill({
   event,
   day,
@@ -216,7 +260,7 @@ export function EventPill({
       )}>
       {timeLabel != null && (
         <Text type="supporting" color="inherit" xstyle={styles.eventTime}>
-          {timeLabel}
+          <ScheduleTime>{timeLabel}</ScheduleTime>
         </Text>
       )}
       <Text
@@ -239,11 +283,38 @@ export function MonthEventPill({
   timezoneID: string;
   isPast?: boolean;
 }) {
-  const {categories, locale} = useScheduleContext();
+  const {locale} = useScheduleContext();
+  // A month chip shows its start time after the title (component:Schedule
+  // FR18).
+  return (
+    <TitleFirstPill
+      event={event}
+      timeLabel={
+        isDayEvent(event)
+          ? null
+          : formatEventStartTime(event, timezoneID, locale)
+      }
+      isPast={isPast}
+    />
+  );
+}
+
+/**
+ * A pill that leads with the event's title; its time follows on the same
+ * line only when the whole title and the time fit, and otherwise the title
+ * shows alone, ellipsized.
+ */
+export function TitleFirstPill({
+  event,
+  timeLabel,
+  isPast = false,
+}: {
+  event: CalendarEvent;
+  timeLabel: string | null;
+  isPast?: boolean;
+}) {
+  const {categories} = useScheduleContext();
   const category = getEventCategory(event, categories);
-  const timeLabel = isDayEvent(event)
-    ? null
-    : formatEventStartTime(event, timezoneID, locale);
   return (
     <span
       {...stylex.props(
@@ -252,18 +323,23 @@ export function MonthEventPill({
           ? eventPastSurfaceColorStyle(category.color)
           : eventSurfaceColorStyle(category.color),
       )}>
-      {timeLabel != null && (
-        <Text type="supporting" color="inherit" xstyle={styles.eventTime}>
-          {timeLabel}
+      <span {...stylex.props(styles.titleFirstLine)}>
+        <Text
+          type="supporting"
+          color="inherit"
+          weight="bold"
+          xstyle={styles.titleFirstTitle}>
+          {event.title}
         </Text>
-      )}
-      <Text
-        type="supporting"
-        color="inherit"
-        weight="bold"
-        xstyle={styles.eventTitle}>
-        {event.title}
-      </Text>
+        {timeLabel != null && (
+          <Text
+            type="supporting"
+            color="inherit"
+            xstyle={styles.titleFirstTime}>
+            <ScheduleTime>{timeLabel}</ScheduleTime>
+          </Text>
+        )}
+      </span>
     </span>
   );
 }
@@ -290,9 +366,11 @@ export function ListEventRow({
         )}
       />
       <span {...stylex.props(styles.listEventTime)}>
-        {isDayEvent(event)
-          ? 'All day'
-          : formatEventTimeRange(event, timezoneID, locale)}
+        <ScheduleTime>
+          {isDayEvent(event)
+            ? 'All day'
+            : formatEventTimeRange(event, timezoneID, locale)}
+        </ScheduleTime>
       </span>
       <span
         {...stylex.props(
@@ -465,6 +543,25 @@ export function formatFullDate(
   );
 }
 
+/** A week row's dates, such as "May 10 – 16, 2026", for its row header. */
+export function formatWeekRange(
+  start: PlainDate,
+  end: PlainDate,
+  timezoneID: string,
+  locale: Locale,
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: timezoneID,
+    calendar: 'gregory',
+  }).formatRange(
+    new Date(plainDateToInstant(start, timezoneID, 12)),
+    new Date(plainDateToInstant(end, timezoneID, 12)),
+  );
+}
+
 export function formatWeekday(
   date: PlainDate,
   timezoneID: string,
@@ -534,6 +631,25 @@ export function formatEventTimeRange(
   )}`;
 }
 
+/**
+ * An event's start and end with their dates, such as "May 11 at 9:00 AM – May
+ * 13 at 9:00 AM" in en-US, for a timed span of a day or more
+ * (component:Schedule AR2).
+ */
+export function formatEventDateTimeRange(
+  event: CalendarInstantEvent,
+  timezoneID: string,
+  locale: Locale,
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: timezoneID,
+  }).formatRange(new Date(event.start), new Date(event.end));
+}
+
 export function formatEventStartTime(
   event: CalendarInstantEvent,
   timezoneID: string,
@@ -580,17 +696,6 @@ export function getMinutesSinceStartOfDay(
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
-}
-
-export function eventSpansPastDay(
-  event: CalendarInstantEvent,
-  day: PlainDate,
-  timezoneID: string,
-): boolean {
-  return plainDateIsAfter(
-    plainDateFromInstant(Math.max(event.end - 1, event.start), timezoneID),
-    day,
-  );
 }
 
 export function isEventInPast(
@@ -698,10 +803,14 @@ export const styles = stylex.create({
   monthGrid: {
     overflowX: 'auto',
   },
+  // The month surface isolates its paint order: chips rise above the cells
+  // and a focused "+N more" above the chips, and nothing outside the surface
+  // can see either value.
   monthGridSurface: {
     position: 'relative',
     width: '100%',
     minWidth: '784px',
+    isolation: 'isolate',
   },
   monthCellGrid: {
     display: 'grid',
@@ -711,15 +820,8 @@ export const styles = stylex.create({
   monthGridRow: {
     display: 'contents',
   },
-  monthEventOverlay: {
-    position: 'absolute',
-    inset: 0,
-    display: 'grid',
-    gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-    gridAutoRows: '128px',
-    pointerEvents: 'none',
-  },
   monthCell: {
+    position: 'relative',
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
@@ -732,6 +834,15 @@ export const styles = stylex.create({
     borderBlockEndStyle: 'solid',
     borderBlockEndColor: colorVars['--color-border'],
     backgroundColor: colorVars['--color-background-card'],
+  },
+  // A day cell takes focus only when its "+N more" goes away while its
+  // popover is open. The shared ring sits inset, so the table's scroll edge
+  // never clips it, and the cell stays under the chips it holds.
+  monthCellFocus: {
+    outlineOffset: {
+      default: null,
+      ':focus-visible': `calc(-1 * ${focusVars['--focus-outline-width']})`,
+    },
   },
   monthCellLastColumn: {
     borderInlineEndWidth: 0,
@@ -765,22 +876,100 @@ export const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
     minWidth: 0,
   },
-  monthEventSpan: (
-    week: number,
-    columnStart: number,
-    columnEnd: number,
-    level: number,
-  ) => ({
-    gridRow: `${week + 1}`,
-    gridColumn: `${columnStart + 1} / ${columnEnd + 2}`,
-    alignSelf: 'start',
+  // A chip lives in the cell of its first day in the week and paints across
+  // its days from there, on its level: it starts a chip inset into that cell
+  // and ends a chip inset plus one border short of its last day's edge, so
+  // it clears each day's end border the way the cells do. It rises above the
+  // cells it crosses inside the isolated surface (component:Schedule FR15,
+  // FR19).
+  monthChip: (span: number, level: number) => ({
+    position: 'absolute',
+    insetInlineStart: spacingVars['--spacing-0-5'],
+    insetBlockStart: `${MONTH_CHIP_TOP + level * MONTH_LEVEL_PITCH}px`,
+    inlineSize: `calc(${span} * 100% + ${span - 1} * ${borderVars['--border-width']} - 2 * ${spacingVars['--spacing-0-5']})`,
     minWidth: 0,
-    marginInlineStart: spacingVars['--spacing-0-5'],
-    marginInlineEnd: `calc(${spacingVars['--spacing-0-5']} + ${borderVars['--border-width']})`,
-    marginBlockStart: `${30 + level * 29}px`,
-    pointerEvents: 'auto',
     zIndex: 1,
   }),
+  // The last column's cell has no end border, so the same chip is one border
+  // narrower than its padding box.
+  monthChipInLastColumn: {
+    inlineSize: `calc(100% - 2 * ${spacingVars['--spacing-0-5']} - ${borderVars['--border-width']})`,
+  },
+  // A chip button stays above the cells it crosses, like any chip, and a
+  // focused one keeps its whole ring above the chips around it.
+  monthChipFocus: {
+    zIndex: {
+      default: 1,
+      ':focus-visible': 2,
+    },
+  },
+  // A busy day's "+N more" takes the slot of the level it stands in for, with
+  // a chip's insets and height, and keeps its focus ring above the chips.
+  monthMoreButton: {
+    position: 'absolute',
+    insetInlineStart: spacingVars['--spacing-0-5'],
+    insetInlineEnd: `calc(${spacingVars['--spacing-0-5']} + ${borderVars['--border-width']})`,
+    display: 'flex',
+    alignItems: 'center',
+    minWidth: 0,
+    overflow: 'hidden',
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: 'transparent',
+    borderRadius: radiusVars['--radius-inner'],
+    paddingBlock: spacingVars['--spacing-0-5'],
+    paddingInline: spacingVars['--spacing-1-5'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontWeight: fontWeightVars['--font-weight-medium'],
+    color: colorVars['--color-text-secondary'],
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    backgroundColor: {
+      default: 'transparent',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        default: null,
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+    },
+    zIndex: {
+      default: null,
+      ':focus-visible': 2,
+    },
+  },
+  monthMoreButtonPosition: (level: number) => ({
+    insetBlockStart: `${MONTH_CHIP_TOP + level * MONTH_LEVEL_PITCH}px`,
+  }),
+  // The day popover lists rows that ellipsize their titles, so its content
+  // has a cap for the titles to fit within.
+  monthDayEvents: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-2'],
+    maxInlineSize: '360px',
+  },
+  // A row of a day's list that opens its event: the whole row is the
+  // button, with the list row's look and the shared focus ring.
+  monthDayEventButton: {
+    inlineSize: '100%',
+    borderRadius: radiusVars['--radius-inner'],
+    backgroundColor: {
+      default: 'transparent',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        default: null,
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+    },
+  },
+  monthDayEventList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-2'],
+    margin: 0,
+    padding: 0,
+    listStyle: 'none',
+  },
   eventPill: {
     ...baseText,
     display: 'flex',
@@ -811,6 +1000,33 @@ export const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     flexShrink: 0,
+    opacity: 0.8,
+  },
+  // A chip that leads with its title is one line tall. Its title and time
+  // wrap as a flex row, so the time drops to a second, clipped line whenever
+  // the whole title and the time do not fit side by side: layout, not
+  // script, decides whether the time shows (component:Schedule FR18, PR5).
+  titleFirstLine: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    columnGap: spacingVars['--spacing-1'],
+    flexGrow: 1,
+    minWidth: 0,
+    blockSize: `calc(${typeScaleVars['--text-supporting-size']} * ${typeScaleVars['--text-supporting-leading']})`,
+    overflow: 'hidden',
+  },
+  // Alone on the line, a long title shrinks and ellipsizes.
+  titleFirstTitle: {
+    minWidth: 0,
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  titleFirstTime: {
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
     opacity: 0.8,
   },
   moreEvents: {
@@ -1113,16 +1329,13 @@ export const styles = stylex.create({
       ':focus-visible': 1,
     },
   },
-  // The event popover keeps to the viewport the way the Popover component
-  // does: it never grows past the visible block size, and scrolls inside
-  // when its content is taller.
-  eventPopover: {
-    boxSizing: 'border-box',
+  // The popover keeps to the viewport the way the Popover component does: it
+  // never grows past the visible block size, minus the surface padding.
+  eventPopoverBody: {
     maxBlockSize: stylex.firstThatWorks(
-      `calc(100dvb - 2 * ${spacingVars['--spacing-4']})`,
-      `calc(100vh - 2 * ${spacingVars['--spacing-4']})`,
+      `calc(100dvb - 2 * ${spacingVars['--spacing-4']} - 2 * ${spacingVars['--spacing-3']})`,
+      `calc(100vh - 2 * ${spacingVars['--spacing-4']} - 2 * ${spacingVars['--spacing-3']})`,
     ),
-    overflowY: 'auto',
   },
   // Blocks in one overlap cluster split the column into equal tracks and never
   // overlap, so they carry no z-index of their own; the 2px insets keep the

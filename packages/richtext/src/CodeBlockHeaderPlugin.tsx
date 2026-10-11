@@ -81,6 +81,7 @@ const styles = stylex.create({
   },
   placement: (top: number, left: number, width: number) => ({
     top,
+    // eslint-disable-next-line @astryx/no-physical-properties -- intentional: `left` is a measured viewport coordinate (`box.left - origin.left + element.clientLeft`), not an authored edge. `insetInlineStart` would resolve to the right edge in RTL and place the header off the block.
     left,
     width,
   }),

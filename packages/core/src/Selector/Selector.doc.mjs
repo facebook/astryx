@@ -157,10 +157,6 @@ export const docs = {
       {className: 'astryx-selector-search'},
       {className: 'astryx-selector-section-heading'},
       {className: 'astryx-selector-empty-state'},
-      {
-        className: 'astryx-selector-clear-icon',
-        deprecatedFor: 'input-clear-icon',
-      },
       {className: 'astryx-selector-indicator-icon', states: ['state']},
       {className: 'astryx-selector-check'},
       {className: 'astryx-selector-popup'},
@@ -344,7 +340,7 @@ export const docs = {
       name: 'width',
       type: 'SizeValue',
       description:
-        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned. Without a width the field follows its displayed value and can shrink with its row (the value truncates) instead of overflowing it; use `<HStack wrap="wrap">` for filter bars so selectors move to a second line on phones.',
     },
     {
       name: 'startIcon',

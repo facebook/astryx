@@ -390,7 +390,7 @@ describe('ComplexSelector popup theme target', () => {
     // that inner box cannot paint the popup's background or radius, which is
     // what a theme reaches for this class to do.
     expect(popup).toHaveAttribute('role', 'dialog');
-    expect(popup).toHaveClass('astryx-popover-surface');
+    expect(popup).toHaveClass('astryx-popover');
     expect(popup.querySelector('[id]')).not.toBeNull();
     expect(popup).toContainElement(
       screen.getByRole('button', {name: 'Done', ...h}),
@@ -684,5 +684,70 @@ describe('ComplexSelector onOpenChange', () => {
     await user.click(trigger);
     act(() => handleRef.current?.open());
     expect(onOpenChange.mock.calls).toEqual([[true]]);
+  });
+
+  describe('statusVariant forwarding', () => {
+    it('defaults to attached (status renders with data-variant="attached")', () => {
+      const {container} = render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          status={{type: 'error', message: 'Required'}}>
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+        'data-variant',
+        'attached',
+      );
+    });
+
+    it('forwards statusVariant="detached" to the underlying Field status', () => {
+      const {container} = render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          status={{type: 'error', message: 'Required'}}
+          statusVariant="detached">
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+        'data-variant',
+        'detached',
+      );
+    });
+
+    it('forces detached when variant="ghost" even if statusVariant="attached"', () => {
+      const {container} = render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          variant="ghost"
+          status={{type: 'error', message: 'Required'}}
+          statusVariant="attached">
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+        'data-variant',
+        'detached',
+      );
+    });
+
+    it('renders no message box for statusVariant="tooltip"', () => {
+      const {container} = render(
+        <ComplexSelector
+          label="Filter"
+          value={[]}
+          status={{type: 'error', message: 'Required'}}
+          statusVariant="tooltip">
+          {() => <button type="button">Apply</button>}
+        </ComplexSelector>,
+      );
+      expect(
+        container.querySelector('.astryx-field-status'),
+      ).not.toBeInTheDocument();
+    });
   });
 });

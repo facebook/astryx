@@ -1457,6 +1457,111 @@ describe('DropdownMenuItem ref', () => {
   });
 });
 
+describe('DropdownMenuItem host attributes', () => {
+  it('puts aria-*, data-* and id on the row root, a link row included', () => {
+    render(
+      <DropdownMenu button={{label: 'Views'}}>
+        <DropdownMenuItem
+          label="Inbox"
+          href="/inbox"
+          aria-current="page"
+          data-view="inbox"
+          id="inbox-row"
+        />
+        <DropdownMenuItem
+          label="Reload"
+          onClick={() => {}}
+          aria-busy={true}
+          data-pending=""
+        />
+      </DropdownMenu>,
+    );
+    const inbox = screen.getByRole('menuitem', {name: 'Inbox', hidden: true});
+    expect(inbox.tagName).toBe('A');
+    expect(inbox).toHaveAttribute('aria-current', 'page');
+    expect(inbox).toHaveAttribute('data-view', 'inbox');
+    expect(inbox).toHaveAttribute('id', 'inbox-row');
+    const reload = screen.getByRole('menuitem', {name: 'Reload', hidden: true});
+    expect(reload).toHaveAttribute('aria-busy', 'true');
+    expect(reload).toHaveAttribute('data-pending', '');
+  });
+
+  it('runs the DOM handlers the caller attaches, such as a drop target', () => {
+    const onDragOver = vi.fn((event: {preventDefault: () => void}) =>
+      event.preventDefault(),
+    );
+    const onDrop = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Help'}}>
+        <DropdownMenuItem
+          label="Report a bug"
+          onClick={() => {}}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+        />
+      </DropdownMenu>,
+    );
+    const row = screen.getByRole('menuitem', {
+      name: 'Report a bug',
+      hidden: true,
+    });
+    fireEvent.dragOver(row);
+    fireEvent.drop(row);
+    expect(onDragOver).toHaveBeenCalledTimes(1);
+    expect(onDrop).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the row's own role, tab stop and hover focus beside a caller's onPointerMove", async () => {
+    const user = userEvent.setup();
+    const onPointerMove = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <DropdownMenuItem
+          label="Delete"
+          onClick={() => {}}
+          onPointerMove={onPointerMove}
+        />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const edit = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    const del = screen.getByRole('menuitem', {name: 'Delete', hidden: true});
+    expect(del).toHaveAttribute('tabindex', '-1');
+    edit.focus();
+
+    fireEvent.pointerMove(del, {pointerType: 'mouse'});
+
+    // The row still takes the one focus highlight under the mouse, and the
+    // caller's handler runs as well.
+    expect(del).toHaveFocus();
+    expect(onPointerMove).toHaveBeenCalledTimes(1);
+  });
+
+  it("a middle click on a link row runs the caller's onAuxClick and still closes the menu", async () => {
+    const user = userEvent.setup();
+    const onAuxClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Docs" href="/docs" onAuxClick={onAuxClick} />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Actions'});
+    await user.click(trigger);
+    const row = screen.getByRole('menuitem', {name: 'Docs', hidden: true});
+
+    fireEvent(
+      row,
+      new MouseEvent('auxclick', {bubbles: true, cancelable: true, button: 1}),
+    );
+
+    expect(onAuxClick).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+  });
+});
+
 describe('DropdownMenuGroup (compound mode)', () => {
   it('a focusable node in the heading is not reachable by the arrow keys', async () => {
     // A heading is not a menu row, so a control inside one lands in the
@@ -2557,6 +2662,59 @@ describe('DropdownMenu press model', () => {
     expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
   });
 
+  it('a press-opened menu returns focus to its trigger, not to the control focused before the press', async () => {
+    // A browser's popover remembers the focused element when it is shown
+    // and, when it hides with focus inside it, hands focus back to that
+    // element before the layer's own hide handler runs. jsdom has no popover,
+    // so the mocks carry that one rule here. A mouse press opens the menu
+    // before the browser's mousedown would have focused the trigger: the
+    // popover must still remember the trigger, or Escape lands focus on
+    // whatever control was focused before the press.
+    let rememberedFocus: Element | null = null;
+    const showPopover = HTMLElement.prototype.showPopover;
+    const hidePopover = HTMLElement.prototype.hidePopover;
+    HTMLElement.prototype.showPopover = function (this: HTMLElement) {
+      rememberedFocus = document.activeElement;
+      showPopover.call(this);
+    };
+    HTMLElement.prototype.hidePopover = function (this: HTMLElement) {
+      if (
+        rememberedFocus instanceof HTMLElement &&
+        this.contains(document.activeElement)
+      ) {
+        rememberedFocus.focus();
+      }
+      hidePopover.call(this);
+    };
+
+    render(
+      <>
+        <button type="button">Before</button>
+        <DropdownMenu
+          button={{label: 'Actions'}}
+          items={[{label: 'Edit'}, {label: 'Delete'}]}
+        />
+      </>,
+    );
+    const before = screen.getByRole('button', {name: 'Before'});
+    const trigger = screen.getByRole('button', {name: /Actions/});
+    before.focus();
+
+    fireEvent.pointerDown(trigger, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // The popover recorded the trigger, not the control focused before.
+    expect(rememberedFocus).toBe(trigger);
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => expect(menu).toHaveFocus());
+
+    fireEvent.keyDown(menu, {key: 'Escape'});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveFocus();
+    expect(before).not.toHaveFocus();
+  });
+
   it('the opening release before the settle time acts on nothing and the menu stays', () => {
     vi.useFakeTimers();
     try {
@@ -2606,6 +2764,30 @@ describe('DropdownMenu press model', () => {
       // The click the browser aims at the trigger for this gesture is spent.
       fireEvent.click(trigger, {detail: 1});
       expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a menu a held finger opens keeps its trigger as the invoker until the finger lifts', () => {
+    // A release on the trigger is outside the `popover="auto"` menu, so the
+    // browser's light dismiss would close it; holding the invoker through
+    // the press exempts the trigger, as it does for a mouse press.
+    vi.useFakeTimers();
+    try {
+      const trigger = renderMenu();
+      fireEvent.pointerDown(trigger, touch);
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(trigger).toHaveAttribute('popovertarget');
+      fireEvent.pointerUp(trigger, touch);
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      expect(trigger).not.toHaveAttribute('popovertarget');
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
     } finally {
       vi.useRealTimers();
     }
@@ -3001,6 +3183,27 @@ describe('DropdownMenuItem href', () => {
     expect(row.tagName).toBe('A');
     expect(row).not.toHaveAttribute('href');
     expect(row).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('a link row is not draggable; a row without an address keeps the default', () => {
+    // A link is draggable by default, and a mouse press that moves a few
+    // pixels on one starts the browser's link drag, which cancels the press
+    // model's pointer stream before the row under the release can act.
+    render(
+      <DropdownMenu button={{label: 'Places'}}>
+        <DropdownMenuItem label="Inbox" href="/inbox" />
+        <DropdownMenuItem label="Archive" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    const inbox = screen.getByRole('menuitem', {name: 'Inbox', hidden: true});
+    expect(inbox.tagName).toBe('A');
+    expect(inbox).toHaveAttribute('draggable', 'false');
+    expect(inbox.draggable).toBe(false);
+    const archive = screen.getByRole('menuitem', {
+      name: 'Archive',
+      hidden: true,
+    });
+    expect(archive).not.toHaveAttribute('draggable');
   });
 });
 

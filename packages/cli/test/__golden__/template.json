@@ -1,6 +1,7 @@
 {
   "apiVersion": 1,
   "type": "template.show",
+  "package": "@acme/kit",
   "data": {
     "template": "hero",
     "description": "A zorblax hero block.",

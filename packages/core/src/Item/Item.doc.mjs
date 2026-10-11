@@ -26,7 +26,11 @@ export const docs = {
     },
   },
   theming: {
-    targets: [{className: 'astryx-item', visualProps: ['density', 'align']}],
+    targets: [
+      {className: 'astryx-item', visualProps: ['density', 'align']},
+      {className: 'astryx-item-swipe-panel', visualProps: ['side']},
+      {className: 'astryx-item-swipe-action', visualProps: ['variant']},
+    ],
     vars: [
       {
         name: '--_item-label-color',
@@ -191,6 +195,19 @@ export const docs = {
           default: 'false',
         },
         {
+          name: 'swipeActions',
+          type: '{leading?: ItemSwipeAction[]; trailing?: ItemSwipeAction[]}',
+          description:
+            "Swipe actions for touch: the verbs a sideways drag uncovers on each side, outermost last, each `{id?, label, icon?, onActivate, isDisabled?, variant?: 'neutral' | 'accent' | 'destructive', hasRemoval?}`. `leading` is uncovered by a drag toward the inline end, `trailing` toward the inline start. A mouse never starts the drag and a mostly vertical drag stays the scroller's. The gesture is a touch accelerator and never a row's only path to a verb: a verb reachable only by swipe is unreachable by keyboard and by mouse, so every entry must also be reachable through the row's own content. Served on a row whose role permits interactive descendants (a listitem, a row with no role) and not on an option, a menu item, or a row that is the enlarged target of a native radio. The element containing the rows clips in the inline axis with overflow-inline: clip — List does; any other host does it once. `hasRemoval` only says the row holds out after the action fires instead of springing back.",
+        },
+        {
+          name: 'swipeBehavior',
+          type: "'reveal' | 'commit'",
+          description:
+            'What a swipe does. `reveal` rests the row open with every entry a real button and fires the outermost on a long drag or a fling; `commit` slides the row out and fires the outermost on release, with nothing resting and a presentational panel. `commit` fits one entry per side.',
+          default: "'reveal'",
+        },
+        {
           name: 'ref',
           type: 'React.Ref<HTMLDivElement>',
           description: 'Ref forwarded to the root element.',
@@ -232,6 +249,11 @@ export const docs = {
         guidance: true,
         description:
           'Use align="start" when start or end content is taller than a single line of text.',
+      },
+      {
+        guidance: true,
+        description:
+          'Give a swipe action a second home in the row (a menu or a button in endContent): the swipe is a touch accelerator, and a verb reachable only by swipe is unreachable by keyboard and by mouse.',
       },
       {
         guidance: false,

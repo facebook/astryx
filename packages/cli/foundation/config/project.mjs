@@ -54,6 +54,7 @@ import {
   discoverOwnedComponents,
   discoverValidIntegrationComponents,
 } from '../discovery/component-discovery.mjs';
+import {resolveComponentReplacements} from '../discovery/component-replacement.mjs';
 import {findCoreDir} from '../fs/paths.mjs';
 import {
   applyTemplateReplacements,
@@ -68,6 +69,7 @@ import {
 import {
   discoverBundledThemes,
   discoverIntegrationThemes,
+  discoverLocalThemes,
 } from '../discovery/theme-discovery.mjs';
 import {getTransformsBetween} from '../../assets/codemods/registry.mjs';
 import {
@@ -681,6 +683,34 @@ export class Project {
   }
 
   /**
+   * Integration component replacements (spec:AST-035 FR10–FR15): the active
+   * replacement for each replaced Core component. A finding about a package
+   * that declares the CLI floor joins the project's integration issues under
+   * that package. A package without the floor adds nothing to an app's
+   * output (FR15); its author sees the findings in `doctor integration
+   * components`. Memoized per instance.
+   *
+   * @returns {Promise<import('../discovery/component-replacement.mjs').ComponentReplacements>}
+   */
+  async componentReplacements() {
+    return this.#memo('componentReplacements', async () => {
+      const replacements = await resolveComponentReplacements(
+        findCoreDir(this.#cwd),
+        this.#loadedIntegrations,
+      );
+      for (const finding of replacements.findings) {
+        if (!finding.optedIn) continue;
+        this.#pushIssue(finding.package, {
+          code: finding.code,
+          severity: finding.severity,
+          message: finding.message,
+        });
+      }
+      return replacements;
+    });
+  }
+
+  /**
    * Core + integration templates, type-tagged, with valid integration
    * replacements projected over their Core targets. Wraps raw template discovery
    * (Core + external blocks) and discoverIntegrationTemplatesForOne per integration
@@ -757,16 +787,20 @@ export class Project {
   }
 
   /**
-   * Bundled source themes plus themes contributed by installed integrations.
-   * Each record keeps its package owner and source directory so callers can
-   * both list and copy it without reconstructing paths. A broken theme
-   * contribution is reported without hiding the package's other valid kinds.
+   * Bundled source themes, themes contributed by installed integrations, and
+   * source themes under this app's conventional local authoring root. Each
+   * record keeps its owner and source directory so app imports and explicit
+   * ejects share one discovery seam. A broken integration theme contribution is
+   * reported without hiding the package's other valid kinds.
    *
+   * @param {{includeLocal?: boolean}} [options]
    * @returns {Promise<import('../discovery/theme-discovery.mjs').DiscoveredTheme[]>}
    */
-  async themes() {
-    return this.#memo('themes', async () => {
+  async themes({includeLocal = true} = {}) {
+    return this.#memo(includeLocal ? 'themes' : 'themes:external', async () => {
       const themes = discoverBundledThemes();
+      const projectDir = findPackageRoot(this.#cwd) ?? this.#cwd;
+      if (includeLocal) themes.push(...discoverLocalThemes(projectDir));
 
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
@@ -932,6 +966,9 @@ export class Project {
     // catalog. Resolve it first so issue results never depend on which discovery
     // method the caller happened to invoke earlier.
     await this.templates();
+    // Component replacement validity likewise depends on Core plus every
+    // integration's components.
+    await this.componentReplacements();
     for (const integration of this.#loadedIntegrations) {
       await this.#collectIssues(integration);
     }

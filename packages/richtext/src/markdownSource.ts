@@ -208,6 +208,28 @@ const BLOCK_START =
  * instead, and stays with them. Joining every chunk's leading, content, and
  * trailing text gives back the input exactly.
  */
+/**
+ * The chunks of `markdown` that cover the same lines as `like`, the chunks of
+ * text with the same line count. Rewriting indentation can move a line across
+ * a chunk boundary rule — a thematic break indented into a list item becomes
+ * a break of its own — so the chunks follow the authored text, not the rule.
+ */
+function sameLines(
+  markdown: string,
+  like: ReadonlyArray<MarkdownChunk>,
+): Array<MarkdownChunk> {
+  const lines = markdown.split('\n');
+  const lineEndings = (text: string) => text.split('\n').length - 1;
+  let line = 0;
+  return like.map(chunk => {
+    line += lineEndings(chunk.leading);
+    const count = lineEndings(chunk.content) + 1;
+    const content = lines.slice(line, line + count).join('\n');
+    line += count - 1 + lineEndings(chunk.trailing);
+    return {...chunk, content};
+  });
+}
+
 export function splitMarkdownChunks(markdown: string): Array<MarkdownChunk> {
   const lines = markdown.split('\n');
   const chunks: Array<MarkdownChunk> = [];
@@ -348,9 +370,9 @@ export function importMarkdownKeepingSource(
   const body = byteOrderMark ? markdown.slice(1) : markdown;
   const chunks = splitMarkdownChunks(body);
   // Lexical reads the same chunks with list nesting spelled its way; the
-  // records keep the authored bytes. Only list item indentation changes, so
-  // the chunks line up one for one.
-  const importChunks = splitMarkdownChunks(normalizeListIndentation(body));
+  // records keep the authored bytes. Only indentation changes, so each chunk
+  // is the same lines of the rewritten text.
+  const importChunks = sameLines(normalizeListIndentation(body), chunks);
   const lineEnding = lineEndingOf(body, '\n');
   editor.update(
     () => {
@@ -653,19 +675,24 @@ function $canonicalMarkdown(
   return entry;
 }
 
-/** Line starts that would turn literal text into a block structure. */
+/**
+ * Line starts that would turn literal text into a block structure. Each match
+ * is the spaces before the marker, where the escape goes: block markers may
+ * follow up to three spaces (CommonMark 0.31), and a list item's continuation
+ * line adds its own indentation, so any spaces count.
+ */
 const LINE_START_SYNTAX: ReadonlyArray<RegExp> = [
-  // ATX heading, block quote, bullet list item.
-  /^#{1,6}(?=[ \t]|$)/,
-  /^>/,
-  /^[-+](?=[ \t]|$)/,
+  // Block quote or ATX heading marker.
+  /^ *(?=>|#{1,6}(?:[ \t]|$))/,
+  // Bullet list item.
+  /^ *(?=[-+](?:[ \t]|$))/,
   // Setext underline or thematic break made of `=` or `-`.
-  /^[=-](?=[=\- \t]*$)/,
+  /^ *(?=[=-][=\- \t]*$)/,
   // Table delimiter row.
-  /^[|:](?=[|:\- \t]*-[|:\- \t]*$)/,
+  /^ *(?=[|:][|:\- \t]*-[|:\- \t]*$)/,
 ];
 // An ordered list item escapes its delimiter, not its first character.
-const ORDERED_LIST_START = /^(\d{1,9})([.)])(?=[ \t]|$)/;
+const ORDERED_LIST_START = /^( *\d{1,9})(?=[.)](?:[ \t]|$))/;
 
 // Inline syntax Lexical's export leaves unescaped: link and image brackets and
 // character references.
@@ -735,10 +762,12 @@ function markedView(
     const previous = node.getPreviousSibling();
     if (previous == null || $isLineBreakNode(previous)) {
       const ordered = ORDERED_LIST_START.exec(text);
-      if (ordered != null) {
-        text = ordered[1] + token + text.slice(ordered[1].length);
-      } else if (LINE_START_SYNTAX.some(pattern => pattern.test(text))) {
-        text = token + text;
+      const start = LINE_START_SYNTAX.map(pattern => pattern.exec(text)).find(
+        match => match != null,
+      );
+      const before = ordered?.[1] ?? start?.[0];
+      if (before != null) {
+        text = before + token + text.slice(before.length);
       }
     }
     const view = Object.create(node) as typeof node;
@@ -746,13 +775,16 @@ function markedView(
     return view;
   }
   if ($isElementNode(node) && !$isCodeNode(node)) {
-    const children = node
-      .getChildren()
-      .map(child => markedView(child, token, placeholders));
+    // Read once: each read walks every child, so reading per child would
+    // cost the square of their number — a run of tabs is one node per tab.
+    const original = node.getChildren();
+    const children = original.map(child =>
+      markedView(child, token, placeholders),
+    );
     // Each view's siblings are the views beside it, so a text view sees a
     // plugin node's text view as text with formats, not as a gap.
     children.forEach((child, index) => {
-      if (child !== node.getChildren()[index]) {
+      if (child !== original[index]) {
         child.getPreviousSibling = <T extends LexicalNode>() =>
           (children[index - 1] ?? null) as T | null;
         child.getNextSibling = <T extends LexicalNode>() =>

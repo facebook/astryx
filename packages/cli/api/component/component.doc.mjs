@@ -21,7 +21,10 @@ export const doc = {
     'integration packages; an array returns one ordered result row per selector at ' +
     'every array length; and no name returns the catalog grouped by category. ' +
     'Boolean flags narrow each resolved component to just its props, source, ' +
-    'showcase, or example blocks.',
+    'showcase, or example blocks. An integration component that replaces a Core ' +
+    'component (its doc sets replaces, and its package declares the CLI range that ' +
+    'turns replacement on) answers to the Core name in detail, batch, and list ' +
+    "results; use options.package '@astryxdesign/core' for the original.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'component(name?: string | string[], options?: ComponentOptions): Promise<ComponentListResponse | ComponentBatchResponse | ComponentDetailResponse | ComponentDetailPropsResponse | ComponentDetailSourceResponse | ComponentDetailShowcaseResponse | ComponentDetailBlocksResponse>',
@@ -62,7 +65,7 @@ export const doc = {
       name: 'options.package',
       type: 'string',
       description:
-        "Scope lookup to a specific external package (e.g. '@acme/widgets').",
+        "Scope lookup to a specific external package (e.g. '@acme/widgets'). Use '@astryxdesign/core' to select an original replaced by an integration component.",
     },
     {
       name: 'options.props',

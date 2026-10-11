@@ -29,6 +29,7 @@ modules:
     module:Markdown/headingLinks,
     module:Markdown/remark,
     module:Markdown/softBreaks,
+    module:Markdown/sourceLines,
   ]
 families: [family:navigation-destinations]
 design_specs: []
@@ -50,6 +51,7 @@ system_specs:
     spec:AST-061/DEC-5,
     spec:AST-061/DEC-6,
     spec:AST-064/DEC-6,
+    spec:AST-036/DEC-12,
   ]
 ---
 
@@ -157,6 +159,10 @@ composition, and this component owns aggregate application and fallback.
 exactly as `Markdown` does. It decodes valid named and numeric references in
 plain text and leaves everything else as written; the named reference table
 stays private. `spec:AST-061/DEC-5` owns its contract.
+
+`module:Markdown/sourceLines` owns the opt-in source-line stamps on rendered
+blocks and the optional `sourceLines` prop that `components` block renderers
+receive while its plugin is installed; without it no renderer receives the prop.
 
 `getMarkdownPluginCapabilities(plugin)`, exported from the server-safe
 `@astryxdesign/core/Markdown/plugins` subpath, reports only whether an entry
@@ -291,6 +297,11 @@ text. Outside a table cell, inline code retains its authored backslashes.
   It withholds an unfinished block during streaming, removes a completed block
   before later transforms render the document, and makes typed metadata available
   to those later transforms and to callers of that helper.
+- A semantic-fence proposal renders before `components.code`. `components.code`
+  renders every fence no proposal claims, and a claimed fence whose plugin
+  renderer is absent, returns nothing, throws, or suspends falls back to
+  `components.code` when supplied and to the default Code block otherwise
+  (`spec:AST-036` FR17).
 - Text matching, semantic fences, and source decorations use transform helpers. Core
   may compile those helpers into indexed internal plans without exposing additional
   public phases.

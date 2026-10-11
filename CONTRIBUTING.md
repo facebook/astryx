@@ -674,23 +674,91 @@ pnpm changeset:new --category fix --summary "…" --pr 2717 --contributor yourha
 > `minor`; `[experimental]` and every other category must be `patch`), or
 > declaring a `major` bump while 0.x.
 
-### Version Bumps
+#### When CI requires one
 
-- **0.x (current): bump follows the category.** We track standard semver for the `0.x.y` range, where a minor bump is the stable breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`). A `[breaking]` change bumps the **minor** (`0.x.y → 0.(x+1).0`). A change confined to a surface that was explicitly marked experimental before its first stable publication uses `[experimental]` and bumps the **patch**, even when that experimental API changes incompatibly. Every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) also bumps the patch. If stable defaults, behavior, props, imports, CLI commands, or machine schemas break, the change remains `[breaking]`. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` enforces the coupling both ways.
-- All publishable packages are a `fixed` group, so a single change co-bumps them to the same version. Only genuinely-affected packages get a changelog entry — the rest get a clean version-only bump.
-- **Main targets a patch by default, and `[breaking]` waits for a scheduled minor.** Because the packages are a fixed group, one `[breaking]` entry moves every package to a new minor — so `pnpm check:changesets` refuses one while main is on its patch default. There are two ways forward, and the refusal prints both:
-  - **Keep the release patch-compatible** (the usual answer): leave the released surface working and deprecate it instead. Ship the replacement, keep the old usage equivalent, and take the patch bump; the removal lands once a minor is scheduled.
-  - **Wait for the scheduled minor**: minors are scheduled for a specific day. A release owner adds `.release/target.json` with the target version and that day, and from then until the release your `[breaking]` changeset can land. Removing that file afterwards is part of normal post-release setup, and an expired date stops admitting breaking changes on its own.
+Every pull request runs `scripts/release/changeset-coverage.mjs`, the same
+classifier the release coverage audit runs over a release's commits. It fails
+when the pull request changes something a published package ships and no
+Changeset it adds or edits names that package:
 
-  As a contributor you never author that file or decide the schedule — say what you intend in the PR and a maintainer handles it. The rule is `spec:AST-017` FR46–FR50.
+- package source, such as `packages/*/src` of a published package;
+- CLI behavior and output under `packages/cli` (`api`, `clients`,
+  `foundation`, `authoring`, `assets`);
+- shipped documentation: `packages/cli/assets/docs`, `*.doc.mjs`, and a
+  package README;
+- consumer-facing `package.json` fields such as `exports`, `bin`, and
+  dependency or peer ranges.
+
+Stories, the sandbox, tests, fixtures, snapshots, spec records, generated
+CHANGELOGs, private and canary-only packages (`lab`, `charts`, `richtext`,
+`vega`), the docsite app, CI, and repository tooling never reach a consumer and
+need no Changeset. The failure names the package and the command to run, for
+example `pnpm changeset:new --packages @astryxdesign/cli --category docs`. Run
+the check locally with
+`node scripts/release/changeset-coverage.mjs pr --base origin/main --explain`.
+
+The same check compares the CLI's machine-readable ids with the latest
+release: response `type` values, response fields, golden JSON fields, and
+`astryx doctor` check ids. Removing or renaming a released one breaks scripts
+that read it. Restore it, or classify the removal in a `@astryxdesign/cli`
+Changeset: a `[breaking]` entry that names the id, or a paragraph beginning
+`Compatibility:` that names the id and says why consumers of the latest
+release keep working. Name an id the way the failure prints it, such as
+`themes` or `DoctorCheck.fix`. Catalog values inside those responses, such as template
+slugs and docs routes, are data and may change.
+
+### Release versions
+
+- **Main declares the next version.** The fixed group's version in main's
+  `package.json` files is the next planned release. Before a cut, an owner may
+  raise or lower it while it stays strictly above newest stable. While an
+  untagged cut is active, main may stay equal to that cut or rise, but cannot be
+  lowered below it. After the tag, ordinary PRs must be strictly above stable;
+  trusted merge-back is the only equality exception and publishes no canary.
+- **0.x: the category states the tier a change needs.** A `[breaking]`
+  Changeset declares `minor` and is admitted only while main already declares
+  the next minor. `[experimental]` and every other category declare `patch`.
+  A Changeset never chooses the plan. CI refuses `[breaking]` on a patch plan
+  and refuses a minor-to-patch lowering PR that would strand pending breaking
+  work. The routes are to keep the old usage compatible through deprecation, or
+  have an owner explicitly plan the minor.
+- All publishable packages are a `fixed` group, so they release together at one
+  version. Only genuinely affected packages get a changelog entry.
+- As a contributor you never change the declared version. State compatibility
+  intent and add the right Changeset; a maintainer owns release planning. The
+  governing contract is `spec:AST-017` FR46–FR51.
 
 ### How a release is cut
 
+First, the canonical full-scope `release-check` must pass on an exact commit from
+current `main`; the release branch is cut only from that checked SHA while it remains
+in current main history. A minor cut also requires Cindy, the release owner, to
+explicitly sign off on the exact `vX.Y.0` immediately before the branch is created.
+Scheduled or standing authority does not cover a minor.
+
+A release branch `release/vX.Y.Z` is then cut from that commit, where `X.Y.Z` is the
+version main declares. On that branch only:
+
 ```bash
-pnpm version-packages   # changeset version + scripts/format-changelogs.mjs
+pnpm version-packages   # changelogs at the declared version + codemod promotion + formatting
 ```
 
-`format-changelogs.mjs` rewrites each just-bumped package CHANGELOG into the doc-site format (h1 version, `#### <Category>` sections in canonical order, and a `#### Contributors` section aggregated from the changeset `@handle`s). It's idempotent and has a `--check` mode for CI drift detection.
+`scripts/release/version-packages.mjs` admits the frozen Changesets against the
+declared version, writes their changelog entries under it, and deletes them; it
+never changes a package version. The command then promotes staged codemods,
+refreshes exact internal pins, and formats changelogs with contributor credit.
+Refresh and verify `pnpm-lock.yaml` before the Version Packages PR merges. After tag and publication, one trusted
+`chore/merge-vX.Y.Z-to-main` PR squashes the exact branch-owned outputs and
+frozen deletions onto current main while preserving every post-cut change and
+main's declaration. A separate owner PR then declares the next plan across the
+fixed group, exact internal pins, and lockfile—patch successor by default,
+minor only when the owner explicitly names it.
+
+Before stable publication, a patch release self-grades its complete generated
+changelogs and draft GitHub Release notes against the public Blog Review Rubric's
+`update` profile. Every criterion must pass; failures are fixed on the release
+branch and the complete text is re-graded. A minor release instead requires Cindy's
+explicit human editorial approval of the changelogs, release notes, and public blog.
 
 ## Finding Something to Work On
 

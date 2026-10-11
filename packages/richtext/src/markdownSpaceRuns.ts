@@ -22,8 +22,12 @@ import {$convertToMarkdownString} from '@lexical/markdown';
 import {$isElementNode, $isTextNode} from 'lexical';
 import {absentCharacters} from './markdownCharacterReferences';
 
-/** Two or more spaces with other characters on both sides. */
-const INNER_SPACE_RUN = /(?<=\S)\s{2,}(?=\S)/g;
+/**
+ * A run of spaces with other characters on both sides, long enough for
+ * Lexical's pattern to cost noticeably more than one step per space; shorter
+ * runs, as ordinary text has, export as they are.
+ */
+const INNER_SPACE_RUN = /(?<=\S)\s{64,}(?=\S)/g;
 
 /** Whether Lexical exports the text node's text as written, untouched. */
 function isLiteralText(node: LexicalNode): boolean {
@@ -34,40 +38,46 @@ function isLiteralText(node: LexicalNode): boolean {
 }
 
 /**
- * Lexical's `$convertToMarkdownString(transformers, root)`, with every run of
- * two or more spaces inside a text exported as stand-ins and put back, so the
+ * Lexical's `$convertToMarkdownString(transformers, root)`, with every long
+ * run of spaces inside a text exported as stand-ins and put back, so the
  * export takes time linear in the text. The tree is read through views, never
- * changed.
+ * changed; a tree with no long run exports directly.
  */
 export function $convertToMarkdownKeepingTimeLinear(
   transformers: Array<Transformer>,
   root: ElementNode,
 ): string {
-  // Every string the export can write — texts, and the properties nodes
-  // serialize, such as a link's address and title — so a stand-in occurs
-  // nowhere else in the output.
-  const written: string[] = [];
   const spaces = new Set<string>();
-  const visit = (node: LexicalNode) => {
-    written.push(JSON.stringify(node.exportJSON()));
+  const findRuns = (node: LexicalNode) => {
     if ($isTextNode(node)) {
-      const text = node.getTextContent();
-      written.push(text);
       if (!isLiteralText(node)) {
-        for (const run of text.match(INNER_SPACE_RUN) ?? []) {
+        for (const run of node.getTextContent().match(INNER_SPACE_RUN) ?? []) {
           for (const space of run) {
             spaces.add(space);
           }
         }
       }
-    } else if ($isElementNode(node)) {
-      node.getChildren().forEach(visit);
+    } else if ($isElementNode(node) && !$isCodeNode(node)) {
+      node.getChildren().forEach(findRuns);
     }
   };
-  root.getChildren().forEach(visit);
+  root.getChildren().forEach(findRuns);
   if (spaces.size === 0) {
     return $convertToMarkdownString(transformers, root);
   }
+  // Every string the export can write — texts, and the properties nodes
+  // serialize, such as a link's address and title — so a stand-in occurs
+  // nowhere else in the output.
+  const written: string[] = [];
+  const collect = (node: LexicalNode) => {
+    written.push(JSON.stringify(node.exportJSON()));
+    if ($isTextNode(node)) {
+      written.push(node.getTextContent());
+    } else if ($isElementNode(node)) {
+      node.getChildren().forEach(collect);
+    }
+  };
+  root.getChildren().forEach(collect);
   const free = absentCharacters(written.join(''));
   const standIns = new Map<string, string>();
   for (const space of spaces) {

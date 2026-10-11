@@ -38,28 +38,32 @@ function isBalanced(url: string): boolean {
 
 /** `url` as a Markdown destination that reads back as `url`. */
 export function markdownDestination(url: string): string {
-  if (/\s/.test(url)) {
-    // Only an angle-bracket destination may hold a space (CommonMark §6.3).
-    return `<${url.replace(/[<>]/g, '\\$&')}>`;
+  if (/\s/.test(url) || url.startsWith('<')) {
+    // Only an angle-bracket destination may hold a space or open with `<`
+    // (CommonMark §6.3).
+    return `<${url.replace(/[\\<>]/g, '\\$&')}>`;
   }
-  return isBalanced(url) ? url : url.replace(/[()]/g, '\\$&');
+  // A backslash before punctuation would read back as an escape, so every
+  // backslash is written escaped; so is every parenthesis that does not
+  // balance.
+  return url.replace(isBalanced(url) ? /\\/g : /[\\()]/g, '\\$&');
 }
 
 /**
  * Lexical's link pattern, with a destination in angle brackets too: any
- * characters but brackets and line endings, spaces included.
+ * characters but brackets and line endings, spaces included. A destination
+ * that opens with `<` is an angle-bracket one or no destination at all
+ * (CommonMark §6.3), so `[a](<b>c>)` stays text, as core reads it.
  */
 const LINK_WITH_ANGLE_DESTINATION =
-  /(?:\[(.+?)\])(?:\((?:(<[^<>\n]*>|[^()\s]+)(?:\s"((?:[^"]*\\")*[^"]*)"\s*)?)\))/;
+  /(?:\[(.+?)\])(?:\((?:(<[^<>\n]*>|[^()\s<][^()\s]*)(?:\s"((?:[^"]*\\")*[^"]*)"\s*)?)\))/;
 
 export const LINK_KEEPING_DESTINATIONS: TextMatchTransformer = {
   ...LINK,
   importRegExp: LINK_WITH_ANGLE_DESTINATION,
   replace: (textNode, match) => {
     const destination = match[2];
-    // Only a whole angle-bracket destination drops its brackets; `<b>c>`
-    // is a destination as it stands, as core reads it.
-    if (destination == null || !/^<[^<>\n]*>$/.test(destination)) {
+    if (destination == null || !destination.startsWith('<')) {
       return LINK.replace?.(textNode, match);
     }
     // The link's address is what the angle brackets hold.

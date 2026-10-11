@@ -8,6 +8,7 @@
       {
         "domain": "component",
         "name": "AcmeCard",
+        "package": "@acme/kit",
         "score": 90,
         "reason": "keyword \"zorblax\"",
         "description": "A zorblax card that groups one topic.",
@@ -17,17 +18,18 @@
       {
         "domain": "doc",
         "name": "acme-guide",
+        "package": "@acme/kit",
         "score": 50,
         "reason": "description mentions \"zorblax\"",
         "description": "How zorblax cards fit together.",
         "title": "Unorganized › Acme guide",
         "command": "astryx docs acme-guide --index",
-        "parent": "astryx docs unorganized",
-        "package": "@acme/kit"
+        "parent": "astryx docs unorganized"
       },
       {
         "domain": "template",
         "name": "hero",
+        "package": "@acme/kit",
         "score": 50,
         "reason": "description mentions \"zorblax\"",
         "description": "A zorblax hero block.",
@@ -38,12 +40,12 @@
       {
         "domain": "theme",
         "name": "ocean",
+        "package": "@acme/kit",
         "score": 50,
         "reason": "description mentions \"zorblax\"",
         "description": "A zorblax blue.",
         "displayName": "Ocean",
-        "command": "astryx theme add ocean",
-        "package": "@acme/kit"
+        "command": "astryx theme add ocean"
       }
     ]
   }

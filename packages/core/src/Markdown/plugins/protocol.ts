@@ -159,6 +159,13 @@ export interface MarkdownTransform<Node extends MarkdownExtensionNode = never> {
 }
 
 const markdownTransformClaim = Symbol('MarkdownTransformClaim');
+/**
+ * Definition key of the first-party source-lines plugin
+ * (`module:Markdown/sourceLines`). It is a parse option, not syntax: the
+ * plugin enters parse identity so the parser records block lines during the
+ * parse it already runs, and no other entry can carry it.
+ */
+const markdownSourceLinesDefinition = Symbol('MarkdownSourceLines');
 const markdownTransformTrusted = Symbol('MarkdownTransformTrusted');
 
 interface ClaimAwareMarkdownTransform<
@@ -449,6 +456,29 @@ export function createMarkdownPlugin(
   }) as unknown as MarkdownPluginEntry;
 }
 
+/**
+ * @internal Creates the first-party source-lines entry. Its transform is a
+ * trusted identity that claims no source, so the transform pipeline skips it;
+ * the entry's only effect is the parse option the definition key carries.
+ */
+export function createMarkdownSourceLinesEntry(
+  name: string,
+): MarkdownPluginEntry<never> {
+  const transform = markMarkdownTransformClaim(
+    markMarkdownTransformTrusted(document => document),
+    () => false,
+  );
+  const definition: MarkdownTransformPluginDefinition<string, never> & {
+    readonly [markdownSourceLinesDefinition]: true;
+  } = {
+    name,
+    apiVersion: 1,
+    transform,
+    [markdownSourceLinesDefinition]: true,
+  };
+  return createMarkdownPlugin(definition);
+}
+
 export interface PreparedSyntaxContribution {
   readonly pluginName: string;
   readonly display: 'inline' | 'block';
@@ -484,6 +514,8 @@ export interface PreparedMarkdownPlugins {
   readonly hasUntrustedTransform: boolean;
   readonly syntaxIdentity: string;
   readonly renderers: ReadonlyMap<string, PreparedRenderer>;
+  /** Whether the source-lines plugin is installed (`module:Markdown/sourceLines`). */
+  readonly sourceLines: boolean;
 }
 
 const preparedPluginLists = new WeakMap<
@@ -542,6 +574,7 @@ export function prepareMarkdownPlugins(
   const syntaxIdentity: string[] = [];
   const entries: InternalMarkdownPluginEntry[] = [];
   const syntaxEntries: MarkdownPluginEntry[] = [];
+  let sourceLines = false;
 
   for (const publicEntry of plugins) {
     const definition = getMarkdownPluginDefinition(publicEntry);
@@ -572,6 +605,17 @@ export function prepareMarkdownPlugins(
           renderer: renderer,
         });
       }
+    }
+    if (
+      (definition as {readonly [markdownSourceLinesDefinition]?: true})[
+        markdownSourceLinesDefinition
+      ] === true
+    ) {
+      sourceLines = true;
+      syntaxEntries.push(syntaxOnlyEntry(publicEntry));
+      syntaxIdentity.push(
+        `${definition.name}\0${definition.apiVersion}\0source-lines`,
+      );
     }
     if ('syntax' in definition && definition.syntax != null) {
       syntaxEntries.push(syntaxOnlyEntry(publicEntry));
@@ -614,6 +658,7 @@ export function prepareMarkdownPlugins(
     hasUntrustedTransform: transforms.some(entry => !entry.trusted),
     syntaxIdentity: syntaxIdentity.join('\u0001'),
     renderers,
+    sourceLines,
   };
   preparedPluginLists.set(plugins, prepared);
   return prepared;

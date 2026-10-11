@@ -79,21 +79,17 @@ const MIGRATION_FLAGS = [
 describe('astryx upgrade flag interactions', () => {
   it('--list: help says it ignores every other flag but --registry, and it does', async () => {
     const options = await upgradeOptions();
-    expect(options['--list']).toMatch(/Every other flag is ignored, except --registry/);
+    expect(options['--list']).toMatch(/Every other flag is refused, as is --registry/);
 
     installPackage('@astryxdesign/core', '0.6.0');
-    const listed = await upgradeJson([
-      '--list',
-      '--from',
-      'bogus',
-      '--codemod',
-      'bogus',
-      '--apply',
-      '--path',
-      '../outside',
-    ]);
+
+    const listed = await upgradeJson(['--list']);
     expect(listed.status).toBe(0);
     expect(listed.envelope.type).toBe('upgrade.list');
+
+    const withFlags = await upgradeJson(['--list', '--from', 'bogus']);
+    expect(withFlags.status).toBe(1);
+    expect(withFlags.envelope.code).toBe('ERR_INVALID_ARGUMENT');
 
     const refused = await upgradeJson(['--list', '--registry']);
     expect(refused.status).toBe(1);
