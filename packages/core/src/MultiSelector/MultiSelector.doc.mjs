@@ -406,6 +406,24 @@ export const docs = {
             'Called whenever the panel opens or closes, however it happened: the trigger, the keyboard, a light dismiss, Escape, or the handle.',
         },
         {
+          name: 'onClick',
+          type: '(event: MouseEvent) => void',
+          description:
+            'Click handler on the trigger (or the renderTrigger control). Runs after the built-in toggle and cannot cancel it.',
+        },
+        {
+          name: 'onFocus',
+          type: '(event: FocusEvent) => void',
+          description:
+            "Focus handler on the trigger. Runs before the selector's own focus handling.",
+        },
+        {
+          name: 'onKeyDown',
+          type: '(event: KeyboardEvent) => void',
+          description:
+            'Key handler on the trigger button. Runs after the built-in keyboard model and is skipped for keys it handles and cancels.',
+        },
+        {
           name: 'containerXstyle',
           type: 'StyleXStyles',
           description:
@@ -551,6 +569,10 @@ export const docsZh = {
         onOpenChange: '面板每次打开或关闭时触发，无论由何种方式引起。',
         presentation:
           '选项列表的呈现方式：锚定弹出框、底部抽屉，或根据紧凑触控屏自适应。',
+        onClick: '触发器的点击处理函数，在内置开关之后运行，无法取消它。',
+        onFocus: '触发器的焦点处理函数，在选择器自身的焦点处理之前运行。',
+        onKeyDown:
+          '触发器的按键处理函数，在内置键盘模型之后运行；该模型处理并取消的按键不会传给它。',
         containerXstyle:
           '字段容器（标签、控件和状态整体）的 StyleX 样式。在 InputGroup 内或 `horizontal-labels` FormLayout 中无效。不接受根级 xstyle、className 和 style。',
         containerClassName: '字段容器的类名，作用目标同 containerXstyle。',
@@ -706,6 +728,10 @@ export const docsDense = {
         onOpenChange: 'fires on every open/close, whatever caused it',
         presentation:
           'popover, bottom-sheet, or compact-touch adaptive presentation',
+        onClick:
+          'trigger click; runs after the built-in toggle, cannot cancel it',
+        onFocus: 'trigger focus; runs before built-in focus handling',
+        onKeyDown: 'trigger keys; runs after the built-in keyboard model',
         containerXstyle:
           'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
         containerClassName: 'Class name for the field container.',

@@ -354,6 +354,24 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'onClick',
+      type: '(event: MouseEvent) => void',
+      description:
+        'Click handler on the trigger button. Runs before the selector toggles its surface; preventDefault() does not keep it closed.',
+    },
+    {
+      name: 'onFocus',
+      type: '(event: FocusEvent) => void',
+      description:
+        "Focus handler on the trigger button. Runs before the selector's own focus handling.",
+    },
+    {
+      name: 'onKeyDown',
+      type: '(event: KeyboardEvent) => void',
+      description:
+        'Key handler on the trigger button. Runs after the built-in keyboard model and is skipped for keys it handles and cancels.',
+    },
+    {
       name: 'containerXstyle',
       type: 'StyleXStyles',
       description:

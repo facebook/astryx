@@ -603,6 +603,24 @@ export interface MultiSelectorProps<
   ref?: React.Ref<HTMLElement>;
 
   /**
+   * Click handler on the trigger (or, with `renderTrigger`, the caller's
+   * control). It runs after the built-in toggle and cannot cancel it.
+   */
+  onClick?: React.MouseEventHandler<HTMLElement>;
+
+  /**
+   * Focus handler on the trigger. It runs before the selector's own focus
+   * handling.
+   */
+  onFocus?: React.FocusEventHandler<HTMLElement>;
+
+  /**
+   * Key handler on the trigger. It runs after the built-in keyboard model and
+   * is skipped for keys that model handles and cancels.
+   */
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
+
+  /**
    * Whether to visually hide the label (still accessible to screen readers).
    * @default false
    */

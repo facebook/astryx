@@ -208,6 +208,18 @@ export const docs = {
           description: 'StyleX styles for the popup content container.',
         },
         {
+          name: 'onClick',
+          type: '(event: MouseEvent) => void',
+          description:
+            'Click handler on the trigger (or the renderTrigger control). Runs before the popup opens; call preventDefault() to keep it closed. A press elsewhere in the control box goes through the trigger too.',
+        },
+        {
+          name: 'onKeyDown',
+          type: '(event: KeyboardEvent) => void',
+          description:
+            'Key handler on the trigger (or the renderTrigger control). Runs after the built-in handling and receives every key, including the ArrowDown that opens the popup.',
+        },
+        {
           name: 'containerXstyle',
           type: 'StyleXStyles',
           description:
@@ -372,6 +384,10 @@ export const docsDense = {
       'Caller-rendered opener replacing the field+button; spread the given props; popup anchored to it, labelled by label.',
     handleRef: 'Imperative open/close/toggle handle.',
     onOpenChange: 'Notified on every open and close, whatever caused it.',
+    onClick:
+      'Trigger click; runs before opening, preventDefault() keeps the popup closed.',
+    onKeyDown:
+      'Trigger keys; runs after built-in handling, sees the opening ArrowDown.',
     containerXstyle:
       'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
     containerClassName: 'Class name for the field container.',

@@ -290,6 +290,19 @@ export interface ComplexSelectorProps<Value> extends Omit<
    * accessible name — or, with `renderTrigger`, the caller's control.
    */
   ref?: React.Ref<HTMLElement>;
+  /**
+   * Click handler on the trigger (or, with `renderTrigger`, the caller's
+   * control). It runs before the popup opens; call `preventDefault()` to keep
+   * the popup closed. A press elsewhere in the control box goes through the
+   * trigger, so it reaches this handler too.
+   */
+  onClick?: React.MouseEventHandler<HTMLElement>;
+  /**
+   * Key handler on the trigger (or the caller's control). It runs after the
+   * built-in handling and receives every key, including the ArrowDown that
+   * opens the popup.
+   */
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
   /** Current controlled value. */
   value: Value;
   /** Called when custom content commits a new value. */

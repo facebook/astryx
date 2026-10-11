@@ -544,6 +544,25 @@ interface SelectorPropsBase<
   ref?: React.Ref<HTMLButtonElement>;
 
   /**
+   * Click handler on the trigger button. It runs before the selector toggles
+   * its surface (the press then reaches the control box), and calling
+   * `preventDefault()` does not keep the surface closed.
+   */
+  onClick?: React.MouseEventHandler<HTMLElement>;
+
+  /**
+   * Focus handler on the trigger button. It runs before the selector's own
+   * focus handling.
+   */
+  onFocus?: React.FocusEventHandler<HTMLElement>;
+
+  /**
+   * Key handler on the trigger button. It runs after the built-in keyboard
+   * model and is skipped for keys that model handles and cancels.
+   */
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
+
+  /**
    * Whether to visually hide the label (still accessible to screen readers).
    * @default false
    */
