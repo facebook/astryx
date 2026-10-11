@@ -2,30 +2,26 @@
 
 /**
  * @file globalIconRegistry.tsx
- * @input None (pure module-level state)
- * @output Exports registerIcons, getIconRegistry, getIcon, resetIcons, IconName, IconRegistry
- * @position Global and theme-scoped icon registry; works in server and client environments
+ * @input Released global artwork overrides or an explicit theme source
+ * @output ReactNode-valued registry reads with local adaptive source fallback
+ * @position Server/client registry; global registration never admits capability contracts
  *
- * This module has NO 'use client' directive — it's importable from RSC.
- * Components resolve semantic icons through getIcon() or the client useIcon() hook.
+ * This module has NO 'use client' directive. Source binding and resolution are
+ * synchronous, and normalized theme IR is kept separate from the node read view.
  */
-
 import type {ReactNode} from 'react';
 import {defaultIcons} from './defaultIcons';
 import type {DefinedTheme} from '../theme/defineTheme';
 import {getRegisteredTheme} from '../theme/themeRegistry';
 import {warnOnce} from '../utils/devWarning';
+import {getOwnIconData} from './iconCapabilities';
+import {
+  normalizeIconEntry,
+  prepareIconEntries,
+  type IconEntry,
+} from './adaptiveIcons';
+import {resolveIconWithContext, type IconDiagnostic} from './iconResolution';
 
-// =============================================================================
-// Types
-// =============================================================================
-
-/**
- * Semantic icon names used internally by Astryx components.
- *
- * These represent the functional purpose of each icon, not a specific
- * visual representation. Themes provide the actual icon components.
- */
 // SYNC: packages/cli/assets/docs/icons.doc.mjs — update USAGE_HINTS when adding names
 export type IconName =
   | 'close'
@@ -57,203 +53,176 @@ export type IconName =
   | 'wrench'
   | 'stop'
   | 'microphone';
-
-/**
- * A namespaced extension key, `'<namespace>:<name>'`.
- *
- * This is the tier for a glyph that belongs to one component or library rather
- * than to the system: `'richtext:bold'`, `'numberInput:stepperDown'`. A theme
- * overrides it by key through `registerIcons` or `defineTheme({icons})`,
- * exactly as it overrides a built-in name, and the core {@link IconName} union
- * stays reserved for glyphs the whole system shares.
- *
- * Accepted anywhere a built-in name is, including `<Icon icon>` — which is
- * what lets a namespaced glyph keep `size`, `color` and `xstyle`.
- */
+/** A glyph owned by a component/library rather than the system. */
 export type NamespacedIconName = `${string}:${string}`;
-
-/**
- * A semantic icon name — either one of the built-in {@link IconName}s or an
- * arbitrary string key contributed by a library/app.
- *
- * The `(string & {})` intersection keeps the built-in names available for
- * autocomplete while still allowing any string, so downstream libraries can
- * register and resolve their own keys (e.g. `'richtext:bold'`) without having
- * to widen the core `IconName` union.
- */
+/** Keep semantic names in autocomplete while admitting application read keys. */
 export type ExtendedIconName = IconName | (string & {});
-
-/**
- * A complete icon registry: every semantic name mapped to a React node.
- *
- * `upload` is the one name a complete registry may still omit. Requiring it
- * would break registries written before it existed, so it becomes required in
- * the next scheduled minor (`spec:AST-032` FR6). An omitted `upload` resolves
- * the default artwork, so resolved registry snapshots are always complete.
- */
+/** Actual node read contract. Source IR is never disguised as ReactNode. */
 export type IconRegistry = Record<Exclude<IconName, 'upload'>, ReactNode> &
   Partial<Record<'upload', ReactNode>>;
-
 export type IconRegistrySource = DefinedTheme | string | null | undefined;
+let globalRegistry: Record<string, IconEntry> = {};
 
-// =============================================================================
-// Global Registry
-// =============================================================================
-
-let globalRegistry: Record<string, ReactNode> = {};
-
-/**
- * A key is namespaced when it carries a `<namespace>:` prefix — the runtime
- * form of {@link NamespacedIconName}, which is how the typed
- * {@link getIconRegistry} snapshot tells a built-in name from a component- or
- * library-owned one.
- */
-function isNamespacedKey(name: string): boolean {
-  return name.includes(':');
+function getTheme(source: IconRegistrySource): DefinedTheme | null | undefined {
+  return typeof source === 'string' ? getRegisteredTheme(source) : source;
 }
-
-function getThemeIconOverrides(
-  source: IconRegistrySource,
-): Partial<Record<IconName | NamespacedIconName, ReactNode>> | null {
-  if (source == null) {
-    return null;
-  }
-
-  if (typeof source === 'string') {
-    return getRegisteredTheme(source)?.icons ?? null;
-  }
-
-  return source.icons ?? null;
+/** @internal Own descriptors leave policy and capability metadata untouched on fixed reads. */
+// eslint-disable-next-line @typescript-eslint/promise-function-async -- Opaque registry data is read synchronously and never awaited or wrapped.
+function getThemeEntries(source: IconRegistrySource): unknown {
+  const theme = getTheme(source);
+  return (
+    getOwnIconData(theme, '__iconSources') ?? getOwnIconData(theme, 'icons')
+  );
 }
-
-/**
- * Register icons at the module level. Works in both server and client
- * environments. Call once at app initialization (e.g. root layout).
- *
- * Icons registered here are available to all components — including
- * server-rendered ones that can't access React Context.
- *
- * @example
- * ```
- * import { registerIcons } from '@astryxdesign/core';
- * import { brandIcons } from './brand-icons';
- * registerIcons(brandIcons);
- * ```
- *
- * Libraries may also register their own extension keys (any string), so a
- * theme can override them the same way it overrides built-in icons. A library
- * that ships its own icons registers them by key, then resolves with
- * `getIcon('richtext:bold')`.
- * @example
- * ```
- * registerIcons({ 'richtext:bold': <MyBoldIcon /> });
- * ```
- */
+/** Global registration retains its one-argument ReactNode artwork contract. */
 export function registerIcons(
   icons: Partial<Record<ExtendedIconName, ReactNode>>,
 ): void {
+  const prepared = prepareIconEntries(icons);
   warnOnce(
     'icon-registry:global-register-icons',
     'Icon',
     '`registerIcons()` applies icon overrides globally. Prefer `defineTheme({ icons })` for theme-scoped icon overrides.',
   );
-  globalRegistry = {...globalRegistry, ...icons};
+  globalRegistry = {...globalRegistry, ...prepared.entries};
 }
-
+/** @internal Resolve only the selected source, validating foreign data before use. */
+export function getIconSourceEntry(
+  name: ExtendedIconName,
+  source?: IconRegistrySource,
+): {
+  entry?: IconEntry;
+  provenance: 'theme' | 'global' | 'default' | 'missing';
+  diagnostics: IconDiagnostic[];
+} {
+  const diagnostics: IconDiagnostic[] = [];
+  const invalid = () => {
+    diagnostics.push({
+      code: 'malformed-entry',
+      // eslint-disable-next-line @astryx/no-hardcoded-i18n-string -- Private developer diagnostic, never rendered UI.
+      message: 'Malformed runtime icon artwork was ignored.',
+    });
+  };
+  const sources: {
+    entry: unknown;
+    provenance: 'theme' | 'global' | 'default';
+  }[] = [];
+  try {
+    const themeEntry = getOwnIconData(getThemeEntries(source), name);
+    if (themeEntry != null) {
+      sources.push({entry: themeEntry, provenance: 'theme'});
+    }
+  } catch {
+    invalid();
+  }
+  sources.push(
+    {entry: globalRegistry[name], provenance: 'global'},
+    {entry: defaultIcons[name as IconName], provenance: 'default'},
+  );
+  for (const candidate of sources) {
+    if (candidate.entry == null) {
+      continue;
+    }
+    try {
+      return {
+        entry: normalizeIconEntry(candidate.entry),
+        provenance: candidate.provenance,
+        diagnostics,
+      };
+    } catch {
+      invalid();
+    }
+  }
+  return {provenance: 'missing', diagnostics};
+}
+const needsResolution = Symbol(
+  'Icon source requires adaptive or malformed-data resolution',
+);
 /**
- * Get a snapshot of the full icon registry, with registered icons overriding
- * built-in defaults.
- *
- * Works in both server and client environments. Useful for tooling that needs
- * to derive valid semantic icon-name options from the same registry Icon
- * resolves against.
+ * Fixed reads skip all policy/contract inspection. Valid immutable React nodes
+ * and primitives take only source selection and own-field reads.
  */
+function getFixedRead(
+  name: ExtendedIconName,
+  source?: IconRegistrySource,
+): ReactNode | typeof needsResolution {
+  let entry: unknown;
+  try {
+    entry =
+      getOwnIconData(getThemeEntries(source), name) ??
+      globalRegistry[name] ??
+      defaultIcons[name as IconName];
+    if (
+      entry === undefined ||
+      entry === null ||
+      typeof entry === 'string' ||
+      typeof entry === 'number' ||
+      typeof entry === 'boolean' ||
+      typeof entry === 'bigint'
+    ) {
+      return entry as ReactNode;
+    }
+    const tag = getOwnIconData(entry, '$$typeof');
+    if (
+      tag === Symbol.for('react.transitional.element') ||
+      tag === Symbol.for('react.element') ||
+      tag === Symbol.for('react.portal')
+    ) {
+      return entry as ReactNode;
+    }
+    // Opaque fixed containers are validated without inspecting theme policy.
+    if (Array.isArray(entry)) {
+      return normalizeIconEntry(entry) as ReactNode;
+    }
+  } catch {
+    return needsResolution;
+  }
+  return needsResolution;
+}
+/** Snapshot of built-in names only, with actual selected ReactNode values. */
 export function getIconRegistry(
   source?: IconRegistrySource,
 ): Readonly<Record<IconName, ReactNode>> {
   const registry: Record<string, ReactNode> = {};
-
-  // Only surface built-in IconName keys here — namespaced keys, whether
-  // contributed by a library or shipped as a component's own default, are
-  // resolved via getIcon/getExtendedIcon and intentionally kept out of the
-  // typed IconRegistry snapshot.
   for (const name of Object.keys(defaultIcons) as IconName[]) {
-    if (isNamespacedKey(name)) {
-      continue;
+    if (!name.includes(':')) {
+      registry[name] = getIcon(name, source);
     }
-    registry[name] = globalRegistry[name] ?? defaultIcons[name];
   }
-
-  const themeIcons = getThemeIconOverrides(source);
-  if (themeIcons != null) {
-    for (const name of Object.keys(themeIcons) as IconName[]) {
-      if (isNamespacedKey(name)) {
-        continue;
+  // Preserve released snapshots' non-namespaced theme extension keys.
+  try {
+    const entries = getThemeEntries(source);
+    if (entries && typeof entries === 'object') {
+      for (const key of Reflect.ownKeys(entries)) {
+        if (typeof key === 'string' && !key.includes(':')) {
+          registry[key] = getIcon(key, source);
+        }
       }
-      registry[name] = themeIcons[name] ?? registry[name];
     }
+  } catch {
+    // A malformed theme source cannot poison defaults/global artwork.
   }
-
   return registry as Record<IconName, ReactNode>;
 }
-
-/**
- * Get an icon by name from the global registry, falling back to defaults.
- *
- * Works in both server and client environments.
- * Falls back to built-in default icons when no override is registered.
- *
- * Accepts extension keys (any string) in addition to the built-in
- * {@link IconName}s — useful for library-contributed icons. For a
- * caller-supplied fallback when a key isn't registered, use
- * {@link getExtendedIcon}.
- */
+/** Read one icon; no additional request or capability parameters. */
 export function getIcon(
   name: ExtendedIconName,
   source?: IconRegistrySource,
 ): ReactNode {
-  const themeIcons = getThemeIconOverrides(source);
-  return (
-    themeIcons?.[name as IconName] ??
-    globalRegistry[name] ??
-    defaultIcons[name as IconName]
-  );
+  const fixed = getFixedRead(name, source);
+  return fixed === needsResolution
+    ? resolveIconWithContext(name, {}, source).node
+    : fixed;
 }
-
-/**
- * Resolve an extension icon by an arbitrary string key, falling back to a
- * caller-supplied default when nothing is registered.
- *
- * This is the seam libraries use to make their own icons themeable: ship the
- * inline SVG as `fallback`, resolve through this function, and a theme can
- * override the key via {@link registerIcons} without the library having to
- * widen the core {@link IconName} union.
- *
- * The `fallback` is the library default, overridable by a theme registering the
- * same key (for example `'richtext:bold'`).
- * @example
- * ```
- * getExtendedIcon('richtext:bold', <BoldGlyph />)
- * ```
- */
+/** Library-owned extension fallback retains the released fallback/source ordering. */
 export function getExtendedIcon(
   name: ExtendedIconName,
   fallback?: ReactNode,
   source?: IconRegistrySource,
 ): ReactNode {
-  const themeIcons = getThemeIconOverrides(source);
-  return (
-    themeIcons?.[name as IconName] ??
-    globalRegistry[name] ??
-    defaultIcons[name as IconName] ??
-    fallback
-  );
+  return getIcon(name, source) ?? fallback;
 }
-
-/**
- * Reset the global registry. For testing only.
- * @internal
- */
+/** @internal Testing-only reset clears artwork overrides, never contract snapshots. */
 export function resetIcons(): void {
   globalRegistry = {};
 }

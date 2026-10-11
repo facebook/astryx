@@ -1,5 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/**
+ * @file Icon consumer documentation
+ * @input Semantic/direct artwork, independent requests and active theme defaults
+ * @output Public props, sizing and accessible-name guidance
+ * @position Builder-facing Icon reference; no component participation policy
+ */
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
 const anatomy = [
   {
@@ -48,10 +55,22 @@ export const docs = {
     },
     {
       name: 'size',
-      type: "'xsm' | 'sm' | 'md' | 'lg'",
+      type: 'IconSize',
       description:
-        'Icon size. An explicit value wins. When omitted, Icon uses the nearest default supplied by an owning Astryx component for its icon slot, then falls back to md when no contextual default exists.',
+        'Built-in xsm/sm/md/lg or an admitted application icon-size name. An explicit value wins; otherwise the nearest owning-component default wins, then md. Explicit and standalone icons use active theme dimension overrides. Implicit built-in sizes inside existing components keep their released rem scaling; omitted overrides and built-in null clears keep that scaling too.',
       default: "Contextual; otherwise 'md'",
+    },
+    {
+      name: 'appearance',
+      type: 'IconAppearance',
+      description:
+        'An admitted supplied-artwork appearance. Explicit intent wins over the theme default or per-size choice. Unsupported branches fall back to supplied artwork; ordinary direct SVG components do not receive this prop.',
+    },
+    {
+      name: 'weight',
+      type: 'IconWeight',
+      description:
+        'An admitted exact or numeric-range artwork weight. Explicit intent wins over the theme default or per-size choice. Fractional numeric values are preserved for supplied range renderers; ordinary direct SVG components do not receive this prop.',
     },
     {
       name: 'label',
@@ -153,10 +172,22 @@ export const docsZh = {
     },
     {
       name: 'size',
-      type: "'xsm' | 'sm' | 'md' | 'lg'",
+      type: 'IconSize',
       description:
-        '图标尺寸。显式值优先。省略时，Icon 使用最近的 Astryx 所属组件为其图标槽提供的默认尺寸；如果没有上下文默认值，则回退为 md。',
+        '内置 xsm/sm/md/lg 或应用声明的图标尺寸名称。显式值优先，其次为所属组件的默认值，最后为 md。显式尺寸和独立图标使用当前主题的尺寸覆盖；现有组件隐式提供的内置尺寸保留原有 rem 缩放。省略覆盖或将内置尺寸覆盖设为 null 时也保留原有缩放。',
       default: "上下文默认值；否则为 'md'",
+    },
+    {
+      name: 'appearance',
+      type: 'IconAppearance',
+      description:
+        '已声明的图标外观。显式请求优先于主题默认值或按尺寸设置的值；没有对应分支时使用提供的回退图形。普通直接 SVG 组件不会收到此属性。',
+    },
+    {
+      name: 'weight',
+      type: 'IconWeight',
+      description:
+        '已声明的精确字重或数值范围字重。显式请求优先于主题默认值或按尺寸设置的值；提供的范围渲染组件收到原始小数值。普通直接 SVG 组件不会收到此属性。',
     },
     {
       name: 'label',
@@ -296,7 +327,11 @@ export const docsDense = {
   propDescriptions: {
     icon: 'Semantic icon name or SVG component. Valid names: close, chevronDown, chevronLeft, chevronRight, chevronsLeft, chevronsRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, upload, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone. For others, pass an SVG component.',
     color: 'Color variant mapped to Astryx icon color tokens.',
-    size: "explicit Icon size; otherwise nearest owning-component default, then 'md' when no contextual default exists",
+    size: "admitted icon size; explicit/standalone theme overrides apply; implicit existing-component built-ins and omitted/null overrides retain rem scaling; default context, then 'md'",
+    appearance:
+      'Admitted supplied-artwork appearance; explicit beats theme default/bySize; not forwarded to ordinary direct SVGs.',
+    weight:
+      'Admitted exact/range artwork weight; explicit beats theme default/bySize; fractional range values preserved; not forwarded to ordinary direct SVGs.',
     label:
       'Accessible name for a meaningful, standalone icon. Sets role="img" + aria-label and drops the default aria-hidden. Omit (default) for decorative icons (stays aria-hidden). Empty string = decorative. The accessible-name/alt-text prop for icons.',
     xstyle:

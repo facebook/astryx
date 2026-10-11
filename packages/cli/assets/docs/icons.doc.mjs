@@ -1,7 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Icons reference doc: semantic icon names available in Astryx
+ * @file Icons consumer reference
+ * @input Semantic names, supplied artwork and local capability contracts
+ * @output Theme-scoped fixed/adaptive icon authoring guidance
+ * @position Builder-facing icons reference; no role or component enrollment API
  */
 
 /** @type {import('@astryxdesign/cli/authoring').ReferenceDoc} */
@@ -15,11 +18,11 @@ export const docs = {
   sections: [
     {
       title: 'Available Names',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
-          text: 'Components that accept an icon prop use IconType: either a semantic name string or a direct SVG component. The semantic names below are resolved through the global icon registry.',
+          text: 'Components that accept an icon prop use IconType: either a semantic name string or a direct SVG component. Semantic names use the active theme artwork, then the registered defaults.',
         },
         {
           type: 'table',
@@ -60,7 +63,7 @@ export const docs = {
     },
     {
       title: 'Custom Icons',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -80,7 +83,7 @@ import { HeartIcon } from 'lucide-react';
     },
     {
       title: 'Theme Overrides',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -105,7 +108,7 @@ export const brandTheme = defineTheme({
     },
     {
       title: 'Component and Library Icons',
-  category: 'foundations',
+      category: 'foundations',
       content: [
         {
           type: 'prose',
@@ -130,6 +133,50 @@ export const brandTheme = defineTheme({
         {
           type: 'prose',
           text: 'Outside core, pass a fallback to `getExtendedIcon(key, fallback)` so the glyph renders with no theme.',
+        },
+      ],
+    },
+    {
+      title: 'Adaptive Artwork and Dimensions',
+      category: 'foundations',
+      content: [
+        {
+          type: 'prose',
+          text: 'Declare supplied sizes, appearances, and exact or numeric-range weights with `defineIconCapabilities`. Bind a default-first tree with `defineAdaptiveIcon`; sparse branches use the nearest supplied default, never invented artwork. `iconCapabilities` adds theme dimensions and atomic `presentation.default`/`presentation.bySize`; explicit Icon requests win. For production theme builds, import the registry itself from a separate module, not only its SVG components. Compile that module alongside your package and use the existing `--icons-specifier` option when its compiled path differs. The JavaScript and types preserve these values, not the stylesheet.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'icons.tsx — importable bound registry',
+          code: `import {defineIconCapabilities, defineAdaptiveIcon} from '@astryxdesign/core/Icon';
+import {SearchOutline, SearchFilled} from './artwork';
+
+export const capabilities = defineIconCapabilities({appearances: ['outline', 'filled']});
+export const icons = {search: defineAdaptiveIcon(capabilities, {
+  default: <SearchOutline />,
+  byAppearance: {filled: <SearchFilled />},
+})};`,
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'brandTheme.ts — import the registry and contract',
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
+import {icons, capabilities} from './icons';
+
+export const brandTheme = defineTheme({
+  name: 'brand',
+  icons,
+  iconCapabilities: {
+    contract: capabilities,
+    sizeOverrides: {md: '24px'},
+    presentation: {default: {appearance: 'outline'}, bySize: {sm: {appearance: 'filled'}}},
+  },
+});`,
+        },
+        {
+          type: 'prose',
+          text: 'Explicit sizes and standalone md use active theme dimension overrides. Implicit built-in sizes in existing components keep their released rem box; omitted overrides and built-in null clears retain rem scaling. Custom icon-size names have canonical contract dimensions and do not extend control size props. Application type augmentation does not install runtime capabilities. `getIcon`, `getExtendedIcon`, and `useIcon` still return React nodes without extra request arguments; ordinary direct SVGs do not receive appearance or weight.',
         },
       ],
     },

@@ -4,8 +4,8 @@
 
 /**
  * @file IconDefaultSizeContext.ts
- * @input Uses layer-scoped React context and an optional Icon size prop
- * @output Supplies a component-owned default size to descendant Icon instances
+ * @input Explicit Icon size or a component-owned legacy sizing context
+ * @output Distinct explicit/context intent plus the released size fallback
  * @position Internal Icon sizing context; consumed by Icon and icon-slot owners
  */
 
@@ -18,7 +18,11 @@ IconDefaultSizeContext.displayName = 'IconDefaultSizeContext';
 
 export const IconDefaultSizeProvider = IconDefaultSizeContext.Provider;
 
+export function useIconContextSize(): IconSize | null {
+  return use(IconDefaultSizeContext);
+}
+
 export function useIconSize(size: IconSize | undefined): IconSize {
-  const contextualSize = use(IconDefaultSizeContext);
+  const contextualSize = useIconContextSize();
   return size ?? contextualSize ?? 'md';
 }

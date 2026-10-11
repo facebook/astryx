@@ -1,13 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * Astryx Theme System
  *
  * Exports:
  * - Theme: Provider component that applies theme
- * - defineTheme: Create themes with token + component overrides
+ * - defineTheme: Normalize token/component values and local Icon source/presentation contracts
  * - Token exports for direct use in StyleX
  *
  * Themes are in separate packages:
@@ -40,6 +38,7 @@ export type {
   DefineThemeInput,
   DefinedTheme,
   ResolvedDefinedTheme,
+  ThemeIconOverrides,
   CoreTokenName,
   TokenName,
   TokenValue,

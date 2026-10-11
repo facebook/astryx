@@ -3,8 +3,9 @@
 /**
  * @file theme build API — compile standalone themes or one selected family.
  * @input JS/TS theme modules, build/check options, and the installed Core.
- * @output Generated artifacts preserving imported and inherited icon registries.
- * @position CLI theme compiler; standalone icon provenance is icon-imports.mjs.
+ * @output Generated artifacts preserving imported icons, library contract references,
+ *   and source-owned adaptive data.
+ * @position CLI theme compiler; Icon provenance and lossless guards are private helpers.
  *
  * `themeBuild` and `themeBuildFamily` share the same loader, compiler,
  * serializers, check, and writer. They read defineTheme() sources and, via
@@ -82,6 +83,17 @@ import {
 import {interceptCore} from './core-interception.mjs';
 import {generateFamilyCSS, resolveThemeFamily} from './family.mjs';
 import {resolveIconImports} from './icon-imports.mjs';
+import {
+  lowerBuiltIconContracts,
+  lowerBuiltIconSources,
+} from './icon-emission.mjs';
+import {
+  assertIconCapability,
+  assertRetainedIconInput,
+  assertSupportedIconFields,
+  hasIconCapabilityIntent,
+  supportsIconCapabilities,
+} from './icon-serialization.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -120,6 +132,8 @@ import {resolveIconImports} from './icon-imports.mjs';
  * namespace wearing its name.
  */
 /** @type {any} */ let _coreRootModule = null;
+/** The selected Core's public Icon constructors, not private resolver helpers. */
+/** @type {any} */ let _coreIconModule = null;
 /** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
@@ -129,6 +143,11 @@ try {
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
   _generateAdaptationCSS = coreTheme.generateAdaptationCSS;
   _dataTokenDefaults = coreTheme.dataTokenDefaults;
+  try {
+    _coreIconModule = await import('@astryxdesign/core/Icon');
+  } catch {
+    // Older Core without a usable Icon subpath still supports baseline themes.
+  }
   try {
     _coreRootModule = await import('@astryxdesign/core');
   } catch {
@@ -150,6 +169,7 @@ try {
  * @typedef {{
  *   themeModule: any,
  *   rootModule: any,
+ *   iconModule: any,
  *   importError: any,
  *   defineTheme: any,
  *   generateThemeRulesSplit: any,
@@ -167,6 +187,7 @@ try {
 const _cliCore = {
   themeModule: _coreThemeModule,
   rootModule: _coreRootModule,
+  iconModule: _coreIconModule,
   importError: _coreImportError,
   defineTheme: _defineTheme,
   generateThemeRulesSplit: _generateThemeRulesSplit,
@@ -182,6 +203,7 @@ const _cliCore = {
 function setCore(core) {
   _coreThemeModule = core.themeModule;
   _coreRootModule = core.rootModule;
+  _coreIconModule = core.iconModule;
   _coreImportError = core.importError;
   _defineTheme = core.defineTheme;
   _generateThemeRulesSplit = core.generateThemeRulesSplit;
@@ -286,9 +308,19 @@ async function loadProjectCore(cwd) {
       // As with the CLI's own import, the theme namespace stands in for it.
     }
   }
+  let iconModule = null;
+  const iconFile = importTarget(dir, './Icon');
+  if (iconFile) {
+    try {
+      iconModule = await import(pathToFileURL(iconFile).href);
+    } catch {
+      // Missing bound-source support rejects only capability-bearing themes.
+    }
+  }
   return {
     themeModule,
     rootModule,
+    iconModule,
     importError: null,
     defineTheme: themeModule.defineTheme,
     generateThemeRulesSplit: themeModule.generateThemeRulesSplit,
@@ -1438,7 +1470,7 @@ function parseRegistryModule(/** @type {string} */ source, /** @type {string} */
 // prettier-ignore
 function moduleDependencies(/** @type {string} */ source, /** @type {string} */ filePath) {
   const ast = parseRegistryModule(source, filePath);
-  /** @type {Array<{specifier: string, commonJs: boolean, imports: string[]}>} */ const found = [];
+  /** @type {Array<{specifier: string, commonJs: boolean, legacyCommonJs?: boolean, imports: string[]}>} */ const found = [];
   /** @param {any} node */ const literal = node => typeof node?.value === 'string' ? node.value : node?.type === 'TemplateLiteral' && node.expressions.length === 0 ? node.quasis[0]?.value?.cooked : null;
   /** @param {any} node */ const visit = node => {
     if (!node || typeof node !== 'object') return;
@@ -1488,7 +1520,7 @@ function hasNamedExport(/** @type {string} */ file, /** @type {string} */ name, 
 }
 // prettier-ignore
 async function validateRegistryGraphs(/** @type {Array<{specifier: string, exportName: string}>} */ registries, /** @type {string} */ aggregatePath) {
-  /** @type {Array<{specifier: string, parent: string, commonJs: boolean, imports: string[], root?: {exportName: string}}>} */ const pending = registries.map(root => ({specifier: root.specifier, parent: aggregatePath, commonJs: false, imports: [root.exportName], root}));
+  /** @type {Array<{specifier: string, parent: string, commonJs: boolean, legacyCommonJs?: boolean, imports: string[], root?: {exportName: string}}>} */ const pending = registries.map(root => ({specifier: root.specifier, parent: aggregatePath, commonJs: false, imports: [root.exportName], root}));
   /** @type {Array<{file: string, exportName: string}>} */ const runtimeChecks = []; const seen = new Set();
   while (pending.length > 0) {
     const current = pending.pop(); if (!current) break; const {specifier, parent, commonJs, imports, root} = current;
@@ -1567,7 +1599,7 @@ function isSyncLoaderLimitation(error) {
  *
  * @param {string} filePath
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
- * @returns {Promise<{theme: any, exportName: string, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
+ * @returns {Promise<{theme: any, exportName: string, degraded: {topLevelAwait: boolean, commonJs: boolean, legacyCommonJs?: boolean}}>}
  */
 // prettier-ignore
 async function importThemeModule(filePath, interception, /** @type {any} */ loader = undefined) {
@@ -1582,14 +1614,15 @@ async function importThemeModule(filePath, interception, /** @type {any} */ load
 
   /** @type {any} */
   let mod;
-  const degraded = {topLevelAwait: false, commonJs: false};
+  const degraded = {topLevelAwait: false, commonJs: false, legacyCommonJs: false};
   if (interception) {
     // The CommonJS patch covers `.cjs` package source, which jiti always
     // loads natively; the sync path covers everything else inside packages.
-    // A frozen require(esm) namespace cannot be patched, so retain that gap and
-    // let the selected lineage decide whether it matters.
+    // Scoped readonly native capture is independent of the legacy mutable
+    // export ABI; preserve that ABI's adaptation diagnostics in its own lane.
     const commonJsPatch = interception.patchCommonJs(filePath);
     degraded.commonJs = !commonJsPatch.covered;
+    degraded.legacyCommonJs = !(commonJsPatch.legacyCovered ?? commonJsPatch.covered);
     try {
       try {
         mod = jiti(filePath);
@@ -1617,12 +1650,14 @@ async function importThemeModule(filePath, interception, /** @type {any} */ load
     mod = await jiti.import(filePath, {default: true});
   }
 
+  // Prefer the concrete default export over jiti's interop proxy. Descriptor
+  // checks and captured lineage must see the real theme, not a forwarding shell.
+  if (mod && typeof mod === 'object' && isThemeObject(mod.default)) {
+    return {theme: mod.default, exportName: 'default', degraded};
+  }
   if (isThemeObject(mod)) return {theme: mod, exportName: 'default', degraded};
 
   if (mod && typeof mod === 'object') {
-    if (isThemeObject(mod.default)) {
-      return {theme: mod.default, exportName: 'default', degraded};
-    }
     for (const [exportName, value] of Object.entries(mod)) {
       if (isThemeObject(value)) return {theme: value, exportName, degraded};
     }
@@ -1658,7 +1693,7 @@ function isThemeObject(value) {
  *
  * @param {string} filePath
  * @param {import('./core-interception.mjs').CoreInterception} [interception]
- * @returns {Promise<{theme: any, exportName?: string, degraded: {topLevelAwait: boolean, commonJs: boolean}}>}
+ * @returns {Promise<{theme: any, exportName?: string, degraded: {topLevelAwait: boolean, commonJs: boolean, legacyCommonJs?: boolean}}>}
  */
 // prettier-ignore
 async function extractThemeDefinition(filePath, interception, /** @type {any} */ loader = undefined) {
@@ -1703,7 +1738,9 @@ export async function validateThemePrivateInputs(
     );
   }
 
-  const interception = interceptCore(_coreThemeModule, _coreRootModule);
+  const interception = interceptCore(_coreThemeModule, _coreRootModule, {
+    captureReadonly: supportsIconCapabilities(_coreIconModule),
+  });
   let theme;
   try {
     theme = (await extractThemeDefinition(filePath, interception)).theme;
@@ -1800,6 +1837,130 @@ function extractRegistryInfo(filePath, field) {
 }
 
 /**
+ * Normalize only the Icon projection through Core's public defineTheme. CSS
+ * inputs, legacy private-input checks and existing build receipts stay unchanged.
+ * @param {any} theme @param {any[]} [inputs] @param {any} [ownInput] @returns {any}
+ */
+function normalizeBuiltIconData(theme, inputs = [], ownInput) {
+  assertSupportedIconFields(theme, inputs);
+  if (!supportsIconCapabilities(_coreIconModule)) return theme;
+  assertRetainedIconInput(theme, inputs, _coreIconModule);
+  const rawIntent = inputs.some(hasIconCapabilityIntent);
+  const policyIntent = inputs.some(
+    input => input?.iconCapabilities !== undefined,
+  );
+  const ownContract = ownInput?.iconCapabilities?.contract !== undefined;
+  const ownAdaptive = hasIconCapabilityIntent({icons: ownInput?.icons});
+  if (
+    (rawIntent && !hasIconCapabilityIntent(theme)) ||
+    (policyIntent && theme.iconCapabilities === undefined) ||
+    (ownContract && theme.iconCapabilities?.contract === undefined) ||
+    (ownAdaptive && theme.__iconSources === undefined)
+  )
+    throw new AstryxError(
+      'Installed Core erased captured Icon capability or source intent. Upgrade Core before building this theme.',
+      undefined,
+      ERROR_CODES.ERR_CORE_INCOMPATIBLE,
+    );
+  if (!hasIconCapabilityIntent(theme)) return theme;
+  try {
+    const normalized = _defineTheme({
+      name: theme.name,
+      extends: theme,
+      icons: theme.__iconSources ?? theme.icons,
+      iconCapabilities: theme.iconCapabilities,
+    });
+    assertSupportedIconFields(normalized);
+    assertRetainedIconInput(normalized, inputs, _coreIconModule);
+    const contracts = normalized.__iconContracts ?? [];
+    const expected = new Set();
+    for (const input of [theme, ...inputs]) {
+      for (const contract of input?.__iconContracts ?? [])
+        expected.add(contract);
+      if (input?.iconCapabilities?.contract !== undefined)
+        expected.add(input.iconCapabilities.contract);
+      for (const entry of Object.values(
+        input?.__iconSources ?? input?.icons ?? {},
+      )) {
+        if (
+          entry &&
+          typeof entry === 'object' &&
+          Object.hasOwn(entry, 'capabilities') &&
+          Object.hasOwn(entry, 'tree')
+        )
+          expected.add(entry.capabilities);
+      }
+    }
+    const adaptiveIntent = hasIconCapabilityIntent({
+      icons: theme.__iconSources ?? theme.icons,
+    });
+    if (
+      (adaptiveIntent && normalized.__iconSources === undefined) ||
+      (theme.__iconContracts !== undefined &&
+        normalized.__iconContracts === undefined) ||
+      (theme.iconCapabilities !== undefined &&
+        normalized.iconCapabilities === undefined) ||
+      (theme.iconCapabilities?.contract !== undefined &&
+        normalized.iconCapabilities?.contract === undefined) ||
+      [...expected].some(
+        contract =>
+          !contracts.includes(_coreIconModule.defineIconCapabilities(contract)),
+      )
+    )
+      throw new AstryxError(
+        'The installed Core cannot retain complete bound Icon source, policy and contributor metadata. Upgrade @astryxdesign/core before building this theme.',
+        undefined,
+        ERROR_CODES.ERR_CORE_INCOMPATIBLE,
+      );
+    const result = {...theme};
+    for (const field of [
+      'icons',
+      'iconCapabilities',
+      '__iconSources',
+      '__iconContracts',
+    ]) {
+      if (field === 'icons' && normalized.__iconSources === undefined) continue;
+      if (normalized[field] === undefined) delete result[field];
+      else result[field] = normalized[field];
+    }
+    assertSupportedIconFields(result);
+    return result;
+  } catch (error) {
+    if (error instanceof AstryxError) throw error;
+    throw new AstryxError(
+      error instanceof Error ? error.message : 'Icon normalization failed.',
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
+    );
+  }
+}
+
+/** Preserve the direct registry override and imports proven to share its file.
+ * @param {{importPath: string, localName: string}} item @param {any} info
+ * @param {string | undefined} override @returns {string}
+ */
+function effectiveIconSpecifier(item, info, override) {
+  if (override === undefined) return item.importPath;
+  if (
+    item.importPath === info?.iconsSpecifierImportPath &&
+    item.localName === info?.iconsSpecifierLocalName
+  )
+    return override;
+  if (info?.sourceFile && info.iconsSpecifierImportPath) {
+    try {
+      if (
+        resolveThemeModule(item.importPath, info.sourceFile) ===
+        resolveThemeModule(info.iconsSpecifierImportPath, info.sourceFile)
+      )
+        return override;
+    } catch {
+      // Physical identity must be proven, never inferred from similar spelling.
+    }
+  }
+  return item.importPath;
+}
+
+/**
  * Generate a minimal JS module for a built theme.
  * Includes the theme name, marker, and re-exports the icon registry.
  * All styling is in the CSS file.
@@ -1823,7 +1984,7 @@ function extractRegistryInfo(filePath, field) {
  * @param {any} themeDef
  * @param {import('./icon-imports.mjs').IconImports | null} iconInfo
  * @param {string} [iconsSpecifier] - Overrides the selected registry specifier.
- * @param {{themeBinding?: string, iconsExpression?: string, indicatorsExpression?: string, artifactBaseName?: string, exportIcons?: boolean}} [moduleOptions]
+ * @param {{themeBinding?: string, iconsExpression?: string, indicatorsExpression?: string, artifactBaseName?: string, exportIcons?: boolean, reservedNames?: string[], quoteImports?: boolean}} [moduleOptions]
  * @returns {string}
  */
 function generateBuiltModule(
@@ -1838,17 +1999,17 @@ function generateBuiltModule(
   const exportIcons = moduleOptions.exportIcons ?? true;
   // Keep ordinary direct named imports byte-compatible, while encoding paths
   // with quotes/escapes and retaining default, namespace, and aliased bindings.
-  const iconImport = (iconInfo?.imports ?? [])
-    .map(({importPath, importedName, localName}) => {
-      const overridden =
-        iconsSpecifier !== undefined &&
-        importPath === iconInfo?.iconsSpecifierImportPath &&
-        localName === iconInfo?.iconsSpecifierLocalName;
-      const specifier = overridden
-        ? JSON.stringify(iconsSpecifier)
-        : /['\\\r\n]/u.test(importPath)
-          ? JSON.stringify(importPath)
-          : `'${importPath}'`;
+  const sourceImports = iconInfo?.imports ?? [];
+  const iconImport = sourceImports
+    .map(item => {
+      const {importPath, importedName, localName} = item;
+      const source = effectiveIconSpecifier(item, iconInfo, iconsSpecifier);
+      const specifier =
+        source !== importPath || moduleOptions.quoteImports
+          ? JSON.stringify(source)
+          : /['\\\r\n]/u.test(importPath)
+            ? JSON.stringify(importPath)
+            : `'${importPath}'`;
       const imported = /^[$\p{ID_Start}][$\u200c\u200d\p{ID_Continue}]*$/u.test(
         importedName,
       )
@@ -1864,16 +2025,50 @@ function generateBuiltModule(
     })
     .join('');
   const iconDeclaration =
-    iconInfo && iconInfo.expression !== iconInfo.exportName
+    iconInfo?.exportName && iconInfo.expression !== iconInfo.exportName
       ? `const ${iconInfo.exportName} = ${iconInfo.expression};\n`
       : '';
-  const iconsExpression = moduleOptions.iconsExpression ?? iconInfo?.exportName;
+  const importedIconsExpression =
+    moduleOptions.iconsExpression ?? iconInfo?.exportName;
+  const usedIconBindings = new Set([
+    themeBinding,
+    ...(moduleOptions.reservedNames ?? []),
+    ...(iconInfo?.imports ?? []).map(item => item.localName),
+    ...(iconInfo ? [iconInfo.exportName] : []),
+  ]);
+  const loweredContracts = lowerBuiltIconContracts(
+    themeDef,
+    themeBinding,
+    usedIconBindings,
+    importedIconsExpression,
+    iconInfo?.policyContractExpression,
+    (iconInfo?.contractReferences ?? []).map(value => ({
+      contract: _coreIconModule.defineIconCapabilities(value.contract),
+      expression: value.expression,
+    })),
+  );
+  const loweredIcons =
+    themeDef.__iconSources !== undefined && importedIconsExpression
+      ? lowerBuiltIconSources(
+          themeDef,
+          importedIconsExpression,
+          themeBinding,
+          usedIconBindings,
+          loweredContracts.expression,
+        )
+      : null;
+  const iconsExpression = loweredIcons?.icons ?? importedIconsExpression;
   const iconsField = iconsExpression ? `  icons: ${iconsExpression},` : '';
+  const sourcesField = loweredIcons
+    ? `\n  __iconSources: ${loweredIcons.sources},`
+    : '';
   const indicatorsField = moduleOptions.indicatorsExpression
     ? `\n  indicators: ${moduleOptions.indicatorsExpression},`
     : '';
   const iconReExport =
-    iconInfo && exportIcons ? `\nexport { ${iconInfo.exportName} };\n` : '';
+    iconInfo?.exportName && exportIcons
+      ? `\nexport { ${loweredIcons ? `${loweredIcons.icons} as ${iconInfo.exportName}` : iconInfo.exportName} };\n`
+      : '';
 
   // Resolve token values — tuples become light-dark() strings
   /** @type {Record<string, unknown>} */
@@ -1930,9 +2125,10 @@ function generateBuiltModule(
     serializeField('__onDark', themeDef.__onDark) +
     serializeField('__onLight', themeDef.__onLight) +
     serializeField('__adaptations', themeDef.__adaptations) +
+    loweredContracts.fields +
     serializeField('__axes', themeDef.__axes ?? {}, true);
 
-  return `${iconImport}${iconDeclaration}/**
+  return `${iconImport}${loweredContracts.imports}${loweredIcons?.imports ?? ''}${iconDeclaration}${loweredContracts.declarations}${loweredIcons?.declarations ?? ''}/**
  * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
  * Import the CSS file alongside this module:
  *
@@ -1943,7 +2139,7 @@ export const ${themeBinding} = {
   name: '${themeDef.name}',
   __built: true,
   tokens: ${tokensStr},
-${inheritableFields}${iconsField}${indicatorsField}
+${inheritableFields}${iconsField}${sourcesField}${indicatorsField}
 };
 ${iconReExport}`;
 }
@@ -1965,7 +2161,7 @@ function generateBuiltTypes(
   const themeBinding =
     typeOptions.themeBinding ?? `${toIdentifier(themeDef.name)}Theme`;
   const iconType =
-    iconInfo && (typeOptions.includeIconExport ?? true)
+    iconInfo?.exportName && (typeOptions.includeIconExport ?? true)
       ? `import type { IconRegistry } from '@astryxdesign/core/Icon';
 export declare const ${iconInfo.exportName}: IconRegistry;
 `
@@ -2324,6 +2520,122 @@ function validateHeadingTypeAugmentationSupport(themeDef) {
 }
 
 /**
+ * A directly exported object literal is raw evidence even when an unrelated
+ * frozen CommonJS namespace caused a coverage gap. Escaped/mutated bindings,
+ * calls, spreads and opaque exports cannot prove their own authored contents.
+ * @param {string} file @param {string} exportName @returns {boolean}
+ */
+function exportsRawThemeLiteral(file, exportName) {
+  try {
+    const ast = parse(fs.readFileSync(file, 'utf8'), {
+      sourceType: 'module',
+      plugins: ['typescript', 'jsx'],
+    });
+    /** @param {any} node @returns {any} */
+    const unwrap = node => {
+      while (
+        node &&
+        [
+          'TSAsExpression',
+          'TSSatisfiesExpression',
+          'TSNonNullExpression',
+          'ParenthesizedExpression',
+        ].includes(node.type)
+      )
+        node = node.expression;
+      return node;
+    };
+    /** @type {Map<string, any>} */
+    const declarations = new Map();
+    /** @type {Set<any>} */
+    const allowedReferences = new Set();
+    let selected;
+    for (const statement of ast.program.body) {
+      const declaration =
+        statement.type === 'ExportNamedDeclaration'
+          ? statement.declaration
+          : statement;
+      if (
+        declaration?.type === 'VariableDeclaration' &&
+        declaration.kind === 'const'
+      ) {
+        for (const item of declaration.declarations) {
+          if (item.id.type !== 'Identifier') continue;
+          declarations.set(item.id.name, item);
+          if (
+            statement.type === 'ExportNamedDeclaration' &&
+            item.id.name === exportName
+          )
+            selected = item.id;
+        }
+      }
+      if (
+        exportName === 'default' &&
+        statement.type === 'ExportDefaultDeclaration'
+      )
+        selected = unwrap(statement.declaration);
+      if (statement.type === 'ExportNamedDeclaration' && !statement.source) {
+        for (const item of statement.specifiers) {
+          if (item.type !== 'ExportSpecifier') continue;
+          const exported =
+            item.exported.type === 'Identifier'
+              ? item.exported.name
+              : item.exported.value;
+          if (exported === exportName) {
+            selected = item.local;
+            allowedReferences.add(item.exported);
+          }
+        }
+      }
+    }
+    const names = new Set();
+    while (selected?.type === 'Identifier') {
+      if (names.has(selected.name)) return false;
+      names.add(selected.name);
+      allowedReferences.add(selected);
+      const declaration = declarations.get(selected.name);
+      if (!declaration) return false;
+      allowedReferences.add(declaration.id);
+      selected = unwrap(declaration.init);
+    }
+    if (
+      selected?.type !== 'ObjectExpression' ||
+      !selected.properties.every(
+        (/** @type {any} */ item) =>
+          item.type === 'ObjectProperty' && !item.method && !item.computed,
+      )
+    )
+      return false;
+    /** @param {any} node @returns {boolean} */
+    const onlyExports = node => {
+      if (!node || typeof node !== 'object') return true;
+      if (
+        node.type === 'Identifier' &&
+        names.has(node.name) &&
+        !allowedReferences.has(node)
+      )
+        return false;
+      return Object.entries(node).every(([key, value]) => {
+        if (
+          node.type === 'ObjectProperty' &&
+          key === 'key' &&
+          !node.computed &&
+          !node.shorthand
+        )
+          return true;
+        return Array.isArray(value)
+          ? value.every(onlyExports)
+          : onlyExports(value);
+      });
+    };
+    return onlyExports(ast.program);
+  } catch {
+    // Inconclusive evidence must not bless an unobserved resolved source.
+  }
+  return false;
+}
+
+/**
  * Compile a defineTheme file to CSS + CSS .d.ts + JS + JS .d.ts (and an
  * optional `.variants.d.ts`). Performs the writes and returns a `theme.build` receipt,
  * or `null` when the theme produced no CSS (nothing to build). Throws
@@ -2363,15 +2675,13 @@ async function themeBuildInternal(
 
   await selectCore(cwd);
 
-  // Standalone builds only need interception when an older Core could erase
-  // adaptations. Family preparation always supplies the same recorder as its
-  // shared loader so exact authored parent identity stays CLI-private instead
-  // of becoming a public DefinedTheme field.
+  // Always retain exact authored inputs, including ancestor contracts whose
+  // source keys/policies are overridden later. Family loads share one recorder.
   const interception =
     options.__familyInterception ??
-    (_generateAdaptationCSS
-      ? undefined
-      : interceptCore(_coreThemeModule, _coreRootModule));
+    interceptCore(_coreThemeModule, _coreRootModule, {
+      captureReadonly: supportsIconCapabilities(_coreIconModule),
+    });
 
   // Extract theme definition
   let themeDef;
@@ -2416,8 +2726,41 @@ async function themeBuildInternal(
   const hasCoverageGap = Boolean(
     loadDegradation?.topLevelAwait || loadDegradation?.commonJs,
   );
+  const hasLegacyCoverageGap = Boolean(
+    loadDegradation?.topLevelAwait ||
+    (loadDegradation?.legacyCommonJs ?? loadDegradation?.commonJs),
+  );
   const unobservedLineage =
-    interception && hasCoverageGap ? interception.unobservedIn(themeDef) : [];
+    interception && hasLegacyCoverageGap
+      ? interception.unobservedIn(themeDef)
+      : [];
+  const capturedIconInput = interception?.inputOf(themeDef) ?? themeDef;
+  const iconLineage = adaptationLineage ?? [themeDef];
+  const rawIconInputs = [
+    ...new Set(
+      iconLineage.map(
+        (/** @type {any} */ value) => interception?.inputOf(value) ?? value,
+      ),
+    ),
+  ];
+  assertSupportedIconFields(themeDef, iconLineage);
+  const unobservedIconLineage =
+    interception && hasCoverageGap
+      ? interception
+          .unobservedIn(themeDef, [
+            'iconCapabilities',
+            '__iconContracts',
+            '__iconSources',
+          ])
+          .filter(
+            (/** @type {any} */ value) =>
+              value.__built !== true &&
+              !(
+                value === themeDef &&
+                exportsRawThemeLiteral(filePath, themeExportName ?? 'default')
+              ),
+          )
+      : [];
   if (interception) interception.strip(themeDef);
   if (!ancestryObserved) {
     throw new AstryxError(
@@ -2458,14 +2801,21 @@ async function themeBuildInternal(
   // Family preparation keeps its own named-import registry contract, which
   // themeBuildFamily checks against the selected members' graph.
   const standaloneIcons = !options.__prepareFamily;
+  const iconFreeInputs = new Set();
   const iconResolution = {
+    iconFreeInputs,
     readSource: (/** @type {string} */ file) => fs.readFileSync(file, 'utf8'),
     resolveModule: resolveThemeModule,
     reservedNames: [`${toIdentifier(themeDef.name)}Theme`],
     rawInput: 'extends' in themeDef,
     hasIcons:
-      Object.keys(themeDef.icons ?? {}).length > 0 ||
-      Object.keys(themeDef.extends?.icons ?? {}).length > 0,
+      Object.keys(themeDef.__iconSources ?? themeDef.icons ?? {}).length > 0 ||
+      Object.keys(
+        themeDef.extends?.__iconSources ?? themeDef.extends?.icons ?? {},
+      ).length > 0,
+    theme: themeDef,
+    inputOf: (/** @type {any} */ value) =>
+      interception?.inputOf(value) ?? value,
   };
   let iconInfo = standaloneIcons
     ? await resolveIconImports(filePath, themeExportName, iconResolution)
@@ -2525,9 +2875,20 @@ async function themeBuildInternal(
   const coreVersionForCapability = readPkgVersion(findCoreDir(cwd));
   assertAdaptationCapability(themeDef, {
     coreVersion: coreVersionForCapability,
-    lineage: adaptationLineage,
+    lineage:
+      interception?.lineageOf(themeDef, {legacy: true}) ?? adaptationLineage,
     unobserved: unobservedLineage,
-    degradation: loadDegradation,
+    degradation: {
+      ...loadDegradation,
+      commonJs: loadDegradation?.legacyCommonJs ?? loadDegradation?.commonJs,
+    },
+  });
+  assertIconCapability(themeDef, _coreIconModule, {
+    coreVersion: coreVersionForCapability,
+    lineage: iconLineage,
+    unobserved: unobservedIconLineage.filter(
+      (/** @type {any} */ value) => !iconFreeInputs.has(value),
+    ),
   });
 
   let css;
@@ -2558,7 +2919,11 @@ async function themeBuildInternal(
     ];
     const needsResolution =
       INPUT_ONLY_FIELDS.some(field => themeDef[field] !== undefined) ||
-      ('localTokens' in themeDef && themeDef.__localTokenLineage === undefined);
+      ('localTokens' in themeDef &&
+        themeDef.__localTokenLineage === undefined) ||
+      ((themeDef.iconCapabilities !== undefined ||
+        hasIconCapabilityIntent({icons: themeDef.icons})) &&
+        themeDef.__axes === undefined);
     if (needsResolution) {
       try {
         resolvedTheme = _defineTheme({...themeDef});
@@ -2594,6 +2959,8 @@ async function themeBuildInternal(
     if (
       iconInfo &&
       iconInfo.iconsSpecifierLocalName === undefined &&
+      !iconInfo.policyContractExpression &&
+      !iconInfo.contractReferences?.length &&
       Object.keys(resolvedTheme.icons ?? {}).length === 0
     ) {
       iconInfo = null;
@@ -2633,6 +3000,20 @@ async function themeBuildInternal(
       unobserved: unobservedLineage,
       degradation: loadDegradation,
     });
+
+    assertIconCapability(resolvedTheme, _coreIconModule, {
+      coreVersion: coreVersionForCapability,
+      lineage: iconLineage,
+      unobserved: unobservedIconLineage.filter(
+        (/** @type {any} */ value) => !iconFreeInputs.has(value),
+      ),
+    });
+    resolvedTheme = normalizeBuiltIconData(
+      resolvedTheme,
+      rawIconInputs,
+      capturedIconInput,
+    );
+    assertSupportedIconFields(resolvedTheme, iconLineage);
 
     const adaptationEnrollmentErrors =
       await validateAdaptationEnrollment(resolvedTheme);
@@ -2887,7 +3268,9 @@ async function themeBuildInternal(
       theme: displayTheme,
       sourceTheme: themeDef,
       sourceParent,
-      iconInfo: extractRegistryInfo(filePath, 'icons'),
+      themeExportName,
+      iconResolution,
+      iconInfo,
       indicatorInfo: extractRegistryInfo(filePath, 'indicators'),
       variantDecl,
       css: cssPlan,
@@ -3198,6 +3581,74 @@ function allocateFamilyBindings(members) {
   const used = new Map();
   return new Map(members.map(member => { const base = familyThemeBinding(member.theme.name), count = used.get(base) ?? 0; used.set(base, count + 1); return [member.theme.name, count === 0 ? base : `${base}${count + 1}`]; }));
 }
+/** Rebase a full private Icon import plan without retaining source-theme files.
+ * @param {any} info @param {string} filePath @param {string} jsPath
+ * @param {string} binding @param {Set<string>} used @returns {any}
+ */
+function familyIconImports(info, filePath, jsPath, binding, used) {
+  if (!info) return null;
+  const aliases = new Map();
+  /** @param {string} name */
+  const allocate = name => {
+    const stem = `${binding}${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+    let value = stem,
+      index = 1;
+    while (used.has(value)) value = `${stem}${index++}`;
+    used.add(value);
+    return value;
+  };
+  for (const item of info.imports)
+    aliases.set(item.localName, allocate(item.localName));
+  if (info.exportName && !aliases.has(info.exportName))
+    aliases.set(info.exportName, allocate(info.exportName));
+  /** Generated reference grammar has identifiers and quoted member names only.
+   * @param {string | undefined} expression @returns {string | undefined}
+   */
+  const rename = expression =>
+    expression?.replace(
+      /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[A-Za-z_$][\w$]*/gu,
+      token => aliases.get(token) ?? token,
+    );
+  /** @param {string | undefined} source @returns {string | undefined} */
+  const rebase = source => {
+    if (!source?.startsWith('.')) return source;
+    const absolute = path.resolve(path.dirname(filePath), source);
+    const relative = path
+      .relative(path.dirname(jsPath), absolute)
+      .split(path.sep)
+      .join('/');
+    return relative.startsWith('./') || relative.startsWith('../')
+      ? relative
+      : `./${relative}`;
+  };
+  return {
+    ...info,
+    sourceFile: jsPath,
+    validationImports: info.validationImports?.map(
+      (/** @type {any} */ item) => ({
+        ...item,
+        importPath: rebase(item.importPath),
+      }),
+    ),
+    imports: info.imports.map((/** @type {any} */ item) => ({
+      ...item,
+      importPath: rebase(item.importPath),
+      localName: aliases.get(item.localName),
+    })),
+    expression: rename(info.expression),
+    exportName: aliases.get(info.exportName) ?? '',
+    iconsSpecifierImportPath: rebase(info.iconsSpecifierImportPath),
+    iconsSpecifierLocalName: aliases.get(info.iconsSpecifierLocalName),
+    policyContractExpression: rename(info.policyContractExpression),
+    contractReferences: info.contractReferences?.map(
+      (/** @type {any} */ item) => ({
+        ...item,
+        expression: rename(item.expression),
+      }),
+    ),
+  };
+}
+
 /** Rebase a scraped relative registry import to the aggregate module. @param {any} info @param {string} filePath @param {string} outDir @param {string | undefined} override */
 // prettier-ignore
 function familyRegistryInput(info, filePath, outDir, override) {
@@ -3267,7 +3718,9 @@ export async function themeBuildFamily(
     throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
   }
   await selectCore(cwd);
-  const familyInterception = interceptCore(_coreThemeModule, _coreRootModule);
+  const familyInterception = interceptCore(_coreThemeModule, _coreRootModule, {
+    captureReadonly: supportsIconCapabilities(_coreIconModule),
+  });
   // prettier-ignore
   const familyLoader = createJiti(import.meta.url, {moduleCache: true, interopDefault: false, jsx: true, extensions: THEME_MODULE_EXTENSIONS, virtualModules: familyInterception.modules});
   /** @type {any[]} */
@@ -3302,6 +3755,21 @@ export async function themeBuildFamily(
     throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
   }
   for (const member of members) {
+    member.iconInfo = await resolveIconImports(
+      member.filePath,
+      member.themeExportName ?? 'default',
+      member.iconResolution,
+    );
+    if (
+      member.iconInfo &&
+      options.iconsSpecifier !== undefined &&
+      member.iconInfo.iconsSpecifierImportPath === undefined
+    )
+      throw new AstryxError(
+        'The icon registry is inherited through a theme import. To use --icons-specifier, import the registry directly and set icons to that binding.',
+        undefined,
+        ERROR_CODES.ERR_THEME_INVALID,
+      );
     for (const [field, info] of [
       ['icons', member.iconInfo],
       ['indicators', member.indicatorInfo],
@@ -3365,20 +3833,48 @@ export async function themeBuildFamily(
   const css = generateFamilyCSS(members);
   /** @type {Array<{specifier: string, exportName: string}>} */
   const registryImports = [];
+  const familyBindings = new Set([...bindings.values()]);
   const js = members
     .map(member => {
       const themeBinding = bindings.get(member.theme.name);
+      if (!themeBinding)
+        throw new AstryxError(
+          'A selected family theme has no allocated output binding.',
+          undefined,
+          ERROR_CODES.ERR_THEME_INVALID,
+        );
       const parentBinding = member.parentName
         ? bindings.get(member.parentName)
         : null;
-      // prettier-ignore
-      const icon = familyRegistryInput(member.iconInfo, member.filePath, outDir, options.iconsSpecifier);
+      const iconImports = familyIconImports(
+        member.iconInfo,
+        member.filePath,
+        jsPath,
+        themeBinding,
+        familyBindings,
+      );
       // prettier-ignore
       const indicator = familyRegistryInput(member.indicatorInfo, member.filePath, outDir, undefined);
-      // prettier-ignore
-      for (const registry of [icon, indicator]) if (registry.info) registryImports.push({specifier: registry.specifier ?? registry.info.importPath, exportName: registry.info.exportName});
-      const ownIcons = icon.info ? `${themeBinding}Icons` : null;
-      const inheritedIcons = parentBinding ? `${parentBinding}.icons` : null;
+      if (indicator.info)
+        registryImports.push({
+          specifier: indicator.specifier ?? indicator.info.importPath,
+          exportName: indicator.info.exportName,
+        });
+      if (options.iconsSpecifier === undefined)
+        for (const item of iconImports?.validationImports ?? [])
+          registryImports.push({
+            specifier: item.importPath,
+            exportName: item.importedName,
+          });
+      for (const item of iconImports?.imports ?? [])
+        registryImports.push({
+          specifier: effectiveIconSpecifier(
+            item,
+            iconImports,
+            options.iconsSpecifier,
+          ),
+          exportName: item.importedName,
+        });
       const ownIndicators = indicator.info ? `${themeBinding}Indicators` : null;
       const inheritedIndicators = parentBinding
         ? `${parentBinding}.indicators`
@@ -3391,15 +3887,12 @@ export async function themeBuildFamily(
       const indicatorImport = indicator.info
         ? `import { ${indicator.info.exportName} as ${ownIndicators} } from ${JSON.stringify(indicator.specifier ?? indicator.info.importPath)};\n`
         : '';
-      // The member's own registry import, bound to its family-unique name; a
-      // rebased or overridden specifier replaces the scraped one.
-      // prettier-ignore
-      const iconImports = icon.info && ownIcons ? {imports: [{importPath: icon.info.importPath, importedName: icon.info.exportName, localName: ownIcons}], expression: ownIcons, exportName: ownIcons, iconsSpecifierImportPath: icon.info.importPath, iconsSpecifierLocalName: ownIcons} : null;
       return (
         indicatorImport +
-        generateBuiltModule(member.theme, iconImports, icon.specifier, {
+        generateBuiltModule(member.theme, iconImports, options.iconsSpecifier, {
           themeBinding,
-          iconsExpression: expression(ownIcons, inheritedIcons),
+          reservedNames: [...familyBindings],
+          quoteImports: true,
           indicatorsExpression: expression(ownIndicators, inheritedIndicators),
           artifactBaseName: baseName,
           exportIcons: false,

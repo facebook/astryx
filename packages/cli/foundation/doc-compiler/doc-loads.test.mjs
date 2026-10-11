@@ -65,18 +65,18 @@ const RUNNERS = {
     sites: ['importThemeArtifact'],
   },
   'api/theme/build/build.mjs': {
-    runs: "theme source modules, through jiti; eval for legacy theme object literals; the project's installed Core",
+    runs: "theme source modules, through jiti; eval for legacy theme object literals; the project's installed Core and its Icon capability constructors",
     sites: [
       '.evalModule() ×2',
       '.import()',
       'createJiti ×5',
       'eval ×2',
-      'import(<computed>) ×3',
+      'import(<computed>) ×4',
     ],
   },
   'api/theme/build/core-interception.mjs': {
     runs: "@astryxdesign/core as a theme's CommonJS dependencies require it, to wrap defineTheme",
-    sites: ['require(<computed>)'],
+    sites: ['module', 'require(<computed>)'],
   },
   'api/upgrade/_adapter.mjs': {
     runs: 'the commands a codemod declares as its post-codemod hooks',
