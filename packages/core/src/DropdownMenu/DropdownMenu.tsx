@@ -92,7 +92,10 @@ import {
 import {isRenderable, mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {useInteractionModalityTracking} from '../utils/interactionModality';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {useTranslator} from '../i18n';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 
@@ -848,6 +851,10 @@ function DropdownMenuPopover({
   const headerRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
   const hasRegions = isRenderable(header) || isRenderable(footer);
+  // Whether the menu element itself took focus from the keyboard. A pointer
+  // open focuses it programmatically, and pointer history must not paint the
+  // keyboard ring (architecture:interaction-modality INV1).
+  const [isMenuKeyboardFocused, setIsMenuKeyboardFocused] = useState(false);
   // The press model is mounted below (it needs the popover); the hide path
   // above it ends the gesture in flight through this ref.
   const cancelMenuPressRef = useRef<() => void>(() => {});
@@ -1064,6 +1071,10 @@ function DropdownMenuPopover({
           // header. The menu is one stop, so go straight to the header.
           if (e.shiftKey && e.target !== listRef.current) {
             e.preventDefault();
+            // The popover's focus trap listens on the document and would read
+            // this same Shift+Tab against the field just focused — the trap's
+            // first element — and wrap to the footer. This key is handled.
+            e.stopPropagation();
             tabbables[tabbables.length - 1].focus();
           }
           return;
@@ -1450,6 +1461,17 @@ function DropdownMenuPopover({
                 : (rest['aria-labelledby'] as string | undefined)
             }
             onKeyDown={listKeyDown}
+            onFocus={event => {
+              (
+                rest.onFocus as
+                  React.FocusEventHandler<HTMLDivElement> | undefined
+              )?.(event);
+              if (event.target === event.currentTarget) {
+                setIsMenuKeyboardFocused(
+                  getInteractionModality() === 'keyboard',
+                );
+              }
+            }}
             {...menuPress.menuProps}
             {...mergeProps(
               themeProps('dropdown-menu'),
@@ -1463,7 +1485,9 @@ function DropdownMenuPopover({
                 // Between a header and a footer the menu is a Tab stop, so
                 // keyboard focus on it must be visible (the base style removes
                 // the ring for the pointer-open focus target).
-                hasRegions && focusOutlineStyles.focusVisible,
+                hasRegions &&
+                  isMenuKeyboardFocused &&
+                  focusOutlineStyles.focusVisible,
                 xstyle,
               ),
               className,

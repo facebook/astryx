@@ -109,6 +109,16 @@ test('Shift+Tab from a row goes straight to the header', async ({page}) => {
   await expect(menu).toBeVisible();
 });
 
+test('a mouse open draws no keyboard focus ring on the menu', async ({
+  page,
+}) => {
+  const menu = await openMenu(page);
+  const outlineStyle = await menu.evaluate(
+    el => getComputedStyle(el).outlineStyle,
+  );
+  expect(outlineStyle).toBe('none');
+});
+
 test('keyboard focus on the menu between the regions is visible', async ({
   page,
 }) => {

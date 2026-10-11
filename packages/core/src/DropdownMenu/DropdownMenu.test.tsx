@@ -3444,6 +3444,28 @@ describe('DropdownMenu header and footer', () => {
     expect(hide).not.toHaveBeenCalled();
   });
 
+  it('a pointer open draws no focus ring on the menu; keyboard focus on it does', async () => {
+    const {menu} = await open();
+    // Opened with a pointer: the menu is focused but must not ring.
+    const ringClasses = stylex
+      .props(focusOutlineStyles.focusVisible)
+      .className!.split(' ')
+      .filter(Boolean);
+    const hasRing = () => ringClasses.every(c => menu.classList.contains(c));
+    expect(menu).toHaveFocus();
+    expect(hasRing()).toBe(false);
+    // Keyboard: leave to the header and come back by Tab.
+    const field = screen.getByRole('textbox', {
+      name: 'Filter labels',
+      hidden: true,
+    });
+    fireEvent.keyDown(document, {key: 'Tab', shiftKey: true});
+    act(() => field.focus());
+    fireEvent.keyDown(document, {key: 'Tab'});
+    act(() => menu.focus());
+    await waitFor(() => expect(hasRing()).toBe(true));
+  });
+
   it('Tab past the last footer control closes the menu', async () => {
     await open();
     const hide = vi.mocked(HTMLElement.prototype.hidePopover);
