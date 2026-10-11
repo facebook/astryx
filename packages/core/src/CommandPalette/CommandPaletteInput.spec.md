@@ -29,7 +29,7 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: [spec:AST-017, spec:AST-020]
+system_specs: [spec:AST-017, spec:AST-020, spec:AST-056]
 ---
 
 # CommandPaletteInput component contract
@@ -39,12 +39,12 @@ system_specs: [spec:AST-017, spec:AST-020]
 | Area                    | Contract                                                                                                                                                 |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Public contract         | A query field with context-backed search state, optional trailing content, and a split wrapper/field attribute boundary.                                 |
-| Behavior                | Standalone use is a searchbox; CommandPalette context supplies combobox state, popup relationships, search state, and keyboard delegation.               |
+| Behavior                | Standalone use without popup attributes is a searchbox; caller popup attributes or CommandPalette context supply combobox state and relationships.       |
 | End-user impact         | Screen-reader users receive role and popup state that match whether a controlled result popup exists.                                                    |
 | Builder impact          | Context-owned popup semantics cannot be replaced through native passthrough props; standalone caller-owned popup semantics remain supported.             |
 | Compatibility/readiness | A victim-free `[fix]` restores no-popup semantics while preserving released caller-owned popup associations; primary callback naming remains unresolved. |
 | Review checks           | Reject unassociated standalone combobox state, clobberable owned popup semantics, empty trailing chrome, or changed input ref routing.                   |
-| Governing rules         | `architecture:public-component-api/INV2,INV5`; `spec:AST-020/FR1,FR2`; WCAG 2.2 4.1.2.                                                                   |
+| Governing rules         | `architecture:public-component-api/INV2,INV5`; `spec:AST-017/FR1,FR3,FR5`; `spec:AST-020/FR1,FR2`; `spec:AST-056/AR2`; WCAG 2.2 4.1.2.                   |
 
 This table is a review projection; the body below is authoritative.
 
@@ -56,8 +56,8 @@ field when no result-popup context is present.
 
 ## Compatibility and migration
 
-- Released default preserved: callers that associate the standalone field with
-  their own popup keep their role and ARIA relationships
+- Released default preserved: `no` for no-popup standalone semantic output;
+  caller-owned popup associations and all CommandPalette output remain equivalent
 - Compatibility class: victim-free contract restoration under
   `spec:AST-017/FR1,FR3,FR5`; no-popup standalone use has no released popup
   association to preserve
@@ -71,8 +71,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Owns**
 
-- The Input, Search glyph, native Query field, Loading spinner placement, and
-  Trailing content.
+- The arrangement inside Input: Search glyph, native Query field, Loading spinner
+  placement, and Trailing content.
 - The query field's role and popup state when CommandPalette context is present.
 - Context fallback for the search value, value updates, and keyboard navigation.
 
@@ -85,11 +85,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept          | Closed values or states                                                              | Meaning                                          | Availability by variant/orientation/state | Default              | Owner                           | Stability          | Invalid-value behavior                                       |
-| ---------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------ | ----------------------------------------- | -------------------- | ------------------------------- | ------------------ | ------------------------------------------------------------ |
-| Query binding    | explicit; CommandPalette context; native                                             | Source and destination of query text changes.    | All uses                                  | context, then native | `component:CommandPaletteInput` | Released           | Missing handlers leave native state                          |
-| Popup semantics  | standalone searchbox; standalone caller-owned popup; contextual CommandPalette popup | Whether the query field controls a result popup. | Context-dependent                         | standalone searchbox | `component:CommandPaletteInput` | Contract-restoring | Standalone overrides persist; CommandPalette context wins    |
-| Trailing content | busy indicator; `endContent`; both; absent                                           | Supporting status or caller content after query. | All uses                                  | absent               | `component:CommandPaletteInput` | Released           | Boolean, empty-string, null, and undefined values are absent |
+| Concept          | Closed values or states                                                              | Meaning                                          | Availability by variant/orientation/state | Default              | Owner                           | Stability | Invalid-value behavior                                       |
+| ---------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------ | ----------------------------------------- | -------------------- | ------------------------------- | --------- | ------------------------------------------------------------ |
+| Query binding    | explicit; CommandPalette context; native                                             | Source and destination of query text changes.    | All uses                                  | context, then native | `component:CommandPaletteInput` | Released  | Missing handlers leave native state                          |
+| Popup semantics  | standalone searchbox; standalone caller-owned popup; contextual CommandPalette popup | Whether the query field controls a result popup. | Context-dependent                         | standalone searchbox | `component:CommandPaletteInput` | Stable    | Standalone overrides persist; CommandPalette context wins    |
+| Trailing content | busy indicator; `endContent`; both; absent                                           | Supporting status or caller content after query. | All uses                                  | absent               | `component:CommandPaletteInput` | Released  | Boolean, empty-string, null, and undefined values are absent |
 
 ## Behavioral and layout contract
 
@@ -129,8 +129,8 @@ intentional decision.
   uncontrolled state.
 - **ORD2 — Keyboard handling.** Consumer handler → default-prevented check →
   CommandPalette context handler.
-- **ORD3 — Accessible name.** Native `aria-label` → `label` → visible
-  placeholder text.
+- **ORD3 — Accessible name.** Native `aria-label` → `label` → localized
+  CommandPalette label. Placeholder text never supplies the accessible name.
 
 ### Performance and resources
 
@@ -140,7 +140,8 @@ intentional decision.
 ## Accessibility contract
 
 - **AR1 — Name.** The native query field has an explicit accessible name from
-  ORD3, supporting WCAG 2.2 4.1.2.
+  ORD3 that is distinct from placeholder text, satisfying `spec:AST-056/AR2`
+  and supporting WCAG 2.2 4.1.2.
 - **AR2 — Role and popup state.** Standalone use without popup attributes exposes
   a `searchbox` without popup-only state. Standalone callers that provide their
   own popup relationships retain those semantics. CommandPalette context exposes
@@ -169,6 +170,7 @@ intentional decision.
 - `spec:AST-017` owns compatibility classification for the released standalone
   caller-popup and no-popup cases.
 - `spec:AST-020` supplies the WCAG 2.2 and adopted-pattern evidence boundaries.
+- `spec:AST-056/AR2` requires a query-field name distinct from placeholder text.
 
 ## Verification map
 

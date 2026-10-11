@@ -16,7 +16,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Provide a concise label when the placeholder does not fully identify what can be searched.',
+          'Always provide a concise label that identifies what can be searched when the generic Command palette fallback is not specific enough.',
       },
       {
         guidance: true,
@@ -45,7 +45,7 @@ export const docs = {
         name: 'Query field',
         required: true,
         description:
-          'The native text field. It is a searchbox when standalone and a combobox inside CommandPalette.',
+          'The native text field. It is a searchbox when standalone without popup attributes and a combobox when popup relationships are supplied or CommandPalette context is present.',
       },
       {
         name: 'Loading spinner',
@@ -75,7 +75,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description:
-        'Accessible label for the query field, announced by screen readers. Falls back to the placeholder text when omitted.',
+        'Accessible label for the query field, announced by screen readers. Falls back to the localized Command palette label, never to placeholder text.',
     },
     {
       name: 'hasAutoFocus',
@@ -140,7 +140,8 @@ export const docsZh = {
     '搜索输入插槽。挂载时自动聚焦。在 CommandPalette 内使用时连接到上下文。',
   propDescriptions: {
     placeholder: '输入框的占位文本。',
-    label: '查询字段的无障碍标签，供屏幕阅读器朗读。省略时回退到占位文本。',
+    label:
+      '查询字段的无障碍标签，供屏幕阅读器朗读。省略时使用本地化的命令面板标签，而非占位文本。',
     hasAutoFocus: '挂载时自动聚焦输入框。内联命令面板中自动禁用。',
     endContent: '渲染在输入框末尾的内容，位于加载指示器之后。',
     value: '搜索值。在 CommandPalette 内省略时从上下文读取。',
@@ -157,7 +158,8 @@ export const docsDense = {
     'search input; auto-focus on mount; wires to context inside CommandPalette',
   propDescriptions: {
     placeholder: 'input placeholder text',
-    label: 'accessible label for the query field; falls back to placeholder',
+    label:
+      'accessible label for the query field; defaults to localized Command palette label, never placeholder',
     hasAutoFocus: 'auto-focus on mount; auto-disabled in inline mode',
     endContent: 'trailing content after spinner',
     value: 'search value; reads context when omitted inside palette',

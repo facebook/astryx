@@ -76,11 +76,28 @@ describe('CommandPaletteInput', () => {
     expect(input).toHaveAttribute('aria-activedescendant', 'caller-item');
   });
 
-  it('has an accessible name by default', () => {
+  it('infers caller-owned popup defaults from aria-controls alone', () => {
+    render(<CommandPaletteInput aria-controls="caller-list" />);
+
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    expect(input).toHaveAttribute('aria-autocomplete', 'list');
+    expect(input).toHaveAttribute('aria-controls', 'caller-list');
+  });
+
+  it('preserves a caller-owned combobox role and supplies popup defaults', () => {
+    render(<CommandPaletteInput role="combobox" />);
+
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    expect(input).toHaveAttribute('aria-autocomplete', 'list');
+  });
+
+  it('has a localized non-placeholder accessible name by default', () => {
     render(<CommandPaletteInput />);
     expect(screen.getByRole('searchbox')).toHaveAttribute(
       'aria-label',
-      'Search…',
+      'Command palette',
     );
   });
 
@@ -91,11 +108,11 @@ describe('CommandPaletteInput', () => {
     expect(input).toHaveAttribute('placeholder', 'Search…');
   });
 
-  it('falls back to a custom placeholder for the accessible name', () => {
+  it('keeps the localized accessible name when the placeholder changes', () => {
     render(<CommandPaletteInput placeholder="Type a command..." />);
     expect(screen.getByRole('searchbox')).toHaveAttribute(
       'aria-label',
-      'Type a command...',
+      'Command palette',
     );
   });
 
@@ -201,6 +218,22 @@ describe('CommandPaletteInput popup context', () => {
     expect(input).toHaveAttribute('aria-autocomplete', 'list');
     expect(input).toHaveAttribute('aria-controls', 'list-1');
     expect(input).not.toHaveAttribute('aria-activedescendant');
+  });
+
+  it('renders the busy spinner before trailing content', () => {
+    render(
+      <CommandPaletteContext value={makeContext({isBusy: true})}>
+        <CommandPaletteInput
+          endContent={<span data-testid="trailing-content">⌘K</span>}
+        />
+      </CommandPaletteContext>,
+    );
+
+    const spinner = screen.getByRole('status');
+    const trailingContent = screen.getByTestId('trailing-content');
+    expect(trailingContent.parentElement?.firstElementChild).toContainElement(
+      spinner,
+    );
   });
 
   it('reports the contextual open state and controlled list', () => {
