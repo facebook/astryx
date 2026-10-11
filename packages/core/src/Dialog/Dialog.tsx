@@ -4,7 +4,8 @@
 
 /**
  * @file Dialog.tsx
- * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext, layerTextReset
+ * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext, layerTextReset,
+ *   layerStructureReset, modalOutlet
  * @output Exports Dialog component, DialogProps, DialogVariant, DialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by Dialog.test.tsx
  *
@@ -35,9 +36,11 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {useModalOutlet} from '../Layer/modalOutlet';
 import {
   colorVars,
   radiusVars,
@@ -550,6 +553,10 @@ export function Dialog({
     }
   }, [isOpen, isInline]);
 
+  // Host app-global surfaces (toasts) inside this modal while it is open, so
+  // they stay visible and operable above it.
+  useModalOutlet(dialogRef, isOpen && !isInline);
+
   // Lock body scroll when dialog is open (iOS Safari workaround)
   // Skip for inline rendering — no modal overlay to compensate for.
   useScrollLock(isOpen && !isInline);
@@ -679,6 +686,7 @@ export function Dialog({
           themeProps('dialog', {variant}),
           stylex.props(
             layerTextReset.reset,
+            layerStructureReset.reset,
             styles.inlineWrapper,
             overlayPaddingReset.reset,
             standardSizing &&
@@ -714,6 +722,7 @@ export function Dialog({
         themeProps('dialog', {variant}),
         focusOutlineProps.focusVisible(
           layerTextReset.reset,
+          layerStructureReset.reset,
           styles.dialog,
           overlayPaddingReset.reset,
           isOpen && styles.open,

@@ -23,7 +23,7 @@ export const docs = {
   blocks: [
     {
       type: 'prose',
-      text: 'A theme contribution has editable `defineTheme` source plus a built module and production CSS. `integration add theme` scaffolds the source and declares the package exports; `theme build` writes the built outputs. An app installs the package, runs `theme add --import`, applies the theme from its generated app module, and customizes it with `extends` instead of copying source.',
+      text: 'A theme contribution has editable `defineTheme` source plus a built module and production CSS. `integration add theme` scaffolds the source and declares the package exports; `theme build` writes the built outputs. An app installs the package, runs `theme add`, applies the theme from its generated app module, and customizes it with `extends` instead of copying source.',
     },
     {
       type: 'prose',

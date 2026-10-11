@@ -1,5 +1,9 @@
 # @xds/theme-butter
 
+# 0.6.8
+
+---
+
 # 0.6.7
 
 #### New Features

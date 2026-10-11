@@ -50,6 +50,7 @@ import {
 import {mergeProps, themeProps} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
@@ -713,6 +714,7 @@ export function BottomSheetPanel({
         themeProps('bottom-sheet'),
         stylex.props(
           layerTextReset.reset,
+          layerStructureReset.reset,
           styles.sheet,
           overlayPaddingReset.reset,
           height === 'hug' ? styles.hugHeight : styles.budget,

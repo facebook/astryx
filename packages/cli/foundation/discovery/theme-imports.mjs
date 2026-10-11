@@ -130,7 +130,7 @@ function resolvePackageTheme(theme, cwd, ownerThemeCount) {
     findInstalledPackage(cwd, importPackage);
   if (!packageDir) {
     throw new ThemeImportError(
-      `Theme package "${importPackage}" is not installed. Run \`npm install ${importPackage}\` (or yarn/pnpm/bun), then run \`astryx theme add ${theme.slug} --import\`.`,
+      `Theme package "${importPackage}" is not installed. Run \`npm install ${importPackage}\` (or yarn/pnpm/bun), then run \`astryx theme add ${theme.slug}\`.`,
     );
   }
   const pkg = readPackage(path.join(packageDir, 'package.json'));

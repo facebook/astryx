@@ -109,6 +109,7 @@ function runFixture(
   indexContent,
   components = 'core/Button',
   readySelector = null,
+  stories = null,
 ) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'a11y-cli-fixture-'));
   const storybook = path.join(dir, 'storybook');
@@ -135,6 +136,7 @@ function runFixture(
         ...(readySelector == null
           ? []
           : ['--ready-selector', readySelector]),
+        ...(stories == null ? [] : ['--stories', stories]),
       ],
       {
         cwd: REPO_ROOT,
@@ -168,6 +170,23 @@ const VALID_INDEX = JSON.stringify({
   },
 });
 
+const FOCUSED_INDEX = JSON.stringify({
+  entries: {
+    'core-button--fixture': {
+      id: 'core-button--fixture',
+      title: 'Core/Button',
+      name: 'Fixture',
+      type: 'story',
+    },
+    'core-button--other': {
+      id: 'core-button--other',
+      title: 'Core/Button',
+      name: 'Other',
+      type: 'story',
+    },
+  },
+});
+
 const PATTERN_INDEX = JSON.stringify({
   entries: {
     'a11y-button-pattern--clickable-card-disabled': {
@@ -196,6 +215,36 @@ describe.sequential('accessibility-audit CLI readiness', () => {
     );
     expect(result.status).toBe(0);
     expect(result.report.readySelector).toBe('[role="menu"]');
+  });
+
+  it('audits only the requested owned story', () => {
+    const result = runFixture(
+      'delayed',
+      FOCUSED_INDEX,
+      'core/Button',
+      null,
+      'core-button--fixture',
+    );
+    expect(result.status).toBe(0);
+    expect(result.report.requestedStories).toEqual(['core-button--fixture']);
+    expect(result.report.auditedStories.map(story => story.storyId)).toEqual([
+      'core-button--fixture',
+    ]);
+  });
+
+  it('fails closed when a requested story is not owned by the component', () => {
+    const result = runFixture(
+      'delayed',
+      FOCUSED_INDEX,
+      'core/Button',
+      null,
+      'core-link--missing',
+    );
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      'Requested stories did not resolve in the selected component scope: core-link--missing',
+    );
+    expect(result.report).toBeNull();
   });
 
   it('fails closed when a focused readiness selector stays absent', () => {

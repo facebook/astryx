@@ -312,6 +312,18 @@ describe('theme template stays in sync with the theme system', () => {
     ).toEqual([]);
   });
 
+  it('documents the color scale without enabling it for new themes', () => {
+    expect(template).toMatch(/^ {2}\/\/ color: \{/m);
+    expect(template).not.toMatch(/^ {2}color: \{/m);
+    expect(template).toContain(
+      'astryx theme palette generate palette.config.json --out palette.generated.ts',
+    );
+    expect(template).toContain(
+      "// import {palette} from './palette.generated';",
+    );
+    expect(template).toContain('palette.neutral.light[100]');
+  });
+
   it('invents no field that defineTheme does not accept', () => {
     const real = new Set([...defineThemeFields(), 'name']);
     const invented = templateFields().filter(f => !real.has(f));
