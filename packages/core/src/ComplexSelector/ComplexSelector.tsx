@@ -291,16 +291,18 @@ export interface ComplexSelectorProps<Value> extends Omit<
    */
   ref?: React.Ref<HTMLElement>;
   /**
-   * Click handler on the trigger (or, with `renderTrigger`, the caller's
-   * control). It runs before the popup opens; call `preventDefault()` to keep
-   * the popup closed. A press elsewhere in the control box goes through the
-   * trigger, so it reaches this handler too.
+   * Click handler on the trigger. It runs before the popup opens; call
+   * `preventDefault()` to keep the popup closed. A press elsewhere in the
+   * control box goes through the trigger, so it reaches this handler too.
+   * With `renderTrigger` it lands on the caller's control and runs after the
+   * built-in toggle, which it cannot cancel.
    */
   onClick?: React.MouseEventHandler<HTMLElement>;
   /**
-   * Key handler on the trigger (or the caller's control). It runs after the
-   * built-in handling and receives every key, including the ArrowDown that
-   * opens the popup.
+   * Key handler on the trigger. It runs after the built-in handling and
+   * receives every key, including the ArrowDown that opens the popup. With
+   * `renderTrigger` it lands on the caller's control, runs after the built-in
+   * handling, and is skipped for keys that handling cancels.
    */
   onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
   /** Current controlled value. */
@@ -669,8 +671,10 @@ export function ComplexSelector<Value>({
         triggerRef.current = el;
       }, ref),
       id: triggerId,
-      onClick: handleTriggerButtonClick,
-      onKeyDown: handleTriggerButtonKeyDown,
+      // This path never forwarded caller handlers before, so the newly
+      // forwarded ones compose component first and cannot cancel opening.
+      onClick: composeEventHandlers(handleTriggerClick, onClickProp),
+      onKeyDown: composeEventHandlers(handleTriggerKeyDown, onKeyDownProp),
       'aria-haspopup': 'dialog',
       'aria-expanded': isOpen,
       'aria-controls': contentId,

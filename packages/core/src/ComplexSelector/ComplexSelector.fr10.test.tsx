@@ -184,6 +184,26 @@ describe('ComplexSelector FR10 targets', () => {
 });
 
 describe('ComplexSelector FR10 renderTrigger', () => {
+  it('runs a newly forwarded onClick after the built-in toggle, without cancelling it', () => {
+    render(
+      <ComplexSelector
+        label="Fruit"
+        value={VALUE}
+        onChange={() => {}}
+        onClick={event => event.preventDefault()}
+        renderTrigger={props => (
+          <button type="button" {...props}>
+            Open
+          </button>
+        )}>
+        {content}
+      </ComplexSelector>,
+    );
+    const opener = screen.getByRole('button', {name: 'Open'});
+    fireEvent.click(opener);
+    expect(opener).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('forwards base props and the ref to the caller-rendered control', () => {
     const ref = {current: null as HTMLElement | null};
     const onClick = vi.fn();

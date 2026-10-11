@@ -211,13 +211,13 @@ export const docs = {
           name: 'onClick',
           type: '(event: MouseEvent) => void',
           description:
-            'Click handler on the trigger (or the renderTrigger control). Runs before the popup opens; call preventDefault() to keep it closed. A press elsewhere in the control box goes through the trigger too.',
+            'Click handler on the trigger. Runs before the popup opens; call preventDefault() to keep it closed. A press elsewhere in the control box goes through the trigger too. With renderTrigger it runs after the built-in toggle and cannot cancel it.',
         },
         {
           name: 'onKeyDown',
           type: '(event: KeyboardEvent) => void',
           description:
-            'Key handler on the trigger (or the renderTrigger control). Runs after the built-in handling and receives every key, including the ArrowDown that opens the popup.',
+            'Key handler on the trigger. Runs after the built-in handling and receives every key, including the ArrowDown that opens the popup. With renderTrigger it is skipped for keys the built-in handling cancels.',
         },
         {
           name: 'containerXstyle',
