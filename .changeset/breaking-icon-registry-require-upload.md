@@ -3,7 +3,7 @@
 ---
 
 [breaking] Require `upload` on complete `IconRegistry` types
-@rubyycheung @cixzhang
+@rubyycheung @cixzhang @Geervan
 
 Old usage:
 A custom complete icon registry typed as `IconRegistry` that omitted the `upload` key.
