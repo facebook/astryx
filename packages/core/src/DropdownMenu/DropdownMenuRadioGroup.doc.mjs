@@ -66,7 +66,7 @@ export const docs = {
       type: "'radio' | 'check'",
       default: "'radio'",
       description:
-        "The mark the rows draw for the chosen option. 'radio' draws the radio circle on every row; 'check' draws the single-selection check mark (the theme's check indicator, as Selector marks its chosen option) at the inline end of the chosen row and nothing on the others. The rows stay menuitemradio with aria-checked either way.",
+        "The mark the rows draw for the chosen option. 'radio' draws the radio circle on every row; 'check' draws the single-selection check mark (the theme's check indicator, as Selector marks its chosen option) at the inline end of the chosen row and nothing on the others. The rows stay menuitemradio with aria-checked either way. ContextMenuRadioGroup, the same component under another name, takes it too.",
     },
     {
       name: 'children',
