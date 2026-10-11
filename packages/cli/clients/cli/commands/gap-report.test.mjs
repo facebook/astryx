@@ -282,7 +282,7 @@ describe('gap-report control docs', () => {
       expect(help.stdout).toContain(text);
     }
     expect(option('--list-categories')).toContain(
-      'the component and the other gap-report options are ignored',
+      'the component and the other gap-report options are refused with ERR_INVALID_ARGUMENT',
     );
 
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-gap-limits-'));
@@ -328,6 +328,6 @@ describe('gap-report control docs', () => {
     }
     await expect(
       gapReport(undefined, {listCategories: true, category: 'not_real', package: 'nope'}),
-    ).resolves.toMatchObject({type: 'gap-report.categories'});
+    ).rejects.toMatchObject({code: 'ERR_INVALID_ARGUMENT'});
   });
 });

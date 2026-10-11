@@ -48,7 +48,7 @@ export const doc = {
     {
       name: 'options.list',
       type: 'boolean',
-      description: 'Force the list response even when a name is given.',
+      description: 'List templates instead of scaffolding; refused with ERR_INVALID_ARGUMENT when a name or path is also given.',
       default: 'false',
     },
     {
@@ -133,6 +133,10 @@ export const doc = {
     },
   ],
   throws: [
+    {
+      code: 'ERR_INVALID_ARGUMENT',
+      when: '--cdn is combined with <name>, --list, --skeleton, --type, or --package; --list is combined with <name>, <path>, --skeleton, or --overwrite; --skeleton is combined with <path> or --overwrite',
+    },
     {
       code: 'ERR_UNKNOWN_TEMPLATE',
       when: 'the named template does not exist, or options.skeleton is set without a name',
