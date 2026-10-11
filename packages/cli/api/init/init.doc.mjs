@@ -76,10 +76,14 @@ export const doc = {
     {
       type: 'init.remove',
       description:
-        'Returned when `removeAgents` is set. `data.removed` is always true, even when no managed block was found.',
+        'The removal receipt, returned when `removeAgents` is set: `data.removed` is true when a managed agent-docs block was found and removed, and false when there was none to remove.',
     },
   ],
   throws: [
+    {
+      code: 'ERR_INVALID_ARGUMENT',
+      when: '--remove-agents is combined with --features, --all, --agent, or --agent-docs-path; or --all is combined with --features',
+    },
     {
       code: 'ERR_UNKNOWN_AGENT',
       when: 'the agents feature runs (default mode, features includes agents, or all) and `agent` is not one of claude, cursor, codex, hermes, muse, all',
