@@ -3,6 +3,9 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {TimeInput} from '@astryxdesign/core/TimeInput';
+import {FormLayout} from '@astryxdesign/core/FormLayout';
+import {Text} from '@astryxdesign/core/Text';
+import {InputGroup, InputGroupText} from '@astryxdesign/core/InputGroup';
 import type {ISOTimeString} from '@astryxdesign/core';
 
 const meta: Meta<typeof TimeInput> = {
@@ -454,4 +457,51 @@ export const StatusVariantComparison: Story = {
       </div>
     );
   },
+};
+
+const PART_STYLES = {
+  containerStyle: {
+    backgroundColor: 'rgba(0, 150, 255, 0.16)',
+    padding: 8,
+    borderRadius: 8,
+  },
+  controlStyle: {outline: '2px dashed #c800ff', outlineOffset: 3},
+} as const;
+
+/**
+ * Where each styling part lands (family:input-fields FR10). The blue tint is
+ * `containerStyle` on the Field box; the dashed outline is `controlStyle` on
+ * the visual control box. In a `horizontal-labels` FormLayout and inside
+ * InputGroup no Field box renders, so only the control outline shows.
+ */
+export const StylingParts: Story = {
+  render: () => (
+    <div style={{display: 'grid', gap: 16, maxWidth: 360}}>
+      <Text type="supporting">presentation="text-input"</Text>
+      <TimeInput
+        label="Start time"
+        presentation="text-input"
+        {...PART_STYLES}
+      />
+      <Text type="supporting">presentation="native"</Text>
+      <TimeInput label="Start time" presentation="native" {...PART_STYLES} />
+      <Text type="supporting">presentation="bottom-sheet"</Text>
+      <TimeInput
+        label="Start time"
+        presentation="bottom-sheet"
+        {...PART_STYLES}
+      />
+      <Text type="supporting">
+        horizontal-labels FormLayout: container* has no effect
+      </Text>
+      <FormLayout direction="horizontal-labels">
+        <TimeInput label="Start time" {...PART_STYLES} />
+      </FormLayout>
+      <Text type="supporting">Inside InputGroup: container* has no effect</Text>
+      <InputGroup label="Start time group">
+        <InputGroupText>Due</InputGroupText>
+        <TimeInput label="Start time" isLabelHidden {...PART_STYLES} />
+      </InputGroup>
+    </div>
+  ),
 };

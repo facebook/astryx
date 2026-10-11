@@ -20,10 +20,6 @@ const NOT_FIELD_INPUTS = new Set(['Field', 'InputGroup', 'FormLayout']);
 const PENDING_FR10 = new Set([
   // text batch
   // date/time batch
-  'DateInput',
-  'DateRangeInput',
-  'DateTimeInput',
-  'TimeInput',
   // selector batch
   'Selector',
   'MultiSelector',

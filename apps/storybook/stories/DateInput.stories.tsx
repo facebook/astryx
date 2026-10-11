@@ -3,6 +3,9 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {DateInput} from '@astryxdesign/core/DateInput';
+import {FormLayout} from '@astryxdesign/core/FormLayout';
+import {Text} from '@astryxdesign/core/Text';
+import {InputGroup, InputGroupText} from '@astryxdesign/core/InputGroup';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
@@ -680,4 +683,47 @@ export const ThemedCalendarToggleIcon: Story = {
       </Theme>
     );
   },
+};
+
+const PART_STYLES = {
+  containerStyle: {
+    backgroundColor: 'rgba(0, 150, 255, 0.16)',
+    padding: 8,
+    borderRadius: 8,
+  },
+  controlStyle: {outline: '2px dashed #c800ff', outlineOffset: 3},
+} as const;
+
+/**
+ * Where each styling part lands (family:input-fields FR10). The blue tint is
+ * `containerStyle` on the Field box; the dashed outline is `controlStyle` on
+ * the visual control box. In a `horizontal-labels` FormLayout and inside
+ * InputGroup no Field box renders, so only the control outline shows.
+ */
+export const StylingParts: Story = {
+  render: () => (
+    <div style={{display: 'grid', gap: 16, maxWidth: 360}}>
+      <Text type="supporting">presentation="popover"</Text>
+      <DateInput label="Due date" presentation="popover" {...PART_STYLES} />
+      <Text type="supporting">presentation="native"</Text>
+      <DateInput label="Due date" presentation="native" {...PART_STYLES} />
+      <Text type="supporting">presentation="bottom-sheet"</Text>
+      <DateInput
+        label="Due date"
+        presentation="bottom-sheet"
+        {...PART_STYLES}
+      />
+      <Text type="supporting">
+        horizontal-labels FormLayout: container* has no effect
+      </Text>
+      <FormLayout direction="horizontal-labels">
+        <DateInput label="Due date" {...PART_STYLES} />
+      </FormLayout>
+      <Text type="supporting">Inside InputGroup: container* has no effect</Text>
+      <InputGroup label="Due date group">
+        <InputGroupText>Due</InputGroupText>
+        <DateInput label="Due date" isLabelHidden {...PART_STYLES} />
+      </InputGroup>
+    </div>
+  ),
 };

@@ -3,6 +3,8 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {DateRangeInput} from '@astryxdesign/core/DateRangeInput';
+import {FormLayout} from '@astryxdesign/core/FormLayout';
+import {Text} from '@astryxdesign/core/Text';
 import type {DateRange} from '@astryxdesign/core/DateRangeInput';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
@@ -454,4 +456,34 @@ export const ThemedIcons: Story = {
       </Theme>
     );
   },
+};
+
+const PART_STYLES = {
+  containerStyle: {
+    backgroundColor: 'rgba(0, 150, 255, 0.16)',
+    padding: 8,
+    borderRadius: 8,
+  },
+  controlStyle: {outline: '2px dashed #c800ff', outlineOffset: 3},
+} as const;
+
+/**
+ * Where each styling part lands (family:input-fields FR10). The blue tint is
+ * `containerStyle` on the Field box; the dashed outline is `controlStyle` on
+ * the visual control box. In a `horizontal-labels` FormLayout and inside
+ * InputGroup no Field box renders, so only the control outline shows.
+ */
+export const StylingParts: Story = {
+  render: () => (
+    <div style={{display: 'grid', gap: 16, maxWidth: 360}}>
+      <Text type="supporting">Standalone</Text>
+      <DateRangeInput label="Stay" {...PART_STYLES} />
+      <Text type="supporting">
+        horizontal-labels FormLayout: container* has no effect
+      </Text>
+      <FormLayout direction="horizontal-labels">
+        <DateRangeInput label="Stay" {...PART_STYLES} />
+      </FormLayout>
+    </div>
+  ),
 };
