@@ -69,10 +69,7 @@ test('typing into the header field filters without moving to a row', async ({
   await page.keyboard.type('de');
   await expect(field).toHaveValue('de');
   await expect(field).toBeFocused();
-  await expect(page.getByRole('menuitem')).toHaveText([
-    'Documentation',
-    'Design',
-  ]);
+  await expect(page.getByRole('menuitem')).toHaveText(['Design']);
 });
 
 test('Tab walks header, menu, footer, then closes to the trigger', async ({
@@ -99,6 +96,32 @@ test('Tab walks header, menu, footer, then closes to the trigger', async ({
   await page.keyboard.press('Tab');
   await expect(menu).toBeHidden();
   await expect(page.locator(TRIGGER)).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('Shift+Tab from a row goes straight to the header', async ({page}) => {
+  const menu = await openMenu(page);
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('menuitem', {name: 'Bug'})).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(
+    page.getByRole('textbox', {name: 'Filter labels'}),
+  ).toBeFocused();
+  await expect(menu).toBeVisible();
+});
+
+test('keyboard focus on the menu between the regions is visible', async ({
+  page,
+}) => {
+  const menu = await openMenu(page);
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(menu).toBeFocused();
+  const outline = await menu.evaluate(el => {
+    const style = getComputedStyle(el);
+    return {style: style.outlineStyle, width: parseFloat(style.outlineWidth)};
+  });
+  expect(outline.style).not.toBe('none');
+  expect(outline.width).toBeGreaterThan(0);
 });
 
 test('Escape in the header closes the menu and returns focus to the trigger', async ({

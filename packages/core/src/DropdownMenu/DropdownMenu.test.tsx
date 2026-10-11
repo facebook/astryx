@@ -3430,6 +3430,20 @@ describe('DropdownMenu header and footer', () => {
     expect(hide).not.toHaveBeenCalled();
   });
 
+  it('Shift+Tab from a row moves straight to the header and keeps the menu open', async () => {
+    const {menu} = await open();
+    const hide = vi.mocked(HTMLElement.prototype.hidePopover);
+    hide.mockClear();
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    const row = screen.getByRole('menuitem', {name: 'Bug', hidden: true});
+    await waitFor(() => expect(row).toHaveFocus());
+    fireEvent.keyDown(row, {key: 'Tab', shiftKey: true});
+    expect(
+      screen.getByRole('textbox', {name: 'Filter labels', hidden: true}),
+    ).toHaveFocus();
+    expect(hide).not.toHaveBeenCalled();
+  });
+
   it('Tab past the last footer control closes the menu', async () => {
     await open();
     const hide = vi.mocked(HTMLElement.prototype.hidePopover);

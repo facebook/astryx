@@ -1057,7 +1057,15 @@ function DropdownMenuPopover({
       // takes the Tab instead, and the menu stays open.
       if (e.key === 'Tab') {
         const region = e.shiftKey ? headerRef.current : footerRef.current;
-        if (tabbablesIn(region).length > 0) {
+        const tabbables = tabbablesIn(region);
+        if (tabbables.length > 0) {
+          // From a row, the browser's Shift+Tab would stop on the menu element
+          // itself — the row's ancestor and a Tab stop — before reaching the
+          // header. The menu is one stop, so go straight to the header.
+          if (e.shiftKey && e.target !== listRef.current) {
+            e.preventDefault();
+            tabbables[tabbables.length - 1].focus();
+          }
           return;
         }
         closeMenu();
@@ -1070,7 +1078,7 @@ function DropdownMenuPopover({
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent, listRef],
   );
 
   // Tab past the last control of the footer, or Shift+Tab before the first
@@ -1452,6 +1460,10 @@ function DropdownMenuPopover({
                 hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
                 hasOverflow && styles.scrollable,
                 hasRegions && styles.menuInFrame,
+                // Between a header and a footer the menu is a Tab stop, so
+                // keyboard focus on it must be visible (the base style removes
+                // the ring for the pointer-open focus target).
+                hasRegions && focusOutlineStyles.focusVisible,
                 xstyle,
               ),
               className,
