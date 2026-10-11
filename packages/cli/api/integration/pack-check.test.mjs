@@ -504,6 +504,14 @@ describe('integrationPackCheck', () => {
         message:
           'Theme "ocean" exports @acme/widgets/theme.css without a complete built module and stylesheet pair. Missing partner exports alone do not block packing; add the matching export when the theme should be importable. Every declared export must resolve. Staleness is a warning until the complete importable pair is declared.',
       },
+      // A 0.6.5-built stylesheet still carries the root data-color defaults
+      // that theme output no longer emits, so it no longer matches its source.
+      {
+        code: 'theme_stylesheet_stale',
+        severity: 'warning',
+        message:
+          'Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. This incomplete export remains packable, but run `astryx theme build themes/ocean/oceanTheme.ts` before adding its matching export.',
+      },
     ]);
     const cli = runCliVerify();
     expect(cli.status, cli.stderr).toBe(0);

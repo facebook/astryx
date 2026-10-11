@@ -28,6 +28,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useBusyIndicatorLane} from './busyIndicatorLane';
+import {useTrailingKeyDown} from './trailingKeyDown';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -990,6 +991,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   );
 
   // Keyboard navigation
+  const trailingKeyDown = useTrailingKeyDown();
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       externalOnKeyDown?.(e);
@@ -1165,7 +1167,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         onFocus={composeEventHandlers(handleFocus, onFocusProp)}
         onClick={composeEventHandlers(handleClick, onClickProp)}
         onBlur={composeEventHandlers(handleBlur, onBlurProp)}
-        onKeyDown={handleKeyDown}
+        onKeyDown={
+          trailingKeyDown
+            ? event => {
+                handleKeyDown(event);
+                trailingKeyDown(event);
+              }
+            : handleKeyDown
+        }
         placeholder={placeholder}
         // When a disabled-reason tooltip is shown the input keeps focusability
         // via aria-disabled + readOnly instead of the native disabled

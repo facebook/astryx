@@ -157,7 +157,7 @@ export const docs = {
     {
       title: 'useTheme Hook',
       content: [
-        {type: 'prose', text: '`useTheme()` reads the nearest Theme and effective color mode from React context. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript.'},
+        {type: 'prose', text: '`useTheme()` reads the nearest Theme and effective color mode from React context. Prefer `dataVars` for CSS-capable SVG and DOM values. Use this hook for canvas, charts, maps, third-party configuration objects, or an SVG API that requires a concrete JavaScript color instead of a `var(...)` reference.'},
         {type: 'code', lang: 'tsx', label: 'Access resolved token values in React', code: "import {useMemo} from 'react';\nimport {useTheme} from '@astryxdesign/core/theme';\n\nfunction ChartConfig() {\n  const {mode, tokens} = useTheme();\n  const options = useMemo(() => ({\n    mode,\n    textColor: tokens['--color-text-primary'],\n    gridColor: tokens['--color-border'],\n    seriesColor: tokens['--color-data-categorical-blue'],\n  }), [mode, tokens]);\n  return <Chart options={options} />;\n}"},
         {type: 'prose', text: 'Prefer CSS variables for ordinary styling. See {@link generic:use-a-theme} for the provider setup, and {@link namespace:tokens} for the full token reference.'},
       ],

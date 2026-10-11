@@ -322,7 +322,7 @@ function MicroInteractionsCard() {
             onChange={setSliderValue}
             min={0}
             max={100}
-            xstyle={styles.maxW300}
+            containerXstyle={styles.maxW300}
           />
         </VStack>
 

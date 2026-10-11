@@ -61,8 +61,6 @@ import {
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
   activateMenuItem,
-  hostedControlOf,
-  isTextEntry,
 } from '../DropdownMenu/menuItemRoles';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useMenuDrillIn} from '../DropdownMenu/useMenuDrillIn';
@@ -418,9 +416,6 @@ export function ContextMenu({
     // Menus wrap from the last row to the first and back.
     wrap: true,
     hasPaging: true,
-    // Arrows, Home and End leave a text field the menu hosts only at its
-    // caret's edge.
-    hasCaretGuard: true,
     onEscape: closeMenu,
   });
 
@@ -490,13 +485,7 @@ export function ContextMenu({
       if (!ownsEvent(e)) {
         return;
       }
-      // A key pressed in a control the menu hosts beside its rows is that
-      // control's; see DropdownMenu.
-      const hosted = hostedControlOf(e.target, listRef.current);
       if (e.key === 'Enter' || e.key === ' ') {
-        if (hosted != null) {
-          return;
-        }
         e.preventDefault();
         // A held key's auto-repeat never activates.
         if (e.repeat) {
@@ -522,13 +511,13 @@ export function ContextMenu({
         closeMenu();
         return;
       }
-      if (!(hosted != null && isTextEntry(hosted)) && typeahead.onKeyDown(e)) {
+      if (typeahead.onKeyDown(e)) {
         e.preventDefault();
         return;
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead, ownsEvent, listRef],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
   // Place the zero-size cursor anchor at a point in the trigger's local
