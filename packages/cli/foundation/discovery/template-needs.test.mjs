@@ -93,15 +93,26 @@ describe('extractImportedPackages', () => {
 
 describe('analyzeTemplateNeeds', () => {
   let dir;
+  let userAgent;
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tmpl-needs-'));
+    // Detection falls back to the runner when nothing is on disk; keep the
+    // test runner's own package manager out of the answer.
+    userAgent = process.env.npm_config_user_agent;
+    delete process.env.npm_config_user_agent;
   });
-  afterEach(() => fs.rmSync(dir, {recursive: true, force: true}));
+  afterEach(() => {
+    fs.rmSync(dir, {recursive: true, force: true});
+    if (userAgent === undefined) delete process.env.npm_config_user_agent;
+    else process.env.npm_config_user_agent = userAgent;
+  });
 
   it('reports missing external packages with an install command', () => {
     fs.writeFileSync(
       path.join(dir, 'package.json'),
-      JSON.stringify({dependencies: {'react': '^19.0.0', '@astryxdesign/core': '^0.6.0'}}),
+      JSON.stringify({
+        dependencies: {react: '^19.0.0', '@astryxdesign/core': '^0.6.0'},
+      }),
     );
     const source = `
       import {Button} from '@astryxdesign/core';
@@ -120,7 +131,7 @@ describe('analyzeTemplateNeeds', () => {
       path.join(dir, 'package.json'),
       JSON.stringify({
         dependencies: {
-          'react': '^19.0.0',
+          react: '^19.0.0',
           '@astryxdesign/core': '^0.6.0',
           '@heroicons/react': '^2.2.0',
         },
@@ -181,6 +192,32 @@ describe('analyzeTemplateNeeds', () => {
     const source = `import {Chart} from 'recharts';`;
     const result = analyzeTemplateNeeds(source, dir);
     expect(result.installCommand).toMatch(/^yarn add /);
+  });
+
+  it('omits the install command when several lockfiles tie', () => {
+    fs.writeFileSync(path.join(dir, 'package.json'), '{}');
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    const source = `import {Chart} from 'recharts';`;
+    const result = analyzeTemplateNeeds(source, dir);
+    expect(result.missingPackages).toEqual(['recharts']);
+    expect(result.installCommand).toBeNull();
+    expect(result.notes[0]).toMatch(
+      /with this project's package manager: recharts/,
+    );
+    expect(result.notes[0]).not.toMatch(/npm install|pnpm add|yarn add/);
+  });
+
+  it('follows a declared packageManager over a stray lockfile', () => {
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      JSON.stringify({packageManager: 'pnpm@11.10.0'}),
+    );
+    fs.writeFileSync(path.join(dir, 'pnpm-lock.yaml'), '');
+    fs.writeFileSync(path.join(dir, 'yarn.lock'), '');
+    const source = `import {Chart} from 'recharts';`;
+    const result = analyzeTemplateNeeds(source, dir);
+    expect(result.installCommand).toMatch(/^pnpm add recharts/);
   });
 
   it('excludes @stylexjs/stylex from missing packages (it is a Core peer)', () => {

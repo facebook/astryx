@@ -20,6 +20,7 @@ import * as path from 'node:path';
 import module from 'node:module';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {detectStylingSystem} from '../agent-docs/agent-docs.mjs';
+import {explainPackageManager} from '../env/package-manager.mjs';
 
 // ── Known packages that a template may import without the user installing them.
 // react and react-dom are the framework; @astryxdesign/* is the design system
@@ -59,16 +60,28 @@ export function extractImportedPackages(source) {
   return pkgs;
 }
 
+/** @type {Record<string, string>} */
+const ADD_VERB = {
+  pnpm: 'pnpm add',
+  yarn: 'yarn add',
+  bun: 'bun add',
+  npm: 'npm install',
+};
+
 /**
- * Detect which package manager the project uses, from its lockfile.
+ * The command that adds packages with the project's package manager, using the
+ * CLI's shared detection (declared `packageManager`, then lockfiles, then
+ * committed config, then the runner). Returns null when several lockfiles tie
+ * and nothing the project owns picks one: a guessed install line would write a
+ * second lockfile into the project, so the receipt names the packages without
+ * a command instead.
  * @param {string} cwd Project root
- * @returns {'pnpm add' | 'yarn add' | 'bun add' | 'npm install'}
+ * @returns {string | null}
  */
-function detectInstallCommand(cwd) {
-  if (fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'))) return 'pnpm add';
-  if (fs.existsSync(path.join(cwd, 'yarn.lock'))) return 'yarn add';
-  if (fs.existsSync(path.join(cwd, 'bun.lockb'))) return 'bun add';
-  return 'npm install';
+function detectInstallVerb(cwd) {
+  const {pm, ambiguous} = explainPackageManager(cwd);
+  if (ambiguous) return null;
+  return ADD_VERB[pm] ?? 'npm install';
 }
 
 /**
@@ -128,11 +141,13 @@ export function analyzeTemplateNeeds(source, cwd) {
 
   // Build the install command with version ranges from the CLI workspace.
   let installCommand = null;
+  /** @type {string[]} */
+  let specs = [];
   if (missing.length > 0) {
-    const pm = detectInstallCommand(cwd);
+    const verb = detectInstallVerb(cwd);
     const ranges = cliPackageRanges();
-    const specs = missing.map(p => (ranges[p] ? `${p}@"${ranges[p]}"` : p));
-    installCommand = `${pm} ${specs.join(' ')}`;
+    specs = missing.map(p => (ranges[p] ? `${p}@"${ranges[p]}"` : p));
+    installCommand = verb ? `${verb} ${specs.join(' ')}` : null;
   }
 
   // ── StyleX compiler ────────────────────────────────────────────────────
@@ -144,7 +159,11 @@ export function analyzeTemplateNeeds(source, cwd) {
   /** @type {string[]} */
   const notes = [];
   if (missing.length > 0) {
-    notes.push(`Install missing dependencies: ${installCommand}`);
+    notes.push(
+      installCommand
+        ? `Install missing dependencies: ${installCommand}`
+        : `Install missing dependencies with this project's package manager: ${specs.join(' ')}. Several lockfiles are present and nothing in the project says which manager to use; \`astryx doctor\` explains.`,
+    );
   }
   if (stylexCompilerNeeded) {
     notes.push(
