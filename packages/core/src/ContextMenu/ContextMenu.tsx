@@ -583,7 +583,9 @@ export function ContextMenu({
   // `contextmenu` event on long-press, so a context menu is otherwise
   // unreachable on touch. Open the menu at the touch point once the press is
   // held long enough (see useLongPress for timer/move-cancel/cleanup logic).
-  const longPressHandlers = useLongPress({
+  // The hook also returns the imperative start/moveTo/cancel API the menu press
+  // model drives; only its four touch handlers belong on the trigger element.
+  const longPress = useLongPress({
     disabled: isDisabled,
     onLongPress: useCallback(
       (point: {x: number; y: number}) => {
@@ -714,7 +716,10 @@ export function ContextMenu({
         ref={useMergedRefs(ref, triggerRef)}
         {...triggerProps}
         onContextMenu={handleContextMenu}
-        {...longPressHandlers}
+        onTouchStart={longPress.onTouchStart}
+        onTouchMove={longPress.onTouchMove}
+        onTouchEnd={longPress.onTouchEnd}
+        onTouchCancel={longPress.onTouchCancel}
         data-testid={testId}
         {...stylex.props(
           styles.trigger,
