@@ -10,11 +10,19 @@
 import migrateDeprecatedThemeSurface, {
   meta as migrateDeprecatedThemeSurfaceMeta,
 } from './migrate-deprecated-theme-surface.mjs';
+import migrateFieldInputStyling, {
+  meta as migrateFieldInputStylingMeta,
+} from './migrate-field-input-styling.mjs';
 
 export default [
   {
     name: 'migrate-deprecated-theme-surface',
     transform: migrateDeprecatedThemeSurface,
     meta: migrateDeprecatedThemeSurfaceMeta,
+  },
+  {
+    name: 'migrate-field-input-styling',
+    transform: migrateFieldInputStyling,
+    meta: migrateFieldInputStylingMeta,
   },
 ];
