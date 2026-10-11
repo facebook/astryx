@@ -542,12 +542,16 @@ export function DropdownMenuSubMenu(
 
   // Single ref for the trigger row: store it for focus management AND wire it
   // as the flyout's positioning anchor (CSS anchor positioning).
+  // Depends on the layer's anchor ref alone, which is stable: the layer
+  // object changes with its open state, and a new callback here would re-run a
+  // caller's ref as the flyout opens.
+  const layerRef = layer.ref;
   const setTriggerEl = useCallback(
     (el: HTMLDivElement | null) => {
       triggerRef.current = el;
-      layer.ref(el);
+      layerRef(el);
     },
-    [layer],
+    [layerRef],
   );
   // The caller's ref reaches the same row.
   const triggerRowRef = useMergedRefs<HTMLElement>(setTriggerEl, ref);
@@ -555,6 +559,9 @@ export function DropdownMenuSubMenu(
   const handleTriggerClick = useCallback(
     (event: React.MouseEvent) => {
       if (isDisabled) {
+        // As a disabled DropdownMenuItem does: the click is spent, so a
+        // caller's onClick composed after this one does not run.
+        event.preventDefault();
         return;
       }
       if (isDrillIn) {

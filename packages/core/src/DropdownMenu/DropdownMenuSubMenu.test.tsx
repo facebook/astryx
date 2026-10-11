@@ -485,6 +485,47 @@ describe('DropdownMenuSubMenu host attributes', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  it('a stable callback ref is not re-run as the flyout opens and closes', async () => {
+    const user = userEvent.setup();
+    const ref = vi.fn<(el: HTMLElement | null) => void>();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" ref={ref}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    expect(ref).toHaveBeenLastCalledWith(trigger);
+    ref.mockClear();
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+    expect(ref).not.toHaveBeenCalled();
+  });
+
+  it("a disabled row does not pass a click on to the caller's onClick", async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" isDisabled onClick={onClick}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    // A programmatic or assistive-technology activation.
+    act(() => trigger.click());
+    expect(onClick).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('the row keeps its own popup state and tab stop', async () => {
     const user = userEvent.setup();
     render(
