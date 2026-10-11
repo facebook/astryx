@@ -685,45 +685,113 @@ export const ThemedCalendarToggleIcon: Story = {
   },
 };
 
-const PART_STYLES = {
-  containerStyle: {
-    backgroundColor: 'rgba(0, 150, 255, 0.16)',
-    padding: 8,
-    borderRadius: 8,
-  },
-  controlStyle: {outline: '2px dashed #c800ff', outlineOffset: 3},
-} as const;
+const CONTROL_STYLE = {outline: '2px dashed #c800ff', outlineOffset: 3};
+const CONTAINER_STYLE = {
+  backgroundColor: 'rgba(0, 150, 255, 0.16)',
+  padding: 8,
+  borderRadius: 8,
+};
 
 /**
- * Where each styling part lands (family:input-fields FR10). The blue tint is
- * `containerStyle` on the Field box; the dashed outline is `controlStyle` on
- * the visual control box. In a `horizontal-labels` FormLayout and inside
- * InputGroup no Field box renders, so only the control outline shows.
+ * Where each styling part lands (family:input-fields FR10). The dashed outline
+ * is `controlStyle` on the visual control box. The blue tint is
+ * `containerStyle` on the Field box; in a `horizontal-labels` FormLayout and
+ * inside InputGroup no Field box renders, so there it has no effect (and warns
+ * in development).
  */
 export const StylingParts: Story = {
   render: () => (
-    <div style={{display: 'grid', gap: 16, maxWidth: 360}}>
-      <Text type="supporting">presentation="popover"</Text>
-      <DateInput label="Due date" presentation="popover" {...PART_STYLES} />
-      <Text type="supporting">presentation="native"</Text>
-      <DateInput label="Due date" presentation="native" {...PART_STYLES} />
-      <Text type="supporting">presentation="bottom-sheet"</Text>
-      <DateInput
-        label="Due date"
-        presentation="bottom-sheet"
-        {...PART_STYLES}
-      />
-      <Text type="supporting">
-        horizontal-labels FormLayout: container* has no effect
-      </Text>
-      <FormLayout direction="horizontal-labels">
-        <DateInput label="Due date" {...PART_STYLES} />
-      </FormLayout>
-      <Text type="supporting">Inside InputGroup: container* has no effect</Text>
-      <InputGroup label="Due date group">
-        <InputGroupText>Due</InputGroupText>
-        <DateInput label="Due date" isLabelHidden {...PART_STYLES} />
-      </InputGroup>
+    <div style={{display: 'grid', gap: 24, maxWidth: 360}}>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">controlStyle</Text>
+        <div data-parts-row="control-popover" style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="popover"</Text>
+          <DateInput
+            label="Due date"
+            presentation="popover"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div data-parts-row="control-native" style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="native"</Text>
+          <DateInput
+            label="Due date"
+            presentation="native"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="control-bottom-sheet"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="bottom-sheet"</Text>
+          <DateInput
+            label="Due date"
+            presentation="bottom-sheet"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="control-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <DateInput label="Due date" controlStyle={CONTROL_STYLE} />
+          </FormLayout>
+        </div>
+        <div
+          data-parts-row="control-input-group"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">InputGroup</Text>
+          <InputGroup label="Due date group">
+            <InputGroupText>At</InputGroupText>
+            <DateInput
+              label="Due date"
+              isLabelHidden
+              controlStyle={CONTROL_STYLE}
+            />
+          </InputGroup>
+        </div>
+      </div>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">containerStyle and controlStyle</Text>
+        <div
+          data-parts-row="container-popover"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="popover"</Text>
+          <DateInput
+            label="Due date"
+            presentation="popover"
+            containerStyle={CONTAINER_STYLE}
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="container-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <DateInput
+              label="Due date"
+              containerStyle={CONTAINER_STYLE}
+              controlStyle={CONTROL_STYLE}
+            />
+          </FormLayout>
+        </div>
+        <div
+          data-parts-row="container-input-group"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">InputGroup</Text>
+          <InputGroup label="Due date group">
+            <InputGroupText>At</InputGroupText>
+            <DateInput
+              label="Due date"
+              isLabelHidden
+              containerStyle={CONTAINER_STYLE}
+              controlStyle={CONTROL_STYLE}
+            />
+          </InputGroup>
+        </div>
+      </div>
     </div>
   ),
 };

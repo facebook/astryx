@@ -459,49 +459,115 @@ export const StatusVariantComparison: Story = {
   },
 };
 
-const PART_STYLES = {
-  containerStyle: {
-    backgroundColor: 'rgba(0, 150, 255, 0.16)',
-    padding: 8,
-    borderRadius: 8,
-  },
-  controlStyle: {outline: '2px dashed #c800ff', outlineOffset: 3},
-} as const;
+const CONTROL_STYLE = {outline: '2px dashed #c800ff', outlineOffset: 3};
+const CONTAINER_STYLE = {
+  backgroundColor: 'rgba(0, 150, 255, 0.16)',
+  padding: 8,
+  borderRadius: 8,
+};
 
 /**
- * Where each styling part lands (family:input-fields FR10). The blue tint is
- * `containerStyle` on the Field box; the dashed outline is `controlStyle` on
- * the visual control box. In a `horizontal-labels` FormLayout and inside
- * InputGroup no Field box renders, so only the control outline shows.
+ * Where each styling part lands (family:input-fields FR10). The dashed outline
+ * is `controlStyle` on the visual control box. The blue tint is
+ * `containerStyle` on the Field box; in a `horizontal-labels` FormLayout and
+ * inside InputGroup no Field box renders, so there it has no effect (and warns
+ * in development).
  */
 export const StylingParts: Story = {
   render: () => (
-    <div style={{display: 'grid', gap: 16, maxWidth: 360}}>
-      <Text type="supporting">presentation="text-input"</Text>
-      <TimeInput
-        label="Start time"
-        presentation="text-input"
-        {...PART_STYLES}
-      />
-      <Text type="supporting">presentation="native"</Text>
-      <TimeInput label="Start time" presentation="native" {...PART_STYLES} />
-      <Text type="supporting">presentation="bottom-sheet"</Text>
-      <TimeInput
-        label="Start time"
-        presentation="bottom-sheet"
-        {...PART_STYLES}
-      />
-      <Text type="supporting">
-        horizontal-labels FormLayout: container* has no effect
-      </Text>
-      <FormLayout direction="horizontal-labels">
-        <TimeInput label="Start time" {...PART_STYLES} />
-      </FormLayout>
-      <Text type="supporting">Inside InputGroup: container* has no effect</Text>
-      <InputGroup label="Start time group">
-        <InputGroupText>Due</InputGroupText>
-        <TimeInput label="Start time" isLabelHidden {...PART_STYLES} />
-      </InputGroup>
+    <div style={{display: 'grid', gap: 24, maxWidth: 360}}>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">controlStyle</Text>
+        <div
+          data-parts-row="control-text-input"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="text-input"</Text>
+          <TimeInput
+            label="Start time"
+            presentation="text-input"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div data-parts-row="control-native" style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="native"</Text>
+          <TimeInput
+            label="Start time"
+            presentation="native"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="control-bottom-sheet"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="bottom-sheet"</Text>
+          <TimeInput
+            label="Start time"
+            presentation="bottom-sheet"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="control-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <TimeInput label="Start time" controlStyle={CONTROL_STYLE} />
+          </FormLayout>
+        </div>
+        <div
+          data-parts-row="control-input-group"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">InputGroup</Text>
+          <InputGroup label="Start time group">
+            <InputGroupText>At</InputGroupText>
+            <TimeInput
+              label="Start time"
+              isLabelHidden
+              controlStyle={CONTROL_STYLE}
+            />
+          </InputGroup>
+        </div>
+      </div>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">containerStyle and controlStyle</Text>
+        <div
+          data-parts-row="container-text-input"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="text-input"</Text>
+          <TimeInput
+            label="Start time"
+            presentation="text-input"
+            containerStyle={CONTAINER_STYLE}
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="container-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <TimeInput
+              label="Start time"
+              containerStyle={CONTAINER_STYLE}
+              controlStyle={CONTROL_STYLE}
+            />
+          </FormLayout>
+        </div>
+        <div
+          data-parts-row="container-input-group"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">InputGroup</Text>
+          <InputGroup label="Start time group">
+            <InputGroupText>At</InputGroupText>
+            <TimeInput
+              label="Start time"
+              isLabelHidden
+              containerStyle={CONTAINER_STYLE}
+              controlStyle={CONTROL_STYLE}
+            />
+          </InputGroup>
+        </div>
+      </div>
     </div>
   ),
 };

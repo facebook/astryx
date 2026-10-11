@@ -458,32 +458,65 @@ export const ThemedIcons: Story = {
   },
 };
 
-const PART_STYLES = {
-  containerStyle: {
-    backgroundColor: 'rgba(0, 150, 255, 0.16)',
-    padding: 8,
-    borderRadius: 8,
-  },
-  controlStyle: {outline: '2px dashed #c800ff', outlineOffset: 3},
-} as const;
+const CONTROL_STYLE = {outline: '2px dashed #c800ff', outlineOffset: 3};
+const CONTAINER_STYLE = {
+  backgroundColor: 'rgba(0, 150, 255, 0.16)',
+  padding: 8,
+  borderRadius: 8,
+};
 
 /**
- * Where each styling part lands (family:input-fields FR10). The blue tint is
- * `containerStyle` on the Field box; the dashed outline is `controlStyle` on
- * the visual control box. In a `horizontal-labels` FormLayout and inside
- * InputGroup no Field box renders, so only the control outline shows.
+ * Where each styling part lands (family:input-fields FR10). The dashed outline
+ * is `controlStyle` on the visual control box. The blue tint is
+ * `containerStyle` on the Field box; in a `horizontal-labels` FormLayout and
+ * inside InputGroup no Field box renders, so there it has no effect (and warns
+ * in development).
  */
 export const StylingParts: Story = {
   render: () => (
-    <div style={{display: 'grid', gap: 16, maxWidth: 360}}>
-      <Text type="supporting">Standalone</Text>
-      <DateRangeInput label="Stay" {...PART_STYLES} />
-      <Text type="supporting">
-        horizontal-labels FormLayout: container* has no effect
-      </Text>
-      <FormLayout direction="horizontal-labels">
-        <DateRangeInput label="Stay" {...PART_STYLES} />
-      </FormLayout>
+    <div style={{display: 'grid', gap: 24, maxWidth: 360}}>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">controlStyle</Text>
+        <div
+          data-parts-row="control-standalone"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">Standalone</Text>
+          <DateRangeInput label="Stay" controlStyle={CONTROL_STYLE} />
+        </div>
+        <div
+          data-parts-row="control-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <DateRangeInput label="Stay" controlStyle={CONTROL_STYLE} />
+          </FormLayout>
+        </div>
+      </div>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">containerStyle and controlStyle</Text>
+        <div
+          data-parts-row="container-standalone"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">Standalone</Text>
+          <DateRangeInput
+            label="Stay"
+            containerStyle={CONTAINER_STYLE}
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="container-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <DateRangeInput
+              label="Stay"
+              containerStyle={CONTAINER_STYLE}
+              controlStyle={CONTROL_STYLE}
+            />
+          </FormLayout>
+        </div>
+      </div>
     </div>
   ),
 };
