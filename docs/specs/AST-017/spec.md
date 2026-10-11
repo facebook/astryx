@@ -153,7 +153,14 @@ one removal merged ahead of the decision to allow it.
   accessibility behavior; stable CLI command names, options, exit behavior, and
   machine-readable schemas; and other explicitly documented public extension
   points. Internal implementation, undocumented markup, and source layout are not
-  stable merely because a consumer can observe them.
+  stable merely because a consumer can observe them. Changing a default value by
+  itself is nonbreaking when every documented input the released contract accepts
+  keeps its documented behavior and no documented contract promised the old default;
+  it is breaking when it removes or changes an API surface, or when a documented
+  stable contract a caller relied on no longer holds under the new default, which
+  FR1's victim test names as the scenario. A default change is announced in a
+  `[feat]` or `[fix]` Changeset that names the old and new default and the prop or
+  option that restores the old default.
 - **FR4 — Preserved old usage is nonbreaking.** A rename or replacement is
   nonbreaking when the old released call, import, option, identifier, or input
   continues to work with equivalent meaning through a compatibility alias or
@@ -382,8 +389,9 @@ one removal merged ahead of the decision to allow it.
   Outside approved cleanup, changes to behavior, types, exports, CSS or tokens,
   documented markup or selectors, accessibility semantics, persistence, CLI,
   configuration, schemas, build tooling, contractual documentation operations, and
-  package files MUST be additive, implementation-equivalent, or a victim-free
-  contract restoration under FR5. Documentation catalog names and routes follow
+  package files MUST be additive, implementation-equivalent, a default change under
+  FR3, or a victim-free contract restoration under FR5. Documentation catalog names
+  and routes follow
   FR45. An internal label, low adoption, or lack of a source-level API change does
   not weaken this rule.
 - **FR26 — Public lifecycle state is explicit.** Each public surface is
@@ -465,7 +473,7 @@ one removal merged ahead of the decision to allow it.
   record cites that exact requirement and CI enforces it. Release cadence MUST NOT be
   interpreted as a deprecation clock or eligibility gate.
 - **FR31 — Cleanup is one-to-one with approved ids and proven modernization.** A
-  removal or default switch is allowed only when its applicable lifecycle record id
+  removal is allowed only when its applicable lifecycle record id
   (`DEP-*` for deprecation or `IFIX-*` for correction) and distinct `CLN-*` id appear in
   the frozen minor manifest. Each incompatible delta maps to exactly one applicable
   lifecycle record and one cleanup id, and each cleanup id maps to the old contract,
@@ -786,7 +794,7 @@ lands, maintainers apply its requirement in review and release approval.
 
 | Contract        | Verification                                                                                                                                                                                          | Representative states                                                                                                                                                                         | Mutation or failure expectation                                                                                                                                                                                                                                       |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3         | PR compatibility statement plus latest stable package inspection                                                                                                                                      | released export, behavior, CLI command; unreleased and private surface                                                                                                                        | A change is labeled from diff size or possibility alone, or a released contract change is missed                                                                                                                                                                      |
+| FR1–FR3         | PR compatibility statement plus latest stable package inspection                                                                                                                                      | released export, behavior, CLI command; unreleased and private surface; a default change with and without a restoring prop                                                                    | A change is labeled from diff size or possibility alone, a released contract change is missed, or a default-only change is tagged `[breaking]` without a named victim                                                                                                 |
 | FR4–FR6         | Old-usage type/runtime/CLI regression test                                                                                                                                                            | alias retained, deprecation warning, broad rewrite, low-adoption caller                                                                                                                       | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                                                                                     |
 | FR7–FR8         | `pnpm check:changesets` plus migration review                                                                                                                                                         | existing `[fix]`, `[feat]`, `[breaking]`, and `[experimental]` tags paired with compatible, deprecation, planned-removal, or incompatible-fix metadata                                        | A new lifecycle replaces an established tag, tag/metadata/bump diverge, an incompatible correction uses bare `[fix]`, or migration is unusable                                                                                                                        |
 | FR9–FR13        | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests                                                                      | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                                                                                                 | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                                                                                        |
@@ -1146,6 +1154,24 @@ preserve or explicitly account for every observable result it owns.
 Rejected: a runtime compatibility flag or branch used only to acknowledge deprecation,
 a warning without an available modernization path, copyable guidance that keeps
 teaching the old surface, and a migration that guesses at uncertain consumer intent.
+
+### DEC-17 — A default change is not breaking by itself
+
+**Reference:** `spec:AST-017/DEC-17`
+**Decider:** `cixzhang`, `2026-10-11`
+
+A default is a covered surface, so FR1's victim test decides it: changing a default
+value is nonbreaking when every documented input keeps its documented behavior, no
+documented contract promised the old default, and the old default stays reachable
+through a prop or option. Such a change ships as a `[feat]` or `[fix]` that names the
+old and new default and the restoring prop. It becomes breaking only when it removes
+or changes an API surface, or when a documented stable contract a caller relied on no
+longer holds under the new default. Cleanup records and the frozen minor manifest
+govern removals; they do not govern default changes.
+
+Rejected: treating every stable default change as a `[breaking]` removal with a
+deprecation record, which routes a reachable, prop-restorable change through the
+cleanup lane its evidence requirements were designed for.
 
 ## Open questions
 
