@@ -103,7 +103,7 @@ describe('useComponentTranslator', () => {
 });
 
 describe('the whole English catalog', () => {
-  it('carries every authored key and message, and agrees with the slices', () => {
+  it('is the spread of the namespace slices and carries every authored key once', () => {
     const authored = Object.keys(enSource).sort();
     expect(Object.keys(enCatalog).sort()).toEqual(authored);
     for (const key of authored) {

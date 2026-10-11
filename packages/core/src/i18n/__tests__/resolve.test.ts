@@ -93,8 +93,7 @@ describe('resolve — basic lookup', () => {
       ),
     ).toBe('Go to next page');
     // A key of another namespace is not in the slice: the key comes back and
-    // the one-time warning fires, which is what check:i18n-catalog's
-    // slice-coverage rule (landing with the component sweep) prevents.
+    // the one-time warning fires, which is what check:i18n-catalog prevents.
     expect(
       resolve(
         '@astryx.button.loading',

@@ -11,7 +11,11 @@ export const docs = {
   type: 'generic',
   name: 'i18n-rtl-and-testing',
   title: 'RTL & Testing',
-  placement: {parent: 'namespace:internationalization', slot: 'guides', order: 30},
+  placement: {
+    parent: 'namespace:internationalization',
+    slot: 'guides',
+    order: 30,
+  },
   category: 'guide',
   description:
     'Text direction (RTL), pseudo-locale testing, and contributor guidance for developers and translators.',
@@ -122,7 +126,7 @@ import pseudo from '@astryxdesign/core/locales/pseudo.generated.js';
         },
         {
           type: 'prose',
-          text: "Astryx components read their strings from the English catalog rather than hardcoding them. Your own code reads any `@astryx.*` key with `useTranslator()`:",
+          text: 'Astryx components read their own strings from the English catalog rather than hardcoding them. An app that neither mounts `InternationalizationProvider`, calls `useTranslator()` nor imports `InternationalizationContext` bundles only the strings of the components it renders; one that does any of those carries the whole catalog, each string once. Your own code reads any `@astryx.*` key with `useTranslator()`:',
         },
         {
           type: 'code',
