@@ -205,7 +205,7 @@ export function analyzeTemplateNeeds(source, cwd) {
     const resolved = resolveInstallVerb(cwd);
     const ranges = cliPackageRanges();
     const specs = missing.map(p => (ranges[p] ? `${p}@"${ranges[p]}"` : p));
-    if (resolved.verb) {
+    if (resolved.verb !== null) {
       installCommand = `${resolved.verb} ${specs.join(' ')}`;
     } else {
       const where = path.relative(process.cwd(), resolved.dir) || '.';
