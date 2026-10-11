@@ -117,7 +117,42 @@ function tabbablesIn(region: HTMLElement | null): HTMLElement[] {
   if (region == null) {
     return [];
   }
-  return getFocusableElements(region).filter(element => element.tabIndex >= 0);
+  return getFocusableElements(region).filter(
+    element => element.tabIndex >= 0 && !isInsideHiddenWrapper(element, region),
+  );
+}
+
+/**
+ * Whether a `display: none` ancestor between the element and its region hides
+ * it — a control in a wrapper hidden at some widths, say. The trap's test reads
+ * only the element's own display.
+ */
+function isInsideHiddenWrapper(
+  element: HTMLElement,
+  region: HTMLElement,
+): boolean {
+  if (typeof window === 'undefined' || !window.getComputedStyle) {
+    return false;
+  }
+  for (
+    let node = element.parentElement;
+    node != null && node !== region.parentElement;
+    node = node.parentElement
+  ) {
+    if (window.getComputedStyle(node).display === 'none') {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Move focus to a region control. Reports whether focus actually arrived, so a
+ * caller can close the menu instead of stranding focus on the page.
+ */
+function focusRegionControl(element: HTMLElement): boolean {
+  element.focus();
+  return element.ownerDocument.activeElement === element;
 }
 
 const styles = stylex.create({
@@ -1049,13 +1084,13 @@ function DropdownMenuPopover({
           const region = e.shiftKey ? headerRef.current : footerRef.current;
           const tabbables = tabbablesIn(region);
           e.stopPropagation();
-          if (tabbables.length > 0) {
+          const target = e.shiftKey
+            ? tabbables[tabbables.length - 1]
+            : tabbables[0];
+          if (target != null) {
             e.preventDefault();
-            (e.shiftKey
-              ? tabbables[tabbables.length - 1]
-              : tabbables[0]
-            ).focus();
-          } else {
+          }
+          if (target == null || !focusRegionControl(target)) {
             closeMenu();
           }
         }
@@ -1099,7 +1134,9 @@ function DropdownMenuPopover({
             // this same Shift+Tab against the field just focused — the trap's
             // first element — and wrap to the footer. This key is handled.
             e.stopPropagation();
-            tabbables[tabbables.length - 1].focus();
+            if (!focusRegionControl(tabbables[tabbables.length - 1])) {
+              closeMenu();
+            }
           }
           return;
         }
