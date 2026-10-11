@@ -49,6 +49,12 @@ const CONTAINER_COMPONENTS = [
   'Slider',
 ];
 
+/**
+ * Field-root members that also render inside InputGroup. There Field is absent
+ * and root styling painted the control surface, so it moves to `control*`.
+ */
+const GROUPED_CONTROL_COMPONENTS = new Set(['Typeahead']);
+
 /** @type {ReadonlyMap<string, 'control' | 'container'>} */
 const PART_BY_COMPONENT = new Map([
   ...CONTROL_COMPONENTS.map(name => /** @type {const} */ ([name, 'control'])),
@@ -85,6 +91,8 @@ export default function migrateFieldInputStyling(file, api) {
   const localParts = new Map();
   /** @type {Set<string>} */
   const namespaces = new Set();
+  /** @type {Map<string, string>} */
+  const importedNames = new Map();
 
   root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     const source = path.node.source.value;
@@ -93,6 +101,8 @@ export default function migrateFieldInputStyling(file, api) {
     for (const specifier of path.node.specifiers ?? []) {
       if (specifier.type === 'ImportSpecifier') {
         if (specifier.importKind === 'type') continue;
+        const local = specifier.local?.name ?? specifier.imported.name;
+        importedNames.set(local, specifier.imported.name);
         const part = PART_BY_COMPONENT.get(specifier.imported.name);
         if (part) {
           localParts.set(
@@ -106,6 +116,33 @@ export default function migrateFieldInputStyling(file, api) {
     }
   });
   if (localParts.size === 0 && namespaces.size === 0) return undefined;
+
+  /** The imported component name an opening-element name refers to. @param {any} name */
+  const componentOf = name => {
+    if (name.type === 'JSXIdentifier') return importedNames.get(name.name);
+    if (
+      name.type === 'JSXMemberExpression' &&
+      name.object.type === 'JSXIdentifier' &&
+      namespaces.has(name.object.name) &&
+      name.property.type === 'JSXIdentifier'
+    ) {
+      return name.property.name;
+    }
+    return undefined;
+  };
+
+  /** @param {any} path */
+  const isInsideInputGroup = path => {
+    for (let p = path.parent; p; p = p.parent) {
+      if (
+        p.node.type === 'JSXElement' &&
+        componentOf(p.node.openingElement.name) === 'InputGroup'
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
 
   /** @param {any} name */
   const partFor = name => {
@@ -123,8 +160,15 @@ export default function migrateFieldInputStyling(file, api) {
 
   let changed = false;
   root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
-    const part = partFor(path.node.name);
+    let part = partFor(path.node.name);
     if (!part) return;
+    if (
+      part === 'container' &&
+      GROUPED_CONTROL_COMPONENTS.has(componentOf(path.node.name) ?? '') &&
+      isInsideInputGroup(path.parent)
+    ) {
+      part = 'control';
+    }
     const attributes = path.node.attributes ?? [];
     const present = new Set(
       attributes

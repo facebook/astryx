@@ -40,6 +40,19 @@ const c = <Slider label="Volume" className="volume" value={1} />;`;
     expect(output).toContain('containerClassName="volume"');
   });
 
+  it('moves a Typeahead inside InputGroup to control*, where its root styling painted the surface', () => {
+    const input = `import {InputGroup, Typeahead} from '@astryxdesign/core';
+const a = (
+  <InputGroup label="Produce">
+    <Typeahead label="Fruit" className="grouped" />
+  </InputGroup>
+);
+const b = <Typeahead label="Fruit" className="standalone" />;`;
+    const output = apply(input);
+    expect(output).toContain('controlClassName="grouped"');
+    expect(output).toContain('containerClassName="standalone"');
+  });
+
   it('follows aliased and namespace imports', () => {
     const input = `import {TextArea as Notes} from '@astryxdesign/core';
 import * as Astryx from '@astryxdesign/core';
