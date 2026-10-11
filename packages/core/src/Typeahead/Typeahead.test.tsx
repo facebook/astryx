@@ -2325,7 +2325,7 @@ describe('emptySearchText rename', () => {
 });
 
 describe('Typeahead consumer key handler order', () => {
-  it('runs onKeyDown after built-in key handling, so it cannot cancel navigation', async () => {
+  it('runs onKeyDown on the input after built-in key handling, so it cannot cancel navigation', async () => {
     let currentTarget: EventTarget | null = null;
     const onKeyDown = vi.fn((event: React.KeyboardEvent) => {
       currentTarget = event.currentTarget;
@@ -2351,7 +2351,26 @@ describe('Typeahead consumer key handler order', () => {
     });
     fireEvent.keyDown(input, {key: 'ArrowDown'});
     expect(onKeyDown).toHaveBeenCalledOnce();
-    expect(currentTarget).toBe(container.querySelector('.astryx-typeahead'));
+    expect(currentTarget).toBe(screen.getByRole('combobox'));
     expect(input).toHaveAttribute('aria-activedescendant');
+  });
+});
+
+describe('Typeahead consumer key handler target', () => {
+  it('does not run onKeyDown for keys on the clear button', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('button', {name: /clear/i}), {
+      key: 'Enter',
+    });
+    expect(onKeyDown).not.toHaveBeenCalled();
   });
 });

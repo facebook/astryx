@@ -73,6 +73,23 @@ export function describeFieldInputParts(
       expect(onFocus).toHaveBeenCalled();
     });
 
+    it('keeps a caller aria-describedby alongside the field description', () => {
+      render(
+        renderMember({
+          'aria-describedby': 'caller-help',
+          description: 'Field help',
+        }),
+      );
+      const ids = (getControl().getAttribute('aria-describedby') ?? '').split(
+        ' ',
+      );
+      expect(ids).toContain('caller-help');
+      const describedText = ids
+        .map(id => document.getElementById(id)?.textContent ?? '')
+        .join(' ');
+      expect(describedText).toContain('Field help');
+    });
+
     it('styles the Field box with container* and the control box with control*', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const {container} = render(

@@ -59,6 +59,7 @@ import {
   isImeKeyEvent,
   mergeProps,
 } from '../utils';
+import {TrailingKeyDownContext} from './trailingKeyDown';
 import {
   type FieldInputBaseProps,
   useFieldInputStyling,
@@ -410,6 +411,7 @@ export function Typeahead<T extends SearchableItem>({
   controlClassName,
   controlStyle,
   id: idProp,
+  'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: TypeaheadProps<T>) {
   const {rest, container} = useFieldInputStyling('Typeahead', restProps, {
@@ -594,10 +596,6 @@ export function Typeahead<T extends SearchableItem>({
         ref={useMergedRefs(wrapperRef, disabledMessageTooltip.ref)}
         onClick={handleWrapperClick}
         onBlur={handleBlur}
-        // A consumer onKeyDown runs after the input's own key handling, in the
-        // bubble phase, so it observes every key and cannot cancel built-in
-        // navigation or selection.
-        onKeyDown={onKeyDown}
         {...mergeProps(
           themeProps('typeahead', {size, status: status?.type}),
           stylex.props(
@@ -634,38 +632,44 @@ export function Typeahead<T extends SearchableItem>({
                 xstyle={styles.tokenOverlay}
               />
             )}
-            <BaseTypeahead
-              {...rest}
-              ref={useMergedRefs(inputRef, ref)}
-              searchSource={searchSource}
-              value={value}
-              onChange={handleChange}
-              renderItem={renderItem}
-              placeholder={showToken ? undefined : placeholder}
-              hasEntriesOnFocus={hasEntriesOnFocus}
-              maxMenuItems={maxMenuItems}
-              minQueryLength={minQueryLength}
-              emptySearchText={emptySearchText}
-              isDisabled={isDisabled}
-              hasAutoFocus={hasAutoFocus}
-              isFocusableDisabled={showsDisabledMessage}
-              inputId={inputId}
-              ariaDescribedBy={ariaDescribedBy}
-              ariaLabelledBy={ariaLabelledBy}
-              onChangeQuery={onChangeQuery}
-              onOpenChange={onOpenChange}
-              debounceMs={debounceMs}
-              anchorRef={wrapperRef}
-              onKeyDown={handleKeyDown}
-              inputXStyle={showToken ? styles.inputHidden : undefined}
-              // While the token is shown the input is invisible and inert behind
-              // it — take it out of the Tab order so keyboard users don't hit a
-              // stop they cannot see (WCAG 2.4.3 / 2.4.7). It stays
-              // programmatically focusable: entering edit mode and clearing both
-              // refocus it once the token goes away.
-              inputTabIndex={showToken ? -1 : undefined}
-              size={size}
-            />
+            <TrailingKeyDownContext value={onKeyDown}>
+              <BaseTypeahead
+                {...rest}
+                ref={useMergedRefs(inputRef, ref)}
+                searchSource={searchSource}
+                value={value}
+                onChange={handleChange}
+                renderItem={renderItem}
+                placeholder={showToken ? undefined : placeholder}
+                hasEntriesOnFocus={hasEntriesOnFocus}
+                maxMenuItems={maxMenuItems}
+                minQueryLength={minQueryLength}
+                emptySearchText={emptySearchText}
+                isDisabled={isDisabled}
+                hasAutoFocus={hasAutoFocus}
+                isFocusableDisabled={showsDisabledMessage}
+                inputId={inputId}
+                ariaDescribedBy={
+                  [ariaDescribedByProp, ariaDescribedBy]
+                    .filter(Boolean)
+                    .join(' ') || undefined
+                }
+                ariaLabelledBy={ariaLabelledBy}
+                onChangeQuery={onChangeQuery}
+                onOpenChange={onOpenChange}
+                debounceMs={debounceMs}
+                anchorRef={wrapperRef}
+                onKeyDown={handleKeyDown}
+                inputXStyle={showToken ? styles.inputHidden : undefined}
+                // While the token is shown the input is invisible and inert behind
+                // it — take it out of the Tab order so keyboard users don't hit a
+                // stop they cannot see (WCAG 2.4.3 / 2.4.7). It stays
+                // programmatically focusable: entering edit mode and clearing both
+                // refocus it once the token goes away.
+                inputTabIndex={showToken ? -1 : undefined}
+                size={size}
+              />
+            </TrailingKeyDownContext>
           </div>
         </BusyIndicatorLaneProvider>
         <EndLane

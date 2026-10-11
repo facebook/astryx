@@ -573,6 +573,7 @@ export function NumberInput({
   controlStyle,
   ref,
   id: idProp,
+  'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: NumberInputProps) {
   const {rest, container} = useFieldInputStyling('NumberInput', restProps, {
@@ -943,7 +944,10 @@ export function NumberInput({
         aria-valuetext={
           value == null || !formatValue ? undefined : formattedValue
         }
-        aria-describedby={ariaDescribedBy}
+        aria-describedby={
+          [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
+          undefined
+        }
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined

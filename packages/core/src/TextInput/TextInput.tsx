@@ -320,6 +320,7 @@ export function TextInput({
   controlStyle,
   ref,
   id: idProp,
+  'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: TextInputProps) {
   const {rest, container} = useFieldInputStyling('TextInput', restProps, {
@@ -489,7 +490,10 @@ export function TextInput({
         readOnly={isReadOnly || showsDisabledMessage || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
-        aria-describedby={ariaDescribedBy}
+        aria-describedby={
+          [ariaDescribedByProp, ariaDescribedBy].filter(Boolean).join(' ') ||
+          undefined
+        }
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
         aria-busy={isBusy || undefined}

@@ -31,6 +31,7 @@ import {
   useIsBusy,
   type BusyIndicatorLane,
 } from '../Typeahead/busyIndicatorLane';
+import {TrailingKeyDownContext} from '../Typeahead/trailingKeyDown';
 import {
   type FieldInputBaseProps,
   useFieldInputStyling,
@@ -595,6 +596,7 @@ export function Tokenizer<T extends SearchableItem>({
   handleRef,
   onKeyDown,
   id: idProp,
+  'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: TokenizerProps<T>) {
   const {rest, container} = useFieldInputStyling('Tokenizer', restProps, {
@@ -957,10 +959,6 @@ export function Tokenizer<T extends SearchableItem>({
       onClick={handleWrapperClick}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
-      // A consumer onKeyDown runs after the input's own key handling, in the
-      // bubble phase, so it observes every key and cannot cancel built-in
-      // navigation or token editing.
-      onKeyDown={onKeyDown}
       {...mergeProps(
         themeProps('tokenizer', {
           size,
@@ -1005,44 +1003,50 @@ export function Tokenizer<T extends SearchableItem>({
           indicator lands in the end controls below beside the clear
           button rather than as a second one inside the base. */}
       <BusyIndicatorLaneProvider value={busyLane}>
-        <BaseTypeahead
-          {...rest}
-          ref={useMergedRefs(inputRef, ref)}
-          searchSource={isAtMax ? emptySource : filteredSource}
-          value={null}
-          onChange={handleAdd}
-          renderItem={renderItem}
-          // A space keeps :placeholder-shown available as the CSS-only empty
-          // query signal without painting placeholder text beside tokens.
-          placeholder={value.length === 0 ? placeholder : ' '}
-          hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
-          maxMenuItems={maxMenuItems}
-          menuWidth={menuWidth}
-          minQueryLength={minQueryLength}
-          emptySearchText={emptySearchText}
-          isDisabled={isDisabled}
-          isFocusableDisabled={showsDisabledMessage}
-          hasAutoFocus={hasAutoFocus}
-          inputId={inputId}
-          ariaDescribedBy={ariaDescribedBy}
-          onChangeQuery={onChangeQuery}
-          __queryEntries={createEntries}
-          debounceMs={debounceMs}
-          onKeyDown={handleKeyDown}
-          anchorRef={wrapperRef}
-          size={size}
-          inputXStyle={[
-            isAtMax || isTruncated
-              ? styles.inputAtMax
-              : value.length > 0
-                ? [styles.inputCompact, compactInputSizeStyles[size]]
-                : undefined,
-            // The compact-token style owns the same reserve with an empty-query
-            // exception. This standalone rule is only for an empty Tokenizer;
-            // it still resolves to zero until the lane publishes a width.
-            !(isAtMax || isTruncated || value.length > 0) && laneReserve,
-          ]}
-        />
+        <TrailingKeyDownContext value={onKeyDown}>
+          <BaseTypeahead
+            {...rest}
+            ref={useMergedRefs(inputRef, ref)}
+            searchSource={isAtMax ? emptySource : filteredSource}
+            value={null}
+            onChange={handleAdd}
+            renderItem={renderItem}
+            // A space keeps :placeholder-shown available as the CSS-only empty
+            // query signal without painting placeholder text beside tokens.
+            placeholder={value.length === 0 ? placeholder : ' '}
+            hasEntriesOnFocus={isAtMax ? false : hasEntriesOnFocus}
+            maxMenuItems={maxMenuItems}
+            menuWidth={menuWidth}
+            minQueryLength={minQueryLength}
+            emptySearchText={emptySearchText}
+            isDisabled={isDisabled}
+            isFocusableDisabled={showsDisabledMessage}
+            hasAutoFocus={hasAutoFocus}
+            inputId={inputId}
+            ariaDescribedBy={
+              [ariaDescribedByProp, ariaDescribedBy]
+                .filter(Boolean)
+                .join(' ') || undefined
+            }
+            onChangeQuery={onChangeQuery}
+            __queryEntries={createEntries}
+            debounceMs={debounceMs}
+            onKeyDown={handleKeyDown}
+            anchorRef={wrapperRef}
+            size={size}
+            inputXStyle={[
+              isAtMax || isTruncated
+                ? styles.inputAtMax
+                : value.length > 0
+                  ? [styles.inputCompact, compactInputSizeStyles[size]]
+                  : undefined,
+              // The compact-token style owns the same reserve with an empty-query
+              // exception. This standalone rule is only for an empty Tokenizer;
+              // it still resolves to zero until the lane publishes a width.
+              !(isAtMax || isTruncated || value.length > 0) && laneReserve,
+            ]}
+          />
+        </TrailingKeyDownContext>
       </BusyIndicatorLaneProvider>
       {htmlName != null &&
         value.map(item => (
@@ -1102,7 +1106,10 @@ export function Tokenizer<T extends SearchableItem>({
                 !isDisabled &&
                 inputStatusHoverShadowStyles[status.type],
               status && inputStatusFocusWithinStyles[status.type],
+              controlXstyle,
             ),
+            controlClassName,
+            controlStyle,
           )}>
           {isTruncated && (
             <>

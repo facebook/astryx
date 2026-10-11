@@ -41,7 +41,7 @@ import {Tooltip} from '../Tooltip/Tooltip';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
-import {composeEventHandlers, mergeProps, rtlStyles} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {
   getInteractionModality,
@@ -502,6 +502,11 @@ export function Slider({ref, ...props}: SliderProps) {
     onPointerMove,
     onPointerUp,
     onPointerCancel,
+    onKeyDown,
+    onFocus,
+    onBlur,
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
     ...restWithRange
   } = props;
   const {minStepsBetweenThumbs: _minSteps, ...restProps} =
@@ -520,7 +525,17 @@ export function Slider({ref, ...props}: SliderProps) {
 
   const isHorizontal = orientation === 'horizontal';
 
-  const id = useId();
+  // Consumer handlers run after the component's own and always run: the
+  // component's handlers call preventDefault() for their own reasons, which
+  // must not silence a consumer.
+  const after =
+    <E,>(own: (event: E) => void, consumer?: (event: E) => void) =>
+    (event: E) => {
+      own(event);
+      consumer?.(event);
+    };
+  const generatedId = useId();
+  const id = idProp ?? generatedId;
   const labelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -917,6 +932,8 @@ export function Slider({ref, ...props}: SliderProps) {
 
     const thumbElement = (
       <div
+        {...(!isRange ? rest : undefined)}
+        ref={!isRange ? ref : undefined}
         key={thumbIndex}
         id={!isRange ? id : undefined}
         role="slider"
@@ -933,10 +950,20 @@ export function Slider({ref, ...props}: SliderProps) {
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-label={thumbLabel}
         aria-labelledby={!isRange ? labelID : undefined}
-        aria-describedby={ariaDescribedBy}
-        onKeyDown={e => handleKeyDown(thumbIndex, e)}
-        onFocus={e => handleThumbFocus(thumbIndex, e)}
-        onBlur={handleThumbBlur}
+        aria-describedby={
+          [!isRange ? ariaDescribedByProp : undefined, ariaDescribedBy]
+            .filter(Boolean)
+            .join(' ') || undefined
+        }
+        onKeyDown={after(
+          e => handleKeyDown(thumbIndex, e),
+          !isRange ? onKeyDown : undefined,
+        )}
+        onFocus={after(
+          e => handleThumbFocus(thumbIndex, e),
+          !isRange ? onFocus : undefined,
+        )}
+        onBlur={after(handleThumbBlur, !isRange ? onBlur : undefined)}
         {...mergeProps(
           themeProps('slider-thumb', {
             orientation,
@@ -1059,18 +1086,29 @@ export function Slider({ref, ...props}: SliderProps) {
             />
           ))}
         <div
-          {...rest}
-          ref={useMergedRefs(ref, trackRef, disabledMessageTooltip.ref)}
+          // In range mode the role="group" control takes the base props; a
+          // single slider gives them to its role="slider" thumb.
+          {...(isRange ? rest : undefined)}
+          {...(isRange
+            ? {
+                onKeyDown,
+                onFocus,
+                onBlur,
+                'aria-describedby': ariaDescribedByProp,
+              }
+            : undefined)}
+          ref={useMergedRefs(
+            isRange ? ref : undefined,
+            trackRef,
+            disabledMessageTooltip.ref,
+          )}
           {...(isRange
             ? {role: 'group', 'aria-labelledby': labelID}
             : undefined)}
-          onPointerDown={composeEventHandlers(handlePointerDown, onPointerDown)}
-          onPointerMove={composeEventHandlers(handlePointerMove, onPointerMove)}
-          onPointerUp={composeEventHandlers(handlePointerUp, onPointerUp)}
-          onPointerCancel={composeEventHandlers(
-            handlePointerUp,
-            onPointerCancel,
-          )}
+          onPointerDown={after(handlePointerDown, onPointerDown)}
+          onPointerMove={after(handlePointerMove, onPointerMove)}
+          onPointerUp={after(handlePointerUp, onPointerUp)}
+          onPointerCancel={after(handlePointerUp, onPointerCancel)}
           {...mergeProps(
             themeProps('slider-control', {
               orientation,

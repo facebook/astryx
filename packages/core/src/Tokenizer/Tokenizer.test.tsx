@@ -1946,7 +1946,7 @@ describe('Tokenizer emptySearchText', () => {
 });
 
 describe('Tokenizer consumer key handler order', () => {
-  it('runs onKeyDown after built-in key handling, so it cannot cancel token removal', () => {
+  it('runs onKeyDown on the input after built-in key handling, so it cannot cancel token removal', () => {
     let currentTarget: EventTarget | null = null;
     const onKeyDown = vi.fn((event: React.KeyboardEvent) => {
       currentTarget = event.currentTarget;
@@ -1968,6 +1968,6 @@ describe('Tokenizer consumer key handler order', () => {
       type: 'remove',
     });
     expect(onKeyDown).toHaveBeenCalledOnce();
-    expect(currentTarget).toBe(container.querySelector('.astryx-tokenizer'));
+    expect(currentTarget).toBe(screen.getByRole('combobox'));
   });
 });
