@@ -134,6 +134,10 @@ export const doc = {
   ],
   throws: [
     {
+      code: 'ERR_INVALID_ARGUMENT',
+      when: 'options.list is set with a type outside page or block, or with a package that provides no templates; a valid filter that matches nothing returns an empty list instead',
+    },
+    {
       code: 'ERR_UNKNOWN_TEMPLATE',
       when: 'the named template does not exist, or options.skeleton is set without a name',
     },
