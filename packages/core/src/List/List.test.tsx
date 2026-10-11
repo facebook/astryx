@@ -957,6 +957,24 @@ describe('List and swipe actions', () => {
     expect(rules.some(r => /overflow[-a-z]*: hidden/.test(r))).toBe(false);
   });
 
+  it('passes controlProps through to the row\x27s control unchanged', () => {
+    render(
+      <List>
+        <ListItem
+          label="A"
+          data-testid="row"
+          href="/a"
+          controlProps={{'data-nav-id': 'a', tabIndex: -1}}
+        />
+      </List>,
+    );
+    const row = screen.getByTestId('row');
+    const link = screen.getByRole('link', {name: 'A'});
+    expect(link).toHaveAttribute('data-nav-id', 'a');
+    expect(link).toHaveAttribute('tabindex', '-1');
+    expect(row).not.toHaveAttribute('data-nav-id');
+  });
+
   it('passes swipeActions and swipeBehavior through to the row unchanged', async () => {
     render(
       <List>
