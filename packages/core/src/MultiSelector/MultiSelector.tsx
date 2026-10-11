@@ -739,7 +739,7 @@ export interface MultiSelectorProps<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `controlXstyle`/`controlClassName`/`controlStyle`.
    */
   width?: SizeValue;
   /**
@@ -923,7 +923,8 @@ export interface MultiSelectorProps<
   onOpenChange?: (isOpen: boolean) => void;
 
   /**
-   * Test ID for testing frameworks.
+   * Test ID for testing frameworks, set on the trigger button (or, with
+   * `renderTrigger`, the caller's control).
    */
   'data-testid'?: string;
 }

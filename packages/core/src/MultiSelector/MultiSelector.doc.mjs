@@ -406,10 +406,38 @@ export const docs = {
             'Called whenever the panel opens or closes, however it happened: the trigger, the keyboard, a light dismiss, Escape, or the handle.',
         },
         {
-          name: 'xstyle',
+          name: 'containerXstyle',
           type: 'StyleXStyles',
           description:
-            'StyleX styles for layout customization. Must be a stylex.create() value.',
+            'StyleX styles for the field container (label, control, and status together). No effect inside InputGroup (style the InputGroup instead) or in a `horizontal-labels` FormLayout. Root `xstyle`, `className`, and `style` are not accepted.',
+        },
+        {
+          name: 'containerClassName',
+          type: 'string',
+          description:
+            'Class name for the field container. Same targeting as `containerXstyle`.',
+        },
+        {
+          name: 'containerStyle',
+          type: 'CSSProperties',
+          description:
+            'Inline styles for the field container. Same targeting as `containerXstyle`.',
+        },
+        {
+          name: 'controlXstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for the visual control box: the element that paints the border and background and holds the value, icons, and end controls. Never the trigger button itself.',
+        },
+        {
+          name: 'controlClassName',
+          type: 'string',
+          description: 'Class name for the visual control box.',
+        },
+        {
+          name: 'controlStyle',
+          type: 'CSSProperties',
+          description: 'Inline styles for the visual control box.',
         },
       ],
     },
@@ -523,7 +551,14 @@ export const docsZh = {
         onOpenChange: '面板每次打开或关闭时触发，无论由何种方式引起。',
         presentation:
           '选项列表的呈现方式：锚定弹出框、底部抽屉，或根据紧凑触控屏自适应。',
-        xstyle: '布局自定义的 StyleX 样式，必须是 stylex.create() 值。',
+        containerXstyle:
+          '字段容器（标签、控件和状态整体）的 StyleX 样式。在 InputGroup 内或 `horizontal-labels` FormLayout 中无效。不接受根级 xstyle、className 和 style。',
+        containerClassName: '字段容器的类名，作用目标同 containerXstyle。',
+        containerStyle: '字段容器的内联样式，作用目标同 containerXstyle。',
+        controlXstyle:
+          '可视控件框的 StyleX 样式：绘制边框和背景并包含值、图标与尾部控件的元素，而非触发按钮本身。',
+        controlClassName: '可视控件框的类名。',
+        controlStyle: '可视控件框的内联样式。',
       },
     },
   ],
@@ -671,7 +706,14 @@ export const docsDense = {
         onOpenChange: 'fires on every open/close, whatever caused it',
         presentation:
           'popover, bottom-sheet, or compact-touch adaptive presentation',
-        xstyle: 'StyleX layout styles; stylex.create() only',
+        containerXstyle:
+          'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
+        containerClassName: 'Class name for the field container.',
+        containerStyle: 'Inline styles for the field container.',
+        controlXstyle:
+          'StyleX styles for the visual control box (border, background, icons); not the trigger button.',
+        controlClassName: 'Class name for the visual control box.',
+        controlStyle: 'Inline styles for the visual control box.',
       },
     },
   ],

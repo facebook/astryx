@@ -25,9 +25,6 @@ const PENDING_FR10 = new Set([
   'DateTimeInput',
   'TimeInput',
   // selector batch
-  'Selector',
-  'MultiSelector',
-  'ComplexSelector',
   // field-root batch
   'Typeahead',
   'Tokenizer',
