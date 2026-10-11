@@ -69,6 +69,7 @@ import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {useMenuOverflow} from './useMenuOverflow';
+import {MenuRegionsContext} from './menuRegionsContext';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
@@ -850,7 +851,10 @@ function DropdownMenuPopover({
   const contentRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
-  const hasRegions = isRenderable(header) || isRenderable(footer);
+  const hasRegions = useMemo(
+    () => isRenderable(header) || isRenderable(footer),
+    [header, footer],
+  );
   // Whether the menu element itself took focus from the keyboard. A pointer
   // open focuses it programmatically, and pointer history must not paint the
   // keyboard ring (architecture:interaction-modality INV1).
@@ -1035,6 +1039,23 @@ function DropdownMenuPopover({
       // A submenu flyout renders inline inside this menu; its key events bubble
       // up here. Let that level own them — only handle events from this level.
       if (!ownsEvent(e)) {
+        // Except Tab with a header or footer: each open flyout has closed
+        // itself as the key bubbled up, and the root moves focus on as Tab
+        // from one of its own rows would.
+        if (e.key === 'Tab' && hasRegions) {
+          const region = e.shiftKey ? headerRef.current : footerRef.current;
+          const tabbables = tabbablesIn(region);
+          e.stopPropagation();
+          if (tabbables.length > 0) {
+            e.preventDefault();
+            (e.shiftKey
+              ? tabbables[tabbables.length - 1]
+              : tabbables[0]
+            ).focus();
+          } else {
+            closeMenu();
+          }
+        }
         return;
       }
       if (e.key === 'Enter' || e.key === ' ') {
@@ -1089,7 +1110,7 @@ function DropdownMenuPopover({
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead, ownsEvent, listRef],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent, listRef, hasRegions],
   );
 
   // Tab past the last control of the footer, or Shift+Tab before the first
@@ -1493,9 +1514,11 @@ function DropdownMenuPopover({
               className,
               style,
             )}>
-            <DropdownMenuContext value={contextValue}>
-              {menuContent}
-            </DropdownMenuContext>
+            <MenuRegionsContext value={hasRegions}>
+              <DropdownMenuContext value={contextValue}>
+                {menuContent}
+              </DropdownMenuContext>
+            </MenuRegionsContext>
           </div>,
         ),
         {

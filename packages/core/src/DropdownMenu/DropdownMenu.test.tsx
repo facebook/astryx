@@ -19,6 +19,7 @@ import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {DropdownMenuGroup} from './DropdownMenuGroup';
+import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
 import {Divider} from '../Divider';
 import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
@@ -3464,6 +3465,62 @@ describe('DropdownMenu header and footer', () => {
     fireEvent.keyDown(document, {key: 'Tab'});
     act(() => menu.focus());
     await waitFor(() => expect(hasRing()).toBe(true));
+  });
+
+  describe('with a sub-menu open', () => {
+    async function openFlyout() {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          button={{label: 'Labels'}}
+          header={<input aria-label="Filter labels" />}
+          footer={<button type="button">Create label</button>}>
+          <DropdownMenuItem label="Bug" />
+          <DropdownMenuSubMenu label="Move to">
+            <DropdownMenuItem label="Folder A" />
+            <DropdownMenuItem label="Folder B" />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      await user.click(screen.getByRole('button', {name: /Labels/}));
+      const root = screen.getByRole('menu', {name: 'Labels', hidden: true});
+      await waitFor(() => expect(root).toHaveFocus());
+      const subTrigger = screen.getByRole('menuitem', {
+        name: /Move to/,
+        hidden: true,
+      });
+      act(() => subTrigger.focus());
+      await user.keyboard('{ArrowRight}');
+      await waitFor(() =>
+        expect(subTrigger).toHaveAttribute('aria-expanded', 'true'),
+      );
+      const folder = screen.getByRole('menuitem', {
+        name: 'Folder A',
+        hidden: true,
+      });
+      await waitFor(() => expect(folder).toHaveFocus());
+      const hide = vi.mocked(HTMLElement.prototype.hidePopover);
+      return {root, subTrigger, folder, hide};
+    }
+
+    it('Tab from a flyout row closes the flyout and moves to the footer', async () => {
+      const {root, subTrigger, folder} = await openFlyout();
+      fireEvent.keyDown(folder, {key: 'Tab'});
+      expect(subTrigger).toHaveAttribute('aria-expanded', 'false');
+      expect(
+        screen.getByRole('button', {name: 'Create label', hidden: true}),
+      ).toHaveFocus();
+      expect(root.closest('[popover]')).toHaveAttribute('popover-open');
+    });
+
+    it('Shift+Tab from a flyout row closes the flyout and moves to the header', async () => {
+      const {subTrigger, folder} = await openFlyout();
+      fireEvent.keyDown(folder, {key: 'Tab', shiftKey: true});
+      expect(subTrigger).toHaveAttribute('aria-expanded', 'false');
+      expect(
+        screen.getByRole('textbox', {name: 'Filter labels', hidden: true}),
+      ).toHaveFocus();
+    });
   });
 
   it('Tab past the last footer control closes the menu', async () => {

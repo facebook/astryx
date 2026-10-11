@@ -50,6 +50,7 @@
  */
 
 import React, {
+  use,
   useCallback,
   useEffect,
   useId,
@@ -63,6 +64,7 @@ import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
+import {MenuRegionsContext} from './menuRegionsContext';
 import {Item} from '../Item';
 import {useLayer} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
@@ -356,6 +358,7 @@ export function DropdownMenuSubMenu(
 
   const t = useTranslator();
   const menuCtx = useDropdownMenuContext();
+  const rootHasRegions = use(MenuRegionsContext);
   const menuSize = menuCtx?.menuSize ?? 'md';
   const canOpen = !isDisabled;
 
@@ -655,6 +658,13 @@ export function DropdownMenuSubMenu(
   // stopPropagation needed — each level self-filters.
   const handleContentKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // In a menu with a header or footer, Tab leaves the whole flyout stack:
+      // every open level closes as the key bubbles past it — this one's own
+      // rows or a deeper level's — and the root menu moves focus to a region.
+      if (e.key === 'Tab' && rootHasRegions) {
+        close({focusTrigger: false});
+        return;
+      }
       if (!ownsEvent(e)) {
         return;
       }
@@ -702,7 +712,7 @@ export function DropdownMenuSubMenu(
       }
       listNavKeyDown(e);
     },
-    [ownsEvent, close, listNavKeyDown, typeahead, menuRef],
+    [ownsEvent, close, listNavKeyDown, typeahead, menuRef, rootHasRegions],
   );
 
   // Re-provide the menu context so nested items behave exactly like top-level

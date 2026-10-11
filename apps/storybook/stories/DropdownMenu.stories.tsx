@@ -1469,6 +1469,10 @@ export const HeaderAndFooter: Story = {
           {visible.map(label => (
             <DropdownMenuItem key={label} label={label} onClick={() => {}} />
           ))}
+          <DropdownMenuSubMenu label="Move to">
+            <DropdownMenuItem label="Archive" onClick={() => {}} />
+            <DropdownMenuItem label="Backlog" onClick={() => {}} />
+          </DropdownMenuSubMenu>
         </DropdownMenu>
         <output data-testid="created">{created}</output>
       </>

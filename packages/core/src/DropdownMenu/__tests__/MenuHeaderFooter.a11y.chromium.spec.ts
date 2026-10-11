@@ -69,7 +69,7 @@ test('typing into the header field filters without moving to a row', async ({
   await page.keyboard.type('de');
   await expect(field).toHaveValue('de');
   await expect(field).toBeFocused();
-  await expect(page.getByRole('menuitem')).toHaveText(['Design']);
+  await expect(page.getByRole('menuitem')).toHaveText(['Design', 'Move to']);
 });
 
 test('Tab walks header, menu, footer, then closes to the trigger', async ({
@@ -132,6 +132,32 @@ test('keyboard focus on the menu between the regions is visible', async ({
   });
   expect(outline.style).not.toBe('none');
   expect(outline.width).toBeGreaterThan(0);
+});
+
+test('Tab and Shift+Tab from an open sub-menu close it and reach a region', async ({
+  page,
+}) => {
+  const menu = await openMenu(page);
+  const subTrigger = page.getByRole('menuitem', {name: 'Move to'});
+  await page.keyboard.press('End');
+  await expect(subTrigger).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('menuitem', {name: 'Archive'})).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', {name: 'Create label'})).toBeFocused();
+  await expect(subTrigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(menu).toBeVisible();
+
+  await page.keyboard.press('Shift+Tab');
+  await expect(menu).toBeFocused();
+  await page.keyboard.press('End');
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('menuitem', {name: 'Archive'})).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(
+    page.getByRole('textbox', {name: 'Filter labels'}),
+  ).toBeFocused();
+  await expect(subTrigger).toHaveAttribute('aria-expanded', 'false');
 });
 
 test('Escape in the header closes the menu and returns focus to the trigger', async ({
