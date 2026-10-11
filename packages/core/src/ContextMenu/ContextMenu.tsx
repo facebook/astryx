@@ -336,6 +336,8 @@ export function ContextMenu({
   // Fingers that went down outside the open menu; each closes it if it lifts
   // without the browser cancelling it (a tap, not a scroll).
   const outsideTouchesRef = useRef(new Set<number>());
+  // The latest closeMenu, for the outside-press listeners (see below).
+  const closeMenuRef = useRef<() => void>(() => {});
   const sheetHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const [isOpen, setIsOpen] = useState(false);
@@ -444,6 +446,12 @@ export function ContextMenu({
   // never closes it. A mouse or pen press outside closes the menu at once; a
   // finger closes it on a tap, lifted rather than cancelled, so a scroll that
   // starts outside leaves it open, as before.
+  //
+  // The listeners read the latest `closeMenu` through a ref, so they are
+  // installed once per open: a caller's inline `onOpenChange` gives
+  // `closeMenu` a new identity on every render, and re-installing them would
+  // forget a finger recorded between its press and its lift.
+  closeMenuRef.current = closeMenu;
   useEffect(() => {
     if (!isOpen || usesBottomSheet) {
       return;
@@ -458,11 +466,11 @@ export function ContextMenu({
         outsideTouches.add(e.pointerId);
         return;
       }
-      closeMenu();
+      closeMenuRef.current();
     };
     const handlePointerUp = (e: PointerEvent) => {
       if (outsideTouches.delete(e.pointerId)) {
-        closeMenu();
+        closeMenuRef.current();
       }
     };
     const handlePointerCancel = (e: PointerEvent) => {
@@ -477,7 +485,7 @@ export function ContextMenu({
       document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('pointercancel', handlePointerCancel);
     };
-  }, [isOpen, closeMenu, listRef, usesBottomSheet]);
+  }, [isOpen, listRef, usesBottomSheet]);
 
   // Dismiss on Escape from anywhere while open. The menu div's own onKeyDown
   // only fires when focus is inside the menu; a document-level listener is

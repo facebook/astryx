@@ -517,6 +517,36 @@ describe('ContextMenu outside dismissal', () => {
     fireEvent.mouseDown(outside);
     expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
+
+  it('a tap outside closes the menu even when the host re-renders mid-tap with an inline onOpenChange', () => {
+    const calls: boolean[] = [];
+    // A new inline handler on every render gives the menu's close a new
+    // identity each time, as a host that re-renders often does.
+    const ui = () => (
+      <>
+        <ContextMenu
+          items={[{label: 'Cut'}]}
+          data-testid="ctx"
+          onOpenChange={isOpen => calls.push(isOpen)}>
+          <div>Long-press me</div>
+        </ContextMenu>
+        <button type="button">Outside</button>
+      </>
+    );
+    const {rerender} = render(ui());
+    fireEvent.contextMenu(screen.getByTestId('ctx'), {
+      clientX: 50,
+      clientY: 15,
+      detail: 1,
+    });
+    expect(calls.at(-1)).toBe(true);
+    const outside = screen.getByRole('button', {name: 'Outside'});
+    fireEvent.pointerDown(outside, finger(5));
+    // The host re-renders between the finger's press and its lift.
+    rerender(ui());
+    lift(outside, 5);
+    expect(calls.at(-1)).toBe(false);
+  });
 });
 
 describe('ContextMenu items', () => {
