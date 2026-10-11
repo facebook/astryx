@@ -161,7 +161,7 @@ export const docs = {
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
       {name: 'Description', required: false, description: 'Helper text between the label and the drop zone explaining accepted formats or size limits.'},
       {name: 'Drop zone', required: true, description: 'The clickable area for file selection. In dropzone mode, also accepts dragged files.'},
-      {name: 'Upload icon', required: false, description: 'An arrow icon in the drop zone hinting at the upload action.'},
+      {name: 'Upload icon', required: false, description: 'An upload-to-tray icon in the drop zone hinting at the upload action.'},
       {name: 'Placeholder', required: false, description: 'Hint text shown when no files are selected.'},
       {name: 'File name display', required: false, description: 'Shows the name(s) of selected files.'},
       {name: 'Clear button', required: false, description: 'A close button that removes selected files and returns focus to the input.'},

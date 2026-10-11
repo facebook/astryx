@@ -12,7 +12,7 @@ export const doc = {
   displayName: 'Authored doc graph fields',
   namespace: 'authoring',
   description:
-    "Placement, compatibility aliases, and audience: fields every authored doc kind declares for the docs tree. The docs tree reads `placement` for every guide, the CLI's and each integration's; aliases and audience are not built yet. A reference topic outside the docs tree that sets one fails to load, and other doc kinds accept them and ignore them.",
+    "Fields every authored doc kind can declare for the docs tree: `placement`, plus two reserved fields, `aliases` and `audience`. The docs tree reads `placement` for every guide, the CLI's and each integration's. Nothing reads `aliases` or `audience` today: a reference topic outside the docs tree that sets one fails to load, and other doc kinds accept them and ignore them.",
   appliesTo: 'Every supported .doc.mjs object',
   fields: [
     {
@@ -45,13 +45,13 @@ export const doc = {
       name: 'aliases',
       type: 'string[]',
       description:
-        'Prior names or routes the docs tree will keep resolving to this doc, without creating another identity. Not read yet: a topic that sets it fails to load.',
+        'Reserved: prior names or routes the docs tree will keep resolving to this doc, without creating another identity. Nothing reads it today, and a topic that sets it fails to load.',
     },
     {
       name: 'audience',
       type: "'public' | 'internal'",
       description:
-        "Which docs bundle includes this doc ('public' when omitted). Not read yet: a topic that sets it fails to load.",
+        "Reserved: which docs bundle includes this doc ('public' when omitted). Nothing reads it today, and a topic that sets it fails to load.",
       default: "'public'",
     },
   ],

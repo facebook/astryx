@@ -44,6 +44,7 @@ const baseTemplateFields = {
   name: z.string().min(1, 'name is required'),
   displayName: z.string().min(1).optional(),
   description: z.string().min(1, 'description is required').optional(),
+  keywords: z.array(z.string().min(1)).optional(),
   category: z.string().optional(),
   componentsUsed: z.array(z.string()).optional(),
   preview: previewSchema.optional(),

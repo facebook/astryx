@@ -69,6 +69,8 @@ export interface ComputedNode {
   readonly readOnly: boolean | null;
   /** Whether the engine exposes the control as required. */
   readonly required: boolean | null;
+  /** Computed pressed state for toggle buttons, or null when none is exposed. */
+  readonly pressed: 'true' | 'false' | 'mixed' | null;
   /** Computed checked state, or null when the node exposes none. */
   readonly checked: 'true' | 'false' | 'mixed' | null;
   /** Computed selected state, or null when the node exposes none. */

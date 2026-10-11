@@ -24,7 +24,7 @@ Every stable `@astryxdesign/*` package ships at the same version, so bump them a
 Preview the migration first:
 
 ```bash
-npx astryx upgrade --from <your-version>
+npx @astryxdesign/cli upgrade --from <your-version>
 ```
 
 That is a dry run. Add `--apply` to write the changes to disk.

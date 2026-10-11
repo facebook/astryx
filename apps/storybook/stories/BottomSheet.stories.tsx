@@ -120,6 +120,45 @@ export const TextOnlyFitting: Story = {
   },
 };
 
+/**
+ * Content placed directly in a sheet with `padding`. The sheet pads it like
+ * Dialog, and a full-bleed Divider reaches the sheet's edges because the
+ * content box publishes its inset. Without `padding` (or a theme's
+ * bottom-sheet padding) the content box stays unpadded.
+ */
+export const ContainerPadding: Story = {
+  args: {
+    isOpen: true,
+    label: 'Order summary',
+    height: 'hug',
+    padding: 4,
+    children: (
+      <VStack gap={4}>
+        <Heading level={2}>Order summary</Heading>
+        <Text>
+          This content has no wrapper of its own. The sheet supplies the inset,
+          exactly as Dialog does.
+        </Text>
+        <Divider isFullBleed />
+        <Text color="secondary">
+          The divider above escapes the inset and spans the sheet.
+        </Text>
+      </VStack>
+    ),
+  },
+  render: args => {
+    const standaloneArgs = args as StandaloneBottomSheetStoryProps;
+    const [isOpen, setIsOpen] = useState(true);
+    return (
+      <BottomSheet
+        {...standaloneArgs}
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+      />
+    );
+  },
+};
+
 interface CommentFormValues {
   title: string;
   author: string;

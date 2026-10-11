@@ -18,21 +18,22 @@ export const doc = {
     'Non-interactive project setup (no prompts, so it behaves the same for humans, ' +
     'agents, and CI). By default it installs the AGENTS.md/CLAUDE.md agent-docs, ' +
     'including guidance from configured integrations, and prints getting-started ' +
-    'guidance; features/--all add theme and page-building ' +
-    'guidance and write an annotated theme template.',
+    "steps. --features and --all print only the chosen features' guidance (no " +
+    'getting-started steps); the theme feature also writes an annotated theme template.',
   fn: 'init',
   options: [
     {
       flag: '--features <list>',
       param: 'options.features',
       description:
-        'Comma-separated features to install (agents, theme, template). An unknown feature exits 1 with ERR_UNKNOWN_FEATURE. ' +
-        'Ignored with --all or --remove-agents',
+        'Comma-separated features: agents (agent docs), theme (writes theme.template.ts), template (prints the page-building commands; writes no file). ' +
+        'An unknown feature exits 1 with ERR_UNKNOWN_FEATURE. Ignored with --all or --remove-agents',
     },
     {
       flag: '--all',
       param: 'options.all',
-      description: 'Install all features (agents, theme, template); overrides --features',
+      description:
+        'Install all features (agents, theme, template); overrides --features. Prints their guidance instead of the getting-started steps',
     },
     {
       flag: '--remove-agents',
@@ -47,7 +48,9 @@ export const doc = {
       param: 'options.agent',
       choices: ['claude', 'cursor', 'codex', 'hermes', 'muse', 'all'],
       description:
-        'Target AI tool for agent docs: claude, cursor, codex, hermes, muse, all. An unknown tool exits 1 with ERR_UNKNOWN_AGENT. ' +
+        'Target AI tool for agent docs: claude (CLAUDE.md or .claude/CLAUDE.md, else creates .claude/CLAUDE.md), cursor (.cursorrules if present, else AGENTS.md), ' +
+        'codex and muse (AGENTS.md), hermes (.hermes.md or HERMES.md if present, else AGENTS.md), all (every existing agent doc, else AGENTS.md and .claude/CLAUDE.md). ' +
+        'An unknown tool exits 1 with ERR_UNKNOWN_AGENT. ' +
         'Used only when agent docs are installed (the default, --all, or --features agents); --agent-docs-path takes precedence',
     },
     {

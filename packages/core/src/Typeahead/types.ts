@@ -39,6 +39,15 @@ export interface SearchableItem<TAuxData = unknown> {
   label: string;
 
   /**
+   * The item's secondary control as one node the caller renders and names;
+   * the same key with the same type as `SelectorOptionData.action`
+   * (`spec:AST-058`). The typeahead panel does not render it yet and warns in
+   * development when an item carries one. Absent and `null` mean the same:
+   * none.
+   */
+  action?: ReactNode;
+
+  /**
    * Pre-rendered element for SSR compatibility.
    * When provided, takes priority over `renderItem` and default label rendering.
    */
@@ -82,9 +91,7 @@ export interface SearchableItem<TAuxData = unknown> {
  * };
  * ```
  */
-export interface SearchSource<
-  T extends SearchableItem = SearchableItem,
-> {
+export interface SearchSource<T extends SearchableItem = SearchableItem> {
   /**
    * Called on query change. Returns matching items.
    * Can be synchronous or asynchronous.

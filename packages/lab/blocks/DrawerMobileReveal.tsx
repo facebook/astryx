@@ -9,11 +9,10 @@
  */
 
 import {useState} from 'react';
-import {Drawer} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
-import {Section} from '@astryxdesign/core/Section';
-import {VStack} from '@astryxdesign/core/Stack';
-import {Heading, Text} from '@astryxdesign/core/Text';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function DrawerMobileReveal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,14 +25,18 @@ export default function DrawerMobileReveal() {
         onOpenChange={setIsOpen}
         label="Mobile reveal"
         width={360}>
-        <Section padding={4}>
-          <VStack gap={2}>
-            <Heading level={3}>Mobile reveal</Heading>
-            <Text type="body">
-              The page remains visible beside the drawer on mobile.
-            </Text>
-          </VStack>
-        </Section>
+        <Layout
+          header={
+            <DrawerHeader title="Mobile reveal" onOpenChange={setIsOpen} />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">
+                The page remains visible beside the drawer on mobile.
+              </Text>
+            </LayoutContent>
+          }
+        />
       </Drawer>
     </>
   );

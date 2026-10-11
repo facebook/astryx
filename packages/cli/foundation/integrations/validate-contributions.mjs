@@ -99,8 +99,40 @@ function checkUnknownKeys(integration, issues) {
 }
 
 /**
- * Verify each declared contribution root exists on disk. A declared-but-missing
- * root is a `missing_root` error.
+ * Why a declared root cannot be read as a folder, or null when it can.
+ * A missing root keeps its own issue; a root that is a file or that the
+ * user running astryx cannot read used to surface as a raw errno from
+ * whichever check touched it first, or end validation outright.
+ * @param {string} root
+ * @returns {{kind: 'missing'} | {kind: 'not-a-folder'} | {kind: 'unreadable', code: string} | null}
+ */
+export function rootProblem(root) {
+  let stat;
+  try {
+    stat = fs.statSync(root);
+  } catch (err) {
+    const code = /** @type {any} */ (err)?.code;
+    return code === 'ENOENT' || code === 'ENOTDIR'
+      ? {kind: 'missing'}
+      : {kind: 'unreadable', code: String(code ?? 'unknown error')};
+  }
+  if (!stat.isDirectory()) return {kind: 'not-a-folder'};
+  try {
+    fs.accessSync(root, fs.constants.R_OK | fs.constants.X_OK);
+  } catch (err) {
+    return {
+      kind: 'unreadable',
+      code: String(/** @type {any} */ (err)?.code ?? 'unknown error'),
+    };
+  }
+  return null;
+}
+
+/**
+ * Verify each declared contribution root is a folder Astryx can read. A
+ * declared-but-missing root is a `missing_root` error, a file is an
+ * `invalid_root` error, and a folder that cannot be read is an
+ * `unreadable_root` error. The contribution checks skip all three.
  * @param {{components?: string, templates?: string, codemods?: string, docs?: string, themes?: string}} resolved
  *   absolute resolved roots (undefined when not declared)
  * @param {Issue[]} issues
@@ -116,11 +148,27 @@ function checkRoots(resolved, issues) {
   for (const kind of kinds) {
     const root = resolved[kind];
     if (root == null) continue;
-    if (!fs.existsSync(root)) {
+    const problem = rootProblem(root);
+    if (problem == null) continue;
+    if (problem.kind === 'missing') {
       issues.push(
         issueError(
           'missing_root',
           `Declared ${kind} root does not exist on disk: ${root}`,
+        ),
+      );
+    } else if (problem.kind === 'not-a-folder') {
+      issues.push(
+        issueError(
+          'invalid_root',
+          `Declared ${kind} root is a file, not a folder: ${root}. Fix: point "${kind}" in the manifest at the folder that holds them.`,
+        ),
+      );
+    } else {
+      issues.push(
+        issueError(
+          'unreadable_root',
+          `Declared ${kind} root cannot be read (${problem.code}): ${root}. Fix: make it readable by the user running astryx.`,
         ),
       );
     }
@@ -135,7 +183,7 @@ function checkRoots(resolved, issues) {
  * @param {Issue[]} issues
  */
 async function checkCodemods(integration, issues) {
-  if (!integration.codemods || !fs.existsSync(integration.codemods)) return;
+  if (!integration.codemods || rootProblem(integration.codemods)) return;
   const context = integration.__packageDir
     ? createFixContext(integration.__packageDir, integration)
     : null;
@@ -232,7 +280,7 @@ async function checkCodemods(integration, issues) {
  * @param {Issue[]} issues
  */
 async function checkTemplates(integration, issues) {
-  if (!integration.templates || !fs.existsSync(integration.templates)) return;
+  if (!integration.templates || rootProblem(integration.templates)) return;
   try {
     const {errors} = await discoverIntegrationTemplatesForOne(integration);
     for (const e of errors) {
@@ -257,7 +305,7 @@ async function checkTemplates(integration, issues) {
  * @param {Issue[]} issues
  */
 async function checkComponents(integration, issues) {
-  if (!integration.components || !fs.existsSync(integration.components)) return;
+  if (!integration.components || rootProblem(integration.components)) return;
   const discover = componentDiscovery.discoverValidIntegrationComponents;
   if (typeof discover !== 'function') return; // feature not present yet
   try {
@@ -330,7 +378,7 @@ async function checkComponents(integration, issues) {
  * @param {Issue[]} issues
  */
 async function checkDocs(integration, issues) {
-  if (!integration.docs || !fs.existsSync(integration.docs)) return;
+  if (!integration.docs || rootProblem(integration.docs)) return;
   try {
     const {errors} = await discoverIntegrationDocs(integration);
     for (const e of errors) {
@@ -349,7 +397,7 @@ async function checkDocs(integration, issues) {
  * @param {Issue[]} issues
  */
 async function checkThemes(integration, issues) {
-  if (!integration.themes || !fs.existsSync(integration.themes)) return;
+  if (!integration.themes || rootProblem(integration.themes)) return;
   try {
     await discoverIntegrationThemes(integration);
   } catch (err) {

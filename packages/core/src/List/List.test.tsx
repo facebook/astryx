@@ -12,8 +12,10 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {rulesDeclaredFor} from '../__tests__/pressState';
 import {List} from './List';
 import {ListItem} from './ListItem';
+import {ListMarkerScope} from './ListContext';
 
 describe('List', () => {
   // ===========================================================================
@@ -842,5 +844,136 @@ describe('List', () => {
       </List>,
     );
     expect(screen.getByText('42')).toBeInTheDocument();
+  });
+
+  describe('ListMarkerScope (internal, for Markdown nested lists)', () => {
+    /** The shape inside the item's marker box. */
+    const markerShape = (container: HTMLElement) => {
+      // The dot, ring, or square: an empty element in the marker box.
+      const shape = container.querySelector('li > span > span:empty');
+      return shape == null ? null : getComputedStyle(shape);
+    };
+
+    it('draws the list style marker without a scope', () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListItem label="Item" />
+        </List>,
+      );
+      expect(markerShape(container)?.borderRadius).toBe('50%');
+    });
+
+    it('draws the scope marker in place of the list style', () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListMarkerScope marker="square">
+            <ListItem label="Item" />
+          </ListMarkerScope>
+        </List>,
+      );
+      const shape = markerShape(container);
+      expect(shape).not.toBeNull();
+      expect(shape?.borderRadius).not.toBe('50%');
+      expect(container.querySelector('ul')).not.toBeNull();
+    });
+
+    it("draws a task item's read-only checkbox in place of its marker", () => {
+      const {container} = render(
+        <List listStyle="disc">
+          <ListMarkerScope
+            marker="disc"
+            task={{isChecked: true, label: 'Done'}}>
+            <ListItem label="Done" />
+          </ListMarkerScope>
+          <ListItem label="Plain" />
+        </List>,
+      );
+      const checkbox = screen.getByRole('checkbox', {name: 'Done'});
+      expect(checkbox).toBeChecked();
+      expect(checkbox).toHaveAttribute('aria-readonly', 'true');
+      const [task, plain] = container.querySelectorAll('li');
+      expect(task?.contains(checkbox)).toBe(true);
+      // The task item has no dot in its marker box; the plain item keeps it.
+      expect(task?.querySelector(':scope > span > span:empty')).toBeNull();
+      expect(plain?.querySelector(':scope > span > span:empty')).not.toBeNull();
+    });
+
+    it('draws no task checkbox in a list without markers', () => {
+      render(
+        <List>
+          <ListMarkerScope
+            marker="disc"
+            task={{isChecked: true, label: 'Done'}}>
+            <ListItem label="Done" />
+          </ListMarkerScope>
+        </List>,
+      );
+      expect(screen.queryByRole('checkbox')).toBeNull();
+    });
+
+    it('keeps a numbered list ordered with a letter marker', () => {
+      render(
+        <List listStyle="decimal" start={3}>
+          <ListMarkerScope marker="lower-alpha">
+            <ListItem label="Item" />
+          </ListMarkerScope>
+        </List>,
+      );
+      const list = screen.getByRole('list');
+      expect(list.tagName).toBe('OL');
+      expect(list).toHaveAttribute('start', '3');
+    });
+
+    it('draws no marker in a list without markers, or outside a list', () => {
+      const {container} = render(
+        <>
+          <List>
+            <ListMarkerScope marker="square">
+              <ListItem label="In a plain list" />
+            </ListMarkerScope>
+          </List>
+          <ListMarkerScope marker="square">
+            <span>Outside a list</span>
+          </ListMarkerScope>
+        </>,
+      );
+      expect(markerShape(container)).toBeNull();
+      expect(screen.getByText('Outside a list')).toBeInTheDocument();
+    });
+  });
+});
+
+describe('List and swipe actions', () => {
+  it('clips the rows in the inline axis with clip, never hidden, so a row dragged aside paints no further than the list', () => {
+    render(
+      <List>
+        <ListItem label="A" />
+      </List>,
+    );
+    const rules = rulesDeclaredFor(screen.getByRole('list'));
+    // Declared as `overflow-inline`; StyleX emits the physical longhand of
+    // the same axis in horizontal writing modes.
+    expect(rules.some(r => /overflow-(inline|x): clip/.test(r))).toBe(true);
+    expect(rules.some(r => /overflow[-a-z]*: hidden/.test(r))).toBe(false);
+  });
+
+  it('passes swipeActions and swipeBehavior through to the row unchanged', () => {
+    render(
+      <List>
+        <ListItem
+          label="A"
+          data-testid="row"
+          swipeBehavior="commit"
+          swipeActions={{trailing: [{label: 'Archive', onActivate: () => {}}]}}
+        />
+      </List>,
+    );
+    const row = screen.getByTestId('row');
+    expect(row.tagName).toBe('LI');
+    expect(row.parentElement).toBe(screen.getByRole('list'));
+    const panel = row.querySelector('[data-swipe-panel="trailing"]');
+    expect(panel).not.toBeNull();
+    // Commit: presentational.
+    expect(panel).toHaveAttribute('aria-hidden', 'true');
   });
 });

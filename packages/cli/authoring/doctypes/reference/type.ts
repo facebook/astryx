@@ -127,6 +127,11 @@ export interface ReferenceDoc extends AuthoredDocGraphFields {
   description: string;
   /** Navigation category: 'guide' or 'foundations'. */
   category?: string;
+  /** Words a reader may search for that the title and sections do not use:
+   *  a synonym, a task ("dark mode"), or another library's name for the same
+   *  thing. `astryx search` matches each as a keyword of the whole topic, so
+   *  an exact one ranks the topic like its own title does. */
+  keywords?: string[];
   /** Name of an existing topic this doc takes the place of. Authored by an
    *  integration whose guide should be served instead of the built-in one —
    *  `replaces: 'getting-started'` on a doc named `getting-started` swaps the

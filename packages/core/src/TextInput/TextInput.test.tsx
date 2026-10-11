@@ -1132,3 +1132,12 @@ describe('TextInput text size', () => {
   });
 });
 
+describe('TextInput in a narrow row', () => {
+  it('lets a filter bar shrink the whole field instead of overflowing', () => {
+    const {container} = render(
+      <TextInput label="Search" value="" onChange={() => {}} />,
+    );
+    const root = container.querySelector('.astryx-field')!;
+    expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+});

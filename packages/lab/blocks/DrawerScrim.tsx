@@ -9,11 +9,11 @@
  */
 
 import {useState} from 'react';
-import {Drawer} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
-import {Section} from '@astryxdesign/core/Section';
-import {HStack, VStack} from '@astryxdesign/core/Stack';
-import {Heading, Text} from '@astryxdesign/core/Text';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {HStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function DrawerScrim() {
   const [openModal, setOpenModal] = useState(false);
@@ -32,28 +32,36 @@ export default function DrawerScrim() {
         isOpen={openModal}
         onOpenChange={setOpenModal}
         label="Edit details">
-        <Section padding={4}>
-          <VStack gap={2}>
-            <Heading level={3}>Edit details</Heading>
-            <Text type="body">
-              The scrim blocks the page behind this modal drawer.
-            </Text>
-          </VStack>
-        </Section>
+        <Layout
+          header={
+            <DrawerHeader title="Edit details" onOpenChange={setOpenModal} />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">
+                The scrim blocks the page behind this modal drawer.
+              </Text>
+            </LayoutContent>
+          }
+        />
       </Drawer>
       <Drawer
         isOpen={openPanel}
         onOpenChange={setOpenPanel}
         label="Inspector"
         hasScrim={false}>
-        <Section padding={4}>
-          <VStack gap={2}>
-            <Heading level={3}>Inspector</Heading>
-            <Text type="body">
-              The page behind this non-modal drawer stays interactive.
-            </Text>
-          </VStack>
-        </Section>
+        <Layout
+          header={
+            <DrawerHeader title="Inspector" onOpenChange={setOpenPanel} />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">
+                The page behind this non-modal drawer stays interactive.
+              </Text>
+            </LayoutContent>
+          }
+        />
       </Drawer>
     </>
   );

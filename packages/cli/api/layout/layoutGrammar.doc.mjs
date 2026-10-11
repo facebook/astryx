@@ -18,7 +18,7 @@ export const doc = {
   description:
     'The reference behind `astryx layout grammar`: the agent cheatsheet for writing XLE/XLO ' +
     "layout expressions, with the alias table generated from this branch's registry rather than " +
-    'hand-maintained, so short names always reflect the components actually installed.',
+    'hand-maintained, so short names always reflect the components actually installed. **Deprecated (DEP-0006).** Use `build`, `template`, and `docs layout` instead. This function will be removed in a future minor release.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'layoutGrammar(options?: LayoutGrammarOptions): Promise<LayoutGrammarResponse>',

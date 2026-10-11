@@ -164,9 +164,23 @@ async function selectTarget(project, component, packageName) {
   const bareComponent = component.startsWith('XDS')
     ? component.slice(3)
     : component;
+  const records = await project.components();
+  // A replaced Core component routes to the package that replaces it
+  // (spec:AST-035 FR11). Owners below match without case, so the Core name
+  // does too.
+  const coreName =
+    records.find(
+      record =>
+        record.package === CORE_PACKAGE &&
+        record.name.toLowerCase() === bareComponent.toLowerCase(),
+    )?.name ?? bareComponent;
+  const replacement = (await project.componentReplacements()).forTarget(
+    coreName,
+  );
+  if (replacement) return targetForPackage(project, replacement.package);
   const owners = [
     ...new Set(
-      (await project.components())
+      records
         .filter(
           record => record.name.toLowerCase() === bareComponent.toLowerCase(),
         )
@@ -189,7 +203,9 @@ async function selectTarget(project, component, packageName) {
 /**
  * Collect the effective handler set in delivery order: project config first,
  * then integrations in config order. Valid handlers dedupe by handle identity;
- * malformed integration exports retain their position as failed deliveries.
+ * malformed integration exports and integrations that failed to load retain
+ * their position as failed deliveries. An unloadable integration may export a
+ * handler, so it never counts as an empty set that enables the fallback.
  *
  * @param {Project} project
  * @returns {HandlerEntry[]}
@@ -214,7 +230,15 @@ export function collectGapReportHandlers(project) {
   }
 
   for (const integration of project.loadedIntegrations) {
-    if (integration.__loadError) continue;
+    if (integration.__loadError) {
+      entries.push({
+        kind: 'malformed',
+        handlerType: 'integration',
+        handlerName: integration.name,
+        error: `Integration failed to load, so it could not receive this report: ${integration.__loadError}. Fix the package or remove it from integrations in astryx.config, then rerun.`,
+      });
+      continue;
+    }
     if (integration.__gapReportError) {
       entries.push({
         kind: 'malformed',

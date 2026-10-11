@@ -13,10 +13,10 @@ export default {
   componentsUsed: [
     'Drawer',
     'Button',
-    'Section',
+    'Layout',
+    'LayoutContent',
     'HStack',
-    'VStack',
-    'Heading',
+    'DrawerHeader',
     'Text',
   ],
 };

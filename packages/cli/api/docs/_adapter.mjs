@@ -151,6 +151,31 @@ function providerOf(entry) {
 }
 
 /**
+ * The npm package that wrote each section of a lowered topic: the topic's own
+ * package, or the package of the extension that contributed the section
+ * (spec cli-surface INV28).
+ * @param {DocsTopicEntry} entry
+ * @param {{sectionProviders?: Record<string, string>}} node the lowered topic
+ * @returns {(sectionId: string | undefined) => string}
+ */
+export function sectionPackageOf(entry, node) {
+  /** @type {Map<string, string>} */
+  const byProvider = new Map([[providerOf(entry), entry.package]]);
+  for (const extension of entry.extensions ?? []) {
+    byProvider.set(providerOf(extension), extension.package);
+  }
+  return sectionId => {
+    const provider =
+      sectionId == null ? undefined : node.sectionProviders?.[sectionId];
+    return (
+      (provider == null
+        ? undefined
+        : byProvider.get(normalizeProviderId(provider))) ?? entry.package
+    );
+  };
+}
+
+/**
  * One topic, lowered for `lang` with every link between docs resolved
  * (spec:AST-047 FR9): an inline `{@link <target>}` reads as the command that
  * opens its doc, and a `reference` block carries the doc it names and the
@@ -667,10 +692,12 @@ export async function docsLinkProblems(
 /**
  * What \`astryx doctor integration docs\` checks in one integration's docs: the
  * docs tree they build beside the CLI's (namespaces, placements, routes) and
- * every link in them (spec:AST-046, spec:AST-047).
+ * every link in them (spec:AST-046, spec:AST-047). A tree problem hides a doc,
+ * so it is an error; a link that names no doc prints as written, so it is a
+ * warning.
  * @param {{name: string}} integration
  * @param {{records: import('../../foundation/discovery/docs-discovery.mjs').DocsTopicRecord[], namespaces: import('../../foundation/doc-compiler/tree.mjs').TreeNamespaceInput[], guides: import('../../foundation/doc-compiler/tree.mjs').TreeDocInput[]}} discovered
- * @returns {Promise<string[]>}
+ * @returns {Promise<Array<{severity: 'error' | 'warning', message: string}>>}
  */
 export async function packageDocsProblems(integration, discovered) {
   const catalog = DocsCatalog.fromBuiltins();
@@ -680,12 +707,18 @@ export async function packageDocsProblems(integration, discovered) {
     guides: discovered.guides.map(input => ({...input, rank: 1})),
   });
   const tree = await projectTree(catalog);
+  /** @type {Array<{severity: 'error' | 'warning', message: string}>} */
   const problems = tree.diagnostics
     .filter(d => d.severity === 'error' && d.provider === integration.name)
-    .map(d => `${d.source ?? integration.name}: ${d.message}`);
-  problems.push(
-    ...(await docsLinkProblems(catalog, tree, {owner: integration.name})),
-  );
+    .map(d => ({
+      severity: /** @type {const} */ ('error'),
+      message: `${d.source ?? integration.name}: ${d.message}`,
+    }));
+  for (const message of await docsLinkProblems(catalog, tree, {
+    owner: integration.name,
+  })) {
+    problems.push({severity: 'warning', message});
+  }
   return problems;
 }
 
@@ -699,8 +732,55 @@ export async function packageDocsProblems(integration, discovered) {
 export function referenceTargets(catalog, lang) {
   return async topic => {
     const target = catalog.resolve(topic);
-    return target ? lowerTopic(catalog, target, lang) : null;
+    if (target) return lowerTopic(catalog, target, lang);
+    return namespaceReferenceTarget(catalog, topic, lang);
   };
+}
+
+/**
+ * A docs-tree namespace as the target of a token reference: every guide placed
+ * below it, lowered for `lang` and read in tree order as one topic. A flat
+ * topic split into a namespace keeps answering the references its readers
+ * wrote, so `{type: 'token-ref', topic: 'tokens', section: 'Color Tokens'}`
+ * finds the guide that now holds that table. Null for any other route.
+ * @param {DocsCatalog} catalog
+ * @param {string} route
+ * @param {string | null} lang
+ * @returns {Promise<import('../../foundation/doc-compiler/compile.mjs').CompiledReferenceNode | null>}
+ */
+async function namespaceReferenceTarget(catalog, route, lang) {
+  const tree = await projectTree(catalog);
+  const node = tree.get(route) ?? tree.getFolded(route);
+  if (!node || node.kind !== 'namespace' || node.generated) return null;
+  /** @type {any[]} */
+  const sections = [];
+  /** @type {Record<string, string>} */
+  const sourceTitles = {};
+  /** @param {TreeNode} parent */
+  const walk = async parent => {
+    for (const slot of parent.slots) {
+      for (const childRoute of slot.children) {
+        const child = tree.get(childRoute);
+        if (!child || child.parent !== parent.route) continue;
+        if (child.kind === 'namespace') {
+          await walk(child);
+        } else if (child.kind === 'generic' && child.ref?.topicFile) {
+          const lowered = await lowerTopic(catalog, guideEntry(child), lang);
+          sections.push(...lowered.doc.sections);
+          for (const [key, title] of Object.entries(lowered.sourceTitles)) {
+            sourceTitles[key] ??= title;
+          }
+        }
+      }
+    }
+  };
+  await walk(node);
+  if (sections.length === 0) return null;
+  return /** @type {any} */ ({
+    id: node.route,
+    doc: {sections},
+    sourceTitles,
+  });
 }
 
 /**

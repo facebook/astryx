@@ -100,7 +100,7 @@ describe('integration-contributed topics', () => {
       package: '@acme/widgets',
     });
     // The built-in topics keep their own owner.
-    expect(listed.data.find(t => t.topic === 'tokens').package).toBe('@astryxdesign/cli');
+    expect(listed.data.find(t => t.topic === 'color').package).toBe('@astryxdesign/cli');
 
     const detail = await docs('deploying', undefined, {cwd: tmpDir, full: true});
     expect(detail.type).toBe('docs.detail');
@@ -243,7 +243,7 @@ describe('integration-contributed topics', () => {
       const english = await docs('theme', undefined, {full: true});
       const englishTitles = english.data.sections.map(section => section.title);
       expect(englishTitles).toEqual(
-        expect.arrayContaining(['Quick Start', 'Theme Props']),
+        expect.arrayContaining(['Wrap your app in a theme', 'Dark mode']),
       );
       scaffold({
         'theme-internal.doc.mjs': topic({
@@ -251,12 +251,13 @@ describe('integration-contributed topics', () => {
           extends: 'theme',
           sections: [
             {
-              id: 'acme-quick-start',
-              title: 'Quick Start',
-              content: [{type: 'prose', text: 'Acme quick start.'}],
+              id: 'quick-start',
+              title: 'Wrap your app in a theme',
+              content: [{type: 'prose', text: 'Acme themes.'}],
             },
             {
-              title: 'Theme Props',
+              id: 'light-dark-mode',
+              title: 'Dark mode',
               content: [{type: 'prose', text: 'Acme props.'}],
             },
           ],
@@ -271,7 +272,7 @@ describe('integration-contributed topics', () => {
       expect(extended.data.sections).toHaveLength(base.data.sections.length);
       expect(
         extended.data.sections.filter(
-          section => section.id === 'acme-quick-start',
+          section => section.id === 'quick-start',
         ),
       ).toHaveLength(1);
       expect(
@@ -305,10 +306,32 @@ describe('integration-contributed topics', () => {
     });
   }, SLOW);
 
+  it('ranks the topics that match every word of the query first', async () => {
+    // Dozens of CLI docs match `integration` alone, by name or in a code
+    // tick; the topics that hold both words, this one and the CLI's own
+    // troubleshooting guide, must still come first.
+    scaffold({
+      'troubleshooting.doc.mjs': topic({
+        name: 'troubleshooting',
+        title: 'Troubleshooting',
+        description: 'What to check when an integration does not load.',
+      }),
+    });
+    const {data} = await search('troubleshoot integration', {cwd: tmpDir, type: 'doc'});
+    const top = data.results.slice(0, 2).map(result => result.name);
+    // This topic, and the CLI's own troubleshooting guide wherever the tree
+    // places it.
+    expect(top).toContain('troubleshooting');
+    expect(
+      top.some(name => /^cli\/integrations\/(?:.+\/)?troubleshooting$/.test(name)),
+      top.join(', '),
+    ).toBe(true);
+  }, SLOW);
+
   it("falls back to the CLI's own topics when the project config is unreadable", async () => {
     scaffold({'deploying.doc.mjs': topic()}, {config: 'export default {integrations: 42};\n'});
     const catalog = await loadDocsCatalog(tmpDir);
-    expect(catalog.resolve('tokens')).toBeTruthy();
+    expect(catalog.resolve('color')).toBeTruthy();
     expect(catalog.resolve('deploying')).toBeUndefined();
   }, SLOW);
 });

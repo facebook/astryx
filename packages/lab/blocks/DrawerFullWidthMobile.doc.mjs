@@ -10,5 +10,12 @@ export default {
   exampleFor: 'Drawer',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Drawer', 'Button', 'Section', 'VStack', 'Heading', 'Text'],
+  componentsUsed: [
+    'Drawer',
+    'Button',
+    'Layout',
+    'LayoutContent',
+    'DrawerHeader',
+    'Text',
+  ],
 };

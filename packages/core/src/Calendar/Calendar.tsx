@@ -61,6 +61,7 @@ import {
 import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {getInitialFocusDate} from './getInitialFocusDate';
 import {
   computeDayCellState,
@@ -187,8 +188,8 @@ interface CalendarSingleProps extends CalendarBaseProps {
   /** Selection mode */
   mode?: 'single';
 
-  /** Selected date in ISO format (YYYY-MM-DD) */
-  value?: ISODateString;
+  /** Selected date in ISO format (YYYY-MM-DD), or null for controlled empty state */
+  value?: ISODateString | null;
 
   /** Default value for uncontrolled mode */
   defaultValue?: ISODateString;
@@ -201,8 +202,8 @@ interface CalendarRangeProps extends CalendarBaseProps {
   /** Selection mode */
   mode: 'range';
 
-  /** Selected date range */
-  value?: DateRange;
+  /** Selected date range, or null for controlled empty state */
+  value?: DateRange | null;
 
   /** Default value for uncontrolled mode */
   defaultValue?: DateRange;
@@ -281,7 +282,8 @@ export function Calendar({ref, ...props}: CalendarProps) {
   const [pendingFocus, setPendingFocus] = useState<ISODateString | null>(null);
 
   // Determine effective value
-  const effectiveValue = value !== undefined ? value : internalValue;
+  const effectiveValue =
+    (value !== undefined ? value : internalValue) ?? undefined;
 
   // Focus date state (which month is visible). Falls back to today, clamped
   // into the min/max window so a window that doesn't contain today doesn't
@@ -1035,6 +1037,7 @@ function DayCell({
 }: DayCellProps) {
   const t = useTranslator();
   const locale = useLocale();
+  const pressable = usePressFeedback();
   const {date, isOutside, dayNumber} = day;
 
   if (isOutside && !hasOutsideDays) {
@@ -1158,6 +1161,7 @@ function DayCell({
         onClick={() => !state.effectivelyDisabled && onDayClick(date)}
         onMouseEnter={() => !state.effectivelyDisabled && onDayHover(date)}
         onMouseLeave={() => onDayHover(null)}
+        {...pressable}
         {...mergeProps(
           themeProps('calendar-day', {
             selected: endpoint ? 'selected' : null,

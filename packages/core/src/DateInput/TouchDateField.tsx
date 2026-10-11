@@ -78,7 +78,6 @@ import {IconButton} from '../IconButton';
 import {useLocale, useTranslator} from '../i18n';
 import {useInputGroup} from '../InputGroup';
 import {groupStyles} from '../InputGroup/groupStyles';
-import {stableClassName} from '../naming';
 import {useSize} from '../SizeContext';
 import {Spinner} from '../Spinner';
 import {
@@ -111,6 +110,7 @@ import {
   type ISODateString,
 } from '../utils';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {MonthScroller, type MonthScrollerHandle} from './MonthScroller';
 import {MonthYearWheels} from './MonthYearWheels';
@@ -577,6 +577,7 @@ export function TouchDateField({
   ref,
   ...rest
 }: DateInputProps) {
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -954,6 +955,7 @@ export function TouchDateField({
           // restyle the header button. Adding a target later is additive;
           // withdrawing one is not.
           data-title="month-year"
+          {...pressable}
           {...stylex.props(
             styles.title,
             interactionOverlayStyles.backgroundColor,
@@ -1258,7 +1260,6 @@ export function TouchDateField({
         <InputClearButton
           label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
-          iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
       {isBusy && <Spinner size="sm" />}

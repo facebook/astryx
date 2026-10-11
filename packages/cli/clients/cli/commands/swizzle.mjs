@@ -11,8 +11,8 @@
  */
 
 import {jsonOut} from '../../../foundation/response/json.mjs';
-import {emit, section, list, text, WARN} from '../formatters/index.mjs';
-import {cliError} from '../lib/cli-error.mjs';
+import {emit, section, list, text, WARN, record} from '../formatters/index.mjs';
+import {cliError, rejectEmptyArgument} from '../lib/cli-error.mjs';
 import {getCliInvocation} from '../../../foundation/env/package-manager.mjs';
 import {swizzle as swizzleApi} from '../../../api/swizzle/swizzle.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
@@ -27,6 +27,9 @@ export function registerSwizzle(program) {
   defineCommand(program, swizzleCommand, {
     fn: swizzleFn,
     action: async (/** @type {string | undefined} */ component, /** @type {{output: string, package?: string, list?: boolean, overwrite?: boolean}} */ options) => {
+      if (!options.list) {
+        rejectEmptyArgument('component', component, 'astryx swizzle');
+      }
       const json = program.opts().json || false;
       const run = getCliInvocation();
 
@@ -60,6 +63,7 @@ export function registerSwizzle(program) {
       if (result.type === 'swizzle.list') {
         const components = result.data;
         emit(
+          record({package: result.package}),
           section('Available components'),
           list(components),
           text(`Usage: ${run} swizzle <component>`),

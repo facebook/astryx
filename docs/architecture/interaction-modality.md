@@ -238,9 +238,9 @@ ownership, scrolling, clipping, hit testing, or whether an essential control rem
 perceivable in the supported presentation. Unit tests prove event routing, DOM state,
 and deterministic intent ordering but do not replace those browser outcomes.
 
-[PR #5648](https://github.com/facebook/astryx/pull/5648) is a verification
-benchmark for the record, not an authority for it. Its ChatComposer fixture
-covers keyboard-owned editor focus, pointer suppression, clearing an existing
-keyboard indicator on pointer press, and keeping internal action focus owned by
-the action. The benchmark also verifies programmatic editor focus after both
-keyboard and pointer input before the behavior is treated as complete.
+A composed editor surface is the record's verification benchmark: it covers
+keyboard-owned editor focus, pointer suppression, clearing an existing keyboard
+indicator on pointer press, and keeping internal action focus owned by the
+action. The benchmark also verifies programmatic editor focus after both
+keyboard and pointer input before the behavior is treated as complete. A
+benchmark demonstrates the invariants; it does not carry authority for them.

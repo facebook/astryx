@@ -41,10 +41,12 @@ export {
   discoverCoreTemplates,
   discoverIntegrationTemplatesForOne,
   stripTemplateAssetRefs,
+  replaceDemoMedia,
   listTemplates,
   findRelatedBlocks,
   findShowcase,
   extractComponents,
+  pkgOf,
 } from '../../foundation/discovery/template-adapter.mjs';
 
 /**

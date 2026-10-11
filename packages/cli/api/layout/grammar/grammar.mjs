@@ -13,6 +13,7 @@ import {buildRegistry} from '../../../foundation/xle/registry.mjs';
 import {MAX_REPEAT} from '../../../foundation/xle/expand.mjs';
 
 /**
+ * @deprecated DEP-0006: Use `build`, `template`, and `docs layout` instead. Removal in CLN-0006.
  * `astryx layout grammar` — the agent cheatsheet, with the alias table
  * generated from this branch's registry (never hand-maintained).
  *

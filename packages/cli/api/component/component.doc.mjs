@@ -21,7 +21,10 @@ export const doc = {
     'integration packages; an array returns one ordered result row per selector at ' +
     'every array length; and no name returns the catalog grouped by category. ' +
     'Boolean flags narrow each resolved component to just its props, source, ' +
-    'showcase, or example blocks.',
+    'showcase, or example blocks. An integration component that replaces a Core ' +
+    'component (its doc sets replaces, and its package declares the CLI range that ' +
+    'turns replacement on) answers to the Core name in detail, batch, and list ' +
+    "results; use options.package '@astryxdesign/core' for the original.",
   importPath: '@astryxdesign/cli/api',
   signature:
     'component(name?: string | string[], options?: ComponentOptions): Promise<ComponentListResponse | ComponentBatchResponse | ComponentDetailResponse | ComponentDetailPropsResponse | ComponentDetailSourceResponse | ComponentDetailShowcaseResponse | ComponentDetailBlocksResponse>',
@@ -45,6 +48,7 @@ export const doc = {
       name: 'options.cwd',
       type: 'string',
       description: 'Directory to resolve @astryxdesign/core from.',
+      default: 'process.cwd()',
     },
     {
       name: 'options.list',
@@ -54,13 +58,14 @@ export const doc = {
     {
       name: 'options.category',
       type: 'string',
-      description: 'List only components in this category.',
+      description:
+        "List only the components in this group: a key of the unfiltered list (each component's group field), such as 'Layout' or 'Button'. It is not the category field of a component detail.",
     },
     {
       name: 'options.package',
       type: 'string',
       description:
-        "Scope lookup to a specific external package (e.g. '@acme/xds-widgets').",
+        "Scope lookup to a specific external package (e.g. '@acme/widgets'). Use '@astryxdesign/core' to select an original replaced by an integration component.",
     },
     {
       name: 'options.props',
@@ -87,7 +92,8 @@ export const doc = {
       name: 'options.detail',
       type: "'full' | 'compact' | 'brief'",
       description: 'Detail level for list views.',
-      default: "'full' for a named component, 'brief' for list views",
+      default:
+        "'full' for a named component; 'brief' for lists (returned as data.detail: 'names')",
     },
     {
       name: 'options.lang',
@@ -110,7 +116,7 @@ export const doc = {
     {
       type: 'component.list',
       description:
-        "The catalog grouped by category. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: names entries with name, package, and an optional canonical import for integration and legacy package components; brief entries; or full ComponentDoc entries.",
+        "The catalog grouped by component group. data.detail is the level ('names' | 'compact' | 'full') and data.components is the grouped map: names entries with name, package, and an optional canonical import for integration and legacy package components; brief entries; or full ComponentDoc entries.",
     },
     {
       type: 'component.batch',
@@ -160,7 +166,7 @@ export const doc = {
     },
     {
       code: 'ERR_UNKNOWN_CATEGORY',
-      when: 'options.category is not a string or matches no known category',
+      when: 'options.category is not a string or matches no component group',
     },
     {
       code: 'ERR_UNKNOWN_COMPONENT',
@@ -173,6 +179,10 @@ export const doc = {
     {
       code: 'ERR_NO_DOC',
       when: 'the resolved component has no .doc.mjs typed doc file',
+    },
+    {
+      code: 'ERR_INVALID_DOC',
+      when: "the resolved component's .doc.mjs fails to load or validate",
     },
     {
       code: 'ERR_NO_SOURCE',
@@ -194,8 +204,8 @@ export const doc = {
     },
     {label: 'Props only', code: "await component('Button', {props: true});"},
     {
-      label: 'Browse a category',
-      code: "await component(undefined, {category: 'Form', detail: 'compact'});",
+      label: 'Browse one group',
+      code: "await component(undefined, {category: 'Layout', detail: 'compact'});",
     },
   ],
   command: 'component',

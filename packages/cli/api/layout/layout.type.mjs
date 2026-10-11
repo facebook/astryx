@@ -48,6 +48,7 @@
  * @property {LayoutBlockReference[]} data.blocksReferenced
  * @property {string[]} data.warnings
  * @property {string | null} data.written
+ * @property {number} data.demoMediaReplaced Astryx demo media references (images, posters, videos) replaced in the spliced template blocks: images with a neutral placeholder, videos with an empty source. Swap in your own media at those points in the code; no media is installed. 0 when no spliced block carried any.
  */
 
 /**

@@ -81,6 +81,13 @@ const styles = stylex.create({
     // released padding. An explicit contentWidth overrides this on the same node.
     '--layout-content-width': '100cqi',
     '--layout-alignment-width': '100cqi',
+    // A Layout's `padding` belongs to its own regions. Clear an ancestor
+    // Layout's value so a nested Layout without `padding` takes the nearest
+    // padding container's inset (Card, Section, Dialog) or the default,
+    // instead of inheriting, e.g., AppShell's internal padding={0}. An
+    // explicit `padding` on this Layout overrides this on the same node.
+    '--layout-padding-own-outer-x': 'initial',
+    '--layout-padding-own-outer-y': 'initial',
   },
   fill: {
     // Add 2x container block padding to compensate for negative block margins
@@ -140,10 +147,10 @@ const styles = stylex.create({
         'max(0px, calc((100% - var(--layout-content-width)) / 2))',
     },
   },
-  // When full bleed, set outer padding variables to 0 so child components touch container edges
+  // When full bleed, set this Layout's outer padding to 0 so its regions touch container edges
   fullBleed: {
-    '--layout-padding-outer-x': '0px',
-    '--layout-padding-outer-y': '0px',
+    '--layout-padding-own-outer-x': '0px',
+    '--layout-padding-own-outer-y': '0px',
   },
 });
 
@@ -224,7 +231,9 @@ export interface LayoutProps extends Omit<BaseProps, 'content'> {
 
   /**
    * Padding at the layout's outer edges using the spacing scale.
-   * Controls both `--layout-padding-outer-x` and `--layout-padding-outer-y`.
+   * Applies to this Layout's own header, footer, panels, and content; a nested
+   * Layout does not inherit it. Without `padding`, regions use the enclosing
+   * Card, Section, or Dialog padding, or the default inset.
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
   padding?: SpacingStep;

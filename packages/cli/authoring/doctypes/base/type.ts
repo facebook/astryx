@@ -39,9 +39,11 @@ export interface DocPlacement {
 export interface AuthoredDocGraphFields {
   /** The doc's one parent in the docs tree: a namespace of its own package. */
   placement?: DocPlacement;
-  /** Prior routes or names the docs tree will keep resolving. Not read yet. */
+  /** Reserved: prior routes or names the docs tree will keep resolving.
+   *  Nothing reads it yet. */
   aliases?: string[];
-  /** Docs bundle audience; omit for public docs. Not read yet. */
+  /** Reserved: docs bundle audience; omit for public docs. Nothing reads it
+   *  yet. */
   audience?: DocAudience;
 }
 
@@ -498,15 +500,6 @@ export interface ComponentThemingTarget {
    *  selectors such as `[data-checked="checked"]`. Omit if the element has no
    *  state-driven selectors. */
   states?: string[];
-  /** Set when this target has been renamed and this entry is the old name.
-   *  The component continues emitting the class through `themeProps`'s
-   *  `legacyNames`, so existing themes keep working while discovery and build
-   *  guidance prefer the replacement. The value is the canonical target key
-   *  without the `astryx-` prefix — e.g. `"checkbox-indicator"`.
-   *
-   *  A theme target is public API; deprecation alone does not authorize
-   *  removing either this metadata or runtime support. */
-  deprecatedFor?: string;
 }
 
 /**

@@ -3,7 +3,7 @@
 /**
  * @file Programmatic API for the Astryx CLI.
  *
- * Every function returns the same { type, data } envelope that `xds --json` outputs.
+ * Every function returns the same { type, data } envelope that `astryx --json` outputs.
  * Errors throw AstryxError (with optional .suggestions).
  *
  * @example
@@ -28,9 +28,13 @@ export {template} from './template/template.mjs';
 export {
   themeBuild,
   themeAdd,
+  themeRemove,
+  themeUse,
+  themeEject,
   themeTemplate,
   themeList,
   themeListAvailable,
+  themeListCopySources,
   themeTargets,
   themePaletteGenerate,
   generateTonalPalette,

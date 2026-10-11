@@ -432,7 +432,7 @@ describe('Project discovery', () => {
       package: '@acme/widgets',
     });
     // The CLI's own topics are still there.
-    expect(catalog.resolve('tokens').package).toBe('@astryxdesign/cli');
+    expect(catalog.resolve('color').package).toBe('@astryxdesign/cli');
     expect(await project.issues()).toEqual([]);
   });
 
