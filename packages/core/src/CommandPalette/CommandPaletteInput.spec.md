@@ -142,9 +142,9 @@ intentional decision.
 ## Accessibility contract
 
 - **AR1 — Name.** The native query field has an explicit accessible name from
-  ORD3, but its released placeholder fallback remains a BLOCK against
-  `spec:AST-056/AR2` and WCAG 2.2 4.1.2 until the separately classified
-  incompatible correction gains an approved migration path.
+  ORD3, supporting WCAG 2.2 4.1.2. Its released placeholder fallback remains a
+  BLOCK against `spec:AST-056/AR2` until an approved `spec:AST-017/FR32`
+  correction replaces it.
 - **AR2 — Role and popup state.** Standalone use without popup attributes exposes
   a `searchbox` without popup-only state. Standalone callers that provide their
   own popup relationships retain those semantics. CommandPalette context exposes
