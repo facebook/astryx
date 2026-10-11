@@ -82,26 +82,31 @@ in the canonical `Grid.doc.mjs` and the subordinate `GridSpan.doc.mjs`;
 
 ### Responsive contract
 
-`columns` is the only prop that decides how many column tracks Grid renders,
-and its shape decides whether that count reflows:
+The `columns` prop decides how many column tracks Grid lays out and whether
+that count changes with the container's width. Other inputs change the result
+only by changing what `columns` has to fit: `width` and `maxWidth` set the
+container width a reflowing shape measures against; an `xstyle`, `className`,
+or `style` that sets the track template (including under a media query)
+replaces the computed one; and a GridSpan wider than the available tracks makes
+the browser add implicit tracks for that row. No other prop changes the count.
 
-| `columns`                   | Track list                                                                                                        | Reflows      |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------ |
-| `N` (number)                | `repeat(N, 1fr)`: exactly N equal tracks at every container width                                                 | never        |
-| `{minWidth}`                | `repeat(auto-fill, minmax(<minWidth>px, 1fr))`: as many tracks as fit at the floor; empty tracks keep their width | yes          |
-| `{minWidth, repeat: 'fit'}` | `repeat(auto-fit, …)`: as above, with empty tracks collapsed so present items stretch                             | yes          |
-| `{minWidth, max}`           | capped auto-fill: at most `max` tracks, each at least `minWidth` px and at least a `max`-th of the row            | yes, up to N |
+| `columns`                   | Behavior                                                                                                                                                                                     | Reflows |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `N` (number)                | Exactly N equal-width tracks at every container width.                                                                                                                                       | never   |
+| `{minWidth}`                | As many tracks as fit while each stays at least `minWidth` px wide; one track when nothing narrower fits, shrinking below the floor rather than overflowing. Empty tracks keep their width.  | yes     |
+| `{minWidth, repeat: 'fit'}` | As above, and empty tracks collapse so the present items stretch across the row.                                                                                                             | yes     |
+| `{minWidth, max}`           | Up to `max` tracks, each at least `minWidth` px and never narrower than an equal share of the row; fewer tracks as the container narrows, down to one. `repeat: 'fit'` applies the same way. | yes     |
+| omitted, `0`, or negative   | One track.                                                                                                                                                                                   | never   |
 
-- `gap` and `columnGap` enter the capped track math: the per-track floor is
-  `(100% − (max − 1) × gap) / max`, so `max` tracks always fit exactly when the
-  container is wide enough. They never change the count in the fixed form.
-- `width`, `maxWidth`, `height`, `minHeight`, `rowHeight`, `align`, and
-  `justify` size or place the container and its items; none changes the column
-  count.
-- GridSpan places its item with `grid-column: span k` (or `1 / -1` for
-  `'full'`); it does not change the parent's track count. In a reflowing grid
-  that has dropped below k tracks, a `span k` item spans the tracks that remain
-  and the browser creates implicit tracks for the rest.
+- `gap` and `columnGap` count toward the width a reflowing shape has to fit, so
+  the full count is reached only when the container has room for the tracks and
+  the gaps between them. They never change the count of a numeric `columns`.
+- `height`, `minHeight`, `rowHeight`, `align`, and `justify` size or place the
+  container and its items and do not change the column count.
+- GridSpan spans `k` tracks (or the whole row for `'full'`) and does not change
+  the parent's track count. In a reflowing grid that has fewer than `k` tracks,
+  the item spans the tracks that exist and the browser adds implicit tracks for
+  the remainder, which can widen that row.
 - For columns that reflow on small screens, use `{minWidth, max}`. A numeric
   `columns` never reflows, so a four-up numeric row on a phone renders four
   narrow tracks; that is the fixed contract, not a defect.
@@ -178,18 +183,15 @@ relationship.
 
 **Decider:** `cixzhang`, `2026-10-11`
 
-`columns={N}` keeps meaning exactly N equal tracks, and a grid that should
-reflow on small screens uses the existing `{minWidth, max?, repeat?}` form. The
-failure this answers was discoverability, not a missing capability: callers and
-agents reached for the number because the docs led with it and did not say it
-never reflows. The record and the docs now state the responsive contract in one
-place.
+`columns={N}` means exactly N equal tracks at every width, and a grid that
+reflows on small screens uses `{minWidth, max?, repeat?}`. Two shapes, one
+responsibility each: the number is the fixed contract, the object form is the
+responsive one, and the record and the docs say so where a caller first meets
+`columns`.
 
-Rejected: redefining the number as "at most N" (a breaking change to every
-released numeric grid, with a new opt-out shape); adding a `{count, isFixed}`
-shape (duplicates the number and the `max` cap with a parallel code path). The
-deprecation and cleanup this record once proposed for the numeric meaning are
-withdrawn with it.
+Rejected: redefining the number as "at most N" (breaks every released numeric
+grid and needs an opt-out shape); a `{count, isFixed}` shape (duplicates the
+number and the `max` cap).
 
 ## Open questions
 
