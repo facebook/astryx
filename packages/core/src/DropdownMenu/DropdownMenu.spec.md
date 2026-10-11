@@ -85,13 +85,14 @@ Consumer migration instructions belong in consumer docs and release notes.
 ## Public concepts
 
 Consumer props, item shapes, subcomponents, and presentation policy remain
-documented in `DropdownMenu.doc.mjs` and the subcomponent docs. Two component-local concepts are added, by DEC-2 and DEC-3; each keeps its
+documented in `DropdownMenu.doc.mjs` and the subcomponent docs. Three component-local concepts are added, by DEC-2, DEC-3 and DEC-8; each keeps its
 released default.
 
 | Concept         | Closed values or states                                  | Meaning                                                                                                                                                               | Availability by variant/orientation/state | Default  | Owner                    | Stability | Invalid-value behavior                              |
 | --------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------- | ------------------------ | --------- | --------------------------------------------------- |
 | Menu height cap | `menuMaxHeight`: a number of pixels                      | Lifts the 300px cap for a menu that must fit its rows; the viewport still bounds it.                                                                                  | Pointer presentation                      | `300px`  | `component:DropdownMenu` | stable    | Ignored by the touch sheet.                         |
 | Trigger source  | `button` (Button props) or `renderTrigger` (render prop) | Which control the menu hangs off. `trigger` receives `DropdownMenuTriggerProps` — the press model, keyboard opens, toggle click and ARIA wiring — and names the menu. | Both presentations                        | `button` | `component:DropdownMenu` | stable    | Both given: `trigger` wins and a dev warning fires. |
+| Radio mark      | `indicator` on a radio group: `radio` or `check`         | How a radio group's rows mark the chosen option: the radio circle on every row, or the shared `check` indicator at each row's inline end, in its state.               | Compound radio groups                     | `radio`  | `component:DropdownMenu` | proposed  | Any other value draws the radio.                    |
 
 ## Behavioral and layout contract
 
@@ -114,6 +115,7 @@ released default.
 | FR12                  | In the pointer menu ArrowDown on the last enabled row wraps to the first and ArrowUp on the first to the last; PageDown and PageUp move to the last and first fully visible enabled row and, pressed there again, one viewport further without wrapping; ArrowUp on the trigger opens with the last enabled row highlighted; the key that opened the menu and its auto-repeats do not activate; typeahead matches the row's label element alone and ignores Control/Command chords and input-method composition.                                                                                                                                                                                                              | Proposed in this change; `DropdownMenu.test.tsx` keyboard suite, `useListFocus.test.tsx`, `useTypeahead.test.tsx`                                                             | Proposed; verified in jsdom, pending owner review                                 |
 | FR13                  | On a mouse, a nested flyout stays open while the pointer is inside the triangle from where it left its row to the flyout's near edge — including while the pointer is paused there — and closes after the existing delay once the pointer has left both the row and that triangle. The row's click toggle and its guard window are unchanged.                                                                                                                                                                                                                                                                                                                                                                                 | Proposed in this change; `DropdownMenuSubMenu.test.tsx` safe-triangle suite, `useMenuHover.test.tsx`                                                                          | Proposed; verified in jsdom, pending owner review                                 |
 | FR14                  | A compound `DropdownMenuGroup` is one `role="group"` named by its heading through `aria-labelledby`; the heading carries `dropdown-menu-section-heading`, is plain text rather than a menu item, and is skipped by roving focus and typeahead. An untitled group is an unnamed `role="group"`.                                                                                                                                                                                                                                                                                                                                                                                                                                | DEC-1, docs, and tests                                                                                                                                                        | Proposed; awaiting owner approval                                                 |
+| FR15                  | A `DropdownMenuRadioGroup` with `indicator="check"` MUST render the theme's `check` indicator, carrying `dropdown-menu-radio`, at the inline end of every row, in that row's checked or unchecked state; the default `check` draws only on the chosen row, and a theme whose `check` draws an unchecked state (a radio) shows it on every row, as Selector's AV1 allows. Every row keeps `role="menuitemradio"` and `aria-checked`. The default `radio` draws the radio circle on every row. `ContextMenuRadioGroup` and `BreadcrumbMenuRadioGroup` are the same component.                                                                                                                                                   | Proposed DEC-8; `component:CheckIndicator` leaves row placement to its host; Selector's `indicatorPosition` defaults to `end`                                                 | Proposed; verified in jsdom and Chromium, pending owner review                    |
 
 ### Allowed variation
 
@@ -276,6 +278,7 @@ than adding a DropdownMenu-owned heading target.
 | FR8, AR2            | `DropdownMenu.test.tsx` "DropdownMenuItem href" suite (pointer menu and bottom sheet)                                                                                        | Plain click, ⌘-click, Enter with modifiers, disabled link row                                              | A row rendering an inner anchor, running `onClick` on a modified click, or a synthesized click dropping the modifiers fails.                                  | `audit:DropdownMenu/behavior` |
 | FR12, AR3           | `DropdownMenuSubMenu.test.tsx` "drill-in on a phone" suite; `__tests__/DropdownMenuDrillIn.a11y.chromium.spec.ts` (real Chromium, coarse pointer)                            | Drill in, Back, Escape, ArrowLeft, nested level, scoped typeahead, forced presentations, close resets      | A flyout opening on a coarse pointer, a missing Back row, sibling rows staying in the order, or focus not returning to the row fails.                         | `audit:DropdownMenu/behavior` |
 | FR10                | `DropdownMenuSubMenu.test.tsx` safe-triangle suite; `useMenuHover.test.tsx` `isPointInSafeTriangle` and click-guard suites                                                   | diagonal path toward the flyout, a pause inside it, path away, click-opened and hover-opened guard windows | A flyout that closes while the pointer is inside the triangle or paused in it, one that never closes after leaving it, or a changed guard-window rule, fails. | `audit:DropdownMenu/behavior` |
+| FR15                | `DropdownMenuSelectable.test.tsx` check-mark case; `__tests__/DropdownMenuRadioCheck.a11y.chromium.spec.ts`                                                                  | default radio; default check on the chosen row only; a check swapped for a radio on every row              | A check group that draws a radio, a default check on an unchosen row, or a row that loses `menuitemradio` or `aria-checked`, fails.                           | `audit:DropdownMenu/behavior` |
 
 ## Decision log
 
@@ -440,3 +443,25 @@ The value is a number of pixels. Rejected: an arbitrary CSS length (`50vh`,
 `calc(...)`), which is product-shaped tuning on a shared component that
 `spec:AST-002` does not admit, and which lets a caller write a cap the
 viewport term cannot reason about.
+
+### DEC-8 (proposed) — A radio group chooses its mark: the radio circle or the check
+
+**Reference:** `component:DropdownMenu/DEC-8`
+**Decider:** proposed by `vjeux`, `2026-10-10`; pending owner review
+
+A single choice in a menu reads either as a set of radios or as a list with the
+current option checked, the way Selector and a native pop-up menu mark it. The
+rows mean the same either way (`menuitemradio` with `aria-checked`), so the
+choice is a picture, and both pictures already exist in the single-selection
+indicator family: `radio` and `check`. The group chooses, so one set never mixes
+marks. The check sits at the inline end, Selector's default edge, so the
+unmarked rows' labels line up with the marked one. Every row renders the
+indicator in its own state, as Selector's options do: the default check draws
+nothing on an unchosen row, and a theme that replaces `check` with a mark that
+draws an unchecked state shows that mark on every row.
+
+Rejected: a per-row prop, which lets one set mix marks; remapping
+`indicators.radio` in the theme, which changes every radio in the product,
+RadioList included; and letting a `DropdownMenuItem` take
+`role="menuitemradio"`, which hands the row's role, `aria-checked` and
+selection to the caller.

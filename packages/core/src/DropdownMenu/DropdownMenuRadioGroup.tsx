@@ -22,6 +22,7 @@ import type {BaseProps} from '../BaseProps';
 import {
   DropdownMenuRadioGroupContext,
   type DropdownMenuRadioGroupContextValue,
+  type DropdownMenuRadioIndicator,
 } from './DropdownMenuContext';
 
 const styles = stylex.create({
@@ -64,6 +65,19 @@ export interface DropdownMenuRadioGroupProps extends Omit<
    */
   hasCloseOnSelect?: boolean;
   /**
+   * The mark the group's rows draw for the chosen option. `radio` draws the
+   * radio circle on every row. `check` renders the theme's single-selection
+   * `check` indicator (the mark Selector puts on its chosen option) at the
+   * inline end of every row, in that row's state: the default check draws on
+   * the chosen row only, and a theme whose `check` draws an unchecked state
+   * (a radio, say) shows it on every row. The rows stay `menuitemradio` with
+   * `aria-checked` either way. `ContextMenuRadioGroup` and
+   * `BreadcrumbMenuRadioGroup` are this component under other names, so they
+   * take the prop too.
+   * @default 'radio'
+   */
+  indicator?: DropdownMenuRadioIndicator;
+  /**
    * The `DropdownMenuRadioItem`s that make up the group.
    */
   children: ReactNode;
@@ -91,6 +105,7 @@ export function DropdownMenuRadioGroup({
   onChange,
   label,
   hasCloseOnSelect = true,
+  indicator = 'radio',
   children,
   xstyle,
   className,
@@ -98,8 +113,8 @@ export function DropdownMenuRadioGroup({
   ...rest
 }: DropdownMenuRadioGroupProps) {
   const contextValue = useMemo<DropdownMenuRadioGroupContextValue>(
-    () => ({value, onChange, hasCloseOnSelect}),
-    [value, onChange, hasCloseOnSelect],
+    () => ({value, onChange, hasCloseOnSelect, indicator}),
+    [value, onChange, hasCloseOnSelect, indicator],
   );
 
   return (

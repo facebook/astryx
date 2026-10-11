@@ -842,6 +842,33 @@ export const LabRadioGroup: Story = {
   },
 };
 
+export const RadioGroupCheckMark: Story = {
+  render: function RadioGroupCheckMarkStory() {
+    const [limit, setLimit] = useState('25');
+    return (
+      <DropdownMenu button={{label: 'Rows shown'}}>
+        <DropdownMenuRadioGroup
+          value={limit}
+          onChange={setLimit}
+          label="Rows shown"
+          indicator="check">
+          <DropdownMenuRadioItem value="10" label="10 rows" />
+          <DropdownMenuRadioItem value="25" label="25 rows" />
+          <DropdownMenuRadioItem value="50" label="50 rows" />
+        </DropdownMenuRadioGroup>
+      </DropdownMenu>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A radio group with `indicator="check"`: each row renders the theme\'s single-selection check indicator at its inline end, as Selector marks its options. With the default check only the chosen row shows a mark. The rows stay `menuitemradio` with `aria-checked`.',
+      },
+    },
+  },
+};
+
 export const LabSelectableSizes: Story = {
   render: function LabSelectableSizesStory() {
     const [sm, setSm] = useState('a');

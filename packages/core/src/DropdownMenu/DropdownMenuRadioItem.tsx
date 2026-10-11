@@ -16,7 +16,10 @@
  *
  * The round radio visual is the shared radio indicator, decorative
  * (aria-hidden) — the row owns the checked state, and menu radios pick up the
- * same `radio` theming (and any theme replacement) as RadioList. This row keeps
+ * same `radio` theming (and any theme replacement) as RadioList. A group with
+ * `indicator="check"` renders the shared `check` indicator instead, at the
+ * row's inline end in the row's state, as Selector marks its options: the
+ * default check draws on the chosen row only. This row keeps
  * the marker box: its size is derived from the menu's item size and it swaps to
  * the inline-end of the row on coarse-pointer (touch) devices via CSS `order`.
  */
@@ -69,6 +72,13 @@ const styles = stylex.create({
       default: 0,
       '@media (pointer: coarse)': 'auto',
     },
+  },
+  // The check mark sits at the inline end of the chosen row on every pointer,
+  // as Selector's does, so the unmarked rows' labels line up with it.
+  endMarker: {
+    pointerEvents: 'none',
+    order: 1,
+    marginInlineStart: 'auto',
   },
 });
 
@@ -146,6 +156,11 @@ export function DropdownMenuRadioItem({
   const controlSize = menuSize === 'sm' ? 'sm' : 'md';
   const isChecked = groupCtx.value === value;
   const RadioControl = useIndicator('radio');
+  const CheckControl = useIndicator('check');
+  const isCheckMark = groupCtx.indicator === 'check';
+  // Rendered on every row in its state: the default check draws nothing on an
+  // unchosen row, the radio (or a theme's replacement check) may.
+  const Mark = isCheckMark ? CheckControl : RadioControl;
 
   const handleClick = useCallback(() => {
     if (isDisabled) {
@@ -172,11 +187,11 @@ export function DropdownMenuRadioItem({
       marker={
         // No wrapper — see DropdownMenuCheckboxItem: the target belongs on the
         // visible circle, and the indicator already owns its control size.
-        <RadioControl
+        <Mark
           state={isChecked ? 'checked' : 'unchecked'}
           size={controlSize}
           isDisabled={isDisabled}
-          xstyle={styles.marker}
+          xstyle={isCheckMark ? styles.endMarker : styles.marker}
           {...themeProps('dropdown-menu-radio', {
             size: controlSize,
             checked: isChecked ? 'checked' : null,

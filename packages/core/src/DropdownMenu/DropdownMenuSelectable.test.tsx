@@ -10,12 +10,16 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {useState} from 'react';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuCheckboxItem} from './DropdownMenuCheckboxItem';
 import {DropdownMenuRadioGroup} from './DropdownMenuRadioGroup';
 import {DropdownMenuRadioItem} from './DropdownMenuRadioItem';
+import {defineTheme} from '../theme/defineTheme';
+import {Theme} from '../theme/Theme';
+import {RadioIndicator} from '../Indicator';
 
 beforeEach(() => {
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
@@ -158,6 +162,83 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
     expect(
       uncheckedIndicator?.querySelector('.astryx-radio-dot'),
     ).not.toBeInTheDocument();
+  });
+
+  it('indicator="check" marks the chosen row with the check mark and keeps the radio semantics', async () => {
+    const user = userEvent.setup();
+    function Sort() {
+      const [sort, setSort] = useState('newest');
+      return (
+        <DropdownMenu button={{label: 'Sort'}}>
+          <DropdownMenuRadioGroup
+            value={sort}
+            onChange={setSort}
+            label="Sort by"
+            indicator="check"
+            hasCloseOnSelect={false}>
+            <DropdownMenuRadioItem value="newest" label="Newest" />
+            <DropdownMenuRadioItem value="oldest" label="Oldest" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      );
+    }
+    render(<Sort />);
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const row = (name: string) =>
+      screen.getByRole('menuitemradio', {name, hidden: true});
+    const mark = (name: string) =>
+      row(name).querySelector('.astryx-dropdown-menu-radio');
+    expect(row('Newest')).toHaveAttribute('aria-checked', 'true');
+    expect(row('Oldest')).toHaveAttribute('aria-checked', 'false');
+    // The chosen row draws the check glyph, carrying the menu's target and
+    // its state; no radio circle is drawn anywhere.
+    expect(mark('Newest')).toHaveClass('astryx-icon');
+    expect(mark('Newest')).toHaveAttribute('data-checked', 'checked');
+    expect(mark('Newest')).toHaveAttribute('aria-hidden', 'true');
+    expect(document.querySelector('.astryx-radio')).toBeNull();
+    // The other row draws no mark.
+    expect(mark('Oldest')).toBeNull();
+
+    // A new choice moves the mark.
+    await user.click(row('Oldest'));
+    expect(row('Oldest')).toHaveAttribute('aria-checked', 'true');
+    expect(mark('Oldest')).toHaveClass('astryx-icon');
+    expect(mark('Newest')).toBeNull();
+  });
+
+  it('indicator="check" under a theme whose check draws an unchecked state shows it on every row', async () => {
+    const user = userEvent.setup();
+    const theme = defineTheme({
+      name: 'menu-radio-check-swap-test',
+      indicators: {check: RadioIndicator},
+    });
+    render(
+      <Theme theme={theme}>
+        <DropdownMenu button={{label: 'Sort'}}>
+          <DropdownMenuRadioGroup
+            value="newest"
+            onChange={() => {}}
+            label="Sort by"
+            indicator="check">
+            <DropdownMenuRadioItem value="newest" label="Newest" />
+            <DropdownMenuRadioItem value="oldest" label="Oldest" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      </Theme>,
+    );
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const rows = screen.getAllByRole('menuitemradio', {hidden: true});
+    // Every row renders the theme's check, a radio here, carrying the menu
+    // target; only the chosen one is filled.
+    for (const row of rows) {
+      const mark = row.querySelector('.astryx-dropdown-menu-radio');
+      expect(mark).toHaveClass('astryx-radio');
+    }
+    const filled = rows.filter(
+      row => row.querySelector('.astryx-radio-dot') != null,
+    );
+    expect(filled).toHaveLength(1);
+    expect(filled[0]).toHaveAccessibleName('Newest');
   });
 
   it('calls onChange with the selected value', async () => {
