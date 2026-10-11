@@ -466,6 +466,84 @@ describe('markdownSourceLinesPlugin', () => {
     expect(hasAnyLine(parseMarkdownAst(NESTED, {plugins: []}))).toBe(false);
   });
 
+  it('composes with a transform that rebuilds nested blocks, which keep their lines', () => {
+    const rebuild = (value: unknown): unknown =>
+      Array.isArray(value)
+        ? value.map(rebuild)
+        : value != null && typeof value === 'object'
+          ? Object.fromEntries(
+              Object.entries(value).map(([key, child]) => [
+                key,
+                key === 'children' ? rebuild(child) : child,
+              ]),
+            )
+          : value;
+    const copy = createMarkdownPlugin({
+      apiVersion: 1,
+      name: 'test-rebuild',
+      transform: document => ({
+        ...document,
+        children: rebuild(document.children) as typeof document.children,
+      }),
+    });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {container} = render(
+      <Markdown plugins={[copy, markdownSourceLinesPlugin]}>{NESTED}</Markdown>,
+    );
+    expect(warning).not.toHaveBeenCalled();
+    warning.mockRestore();
+    expect(stamps(container, '[data-source-line]')).toEqual(
+      stamps(renderDocument(NESTED, true), '[data-source-line]'),
+    );
+  });
+
+  it('refuses a transform that shifts a nested block to other lines', () => {
+    const shift = (value: unknown): unknown => {
+      if (Array.isArray(value)) {
+        return value.map(shift);
+      }
+      if (value == null || typeof value !== 'object') {
+        return value;
+      }
+      const node = value as {
+        type?: string;
+        position?: {start: {line?: number}; end: {line?: number}};
+        children?: unknown;
+      };
+      if (node.type === 'paragraph' && node.position?.start.line === 12) {
+        return {
+          ...node,
+          position: {start: {line: 13}, end: {line: 13}},
+        };
+      }
+      return node.children == null
+        ? node
+        : {...node, children: shift(node.children)};
+    };
+    const forge = createMarkdownPlugin({
+      apiVersion: 1,
+      name: 'test-shift-lines',
+      transform: document => ({
+        ...document,
+        children: shift(document.children) as typeof document.children,
+      }),
+    });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {container} = render(
+      <Markdown plugins={[forge, markdownSourceLinesPlugin]}>
+        {NESTED}
+      </Markdown>,
+    );
+    expect(warning).toHaveBeenCalledWith(
+      expect.stringContaining('"test-shift-lines" failed in transform'),
+      expect.anything(),
+    );
+    warning.mockRestore();
+    expect(stamps(container, '[data-source-line]')).toEqual(
+      stamps(renderDocument(NESTED, true), '[data-source-line]'),
+    );
+  });
+
   it('keeps the released DOM and renderer props byte-identical without the plugin', () => {
     const plain = renderToStaticMarkup(<Markdown>{SOURCE}</Markdown>);
     expect(
