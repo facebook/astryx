@@ -72,6 +72,7 @@ export {validateLoadedIntegration};
  * @property {string} [name] Integration package name (from package.json).
  * @property {string} [version] Integration package version.
  * @property {string} [manifestFile] Absolute path to the loaded manifest.
+ * @property {'no_package_json'} [reason] Why nothing was validated (internal).
  * @property {Issue[]} issues
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
  */
@@ -349,7 +350,7 @@ async function validateAtPackageDir(
 export async function validateLocalIntegration(cwd = process.cwd()) {
   const pkgJsonPath = findNearestPackageJson(cwd);
   if (!pkgJsonPath) {
-    return {found: false, issues: []};
+    return {found: false, reason: 'no_package_json', issues: []};
   }
   const packageDir = path.dirname(pkgJsonPath);
 
@@ -468,7 +469,9 @@ export async function validateIntegration(pkg, options = {}) {
       validated: result.found,
       name: result.found ? (result.name ?? null) : null,
       version: result.found ? (result.version ?? null) : null,
-      issues: result.issues,
+      issues: result.reason === 'no_package_json'
+        ? [{code: 'no_package', severity: 'error', message: 'No package.json found. Run this command inside a package directory.'}]
+        : result.issues,
     },
   };
 }
