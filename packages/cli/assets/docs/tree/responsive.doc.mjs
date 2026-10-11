@@ -103,7 +103,7 @@ const isNarrow = useMediaQuery('(max-width: 1024px)');
       content: [
         {
           type: 'prose',
-          text: 'For columns that reflow on small screens, use `Grid columns={{minWidth, max}}`. A numeric `columns` is exactly N columns at every width and never reflows: `columns={4}` on a 390px phone renders four narrow tracks that overflow the page. `{minWidth: 240, max: 4}` renders at most four columns, each at least 240px, and drops to one full-width column when the container is narrow; `gap` is included in the track math, so the cap always fits when there is room.',
+          text: 'For columns that reflow on small screens, use `Grid columns={{minWidth, max}}`. A numeric `columns` is exactly N columns at every width and never reflows: `columns={4}` on a 390px phone renders four narrow tracks that overflow the page. `{minWidth: 240, max: 4}` renders at most four columns, each at least 240px, and drops to one full-width column when the container is narrow; `max` is what lets that last column shrink to the container, and `gap` counts toward the room the columns need.',
         },
         {
           type: 'code',
@@ -123,9 +123,9 @@ const isNarrow = useMediaQuery('(max-width: 1024px)');
           type: 'list',
           style: 'unordered',
           items: [
-            '`{minWidth}` alone: as many columns as fit at the floor, no cap',
+            '`{minWidth}` alone: as many columns as fit at the floor, no cap; a container narrower than `minWidth` overflows, so add `max` for anything that reaches a phone',
             "`{minWidth, repeat: 'fit'}`: empty tracks collapse so present items stretch",
-            "A `GridSpan` in a grid that has dropped below its span takes the tracks that remain; keep spans small or use `columns='full'`",
+            "A numeric `GridSpan` wider than the grid's current columns adds implicit columns to the whole grid and later items flow into them; in a reflowing grid keep spans within the smallest count it can reach, or use `columns='full'`, which adds none",
           ],
         },
       ],
