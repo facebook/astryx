@@ -18,6 +18,8 @@
  * TODO instead of a rename so no value is silently dropped.
  */
 
+import {transformProp} from '../../transform-prop.mjs';
+
 export const meta = {
   title: 'Migrate input root styling to container/control parts',
   description:
@@ -74,6 +76,14 @@ const PACKAGE_PATTERN = /^@(astryxdesign|xds)\/core(\/[A-Za-z]+)?$/u;
 const TODO =
   ' TODO(astryx upgrade): root styling is no longer accepted here; merge it into ';
 
+/** @type {ReadonlyMap<string, ReadonlySet<string>>} */
+const COMPONENT_PROPS = new Map(
+  [...PART_BY_COMPONENT.keys()].map(name => [
+    name,
+    new Set(Object.keys(ROOT_STYLE_PROPS)),
+  ]),
+);
+
 /**
  * @param {import('../../../../authoring/codemod/type').AstryxCodemodFile} file
  * @param {import('../../../../authoring/codemod/type').CodemodTransformApi} api
@@ -87,102 +97,86 @@ export default function migrateFieldInputStyling(file, api) {
 
   const j = api.jscodeshift;
   const root = j(file.source);
-  /** @type {Map<string, 'control' | 'container'>} */
-  const localParts = new Map();
-  /** @type {Set<string>} */
-  const namespaces = new Set();
-  /** @type {Map<string, string>} */
-  const importedNames = new Map();
+  const matchesImport = (/** @type {string} */ source) =>
+    PACKAGE_PATTERN.test(source);
 
+  // Local names that resolve to an Astryx InputGroup (named or namespace).
+  /** @type {Set<string>} */
+  const inputGroupNames = new Set();
+  /** @type {Set<string>} */
+  const namespaceNames = new Set();
   root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     const source = path.node.source.value;
-    if (typeof source !== 'string' || !PACKAGE_PATTERN.test(source)) return;
     if (path.node.importKind === 'type') return;
+    if (typeof source !== 'string' || !matchesImport(source)) return;
     for (const specifier of path.node.specifiers ?? []) {
-      if (specifier.type === 'ImportSpecifier') {
-        if (specifier.importKind === 'type') continue;
-        const local = specifier.local?.name ?? specifier.imported.name;
-        importedNames.set(local, specifier.imported.name);
-        const part = PART_BY_COMPONENT.get(specifier.imported.name);
-        if (part) {
-          localParts.set(
-            specifier.local?.name ?? specifier.imported.name,
-            part,
-          );
-        }
+      if (specifier.importKind === 'type') continue;
+      if (
+        specifier.type === 'ImportSpecifier' &&
+        specifier.imported?.name === 'InputGroup'
+      ) {
+        inputGroupNames.add(specifier.local?.name ?? 'InputGroup');
       } else if (specifier.type === 'ImportNamespaceSpecifier') {
-        namespaces.add(specifier.local.name);
+        namespaceNames.add(specifier.local.name);
       }
     }
   });
-  if (localParts.size === 0 && namespaces.size === 0) return undefined;
 
-  /** The imported component name an opening-element name refers to. @param {any} name */
-  const componentOf = name => {
-    if (name.type === 'JSXIdentifier') return importedNames.get(name.name);
-    if (
+  /** @param {any} elementPath a JSXElement path */
+  const isInputGroup = elementPath => {
+    const name = elementPath.node.openingElement.name;
+    let localName;
+    if (name.type === 'JSXIdentifier' && inputGroupNames.has(name.name)) {
+      localName = name.name;
+    } else if (
       name.type === 'JSXMemberExpression' &&
-      name.object.type === 'JSXIdentifier' &&
-      namespaces.has(name.object.name) &&
-      name.property.type === 'JSXIdentifier'
+      name.object?.type === 'JSXIdentifier' &&
+      name.property?.type === 'JSXIdentifier' &&
+      name.property.name === 'InputGroup' &&
+      namespaceNames.has(name.object.name)
     ) {
-      return name.property.name;
+      localName = name.object.name;
+    } else {
+      return false;
     }
-    return undefined;
+    const scope = elementPath.scope?.lookup(localName);
+    return scope?.path.node.type === 'Program';
   };
 
-  /** @param {any} path */
-  const isInsideInputGroup = path => {
-    for (let p = path.parent; p; p = p.parent) {
-      if (
-        p.node.type === 'JSXElement' &&
-        componentOf(p.node.openingElement.name) === 'InputGroup'
-      ) {
-        return true;
-      }
+  /** @param {any} openingPath a JSXOpeningElement path */
+  const isInsideInputGroup = openingPath => {
+    for (let p = openingPath.parent?.parent; p; p = p.parent) {
+      if (p.node.type === 'JSXElement' && isInputGroup(p)) return true;
     }
     return false;
   };
 
-  /** @param {any} name */
-  const partFor = name => {
-    if (name.type === 'JSXIdentifier') return localParts.get(name.name);
-    if (
-      name.type === 'JSXMemberExpression' &&
-      name.object.type === 'JSXIdentifier' &&
-      namespaces.has(name.object.name) &&
-      name.property.type === 'JSXIdentifier'
-    ) {
-      return PART_BY_COMPONENT.get(name.property.name);
-    }
-    return undefined;
-  };
-
   let changed = false;
-  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
-    let part = partFor(path.node.name);
-    if (!part) return;
-    if (
-      part === 'container' &&
-      GROUPED_CONTROL_COMPONENTS.has(componentOf(path.node.name) ?? '') &&
-      isInsideInputGroup(path.parent)
-    ) {
-      part = 'control';
-    }
-    const attributes = path.node.attributes ?? [];
-    const present = new Set(
-      attributes
-        .filter((/** @type {any} */ a) => a.type === 'JSXAttribute')
-        .map((/** @type {any} */ a) => a.name.name),
-    );
-    for (const attribute of attributes) {
-      if (attribute.type !== 'JSXAttribute') continue;
-      const name = attribute.name?.name;
-      if (!Object.hasOwn(ROOT_STYLE_PROPS, name)) continue;
-      const next =
-        part +
-        ROOT_STYLE_PROPS[/** @type {keyof typeof ROOT_STYLE_PROPS} */ (name)];
-      if (present.has(next)) {
+  transformProp(
+    root,
+    j,
+    {matchesImport, components: COMPONENT_PROPS},
+    (propPath, {component}) => {
+      const attribute = propPath.node;
+      const openingPath = propPath.parent;
+      let part = PART_BY_COMPONENT.get(component);
+      if (!part) return;
+      if (
+        part === 'container' &&
+        GROUPED_CONTROL_COMPONENTS.has(component) &&
+        isInsideInputGroup(openingPath)
+      ) {
+        part = 'control';
+      }
+      const name = /** @type {keyof typeof ROOT_STYLE_PROPS} */ (
+        attribute.name.name
+      );
+      const next = part + ROOT_STYLE_PROPS[name];
+      const present = (openingPath.node.attributes ?? []).some(
+        (/** @type {any} */ a) =>
+          a.type === 'JSXAttribute' && a.name?.name === next,
+      );
+      if (present) {
         const comment = `${TODO}\`${next}\`. `;
         attribute.comments ??= [];
         if (
@@ -193,13 +187,12 @@ export default function migrateFieldInputStyling(file, api) {
           attribute.comments.push(j.commentBlock(comment, true, false));
           changed = true;
         }
-        continue;
+        return;
       }
       attribute.name = j.jsxIdentifier(next);
-      present.add(next);
       changed = true;
-    }
-  });
+    },
+  );
 
   return changed ? root.toSource({quote: 'single'}) : undefined;
 }

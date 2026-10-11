@@ -76,6 +76,18 @@ const c = <NumberInput label="Qty" {...rest} startIcon={<Icon className="icon" /
     expect(apply(input)).toBe(input);
   });
 
+  it('leaves tags whose name is shadowed by a local binding', () => {
+    const input = `import {TextInput} from '@astryxdesign/core';
+import * as Astryx from '@astryxdesign/core';
+function Row({TextInput}) {
+  return <TextInput className="kept" />;
+}
+function Other(Astryx) {
+  return <Astryx.Typeahead className="kept" />;
+}`;
+    expect(apply(input)).toBe(input);
+  });
+
   it('marks a conflict with a TODO instead of dropping a value', () => {
     const input = `import {TextInput} from '@astryxdesign/core';
 const a = <TextInput label="Name" className="old" controlClassName="new" />;`;
