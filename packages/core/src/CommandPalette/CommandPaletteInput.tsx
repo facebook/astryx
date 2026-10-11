@@ -187,6 +187,15 @@ export function CommandPaletteInput({
   const handleValueChange = onValueChange ?? ctx?.setSearch;
   const accessibleLabel = props['aria-label'] ?? label ?? placeholder;
   const hasEndContent = isRenderable(endContent);
+  const callerOwnsPopup =
+    !ctx &&
+    (props.role === 'combobox' ||
+      props['aria-expanded'] != null ||
+      props['aria-autocomplete'] != null ||
+      props['aria-controls'] != null ||
+      props['aria-activedescendant'] != null);
+  const standaloneRole =
+    props.role ?? (callerOwnsPopup ? 'combobox' : 'searchbox');
 
   // When rendered inside an inline dialog, disable auto-focus by default
   // to avoid stealing focus from the surrounding page.
@@ -230,14 +239,25 @@ export function CommandPaletteInput({
         ref={useMergedRefs(ref, inputRef)}
         {...stylex.props(styles.input)}
         type="text"
-        role={ctx ? 'combobox' : 'searchbox'}
-        aria-expanded={ctx?.isOpen}
-        aria-autocomplete={ctx ? 'list' : undefined}
-        aria-controls={ctx?.listId}
+        role={ctx ? 'combobox' : standaloneRole}
+        aria-expanded={
+          ctx
+            ? ctx.isOpen
+            : (props['aria-expanded'] ?? (callerOwnsPopup || undefined))
+        }
+        aria-autocomplete={
+          ctx
+            ? 'list'
+            : (props['aria-autocomplete'] ??
+              (callerOwnsPopup ? 'list' : undefined))
+        }
+        aria-controls={ctx ? ctx.listId : props['aria-controls']}
         aria-activedescendant={
-          ctx && ctx.highlightedIndex >= 0
-            ? ctx.getItemId(ctx.highlightedIndex)
-            : undefined
+          ctx
+            ? ctx.highlightedIndex >= 0
+              ? ctx.getItemId(ctx.highlightedIndex)
+              : undefined
+            : props['aria-activedescendant']
         }
         // A placeholder alone is not a reliable accessible name. Consumers
         // may provide aria-label directly; otherwise label and placeholder are

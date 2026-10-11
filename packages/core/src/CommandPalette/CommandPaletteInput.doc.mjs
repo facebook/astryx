@@ -31,7 +31,7 @@ export const docs = {
     ],
     anatomy: [
       {
-        name: 'Input region',
+        name: 'Input',
         required: true,
         description:
           'The surrounding inline layout for the search glyph, query field, and trailing content.',

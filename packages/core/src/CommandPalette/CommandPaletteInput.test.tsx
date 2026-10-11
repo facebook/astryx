@@ -59,6 +59,23 @@ describe('CommandPaletteInput', () => {
     expect(input).not.toHaveAttribute('aria-autocomplete');
   });
 
+  it('preserves standalone caller-owned popup semantics', () => {
+    render(
+      <CommandPaletteInput
+        aria-expanded="false"
+        aria-autocomplete="both"
+        aria-controls="caller-list"
+        aria-activedescendant="caller-item"
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(input).toHaveAttribute('aria-autocomplete', 'both');
+    expect(input).toHaveAttribute('aria-controls', 'caller-list');
+    expect(input).toHaveAttribute('aria-activedescendant', 'caller-item');
+  });
+
   it('has an accessible name by default', () => {
     render(<CommandPaletteInput />);
     expect(screen.getByRole('searchbox')).toHaveAttribute(
@@ -127,7 +144,34 @@ describe('CommandPaletteInput', () => {
 
   it('keeps visible numeric end content in the trailing group', () => {
     render(<CommandPaletteInput endContent={0} />);
-    expect(screen.getByText('0').tagName).toBe('SPAN');
+    const input = screen.getByRole('searchbox');
+    const trailingGroup = screen.getByText('0');
+    expect(trailingGroup.tagName).toBe('SPAN');
+    expect(input.parentElement?.lastElementChild).toBe(trailingGroup);
+  });
+
+  it.each([false, true, '', null, undefined])(
+    'omits trailing chrome for empty end content %#',
+    endContent => {
+      render(<CommandPaletteInput endContent={endContent} />);
+      expect(
+        screen.getByRole('searchbox').parentElement?.children,
+      ).toHaveLength(2);
+    },
+  );
+
+  it('does not schedule focus when hasAutoFocus is false', async () => {
+    const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');
+    render(<CommandPaletteInput hasAutoFocus={false} />);
+
+    const input = screen.getByRole('searchbox');
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+    const inputFocusCalls = focusSpy.mock.calls.filter((_, i) => {
+      return focusSpy.mock.contexts[i] === input;
+    });
+    expect(input).not.toHaveAttribute('data-autofocus');
+    expect(inputFocusCalls).toHaveLength(0);
+    focusSpy.mockRestore();
   });
 
   it('forwards the ref and native data attributes to the query field', () => {
@@ -159,6 +203,18 @@ describe('CommandPaletteInput popup context', () => {
     expect(input).not.toHaveAttribute('aria-activedescendant');
   });
 
+  it('reports the contextual open state and controlled list', () => {
+    render(
+      <CommandPaletteContext value={makeContext()}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    expect(input).toHaveAttribute('aria-controls', 'list-1');
+  });
+
   it('exposes the highlighted option as the active descendant', () => {
     render(
       <CommandPaletteContext value={makeContext({highlightedIndex: 2})}>
@@ -186,6 +242,23 @@ describe('CommandPaletteInput popup context', () => {
     expect(setSearch).toHaveBeenCalledWith('help');
   });
 
+  it('gives explicit search state precedence over context', () => {
+    const setSearch = vi.fn();
+    const onValueChange = vi.fn();
+    render(
+      <CommandPaletteContext
+        value={makeContext({search: 'context', setSearch})}>
+        <CommandPaletteInput value="explicit" onValueChange={onValueChange} />
+      </CommandPaletteContext>,
+    );
+
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveValue('explicit');
+    fireEvent.change(input, {target: {value: 'next'}});
+    expect(onValueChange).toHaveBeenCalledWith('next');
+    expect(setSearch).not.toHaveBeenCalled();
+  });
+
   it('does not delegate a consumer-prevented keyboard event', () => {
     const onKeyDown = vi.fn();
     render(
@@ -198,7 +271,7 @@ describe('CommandPaletteInput popup context', () => {
     expect(onKeyDown).not.toHaveBeenCalled();
   });
 
-  it('does not auto-focus inside an inline dialog', () => {
+  it('does not auto-focus inside an inline dialog', async () => {
     const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');
     render(
       <Dialog isOpen isInline onOpenChange={() => {}}>
@@ -209,6 +282,7 @@ describe('CommandPaletteInput popup context', () => {
     );
 
     const input = screen.getByRole('combobox');
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
     const inputFocusCalls = focusSpy.mock.calls.filter((_, i) => {
       return focusSpy.mock.contexts[i] === input;
     });
