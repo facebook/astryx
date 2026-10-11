@@ -27,6 +27,12 @@ export interface FieldInputPartsOptions {
    * set false only for a member whose control id is component-owned.
    */
   forwardsId?: boolean;
+  /**
+   * Whether the primary semantic control itself references the field
+   * description. Defaults to true; FileInput describes its trigger button
+   * instead of the hidden native input that takes base props.
+   */
+  controlReferencesDescription?: boolean;
 }
 
 /**
@@ -41,6 +47,7 @@ export function describeFieldInputParts(
     getControl,
     inGroup = false,
     forwardsId = true,
+    controlReferencesDescription = true,
   }: FieldInputPartsOptions,
 ): void {
   describe(`${name} FR10 prop targets`, () => {
@@ -77,6 +84,7 @@ export function describeFieldInputParts(
       render(
         renderMember({
           'aria-describedby': 'caller-help',
+          // eslint-disable-next-line @astryx/no-hardcoded-i18n-string -- test fixture text
           description: 'Field help',
         }),
       );
@@ -84,6 +92,9 @@ export function describeFieldInputParts(
         ' ',
       );
       expect(ids).toContain('caller-help');
+      if (!controlReferencesDescription) {
+        return;
+      }
       const describedText = ids
         .map(id => document.getElementById(id)?.textContent ?? '')
         .join(' ');

@@ -932,9 +932,9 @@ export function Slider({ref, ...props}: SliderProps) {
 
     const thumbElement = (
       <div
+        key={thumbIndex}
         {...(!isRange ? rest : undefined)}
         ref={!isRange ? ref : undefined}
-        key={thumbIndex}
         id={!isRange ? id : undefined}
         role="slider"
         // With a disabledMessage the thumb keeps focusability so the reason is
