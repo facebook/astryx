@@ -19,8 +19,10 @@ import {useTranslator} from './useTranslator';
 import {InternationalizationContext} from './InternationalizationContext';
 import {InternationalizationProvider} from './InternationalizationProvider';
 import {__resetForTests} from './resolve';
+import enCatalog from './generated-locales/en.generated';
 import buttonMessages from './generated-locales/en/button.generated';
 import paginationMessages from './generated-locales/en/pagination.generated';
+import enSource from '../../locales/en.json';
 import type {MessagesByLocale, Overrides} from './types';
 
 const FR_MESSAGES: MessagesByLocale = {
@@ -97,6 +99,22 @@ describe('useComponentTranslator', () => {
     const {result} = renderHook(() => useTranslator());
     expect(result.current('@astryx.button.loading')).toBe('Loading');
     expect(result.current('@astryx.pagination.next')).toBe('Go to next page');
+  });
+});
+
+describe('the whole English catalog', () => {
+  it('is the spread of the namespace slices and carries every authored key once', () => {
+    const authored = Object.keys(enSource).sort();
+    expect(Object.keys(enCatalog).sort()).toEqual(authored);
+    for (const key of authored) {
+      expect(enCatalog[key]).toBe(
+        (enSource as Record<string, {defaultMessage: string}>)[key]
+          .defaultMessage,
+      );
+    }
+    expect(enCatalog['@astryx.button.loading']).toBe(
+      buttonMessages['@astryx.button.loading'],
+    );
   });
 });
 

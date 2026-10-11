@@ -16,6 +16,7 @@ import {
   getSliceModuleName,
   isSourceLocaleFile,
   namespaceOf,
+  renderEnglishCatalogModule,
   renderNamespaceSliceModule,
   renderRuntimeCatalogModule,
 } from './generate-i18n-runtime.mjs';
@@ -165,6 +166,20 @@ describe('English namespace slices', () => {
     expect(output).toContain(
       "const runtimeCatalog: Readonly<Record<string, string>> = {\n  '@astryx.button.loading': 'Loading',\n};",
     );
+    expect(output).toContain('export default runtimeCatalog;');
+  });
+
+  it('renders the whole English catalog as the spread of its slices, so each string ships once', async () => {
+    const output = await renderEnglishCatalogModule(['button', 'pagination']);
+    expect(output).toContain(
+      "import buttonMessages from './en/button.generated';",
+    );
+    expect(output).toContain(
+      "import paginationMessages from './en/pagination.generated';",
+    );
+    expect(output).toContain('...buttonMessages,');
+    expect(output).toContain('...paginationMessages,');
+    expect(output).not.toMatch(/'@astryx\./);
     expect(output).toContain('export default runtimeCatalog;');
   });
 });

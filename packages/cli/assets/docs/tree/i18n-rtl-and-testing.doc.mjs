@@ -11,7 +11,11 @@ export const docs = {
   type: 'generic',
   name: 'i18n-rtl-and-testing',
   title: 'RTL & Testing',
-  placement: {parent: 'namespace:internationalization', slot: 'guides', order: 30},
+  placement: {
+    parent: 'namespace:internationalization',
+    slot: 'guides',
+    order: 30,
+  },
   category: 'guide',
   description:
     'Text direction (RTL), pseudo-locale testing, and contributor guidance for developers and translators.',
@@ -122,22 +126,23 @@ import pseudo from '@astryxdesign/core/locales/pseudo.generated.js';
         },
         {
           type: 'prose',
-          text: 'Astryx component authors read strings with `useTranslator()` rather than hardcoding user-facing text.',
+          text: "Astryx component authors read strings with `useComponentTranslator(<slice>)` rather than hardcoding user-facing text. The slice is the component's own namespace of the English catalog, so an app bundles only the strings of the components it renders.",
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Read an astryx string',
-          code: `import {useTranslator} from '@astryxdesign/core/i18n';
+          code: `import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import saveButtonMessages from '../i18n/generated-locales/en/saveButton.generated';
 
 function SaveButton() {
-  const t = useTranslator();
-  return <button>{t('@astryx.actions.save')}</button>;
+  const t = useComponentTranslator(saveButtonMessages);
+  return <button>{t('@astryx.saveButton.save')}</button>;
 }`,
         },
         {
           type: 'prose',
-          text: "Astryx's own strings live in `packages/core/locales/en.json`. New user-facing strings must go through `useTranslator`; this is enforced by the `@astryx/no-hardcoded-i18n-string` ESLint rule. See the AI contribution guide for the alias-and-resolve pattern used when adding new keys.",
+          text: "Astryx's own strings live in `packages/core/locales/en.json`, keyed `@astryx.<namespace>.<name>`. New user-facing strings must go through the translator; the `@astryx/no-hardcoded-i18n-string` ESLint rule enforces that, and `pnpm check:i18n-catalog` fails a key read outside the file's slice. `useTranslator()` from `@astryxdesign/core/i18n` is the consumer-facing hook and carries the whole catalog. See the AI contribution guide for the alias-and-resolve pattern used when adding new keys.",
         },
         {
           type: 'prose',
