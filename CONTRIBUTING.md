@@ -115,8 +115,10 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@astryxdesign/core`:** nothing extra. The dev server
-serves the edited source, so the story updates on save — no rebuild, no restart.
+**If you make changes to `@astryxdesign/core`:** source changes update without a
+rebuild or restart. Storybook and the docsite also watch
+`packages/core/locales/*.json`, regenerate the compact runtime catalogs, and
+reload imported messages after a locale edit.
 
 ### Running the Doc Site
 
@@ -286,6 +288,83 @@ export * from './MyComponent';
 > It is auto-generated from the `src/` directory by `scripts/sync-exports.js` and
 > committed automatically when changes land on `main`. If you need to verify your
 > component will be included, run `pnpm sync:exports:check`.
+
+### User-facing strings and text direction
+
+Components read user-facing strings with `useTranslator()` rather than
+hardcoding them:
+
+```tsx
+import {useTranslator} from '@astryxdesign/core/i18n';
+
+function SaveButton() {
+  const t = useTranslator();
+  return <button>{t('@astryx.actions.save')}</button>;
+}
+```
+
+Astryx's own strings live in `packages/core/locales/en.json`. The
+`@astryx/no-hardcoded-i18n-string` ESLint rule rejects a hardcoded one. For a
+prop whose default is a translated string, alias the prop and resolve it in the
+body: destructure `label: labelFromProps`, then
+`const label = labelFromProps ?? t('@astryx.<component>.<key>')`.
+
+A component that responds to text direction resolves it from the DOM, not from
+a render-time JavaScript read. Reach for the lightest tool that works, in this
+order:
+
+1. **CSS logical properties.** Use `insetInlineStart`, `paddingInlineEnd`,
+   `marginInline`, and friends instead of physical `left`/`right`. Most
+   mirroring needs nothing more: the browser flips it from the ambient `dir`.
+   The `@astryx/no-physical-properties` ESLint rule enforces this.
+2. **Directional icons: mirror with CSS, not a name swap.** Render one fixed
+   glyph and wrap it in the shared `rtlStyles.mirror` (a `scaleX(-1)` that only
+   applies under `[dir="rtl"]`). It flips from the ancestor `dir` through the
+   cascade, so it works on the server with no hydration flash. Do not pick
+   `chevronLeft` or `chevronRight` in JavaScript. Pagination, Calendar, and
+   Carousel handle their chevrons this way.
+
+   ```tsx
+   import * as stylex from '@stylexjs/stylex';
+   import {rtlStyles} from '@astryxdesign/core';
+
+   function NextButton() {
+     // One glyph; CSS flips it under RTL. No direction read.
+     return (
+       <span {...stylex.props(rtlStyles.mirror)}>
+         <Icon icon="chevronRight" />
+       </span>
+     );
+   }
+   ```
+
+3. **Behavior: read the DOM lazily, on the event.** For what CSS can't express
+   (arrow-key mapping, drag and scroll math), read direction at interaction
+   time with `isRtlElement(el)` (a `getComputedStyle().direction` check), never
+   during render. The focus hooks (`useListFocus`, `useGridFocus`,
+   `useTreeFocus`) already detect direction from their container, so arrow keys
+   flip for free; don't pass them a direction flag.
+4. **`useDirection()` context, as a last resort.** Use it only when you need
+   the direction value during render and nothing above fits. It is SSR-safe
+   and returns `'ltr'` outside a provider (like `useTranslator`'s silent
+   fallback), but it is the one path that can mismatch on hydration when the
+   provider's direction disagrees with `<html dir>`. No Astryx component reads
+   direction from context at render time.
+
+### Adding a semantic icon
+
+Add a semantic icon name only for a glyph the whole system shares:
+
+1. Add the name to the `IconName` type in
+   `packages/core/src/Icon/globalIconRegistry.tsx`.
+2. Add the default SVG to `packages/core/src/Icon/defaultIcons.tsx`.
+3. Add a row to the Available Names table in
+   `packages/cli/assets/docs/icons.doc.mjs`.
+
+A glyph that belongs to one component takes a namespaced key instead
+(`numberInput:stepperDown`), so the shared `IconName` list does not grow. Ship
+its fallback in `defaultIcons` under the same key so the glyph still renders
+with no theme.
 
 ## Accessibility Checklist
 
@@ -595,18 +674,91 @@ pnpm changeset:new --category fix --summary "…" --pr 2717 --contributor yourha
 > `minor`; `[experimental]` and every other category must be `patch`), or
 > declaring a `major` bump while 0.x.
 
-### Version Bumps
+#### When CI requires one
 
-- **0.x (current): bump follows the category.** We track standard semver for the `0.x.y` range, where a minor bump is the stable breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`). A `[breaking]` change bumps the **minor** (`0.x.y → 0.(x+1).0`). A change confined to a surface that was explicitly marked experimental before its first stable publication uses `[experimental]` and bumps the **patch**, even when that experimental API changes incompatibly. Every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) also bumps the patch. If stable defaults, behavior, props, imports, CLI commands, or machine schemas break, the change remains `[breaking]`. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` enforces the coupling both ways.
-- All publishable packages are a `fixed` group, so a single change co-bumps them to the same version. Only genuinely-affected packages get a changelog entry — the rest get a clean version-only bump.
+Every pull request runs `scripts/release/changeset-coverage.mjs`, the same
+classifier the release coverage audit runs over a release's commits. It fails
+when the pull request changes something a published package ships and no
+Changeset it adds or edits names that package:
+
+- package source, such as `packages/*/src` of a published package;
+- CLI behavior and output under `packages/cli` (`api`, `clients`,
+  `foundation`, `authoring`, `assets`);
+- shipped documentation: `packages/cli/assets/docs`, `*.doc.mjs`, and a
+  package README;
+- consumer-facing `package.json` fields such as `exports`, `bin`, and
+  dependency or peer ranges.
+
+Stories, the sandbox, tests, fixtures, snapshots, spec records, generated
+CHANGELOGs, private and canary-only packages (`lab`, `charts`, `richtext`,
+`vega`), the docsite app, CI, and repository tooling never reach a consumer and
+need no Changeset. The failure names the package and the command to run, for
+example `pnpm changeset:new --packages @astryxdesign/cli --category docs`. Run
+the check locally with
+`node scripts/release/changeset-coverage.mjs pr --base origin/main --explain`.
+
+The same check compares the CLI's machine-readable ids with the latest
+release: response `type` values, response fields, golden JSON fields, and
+`astryx doctor` check ids. Removing or renaming a released one breaks scripts
+that read it. Restore it, or classify the removal in a `@astryxdesign/cli`
+Changeset: a `[breaking]` entry that names the id, or a paragraph beginning
+`Compatibility:` that names the id and says why consumers of the latest
+release keep working. Name an id the way the failure prints it, such as
+`themes` or `DoctorCheck.fix`. Catalog values inside those responses, such as template
+slugs and docs routes, are data and may change.
+
+### Release versions
+
+- **Main declares the next version.** The fixed group's version in main's
+  `package.json` files is the next planned release. Before a cut, an owner may
+  raise or lower it while it stays strictly above newest stable. While an
+  untagged cut is active, main may stay equal to that cut or rise, but cannot be
+  lowered below it. After the tag, ordinary PRs must be strictly above stable;
+  trusted merge-back is the only equality exception and publishes no canary.
+- **0.x: the category states the tier a change needs.** A `[breaking]`
+  Changeset declares `minor` and is admitted only while main already declares
+  the next minor. `[experimental]` and every other category declare `patch`.
+  A Changeset never chooses the plan. CI refuses `[breaking]` on a patch plan
+  and refuses a minor-to-patch lowering PR that would strand pending breaking
+  work. The routes are to keep the old usage compatible through deprecation, or
+  have an owner explicitly plan the minor.
+- All publishable packages are a `fixed` group, so they release together at one
+  version. Only genuinely affected packages get a changelog entry.
+- As a contributor you never change the declared version. State compatibility
+  intent and add the right Changeset; a maintainer owns release planning. The
+  governing contract is `spec:AST-017` FR46–FR51.
 
 ### How a release is cut
 
+First, the canonical full-scope `release-check` must pass on an exact commit from
+current `main`; the release branch is cut only from that checked SHA while it remains
+in current main history. A minor cut also requires Cindy, the release owner, to
+explicitly sign off on the exact `vX.Y.0` immediately before the branch is created.
+Scheduled or standing authority does not cover a minor.
+
+A release branch `release/vX.Y.Z` is then cut from that commit, where `X.Y.Z` is the
+version main declares. On that branch only:
+
 ```bash
-pnpm version-packages   # changeset version + scripts/format-changelogs.mjs
+pnpm version-packages   # changelogs at the declared version + codemod promotion + formatting
 ```
 
-`format-changelogs.mjs` rewrites each just-bumped package CHANGELOG into the doc-site format (h1 version, `#### <Category>` sections in canonical order, and a `#### Contributors` section aggregated from the changeset `@handle`s). It's idempotent and has a `--check` mode for CI drift detection.
+`scripts/release/version-packages.mjs` admits the frozen Changesets against the
+declared version, writes their changelog entries under it, and deletes them; it
+never changes a package version. The command then promotes staged codemods,
+refreshes exact internal pins, and formats changelogs with contributor credit.
+Refresh and verify `pnpm-lock.yaml` before the Version Packages PR merges. After tag and publication, one trusted
+`chore/merge-vX.Y.Z-to-main` PR squashes the exact branch-owned outputs and
+frozen deletions onto current main while preserving every post-cut change and
+main's declaration. A separate owner PR then declares the next plan across the
+fixed group, exact internal pins, and lockfile—patch successor by default,
+minor only when the owner explicitly names it.
+
+Before stable publication, a patch release self-grades its complete generated
+changelogs and draft GitHub Release notes against the public Blog Review Rubric's
+`update` profile. Every criterion must pass; failures are fixed on the release
+branch and the complete text is re-graded. A minor release instead requires Cindy's
+explicit human editorial approval of the changelogs, release notes, and public blog.
 
 ## Finding Something to Work On
 
@@ -815,7 +967,8 @@ and doesn't need network to use.
 Astryx accepts community translations via Crowdin. To help translate astryx
 into your language, visit <https://crowdin.com/project/astryx>. New locales are
 picked up automatically after a maintainer reviews the auto-generated
-translations PR.
+translations PR. Direct PRs against `packages/core/locales/*.json` also work if
+you prefer that flow.
 
 Calendar’s compact weekday labels, such as `Su` and `Mo`, are generated from
 Unicode CLDR data because browsers do not provide that format.

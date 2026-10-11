@@ -275,6 +275,53 @@ export const AsyncSearch: Story = {
   },
 };
 
+// ─── Built-in strings ────────────────────────────────────────────────────────
+
+/**
+ * Nothing overridden, so every built-in string renders. `bootstrap()` returns
+ * nothing so first open shows the bootstrap empty state, and the async
+ * `search()` keeps the pending state observable.
+ */
+export const BuiltInStrings: Story = {
+  render: function Render() {
+    const [isOpen, setIsOpen] = useState(false);
+    const source = useMemo<SearchSource>(() => {
+      let controller: AbortController | null = null;
+      return {
+        cancel() {
+          controller?.abort();
+        },
+        async search(query: string) {
+          controller?.abort();
+          controller = new AbortController();
+          await new Promise(r => setTimeout(r, 600));
+          const all = [
+            {id: 'home', label: 'Home'},
+            {id: 'settings', label: 'Settings'},
+            {id: 'profile', label: 'Profile'},
+          ];
+          return all.filter(c =>
+            c.label.toLowerCase().includes(query.toLowerCase()),
+          );
+        },
+        bootstrap() {
+          return [];
+        },
+      };
+    }, []);
+    return (
+      <>
+        <Button label="Open" onClick={() => setIsOpen(true)} />
+        <CommandPalette
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          searchSource={source}
+        />
+      </>
+    );
+  },
+};
+
 // ─── Keywords ────────────────────────────────────────────────────────────────
 
 /** Type "theme" or "appearance" to find "Toggle Dark Mode". */

@@ -65,7 +65,7 @@ describe('discoverBuiltinTopics', () => {
   it("finds the CLI's own topics and not their localization overlays", () => {
     const topics = discoverBuiltinTopics();
     expect(Object.keys(topics).length).toBeGreaterThan(0);
-    expect(topics.tokens).toMatch(/assets[/\\]docs[/\\]tokens\.doc\.mjs$/);
+    expect(topics.color).toMatch(/assets[/\\]docs[/\\]color\.doc\.mjs$/);
     for (const name of Object.keys(topics)) {
       expect(name).not.toMatch(/\.(zh|dense)$/);
     }
@@ -507,6 +507,27 @@ describe('mergeTopic', () => {
     expect(merged.sections[1].content[0].text).toBe('use tokens');
     // The base is untouched.
     expect(base.sections[0].content[0].text).toBe('npm i');
+  });
+
+  it('finds a retitled base section by the key its old title derives', () => {
+    // A base section retitled later keeps its old key as its `id`; an
+    // extension that still names it by the old title replaces it.
+    const merged = mergeTopic(
+      {
+        ...base,
+        sections: [
+          {id: 'quick-start', title: 'Wrap your app in a theme', content: []},
+          {id: 'tokens', title: 'Tokens', content: []},
+        ],
+      },
+      {sections: [{title: 'Quick Start', content: []}]},
+    );
+    expect(merged.sections.map(section => [section.id, section.title])).toEqual(
+      [
+        ['quick-start', 'Quick Start'],
+        ['tokens', 'Tokens'],
+      ],
+    );
   });
 
   it('replaces a section by stable ID even when its title changes', () => {

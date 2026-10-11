@@ -38,6 +38,7 @@ import {doc as componentFn} from '../../../../api/component/component.doc.mjs';
  *
  * @typedef {(
  *   | import('../../../../api/component/component.type.mjs').ComponentListResponse
+ *   | import('../../../../api/component/component.type.mjs').ComponentBatchResponse
  *   | import('../../../../api/component/component.type.mjs').ComponentDetailResponse
  *   | import('../../../../api/component/component.type.mjs').ComponentDetailPropsResponse
  *   | import('../../../../api/component/component.type.mjs').ComponentDetailSourceResponse
@@ -67,6 +68,11 @@ function summarize(result) {
       );
       return resultSet({count, resultKind: 'component'});
     }
+    case 'component.batch':
+      return resultSet({
+        count: result.data.results.filter(row => row.status === 'found').length,
+        resultKind: 'component',
+      });
     case 'component.detail':
     case 'component.detail.props':
     case 'component.detail.source':
@@ -83,18 +89,123 @@ function summarize(result) {
 }
 
 /**
+ * Project one single-component API result through the existing formatter kit.
+ * @param {import('../../../../api/component/component.type.mjs').ComponentSingleResponse} result
+ * @param {string} requestedName
+ * @param {'full'|'compact'|'brief'} detail
+ * @param {Awaited<ReturnType<typeof resolveTheme>>} themeData
+ * @returns {import('../../formatters/index.mjs').Block[]}
+ */
+function componentDetailBlocks(result, requestedName, detail, themeData) {
+  const requested = (requestedName.split('/').pop() ?? requestedName).replace(
+    /^XDS/,
+    '',
+  );
+  // A replacement answers to the Core name it replaces (spec:AST-035 FR11),
+  // but its package exports it under its own name: print that one.
+  const resolvedName =
+    result.type === 'component.detail' &&
+    typeof result.data.name === 'string' &&
+    result.data.replaces === requested
+      ? result.data.name
+      : requested;
+  switch (result.type) {
+    case 'component.detail': {
+      /** @type {import('../../formatters/index.mjs').Block[]} */
+      const out = [record({package: result.package})];
+      if (result.data.parentDoc) {
+        out.push(record(result.data, {fields: ['parentDoc']}));
+      }
+      out.push(
+        detail === 'brief'
+          ? code(
+              formatBrief(result.data, resolvedName, result.data.import, {
+                themeData,
+              }),
+            )
+          : detail === 'compact'
+            ? code(
+                formatCompact(result.data, resolvedName, result.data.import),
+              )
+            : code(
+                formatFull(result.data, {
+                  themeData,
+                  importHint: result.data.import,
+                }),
+              ),
+      );
+      return out;
+    }
+    case 'component.detail.props':
+      return [
+        record({package: result.package}),
+        code(formatProps({props: result.data}, resolvedName)),
+      ];
+    case 'component.detail.source':
+    case 'component.detail.showcase':
+      return [code(result.data.source)];
+    case 'component.detail.blocks': {
+      const {showcase, examples, related} = result.data;
+      // A block another package owns says which one.
+      /** @param {{package: string}} block @param {string} label */
+      const owned = (block, label) =>
+        block.package === result.package ? label : `${label} (${block.package})`;
+      /** @type {import('../../formatters/index.mjs').Block[]} */
+      const out = [record({package: result.package})];
+      if (showcase) {
+        out.push(
+          section('Showcase'),
+          record(
+            {...showcase, displayName: owned(showcase, showcase.displayName)},
+            {fields: ['displayName', 'description']},
+          ),
+        );
+      }
+      if (examples.length > 0) {
+        out.push(
+          section('Examples'),
+          records(
+            examples.map(block => ({...block, name: owned(block, block.name)})),
+            {fields: ['name', 'description']},
+          ),
+        );
+      }
+      if (related.length > 0) {
+        out.push(
+          section(
+            `Related: ${related.length} blocks that use ${result.data.component}`,
+          ),
+          list(related.map(block => owned(block, block.name))),
+        );
+      }
+      if (!showcase && examples.length === 0 && related.length === 0) {
+        out.push(text(`No blocks found for ${result.data.component}`));
+      }
+      return out;
+    }
+    default:
+      return [];
+  }
+}
+
+/**
  * @param {import('commander').Command} program
  */
 export function registerComponent(program) {
   defineCommand(program, componentCommand, {
     fn: componentFn,
-    action: async (/** @type {string | undefined} */ name, /** @type {{list?: boolean, category?: string, props?: boolean, source?: boolean, showcase?: boolean, blocks?: boolean, package?: string}} */ options) => {
+    action: async (
+      /** @type {string[] | undefined} */ names,
+      /** @type {{list?: boolean, category?: string, props?: boolean, source?: boolean, showcase?: boolean, blocks?: boolean, package?: string}} */ options,
+    ) => {
       const run = getCliInvocation();
+      const name = names?.length === 1 ? names[0] : undefined;
+      const apiInput = !names?.length ? undefined : name ?? names;
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
       const lang = program.opts().lang || null;
       const detailSource = program.getOptionValueSource('detail');
-      const isListView = options.list || options.category || !name;
+      const isListView = options.list || options.category || !names?.length;
       // Default detail level is full for single-component view, brief for list views.
       // (List views are scannable name lists; users can opt into compact/full.)
       let detail = program.opts().detail || 'full';
@@ -119,7 +230,7 @@ export function registerComponent(program) {
       /** @type {ComponentResult} */
       let result;
       try {
-        result = /** @type {ComponentResult} */ (await componentApi(name, {
+        result = /** @type {ComponentResult} */ (await componentApi(apiInput, {
           cwd: process.cwd(),
           list: options.list,
           category: options.category,
@@ -137,6 +248,12 @@ export function registerComponent(program) {
       }
 
       const answered = summarize(result);
+      if (
+        result.type === 'component.batch' &&
+        result.data.results.some(row => row.status !== 'found')
+      ) {
+        process.exitCode = 1;
+      }
       if (json) {
         jsonOut(result);
         return answered;
@@ -146,13 +263,24 @@ export function registerComponent(program) {
       // The api layer already resolved against core (result exists), so core is
       // present on this path; narrow away the null branch findCoreDir allows.
       const coreDir = /** @type {string} */ (findCoreDir(process.cwd()));
-      const themeData = resolveTheme(process.cwd());
+      let themeData;
+      try {
+        themeData = await resolveTheme(process.cwd());
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message.split('\n', 1)[0]?.trim() || error.name
+            : String(error);
+        return cliError(`Could not load the recorded theme: ${message}`, {
+          code: ERROR_CODES.ERR_THEME_LOAD,
+        });
+      }
 
       // Footer shared by the compact + names list views (prose → text()).
       const listFooter = text(
         [
           `Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`,
-          `Usage: ${run} component <name>`,
+          `Usage: ${run} component <name> [name...]`,
         ].join('\n'),
       );
 
@@ -162,8 +290,34 @@ export function registerComponent(program) {
           // in result.data.detail and the grouped map in result.data.components.
           if (result.data.detail === 'full') {
             // --detail full — dense per-component docs (signature, props, theming,
-            // examples). Verbatim doc block from the shared formatter.
-            emit(code(await formatBriefAll(coreDir, {zh, lang, themeData})));
+            // examples). Verbatim doc block from the shared formatter. A Core slot
+            // an integration component replaces prints that component, from the
+            // list result (spec:AST-035 FR11). Only the result's groups print, so
+            // `--category` text shows what its JSON shows and every printed slot
+            // is covered by the replacement map built from that result.
+            /** @type {Map<string, any>} */
+            const replacements = new Map();
+            for (const items of Object.values(result.data.components)) {
+              for (const item of /** @type {any[]} */ (items)) {
+                if (
+                  item.package !== '@astryxdesign/core' &&
+                  typeof item.replaces === 'string'
+                ) {
+                  replacements.set(item.replaces, item);
+                }
+              }
+            }
+            emit(
+              code(
+                await formatBriefAll(coreDir, {
+                  zh,
+                  lang,
+                  themeData,
+                  replacements,
+                  categories: Object.keys(result.data.components),
+                }),
+              ),
+            );
             break;
           }
 
@@ -179,7 +333,13 @@ export function registerComponent(program) {
               const isUngrouped =
                 entries.length === 1 && items.length === 1 && items[0]?.name === cat;
               if (!isUngrouped) out.push(section(cat));
-              out.push(records(items, {fields: ['name', 'import', 'description']}));
+              // An entry from another package says which one (cli-surface INV28).
+              const named = items.map(item =>
+                item.package === '@astryxdesign/core'
+                  ? item
+                  : {...item, import: `${item.import}  [${item.package}]`},
+              );
+              out.push(records(named, {fields: ['name', 'import', 'description']}));
             }
             out.push(listFooter);
             emit(...out);
@@ -231,64 +391,80 @@ export function registerComponent(program) {
           break;
         }
 
-        case 'component.detail': {
-          const resolvedName = (name || '').replace(/^XDS/, '');
-          const importHint = result.data.import;
-          if (result.data.parentDoc) emit(record(result.data, {fields: ['parentDoc']}));
-          const doc =
-            detail === 'brief'
-              ? code(formatBrief(result.data, resolvedName, importHint, {themeData}))
-              : detail === 'compact'
-                ? code(formatCompact(result.data, resolvedName, importHint))
-                : code(formatFull(result.data, {themeData, importHint}));
-          emit(doc);
-          break;
-        }
-
-        case 'component.detail.props': {
-          const resolvedName = (name || '').replace(/^XDS/, '');
-          emit(code(formatProps({props: result.data}, resolvedName)));
-          break;
-        }
-
-        case 'component.detail.source': {
-          emit(code(result.data.source));
-          break;
-        }
-
-        case 'component.detail.showcase': {
-          emit(code(result.data.source));
-          break;
-        }
-
-        case 'component.detail.blocks': {
-          const {showcase, examples, related} = result.data;
+        case 'component.batch': {
           /** @type {import('../../formatters/index.mjs').Block[]} */
-          const out = [];
-          if (showcase) {
+          const out = [
+            section('Component batch'),
+            record({count: result.data.count}),
+            section('Results'),
+          ];
+          for (const row of result.data.results) {
+            out.push(section(row.selector));
+            if (row.status === 'found') {
+              out.push(
+                record(row, {fields: ['selector', 'status']}),
+                section('Result'),
+                // A batch is not piped as one file, so a source row names its
+                // package here; the other rows name it themselves.
+                ...(row.result.type === 'component.detail.source' ||
+                row.result.type === 'component.detail.showcase'
+                  ? [record({package: row.result.package})]
+                  : []),
+                ...componentDetailBlocks(
+                  row.result,
+                  row.selector,
+                  detail,
+                  themeData,
+                ),
+              );
+              continue;
+            }
             out.push(
-              section('Showcase'),
-              record(showcase, {fields: ['displayName', 'description']}),
+              record(row, {
+                fields: ['selector', 'status', 'code', 'error'],
+              }),
             );
-          }
-          if (examples.length > 0) {
-            out.push(
-              section('Examples'),
-              records(examples, {fields: ['name', 'description']}),
-            );
-          }
-          if (related.length > 0) {
-            out.push(
-              section(`Related: ${related.length} blocks that use ${result.data.component}`),
-              list(related.map(b => b.name)),
-            );
-          }
-          if (!showcase && examples.length === 0 && related.length === 0) {
-            out.push(text(`No blocks found for ${result.data.component}`));
+            if (row.status === 'ambiguous') {
+              out.push(
+                section('Candidates'),
+                records(row.candidates, {
+                  fields: ['package', 'component', 'kind', 'installed'],
+                }),
+              );
+            } else if (row.suggestions?.length) {
+              out.push(
+                section('Suggestions'),
+                records(row.suggestions, {fields: ['name', 'reason']}),
+              );
+            }
           }
           emit(...out);
           break;
         }
+
+        case 'component.detail':
+        case 'component.detail.props':
+        case 'component.detail.source':
+        case 'component.detail.showcase':
+        case 'component.detail.blocks':
+          // Source and showcase print the file alone so it pipes byte for
+          // byte; the package they come from goes to stderr (cli-surface
+          // INV28).
+          if (
+            result.type === 'component.detail.source' ||
+            result.type === 'component.detail.showcase'
+          ) {
+            console.error(`package: ${result.package}`);
+          }
+          emit(
+            ...componentDetailBlocks(
+              result,
+              name ?? '',
+              detail,
+              themeData,
+            ),
+          );
+          break;
       }
       return answered;
     },

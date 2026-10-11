@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {DateTimeInput} from '@astryxdesign/core/DateTimeInput';
 import type {ISODateTimeString} from '@astryxdesign/core/DateTimeInput';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
@@ -233,6 +234,43 @@ export const WithClearButton: Story = {
   args: {
     label: 'Start time',
     hasClear: true,
+  },
+};
+
+/**
+ * Selects a date, clears the controlled value, and reopens the calendar. The
+ * final frame is the regression endpoint: an empty field with no selected day.
+ */
+export const ClearedCalendarSelection: Story = {
+  tags: ['visual-baseline'],
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T09:00' as ISODateTimeString,
+    );
+    return <DateTimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Meeting time',
+    hasClear: true,
+    min: '2026-03-01T00:00' as ISODateTimeString,
+    max: '2026-03-31T23:59' as ISODateTimeString,
+    presentation: 'popover',
+  },
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.click(canvas.getByRole('button', {name: 'Open calendar'}));
+    await userEvent.click(canvas.getByRole('button', {name: /March 20, 2026/}));
+    await userEvent.click(
+      canvas.getByRole('button', {name: 'Clear Meeting time'}),
+    );
+    await userEvent.click(canvas.getByRole('button', {name: 'Open calendar'}));
+
+    await waitFor(() => {
+      expect(
+        canvas.queryAllByRole('gridcell', {selected: true, hidden: true}),
+      ).toHaveLength(0);
+    });
   },
 };
 

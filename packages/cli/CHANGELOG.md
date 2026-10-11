@@ -1,5 +1,491 @@
 # @xds/cli
 
+# 0.6.8
+
+#### Fixes
+
+- A template that sets `replaces` needs `@astryxdesign/cli` 0.6.4, and one that sets `keywords` needs 0.6.6, not 0.7.0 (#7265).
+  Published 0.6.4 applies a template's `replaces`, and published 0.6.6 reads its `keywords`. `integration verify` asked for `">=0.7.0"` for both, a range no released CLI satisfies, and npm leaves the CLI uninstalled in an app that installs a package with that optional peer. `integration verify` now accepts `">=0.6.4"` for `replaces` and `">=0.6.6"` for `keywords`, and still refuses a range that admits an older CLI. Its messages now say what older CLIs do. Before 0.6.6 a template that sets `keywords` is dropped, and before 0.6.4 the package's doc topics are hidden too.
+
+#### Documentation
+
+- Guide new theme authors to the palette generator and keep the broad color scale opt-in in generated theme templates (#6795).
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @josephfarina
+- @rubyycheung
+
+---
+
+# 0.6.7
+
+#### New Features
+
+- Apps can opt into package-managed themes with `astryx theme add <slug> --import`. The command records the theme in one generated app module with its production CSS, optional font CSS, and default slug. Use `theme remove` and `theme use` to manage that record, and pass `themes[defaultThemeSlug]` to `<Theme>`.
+  Plain `astryx theme add` keeps its released source-copy behavior, options, stdout, exit status, and every `theme.add` data field. It now warns that `theme eject` is the explicit source-fork command and `theme add --import` is the way to use the package-managed theme. Its machine result adds the `DEP-0005` deprecation entry; the cleanup is `CLN-0005` in a later scheduled minor.
+
+  Use `defineTheme({extends: importedTheme, ...})` for ordinary customization. `theme eject` creates an independent local fork with its descriptor. JSON callers receive `theme.app` from import, remove, and use, or `theme.eject` from eject.
+
+  Existing bundled source copies stay where they are and keep their bytes. Run `astryx upgrade --from 0.6.4 --path . --apply` to add the missing unmaintained descriptor beside each bundled copy in `src/themes`. Until then, theme commands skip those copies and `theme list` and doctor name them as unmigrated. Package integration themes keep their released complete-directory copy, including the authoring descriptor.
+
+  `ASTRYX_THEME` is no longer read. In a project with a generated app theme module, component metadata reads that record's default built theme. Without the module, the released `package.json#astryx.theme` lookup keeps its meaning. Doctor loads every recorded built module through the same theme adapter, so a broken runtime import fails `theme-owners` instead of passing.
+
+  `theme build` also writes `<out>.css.d.ts` so TypeScript accepts generated CSS imports. Check mode stays compatible with released output sets that do not have this new stub yet.
+
+  Integration themes can export built modules and stylesheets. `astryx integration add theme` creates those exports, and `integration verify` checks the exported paths against the packed package and source. Missing partner exports alone do not block packing. Every declared export must resolve; staleness is a warning for an incomplete set and an error for the complete importable module and stylesheet pair.
+
+- Every result now names the package it comes from. A `--json` result about one artifact (a component and each of its projections, a doc topic, index, section, or docs-tree node, a template, a hook, and `swizzle`) carries `package` in its envelope, directly after `type`. A result that lists artifacts gives each item its own `package`: every `search` hit, `build`'s start, alternatives, blocks, and components, a doc's sections, a docs-tree node's children, `--blocks` entries, and the `component --list` and `upgrade --list` entries. Text names the same package; `--source`, `--showcase`, and a template's source still print only the source on stdout and name the package on stderr. Existing fields are unchanged.
+- Deprecate the `astryx layout` command group
+  The `astryx layout` command group (`expand`, `check`, `grammar`) is deprecated. Use `astryx build` to choose the template to start from, `astryx template` to scaffold it, and `astryx docs layout` for layout guidance.
+
+  In human mode each invocation prints a stderr warning naming the replacement. In JSON mode the response envelope carries machine-readable deprecation metadata in its `meta` field. Canonical stdout, exit codes, and the `layout.expand` / `layout.check` / `layout.grammar` response schemas are unchanged.
+
+  Deprecation lifecycle (`spec:AST-017` FR28, FR31) — removal only in a later minor whose frozen manifest carries both ids of a pair:
+
+- An integration component can replace a Core component, once its package opts in
+  An `@acme/nav` component whose doc sets `replaces: 'SideNav'` takes over `SideNav` for unqualified component detail, batch selectors, every `component --list` detail level, `search`, `swizzle`, and gap-report routing, when `@acme/nav` declares `"@astryxdesign/cli": ">=0.6.7"` in `peerDependencies` (optional in `peerDependenciesMeta`). Every result names its package, `--package @astryxdesign/core` still selects the original Core component, and the replacement keeps answering to its own name. `component SideNav --package @acme/nav` also selects it.
+
+  Any `@astryxdesign/cli` range that starts at 0.6.7 or later is the opt-in, including the `>=0.7.0` that `integration add doc --parent` wrote in 0.6.4 and 0.6.5, and `integration add theme` in 0.6.5. A package whose range admits an earlier CLI keeps its component under its own name and Core stays selected, and an app that loads it sees no new output; its author gets warnings naming the range to add, from `astryx doctor integration components` and `integration verify`. For a package that declares the range, `astryx doctor integration components` reports a missing Core target, an invalid value, a component named after a different Core component, or two replacements for one target in the package as errors and exits 1. When several packages replace one target, an explicitly configured package beats an autolinked one, the later configured package wins, and Doctor warns.
+
+- Add the model comparison page template with responsive sticky context and accessible interactions. (#6251)
+- New `table-collapsible` page template: several tables on one page, each in a collapsible card with its own columns, for groups that do not share a schema. Every table sorts on its own, one time range in the page header drives all of them, and rows expand in place into a full-width history chart. Below 720px each table folds to its name and headline figure. (#6065)
+
+#### Fixes
+
+- Printed commands name the scoped `@astryxdesign/cli` package whenever the `astryx` bin is not installed for the project
+- Compact the generated agent-docs block: fewer lines, same behavioral coverage
+- `astryx doctor` keeps its `themes` check, with the same id, label and fields, beside the new theme checks, so scripts that read it by id keep working. Without a generated theme module it reports what it did before: whether an `@astryxdesign/theme-*` package is installed, and whether the app's package.json names a theme in `astryx.theme`. Its fix now names `theme add --import`. With a generated module it reports the overall result of the theme checks.
+  In a workspace, `themes` reads the app's own package.json, the file the CLI reads when it resolves the theme, rather than the package.json beside the root `node_modules`. It no longer counts the `ASTRYX_THEME` variable, which the CLI does not read, as a wired theme.
+- Doctor says why it skipped a check and what it checked, and `doctor integration validate` no longer crashes on a folder it cannot read
+- upgrade: exclude node_modules from integration codemod discovery
+  When an integration declared its codemods root as the package root (`codemods: "./"`), the version-folder scan treated `node_modules`, `.git`, `__tests__`, and `__fixtures__` as version folders and loaded their files as codemods. The same `SKIP_DIRS` filter that the recursive file walk already used is now also applied to the top-level version-folder enumeration.
+- Align the layout deprecation (DEP-0006) with the documented envelope and precedent
+  The layout command's JSON envelope now emits `meta.deprecations: [{id, replacements}]`, matching the response schema doc and the DEP-0005 theme add precedent. The `deprecated` CommandDoc field renders in `--help` and the manifest. The programmatic API exports (`layoutExpand`, `layoutCheck`, `layoutGrammar`) carry `@deprecated` in their declarations and generated types. Command and function reference pages name DEP-0006 and the replacement. The DEP-0006 record names its direct authority. All released data fields are unchanged.
+- swizzle: rewrite every .stylex import to a deep path
+  `astryx swizzle Button` (and any component that imports a `.stylex` module from outside its own directory) emitted an import that collapsed to the directory barrel — e.g. `@astryxdesign/core/utils` instead of `@astryxdesign/core/utils/interactionOverlay.stylex`. The barrel does not re-export those StyleX symbols, so the swizzled file could not compile.
+
+  `rewriteImports` now gives every `*.stylex` module the deep subpath. The exports generator (`scripts/sync-exports.js`) adds 16 specific subpath exports for the `.stylex` modules swizzled components actually reference across directories:
+
+  `DateInput/tokens.stylex`, `Icon/IconSize.stylex`, `Indicator/indicator.markers.stylex`, `Layer/layerAnimations.stylex`, `Layer/layerTextReset.stylex`, `Layer/layerViewportInset.stylex`, `Layout/container.stylex`, `Layout/edgeCompensation.stylex`, `Layout/padding.stylex`, `NavItem/navItemStyles.stylex`, `Selector/selectorPresentation.stylex`, `Stack/stack.stylex`, `Stack/stackItem.stylex`, `Text/text.stylex`, `utils/focusOutline.stylex`, `utils/interactionOverlay.stylex`
+
+  These are public API additions. Each module already ships in the npm tarball (in `dist/`); only the exports map entry is new. No wildcard — a future cross-directory `.stylex` import needs a deliberate entry in `STATIC_EXPORTS`. Precedent: `./theme/dataTokens.stylex` (AST-066 FR2).
+
+- template: show a grouped summary by default instead of the full catalog
+  Bare `astryx template` (no name, no `--list`) now shows templates grouped by category with counts — about 21 KB instead of the full 149 KB catalog. The full catalog with descriptions is still reachable via `astryx template --list`.
+
+  JSON output is unchanged — `--json template` still returns the complete `template.list` response. This is a text-only rendering change under AST-017 FR11: the machine-readable response schema is the contract; text formatting is not.
+
+  Trade-off: the grouped output still includes every template id (so `template <id>` works from a copy-paste), at the cost of ~21 KB. An even shorter summary (type + count only, no ids) would be ~500 bytes but would require a second step to discover any id. The current shape serves both human scanning and agent copy-paste without a round-trip.
+
+- template: bare `template --type` no longer prints an empty group header
+- A section read on a docs-tree namespace answers from the guide that has the section again, so `astryx docs layout side-panels` and the other layout section reads released in 0.6.6 work after the layout split. `docs(route, section)` returns the same `docs.detail.section` the guide's own section read returns, found by key, then by title, in `--dense` and `--zh` too. When no guide or more than one has the section, the read fails with `ERR_UNKNOWN_SECTION` and names the guides to read it from.
+- `astryx search` ranks a component, hook, or template that a query word names above a doc that matched only by keyword, heading, or text. `font size` finds Text first again instead of a typography guide. A doc the query names, such as `font setup` or `migration`, or one whose title the query holds, such as `resizable side panels`, keeps its place. Result scores do not change; only the order between domains moves.
+- `astryx search` finds a guide when the query is its route or title in the other number: `side panel` finds the side panels guide first again, and `header and footer` finds headers and footers. A section's heading still doesn't count as its topic's name, so `font size` keeps finding Text first.
+- Fix comparison table category from "Table - Frozen Column" to "Table - Comparison"
+  The category described an implementation detail (the frozen label column) instead of what the template is for. Builders searching by layout type now find it under Comparison.
+- Template and build tell you what a scaffolded template needs that your project lacks.
+  When `astryx template <name> <path>` scaffolds a file that imports packages your project does not have (e.g. `@heroicons/react`, `recharts`, `lucide-react`), the receipt now includes a ready-to-run install command with the project's package manager and version ranges from the CLI workspace. `astryx build` shows the same note on its start template.
+
+  When a scaffolded template uses StyleX and the project has no compiler plugin configured, the receipt warns and points to `astryx docs styling-overview`. The agent-docs block no longer says "don't use xstyle" flat-out — it acknowledges that some templates need it and links the setup doc.
+
+  `detectStylingSystem` now recognizes the official `@stylexjs/rollup-plugin`, `@stylexjs/webpack-plugin`, and `@stylexjs/nextjs-plugin` alongside the existing entries.
+
+- `astryx theme build` prints one line per built theme, plus one line naming fonts the themes do not load. Before, every theme printed the same install example and font recipe, so a build of many themes printed the same blocks again and again. `--detail full` prints the install example and font recipe, once for a batch instead of once per theme; for one theme it prints what the default printed before. Only the text report changes: `--json` output, `--check`, exit codes and written files are unchanged.
+- Wherever the CLI shows the `<Theme>` wrapper, it now also shows where `Theme` comes from: `import {Theme} from '@astryxdesign/core'`. This covers the `astryx init` next steps, `theme add` and `theme build` output, the doctor fix for an unimported theme module, `build` help, and the theme guides.
+- `astryx theme add <slug> --import` names the npm package that owns the added theme, in its JSON envelope (`package`, directly after `type`) and in its text output, the same way other results about one artifact do. A local theme has no package, so its result has no `package`, and `theme remove` and `theme use` are unchanged.
+  `astryx theme add --list` keeps its JSON. Its text now names `theme add <slug> --import` to use a theme and `theme eject <slug>` to fork one, instead of the deprecated copy form.
+
+  `astryx doctor` adds a `theme-management` check, and focused `theme-*` checks once a project has a generated theme module.
+
+- One-off commands in a classic Yarn (1.x) project use `npx @astryxdesign/cli …` instead of `yarn dlx`, which classic Yarn does not have
+
+#### Documentation
+
+- `astryx docs migration`, `internationalization`, `styling`, `styling-libraries`, `typography` and `tokens` still work and now list focused guides. Each section is also readable under its guide, for example `astryx docs tokens/tokens-spacing` or `astryx docs styling/tokens-and-setup stylex-setup`, and `astryx docs <topic> <section>` keeps working: every section key these topics had still opens the same section. `astryx docs tokens --depth all --detail full` prints every token table, and a `token-ref` to `tokens` keeps resolving through the guide that holds the table.
+  Integrations: these six names are now docs-tree sections, not topics, so an integration doc that declares `extends` or `replaces` with one of them is reported as naming no topic, and its content no longer shows. To keep that content, ship it as your own topic under a new name, or as a guide in your package's own section (`astryx integration add doc <name> --parent <your-section>`). Topics that are still flat, such as `theme` or `color`, can still be extended or replaced.
+
+  (#7184)
+
+- `astryx docs layout` still works and now lists the focused guides. Each section is also readable under its guide, for example `astryx docs layout/side-panels` or `astryx docs layout/scaffold shell`, and `astryx docs layout <section>` keeps working.
+  (#7125)
+- `astryx docs layout` opens with its overview again, and `astryx docs author-a-theme` and `use-a-theme` restore guidance the theme split dropped: what a bad `extends` base does, how adaptation rules are validated, what `__built` means, the icon-registry specifier traps, `registerTheme`, and wiring built themes in development too.
+  (#7204)
+- Add a choose-a-path styling overview and restore the import-based workflow across the theme guides.
+  (#7134)
+- Split the theme documentation into focused guides for using and authoring themes, with a concise overview that points to both workflows.
+  (#7141)
+
+#### Other Changes
+
+- A hint uses `npx astryx …` (or `pnpm exec`, `yarn`, `bunx`) only when the `astryx` bin is in `node_modules/.bin`, in the project or a folder above it. Otherwise it prints `npx @astryxdesign/cli …` (`pnpm dlx`, `yarn dlx`, `bunx`), as it already did when the CLI ran from an npx or dlx cache.
+- A global install, or a workspace install used in a fresh package, used to print `npx astryx …`. The npm package named `astryx` is not this CLI, so following that hint fetched an unrelated package.
+- `astryx blog` follows the same rule, and the incident console template names the scoped package.
+
+  Classification: contract-restoring. JSON shapes are unchanged; only hint text changes, and projects with the CLI installed keep `npx astryx …`.
+
+- deprecation `DEP-0006` / cleanup `CLN-0006` — `astryx layout` command group (`expand`, `check`, `grammar`)
+- A check that needs the loaded project quotes the reason the CLI could not load it, instead of only "Skipped".
+- The config check warns when astryx.config imports but the CLI cannot load the project from it. Before, it said the config loaded cleanly.
+- Integration contributions name the integrations they checked; with none loaded, the check reports info and says there is nothing to check.
+- The agent-docs check reads every file init can write (Hermes included) and looks in the project root as well as the working directory, so running doctor from a subfolder no longer reports that there are no agent docs.
+- `astryx doctor integration validate` names a folder it cannot read and keeps checking. A declared root that is a file or that cannot be read is reported as `invalid_root` or `unreadable_root` instead of a raw error or a crash.
+
+  Classification: contract-restoring. No check becomes stricter: every new finding is a warning or info, and the only exit-code change is that an unreadable folder outside every root no longer crashes validation.
+
+- Whenever the CLI prints its scoped one-off form (it ran from an npx or dlx cache, or the `astryx` bin is not installed for the project), a Yarn project got `yarn dlx @astryxdesign/cli …`. On classic Yarn that command fails.
+- Classic Yarn is read from the declared `packageManager` version, the `yarn.lock` header (`# yarn lockfile v1`), a committed `.yarnrc` (without `.yarnrc.yml`), or the runner. Yarn 2 and later keep `yarn dlx`.
+
+  Classification: contract-restoring. JSON shapes are unchanged; only hint text changes.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @ernestt
+- @josephfarina
+
+---
+
+# 0.6.6
+
+#### New Features
+
+- Add a shared `upload` icon, and use it for FileInput's upload affordance instead of the directional `arrowUp`
+  Themes draw `upload` through `icons.upload`, separately from `arrowUp`, so sort arrows and every other `arrowUp` use stay unchanged. Every bundled theme and theme template draws `upload` in its own icon style. FileInput keeps its icon size, placement, color, and accessibility in both modes; a theme with no `upload` artwork shows the default upload-into-tray glyph there.
+
+  A complete `IconRegistry` may still omit `upload` in this release. The next minor makes it required, so add an `upload` entry to any registry you type as `IconRegistry`.
+
+- Templates declare their `keywords`, and `build` tells a part of a page from a page by the components the project can use (#6805)
+- `build` chooses where to start with a checked-in table of word weights blended with the page ranker
+- `astryx docs <route> --depth <levels>` reads as far down the docs tree as you ask, from one doc to everything below it.
+  `--depth 0` reads only the namespace you name, `--depth 1` adds the docs right below it (what a read without `--depth` shows), and `--depth all` goes to the bottom. With `--depth`, `--detail` sets how much of each doc below shows: `brief` (the default) is one line each, named by where it sits so you can open it, `compact` adds its sections, and `full` prints it whole. So `astryx docs cli --depth all` is a map of every CLI doc, and `astryx docs cli/integrations --depth all --detail full` prints the integration guides as one read. Where a read stops, a namespace says how many docs sit below it. `--json` returns the same tree as `docs.node`: each child carries its own `slots` while the read goes deeper, `childCount` where it stops, and its text at `compact` or `full`. `docs()` takes the same `depth` and `detail` options. Reads without `--depth` are unchanged.
+- Point at `discover` where people look for things to add
+  Nothing an agent reads named `discover`, so agents asked to find a theme searched the package registry instead. The agent block `astryx init` writes now lists `discover <words>` (integrations you could add, and the ones you have), `theme list` ends with `More themes in packages you could add: astryx discover theme`, and a text search ends with `More in packages you could add: astryx discover <query>` (except `--type hook`, since no integration adds hooks). JSON output is unchanged.
+- `integration add theme --from <base>` forks an existing theme as the starting point instead of a blank scaffold. The new theme copies the base's source files — renamed and rewritten for the new slug — with no link back. Use `--from` when you want to change a lot; for a small change that stays linked, use `extends` in `defineTheme`.
+
+#### Fixes
+
+- Say when a command did nothing: `upgrade` reports `sourcePathFound`, the integration checks report `validated`.
+  Two commands could legitimately do nothing and produce an envelope identical to a clean success. Both now carry the fact in a field of their own response instead of only in human text.
+
+  `astryx upgrade` defaults `--path` to `./src`. A project laid out as `app/` (or a typo) skipped every code codemod and still reported exit 0, `filesChanged: 0`, `errors: []` and "Upgrade complete". The only warning was a log line `--json` suppresses by design. `upgrade.run` now carries `sourcePathFound`, and the human completion line names the directory it did not find.
+
+  `astryx doctor integration validate|components|docs|templates` returned `{name: null, version: null, issues: []}` and exit 0 when no integration manifest was found — the same shape as a validated, healthy integration. All four envelopes now carry `validated`, false only when nothing was inspected.
+
+- `astryx manifest --json` now takes each command's examples from its CommandDoc and its response types from the API function it wraps, so no example differs from the documented one and `upgrade` lists `upgrade.registry`, which `upgrade --registry --json` already emits.
+- `astryx template <name> <path>` and `astryx layout expand` now say when they replaced Astryx demo media. The `template.copy` and `layout.expand` receipts carry `demoMediaReplaced`, the number of demo image and video references that became placeholders (one per reference, however many fixture paths its URL carries), and the text output names the file to update (when `layout expand` prints the code instead, the same line follows it as a comment, so the output is still valid TSX). Nothing about the copy itself changed.
+- `astryx template <name>` and `template()` now return the same source that `astryx template <name> <path>` writes, and say how many Astryx demo media references they replaced. Demo images and videos that only Astryx's own previews serve are replaced the same way in both, so code copied from the printed source no longer points at media your project doesn't have. `template.show` gains `demoMediaReplaced` (0 when the template carried none); in text mode the count is stated on stderr so the printed source stays exact.
+- A write that fails reports ERR_WRITE_FAILED instead of a raw Node errno.
+  `astryx template` into an unwritable directory returned `{"error": "EACCES: permission denied, open '/home/you/project/readonly/x.tsx'", "code": "ERR_UNKNOWN"}`, and `swizzle` returned the `mkdir` equivalent. Two things were wrong: ERR_WRITE_FAILED is already in the frozen error registry for exactly this case, and the message carried an absolute host path where every other Astryx message names its target relative to the project.
+
+  Both now throw ERR_WRITE_FAILED with the errno kept (it is the part that says what to fix) and the target named relative to the project. Nothing is left half-written: a `swizzle` that fails part-way removes the files it already copied and puts back any it replaced before it reports the error, and the message names any file it could not restore.
+
+- When `discover --available` runs without a discover source, the CLI now
+  explains what discover sources are and where to find Astryx packages on npm, instead of the misleading message that told users to add package names they had no way to find. The base `discover` with no integrations also gains a pointer to npm and the integrations docs.
+- A package with a namespace doc or a placed guide needs `@astryxdesign/cli` 0.6.4, not 0.7.0.
+  Published 0.6.4 reads an integration's docs tree: it lists the namespace and reads each guide placed in it. 0.6.3 rejects a namespace doc and hides every doc topic the package ships. `integration add doc --parent` wrote `"@astryxdesign/cli": ">=0.7.0"`, a range no released CLI satisfies, and `integration verify` failed a docs-tree package whose CLI peer started at 0.6.4. `integration add doc --parent` now writes `">=0.6.4"`, marked optional, and `integration verify` accepts it. A template that sets `replaces` or `keywords` still needs `">=0.7.0"`.
+- `gap-report` fails when a listed integration cannot load, instead of reporting a clean result.
+  An integration whose `astryx.integration` module throws on import or fails validation was left out of the handler set. With no other handler, the report fell through to the built-in GitHub fallback for Core: the command exited 0 with `consent_required`, printed nothing on stderr, and offered `--confirm-public` to file on Core's public tracker a report the integration might have been meant to receive.
+
+  The unloadable integration now records a failed delivery in its config position, with the load error and the fix in its message. Like any handler, it turns the fallback off, so the report never goes to another package's tracker. The command exits 1, and a failed or partial report now prints each failed delivery on stderr as well as in the receipt.
+
+- `astryx integration add theme <name> --from <base>` now adds the packages the copied theme files import to `dependencies`.
+  A fork of a bundled theme such as `neutral` copies its `icons.tsx`, which imports `lucide-react`, but the package did not declare it. So `astryx theme build` on the fork failed with "Cannot find module 'lucide-react'", and an app that installed the package hit the same error. `--from` now adds each package the copied files import, at the range the bundled themes use. It leaves out Core and React, which every Astryx app already has, and anything the package already declares.
+- `astryx integration pack` without `--check` now points only at `astryx integration verify`.
+  It used to say "Pass --check to verify the integration tarball, or run `astryx integration verify`", which sent people to the deprecated spelling. It now says that `integration pack` is now `integration verify`, and that `npm pack` builds the tarball. The error code and exit code are unchanged, and `integration pack --check` still runs the same check as before.
+- Search: differentiate all-word matches by total quality; index themes
+  Within the all-words tier, every candidate whose strongest token hit was a keyword scored the same (e.g. 157), regardless of how the other query words matched. A doc matching both words by keyword outranked nothing, and `search "how to use a theme"` put API reference docs above the consumer theme guide.
+
+  The bonus now uses the sum of ALL token scores instead of just the strongest, so a candidate matching every word by keyword outranks one matching keyword + prose. The `theme` doc also gains consumer-facing keywords so it surfaces for questions like "how to use a theme" and "how to apply a theme".
+
+  Themes are now a search domain: bundled and integration-provided themes appear in results with their slug, displayName, package, and the `astryx theme add` command. `--type theme` filters to them. Like `--type doc`, it works outside an app, where an open search now covers the docs and themes. Search help, the manifest, and the API reference list the new domain and its result fields.
+
+- Search ranks a theme's description as prose, not as keywords
+  A word a theme shares with your query only through its description, such as `minimal`, `focus` or `content`, now ranks the theme like any other description instead of like a declared keyword, so it no longer lands above the components, hooks and docs that declare that word. A theme still comes first for its own slug or display name: `astryx search neutral` finds the Neutral theme first.
+- A package that ships a theme or a doc section `id` needs `@astryxdesign/cli` 0.6.4, not 0.7.0.
+  Published 0.6.4 reads typed theme descriptors and section ids; 0.6.3 rejects both and hides the package's themes or doc topics. The 0.6.5 notes said a stable CLI before 0.7.0 rejects them, so `integration add theme` wrote `"@astryxdesign/cli": ">=0.7.0"`, a range no released CLI satisfies, and `integration verify` failed a theme or section-id package whose CLI peer started at 0.6.4. `integration add theme` now writes `">=0.6.4"`, marked optional, and `integration verify` accepts it for themes and section ids. A template that sets `replaces` or `keywords` still needs `">=0.7.0"`.
+- `theme build` resolves real icon imports from the selected theme instead of matching comment or string contents. Generated modules preserve named, aliased, default, and namespace registry imports, plus inherited icons with child overrides. Normal builds and `--check` reject unsupported inline registries with `ERR_THEME_INVALID` before generating or writing output. Move such a registry into its own module and import it into the theme file.
+- `astryx theme build` in an app uses the app's installed `@astryxdesign/core`, and says to install Core when there is none.
+  Run one-off with `npx @astryxdesign/cli`, it failed with "Build @astryxdesign/core first (e.g. `pnpm -F @astryxdesign/core build`)" even when the app had Core installed, because it looked for Core only next to the CLI. It now generates with the Core the project installed, the same Core the app's `<Theme>` runs on. In an app without Core, the error now says to install it (`npm install @astryxdesign/core`). The build command stays only for the Astryx repository itself. The error code (`ERR_CORE_NOT_FOUND`) is unchanged.
+
+#### Other Changes
+
+- `TemplateDoc` gains an optional `keywords` list: the ideas, domains, and other names a builder might use for what the template serves. `parseTemplate` validates it, discovery carries it from every template source, `astryx search` matches it as it matches a template's description, and `astryx build` ranks page templates on it. Each Core page template's closing list of ideas moved out of its `description` into `keywords`, so descriptions describe the layout.
+- `build` starts a part of a page where it lives (`spec:AST-048` FR3), and the project's own components say what a part is: an idea whose head noun is a word of a component's name or keywords, Core's or an integration's, asks for a part, unless the noun names a family of page templates or the idea lists three or more pieces. A part starts from the base template of the family the idea names, else from the app shell; a change to an existing page or part (an idea whose "existing" names a page family or a component, such as "the existing table", and that does not ask for a new page) starts from the app shell. The start's reason says which case applies and why.
+- A family's base template leads its family unless a variant matches two terms of its own; a base that cannot start on its own never displaces the variant that leads.
+
+  Integration templates that set `keywords` need `@astryxdesign/cli` 0.7.0 or later. The template metadata object is strict, so a stable CLI before 0.7.0 rejects the field, drops that template, and hides the package's doc topics; only `template --list` and `search` print a warning. `integration verify` fails a package whose template sets `keywords` until it declares `@astryxdesign/cli >=0.7.0`, as it does for `replaces`.
+
+- `api/build/kit/weights.mjs` scores each candidate start (the app shell and every ready page template) from the idea's stemmed words using the tables in `weights.json`, and blends those scores with the ranker's own. The blend decides the start of every whole page; a part or an edit starts where it did before, and the ranker's pick of a template the tables do not list stands. Without a weights file the ranker's pick stands. The response's shape is unchanged.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AstryxBot
+- @cixzhang
+- @jiunshinn
+- @josephfarina
+- @rubyycheung
+
+---
+
+# 0.6.5
+
+#### New Features
+
+- `astryx component` accepts several exact selectors in one call. The JSON response keeps one ordered row per selector, including missing and ambiguous components, and text mode prints every row before exiting nonzero when any lookup fails. The `component()` API accepts selector arrays and always returns `component.batch` for an array, including empty and one-item arrays. Batches accept up to 100 selectors and reject larger arrays before lookup. The public API also exports shared `BatchResponse` and `BatchRow` types for typed receipts.
+- `astryx discover` browses integrations: the ones a project has and, through discover sources, the ones it could add, with every version and what each one adds. It searches every kind of item and filters with `--type`, `--installed`, `--available`, and `--limit`. A project sets a source as `discover` in `astryx.config`, and an integration exports one as a `discover` named export. Discover only reads: it prints the command that adds a package and never runs it. Existing `--json` fields keep their meaning. A free-text query now always lists its matches, even an exact component name, and `astryx discover <package>/<Name>` opens one.
+- `astryx integration verify` is the new name of `astryx integration pack --check`.
+  The check you run before publishing an integration now has a name that says what it does. `astryx integration verify` packs the package with npm, installs the tarball into a temporary app, and checks that the app sees the same components, templates, themes, docs, and codemods. It takes no flags. `astryx integration pack --check` still works as a deprecated alias: it runs the same check with the same output, JSON, and exit codes, prints a note that names `integration verify`, and shows as deprecated in help. It will be removed in a later release. The `integrationPackCheck()` API and its `integration.pack-check` JSON response do not change. With `--json`, a command group given an unknown subcommand now reports `ERR_UNKNOWN_SUBCOMMAND` and lists its subcommands, where it used to say JSON output is not supported.
+
+#### Fixes
+
+- Fix the CLI's topic docs and how they print.
+- `astryx doctor` no longer reports an integration it could not check as absent or complete (#6619)
+- `upgrade`'s `filesChanged` counts files, not (codemod, file) pairs (#6622)
+  One source file that four codemods each changed was reported as four files changed, so `filesChanged` matched `transformsApplied` and the documented meaning, "Total files changed", was not true. The human summary said the same thing: "Found 4 changes across 4 files" for one file.
+
+  `filesChanged` is now the count of distinct files. `transformsApplied` is unchanged: a code or config codemod counts once for each file it changed, and a project codemod counts once. A file that both a core codemod and an integration codemod changed counts once in `filesChanged`.
+
+- A parse error prints the Astryx error format in text mode.
+  `astryx theme list --lang zh-Hans` printed Commander's own line — `error: option '--lang <locale>' argument 'zh-Hans' is invalid…` — while every other CLI error prints `Error: …`. `--json` was already correct (`ERR_INVALID_LANG`), so the two modes agreed only on the exit code.
+
+  Commander writes that line before any Astryx code runs, so the JSON shim — the one place that already sees every parse failure — now suppresses it and writes the Astryx line itself, from the same message, for both modes. Every parse failure is covered: unknown option, unknown command, missing argument, and an invalid value for a global option. `--help` and `--version` are untouched and still exit 0.
+
+- The CLI reference now matches what the commands do. Every `--help` ends with the command's examples and a `More:` line that names its full docs page. Function docs show each parameter's default, mark required parameters, list the error codes each function throws, and use examples that run. The response-type list adds `help`, `version`, and `upgrade.registry`, and `astryx manifest` now lists `upgrade.registry` for `upgrade`. The `--zh`, `--dense`, `--lang`, and `--detail` descriptions name the commands they change, and command summaries say when to use each command. When `astryx template` refuses to overwrite a file, it now says to re-run with `--overwrite` (or `-f`). The `upgrade` command page (`astryx docs cli/commands/upgrade`) now explains which files codemods never edit, what happens when one of them needs a change, and how to regenerate it.
+- `astryx integration pack --check` now checks the tarball when a `prepack`, `prepare`, or `postpack` script prints to stdout. Before, any lifecycle output made the check fail with "npm pack produced unparseable JSON output" before it looked at the tarball. A failing lifecycle script still fails the check, and its output stays in the `pack_failed` message.
+- `astryx doctor integration docs` fails when a namespace doc or a placement fails, as its help says.
+  Such a failure hides the doc from the docs tree, so it now exits 1 with an `invalid_doc_graph` error instead of a warning. A link that names no doc still only warns, since it prints as written. `doctor integration docs` and `doctor integration components` also no longer print an `[ok]` line after a check that failed.
+
+  A mistyped subcommand under `doctor` now fails and lists the subcommands the group has: `astryx doctor integrations` used to run the project checks, and `astryx doctor integration bogus` exited 0 in text though it exited 1 with `--json`.
+
+- A package that ships a theme, or a doc section with an `id`, now declares the CLI that can read it.
+  A stable CLI before 0.7.0 rejects both: it cannot read the typed theme descriptors that `astryx integration add theme` writes, and it rejects a section `id`. Either way it hides the package's themes or doc topics with no warning. `astryx integration add theme` now adds `"@astryxdesign/cli": ">=0.7.0"` to `peerDependencies`, marked optional, and `astryx integration verify` fails with `themes_need_cli` or `section_ids_need_cli` when a package needs that peer range and does not declare it.
+- `astryx integration verify` resolves every public import in the packed package, not in your source folder.
+  Before, its temporary app resolved your package's own name through the source `package.json`, so an `exports` target left out of the tarball still passed. It now fails with `component_export_missing`, as an app that installs the tarball would.
+- `astryx theme add` and `astryx theme build` now undo a failed write completely. Before, when one file failed to write after others were written, the written files kept their new content. Now every replaced file gets its previous content back, every new file is removed, and the error names any file that could not be restored. Both commands also refuse to replace a destination that is a symbolic link. (#6852)
+
+#### Other Changes
+
+- A code block's label now prints above the block instead of as a `// label` line inside it, so copied bash, CSS, JSON, and HTML stay valid. Table cells escape `|`, so a union type stays in one column.
+- `astryx search dark mode` searches for both words; it used to drop every word after the first. A result that matches every word of a query, one of them by name or keyword, now outranks one that matches only some, and a section whose title or heading holds the whole query ranks near the top. Topics can declare search `keywords`, now a documented ReferenceDoc field, and a namespace's `keywords` now count too. A query keeps its phrase when common words such as `make`, `build`, or `an` drop out, so `astryx search make an integration` finds the integration guides, a plural of a doc's name matches it, one step below the exact name, and a component's name typed as words, such as `command palette`, finds the component. Outside an app, where `@astryxdesign/core` is not installed, `astryx search` searches the docs instead of failing, and says so; `--type component`, `hook`, or `template` still needs Core.
+- Snippets that failed when copied now work: StyleX token imports, the `fr-FR.json` locale path, Tailwind `rounded-lg`, `--color-background-muted`, icon and color values, and the Cursor rule path.
+- Claims that did not match the code are corrected: the 30 shipped locales and how RTL mirroring works, what `astryx init` writes, `--detail brief` for a shorter read, the Neutral and Matcha fonts, the components that need anchor positioning, `gap` steps, Card's radius, and the Next.js StyleX example. The deprecated bare classes are still emitted and will be removed in a later release.
+- `astryx docs tokens` lists all 258 tokens, adding the data visualization and syntax groups, and shows both halves of every `light-dark()` value.
+- Long sections are split, vague titles renamed, and the `--dense` and Chinese versions no longer drop blocks. Eleven long section keys are shorter, such as `astryx docs styling stylex-setup`, and every old key still resolves. An integration section that extends a Core topic by a section's old title still replaces that section.
+- `astryx integration add codemod --to` help says it takes the Core version whose upgrade runs the codemod.
+- The agent block that `astryx init` writes now says `upgrade --from <old version> --apply`; `upgrade --apply` alone stops with "Missing required --from".
+- The contributor-only sections, on adding a semantic icon and on strings and text direction inside components, moved to CONTRIBUTING.md.
+- An installed dependency whose `astryx.integration.*` manifest cannot be loaded is still kept out of the loaded set, but `implicit-integrations` now names it and says it contributes nothing. Before, doctor said that no installed dependency ships a manifest. The check stays informational, and `astryx doctor integration validate <package>` gives the details.
+- `implicit-integrations` lists only the roots that exist on disk. A package whose declared roots are missing is reported as contributing nothing, with the missing roots named. Before, it listed every root the manifest declared.
+- `provider-identity` says how many loaded integrations it could not read, instead of counting only the readable ones.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @josephfarina
+
+---
+
+# 0.6.4
+
+#### New Features
+
+- Add a reusable Item document tabs block template (#6652)
+- `astryx build "<idea>"` now always names a page template to start from (#6707).
+  A page template carries the page frame, the spacing, and the section rhythm. A page composed from components has to rediscover them. Before, the kit recommended scaffolding only when a template matched almost by name. Other ideas got "use it as a layout reference", which pointed at a 35-line `--skeleton`, and an idea that no template matched got "frame with AppShell, then compose". Now:
+- Link docs by identity, and let integrations add to the docs tree. (#6626)
+  A doc links another doc inside its text with `{@link [<provider>:]<kind>:<name>}`, such as `{@link command:doctor}`. The CLI prints each link as the `astryx docs` command that opens the doc; a link that names no doc prints as written, and `astryx doctor` warns on it. An older CLI prints the link as plain text. `reference`, `workflow`, and `collection` blocks stay in namespace docs.
+
+  An integration can ship namespace docs and place its guides in them. They show up in `astryx docs` beside `cli`, with the same moves, links, and search, and `astryx doctor integration docs` checks them before the package ships. A namespace doc in an integration's docs directory no longer fails to load, and `astryx integration add doc <name> --parent <namespace>` writes a placed guide. A CLI release that does not read the docs tree can hide every doc topic of a package that ships a namespace doc or a placed guide, with nothing saying why, so `--parent` declares the CLI that reads them as an optional `@astryxdesign/cli` peer, and `astryx integration pack --check` fails a package that ships either one without it.
+
+  The CLI keeps its own routes: an integration's flat topic or namespace named `cli`, `unorganized`, or after one of the CLI's topics (compared without case) is withdrawn from the tree, its name opens the CLI's doc, and doctor warns.
+
+  Every flat topic now sits in `astryx docs unorganized`, under its own name, so every doc has a place in the tree with a way up and across. Search hits for a topic name the level and the package that wrote it.
+
+  New guide: `astryx docs cli/writing-docs`.
+
+- In text, `astryx docs <topic>` lists the topic's sections when it has more than one. (#6626)
+  Read one with `astryx docs <topic> <section>`, or print the whole topic with `--full`. `--dense` still prints the whole dense doc, so the agent bootstrap in AGENTS.md reads the same as before. The JSON contract is unchanged: `astryx docs <topic> --json` and `docs(topic)` in `@astryxdesign/cli/api` still return the whole topic (`docs.detail`), and `--index` returns its section list.
+- Read the CLI's docs as a tree, one level at a time. (#6498, #6626)
+  `astryx docs cli` lists the CLI's guides and reference. `astryx docs cli/commands` lists every command, `astryx docs cli/api` lists the API's functions, schemas, and enums, and a route such as `astryx docs cli/api/functions/search` prints one doc. `--json` returns `docs.node` for a namespace or typed doc, identified by its doc identity (a generated level has `id: null`). The text of `astryx docs` lists the docs tree's namespaces first; its `--json` keeps `data` as the topic list and adds them in `meta.namespaces`. Every command, API function, schema, and enum doc the CLI ships declares the `namespace` that reads it: `astryx doctor` fails when one has none or names one nothing reads, and warns when one has no route in the tree.
+- Export `themeTemplate()` from `@astryxdesign/cli/api`, matching the documented API behind `astryx theme template`. (#6626)
+- The integration guide moved from `astryx docs cli-integrations` to `astryx docs cli/integrations`. (#6626)
+  Documentation names and routes are mutable catalog data under `spec:AST-017/FR45`, so the move is nonbreaking and needs no compatibility alias. The guide now lives in the CLI's docs tree, under `cli`. Use `astryx docs cli/integrations`, including section reads such as `astryx docs cli/integrations components`. The old name no longer resolves. The docsite page stays at `/docs/cli-integrations`.
+- `astryx search` finds the smallest doc part that answers. (#6626)
+  A doc hit is now one section (`astryx docs cli/integrations codemods`), one docs-tree route (`astryx docs cli/api/functions/assert-response`), or a topic's index, never a whole-topic read. Typed docs match by their own name and by the identifiers they define, such as error codes. `astryx search --type doc` works without `@astryxdesign/core`. `astryx docs` lists the docs tree first, and a namespace shows each child's own name when its route name differs.
+
+  Every docs read now ends with its moves: `Up`, plus `Previous` and `Next` for a section or a docs-tree page, and `Related` for a typed doc (its command or API function, and its related docs). `--json` carries them as `links` (`up`, `previous`, `next`, `related`). Each search hit carries `parent`, the command that opens the level above it, and a docs-tree hit carries `package`.
+
+- A doc section can include another doc instead of copying it. Put a `reference` block in the section, such as `{type: 'reference', target: '@astryxdesign/cli:schema:integration', projection: {fields: ['components', 'docs']}}`, and `astryx docs` prints those two fields of the integration manifest from the schema's own doc, then the command that opens it.
+  A reference block includes a schema, command, function, or enum doc. `projection.fields` keeps only the named fields of a schema, and `presentation` is `full` (the default), `compact` (no code blocks), or `summary`. A reference to any other doc shows its title and summary. A read inlines the block, so `--json` still returns only the stable block kinds. `astryx doctor integration docs` fails when a block names a doc, field, or projection it cannot include, and a read marks what is missing. Links also find the CLI's authoring schemas now: `schema:integration` opens `astryx docs authoring integration`.
+- `astryx doctor` now fails when a type that `@astryxdesign/cli/authoring` exports has no doc in `astryx docs authoring`, or when a listed self-doc documents nothing the package exports. The message names each type, the module that declares it, and the self-doc that is missing or not listed. (#6498)
+- Add `presentation` to DateInput, DateTimeInput, and TimeInput (`spec:AST-043`) (#6628).
+  `presentation` names every picker surface, distinguishing Astryx's desktop surface, Astryx's bottom sheet (including a new TimeInput sheet), the browser/OS picker, and — for TimeInput only — a plain typed field. DateInput and DateTimeInput accept five values: `'popover' | 'bottom-sheet' | 'native' | 'adaptive-bottom-sheet' | 'adaptive-native'` (default). TimeInput accepts those five plus `'text-input'`, the typed field on every pointer, because that is the surface its released `nativePicker="never"` already was. `presentation="native"` always shows native; `adaptive-native` keeps the released native fallbacks.
+
+  `nativePicker` is deprecated but keeps working exactly as released (`touch`→`adaptive-native`, `always`→`native`, `never`→`adaptive-bottom-sheet`, or `text-input` for TimeInput); `presentation` wins when both are set. `astryx upgrade` ships `migrate-native-picker-to-presentation` for static callsites.
+
+- Prepare integration template replacement before its supported package boundary. (#6265, #6626)
+  An integration template can set `replaces` in its own metadata to a Core template id. Unqualified template lookup and discovery surfaces use a valid replacement, while `--package @astryxdesign/core` still selects the original. Missing targets, type mismatches, a declaration on a template that cannot be used, and duplicate declarations fail closed and are reported by `astryx doctor integration templates`.
+
+  When separate configured packages replace one target, the package configured later wins with a warning. Explicitly configured packages always precede autolinked ones. When only autolinked packages conflict, the dependency listed later in package.json wins with a warning and the CLI recommends explicit configuration. Invalid contribution kinds remain reportable without hiding other valid kinds, and invalid template or component files do not hide valid siblings.
+
+  This implementation may ship in final 0.6.x for forward validation, but an integration package that uses `replaces` must still require `@astryxdesign/cli >=0.7.0`. Earlier CLIs reject the field and withhold that package's templates and doc topics. No supported latest-stable integration consumer can enter the replacement path yet, so replacement selection and its mutable catalog results are patch-compatible pre-publication behavior.
+
+  Existing same-id `IntegrationTemplateConflict` responses keep their released warning-only shape on 0.6.x. The optional `TemplateListEntry.replaces` field is additive; at or after 0.7.0, replacement-specific `relationship`, `replaces`, and `severity: 'info'` conflict fields require one deliberate projection update across runtime, types, generated reference, terminal output, documentation, and tests. A package-version bump alone leaves the warning-only shape unchanged.
+
+- Add ScrollableArea block templates so the component page has worked examples. All six share one content vocabulary — a workspace file panel of labelled sections holding a two-column grid of muted cards — so the only thing that changes between examples is the behavior each one demonstrates: block-axis scrolling, `axis="inline"` with `isFullBleed`, sticky section labels, `axis="both"`, sticky pass-through against `stickyContainment="always"`, and `overscroll` allow against contain. (#6490)
+- Add the Tree Table page template (#6195)
+  A hierarchical table where every parent row is derived from its children, shown as a code repository: folders roll up the newest commit beneath them, columns resize, sorting is scoped to siblings so branches never interleave, arrow keys walk the tree per the APG treegrid pattern, and search prunes to the branches that match. Selecting a folder drives a header trail that folds its middle into a menu once the path outgrows the bar. Supporting repository chrome — header actions, an About sidebar and a README rendered with `Markdown` — puts the table in the context that makes its rollups legible.
+- Add opt-in typed documentation graph contracts and stable provider-aware documentation identity without breaking existing topic readers. (#6471)
+  New `NamespaceDoc`, `AuthoredDocKind`, provider identity types, semantic graph-block types, section IDs, `astryx docs <topic> --index`, and section-key reads are additive. The public `ReferenceContentBlock` union keeps its 0.6.x members so existing exhaustive renderers continue to compile; graph-only `workflow`, `collection`, and `reference` blocks are exported separately as `GraphContentBlock` and are accepted by `NamespaceDoc`.
+
+  Existing authored topics continue to load and read as before. Duplicate title-derived keys receive deterministic suffixed index keys, titles with no Latin letters or digits receive deterministic `section-N` keys, ambiguous title queries keep returning the first match, and legacy extension sections without IDs continue to merge by exact title. Explicit new section IDs remain validated. The new progressive-disclosure Doctor audit reports compatibility issues as warnings, and existing full-topic text output keeps its 0.6.x formatting.
+
+  Every doc section can opt into a stable `id`. `astryx docs <topic> --index` (`docs(topic, undefined, {index: true})`) returns the topic's section index (`docs.index`), and `astryx docs <topic> <key>` reads one section. A topic read still returns the whole doc. `astryx docs authoring` documents every authoring schema, one section each.
+
+  Provider-ID conflicts are now visible instead of being dropped without a word: the package being authored wins, otherwise the first-loaded provider wins, and every command plus `astryx doctor` reports the set-aside package.
+
+- Integration themes use typed same-stem descriptors, not a central catalog. (#6498)
+  A themes root no longer holds `manifest.json`, the theme catalog that `astryx integration add theme` wrote in 0.6 (stable since 0.6.3). Each theme carries a strongly typed `<name>Theme.doc.mjs` beside its source instead, and a themes root that still holds the catalog is refused. To migrate an integration package, run `astryx upgrade --from 0.6.3 --path . --apply` in it: a codemod writes each theme's descriptor from its catalog entry and removes the catalog. Until a package is migrated, apps that install it get none of its themes or doc topics.
+
+  Theme discovery reads descriptors and checks integration theme sources without executing them, and `theme add` copies an integration theme's complete directory. `astryx doctor integration validate` warns about a folder in the themes root that looks like a theme but is not read as one. New component, topic, and template scaffolds also emit type-annotated `.doc.mjs`; released `.template.*` inputs remain readable.
+
+#### Fixes
+
+- The published authoring types now type-check in projects that use `"moduleResolution": "nodenext"` or have no Node types installed. Relative imports inside them name their files, and `PostCodemodCommand`'s `env` no longer needs Node's types. (#6492)
+- Drop `gpt-tokenizer` from the CLI's peer dependencies. Nothing in the CLI imports it, but npm and pnpm install a required peer by default, so every install of the CLI pulled in about 53 MB it never used. (#6508)
+- `astryx init`, `astryx init --remove-agents` and `astryx upgrade --apply` no longer edit or delete a file outside the project through an agent file or `.claude/` directory that is a symlink pointing there. Init reports a path-safety error for that file and exits 1, `init --remove-agents` fails with `ERR_PATH_TRAVERSAL` and exits 1 instead of reporting the block removed, and upgrade reports the refresh as failed, before any file is written. (#6524)
+- The text output of `astryx component` and `astryx hook` no longer adds non-ASCII characters of its own. Empty table cells show `-` instead of an em dash, the brief view's import hint reads `<- from`, derived properties and deprecated targets use `->`, and brief prop and parameter lists are separated by commas instead of middle dots. Text that comes from the docs themselves is unchanged. (#6553)
+- `astryx init` human output is now plain ASCII, including the per-file lines `init --remove-agents` prints. Status lines use `[ok]` instead of a check glyph, and dashes, bullets and arrows print as `-` and `->`. `--json` output is unchanged. (#6540)
+- `astryx upgrade` human output is now plain ASCII. Progress and codemod lines use `[ok]`, `!` and `!!` instead of check, warning and cross glyphs, and dashes and arrows print as `-` and `->`, including in codemod titles listed by `--list`. `--json` output is unchanged. (#6539)
+- Commands that write files no longer follow a dangling symlink out of the project: when the target, or a directory on the way to it, links to a missing path outside the project root, the command now fails with `ERR_PATH_TRAVERSAL` instead of creating the file there. A symlink escape reported by `integration add` now carries `ERR_PATH_TRAVERSAL` too, instead of an unregistered `PATH_TRAVERSAL` code. (#6513)
+- `astryx blog` text output now labels the feed URL `feedUrl`, matching its `--json` key, and prints every post field the JSON carries: the list adds each post's description, date, authors and link, and a post read adds its metadata above the body. (#6526)
+- `astryx build "<idea>"` no longer prints a `setup:` line in its text output. That field existed only in the text, never in the `--json` kit, so the two views disagreed. The same guidance is in the no-query `astryx build` playbook. (#6570)
+- `astryx build --json` with no query, and `build()` with no query, now return the playbook itself — a title, the ordered steps with their commands, the on-system rules, and related lookups — instead of only `{playbook: true}`. The terminal output is rendered from the same data, and `playbook: true` is still there. (#6566)
+- The programmatic `component()` API now rejects `detail` and `lang` values that the `astryx component` command rejects, with the same codes (`ERR_INVALID_DETAIL`, `ERR_INVALID_LANG`). It used to fall back silently: an unknown `detail` returned the name list, and an unknown `lang` returned English. (#6576)
+- The programmatic `component(name, {cwd, blocks: true})` now discovers blocks from the `cwd` it is given, as every other slice already does. It used to read blocks from the process working directory, so a caller pointing at another project got that directory's blocks, or none. (#6580)
+- `parentDoc` in `astryx component <Name> --json` is now a documented part of the `component.detail` response. The field appears when a sub-component such as `HStack` is scoped out of its parent's doc. It is in the published response type and the `component()` reference, and the text output now shows it as `parentDoc: Stack`. (#6575)
+- `astryx component <Name>` no longer prints a "Related block templates" list that `--json` never carried, so the text output shows only what the JSON result holds. The same blocks are still listed by `astryx component <Name> --blocks`, in text and JSON. (#6574)
+- `astryx component <Name> --package <pkg>` no longer ignores `--source` and `--blocks` when the package publishes docs through the legacy `astryx.docs` field. `--source` now fails with `ERR_NO_SOURCE`, and `--blocks` returns the blocks, the same answers as without `--package`. Before, both flags silently returned the plain doc. (#6577)
+- `astryx component --list` now prints the right import for components from packages that publish docs through the legacy `astryx.docs` field. It used to show an `@astryxdesign/core` path for them. The JSON list entries now carry the same `import` that `astryx component <Name>` reports for each of those components. (#6578)
+- `astryx integration add component <Name>` now refuses with `ERR_FILE_EXISTS` when a component doc anywhere under the components root already uses that name, for example `components/<Name>/<Name>.doc.mjs`. Before, it wrote a second `<Name>` beside the first and reported success, and `astryx component <Name>` then showed the new scaffold instead of the authored component. `--dry-run` refuses the same way. (#6557)
+- The `debug` entry of the `AstryxConfig` type and of `astryx docs authoring config` now states how handlers from integrations combine with the app's own: the app's runs first, then each integration's in load order, a handler that throws is skipped without affecting the others or the command, and `{"astryx": {"inheritDebug": false}}` refuses inherited handlers. The type no longer claims that leaving `debug` out records nothing. (#6514)
+- The text output of `astryx discover` (the package list and a single package) now shows every field its `--json` entry carries, including `category` and `version`, which only the JSON used to include. (#6521)
+- `astryx doctor` text output now uses the same field names as `--json`: each check prints its `id` and `label` (the label was shown as `check`, and the id was missing), and the summary prints `pass`, `warn`, `fail`, and `info` under a `summary` heading instead of a prose line. (#6516)
+- `astryx template --help` and `astryx layout expand --help` now explain how the path argument is read: a path ending in a source-file extension is the file to write, anything else is a directory that gets `page.tsx`, the block's file name, or `<Name>.tsx`. `layout expand` and `layout check` also document `-` for stdin and that `--file` wins over the argument, and `--overwrite` no longer mentions a prompt the CLI never shows. (#6571)
+- The CLI no longer reads or sets the `ASTRYX_LATEST_VERSION` environment variable. Its only effect was an `FYI: A newer version of @astryxdesign/core ...` line on stderr after `astryx component` and `astryx docs`, and a CLI run cannot set a variable for later runs, so the line appeared only when the variable was set by hand. Commands now print the same output whether or not it is set. (#6554)
+- The `@astryxdesign/cli/json` types now declare `apiVersion` on `CLIError`, `CLIUnsupportedError`, and the success envelope that `parseResponse` and `assertResponse` return, matching what every `--json` envelope carries. Code that constructs a `CLIError` value by hand, for example in a test double, now has to include `apiVersion`. (#6555)
+- `astryx <command> --help` (including `astryx manifest --help`) now ends with the command's documented exit codes, and each command in `astryx manifest --json` carries them as `exitCodes: [{code, when}]`. `astryx doctor --help` shows them once, and the `layout` and `discover` exit codes now say when they apply: bare `astryx layout` exits 1, and a blank `discover` query exits 1 when packages are discovered. (#6586)
+- `astryx gap-report --help` and `astryx manifest` now describe the `component` argument and say that `component`, `--category`, and `--reason` are required unless `--list-categories` is set, with the character limits the command enforces. The manifest listed the argument with an empty description, and nothing said these inputs were required. (#6518)
+- `astryx theme build` now fails with `ERR_THEME_INVALID`, before writing anything, when a custom Heading type's standalone rule has no usable declaration: every value is blank, or the compiler dropped every declaration. It previously wrote CSS with an empty or missing rule and still added the type to the generated `HeadingTypeMap`. (#6547)
+- With `--json`, `astryx help <unknown-command>` and a command group run without a subcommand (such as `astryx layout --json`) now return an error envelope, with `ERR_UNKNOWN_COMMAND` or `ERR_MISSING_ARGUMENT`, instead of a success-shaped help envelope. Both still exit 1, as they do without `--json`. (#6550)
+- `astryx hook <name>` text output no longer lists block templates that the `--json` envelope does not carry. It now names the related components and points to `astryx component <name> --blocks`, which returns their block templates as JSON. (#6537)
+- `"astryx": {"inheritDebug": false}` in package.json now also refuses the `debug` handler of an autolinked integration in a project that has no `astryx.config`. The setting used to be read only beside a config file, so without one those handlers still received every run. (#6520)
+- Programmatic `init()` now confines the starter template it scaffolds with `templateName` to the project directory. A `src` symlink that points outside the project is rejected with `ERR_PATH_TRAVERSAL` before anything is written. (#6538)
+- `astryx integration add --help` and the CLI manifest now define every control: the name format for each kind, that `--type` defaults to `page`, that `--to` takes an exact semver version, and that `--replaces` and `--extends` can't be combined. The `integrationAdd()` docs say the same. Behavior is unchanged. (#6558)
+- One integration that cannot load at all (a configured package that is not installed, has no manifest or more than one, or a package being authored with two manifests) no longer takes every other integration down with it. It is reported as that package's integration issue, the other integrations keep contributing, and `astryx discover` no longer exits 1 because of it. (#6519)
+- One integration whose templates root cannot be read, for example a manifest that points `templates` at a file, no longer makes `astryx template` fail with a raw filesystem error. That package's templates are skipped with the usual one-line warning, and core templates and every other integration's templates still list and resolve. (#6523)
+- The `--json` option's description in `astryx --help`, in the manifest, and in the CLI README now lists every envelope field: `{ apiVersion, type, data, meta? }` on success and `{ apiVersion, error, code, suggestions? }` on failure. It used to omit `apiVersion`, `meta`, and the stable `code` field that consumers branch on. (#6549)
+- `astryx layout expand <expr> <dir>` now refuses the write, with `ERR_PATH_TRAVERSAL`, when `<dir>/<Name>.tsx` is a symlink to an existing file outside the project. Before, only the directory was checked, so the generated TSX replaced the file the link pointed at. (#6564)
+- `astryx layout expand <expr> <path>` now labels its text fields `componentsUsed` and `todos`, the keys the `--json` output uses, instead of `Components` and `TODOs`. (#6569)
+- `astryx layout expand` now caps every `*N` repeat at 10000 copies. Repeated table rows skipped the cap, and a huge count on any element was still walked copy by copy before the cap applied, so `B*999999999` could hang or run out of memory. `astryx layout grammar` now states the cap. (#6565)
+- `astryx layout check -` and `astryx layout expand -` now stop reading stdin at 5 MB and fail with `ERR_INVALID_ARGUMENT`, the same size cap `--file` already had. Before, an endless or oversized pipe was buffered whole until memory ran out. (#6572)
+- When a command's module fails to load, running that command with `--json` now prints one error envelope (`ERR_UNKNOWN`, with the load error in the message) instead of printing nothing to stdout. Without `--json` the error is still printed to stderr, and the exit code is still 1 in both modes. (#6551)
+- `astryx manifest` without `--json` now labels each command's name `name:`, the same key the JSON manifest uses, instead of `command:`. (#6552)
+- `astryx theme build --out` now reports a path that leaves the working directory with `ERR_PATH_TRAVERSAL`, and an output directory it cannot create with `ERR_WRITE_FAILED`, instead of unregistered codes such as `PATH_TRAVERSAL` or `EEXIST`. The programmatic `themeBuild()` throws the same codes as an `AstryxError`. (#6543)
+- `astryx theme palette generate` now writes candidate JSON in the canonical form the `astryx-oklch-v1` recipe pins, so a JSON candidate and the `candidateSha256` in its receipt match the recipe's reference fixtures byte for byte. Before, the `stops` array was printed on one line, which changed the bytes and the digest of every JSON candidate. (#6531)
+- `astryx theme palette generate` and `generateTonalPalette()` now reject a `neutralProfile` the recipe does not define, even when the request has no neutral family. Before, such a request produced a candidate whose receipt recorded the unknown profile as part of the normalized request. (#6534)
+- `astryx theme palette generate` now reports an output or preview path it cannot use, such as one below a regular file, with the stable `ERR_WRITE_FAILED` code. Before, the `--json` error envelope carried the raw system error name, such as `ENOTDIR`, as its `code`. (#6533)
+- `--json` output is one envelope again when `astryx.config` or an integration manifest prints while it loads. Anything a project module writes to stdout during its load now goes to stderr. (#6581)
+- A `--json` error envelope's `code` is now always one of the documented error codes. A failure that carried a Node.js system code, such as `ENOTDIR` or `EACCES` from a failed write, used to put that code in the envelope; it now reports `ERR_UNKNOWN`, and the original message is unchanged. (#6548)
+- The 0.6 `rename-resizable-pixel-bounds` upgrade codemod now also renames `minSizePx`/`maxSizePx` in static inline `useResizable` configurations called through a namespace import (`Astryx.useResizable({...})`) or wrapped in `as const` or `satisfies`. These were left unchanged before. (#6541)
+- `astryx search` now fails with `ERR_CORE_NOT_FOUND`, like `component` and `hook`, when `@astryxdesign/core` cannot be found, instead of the catch-all `ERR_UNKNOWN`. (#6525)
+- `astryx search --limit` now refuses a value that is not a positive integer, such as `1.5` or `5abc`, with `ERR_INVALID_ARGUMENT` and exit 1, as `search({limit})` already did, instead of silently truncating it. (#6528)
+- `astryx search` text output now prints every field its `--json` results carry: `title` for doc results and `kind` for template results were missing. The `--verbose` help now says what it adds: each result's score and match reason. (#6527)
+- `search()` from `@astryxdesign/cli/api` is now declared to return `SearchResponse`, as its docs say, so TypeScript sees each result's `SearchResultEntry` fields instead of a bare `object`. (#6529)
+- `astryx swizzle` no longer writes outside the project through a symlink in the output folder. When the component folder or one of its files is a symlink that points outside the project, the command now fails with `ERR_PATH_TRAVERSAL` before it writes anything. (#6573)
+- The `astryx swizzle --overwrite` help and manifest entry no longer says it skips a prompt. The CLI never prompts. The entry now says that without `--overwrite`, existing files fail the command with `ERR_FILE_EXISTS` and nothing is written. (#6579)
+- `astryx template <name> <dir>` now refuses the write, with `ERR_PATH_TRAVERSAL`, when the file it would create in that directory is a symlink to an existing file outside the project. Before, only the directory was checked, so `--overwrite` followed the link and replaced the file it pointed at. (#6563)
+- `astryx template <name> <path>` and `astryx layout expand` now replace demo media only when a path starts with `/template-assets/`, so third-party URLs and product paths that merely contain that text are left alone. Demo media in a subdirectory, with a query string, or with characters such as `@` in the file name is now replaced whole instead of being corrupted or left behind. A demo media reference that cannot be replaced safely, such as one with no file suffix or one built at runtime, now fails the copy with its path. (#6596)
+- `astryx theme add` now copies every file a theme catalog lists byte for byte, so a theme that ships a font or an image arrives intact. Before, it decoded each file as text, which corrupted any file that was not UTF-8. (#6530)
+- `astryx theme add` no longer writes through a symlink that already sits at the temporary name it stages each file under. A link that leads outside the project now fails with `ERR_PATH_TRAVERSAL`, and any other entry at that name fails the copy instead of being overwritten. (#6535)
+- `astryx theme build` and `astryx theme palette generate` now print plain ASCII: status lines use `[ok]`, `[warn]`, `[error]`, `[fail]`, and `[note]` markers instead of symbol glyphs, and theme build messages drop em dashes and ellipses. The reworded font and private-variable messages also appear in the `--json` receipt's `notices` and `warnings`. Generated theme files are unchanged. (#6544)
+- `astryx theme build --help` and the capability manifest now state each flag's default and which flag combinations are refused (`--family` with `--out` or `--watch`, `--check` with `--watch`, `--watch` with `--json`, `--out` with more than one file), with the error code the refusal returns. (#6546)
+- The `themeBuild()` reference and the `theme.build` response-type entry (and the CLI README table generated from it) now document every field of the receipt by name, including `notices`, the advisories (such as a font the theme names but does not load) that had no documentation. (#6545)
+- `astryx theme template` now reports a file it cannot write with the stable `ERR_WRITE_FAILED` code. Before, the `--json` error envelope carried the raw system error name, such as `EEXIST` or `EISDIR`, as its `code`. (#6532)
+- `astryx upgrade --json` now prints exactly one JSON envelope when a post-codemod hook prints output. Anything a hook's `buildCommand` writes goes to stderr, so stdout carries only the result. (#6536)
+- The published `UpgradeListEntry` type now declares `optional`, the boolean every `astryx upgrade --list --json` entry already carries, so typed callers can read it without a cast. (#6542)
+- `astryx doctor integration validate`, `templates`, `components`, and `docs` now show the `invalid_package_json` error when a local integration's package.json can't be parsed. Before, the text output said no `astryx.integration.*` file was found and hid the error, because the JSON reported a null `name`, which means no manifest. In that case `data.name` is now `(local package)`. (#6559)
+- `astryx docs authoring` now says which docs-graph features are not built yet: the `placement`, `aliases` and `audience` fields, the workflow, collection and reference blocks, namespace docs, and the artifact, doc and instance identities. It had described them as working, but a topic that uses them fails to load. A namespace doc in an integration's docs directory now fails with a message that names it, instead of reporting missing topic fields. (#6492)
+- `astryx doctor integration validate` now ends each finding about a misplaced contribution, a stray codemod file, a mis-named codemod folder, a component doc without its source, or a component source without a doc with a fix that works when followed as written: where to move the file and the manifest line to add, the version folder a codemod belongs in, or the file to add. Codemod files are named by their path inside the package instead of an absolute path. A hidden component doc no longer draws the missing-doc warning, and a codemods root at the package root no longer reports the manifest as a stray codemod. (#6498)
+- An integration topic that `extends` another no longer renames it. `astryx docs theme` with an extension installed used to print the extension's own title and description; the topic now keeps its own, and the extension only adds or replaces sections. A topic that `replaces` another still renames it. (#6498)
+- Use extensionless subpath specifiers for generated integration imports (#6288)
+  `integrationAddComponent` and `integrationAddTemplate` now emit extensionless public import specifiers (`@pkg/components/MyWidget` instead of `@pkg/components/MyWidget.tsx`) and map them to source files through the package `exports` field. Consumer imports no longer expose the package's source extension or require `allowImportingTsExtensions`.
+
+  `integrationPackCheck` now rejects public specifiers ending in `.tsx` or `.ts` and validates each exact import from the packed artifact through Node's package resolver. Packages without a usable public export fail the check, and the result does not depend on project-local TypeScript.
+
+- Make every command's text output match its --json data (#6616)
+  `upgrade --list` text now renders each codemod from the JSON result (name, title, version, optional) instead of the API logger, with no `(undefined)` rows. `theme targets` prints one line per target via the formatter kit's inline layout and now shows className. `docs` list shows the package field. A manifest-driven parity test covers the commands this PR fixes and catches future regressions in the same family; commands with known deferred divergences are covered by envelope and exit-code checks and have allowlist entries that explain the gap.
+- Correct the palette authoring types. `TonalPaletteCandidate`'s description had landed on `TonalPaletteAnchor`, so the generated `.d.ts` documented the wrong type and left the candidate bare. `TonalPaletteFamilyInput` — the type an author writes by hand — had no property descriptions, and `neutralProfile` never said what its four values do. (#6168)
+  [fix] Give the generation receipt a real type. `generationReceipt` was `Record<string, unknown>`; it is now `TonalPaletteGenerationReceipt`, with `TonalPaletteRampDiagnostics`, `TonalPaletteCoordinationDiagnostics`, and `TonalPaletteNormalizedRequest` beside it. The generator's internal typedefs point at the same types, so the compiler holds the documentation true instead of letting it drift.
+
+  [docs] Replace the stale `xds` command name with `astryx` across 79 lines of API type docs in 11 files, and realign the invocation tables. Codemods and changelogs that reference the old name are untouched — migrating it is their job.
+
+- Protect generated, vendored, ignored, linked, dependency, and out-of-root files from upgrade codemods using working-tree declarations. Upgrades now run declared regeneration hooks, recheck protected outputs, and report incomplete changes in human and JSON results (#6692).
+- Restrict the authoring factory codemod to Astryx imports (#6335)
+- Restrict the status-variant and Avatar-size upgrade codemods to static props on verified imported JSX components, avoiding unrelated literal rewrites. (#6445)
+- Test and fixture files under a codemod version folder are no longer loaded as codemods. Every `.ts`/`.mjs`/`.js` file under a version folder was loaded and validated, so a test colocated with its transform failed validation and — a definition error being a hard error — took every codemod in that version with it, while `upgrade` applied nothing and reported success. Reserved names: `*.test.*`, `*.spec.*`, `*.fixture.*`, and anything under `__tests__/` or `__fixtures__/`. (#6230)
+- A stamped component doc (`type: 'component'`) that documents several components with `components` now loads, as the published `ComponentDoc` type allows. It used to fail with "props: expected array". Each entry must name its component; an entry without a `name` fails at load instead of later in a reader. (#6492)
+- Keep authored theme declarations inside their CSS boundaries. Drop only an unsafe declaration, preserve valid CSS values and legacy token generation, and continue compiling the rest of the theme. Runtime reports dropped declarations on the console; theme builds include them in the existing receipt warnings. CSS generators accept an optional warning-text array for build collectors, without a callback API or additional exported diagnostic types. (#5529)
+- Make the Toolbar — Table Filter block's filters actually filter, and bring the row up to the pattern the Filterable Table page template demonstrates: each closed selector doubles as its own filter chip, clauses fold from the end into a count as the row narrows, and the result count, clear all, and a column picker follow the clauses. (#6478)
+
+#### Documentation
+
+- `astryx docs authoring` now documents the `DebugEvent` a `debug` handler receives and the `GapReportHandler` contract, field by field. Both types were exported from `@astryxdesign/cli/authoring` with no section of their own. (#6498)
+- `astryx docs authoring` now matches the published authoring types field for field, and a test keeps it that way: every field is listed, with its real type and whether it is required. Three entries were wrong: a component doc's `usage` is optional on sub-component docs, a command option's `default` may also be a boolean or a list, and a codemod's `type` is `'code'` or `'config'`. (#6492)
+- Document CheckboxList's `isReadOnly` prop, and separate the select-all block example's rows with `hasDividers` instead of placing a Divider inside the options list (#6777).
+- The documented exit codes for `astryx build` now say that a query exits 1 when `@astryxdesign/core` cannot be found, while the playbook (`astryx build` with no query) needs no core. (#6592)
+- `astryx discover --components` is now documented as what it does: in the package list it prints every component of each package instead of the first 10 and a "+N more" count, and it changes nothing in `--json`. It was described as "List components only". The help also gains an example. (#6522)
+- `astryx init --help` and the manifest now say how init's flags interact: `--remove-agents` only removes the managed block and ignores the install flags, `--all` overrides `--features`, and `--agent` and `--agent-docs-path` apply only when agent docs are installed, with an explicit path taking precedence. The documented exit codes now include an `--agent-docs-path` outside the project (exit 1) and no longer list two template cases the CLI cannot reach. (#6589)
+- `astryx theme add --overwrite` and `astryx upgrade --install-deps` no longer describe a prompt the CLI never shows; each now says what happens without the flag (`ERR_FILE_EXISTS` with nothing written, or `ERR_DEP_MISSING`). `ERR_FILE_EXISTS` is described as "Refused to overwrite an existing file." without the "non-interactive mode" qualifier; its meaning is unchanged. (#6593)
+- The CLI README now shows `apiVersion` in every hand-written envelope shape and example, and lists `astryx search --verbose` in place of `--detail`, which needs a level and does not add a result's score or reason. (#6587)
+- The response-type docs, and the CLI README table generated from them, now name the fields of the `component.detail`, `docs.index`, `search`, `build.kit`, `gap-report.file`, `theme.build`, `theme.targets`, and `integration.pack-check` responses by their JSON keys, including `parentDoc`, `hint`, `notices`, `deprecatedFor`, each gap-report delivery's fields, and the pack-check contribution identities and issue fields. The `component.detail` response type declares `parentDoc`. (#6588)
+- `astryx template --help` and the manifest now say which flags win when they are combined: `--cdn` overrides everything else and writes to its value, else to `<path>`, else `cdn.template.html`; `--list` ignores a name, a path, `--skeleton` and `--overwrite`; and `--skeleton` needs a name and writes nothing. (#6591)
+- `astryx upgrade --help` and the manifest now state how its flags combine: `--list` ignores every other flag, `--registry` refuses `--list` and the migration flags, and `--codemod` is the only way to run an optional codemod and also skips the ShadCN composition check. The `--from` help names the legacy `@xds/core` fallback, and the documented exit codes now include a missing core, a missing jscodeshift, an invalid `astryx.config`, a post-codemod hook failure and the refused flag combinations. (#6590)
+- `astryx docs authoring` now says where loading a doc is looser than its published type (stamped component and function docs, older generic docs, and templates), and which doc kinds accept fields they do not know. Nothing about how docs load has changed. (#6492)
+
+#### Other Changes
+
+- `start` names the template to scaffold, with the `template <id> --type page <path>` command that selects it (an integration replacement through the Core id it replaces), a `basis`, a one-line `reason`, and `alternatives`: the next two templates. A page ranker built for the long ideas builders write ("ops dashboard with a KPI row, a sortable table and a trend chart") picks it. Every matched word counts, weighted by how rare it is among page templates. The words before the first "with", ":" or "," name the page's family, a container ("in a modal") names its frame, and a word that only modifies another ("product" in "product response") counts half. A family's base template (`dashboard`, `settings`) leads its family unless a variant's own words outweigh it. Family words come from the templates' own ids. `basis` is `direct` when the ranker's pick is also search's direct match, `closest` when it is not, and `fallback` when nothing has the evidence to lead and the page starts from the `shell-top-nav` app shell (`blank` when that is not available). A template that is not ready yet is never the start.
+- Search matches words more strictly. A term matches inside a name or keyword only at the start of one of its words ("input" finds `TextInput`, "file" no longer finds "profile"), plurals and stems count as the same word, and typo tolerance applies only to one-word lookups of words long enough that one edit rarely makes another word ("site" no longer matches "side", nor "cable" "table").
+- Blocks and components that matched only one description word of a multi-word idea are no longer offered.
+- The text output has four sections: TEMPLATE (with its reason and command), OTHER TEMPLATES, BLOCKS, and COMPONENTS (with the frame and foundation names). They replace RECOMMENDED START and PAGE TEMPLATES. Search's page matches (`pages`) move to one line, with their full entries under `--verbose`. Descriptions stop at their first sentence, and blocks and components show the top three, each with one shared command line. `--verbose` shows every block and component, with full descriptions, import paths, and match reasons. The recommended command always scaffolds (`template <id> --type page <path>`), where for most ideas it used to print a `--skeleton` or `component AppShell`.
+
+  The `build` playbook, the generated agent docs, and the `working-with-ai` and `layout` guides now start every page from a template.
+
+  Compatibility: the `build.kit` JSON only gains `start`. Every existing field keeps its shape and meaning. Which pages, blocks, and components are listed, and `directMatch`, change with the stricter matching, as ranking results do. The human-readable output is reorganized. Options, exit codes, and the `build.help` shape are unchanged, and `build` still writes nothing. The same matching changes the ranking of `search` results.
+
+- Docs reads go through one internal compiler. `astryx docs` (and `docs()`), `astryx doctor` and `astryx search` read compiled topic nodes instead of each loading, merging, translating and linking doc files on its own. Output is unchanged. (#6484)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @bhamodi
+- @cixzhang
+- @ejhammond
+- @ernestt
+- @imdreamrunner
+- @josephfarina
+
+---
+
 # 0.6.3
 
 #### New Features

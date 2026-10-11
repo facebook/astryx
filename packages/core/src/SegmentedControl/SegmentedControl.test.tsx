@@ -229,6 +229,122 @@ describe('SegmentedControl', () => {
     expect(labelStyle.textOverflow).toBe('ellipsis');
   });
 
+  it('caps the hug layout at its container and lets segments truncate', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem
+          value="grid"
+          label="A very long segment label that should truncate"
+        />
+        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem
+          value="icon"
+          label="Icon"
+          icon={<span>*</span>}
+          isLabelHidden
+        />
+      </SegmentedControl>,
+    );
+
+    const group = getComputedStyle(screen.getByRole('radiogroup'));
+    expect(group.width).toBe('fit-content');
+    expect(group.maxWidth).toBe('100%');
+    expect(group.minWidth).toBe('0');
+
+    const segment = screen.getByRole('radio', {name: /very long/});
+    expect(getComputedStyle(segment).minWidth).toBe('0');
+    expect(getComputedStyle(segment).flexShrink).not.toBe('0');
+
+    // Icon-only segments have nothing to truncate and keep their size.
+    const iconOnly = screen.getByRole('radio', {name: 'Icon'});
+    expect(getComputedStyle(iconOnly).flexShrink).toBe('0');
+  });
+
+  it('keeps the content-sized hug layout from #6643 while adding the cap', () => {
+    // #6643 stops a stretching column from widening hug; the cap must not
+    // undo that. Both declarations coexist: fit-content sizes it, the cap
+    // only applies when the container is narrower than the content.
+    render(
+      <div style={{display: 'flex', flexDirection: 'column'}}>
+        <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+          <SegmentedControlItem value="grid" label="Grid" />
+          <SegmentedControlItem value="list" label="List" />
+        </SegmentedControl>
+      </div>,
+    );
+    const group = getComputedStyle(screen.getByRole('radiogroup'));
+    expect(group.width).toBe('fit-content');
+    expect(group.maxWidth).toBe('100%');
+    expect(group.display).toBe('inline-flex');
+  });
+
+  it('lets a fill control yield to a narrow row too', () => {
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={() => {}}
+        label="View mode"
+        layout="fill">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+    const group = getComputedStyle(screen.getByRole('radiogroup'));
+    expect(group.width).toBe('100%');
+    expect(group.minWidth).toBe('0');
+    expect(group.maxWidth).toBe('100%');
+  });
+
+  it('truncates the label of an icon-and-label segment but keeps its icon', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem
+          value="grid"
+          label="Grid with thumbnails and captions"
+          icon={<span data-testid="grid-icon">#</span>}
+        />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+    const segment = screen.getByRole('radio', {name: /Grid with/});
+    expect(getComputedStyle(segment).minWidth).toBe('0');
+    // Icon + label is not icon-only: the segment itself still shrinks.
+    expect(getComputedStyle(segment).flexShrink).not.toBe('0');
+    const iconWrapper = screen.getByTestId('grid-icon').parentElement!;
+    expect(getComputedStyle(iconWrapper).flexShrink).toBe('0');
+    const label = screen.getByText('Grid with thumbnails and captions');
+    expect(getComputedStyle(label).textOverflow).toBe('ellipsis');
+  });
+
+  it('does not cap a control whose segments are all icon-only', () => {
+    // Nothing in it can shrink, so a cap would only leave the last segments
+    // hanging outside the control's track in a too-narrow container.
+    render(
+      <SegmentedControl value="list" onChange={() => {}} label="View mode">
+        <SegmentedControlItem
+          value="list"
+          label="List"
+          icon={<span>=</span>}
+          isLabelHidden
+        />
+        <SegmentedControlItem
+          value="board"
+          label="Board"
+          icon={<span>#</span>}
+          isLabelHidden
+        />
+      </SegmentedControl>,
+    );
+    const group = getComputedStyle(screen.getByRole('radiogroup'));
+    expect(group.width).toBe('fit-content');
+    expect(group.maxWidth).toBe('none');
+    // No min-size reset either, so a flex row cannot squeeze it.
+    expect(group.minWidth).toBe('auto');
+    for (const radio of screen.getAllByRole('radio')) {
+      expect(getComputedStyle(radio).flexShrink).toBe('0');
+    }
+  });
+
   it('promotes the first enabled item when the value matches no item and the first is disabled', () => {
     render(
       <SegmentedControl

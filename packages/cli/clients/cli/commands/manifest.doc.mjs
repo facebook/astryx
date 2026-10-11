@@ -20,7 +20,7 @@ export const doc = {
     'tooling to introspect. Intended to be run with --json.',
   examples: [
     {label: 'Full manifest', cli: 'astryx manifest --json'},
-    {label: 'Shorthand', cli: 'astryx --json'},
+    {label: 'The same manifest, under data.manifest (type "help")', cli: 'astryx --json'},
   ],
   exitCodes: [
     {code: 0, when: 'success'},

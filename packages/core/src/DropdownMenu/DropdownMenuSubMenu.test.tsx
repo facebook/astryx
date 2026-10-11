@@ -6,14 +6,16 @@
  * @output Unit tests for DropdownMenuSubMenu (#3829)
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {useState} from 'react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {createRef, useState} from 'react';
 import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
+import {IconButton} from '../IconButton';
+import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 import {rtlStyles} from '../utils';
 
 beforeEach(() => {
@@ -113,7 +115,7 @@ describe('DropdownMenuSubMenu', () => {
     expect(popover).toHaveStyle({minWidth: 'var(--x-minWidth)'});
     expect(popover?.getAttribute('style')).toContain('min(640px, calc(100vw');
     expect(flyout).toHaveStyle(
-      'max-height: min(300px,calc(100dvb - max(var(--spacing-4),env(safe-area-inset-top,0px)) - max(var(--spacing-4),env(safe-area-inset-bottom,0px))))',
+      'max-height: min(300px,calc(100dvb - calc(max(var(--spacing-4), env(safe-area-inset-top, 0px)) + var(--astryx-layer-inset-block-start, 0px)) - calc(max(var(--spacing-4), env(safe-area-inset-bottom, 0px)) + var(--astryx-layer-inset-block-end, 0px))))',
     );
     expect(flyout).not.toHaveStyle({overflowY: 'auto'});
     expect(flyout).toHaveAttribute('tabindex', '-1');
@@ -191,6 +193,44 @@ describe('DropdownMenuSubMenu', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
     });
     expect(trigger).toHaveFocus();
+  });
+
+  it('a field the flyout hosts keeps what is typed and its Left key', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to">
+          <input aria-label="Folder name" />
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
+      ).toHaveFocus();
+    });
+    trigger.focus();
+    await user.keyboard('{ArrowRight}');
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menuitem', {name: 'Folder A', hidden: true}),
+      ).toHaveFocus();
+    });
+    const field = screen.getByRole('textbox', {
+      name: 'Folder name',
+      hidden: true,
+    });
+    act(() => field.focus());
+    await user.keyboard('fa{ArrowLeft}');
+    expect(field).toHaveValue('fa');
+    expect(field).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('mirrors its indicator and keyboard directions under RTL', async () => {
@@ -396,6 +436,151 @@ describe('DropdownMenuSubMenu', () => {
         screen.getByRole('menuitem', {name: 'Archive', hidden: true}),
       ).toHaveFocus();
     });
+  });
+});
+
+describe('DropdownMenuSubMenu host attributes', () => {
+  async function openRoot(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    // A pointer open focuses the menu in a frame; let it land first.
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
+      ).toHaveFocus();
+    });
+    return screen.getByRole('menuitem', {name: /Move to/, hidden: true});
+  }
+
+  it('aria-*, data-* and id reach the trigger row, and the flyout stays labelled by it', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu
+          label="Move to"
+          aria-keyshortcuts="M"
+          data-row="move"
+          id="move-row">
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    expect(trigger).toHaveAttribute('aria-keyshortcuts', 'M');
+    expect(trigger).toHaveAttribute('data-row', 'move');
+    expect(trigger).toHaveAttribute('id', 'move-row');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    expect(
+      screen.getByRole('menu', {name: 'Move to', hidden: true}),
+    ).toHaveAttribute('aria-labelledby', 'move-row');
+  });
+
+  it('a ref reaches the trigger row', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<HTMLElement>();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" ref={ref}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    expect(ref.current).toBe(trigger);
+  });
+
+  it("a caller's handlers run after the row's own, and the row still opens and takes the hover focus", async () => {
+    const user = userEvent.setup();
+    const onKeyDown = vi.fn();
+    const onClick = vi.fn();
+    const onPointerMove = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Rename" onClick={() => {}} />
+        <DropdownMenuSubMenu
+          label="Move to"
+          onKeyDown={onKeyDown}
+          onClick={onClick}
+          onPointerMove={onPointerMove}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    fireEvent.pointerMove(trigger, {pointerType: 'mouse'});
+    expect(trigger).toHaveFocus();
+    expect(onPointerMove).toHaveBeenCalledTimes(1);
+    // A key the row does not consume reaches the caller.
+    fireEvent.keyDown(trigger, {key: 'm'});
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    await user.keyboard('{ArrowRight}');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    fireEvent.click(trigger, {detail: 1});
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('a stable callback ref is not re-run as the flyout opens and closes', async () => {
+    const user = userEvent.setup();
+    const ref = vi.fn<(el: HTMLElement | null) => void>();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" ref={ref}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    expect(ref).toHaveBeenLastCalledWith(trigger);
+    ref.mockClear();
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+    expect(ref).not.toHaveBeenCalled();
+  });
+
+  it("a disabled row does not pass a click on to the caller's onClick", async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" isDisabled onClick={onClick}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    // A programmatic or assistive-technology activation.
+    act(() => trigger.click());
+    expect(onClick).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('the row keeps its own popup state and tab stop', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu
+          label="Move to"
+          aria-haspopup="listbox"
+          aria-expanded={true}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveAttribute('tabindex', '-1');
   });
 });
 
@@ -904,5 +1089,446 @@ describe('DropdownMenuSubMenu hover/click guard', () => {
     expect(
       screen.getByRole('menuitem', {name: 'Folder A', hidden: true}),
     ).toHaveFocus();
+  });
+});
+
+describe('DropdownMenuSubMenu press model', () => {
+  it('a press released on the sub-menu row opens it and keeps the menu', async () => {
+    const user = userEvent.setup();
+    render(<MoveMenu />);
+    const root = screen.getByRole('button', {name: /Actions/});
+    await user.click(root);
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    const rename = screen.getByRole('menuitem', {name: 'Rename', hidden: true});
+    fireEvent.pointerDown(rename, {pointerType: 'touch', pointerId: 1});
+    fireEvent.pointerMove(trigger, {pointerType: 'touch', pointerId: 1});
+    fireEvent.pointerUp(trigger, {pointerType: 'touch', pointerId: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(root).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('a release inside the flyout acts on the flyout row and closes the whole menu', async () => {
+    const onMove = vi.fn();
+    const user = userEvent.setup();
+    render(<MoveMenu onMove={onMove} />);
+    const root = screen.getByRole('button', {name: /Actions/});
+    await user.click(root);
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    await user.click(trigger);
+    const folderB = screen.getByRole('menuitem', {
+      name: 'Folder B',
+      hidden: true,
+    });
+    const folderA = screen.getByRole('menuitem', {
+      name: 'Folder A',
+      hidden: true,
+    });
+    fireEvent.pointerDown(folderA, {pointerType: 'touch', pointerId: 1});
+    fireEvent.pointerMove(folderB, {pointerType: 'touch', pointerId: 1});
+    fireEvent.pointerUp(folderB, {pointerType: 'touch', pointerId: 1});
+    fireEvent.click(folderA, {detail: 1});
+    expect(onMove).toHaveBeenCalledTimes(1);
+    expect(onMove).toHaveBeenCalledWith('b');
+    expect(root).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('DropdownMenuSubMenu safe triangle', () => {
+  const flyoutRect = {
+    top: 0,
+    bottom: 200,
+    left: 300,
+    right: 500,
+    width: 200,
+    height: 200,
+    x: 300,
+    y: 0,
+    toJSON: () => ({}),
+  } as DOMRect;
+
+  async function openByHover() {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    render(<MoveMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const trigger = screen.getByRole('menuitem', {
+      name: /Move to/,
+      hidden: true,
+    });
+    await user.hover(trigger);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const flyout = screen.getByRole('menu', {name: /Move to/, hidden: true});
+    vi.spyOn(flyout, 'getBoundingClientRect').mockReturnValue(flyoutRect);
+    return {trigger, flyout};
+  }
+
+  it('a diagonal path toward the flyout keeps it open past the close delay', async () => {
+    const {trigger} = await openByHover();
+    // The pointer leaves the row at (250, 100), heading for the flyout's near
+    // (left) edge; every move inside the triangle restarts the close delay.
+    fireEvent.mouseLeave(trigger, {clientX: 250, clientY: 100});
+    for (const [x, y] of [
+      [260, 90],
+      [270, 80],
+      [280, 60],
+      [290, 40],
+    ]) {
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+      fireEvent.pointerMove(document.body, {clientX: x, clientY: y});
+    }
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    vi.useRealTimers();
+  });
+
+  it('leaving both the row and the triangle closes after the delay', async () => {
+    const {trigger} = await openByHover();
+    fireEvent.mouseLeave(trigger, {clientX: 250, clientY: 100});
+    // Straight down, away from the flyout: outside the triangle.
+    fireEvent.pointerMove(document.body, {clientX: 250, clientY: 400});
+    act(() => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    vi.useRealTimers();
+  });
+
+  it('a pointer that pauses inside the triangle keeps the flyout open', async () => {
+    const {trigger} = await openByHover();
+    // The pointer leaves the row mid-diagonal and then STOPS, aiming at a
+    // row: no further pointermove fires. Pausing is not leaving, and this is
+    // the exact moment the triangle exists to protect — the close delay used
+    // to run out underneath it.
+    fireEvent.mouseLeave(trigger, {clientX: 250, clientY: 100});
+    fireEvent.pointerMove(document.body, {clientX: 275, clientY: 95});
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    vi.useRealTimers();
+  });
+
+  it('a pause inside the triangle still closes once the pointer leaves it', async () => {
+    const {trigger} = await openByHover();
+    fireEvent.mouseLeave(trigger, {clientX: 250, clientY: 100});
+    fireEvent.pointerMove(document.body, {clientX: 275, clientY: 95});
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // Re-arming is not the same as never closing: the first move out of the
+    // triangle lets the delay run.
+    fireEvent.pointerMove(document.body, {clientX: 250, clientY: 400});
+    act(() => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    vi.useRealTimers();
+  });
+});
+
+describe('DropdownMenuSubMenu drill-in on a phone', () => {
+  const originalMatchMedia = window.matchMedia;
+
+  // The drill-in resolves on the same query the root presentation uses for
+  // its bottom sheet, so one component carries one meaning of "adaptive".
+  function stubCompactTouch(matches: boolean) {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: matches && query === COMPACT_TOUCH_PRESENTATION_QUERY,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+  }
+
+  afterEach(() => {
+    vi.stubGlobal('matchMedia', originalMatchMedia);
+  });
+
+  function PhoneMenu({onMove}: {onMove?: (folder: string) => void} = {}) {
+    return (
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Rename" onClick={() => {}} />
+        <DropdownMenuSubMenu label="Move to">
+          <DropdownMenuItem label="Folder A" onClick={() => onMove?.('a')} />
+          <DropdownMenuSubMenu label="Archive">
+            <DropdownMenuItem label="2025" onClick={() => onMove?.('2025')} />
+          </DropdownMenuSubMenu>
+        </DropdownMenuSubMenu>
+        <DropdownMenuItem label="Delete" onClick={() => {}} />
+      </DropdownMenu>
+    );
+  }
+
+  // The popover is not open for jsdom's accessibility tree, so every query
+  // passes `hidden`; the rows a drilled-in view replaced sit under a `hidden`
+  // wrapper, which is what "shown" means here.
+  const h = {hidden: true} as const;
+  const isShown = (el: HTMLElement) => el.closest('[hidden]') == null;
+  const visibleRows = () =>
+    screen
+      .getAllByRole('menuitem', h)
+      .filter(isShown)
+      .map(el => el.textContent);
+  const shownRow = (name: string) =>
+    screen.getAllByRole('menuitem', {name, ...h}).find(isShown)!;
+  const shownMenu = (name: string) =>
+    screen.getAllByRole('menu', {name, ...h}).find(isShown)!;
+
+  it('on a phone a sub-menu drills in, is named by its row, and Back returns', async () => {
+    stubCompactTouch(true);
+    const user = userEvent.setup();
+    const onMove = vi.fn();
+    render(<PhoneMenu onMove={onMove} />);
+    const trigger = screen.getByRole('button', {name: /Actions/});
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    const rootMenu = shownMenu('Actions');
+
+    const moveTo = shownRow('Move to');
+    expect(moveTo).toHaveAttribute('aria-haspopup', 'menu');
+    expect(moveTo).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(moveTo, {detail: 1});
+
+    // The list is replaced in place: the sibling rows are gone from view, the
+    // drilled list is named by its row and leads with a Back row.
+    const drilled = await waitFor(() => shownMenu('Move to'));
+    expect(rootMenu).toContainElement(drilled);
+    expect(visibleRows()).toEqual(['Back to Actions', 'Folder A', 'Archive']);
+    // The sibling row is still mounted (its state stays live) but hidden.
+    expect(screen.getByRole('menuitem', {name: 'Rename', ...h})).not.toBe(
+      undefined,
+    );
+    expect(isShown(screen.getByRole('menuitem', {name: 'Rename', ...h}))).toBe(
+      false,
+    );
+    // No flyout beside the menu: the drilled list has no popover of its own.
+    expect(drilled.closest('[popover]')).toBe(rootMenu.closest('[popover]'));
+
+    // Back returns to the sub-menu row.
+    fireEvent.click(shownRow('Back to Actions'), {
+      detail: 1,
+    });
+    await waitFor(() => expect(shownRow('Move to')).toHaveFocus());
+    expect(visibleRows()).toEqual(['Rename', 'Move to', 'Delete']);
+
+    // Escape and ArrowLeft pop too, and a second level names its parent.
+    fireEvent.keyDown(shownRow('Move to'), {
+      key: 'Enter',
+    });
+    await waitFor(() => shownMenu('Move to'));
+    // A keyboard drill-in lands on the first row after Back.
+    expect(shownRow('Folder A')).toHaveFocus();
+    fireEvent.keyDown(shownRow('Archive'), {
+      key: 'Enter',
+    });
+    await waitFor(() => shownMenu('Archive'));
+    expect(visibleRows()).toEqual(['Back to Move to', '2025']);
+    expect(shownRow('2025')).toHaveFocus();
+
+    fireEvent.keyDown(document.activeElement!, {key: 'ArrowLeft'});
+    await waitFor(() => expect(shownRow('Archive')).toHaveFocus());
+    expect(visibleRows()).toEqual(['Back to Actions', 'Folder A', 'Archive']);
+    fireEvent.keyDown(document.activeElement!, {key: 'Escape'});
+    await waitFor(() => expect(shownRow('Move to')).toHaveFocus());
+    // One Escape popped one level; the menu is still open.
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // A pick inside a drilled list acts and closes the whole menu.
+    fireEvent.click(shownRow('Move to'), {
+      detail: 1,
+    });
+    await waitFor(() => shownMenu('Move to'));
+    fireEvent.click(shownRow('Folder A'), {
+      detail: 1,
+    });
+    expect(onMove).toHaveBeenCalledWith('a');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+  });
+
+  it('typeahead and arrows scope to the drilled rows', async () => {
+    stubCompactTouch(true);
+    const user = userEvent.setup();
+    render(<PhoneMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    fireEvent.keyDown(await waitFor(() => shownRow('Move to')), {
+      key: 'Enter',
+    });
+    const drilled = await waitFor(() => shownMenu('Move to'));
+    const folderA = shownRow('Folder A');
+    expect(folderA).toHaveFocus();
+    // "d" matches Delete at the root, which is not shown: nothing moves.
+    fireEvent.keyDown(folderA, {key: 'd'});
+    expect(folderA).toHaveFocus();
+    // Arrows, Home and End walk the drilled list only, Back included; the
+    // hidden parent rows are not in the order.
+    fireEvent.keyDown(folderA, {key: 'ArrowUp'});
+    expect(shownRow('Back to Actions')).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, {key: 'End'});
+    expect(shownRow('Archive')).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, {key: 'Home'});
+    expect(shownRow('Back to Actions')).toHaveFocus();
+    expect(drilled).toBeInTheDocument();
+  });
+
+  it('presentation="flyout" keeps the flyout on a phone and "drill-in" drills on a laptop', async () => {
+    stubCompactTouch(true);
+    const user = userEvent.setup();
+    const {unmount} = render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" presentation="flyout">
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    fireEvent.click(await waitFor(() => shownRow('Move to')), {
+      detail: 1,
+    });
+    // The flyout renders in a popover of its own beside the row.
+    const flyout = await waitFor(() => shownMenu('Move to'));
+    expect(flyout.closest('[popover]')).not.toBe(
+      shownMenu('Actions').closest('[popover]'),
+    );
+    expect(screen.queryByRole('menuitem', {name: /^Back to/, ...h})).toBeNull();
+    unmount();
+
+    stubCompactTouch(false);
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" presentation="drill-in">
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    fireEvent.click(await waitFor(() => shownRow('Move to')), {
+      detail: 1,
+    });
+    await waitFor(() => shownRow('Back to Actions'));
+  });
+
+  it('closing the menu resets the drilled view', async () => {
+    stubCompactTouch(true);
+    const user = userEvent.setup();
+    render(<PhoneMenu />);
+    const trigger = screen.getByRole('button', {name: /Actions/});
+    await user.click(trigger);
+    fireEvent.click(await waitFor(() => shownRow('Move to')), {
+      detail: 1,
+    });
+    await waitFor(() => shownMenu('Move to'));
+    fireEvent.keyDown(document.activeElement!, {key: 'Escape'});
+    await waitFor(() => expect(shownRow('Move to')).toHaveFocus());
+    fireEvent.keyDown(document.activeElement!, {key: 'Escape'});
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    expect(visibleRows()).toEqual(['Rename', 'Move to', 'Delete']);
+  });
+
+  describe('a menu hung off a custom trigger', () => {
+    async function drillIntoMoveTo(triggerName: RegExp | string) {
+      const user = userEvent.setup();
+      const trigger = screen.getByRole('button', {name: triggerName});
+      await user.click(trigger);
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+      );
+      fireEvent.click(await waitFor(() => shownRow('Move to')), {detail: 1});
+      await waitFor(() => shownMenu('Move to'));
+      return visibleRows()[0];
+    }
+
+    it('names its Back row after the icon button it hangs off', async () => {
+      stubCompactTouch(false);
+      render(
+        <DropdownMenu
+          renderTrigger={props => (
+            <IconButton
+              icon="moreHorizontal"
+              label="Session actions"
+              {...props}
+            />
+          )}>
+          <DropdownMenuSubMenu label="Move to" presentation="drill-in">
+            <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      expect(await drillIntoMoveTo('Session actions')).toBe(
+        'Back to Session actions',
+      );
+    });
+
+    it('names its Back row after a text trigger', async () => {
+      stubCompactTouch(false);
+      render(
+        <DropdownMenu
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              Options
+            </button>
+          )}>
+          <DropdownMenuSubMenu label="Move to" presentation="drill-in">
+            <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      expect(await drillIntoMoveTo('Options')).toBe('Back to Options');
+    });
+
+    it('takes the name the caller gave the menu with aria-label', async () => {
+      stubCompactTouch(false);
+      render(
+        <DropdownMenu
+          aria-label="Row actions"
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              …
+            </button>
+          )}>
+          <DropdownMenuSubMenu label="Move to" presentation="drill-in">
+            <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      expect(shownMenuNamed('Row actions')).toBeDefined();
+      expect(await drillIntoMoveTo('…')).toBe('Back to Row actions');
+    });
+
+    const shownMenuNamed = (name: string) =>
+      screen.getAllByRole('menu', {name, ...h}).find(isShown);
   });
 });

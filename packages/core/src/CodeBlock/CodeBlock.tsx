@@ -308,7 +308,7 @@ const styles = stylex.create({
     // The copy control is a ghost IconButton (Button owns its own padding,
     // radius, and hover surface); this only tints the resting glyph to the
     // muted syntax-comment colour so it blends into the header/corner. A theme
-    // reaches it via the `codeblock-copy-button` target on the Button.
+    // reaches it via the `code-block-copy-button` target on the Button.
     color: 'var(--color-syntax-comment)',
   },
   copyButtonAbsolute: {
@@ -779,8 +779,21 @@ export function CodeBlock({
     hasLanguageLabel && language !== 'plaintext' ? language : null;
   const showHeader = title != null || languageLabel != null;
 
-  const canCollapse = isCollapsible && lines.length >= collapsibleThreshold;
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // A collapsed body must never outlive the visible header that controls it.
+  const canCollapse =
+    showHeader && isCollapsible && lines.length >= collapsibleThreshold;
+  const collapseControl = useMemo(
+    () => (canCollapse ? {} : null),
+    [canCollapse],
+  );
+  const [collapsedControl, setCollapsedControl] = useState<object | null>(null);
+  const isCollapsed =
+    collapseControl != null && collapsedControl === collapseControl;
+  const toggleCollapsed = useCallback(() => {
+    setCollapsedControl(current =>
+      current === collapseControl ? null : collapseControl,
+    );
+  }, [collapseControl]);
   // Links the collapsible header to the code region it shows/hides so assistive
   // tech can move from the button to its controlled content (disclosure
   // pattern). The region stays mounted when collapsed (CSS grid animation), so
@@ -788,9 +801,13 @@ export function CodeBlock({
   const regionId = useId();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const scrollStyle: CSSProperties | undefined = maxHeight
-    ? {maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}
-    : undefined;
+  const scrollStyle: CSSProperties | undefined =
+    maxHeight != null
+      ? {
+          maxHeight:
+            typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
+        }
+      : undefined;
 
   const copyButtonEl = hasCopyButton ? (
     <IconButton
@@ -811,20 +828,14 @@ export function CodeBlock({
         void handleCopy();
       }}
       xstyle={[styles.copyButton, !showHeader && styles.copyButtonAbsolute]}
-      {...themeProps('code-block-copy-button', undefined, {
-        legacyNames: ['codeblock-copy-button'],
-      })}
+      {...themeProps('code-block-copy-button')}
     />
   ) : null;
 
   const headerEl = showHeader ? (
     <div
       {...mergeProps(
-        themeProps(
-          'code-block-header',
-          {size, language, container},
-          {legacyNames: ['codeblock-header']},
-        ),
+        themeProps('code-block-header', {size, language, container}),
         stylex.props(
           styles.headerRow,
           hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
@@ -835,13 +846,18 @@ export function CodeBlock({
         tabIndex={canCollapse ? 0 : undefined}
         aria-expanded={canCollapse ? !isCollapsed : undefined}
         aria-controls={canCollapse ? regionId : undefined}
-        onClick={canCollapse ? () => setIsCollapsed(prev => !prev) : undefined}
+        aria-label={
+          canCollapse && !title?.trim() && !languageLabel
+            ? t('@astryx.codeBlock.code')
+            : undefined
+        }
+        onClick={canCollapse ? toggleCollapsed : undefined}
         onKeyDown={
           canCollapse
             ? (e: React.KeyboardEvent) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  setIsCollapsed(prev => !prev);
+                  toggleCollapsed();
                 }
               }
             : undefined
@@ -852,11 +868,7 @@ export function CodeBlock({
         )}>
         <span
           {...mergeProps(
-            themeProps(
-              'code-block-title',
-              {size, language},
-              {legacyNames: ['codeblock-title']},
-            ),
+            themeProps('code-block-title', {size, language}),
             stylex.props(styles.headerTitle),
           )}>
           {canCollapse && (
@@ -928,13 +940,7 @@ export function CodeBlock({
     <pre
       ref={ref}
       {...mergeProps(
-        themeProps(
-          'code-block',
-          {size, language, container},
-          // `codeblock` ran the compound name together; keep it emitted so
-          // existing themes continue to work.
-          {legacyNames: ['codeblock']},
-        ),
+        themeProps('code-block', {size, language, container}),
         stylex.props(
           styles.root,
           dynamicStyles.width(widthProp),

@@ -4,6 +4,9 @@
  * @file Data extraction tests for the docsite.
  *
  * Validates that the generated registries contain expected data.
+ * @input Authored component docs and the generated docsite registries
+ * @output Regression coverage for catalog projections, including Lab Drawer demos
+ * @position Build-time docsite data verification
  * Run: pnpm -F @astryxdesign/docsite test
  */
 
@@ -12,6 +15,8 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
 import {docs as chatDocs} from '../../../../packages/core/src/Chat/Chat.doc.mjs';
+import {docs as drawerDocs} from '../../../../packages/lab/src/Drawer/Drawer.doc.mjs';
+import {docs as drawerHeaderDocs} from '../../../../packages/lab/src/Drawer/DrawerHeader.doc.mjs';
 import docsiteConfig from '../../astryx.config.mjs';
 import {packages} from '../generated/packageRegistry';
 import {
@@ -1203,6 +1208,44 @@ describe('exampleRegistry', () => {
     expect(exampleRegistry['Button']).toBeDefined();
     expect(exampleRegistry['Table']).toBeDefined();
     expect(exampleRegistry['Dialog']).toBeDefined();
+  });
+
+  it('projects Drawer docs into a live showcase and five example blocks', () => {
+    const drawerBlocks = blocks.filter(block => block.exampleFor === 'Drawer');
+    const labels = drawerDocs.examples!.map(example => example.label);
+    expect(drawerBlocks).toHaveLength(6);
+    expect(drawerBlocks.map(block => block.name).sort()).toEqual(
+      [...labels].sort(),
+    );
+    expect(
+      drawerBlocks.every(block => block.sourcePackage === '@astryxdesign/lab'),
+    ).toBe(true);
+
+    const showcase = drawerBlocks.filter(block => block.isShowcase);
+    expect(showcase.map(block => block.name)).toEqual([labels[0]]);
+    expect(showcaseRegistry.Drawer).toBeTypeOf('function');
+    expect(exampleRegistry.Drawer.map(example => example.name).sort()).toEqual(
+      labels.slice(1).sort(),
+    );
+  });
+
+  it('gives DrawerHeader a visible showcase and projects its docs into example blocks', () => {
+    const headerBlocks = blocks.filter(
+      block => block.exampleFor === 'DrawerHeader',
+    );
+    const labels = drawerHeaderDocs.examples!.map(example => example.label);
+    expect(headerBlocks).toHaveLength(labels.length + 1);
+    expect(
+      headerBlocks.every(block => block.sourcePackage === '@astryxdesign/lab'),
+    ).toBe(true);
+
+    // Like DialogHeader, the page leads with a rendered header rather than an
+    // empty preview; every authored example also runs live.
+    expect(headerBlocks.filter(block => block.isShowcase)).toHaveLength(1);
+    expect(showcaseRegistry.DrawerHeader).toBeTypeOf('function');
+    expect(
+      exampleRegistry.DrawerHeader.map(example => example.name).sort(),
+    ).toEqual([...labels].sort());
   });
 
   it('Button has multiple examples', () => {

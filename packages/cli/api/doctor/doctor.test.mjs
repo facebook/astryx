@@ -354,16 +354,31 @@ describe('checkImplicitIntegrations', () => {
   });
 
   it('names the package, the field, and what it contributes', () => {
-    const c = checkImplicitIntegrations({
-      integrations: [
-        autolinked({templates: '/abs/templates', themes: '/abs/themes'}),
-      ],
-    });
-    expect(c.message).toContain('@acme/widgets@1.0.0');
-    expect(c.message).toContain('from dependencies');
-    expect(c.message).toContain(
-      'contributing components, templates, themes',
-    );
+    // Roots count only when they exist, so this one gives them real folders.
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-implicit-'));
+    try {
+      const dir = name => {
+        fs.mkdirSync(path.join(root, name));
+        return path.join(root, name);
+      };
+      const c = checkImplicitIntegrations({
+        integrations: [
+          autolinked({
+            components: dir('components'),
+            templates: dir('templates'),
+            themes: dir('themes'),
+          }),
+        ],
+      });
+      expect(c.message).toContain('@acme/widgets@1.0.0');
+      expect(c.message).toContain('from dependencies');
+      expect(c.message).toContain(
+        'contributing components, templates, themes',
+      );
+      expect(c.message).not.toContain('missing on disk');
+    } finally {
+      fs.rmSync(root, {recursive: true, force: true});
+    }
   });
 
   it('names the declared key too when an npm alias makes them differ', () => {
@@ -904,5 +919,234 @@ describe('checkDocsProgressiveDisclosure languages', () => {
     expect(c.message).toContain('deploying [zh]: zh overlay broken');
     expect(c.message).toContain('deploying [dense] overview: 41 KB');
     expect(c.message).not.toMatch(/deploying overview:/);
+  });
+});
+
+describe('doctor says what it could not check', () => {
+  const CORE = {
+    'node_modules/@astryxdesign/core/package.json': JSON.stringify({
+      name: '@astryxdesign/core',
+      version: '0.6.3',
+    }),
+  };
+
+  /** Installed dependency whose manifest declares roots that do not exist. */
+  const dangling = {
+    'node_modules/@acme/dangling/package.json': JSON.stringify({
+      name: '@acme/dangling',
+      version: '2.0.0',
+    }),
+    'node_modules/@acme/dangling/astryx.integration.mjs':
+      "export default {providerId: 'acme-dangling', components: './components', templates: './templates', docs: './docs'};\n",
+  };
+
+  /** Installed dependency whose manifest cannot be parsed at all. */
+  const broken = {
+    'node_modules/@acme/broken/package.json': JSON.stringify({
+      name: '@acme/broken',
+      version: '1.0.0',
+    }),
+    'node_modules/@acme/broken/astryx.integration.mjs':
+      'export default {  this is not valid javascript ((\n',
+  };
+
+  /** @param {Record<string, string>} extra @param {string[]} deps */
+  const project = (extra, deps) =>
+    mkProject({
+      'package.json': JSON.stringify({
+        name: 'consumer',
+        version: '1.0.0',
+        dependencies: Object.fromEntries(
+          ['@astryxdesign/core', ...deps].map(d => [d, '1.0.0']),
+        ),
+      }),
+      ...CORE,
+      ...extra,
+    });
+
+  // An unparseable manifest is kept out of the loaded set on purpose, and
+  // doctor used to report that no installed dependency ships a manifest.
+  it('names an installed dependency whose manifest cannot be loaded', async () => {
+    const report = (await doctor({cwd: project(broken, ['@acme/broken'])})).data;
+    const check = report.checks.find(c => c.id === 'implicit-integrations');
+
+    expect(check.status).toBe('info');
+    expect(check.message).toContain('@acme/broken');
+    expect(check.message).toContain('could not be loaded');
+    expect(check.message).not.toContain('no installed dependency ships');
+    expect(report.summary.fail).toBe(0);
+  }, SLOW);
+
+  it('does not claim contributions from roots that are missing on disk', async () => {
+    const report = (await doctor({cwd: project(dangling, ['@acme/dangling'])}))
+      .data;
+    const implicit = report.checks.find(c => c.id === 'implicit-integrations');
+    const issues = report.checks.find(c => c.id === 'integration-issues');
+
+    expect(implicit.message).toContain('contributing nothing');
+    expect(implicit.message).toContain('missing on disk');
+    expect(implicit.message).not.toContain('contributing components');
+    expect(issues.status).toBe('warn');
+    expect(issues.message).toContain('@acme/dangling');
+  }, SLOW);
+
+  it('still says no dependency ships a manifest when none does', async () => {
+    const report = (await doctor({cwd: project({}, [])})).data;
+    const check = report.checks.find(c => c.id === 'implicit-integrations');
+
+    expect(check.message).toBe(
+      'None — no installed dependency ships an astryx.integration.* manifest.',
+    );
+  }, SLOW);
+
+  it('says how many integrations could not be read, rather than counting silently', () => {
+    /** @type {any} */
+    const ctx = {
+      cwd: '/x',
+      nodeVersion: process.versions.node,
+      coreDir: null,
+      configPath: null,
+      configTheme: null,
+      integrations: [
+        {name: '@acme/ok', __spec: '@acme/ok', providerId: 'ok'},
+        {name: '@acme/bad', __spec: '@acme/bad', __loadError: 'boom'},
+      ],
+    };
+    const check = checkProviderIdentity(ctx);
+
+    expect(check.message).toContain('1 loaded integration has its own provider ID.');
+    expect(check.message).toContain('could not be read');
+  });
+});
+
+describe('doctor says why it skipped and what it checked', () => {
+  const CORE_STUB = {
+    'node_modules/@astryxdesign/core/package.json': JSON.stringify({
+      name: '@astryxdesign/core',
+      version: '0.6.3',
+    }),
+  };
+
+  /** A project under the working directory, so its config can be imported. */
+  function cwdProject(files) {
+    const dir = fs.mkdtempSync(
+      path.join(process.cwd(), '.astryx-doctor-shape-'),
+    );
+    tmpDirs.push(dir);
+    for (const [rel, content] of Object.entries(files)) {
+      const abs = path.join(dir, rel);
+      fs.mkdirSync(path.dirname(abs), {recursive: true});
+      fs.writeFileSync(abs, content);
+    }
+    return dir;
+  }
+
+  it(
+    'warns, and quotes the reason, when the CLI cannot load the project from a config that imports',
+    async () => {
+      const dir = cwdProject({
+        'package.json': '{"name":"app"}',
+        ...CORE_STUB,
+        'astryx.config.mjs': "export default { integrations: 'oops' };\n",
+      });
+      const {checks, summary} = (await doctor({cwd: dir})).data;
+      const by = Object.fromEntries(checks.map(c => [c.id, c]));
+      expect(by.config.status).toBe('warn');
+      expect(by.config.message).toMatch(
+        /^astryx\.config\.mjs loads, but the CLI could not load the project from it: .*integrations/,
+      );
+      expect(by.config.fix).toContain('astryx docs authoring config');
+      for (const id of ['implicit-integrations', 'provider-identity']) {
+        expect(by[id].message).toMatch(
+          /^Skipped — the project configuration could not be read: .*integrations/,
+        );
+      }
+      expect(by['integration-issues'].message).toMatch(
+        /^Skipped — the project integration graph could not be loaded: .*integrations/,
+      );
+      // A warning: the exit code a released CLI gave this project is unchanged.
+      expect(summary.fail).toBe(0);
+    },
+    SLOW,
+  );
+
+  it(
+    'passes the config check when the CLI loads the project from it',
+    async () => {
+      const dir = cwdProject({
+        'package.json': '{"name":"app"}',
+        ...CORE_STUB,
+        'astryx.config.mjs': 'export default { integrations: [] };\n',
+      });
+      const by = Object.fromEntries(
+        (await doctor({cwd: dir})).data.checks.map(c => [c.id, c]),
+      );
+      expect(by.config.status).toBe('pass');
+      expect(by['implicit-integrations'].message).not.toContain('Skipped');
+    },
+    SLOW,
+  );
+
+  it('says there is nothing to check when no integration is loaded', () => {
+    expect(
+      checkIntegrationIssues({integrationIssues: [], integrations: []}),
+    ).toEqual({
+      id: 'integration-issues',
+      label: 'Integration contributions',
+      status: 'info',
+      message:
+        'No integration is loaded, so there are no integration contributions to check.',
+    });
+  });
+
+  it('names what it checked when every loaded integration is clean', () => {
+    expect(
+      checkIntegrationIssues({
+        integrationIssues: [],
+        integrations: [{name: '@acme/widgets'}],
+      }),
+    ).toMatchObject({
+      status: 'pass',
+      message:
+        '1 loaded integration checked (@acme/widgets): contributions and cross-package relationships are valid.',
+    });
+  });
+
+  it('bounds the names it lists', () => {
+    const integrations = Array.from({length: 12}, (_, i) => ({
+      name: `@acme/kit-${i}`,
+    }));
+    const c = checkIntegrationIssues({integrationIssues: [], integrations});
+    expect(c.message).toMatch(
+      /^12 loaded integrations checked \(.* and 2 more\): /,
+    );
+  });
+});
+
+describe('no Astryx-owned environment variables (spec:AST-017 FR14)', () => {
+  it('no source file reads an ASTRYX_* env var', () => {
+    const cliDir = path.resolve(REPO, 'packages/cli');
+    const SKIP = new Set(['node_modules', 'dist', 'coverage']);
+    const ENV_READ = /process\.env(?:\.|\[\s*['"`])ASTRYX_/;
+    /** @type {string[]} */
+    const hits = [];
+    /** @param {string} dir */
+    const walk = dir => {
+      for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+        if (SKIP.has(entry.name)) continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+          continue;
+        }
+        if (!/\.[cm]?[jt]sx?$/.test(entry.name)) continue;
+        if (/\.test\.|\.d\.[cm]?ts$/.test(entry.name)) continue;
+        if (ENV_READ.test(fs.readFileSync(full, 'utf8'))) {
+          hits.push(path.relative(cliDir, full));
+        }
+      }
+    };
+    walk(cliDir);
+    expect(hits).toEqual([]);
   });
 });

@@ -5,7 +5,7 @@
 /**
  * @file DateTimeInput.tsx
  * @input Uses React, Field, Calendar, NativeDateSegment, NativeTimeSegment, TouchDateTimeField, usePopover, useAnnounce, time parsing utilities, StyleX intrinsic flex layout
- * @output Exports DateTimeInput component, DateTimeInputProps, and native picker type
+ * @output Exports DateTimeInput component, DateTimeInputProps, and native picker type; cleared values keep the pointer Calendar controlled-empty
  * @position Core implementation; consumed by index.ts, tested by DateTimeInput.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -1879,7 +1879,7 @@ function PointerDateTimeField({
           <Calendar
             handleRef={calendarRef}
             mode="single"
-            value={valueParts.date}
+            value={valueParts.date ?? null}
             onChange={(d: ISODateString) => handleDateChange(d, 'calendar')}
             min={calendarMin}
             max={calendarMax}

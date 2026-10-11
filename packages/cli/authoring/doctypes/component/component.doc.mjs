@@ -53,6 +53,12 @@ export const doc = {
         'Exact public package specifier consumers use to import an integration-owned component. The packed-package gate resolves this specifier and verifies it exports the component name.',
     },
     {
+      name: 'replaces',
+      type: 'string',
+      description:
+        "Integration components only: the exact `name` of the Core ComponentDoc this component takes over for unqualified lookup, so every app that loads the integration gets it from component detail, component lists, search, `swizzle <Name>`, and issue routing; `swizzle --list` keeps listing Core names. The Core original stays reachable with `--package @astryxdesign/core`. It takes effect only when the package's peer range starts at the release that applies it, `\"@astryxdesign/cli\": \">=0.6.7\"` or later; without such a range the component keeps its own name and `doctor integration components` warns. Set it only to intentionally own a Core identity; give an alternative or variant its own name instead.",
+    },
+    {
       name: 'keywords',
       type: 'string[]',
       description:

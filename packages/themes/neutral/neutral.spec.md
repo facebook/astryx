@@ -168,6 +168,20 @@ for authoring and audits, while the generated selected-stop references used by
 complete authoring palette is not bundled into generated CSS or generic
 theme-build artifacts.
 
+The selected-stop module is a deterministic derived artifact. A checked-in,
+explicit maintenance command MUST discover every palette family, mode, and stop
+referenced by Neutral's theme source, resolve each one from the committed full
+palette, and regenerate the selected-stop module without changing token mappings.
+A non-writing check MUST compare the complete generated module with the committed
+file and fail on missing, extra, stale, or invalid references. Normal theme builds
+MUST check this invariant but MUST NOT regenerate or adopt palette values.
+
+The checked-in module currently contains 104 entries, while `neutralTheme.ts`
+references 95. The nine extras are superseded light-mode stops left behind when
+#6171 changed those mappings. The first supported regeneration MUST remove those
+nine unused private entries while preserving every referenced value, the complete
+authoring palette, all token mappings, rendered output, and public APIs.
+
 ## Verification map
 
 | Theme contract            | Evidence                                            | Representative states                                          | Failure signal                                                                                                 |
@@ -176,6 +190,7 @@ theme-build artifacts.
 | Local role contract       | Planned AST-006 implementation and Neutral fixtures | exact declaration/use/output name; public meaning; rename      | The shipped name or meaning changes without reviewed compatibility handling, or leaks into portable/Core APIs. |
 | Component mappings        | Theme-spec review and rendered evidence             | Badge info; each future mapping; light/dark; interaction state | A mapping does not genuinely mean filled accent status or lands without contextual evidence.                   |
 | Contrast                  | Badge check plus rendered component matrix          | light/dark and interactive states                              | A required pairing falls below its threshold.                                                                  |
+| Selected runtime refs     | Deterministic regeneration plus exhaustive parity   | every referenced family, mode, and stop                        | A generated reference is missing, extra, invalid, or differs from the committed full palette.                  |
 | Existing package contract | Theme build, package, and resolution tests          | runtime, CSS, declarations, public exports                     | This record implies an artifact that the package does not ship.                                                |
 
 ## Decision log
@@ -260,6 +275,27 @@ dark foregrounds preserve their darker role, ordinary backgrounds do not become
 true black automatically, and a reviewed token may use the closer value from
 the companion ramp. Intentional values without an approved palette match remain
 explicit theme-local values.
+
+### DEC-5 — Generate the selected runtime references from their owned sources
+
+**Reference:** `theme:neutral/DEC-5`
+
+**Decider:** `rubyycheung`, `2026-09-30`
+
+Neutral's selected-stop module is generated from two existing sources of truth:
+the family, mode, and stop references used by `neutralTheme.ts`, and the exact
+values in `neutralPalettes.generated.ts`. Regeneration copies only those selected
+values into the runtime artifact. It neither chooses mappings nor regenerates the
+full palette.
+
+The generator has an explicit write mode for maintainers and a non-writing check
+for CI. The check compares the entire expected artifact, so a missing, extra,
+invalid, or stale selected reference fails before package output is accepted.
+Normal theme builds run the check rather than silently changing committed source.
+
+Rejected: importing the complete palette at runtime, maintaining a second manual
+selection manifest, or treating token-mapping assertions as proof that copied
+hex values still match the approved palette.
 
 ## Open questions
 

@@ -81,6 +81,8 @@ export interface CommandDoc extends AuthoredDocGraphFields {
   examples?: CommandExampleDoc[];
   /** Documented exit codes. */
   exitCodes?: {code: number; when: string}[];
+  /** Deprecation notice — a DEP-* id and the replacement. */
+  deprecated?: string;
   /** Related command names; the CLI links each to its doc. */
   related?: string[];
   /** Freeform prose/notes. */

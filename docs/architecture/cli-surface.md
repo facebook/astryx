@@ -97,7 +97,7 @@ and remains available through explicit Core package selection.
   condition, not a fallback. A command with nothing to do exits with a result,
   never a question.
 - **INV2 — Every `--json` emission is one valid envelope.** Success is
-  `{apiVersion, type, data}` plus optional `meta`. Failure is
+  `{apiVersion, type, data}` plus optional `package` (INV28) and `meta`. Failure is
   `{apiVersion, error, code}` plus optional `suggestions`. There is no third
   shape, no partial write, and no raw stack trace: an uncaught throw becomes an
   envelope at the bin error boundary.
@@ -158,7 +158,7 @@ and remains available through explicit Core package selection.
   same installed package in place, preserving its configured order while making
   working bytes authoritative.
 - **INV17 — Pack verification examines the artifact consumers receive.**
-  `integration pack --check` runs the package lifecycle through `npm pack`,
+  `integration verify` runs the package lifecycle through `npm pack`,
   compares the required file inventory with the actual tarball, extracts that
   tarball into a scratch consumer, and reruns contribution discovery. It rejects
   advertised component imports ending in `.ts` or `.tsx`, resolves every exact
@@ -173,19 +173,29 @@ and remains available through explicit Core package selection.
   Invalid template and component files do not hide valid siblings. A
   package-scoped theme lookup still surfaces that package's blocking catalog
   error instead of misreporting the theme as unknown.
-- **INV19 — Integration themes are packaged editable source.** The manifest's
-  `themes` root contains one directory per slug. Every theme source has a mandatory
-  same-stem, strongly typed `ThemeDoc`; there is no root item catalog. Discovery
-  derives the source entry and required named runtime export from the shared stem,
-  parses source without executing it, and rejects escaped local imports and missing
-  or type-only runtime exports. The theme directory is the recursive copy and pack
-  boundary; dot entries and files npm never publishes belong to no theme. A
-  dot-folder, or a folder holding neither a descriptor nor a `<name>Theme`
-  source, is not a theme and is neither read nor packed, and doctor warns about
-  one that looks like a theme; a folder with a theme source and no descriptor
-  fails. `theme list` retains package
-  ownership, and `theme add --package` copies the complete directory before
-  `theme build` compiles the consumer-owned copy.
+- **INV19 — Integration themes are importable packages; editable source is an
+  explicit eject.** The manifest's `themes` root contains one directory per slug.
+  Every theme source has a mandatory same-stem, strongly typed `ThemeDoc`; there
+  is no root item catalog. Discovery derives the source entry and required named
+  export from the shared stem, parses source without executing it, and rejects
+  escaped local imports and missing or type-only exports. The theme directory is
+  the recursive copy and pack boundary; dot entries and files npm never publishes
+  belong to no theme. A dot-folder, or a folder holding neither a descriptor nor
+  a `<name>Theme` source, is not a theme and is neither read nor packed, and doctor
+  warns about one that looks like a theme; a folder with a theme source and no
+  descriptor fails. The one exception is the project's local `src/themes` root:
+  a source copy made by the released `theme add` without its descriptor is
+  reported as unmigrated, skipped without failing theme commands, and remains
+  unmanaged until upgrade adds its missing descriptor. `integration add theme`
+  creates public built-module and stylesheet exports and keeps CSS side effectful.
+  A package may also export a font stylesheet. `integration verify` rebuilds
+  source, compares the local built module and stylesheet, and proves every
+  declared theme export resolves from the packed package. `theme list` retains
+  package ownership, and `theme add --import` records that owner and imports only built
+  outputs. The deprecated plain `theme add` keeps copying source until its scheduled
+  cleanup. `theme eject` is the explicit source fork; it copies the complete
+  theme directory and same-stem descriptor, with the local descriptor marked as
+  not maintained by the package owner.
 - **INV20 — A command's API subject has one layout.** A command's behavior lives
   in `api/<subject>/`. `<subject>.mjs` is the subject's entry, and `api/index.mjs`
   re-exports what it exports. A subject with more than one operation puts each in
@@ -255,6 +265,20 @@ and remains available through explicit Core package selection.
   `astryx search` meet it first.
   A link between docs names its target by doc identity and is resolved on
   every read; Doctor warns on one that names no doc.
+- **INV28 — Every result names the package each artifact comes from.** A
+  `--json` result about one artifact (a component, doc, template, or hook)
+  carries `package` in its envelope, directly after `type`. A result
+  that lists artifacts gives each listed artifact its own `package`, and a
+  doc's sections each name the package that wrote them. Core's components,
+  hooks, templates, and codemods name `@astryxdesign/core`; the docs the CLI
+  ships name `@astryxdesign/cli`; an integration's artifacts name the
+  integration's package, with nothing written for it by the integration's
+  author. Two lists of plain names, `hook --list` and `swizzle --list`, hold
+  only Core's artifacts and name `package` once, in the envelope; `build`'s
+  `frame` and `foundation` are fixed lists of Core component names. Text
+  output names the same package. Verbatim source output (`--source`,
+  `--showcase`, and a template's source) keeps stdout to the source alone, so
+  it pipes byte for byte, and names the package on stderr.
 
 Some modules predate INV20–INV23 and do not meet them yet; `spec:AST-042` lists
 the known gaps.
@@ -281,7 +305,7 @@ updated in the same pull request when it moves an invariant:
   or JSON (INV27);
 - changing an integration writer's receipt, no-clobber/rollback behavior,
   package.json mutation policy, or public subpath spelling;
-- changing what `integration pack --check` executes, resolves, or proves about
+- changing what `integration verify` executes, resolves, or proves about
   the tarball;
 - changing local, configured, or autolinked integration precedence;
 - changing an integration item descriptor, the theme directory boundary, or the consumer copy contract.
@@ -352,6 +376,7 @@ non-interactive guarantee.
 | INV23     | `clients/cli/formatters/index.test.mjs` for the kit; review of handlers; no mechanical check yet                                                           | A handler pads, aligns, or draws text itself, or a block kind is missing from the help "Output format" list.                                    |
 | INV24     | `api/integration/add-contribution.test.mjs`, `api/integration/add-theme.test.mjs`, `foundation/discovery/theme-discovery.test.mjs`                         | New authoring emits an untyped or non-`.doc.mjs` item, adding one item edits a shared file, or an item catalog becomes authoritative.           |
 | INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
+| INV28     | `test/inv28-package-provenance.test.mjs`, `clients/cli/commands/text-json-parity.test.mjs`, `cli-api-types-verify`                                         | A result about one artifact has no envelope `package`, a listed artifact has no `package`, or text omits the package the envelope names.        |
 
 ## Open questions
 

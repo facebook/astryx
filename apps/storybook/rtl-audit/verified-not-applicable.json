@@ -122,6 +122,15 @@
     "reason": "Card is a block container with symmetric radius, border, shadow, and logical padding. It owns no directional glyph, inline-axis ordering, physical positioning, scrolling action, dragging, overlay, or keyboard behavior."
   },
   {
+    "component": "core/Citation",
+    "reason": "Citation renders a direction-neutral inline chip or superscript badge in normal text flow. Its optional icon is caller-owned or a source image; spacing uses logical margin and padding, and the component owns no directional glyph, physical inline positioning, reordering, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior.",
+    "evidence": {
+      "apps/storybook/stories/Citation.stories.tsx": "sha256:c2cafac52d87682547ccfff6185008d704421ef770e22edd7759ccd4b9673554",
+      "packages/core/src/Citation/Citation.tsx": "sha256:3ddc76002e34bf99640b4d2ba3a62add63af29845dc1227825010a64628fc481",
+      "packages/core/src/Citation/index.ts": "sha256:27df0cd0fd0aed1f3722d2b5e1b7be08e940b29094ad23410d7b639b5b9ad976"
+    }
+  },
+  {
     "component": "core/Code",
     "reason": "Code is an inline typographic treatment with a monospace font, symmetric background/radius, and logical padding. The code string owns its own bidi content; the component adds no directional visual, positioning, ordering, interaction, or overlay."
   },
@@ -308,6 +317,15 @@
       "packages/core/src/Chat/ChatSystemMessage.tsx": "sha256:11273238c02e6b48292cb2444b1229e5a06eb08494d32696e88143b5ad2e1ca3",
       "packages/core/src/Chat/index.ts": "sha256:0f4a9d3ee08b4fcd43698ad017460aad109c500d2411913f509506d2a27387bb",
       "packages/core/src/Divider/Divider.tsx": "sha256:f302b5c9eecde40b486c09d49c71cb7dab158e2fcedcb38c0145671c45d9cf8d"
+    }
+  },
+  {
+    "component": "core/CommandPaletteGroup",
+    "reason": "CommandPaletteGroup owns a vertically stacked listbox group with logical inline padding and block spacing. Its visible heading and item content follow normal document direction; it renders no directional glyph, physical inline positioning, reordered controls, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. The dedicated fixtures exercise the supported composition and public heading theme target without adding a component-owned RTL dimension.",
+    "evidence": {
+      "apps/storybook/stories/CommandPaletteGroup.stories.tsx": "sha256:82d4d68c5cfd0b4f2d027fb62f2b381a9ff9669b72ccf195c1613e9a63e2cb6c",
+      "packages/core/src/CommandPalette/CommandPaletteGroup.tsx": "sha256:7c9a33733d68a42ea57a928a4d6ed20caa2562f53cb2340fe8122071bcc95924",
+      "packages/core/src/CommandPalette/index.ts": "sha256:ba38845bbde6d73172df2c0791ca513c9f2b7baab17440e066e783ff6cfc7558"
     }
   }
 ]

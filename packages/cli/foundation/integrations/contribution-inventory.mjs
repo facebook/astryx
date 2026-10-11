@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Contribution inventory for integration pack-check.
+ * @file Contribution inventory for `astryx integration verify`.
  *
  * Enumerates the files and contribution identities an integration package
  * declares, for cross-referencing against the npm tarball. The file inventory
@@ -71,9 +71,9 @@ function enumerateThemeFiles(root, pkgDir) {
   if (!root || !fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
     return [];
   }
-  // Exactly what `theme add` copies: each theme folder's files, including
-  // tests and fixtures, but no dot entry or file npm never publishes. Files
-  // beside the theme folders belong to no theme.
+  // Exactly what `theme eject` copies and what the package ships as source:
+  // each theme folder's files, including tests and fixtures, but no dot entry
+  // or file npm never publishes. Files beside the theme folders belong to no theme.
   /** @type {string[]} */
   const files = [];
   for (const entry of fs.readdirSync(root, {withFileTypes: true})) {

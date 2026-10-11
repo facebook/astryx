@@ -7,22 +7,14 @@
  * this file into the resolved version folder.
  */
 
-import migrateThemeCatalogToDescriptors, {
-  meta as migrateThemeCatalogToDescriptorsMeta,
-} from './migrate-theme-catalog-to-descriptors.mjs';
-import migrateNativePickerToPresentation, {
-  meta as migrateNativePickerToPresentationMeta,
-} from './migrate-native-picker-to-presentation.mjs';
+import migrateDeprecatedThemeSurface, {
+  meta as migrateDeprecatedThemeSurfaceMeta,
+} from './migrate-deprecated-theme-surface.mjs';
 
 export default [
   {
-    name: 'migrate-theme-catalog-to-descriptors',
-    transform: migrateThemeCatalogToDescriptors,
-    meta: migrateThemeCatalogToDescriptorsMeta,
-  },
-  {
-    name: 'migrate-native-picker-to-presentation',
-    transform: migrateNativePickerToPresentation,
-    meta: migrateNativePickerToPresentationMeta,
+    name: 'migrate-deprecated-theme-surface',
+    transform: migrateDeprecatedThemeSurface,
+    meta: migrateDeprecatedThemeSurfaceMeta,
   },
 ];

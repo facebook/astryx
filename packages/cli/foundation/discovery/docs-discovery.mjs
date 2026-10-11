@@ -626,7 +626,11 @@ function findMergeTarget(sections, section) {
   const sameTitle = sections.findIndex(
     candidate => sourceTitle(candidate) === title,
   );
-  return sameTitle;
+  if (sameTitle !== -1) return sameTitle;
+  // A base section retitled later keeps its old key as its `id`, so an
+  // extension that still names it by the old title finds it by that id. A
+  // title variant of a section with no id stays a separate section.
+  return sections.findIndex(candidate => candidate.id === key);
 }
 
 /**

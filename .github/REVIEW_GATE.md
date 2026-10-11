@@ -33,6 +33,18 @@ with their read-only token, so an approver uses an issue comment containing
 `/approve-spec <full-head-sha>` instead; that command runs from the trusted
 default branch and a new commit invalidates it.
 
+A review app may also relay an owner's decision, for owners who decide from
+the app's own pull request view. It sends a `spec-owner-decision` repository
+dispatch naming the pull request, the full head SHA, the owner's GitHub login,
+`approve` or `revoke`, and a request key. The gate accepts it only when the
+sender is the app named in the `SPEC_DECISION_APP` repository variable, the
+owner is in `.github/ENGOWNERS` or `.github/DESIGNOWNERS`, and the SHA is the
+live head; with the variable unset, every relay is ignored. An accepted relay
+is published as the trusted status `spec-owner-decision/<owner>`, and the gate
+counts it exactly like that owner's `/approve-spec` or `/revoke-spec` command:
+it satisfies only the groups that owner may approve, the owner's latest
+decision wins, and a new commit invalidates it.
+
 Only that exact form decides the gate. The command must start the comment,
 lowercase and unindented, because the workflow trigger matches the raw comment
 body — an indented or capitalized command never starts the workflow, so the
@@ -71,6 +83,10 @@ A PR changes only spec records when every changed path is one of:
 - a colocated Core/Lab `<Name>.spec.md`.
 
 Draft-only spec records can merge after validation without owner approval.
+Approval reads the record against the `## Writing rubric results` the author
+reports in the pull request description (`docs/contributing/spec-writing.md`);
+a record pull request without them is incomplete. That is a review convention,
+not a status this gate publishes.
 Pure spec-record PRs do not add Changesets because they do not release packages;
 CI rejects a PR containing only spec records and `.changeset` entries.
 That classification fails closed on an empty or truncated file list and checks

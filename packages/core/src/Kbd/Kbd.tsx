@@ -47,7 +47,7 @@ const styles = stylex.create({
     borderBottomWidth: '2px',
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border-emphasized'],
-    color: colorVars['--color-text-secondary'],
+    color: colorVars['--color-text-primary'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],

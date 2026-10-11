@@ -155,10 +155,14 @@ Every record is either:
   record states durable requirements, prohibitions, compatibility, ownership, and
   evidence independently of any one implementation change. It never exists to
   approve a pull request and never approves, rejects, classifies, designates, or
-  authorizes a specific one. Pull requests and issues may appear only as clearly
-  non-authoritative examples, historical evidence, or references; the rule must
-  remain complete without them. The reviewer owns each change's disposition
-  against current authority.
+  authorizes a specific one. Pull requests and issues are not standing content:
+  a record states the fact a change established, not the change, and remains
+  complete without any pull request or issue it once cited. Research that
+  supports a decision — a survey, an options comparison, a benchmark, a test's
+  design or scores — is an artifact linked from the pull request, not record
+  content; the record keeps the conclusion inside the decision that rests on
+  it. A fact owned elsewhere is delegated by linking the record that owns it.
+  The reviewer owns each change's disposition against current authority.
 - **INV11 — Every public delta has an authority result.** Every public API update
   and every public behavior change is matched to current committed authority
   before acceptance. Package-export shape is not the only trigger: reachable
@@ -332,6 +336,10 @@ for a clause that has no stable heading or explicit anchor.
 
 Then write the authoritative body:
 
+- Describe the system in the present tense, not the project that produced it.
+  `docs/contributing/spec-writing.md` turns this rule and INV10 into a rubric;
+  a pull request that creates or changes a record reports that rubric's results
+  in its description before review.
 - Use familiar words and short, direct sentences.
 - State each rule fully once, beside the conditions and exceptions that control it.
   Later sections cite its ID or canonical owner instead of restating the prose.

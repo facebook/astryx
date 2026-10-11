@@ -51,6 +51,7 @@ import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 import type {ButtonVariantMap} from './index';
 
@@ -86,6 +87,13 @@ const styles = stylex.create({
     lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     whiteSpace: 'nowrap',
+    // One line by construction, so a label wider than the space available
+    // has to truncate. As a flex item the automatic minimum size would hold
+    // the button at its full label width (and `nowrap` lets an inline button
+    // run past its container), so the label's ellipsis never engaged. These
+    // let a row shrink the button and cap it at its container.
+    minWidth: 0,
+    maxWidth: '100%',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
@@ -101,7 +109,14 @@ const styles = stylex.create({
   pressable: {
     transform: {
       default: 'scale(1)',
-      ':active:where(:not(:disabled,[aria-disabled="true"]))': 'scale(0.98)',
+      // A mouse press. Under a coarse pointer `:active` is not a press (it
+      // paints on the touch and outlives a scroll), so the touch press model
+      // writes `data-astryx-press` instead; see interactionOverlay.stylex.ts.
+      ':active:where(:not(:disabled,[aria-disabled="true"]))': {
+        default: 'scale(0.98)',
+        '@media (pointer: coarse)': 'scale(1)',
+      },
+      '[data-astryx-press="on"]': 'scale(0.98)',
     },
   },
   inactive: {
@@ -110,6 +125,7 @@ const styles = stylex.create({
     transform: {
       default: 'none',
       ':active': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
   disabled: {
@@ -122,6 +138,7 @@ const styles = stylex.create({
     backgroundImage: {
       default: 'none',
       ':active': 'none',
+      '[data-astryx-press="on"]': 'none',
     },
   },
   iconOnly: {
@@ -129,6 +146,10 @@ const styles = stylex.create({
     aspectRatio: 'var(--button-icon-only-aspect)',
     paddingInline: 0,
     paddingBlock: 0,
+    // An icon-only button has no label to truncate: keep it square rather
+    // than letting a crowded row squeeze it.
+    flexShrink: 0,
+    maxWidth: 'none',
   },
   endContentWrapper: {
     display: 'inline-flex',
@@ -551,6 +572,7 @@ export function Button({
   ref,
   ...props
 }: ButtonProps): ReactNode {
+  const pressFeedback = usePressFeedback();
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
@@ -765,6 +787,7 @@ export function Button({
         target={target}
         rel={rel}
         {...sharedMergedProps}
+        {...pressFeedback}
         {...props}
         {...ariaLabelProp}
         {...describedByProp}
@@ -781,6 +804,7 @@ export function Button({
         type={type}
         disabled={useAriaDisabled ? undefined : buttonDisabled}
         {...sharedMergedProps}
+        {...pressFeedback}
         {...props}
         {...ariaLabelProp}
         {...describedByProp}

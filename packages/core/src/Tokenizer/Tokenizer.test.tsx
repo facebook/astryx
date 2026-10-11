@@ -20,7 +20,7 @@ import {
   afterEach,
 } from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
-import {Profiler} from 'react';
+import {createRef, Profiler} from 'react';
 import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -154,21 +154,43 @@ describe('Tokenizer minQueryLength', () => {
 });
 
 describe('Tokenizer', () => {
-  it('forwards ref to the root field element', () => {
-    let root: HTMLDivElement | null = null;
+  it('forwards DOM props and ref while preserving focus callbacks', () => {
+    const ref = createRef<HTMLDivElement>();
+    const onClick = vi.fn();
+    const onFocus = vi.fn();
+    const onBlur = vi.fn();
     render(
       <Tokenizer
-        ref={el => {
-          root = el;
-        }}
+        ref={ref}
+        id="members-field"
+        data-tracking="members-picker"
+        data-testid="members-surface"
+        aria-label="Picker region"
+        className="custom-tokenizer"
+        style={{marginTop: 7}}
         label="Members"
         searchSource={userSource}
-        value={[]}
+        value={[users[0]]}
         onChange={() => {}}
+        onClick={onClick}
+        onFocus={onFocus}
+        onBlur={onBlur}
       />,
     );
-    expect(root).toBeInstanceOf(HTMLDivElement);
-    expect(root).toHaveClass('astryx-field');
+    const surface = screen.getByTestId('members-surface');
+    const input = screen.getByRole('combobox');
+
+    expect(ref.current).toBeInstanceOf(HTMLDivElement);
+    expect(ref.current).toHaveClass('astryx-field');
+    expect(surface).toHaveClass('astryx-tokenizer');
+    expect(surface).toHaveAttribute('aria-label', 'Members');
+
+    fireEvent.click(surface);
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(onFocus).toHaveBeenCalledOnce();
+
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
   });
 
   it('exposes focus control through handleRef', () => {
@@ -414,6 +436,29 @@ describe('Tokenizer', () => {
     const input = screen.getByRole('combobox');
     // Placeholder should be empty when tokens exist
     expect(input).not.toHaveAttribute('placeholder', 'Search people...');
+  });
+
+  it('uses a non-painting placeholder to collapse only an empty trailing input', () => {
+    const onChangeQuery = vi.fn();
+    render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0]]}
+        onChange={() => {}}
+        onChangeQuery={onChangeQuery}
+        hasClear
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('placeholder', ' ');
+
+    fireEvent.change(input, {target: {value: 'Al'}});
+    expect(input).toHaveValue('Al');
+    expect(onChangeQuery).toHaveBeenLastCalledWith('Al');
+
+    fireEvent.change(input, {target: {value: ''}});
+    expect(onChangeQuery).toHaveBeenLastCalledWith('');
   });
 
   it('shows placeholder when no tokens are present', () => {
@@ -1711,5 +1756,189 @@ describe('Tokenizer end-lane reserve', () => {
     await waitFor(() => {
       expect(laneHost(container)).toBeNull();
     });
+  });
+});
+
+// `emptySearchResultsText` was renamed to `emptySearchText` and widened from
+// `string` to `ReactNode` (`spec:AST-056` FR1). It is a released prop with a
+// victim, so the replacement ships first and the old name keeps working
+// through the overlap (`spec:AST-017` FR28, FR29).
+describe('Tokenizer emptySearchText', () => {
+  async function searchForNothing() {
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'zzzzz'}});
+  }
+
+  it('renders an element, which the old string type could not express', async () => {
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchText={
+          <span>
+            Nobody by that name. <a href="/invite">Invite them</a>
+          </span>
+        }
+      />,
+    );
+    await searchForNothing();
+
+    await waitFor(() => {
+      expect(screen.getByText('Invite them')).toBeInTheDocument();
+    });
+  });
+
+  it('announces what it rendered, not the catalog default', async () => {
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchText={
+          <span>
+            Nobody by that name. <a href="/invite">Invite them</a>
+          </span>
+        }
+      />,
+    );
+    await searchForNothing();
+
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Nobody by that name. Invite them');
+    });
+  });
+
+  it('leaves an aria-hidden decoration out of the announcement', async () => {
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchText={
+          <span>
+            Nobody by that name<span aria-hidden="true"> →</span>
+          </span>
+        }
+      />,
+    );
+    await searchForNothing();
+
+    // The arrow is hidden from the accessibility tree on screen, so reading
+    // it into the live region would announce something the sighted user is
+    // not being shown either.
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]'),
+      ).toHaveTextContent('Nobody by that name');
+    });
+    expect(
+      document.querySelector('[data-astryx-live-region="polite"]')?.textContent,
+    ).not.toContain('→');
+  });
+
+  it('treats an explicit null as not given, falling through to the old name', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchResultsText="Nobody found"
+        emptySearchText={null}
+      />,
+    );
+    await searchForNothing();
+
+    // `null` is what this prop's own `??` default already treats as absent,
+    // so the released name still supplies the message and the warning says
+    // only that it is deprecated.
+    await waitFor(() => {
+      expect(screen.getByText('Nobody found')).toBeInTheDocument();
+    });
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('are both set'),
+    );
+    warn.mockRestore();
+  });
+
+  it('falls through to the default when null is the only value given', async () => {
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchText={null}
+      />,
+    );
+    await searchForNothing();
+
+    await waitFor(() => {
+      expect(screen.getByText('No results found')).toBeInTheDocument();
+    });
+  });
+
+  it('keeps the deprecated name working, and says it is deprecated', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchResultsText="Nobody found"
+      />,
+    );
+    await searchForNothing();
+
+    await waitFor(() => {
+      expect(screen.getByText('Nobody found')).toBeInTheDocument();
+    });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Tokenizer: `emptySearchResultsText` is deprecated; use `emptySearchText`',
+      ),
+    );
+    warn.mockRestore();
+  });
+
+  it('lets the new name win when both are set, and warns', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <Tokenizer
+        label="People"
+        searchSource={userSource}
+        value={[]}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchResultsText="Old copy"
+        emptySearchText="New copy"
+      />,
+    );
+    await searchForNothing();
+
+    await waitFor(() => {
+      expect(screen.getByText('New copy')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Old copy')).not.toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Tokenizer: `emptySearchResultsText` and `emptySearchText` are both set',
+      ),
+    );
+    warn.mockRestore();
   });
 });

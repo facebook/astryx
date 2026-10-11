@@ -16,9 +16,10 @@ import {
   isFilePathArg,
   PathSafetyError,
 } from '../../../foundation/fs/path-safety.mjs';
-import {AstryxError} from '../../error.mjs';
+import {AstryxError, writeFailed} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {stripTemplateAssetRefs} from '../../../foundation/discovery/template-adapter.mjs';
+import {pkgOf, replaceDemoMedia} from '../../../foundation/discovery/template-adapter.mjs';
+import {analyzeTemplateNeeds} from '../../../foundation/discovery/template-needs.mjs';
 
 /**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
@@ -74,28 +75,46 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
   if (!overwrite && fs.existsSync(outputFilePath)) {
     const rel = path.relative(cwd, outputFilePath) || outputFilePath;
     throw new AstryxError(
-      `Refusing to overwrite existing file ${rel}. Re-run with overwrite to replace it.`,
+      `Refusing to overwrite existing file ${rel}. Re-run with --overwrite (or -f) to replace it.`,
       undefined,
       ERROR_CODES.ERR_FILE_EXISTS,
     );
   }
 
-  fs.mkdirSync(outputDir, {recursive: true});
-
   // Strip demo image references so the scaffolded file renders without a
-  // Meta-only network dependency.
-  const source = fs.readFileSync(match.filePath, 'utf-8');
-  const outputSource = stripTemplateAssetRefs(source);
-  fs.writeFileSync(outputFilePath, outputSource);
+  // Meta-only network dependency. Read before any write, so a failure below
+  // leaves nothing behind.
+  const {source: outputSource, demoMediaReplaced} = replaceDemoMedia(
+    fs.readFileSync(match.filePath, 'utf-8'),
+  );
+  try {
+    fs.mkdirSync(outputDir, {recursive: true});
+    fs.writeFileSync(outputFilePath, outputSource);
+  } catch (err) {
+    throw writeFailed(outputFilePath, cwd, err);
+  }
+
+  // Analyze what the template needs that the project lacks: external packages
+  // and the StyleX compiler. Derived from the source's own imports.
+  const {notes, missingPackages, installCommand} = analyzeTemplateNeeds(
+    outputSource,
+    cwd,
+  );
+  const missing = missingPackages;
 
   const relOutput = path.relative(cwd, outputDir) || '.';
   return {
     type: 'template.copy',
+    package: pkgOf(match),
     data: {
       template: match.dirName,
       outputDir: relOutput,
       fileName: outputFileName,
       filesCopied: 1,
+      demoMediaReplaced,
+      notes,
+      missingPackages: missing,
+      installCommand,
     },
   };
 }

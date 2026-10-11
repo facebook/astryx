@@ -23,6 +23,7 @@
 /**
  * @typedef {object} UpgradeListEntry
  * @property {string} name
+ * @property {string} package The npm package that ships the codemod.
  * @property {string} title
  * @property {string} version
  * @property {boolean} optional True when the codemod runs only if named with `--codemod`.
@@ -116,14 +117,15 @@
  * @property {string[]} data.integrations Integration packages processed in this upgrade (by name/spec).
  * @property {boolean} data.agentDocsRefreshed
  * @property {AgentDocsSummary} data.agentDocs
+ * @property {boolean} data.sourcePathFound Whether the resolved source directory (`path`, default `./src`) exists. False means no source file was read, so a zero `filesChanged` says nothing about the project being migrated.
  * @property {RegistryCompositionSummary} [data.registryCompositions]
  * @property {boolean} [data.complete] False when protected required changes remain.
  * @property {'ERR_CODEMOD_PROTECTED'} [data.errorCode] Stable incomplete-result code when complete is false.
- * @property {number} [data.filesChanged] Total files changed across core + integration codemods (apply mode).
+ * @property {number} [data.filesChanged] Distinct files changed across core + integration codemods (apply mode). One file that four codemods each changed counts once.
  * @property {string[]} [data.modifiedFiles] Project-relative files changed or previewed.
  * @property {ProtectedCodemodFile[]} [data.protectedFiles] Protected files that still require a codemod change after regeneration.
  * @property {Array<{file: string, location?: string, reason: string}>} [data.declinedCandidates] Candidates left unchanged because proof was insufficient.
- * @property {number} [data.transformsApplied] Total transforms that reported a change.
+ * @property {number} [data.transformsApplied] Total codemod changes. A code or config codemod counts once for each file it changed, so one file changed by four of them counts four times; a project codemod counts once, however many files it writes.
  * @property {Array<{file: string, codemod: string, error: string}>} [data.errors] Per-codemod errors, when any codemod failed.
  */
 

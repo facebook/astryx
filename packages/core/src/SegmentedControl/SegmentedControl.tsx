@@ -56,7 +56,8 @@ export interface SegmentedControlProps extends Omit<
   size?: SegmentedControlSize;
   /**
    * Layout mode for segment sizing.
-   * - `'hug'` (default): the control and each segment hug their content width.
+   * - `'hug'` (default): the control and each segment hug their content width,
+   *   capped at the container (segment labels truncate when it is too narrow).
    * - `'fill'`: segments stretch equally to fill the container width.
    * @default 'hug'
    */
@@ -92,6 +93,21 @@ const styles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     width: 'fit-content',
+    // Hug sizes to its segments but never past its container: in a narrow
+    // card or a phone row the segments shrink and their labels truncate
+    // instead of the control running off the edge. The cap and the min-size
+    // reset apply only when a segment has a visible label to truncate
+    // (icon-only segments carry `aria-label` and keep their size): a control
+    // of icon-only segments has nothing that can shrink, and squeezing it
+    // would leave segments hanging outside its track.
+    maxWidth: {
+      default: 'none',
+      ':has([role="radio"]:not([aria-label]))': '100%',
+    },
+    minWidth: {
+      default: 'auto',
+      ':has([role="radio"]:not([aria-label]))': 0,
+    },
     gap: spacingVars['--spacing-0-5'],
     '--_segmented-control-padding': spacingVars['--spacing-0-5'],
     padding: 'var(--_segmented-control-padding)',

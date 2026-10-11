@@ -43,7 +43,12 @@ export {
 export * from './Chat';
 
 // Drawer — experimental overlay panel
-export {Drawer, type DrawerProps} from './Drawer';
+export {
+  Drawer,
+  DrawerHeader,
+  type DrawerProps,
+  type DrawerHeaderProps,
+} from './Drawer';
 
 // Tour — guided product-tour / NUX walkthrough (facebook/astryx#4239)
 export {
@@ -264,5 +269,5 @@ export {
 
 // RichTextEditor (RFC facebook/astryx#3899) has graduated out of @astryxdesign/lab
 // into its own canary-only package, @astryxdesign/richtext, so it can be canaried
-// independently (e.g. into EPS/Nest). Import it from there:
+// independently by an adopting application. Import it from there:
 //   import {RichTextEditor, RichTextView} from '@astryxdesign/richtext';

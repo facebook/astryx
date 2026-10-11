@@ -52,6 +52,13 @@ export const doc = {
       description: "Navigation category: 'guide' or 'foundations'.",
     },
     {
+      name: 'keywords',
+      type: 'string[]',
+      description:
+        "Words a reader may search for that the title and sections do not use: a synonym, a task, or another library's name for the same thing. `astryx search` matches each as a keyword of the whole topic, so an exact one ranks the topic like its own title does.",
+      example: "['dark mode', 'color scheme']",
+    },
+    {
       name: 'replaces',
       type: 'string',
       description:

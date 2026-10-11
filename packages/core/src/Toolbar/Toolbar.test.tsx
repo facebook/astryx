@@ -181,6 +181,66 @@ describe('Toolbar', () => {
     expect(sectionInner).toHaveAttribute('data-variant', 'transparent');
   });
 
+  describe('slot clipping', () => {
+    // The slot wrappers are the direct parents of the caller's content. A slot
+    // that clips its overflow cuts off anything its children paint outside
+    // their own box (box-shadow, focus rings, hover halos).
+    function slotOf(testId: string): HTMLElement {
+      const slot = screen.getByTestId(testId).parentElement;
+      if (slot == null) {
+        throw new Error(`expected "${testId}" to sit inside a slot`);
+      }
+      return slot;
+    }
+
+    function clipsOverflow(el: HTMLElement): boolean {
+      const style = getComputedStyle(el);
+      return [style.overflow, style.overflowX, style.overflowY].some(value =>
+        ['hidden', 'clip', 'auto', 'scroll'].includes(value),
+      );
+    }
+
+    it('does not clip any slot in the three-slot layout', () => {
+      render(
+        <Toolbar
+          label="Actions"
+          startContent={<span data-testid="start">Start</span>}
+          centerContent={<span data-testid="center">Center</span>}
+          endContent={<span data-testid="end">End</span>}
+        />,
+      );
+      expect(clipsOverflow(slotOf('start'))).toBe(false);
+      expect(clipsOverflow(slotOf('center'))).toBe(false);
+      expect(clipsOverflow(slotOf('end'))).toBe(false);
+    });
+
+    it('does not clip any slot in the two-slot layout', () => {
+      render(
+        <Toolbar
+          label="Actions"
+          startContent={<span data-testid="start">Start</span>}
+          endContent={<span data-testid="end">End</span>}
+        />,
+      );
+      expect(clipsOverflow(slotOf('start'))).toBe(false);
+      expect(clipsOverflow(slotOf('end'))).toBe(false);
+    });
+
+    it('still lets the center slot shrink below its content width', () => {
+      render(
+        <Toolbar
+          label="Actions"
+          startContent={<span data-testid="start">Start</span>}
+          centerContent={<span data-testid="center">Center</span>}
+          endContent={<span data-testid="end">End</span>}
+        />,
+      );
+      // The `auto` track only shrinks for an item whose minimum width is zero.
+      // Dropping the clip must not turn a narrow toolbar into a wider one.
+      expect(parseFloat(getComputedStyle(slotOf('center')).minWidth)).toBe(0);
+    });
+  });
+
   it('navigates with ArrowRight/ArrowLeft in horizontal orientation', async () => {
     const user = userEvent.setup();
     render(

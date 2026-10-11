@@ -1211,7 +1211,7 @@ const KIND_OPTIONS = {
   template: new Set(['cwd', 'dryRun', 'templateType']),
   codemod: new Set(['cwd', 'dryRun', 'to']),
   'agent-doc': new Set(['cwd', 'dryRun']),
-  theme: new Set(['cwd', 'dryRun']),
+  theme: new Set(['cwd', 'dryRun', 'from']),
 };
 
 /**
@@ -1238,7 +1238,7 @@ function validateKindOptions(kind, options) {
  *
  * @param {'component'|'doc'|'template'|'codemod'|'agent-doc'|'theme'} kind
  * @param {string} name
- * @param {{cwd?: string, dryRun?: boolean, templateType?: 'page'|'block', to?: string, replaces?: string, extends?: string, parent?: string}} [options]
+ * @param {{cwd?: string, dryRun?: boolean, templateType?: 'page'|'block', to?: string, replaces?: string, extends?: string, parent?: string, from?: string}} [options]
  * @returns {Promise<import('./integration-authoring.type.mjs').IntegrationAddResponse>}
  */
 export async function integrationAdd(kind, name, options = {}) {
@@ -1270,6 +1270,10 @@ export async function integrationAdd(kind, name, options = {}) {
     case 'agent-doc':
       return integrationAddAgentDoc(name, options);
     case 'theme':
-      return integrationAddTheme(name, options);
+      return integrationAddTheme(name, {
+        cwd: options.cwd,
+        dryRun: options.dryRun,
+        from: options.from,
+      });
   }
 }

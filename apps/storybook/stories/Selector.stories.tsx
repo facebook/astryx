@@ -583,6 +583,35 @@ const compactSizingTheme = defineTheme({
   },
 });
 
+// A spacing scale taller than the small token can hold, like the docsite
+// Playground's largest preset: `--spacing-5` (40px) equals the small size
+// token, so an uncapped spacing row plus borders would overshoot it.
+const wideSpacingSizingTheme = defineTheme({
+  name: 'selector-wide-spacing-sizing',
+  typography: {scale: {base: 18, ratio: 1.414}},
+  tokens: {
+    '--spacing-5': '40px',
+    '--size-element-sm': '40px',
+    '--size-element-md': '48px',
+    '--size-element-lg': '56px',
+  },
+});
+
+// Label text too large for the small token: the trigger must keep it visible
+// rather than cap its row to the token.
+const largeTextSizingTheme = defineTheme({
+  name: 'selector-large-text-sizing',
+  tokens: {'--spacing-5': '40px', '--text-label-size': '32px'},
+});
+
+// Wide spacing with the default size ramp and label: a built-in one-line value
+// lands on its token, and a caller-rendered value that sets a larger font with
+// its own line height grows the trigger to fit.
+const wideSpacingDefaultSizesTheme = defineTheme({
+  name: 'selector-wide-spacing-default-sizes',
+  tokens: {'--spacing-5': '40px'},
+});
+
 export const SizeVariants: Story = {
   render: () => {
     const [value1, setValue1] = useState<string | undefined>();
@@ -678,6 +707,67 @@ export const SizeVariants: Story = {
             </div>
           ))}
         </Theme>
+        <Theme theme={wideSpacingSizingTheme}>
+          {(['sm', 'md', 'lg'] as const).map(size => (
+            <div key={size} style={{display: 'grid', gap: 8}}>
+              {(['plain', 'clear'] as const).map(state => (
+                <Selector
+                  key={state}
+                  label={`Wide spacing ${size} ${state}`}
+                  size={size}
+                  options={['Apple']}
+                  value="Apple"
+                  onChange={() => {}}
+                  hasClear={state === 'clear'}
+                />
+              ))}
+              <Selector
+                label={`Wide spacing ${size} multiline`}
+                data-testid="wide-multiline"
+                size={size}
+                options={['Apple']}
+                value="Apple"
+                onChange={() => {}}
+                renderValue={option => (
+                  <>
+                    <div>{option.label}</div>
+                    <div>Second line</div>
+                  </>
+                )}
+              />
+            </div>
+          ))}
+        </Theme>
+        <Theme theme={largeTextSizingTheme}>
+          <Selector
+            label="Large text small"
+            data-testid="large-text"
+            size="sm"
+            options={['Ågypj']}
+            value="Ågypj"
+            onChange={() => {}}
+          />
+        </Theme>
+        <Theme theme={wideSpacingDefaultSizesTheme}>
+          <Selector
+            label="Wide spacing default small"
+            size="sm"
+            options={['Apple']}
+            value="Apple"
+            onChange={() => {}}
+          />
+          <Selector
+            label="Wide spacing large custom value"
+            data-testid="large-custom"
+            size="sm"
+            options={['Ågypj']}
+            value="Ågypj"
+            onChange={() => {}}
+            renderValue={option => (
+              <div style={{fontSize: 32, lineHeight: 1.25}}>{option.label}</div>
+            )}
+          />
+        </Theme>
       </div>
     );
   },
@@ -686,15 +776,55 @@ export const SizeVariants: Story = {
     await document.fonts.ready;
     const triggers =
       canvasElement.querySelectorAll<HTMLElement>('.astryx-selector');
-    expect(triggers).toHaveLength(33);
+    expect(triggers).toHaveLength(45);
     for (const trigger of triggers) {
       const styles = getComputedStyle(trigger);
       const size = Number.parseFloat(
         styles.getPropertyValue(`--size-element-${trigger.dataset.size}`),
       );
       const height = trigger.getBoundingClientRect().height;
-      if (trigger.dataset.testid === 'compact-multiline') {
+      if (
+        trigger.dataset.testid === 'large-text' ||
+        trigger.dataset.testid === 'large-custom'
+      ) {
+        // Text larger than the token can hold keeps its whole line box.
+        const walker = document.createTreeWalker(trigger, NodeFilter.SHOW_TEXT);
+        let text: Node | null = walker.nextNode();
+        while (text && !text.textContent?.includes('Ågypj')) {
+          text = walker.nextNode();
+        }
+        // The nearest ancestor that clips: the built-in label, or the
+        // renderValue wrapper around caller content.
+        let clipElement = text?.parentElement ?? null;
+        while (
+          clipElement &&
+          clipElement !== trigger &&
+          getComputedStyle(clipElement).overflowY === 'visible'
+        ) {
+          clipElement = clipElement.parentElement;
+        }
+        expect(clipElement).toBeTruthy();
+        if (!text || !clipElement) {
+          continue;
+        }
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        const textBox = range.getBoundingClientRect();
+        const clip = clipElement.getBoundingClientRect();
+        expect(textBox.top).toBeGreaterThanOrEqual(clip.top - 0.5);
+        expect(textBox.bottom).toBeLessThanOrEqual(clip.bottom + 0.5);
         expect(height).toBeGreaterThan(size);
+      } else if (trigger.dataset.testid?.endsWith('-multiline')) {
+        // Two text rows, plus whatever padding remains once the first row
+        // fills the token (padding never goes below zero).
+        const row = Number.parseFloat(styles.lineHeight);
+        const borders =
+          Number.parseFloat(styles.borderTopWidth) +
+          Number.parseFloat(styles.borderBottomWidth);
+        expect(height, trigger.textContent ?? '').toBeCloseTo(
+          Math.max(size + row, 2 * row + borders),
+          1,
+        );
       } else {
         expect(height, trigger.textContent ?? '').toBeCloseTo(size, 1);
       }

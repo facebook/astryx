@@ -1,109 +1,177 @@
 <!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-astryx-theme="neutral">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Astryx is an open source design system built for people and agents." />
     <meta name="robots" content="noindex, follow" />
     <link rel="canonical" href="https://astryx.atmeta.com/" />
-    <title>Astryx has moved</title>
+    <link rel="stylesheet" href="/astryx/assets/reset.css" />
+    <link rel="stylesheet" href="/astryx/assets/astryx.css" />
+    <link rel="stylesheet" href="/astryx/assets/theme.css" />
+    <title>Astryx Design System</title>
     <style>
-      :root {
-        color-scheme: light dark;
-        font-family:
-          Inter,
-          ui-sans-serif,
-          system-ui,
-          -apple-system,
-          BlinkMacSystemFont,
-          'Segoe UI',
-          sans-serif;
-      }
-      * {
-        box-sizing: border-box;
-      }
       body {
         min-height: 100vh;
-        margin: 0;
-        display: grid;
-        place-items: center;
-        background: light-dark(#f7f7f8, #171719);
-        color: light-dark(#18181b, #fafafa);
+        min-height: 100svh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: var(--spacing-6);
+        background: var(--color-background-body);
+        color: var(--color-text-primary);
+        font-family: var(--font-family-body);
       }
+
       main {
-        width: min(100% - 2rem, 32rem);
-        padding: clamp(1.5rem, 6vw, 3rem);
-        border: 1px solid light-dark(#dedee3, #3f3f46);
-        border-radius: 1rem;
-        background: light-dark(#fff, #242427);
-        box-shadow: 0 1rem 3rem rgb(0 0 0 / 12%);
+        width: min(100%, 30rem);
+        margin-block: auto;
       }
+
       h1 {
-        margin: 0 0 0.75rem;
-        font-size: clamp(2rem, 9vw, 3rem);
+        margin-block-end: var(--spacing-2);
+        font-size: var(--text-heading-1-size);
+        font-weight: var(--font-weight-semibold);
+      }
+
+      .intro {
+        margin-block-end: var(--spacing-6);
+        color: var(--color-text-secondary);
+        font-size: var(--text-body-size);
+        line-height: var(--text-body-leading);
+      }
+
+      .links {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-3);
+      }
+
+      .card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: var(--size-element-lg);
+        padding: var(--spacing-4);
+        border: var(--border-width) solid var(--color-border);
+        border-radius: var(--radius-element);
+        background: var(--color-background-card);
+        box-shadow: var(--shadow-low);
+        color: var(--color-text-primary);
+        text-decoration: none;
+        transition:
+          box-shadow var(--duration-fast) var(--ease-standard),
+          transform var(--duration-fast) var(--ease-standard);
+      }
+
+      .card.primary {
+        border-color: var(--color-accent);
+      }
+
+      @media (hover: hover) {
+        .card:hover {
+          box-shadow: var(--shadow-med);
+        }
+      }
+
+      .card:active {
+        transform: scale(0.98);
+      }
+
+      .card:focus-visible {
+        outline: var(--focus-outline-width) var(--focus-outline-style)
+          var(--focus-outline-color);
+        outline-offset: var(--focus-outline-offset);
+      }
+
+      .card-copy,
+      .card-title,
+      .card-desc {
+        display: block;
+      }
+
+      .card-title {
+        font-weight: var(--font-weight-semibold);
+      }
+
+      .card-desc {
+        margin-block-start: var(--spacing-0-5);
+        color: var(--color-text-secondary);
+        font-size: var(--text-supporting-size);
+        line-height: var(--text-supporting-leading);
+      }
+
+      .arrow {
+        flex: none;
+        margin-inline-start: var(--spacing-4);
+        color: var(--color-icon-secondary);
+        font-size: var(--text-heading-4-size);
         line-height: 1;
       }
-      p {
-        margin: 0 0 1.5rem;
-        color: light-dark(#52525b, #d4d4d8);
-        line-height: 1.5;
-      }
-      nav {
-        display: grid;
-        gap: 0.75rem;
-      }
-      a {
-        display: block;
-        padding: 1rem;
-        border: 1px solid light-dark(#d4d4d8, #52525b);
-        border-radius: 0.75rem;
-        color: inherit;
-        text-decoration: none;
-      }
-      a:hover {
-        border-color: #4b57b5;
-      }
-      a:focus-visible {
-        outline: 3px solid #4b57b5;
-        outline-offset: 3px;
-      }
-      a.primary {
-        border-color: #4b57b5;
-        background: #4b57b5;
-        color: #fff;
-        font-weight: 700;
-      }
-      strong,
-      small {
-        display: block;
-      }
-      small {
-        margin-top: 0.25rem;
-        color: inherit;
-        opacity: 0.8;
+
+      @media (prefers-reduced-motion: reduce) {
+        .card {
+          transition-duration: 0s;
+        }
       }
     </style>
   </head>
   <body>
     <main>
-      <h1>Astryx has moved</h1>
-      <p>
-        The canonical documentation, Storybook, and Sandbox now live together on
-        the Astryx docsite.
+      <h1>Astryx Design System</h1>
+      <p class="intro">
+        Open source, fully customizable, and built for people and agents working
+        together. Astryx’s public sites now live at astryx.atmeta.com.
       </p>
-      <nav aria-label="Astryx destinations">
-        <a class="primary" href="https://astryx.atmeta.com/">
-          <strong>Astryx documentation</strong>
-          <small>Canonical site</small>
+      <nav class="links" aria-label="Astryx destinations">
+        <a
+          id="documentation"
+          class="card primary"
+          href="https://astryx.atmeta.com/">
+          <span class="card-copy">
+            <strong class="card-title">Documentation</strong>
+            <small class="card-desc"
+              >Guides, components, templates, and themes</small
+            >
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
         </a>
-        <a id="storybook" href="https://astryx.atmeta.com/storybook/">
-          <strong>Storybook</strong>
-          <small>Components, props, and interactive examples</small>
+        <a
+          id="storybook"
+          class="card"
+          href="https://astryx.atmeta.com/storybook/">
+          <span class="card-copy">
+            <strong class="card-title">Storybook</strong>
+            <small class="card-desc"
+              >Components, props, and interactive examples</small
+            >
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
         </a>
-        <a id="sandbox" href="https://astryx.atmeta.com/sandbox/">
-          <strong>Sandbox</strong>
-          <small>Full app examples and developer tools</small>
+        <a id="sandbox" class="card" href="https://astryx.atmeta.com/sandbox/">
+          <span class="card-copy">
+            <strong class="card-title">Sandbox</strong>
+            <small class="card-desc"
+              >Full app examples and developer tools</small
+            >
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a
+          id="repository"
+          class="card"
+          href="https://github.com/facebook/astryx">
+          <span class="card-copy">
+            <strong class="card-title">GitHub repository</strong>
+            <small class="card-desc"
+              >Source, issues, and contribution guide</small
+            >
+          </span>
+          <span class="arrow" aria-hidden="true">→</span>
         </a>
       </nav>
     </main>

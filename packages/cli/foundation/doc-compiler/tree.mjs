@@ -58,7 +58,7 @@ export const KIND_GROUPS = Object.freeze({
   schema: {
     segment: 'schemas',
     title: 'Schemas',
-    summary: 'Every shape the CLI reads or returns, field by field.',
+    summary: 'Data shapes, field by field.',
   },
   enum: {
     segment: 'enums',
@@ -140,6 +140,7 @@ export const UNORGANIZED = 'unorganized';
  * @property {string} name
  * @property {string} title
  * @property {string} summary
+ * @property {string[]} [keywords] an authored namespace's search keywords
  * @property {string | null} parent the parent's route; null at the top
  * @property {string | null} slot the parent slot this node sits in
  * @property {number | null} order
@@ -420,10 +421,14 @@ export function buildDocsTree({namespaces, docs, topics = []}) {
         name: input.doc.name,
         title: input.doc.title,
         summary: input.doc.summary,
+        ...(Array.isArray(input.doc.keywords)
+          ? {keywords: input.doc.keywords}
+          : {}),
         parent: parentRoute,
         slot: home?.slot ?? null,
         order: home?.order ?? null,
         generated: false,
+        ref: {selfDoc: input.doc},
         slots: Object.entries(input.doc.slots).map(([name, slot]) => ({
           name,
           title: slot.title,
@@ -737,6 +742,28 @@ export function treeDocFiles(dir = TREE_DOCS_DIR) {
     .filter(file => /^[\w-]+\.doc\.mjs$/u.test(file))
     .sort(byText)
     .map(file => path.join(dir, file));
+}
+
+/**
+ * The names of the CLI's own root namespaces (spec:AST-046 FR7): each is read
+ * with `astryx docs <name>`, as a flat topic is, though no topic file has its
+ * name. Read from the namespace files' text, without loading them, so a
+ * synchronous caller (the agent docs block) lists them beside the flat topics.
+ * A topic split into a namespace keeps its name in every such list.
+ * @param {string} [dir]
+ * @returns {string[]}
+ */
+export function cliRootNamespaceNames(dir = TREE_DOCS_DIR) {
+  /** @type {string[]} */
+  const names = [];
+  for (const file of treeDocFiles(dir)) {
+    const text = fs.readFileSync(file, 'utf8');
+    if (!/["']?type["']?\s*:\s*["']namespace["']/u.test(text)) continue;
+    if (/["']?placement["']?\s*:/u.test(text)) continue;
+    const name = /["']?name["']?\s*:\s*["']([\w-]+)["']/u.exec(text)?.[1];
+    if (name) names.push(name);
+  }
+  return names.sort(byText);
 }
 
 /**

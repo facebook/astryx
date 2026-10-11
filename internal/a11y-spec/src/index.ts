@@ -119,6 +119,22 @@ export {
 } from './patterns/spinbutton';
 
 export {
+  TOGGLE_BUTTON_PATTERN,
+  type ToggleButtonStateFacts,
+} from './patterns/toggle-button';
+
+export {
   DISCLOSURE_PATTERN,
   type DisclosureStateFacts,
 } from './patterns/disclosure';
+
+export {
+  BREADCRUMB_PATTERN,
+  type BreadcrumbStateFacts,
+} from './patterns/breadcrumb';
+
+export {
+  LANDMARK_PATTERN,
+  type LandmarkRole,
+  type LandmarkStateFacts,
+} from './patterns/landmark';

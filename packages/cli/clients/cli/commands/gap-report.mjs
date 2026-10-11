@@ -55,6 +55,18 @@ export function registerGapReport(program) {
         result.type === 'gap-report.file' &&
         (result.data.status === 'failed' || result.data.status === 'partial');
 
+      // stderr in both modes, so a caller that reads only the exit code or the
+      // JSON envelope still sees which delivery failed and why.
+      if (isFailure && result.type === 'gap-report.file') {
+        for (const delivery of result.data.deliveries) {
+          if (delivery.status === 'failed') {
+            console.error(
+              `gap-report: delivery to ${delivery.handler} failed: ${delivery.message ?? 'no message'}`,
+            );
+          }
+        }
+      }
+
       if (program.opts().json) {
         jsonOut(result);
         if (isFailure) process.exitCode = 1;

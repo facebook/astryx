@@ -22,6 +22,7 @@ import {
   findComponentReadme,
 } from '../discovery/component-discovery.mjs';
 import {discoverHooks, findHookDoc} from '../discovery/hook-discovery.mjs';
+import {themeImportPackage} from '../discovery/theme-discovery.mjs';
 import {CLI_ROOT, findCoreDir} from '../fs/paths.mjs';
 import {packageSource} from './source.mjs';
 import {treeDocFiles} from './tree.mjs';
@@ -110,7 +111,7 @@ export async function collectDocInputs(project) {
   }
 
   for (const theme of await project.themes()) {
-    list.add('themes', theme.slug, theme.package, theme.docPath);
+    list.add('themes', theme.slug, themeImportPackage(theme), theme.docPath);
   }
 
   for (const topic of (await project.docs()).entries()) {

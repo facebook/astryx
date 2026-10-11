@@ -47,18 +47,21 @@
  * astryx --json template <name>
  * @typedef {object} TemplateShowResponse
  * @property {'template.show'} type
+ * @property {string} package The npm package that owns the template.
  * @property {object} data
  * @property {string} data.template
  * @property {string} data.description
  * @property {'page' | 'block'} data.type
  * @property {string[]} data.components
  * @property {string} data.source
+ * @property {number} data.demoMediaReplaced Astryx demo media references (images, posters, videos) replaced in the returned source: images with a neutral placeholder, videos with an empty source. Swap in your own media at those points; no media is installed. 0 when the template carried none.
  */
 
 /**
  * astryx --json template <name> --skeleton
  * @typedef {object} TemplateSkeletonResponse
  * @property {'template.skeleton'} type
+ * @property {string} package The npm package that owns the template.
  * @property {object} data
  * @property {string} data.template
  * @property {string} data.description
@@ -70,11 +73,16 @@
  * astryx --json template <name> [path]
  * @typedef {object} TemplateCopyResponse
  * @property {'template.copy'} type
+ * @property {string} package The npm package that owns the template.
  * @property {object} data
  * @property {string} data.template
  * @property {string} data.outputDir
  * @property {string} data.fileName
  * @property {number} data.filesCopied
+ * @property {number} data.demoMediaReplaced Astryx demo media references (images, posters, videos) replaced in the written file: images with a neutral placeholder, videos with an empty source. Swap in your own media at those points; no media is installed. 0 when the template carried none.
+ * @property {string[]} data.notes Setup notes: what the template needs that the project lacks (missing packages, missing StyleX compiler). Each note is one actionable line. Empty when the template needs nothing the project lacks.
+ * @property {string[]} data.missingPackages External package names the template imports that are not in the project's dependencies. Empty when none are missing.
+ * @property {string | null} data.installCommand A ready-to-run install command for the missing packages, using the project's package manager and the CLI workspace's version ranges. Null when no packages are missing.
  */
 
 /**
