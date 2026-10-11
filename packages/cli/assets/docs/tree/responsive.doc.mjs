@@ -21,6 +21,9 @@ export const docs = {
     'Dialog',
     'BottomSheet',
     'contract',
+    'Grid',
+    'columns',
+    'minWidth',
   ],
 
   sections: [
@@ -91,6 +94,39 @@ const isNarrow = useMediaQuery('(max-width: 1024px)');
         {
           type: 'prose',
           text: 'Verify: every contract line names a mechanism, so the comment cannot drift from the behavior.',
+        },
+      ],
+    },
+    {
+      id: 'columns-that-reflow',
+      title: 'Columns that reflow',
+      content: [
+        {
+          type: 'prose',
+          text: 'For columns that reflow on small screens, use `Grid columns={{minWidth, max}}`. A numeric `columns` is exactly N columns at every width and never reflows: `columns={4}` on a 390px phone renders four narrow tracks that overflow the page. `{minWidth: 240, max: 4}` renders at most four columns, each at least 240px, and drops to one full-width column when the container is narrow; `gap` is included in the track math, so the cap always fits when there is room.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Reflowing stat row versus a fixed week row',
+          code: `// Reflows: 4 columns on desktop, 3 at 768px, 1 on a phone.
+<Grid columns={{minWidth: 240, max: 4}} gap={3}>
+  {stats.map(stat => <StatCard key={stat.id} {...stat} />)}
+</Grid>
+
+// Fixed: exactly 7 columns at every width (a number never reflows).
+<Grid columns={7} gap={1}>
+  {days.map(day => <DayCell key={day} day={day} />)}
+</Grid>`,
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            '`{minWidth}` alone: as many columns as fit at the floor, no cap',
+            "`{minWidth, repeat: 'fit'}`: empty tracks collapse so present items stretch",
+            "A `GridSpan` in a grid that has dropped below its span takes the tracks that remain; keep spans small or use `columns='full'`",
+          ],
         },
       ],
     },
