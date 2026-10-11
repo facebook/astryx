@@ -208,7 +208,7 @@ export function analyzeTemplateNeeds(source, cwd) {
     if (resolved.verb !== null) {
       installCommand = `${resolved.verb} ${specs.join(' ')}`;
     } else {
-      const where = path.relative(process.cwd(), resolved.dir) || '.';
+      const where = path.relative(cwd, resolved.dir) || '.';
       noCommandReason = `Install missing dependencies: ${specs.join(' ')}. No install command: ${where} has ${resolved.lockfiles.join(' and ')}, and nothing there says which package manager to use.`;
     }
   }

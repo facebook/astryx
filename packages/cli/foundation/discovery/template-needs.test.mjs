@@ -258,13 +258,25 @@ describe('analyzeTemplateNeeds', () => {
         expect(result.installCommand).toBeNull();
         const note = result.notes[0];
         expect(note).toContain('recharts');
-        expect(note).toContain(path.relative(process.cwd(), dir) || '.');
+        expect(note).toContain('No install command: . has');
         expect(note).toMatch(
           /yarn\.lock and pnpm-lock\.yaml|pnpm-lock\.yaml and yarn\.lock/,
         );
         expect(note).not.toMatch(/npm install|pnpm add|yarn add/);
       },
     );
+
+    it('names the deciding directory relative to the target, not the process', () => {
+      write('package.json', JSON.stringify({workspaces: ['apps/*']}));
+      write('package-lock.json');
+      write('yarn.lock');
+      write('apps/web/package.json', '{}');
+      const result = analyzeTemplateNeeds(source, path.join(dir, 'apps/web'));
+      expect(result.installCommand).toBeNull();
+      expect(result.notes[0]).toContain(
+        `No install command: ${path.join('..', '..')} has`,
+      );
+    });
 
     it('stays ambiguous with only a package.json workspaces field beside tied lockfiles', () => {
       write('package.json', JSON.stringify({workspaces: ['apps/*']}));
