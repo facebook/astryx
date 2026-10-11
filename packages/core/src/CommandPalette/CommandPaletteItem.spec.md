@@ -66,11 +66,11 @@ standalone scroll behavior.
   state, then the existing false default
 - Migration decision: none for these corrections; OQ1 holds any change to the
   standalone keyboard contract
-- Documentation correction: latest stable promised Enter through item
-  `onSelect`, but no public runtime path invokes it — CommandPalette mints rows
-  without item callbacks and standalone items have no keyboard owner. Docs now
-  describe current pointer/item and root-keyboard callbacks; OQ1 owns any new
-  keyboard path.
+- Documentation compatibility: item `onSelect` reports pointer activation only.
+  No public runtime path delivers Enter to it — CommandPalette mints rows without
+  item callbacks and standalone items have no keyboard owner — so describing
+  keyboard selection through root `onValueChange` leaves no released consumer
+  behind (`spec:AST-017/FR1,FR5`). OQ1 owns any standalone keyboard path.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -109,7 +109,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | ID  | Candidate invariant                                                                                                                                                                  | Basis                                                        | Draft review state                                                        |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------- |
 | FR1 | Native props and `ref` reach the option root. CommandPalette context owns registered-item id, role, selected state, disabled state, and value marker; standalone caller id persists. | Released source and `architecture:public-component-api/INV5` | Verified by focused DOM tests                                             |
-| FR2 | Pointer activation runs consumer `onClick`, then stops when prevented; otherwise it calls item `onSelect`, then context selection and close. Disabled items run none of those paths. | Released callbacks and disabled promise                      | Corrected and mutation-resistant                                          |
+| FR2 | Pointer activation runs consumer `onClick`, then stops when prevented; otherwise it calls item `onSelect`, then context selection and close. Disabled items run none of those paths. | Released callbacks and disabled promise                      | Verified; mutation-resistant                                              |
 | FR3 | Explicit `isHighlighted` and `isSelected` precede context-derived values, then false. Highlight paints active state only; selection alone drives `aria-selected`.                    | Released source, docs, and listbox semantics                 | State semantics tested; precedence tested; combined paint gap remains OQ2 |
 | FR4 | Context owns highlighted-item scrolling. Outside context, a highlighted item scrolls nearest, except an initially highlighted item inside an inline Dialog does not scroll.          | Released source and regression history                       | Verified by focused Effect tests                                          |
 | FR5 | Children provide the option's label and supporting presentation, without nested interactive descendants.                                                                             | Option semantics and `spec:AST-020/FR1,FR2`                  | Documented; exact-head a11y remains a gate                                |
