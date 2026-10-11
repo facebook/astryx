@@ -119,8 +119,8 @@ export interface CommandPaletteInputProps extends Omit<
 
   /**
    * Accessible label for the query field, announced by screen readers.
-   * Falls back to the localized CommandPalette label, never to placeholder
-   * text, since placeholder text is not an accessible label.
+   * Falls back to the placeholder text (`'Search…'` by default); provide a
+   * purpose-specific label so placeholder text is not the field's only name.
    */
   label?: string;
 
@@ -185,8 +185,7 @@ export function CommandPaletteInput({
   // Use context values as fallback
   const value = controlledValue ?? ctx?.search;
   const handleValueChange = onValueChange ?? ctx?.setSearch;
-  const accessibleLabel =
-    props['aria-label'] ?? label ?? t('@astryx.commandPalette.label');
+  const accessibleLabel = props['aria-label'] ?? label ?? placeholder;
   const hasEndContent = isRenderable(endContent);
   const callerOwnsPopup =
     !ctx &&
@@ -260,9 +259,9 @@ export function CommandPaletteInput({
               : undefined
             : props['aria-activedescendant']
         }
-        // Placeholder text is not an accessible label. Consumers may provide
-        // aria-label directly; otherwise label and the localized component name
-        // are the documented fallbacks.
+        // Consumers should provide a purpose-specific label. The released
+        // placeholder fallback remains until its incompatible correction has
+        // an approved migration path.
         aria-label={accessibleLabel}
         placeholder={placeholder}
         value={value}

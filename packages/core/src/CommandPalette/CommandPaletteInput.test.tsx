@@ -93,11 +93,11 @@ describe('CommandPaletteInput', () => {
     expect(input).toHaveAttribute('aria-autocomplete', 'list');
   });
 
-  it('has a localized non-placeholder accessible name by default', () => {
+  it('has an accessible name by default', () => {
     render(<CommandPaletteInput />);
     expect(screen.getByRole('searchbox')).toHaveAttribute(
       'aria-label',
-      'Command palette',
+      'Search…',
     );
   });
 
@@ -108,11 +108,11 @@ describe('CommandPaletteInput', () => {
     expect(input).toHaveAttribute('placeholder', 'Search…');
   });
 
-  it('keeps the localized accessible name when the placeholder changes', () => {
+  it('falls back to a custom placeholder for the accessible name', () => {
     render(<CommandPaletteInput placeholder="Type a command..." />);
     expect(screen.getByRole('searchbox')).toHaveAttribute(
       'aria-label',
-      'Command palette',
+      'Type a command...',
     );
   });
 
