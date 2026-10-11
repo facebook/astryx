@@ -551,17 +551,32 @@ export function ComplexSelector<Value>({
     [isDisabled, isOpen, popover],
   );
 
-  // A press elsewhere in the control box (padding, start icon, chevron) opens
-  // the popup; the button's own click is composed on the button so a
-  // consumer `onClick` runs after the built-in toggle.
+  // A caller `onClick` runs first and can cancel opening with
+  // `preventDefault()`, as it always could. It now lands on the trigger, so
+  // the trigger composes it; a press elsewhere in the control box (padding,
+  // start icon, chevron) opens the popup directly.
+  const handleTriggerButtonClick = composeEventHandlers(
+    onClickProp,
+    handleTriggerClick,
+  );
+  // A caller `onKeyDown` sees every key, including the ArrowDown the trigger
+  // has already used to open the popup.
+  const handleTriggerButtonKeyDown = (
+    event: React.KeyboardEvent<HTMLElement>,
+  ) => {
+    handleTriggerKeyDown(event);
+    onKeyDownProp?.(event);
+  };
   const handleControlBoxClick = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
       if (triggerRef.current?.contains(event.target as Node)) {
         return;
       }
-      handleTriggerClick();
+      // Route the press through the trigger so it behaves exactly like a
+      // press on the trigger itself, caller `onClick` included.
+      triggerRef.current?.click();
     },
-    [handleTriggerClick],
+    [],
   );
 
   useImperativeHandle(
@@ -639,8 +654,8 @@ export function ComplexSelector<Value>({
         triggerRef.current = el;
       }, ref),
       id: triggerId,
-      onClick: composeEventHandlers(handleTriggerClick, onClickProp),
-      onKeyDown: composeEventHandlers(handleTriggerKeyDown, onKeyDownProp),
+      onClick: handleTriggerButtonClick,
+      onKeyDown: handleTriggerButtonKeyDown,
       'aria-haspopup': 'dialog',
       'aria-expanded': isOpen,
       'aria-controls': contentId,
@@ -701,10 +716,8 @@ export function ComplexSelector<Value>({
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           disabled={isDisabled}
-          // Component first: the built-in toggle and ArrowDown opening always
-          // run; a consumer handler sees what they leave uncancelled.
-          onClick={composeEventHandlers(handleTriggerClick, onClickProp)}
-          onKeyDown={composeEventHandlers(handleTriggerKeyDown, onKeyDownProp)}
+          onClick={handleTriggerButtonClick}
+          onKeyDown={handleTriggerButtonKeyDown}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerText)}>{triggerContent}</span>
         </button>

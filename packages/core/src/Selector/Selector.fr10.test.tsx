@@ -72,25 +72,24 @@ describe('Selector FR10 targets', () => {
     );
   });
 
-  it('runs the built-in toggle before a consumer onClick, once per press', () => {
-    const states: (string | null)[] = [];
+  it('keeps a caller onClick on the trigger, where cancelling does not stop the toggle', () => {
+    const targets: EventTarget[] = [];
     render(
       <Selector
         label="Fruit"
         options={OPTIONS}
         onChange={() => {}}
         onClick={event => {
-          states.push(event.currentTarget.getAttribute('role') ?? 'button');
-          // Neither cancelling nor stopping the press undoes the built-in
-          // toggle, which already ran on the trigger button.
+          targets.push(event.currentTarget);
           event.preventDefault();
-          event.stopPropagation();
         }}
       />,
     );
     const trigger = screen.getByRole('combobox');
     fireEvent.click(trigger);
-    expect(states).toHaveLength(1);
+    // Unchanged order: the caller runs on the trigger, then the press reaches
+    // the control box's toggle, which `preventDefault()` never cancelled.
+    expect(targets).toEqual([trigger]);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 

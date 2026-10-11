@@ -916,7 +916,6 @@ export function Selector<T extends SelectorOptionType>(
     controlClassName,
     controlStyle,
     ref,
-    onClick,
     onFocus,
     onKeyDown: onKeyDownProp,
     hasClear: hasClearProp,
@@ -1339,22 +1338,6 @@ export function Selector<T extends SelectorOptionType>(
     },
     onDismiss: surface.hide,
   });
-
-  // The trigger button owns its click so a consumer `onClick`, which lands on
-  // the button, composes after the built-in toggle. A press elsewhere in the
-  // control box (padding, start icon, chevron) still opens the surface.
-  const handleTriggerButtonClick = useCallback(() => {
-    onTriggerClick();
-  }, [onTriggerClick]);
-  const handleControlBoxClick = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
-      if (triggerRef.current?.contains(event.target as Node)) {
-        return;
-      }
-      onTriggerClick();
-    },
-    [onTriggerClick],
-  );
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -1835,11 +1818,15 @@ export function Selector<T extends SelectorOptionType>(
     'aria-required': isEffectivelyRequired ? 'true' : undefined,
     'aria-invalid': status?.type === 'error' ? 'true' : undefined,
     'aria-busy': isBusy || undefined,
-    // Component first: the built-in keyboard model and focus bookkeeping
-    // always run; a consumer handler sees what they leave uncancelled.
+    // The built-in keyboard model runs first; a caller handler sees the keys
+    // it leaves uncancelled. A caller `onClick` arrives through `rest` and
+    // runs on the trigger before the press bubbles to the control box's
+    // toggle, as it always has.
     onKeyDown: composeEventHandlers(handleTriggerKeyDown, onKeyDownProp),
-    onFocus: composeEventHandlers(surface.onTriggerFocus, onFocus),
-    onClick: composeEventHandlers(handleTriggerButtonClick, onClick),
+    onFocus: event => {
+      onFocus?.(event);
+      surface.onTriggerFocus(event);
+    },
     tabIndex: isDisabled && !showsDisabledMessage ? -1 : 0,
     ...stylex.props(
       styles.trigger,
@@ -1859,7 +1846,7 @@ export function Selector<T extends SelectorOptionType>(
           // compose, so attaching unconditionally is safe.
           disabledMessageTooltip.ref(el);
         }}
-        onClick={handleControlBoxClick}
+        onClick={onTriggerClick}
         {...pressable}
         {...mergeProps(
           themeProps('selector', {

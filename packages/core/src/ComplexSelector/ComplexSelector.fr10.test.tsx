@@ -35,7 +35,7 @@ beforeEach(() => {
 
 describe('ComplexSelector props type (family:input-fields FR10)', () => {
   it('accepts container* and control* and no root styling', () => {
-    expectFieldInputProps<ComplexSelectorProps>();
+    expectFieldInputProps<ComplexSelectorProps<string>>();
   });
 });
 
@@ -77,26 +77,45 @@ describe('ComplexSelector FR10 targets', () => {
     );
   });
 
-  it('runs the built-in toggle before a consumer onClick, once per press', () => {
-    const states: (string | null)[] = [];
-    render(
+  it('lets a caller onClick on the trigger cancel opening, as before', () => {
+    const targets: EventTarget[] = [];
+    const {container} = render(
       <ComplexSelector
         label="Fruit"
         value={VALUE}
         onChange={() => {}}
+        controlClassName="fr10-control"
         onClick={event => {
-          states.push(event.currentTarget.getAttribute('role') ?? 'button');
-          // Neither cancelling nor stopping the press undoes the built-in
-          // toggle, which already ran on the trigger button.
+          targets.push(event.currentTarget);
           event.preventDefault();
-          event.stopPropagation();
         }}>
         {content}
       </ComplexSelector>,
     );
     const trigger = screen.getByRole('button', {name: 'Fruit'});
     fireEvent.click(trigger);
-    expect(states).toHaveLength(1);
+    expect(targets).toEqual([trigger]);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    // A press elsewhere in the control box goes through the trigger too.
+    fireEvent.click(container.querySelector('.fr10-control') as HTMLElement);
+    expect(targets).toEqual([trigger, trigger]);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('opens once per press when a caller onClick does not cancel', () => {
+    const onClick = vi.fn();
+    render(
+      <ComplexSelector
+        label="Fruit"
+        value={VALUE}
+        onChange={() => {}}
+        onClick={onClick}>
+        {content}
+      </ComplexSelector>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Fruit'});
+    fireEvent.click(trigger);
+    expect(onClick).toHaveBeenCalledTimes(1);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
@@ -118,23 +137,27 @@ describe('ComplexSelector FR10 targets', () => {
     );
   });
 
-  it('keeps the built-in keyboard model and composes a consumer onKeyDown after it', () => {
-    const keyTargets: EventTarget[] = [];
+  it('keeps the built-in keyboard model and still hands every key to a caller onKeyDown', () => {
+    const keys: string[] = [];
+    const targets: EventTarget[] = [];
     render(
       <ComplexSelector
         label="Fruit"
         value={VALUE}
         onChange={() => {}}
-        onKeyDown={event => keyTargets.push(event.currentTarget)}>
+        onKeyDown={event => {
+          keys.push(event.key);
+          targets.push(event.currentTarget);
+        }}>
         {content}
       </ComplexSelector>,
     );
     const trigger = screen.getByRole('button', {name: 'Fruit'});
-    fireEvent.keyDown(trigger, {key: 'Tab'});
-    // The consumer handler lands on the trigger itself.
-    expect(keyTargets).toEqual([trigger]);
     fireEvent.keyDown(trigger, {key: 'ArrowDown'});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // The caller still sees the ArrowDown the trigger used to open the popup.
+    expect(keys).toEqual(['ArrowDown']);
+    expect(targets).toEqual([trigger]);
   });
 });
 

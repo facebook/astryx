@@ -1740,9 +1740,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       if (triggerRef.current?.contains(event.target as Node)) {
         return;
       }
-      onTriggerClick();
+      // Route the press through the trigger so it behaves exactly like a
+      // press on the trigger itself, caller `onClick` included.
+      triggerRef.current?.click();
     },
-    [onTriggerClick],
+    [],
   );
 
   // Highlight scrolling (and its hover/keyboard split) lives in useMultiCombobox.
@@ -2327,10 +2329,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     'aria-required': isEffectivelyRequired ? 'true' : undefined,
     'aria-invalid': status?.type === 'error' ? 'true' : undefined,
     'aria-busy': isBusy || undefined,
-    // Component first: the built-in keyboard model and focus bookkeeping
-    // always run; a consumer handler sees what they leave uncancelled.
+    // Newly forwarded handlers compose component first: the built-in toggle
+    // and keyboard model always run. `onFocus` keeps its existing caller-first
+    // order.
     onKeyDown: composeEventHandlers(onKeyDown, onKeyDownProp),
-    onFocus: composeEventHandlers(surface.onTriggerFocus, onFocus),
+    onFocus: event => {
+      onFocus?.(event);
+      surface.onTriggerFocus(event);
+    },
     onClick: composeEventHandlers(handleTriggerButtonClick, onClick),
     tabIndex: isDisabled && !showsDisabledMessage ? -1 : 0,
     ...stylex.props(
@@ -2368,7 +2374,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       onKeyDown: isEffectivelyReadOnly
         ? onKeyDownProp
         : composeEventHandlers(onKeyDown, onKeyDownProp),
-      onFocus: composeEventHandlers(surface.onTriggerFocus, onFocus),
+      onFocus: event => {
+        onFocus?.(event);
+        surface.onTriggerFocus(event);
+      },
       // A read-only selector has no selection surface to open, so it must
       // not advertise one: `spec:AST-011` FR4. Telling a screen-reader user
       // "collapsed, has popup" on a control that cannot open leaves them
