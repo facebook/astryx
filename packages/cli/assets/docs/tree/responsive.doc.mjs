@@ -125,7 +125,8 @@ const isNarrow = useMediaQuery('(max-width: 1024px)');
           items: [
             '`{minWidth}` alone: as many columns as fit at the floor, no cap; a container narrower than `minWidth` overflows, so add `max` for anything that reaches a phone',
             "`{minWidth, repeat: 'fit'}`: empty tracks collapse so present items stretch",
-            "A numeric `GridSpan` wider than the grid's current columns adds implicit columns to the whole grid and later items flow into them; in a reflowing grid keep spans within the smallest count it can reach, or use `columns='full'`, which adds none",
+            "A numeric `GridSpan` wider than the grid's current columns adds implicit columns to the whole grid; items placed before and after the span flow into them, and `columns='full'` then covers only the explicit columns. In a reflowing grid keep spans within the smallest count it can reach, or use `'full'`, which adds none",
+            'Styling that changes the room columns have to fit changes the count a reflowing shape reaches: a `columnGap` or `gap` step, inline padding on the grid, or a `grid-auto-flow` override through `xstyle`. A `className` rule replaces the computed track list only when it wins the cascade against the generated styles; prefer `xstyle` for overrides',
           ],
         },
       ],
