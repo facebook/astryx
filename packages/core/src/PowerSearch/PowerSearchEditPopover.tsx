@@ -713,9 +713,16 @@ export function PowerSearchEditPopover({
         operator: defaultOp?.key,
         value: undefined,
       });
-      saveIfEmptyOperator(fieldKey, defaultOp);
+      // Re-choosing the current field with its current operator changes
+      // nothing, so it saves nothing.
+      if (
+        fieldKey !== partialFilter.field ||
+        defaultOp?.key !== partialFilter.operator
+      ) {
+        saveIfEmptyOperator(fieldKey, defaultOp);
+      }
     },
-    [config, saveIfEmptyOperator],
+    [config, partialFilter.field, partialFilter.operator, saveIfEmptyOperator],
   );
 
   const handleOperatorChange = useCallback(
@@ -729,9 +736,18 @@ export function PowerSearchEditPopover({
         operator: operatorKey,
         value: keepValue ? prev.value : undefined,
       }));
-      saveIfEmptyOperator(partialFilter.field, newOp);
+      // Re-choosing the current operator changes nothing, so it saves nothing.
+      if (operatorKey !== partialFilter.operator) {
+        saveIfEmptyOperator(partialFilter.field, newOp);
+      }
     },
-    [config, partialFilter.field, currentOperator, saveIfEmptyOperator],
+    [
+      config,
+      partialFilter.field,
+      partialFilter.operator,
+      currentOperator,
+      saveIfEmptyOperator,
+    ],
   );
 
   const handleValueChange = useCallback(

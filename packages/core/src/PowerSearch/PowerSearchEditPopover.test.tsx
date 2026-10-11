@@ -930,6 +930,28 @@ describe('empty-operator save', () => {
     });
   });
 
+  it('does not save again when the current empty operator or field is re-chosen', () => {
+    const onSave = vi.fn();
+    render(
+      <React.StrictMode>
+        <Harness
+          filter={{field: 'title', operator: 'contains', value: undefined}}
+          onSave={onSave}
+        />
+      </React.StrictMode>,
+    );
+
+    selectOption('Operator', 'is empty');
+    expect(onSave).toHaveBeenCalledTimes(1);
+    selectOption('Operator', 'is empty');
+    expect(onSave).toHaveBeenCalledTimes(1);
+
+    selectOption('Field', 'Assignee');
+    expect(onSave).toHaveBeenCalledTimes(2);
+    selectOption('Field', 'Assignee');
+    expect(onSave).toHaveBeenCalledTimes(2);
+  });
+
   it('saves exactly once when it opens on a complete empty-operator filter', () => {
     const onSave = vi.fn();
     render(
