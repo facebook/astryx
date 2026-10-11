@@ -19,4 +19,4 @@ Migration:
 Import `dataVars` from `@astryxdesign/core/theme/dataTokens.stylex` for CSS-capable code. Canvas and other non-CSS APIs continue to use `resolveThemeToken()` or `useTheme().token()`. Rebuild committed theme CSS with `astryx theme build`.
 
 Codemod:
-`astryx upgrade` runs `validate-data-token-ownership`, which rewrites nothing and reports direct `var(--color-data-*)` strings and stale generated theme CSS for manual migration.
+`astryx upgrade` runs `validate-data-token-ownership`, which rewrites nothing and reports fallback-less `var(--color-data-*)` uses (whole or embedded source strings, and stylesheets) and stale generated theme CSS for manual migration.

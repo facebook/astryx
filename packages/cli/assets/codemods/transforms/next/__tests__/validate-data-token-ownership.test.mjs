@@ -20,6 +20,8 @@ describe('validate-data-token-ownership', () => {
     for (const source of [
       `const fill = 'var(--color-data-categorical-green)';`,
       'const fill = `var(--color-data-categorical-green)`;',
+      `const border = '1px solid var(--color-data-categorical-green)';`,
+      'const border = `${width}px solid var(--color-data-categorical-green)`;',
     ]) {
       await expect(run(source)).rejects.toThrow(
         /CSS-capable code imports dataVars.*Canvas.*resolveThemeToken/s,
@@ -44,6 +46,22 @@ const fill = dataVars['--color-data-categorical-green'];
     await expect(run(source, 'theme.css')).rejects.toThrow(
       /Rebuild it with `astryx theme build`/,
     );
+  });
+
+  it('reports raw stylesheet uses without a fallback', async () => {
+    await expect(
+      run('.bar { fill: var(--color-data-categorical-green); }', 'chart.css'),
+    ).rejects.toThrow(/Raw var\(--color-data-categorical-green\).*line 1/s);
+  });
+
+  it('leaves stylesheet uses with a fallback, and comments, unchanged', async () => {
+    expect(
+      await run(
+        `/* var(--color-data-categorical-green) */
+.bar { fill: var(--color-data-categorical-green, #008000); }`,
+        'chart.css',
+      ),
+    ).toBeUndefined();
   });
 
   it('does not claim ownership of hand-authored CSS or sparse theme overrides', async () => {
