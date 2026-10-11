@@ -143,8 +143,9 @@ const styles = stylex.create({
   // Show more/less button
   toggleButton: {
     appearance: 'none',
-    background: 'none',
-    border: 'none',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderStyle: 'none',
     padding: `${spacingVars['--spacing-2']} 0`,
     cursor: {
       default: 'pointer',

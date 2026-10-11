@@ -1,0 +1,128 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Example-coverage report (report-only).
+ *
+ * Prints, for every configured integration package and for Core, how many
+ * authored doc-example labels have a paired runnable block — starting from the
+ * AUTHORED files, so an example that silently renders as a CLI snippet (no
+ * runnable demo) is visible in CI logs. This is a REPORT, not a gate: Core
+ * does not require pairing and integration packages are intentionally no
+ * stricter (owner decision, 2026-09-30); a repo-wide pairing gate remains an
+ * open decision.
+ *
+ * @input Authored component docs and template descriptors across documented
+ *   packages, plus the generated block registry
+ * @output CI-visible coverage inventory and regression coverage for
+ *   authored-block admission into the registry
+ * @position Build-time docsite documentation-coverage reporting
+ * Run: pnpm -F @astryxdesign/docsite test
+ */
+
+import * as path from 'node:path';
+import {describe, expect, it} from 'vitest';
+import docsiteConfig from '../../astryx.config.mjs';
+import {
+  inventoryPackageExamples,
+  pairExampleCoverage,
+  formatCoverageReport,
+  resolveTemplatesRoot,
+} from '../lib/exampleCoverage.mjs';
+import {blocks as registeredBlocks} from '../generated/blockRegistry';
+import {packages} from '../generated/packageRegistry';
+
+const REPO_ROOT = path.resolve(__dirname, '../../../..');
+
+interface PackageInventory {
+  packageName: string;
+  components: Awaited<
+    ReturnType<typeof inventoryPackageExamples>
+  >['components'];
+  blocks: Awaited<ReturnType<typeof inventoryPackageExamples>>['blocks'];
+  coverage: ReturnType<typeof pairExampleCoverage>;
+}
+
+async function inventoryIntegration(
+  packageName: string,
+): Promise<PackageInventory> {
+  const registryEntry = packages.find(pkg => pkg.name === packageName);
+  expect(
+    registryEntry,
+    `${packageName} missing from packageRegistry`,
+  ).toBeDefined();
+  const packageDir = path.join(REPO_ROOT, registryEntry!.packagePath);
+  const {components, blocks} = await inventoryPackageExamples({
+    repoRoot: REPO_ROOT,
+    srcDir: path.join(packageDir, 'src'),
+    blocksDir: await resolveTemplatesRoot(packageDir),
+  });
+  return {
+    packageName,
+    components,
+    blocks,
+    coverage: pairExampleCoverage(components, blocks),
+  };
+}
+
+describe('example coverage (report-only)', () => {
+  it('reports authored example-label ↔ runnable-block coverage per package', async () => {
+    const inventories: PackageInventory[] = [];
+    for (const packageName of docsiteConfig.integrations) {
+      inventories.push(await inventoryIntegration(packageName));
+    }
+    // Core authors its runnable blocks centrally in the CLI's assets tree.
+    const {components, blocks} = await inventoryPackageExamples({
+      repoRoot: REPO_ROOT,
+      srcDir: path.join(REPO_ROOT, 'packages/core/src'),
+      blocksDir: path.join(REPO_ROOT, 'packages/cli/assets/templates/blocks'),
+    });
+    inventories.push({
+      packageName: '@astryxdesign/core',
+      components,
+      blocks,
+      coverage: pairExampleCoverage(components, blocks),
+    });
+
+    for (const inventory of inventories) {
+      // Write straight to stdout: vitest's console interceptor hides
+      // console.* output for passing tests, and this report's whole job is
+      // to be readable in CI logs.
+      process.stdout.write(
+        formatCoverageReport(
+          inventory.packageName,
+          inventory.coverage,
+          inventory.blocks,
+        ) + '\n',
+      );
+      // Report-only: the inventory must compute, nothing more.
+      expect(Array.isArray(inventory.coverage)).toBe(true);
+    }
+  }, 120_000);
+
+  it('admits every authored Lab block into the generated registry', async () => {
+    // Authored → generated direction: a well-formed descriptor pair sitting in
+    // packages/lab/blocks that never reaches blockRegistry would be a silent
+    // drop in the plumbing (as opposed to an authoring choice, which the
+    // report above covers). Lab currently has no broken descriptors, so every
+    // authored block must appear, attributed to the package.
+    const lab = await inventoryIntegration('@astryxdesign/lab');
+    const registeredLabNames = new Set(
+      registeredBlocks
+        .filter(block => block.sourcePackage === '@astryxdesign/lab')
+        .map(block => block.name),
+    );
+    for (const block of lab.blocks) {
+      if (
+        block.type !== 'block' ||
+        block.loadError != null ||
+        !block.hasSource
+      ) {
+        continue;
+      }
+      expect(
+        registeredLabNames.has(block.name),
+        `${block.file} is authored but missing from the generated blockRegistry`,
+      ).toBe(true);
+    }
+  }, 60_000);
+});

@@ -2,7 +2,7 @@
 
 'use client';
 
-import {lazy, Suspense, useEffect, useState} from 'react';
+import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -15,6 +15,7 @@ import {
 import {useAppShellMobile} from '@astryxdesign/core/AppShell';
 import {MobileNav} from '@astryxdesign/core/MobileNav';
 import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
 import {HStack} from '@astryxdesign/core/Layout';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Search, HeartHandshake, Sun, Moon, Menu} from 'lucide-react';
@@ -22,6 +23,7 @@ import {GITHUB_REPO} from '../constants';
 import {AstryxIcon} from './logos';
 import {useThemeMode} from '../app/providers';
 import {trackSearch, trackClickCta} from '../lib/analytics';
+import {useAppShellHeaderHeight} from '../lib/useAppShellHeaderHeight';
 
 const LazySearchPalette = lazy(() =>
   import('./SearchPalette').then(module => ({default: module.SearchPalette})),
@@ -44,10 +46,11 @@ const GitHubIcon = ({
   </svg>
 );
 
-// Responsive helpers. The desktop links and the mobile hamburger both live in
-// the DOM at all times; a pure CSS @media query decides which is visible so the
-// server-rendered HTML is correct on first paint (no post-hydration flip).
-const MOBILE_BREAKPOINT = '@media (max-width: 768px)';
+// Responsive helpers. Keep a CSS-controlled hamburger in the server HTML;
+// when AppShell switches to mobile-bar mode, its automatic toggle takes over.
+// Match AppShell's default md breakpoint: equality belongs to desktop.
+// Negate min-width so StyleX does not lower '<' to a rounded 767.99px bound.
+const MOBILE_BREAKPOINT = '@media not (min-width: 768px)';
 
 const styles = stylex.create({
   desktopNav: {
@@ -109,10 +112,18 @@ export function SharedTopNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const {mode, themeMode, toggleMode} = useThemeMode();
-  // When AppShell owns the mobile drawer (docs, which has a sideNav) we defer
-  // to its single hamburger; otherwise we render our own.
-  const {isMobileNavEnabled, closeMobileNav} = useAppShellMobile();
+  // Enabled describes drawer ownership, not whether its automatic hamburger
+  // has rendered yet. During SSR AppShell still renders the desktop top bar.
+  const {
+    isMobileNavEnabled,
+    isMobileNavOpen,
+    mobileNavId,
+    openMobileNav,
+    closeMobileNav,
+  } = useAppShellMobile();
   const renderMode = useTopNavRenderMode();
+  const navRef = useRef<HTMLElement>(null);
+  useAppShellHeaderHeight(navRef);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -174,6 +185,7 @@ export function SharedTopNav() {
   return (
     <>
       <TopNav
+        ref={navRef}
         label="Astryx navigation"
         heading={
           <TopNavHeading
@@ -278,15 +290,30 @@ export function SharedTopNav() {
                 trackClickCta({page: 'landing', target: 'get_started'})
               }
             />
-            {!isMobileNavEnabled && (
+            {(!isMobileNavEnabled || renderMode === 'default') && (
               <div {...stylex.props(styles.mobileToggle)}>
                 <Button
-                  label="Open menu"
+                  label={isMobileNavEnabled ? 'Open navigation' : 'Open menu'}
                   tooltip="Menu"
                   variant="ghost"
                   isIconOnly
-                  icon={<Menu size={20} />}
-                  onClick={() => setIsMenuOpen(true)}
+                  icon={
+                    isMobileNavEnabled ? (
+                      // Match AppShell's glyph and Button-owned icon size.
+                      <Icon icon="menu" color="inherit" />
+                    ) : (
+                      <Menu size={20} />
+                    )
+                  }
+                  aria-expanded={
+                    isMobileNavEnabled ? isMobileNavOpen : undefined
+                  }
+                  aria-controls={isMobileNavEnabled ? mobileNavId : undefined}
+                  onClick={
+                    isMobileNavEnabled
+                      ? openMobileNav
+                      : () => setIsMenuOpen(true)
+                  }
                 />
               </div>
             )}

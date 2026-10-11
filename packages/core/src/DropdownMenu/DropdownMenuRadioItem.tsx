@@ -93,7 +93,7 @@ export interface DropdownMenuRadioItemProps extends Omit<
   description?: ReactNode;
   /**
    * Icon to display before the label. Accepts a semantic icon name (see
-   * `npx astryx docs icons`) or a rendered node.
+   * `npx @astryxdesign/cli docs icons`) or a rendered node.
    */
   icon?: ReactNode | IconType;
   /**
@@ -108,6 +108,8 @@ export interface DropdownMenuRadioItemProps extends Omit<
    * metadata.
    */
   endContent?: ReactNode;
+  /** Ref forwarded to the row root — the element carrying `role="menuitemradio"`. */
+  ref?: React.Ref<HTMLElement>;
 }
 
 /**

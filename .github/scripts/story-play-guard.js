@@ -21,13 +21,13 @@
  * a story that cannot boot must not pass by silence.
  */
 
-const { chromium } = require('playwright');
+const {chromium} = require('playwright');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 
 const args = process.argv.slice(2);
-const getArg = (name) => {
+const getArg = name => {
   const idx = args.indexOf(`--${name}`);
   return idx !== -1 ? args[idx + 1] : null;
 };
@@ -39,12 +39,161 @@ const port = Number(getArg('port') || 6010);
 // whole cost of promoting its play function into required CI.
 const TARGETS = [
   {
+    component: 'Selector',
+    story: 'core-selector--size-variants',
+    guards:
+      'compact and wide-spacing triggers match their size tokens, large label text stays unclipped, and multiline values grow by one text row',
+  },
+  {
+    component: 'MultiSelector',
+    story: 'core-multiselector--sizes',
+    guards: 'compact trigger variants match their size tokens',
+  },
+  {
+    component: 'Code',
+    story: 'core-code--colors',
+    guards:
+      'primary, secondary, and inherited text colors remain distinct and inheritance follows the surrounding text',
+  },
+  {
+    component: 'Code',
+    story: 'core-code--long-inline-content',
+    guards:
+      'an unbroken inline identifier wraps without overflowing its constrained prose container',
+  },
+  {
+    component: 'Code',
+    story: 'core-code--text-sizes',
+    guards:
+      'size="inherit" matches each surrounding font size and line height across distinct text roles',
+  },
+  {
     component: 'ChartTooltip',
     story: 'charts-chrome-tooltip--modal-layering',
     guards:
       'ChartTooltip stays continuously open across content-bearing points in ' +
       'nested Theme/MediaTheme scope above a native modal with nonzero geometry',
   },
+  {
+    component: 'ChatToolCalls',
+    story: 'core-chattoolcalls--focused-grouped-detail',
+    guards:
+      'grouped detail focus ring remains visible inside the animated clip boundary',
+  },
+  {
+    component: 'ChatToolCalls',
+    story: 'core-chattoolcalls--narrow',
+    guards: 'long metadata stays within the 320px narrow-container fixture',
+  },
+  {
+    component: 'PowerSearch',
+    story: 'core-powersearch--near-full-token-row',
+    hasTouch: true,
+    guards:
+      'on a coarse pointer, an empty trailing combobox stays on the nearly full token row without overlapping the full Clear all hit area',
+  },
+  {
+    component: 'PowerSearch',
+    story: 'core-powersearch--near-full-token-row-rtl',
+    hasTouch: true,
+    guards:
+      'on a coarse pointer, the compact combobox and full Clear all hit area remain separate in RTL as well',
+  },
+  // spec:AST-059 — the layer runtime's viewport inset. Each story is one
+  // claim of the record; the guard is its rendered evidence, at a desktop
+  // viewport and at a phone's, because a cap that holds only where the
+  // viewport is wider than the layer is no cap. Every play also asserts the
+  // first painted frame equals the settled one (FR8).
+  ...[
+    {
+      story: 'core-layer--content-fits-beside-trigger',
+      guards:
+        'FR2/FR4: a content-sized layer with room beside its trigger stays start-aligned at its content size',
+    },
+    {
+      story: 'core-layer--content-does-not-fit-beside-trigger',
+      guards:
+        'FR2/FR4: unwrappable content flips at its size where it fits the viewport and is capped to the viewport where it does not',
+    },
+    {
+      story: 'core-layer--explicit-size-near-edge',
+      guards:
+        'FR2: a 352px end-aligned layer 45px from the edge renders at min(352px, cap), on screen',
+    },
+    {
+      story: 'core-layer--trigger-near-edge-flips',
+      guards:
+        'FR4: a 320px start-aligned layer near the end edge flips to end alignment and keeps the gutter',
+    },
+    {
+      story: 'core-layer--neither-side-fits',
+      guards:
+        'FR2/FR4: a 1000px layer on a centred trigger slides inside the gutters where it fits the viewport and is capped where it does not',
+    },
+    {
+      story: 'core-layer--trigger-near-the-bottom-flips',
+      guards:
+        'FR4: a layer placed below a trigger with no room below flips above, inside the block gutters',
+    },
+    {
+      story: 'core-layer--wide-layer-near-the-bottom-flips',
+      guards:
+        'FR2/FR4: a layer wider than the room beside its trigger, placed below with no room below, is capped to the viewport and flips above',
+    },
+    {
+      story: 'core-layer--taller-than-the-viewport',
+      guards:
+        'FR3: the layer box is capped to the viewport minus both block gutters',
+    },
+    {
+      story: 'core-layer--anchor-leaves-the-viewport',
+      guards:
+        'FR5: an open layer follows its anchor out of the viewport with its size intact and does not pin to the edge',
+    },
+    {
+      story: 'core-layer--anchor-already-off-screen',
+      guards:
+        'FR5/FR8: a layer opened with its anchor off-screen holds beside the anchor from its first frame',
+    },
+    {
+      story: 'core-layer--app-declared-inset',
+      guards:
+        'FR6: LayerProvider inset lifts the bottom gutter so a layer flips above a trigger near a declared bar',
+    },
+    {
+      story: 'core-layer--inset-changes-while-open',
+      guards:
+        'FR6/FR8: changing the provider inset moves an open layer in the same frame, with no later shift',
+    },
+    {
+      story: 'core-layer--layer-opens-as-inset-arrives',
+      guards:
+        'FR6/FR8: a layer mounted open in the same commit as its provider is above the bar in its first frame',
+    },
+    {
+      story: 'core-layer--measured-inset',
+      guards:
+        'FR6/FR8: an inset the app measures and declares before paint reaches the layer in that same frame',
+    },
+    {
+      story: 'core-layer--portaled-outside-the-provider-subtree',
+      guards:
+        'FR6: a layer portaled out of its JSX position still receives the provider inset',
+    },
+    {
+      story: 'core-layer--gutter-at-the-edge',
+      guards:
+        'FR1: a wrapping layer beside a flush trigger stops 16px short of the viewport edge',
+    },
+  ].flatMap(target => [
+    {component: 'Layer', ...target},
+    {
+      component: 'Layer (phone)',
+      ...target,
+      viewport: {width: 390, height: 844},
+      hasTouch: true,
+    },
+  ]),
   {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
@@ -64,7 +213,7 @@ const CONTENT_TYPES = {
 };
 
 function createServer(dir, listenPort) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const server = http.createServer((req, res) => {
       const filePath = path
         .join(dir, req.url === '/' ? 'index.html' : req.url)
@@ -84,8 +233,7 @@ function createServer(dir, listenPort) {
           return;
         }
         res.writeHead(200, {
-          'Content-Type':
-            CONTENT_TYPES[path.extname(resolved)] || 'text/plain',
+          'Content-Type': CONTENT_TYPES[path.extname(resolved)] || 'text/plain',
         });
         res.end(data);
       });
@@ -99,7 +247,7 @@ function createServer(dir, listenPort) {
 // is emitted only after the play function resolves; every failure mode has
 // its own event. Attached before any preview code runs so no event is missed.
 function recordStoryOutcome() {
-  window.__storyOutcome = { done: false, errors: [] };
+  window.__storyOutcome = {done: false, errors: []};
   const ERROR_EVENTS = [
     'playFunctionThrewException',
     'unhandledErrorsWhilePlaying',
@@ -107,7 +255,7 @@ function recordStoryOutcome() {
     'storyErrored',
     'storyMissing',
   ];
-  const describe = (payload) => {
+  const describe = payload => {
     if (payload == null) return '';
     if (typeof payload === 'string') return payload;
     return [payload.name, payload.title, payload.message, payload.description]
@@ -124,9 +272,9 @@ function recordStoryOutcome() {
       window.__storyOutcome.done = true;
     });
     for (const event of ERROR_EVENTS) {
-      channel.on(event, (payload) => {
+      channel.on(event, payload => {
         window.__storyOutcome.errors.push(
-          `${event}${describe(payload) ? ` — ${describe(payload)}` : ''}`
+          `${event}${describe(payload) ? ` — ${describe(payload)}` : ''}`,
         );
         window.__storyOutcome.done = true;
       });
@@ -137,14 +285,15 @@ function recordStoryOutcome() {
 
 async function probe(page, target) {
   await page.addInitScript(recordStoryOutcome);
+  const pointerQuery = target.hasTouch ? '&storyPlayPointer=coarse' : '';
   await page.goto(
-    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story`,
-    { waitUntil: 'domcontentloaded', timeout: 30000 }
+    `http://localhost:${port}/iframe.html?id=${target.story}&viewMode=story${pointerQuery}`,
+    {waitUntil: 'domcontentloaded', timeout: 30000},
   );
   await page.waitForFunction(
     () => window.__storyOutcome && window.__storyOutcome.done === true,
     null,
-    { timeout: 30000 }
+    {timeout: 30000},
   );
   return page.evaluate(() => window.__storyOutcome);
 }
@@ -161,31 +310,32 @@ async function run() {
   let failures = 0;
 
   try {
-    const context = await browser.newContext({
-      viewport: { width: 1280, height: 900 },
-    });
-
     for (const target of TARGETS) {
+      const context = await browser.newContext({
+        viewport: target.viewport ?? {width: 1280, height: 900},
+        hasTouch: target.hasTouch === true,
+      });
       const page = await context.newPage();
       try {
         const outcome = await probe(page, target);
         if (outcome.errors.length > 0) {
           failures++;
           console.error(
-            `✗ ${target.component} (${target.story}):\n    ${outcome.errors.join('\n    ')}`
+            `✗ ${target.component} (${target.story}):\n    ${outcome.errors.join('\n    ')}`,
           );
         } else {
           console.log(
-            `✓ ${target.component} (${target.story}): play passed — ${target.guards}`
+            `✓ ${target.component} (${target.story}): play passed — ${target.guards}`,
           );
         }
       } catch (e) {
         failures++;
         console.error(
-          `✗ ${target.component} (${target.story}): no play outcome — ${e.message}`
+          `✗ ${target.component} (${target.story}): no play outcome — ${e.message}`,
         );
       } finally {
         await page.close();
+        await context.close();
       }
     }
   } finally {
@@ -194,7 +344,9 @@ async function run() {
   }
 
   if (failures > 0) {
-    console.error(`\nFailing: ${failures} story play function(s) did not pass.`);
+    console.error(
+      `\nFailing: ${failures} story play function(s) did not pass.`,
+    );
     return 1;
   }
   console.log('\nAll story play guards passed.');
@@ -202,10 +354,10 @@ async function run() {
 }
 
 run()
-  .then((code) => {
+  .then(code => {
     process.exitCode = code;
   })
-  .catch((e) => {
+  .catch(e => {
     console.error('Story play guard failed:', e);
     process.exit(1);
   });

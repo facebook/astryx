@@ -57,6 +57,50 @@ describe('spec-only change scope', () => {
     expect(result.specChangesetConflict).toBe(true);
   });
 
+  it('allows an existing Changeset reclassification beside its governing spec', () => {
+    const result = classifyChanges([
+      {status: 'M', filename: 'docs/specs/AST-017/spec.md'},
+      {status: 'M', filename: '.changeset/existing-release.md'},
+    ]);
+    expect(result.specChangesetConflict).toBe(false);
+  });
+
+  it.each([
+    ['added', {status: 'A', filename: '.changeset/new-release.md'}],
+    ['deleted', {status: 'D', filename: '.changeset/old-release.md'}],
+    [
+      'renamed in',
+      {
+        status: 'R100',
+        filename: '.changeset/new-release.md',
+        previous_filename: 'notes/release.md',
+      },
+    ],
+    [
+      'renamed out',
+      {
+        status: 'R100',
+        filename: 'notes/release.md',
+        previous_filename: '.changeset/old-release.md',
+      },
+    ],
+    ['missing status', {filename: '.changeset/unknown-release.md'}],
+    [
+      'worktree/index status',
+      {status: 'MM', filename: '.changeset/mixed-release.md'},
+    ],
+    [
+      'rename-like M status',
+      {status: 'M087', filename: '.changeset/odd-release.md'},
+    ],
+  ])('rejects a %s Changeset beside spec records', (_label, changeset) => {
+    const result = classifyChanges([
+      {status: 'M', filename: 'docs/specs/AST-017/spec.md'},
+      changeset,
+    ]);
+    expect(result.specChangesetConflict).toBe(true);
+  });
+
   it('does not let an unrelated file hide a spec-only Changeset', () => {
     const result = classifyChanges([
       {filename: 'docs/families/input-fields.md'},
@@ -174,8 +218,12 @@ describe('spec-only change scope', () => {
         'A\tdocs/specs/AST-001-x/spec.md\nR100\told.ts\tpackages/core/src/X/X.spec.md\n',
       ),
     ).toEqual([
-      {filename: 'docs/specs/AST-001-x/spec.md'},
-      {filename: 'packages/core/src/X/X.spec.md', previous_filename: 'old.ts'},
+      {filename: 'docs/specs/AST-001-x/spec.md', status: 'A'},
+      {
+        filename: 'packages/core/src/X/X.spec.md',
+        previous_filename: 'old.ts',
+        status: 'R100',
+      },
     ]);
   });
 });

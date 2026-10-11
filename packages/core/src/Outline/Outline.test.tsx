@@ -357,6 +357,21 @@ describe('Outline keyboard navigation', () => {
     ]);
   });
 
+  it('uses actual DOM focus rather than aria-activedescendant', () => {
+    render(<Outline items={items} activeId="intro" />);
+    const nav = screen.getByRole('navigation', {name: 'Table of contents'});
+    const links = screen.getAllByRole('link');
+
+    act(() => {
+      links[2].focus();
+    });
+
+    expect(links[2]).toHaveFocus();
+    expect(nav).not.toHaveAttribute('aria-activedescendant');
+    expect(links[0]).toHaveAttribute('aria-current', 'location');
+    expect(links[2]).not.toHaveAttribute('aria-current');
+  });
+
   it('seats the tab stop on the active heading, not always the first', () => {
     // WAI-ARIA roving tabindex: the single tab stop belongs on the *current*
     // item. Tabbing into a TOC while reading section 3 must land on section 3,

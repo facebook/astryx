@@ -58,6 +58,9 @@ import {
   type ScrollbarGutterHold,
 } from '../hooks/scrollbarGutter';
 import {mergeProps, composeEventHandlers} from '../utils';
+import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
+import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
@@ -76,7 +79,8 @@ const styles = stylex.create({
     position: 'fixed',
     margin: 0,
     padding: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     maxWidth: 'none',
     maxHeight: 'none',
     // Full viewport overlay — the dialog itself is the full-screen container
@@ -95,8 +99,10 @@ const styles = stylex.create({
     // depended on it being a scroll container.
     overflow: 'clip',
     overscrollBehavior: 'contain',
-    // Prevent touch gestures (pull-to-refresh, background scroll) passing through
-    touchAction: 'none',
+    // Stop pans passing through (pull-to-refresh, background scroll), but
+    // leave pinch to the browser: the open nav covers the whole viewport, and
+    // pinch-zoom is how phone readers resize text (WCAG 1.4.4).
+    touchAction: 'pinch-zoom',
     outline: 'none',
     // Native <dialog> uses display:none when closed.
     // Open state applied via isOpen prop to avoid :where([open]) specificity issues.
@@ -227,9 +233,9 @@ const styles = stylex.create({
     overflowY: 'auto',
     overflowX: 'hidden',
     overscrollBehavior: 'contain',
-    // Re-enable vertical touch scrolling inside the drawer content
-    // (dialog root has touch-action: none to block pull-to-refresh)
-    touchAction: 'pan-y',
+    // Re-enable vertical touch scrolling inside the drawer content (the
+    // dialog root allows only pinch-zoom, to block pull-to-refresh)
+    touchAction: 'pan-y pinch-zoom',
     paddingInline: spacingVars['--spacing-2'],
     paddingBlock: spacingVars['--spacing-2'],
   },
@@ -589,6 +595,8 @@ export function MobileNav({
       {...mergeProps(
         themeProps('mobile-nav', {side: resolvedSide}),
         stylex.props(
+          layerTextReset.reset,
+          layerStructureReset.reset,
           styles.dialog,
           overlayPaddingReset.reset,
           isOpen && styles.open,
@@ -610,39 +618,41 @@ export function MobileNav({
       onClick={composeEventHandlers(onClickProp, handleDialogClick)}
       onCancel={handleCancel}>
       <LayerDepthProvider>
-        {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
-        <div
-          tabIndex={-1}
-          {...stylex.props(
-            styles.drawer,
-            dynamicStyles.width(width),
-            isStart && styles.drawerStart,
-            isStart && isOpen && styles.drawerStartOpen,
-            !isStart && styles.drawerEnd,
-            !isStart && isOpen && styles.drawerEndOpen,
-          )}>
-          {/* Header — content + close button */}
+        <LayerContentBoundary>
+          {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
           <div
-            {...stylex.props(styles.header, !header && styles.headerNoTitle)}>
-            {typeof header === 'string' ? (
-              <Heading level={2} xstyle={styles.headerText}>
-                {header}
-              </Heading>
-            ) : (
-              (header ?? null)
-            )}
-            <Button
-              variant="ghost"
-              label={t('@astryx.mobileNav.closeNavigation')}
-              icon={<Icon icon="close" color="inherit" />}
-              onClick={() => onOpenChange(false)}
-              isIconOnly
-            />
-          </div>
+            tabIndex={-1}
+            {...stylex.props(
+              styles.drawer,
+              dynamicStyles.width(width),
+              isStart && styles.drawerStart,
+              isStart && isOpen && styles.drawerStartOpen,
+              !isStart && styles.drawerEnd,
+              !isStart && isOpen && styles.drawerEndOpen,
+            )}>
+            {/* Header — content + close button */}
+            <div
+              {...stylex.props(styles.header, !header && styles.headerNoTitle)}>
+              {typeof header === 'string' ? (
+                <Heading level={2} xstyle={styles.headerText}>
+                  {header}
+                </Heading>
+              ) : (
+                (header ?? null)
+              )}
+              <Button
+                variant="ghost"
+                label={t('@astryx.mobileNav.closeNavigation')}
+                icon={<Icon icon="close" color="inherit" />}
+                onClick={() => onOpenChange(false)}
+                isIconOnly
+              />
+            </div>
 
-          {/* Scrollable content */}
-          <div {...stylex.props(styles.content)}>{children}</div>
-        </div>
+            {/* Scrollable content */}
+            <div {...stylex.props(styles.content)}>{children}</div>
+          </div>
+        </LayerContentBoundary>
       </LayerDepthProvider>
     </dialog>
   );

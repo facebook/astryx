@@ -10,19 +10,14 @@ import yaml from 'yaml';
 
 import {
   PR_ANALYSIS_MARKER,
-  createPublishedDeploymentResult,
-  createUnavailableDeploymentResult,
   reconcileEarlyPreviewComment,
   reconcilePrComment,
   resolveWorkflowRunPullRequest,
   validateAnalysisMetadata,
-  writeDeploymentResult,
 } from './pr-preview.mjs';
 
 const HEAD = 'a'.repeat(40);
 const BASE = 'b'.repeat(40);
-const PAGES = 'c'.repeat(40);
-const INDEX = 'd'.repeat(64);
 const VERCEL_ORIGIN = 'https://astryx-3s4xgbci4-fbopensource.vercel.app';
 const ROOT = path.resolve(import.meta.dirname, '../../..');
 const REQUIRE = createRequire(import.meta.url);
@@ -156,14 +151,13 @@ function githubFixture({value = identity(), comments = []} = {}) {
   return {github, state};
 }
 
-function fixture(value = identity(), {analysis = true, deployment} = {}) {
+function fixture(value = identity(), {analysis = true} = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pr-preview-'));
   roots.push(root);
   const paths = {
     analysis: path.join(root, 'analysis.json'),
     metadata: path.join(root, 'pr-meta.json'),
     a11y: path.join(root, 'a11y.json'),
-    deployment: path.join(root, 'preview-deployment.json'),
     visual: path.join(root, 'missing-visual.json'),
   };
   if (analysis) {
@@ -194,21 +188,11 @@ function fixture(value = identity(), {analysis = true, deployment} = {}) {
     paths.a11y,
     '{"components":{},"summary":{"componentsAudited":0,"totalViolations":0}}',
   );
-  if (deployment) writeDeploymentResult(paths.deployment, deployment);
   return paths;
-}
-
-function published(value, available = ['sandbox']) {
-  return createPublishedDeploymentResult(value, {
-    storybookIndexSha256: available.includes('storybook') ? INDEX : null,
-    sandboxIndexSha256: available.includes('sandbox') ? INDEX : null,
-    pagesCommit: PAGES,
-  });
 }
 
 async function reconcile({
   value = identity(),
-  deployment,
   previewAvailable = false,
   analysis = true,
   comments = [],
@@ -217,7 +201,7 @@ async function reconcile({
   fallbackMessage,
   execute,
 } = {}) {
-  const paths = fixture(value, {analysis, deployment});
+  const paths = fixture(value, {analysis});
   const {github, state} = githubFixture({
     value: githubFixtureValue,
     comments,
@@ -234,7 +218,6 @@ async function reconcile({
     analysisPath: paths.analysis,
     metadataPath: paths.metadata,
     a11yPath: paths.a11y,
-    deploymentResultPath: paths.deployment,
     lookupPreview: async () => (previewAvailable ? VERCEL_ORIGIN : null),
     probePreview: async () => true,
     visualPath: paths.visual,
@@ -402,7 +385,6 @@ describe('trusted PR preview identity', () => {
     expect(writeCapableJobs).toEqual([
       'preview-comment',
       'spec-only-reconcile',
-      'deploy-preview',
       'comment',
     ]);
     for (const name of writeCapableJobs) {
@@ -504,42 +486,23 @@ describe('analysis metadata compatibility', () => {
 
 describe('PR comment preview reconciliation', () => {
   it.each([
-    ['neither ready', undefined, false],
-    ['exact-head Vercel ready', undefined, true],
-    ['Pages Sandbox only is not proof', published(identity()), false],
-    ['Vercel ready with independent Pages result', published(identity()), true],
-    [
-      'obsolete Pages Storybook proof',
-      published(identity(), ['storybook']),
-      false,
-    ],
-    [
-      'Pages failure with ready Vercel',
-      createUnavailableDeploymentResult(identity(), 'publisher-failed'),
-      true,
-    ],
-  ])(
-    'shows both or neither exact-head links: %s',
-    async (_label, deployment, ready) => {
-      const {result} = await reconcile({deployment, previewAvailable: ready});
-      expect(result.body.includes('View Storybook for this PR')).toBe(ready);
-      expect(result.body.includes('View Sandbox for this PR')).toBe(ready);
-      expect(result.body.includes('> **Preview availability:**')).toBe(!ready);
-      if (ready) {
-        expect(result.body).toContain(`${VERCEL_ORIGIN}/storybook/`);
-        expect(result.body).toContain(`${VERCEL_ORIGIN}/sandbox/`);
-      }
-      expect(result.body).not.toContain(
-        'https://facebook.github.io/astryx/pr/5697/sandbox/',
-      );
-    },
-  );
+    ['not ready', false],
+    ['exact-head Vercel ready', true],
+  ])('shows both or neither exact-head links: %s', async (_label, ready) => {
+    const {result} = await reconcile({previewAvailable: ready});
+    expect(result.body.includes('View Storybook for this PR')).toBe(ready);
+    expect(result.body.includes('View Sandbox for this PR')).toBe(ready);
+    expect(result.body.includes('> **Preview availability:**')).toBe(!ready);
+    if (ready) {
+      expect(result.body).toContain(`${VERCEL_ORIGIN}/storybook/`);
+      expect(result.body).toContain(`${VERCEL_ORIGIN}/sandbox/`);
+    }
+    expect(result.body).not.toContain('facebook.github.io/astryx/pr/');
+  });
 
   it('keeps current trustworthy analysis when source CI fails', async () => {
     const value = identity({sourceConclusion: 'failure'});
-    const deployment = {status: 'unavailable', reason: 'source-failed'};
-
-    const {result} = await reconcile({value, deployment});
+    const {result} = await reconcile({value});
 
     expect(result.body).toContain('Modified Components');
     expect(result.body).toContain('Card');
@@ -620,7 +583,6 @@ describe('PR comment preview reconciliation', () => {
     };
 
     const {result, core} = await reconcile({
-      deployment: published(identity()),
       comments: [stale],
       execute: () => {
         throw new Error('malformed analysis');
@@ -640,7 +602,7 @@ describe('PR comment preview reconciliation', () => {
   it('updates one same-PR comment across repeated source attempts', async () => {
     const first = identity();
     const harness = githubFixture({value: first});
-    const firstPaths = fixture(first, {deployment: published(first)});
+    const firstPaths = fixture(first);
     const core = {info: vi.fn(), warning: vi.fn()};
     const common = {
       github: harness.github,
@@ -659,7 +621,6 @@ describe('PR comment preview reconciliation', () => {
       analysisPath: firstPaths.analysis,
       metadataPath: firstPaths.metadata,
       a11yPath: firstPaths.a11y,
-      deploymentResultPath: firstPaths.deployment,
     });
 
     const second = identity({sourceRunAttempt: 2});
@@ -667,16 +628,13 @@ describe('PR comment preview reconciliation', () => {
       data: sourceRun(second),
     });
     harness.github.rest.pulls.get.mockResolvedValue({data: pull(second)});
-    const secondPaths = fixture(second, {
-      deployment: published(second, ['storybook']),
-    });
+    const secondPaths = fixture(second, {});
     await reconcilePrComment({
       ...common,
       expectedIdentity: second,
       analysisPath: secondPaths.analysis,
       metadataPath: secondPaths.metadata,
       a11yPath: secondPaths.a11y,
-      deploymentResultPath: secondPaths.deployment,
       visualPath: secondPaths.visual,
     });
 
@@ -692,24 +650,10 @@ describe('PR comment preview reconciliation', () => {
     expect(harness.state.listedIssues).toEqual([5697, 5697]);
   });
 
-  it.each([
-    ['wrong PR', {prNumber: 9999}],
-    ['wrong head', {headSha: 'e'.repeat(40)}],
-    ['wrong repository', {headRepository: 'someone/astryx'}],
-  ])(
-    'never treats an old Pages result with the %s as Vercel preview proof',
-    async (_label, overrides) => {
-      const deployment = published(identity(overrides));
-      const {result} = await reconcile({deployment, previewAvailable: false});
-      expect(result.body).not.toContain('View Storybook for this PR');
-      expect(result.body).not.toContain('View Sandbox for this PR');
-    },
-  );
-
   it('does not mutate any PR after the source identity becomes stale', async () => {
     const expected = identity();
     const current = identity({headSha: 'f'.repeat(40)});
-    const paths = fixture(expected, {deployment: published(expected)});
+    const paths = fixture(expected);
     const {github, state} = githubFixture({value: current});
 
     await expect(
@@ -724,7 +668,6 @@ describe('PR comment preview reconciliation', () => {
         analysisPath: paths.analysis,
         metadataPath: paths.metadata,
         a11yPath: paths.a11y,
-        deploymentResultPath: paths.deployment,
         visualPath: paths.visual,
       }),
     ).rejects.toThrow(/headSha does not match/);
@@ -764,7 +707,7 @@ describe('PR comment preview reconciliation', () => {
 
   it('does not emit links for dispatch without a PR-backed source run', async () => {
     const value = identity();
-    const paths = fixture(value, {deployment: published(value)});
+    const paths = fixture(value);
     const {github, state} = githubFixture({value});
     github.rest.actions.getWorkflowRun.mockResolvedValue({
       data: {...sourceRun(value), event: 'workflow_dispatch'},
@@ -782,7 +725,6 @@ describe('PR comment preview reconciliation', () => {
         analysisPath: paths.analysis,
         metadataPath: paths.metadata,
         a11yPath: paths.a11y,
-        deploymentResultPath: paths.deployment,
         visualPath: paths.visual,
       }),
     ).rejects.toThrow(/not backed by a pull request/);
@@ -790,11 +732,10 @@ describe('PR comment preview reconciliation', () => {
     expect(state.updated).toHaveLength(0);
   });
 
-  it('renders the current successful path from exact publisher proof', async () => {
+  it('renders the current successful path from exact Vercel proof', async () => {
     const value = identity();
     const {result, state} = await reconcile({
       value,
-      deployment: published(value),
       previewAvailable: true,
     });
 
@@ -808,7 +749,7 @@ describe('PR comment preview reconciliation', () => {
 
   it('never advertises either link when one preview route probe fails', async () => {
     const value = identity();
-    const paths = fixture(value, {deployment: published(value)});
+    const paths = fixture(value);
     const {github, state} = githubFixture({value});
     const context = {
       repo: {owner: 'facebook', repo: 'astryx'},
@@ -886,7 +827,7 @@ describe('PR comment preview reconciliation', () => {
 
   it('posts preview links before CI and later enriches the same report', async () => {
     const value = identity();
-    const paths = fixture(value, {deployment: published(value)});
+    const paths = fixture(value);
     const {github, state} = githubFixture({value});
     const early = () =>
       reconcileEarlyPreviewComment({
@@ -917,7 +858,6 @@ describe('PR comment preview reconciliation', () => {
       analysisPath: paths.analysis,
       metadataPath: paths.metadata,
       a11yPath: paths.a11y,
-      deploymentResultPath: paths.deployment,
       visualPath: paths.visual,
       lookupPreview: async () => VERCEL_ORIGIN,
       probePreview: async () => true,
@@ -933,7 +873,6 @@ describe('PR comment preview reconciliation', () => {
     const value = identity();
     const {result, github, state} = await reconcile({
       value,
-      deployment: published(value),
       previewAvailable: false,
     });
     expect(result.body).toContain('Modified Components');
@@ -995,7 +934,6 @@ describe('PR comment preview reconciliation', () => {
     const value = identity();
     const {github, state} = await reconcile({
       value,
-      deployment: published(value),
       previewAvailable: true,
     });
     const prior = state.comments[0].body;

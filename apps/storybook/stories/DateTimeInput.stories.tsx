@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {DateTimeInput} from '@astryxdesign/core/DateTimeInput';
 import type {ISODateTimeString} from '@astryxdesign/core/DateTimeInput';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
@@ -74,11 +75,23 @@ const meta: Meta<typeof DateTimeInput> = {
       control: 'boolean',
       description: 'Whether to show a clear button',
     },
+    presentation: {
+      control: 'select',
+      options: [
+        'popover',
+        'bottom-sheet',
+        'native',
+        'adaptive-bottom-sheet',
+        'adaptive-native',
+      ],
+      description:
+        'Which surfaces draw the pickers (spec:AST-043); nativePicker is deprecated',
+    },
     nativePicker: {
       control: 'radio',
       options: ['touch', 'always', 'never'],
       description:
-        "Date and time picker surfaces: native browser/OS controls on touch by default, native wherever compatible, or Astryx's surfaces everywhere",
+        "Deprecated — use presentation ('touch' → 'adaptive-native', 'always' → 'native', 'never' → 'adaptive-bottom-sheet'); presentation wins when both are set",
     },
     numberOfMonths: {
       control: 'radio',
@@ -146,25 +159,25 @@ export const NativePickerModes: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
         <DateTimeInput
-          label="nativePicker='touch' (default)"
+          label="presentation='adaptive-native' (default)"
           description="Native date and compatible time controls on a coarse primary pointer"
           value={value}
           onChange={setValue}
-          nativePicker="touch"
+          presentation="adaptive-native"
         />
         <DateTimeInput
-          label="nativePicker='always'"
+          label="presentation='native'"
           description="Native date and compatible time controls on every pointer type"
           value={value}
           onChange={setValue}
-          nativePicker="always"
+          presentation="native"
         />
         <DateTimeInput
-          label="nativePicker='never'"
+          label="presentation='adaptive-bottom-sheet'"
           description="Astryx bottom sheet on coarse pointers; calendar popover on fine pointers"
           value={value}
           onChange={setValue}
-          nativePicker="never"
+          presentation="adaptive-bottom-sheet"
         />
       </div>
     );
@@ -221,6 +234,43 @@ export const WithClearButton: Story = {
   args: {
     label: 'Start time',
     hasClear: true,
+  },
+};
+
+/**
+ * Selects a date, clears the controlled value, and reopens the calendar. The
+ * final frame is the regression endpoint: an empty field with no selected day.
+ */
+export const ClearedCalendarSelection: Story = {
+  tags: ['visual-baseline'],
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      '2026-03-15T09:00' as ISODateTimeString,
+    );
+    return <DateTimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Meeting time',
+    hasClear: true,
+    min: '2026-03-01T00:00' as ISODateTimeString,
+    max: '2026-03-31T23:59' as ISODateTimeString,
+    presentation: 'popover',
+  },
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.click(canvas.getByRole('button', {name: 'Open calendar'}));
+    await userEvent.click(canvas.getByRole('button', {name: /March 20, 2026/}));
+    await userEvent.click(
+      canvas.getByRole('button', {name: 'Clear Meeting time'}),
+    );
+    await userEvent.click(canvas.getByRole('button', {name: 'Open calendar'}));
+
+    await waitFor(() => {
+      expect(
+        canvas.queryAllByRole('gridcell', {selected: true, hidden: true}),
+      ).toHaveLength(0);
+    });
   },
 };
 
@@ -405,7 +455,7 @@ export const TwoMonthCalendar: Story = {
   args: {
     label: 'Travel departure',
     numberOfMonths: 2,
-    nativePicker: 'never',
+    presentation: 'adaptive-bottom-sheet',
   },
 };
 

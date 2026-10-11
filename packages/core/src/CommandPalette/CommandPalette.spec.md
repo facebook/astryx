@@ -18,6 +18,7 @@ verified_by:
     packages/core/src/CommandPalette/CommandPaletteItem.test.tsx,
     packages/core/src/CommandPalette/CommandPaletteGroup.test.tsx,
     packages/core/src/CommandPalette/CommandPaletteFooter.test.tsx,
+    packages/core/src/CommandPalette/__tests__/CommandPaletteFooter.a11y.chromium.spec.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
@@ -78,12 +79,12 @@ documented in `CommandPalette.doc.mjs` and its subcomponent docs.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                 | Basis                             | Draft review state                                                        |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------- |
-| FR1 | The current default render places Input and Footer around a List inside a delegated Dialog; the List contains Items, optional Groups and Group headings, or Empty according to the current results. | Current source, docs, and tests   | Verified current behavior; no new behavior decided                        |
-| FR2 | Input, List, Item, Group, Group heading, Empty, and Footer carry the seven current `command-palette-*` targets documented below; no `command-palette` root target exists.                           | Current source and target docs    | Verified current inventory; focused placement coverage is partial         |
-| FR3 | The default Input delegates its Search glyph to Icon and pending Loading spinner to Spinner; the default Footer delegates keyboard shortcuts to Kbd; the containing surface delegates to Dialog.    | Current source and component docs | Verified current composition; no ownership change                         |
-| FR4 | Query field is a distinct native text field inside Input and currently has no separate public target. The `command-palette-input` target is on the surrounding search region, not the native field. | Current source and target docs    | Verified current reachability; long-term theming intent remains unsettled |
+| ID  | Candidate invariant                                                                                                                                                                                 | Basis                             | Draft review state                                                                    |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------- |
+| FR1 | The current default render places Input and Footer around a List inside a delegated Dialog; the List contains Items, optional Groups and Group headings, or Empty according to the current results. | Current source, docs, and tests   | Verified current behavior; no new behavior decided                                    |
+| FR2 | Input, List, Item, Group, Group heading, Empty, and Footer carry the seven current `command-palette-*` targets documented below; no `command-palette` root target exists.                           | Current source and target docs    | Verified current inventory; focused placement covers Group, Group heading, and Footer |
+| FR3 | The default Input delegates its Search glyph to Icon and pending Loading spinner to Spinner; the default Footer delegates keyboard shortcuts to Kbd; the containing surface delegates to Dialog.    | Current source and component docs | Footer-to-Kbd composition is focused-test verified; no ownership change               |
+| FR4 | Query field is a distinct native text field inside Input and currently has no separate public target. The `command-palette-input` target is on the surrounding search region, not the native field. | Current source and target docs    | Verified current reachability; long-term theming intent remains unsettled             |
 
 ### Allowed variation
 
@@ -191,18 +192,18 @@ current audit gap and does not authorize a new target.
 
 ## Verification map
 
-| Contract            | Verification                                                                    | Representative states                                  | Mutation or failure expectation                                                                                                                                                                                                                     | Audit section                  |
-| ------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| FR1                 | CommandPalette root and subcomponent render suites plus source inspection       | Default, grouped, empty, pending, and replaced slots   | Removing the asserted Dialog, Query field, List, Item, Group, Group heading, Empty, or Footer content fails existing role, content, or slot assertions; Search glyph, Loading spinner, and Keyboard shortcut presence remain source-inspected only. | `audit:CommandPalette/anatomy` |
-| FR2                 | Source inspection, `themingTargets.test.ts`, and `CommandPaletteGroup.test.tsx` | Seven local targets; Group and Group heading placement | Removing a current target fails the global inventory; moving Group or Group heading fails focused class assertions.                                                                                                                                 | `audit:CommandPalette/theming` |
-| FR3                 | Source inspection plus Dialog, Icon, Spinner, and Kbd public target metadata    | Default surface, Input visuals, and Footer shortcuts   | Existing focused tests do not assert the composed Icon, Spinner, or Kbd instances; changing delegated ownership requires this map and the delegated component metadata to change.                                                                   | `audit:CommandPalette/theming` |
-| FR4                 | `CommandPaletteInput.test.tsx` and source inspection                            | Native query field with idle and pending Input         | Removing the field fails combobox tests; adding a field target requires an explicit map update.                                                                                                                                                     | `audit:CommandPalette/anatomy` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                   | Canonical anatomy and seven current local targets      | Missing, extra, prefixed, stale, or alias-backed mappings fail repository validation.                                                                                                                                                               | `audit:CommandPalette/theming` |
+| Contract            | Verification                                                                       | Representative states                                           | Mutation or failure expectation                                                                                                                                                                                                            | Audit section                  |
+| ------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| FR1                 | CommandPalette root and subcomponent render suites plus browser evidence           | Default, grouped, empty, pending, and replaced slots            | Removing the asserted Dialog, Query field, List, Item, Group, Group heading, Empty, or Footer content fails role, content, slot, or exact-head browser assertions; Search glyph and Loading spinner presence remain source-inspected only. | `audit:CommandPalette/anatomy` |
+| FR2                 | `themingTargets.test.ts`, focused subcomponent suites, and browser evidence        | Seven local targets; Group, Group heading, and Footer placement | Removing a current target fails the global inventory; moving Group, Group heading, or Footer fails focused class assertions and the Footer browser receipt.                                                                                | `audit:CommandPalette/theming` |
+| FR3                 | Focused Footer suite and browser evidence plus delegated component target metadata | Default surface, Input visuals, and Footer shortcuts            | Removing Footer's four Kbd shortcuts or either stable target fails focused unit and browser assertions; Icon and Spinner composition remain source-inspected.                                                                              | `audit:CommandPalette/theming` |
+| FR4                 | `CommandPaletteInput.test.tsx` and source inspection                               | Native query field with idle and pending Input                  | Removing the field fails combobox tests; adding a field target requires an explicit map update.                                                                                                                                            | `audit:CommandPalette/anatomy` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                      | Canonical anatomy and seven current local targets               | Missing, extra, prefixed, stale, or alias-backed mappings fail repository validation.                                                                                                                                                      | `audit:CommandPalette/theming` |
 
-Focused target-placement assertions currently cover Group and Group heading.
-Input, List, Item, Empty, and Footer placement rely on source inspection plus the
-global target inventory. Existing tests assert default Footer text and pending
-announcements, but do not assert that Icon, Spinner, or Kbd renders.
+Focused target-placement assertions cover Group, Group heading, and Footer.
+Input, List, Item, and Empty placement rely on source inspection plus the global
+target inventory. Focused Footer tests pin all four default Kbd instances; Icon
+and Spinner composition remain source-inspected.
 
 ## Decision log
 
@@ -213,9 +214,9 @@ layer, API, or theming decision.
 
 - **OQ1 — Should Query field gain a stable public theming target?** (`human-api`)
   Its current lack of direct reachability is an audit gap, not settled intent.
-- **OQ2 — Should focused tests pin the default Search glyph, pending Loading
-  spinner, and default Footer Keyboard shortcuts?** (`checkable`) Their presence
-  is currently source-inspected rather than asserted.
+- **OQ2 — Should focused tests pin the default Search glyph and pending Loading
+  spinner?** (`checkable`) Their presence is currently source-inspected rather
+  than asserted.
 
 ## Content boundary
 

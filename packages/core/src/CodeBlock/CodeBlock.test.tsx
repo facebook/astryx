@@ -9,8 +9,11 @@
  * SYNC: When CodeBlock.tsx changes, update tests to match new behavior
  */
 
+import {createRef} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {CodeBlock} from './CodeBlock';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {dracula} from '../theme/syntax';
@@ -33,6 +36,10 @@ const LONG_CODE = Array.from(
   (_, i) => `const line${i} = ${i};`,
 ).join('\n');
 
+const rootContractStyles = stylex.create({
+  root: {marginBlockStart: '1px'},
+});
+
 describe('CodeBlock', () => {
   beforeEach(() => {
     // jsdom does not implement the async Clipboard API.
@@ -50,6 +57,30 @@ describe('CodeBlock', () => {
     expect(screen.getByText(/const/)).toBeInTheDocument();
   });
 
+  it('forwards the public ref and composes supported root props', () => {
+    const ref = createRef<HTMLPreElement>();
+    render(
+      <CodeBlock
+        ref={ref}
+        code="const x = 1;"
+        data-testid="code-block-root"
+        aria-describedby="code-help"
+        className="consumer-code-block"
+        style={{opacity: 0.75}}
+        xstyle={rootContractStyles.root}
+      />,
+    );
+
+    const root = screen.getByTestId('code-block-root');
+    const xstyleClass = stylex.props(rootContractStyles.root).className;
+    expect(ref.current).toBe(root);
+    expect(root.tagName).toBe('PRE');
+    expect(root).toHaveAttribute('aria-describedby', 'code-help');
+    expect(xstyleClass).toBeTruthy();
+    expect(root).toHaveClass('consumer-code-block', xstyleClass!);
+    expect(root).toHaveStyle({opacity: '0.75'});
+  });
+
   it('makes the scroll container keyboard-focusable', () => {
     render(<CodeBlock code="const x = 1;" language="javascript" />);
     const region = screen.getByRole('group');
@@ -64,6 +95,30 @@ describe('CodeBlock', () => {
     expect(region).toHaveAttribute('aria-label', 'Code');
   });
 
+  it.each(['', '   '])(
+    'names a collapsible header when the visible title is %p',
+    title => {
+      render(
+        <CodeBlock
+          code={LONG_CODE}
+          language="plaintext"
+          title={title}
+          isCollapsible
+        />,
+      );
+
+      const header = screen
+        .getAllByRole('button')
+        .find(element => element.hasAttribute('aria-expanded'));
+      expect(header).toHaveAccessibleName('Code');
+    },
+  );
+
+  it('applies a zero-pixel max height', () => {
+    render(<CodeBlock code="hello" maxHeight={0} />);
+    expect(screen.getByRole('group')).toHaveStyle({maxHeight: '0px'});
+  });
+
   it('copies code when the copy button is clicked', () => {
     render(<CodeBlock code="const x = 1;" language="javascript" />);
     const copyButton = screen.getByRole('button', {name: 'Copy code'});
@@ -76,7 +131,7 @@ describe('CodeBlock', () => {
     const copyButton = screen.getByRole('button', {name: 'Copy code'});
     // Theme seam: a design system can restyle the copy control via this class
     // without turning the button off and re-implementing it.
-    expect(copyButton).toHaveClass('astryx-codeblock-copy-button');
+    expect(copyButton).toHaveClass('astryx-code-block-copy-button');
     // The button carries a visible "Copy code" hover/focus hint (tooltip),
     // wired through aria-describedby — a bare <button> could not.
     expect(copyButton).toHaveAttribute('aria-describedby');
@@ -215,6 +270,44 @@ describe('CodeBlock', () => {
     expect(header).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('expands when rerendering removes the collapse control', () => {
+    const {rerender} = render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+    fireEvent.click(header);
+    expect(screen.getByRole('group').closest('[inert]')).not.toBeNull();
+
+    rerender(<CodeBlock code={LONG_CODE} language="plaintext" isCollapsible />);
+    expect(
+      screen
+        .queryAllByRole('button')
+        .find(el => el.hasAttribute('aria-expanded')),
+    ).toBeUndefined();
+    expect(screen.getByRole('group').closest('[inert]')).toBeNull();
+
+    rerender(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    expect(
+      screen
+        .getAllByRole('button')
+        .find(el => el.hasAttribute('aria-expanded')),
+    ).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('links the collapsible header to its code region via aria-controls', () => {
     render(
       <CodeBlock
@@ -337,7 +430,7 @@ describe('CodeBlock', () => {
   });
 
   describe('header theming targets', () => {
-    it('puts astryx-codeblock-header on the header row when a header shows', () => {
+    it('puts astryx-code-block-header on the header row when a header shows', () => {
       const {container} = render(
         <CodeBlock
           code="const x = 1;"
@@ -346,11 +439,11 @@ describe('CodeBlock', () => {
         />,
       );
       expect(
-        container.querySelector('.astryx-codeblock-header'),
+        container.querySelector('.astryx-code-block-header'),
       ).not.toBeNull();
     });
 
-    it('puts astryx-codeblock-title on the header title element', () => {
+    it('puts astryx-code-block-title on the header title element', () => {
       const {container} = render(
         <CodeBlock
           code="const x = 1;"
@@ -358,7 +451,7 @@ describe('CodeBlock', () => {
           title="example.js"
         />,
       );
-      const titleEl = container.querySelector('.astryx-codeblock-title');
+      const titleEl = container.querySelector('.astryx-code-block-title');
       expect(titleEl).not.toBeNull();
       // The language label + title text live in this element.
       expect(titleEl).toHaveTextContent('example.js');
@@ -370,8 +463,31 @@ describe('CodeBlock', () => {
       const {container} = render(
         <CodeBlock code="const x = 1;" language="plaintext" />,
       );
+      expect(container.querySelector('.astryx-code-block-header')).toBeNull();
+      expect(container.querySelector('.astryx-code-block-title')).toBeNull();
+    });
+
+    it('keeps copy available when a known language label is hidden', async () => {
+      const {container} = render(
+        <CodeBlock
+          code="const x = 1;"
+          language="javascript"
+          hasLanguageLabel={false}
+        />,
+      );
+
       expect(container.querySelector('.astryx-codeblock-header')).toBeNull();
       expect(container.querySelector('.astryx-codeblock-title')).toBeNull();
+      expect(screen.getByRole('group')).toHaveAttribute('aria-label', 'Code');
+
+      const copyButton = screen.getByRole('button', {name: 'Copy code'});
+      expect(copyButton.parentElement).toBe(container.querySelector('pre'));
+      await act(async () => {
+        fireEvent.click(copyButton);
+      });
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        'const x = 1;',
+      );
     });
 
     it('exposes the header and title as themeable defineTheme targets', () => {
@@ -382,23 +498,44 @@ describe('CodeBlock', () => {
       const theme = defineTheme({
         name: 'codeblock-header-target-test',
         components: {
-          'codeblock-header': {
+          'code-block-header': {
             base: {paddingBlock: 'var(--spacing-1)'},
           },
-          'codeblock-title': {
+          'code-block-title': {
             base: {fontSize: 'var(--text-body-size)'},
           },
         },
       });
       const css = generateThemeTestCSS(theme);
-      expect(css).toContain('.astryx-codeblock-header');
-      expect(css).toContain('.astryx-codeblock-title');
+      expect(css).toContain('.astryx-code-block-header');
+      expect(css).toContain('.astryx-code-block-title');
     });
+  });
+
+  it('toggles collapse with Enter and Space', async () => {
+    const user = userEvent.setup();
+    render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+
+    header.focus();
+    await user.keyboard('{Enter}');
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+    await user.keyboard(' ');
+    expect(header).toHaveAttribute('aria-expanded', 'true');
   });
 });
 
 describe('CodeBlock theme target names', () => {
-  it('renders the deprecated classes beside the current ones', () => {
+  it('renders only the canonical target classes', () => {
     const {container} = render(
       <CodeBlock
         code="const x = 1;"
@@ -407,17 +544,21 @@ describe('CodeBlock theme target names', () => {
       />,
     );
     expect(container.querySelector('.astryx-code-block')).toHaveClass(
-      'astryx-codeblock',
+      'astryx-code-block',
     );
     expect(container.querySelector('.astryx-code-block-header')).toHaveClass(
-      'astryx-codeblock-header',
+      'astryx-code-block-header',
     );
     expect(container.querySelector('.astryx-code-block-title')).toHaveClass(
-      'astryx-codeblock-title',
+      'astryx-code-block-title',
     );
     expect(screen.getByRole('button', {name: 'Copy code'})).toHaveClass(
       'astryx-code-block-copy-button',
     );
+    expect(container.querySelector('.astryx-codeblock')).toBeNull();
+    expect(container.querySelector('.astryx-codeblock-header')).toBeNull();
+    expect(container.querySelector('.astryx-codeblock-title')).toBeNull();
+    expect(container.querySelector('.astryx-codeblock-copy-button')).toBeNull();
   });
 
   it('reaches the header and title through the current defineTheme keys', () => {

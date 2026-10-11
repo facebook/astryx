@@ -208,3 +208,21 @@ export async function searchComponents(needle, coreDir, components) {
 
   return results;
 }
+
+/**
+ * The first sentence of a text, whitespace collapsed. A period after "e.g" or
+ * "i.e" does not end the sentence. Used where a description has to fit on one
+ * line: `build`'s alternatives and its text kit.
+ * @param {string} text
+ * @returns {string}
+ */
+export function firstSentence(text) {
+  const flat = String(text ?? '').replace(/\s+/g, ' ').trim();
+  const ends = /[.!?](?=\s|$)/g;
+  for (let m = ends.exec(flat); m; m = ends.exec(flat)) {
+    if (!/\b(e\.g|i\.e)$/i.test(flat.slice(0, m.index))) {
+      return flat.slice(0, m.index + 1);
+    }
+  }
+  return flat;
+}

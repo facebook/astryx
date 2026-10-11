@@ -20,7 +20,7 @@ import {Card} from '@astryxdesign/core/Card';
 import {Code} from '@astryxdesign/core/Code';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Grid} from '@astryxdesign/core/Grid';
-import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {HStack, Layout, LayoutContent, VStack} from '@astryxdesign/core/Layout';
 import {Link} from '@astryxdesign/core/Link';
 import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
 import {MoreMenu} from '@astryxdesign/core/MoreMenu';
@@ -30,14 +30,10 @@ import {Table, pixel, proportional} from '@astryxdesign/core/Table';
 import type {TableColumn, TablePlugin} from '@astryxdesign/core/Table';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
-import {
-  colorVars,
-  radiusVars,
-  spacingVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
+import {colorVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {useToast} from '@astryxdesign/core/Toast';
-import {Drawer, Stat} from '@astryxdesign/lab';
+import {Drawer, DrawerHeader, Stat} from '@astryxdesign/lab';
 
 import {
   TEMPLATE_AUDIT_CATEGORIES,
@@ -352,11 +348,8 @@ function TemplateAuditDetails({row}: {row: TemplateRow}) {
   );
 
   return (
-    <VStack gap={5} padding={5}>
-      <VStack gap={2} xstyle={styles.drawerHeader}>
-        <Heading level={2} tabIndex={-1} data-autofocus>
-          {row.name}
-        </Heading>
+    <VStack gap={5}>
+      <VStack gap={2}>
         <HStack gap={2} vAlign="center" wrap="wrap">
           <Badge
             label={row.type}
@@ -571,6 +564,7 @@ export default function TemplatesPage() {
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [isAuditPanelOpen, setIsAuditPanelOpen] = useState(false);
   const drawerRef = useRef<HTMLDialogElement>(null);
+  const auditContentRef = useRef<HTMLDivElement>(null);
   const auditTriggerRef = useRef<HTMLElement | null>(null);
   const filterInputRef = useRef<HTMLInputElement>(null);
 
@@ -636,9 +630,10 @@ export default function TemplatesPage() {
     }
     const frame = window.requestAnimationFrame(() => {
       const dialog = drawerRef.current;
-      const scrollContainer = dialog?.firstElementChild;
-      if (scrollContainer instanceof HTMLElement) {
-        scrollContainer.scrollTop = 0;
+      // The Layout's content region is the scroller; the drawer keeps its
+      // header pinned above it.
+      if (auditContentRef.current) {
+        auditContentRef.current.scrollTop = 0;
       }
       dialog?.querySelector<HTMLElement>('[data-autofocus]')?.focus();
     });
@@ -988,9 +983,29 @@ export default function TemplatesPage() {
             : 'Template audit details'
         }
         hasScrim={false}
-        hasCloseButton
         width={560}>
-        {selectedRow ? <TemplateAuditDetails row={selectedRow} /> : null}
+        {selectedRow ? (
+          <Layout
+            header={
+              <DrawerHeader
+                // The title is the focus target on open and on row switch,
+                // so the changed audit is announced.
+                title={
+                  <span tabIndex={-1} data-autofocus>
+                    {selectedRow.name}
+                  </span>
+                }
+                onOpenChange={setIsAuditPanelOpen}
+                hasDivider
+              />
+            }
+            content={
+              <LayoutContent ref={auditContentRef}>
+                <TemplateAuditDetails row={selectedRow} />
+              </LayoutContent>
+            }
+          />
+        ) : null}
       </Drawer>
     </>
   );
@@ -1006,9 +1021,6 @@ const styles = stylex.create({
   filterToken: {
     backgroundColor: colorVars['--color-neutral'],
     borderRadius: radiusVars['--radius-inner'],
-  },
-  drawerHeader: {
-    paddingInlineEnd: spacingVars['--spacing-10'],
   },
   tabularValue: {
     fontVariantNumeric: 'tabular-nums',

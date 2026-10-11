@@ -31,7 +31,6 @@ import {
   radiusVars,
   typographyVars,
   typeScaleVars,
-  borderVars,
 } from '../theme/tokens.stylex';
 import {
   Field,
@@ -71,6 +70,12 @@ import {
   formatSharedDate,
 } from '../utils/plainDate';
 import type {TimestampFormat} from '../Timestamp';
+import {
+  effectivePickerPresentation,
+  resolvePickerPresentation,
+  type PickerPresentation,
+} from '../utils/inputPresentation';
+import {useDevWarning} from '../hooks/useDevWarning';
 
 const styles = stylex.create({
   iconButton: {
@@ -164,7 +169,11 @@ export type DateInputSize = keyof typeof sizeStyles;
  * - `'always'`: native wherever the browser supports `<input type="date">`
  * - `'never'`: Astryx's own pickers everywhere
  */
+/** @deprecated Use {@link DateInputPresentation} via the `presentation` prop. */
 export type DateInputNativePicker = 'touch' | 'always' | 'never';
+
+/** Which surface collects the date (`spec:AST-043` FR1; no `text-input` — TimeInput-only). */
+export type DateInputPresentation = PickerPresentation;
 
 export type DateInputFormat = Extract<
   TimestampFormat,
@@ -182,7 +191,6 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {stableClassName} from '../naming';
 import {useLocale, useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -404,13 +412,30 @@ export interface DateInputProps extends Omit<
    * reason enough to prefer `'never'` on a field that uses it.
    *
    * @default 'touch'
-   * @example
-   * ```
-   * // Astryx's own touch picker instead of the platform's
-   * <DateInput label="Event date" value={date} onChange={setDate} nativePicker="never" />
-   * ```
+   * @deprecated Use `presentation` (`spec:AST-043` FR3):
+   * `'touch'` → `'adaptive-native'`, `'always'` → `'native'`,
+   * `'never'` → `'adaptive-bottom-sheet'`. Still works exactly as released;
+   * `presentation` wins when both are set.
    */
   nativePicker?: DateInputNativePicker;
+
+  /**
+   * Which surface collects the date (`spec:AST-043` FR1). Every value opens
+   * a picker; the typed-field-only `'text-input'` belongs to `TimeInput`.
+   *
+   * - `'popover'`: Astryx's typed field + calendar popover on every pointer
+   * - `'bottom-sheet'`: Astryx's bottom-sheet calendar on every pointer
+   * - `'native'`: the browser/OS picker on every pointer, with no Astryx
+   *   fallback (FR2)
+   * - `'adaptive-bottom-sheet'`: popover on a fine pointer, bottom sheet on
+   *   a coarse pointer
+   * - `'adaptive-native'` (default): popover on a fine pointer, browser/OS
+   *   picker on a coarse pointer, keeping the released Astryx fallbacks
+   *   where a native control cannot express the value (FR2)
+   *
+   * @default 'adaptive-native'
+   */
+  presentation?: DateInputPresentation;
 }
 
 /**
@@ -848,7 +873,6 @@ function PointerDateField({
         <InputClearButton
           label={t('@astryx.dateInput.clear', {label})}
           onClick={handleClear}
-          iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
       {isBusy && <Spinner size="sm" />}
@@ -948,18 +972,28 @@ PointerDateField.displayName = 'PointerDateField';
  */
 export function DateInput(props: DateInputProps) {
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);
-  const nativePicker = props.nativePicker ?? 'touch';
-
-  // The platform's picker, where the consumer asked for it — see the
-  // `nativePicker` prop for what that trades away.
-  if (nativePicker === 'always' || (nativePicker === 'touch' && isTouch)) {
-    return <NativeDateField {...props} />;
-  }
-  return isTouch ? (
-    <TouchDateField {...props} />
-  ) : (
-    <PointerDateField {...props} />
+  useDevWarning(
+    'DateInput',
+    '`nativePicker` is deprecated; use `presentation` instead (`touch` → `adaptive-native`, `always` → `native`, `never` → `adaptive-bottom-sheet`). `presentation` wins when both are set.',
+    props.nativePicker !== undefined,
   );
+  const surface = resolvePickerPresentation(
+    effectivePickerPresentation(props.presentation, props.nativePicker),
+    isTouch,
+  );
+  const {
+    presentation: _presentation,
+    nativePicker: _nativePicker,
+    ...rest
+  } = props;
+  switch (surface) {
+    case 'native':
+      return <NativeDateField {...rest} />;
+    case 'sheet':
+      return <TouchDateField {...rest} />;
+    case 'desktop':
+      return <PointerDateField {...rest} />;
+  }
 }
 
 DateInput.displayName = 'DateInput';

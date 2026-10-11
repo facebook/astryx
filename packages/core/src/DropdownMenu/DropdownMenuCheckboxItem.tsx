@@ -93,7 +93,7 @@ export interface DropdownMenuCheckboxItemProps extends Omit<
   description?: ReactNode;
   /**
    * Icon to display before the label. Accepts a semantic icon name (see
-   * `npx astryx docs icons`) or a rendered node.
+   * `npx @astryxdesign/cli docs icons`) or a rendered node.
    */
   icon?: ReactNode | IconType;
   /**
@@ -118,6 +118,8 @@ export interface DropdownMenuCheckboxItemProps extends Omit<
    * @default false
    */
   hasCloseOnSelect?: boolean;
+  /** Ref forwarded to the row root — the element carrying `role="menuitemcheckbox"`. */
+  ref?: React.Ref<HTMLElement>;
   /**
    * Content to render after the label and description, such as a keyboard
    * shortcut hint or badge.
@@ -186,8 +188,8 @@ export function DropdownMenuCheckboxItem({
       onPointerMove={handlePointerMove}
       marker={
         // No wrapper, and no menu-specific theme target: the shared
-        // `astryx-checkbox` target is already on this element (main reached
-        // the menu checkbox through it too), so the menu adds only its own
+        // `astryx-checkbox-indicator` target is already on this element (main
+        // reached the menu checkbox through it too), so the menu adds only its own
         // placement rules. A wrapper here would have duplicated the
         // indicator's control size and moved nothing themeable.
         <CheckboxControl

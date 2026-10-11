@@ -5,7 +5,7 @@
 /**
  * @file Popover.tsx
  * @input Uses React layout measurement and the usePopover hook
- * @output Exports Popover with viewport fitting, conditional overflow, and content-first focus
+ * @output Exports Popover with conditional overflow and content-first focus above the layer runtime's viewport fit
  * @position Layer component; declarative wrapper around usePopover hook
  *
  * For hover-triggered overlays, use HoverCard instead.
@@ -31,23 +31,17 @@ import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
+import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
+import {clampInlineSize, isIntrinsicInlineSize} from '../Layer/clampInlineSize';
 import {spacingVars} from '../theme/tokens.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
+import type {SpacingStep} from '../utils/types';
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
 const BUTTON_SELECTOR = 'button, [role="button"]';
-const POPOVER_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
-const POPOVER_MAX_INLINE_SIZE = `calc(100vi - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
-const POPOVER_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${POPOVER_VIEWPORT_GUTTER} - ${POPOVER_VIEWPORT_GUTTER})`;
-const POPOVER_MAX_BLOCK_SIZE = `calc(100dvb - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px)))`;
-const POPOVER_MAX_BLOCK_SIZE_FALLBACK = `calc(100vh - ${POPOVER_VIEWPORT_GUTTER} - ${POPOVER_VIEWPORT_GUTTER})`;
-const POPOVER_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
-const POPOVER_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${POPOVER_VIEWPORT_GUTTER})`;
-const POPOVER_INLINE_EDGE_GUTTER = `max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))`;
-
 /**
  * Find the trigger button inside a container element.
  * Looks for `<button>` or `[role="button"]` — either the element itself
@@ -163,10 +157,27 @@ export interface PopoverProps extends Pick<
 
   /**
    * Width of the popover container.
-   * Numbers are px, strings used as-is.
+   * Numbers are px, strings are CSS widths. The popover renders at this width
+   * up to the viewport minus its gutters — it is never shrunk to the room
+   * beside the trigger; when it does not fit there it flips or slides.
    * @default 'auto'
    */
   width?: number | string;
+
+  /**
+   * Inner padding of the popover surface, using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * Matches the `padding` prop on `Card` and `Stack`.
+   *
+   * Pass `0` for a flush surface when the content owns its own edges — a
+   * list of rows whose hover paint reaches the edge, or a header row with a
+   * bottom rule — and pad the content itself.
+   *
+   * The padding sits on the painted surface (the `popover` theme target), so
+   * a theme's `padding` on that target replaces it rather than nesting.
+   * @default 3
+   */
+  padding?: SpacingStep;
 
   /**
    * Accessible label for the popover dialog.
@@ -254,84 +265,37 @@ const styles = stylex.create({
   anchorWrapper: {
     display: 'inline-flex',
   },
-  viewportFit: {
-    boxSizing: 'border-box',
-    maxBlockSize: stylex.firstThatWorks(
-      POPOVER_MAX_BLOCK_SIZE,
-      POPOVER_MAX_BLOCK_SIZE_FALLBACK,
-    ),
-  },
-  viewportAligned: {
-    maxInlineSize: stylex.firstThatWorks(
-      POPOVER_POSITION_AREA_MAX_INLINE_SIZE,
-      POPOVER_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK,
-    ),
-  },
-  viewportStart: {
-    marginInlineEnd: POPOVER_INLINE_EDGE_GUTTER,
-  },
-  viewportEnd: {
-    marginInlineStart: POPOVER_INLINE_EDGE_GUTTER,
-  },
-  viewportBlockStart: {
-    marginBlockEnd: `max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
-  },
-  viewportBlockEnd: {
-    marginBlockStart: `max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
-  },
-  viewportCentered: {
-    marginInlineStart: POPOVER_INLINE_EDGE_GUTTER,
-    marginInlineEnd: POPOVER_INLINE_EDGE_GUTTER,
-    maxInlineSize: stylex.firstThatWorks(
-      POPOVER_MAX_INLINE_SIZE,
-      POPOVER_MAX_INLINE_SIZE_FALLBACK,
-    ),
-  },
-  viewportBlockCentered: {
-    marginBlockStart: `max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px))`,
-    marginBlockEnd: `max(${POPOVER_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))`,
-    maxInlineSize: stylex.firstThatWorks(
-      POPOVER_MAX_INLINE_SIZE,
-      POPOVER_MAX_INLINE_SIZE_FALLBACK,
-    ),
-  },
+  // The painted surface is capped to the viewport with the layer runtime's
+  // one definition (spec:AST-059 FR2, FR3): the layer box above it caps the
+  // block axis itself and leaves the inline axis to the surface, so a flip is
+  // still chosen when the surface does not fit beside the trigger.
   surfaceViewportFit: {
     boxSizing: 'border-box',
     maxInlineSize: stylex.firstThatWorks(
-      POPOVER_MAX_INLINE_SIZE,
-      POPOVER_MAX_INLINE_SIZE_FALLBACK,
+      layerViewportInset.maxInlineSize,
+      layerViewportInset.maxInlineSizeFallback,
     ),
     maxBlockSize: stylex.firstThatWorks(
-      POPOVER_MAX_BLOCK_SIZE,
-      POPOVER_MAX_BLOCK_SIZE_FALLBACK,
+      layerViewportInset.maxBlockSize,
+      layerViewportInset.maxBlockSizeFallback,
     ),
   },
   surfaceScrollable: {
     overflow: 'auto',
     overscrollBehavior: 'contain',
   },
-  // Content padding, applied to the popup surface so a theme's `padding`
-  // replaces it instead of nesting inside it.
-  contentPadding: {
-    paddingBlockStart: spacingVars['--spacing-3'],
-    paddingBlockEnd: spacingVars['--spacing-3'],
-    paddingInlineStart: spacingVars['--spacing-3'],
-    paddingInlineEnd: spacingVars['--spacing-3'],
-  },
-  customWidth: (width: string | number) => ({
-    width: typeof width === 'number' ? `${width}px` : width,
+  // An explicit width renders at its size up to the viewport cap, never
+  // shrunk to the room beside the trigger (spec:AST-059 FR2). Keywords cannot
+  // sit inside min(); the surface cap above bounds them.
+  customWidth: (width: string) => ({
+    width,
   }),
-  matchTriggerAligned: {
+  // Without a width the surface prefers the trigger's minimum width, clamped
+  // by the runtime's cap because a CSS minimum beats a maximum (FR7).
+  matchTrigger: {
     minWidth: stylex.firstThatWorks(
-      `min(anchor-size(width), ${POPOVER_POSITION_AREA_MAX_INLINE_SIZE})`,
-      `min(anchor-size(width), ${POPOVER_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK})`,
-      'anchor-size(width)',
-    ),
-  },
-  matchTriggerCentered: {
-    minWidth: stylex.firstThatWorks(
-      `min(anchor-size(width), ${POPOVER_MAX_INLINE_SIZE})`,
-      `min(anchor-size(width), ${POPOVER_MAX_INLINE_SIZE_FALLBACK})`,
+      `min(anchor-size(width), ${layerViewportInset.maxInlineSize})`,
+      `min(anchor-size(width), ${layerViewportInset.maxInlineSizeFallback})`,
       'anchor-size(width)',
     ),
   },
@@ -386,6 +350,7 @@ export function Popover({
   onOpenChange,
   isEnabled = true,
   width,
+  padding = 3,
   label,
   role = 'dialog',
   isModal,
@@ -425,8 +390,10 @@ export function Popover({
     // it is the element the `popover` theme target has to sit on — a target on
     // the content div inside it styles a box that paints nothing.
     surfaceTarget: 'popover',
+    // Surface padding is a usePopover option so it lands on that same box,
+    // where a theme's `padding` replaces it instead of nesting inside it.
+    padding,
     xstyle: [
-      styles.contentPadding,
       styles.surfaceViewportFit,
       hasOverflow && styles.surfaceScrollable,
       xstyle,
@@ -664,28 +631,16 @@ export function Popover({
     }
   }, [isOpen, isControlled, popover]);
 
-  // Determine popover xstyle
-  const popoverSizeXstyle = width
-    ? styles.customWidth(width)
-    : alignment === 'center'
-      ? styles.matchTriggerCentered
-      : styles.matchTriggerAligned;
-  const isSidePlacement = placement === 'start' || placement === 'end';
-  const popoverViewportXstyle =
-    alignment === 'center'
-      ? isSidePlacement
-        ? styles.viewportBlockCentered
-        : styles.viewportCentered
-      : [
-          styles.viewportAligned,
-          isSidePlacement
-            ? alignment === 'start'
-              ? styles.viewportBlockStart
-              : styles.viewportBlockEnd
-            : alignment === 'start'
-              ? styles.viewportStart
-              : styles.viewportEnd,
-        ];
+  // Popover's one sizing fact: an explicit width wins over trigger matching.
+  // Fit against the viewport is the layer runtime's (spec:AST-059).
+  const popoverSizeXstyle = !width
+    ? styles.matchTrigger
+    : styles.customWidth(
+        typeof width === 'string' && isIntrinsicInlineSize(width)
+          ? width.trim()
+          : clampInlineSize(width, layerViewportInset.maxInlineSizeFallback),
+      );
+  const layerXstyle = [popoverSizeXstyle, layerAnimations[placement]];
 
   // Sibling mode: render only the popover (no wrapper needed)
   if (anchorRef && children == null) {
@@ -695,12 +650,7 @@ export function Popover({
           placement,
           alignment,
           offset: spacingVars['--spacing-1'],
-          xstyle: [
-            styles.viewportFit,
-            popoverViewportXstyle,
-            popoverSizeXstyle,
-            layerAnimations[placement],
-          ],
+          xstyle: layerXstyle,
         })}
       </>
     );
@@ -725,12 +675,7 @@ export function Popover({
           placement,
           alignment,
           offset: spacingVars['--spacing-1'],
-          xstyle: [
-            styles.viewportFit,
-            popoverViewportXstyle,
-            popoverSizeXstyle,
-            layerAnimations[placement],
-          ],
+          xstyle: layerXstyle,
         })}
       </>
     );
@@ -748,12 +693,7 @@ export function Popover({
         placement,
         alignment,
         offset: spacingVars['--spacing-1'],
-        xstyle: [
-          styles.viewportFit,
-          popoverViewportXstyle,
-          popoverSizeXstyle,
-          layerAnimations[placement],
-        ],
+        xstyle: layerXstyle,
       })}
     </>
   );

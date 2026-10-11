@@ -64,6 +64,8 @@
  *   | 'ERR_UNKNOWN_FEATURE'
  *   | 'ERR_UNKNOWN_CODEMOD'
  *   | 'ERR_CODEMOD_FAILED'
+ *   | 'ERR_CODEMOD_PROTECTED'
+ *   | 'ERR_CODEMOD_PROTECTION_SOURCE'
  *   | 'ERR_NOT_FOUND'
  *   | 'ERR_NO_DOC'
  *   | 'ERR_NO_SHOWCASE'
@@ -161,6 +163,10 @@ export const ERROR_CODES = Object.freeze({
   ERR_UNKNOWN_CODEMOD: 'ERR_UNKNOWN_CODEMOD',
   /** One or more codemods failed during an upgrade run. */
   ERR_CODEMOD_FAILED: 'ERR_CODEMOD_FAILED',
+  /** A required codemod change remains blocked by a protected consumer file. */
+  ERR_CODEMOD_PROTECTED: 'ERR_CODEMOD_PROTECTED',
+  /** A working-tree protection declaration could not be read or parsed. */
+  ERR_CODEMOD_PROTECTION_SOURCE: 'ERR_CODEMOD_PROTECTION_SOURCE',
   /** A generic discover/lookup query matched nothing in any package. */
   ERR_NOT_FOUND: 'ERR_NOT_FOUND',
 

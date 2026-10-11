@@ -2,21 +2,46 @@
 
 /**
  * @file Configure the docsite's routes, response headers, and theme resolution.
- * @input Next.js build configuration and staged preview-only static exports.
+ * @input Next.js build configuration, the early playground cookie guard, and
+ *   staged preview-only static exports.
  * @output Docsite routes plus Storybook and Sandbox at /storybook/ and /sandbox/.
+ *   Client main-app chunks start with the preview's cookie compatibility guard.
  * @position Next.js configuration for the existing Vercel docsite deployment.
  */
 
-import {readdirSync} from 'node:fs';
+import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import {resolve} from 'node:path';
+
+const playgroundCookieCompatibility = readFileSync(
+  resolve(
+    import.meta.dirname,
+    'src/app/playground/preview/cookieCompatibility.js',
+  ),
+  'utf8',
+);
+
+// Slugs that are not pages of their own (generate-data.mjs): a guide under a
+// docs-tree namespace opens at its section on the namespace's full page, and
+// a flat topic merged into another page opens there.
+const docRedirectsPath = resolve(
+  import.meta.dirname,
+  'src/generated/docRedirects.json',
+);
+const docRedirects = existsSync(docRedirectsPath)
+  ? JSON.parse(readFileSync(docRedirectsPath, 'utf8'))
+  : {};
+
+const stagesStaticApps =
+  process.env.VERCEL_ENV === 'preview' ||
+  process.env.VERCEL_ENV === 'production';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   cacheComponents: true,
   // Sandbox exports trailing-slash directories; Next's automatic slash
-  // redirect runs before rewrites. Only preview/canary needs to preserve
-  // those URLs. Production docs keep their existing canonical redirects.
-  skipTrailingSlashRedirect: process.env.VERCEL_ENV === 'preview',
+  // redirect runs before rewrites. Vercel deployments preserve those URLs;
+  // local builds keep the docsite's existing canonical redirects.
+  skipTrailingSlashRedirect: stagesStaticApps,
   // A dynamic route segment can't carry a static extension, so the public
   // plaintext URL /blog/<slug>.txt is served by the /blog/txt/[slug] handler.
   // Static files (including Storybook's iframe and Sandbox's JS/CSS, embeds
@@ -27,7 +52,7 @@ const nextConfig = {
       afterFiles: [
         {source: '/blog/:slug.txt', destination: '/blog/txt/:slug'},
         {source: '/storybook', destination: '/storybook/index.html'},
-        ...(process.env.VERCEL_ENV === 'preview'
+        ...(stagesStaticApps
           ? [
               {source: '/sandbox', destination: '/sandbox/index.html'},
               {
@@ -38,6 +63,20 @@ const nextConfig = {
           : []),
       ],
     };
+  },
+  // Slugs that are not pages of their own redirect to where their text is
+  // shown (docRedirects, from generate-data.mjs): each guide of a docs-tree
+  // namespace to its section on the namespace's page, including the CLI's
+  // integration guides on the CLI Integrations and Writing docs pages.
+  async redirects() {
+    return [
+      // Temporary: a later site version may give these guides pages again.
+      ...Object.entries(docRedirects).map(([slug, destination]) => ({
+        source: `/docs/${slug}`,
+        destination,
+        permanent: false,
+      })),
+    ];
   },
   // The playground preview evaluates user-authored code, so it is the one
   // route that must never be embeddable by another site and never a loader of
@@ -80,7 +119,7 @@ const nextConfig = {
       },
     ];
   },
-  webpack: config => {
+  webpack: (config, {isServer, webpack}) => {
     // Webpack's CSS @import resolver doesn't follow package.json "exports".
     // Map each theme's /theme.css subpath to the actual dist file.
     const themesDir = resolve(import.meta.dirname, '../../packages/themes');
@@ -92,6 +131,21 @@ const nextConfig = {
         themesDir,
         t,
         'dist/theme.css',
+      );
+    }
+
+    // Vercel can add Toolbar instrumentation to Next's shared main-app entry.
+    // Its cookie probe throws before React starts in the playground's opaque
+    // frame, so prepend our route-scoped guard to the final client asset. A
+    // layout Script is too late: Next emits the async main-app tag first.
+    if (!isServer) {
+      config.plugins.push(
+        new webpack.BannerPlugin({
+          banner: playgroundCookieCompatibility,
+          entryOnly: true,
+          include: /main-app-/,
+          raw: true,
+        }),
       );
     }
 

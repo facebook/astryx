@@ -71,12 +71,15 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
   },
+  // `minWidth: 0` lets the `auto` track shrink below the content's width, so a
+  // wide center never widens the toolbar. The slot deliberately does not clip
+  // (`overflow`): clipping would cut off the box-shadow and focus ring of its
+  // outermost children, which paint outside their own box.
   centerSlot: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 0,
-    overflow: 'hidden',
   },
   endSlot: {
     display: 'flex',

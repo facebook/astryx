@@ -25,7 +25,7 @@ design_specs: []
 architecture:
   [architecture:container-padding, architecture:public-component-api]
 contributing: [contributing:api-conventions]
-system_specs: [spec:AST-002/DEC-1, spec:AST-002/DEC-2]
+system_specs: [spec:AST-002/DEC-1, spec:AST-002/DEC-2, spec:AST-057/FR9]
 ---
 
 # List component contract
@@ -94,6 +94,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | FR4 | The retained row inset MUST come from the same private density- and theme-derived source as Item's applied inline padding. A consumer override of row padding through `xstyle`, `className`, or `style` is outside the alignment guarantee; `edgeCompensation` MUST NOT mirror or infer that arbitrary CSS.                                                       | Shared two-owner geometry contract                                  | Accepted contract; implementation pending |
 | FR5 | Compensation MUST preserve Item's hover, press, selection, focus, content, semantics, and hit target. It MUST NOT make the row a full-bleed surface or pull it past either available host edge.                                                                                                                                                                   | Owner direction                                                     | Accepted contract; implementation pending |
 | FR6 | The opt-in is valid only under a host state whose published inline inset matches its applied padding and whose relevant boundary is visually neutral. Current automatic LayoutContent/LayoutPanel states with known publication mismatch are not eligible until that conformance gap is fixed.                                                                    | `architecture:container-padding/INV8–INV11`                         | Accepted contract; implementation pending |
+| FR7 | The list element containing the rows MUST clip in the inline axis with `overflow-inline: clip`, never `hidden`, so a row dragged aside for its swipe actions paints no further than the list's inline edge without the list becoming a scroll container.                                                                                                          | `spec:AST-057/FR9`                                                  | Verified by `List.test.tsx`               |
 
 ### Allowed variation
 
@@ -153,6 +154,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 - `architecture:public-component-api` and `spec:AST-002` own public API admission.
 - Item remains the implementation owner of row padding and interaction paint;
   List owns only the collection-level opt-in and row application.
+- `spec:AST-057` owns swipe actions on `Item` and the rule that the element
+  containing swipe-capable rows clips in the inline axis; List carries that
+  clip (FR7) and `ListItem` passes `swipeActions` and `swipeBehavior` through
+  to `Item` unchanged.
 
 ## Verification map
 

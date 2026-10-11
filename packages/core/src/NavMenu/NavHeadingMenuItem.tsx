@@ -47,7 +47,8 @@ const styles = stylex.create({
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
     },
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     cursor: {
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',

@@ -8,7 +8,7 @@ export const docs = {
   displayName: 'Dropdown Menu Submenu',
   isHiddenFromOverview: true,
   description:
-    'A single menu row that reveals a nested flyout of its own items. The row adopts DropdownMenuItem semantics (label / icon / description / isDisabled); its children become the flyout content. Opens inline-end with viewport auto-flip; Right/Enter/Space opens and focuses the first item, Left/Escape closes and returns focus to the trigger (Right/Left swap in RTL). For data-driven menus, give a menu item a nested `items` array instead of using this component directly.',
+    'A single menu row that reveals a nested flyout of its own items. The row adopts DropdownMenuItem semantics (label / icon / description / isDisabled); its children become the flyout content. Opens inline-end with viewport auto-flip; Right/Enter/Space opens and focuses the first item, Left/Escape closes and returns focus to the trigger (Right/Left swap in RTL). On a phone (a coarse pointer, decided when the menu opened) the row drills in instead: its rows replace the menu\'s rows in the same box, led by a Back row named "Back to <parent>", and Back, Escape or ArrowLeft return to the row. For data-driven menus, give a menu item a nested `items` array instead of using this component directly.',
   playground: {
     defaults: {label: 'Move to'},
   },
@@ -47,7 +47,7 @@ export const docs = {
       type: 'boolean',
       default: 'false',
       description:
-        'Show a spinner in place of the caret, e.g. while a lazy submenu\'s children are loading.',
+        "Show a spinner in place of the caret, e.g. while a lazy submenu's children are loading.",
     },
     {
       name: 'menuWidth',
@@ -59,6 +59,13 @@ export const docs = {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description: 'Called when the flyout opens or closes.',
+    },
+    {
+      name: 'presentation',
+      type: "'flyout' | 'drill-in' | 'adaptive'",
+      description:
+        "How the sub-menu shows its rows. 'flyout' opens them beside the row; 'drill-in' replaces the menu's rows with them and a Back row, in the same box; 'adaptive' drills in when a finger opened the menu (a coarse pointer, decided when the menu opened) and flies out otherwise.",
+      default: "'adaptive'",
     },
     {
       name: 'xstyle',
@@ -74,7 +81,7 @@ export const docsDense = {
   isHiddenFromOverview: true,
   displayName: 'Dropdown Menu Submenu',
   description:
-    'menu row that reveals a nested flyout of its own children/items (single component, not Sub/SubTrigger/SubContent)',
+    'menu row that reveals a nested flyout of its own children/items (single component, not Sub/SubTrigger/SubContent); drills in on a phone',
   propDescriptions: {
     label: 'primary label text for the trigger row',
     icon: 'icon before label',
@@ -85,6 +92,8 @@ export const docsDense = {
     menuWidth:
       'minimum flyout width, capped to the viewport (default: content, min 160px)',
     onOpenChange: 'called when flyout opens/closes',
+    presentation:
+      "'flyout' beside the row | 'drill-in' replaces the rows + Back row | 'adaptive' (default) drills in on a coarse pointer",
     xstyle: 'StyleX styles for the trigger row',
   },
 };

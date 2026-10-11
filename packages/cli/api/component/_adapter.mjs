@@ -18,6 +18,8 @@
  * deduped, so each leaf stays a thin projection.
  */
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {
   findCoreDir,
@@ -35,16 +37,16 @@ import {
   resolveIntegrationImportPath as resolveIntegrationImport,
 } from '../../foundation/discovery/component-discovery.mjs';
 import {Project} from '../../foundation/config/project.mjs';
-import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
+import {loadComponentDoc as loadValidatedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
+import {resolveComponentReplacements} from '../../foundation/discovery/component-replacement.mjs';
 import {searchComponents} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
 
 export {CORE_PACKAGE};
 
 /**
- * A loaded component doc. `loadDocs` returns the authored `.doc.mjs` shape,
- * which is either a single-component or multi-component doc; this loose view
- * captures the fields the API reads across both forms.
+ * A loaded component doc. The shared validated loader accepts stamped and legacy
+ * component docs; this loose view captures the fields the API reads across both.
  * @typedef {object} LoadedComponentDoc
  * @property {string} [name]
  * @property {string} [description]
@@ -56,9 +58,7 @@ export {CORE_PACKAGE};
  */
 
 /**
- * Options object for `loadDocs`, matching its declared parameter shape (used
- * as a cast target so `lang` (which the API may hold as `string|null`) type
- * checks against `loadDocs`'s `lang?: string`).
+ * Options object for the shared component-doc loader.
  * @typedef {{zh?: boolean, dense?: boolean, lang?: string}} LoadDocsOpts
  */
 
@@ -140,6 +140,38 @@ export async function loadIntegrationsSafely(cwd) {
 }
 
 /**
+ * Every component replacement the loaded integrations declare
+ * (spec:AST-035 FR10–FR15): the active one for each replaced Core component,
+ * and the findings Doctor reports. With no Core directory, only the opt-in
+ * and value findings are computed.
+ * @param {string|null} coreDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @returns {Promise<import('../../foundation/discovery/component-replacement.mjs').ComponentReplacements>}
+ */
+export function loadComponentReplacements(coreDir, loadedIntegrations) {
+  return resolveComponentReplacements(coreDir, loadedIntegrations);
+}
+
+/**
+ * The integration component that answers to the Core component name
+ * `dirName` for unqualified lookup, or undefined when none replaces it.
+ * @param {string} coreDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @param {string} dirName
+ * @returns {Promise<import('../../foundation/discovery/component-replacement.mjs').ActiveComponentReplacement | undefined>}
+ */
+export async function resolveComponentReplacement(
+  coreDir,
+  loadedIntegrations,
+  dirName,
+) {
+  if (loadedIntegrations.length === 0) return undefined;
+  return (
+    await resolveComponentReplacements(coreDir, loadedIntegrations)
+  ).forTarget(dirName);
+}
+
+/**
  * Resolve a loaded integration by package name.
  * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
  * @param {string} packageName
@@ -147,6 +179,34 @@ export async function loadIntegrationsSafely(cwd) {
  */
 function findLoadedIntegration(loadedIntegrations, packageName) {
   return loadedIntegrations.find(i => i.name === packageName) ?? null;
+}
+
+/**
+ * Read the exact installed version available to a package-qualified component
+ * selector. Legacy docs packages do not expose a reliable version here, so a
+ * version-qualified lookup never falls through to them.
+ * @param {string} coreDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @param {string} packageName
+ * @returns {string|null}
+ */
+export function installedComponentPackageVersion(
+  coreDir,
+  loadedIntegrations,
+  packageName,
+) {
+  if (packageName === CORE_PACKAGE) {
+    try {
+      const pkg = JSON.parse(
+        fs.readFileSync(path.join(coreDir, 'package.json'), 'utf8'),
+      );
+      return typeof pkg.version === 'string' ? pkg.version : null;
+    } catch {
+      return null;
+    }
+  }
+  const integration = findLoadedIntegration(loadedIntegrations, packageName);
+  return typeof integration?.version === 'string' ? integration.version : null;
 }
 
 /**
@@ -248,6 +308,34 @@ export function classifyScope(
 }
 
 /**
+ * Internal ambiguity marker. Single-component callers still receive the same
+ * AstryxError code, message, and suggestions; batch callers can additionally
+ * project every installed candidate without parsing prose.
+ */
+export class ComponentAmbiguityError extends AstryxError {
+  /** @type {import('./component.type.mjs').ComponentBatchCandidate[]} */
+  candidates;
+
+  /**
+   * @param {ComponentOwner[]} owners
+   * @param {string} dirName
+   */
+  constructor(owners, dirName) {
+    super(
+      `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
+      owners.map(o => ({name: o.package, reason: 'provides this component'})),
+      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+    );
+    this.candidates = owners.map(owner => ({
+      package: owner.package,
+      component: dirName,
+      kind: 'component',
+      installed: true,
+    }));
+  }
+}
+
+/**
  * Refuse to guess when the name is owned by MORE THAN ONE package (core and/or
  * integrations) and the caller did not scope with --package. Legacy
  * `pkg.astryx.docs` externals are intentionally NOT part of this ambiguity set.
@@ -257,11 +345,7 @@ export function classifyScope(
  */
 export function assertUnambiguousOwners(owners, dirName) {
   if (owners.length > 1) {
-    throw new AstryxError(
-      `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
-      owners.map(o => ({name: o.package, reason: 'provides this component'})),
-      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
-    );
+    throw new ComponentAmbiguityError(owners, dirName);
   }
 }
 
@@ -381,9 +465,22 @@ export async function resolveUnscopedDoc(dirName, {coreDir, cwd, name}) {
  */
 export async function loadComponentDoc(docPath, opts = {}) {
   const {zh = false, dense = false, lang = null} = opts;
-  return /** @type {LoadedComponentDoc} */ (
-    await loadDocs(docPath, /** @type {LoadDocsOpts} */ ({zh, dense, lang}))
-  );
+  try {
+    return /** @type {LoadedComponentDoc} */ (
+      await loadValidatedComponentDoc(
+        docPath,
+        /** @type {LoadDocsOpts} */ ({zh, dense, lang}),
+      )
+    );
+  } catch (err) {
+    throw new AstryxError(
+      `Cannot load component metadata: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_DOC,
+    );
+  }
 }
 
 /**

@@ -121,8 +121,9 @@ const sortStyles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
-    background: 'transparent',
-    border: 'none',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderStyle: 'none',
     padding: 0,
     margin: 0,
     cursor: {

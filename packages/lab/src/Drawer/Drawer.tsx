@@ -4,7 +4,7 @@
 
 /**
  * @file Drawer.tsx
- * @input Uses React, StyleX, theme tokens, Icon/IconButton, useScrollLock/useDrawerDialogPresence, BaseProps, mergeProps/mergeRefs, themeProps
+ * @input Uses React, StyleX, theme tokens and text defaults, the Dialog purpose type, shared focus/dismissal/depth primitives, container padding lowering, scroll locking/dialog presence, BaseProps, merged refs/props, themeProps
  * @output Exports Drawer component and DrawerProps
  * @position Lab implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
  *
@@ -23,34 +23,40 @@
  * Uses the native `<dialog>` element (same precedent as Dialog/MobileNav):
  * - `showModal()` when `hasScrim` (default) — top-layer rendering, focus
  *   trapping, `::backdrop`, no z-index management.
- * - `show()` when `hasScrim={false}` — non-modal overlay; the page behind
- *   stays interactive (e.g. master-detail inspectors).
+ * - `showPopover()` when `hasScrim={false}` — non-modal top-layer overlay;
+ *   the page behind stays interactive (e.g. master-detail inspectors).
  *
- * Entry animation uses `@starting-style`; exit slides out before
- * `dialog.close()` releases the top layer and restores focus to the element
- * that opened the drawer. React owns `display` for both legs rather than a
- * discrete `display` transition, so the panel stops painting in the same
- * commit as `close()` — see the `rendered` style for why that matters.
+ * Entry animation uses `@starting-style`; exit slides out before the active
+ * modal-dialog or manual-popover host releases the top layer and focus returns
+ * to the element that opened the drawer. React owns `display` for both legs
+ * rather than a discrete `display` transition, so the panel stops painting in
+ * the same commit as the host closes — see the `rendered` style for why.
  *
- * Sibling drawers coordinate through a module-level LIFO registry: Escape
- * closes only the top (last-opened) drawer, and non-modal drawers stack
- * last-opened-on-top via registry-assigned z-indexes.
+ * Sibling drawers use the shared layer dismissal stack for topmost-only Escape
+ * handling and the browser top layer's chronological paint order.
+ *
+ * Dismissal follows Dialog: `purpose` decides whether Escape and a scrim click
+ * request close, and Drawer renders no close button of its own. Compose
+ * `DrawerHeader` with `onOpenChange` for a visible close action, as with
+ * `DialogHeader`.
+ *
+ * The scrolling content area is the drawer's container, like Dialog's inner
+ * box: the `padding` prop, else the theme's `padding` on `drawer`, insets it
+ * through container tokens, defaulting to `--spacing-4` like Dialog, and the
+ * applied inset is published so a lone Section child escapes it and a Layout
+ * redistributes it to its regions. Compose `DrawerHeader` inside a `Layout`, as
+ * `DialogHeader` is composed in Dialog, so the header is not padded twice. The
+ * root dialog stays the overlay boundary (`overlayPaddingReset`).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/Drawer/Drawer.doc.mjs (props table, features, usage)
  * - /packages/lab/src/Drawer/Drawer.test.tsx (tests for new/changed behavior)
+ * - /packages/lab/src/Drawer/Drawer.spec.md (component contract)
  * - /packages/lab/src/Drawer/index.ts (exports if types change)
  * - /apps/storybook/stories/Drawer.stories.tsx (examples and visual coverage)
  */
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import {useCallback, useRef, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '@astryxdesign/core';
 import {
@@ -59,59 +65,31 @@ import {
   durationVars,
   easeVars,
   shadowVars,
-  spacingVars,
+  typeScaleVars,
+  typographyVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {Icon} from '@astryxdesign/core/Icon';
-import {IconButton} from '@astryxdesign/core/IconButton';
-import {useScrollLock} from '@astryxdesign/core/hooks';
+import type {DialogPurpose} from '@astryxdesign/core/Dialog';
+import {
+  useFocusTrap,
+  useMergedRefs,
+  useScrollLock,
+} from '@astryxdesign/core/hooks';
+import {LayerDepthProvider, useLayerDismissal} from '@astryxdesign/core/Layer';
 import {
   composeEventHandlers,
   mergeProps,
-  mergeRefs,
   themeProps,
 } from '@astryxdesign/core/utils';
-import {overlayPaddingReset} from '@astryxdesign/core/Layout';
+import {container, overlayPaddingReset} from '@astryxdesign/core/Layout';
+import {
+  containerPaddingBlockEndVarStyles,
+  containerPaddingBlockStartVarStyles,
+  containerPaddingInlineVarStyles,
+  paddingStyles,
+  spacingStepToToken,
+} from '@astryxdesign/core/Layout/padding.stylex';
+import type {SpacingStep, SpacingToken} from '@astryxdesign/core/Layout';
 import {useDrawerDialogPresence} from './useDrawerDialogPresence';
-
-// =============================================================================
-// LIFO stacking registry (internal)
-// =============================================================================
-
-// Module-level registry of currently open drawers, in open order (last entry
-// is the top of the stack). SSR-safe: only mutated inside effects. Escape
-// handling consults isTopDrawer() so sibling drawers close innermost-first,
-// and non-modal (show()) drawers get incrementing z-indexes so the
-// last-opened one paints on top; modal drawers rely on the native top
-// layer's chronological stacking instead.
-type DrawerRegistryEntry = {id: string; close: () => void};
-
-// Without the top layer (hasScrim={false} uses show(), not showModal())
-// the panel needs explicit stacking. No z-index token exists in the theme;
-// 1000 matches the app-level drawer convention.
-const NON_MODAL_BASE_Z = 1000;
-
-const openDrawerStack: DrawerRegistryEntry[] = [];
-let registrationCounter = 0;
-
-function registerDrawer(id: string, close: () => void): number {
-  openDrawerStack.push({id, close});
-  registrationCounter += 1;
-  return NON_MODAL_BASE_Z + registrationCounter - 1;
-}
-
-function unregisterDrawer(id: string): void {
-  const index = openDrawerStack.findIndex(entry => entry.id === id);
-  if (index !== -1) {
-    openDrawerStack.splice(index, 1);
-  }
-  if (openDrawerStack.length === 0) {
-    registrationCounter = 0;
-  }
-}
-
-function isTopDrawer(id: string): boolean {
-  return openDrawerStack[openDrawerStack.length - 1]?.id === id;
-}
 
 // =============================================================================
 // Styles
@@ -130,6 +108,23 @@ const MOBILE_WIDTH_FULL = '100dvw';
 
 const styles = stylex.create({
   dialog: {
+    // Keep the layer text boundary local rather than exposing Core styling internals.
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-body-size'],
+    fontWeight: typeScaleVars['--text-body-weight'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    fontStyle: 'normal',
+    textAlign: 'start',
+    textAlignLast: 'auto',
+    textIndent: 0,
+    textTransform: 'none',
+    letterSpacing: 'normal',
+    wordSpacing: 'normal',
+    textShadow: 'none',
+    whiteSpace: 'normal',
+    wordBreak: 'normal',
+    overflowWrap: 'normal',
+    hyphens: 'manual',
     // Reset native <dialog> defaults — the dialog element IS the panel.
     position: 'fixed',
     margin: 0,
@@ -162,14 +157,14 @@ const styles = stylex.create({
     },
   },
   // Rendered while the drawer is open AND while it slides out. Applied from
-  // React state, not from a discrete `display` transition: `close()` drops the
-  // dialog out of the top layer, and any ancestor that establishes a
-  // containing block for fixed positioning (transform, filter, container-type,
-  // contain) then becomes the origin for the panel's `position: fixed`. A
-  // panel still painting after `close()` therefore snaps back INTO the layout
-  // and covers the page for the rest of the hold. Owning `display` lets the
-  // hide land in the same commit as `close()`, so no frame is ever painted
-  // outside the top layer.
+  // React state, not from a discrete `display` transition: leaving either
+  // native top-layer host drops the panel back into its ordinary containing
+  // context, and any ancestor that establishes a containing block for fixed
+  // positioning (transform, filter, container-type, contain) then becomes the
+  // origin for the panel's `position: fixed`. A panel still painting after host
+  // release therefore snaps back INTO the layout and covers the page for the
+  // rest of the hold. Owning `display` lets the hide land in the same commit, so
+  // no frame is ever painted outside the top layer.
   //
   // Applied via the isOpen/exit state, not :where([open]) — attribute
   // selectors have zero specificity and can lose to default styles
@@ -243,11 +238,12 @@ const styles = stylex.create({
       },
     },
   },
-  // Scrollable content area — full-bleed; consumers compose their own
-  // header/body/footer padding.
+  // Scrollable content area, and the drawer's container: it carries the
+  // container padding (--spacing-4 unless the `padding` prop or the theme sets
+  // it, as in Dialog) and publishes it, so a lone Section child escapes it
+  // exactly as in Dialog and a Layout picks it up for its regions.
   // touch-action + overscroll containment keep momentum scrolling inside
-  // the panel on touch devices; the safe-area inset keeps the last row of
-  // content clear of the home indicator.
+  // the panel on touch devices.
   content: {
     flexGrow: 1,
     minHeight: 0,
@@ -256,18 +252,27 @@ const styles = stylex.create({
     overflowX: 'hidden',
     overscrollBehavior: 'contain',
     touchAction: 'pan-y',
-    paddingBlockEnd: 'env(safe-area-inset-bottom, 0px)',
     outline: 'none',
+    // The scrolling area paints the surface itself, covering the panel's whole
+    // inner box. Without it the panel's edge is not uniform: a theme that packs
+    // an inset ring into --shadow-high (the bundled themes all add one in dark
+    // mode) draws that ring just inside the dialog, where an opaque content
+    // wrapper such as Section paints over it — so the ring shows only in the
+    // gap below where the content ends, and the panel's edges appear to change
+    // partway down. Painting the surface here hides the ring evenly, leaving
+    // the anchored-side border as the drawer's one edge (same treatment as
+    // BottomSheetPanel's body, #5305).
+    backgroundColor: colorVars['--color-background-surface'],
   },
-  // Close affordance floats in the top-trailing corner, above the
-  // scrollable content.
-  controls: {
-    position: 'absolute',
-    insetBlockStart: spacingVars['--spacing-2'],
-    insetInlineEnd: spacingVars['--spacing-2'],
-    display: 'flex',
-    gap: spacingVars['--spacing-1'],
-    zIndex: 1,
+  // Block-end inset of the content area = container padding + the home
+  // indicator's safe area, so the last row of content stays clear of the
+  // indicator in every padding mode. Applied after container()'s own padding so this
+  // composed value wins on the block-end edge; the published
+  // --container-padding-block-end keeps the safe area OUT, so a bleed child
+  // subtracts only the container inset and the safe area survives below it.
+  contentSafeArea: {
+    paddingBlockEnd:
+      'calc(var(--container-padding-block-end, 0px) + env(safe-area-inset-bottom, 0px))',
   },
 });
 
@@ -281,9 +286,6 @@ const dynamicStyles = stylex.create({
       [`@media (max-width: ${MOBILE_BREAKPOINT}px)`]: mobileWidth,
     },
     maxWidth: '100dvw',
-  }),
-  stackZ: (z: number) => ({
-    zIndex: z,
   }),
 });
 
@@ -301,10 +303,11 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
   isOpen: boolean;
 
   /**
-   * Called when the drawer requests an open-state change. Escape, scrim
-   * click, and the built-in close button call it with `false`. The caller owns
-   * the open state. When sibling drawers are open, Escape only closes the top
-   * (last-opened) drawer.
+   * Called when the drawer requests an open-state change. Escape and a scrim
+   * click call it with `false` as `purpose` allows; a `DrawerHeader` close
+   * button calls it when you pass the same callback to the header. The caller
+   * owns the open state. When sibling drawers are open, Escape only closes the
+   * top (last-opened) drawer.
    */
   onOpenChange: (isOpen: boolean) => void;
 
@@ -344,19 +347,34 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
    * Whether to render a modal scrim behind the drawer.
    * - `true` (default) — `showModal()`: top layer, focus trap, body scroll
    *   lock, click-outside-to-close.
-   * - `false` — `show()`: non-modal overlay; the page behind stays
-   *   interactive. Escape still closes while focus is inside the drawer.
+   * - `false` — `showPopover()`: non-modal top-layer overlay; the page behind
+   *   stays interactive. Escape still closes through the shared layer stack.
    * @default true
    */
   hasScrim?: boolean;
 
   /**
-   * Whether to render the built-in close button in the top-trailing
-   * corner. Enabled by default for both modal and non-modal drawers so every
-   * overlay has an obvious dismissal affordance.
-   * @default true
+   * Configures how the drawer enables dismissals, matching Dialog.
+   * - required: Disables Escape and scrim click (for mandatory flows); a
+   *   modal required drawer is exposed as an `alertdialog`
+   * - form: Prevents scrim click, allows the Escape key
+   * - info: Allows Escape and scrim click
+   *
+   * A non-modal drawer has no scrim, so `form` and `info` behave the same.
+   * @default 'info'
    */
-  hasCloseButton?: boolean;
+  purpose?: DialogPurpose;
+
+  /**
+   * Internal padding of the drawer content using the spacing scale, matching
+   * Dialog. Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8,
+   * 10. When omitted, uses the theme default for drawers (`--spacing-4`, 16px,
+   * unless the theme sets `padding` on `drawer`), as Dialog does. Pass `0` for
+   * a full-bleed content area. The content area is a container: a Section that
+   * is its only child escapes the padding, bleed children such as Table and
+   * Divider compensate against it, and a Layout picks it up for its regions.
+   */
+  padding?: SpacingStep;
 
   /**
    * Drawer content. Rendered inside a full-height scrollable area.
@@ -386,14 +404,27 @@ export interface DrawerProps extends BaseProps<HTMLDialogElement> {
  * closes the top-most open drawer; focus returns to the element that
  * opened it.
  *
+ * Dismissal matches Dialog: `purpose` decides whether Escape and a scrim click
+ * close the drawer, and `DrawerHeader` renders a close button when given
+ * `onOpenChange`.
+ *
+ * Like Dialog, the drawer is a container: `padding` (or a theme's `padding`
+ * on `drawer`) insets the content area, a lone Section child escapes that
+ * inset, and a Layout inside picks it up for its header, content, and footer
+ * regions. The default inset is `--spacing-4`, matching Dialog.
+ *
  * @example
  * ```
  * const [selected, setSelected] = useState(null);
+ * const handleOpenChange = isOpen => !isOpen && setSelected(null);
  * <Drawer
  *   isOpen={selected != null}
- *   onOpenChange={isOpen => !isOpen && setSelected(null)}
+ *   onOpenChange={handleOpenChange}
  *   label={`Details: ${selected?.name}`}>
- *   <HostDetails host={selected} />
+ *   <Layout
+ *     header={<DrawerHeader title={selected?.name} onOpenChange={handleOpenChange} />}
+ *     content={<LayoutContent><HostDetails host={selected} /></LayoutContent>}
+ *   />
  * </Drawer>
  * ```
  */
@@ -405,7 +436,8 @@ export function Drawer({
   isFullWidthOnMobile = false,
   label,
   hasScrim = true,
-  hasCloseButton = true,
+  purpose = 'info',
+  padding,
   children,
   xstyle,
   className,
@@ -416,15 +448,19 @@ export function Drawer({
   ...props
 }: DrawerProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  // Registry identity + latest onOpenChange (stable across re-renders so the
-  // registration effect doesn't churn on every onOpenChange identity change).
-  const drawerId = useId();
-  const onOpenChangeRef = useRef(onOpenChange);
-  useEffect(() => {
-    onOpenChangeRef.current = onOpenChange;
-  }, [onOpenChange]);
-  // z-index assigned by the registry on open (non-modal stacking only).
-  const [stackZ, setStackZ] = useState(NON_MODAL_BASE_Z);
+  const {containerRef: focusTrapRef} = useFocusTrap<HTMLDialogElement>({
+    isActive: isOpen && hasScrim,
+  });
+  const mergedDialogRef = useMergedRefs(ref, dialogRef, focusTrapRef);
+  // Derive dismissal behavior from purpose, as Dialog does.
+  const allowEscape = purpose !== 'required';
+  const allowScrimClick = purpose === 'info';
+  // Same lowering as Dialog: with no padding prop the content area reads the
+  // theme's --astryx-drawer-padding chain (--spacing-4 when unset), else the
+  // explicit step.
+  const usesThemePadding = padding == null;
+  const effectivePadding = padding ?? 4;
+  const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
   // Whether the panel paints: true while open and for the whole slide-out.
   const [isRendered, setIsRendered] = useState(isOpen);
 
@@ -442,59 +478,50 @@ export function Drawer({
     setIsRendered,
   });
 
-  // LIFO registry membership: register on open, unregister on close or
-  // unmount. The returned z-index stacks non-modal siblings in open order.
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    const z = registerDrawer(drawerId, () => onOpenChangeRef.current(false));
-    setStackZ(z);
-    return () => unregisterDrawer(drawerId);
-  }, [isOpen, drawerId]);
+  const handleDismiss = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
+  // The shared stack owns Escape delivery across every overlay family. The
+  // provider below gives layers opened from Drawer content a greater logical
+  // depth even when they render elsewhere in the DOM or browser top layer.
+  const {shouldDismissOnCloseRequest} = useLayerDismissal({
+    // The native host stays present through the slide-out. Keep this entry on
+    // the stack until the same commit that hides the host, so a second Escape
+    // cannot fall through to a lower layer during the exit animation.
+    isActive: isRendered,
+    // A `required` drawer consumes Escape without closing, so the press cannot
+    // fall through and dismiss a layer behind it either.
+    escapeBehavior: allowEscape ? 'close' : 'block',
+    onDismiss: handleDismiss,
+    getContainer: () => dialogRef.current,
+  });
 
   // Lock body scroll while a modal drawer is open (iOS Safari workaround).
   useScrollLock(isOpen && hasScrim);
 
-  // Escape closes. The native `cancel` event only fires for showModal();
-  // this React keydown handler covers the non-modal show() path too. Only the
-  // top of the drawer stack closes, so stacked siblings peel off
-  // innermost-first.
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDialogElement>) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        if (isTopDrawer(drawerId)) {
-          onOpenChange(false);
-        }
-      }
-    },
-    [onOpenChange, drawerId],
-  );
-
-  // Native cancel event (browser Escape handling) — prevent the browser
-  // from closing the dialog directly and route through onOpenChange so the
-  // caller's state stays the source of truth. Same top-of-stack rule as
-  // the keydown path.
+  // A modal dialog's native cancel event is a platform close request (for
+  // example Android Back). Keep controlled state authoritative and apply the
+  // same top-most/IME rules as the shared Escape listener.
   const handleCancel = useCallback(
     (event: React.SyntheticEvent<HTMLDialogElement>) => {
       event.preventDefault();
-      if (isTopDrawer(drawerId)) {
-        onOpenChange(false);
+      if (shouldDismissOnCloseRequest() && allowEscape) {
+        handleDismiss();
       }
     },
-    [onOpenChange, drawerId],
+    [allowEscape, handleDismiss, shouldDismissOnCloseRequest],
   );
 
   // Clicks on the ::backdrop target the <dialog> element itself; clicks on
   // drawer content always target a child (the content area fills the panel).
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLDialogElement>) => {
-      if (event.target === event.currentTarget && hasScrim) {
+      if (event.target === event.currentTarget && hasScrim && allowScrimClick) {
         onOpenChange(false);
       }
     },
-    [hasScrim, onOpenChange],
+    [allowScrimClick, hasScrim, onOpenChange],
   );
 
   const widthValue = typeof width === 'number' ? `${width}px` : width;
@@ -523,7 +550,7 @@ export function Drawer({
 
   return (
     <dialog
-      ref={mergeRefs(ref, dialogRef)}
+      ref={mergedDialogRef}
       {...mergeProps(
         themeProps('drawer', {side: anchoredSide}),
         stylex.props(
@@ -533,7 +560,7 @@ export function Drawer({
           dynamicStyles.inlineSize(widthValue, mobileWidth),
           isRendered && styles.rendered,
           isOpen && sideOpenStyle,
-          hasScrim ? styles.scrim : dynamicStyles.stackZ(stackZ),
+          hasScrim && styles.scrim,
           hasScrim && isOpen && styles.scrimOpen,
           xstyle,
         ),
@@ -541,26 +568,49 @@ export function Drawer({
         style,
       )}
       {...safeProps}
+      popover={hasScrim ? undefined : 'manual'}
       aria-label={label}
       aria-modal={hasScrim ? 'true' : undefined}
+      {...(purpose === 'required' && hasScrim
+        ? {role: 'alertdialog'}
+        : undefined)}
       onClick={composeEventHandlers(onClickProp, handleClick)}
-      onKeyDown={composeEventHandlers(onKeyDownProp, handleKeyDown)}
+      onKeyDown={onKeyDownProp}
       onCancel={handleCancel}>
-      {/* Scrollable content area — tabIndex so the dialog's focusing steps
-          land on the panel body rather than the first button inside. */}
-      <div tabIndex={-1} {...stylex.props(styles.content)}>
-        {children}
-      </div>
-      {hasCloseButton && (
-        <div {...stylex.props(styles.controls)}>
-          <IconButton
-            icon={<Icon icon="close" size="sm" color="inherit" />}
-            label="Close"
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-          />
+      <LayerDepthProvider>
+        {/* Scrollable content area — tabIndex so the dialog's focusing steps
+            land on the panel body rather than the first button inside. */}
+        <div
+          tabIndex={-1}
+          {...stylex.props(
+            styles.content,
+            ...container(
+              usesThemePadding
+                ? {useThemeDefault: 'drawer'}
+                : {
+                    paddingInnerX: paddingToken,
+                    paddingInnerY: paddingToken,
+                    paddingOuterX: paddingToken,
+                    paddingOuterY: paddingToken,
+                  },
+            ),
+            !usesThemePadding &&
+              effectivePadding !== 4 &&
+              paddingStyles[effectivePadding],
+            !usesThemePadding &&
+              effectivePadding !== 4 &&
+              containerPaddingInlineVarStyles[effectivePadding],
+            !usesThemePadding &&
+              effectivePadding !== 4 &&
+              containerPaddingBlockStartVarStyles[effectivePadding],
+            !usesThemePadding &&
+              effectivePadding !== 4 &&
+              containerPaddingBlockEndVarStyles[effectivePadding],
+            styles.contentSafeArea,
+          )}>
+          {children}
         </div>
-      )}
+      </LayerDepthProvider>
     </dialog>
   );
 }

@@ -60,32 +60,52 @@ describe('authoring self-docs', () => {
   );
 });
 
-describe('what the authoring docs say about the unbuilt docs graph', () => {
-  it('marks exactly the fields topic loading rejects as not read yet', () => {
+describe('what the authoring docs say about the docs tree', () => {
+  it('marks exactly the fields the docs tree does not read yet', () => {
     const notReadYet = graphFieldsDoc.fields
-      .filter(field => /Not read yet/.test(field.description))
+      .filter(field =>
+        /^Reserved: .*Nothing reads it today/.test(field.description),
+      )
       .map(field => field.name);
-    expect(notReadYet.sort()).toEqual([...GRAPH_ONLY_FIELDS].sort());
+    // The tree reads `placement` for every guide (spec:AST-046); the other
+    // graph fields are still refused by every topic reader.
+    expect(notReadYet.sort()).toEqual(
+      GRAPH_ONLY_FIELDS.filter(field => field !== 'placement').sort(),
+    );
     for (const field of graphFieldsDoc.fields) {
-      if (notReadYet.includes(field.name)) {
+      if (GRAPH_ONLY_FIELDS.includes(field.name)) {
         expect(field.description).toMatch(/fails to load/);
       }
     }
-    expect(graphFieldsDoc.description).toMatch(/not built yet/);
+    const placement = graphFieldsDoc.fields.find(f => f.name === 'placement');
+    expect(placement.description).toMatch(
+      /Read for every guide, the CLI's and each integration's/,
+    );
+    expect(graphFieldsDoc.description).toMatch(
+      /Nothing reads `aliases` or `audience` today/,
+    );
   });
 
-  it('says a topic using a graph block fails to load', () => {
+  it('keeps graph blocks behind the separate GraphContentBlock type, and a section takes a reference block', () => {
     const content = referenceDoc.fields
       .flatMap(field => [field, ...(field.fields ?? [])])
       .find(field => field.name === 'sections[].content');
+    expect(content.type).toBe('(ReferenceContentBlock | ReferenceDocBlock)[]');
+    expect(content.description).toContain('GraphContentBlock');
     for (const type of GRAPH_BLOCK_TYPES) {
       expect(content.description).toContain(type);
     }
-    expect(content.description).toMatch(/fails to load/);
+    // A section's reference block reads as the doc it includes.
+    expect(GRAPH_BLOCK_TYPES.has('reference')).toBe(false);
+    expect(content.description).toMatch(
+      /A `reference` block .* includes another doc/,
+    );
   });
 
-  it('says namespace docs are not loaded yet', () => {
-    expect(namespaceDoc.description).toMatch(/Not loaded yet/);
+  it('says where namespace docs live: the CLI tree, and each integration', () => {
+    expect(namespaceDoc.description).toMatch(
+      /an integration ships its own in its docs directory/,
+    );
     expect(
       problemsInTopic({
         ...namespaceDoc.examples?.[0],
@@ -93,7 +113,7 @@ describe('what the authoring docs say about the unbuilt docs graph', () => {
         name: 'x',
       }),
     ).toEqual([
-      '"x" is a namespace doc. Only the docs graph reads namespace docs, and it is not built yet; remove this file from the docs directory.',
+      '"x" is a namespace doc, which the docs tree reads, not the topic list. The CLI keeps its own in assets/docs/tree; an integration ships its namespace docs in its docs directory.',
     ]);
   });
 });

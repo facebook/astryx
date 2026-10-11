@@ -4,15 +4,17 @@ A pull request should make one reviewable change for one reason. Choose the temp
 
 GitHub uses the default template automatically. To choose another, add `?template=<file>.md` to the new-pull-request URL, or copy the matching file from `.github/PULL_REQUEST_TEMPLATE/` into the description.
 
-| Primary intent                                       | Template           | Minimum evidence                                                                                         |
-| ---------------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------- |
-| Restore broken behavior                              | `bug-fix.md`       | reproduction, expected authority, before/after result, unchanged representative path                     |
-| Correct or intentionally change appearance           | `visual-update.md` | current visual authority or owner decision, real-browser before/after pixels, relevant state matrix      |
-| Add a capability                                     | `new-feature.md`   | user need, current specification, complete public delta, behavior and compatibility evidence             |
-| Correct contributor or consumer documentation        | `documentation.md` | reader impact, source of truth, rendered or generated result                                             |
-| Record a durable decision                            | `specification.md` | exact unresolved claim, existing authority searched, decision, rejected alternatives, explicit non-goals |
-| Change tooling, tests, CI, or repository maintenance | `maintenance.md`   | operational problem, failure proof, success proof, unchanged product behavior                            |
-| Anything else                                        | `other.md`         | primary intent, user or maintainer impact, authority, evidence                                           |
+Any pull request that creates or changes a knowledge record — a `docs/specs/<id>/spec.md`, a family, design, theme, or architecture record, or a colocated `<Name>.spec.md` — reports the results of the rubric in [Writing specification records](spec-writing.md) in its description, whichever template it uses. `specification.md` carries the `## Writing rubric results` section; copy it into another template when that pull request also touches a record.
+
+| Primary intent                                       | Template           | Minimum evidence                                                                                                                 |
+| ---------------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Restore broken behavior                              | `bug-fix.md`       | reproduction, expected authority, before/after result, unchanged representative path                                             |
+| Correct or intentionally change appearance           | `visual-update.md` | current visual authority or owner decision, real-browser before/after pixels, relevant state matrix                              |
+| Add a capability                                     | `new-feature.md`   | user need, current specification, complete public delta, behavior and compatibility evidence                                     |
+| Correct contributor or consumer documentation        | `documentation.md` | reader impact, source of truth, rendered or generated result                                                                     |
+| Record a durable decision                            | `specification.md` | exact unresolved claim, existing authority searched, decision, rejected alternatives, explicit non-goals, writing rubric results |
+| Change tooling, tests, CI, or repository maintenance | `maintenance.md`   | operational problem, failure proof, success proof, unchanged product behavior                                                    |
+| Anything else                                        | `other.md`         | primary intent, user or maintainer impact, authority, evidence                                                                   |
 
 ## Explain only what authority does not already say
 

@@ -6,6 +6,8 @@
  * Shared logic for generating CSS rules from a resolved theme definition,
  * including one component-leaf lowering path for root, adaptation, and
  * media-surface values plus condition-correct Heading weight precedence guards.
+ * Built adaptation metadata resolves against the same root component defaults
+ * as defineTheme, so scale-only rules do not reset authored component styles.
  * Used by both the runtime path (Theme injects <style>) and the build
  * path (`astryx theme build` pre-compiles to CSS files).
  *
@@ -1139,6 +1141,7 @@ export function generateAdaptationCSS(
           theme.__axes ?? {},
           theme.tokens,
           theme.localTokens,
+          theme.components,
         )
       : undefined);
   if (!rules || rules.length === 0) {

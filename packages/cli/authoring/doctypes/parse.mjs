@@ -67,8 +67,9 @@ export function parseDoc(input, label = 'doc') {
     case 'theme':
       return parseTheme(input, label);
     case undefined:
-      return parseLegacyDoc(input, label);
     default:
-      throw new Error(`${label} has unsupported type ${JSON.stringify(type)}.`);
+      // 0.6.x shape-sniffed unknown stamps. Keep accepting them through the
+      // patch compatibility window; canonical writers emit a known stamp.
+      return parseLegacyDoc(input, label);
   }
 }

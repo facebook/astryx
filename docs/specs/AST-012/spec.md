@@ -119,7 +119,10 @@ A breakpoint map alone emits no CSS. Only rules with adaptation values do.
   indicators, media-surface fields, and adaptations remain root-owned. Within one
   rule, values use the root expansion, deep-merge, and kind precedence. A
   generative axis expands against the root axis metadata, and every produced leaf
-  counts as a write by that rule. Missing required scale fields MUST be supplied
+  counts as a write by that rule except invariant type-scale component defaults
+  at exact leaf paths already declared on the effective root `components`.
+  Generated tokens and rule-authored component leaves remain writes.
+  Missing required scale fields MUST be supplied
   rather than synthesized from approximate built-in defaults. Component writes in
   rules MUST use the same target, axis, value-domain, and extension validation as
   root `components`; adaptations define no separate component-value validation
@@ -140,7 +143,9 @@ A breakpoint map alone emits no CSS. Only rules with adaptation values do.
   cascade in declaration order and the last matching write to each resolved token
   or component leaf wins. Condition shape creates no independent specificity
   score. Duplicate `when` objects are valid. Reordering overlapping rules is an
-  intentional behavior change.
+  intentional behavior change. A later scale-only rule preserves an earlier
+  authored component leaf when its exact path exists at root; when absent at
+  root, the generated component leaf remains a write and wins if both rules match.
 - **FR7 — Theme extension preserves cascade order.** A child inherits the base
   width-breakpoint overrides and ordered rules. Breakpoints merge by name.
   Inherited rules keep their relative order and resolve against the child's

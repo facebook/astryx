@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {render} from '@testing-library/react';
 import {defineTheme} from '../theme/defineTheme';
 import {resetThemes} from '../theme/themeRegistry';
 import {__resetDevWarnings} from '../utils/devWarning';
@@ -11,7 +12,9 @@ import {
   getIcon,
   getExtendedIcon,
   resetIcons,
+  type IconRegistry,
 } from './globalIconRegistry';
+import {Icon} from './Icon';
 
 describe('iconRegistry (global, RSC-compatible)', () => {
   beforeEach(() => {
@@ -41,6 +44,47 @@ describe('iconRegistry (global, RSC-compatible)', () => {
     expect(icon).toBe(defaultIcons['numberInput:stepperDown']);
     expect(icon).toBeDefined();
     expect(icon).not.toBe(defaultIcons.chevronDown);
+  });
+
+  it('draws the default upload distinctly from arrowUp', () => {
+    const {container: upload} = render(<Icon icon="upload" />);
+    const {container: arrowUp} = render(<Icon icon="arrowUp" />);
+
+    expect(getIcon('upload')).toBe(defaultIcons.upload);
+    expect(upload.querySelector('svg')).not.toBeNull();
+    expect(upload.querySelector('svg')?.innerHTML).not.toBe(
+      arrowUp.querySelector('svg')?.innerHTML,
+    );
+  });
+
+  it('keeps complete registries authored before upload assignable', () => {
+    const {upload: _upload, ...legacyIcons} = defaultIcons;
+    const legacyRegistry: IconRegistry = legacyIcons;
+
+    expect(legacyRegistry.search).toBe(defaultIcons.search);
+  });
+
+  it('lets a theme draw upload without changing arrowUp', () => {
+    const theme = defineTheme({
+      name: 'upload-only',
+      icons: {upload: 'theme-upload'},
+    });
+
+    expect(getIcon('upload', theme)).toBe('theme-upload');
+    expect(getIcon('arrowUp', theme)).toBe(defaultIcons.arrowUp);
+    expect(getIconRegistry(theme).arrowUp).toBe(defaultIcons.arrowUp);
+  });
+
+  it('resolves the default upload for a theme that only draws arrowUp', () => {
+    const {upload: _upload, ...legacyIcons} = defaultIcons;
+    const theme = defineTheme({
+      name: 'legacy-complete',
+      icons: {...legacyIcons, arrowUp: 'theme-arrow-up'},
+    });
+
+    expect(getIcon('arrowUp', theme)).toBe('theme-arrow-up');
+    expect(getIcon('upload', theme)).toBe(defaultIcons.upload);
+    expect(getIconRegistry(theme).upload).toBe(defaultIcons.upload);
   });
 
   it('returns default icons when nothing is registered', () => {

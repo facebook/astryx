@@ -25,6 +25,8 @@
  */
 
 import {recordCommandResult} from '../../../foundation/debug/index.mjs';
+import {routeSegment} from '../../../foundation/discovery/docs-section-key.mjs';
+import {formatCliCommand} from '../../../foundation/env/package-manager.mjs';
 import {text} from '../formatters/index.mjs';
 
 /**
@@ -120,6 +122,10 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
   const cmd = parent.command(argSpec ? `${token} ${argSpec}` : token);
   Object.defineProperty(cmd, COMMAND_DOCS, {value: {doc, fn}, configurable: true});
   if (doc.summary) cmd.description(doc.summary);
+  if (doc.deprecated) {
+    const base = cmd.description() || '';
+    cmd.description(`${base} [DEPRECATED: ${doc.deprecated}]`);
+  }
 
   const paramDesc = (/** @type {string | undefined} */ name) =>
     (fn?.params ?? []).find(p => p.name === name)?.description ?? '';
@@ -143,10 +149,11 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     cmd.addOption(option);
   }
 
-  // Help ends with the documented exit codes. `choices` stay in the option
-  // text: Commander `.choices()` would replace the api layer's
-  // ERR_INVALID_ARGUMENT validation.
-  addExitCodesHelp(cmd, doc.exitCodes);
+  // Help ends with the documented exit codes, the examples, and the docs
+  // route that reads the whole command. `choices` stay in the option text:
+  // Commander `.choices()` would replace the api layer's ERR_INVALID_ARGUMENT
+  // validation.
+  addDocHelp(cmd, doc);
 
   if (action) {
     // The recording seam. An action's job ends at "here is what I answered
@@ -163,6 +170,27 @@ export function defineCommand(parent, doc, {fn, action} = {}) {
     });
   }
   return cmd;
+}
+
+/**
+ * End `cmd`'s help with what its CommandDoc says: the exit codes, then the
+ * examples, then `More:`, the `astryx docs` route that reads the whole command.
+ * @param {import('commander').Command} cmd
+ * @param {import('@astryxdesign/cli/authoring').CommandDoc} doc
+ */
+export function addDocHelp(cmd, doc) {
+  addExitCodesHelp(cmd, doc.exitCodes);
+  // Rendered when help is shown, so the run prefix (npx astryx, pnpm astryx,
+  // ...) is looked up then, not on every start.
+  cmd.addHelpText('after', () => {
+    const examples = (doc.examples ?? []).flatMap(({label, cli}) => [
+      ...(label ? [`  # ${label}`] : []),
+      `  ${formatCliCommand(cli)}`,
+    ]);
+    const more = `More: ${formatCliCommand(`docs cli/commands/${routeSegment(doc.name)}`)}`;
+    const blocks = examples.length > 0 ? [['Examples:', ...examples].join('\n'), more] : [more];
+    return `\n${text(blocks.join('\n\n')).toString()}`;
+  });
 }
 
 /**

@@ -6,7 +6,11 @@ import {
   SegmentedControl,
   SegmentedControlItem,
 } from '@astryxdesign/core/SegmentedControl';
+import {Card} from '@astryxdesign/core/Card';
+import {Heading} from '@astryxdesign/core/Heading';
 import {Icon} from '@astryxdesign/core/Icon';
+import {Text} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Stack';
 import {
   Squares2X2Icon,
   ListBulletIcon,
@@ -58,6 +62,87 @@ export const Default: Story = {
       </SegmentedControl>
     );
   },
+};
+
+export const InVerticalStack: Story = {
+  name: 'Inside a vertical stack',
+  render: () => {
+    const [value, setValue] = useState('viewer');
+    return (
+      <VStack width="100%">
+        <SegmentedControl
+          value={value}
+          onChange={setValue}
+          label="Access level"
+          layout="hug">
+          <SegmentedControlItem value="viewer" label="Viewer" />
+          <SegmentedControlItem value="operator" label="Operator" />
+          <SegmentedControlItem value="owner" label="Owner" />
+        </SegmentedControl>
+      </VStack>
+    );
+  },
+};
+
+const WORKSPACE_SUMMARY: Record<string, string> = {
+  overview: '4 projects, 2 due this week.',
+  activity: '18 updates since Monday.',
+  members: '12 members, 3 pending invites.',
+  billing: 'Next invoice on October 1.',
+};
+
+function WorkspaceCard() {
+  const [view, setView] = useState('overview');
+  return (
+    <Card maxWidth={480}>
+      <VStack gap={3}>
+        <Heading level={3}>Team workspace</Heading>
+        <SegmentedControl
+          label="Workspace view"
+          value={view}
+          onChange={setView}>
+          <SegmentedControlItem value="overview" label="Overview" />
+          <SegmentedControlItem value="activity" label="Activity" />
+          <SegmentedControlItem value="members" label="Members" />
+          <SegmentedControlItem value="billing" label="Billing" />
+        </SegmentedControl>
+        <Text color="secondary">{WORKSPACE_SUMMARY[view]}</Text>
+      </VStack>
+    </Card>
+  );
+}
+
+/**
+ * The SegmentedControl.doc.mjs "In a narrow card" example at 320px, 390px, and
+ * 480px. With room (390px and 480px) the hug control keeps its content width
+ * inside the VStack instead of stretching. At 320px it caps at the card width
+ * and its labels truncate instead of running past the card edge.
+ */
+export const InNarrowCard: Story = {
+  name: 'In a narrow card',
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        gap: 24,
+        flexWrap: 'wrap',
+        alignItems: 'flex-start',
+      }}>
+      {[320, 390, 480].map(width => (
+        <div key={width} style={{width}}>
+          <p
+            style={{
+              fontSize: 12,
+              color: 'var(--color-text-secondary)',
+              marginBottom: 8,
+            }}>
+            {width}px
+          </p>
+          <WorkspaceCard />
+        </div>
+      ))}
+    </div>
+  ),
 };
 
 export const WithIcons: Story = {

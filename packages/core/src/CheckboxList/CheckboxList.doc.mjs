@@ -152,6 +152,13 @@ export const docs = {
         'Explains why the group is disabled. Applies to the whole-group disabled state (isDisabled), not per item. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the checkboxes focusable via aria-disabled (toggling stays blocked). Use this instead of wrapping a disabled CheckboxList in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
     },
     {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        'Whether all checkbox items are read-only. Displays the current state at full opacity but prevents interaction. Unlike isDisabled, read-only checkboxes are not visually dimmed.',
+      default: 'false',
+    },
+    {
       name: 'status',
       type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description: 'Status indicator ({ type, message }).',

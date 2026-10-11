@@ -1,8 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect} from 'storybook/test';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
@@ -433,6 +435,16 @@ export const Status: Story = {
 };
 
 // Size variants
+const compactSizingTheme = defineTheme({
+  name: 'multi-selector-compact-sizing',
+  tokens: {
+    '--spacing-5': '10px',
+    '--size-element-sm': '24px',
+    '--size-element-md': '28px',
+    '--size-element-lg': '32px',
+  },
+});
+
 export const Sizes: Story = {
   render: () => {
     const [value1, setValue1] = useState<string[]>([]);
@@ -465,10 +477,71 @@ export const Sizes: Story = {
           onChange={setValue3}
           placeholder="Large (36px)"
         />
+        <Theme theme={compactSizingTheme}>
+          {(['sm', 'md', 'lg'] as const).map(size => (
+            <div key={size} style={{display: 'grid', gap: 8}}>
+              {(
+                [
+                  'plain',
+                  'start',
+                  'option',
+                  'status',
+                  'tooltip',
+                  'clear',
+                  'loading',
+                  'readonly',
+                ] as const
+              ).map(state => (
+                <MultiSelector
+                  key={state}
+                  label={`Compact ${size} ${state}`}
+                  size={size}
+                  options={[
+                    {
+                      value: 'name',
+                      label: 'Name',
+                      icon: state === 'option' ? 'search' : undefined,
+                    },
+                  ]}
+                  value={['name']}
+                  onChange={() => {}}
+                  startIcon={state === 'start' ? 'search' : undefined}
+                  status={
+                    state === 'status' || state === 'tooltip'
+                      ? {type: 'warning', message: 'Check selection'}
+                      : undefined
+                  }
+                  statusVariant={state === 'tooltip' ? 'tooltip' : 'attached'}
+                  hasClear={state === 'clear'}
+                  isLoading={state === 'loading'}
+                  isReadOnly={state === 'readonly'}
+                />
+              ))}
+            </div>
+          ))}
+        </Theme>
       </div>
     );
   },
   decorators: [Story => <Story />],
+  play: async ({canvasElement}) => {
+    await document.fonts.ready;
+    const triggers = canvasElement.querySelectorAll<HTMLElement>(
+      '.astryx-multi-selector',
+    );
+    expect(triggers).toHaveLength(27);
+    for (const trigger of triggers) {
+      const size = Number.parseFloat(
+        getComputedStyle(trigger).getPropertyValue(
+          `--size-element-${trigger.dataset.size}`,
+        ),
+      );
+      expect(
+        trigger.getBoundingClientRect().height,
+        trigger.textContent ?? '',
+      ).toBeCloseTo(size, 1);
+    }
+  },
 };
 
 // Form composition
@@ -676,6 +749,124 @@ export const EndIndicatorPosition: Story = {
         indicatorPosition="end"
         isDefaultOpen
       />
+    );
+  },
+};
+
+export const CreateFromQuery: Story = {
+  render: () => {
+    const [options, setOptions] = useState([
+      {value: 'bug', label: 'Bug'},
+      {value: 'feature', label: 'Feature'},
+      {value: 'docs', label: 'Docs'},
+    ]);
+    const [value, setValue] = useState<string[]>(['bug']);
+    return (
+      <MultiSelector
+        label="Labels"
+        options={options}
+        value={value}
+        onChange={(next, change) => {
+          if (change?.type === 'create') {
+            setOptions(current => [
+              ...current,
+              {value: change.query, label: change.query},
+            ]);
+          }
+          setValue(next);
+        }}
+        hasSearch
+        hasCreate
+        triggerDisplay="badges"
+        isDefaultOpen
+      />
+    );
+  },
+};
+
+export const RowActions: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>(['feature']);
+    const [lastEdited, setLastEdited] = useState<string | null>(null);
+    const action = (label: string) => (
+      <IconButton
+        label={`Edit ${label}`}
+        icon="moreHorizontal"
+        variant="ghost"
+        size="sm"
+        tooltip={`Edit ${label}`}
+        onClick={() => setLastEdited(label)}
+      />
+    );
+    return (
+      <>
+        <MultiSelector
+          label="Labels"
+          options={[
+            {
+              type: 'section',
+              title: 'Type',
+              options: [
+                {value: 'feature', label: 'Feature'},
+                {value: 'bug', label: 'Bug', action: action('Bug')},
+                {value: 'docs', label: 'Docs'},
+                {
+                  value: 'review',
+                  label: 'Design review',
+                  action: action('Design review'),
+                },
+              ],
+            },
+            {
+              type: 'section',
+              title: 'Priority',
+              options: [
+                {value: 'p0', label: 'P0', action: action('P0')},
+                {value: 'p1', label: 'P1', action: action('P1')},
+              ],
+            },
+          ]}
+          value={value}
+          onChange={setValue}
+          hasSearch
+          hasSelectAll
+          hasClear
+          triggerDisplay="badges"
+          isDefaultOpen
+        />
+        <output data-testid="last-edited">{lastEdited ?? ''}</output>
+      </>
+    );
+  },
+};
+
+export const RowActionsRtl: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <div dir="rtl">
+        <MultiSelector
+          label="Labels"
+          options={[
+            {
+              value: 'bug',
+              label: 'Bug',
+              action: (
+                <IconButton
+                  label="Edit Bug"
+                  icon="moreHorizontal"
+                  variant="ghost"
+                  size="sm"
+                />
+              ),
+            },
+            {value: 'feature', label: 'Feature'},
+          ]}
+          value={value}
+          onChange={setValue}
+          isDefaultOpen
+        />
+      </div>
     );
   },
 };

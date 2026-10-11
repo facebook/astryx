@@ -89,6 +89,12 @@ describe('enforcement layer 3 — per-command setup nudge', () => {
     expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
   });
 
+  it('is quiet in an integration package, which is not an app', async () => {
+    asProject();
+    write('astryx.integration.mjs', 'export default {};\n');
+    expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
+  });
+
   it('does not nudge for the installer command itself', async () => {
     asProject();
     expect((await runCli(['init'], tmp)).stderr).not.toMatch(NUDGE);

@@ -215,6 +215,7 @@ async function computedNode(
         multiline: null,
         readOnly: null,
         required: null,
+        pressed: null,
         checked: null,
         selected: null,
         disabled: false,
@@ -241,6 +242,7 @@ async function computedNode(
       }
     }
     const live = property(node, 'live');
+    const pressed = property(node, 'pressed');
     const checked = property(node, 'checked');
     const selected = optionalFlag(node, 'selected');
     const invalid = property(node, 'invalid');
@@ -279,6 +281,14 @@ async function computedNode(
       multiline: optionalFlag(node, 'multiline'),
       readOnly: optionalFlag(node, 'readonly'),
       required: optionalFlag(node, 'required'),
+      pressed:
+        pressed === 'true' || pressed === true
+          ? 'true'
+          : pressed === 'false' || pressed === false
+            ? 'false'
+            : pressed === 'mixed'
+              ? 'mixed'
+              : null,
       checked:
         checked === 'true' || checked === true
           ? 'true'

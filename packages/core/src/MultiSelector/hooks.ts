@@ -13,6 +13,7 @@
  */
 
 import {useCallback, useRef, useState} from 'react';
+import {isRtlElement} from '../hooks/isRtlElement';
 import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import type {MultiSelectorOptionData} from './types';
 
@@ -36,15 +37,39 @@ interface UseMultiComboboxOptions {
    */
   hasValue?: boolean;
   listboxId: string;
+  /**
+   * Whether the popup is a grid (`spec:AST-058`): rows pair an option cell
+   * with an action cell, the inline-end arrow moves the highlight from the
+   * option to the action and the inline-start arrow back, and Enter on the
+   * action cell activates the caller's control instead of toggling.
+   */
+  isGrid?: boolean;
+  /** Whether the row at `index` carries an action to move to. */
+  rowHasAction?: (index: number) => boolean;
+  /** Activate the control in the highlighted row's action cell. */
+  onActivateAction?: (index: number) => void;
 }
+
+/** Which cell of the highlighted row the highlight is on. */
+export type MultiComboboxCell = 'option' | 'action';
 
 interface UseMultiComboboxResult {
   highlightedIndex: number;
   setHighlightedIndex: (index: number) => void;
+  /** `'action'` only in a grid, while the highlight is on the action cell. */
+  highlightedCell: MultiComboboxCell;
   getItemId: (index: number) => string;
+  /** Id of the action cell of the row at `index` (the active descendant there). */
+  getActionCellId: (index: number) => string;
+  /** The element `aria-activedescendant` names, or undefined. */
+  activeDescendantId: string | undefined;
   onTriggerClick: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  onItemMouseEnter: (item: MultiSelectorOptionData, index: number) => void;
+  onItemMouseEnter: (
+    item: MultiSelectorOptionData,
+    index: number,
+    cell?: MultiComboboxCell,
+  ) => void;
 }
 
 /**
@@ -64,8 +89,18 @@ export function useMultiCombobox({
   onClear,
   hasValue = false,
   listboxId,
+  isGrid = false,
+  rowHasAction,
+  onActivateAction,
 }: UseMultiComboboxOptions): UseMultiComboboxResult {
-  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const [highlightedIndex, setHighlightedIndexState] = useState<number>(-1);
+  const [highlightedCell, setHighlightedCell] =
+    useState<MultiComboboxCell>('option');
+  // Every move between rows lands on the option cell (spec:AST-058 FR5).
+  const setHighlightedIndex = useCallback((index: number) => {
+    setHighlightedIndexState(index);
+    setHighlightedCell('option');
+  }, []);
   const [typeahead, setTypeahead] = useState('');
   const typeaheadTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
@@ -75,6 +110,16 @@ export function useMultiCombobox({
     (index: number) => `${listboxId}-item-${index}`,
     [listboxId],
   );
+  const getActionCellId = useCallback(
+    (index: number) => `${listboxId}-item-${index}-action`,
+    [listboxId],
+  );
+  const activeDescendantId =
+    isOpen && highlightedIndex >= 0
+      ? isGrid && highlightedCell === 'action'
+        ? getActionCellId(highlightedIndex)
+        : getItemId(highlightedIndex)
+      : undefined;
 
   const getEnabledIndices = useCallback(() => {
     return selectableItems
@@ -85,7 +130,7 @@ export function useMultiCombobox({
   const closeAndReset = useCallback(() => {
     setHighlightedIndex(-1);
     onClose();
-  }, [onClose]);
+  }, [onClose, setHighlightedIndex]);
 
   const onTriggerClick = useCallback(() => {
     if (isDisabled) {
@@ -99,7 +144,14 @@ export function useMultiCombobox({
         setHighlightedIndex(0);
       }
     }
-  }, [isDisabled, isOpen, onOpen, closeAndReset, hasSearch]);
+  }, [
+    isDisabled,
+    isOpen,
+    onOpen,
+    closeAndReset,
+    hasSearch,
+    setHighlightedIndex,
+  ]);
 
   // The scroll effect lives here, the highlight owner, so the hover/keyboard
   // split is shared instead of re-implemented in MultiSelector.tsx (#6077).
@@ -111,9 +163,21 @@ export function useMultiCombobox({
   });
 
   const onItemMouseEnter = useCallback(
-    (item: MultiSelectorOptionData, index: number) => {
+    (
+      item: MultiSelectorOptionData,
+      index: number,
+      cell: MultiComboboxCell = 'option',
+    ) => {
+      // The action cell is the caller's control, usable whether or not the
+      // option itself is disabled (spec:AST-058 FR4).
+      if (cell === 'action') {
+        highlightOnHover(index);
+        setHighlightedCell('action');
+        return;
+      }
       if (!item.disabled) {
         highlightOnHover(index);
+        setHighlightedCell('option');
       }
     },
     [highlightOnHover],
@@ -126,6 +190,33 @@ export function useMultiCombobox({
       }
 
       const enabledIndices = getEnabledIndices();
+
+      // In a grid the horizontal arrows move between the row's two cells,
+      // following visual direction under RTL (spec:AST-058 FR5). Outside a
+      // grid, or with no row highlighted, they keep their default meaning
+      // (the caret, in a search input).
+      if (isGrid && isOpen && highlightedIndex >= 0) {
+        const isRtl = isRtlElement(e.currentTarget as HTMLElement);
+        const inlineEnd = isRtl ? 'ArrowLeft' : 'ArrowRight';
+        const inlineStart = isRtl ? 'ArrowRight' : 'ArrowLeft';
+        if (e.key === inlineEnd) {
+          if (
+            highlightedCell === 'option' &&
+            rowHasAction?.(highlightedIndex) === true
+          ) {
+            e.preventDefault();
+            setHighlightedCell('action');
+          }
+          return;
+        }
+        if (e.key === inlineStart) {
+          if (highlightedCell === 'action') {
+            e.preventDefault();
+            setHighlightedCell('option');
+          }
+          return;
+        }
+      }
 
       switch (e.key) {
         case 'ArrowDown':
@@ -165,6 +256,12 @@ export function useMultiCombobox({
           }
           e.preventDefault();
           if (isOpen && highlightedIndex >= 0) {
+            if (isGrid && highlightedCell === 'action') {
+              // The highlight is on the caller's control: fire it, and only
+              // it — the selection does not change (spec:AST-058 FR4).
+              onActivateAction?.(highlightedIndex);
+              break;
+            }
             const item = selectableItems[highlightedIndex];
             if (item && !item.disabled) {
               onToggle(item.value);
@@ -266,6 +363,11 @@ export function useMultiCombobox({
       closeAndReset,
       selectableItems,
       highlightedIndex,
+      highlightedCell,
+      isGrid,
+      rowHasAction,
+      onActivateAction,
+      setHighlightedIndex,
       onToggle,
       getEnabledIndices,
       typeahead,
@@ -278,7 +380,10 @@ export function useMultiCombobox({
   return {
     highlightedIndex,
     setHighlightedIndex,
+    highlightedCell,
     getItemId,
+    getActionCellId,
+    activeDescendantId,
     onTriggerClick,
     onKeyDown,
     onItemMouseEnter,

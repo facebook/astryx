@@ -267,11 +267,12 @@ const groupStyles = stylex.create({
     backgroundColor: colorVars['--color-background-surface'],
     boxSizing: 'content-box',
   },
+  // Every avatar takes the overlap, not just `:not(:first-child)`: a
+  // HoverCard or Tooltip wraps its trigger in its own element, which makes
+  // every wrapped avatar a first child. AvatarGroup pads its start edge by the
+  // same amount so the first avatar still sits inside the group's box.
   overlap: {
-    marginInlineStart: {
-      default: null,
-      ':not(:first-child)': 'var(--_avatar-group-overlap)',
-    },
+    marginInlineStart: 'var(--_avatar-group-overlap)',
   },
 });
 
@@ -384,25 +385,46 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
 }
 
 /**
- * Generates initials from a name string.
- * Takes the first letter of the first two words.
+ * A character that can stand for a word in initials: a letter, a digit, or an
+ * emoji. Punctuation and other symbols, such as `(`, `"` or `-`, cannot.
+ */
+const INITIAL_CHARACTER =
+  /[\p{L}\p{N}\p{Extended_Pictographic}\p{Regional_Indicator}]/u;
+
+/**
+ * The first character of a word that can stand for it in initials, skipping
+ * leading punctuation, or '' when the word has none (a lone `-` or `()`).
+ */
+function initialCharacter(word: string): string {
+  const index = word.search(INITIAL_CHARACTER);
+  return index === -1 ? '' : firstCharacter(word.slice(index));
+}
+
+/**
+ * Generates initials from a name string: the first letter, digit or emoji of
+ * the first and last words. Words with none of those, such as a lone `-`, are
+ * skipped, and leading punctuation within a word is ignored. Returns '' when
+ * no word yields an initial.
  * @example
  * ```
- * getInitials('John Doe')
- * getInitials('Alice')
+ * getInitials('John Doe') // 'JD'
+ * getInitials('Alice') // 'A'
+ * getInitials('Northwind Workbench (automation)') // 'NA'
  * ```
  */
 function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/);
-  if (words.length === 0) {
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .map(initialCharacter)
+    .filter(initial => initial !== '');
+  if (initials.length === 0) {
     return '';
   }
-  if (words.length === 1) {
-    return firstCharacter(words[0]).toUpperCase();
+  if (initials.length === 1) {
+    return initials[0].toUpperCase();
   }
-  return (
-    firstCharacter(words[0]) + firstCharacter(words[words.length - 1])
-  ).toUpperCase();
+  return (initials[0] + initials[initials.length - 1]).toUpperCase();
 }
 
 /**
@@ -554,8 +576,11 @@ export function Avatar({
   // truthy), leaving an empty plate behind a blank accessible name.
   const meaningfulName = meaningful(name);
   const meaningfulAlt = meaningful(alt);
-  const showInitials = !showImage && !showFallbackImage && meaningfulName;
-  const showIcon = !showImage && !showFallbackImage && !meaningfulName;
+  // A name made only of punctuation ("—", "()") still names the avatar, but
+  // yields no initials; it falls back to the default icon, not an empty plate.
+  const initials = meaningfulName ? getInitials(meaningfulName) : '';
+  const showInitials = !showImage && !showFallbackImage && initials !== '';
+  const showIcon = !showImage && !showFallbackImage && initials === '';
 
   // A meaningful accessible name comes from `alt`/`name`, composed with the
   // status element's `label` when one is present ("Jane Doe, Online") — the
@@ -753,7 +778,7 @@ export function Avatar({
                 dynamicStyles.fontSize(numericSize),
               ),
             )}>
-            {getInitials(meaningfulName)}
+            {initials}
           </div>
         )}
         {showIcon && (

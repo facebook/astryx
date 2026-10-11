@@ -15,10 +15,10 @@ An open source design system that's fully customizable and built for how we buil
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/facebook/astryx/wiki/Contributing)
 
 [![Docs](https://img.shields.io/badge/Docs-astryx.atmeta.com-6741d9?logo=readthedocs&logoColor=white)](https://astryx.atmeta.com)
-[![Storybook](https://img.shields.io/badge/Storybook-live-ff4785?logo=storybook&logoColor=white)](https://facebook.github.io/astryx/storybook/)
-[![Sandbox](https://img.shields.io/badge/Sandbox-playground-A9792B)](https://facebook.github.io/astryx/sandbox/)
+[![Storybook](https://img.shields.io/badge/Storybook-live-ff4785?logo=storybook&logoColor=white)](https://astryx.atmeta.com/storybook/)
+[![Sandbox](https://img.shields.io/badge/Sandbox-playground-A9792B)](https://astryx.atmeta.com/sandbox/)
 
-**[Docs](https://astryx.atmeta.com)** · **[Storybook](https://facebook.github.io/astryx/storybook/)** · **[Sandbox](https://facebook.github.io/astryx/sandbox/)** · **[Contributing](https://github.com/facebook/astryx/wiki/Contributing)** · **[Discord](https://discord.com/invite/XnsUcFykEP)**
+**[Docs](https://astryx.atmeta.com)** · **[Storybook](https://astryx.atmeta.com/storybook/)** · **[Sandbox](https://astryx.atmeta.com/sandbox/)** · **[Contributing](https://github.com/facebook/astryx/wiki/Contributing)** · **[Discord](https://discord.com/invite/XnsUcFykEP)**
 
 </div>
 

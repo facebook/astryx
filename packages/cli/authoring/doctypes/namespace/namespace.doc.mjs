@@ -12,7 +12,7 @@ export const doc = {
   displayName: 'NamespaceDoc',
   namespace: 'authoring',
   description:
-    "Declares named navigation slots and renderer-neutral layout blocks for already-discovered docs. It never scans folders or copies child documents. Not loaded yet: only the docs graph reads namespace docs, and it is not built, so keep them out of an integration's docs directory for now.",
+    "Declares one level of the docs tree: named slots, and adoption rules for already-discovered docs. It never scans folders, lists its children, or copies child documents: a child names its parent with `placement`, or a namespace adopts a discovery group. `astryx docs <route>` lists each slot's children one level down. The CLI keeps its namespace docs in its docs tree directory; an integration ships its own in its docs directory, and they appear in `astryx docs` beside the CLI's.",
   appliesTo: '<namespace>.doc.mjs',
   fields: [
     {
@@ -44,13 +44,13 @@ export const doc = {
       name: 'placement',
       type: 'DocPlacement',
       description:
-        'Optional canonical parent request: {parent, slot?, order?}. Invalid explicit placement will fail compilation instead of falling back.',
+        'Optional canonical parent: {parent, slot?, order?}. `parent` names a namespace of the same package as `namespace:<name>`. An invalid placement withdraws the namespace with a diagnostic; it never falls back.',
     },
     {
       name: 'aliases',
       type: 'string[]',
       description:
-        'Prior names or routes the docs graph will keep resolving to this doc.',
+        'Prior names or routes the docs tree will keep resolving to this doc. Not read yet.',
     },
     {
       name: 'audience',
@@ -78,9 +78,9 @@ export const doc = {
     },
     {
       name: 'blocks',
-      type: 'ReferenceContentBlock[]',
+      type: '(ReferenceContentBlock | GraphContentBlock)[]',
       description:
-        'Ordered layout content. V1 adds only workflow, collection, and reference to the existing prose, heading, code, table, list, and token-ref blocks.',
+        'Ordered layout content for the namespace page. Graph-only workflow, collection, and reference blocks are available here without widening the stable ReferenceContentBlock union used by existing topic renderers. Not rendered yet: `astryx docs <route>` lists every slot and its children in order.',
     },
   ],
   examples: [
@@ -103,17 +103,13 @@ export const docs = {
     source: {group: 'cli-commands', kinds: ['command']},
     into: 'reference',
   }],
-  blocks: [
-    {type: 'collection', source: {slot: 'guides'}, presentation: 'cards'},
-    {type: 'collection', source: {slot: 'reference'}, presentation: 'compact'},
-  ],
 };`,
     },
   ],
   notes: [
     {
       type: 'prose',
-      text: "Namespace docs are not loaded yet. Only the docs graph reads them, and it is not built. A namespace doc in an integration's docs directory fails to load as a topic, and with it every topic that package contributes, until the file is removed.",
+      text: "The docs tree reads namespace docs from the CLI and from every configured integration. An integration's namespace doc is a top-level level of the tree, and its guides name it with `placement`; a doc can be placed only in a namespace of its own package. When two packages claim one route, the CLI's own docs win, then integrations in configured order, and `astryx doctor` names the loser.",
     },
     {
       type: 'prose',
