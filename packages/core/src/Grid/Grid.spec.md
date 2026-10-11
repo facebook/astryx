@@ -87,29 +87,33 @@ that count changes with the container's width. Other inputs change the result
 only by changing what `columns` has to fit: `width` and `maxWidth` set the
 container width a reflowing shape measures against; an `xstyle`, `className`,
 or `style` that sets the track template (including under a media query)
-replaces the computed one; and a GridSpan wider than the available tracks makes
-the browser add implicit tracks for that row. No other prop changes the count.
+replaces the computed one; and a numeric GridSpan wider than the grid's tracks
+makes the browser add implicit tracks to the whole grid, which later items flow
+into. No other prop changes the count.
 
-| `columns`                   | Behavior                                                                                                                                                                                     | Reflows |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `N` (number)                | Exactly N equal-width tracks at every container width.                                                                                                                                       | never   |
-| `{minWidth}`                | As many tracks as fit while each stays at least `minWidth` px wide; one track when nothing narrower fits, shrinking below the floor rather than overflowing. Empty tracks keep their width.  | yes     |
-| `{minWidth, repeat: 'fit'}` | As above, and empty tracks collapse so the present items stretch across the row.                                                                                                             | yes     |
-| `{minWidth, max}`           | Up to `max` tracks, each at least `minWidth` px and never narrower than an equal share of the row; fewer tracks as the container narrows, down to one. `repeat: 'fit'` applies the same way. | yes     |
-| omitted, `0`, or negative   | One track.                                                                                                                                                                                   | never   |
+| `columns`                   | Behavior                                                                                                                                                                                                                                                    | Reflows |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `N` (number)                | Exactly N equal-width tracks at every container width.                                                                                                                                                                                                      | never   |
+| `{minWidth}`                | As many tracks as fit while each stays at least `minWidth` px wide. A container narrower than `minWidth` keeps one `minWidth`-wide track that overflows it. Empty tracks keep their width.                                                                  | yes     |
+| `{minWidth, repeat: 'fit'}` | As above, and empty tracks collapse so the present items stretch across the row.                                                                                                                                                                            | yes     |
+| `{minWidth, max}`           | Up to `max` tracks, each at least `minWidth` px and never narrower than an equal share of the row; fewer tracks as the container narrows, down to one track that shrinks to the container rather than overflowing it. `repeat: 'fit'` applies the same way. | yes     |
+| omitted, `0`, or negative   | One track.                                                                                                                                                                                                                                                  | never   |
 
 - `gap` and `columnGap` count toward the width a reflowing shape has to fit, so
   the full count is reached only when the container has room for the tracks and
   the gaps between them. They never change the count of a numeric `columns`.
 - `height`, `minHeight`, `rowHeight`, `align`, and `justify` size or place the
   container and its items and do not change the column count.
-- GridSpan spans `k` tracks (or the whole row for `'full'`) and does not change
-  the parent's track count. In a reflowing grid that has fewer than `k` tracks,
-  the item spans the tracks that exist and the browser adds implicit tracks for
-  the remainder, which can widen that row.
-- For columns that reflow on small screens, use `{minWidth, max}`. A numeric
-  `columns` never reflows, so a four-up numeric row on a phone renders four
-  narrow tracks; that is the fixed contract, not a defect.
+- GridSpan spans `k` tracks, or the whole row for `'full'`. `'full'` never
+  adds tracks. A numeric span wider than the grid's current tracks makes the
+  browser add implicit tracks to the grid for the remainder; they persist for
+  every row and later items flow into them, so in a reflowing grid keep spans
+  within the smallest count the grid can reach or use `'full'`.
+- For columns that reflow on small screens, use `{minWidth, max}`: `max` is
+  what lets the last track shrink to a narrow container, so `{minWidth}` alone
+  still overflows a phone narrower than `minWidth`. A numeric `columns` never
+  reflows, so a four-up numeric row on a phone renders four narrow tracks; that
+  is the fixed contract, not a defect.
 
 ### Representative states
 
