@@ -1087,9 +1087,9 @@ export function PowerSearch({
           statusVariant={statusVariant}
           onFocus={onFocus}
           onBlur={onBlur}
-          xstyle={xstyle}
-          className={className}
-          style={style}
+          containerXstyle={xstyle}
+          containerClassName={className}
+          containerStyle={style}
           data-testid={testId}
         />
       </div>

@@ -59,7 +59,10 @@ import {
   isImeKeyEvent,
   mergeProps,
 } from '../utils';
-import type {BaseProps} from '../BaseProps';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
@@ -75,10 +78,11 @@ export type {
 export type TypeaheadSize = 'sm' | 'md' | 'lg';
 
 export interface TypeaheadProps<T extends SearchableItem> extends Omit<
-  BaseProps<HTMLDivElement>,
+  FieldInputBaseProps<HTMLInputElement>,
   'onChange'
 > {
-  ref?: React.Ref<HTMLDivElement>;
+  /** Ref forwarded to the combobox input. */
+  ref?: React.Ref<HTMLInputElement>;
   /** Accessible label (required). */
   label: string;
   /** Visually hide the label. @default false */
@@ -397,18 +401,26 @@ export function Typeahead<T extends SearchableItem>({
   debounceMs,
   onChangeQuery,
   onOpenChange,
-  onClick,
-  onBlur,
+  onKeyDown,
   width,
-  xstyle,
-  className,
-  style,
-  'data-testid': testId,
-  ...rest
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
+  id: idProp,
+  ...restProps
 }: TypeaheadProps<T>) {
+  const {rest, container} = useFieldInputStyling('Typeahead', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
-  const inputId = useId();
+  const generatedInputId = useId();
+  const inputId = idProp ?? generatedInputId;
   const inputLabelId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
@@ -579,21 +591,9 @@ export function Typeahead<T extends SearchableItem>({
   const typeaheadContent = (
     <>
       <div
-        {...(inputGroup ? rest : undefined)}
-        ref={useMergedRefs(
-          wrapperRef,
-          disabledMessageTooltip.ref,
-          inputGroup ? ref : undefined,
-        )}
-        data-testid={testId}
-        onClick={composeEventHandlers(
-          handleWrapperClick,
-          inputGroup ? onClick : undefined,
-        )}
-        onBlur={composeEventHandlers(
-          handleBlur,
-          inputGroup ? onBlur : undefined,
-        )}
+        ref={useMergedRefs(wrapperRef, disabledMessageTooltip.ref)}
+        onClick={handleWrapperClick}
+        onBlur={handleBlur}
         {...mergeProps(
           themeProps('typeahead', {size, status: status?.type}),
           stylex.props(
@@ -605,10 +605,10 @@ export function Typeahead<T extends SearchableItem>({
             status && inputStatusFocusWithinStyles[status.type],
             isDisabled && inputWrapperStyles.disabled,
             inputGroup && groupStyles.inGroup,
-            inputGroup && xstyle,
+            controlXstyle,
           ),
-          inputGroup ? className : undefined,
-          inputGroup ? style : undefined,
+          controlClassName,
+          controlStyle,
         )}>
         {startIcon &&
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
@@ -631,7 +631,8 @@ export function Typeahead<T extends SearchableItem>({
               />
             )}
             <BaseTypeahead
-              ref={inputRef}
+              {...rest}
+              ref={useMergedRefs(inputRef, ref)}
               searchSource={searchSource}
               value={value}
               onChange={handleChange}
@@ -651,7 +652,7 @@ export function Typeahead<T extends SearchableItem>({
               onOpenChange={onOpenChange}
               debounceMs={debounceMs}
               anchorRef={wrapperRef}
-              onKeyDown={handleKeyDown}
+              onKeyDown={composeEventHandlers(handleKeyDown, onKeyDown)}
               inputXStyle={showToken ? styles.inputHidden : undefined}
               // While the token is shown the input is invisible and inert behind
               // it — take it out of the Tab order so keyboard users don't hit a
@@ -690,10 +691,7 @@ export function Typeahead<T extends SearchableItem>({
 
   return (
     <Field
-      {...rest}
-      onClick={onClick}
-      onBlur={onBlur}
-      ref={ref}
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -713,10 +711,7 @@ export function Typeahead<T extends SearchableItem>({
       }
       statusVariant={statusVariant}
       labelTooltip={labelTooltip}
-      width={width}
-      xstyle={xstyle}
-      className={className}
-      style={style}>
+      width={width}>
       {typeaheadContent}
     </Field>
   );

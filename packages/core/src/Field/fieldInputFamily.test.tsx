@@ -33,11 +33,6 @@ const PENDING_FR10 = new Set([
   'MultiSelector',
   'ComplexSelector',
   // field-root batch
-  'Typeahead',
-  'Tokenizer',
-  'CheckboxList',
-  'RadioList',
-  'Slider',
 ]);
 
 function fieldComposedComponents(): string[] {

@@ -738,20 +738,19 @@ describe('Typeahead', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('forwards DOM props and ref while preserving edit and blur behavior', async () => {
-    const ref = createRef<HTMLDivElement>();
+  it('forwards DOM props and ref to the combobox input while preserving edit and blur behavior', async () => {
+    const ref = createRef<HTMLInputElement>();
     const onClick = vi.fn();
     const onBlur = vi.fn();
     const onChange = vi.fn();
-    render(
+    const {container} = render(
       <Typeahead
         ref={ref}
         id="fruit-field"
         data-tracking="fruit-picker"
-        data-testid="fruit-surface"
-        aria-label="Picker region"
-        className="custom-typeahead"
-        style={{marginTop: 7}}
+        data-testid="fruit-input"
+        containerClassName="custom-typeahead"
+        containerStyle={{marginTop: 7}}
         label="Fruit"
         searchSource={fruitSource}
         value={fruits[0]}
@@ -761,16 +760,22 @@ describe('Typeahead', () => {
         debounceMs={0}
       />,
     );
-    const surface = screen.getByTestId('fruit-surface');
+    const surface = container.querySelector<HTMLElement>('.astryx-typeahead')!;
     const input = screen.getByRole('combobox');
 
-    expect(ref.current).toHaveClass('astryx-field');
-    expect(surface).toHaveClass('astryx-typeahead');
+    expect(ref.current).toBe(input);
+    expect(screen.getByTestId('fruit-input')).toBe(input);
+    expect(input).toHaveAttribute('id', 'fruit-field');
+    expect(input).toHaveAttribute('data-tracking', 'fruit-picker');
     expect(input).toHaveAccessibleName('Fruit');
+    const fieldRoot = container.querySelector('.custom-typeahead');
+    expect(fieldRoot).toHaveClass('astryx-field');
+    expect(fieldRoot).toHaveStyle({marginTop: '7px'});
 
     fireEvent.click(surface);
     await waitFor(() => expect(input).toHaveFocus());
     expect(input).toHaveValue('Apple');
+    fireEvent.click(input);
     expect(onClick).toHaveBeenCalledOnce();
 
     fireEvent.blur(input);
@@ -778,21 +783,19 @@ describe('Typeahead', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('forwards DOM props and ref inside InputGroup without replacing built-in handlers', async () => {
-    const ref = createRef<HTMLDivElement>();
+  it('forwards DOM props and ref to the input inside InputGroup, with control* on the surface', async () => {
+    const ref = createRef<HTMLInputElement>();
     const onClick = vi.fn();
     const onBlur = vi.fn();
     const onChange = vi.fn();
-    render(
+    const {container} = render(
       <InputGroup label="Produce">
         <Typeahead
           ref={ref}
           id="fruit-field"
           data-tracking="fruit-picker"
-          data-testid="fruit-surface"
-          aria-label="Picker region"
-          className="custom-typeahead"
-          style={{marginTop: 7}}
+          controlClassName="custom-typeahead"
+          controlStyle={{marginTop: 7}}
           label="Fruit"
           searchSource={fruitSource}
           value={fruits[0]}
@@ -803,20 +806,20 @@ describe('Typeahead', () => {
         />
       </InputGroup>,
     );
-    const surface = screen.getByTestId('fruit-surface');
+    const surface = container.querySelector<HTMLElement>('.astryx-typeahead')!;
     const input = screen.getByRole('combobox');
 
-    expect(ref.current).toBe(surface);
-    expect(surface).toHaveAttribute('id', 'fruit-field');
-    expect(surface).toHaveAttribute('data-tracking', 'fruit-picker');
-    expect(surface).toHaveAttribute('aria-label', 'Picker region');
-    expect(surface).toHaveClass('astryx-typeahead', 'custom-typeahead');
+    expect(ref.current).toBe(input);
+    expect(input).toHaveAttribute('id', 'fruit-field');
+    expect(input).toHaveAttribute('data-tracking', 'fruit-picker');
+    expect(surface).toHaveClass('custom-typeahead');
     expect(surface).toHaveStyle({marginTop: '7px'});
     expect(input).toHaveAccessibleName('Produce Fruit');
 
     fireEvent.click(surface);
     await waitFor(() => expect(input).toHaveFocus());
     expect(input).toHaveValue('Apple');
+    fireEvent.click(input);
     expect(onClick).toHaveBeenCalledOnce();
 
     fireEvent.blur(input);

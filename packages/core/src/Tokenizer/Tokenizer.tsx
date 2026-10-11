@@ -31,7 +31,11 @@ import {
   useIsBusy,
   type BusyIndicatorLane,
 } from '../Typeahead/busyIndicatorLane';
-import type {BaseProps} from '../BaseProps';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {SizeValue} from '../utils/types';
 import {BaseTypeahead} from '../Typeahead/BaseTypeahead';
 import {useSize} from '../SizeContext/SizeContext';
@@ -60,7 +64,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
-import {mergeProps} from '../utils';
+import {composeEventHandlers, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import {useRenamedProp} from '../hooks/useRenamedProp';
@@ -106,8 +110,8 @@ export interface TokenizerHandle {
 }
 
 export interface TokenizerProps<T extends SearchableItem> extends Omit<
-  BaseProps<HTMLDivElement>,
-  'onChange'
+  FieldInputBaseProps<HTMLInputElement>,
+  'onChange' | 'onFocus' | 'onBlur'
 > {
   /** Accessible label (required). */
   label: string;
@@ -257,8 +261,8 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   onFocus?: (e: React.FocusEvent) => void;
   /** Fires when focus leaves the tokenizer entirely. */
   onBlur?: (e: React.FocusEvent) => void;
-  /** Ref forwarded to the root field element. */
-  ref?: React.Ref<HTMLDivElement>;
+  /** Ref forwarded to the combobox input. */
+  ref?: React.Ref<HTMLInputElement>;
   /** Imperative handle ref for focus/blur control. */
   handleRef?: React.Ref<TokenizerHandle>;
 }
@@ -581,17 +585,27 @@ export function Tokenizer<T extends SearchableItem>({
   onFocus,
   onBlur,
   width,
-  xstyle,
-  className,
-  style,
-  'data-testid': testId,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
   handleRef,
-  ...rest
+  onKeyDown,
+  id: idProp,
+  ...restProps
 }: TokenizerProps<T>) {
+  const {rest, container} = useFieldInputStyling('Tokenizer', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
-  const inputId = useId();
+  const generatedInputId = useId();
+  const inputId = idProp ?? generatedInputId;
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -943,7 +957,6 @@ export function Tokenizer<T extends SearchableItem>({
       onClick={handleWrapperClick}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
-      data-testid={testId}
       {...mergeProps(
         themeProps('tokenizer', {
           size,
@@ -960,7 +973,10 @@ export function Tokenizer<T extends SearchableItem>({
           status && inputStatusBorderStyles[status.type],
           status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
+          controlXstyle,
         ),
+        controlClassName,
+        controlStyle,
       )}>
       {startIcon && (
         <span {...stylex.props(value.length > 0 && styles.startIconWithTokens)}>
@@ -986,7 +1002,8 @@ export function Tokenizer<T extends SearchableItem>({
           button rather than as a second one inside the base. */}
       <BusyIndicatorLaneProvider value={busyLane}>
         <BaseTypeahead
-          ref={inputRef}
+          {...rest}
+          ref={useMergedRefs(inputRef, ref)}
           searchSource={isAtMax ? emptySource : filteredSource}
           value={null}
           onChange={handleAdd}
@@ -1007,7 +1024,7 @@ export function Tokenizer<T extends SearchableItem>({
           onChangeQuery={onChangeQuery}
           __queryEntries={createEntries}
           debounceMs={debounceMs}
-          onKeyDown={handleKeyDown}
+          onKeyDown={composeEventHandlers(handleKeyDown, onKeyDown)}
           anchorRef={wrapperRef}
           size={size}
           inputXStyle={[
@@ -1124,8 +1141,7 @@ export function Tokenizer<T extends SearchableItem>({
 
   return (
     <Field
-      {...rest}
-      ref={ref}
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -1145,10 +1161,7 @@ export function Tokenizer<T extends SearchableItem>({
       }
       statusVariant={statusVariant}
       labelTooltip={labelTooltip}
-      width={width}
-      xstyle={xstyle}
-      className={className}
-      style={style}>
+      width={width}>
       {tokenizerContent}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

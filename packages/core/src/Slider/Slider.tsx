@@ -41,14 +41,17 @@ import {Tooltip} from '../Tooltip/Tooltip';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
-import {mergeProps, rtlStyles} from '../utils';
+import {composeEventHandlers, mergeProps, rtlStyles} from '../utils';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {
   getInteractionModality,
   useInteractionModalityTracking,
 } from '../utils/interactionModality';
 import {isRtlElement} from '../hooks/isRtlElement';
-import type {BaseProps} from '../BaseProps';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -58,10 +61,10 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
 
 export interface SliderBaseProps extends Omit<
-  BaseProps<HTMLDivElement>,
+  FieldInputBaseProps<HTMLDivElement>,
   'onChange'
 > {
-  /** Ref forwarded to the root element */
+  /** Ref forwarded to the slider control element. */
   ref?: React.Ref<HTMLDivElement>;
   /** Label text for the slider (always rendered for accessibility). */
   label: string;
@@ -486,14 +489,28 @@ export function Slider({ref, ...props}: SliderProps) {
     valueDisplay = 'tooltip',
     marks,
     width,
-    xstyle,
-    className,
-    style,
-    'data-testid': testId,
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+    controlXstyle,
+    controlClassName,
+    controlStyle,
     value,
     onChange,
     onChangeEnd,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel,
+    ...restWithRange
   } = props;
+  const {minStepsBetweenThumbs: _minSteps, ...restProps} =
+    restWithRange as typeof restWithRange & {minStepsBetweenThumbs?: number};
+  const {rest, container} = useFieldInputStyling('Slider', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
 
   const isRange = Array.isArray(value);
   const minStepsBetweenThumbs =
@@ -991,7 +1008,7 @@ export function Slider({ref, ...props}: SliderProps) {
 
   return (
     <Field
-      data-testid={testId}
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -1019,10 +1036,7 @@ export function Slider({ref, ...props}: SliderProps) {
       }
       labelTooltip={labelTooltip}
       statusVariant="detached"
-      width={width}
-      xstyle={xstyle}
-      className={className}
-      style={style}>
+      width={width}>
       <div
         {...mergeProps(
           themeProps('slider', {
@@ -1045,14 +1059,18 @@ export function Slider({ref, ...props}: SliderProps) {
             />
           ))}
         <div
+          {...rest}
           ref={useMergedRefs(ref, trackRef, disabledMessageTooltip.ref)}
           {...(isRange
             ? {role: 'group', 'aria-labelledby': labelID}
             : undefined)}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
+          onPointerDown={composeEventHandlers(handlePointerDown, onPointerDown)}
+          onPointerMove={composeEventHandlers(handlePointerMove, onPointerMove)}
+          onPointerUp={composeEventHandlers(handlePointerUp, onPointerUp)}
+          onPointerCancel={composeEventHandlers(
+            handlePointerUp,
+            onPointerCancel,
+          )}
           {...mergeProps(
             themeProps('slider-control', {
               orientation,
@@ -1064,7 +1082,10 @@ export function Slider({ref, ...props}: SliderProps) {
                 ? styles.trackContainerHorizontal
                 : styles.trackContainerVertical,
               isDisabled && styles.trackContainerDisabled,
+              controlXstyle,
             ),
+            controlClassName,
+            controlStyle,
           )}>
           {/* Background track */}
           <div
