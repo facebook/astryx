@@ -48,7 +48,7 @@ export const doc = {
     {
       name: 'options.list',
       type: 'boolean',
-      description: 'Force the list response even when a name is given.',
+      description: 'List templates instead of scaffolding; refused with ERR_INVALID_ARGUMENT when a name or path is also given.',
       default: 'false',
     },
     {

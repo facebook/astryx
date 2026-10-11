@@ -76,7 +76,7 @@ export const doc = {
     {
       type: 'init.remove',
       description:
-        'The removal receipt, returned when `removeAgents` is set: `data.removed` is true when a managed agent-docs block was found and removed, and false when there was none to remove.',
+        'Returned when `removeAgents` is set. `data.removed` is always true, even when no managed block was found.',
     },
   ],
   throws: [
