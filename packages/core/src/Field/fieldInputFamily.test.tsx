@@ -17,7 +17,7 @@ const NOT_FIELD_INPUTS = new Set(['Field', 'InputGroup', 'FormLayout']);
 
 // Field-composed inputs not yet converted to FR10. Each batch removes its own
 // group; keep the comment lines between groups so removals merge cleanly.
-const PENDING_FR10 = new Set([
+const PENDING_FR10 = new Set<string>([
   // text batch
   // date/time batch
   // selector batch
