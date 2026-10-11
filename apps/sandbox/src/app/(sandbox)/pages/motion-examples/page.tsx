@@ -104,7 +104,10 @@ function NavigationOverlaysCard() {
               Modal — backdrop fade and content entry · duration-medium-max
             </Text>
             <HStack gap={2}>
-              <Button label="Open modal" onClick={() => setModalOpen(true)} />
+              <Button
+                label="Open modal"
+                onClick={() => setModalOpen(true)}
+              />
             </HStack>
           </VStack>
         </VStack>
@@ -201,7 +204,11 @@ function MicroInteractionsCard() {
           </Text>
           <HStack gap={2} wrap="wrap">
             <Button label="Primary" variant="primary" onClick={() => {}} />
-            <Button label="Secondary" variant="secondary" onClick={() => {}} />
+            <Button
+              label="Secondary"
+              variant="secondary"
+              onClick={() => {}}
+            />
             <Button label="Ghost" variant="ghost" onClick={() => {}} />
             <Button
               label="Destructive"
@@ -533,6 +540,7 @@ function ReducedMotionCard() {
 
         <VStack gap={2}>
           <Text type="supporting" color="secondary" display="block">
+            
             Honor the OS-level prefers-reduced-motion setting; replace movement
             with instant state changes. Toggle the switch to simulate.
           </Text>
