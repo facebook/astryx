@@ -9,6 +9,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /apps/storybook/stories/CommandPalette.stories.tsx
+ * - /apps/storybook/stories/CommandPaletteInput.stories.tsx
  * - /packages/cli/assets/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
@@ -16,7 +17,7 @@ import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {
   colorVars,
   typeScaleVars,
@@ -112,12 +113,12 @@ export interface CommandPaletteInputProps extends Omit<
 
   /**
    * Placeholder text for the input.
-   * @default 'Search...'
+   * @default 'Search…'
    */
   placeholder?: string;
 
   /**
-   * Accessible label for the combobox input, announced by screen readers.
+   * Accessible label for the query field, announced by screen readers.
    * Falls back to the placeholder text (`'Search…'` by default), since a
    * placeholder alone is not a reliable accessible name.
    */
@@ -184,6 +185,8 @@ export function CommandPaletteInput({
   // Use context values as fallback
   const value = controlledValue ?? ctx?.search;
   const handleValueChange = onValueChange ?? ctx?.setSearch;
+  const accessibleLabel = props['aria-label'] ?? label ?? placeholder;
+  const hasEndContent = isRenderable(endContent);
 
   // When rendered inside an inline dialog, disable auto-focus by default
   // to avoid stealing focus from the surrounding page.
@@ -223,20 +226,23 @@ export function CommandPaletteInput({
         <Icon icon="search" size="sm" color="inherit" />
       </span>
       <input
+        {...props}
         ref={useMergedRefs(ref, inputRef)}
+        {...stylex.props(styles.input)}
         type="text"
-        role="combobox"
-        aria-expanded={ctx?.isOpen ?? true}
-        aria-autocomplete="list"
+        role={ctx ? 'combobox' : 'searchbox'}
+        aria-expanded={ctx?.isOpen}
+        aria-autocomplete={ctx ? 'list' : undefined}
         aria-controls={ctx?.listId}
         aria-activedescendant={
           ctx && ctx.highlightedIndex >= 0
             ? ctx.getItemId(ctx.highlightedIndex)
             : undefined
         }
-        // A placeholder alone is not a reliable accessible name; give the
-        // combobox an explicit one (consumer aria-label via rest props wins).
-        aria-label={label ?? placeholder}
+        // A placeholder alone is not a reliable accessible name. Consumers
+        // may provide aria-label directly; otherwise label and placeholder are
+        // the documented fallbacks.
+        aria-label={accessibleLabel}
         placeholder={placeholder}
         value={value}
         data-autofocus={effectiveAutoFocus || undefined}
@@ -245,19 +251,17 @@ export function CommandPaletteInput({
           onChange?.(e);
         }}
         onKeyDown={handleKeyDown}
-        {...stylex.props(styles.input)}
-        {...props}
       />
-      {(ctx?.isBusy || endContent) && (
+      {(ctx?.isBusy || hasEndContent) && (
         <span {...stylex.props(styles.end)}>
           {ctx?.isBusy && (
             <span {...stylex.props(styles.icon, styles.spinner)}>
               <Spinner size="sm" />
             </span>
           )}
-          {endContent}
+          {hasEndContent && endContent}
         </span>
-      )}{' '}
+      )}
     </div>
   );
 }
