@@ -19,10 +19,6 @@ const NOT_FIELD_INPUTS = new Set(['Field', 'InputGroup', 'FormLayout']);
 // group; keep the comment lines between groups so removals merge cleanly.
 const PENDING_FR10 = new Set([
   // text batch
-  'TextInput',
-  'TextArea',
-  'NumberInput',
-  'FileInput',
   // date/time batch
   'DateInput',
   'DateRangeInput',

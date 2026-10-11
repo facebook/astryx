@@ -1153,7 +1153,7 @@ function FilterRow({
         value={value}
         onChange={onChange}
         isWheelEnabled={false}
-        xstyle={styles.filterValue}
+        controlXstyle={styles.filterValue}
       />
     </InspectorRow>
   );
