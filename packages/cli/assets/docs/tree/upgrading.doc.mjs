@@ -57,7 +57,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: 'Integrations: @acme/astryx-widgets\n3 codemods to run\nApplying integration codemods...\n  Rename AcmeCarousel delay to interval (v0.7.0, @acme/astryx-widgets)\n[ok]     [ok] src/Hero.tsx',
+          code: 'Integrations: @acme/astryx-widgets\n4 codemods to run\nApplying integration codemods...\n  Rename AcmeCarousel delay to interval (v0.7.0, @acme/astryx-widgets)\n[ok]     [ok] src/Hero.tsx',
         },
         {
           type: 'list',

@@ -79,7 +79,7 @@ export const doc = {
           name: 'experimental.xle.components',
           type: 'Record<string, XleComponent>',
           description:
-            'Custom components the deprecated layout expander (`astryx layout`) may emit, keyed by component name. A `{kpi-card}` hint imports `KpiCard` from its `from` path.',
+            'Custom components for the removed layout expander, keyed by component name. The CLI still validates the field, so an entry without a string `from` makes `astryx.config` invalid, but nothing reads it.',
         },
       ],
     },
