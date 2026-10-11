@@ -33,6 +33,7 @@ import type {
   PartialFilter,
   FilterValue,
   OperatorValue,
+  PowerSearchOperator,
 } from './types';
 
 // Below the popover layer's 400px floor (see popoverLayerStyles in
@@ -689,6 +690,21 @@ export function PowerSearchEditPopover({
     }));
   }, [config, partialFilter.field, t]);
 
+  // An "empty" operator takes no value, so choosing one completes the filter:
+  // save it from the choice itself, once, rather than reacting to the state.
+  const saveIfEmptyOperator = useCallback(
+    (fieldKey: string, operator: PowerSearchOperator | undefined) => {
+      if (fieldKey && operator?.value.type === 'empty') {
+        onSave({
+          field: fieldKey,
+          operator: operator.key,
+          value: {type: 'empty'},
+        });
+      }
+    },
+    [onSave],
+  );
+
   const handleFieldChange = useCallback(
     (fieldKey: string) => {
       const defaultOp = config.getDefaultOperator(fieldKey);
@@ -697,8 +713,9 @@ export function PowerSearchEditPopover({
         operator: defaultOp?.key,
         value: undefined,
       });
+      saveIfEmptyOperator(fieldKey, defaultOp);
     },
-    [config],
+    [config, saveIfEmptyOperator],
   );
 
   const handleOperatorChange = useCallback(
@@ -712,8 +729,9 @@ export function PowerSearchEditPopover({
         operator: operatorKey,
         value: keepValue ? prev.value : undefined,
       }));
+      saveIfEmptyOperator(partialFilter.field, newOp);
     },
-    [config, partialFilter.field, currentOperator],
+    [config, partialFilter.field, currentOperator, saveIfEmptyOperator],
   );
 
   const handleValueChange = useCallback(
@@ -773,16 +791,27 @@ export function PowerSearchEditPopover({
   const isEmptyType = operatorValue?.type === 'empty';
   const isNestedType = operatorValue?.type === 'nested';
 
-  // For empty type, auto-save on mount
+  // Opening on an already-complete empty-operator filter saves it once. The
+  // choice that completed it happened before this editor mounted, so this is
+  // the one save not driven by a handler here; the ref keeps it to a single
+  // call across StrictMode's remount and later renders.
+  const hasSavedOnOpenRef = useRef(false);
   useEffect(() => {
-    if (isEmptyType && partialFilter.field && partialFilter.operator) {
-      onSave({
-        field: partialFilter.field,
-        operator: partialFilter.operator,
-        value: {type: 'empty'},
-      });
+    if (hasSavedOnOpenRef.current) {
+      return;
     }
-  }, [isEmptyType, partialFilter.field, partialFilter.operator, onSave]);
+    hasSavedOnOpenRef.current = true;
+    const field = initialFilter.field;
+    const operator = initialFilter.operator
+      ? config.getOperator(field, initialFilter.operator)
+      : undefined;
+    saveIfEmptyOperator(field, operator);
+  }, [
+    config,
+    initialFilter.field,
+    initialFilter.operator,
+    saveIfEmptyOperator,
+  ]);
 
   const showOperatorSelector = operatorOptions.length > 1 || !isEmptyType;
 

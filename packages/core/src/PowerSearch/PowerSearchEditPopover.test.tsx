@@ -766,3 +766,128 @@ describe('narrow-width layout (#4761)', () => {
     }
   });
 });
+
+describe('empty-operator save', () => {
+  const emptyConfig: PowerSearchConfig = {
+    name: 'test-empty',
+    fields: [
+      {
+        key: 'title',
+        label: 'Title',
+        operators: [
+          {key: 'contains', label: 'contains', value: {type: 'string'}},
+          {key: 'is_empty', label: 'is empty', value: {type: 'empty'}},
+        ],
+      },
+      {
+        key: 'assignee',
+        label: 'Assignee',
+        defaultOperator: 'is_unset',
+        operators: [
+          {key: 'is_unset', label: 'is unset', value: {type: 'empty'}},
+          {key: 'is', label: 'is', value: {type: 'string'}},
+        ],
+      },
+    ],
+  };
+
+  type HarnessProps = {
+    filter: React.ComponentProps<typeof PowerSearchEditPopover>['filter'];
+    onSave: (filter: PowerSearchFilter | null) => void;
+  };
+
+  // A parent that keeps the editor mounted and re-renders with a fresh
+  // onSave identity on every render, as an un-memoized consumer does.
+  function Harness({filter, onSave}: HarnessProps) {
+    const config = useInternalConfig(emptyConfig);
+    const [, setTick] = useState(0);
+    return (
+      <>
+        <button type="button" onClick={() => setTick(n => n + 1)}>
+          Rerender
+        </button>
+        <PowerSearchEditPopover
+          config={config}
+          filter={filter}
+          mode="edit"
+          onSave={saved => onSave(saved)}
+          onCancel={() => {}}
+        />
+      </>
+    );
+  }
+
+  const selectOption = (comboboxName: string, optionName: string) => {
+    fireEvent.click(screen.getByRole('combobox', {name: comboboxName}));
+    fireEvent.click(
+      screen.getByRole('option', {name: optionName, hidden: true}),
+    );
+  };
+
+  it('saves exactly once when an empty operator is chosen', () => {
+    const onSave = vi.fn();
+    render(
+      <React.StrictMode>
+        <Harness
+          filter={{field: 'title', operator: 'contains', value: undefined}}
+          onSave={onSave}
+        />
+      </React.StrictMode>,
+    );
+    expect(onSave).not.toHaveBeenCalled();
+
+    selectOption('Operator', 'is empty');
+    fireEvent.click(screen.getByRole('button', {name: 'Rerender'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Rerender'}));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith({
+      field: 'title',
+      operator: 'is_empty',
+      value: {type: 'empty'},
+    });
+  });
+
+  it('saves exactly once when the field switches to one whose default operator is empty', () => {
+    const onSave = vi.fn();
+    render(
+      <React.StrictMode>
+        <Harness
+          filter={{field: 'title', operator: 'contains', value: undefined}}
+          onSave={onSave}
+        />
+      </React.StrictMode>,
+    );
+
+    selectOption('Field', 'Assignee');
+    fireEvent.click(screen.getByRole('button', {name: 'Rerender'}));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith({
+      field: 'assignee',
+      operator: 'is_unset',
+      value: {type: 'empty'},
+    });
+  });
+
+  it('saves exactly once when it opens on a complete empty-operator filter', () => {
+    const onSave = vi.fn();
+    render(
+      <React.StrictMode>
+        <Harness
+          filter={{field: 'title', operator: 'is_empty', value: undefined}}
+          onSave={onSave}
+        />
+      </React.StrictMode>,
+    );
+    fireEvent.click(screen.getByRole('button', {name: 'Rerender'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Rerender'}));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith({
+      field: 'title',
+      operator: 'is_empty',
+      value: {type: 'empty'},
+    });
+  });
+});
