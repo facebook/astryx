@@ -77,6 +77,8 @@ import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useLocale, useTranslator} from '../i18n';
 import {useInputGroup} from '../InputGroup';
+import {useFieldInputStyling} from '../Field/fieldParts';
+import {joinAriaIDs} from '../utils/inputAria';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useSize} from '../SizeContext';
 import {Spinner} from '../Spinner';
@@ -98,6 +100,7 @@ import {
   focusOutlineStyles,
   getInputARIA,
   isImeKeyEvent,
+  composeEventHandlers,
   mergeProps,
   rtlStyles,
   themeProps,
@@ -571,12 +574,28 @@ export function TouchDateField({
   weekStartsOn: weekStartsOnProp = 0,
   format = 'date_long',
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  ...restProps
 }: DateInputProps) {
+  const {rest, container} = useFieldInputStyling('DateInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onClick: onClickProp,
+    onKeyDown: onKeyDownProp,
+    ...controlProps
+  } = rest;
   const pressable = usePressFeedback();
   const t = useTranslator();
   const locale = useLocale();
@@ -586,7 +605,8 @@ export function TouchDateField({
   const size = useSize(sizeProp, 'md');
   const weekStartsOn = normalizeDayOfWeek(weekStartsOnProp);
 
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -627,6 +647,7 @@ export function TouchDateField({
       statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
       statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ],
     inputGroup,
   );
@@ -1180,7 +1201,6 @@ export function TouchDateField({
         // Gated internally by isEnabled, so attaching unconditionally is safe.
         disabledMessageTooltip.ref(el);
       }}
-      {...rest}
       {...mergeProps(
         themeProps('date-input', {
           size,
@@ -1198,10 +1218,10 @@ export function TouchDateField({
             inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
-          xstyle,
+          controlXstyle,
         ),
-        className,
-        style,
+        controlClassName,
+        controlStyle,
       )}>
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <button
@@ -1225,6 +1245,7 @@ export function TouchDateField({
         />
       </button>
       <input
+        {...controlProps}
         ref={mergedInputRef}
         id={id}
         type="text"
@@ -1237,12 +1258,12 @@ export function TouchDateField({
         readOnly
         inputMode="none"
         onChange={() => {}}
-        onClick={openSheet}
-        onKeyDown={handleInputKeyDown}
+        onClick={composeEventHandlers(openSheet, onClickProp)}
+        onKeyDown={composeEventHandlers(handleInputKeyDown, onKeyDownProp)}
         placeholder={placeholder}
         disabled={isEffectivelyDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
-        aria-labelledby={ariaLabelledBy}
+        aria-labelledby={joinAriaIDs(ariaLabelledBy, ariaLabelledByProp)}
         aria-describedby={ariaDescribedBy}
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
@@ -1284,6 +1305,7 @@ export function TouchDateField({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}

@@ -25,6 +25,10 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {
+  FieldInputBaseProps,
+  FieldPartStyleProps,
+} from '../Field/fieldParts';
 import {hasEditableDateSegments} from '../DateInput/nativeDateSegments';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -39,6 +43,7 @@ import {
   plainDateToISO,
   themeProps,
   type ISODateString,
+  composeEventHandlers,
 } from '../utils';
 import type {InputStatusType} from '../Field';
 import {nativePickerSegmentStyles as styles} from './nativePickerSegmentStyles';
@@ -60,6 +65,15 @@ export type NativeDateSegmentProps = {
   isBusy: boolean;
   statusType?: InputStatusType;
   ariaDescribedBy?: string;
+  /**
+   * The caller's base props (data-*, aria-*, DOM handlers, …) for the native
+   * input, the field's semantic control (family:input-fields FR10). Focus and
+   * blur handlers run after the segment's own.
+   */
+  controlProps?: Omit<
+    FieldInputBaseProps<HTMLInputElement>,
+    keyof FieldPartStyleProps | 'onChange' | 'defaultValue'
+  >;
 };
 
 /** The native date half rendered inside DateTimeInput's date wrapper. */
@@ -78,7 +92,13 @@ export function NativeDateSegment({
   isBusy,
   statusType,
   ariaDescribedBy,
+  controlProps,
 }: NativeDateSegmentProps) {
+  const {
+    onFocus: onFocusProp,
+    onBlur: onBlurProp,
+    ...inputProps
+  } = controlProps ?? {};
   const t = useTranslator();
   const locale = useLocale();
   const isTouchPointer = useMediaQuery('(pointer: coarse)');
@@ -259,14 +279,15 @@ export function NativeDateSegment({
       </button>
       <span {...stylex.props(styles.slot)}>
         <input
+          {...inputProps}
           ref={mergedInputRef}
           id={id}
           type="date"
           // UNCONTROLLED on purpose; see initialValueRef and the sync effect.
           defaultValue={initialValueRef.current ?? ''}
           onChange={handleChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
+          onFocus={composeEventHandlers(handleFocus, onFocusProp)}
+          onBlur={composeEventHandlers(handleBlur, onBlurProp)}
           min={min}
           max={max}
           disabled={isEffectivelyDisabled && !hasDisabledMessage}

@@ -209,10 +209,16 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for the Field box around the label, control, and status. containerClassName and containerStyle take a class name and inline styles for the same box. No effect (development warning) where no Field box renders: inside InputGroup (style the group) and in a horizontal-labels FormLayout.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the row that holds the bordered date and time segments with their icons and end controls, never a native input. controlClassName and controlStyle take a class name and inline styles for the same box. Replaces root xstyle, className, and style, which this component does not accept.',
     },
   ],
   theming: {
@@ -565,10 +571,16 @@ export const docsZh = {
       default: "'touch'",
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。',
+        '作用于包含标签、控件和状态的 Field 容器的 StyleX 样式；containerClassName 与 containerStyle 以类名和内联样式作用于同一容器。没有 Field 容器时（InputGroup 内或 horizontal-labels FormLayout 中）不生效，并在开发环境发出警告。',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        '作用于可见控件框（容纳带边框的日期与时间分段及其图标和末端控件的行，而非原生 input）的 StyleX 样式；controlClassName 与 controlStyle 以类名和内联样式作用于同一元素。本组件不接受根级 xstyle、className 和 style。',
     },
   ],
   theming: {
@@ -684,6 +696,9 @@ export const docsDense = {
       "date+time surfaces: 'adaptive-native' (default) = Astryx popovers fine / browser/OS coarse w/ per-segment fallbacks (seconds/timeIncrement/timeOptionInterval); 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = popovers fine / coordinated sheet coarse; 'popover'/'bottom-sheet' force Astryx. every value opens pickers (no typed-only value; that is TimeInput's).",
     nativePicker:
       "deprecated, use presentation: 'touch'='adaptive-native', 'always'='native', 'never'='adaptive-bottom-sheet'. still works as released; presentation wins if both set.",
-    xstyle: 'StyleX styles for layout; must be stylex.create() value',
+    containerXstyle:
+      'Field box (label+control+status); also containerClassName/containerStyle. no effect in InputGroup or horizontal-labels FormLayout',
+    controlXstyle:
+      'visual control box = the row holding the date and time segments, never a native input; also controlClassName/controlStyle. no root xstyle/className/style',
   },
 };

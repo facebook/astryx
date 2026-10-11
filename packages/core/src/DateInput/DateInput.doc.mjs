@@ -177,10 +177,16 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for the Field box around the label, control, and status. containerClassName and containerStyle take a class name and inline styles for the same box. No effect (development warning) where no Field box renders: inside InputGroup (style the group) and in a horizontal-labels FormLayout.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the bordered element that holds the text, icons, and end controls, never the native input. controlClassName and controlStyle take a class name and inline styles for the same box. Replaces root xstyle, className, and style, which this component does not accept.',
     },
   ],
   theming: {
@@ -482,10 +488,16 @@ export const docsZh = {
         '字段宽度（数字按像素处理，字符串按原样使用，例如 “100%”）。统一调整标签、控件和状态消息的宽度。',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        '作用于包含标签、控件和状态的 Field 容器的 StyleX 样式；containerClassName 与 containerStyle 以类名和内联样式作用于同一容器。没有 Field 容器时（InputGroup 内或 horizontal-labels FormLayout 中）不生效，并在开发环境发出警告。',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        '作用于可见控件框（带边框、包含文本、图标和末端控件的元素，而非原生 input）的 StyleX 样式；controlClassName 与 controlStyle 以类名和内联样式作用于同一元素。本组件不接受根级 xstyle、className 和 style。',
     },
   ],
   theming: {
@@ -586,6 +598,9 @@ export const docsDense = {
       "which surface draws the picker: 'adaptive-native' (default) = Astryx popover on fine, browser/OS on coarse w/ Astryx fallbacks; 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = popover fine / Astryx sheet coarse; 'popover'/'bottom-sheet' force Astryx. every value opens a picker (no text-only value; that is TimeInput's). use non-native for weekStartsOn/numberOfMonths/dateConstraints.",
     nativePicker:
       "deprecated, use presentation: 'touch'='adaptive-native', 'always'='native', 'never'='adaptive-bottom-sheet'. still works as released; presentation wins if both set.",
-    xstyle: 'StyleX styles for layout; must be stylex.create() value',
+    containerXstyle:
+      'Field box (label+control+status); also containerClassName/containerStyle. no effect in InputGroup or horizontal-labels FormLayout',
+    controlXstyle:
+      'visual control box (border/bg/icons), never the native input; also controlClassName/controlStyle. no root xstyle/className/style',
   },
 };

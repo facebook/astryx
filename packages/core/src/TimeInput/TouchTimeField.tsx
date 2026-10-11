@@ -37,6 +37,8 @@ import {
   inputStatusFocusWithinStyles,
 } from '../Field';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {useFieldInputStyling} from '../Field/fieldParts';
+import {joinAriaIDs} from '../utils/inputAria';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -59,6 +61,7 @@ import {
   getInputARIA,
   isTimeInRange,
   mergeProps,
+  composeEventHandlers,
   parseISOTime,
   type ISOTimeString,
 } from '../utils';
@@ -196,17 +199,34 @@ export function TouchTimeField({
   statusVariant = 'attached',
   labelTooltip,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
+  ...restProps
 }: TimeInputProps) {
+  const {rest, container} = useFieldInputStyling('TimeInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onClick: onClickProp,
+    ...controlProps
+  } = rest;
   const t = useTranslator();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');
   const size = useSize(sizeProp, 'md');
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -234,6 +254,7 @@ export function TouchTimeField({
       statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
       statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ],
     inputGroup,
   );
@@ -425,10 +446,10 @@ export function TouchTimeField({
           status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
-          xstyle,
+          controlXstyle,
         ),
-        className,
-        style,
+        controlClassName,
+        controlStyle,
       )}>
       <button
         type="button"
@@ -440,6 +461,7 @@ export function TouchTimeField({
         <Icon icon="clock" size="sm" color="secondary" />
       </button>
       <input
+        {...controlProps}
         ref={mergedInputRef}
         id={id}
         type="text"
@@ -448,7 +470,7 @@ export function TouchTimeField({
         readOnly
         inputMode="none"
         onChange={() => {}}
-        onClick={openSheet}
+        onClick={composeEventHandlers(openSheet, onClickProp)}
         placeholder={placeholder}
         disabled={isEffectivelyDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
@@ -460,7 +482,7 @@ export function TouchTimeField({
         aria-haspopup="dialog"
         aria-autocomplete="none"
         autoComplete="off"
-        aria-labelledby={ariaLabelledBy}
+        aria-labelledby={joinAriaIDs(ariaLabelledBy, ariaLabelledByProp)}
         {...stylex.props(styles.input)}
       />
       {isBusy && <Spinner size="sm" />}
@@ -544,6 +566,7 @@ export function TouchTimeField({
   }
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}

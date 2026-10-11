@@ -53,6 +53,8 @@ import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {Icon} from '../Icon';
 import {useLocale, useTranslator} from '../i18n';
 import {useInputGroup} from '../InputGroup';
+import {useFieldInputStyling} from '../Field/fieldParts';
+import {joinAriaIDs} from '../utils/inputAria';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useSize} from '../SizeContext';
 import {Spinner} from '../Spinner';
@@ -69,6 +71,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {
   focusOutlineStyles,
   formatSharedDate,
+  composeEventHandlers,
   getInputARIA,
   mergeProps,
   parseDateInput,
@@ -270,12 +273,28 @@ export function NativeDateField({
   weekStartsOn: _weekStartsOn,
   format = 'date_long',
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  ...restProps
 }: DateInputProps) {
+  const {rest, container} = useFieldInputStyling('DateInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onFocus: onFocusProp,
+    onBlur: onBlurProp,
+    ...controlProps
+  } = rest;
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
@@ -285,7 +304,8 @@ export function NativeDateField({
   // Only breaks a tie the engine probe cannot: see ./nativeDateSegments.
   const isTouchPointer = useMediaQuery('(pointer: coarse)');
 
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -328,6 +348,7 @@ export function NativeDateField({
       statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
       statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ],
     inputGroup,
   );
@@ -549,7 +570,6 @@ export function NativeDateField({
       ref={el => {
         disabledMessageTooltip.ref(el);
       }}
-      {...rest}
       {...mergeProps(
         themeProps('date-input', {
           size,
@@ -567,10 +587,10 @@ export function NativeDateField({
             inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
-          xstyle,
+          controlXstyle,
         ),
-        className,
-        style,
+        controlClassName,
+        controlStyle,
       )}>
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <button
@@ -593,6 +613,7 @@ export function NativeDateField({
       </button>
       <span {...stylex.props(styles.slot)}>
         <input
+          {...controlProps}
           ref={mergedInputRef}
           id={id}
           type="date"
@@ -600,14 +621,14 @@ export function NativeDateField({
           // mount — see `initialValueRef` and the sync effect above.
           defaultValue={initialValueRef.current ?? ''}
           onChange={handleChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
+          onFocus={composeEventHandlers(handleFocus, onFocusProp)}
+          onBlur={composeEventHandlers(handleBlur, onBlurProp)}
           min={min}
           max={max}
           disabled={isEffectivelyDisabled && !showsDisabledMessage}
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
           readOnly={showsDisabledMessage || undefined}
-          aria-labelledby={ariaLabelledBy}
+          aria-labelledby={joinAriaIDs(ariaLabelledBy, ariaLabelledByProp)}
           aria-describedby={ariaDescribedBy}
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={
@@ -661,6 +682,7 @@ export function NativeDateField({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}

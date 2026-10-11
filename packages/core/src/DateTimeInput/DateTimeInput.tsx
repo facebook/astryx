@@ -79,6 +79,7 @@ import {
   isImeKeyEvent,
   mergeProps,
   isFocusDetached,
+  composeEventHandlers,
 } from '../utils';
 import {
   plainDateFromISO,
@@ -87,7 +88,10 @@ import {
   DATE_FORMAT_LONG,
 } from '../utils/plainDate';
 
-import type {BaseProps} from '../BaseProps';
+import {
+  useFieldInputStyling,
+  type FieldInputBaseProps,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useMediaQuery} from '../hooks/useMediaQuery';
@@ -284,7 +288,7 @@ const sizeStyles = stylex.create({
 });
 
 export interface DateTimeInputProps extends Omit<
-  BaseProps,
+  FieldInputBaseProps<HTMLInputElement>,
   'onChange' | 'defaultValue'
 > {
   /** Ref forwarded to the date input element */
@@ -466,7 +470,7 @@ export interface DateTimeInputProps extends Omit<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `containerXstyle` or `controlXstyle`.
    */
   width?: SizeValue;
   /**
@@ -619,15 +623,32 @@ function PointerDateTimeField({
   numberOfMonths = 1,
   weekStartsOn,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
   nativeMode = 'off',
-  ...rest
+  ...restProps
 }: DateTimeInputProps & {
   nativeMode?: 'off' | 'adaptive' | 'forced' | 'legacy';
 }) {
+  const {rest, container} = useFieldInputStyling('DateTimeInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onBlur: onBlurProp,
+    onClick: onClickProp,
+    onKeyDown: onKeyDownProp,
+    ...controlProps
+  } = rest;
   const t = useTranslator();
   const locale = useLocale();
   const usesNativePicker = nativeMode !== 'off';
@@ -652,7 +673,8 @@ function PointerDateTimeField({
   const timePlaceholder =
     timePlaceholderFromProps ?? t('@astryx.dateTimeInput.timePlaceholder');
   const size = useSize(sizeProp, 'md');
-  const dateInputId = useId();
+  const generatedID = useId();
+  const dateInputId = idProp ?? generatedID;
   const timeInputId = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -706,6 +728,7 @@ function PointerDateTimeField({
       status?.message ? statusMessageID : null,
       statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -1582,6 +1605,7 @@ function PointerDateTimeField({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -1604,7 +1628,6 @@ function PointerDateTimeField({
       width={width}>
       <div
         ref={disabledMessageTooltip.ref}
-        {...rest}
         {...mergeProps(
           themeProps('date-time-input', {
             size,
@@ -1614,10 +1637,10 @@ function PointerDateTimeField({
           stylex.props(
             styles.row,
             usesNativePicker && styles.nativeRow,
-            xstyle,
+            controlXstyle,
           ),
-          className,
-          style,
+          controlClassName,
+          controlStyle,
         )}>
         {/* Date input */}
         <div
@@ -1655,6 +1678,13 @@ function PointerDateTimeField({
               isBusy={isBusy}
               statusType={status?.type}
               ariaDescribedBy={ariaDescribedBy}
+              controlProps={{
+                ...controlProps,
+                'aria-labelledby': ariaLabelledByProp,
+                onBlur: onBlurProp,
+                onClick: onClickProp,
+                onKeyDown: onKeyDownProp,
+              }}
             />
           ) : (
             <>
@@ -1688,15 +1718,23 @@ function PointerDateTimeField({
                 />
               </button>
               <input
+                {...controlProps}
                 ref={mergedDateInputRef}
                 id={dateInputId}
                 type="text"
                 role="combobox"
                 value={dateDisplayValue}
                 onChange={handleDateInputChange}
-                onBlur={handleDateBlur}
-                onClick={handleDateInputClick}
-                onKeyDown={handleDateKeyDown}
+                onBlur={composeEventHandlers(handleDateBlur, onBlurProp)}
+                onClick={composeEventHandlers(
+                  handleDateInputClick,
+                  onClickProp,
+                )}
+                onKeyDown={composeEventHandlers(
+                  handleDateKeyDown,
+                  onKeyDownProp,
+                )}
+                aria-labelledby={ariaLabelledByProp}
                 placeholder={placeholder}
                 // With a disabledMessage the input keeps focusability via
                 // aria-disabled so the reason is focus-discoverable; typing is

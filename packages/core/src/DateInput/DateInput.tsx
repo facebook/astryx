@@ -186,8 +186,12 @@ export type {
   InputStatus as DateInputStatus,
   InputStatusType as DateInputStatusType,
 } from '../Field';
-import {mergeProps, isFocusDetached} from '../utils';
-import type {BaseProps} from '../BaseProps';
+import {mergeProps, isFocusDetached, composeEventHandlers} from '../utils';
+import {joinAriaIDs} from '../utils/inputAria';
+import {
+  useFieldInputStyling,
+  type FieldInputBaseProps,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
@@ -195,10 +199,10 @@ import {useLocale, useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 export interface DateInputProps extends Omit<
-  BaseProps,
+  FieldInputBaseProps<HTMLInputElement>,
   'onChange' | 'defaultValue'
 > {
-  /** Ref forwarded to the root element */
+  /** Ref forwarded to the date input (the field's semantic control) */
   ref?: React.Ref<HTMLInputElement>;
   /**
    * Label text for the input (required for accessibility).
@@ -326,7 +330,7 @@ export interface DateInputProps extends Omit<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `containerXstyle` or `controlXstyle`.
    */
   width?: SizeValue;
   /**
@@ -487,19 +491,37 @@ function PointerDateField({
   weekStartsOn,
   format = 'date_long',
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  ...restProps
 }: DateInputProps) {
+  const {rest, container} = useFieldInputStyling('DateInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onBlur: onBlurProp,
+    onClick: onClickProp,
+    onKeyDown: onKeyDownProp,
+    ...controlProps
+  } = rest;
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateInput.placeholder');
   const size = useSize(sizeProp, 'md');
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -548,6 +570,7 @@ function PointerDateField({
       // tooltip's content instead so the status is still announced.
       statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ],
     inputGroup,
   );
@@ -773,7 +796,6 @@ function PointerDateField({
         // compose, so attaching unconditionally is safe.
         disabledMessageTooltip.ref(el);
       }}
-      {...rest}
       {...mergeProps(
         themeProps('date-input', {
           size,
@@ -790,10 +812,10 @@ function PointerDateField({
             inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
-          xstyle,
+          controlXstyle,
         ),
-        className,
-        style,
+        controlClassName,
+        controlStyle,
       )}>
       {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <button
@@ -826,15 +848,16 @@ function PointerDateField({
         />
       </button>
       <input
+        {...controlProps}
         ref={useMergedRefs(ref, inputRef)}
         id={id}
         type="text"
         role="combobox"
         value={displayValue}
         onChange={handleInputChange}
-        onBlur={handleBlur}
-        onClick={handleInputClick}
-        onKeyDown={handleInputKeyDown}
+        onBlur={composeEventHandlers(handleBlur, onBlurProp)}
+        onClick={composeEventHandlers(handleInputClick, onClickProp)}
+        onKeyDown={composeEventHandlers(handleInputKeyDown, onKeyDownProp)}
         placeholder={placeholder}
         // With a disabledMessage the input keeps focusability via
         // aria-disabled so the reason is focus-discoverable; typing is
@@ -843,7 +866,7 @@ function PointerDateField({
         disabled={isEffectivelyDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
         readOnly={showsDisabledMessage || undefined}
-        aria-labelledby={ariaLabelledBy}
+        aria-labelledby={joinAriaIDs(ariaLabelledBy, ariaLabelledByProp)}
         aria-describedby={ariaDescribedBy}
         aria-required={isEffectivelyRequired ? 'true' : undefined}
         aria-invalid={
@@ -902,6 +925,7 @@ function PointerDateField({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}

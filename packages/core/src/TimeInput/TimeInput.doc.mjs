@@ -263,10 +263,16 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for the Field box around the label, control, and status. containerClassName and containerStyle take a class name and inline styles for the same box. No effect (development warning) where no Field box renders: inside InputGroup (style the group) and in a horizontal-labels FormLayout.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the bordered element that holds the text, icons, and end controls, never the native input. controlClassName and controlStyle take a class name and inline styles for the same box. Replaces root xstyle, className, and style, which this component does not accept.',
     },
   ],
   theming: {
@@ -430,10 +436,16 @@ export const docsZh = {
       description: '在标签行末尾以信息图标形式渲染的工具提示文本。',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        '作用于包含标签、控件和状态的 Field 容器的 StyleX 样式；containerClassName 与 containerStyle 以类名和内联样式作用于同一容器。没有 Field 容器时（InputGroup 内或 horizontal-labels FormLayout 中）不生效，并在开发环境发出警告。',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        '作用于可见控件框（带边框、包含文本、图标和末端控件的元素，而非原生 input）的 StyleX 样式；controlClassName 与 controlStyle 以类名和内联样式作用于同一元素。本组件不接受根级 xstyle、className 和 style。',
     },
   ],
   theming: {
@@ -607,7 +619,9 @@ export const docsDense = {
     statusVariant:
       'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'Tooltip as info icon at label row end.',
-    xstyle:
-      'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
+    containerXstyle:
+      'Field box (label+control+status); also containerClassName/containerStyle. no effect in InputGroup or horizontal-labels FormLayout',
+    controlXstyle:
+      'visual control box (border/bg/icons), never the native input; also controlClassName/controlStyle. no root xstyle/className/style',
   },
 };

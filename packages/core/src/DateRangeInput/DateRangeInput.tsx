@@ -58,8 +58,11 @@ import {
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
-import {mergeProps} from '../utils';
-import type {BaseProps} from '../BaseProps';
+import {mergeProps, composeEventHandlers} from '../utils';
+import {
+  useFieldInputStyling,
+  type FieldInputBaseProps,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
@@ -253,7 +256,7 @@ function isRangeWithinSpan(
 }
 
 export interface DateRangeInputProps extends Omit<
-  BaseProps,
+  FieldInputBaseProps<HTMLButtonElement>,
   'onChange' | 'defaultValue'
 > {
   /** Ref forwarded to the trigger button */
@@ -422,7 +425,7 @@ export interface DateRangeInputProps extends Omit<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `containerXstyle` or `controlXstyle`.
    */
   width?: SizeValue;
   /**
@@ -488,19 +491,35 @@ export function DateRangeInput({
   numberOfMonths = 2,
   weekStartsOn,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  ...restProps
 }: DateRangeInputProps) {
+  const {rest, container} = useFieldInputStyling('DateRangeInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onClick: onClickProp,
+    ...controlProps
+  } = rest;
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateRangeInput.placeholder');
   const size = useSize(sizeProp, 'md');
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
   const descriptionID = useId();
   const statusMessageID = useId();
   const requiredID = useId();
@@ -542,6 +561,7 @@ export function DateRangeInput({
       // by describing it with localized, visually hidden required text.
       isEffectivelyRequired ? requiredID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -609,6 +629,7 @@ export function DateRangeInput({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -637,7 +658,6 @@ export function DateRangeInput({
           // compose, so attaching unconditionally is safe.
           disabledMessageTooltip.ref(el);
         }}
-        {...rest}
         {...mergeProps(
           themeProps('date-range-input', {
             size,
@@ -653,10 +673,10 @@ export function DateRangeInput({
               !isEffectivelyDisabled &&
               inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
-            xstyle,
+            controlXstyle,
           ),
-          className,
-          style,
+          controlClassName,
+          controlStyle,
         )}>
         <button
           type="button"
@@ -683,16 +703,18 @@ export function DateRangeInput({
           />
         </button>
         <button
+          {...controlProps}
           ref={ref}
           id={id}
           type="button"
-          onClick={handleToggle}
+          onClick={composeEventHandlers(handleToggle, onClickProp)}
           // With a disabledMessage the trigger keeps focusability via
           // aria-disabled so the reason is focus-discoverable; activation is
           // still blocked by the isEffectivelyDisabled guard in handleToggle.
           disabled={isEffectivelyDisabled && !showsDisabledMessage}
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
           aria-label={triggerAriaLabel}
+          aria-labelledby={ariaLabelledByProp}
           aria-describedby={ariaDescribedBy}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
