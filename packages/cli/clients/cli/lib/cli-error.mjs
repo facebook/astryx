@@ -136,6 +136,25 @@ export function cliError(message, options = {}) {
 }
 
 /**
+ * Reject a positional argument the user typed as `""`.
+ *
+ * @param {string} name the argument as the help spells it, without brackets
+ * @param {unknown} value what Commander passed
+ * @param {string} command the command as a user types it, e.g. `astryx template`
+ * @returns {void} returns only when the argument is not an empty string
+ */
+export function rejectEmptyArgument(name, value, command) {
+  if (typeof value !== 'string' || value.length > 0) return;
+  cliError(
+    `Argument <${name}> is an empty string. ` +
+      'An empty argument is not the same as an omitted one, and ignoring it ' +
+      'would silently discard the rest of the command: pass a value, or leave ' +
+      `<${name}> out of \`${command}\` entirely.`,
+    {code: ERROR_CODES.ERR_INVALID_ARGUMENT},
+  );
+}
+
+/**
  * Clean exit. Mostly a marker for intent — `process.exit(0)` works fine,
  * but using cliExit at success boundaries makes greps for "exit policy"
  * sites unambiguous.
