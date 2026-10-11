@@ -64,7 +64,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
-import {composeEventHandlers, mergeProps} from '../utils';
+import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 import {useRenamedProp} from '../hooks/useRenamedProp';
@@ -957,6 +957,10 @@ export function Tokenizer<T extends SearchableItem>({
       onClick={handleWrapperClick}
       onFocusCapture={handleFocusCapture}
       onBlurCapture={handleBlurCapture}
+      // A consumer onKeyDown runs after the input's own key handling, in the
+      // bubble phase, so it observes every key and cannot cancel built-in
+      // navigation or token editing.
+      onKeyDown={onKeyDown}
       {...mergeProps(
         themeProps('tokenizer', {
           size,
@@ -1024,7 +1028,7 @@ export function Tokenizer<T extends SearchableItem>({
           onChangeQuery={onChangeQuery}
           __queryEntries={createEntries}
           debounceMs={debounceMs}
-          onKeyDown={composeEventHandlers(handleKeyDown, onKeyDown)}
+          onKeyDown={handleKeyDown}
           anchorRef={wrapperRef}
           size={size}
           inputXStyle={[

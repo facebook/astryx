@@ -2323,3 +2323,35 @@ describe('emptySearchText rename', () => {
     });
   });
 });
+
+describe('Typeahead consumer key handler order', () => {
+  it('runs onKeyDown after built-in key handling, so it cannot cancel navigation', async () => {
+    let currentTarget: EventTarget | null = null;
+    const onKeyDown = vi.fn((event: React.KeyboardEvent) => {
+      currentTarget = event.currentTarget;
+      event.preventDefault();
+    });
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        hasEntriesOnFocus
+        onKeyDown={onKeyDown}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole('option', {hidden: true}).length,
+      ).toBeGreaterThan(0);
+    });
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect(currentTarget).toBe(container.querySelector('.astryx-typeahead'));
+    expect(input).toHaveAttribute('aria-activedescendant');
+  });
+});

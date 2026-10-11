@@ -1944,3 +1944,30 @@ describe('Tokenizer emptySearchText', () => {
     warn.mockRestore();
   });
 });
+
+describe('Tokenizer consumer key handler order', () => {
+  it('runs onKeyDown after built-in key handling, so it cannot cancel token removal', () => {
+    let currentTarget: EventTarget | null = null;
+    const onKeyDown = vi.fn((event: React.KeyboardEvent) => {
+      currentTarget = event.currentTarget;
+      event.preventDefault();
+    });
+    const onChange = vi.fn();
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0], users[1]]}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'Backspace'});
+    expect(onChange).toHaveBeenCalledWith([users[0]], {
+      item: users[1],
+      type: 'remove',
+    });
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect(currentTarget).toBe(container.querySelector('.astryx-tokenizer'));
+  });
+});

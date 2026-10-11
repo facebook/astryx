@@ -594,6 +594,10 @@ export function Typeahead<T extends SearchableItem>({
         ref={useMergedRefs(wrapperRef, disabledMessageTooltip.ref)}
         onClick={handleWrapperClick}
         onBlur={handleBlur}
+        // A consumer onKeyDown runs after the input's own key handling, in the
+        // bubble phase, so it observes every key and cannot cancel built-in
+        // navigation or selection.
+        onKeyDown={onKeyDown}
         {...mergeProps(
           themeProps('typeahead', {size, status: status?.type}),
           stylex.props(
@@ -652,7 +656,7 @@ export function Typeahead<T extends SearchableItem>({
               onOpenChange={onOpenChange}
               debounceMs={debounceMs}
               anchorRef={wrapperRef}
-              onKeyDown={composeEventHandlers(handleKeyDown, onKeyDown)}
+              onKeyDown={handleKeyDown}
               inputXStyle={showToken ? styles.inputHidden : undefined}
               // While the token is shown the input is invisible and inert behind
               // it — take it out of the Tab order so keyboard users don't hit a
