@@ -30,12 +30,14 @@ test.afterAll(async () => {
 });
 
 const STORY = 'core-dropdownmenu--header-and-footer';
-const TRIGGER = '#storybook-root [aria-haspopup="menu"]';
+// The trigger button only: the sub-menu row inside the menu also carries
+// aria-haspopup="menu".
+const TRIGGER = '#storybook-root button[aria-haspopup="menu"]';
 
 async function openMenu(page: Page) {
   await page.goto(`${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`);
   await page.locator(TRIGGER).click();
-  const menu = page.getByRole('menu');
+  const menu = page.getByRole('menu', {name: 'Labels', exact: true});
   await expect(menu).toBeVisible();
   // A pointer open focuses the menu itself; let that land first.
   await expect(menu).toBeFocused();
@@ -46,10 +48,12 @@ test('the menu holds only its rows; the field and button sit beside it', async (
   page,
 }) => {
   const menu = await openMenu(page);
+  // The menu holds menu items, plus the sub-menu row's own nested menu.
   const roles = await menu.evaluate(el =>
     Array.from(el.querySelectorAll('[role]')).map(n => n.getAttribute('role')),
   );
-  expect(new Set(roles)).toEqual(new Set(['menuitem']));
+  expect(roles.every(r => r === 'menuitem' || r === 'menu')).toBe(true);
+  expect(roles).toContain('menuitem');
   await expect(menu.getByRole('textbox', {name: 'Filter labels'})).toHaveCount(
     0,
   );
@@ -180,7 +184,7 @@ test('a finger tap on the footer button acts and the menu stays open', async ({
       `${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`,
     );
     await page.locator(TRIGGER).tap();
-    const menu = page.getByRole('menu');
+    const menu = page.getByRole('menu', {name: 'Labels', exact: true});
     await expect(menu).toBeVisible();
     await page.getByRole('button', {name: 'Create label'}).tap();
     await expect(page.getByTestId('created')).toHaveText('1');
