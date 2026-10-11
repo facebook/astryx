@@ -88,7 +88,15 @@ export interface DropdownMenuRadioGroupContextValue {
   onChange: (value: string) => void;
   /** Whether selecting an item should close the menu. @default true */
   hasCloseOnSelect: boolean;
+  /** Which mark the group's rows draw for the chosen option. @default 'radio' */
+  indicator?: DropdownMenuRadioIndicator;
 }
+
+/**
+ * The mark a radio group's rows draw: the radio circle, or the single-selection
+ * check mark that Selector draws on its chosen option.
+ */
+export type DropdownMenuRadioIndicator = 'radio' | 'check';
 
 export const DropdownMenuRadioGroupContext =
   createContext<DropdownMenuRadioGroupContextValue | null>(null);

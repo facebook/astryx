@@ -54,6 +54,7 @@ export {
   DropdownMenuRadioGroup,
   type DropdownMenuRadioGroupProps,
 } from './DropdownMenuRadioGroup';
+export type {DropdownMenuRadioIndicator} from './DropdownMenuContext';
 export {
   DropdownMenuRadioItem,
   type DropdownMenuRadioItemProps,

@@ -10,6 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {useState} from 'react';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
@@ -158,6 +159,48 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
     expect(
       uncheckedIndicator?.querySelector('.astryx-radio-dot'),
     ).not.toBeInTheDocument();
+  });
+
+  it('indicator="check" marks the chosen row with the check mark and keeps the radio semantics', async () => {
+    const user = userEvent.setup();
+    function Sort() {
+      const [sort, setSort] = useState('newest');
+      return (
+        <DropdownMenu button={{label: 'Sort'}}>
+          <DropdownMenuRadioGroup
+            value={sort}
+            onChange={setSort}
+            label="Sort by"
+            indicator="check"
+            hasCloseOnSelect={false}>
+            <DropdownMenuRadioItem value="newest" label="Newest" />
+            <DropdownMenuRadioItem value="oldest" label="Oldest" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      );
+    }
+    render(<Sort />);
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const row = (name: string) =>
+      screen.getByRole('menuitemradio', {name, hidden: true});
+    const mark = (name: string) =>
+      row(name).querySelector('.astryx-dropdown-menu-radio');
+    expect(row('Newest')).toHaveAttribute('aria-checked', 'true');
+    expect(row('Oldest')).toHaveAttribute('aria-checked', 'false');
+    // The chosen row draws the check glyph, carrying the menu's target and
+    // its state; no radio circle is drawn anywhere.
+    expect(mark('Newest')).toHaveClass('astryx-icon');
+    expect(mark('Newest')).toHaveAttribute('data-checked', 'checked');
+    expect(mark('Newest')).toHaveAttribute('aria-hidden', 'true');
+    expect(document.querySelector('.astryx-radio')).toBeNull();
+    // The other row draws no mark.
+    expect(mark('Oldest')).toBeNull();
+
+    // A new choice moves the mark.
+    await user.click(row('Oldest'));
+    expect(row('Oldest')).toHaveAttribute('aria-checked', 'true');
+    expect(mark('Oldest')).toHaveClass('astryx-icon');
+    expect(mark('Newest')).toBeNull();
   });
 
   it('calls onChange with the selected value', async () => {
