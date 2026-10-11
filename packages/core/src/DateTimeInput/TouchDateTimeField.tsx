@@ -597,9 +597,10 @@ export function TouchDateTimeField({
     time: normalizedValueTime,
     value: optimisticValue,
   });
+  // Object.is, matching the dependency comparison of the effect this replaces.
   if (
-    draftSource.time !== normalizedValueTime ||
-    draftSource.value !== optimisticValue
+    !Object.is(draftSource.time, normalizedValueTime) ||
+    !Object.is(draftSource.value, optimisticValue)
   ) {
     setDraftSource({time: normalizedValueTime, value: optimisticValue});
     if (normalizedValueTime !== undefined) {
@@ -631,7 +632,9 @@ export function TouchDateTimeField({
     minMonthIndex,
     maxMonthIndex,
   );
-  if (clampedMonthIndex !== monthIndex) {
+  // Object.is, matching the dependency comparison of the effect this replaces
+  // (a NaN index would otherwise never compare equal and re-render forever).
+  if (!Object.is(clampedMonthIndex, monthIndex)) {
     setMonthIndex(clampedMonthIndex);
   }
   const {year, month} = fromMonthIndex(monthIndex);
