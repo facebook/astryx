@@ -33,7 +33,11 @@ const GENERATED_LOCALES_DIR = path.join(
 );
 const EN_FILE = 'en.json';
 const PSEUDO_FILE = 'pseudo.json';
-/** Where the per-namespace English slices live, under GENERATED_LOCALES_DIR. */
+/**
+ * Where the per-namespace English slices live, under GENERATED_LOCALES_DIR.
+ * The package's exports map gives `./locales/en/*` a `null` target, so the
+ * slices are the package's own and never a consumer import path.
+ */
 const EN_SLICES_DIR = 'en';
 const KEY_PREFIX = '@astryx.';
 
