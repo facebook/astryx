@@ -175,18 +175,41 @@ describe('CommandPaletteItem', () => {
     expect(handleSelect).not.toHaveBeenCalled();
   });
 
-  it('derives selected and highlighted state plus item identity from context', () => {
+  it('derives selected state and item identity from context', () => {
     renderWithContext(
       <CommandPaletteItem value="test" id="consumer-id">
+        Item
+      </CommandPaletteItem>,
+      {value: 'test'},
+    );
+
+    const item = screen.getByRole('option');
+    expect(item).toHaveAttribute('id', 'command-item-0');
+    expect(item).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('paints context-derived highlight when the item is not selected', () => {
+    renderWithContext(
+      <CommandPaletteItem value="test">Item</CommandPaletteItem>,
+      {highlightedIndex: 0},
+    );
+
+    expect(getComputedStyle(screen.getByRole('option')).backgroundColor).toBe(
+      'var(--color-overlay-hover)',
+    );
+  });
+
+  it('lets explicit visual state override context-derived state', () => {
+    renderWithContext(
+      <CommandPaletteItem value="test" isHighlighted={false} isSelected={false}>
         Item
       </CommandPaletteItem>,
       {value: 'test', highlightedIndex: 0},
     );
 
     const item = screen.getByRole('option');
-    expect(item).toHaveAttribute('id', 'command-item-0');
-    expect(item).toHaveAttribute('aria-selected', 'true');
-    expect(item.className).toContain('itemHighlighted');
+    expect(item).toHaveAttribute('aria-selected', 'false');
+    expect(getComputedStyle(item).backgroundColor).toBe('rgba(0, 0, 0, 0)');
   });
 
   it('protects owned option semantics from native passthrough props', () => {

@@ -320,6 +320,15 @@
     }
   },
   {
+    "component": "core/CommandPaletteItem",
+    "reason": "CommandPaletteItem owns one inline flex option row with logical inline padding, logical start text alignment, and direction-neutral highlight, selection, disabled, and press paint. Its supported content is non-interactive text, icons, descriptions, and shortcut hints; it owns no directional glyph, side placement, reordering, horizontal scroll, drag, overlay, or horizontal keyboard behavior. The dedicated state fixture exercises every component-owned visual state without adding an RTL-specific dimension.",
+    "evidence": {
+      "apps/storybook/stories/CommandPaletteItem.stories.tsx": "sha256:9d5c2229f89da3ac53347078560b9ad57cfff7b20a3c71ad3fab2c338161dbf1",
+      "packages/core/src/CommandPalette/CommandPaletteItem.tsx": "sha256:aee0fcaa7b9829e04317f1cab9708c045a1da0d9180e490d64c6a576c39d8f42",
+      "packages/core/src/CommandPalette/index.ts": "sha256:ba38845bbde6d73172df2c0791ca513c9f2b7baab17440e066e783ff6cfc7558"
+    }
+  },
+  {
     "component": "core/CommandPaletteGroup",
     "reason": "CommandPaletteGroup owns a vertically stacked listbox group with logical inline padding and block spacing. Its visible heading and item content follow normal document direction; it renders no directional glyph, physical inline positioning, reordered controls, horizontal scrolling or dragging, side-placed overlay, or horizontal keyboard behavior. The dedicated fixtures exercise the supported composition and public heading theme target without adding a component-owned RTL dimension.",
     "evidence": {

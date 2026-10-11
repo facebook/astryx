@@ -27,7 +27,7 @@ export const States: Story = {
       style={{inlineSize: 'min(22rem, calc(100vw - 2rem))'}}>
       <CommandPaletteItem value="open-file" onSelect={() => {}}>
         Open file
-        <Kbd>⌘O</Kbd>
+        <Kbd keys="mod+o" />
       </CommandPaletteItem>
       <CommandPaletteItem
         value="search-files"

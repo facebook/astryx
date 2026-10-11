@@ -180,15 +180,12 @@ export function CommandPaletteItem({
   }, [ctx, isHighlighted, isInlineDialog]);
 
   const handleClick = useCallback(() => {
-    if (isDisabled) {
-      return;
-    }
     onSelect?.(value);
     if (ctx) {
       ctx.selectItem(value);
       ctx.onClose();
     }
-  }, [isDisabled, value, onSelect, ctx]);
+  }, [value, onSelect, ctx]);
 
   return (
     <div
