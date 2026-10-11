@@ -877,14 +877,16 @@ describe('empty-operator save', () => {
     );
   }
 
-  const selectOption = (comboboxName: string, optionName: string) => {
+  // The save is queued as a microtask after the choice; flush it.
+  const selectOption = async (comboboxName: string, optionName: string) => {
     fireEvent.click(screen.getByRole('combobox', {name: comboboxName}));
     fireEvent.click(
       screen.getByRole('option', {name: optionName, hidden: true}),
     );
+    await act(async () => {});
   };
 
-  it('saves exactly once when an empty operator is chosen', () => {
+  it('saves exactly once when an empty operator is chosen', async () => {
     const onSave = vi.fn();
     render(
       <React.StrictMode>
@@ -896,7 +898,7 @@ describe('empty-operator save', () => {
     );
     expect(onSave).not.toHaveBeenCalled();
 
-    selectOption('Operator', 'is empty');
+    await selectOption('Operator', 'is empty');
     fireEvent.click(screen.getByRole('button', {name: 'Rerender'}));
     fireEvent.click(screen.getByRole('button', {name: 'Rerender'}));
 
@@ -908,7 +910,7 @@ describe('empty-operator save', () => {
     });
   });
 
-  it('saves exactly once when the field switches to one whose default operator is empty', () => {
+  it('saves exactly once when the field switches to one whose default operator is empty', async () => {
     const onSave = vi.fn();
     render(
       <React.StrictMode>
@@ -919,7 +921,7 @@ describe('empty-operator save', () => {
       </React.StrictMode>,
     );
 
-    selectOption('Field', 'Assignee');
+    await selectOption('Field', 'Assignee');
     fireEvent.click(screen.getByRole('button', {name: 'Rerender'}));
 
     expect(onSave).toHaveBeenCalledTimes(1);
@@ -930,7 +932,7 @@ describe('empty-operator save', () => {
     });
   });
 
-  it('does not save again when the current empty operator or field is re-chosen', () => {
+  it('does not save again when the current empty operator or field is re-chosen', async () => {
     const onSave = vi.fn();
     render(
       <React.StrictMode>
@@ -941,18 +943,18 @@ describe('empty-operator save', () => {
       </React.StrictMode>,
     );
 
-    selectOption('Operator', 'is empty');
+    await selectOption('Operator', 'is empty');
     expect(onSave).toHaveBeenCalledTimes(1);
-    selectOption('Operator', 'is empty');
+    await selectOption('Operator', 'is empty');
     expect(onSave).toHaveBeenCalledTimes(1);
 
-    selectOption('Field', 'Assignee');
+    await selectOption('Field', 'Assignee');
     expect(onSave).toHaveBeenCalledTimes(2);
-    selectOption('Field', 'Assignee');
+    await selectOption('Field', 'Assignee');
     expect(onSave).toHaveBeenCalledTimes(2);
   });
 
-  it('saves exactly once when it opens on a complete empty-operator filter', () => {
+  it('does not save just because it opens on a complete empty-operator filter', async () => {
     const onSave = vi.fn();
     render(
       <React.StrictMode>
@@ -963,13 +965,105 @@ describe('empty-operator save', () => {
       </React.StrictMode>,
     );
     fireEvent.click(screen.getByRole('button', {name: 'Rerender'}));
-    fireEvent.click(screen.getByRole('button', {name: 'Rerender'}));
+    await act(async () => {});
 
-    expect(onSave).toHaveBeenCalledTimes(1);
-    expect(onSave).toHaveBeenCalledWith({
-      field: 'title',
-      operator: 'is_empty',
-      value: {type: 'empty'},
+    expect(onSave).not.toHaveBeenCalled();
+  });
+});
+
+describe('empty-operator choices inside PowerSearch', () => {
+  const emptyConfig: PowerSearchConfig = {
+    name: 'test-empty-ps',
+    fields: [
+      {
+        key: 'title',
+        label: 'Title',
+        operators: [
+          {key: 'contains', label: 'contains', value: {type: 'string'}},
+          {key: 'is_empty', label: 'is empty', value: {type: 'empty'}},
+        ],
+      },
+    ],
+  };
+
+  function Harness({
+    initial,
+    onChange,
+  }: {
+    initial: PowerSearchFilter[];
+    onChange: (
+      filters: ReadonlyArray<PowerSearchFilter>,
+      type: string,
+      index: number,
+    ) => void;
+  }) {
+    const [filters, setFilters] = useState(initial);
+    return (
+      <PowerSearch
+        config={emptyConfig}
+        filters={filters}
+        onChange={(next, type, index) => {
+          onChange(next, type, index);
+          setFilters([...next]);
+        }}
+      />
+    );
+  }
+
+  it('returns focus to the search input after an empty operator is chosen', async () => {
+    const onChange = vi.fn();
+    render(
+      <Harness
+        initial={[
+          {
+            field: 'title',
+            operator: 'contains',
+            value: {type: 'string', value: 'x'},
+          },
+        ]}
+        onChange={onChange}
+      />,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Title: contains'));
+      flushRAF();
     });
+    fireEvent.click(
+      screen.getByRole('combobox', {name: 'Operator', hidden: true}),
+    );
+    fireEvent.click(
+      screen.getByRole('option', {name: 'is empty', hidden: true}),
+    );
+    await act(async () => {});
+    act(() => flushRAF());
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][1]).toBe('edit');
+    expect(document.activeElement).not.toBe(document.body);
+    expect(screen.getAllByRole('combobox')[0]).toHaveFocus();
+  });
+
+  it('commits a clicked empty-operator token once without opening the editor', () => {
+    const onChange = vi.fn();
+    const {container} = render(
+      <Harness
+        initial={[
+          {field: 'title', operator: 'is_empty', value: {type: 'empty'}},
+        ]}
+        onChange={onChange}
+      />,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText(/Title: is empty/));
+      flushRAF();
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(
+      [{field: 'title', operator: 'is_empty', value: {type: 'empty'}}],
+      'edit',
+      0,
+    );
+    expect(getEditPopoverText(container)).toBe('');
   });
 });

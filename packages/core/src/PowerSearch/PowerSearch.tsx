@@ -755,6 +755,21 @@ export function PowerSearch({
         return;
       }
 
+      // An "empty" operator filter has no value to edit: commit it as the
+      // editor's save would, the way adding one does, instead of opening it.
+      const operator = config.getOperator(filter.field, filter.operator);
+      if (operator?.value.type === 'empty') {
+        const newFilters = [...filters];
+        newFilters[index] = {
+          field: filter.field,
+          operator: filter.operator,
+          value: {type: 'empty'},
+        };
+        onChange(newFilters, 'edit', index);
+        setPopoverState({type: 'idle'});
+        return;
+      }
+
       setPopoverState({
         type: 'editing',
         filterIndex: index,
@@ -765,7 +780,7 @@ export function PowerSearch({
         },
       });
     },
-    [filters, isReadOnly, isDisabled, setPopoverState],
+    [filters, isReadOnly, isDisabled, config, onChange, setPopoverState],
   );
 
   // Handle popover save

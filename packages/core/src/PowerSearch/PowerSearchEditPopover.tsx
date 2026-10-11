@@ -692,14 +692,19 @@ export function PowerSearchEditPopover({
 
   // An "empty" operator takes no value, so choosing one completes the filter:
   // save it from the choice itself, once, rather than reacting to the state.
+  // The save is queued as a microtask so it runs after the Selector reporting
+  // the choice has finished closing and refocusing its trigger; a parent that
+  // closes the editor on save can then move focus without the Selector taking
+  // it back onto a node that is about to unmount.
   const saveIfEmptyOperator = useCallback(
     (fieldKey: string, operator: PowerSearchOperator | undefined) => {
       if (fieldKey && operator?.value.type === 'empty') {
-        onSave({
+        const filter: PowerSearchFilter = {
           field: fieldKey,
           operator: operator.key,
           value: {type: 'empty'},
-        });
+        };
+        queueMicrotask(() => onSave(filter));
       }
     },
     [onSave],
@@ -802,28 +807,6 @@ export function PowerSearchEditPopover({
   const operatorValue: OperatorValue | undefined = currentOperator?.value;
   const isEmptyType = operatorValue?.type === 'empty';
   const isNestedType = operatorValue?.type === 'nested';
-
-  // Opening on an already-complete empty-operator filter saves it once. The
-  // choice that completed it happened before this editor mounted, so this is
-  // the one save not driven by a handler here; the ref keeps it to a single
-  // call across StrictMode's remount and later renders.
-  const hasSavedOnOpenRef = useRef(false);
-  useEffect(() => {
-    if (hasSavedOnOpenRef.current) {
-      return;
-    }
-    hasSavedOnOpenRef.current = true;
-    const field = initialFilter.field;
-    const operator = initialFilter.operator
-      ? config.getOperator(field, initialFilter.operator)
-      : undefined;
-    saveIfEmptyOperator(field, operator);
-  }, [
-    config,
-    initialFilter.field,
-    initialFilter.operator,
-    saveIfEmptyOperator,
-  ]);
 
   const showOperatorSelector = operatorOptions.length > 1 || !isEmptyType;
 
