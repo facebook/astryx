@@ -165,6 +165,12 @@ export const docs = {
             'Link URL. Makes the item a link via an invisible anchor element. A row whose root is already a link component (see `as`) carries the address on that root instead, and no invisible anchor is rendered.',
         },
         {
+          name: 'role',
+          type: 'string',
+          description:
+            "The row's ARIA role, on the root. With a role a parent owns keyboard access: the label sits in a plain span, no invisible button or anchor is rendered, and `onClick` goes on the root. `role=\"row\"` (a grid) is the exception: the row renders its parts as `gridcell`s (the marker, the start content, the label with its description, the end content, each swipe panel) and keeps its own control in the label cell, which `controlProps` reaches with the grid's roving `tabIndex` and marks; `isSelected` is the row's `aria-selected`; `swipeActions` stays available.",
+        },
+        {
           name: 'controlProps',
           type: 'ItemControlProps',
           description:
