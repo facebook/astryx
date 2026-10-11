@@ -68,6 +68,10 @@ import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useLongPress} from '../hooks/useLongPress';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {
   colorVars,
@@ -350,6 +354,9 @@ export function ContextMenu({
   const triggerFocusRef = useRef<HTMLElement | null>(null);
   const sheetHeadingRef = useRef<HTMLHeadingElement>(null);
 
+  // Records how the user last interacted, so a keyboard-invoked open can be
+  // told from a right-click (see handleContextMenu).
+  useInteractionModalityTracking();
   const [isOpen, setIsOpen] = useState(false);
   const [submenuPath, setSubmenuPath] = useState<ContextMenuItemData[]>([]);
   const currentSubmenu = submenuPath.at(-1);
@@ -608,11 +615,20 @@ export function ContextMenu({
       const localX = isKeyboardInvoked || !rect ? 0 : e.clientX - rect.left;
       const localY =
         isKeyboardInvoked || !rect ? (rect?.height ?? 0) : e.clientY - rect.top;
+      // Where focus lands follows how the menu was asked for. Real browsers
+      // report Shift+F10 and the Menu key at the focused element, not at
+      // (0, 0), so the shared last-input modality is the signal: a key press
+      // before this event makes it a keyboard open; a right-click's own
+      // pointerdown makes it a pointer open.
+      const modality =
+        isKeyboardInvoked || getInteractionModality() === 'keyboard'
+          ? 'keyboard'
+          : 'pointer';
       openAtLocalPoint(
         localX,
         localY,
         e.currentTarget as HTMLElement,
-        isKeyboardInvoked ? 'keyboard' : 'pointer',
+        modality,
       );
     },
     [isDisabled, openAtLocalPoint, getAnchorBaseRect],

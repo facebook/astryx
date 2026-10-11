@@ -23,6 +23,7 @@ import {
 } from './index';
 import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
 import {Divider} from '../Divider';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -1103,9 +1104,20 @@ describe('ContextMenu open focus', () => {
   const menu = () => screen.getByRole('menu', {hidden: true});
   const item = (name: string) =>
     screen.getByRole('menuitem', {name, hidden: true});
-  // A right-click carries the pointer's position; a keyboard-invoked
-  // contextmenu (Shift+F10, the Menu key) reports (0, 0) with no detail.
-  const rightClick = {clientX: 50, clientY: 15, detail: 1};
+  // A right-click is a secondary-button pointerdown, then a contextmenu at
+  // the pointer's position.
+  function rightClick(target: Element) {
+    fireEvent.pointerDown(target, {
+      pointerType: 'mouse',
+      pointerId: 1,
+      button: 2,
+    });
+    fireEvent.contextMenu(target, {clientX: 50, clientY: 15, detail: 1});
+  }
+
+  beforeEach(() => {
+    __resetInteractionModalityForTest();
+  });
 
   it('a right-click opens with the menu focused and no row highlighted', async () => {
     render(
@@ -1113,7 +1125,7 @@ describe('ContextMenu open focus', () => {
         <div>Right-click me</div>
       </ContextMenu>,
     );
-    fireEvent.contextMenu(screen.getByText('Right-click me'), rightClick);
+    rightClick(screen.getByText('Right-click me'));
     await waitFor(() => expect(menu()).toHaveFocus());
     expect(document.activeElement?.getAttribute('role')).toBe('menu');
   });
@@ -1146,7 +1158,7 @@ describe('ContextMenu open focus', () => {
         <div>Right-click me</div>
       </ContextMenu>,
     );
-    fireEvent.contextMenu(screen.getByText('Right-click me'), rightClick);
+    rightClick(screen.getByText('Right-click me'));
     await waitFor(() => expect(menu()).toHaveFocus());
     fireEvent.keyDown(menu(), {key: 'ArrowDown'});
     expect(item('Cut')).toHaveFocus();
@@ -1163,6 +1175,21 @@ describe('ContextMenu open focus', () => {
       clientY: 0,
       detail: 0,
     });
+    await waitFor(() => expect(item('Cut')).toHaveFocus());
+  });
+
+  it('Shift+F10 reported at the focused element still focuses the first row', async () => {
+    render(
+      <ContextMenu items={ITEMS}>
+        <button type="button">Target</button>
+      </ContextMenu>,
+    );
+    const target = screen.getByRole('button', {name: 'Target'});
+    // The page was last used with a pointer, then the key: real browsers
+    // report the contextmenu at the focused element, with no detail.
+    fireEvent.pointerDown(document.body, {pointerType: 'mouse', pointerId: 1});
+    fireEvent.keyDown(target, {key: 'F10', shiftKey: true});
+    fireEvent.contextMenu(target, {clientX: 30, clientY: 12, detail: 0});
     await waitFor(() => expect(item('Cut')).toHaveFocus());
   });
 });

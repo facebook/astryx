@@ -5,7 +5,9 @@
  * @input The `Core/ContextMenu` Default story in a built Storybook, a real
  *   mouse right-click, and a CDP touch long press.
  * @output Real-engine proof that a pointer-opened context menu focuses the
- *   menu itself and highlights no row.
+ *   menu itself and highlights no row, and that Shift+F10, which Chromium
+ *   reports at the focused element rather than at (0, 0), still lands on the
+ *   first row.
  * @position Run with `pnpm test:a11y-contract`; jsdom cannot produce a real
  *   right-click or a held finger.
  */
@@ -81,4 +83,18 @@ test('a long press opens with the menu focused and no row highlighted', async ({
     type: 'touchEnd',
     touchPoints: [],
   });
+});
+
+test('Shift+F10 on a focused reference opens with the first row focused', async ({
+  page,
+}) => {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-contextmenu--inline-trigger&viewMode=story`,
+  );
+  // The page was last used with a pointer; the key press decides the open.
+  await page.mouse.click(5, 5);
+  await page.getByRole('link', {name: 'T123'}).focus();
+  await page.keyboard.press('Shift+F10');
+  await expect(page.getByRole('menu')).toBeVisible();
+  await expect(page.getByRole('menuitem', {name: 'Open'})).toBeFocused();
 });
