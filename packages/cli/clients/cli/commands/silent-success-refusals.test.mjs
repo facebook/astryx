@@ -9,7 +9,7 @@ const json = async a => { const {status,stdout}=await runCli(['--json',...a],{cw
 describe('refuse invalid input (IFIX-0007)', () => {
   it('template --type bogus', async () => { const {status,body}=await json(['template','--list','--type','bogus']); expect(status).toBe(1); expect(body.code).toBe('ERR_INVALID_ARGUMENT'); });
   it('template --package @nope/x', async () => { const {status,body}=await json(['template','--list','--package','@nope/x']); expect(status).toBe(1); expect(body.code).toBe('ERR_INVALID_ARGUMENT'); });
-  it('template valid type+package with empty intersection returns empty list', async () => { const {status,body}=await json(['template','--list','--type','block','--package','@astryxdesign/core']); expect(status).toBe(0); expect(body.type).toBe('template.list'); });
+  it('template valid type+package filter keeps the matching templates', async () => { const {status,body}=await json(['template','--list','--type','block','--package','@astryxdesign/core']); expect(status).toBe(0); expect(body.type).toBe('template.list'); expect(body.data.length).toBeGreaterThan(0); expect(body.data.every(t => t.type === 'block')).toBe(true); });
   it('build --limit 2.5', async () => { const {status,body}=await json(['build','pricing','--limit','2.5']); expect(status).toBe(1); expect(body.code).toBe('ERR_INVALID_ARGUMENT'); });
   it('integration add excess args', async () => { fs.writeFileSync(path.join(dir,'package.json'),JSON.stringify({name:'@t/p',version:'1.0.0'})); const {status}=await json(['integration','add','agent-doc','Run','acme','verify']); expect(status).toBe(1); });
 });
