@@ -324,7 +324,7 @@ export class ComponentAmbiguityError extends AstryxError {
     super(
       `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
       owners.map(o => ({name: o.package, reason: 'provides this component'})),
-      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+      ERROR_CODES.ERR_AMBIGUOUS_COMPONENT,
     );
     this.candidates = owners.map(owner => ({
       package: owner.package,
@@ -375,6 +375,8 @@ export function resolveCoreSourcePath(coreDir, dirName) {
 /**
  * Resolve a bare (unscoped) name to a `.doc.mjs`: core first, then back-compat
  * externals, then a conservative fuzzy search. Throws ERR_UNKNOWN_COMPONENT
+ * for a genuinely unknown name, and ERR_AMBIGUOUS_COMPONENT when multiple
+ * packages provide the same name
  * (with candidate suggestions when close) or ERR_NO_DOC.
  * @param {string} dirName - bare component name (no `XDS` prefix)
  * @param {{coreDir: string, cwd: string, name: string}} ctx - `name` is the caller's original (prefixed) input, used in error text
