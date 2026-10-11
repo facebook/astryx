@@ -121,6 +121,75 @@ for (const [surface, presentation, selector] of SURFACES) {
       expect(ids?.length).toBeGreaterThan(1);
     });
 
+    it('keeps component-only props off the control', () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(
+        <DateInput
+          label="Due"
+          presentation={presentation}
+          min="2026-01-01"
+          max="2026-12-31"
+          dateConstraints={[]}
+          numberOfMonths={2}
+          weekStartsOn={1}
+          format="date"
+          hasClear
+          size="sm"
+          statusVariant="detached"
+          labelTooltip="tip"
+          placeholder="Pick"
+          isOptional
+          width={240}
+        />,
+      );
+      const attrs = [...control(selector).attributes].map(a => a.name);
+      for (const prop of [
+        'increment',
+        'hasautofocus',
+        'timeincrement',
+        'timeoptioninterval',
+        'numberofmonths',
+        'weekstartson',
+        'dateconstraints',
+        'hasclear',
+        'hasseconds',
+        'hourformat',
+        'statusvariant',
+        'labeltooltip',
+        'format',
+        'width',
+        'size',
+      ]) {
+        expect(attrs).not.toContain(prop);
+      }
+      expect(
+        error.mock.calls.filter(call =>
+          /React does not recognize|Invalid value for prop|non-boolean attribute/.test(
+            String(call[0]),
+          ),
+        ),
+      ).toEqual([]);
+      error.mockRestore();
+    });
+
+    it("names the control by its label and then a caller's aria-labelledby", () => {
+      render(
+        <>
+          <span id="caller-name">Billing</span>
+          <DateInput
+            label="Due"
+            presentation={presentation}
+            aria-labelledby="caller-name"
+          />
+        </>,
+      );
+      const ids = control(selector).getAttribute('aria-labelledby')?.split(' ');
+      expect(ids?.at(-1)).toBe('caller-name');
+      const own = document.getElementById(ids?.[0] ?? '');
+      expect(own?.tagName).toBe('LABEL');
+      expect(own?.textContent).toContain('Due');
+    });
+
     it('keeps control* on the control box in a horizontal-labels FormLayout', () => {
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       const {container} = render(

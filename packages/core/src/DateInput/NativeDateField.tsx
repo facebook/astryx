@@ -71,7 +71,6 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {
   focusOutlineStyles,
   formatSharedDate,
-  chainEventHandlers,
   getInputARIA,
   mergeProps,
   parseDateInput,
@@ -80,6 +79,7 @@ import {
   themeProps,
   type ISODateString,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
 
 const styles = stylex.create({
   wrapper: {
@@ -306,6 +306,7 @@ export function NativeDateField({
 
   const generatedID = useId();
   const id = idProp ?? generatedID;
+  const fieldLabelID = useId();
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -628,7 +629,11 @@ export function NativeDateField({
           disabled={isEffectivelyDisabled && !showsDisabledMessage}
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
           readOnly={showsDisabledMessage || undefined}
-          aria-labelledby={joinAriaIDs(ariaLabelledBy, ariaLabelledByProp)}
+          aria-labelledby={
+            ariaLabelledByProp != null
+              ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)
+              : ariaLabelledBy
+          }
           aria-describedby={ariaDescribedBy}
           aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={
@@ -687,6 +692,7 @@ export function NativeDateField({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}

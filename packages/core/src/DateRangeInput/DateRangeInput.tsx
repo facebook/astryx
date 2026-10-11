@@ -58,7 +58,9 @@ import {
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, chainEventHandlers} from '../utils';
+import {mergeProps} from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
+import {joinAriaIDs} from '../utils/inputAria';
 import {
   useFieldInputStyling,
   type FieldInputBaseProps,
@@ -452,6 +454,11 @@ export interface DateRangeInputProps extends Omit<
  * A date range picker with a button trigger that opens a popover
  * containing a dual-month calendar and optional preset ranges.
  *
+ * Base props (`ref`, `id`, `data-*`, `aria-*`, DOM event handlers) go to the range trigger.
+ * A DOM handler runs after the component's own handler for the same event
+ * and still receives events the component handled, even ones it called
+ * `preventDefault` on, so it cannot cancel built-in behavior.
+ *
  * @example
  * ```
  * <DateRangeInput
@@ -508,6 +515,7 @@ export function DateRangeInput({
   const {
     id: idProp,
     'aria-describedby': ariaDescribedByProp,
+    'aria-label': ariaLabelProp,
     'aria-labelledby': ariaLabelledByProp,
     onClick: onClickProp,
     ...controlProps
@@ -520,6 +528,7 @@ export function DateRangeInput({
   const size = useSize(sizeProp, 'md');
   const generatedID = useId();
   const id = idProp ?? generatedID;
+  const triggerNameID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const requiredID = useId();
@@ -713,8 +722,14 @@ export function DateRangeInput({
           // still blocked by the isEffectivelyDisabled guard in handleToggle.
           disabled={isEffectivelyDisabled && !showsDisabledMessage}
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          aria-label={triggerAriaLabel}
-          aria-labelledby={ariaLabelledByProp}
+          // A caller aria-label replaces the trigger's name; a caller
+          // aria-labelledby is read after it (label and selected range).
+          aria-label={ariaLabelProp ?? triggerAriaLabel}
+          aria-labelledby={
+            ariaLabelledByProp != null
+              ? joinAriaIDs(triggerNameID, ariaLabelledByProp)
+              : undefined
+          }
           aria-describedby={ariaDescribedBy}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
@@ -733,6 +748,11 @@ export function DateRangeInput({
             label={t('@astryx.dateInput.clear', {label})}
             onClick={handleClear}
           />
+        )}
+        {ariaLabelledByProp != null && (
+          <VisuallyHidden id={triggerNameID}>
+            {ariaLabelProp ?? triggerAriaLabel}
+          </VisuallyHidden>
         )}
         {isBusy && <Spinner size="sm" />}
         {statusIcon}

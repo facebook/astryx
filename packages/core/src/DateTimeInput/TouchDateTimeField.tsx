@@ -76,11 +76,12 @@ import {
   isRenderable,
   isTimeInRange,
   clampTime,
-  chainEventHandlers,
   mergeProps,
   parseISOTime,
   type ISOTimeString,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
+import {joinAriaIDs} from '../utils/inputAria';
 import {
   DATE_FORMAT_LONG,
   DATE_FORMAT_MONTH_YEAR,
@@ -503,6 +504,13 @@ export function TouchDateTimeField({
   const size = useSize(sizeProp, 'md');
   const generatedID = useId();
   const dateInputId = idProp ?? generatedID;
+  const fieldLabelID = useId();
+  // A caller aria-labelledby names the date input together with the field's
+  // own label.
+  const controlLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(fieldLabelID, ariaLabelledByProp)
+      : undefined;
   const timeInputId = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -1261,6 +1269,7 @@ export function TouchDateTimeField({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={dateInputId}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -1350,7 +1359,7 @@ export function TouchDateTimeField({
                 handleInputKeyDown(event, 'date'),
               onKeyDownProp,
             )}
-            aria-labelledby={ariaLabelledByProp}
+            aria-labelledby={controlLabelledBy}
             placeholder={placeholder}
             disabled={isEffectivelyDisabled && !showsDisabledMessage}
             aria-disabled={showsDisabledMessage ? 'true' : undefined}

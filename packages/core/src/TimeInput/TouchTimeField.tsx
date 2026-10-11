@@ -61,10 +61,10 @@ import {
   getInputARIA,
   isTimeInRange,
   mergeProps,
-  chainEventHandlers,
   parseISOTime,
   type ISOTimeString,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
 import type {TimeInputProps} from './TimeInput';
 
 const sizeStyles = stylex.create({
@@ -193,6 +193,10 @@ export function TouchTimeField({
   hasSeconds = false,
   hasClear = false,
   hourFormat = '12h',
+  // Typed-field only: the wheels step by their own options and the sheet
+  // opens on tap, so neither reaches this surface.
+  increment: _increment,
+  hasAutoFocus: _hasAutoFocus,
   placeholder: placeholderFromProps,
   size: sizeProp,
   status,
@@ -227,6 +231,7 @@ export function TouchTimeField({
   const size = useSize(sizeProp, 'md');
   const generatedID = useId();
   const id = idProp ?? generatedID;
+  const fieldLabelID = useId();
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -482,7 +487,11 @@ export function TouchTimeField({
         aria-haspopup="dialog"
         aria-autocomplete="none"
         autoComplete="off"
-        aria-labelledby={joinAriaIDs(ariaLabelledBy, ariaLabelledByProp)}
+        aria-labelledby={
+          ariaLabelledByProp != null
+            ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)
+            : ariaLabelledBy
+        }
         {...stylex.props(styles.input)}
       />
       {isBusy && <Spinner size="sm" />}
@@ -571,6 +580,7 @@ export function TouchTimeField({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}

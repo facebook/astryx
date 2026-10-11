@@ -45,8 +45,8 @@ import {
   isTimeInRange,
   parseISOTime,
   type ISOTimeString,
-  chainEventHandlers,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
 import {nativePickerSegmentStyles as styles} from './nativePickerSegmentStyles';
 
 const FRACTIONAL_SECONDS = /\.\d+$/;
@@ -312,7 +312,13 @@ export function NativeTimeSegment({
           disabled={isEffectivelyDisabled && !hasDisabledMessage}
           aria-disabled={hasDisabledMessage ? 'true' : undefined}
           readOnly={hasDisabledMessage || undefined}
-          aria-label={ariaLabelledBy ? undefined : inputLabel}
+          // The segment's own label applies only when nothing else names it;
+          // otherwise a caller aria-label from the spread above stays.
+          aria-label={
+            !ariaLabelledBy && inputLabel
+              ? inputLabel
+              : inputProps['aria-label']
+          }
           aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
           autoFocus={hasAutoFocus}

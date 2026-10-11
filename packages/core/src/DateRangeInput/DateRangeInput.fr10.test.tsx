@@ -85,6 +85,37 @@ describe('DateRangeInput FR10 details', () => {
     expect(ids?.length).toBeGreaterThan(1);
   });
 
+  it("names the trigger by its label and range, then a caller's aria-labelledby", () => {
+    render(
+      <>
+        <span id="caller-name">Trip dates</span>
+        <DateRangeInput
+          value={null}
+          onChange={noop}
+          label="Stay"
+          aria-labelledby="caller-name"
+        />
+      </>,
+    );
+    const ids = trigger().getAttribute('aria-labelledby')?.split(' ');
+    expect(ids?.at(-1)).toBe('caller-name');
+    expect(document.getElementById(ids?.[0] ?? '')?.textContent).toMatch(
+      /^Stay: /,
+    );
+  });
+
+  it("uses a caller's aria-label as the trigger's name", () => {
+    render(
+      <DateRangeInput
+        value={null}
+        onChange={noop}
+        label="Stay"
+        aria-label="Trip dates"
+      />,
+    );
+    expect(trigger()).toHaveAttribute('aria-label', 'Trip dates');
+  });
+
   it('keeps control* on the control box in a horizontal-labels FormLayout', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const {container} = render(

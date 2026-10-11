@@ -60,8 +60,8 @@ import {
   isTimeInRange,
   mergeProps,
   getInputARIA,
-  chainEventHandlers,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
 import {joinAriaIDs} from '../utils/inputAria';
 import {
   useFieldInputStyling,
@@ -450,6 +450,7 @@ function TimeField({
 
   const generatedID = useId();
   const id = idProp ?? generatedID;
+  const fieldLabelID = useId();
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -511,6 +512,12 @@ function TimeField({
     ],
     inputGroup,
   );
+  // A caller aria-labelledby names the control together with the field's own
+  // label (the Field label standalone, the group and input labels in a group).
+  const controlLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)
+      : ariaLabelledBy;
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -764,7 +771,7 @@ function TimeField({
           onChange={fireChange}
           placeholder={placeholder}
           openPickerLabel={t('@astryx.timeInput.openPicker', {label})}
-          ariaLabelledBy={joinAriaIDs(ariaLabelledBy, ariaLabelledByProp)}
+          ariaLabelledBy={controlLabelledBy}
           hasAutoFocus={hasAutoFocus}
           min={min}
           max={max}
@@ -812,7 +819,7 @@ function TimeField({
               status?.type === 'error' || !isInputValid ? 'true' : undefined
             }
             aria-busy={isBusy || undefined}
-            aria-labelledby={joinAriaIDs(ariaLabelledBy, ariaLabelledByProp)}
+            aria-labelledby={controlLabelledBy}
             {...stylex.props(
               styles.input,
               isDisabled && styles.inputDisabled,
@@ -857,6 +864,7 @@ function TimeField({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -886,6 +894,11 @@ TimeField.displayName = 'TimeField';
  * A time input whose `presentation` prop chooses the selection surface
  * (`spec:AST-043`); the deprecated `nativePicker` maps to the same surfaces
  * (FR3).
+ *
+ * Base props (`ref`, `id`, `data-*`, `aria-*`, DOM event handlers) go to the time input.
+ * A DOM handler runs after the component's own handler for the same event
+ * and still receives events the component handled, even ones it called
+ * `preventDefault` on, so it cannot cancel built-in behavior.
  */
 export function TimeInput(props: TimeInputProps) {
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);

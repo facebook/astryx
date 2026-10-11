@@ -79,8 +79,9 @@ import {
   isImeKeyEvent,
   mergeProps,
   isFocusDetached,
-  chainEventHandlers,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
+import {joinAriaIDs} from '../utils/inputAria';
 import {
   plainDateFromISO,
   plainDateToISO,
@@ -675,6 +676,13 @@ function PointerDateTimeField({
   const size = useSize(sizeProp, 'md');
   const generatedID = useId();
   const dateInputId = idProp ?? generatedID;
+  const fieldLabelID = useId();
+  // A caller aria-labelledby names the date input together with the field's
+  // own label.
+  const controlLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(fieldLabelID, ariaLabelledByProp)
+      : undefined;
   const timeInputId = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -1610,6 +1618,7 @@ function PointerDateTimeField({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={dateInputId}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -1680,7 +1689,7 @@ function PointerDateTimeField({
               ariaDescribedBy={ariaDescribedBy}
               controlProps={{
                 ...controlProps,
-                'aria-labelledby': ariaLabelledByProp,
+                'aria-labelledby': controlLabelledBy,
                 onBlur: onBlurProp,
                 onClick: onClickProp,
                 onKeyDown: onKeyDownProp,
@@ -1728,7 +1737,7 @@ function PointerDateTimeField({
                 onBlur={chainEventHandlers(handleDateBlur, onBlurProp)}
                 onClick={chainEventHandlers(handleDateInputClick, onClickProp)}
                 onKeyDown={chainEventHandlers(handleDateKeyDown, onKeyDownProp)}
-                aria-labelledby={ariaLabelledByProp}
+                aria-labelledby={controlLabelledBy}
                 placeholder={placeholder}
                 // With a disabledMessage the input keeps focusability via
                 // aria-disabled so the reason is focus-discoverable; typing is
@@ -1984,6 +1993,11 @@ PointerDateTimeField.displayName = 'PointerDateTimeField';
  * surfaces (`spec:AST-043`). Native modes use OS-owned date and time controls
  * in Astryx field chrome; the deprecated `nativePicker` maps to the same
  * surfaces (FR3).
+ *
+ * Base props (`ref`, `id`, `data-*`, `aria-*`, DOM event handlers) go to the date input.
+ * A DOM handler runs after the component's own handler for the same event
+ * and still receives events the component handled, even ones it called
+ * `preventDefault` on, so it cannot cancel built-in behavior.
  */
 export function DateTimeInput(props: DateTimeInputProps) {
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);

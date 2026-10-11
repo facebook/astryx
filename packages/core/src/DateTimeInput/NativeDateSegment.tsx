@@ -43,8 +43,8 @@ import {
   plainDateToISO,
   themeProps,
   type ISODateString,
-  chainEventHandlers,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
 import type {InputStatusType} from '../Field';
 import {nativePickerSegmentStyles as styles} from './nativePickerSegmentStyles';
 
