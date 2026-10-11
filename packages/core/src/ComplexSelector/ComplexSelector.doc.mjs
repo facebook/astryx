@@ -143,6 +143,13 @@ export const docs = {
           description: 'Validation status.',
         },
         {
+          name: 'statusVariant',
+          type: "'attached' | 'detached' | 'tooltip'",
+          description:
+            'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment; detached when variant is ghost); detached floats below as a separate element with spacing; tooltip reveals the message in an info-tip button.',
+          default: "'attached'",
+        },
+        {
           name: 'size',
           type: "'sm' | 'md' | 'lg'",
           description: 'Exact trigger height: sm 28px, md 32px, or lg 36px.',
@@ -176,6 +183,12 @@ export const docs = {
           type: "'start' | 'center' | 'end'",
           description: 'Popup alignment along the placement axis.',
           default: "'start'",
+        },
+        {
+          name: 'renderTrigger',
+          type: '(props: ComplexSelectorRenderTriggerProps) => ReactNode',
+          description:
+            "Render the control the popup hangs off — a glyph in a list row, a chip, an icon button — instead of the selector's own field and button. Spread the given props ({ref, id, onClick, onKeyDown, aria-haspopup, aria-expanded, aria-controls, aria-busy}) onto it; the popup is anchored to that control and still labelled by `label`. The field chrome is not rendered. Pair with handleRef to open from a keystroke elsewhere.",
         },
         {
           name: 'handleRef',
@@ -321,8 +334,12 @@ export const docsDense = {
     startIcon: 'Leading trigger icon.',
     placement: 'Popup placement.',
     alignment: 'Popup alignment.',
+    renderTrigger:
+      'Caller-rendered opener replacing the field+button; spread the given props; popup anchored to it, labelled by label.',
     handleRef: 'Imperative open/close/toggle handle.',
     onOpenChange: 'Notified on every open and close, whatever caused it.',
+    statusVariant:
+      'How status message is placed: attached overlaps below input (detached for ghost); detached floats below w/ spacing; tooltip shows on status icon.',
     accessibility:
       'Custom content must provide its own accessible structure. Use focus hooks and evaluate against WCAG 2.2.',
   },

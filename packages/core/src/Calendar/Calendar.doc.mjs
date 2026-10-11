@@ -34,8 +34,8 @@ export const docs = {
     },
     {
       name: 'value',
-      type: 'ISODateString | DateRange',
-      description: 'Controlled selected value.',
+      type: 'ISODateString | DateRange | null',
+      description: 'Controlled selected value. Use null for no selection; omit value or pass undefined for uncontrolled mode.',
     },
     {
       name: 'defaultValue',
@@ -148,7 +148,7 @@ export const docsZh = {
   },
   props: [
     {name: 'mode', type: "'single' | 'range'", description: '选择模式。', default: "'single'"},
-    {name: 'value', type: 'ISODateString | DateRange', description: '受控选中值。'},
+    {name: 'value', type: 'ISODateString | DateRange | null', description: '受控选中值。null 表示没有选中值；省略或传入 undefined 为非受控模式。'},
     {name: 'defaultValue', type: 'ISODateString | DateRange', description: '非受控默认值。'},
     {name: 'onChange', type: 'Function', description: '选择回调函数。'},
     {name: 'numberOfMonths', type: '1 | 2', description: '显示的月份数量。', default: '1'},

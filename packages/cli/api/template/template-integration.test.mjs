@@ -124,6 +124,20 @@ describe('integration template discovery', () => {
     expect(entry.description).toBe('pricing desc');
   });
 
+  it("reads an integration template's keywords in search and build", async () => {
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, 'observatory', {
+      kind: 'page',
+      body: "export default {type: 'page', name: 'Observatory', description: 'Live tiles over a sky view.', category: 'Dashboard - Observatory', keywords: ['telescope', 'star map']};\n",
+    });
+
+    const found = await search('telescope', {cwd: tmpDir, type: 'template'});
+    expect(found.data.results.map(r => r.name)).toContain('observatory');
+    const kit = await build('telescope star map page', {cwd: tmpDir});
+    if (kit.type !== 'build.kit') throw new Error(kit.type);
+    expect(kit.data.start?.name).toBe('observatory');
+  });
+
   it('preserves integration block showcase metadata in list output', async () => {
     const pkgDir = installWidgets(tmpDir);
     writeTemplate(pkgDir, 'chart-showcase', {
@@ -516,42 +530,6 @@ describe('integration template discovery', () => {
       command: 'astryx template shell-side-nav --type page',
     });
   });
-
-  it('resolves chained block aliases consistently in template', async () => {
-    const [firstTarget, secondTarget] = (await discoverCoreTemplates()).filter(
-      candidate => candidate.type === 'block',
-    );
-    expect(firstTarget).toBeDefined();
-    expect(secondTarget).toBeDefined();
-
-    const pkgDir = installWidgets(tmpDir);
-    writeTemplate(pkgDir, secondTarget.dirName, {
-      kind: 'block',
-      source:
-        'export default function FirstReplacement() { return <span>First chain replacement</span>; }\n',
-    });
-    writeTemplate(pkgDir, 'acme-final-block', {
-      kind: 'block',
-      source:
-        'export default function FinalReplacement() { return <span>Final chain replacement</span>; }\n',
-    });
-    declareReplaces(pkgDir, {
-      [secondTarget.dirName]: firstTarget.dirName,
-      'acme-final-block': secondTarget.dirName,
-    });
-
-    const firstTemplate = await template(firstTarget.dirName, {
-      show: true,
-      cwd: tmpDir,
-    });
-    expect(firstTemplate.data.source).toContain('First chain replacement');
-
-    const secondTemplate = await template(secondTarget.dirName, {
-      show: true,
-      cwd: tmpDir,
-    });
-    expect(secondTemplate.data.source).toContain('Final chain replacement');
-  }, 30_000);
 
   it('keeps the old discovery behavior when no replacement is declared', async () => {
     const pkgDir = installWidgets(tmpDir);
@@ -1256,4 +1234,41 @@ describe('build names a start its command selects', () => {
       template('contact-form', {show: true, cwd: tmpDir}),
     ).rejects.toMatchObject({code: 'ERR_AMBIGUOUS_TEMPLATE'});
   });
+
+  it('resolves chained template aliases without the layout command', async () => {
+    const [firstTarget, secondTarget] = (await discoverCoreTemplates()).filter(
+      candidate => candidate.type === 'block',
+    );
+    expect(firstTarget).toBeDefined();
+    expect(secondTarget).toBeDefined();
+
+    const pkgDir = installWidgets(tmpDir);
+    writeTemplate(pkgDir, secondTarget.dirName, {
+      kind: 'block',
+      source:
+        'export default function FirstReplacement() { return <span>First chain replacement</span>; }\n',
+    });
+    writeTemplate(pkgDir, 'acme-final-block', {
+      kind: 'block',
+      source:
+        'export default function FinalReplacement() { return <span>Final chain replacement</span>; }\n',
+    });
+    declareReplaces(pkgDir, {
+      [secondTarget.dirName]: firstTarget.dirName,
+      'acme-final-block': secondTarget.dirName,
+    });
+
+    const firstTemplate = await template(firstTarget.dirName, {
+      show: true,
+      cwd: tmpDir,
+    });
+    expect(firstTemplate.data.source).toContain('First chain replacement');
+
+    const secondTemplate = await template(secondTarget.dirName, {
+      show: true,
+      cwd: tmpDir,
+    });
+    expect(secondTemplate.data.source).toContain('Final chain replacement');
+  }, 30_000);
+
 });

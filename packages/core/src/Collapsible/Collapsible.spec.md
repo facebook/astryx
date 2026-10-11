@@ -9,19 +9,24 @@ superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-09-07
 owners: [cixzhang, imdreamrunner]
-review_triggers: [public-api, behavior, layout, accessibility]
+review_triggers: [public-api, behavior, layout, accessibility, theming]
 verified_by:
   [
     packages/core/src/Collapsible/Collapsible.test.tsx,
     packages/core/src/Collapsible/CollapsibleGroup.test.tsx,
     packages/core/src/Collapsible/__tests__/Collapsible.a11y.test.tsx,
     packages/core/src/Collapsible/__tests__/Collapsible.a11y.chromium.spec.ts,
+    packages/core/src/theme/themingTargets.test.ts,
   ]
 modules: []
 families: []
 design_specs: []
 architecture:
-  [architecture:public-component-api, architecture:react-component-runtime]
+  [
+    architecture:public-component-api,
+    architecture:react-component-runtime,
+    architecture:component-theming-surface,
+  ]
 contributing: [contributing:api-conventions]
 system_specs: [spec:AST-002/DEC-1, spec:AST-020, spec:AST-021]
 ---
@@ -150,8 +155,32 @@ This contract chooses those relationships but does not expose arbitrary icon or 
 selection. Themes may style the owning Collapsible target without changing the
 semantic direction or position states.
 
+## Theming anatomy
+
+<!-- anatomy-theming:v1 -->
+
+```json
+{
+  "Container": {"target": "collapsible"},
+  "Trigger": {"target": "collapsible-trigger"},
+  "Chevron": {
+    "delegatesTo": {"owner": "component:Icon", "target": "icon"}
+  },
+  "Content": {"target": "collapsible-content"},
+  "Group container": {"target": "collapsible-group"}
+}
+```
+
+The container owns divided-row chrome, while the trigger and content own their
+independent paint and open-state selector surfaces. The chevron keeps Icon's
+target; Collapsible owns its semantic position and direction. CollapsibleGroup is
+an aggregate subcomponent of this contract, so its conditional wrapper target maps
+to the Group container anatomy here.
+
 ## Family and system relationships
 
+- `architecture:component-theming-surface` owns anatomy qualification, target
+  placement, visual-axis and state reflection, and delegated Icon ownership.
 - The public `useCollapsible` hook retains its existing state behavior and consumer
   documentation. This component owns the rendered trigger, chevron, and aggregate
   component/group protocol.
@@ -171,6 +200,7 @@ semantic direction or position states.
 | FR6                | composed trigger layout and geometry tests                                                         | plain text; composed label with trailing content; start/end                       | label becomes shrink-wrapped/stranded or composed content cannot use remaining row                                                                                                                 | audit:Collapsible/layout        |
 | FR7–FR8, ORD1      | group inheritance, item override, and nested reset tests                                           | group start/end; item override; nested omission                                   | group value is ignored, item cannot override, or position leaks into nested content                                                                                                                | audit:Collapsible/behavior      |
 | FR9, AR1–AR3, ORD2 | disclosure semantics via `DISCLOSURE_PATTERN`, plus component-owned chevron and real RTL rendering | collapsed/expanded; controlled/uncontrolled; enabled/disabled; start/end; LTR/RTL | position changes state behavior, the trigger loses its controlled-content relationship, content visibility diverges from state, accessible output duplicates, or leading direction fails to mirror | audit:Collapsible/accessibility |
+| Theming anatomy    | focused target-reflection assertions plus `themingTargets.test.ts`                                 | standalone/grouped; open/closed; enabled/disabled; start/end; divided/density     | a style-driving axis or state disappears from its owning target, a target loses its anatomy owner, or the chevron stops delegating to Icon                                                         | audit:Collapsible/theming       |
 
 ## Decision log
 

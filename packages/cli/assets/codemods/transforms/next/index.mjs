@@ -7,4 +7,14 @@
  * this file into the resolved version folder.
  */
 
-export default [];
+import migrateDeprecatedThemeSurface, {
+  meta as migrateDeprecatedThemeSurfaceMeta,
+} from './migrate-deprecated-theme-surface.mjs';
+
+export default [
+  {
+    name: 'migrate-deprecated-theme-surface',
+    transform: migrateDeprecatedThemeSurface,
+    meta: migrateDeprecatedThemeSurfaceMeta,
+  },
+];

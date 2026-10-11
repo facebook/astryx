@@ -205,7 +205,20 @@ function itSplitsCorrectly(get: () => Built) {
   // output means running the same pass, or the build quietly loses the prefixes
   // the original had.
   it('keeps the vendor prefixing StyleX applies', () => {
-    expect(get().css).toContain('-webkit-');
+    // `-webkit-box-orient` is authored in source, so only a prefix the pass
+    // adds shows that it ran.
+    expect(get().css).toContain('-webkit-user-select');
+  });
+
+  // Source-built tokens must stay native at the same browser floor Astryx
+  // documents. Lowering `light-dark()` here rewrites root variables through
+  // mode helpers that exist only on Theme wrappers, so inherited data colors
+  // become invalid before a theme can use them.
+  it('preserves native light-dark() token values', () => {
+    const {css} = get();
+    expect(css).toContain('light-dark(');
+    expect(css).not.toContain('--lightningcss-light');
+    expect(css).not.toContain('--lightningcss-dark');
   });
 
   it('links the stylesheet from the page', () => {

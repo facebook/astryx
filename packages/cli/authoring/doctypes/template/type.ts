@@ -26,6 +26,17 @@ export interface BaseTemplateDoc extends AuthoredDocGraphFields {
   /** One-sentence description of what the template provides. */
   description?: string;
 
+  /** Search keywords for CLI discovery: the ideas, domains, and other names a
+   *  builder might use for what this template serves (e.g. `['monitoring',
+   *  'uptime', 'on-call']` for a service-health dashboard). Lowercase.
+   *  `astryx search` matches them as it matches the description, and
+   *  `astryx build` ranks page templates on them, so the `description` can
+   *  stay a description of the layout. Integration templates need
+   *  `@astryxdesign/cli` 0.6.6 or later: earlier CLIs reject the field and
+   *  drop that template, and CLIs before 0.6.4 also hide the package's doc
+   *  topics. */
+  keywords?: string[];
+
   /** Optional stable slug override and prior aliases for registry output. */
   registry?: RegistryDocIdentity;
 
@@ -33,7 +44,7 @@ export interface BaseTemplateDoc extends AuthoredDocGraphFields {
    *  replaces for unqualified lookup (find it with
    *  `astryx --json template --list --package @astryxdesign/core`). The Core
    *  original stays selectable with `--package @astryxdesign/core`. Needs
-   *  `@astryxdesign/cli` 0.7.0 or later: earlier CLIs reject the field,
+   *  `@astryxdesign/cli` 0.6.4 or later: earlier CLIs reject the field,
    *  drop that template, and hide the package's doc topics. */
   replaces?: string;
   /** Whether this template is ready for use. Templates with
@@ -122,6 +133,7 @@ export type TemplateCategory =
   | 'Table - Filtering'
   | 'Table - Tree/Hierarchical List'
   | 'Table - Frozen Column'
+  | 'Table - Comparison'
   | 'Table - Chart'
   | 'Table - Heatmap'
   // Form

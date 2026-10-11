@@ -13,7 +13,7 @@
  *
  * @input  validated doc (nodes carry .bound) + registry
  * @output expand() → {code, componentsUsed, states, todos}
- * @position lib/xle — last stage; the browser barrel orchestrates
+ * @position lib/xle — last stage; api/layout.mjs orchestrates
  */
 
 import {PAYLOAD_PROPS} from './validate.mjs';

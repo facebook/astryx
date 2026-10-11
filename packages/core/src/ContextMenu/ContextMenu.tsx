@@ -22,6 +22,9 @@
  *
  * Both modes use useListFocus for DOM-based keyboard navigation.
  * Open state is managed internally — right-click opens, click-outside/Escape closes.
+ * The trigger wrapper is a `div` by default; `triggerAs` makes it an inline
+ * `span`, so a reference inside prose can own a context menu without
+ * breaking the text flow.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ContextMenu/ContextMenu.doc.mjs
@@ -57,8 +60,14 @@ import {
   MENU_ITEM_ROLES,
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
+  activateMenuItem,
+  hostedControlOf,
+  isTextEntry,
 } from '../DropdownMenu/menuItemRoles';
+import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
+import {useMenuDrillIn} from '../DropdownMenu/useMenuDrillIn';
 import {useListFocus} from '../hooks/useListFocus';
+import {useMenuPress} from '../hooks/useMenuPress';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useLongPress} from '../hooks/useLongPress';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
@@ -133,6 +142,15 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     userSelect: 'none',
+    WebkitTouchCallout: 'none',
+  },
+  // Scroll ownership by the browser's own signal; see DropdownMenu.
+  touchNone: {
+    touchAction: 'none',
+  },
+  touchPanY: {
+    touchAction: 'pan-y',
+    overscrollBehavior: 'contain',
   },
   popover: {
     minWidth: '160px',
@@ -187,7 +205,14 @@ export type ContextMenuOption = DropdownMenuOption;
 
 interface ContextMenuBaseProps extends BaseProps {
   /** Ref forwarded to the trigger wrapper element. */
-  ref?: React.Ref<HTMLDivElement>;
+  ref?: React.Ref<HTMLElement>;
+  /**
+   * The element the trigger wrapper renders as. `div` is a block; `span` an
+   * inline wrapper, so a reference inside prose can own a context menu
+   * without breaking the text flow.
+   * @default 'div'
+   */
+  triggerAs?: 'div' | 'span';
   /**
    * Styles applied to the trigger wrapper element (the right-click target).
    * By default the trigger is a plain block that hugs its content — pass a
@@ -271,6 +296,7 @@ export function ContextMenu({
   isDisabled = false,
   onOpenChange,
   presentation = 'popover',
+  triggerAs = 'div',
   ref,
   className,
   style,
@@ -305,7 +331,7 @@ export function ContextMenu({
   // — it scrolls with the content instead of sitting at a fixed viewport point.
   const positionRef = useRef({x: 0, y: 0});
   const cursorAnchorRef = useRef<HTMLSpanElement>(null);
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement>(null);
   // Element focused before the menu opened, restored when it closes so focus
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
@@ -357,11 +383,11 @@ export function ContextMenu({
   }, [layer, updateOpenState, usesBottomSheet]);
 
   const handleBottomSheetSelect = useCallback(
-    (item: ContextMenuItemData) => {
+    (item: ContextMenuItemData, event: React.MouseEvent) => {
       if (item.isDisabled) {
         return;
       }
-      item.onClick?.();
+      item.onClick?.(event);
       if (item.hasCloseOnSelect !== false) {
         closeMenu();
       }
@@ -389,13 +415,18 @@ export function ContextMenu({
   } = useListFocus<HTMLDivElement>({
     itemSelector: MENU_ITEM_SELECTOR,
     boundarySelector: MENU_BOUNDARY_SELECTOR,
-    wrap: false,
+    // Menus wrap from the last row to the first and back.
+    wrap: true,
+    hasPaging: true,
+    // Arrows, Home and End leave a text field the menu hosts only at its
+    // caret's edge.
+    hasCaretGuard: true,
     onEscape: closeMenu,
   });
 
-  // First-character typeahead over the enabled menu items (menus-11). Reuses
-  // the hook's scoped item collection so an inline submenu flyout's items
-  // aren't swept in.
+  // Typeahead over the enabled menu items, matched on each row's LABEL alone.
+  // Reuses the hook's scoped item collection so an inline submenu flyout's
+  // items aren't swept in.
   const typeahead = useTypeahead({
     getItemLabels: () => getMenuItems().map(el => el.textContent),
     onMatch: focusItem,
@@ -459,14 +490,26 @@ export function ContextMenu({
       if (!ownsEvent(e)) {
         return;
       }
+      // A key pressed in a control the menu hosts beside its rows is that
+      // control's; see DropdownMenu.
+      const hosted = hostedControlOf(e.target, listRef.current);
       if (e.key === 'Enter' || e.key === ' ') {
+        if (hosted != null) {
+          return;
+        }
         e.preventDefault();
+        // A held key's auto-repeat never activates.
+        if (e.repeat) {
+          return;
+        }
         const focused = document.activeElement as HTMLElement | null;
         if (
           focused &&
           MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
         ) {
-          focused.click();
+          // The synthesized click keeps the key's modifiers, so a modified
+          // Enter on a link row opens the way a modified click would.
+          activateMenuItem(focused, e);
         }
         return;
       }
@@ -479,13 +522,13 @@ export function ContextMenu({
         closeMenu();
         return;
       }
-      if (typeahead.onKeyDown(e)) {
+      if (!(hosted != null && isTextEntry(hosted)) && typeahead.onKeyDown(e)) {
         e.preventDefault();
         return;
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent, listRef],
   );
 
   // Place the zero-size cursor anchor at a point in the trigger's local
@@ -517,14 +560,20 @@ export function ContextMenu({
     [layer, focusFirst, updateOpenState, usesBottomSheet],
   );
 
+  // The box the cursor anchor's offsets are measured from: the trigger, which
+  // is its containing block.
+  const getAnchorBaseRect = useCallback(
+    (): DOMRect | undefined => triggerRef.current?.getBoundingClientRect(),
+    [],
+  );
+
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
       if (isDisabled) {
         return;
       }
       e.preventDefault();
-      const trigger = triggerRef.current;
-      const rect = trigger?.getBoundingClientRect();
+      const rect = getAnchorBaseRect();
       // A keyboard-initiated contextmenu (Shift+F10 / the Menu key) fires a
       // `contextmenu` event whose coordinates are (0, 0) in several browsers.
       // Detect that and anchor the menu to the trigger's bottom-left instead,
@@ -538,25 +587,27 @@ export function ContextMenu({
         isKeyboardInvoked || !rect ? (rect?.height ?? 0) : e.clientY - rect.top;
       openAtLocalPoint(localX, localY, e.currentTarget as HTMLElement);
     },
-    [isDisabled, openAtLocalPoint],
+    [isDisabled, openAtLocalPoint, getAnchorBaseRect],
   );
 
   // Touch long-press invocation (menus-8). iOS Safari never synthesizes a
   // `contextmenu` event on long-press, so a context menu is otherwise
   // unreachable on touch. Open the menu at the touch point once the press is
   // held long enough (see useLongPress for timer/move-cancel/cleanup logic).
-  const longPressHandlers = useLongPress({
+  // The hook also returns the imperative start/moveTo/cancel API the menu press
+  // model drives; only its four touch handlers belong on the trigger element.
+  const longPress = useLongPress({
     disabled: isDisabled,
     onLongPress: useCallback(
       (point: {x: number; y: number}) => {
-        const rect = triggerRef.current?.getBoundingClientRect();
+        const rect = getAnchorBaseRect();
         openAtLocalPoint(
           rect ? point.x - rect.left : point.x,
           rect ? point.y - rect.top : point.y,
           triggerRef.current,
         );
       },
-      [openAtLocalPoint],
+      [openAtLocalPoint, getAnchorBaseRect],
     ),
   });
 
@@ -564,13 +615,33 @@ export function ContextMenu({
     ? styles.popoverCustomWidth(menuWidth)
     : styles.popover;
 
+  // The drill-in view stack for sub-menus on a phone; the bottom sheet has
+  // its own drill-in.
+  const {drillIn, wrapContent} = useMenuDrillIn(isOpen && !usesBottomSheet);
   const contextValue = useMemo<DropdownMenuContextValue>(
-    () => ({closeMenu, menuSize: size}),
-    [closeMenu, size],
+    () => ({closeMenu, menuSize: size, drillIn, menuLabel: label}),
+    [closeMenu, size, drillIn, label],
   );
 
-  const resolvedMenuContent =
-    itemsProp !== undefined ? renderDropdownItems(items) : menuContent;
+  const resolvedMenuContent = wrapContent(
+    itemsProp !== undefined ? renderDropdownItems(items) : menuContent,
+  );
+
+  const hasOverflow = useMenuOverflow(
+    listRef,
+    resolvedMenuContent,
+    isOpen && !usesBottomSheet,
+  );
+
+  // The press model: the row under a release acts, the highlight follows a
+  // held pointer, a mouse released outside dismisses and a finger leaves the
+  // menu open.
+  const menuPress = useMenuPress({
+    menuRef: listRef,
+    itemSelector: MENU_ITEM_SELECTOR,
+    onDismiss: closeMenu,
+    isEnabled: !usesBottomSheet,
+  });
 
   const renderedMenu = (
     <div
@@ -582,9 +653,15 @@ export function ContextMenu({
       aria-label={label}
       onKeyDown={listKeyDown}
       onContextMenu={e => e.preventDefault()}
+      {...menuPress.menuProps}
       {...mergeProps(
         themeProps('context-menu'),
-        stylex.props(usesBottomSheet ? styles.sheetMenu : styles.menu, xstyle),
+        stylex.props(
+          usesBottomSheet ? styles.sheetMenu : styles.menu,
+          !usesBottomSheet &&
+            (hasOverflow ? styles.touchPanY : styles.touchNone),
+          xstyle,
+        ),
         className,
         style,
       )}>
@@ -640,13 +717,20 @@ export function ContextMenu({
       renderedMenu
     );
 
+  // An inline trigger (`span`) lets prose own a context menu without
+  // breaking its flow.
+  const TriggerElement = triggerAs === 'div' ? 'div' : 'span';
+
   return (
     <>
-      <div
+      <TriggerElement
         ref={useMergedRefs(ref, triggerRef)}
         {...triggerProps}
         onContextMenu={handleContextMenu}
-        {...longPressHandlers}
+        onTouchStart={longPress.onTouchStart}
+        onTouchMove={longPress.onTouchMove}
+        onTouchEnd={longPress.onTouchEnd}
+        onTouchCancel={longPress.onTouchCancel}
         data-testid={testId}
         {...stylex.props(
           styles.trigger,
@@ -667,7 +751,7 @@ export function ContextMenu({
             },
           })}
         />
-      </div>
+      </TriggerElement>
 
       {usesBottomSheet ? (
         <Suspense fallback={null}>

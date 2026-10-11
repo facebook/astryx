@@ -26,6 +26,7 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {Icon} from '../Icon';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
@@ -363,6 +364,7 @@ export function TreeListItem({
   setSize,
   isTabbable,
 }: TreeListItemInternalProps) {
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
@@ -580,6 +582,9 @@ export function TreeListItem({
       )}
       <div {...stylex.props(styles.rowWrapper)}>
         <div
+          {...(isInteractive || (hasChildren && onClick == null)
+            ? pressable
+            : undefined)}
           {...mergeProps(
             themeProps('tree-list-item', {
               density,

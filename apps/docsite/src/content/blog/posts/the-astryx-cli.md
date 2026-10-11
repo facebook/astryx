@@ -36,7 +36,7 @@ Here is the fun part. You do not really need any of it. Your agent will know it 
 
 **Learn.** `astryx search` ranks results across components, hooks, docs, and templates at once. `astryx component` prints the props, examples, and source for a component. `astryx hook` does the same for hooks. `astryx docs` covers reference topics like tokens, color, type, motion, and our principles.
 
-**Compose.** `astryx build` is going to be your best friend. Tell it what you are making. It points your agent at the closest template, the right blocks, and the components to fill the gaps. `astryx template` drops a page template straight into your project.
+**Compose.** `astryx build` is going to be your best friend. Tell it what you are making. It points your agent at the closest template, the right blocks, and the components to fill the gaps. `astryx template` drops a page template straight into your project. `astryx layout` sketches a page's structure from a short expression before you fill it in.
 
 **Make it yours.** `astryx theme build` compiles a theme to production CSS and JS. `astryx swizzle` ejects a component's full source when you want to own it.
 

@@ -34,7 +34,7 @@ manifest.commands.forEach(walk);
 
 describe('command exit codes', () => {
   it('every CommandDoc documents its exit codes', () => {
-    expect(commandDocs.length).toBeGreaterThan(25);
+    expect(commandDocs.length).toBeGreaterThan(30);
     for (const doc of commandDocs) {
       expect(doc.exitCodes?.length, doc.name).toBeGreaterThan(0);
     }

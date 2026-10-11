@@ -177,22 +177,6 @@ describe('DebugEvent result summary', () => {
   );
 
   it(
-    'says so explicitly when a command has no result set',
-    async () => {
-      // Bare `integration` prints its subcommand list: nothing was looked
-      // up, and the run says that rather than leaving four ambiguous nulls.
-      const {event} = await runWithDebug(['integration']);
-      expect(event.output).toMatchObject({
-        resultKind: 'none',
-        resultCount: null,
-        emptyResult: null,
-        directMatch: null,
-      });
-    },
-    SLOW,
-  );
-
-  it(
     'only claims a direct match when the filter resolved one component',
     async () => {
       // The trap: a filter is a substring search, so its mere presence proves

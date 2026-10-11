@@ -20,7 +20,7 @@ import {
 } from '@testing-library/react';
 import React, {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '../theme/tokens.stylex';
+import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import {PowerSearch} from './PowerSearch';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {useInternalConfig} from './useInternalConfig';
@@ -579,7 +579,10 @@ const CHIP_ROW_COLLAPSE = '@container (max-width: 399px)';
 
 const probe = stylex.create({
   responsiveLayerMinWidth: {
-    minWidth: `min(400px, calc(100% - ${spacingVars['--spacing-4']}))`,
+    minWidth: stylex.firstThatWorks(
+      `min(400px, ${layerViewportInset.maxInlineSize})`,
+      `min(400px, ${layerViewportInset.maxInlineSizeFallback})`,
+    ),
   },
   fixedLayerMinWidth: {minWidth: 400},
   queryContainer: {containerType: 'inline-size'},
@@ -755,8 +758,8 @@ describe('narrow-width layout (#4761)', () => {
       .closest('[popover]') as HTMLElement;
     expect(layer).not.toBeNull();
 
-    // The fixed 400px floor is replaced by one clamped to the available
-    // inline space, so the popover never opens wider than the screen.
+    // The fixed 400px floor is clamped by the layer runtime's viewport cap
+    // (spec:AST-059 FR7), so the popover never opens wider than the screen.
     expectProbeClasses(layer, probe.responsiveLayerMinWidth);
     for (const cls of atomicClasses(probe.fixedLayerMinWidth)) {
       expect(layer).not.toHaveClass(cls);

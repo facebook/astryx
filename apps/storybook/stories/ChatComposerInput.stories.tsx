@@ -463,7 +463,7 @@ export const AsyncSearch: Story = {
         variant: 'blue' as const,
       }),
       loadingText: 'Searching users…',
-      emptySearchResultsText: 'No users found',
+      emptySearchText: 'No users found',
     };
 
     return (

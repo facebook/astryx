@@ -42,7 +42,6 @@ import {useState} from 'react';
 import type {ISODateString} from '../utils';
 import {InputGroup} from '../InputGroup';
 import {InternationalizationProvider} from '../i18n';
-import {stableClassName} from '../naming';
 import {DateInput} from './DateInput';
 import {
   toMonthIndex,

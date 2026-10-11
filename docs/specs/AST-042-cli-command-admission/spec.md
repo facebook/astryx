@@ -140,12 +140,12 @@ restates FR4 and FR5 for contributors. It does not yet restate FR7, and CommandD
 has no typed AST-053 eligibility field; projecting the rule there and adding the
 repository check are known enforcement gaps that land separately.
 
-The CLI has 16 top-level commands. The command docs of 25 commands and
+The CLI has 17 top-level commands. The command docs of 28 commands and
 subcommands name the function they call. Known gaps, for which this record does
 not assign migrations:
 
-- the component, discover, search, template, and theme handlers read project
-  state or files themselves (FR1);
+- the component, discover, layout, search, template, and theme handlers read
+  project state or files themselves (FR1);
 - the theme handler draws its target table from characters, and the docs
   handler renders authored headings and tables with its own code (FR3); both
   are candidates for one shared block kind under FR3, not two command
@@ -235,6 +235,36 @@ Rejected: letting each eligible command remain single-only or hide batching behi
 option, which gives equivalent read-only lookups different automation contracts; and
 requiring a new system record for every subcommand exclusion, which defeats the tiered
 bar.
+
+## Deprecation and cleanup records
+
+### DEP-0006 — Deprecate the `astryx layout` command group
+
+| Field            | Value                                                                                                                                                                                                                                                          |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id               | `DEP-0006`                                                                                                                                                                                                                                                     |
+| cleanup          | `CLN-0006`                                                                                                                                                                                                                                                     |
+| package          | `@astryxdesign/cli`                                                                                                                                                                                                                                            |
+| surface          | CLI command group: `astryx layout` (`expand`, `check`, `grammar`), its three JSON response types (`layout.expand`, `layout.check`, `layout.grammar`), and the programmatic API exports `layoutExpand`, `layoutCheck`, `layoutGrammar` from `@astryxdesign/cli` |
+| old contract     | Compressed XLE/XLO expressions parsed, validated, and expanded into XDS TSX; expression validation with canonical-surface echo; grammar cheatsheet with alias table                                                                                            |
+| replacement      | `astryx build` chooses the closest template to start from. `astryx template <name> <path>` scaffolds it. `astryx docs layout` teaches the layout principles (scaffold, structure, spacing, breakpoints).                                                       |
+| warning          | Human mode: one stderr line per invocation naming DEP-0006 and the replacement commands. JSON mode: `meta.deprecations` array in the response envelope, each entry `{id, replacements}`, matching the documented envelope schema.                              |
+| migration        | Non-mechanical. The XLE/XLO expression language has no source-level equivalent in the replacement commands. Use `astryx build` to find the right template, `astryx template <name>` to scaffold it, and edit the scaffolded code directly.                     |
+| codemod          | None — vacuous: expressions are ad-hoc input, not persisted source that a codemod can rewrite.                                                                                                                                                                 |
+| downstream       | Maintained agent-docs teach `build` as the front door. The layout guide (`astryx docs layout`) is unaffected.                                                                                                                                                  |
+| direct authority | `spec:AST-042` (CLI command admission and programmatic parity)                                                                                                                                                                                                 |
+| state            | `deprecated`                                                                                                                                                                                                                                                   |
+| target plan      | `CLN-0006` removal in the next scheduled minor                                                                                                                                                                                                                 |
+
+### CLN-0006 — Remove the `astryx layout` command group
+
+| Field     | Value                                                                                                                                                            |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id        | `CLN-0006`                                                                                                                                                       |
+| lifecycle | `DEP-0006`                                                                                                                                                       |
+| delta     | Remove command registration, API exports (`layoutExpand`, `layoutCheck`, `layoutGrammar`), CLI bindings, command docs, tests, and the `layout.*` response types. |
+| rollback  | Re-register the command group with the same API, response types, and tests from the final-patch baseline.                                                        |
+| state     | `pending` — lands only when a minor is scheduled and `CLN-0006` appears in its frozen manifest                                                                   |
 
 ## Open questions
 

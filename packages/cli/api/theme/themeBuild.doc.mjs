@@ -3,7 +3,10 @@
 /**
  * @file FunctionDoc for `themeBuild()` / `astryx theme build`. Colocated with
  * the API function it documents; the response-shape source of truth stays in
- * `theme.type.mjs`.
+ * `theme.type.mjs`. Documents imported/inherited icons and atomic rejection
+ * of registries that cannot be preserved in build/check modes.
+ * @input themeBuild's build/check and icon-import behavior.
+ * @output Consumer API documentation for generated theme artifacts.
  * @position packages/cli/api/theme — function documentation
  */
 
@@ -21,6 +24,14 @@ export const doc = {
     'writes a scoped CSS file, a JS module that re-exports the built theme, and a .d.ts ' +
     '(plus an optional .variants.d.ts when the theme adds custom prop values). It uses ' +
     "@astryxdesign/core's own generator, so the CSS matches what the <Theme> runtime emits. " +
+    'When another build step emits the icon registry, ' +
+    '{iconsSpecifier} declares the fully specified module path for the generated JS import. ' +
+    'Real registry imports are preserved, including aliases, default imports, and namespace ' +
+    'imports. Icons inherited through extends are retained, with child entries taking precedence. ' +
+    'Comment and string contents do not affect import detection. ' +
+    'An inline registry that cannot be preserved fails with ERR_THEME_INVALID before any ' +
+    'output is written, including in check mode. Move the registry to its own module and ' +
+    'import it into the theme file. ' +
     'With {check: true} it writes nothing and instead compares ' +
     'each output against disk, returning the drift: the CI guard for committed, generated theme CSS.',
   importPath: '@astryxdesign/cli/api',
@@ -60,7 +71,7 @@ export const doc = {
       name: 'options.iconsSpecifier',
       type: 'string',
       description:
-        'Override the import specifier of the icon registry in the generated JS module, for example ./icons.mjs. Takes effect only when the theme sets icons: to a named import; when omitted, the source specifier is kept.',
+        'Override the selected icon-registry import specifier in the generated JS module, for example ./icons.mjs. With child and inherited registries, this changes the child registry import. When omitted, direct source specifiers are preserved; relative imports followed through a local base are rebased to the theme file. A registry inherited through a package theme must be imported directly to use this option.',
     },
     {
       name: 'ctx.cwd',
@@ -74,7 +85,7 @@ export const doc = {
     {
       type: 'theme.build',
       description:
-        'Build receipt {name, tokenCount, componentCount, sizeKB, outputs, warnings, notices}: the theme name; how many tokens (portable plus theme-local) and component targets it overrides; the CSS size in KB; the written outputs {css, js, dts, and variantsDts when custom prop values were augmented}; warnings, the defects the author should fix, including exact canonical replacements for deprecated component target keys and declarations the generator dropped; and notices, advisories about a correct theme, such as a font it names but does not load. Resolves to null instead when the theme produced no CSS (nothing to build).',
+        'Build receipt {name, tokenCount, componentCount, sizeKB, outputs, warnings, notices}: the theme name; how many tokens (portable plus theme-local) and component targets it overrides; the CSS size in KB; the written outputs {css, cssDts for strict side-effect imports, js, dts, and variantsDts when custom prop values were augmented}; warnings, the defects the author should fix, including exact canonical replacements for deprecated component target keys and declarations the generator dropped; and notices, advisories about a correct theme, such as a font it names but does not load. Resolves to null instead when the theme produced no CSS (nothing to build).',
     },
     {
       type: 'theme.build.check',
@@ -90,7 +101,7 @@ export const doc = {
     },
     {
       code: 'ERR_THEME_INVALID',
-      when: 'the resolved theme is invalid, for example it has no name, or a custom Heading type has no standalone rule with a declaration the compiler can emit',
+      when: 'the resolved theme is invalid, for example it has no name, a custom Heading type has no standalone rule with a declaration the compiler can emit, or its icon registry cannot be preserved through an import (also rejected in check mode)',
     },
     {
       code: 'ERR_PATH_TRAVERSAL',

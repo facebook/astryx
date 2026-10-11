@@ -925,4 +925,115 @@ describe('Drawer', () => {
       );
     });
   });
+
+  describe('container padding', () => {
+    // StyleX lowers the block edges to their physical properties. block-end is
+    // asserted separately: its applied edge composes the safe-area inset.
+    const EDGES = [
+      ['inline-start', 'padding-inline-start'],
+      ['inline-end', 'padding-inline-end'],
+      ['block-start', 'padding-top'],
+    ] as const;
+    // StyleX strips the space after the var() fallback comma.
+    const SAFE_AREA_BLOCK_END =
+      'calc(var(--container-padding-block-end,0px) + env(safe-area-inset-bottom,0px))';
+
+    function renderWithPadding(padding?: 0 | 2) {
+      render(
+        <Drawer
+          isOpen
+          onOpenChange={() => {}}
+          label="Details"
+          padding={padding}>
+          <span data-testid="drawer-child">Content</span>
+        </Drawer>,
+      );
+      // The content area is the child's parent: the scrolling box inside the
+      // panel, not the panel itself.
+      return getComputedStyle(
+        screen.getByTestId('drawer-child').parentElement!,
+      );
+    }
+
+    it("defaults to Dialog's --spacing-4 inset and publishes the theme chain", () => {
+      const computed = renderWithPadding();
+      for (const [edge, property] of EDGES) {
+        const published = computed
+          .getPropertyValue(`--container-padding-${edge}`)
+          .replace(/\s+/g, '');
+        expect(published, edge).toContain(
+          `var(--astryx-drawer-padding-${edge}`,
+        );
+        // No theme padding resolves to --spacing-4, as in Dialog.
+        expect(published, edge).toContain(
+          'var(--astryx-drawer-padding,var(--spacing-4))',
+        );
+        // Applied padding reads the published value, so bleed children
+        // subtract exactly the inset they sit in.
+        expect(computed.getPropertyValue(property), edge).toBe(
+          `var(--container-padding-${edge})`,
+        );
+      }
+      // block-end publishes the same chain, while the APPLIED edge adds the
+      // home-indicator safe area on top of the container inset.
+      const publishedEnd = computed
+        .getPropertyValue('--container-padding-block-end')
+        .replace(/\s+/g, '');
+      expect(publishedEnd).toContain('var(--astryx-drawer-padding-block-end');
+      expect(publishedEnd).toContain(
+        'var(--astryx-drawer-padding,var(--spacing-4))',
+      );
+      expect(computed.getPropertyValue('padding-bottom')).toBe(
+        SAFE_AREA_BLOCK_END,
+      );
+      // The Layout insets read the same chain, so a Layout inside the drawer
+      // lines its regions up on the drawer's inset, as in Dialog.
+      for (const name of [
+        '--layout-padding-outer-x',
+        '--layout-padding-outer-y',
+        '--layout-padding-inner-x',
+        '--layout-padding-inner-y',
+      ]) {
+        const value = computed.getPropertyValue(name).replace(/\s+/g, '');
+        expect(value, name).toContain(
+          'var(--astryx-drawer-padding,var(--spacing-4))',
+        );
+      }
+    });
+
+    it.each([0, 2] as const)(
+      'applies and publishes an explicit padding step (%s)',
+      padding => {
+        const computed = renderWithPadding(padding);
+        const expected = `var(--spacing-${padding})`;
+        for (const [edge, property] of EDGES) {
+          expect(
+            computed.getPropertyValue(`--container-padding-${edge}`),
+            edge,
+          ).toBe(expected);
+          expect(computed.getPropertyValue(property), edge).toBe(expected);
+        }
+        expect(computed.getPropertyValue('--container-padding-block-end')).toBe(
+          expected,
+        );
+        expect(computed.getPropertyValue('padding-bottom')).toBe(
+          SAFE_AREA_BLOCK_END,
+        );
+        expect(computed.getPropertyValue('--layout-padding-inner-x')).toBe(
+          expected,
+        );
+      },
+    );
+
+    it('keeps the panel itself unpadded and free of a padding attribute', () => {
+      renderWithPadding(2);
+      const dialog = screen.getByRole('dialog');
+      expect(dialog.hasAttribute('padding')).toBe(false);
+      expect(
+        getComputedStyle(dialog).getPropertyValue(
+          '--container-padding-inline-start',
+        ),
+      ).toBe('0px');
+    });
+  });
 });

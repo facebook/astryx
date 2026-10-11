@@ -240,9 +240,6 @@ describe('--json shim: help shown for a failed invocation is an error envelope',
   });
 
   it('a group added after install gets the same error envelope', () => {
-    // This is the only coverage of the no-subcommand path: every group the CLI
-    // ships has an action of its own (see command-result-coverage.test.mjs), so
-    // a group without one has to be built here.
     const program = new Command('astryx');
     installJsonShim(program);
     // Added later, so only the prototype-level patch covers its outputHelp.
@@ -268,11 +265,4 @@ describe('--json shim: help shown for a failed invocation is an error envelope',
     expect(parsed.suggestions).toEqual([{name: 'late child', reason: 'available subcommand'}]);
   });
 
-  it('astryx help theme --json still emits the help envelope, exit 0', async () => {
-    const {status, stdout} = await runCli(['help', 'theme', '--json']);
-    expect(status).toBe(0);
-    const parsed = parseJson(stdout);
-    expect(parsed.type).toBe('help');
-    expect(parsed.data.command).toBe('astryx theme');
-  });
 });

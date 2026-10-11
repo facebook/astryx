@@ -151,7 +151,7 @@ export const doc = {
       name: 'subcommands',
       type: 'string[]',
       description:
-        'Subcommand names (for command groups like `theme`).',
+        'Subcommand names (for command groups like `theme` / `layout`).',
     },
     {
       name: 'examples',
@@ -195,6 +195,11 @@ export const doc = {
           required: true,
         },
       ],
+    },
+    {
+      name: 'deprecated',
+      type: 'string',
+      description: 'Deprecation notice — a DEP-* id and the replacement.',
     },
     {
       name: 'related',
