@@ -72,7 +72,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | lifecycle | `DEP-0010`                                                                                                                                                                                            |
 | delta     | A numeric `columns` value renders up to N columns of at least 12rem and fewer when the grid is narrower; a `GridSpan` in such a grid takes the full row once the grid has fewer columns than it spans |
 | rollback  | Restore `repeat(N, 1fr)` for numeric `columns` from the final-patch baseline                                                                                                                          |
-| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0019`                                                                                                                      |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                                                                                 |
 
 ## Ownership boundary
 

@@ -76,7 +76,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | lifecycle | `DEP-0007`                                                                                                                                                                 |
 | delta     | `Banner` renders no `role` and no `aria-live` unless the caller passes `role`. Visual status styling, icons, theming targets, and explicit `role` forwarding are unchanged |
 | rollback  | Restore the `status`-to-role map from the final-patch baseline                                                                                                             |
-| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0015`                                                                                           |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                                                      |
 
 ## Ownership boundary
 
