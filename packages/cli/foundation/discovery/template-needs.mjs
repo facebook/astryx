@@ -20,7 +20,7 @@ import * as path from 'node:path';
 import module from 'node:module';
 import {CLI_ROOT} from '../fs/paths.mjs';
 import {detectStylingSystem} from '../agent-docs/agent-docs.mjs';
-import {explainPackageManager} from '../env/package-manager.mjs';
+import {decidePackageManagerIn} from '../env/package-manager.mjs';
 
 // ── Known packages that a template may import without the user installing them.
 // react and react-dom are the framework; @astryxdesign/* is the design system
@@ -69,19 +69,77 @@ const ADD_VERB = {
 };
 
 /**
- * The command that adds packages with the project's package manager, using the
- * CLI's shared detection (declared `packageManager`, then lockfiles, then
- * committed config, then the runner). Returns null when several lockfiles tie
- * and nothing the project owns picks one: a guessed install line would write a
- * second lockfile into the project, so the receipt names the packages without
- * a command instead.
- * @param {string} cwd Project root
- * @returns {string | null}
+ * Whether a package.json declares a workspace (`workspaces` field).
+ * @param {string} dir
+ * @returns {{exists: boolean, declaresWorkspace: boolean}}
  */
-function detectInstallVerb(cwd) {
-  const {pm, ambiguous} = explainPackageManager(cwd);
-  if (ambiguous) return null;
-  return ADD_VERB[pm] ?? 'npm install';
+function readPackageJson(dir) {
+  const pkgPath = path.join(dir, 'package.json');
+  if (!fs.existsSync(pkgPath)) return {exists: false, declaresWorkspace: false};
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    return {exists: true, declaresWorkspace: pkg.workspaces != null};
+  } catch {
+    return {exists: true, declaresWorkspace: false};
+  }
+}
+
+/**
+ * The workspace root (AST-048 FR15): the nearest directory at or above the
+ * target that declares a workspace, by `pnpm-workspace.yaml` or a package.json
+ * `workspaces` field; outside a workspace, the nearest package.json's
+ * directory; with no package.json, the target itself.
+ * @param {string} target
+ * @returns {string}
+ */
+function findWorkspaceRoot(target) {
+  let dir = path.resolve(target);
+  /** @type {string | null} */
+  let nearestPackage = null;
+  for (;;) {
+    const pkg = readPackageJson(dir);
+    if (
+      fs.existsSync(path.join(dir, 'pnpm-workspace.yaml')) ||
+      pkg.declaresWorkspace
+    ) {
+      return dir;
+    }
+    if (pkg.exists && nearestPackage == null) nearestPackage = dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return nearestPackage ?? path.resolve(target);
+    dir = parent;
+  }
+}
+
+/**
+ * The project's package manager for an install command (AST-048 FR17, FR19):
+ * the nearest directory from the target up to the workspace root that has a
+ * `packageManager` field or a lockfile decides, by the CLI's shared
+ * per-directory rule; with none, npm. Ambiguous when that directory's
+ * lockfiles disagree and nothing it commits picks one.
+ * @param {string} target
+ * @returns {{verb: string} | {verb: null, dir: string, lockfiles: string[]}}
+ */
+function resolveInstallVerb(target) {
+  const root = findWorkspaceRoot(target);
+  let dir = path.resolve(target);
+  for (;;) {
+    const decision = decidePackageManagerIn(dir);
+    if (decision) {
+      if (decision.ambiguous) {
+        return {
+          verb: null,
+          dir,
+          lockfiles: decision.lockfiles.map(lock => lock.file),
+        };
+      }
+      return {verb: ADD_VERB[decision.pm] ?? ADD_VERB.npm};
+    }
+    const parent = path.dirname(dir);
+    if (dir === root || parent === dir) break;
+    dir = parent;
+  }
+  return {verb: ADD_VERB.npm};
 }
 
 /**
@@ -141,13 +199,18 @@ export function analyzeTemplateNeeds(source, cwd) {
 
   // Build the install command with version ranges from the CLI workspace.
   let installCommand = null;
-  /** @type {string[]} */
-  let specs = [];
+  /** @type {string | null} */
+  let noCommandReason = null;
   if (missing.length > 0) {
-    const verb = detectInstallVerb(cwd);
+    const resolved = resolveInstallVerb(cwd);
     const ranges = cliPackageRanges();
-    specs = missing.map(p => (ranges[p] ? `${p}@"${ranges[p]}"` : p));
-    installCommand = verb ? `${verb} ${specs.join(' ')}` : null;
+    const specs = missing.map(p => (ranges[p] ? `${p}@"${ranges[p]}"` : p));
+    if (resolved.verb) {
+      installCommand = `${resolved.verb} ${specs.join(' ')}`;
+    } else {
+      const where = path.relative(process.cwd(), resolved.dir) || '.';
+      noCommandReason = `Install missing dependencies: ${specs.join(' ')}. No install command: ${where} has ${resolved.lockfiles.join(' and ')}, and nothing there says which package manager to use.`;
+    }
   }
 
   // ── StyleX compiler ────────────────────────────────────────────────────
@@ -162,7 +225,7 @@ export function analyzeTemplateNeeds(source, cwd) {
     notes.push(
       installCommand
         ? `Install missing dependencies: ${installCommand}`
-        : `Install missing dependencies with this project's package manager: ${specs.join(' ')}. Several lockfiles are present and nothing in the project says which manager to use; \`astryx doctor\` explains.`,
+        : (noCommandReason ?? ''),
     );
   }
   if (stylexCompilerNeeded) {
