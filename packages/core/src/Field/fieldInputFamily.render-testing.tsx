@@ -133,6 +133,7 @@ export function describeFieldInputParts(
       it('ignores container* and warns inside InputGroup, keeping control*', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const {container} = render(
+          // eslint-disable-next-line @astryx/no-hardcoded-i18n-string -- test fixture label
           <InputGroup label="Group">
             {renderMember({
               containerClassName: 'fr10-container',

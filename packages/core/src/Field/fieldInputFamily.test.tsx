@@ -43,7 +43,7 @@ function fieldComposedComponents(): string[] {
     .filter(dir =>
       readdirSync(join(SRC, dir)).some(
         file =>
-          /\.tsx$/.test(file) &&
+          file.endsWith('.tsx') &&
           !/\.(test|stories)\.tsx$/.test(file) &&
           /<Field[\s>]/.test(readFileSync(join(SRC, dir, file), 'utf8')),
       ),
@@ -86,18 +86,21 @@ describe('useFieldInputStyling', () => {
     vi.restoreAllMocks();
   });
 
+  const GROUP_CONTEXT = {isInGroup: true as const, labelID: 'group-label'};
+  const HORIZONTAL_LABELS_CONTEXT = {direction: 'horizontal-labels' as const};
+
   function wrapper(kind: 'plain' | 'group' | 'horizontal-labels') {
     return function Wrapper({children}: {children: ReactNode}) {
       if (kind === 'group') {
         return (
-          <InputGroupContext value={{isInGroup: true, labelID: 'group-label'}}>
+          <InputGroupContext value={GROUP_CONTEXT}>
             {children}
           </InputGroupContext>
         );
       }
       if (kind === 'horizontal-labels') {
         return (
-          <FormLayoutContext value={{direction: 'horizontal-labels'}}>
+          <FormLayoutContext value={HORIZONTAL_LABELS_CONTEXT}>
             {children}
           </FormLayoutContext>
         );
