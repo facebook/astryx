@@ -90,14 +90,16 @@ describe('MultiSelector FR10 targets', () => {
         value={NO_VALUE}
         onChange={() => {}}
         onClick={event => {
-          states.push(event.currentTarget.getAttribute('aria-expanded'));
+          states.push(event.currentTarget.getAttribute('role') ?? 'button');
+          // Neither cancelling nor stopping the press undoes the built-in
+          // toggle, which already ran on the trigger button.
           event.preventDefault();
+          event.stopPropagation();
         }}
       />,
     );
     const trigger = screen.getByRole('combobox');
     fireEvent.click(trigger);
-    // The consumer ran after the toggle, and cancelling did not undo it.
     expect(states).toHaveLength(1);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
@@ -121,19 +123,20 @@ describe('MultiSelector FR10 targets', () => {
   });
 
   it('keeps the built-in keyboard model and composes a consumer onKeyDown after it', () => {
-    const onKeyDown = vi.fn();
+    const keyTargets: EventTarget[] = [];
     render(
       <MultiSelector
         label="Fruit"
         options={OPTIONS}
         value={NO_VALUE}
         onChange={() => {}}
-        onKeyDown={onKeyDown}
+        onKeyDown={event => keyTargets.push(event.currentTarget)}
       />,
     );
     const trigger = screen.getByRole('combobox');
     fireEvent.keyDown(trigger, {key: 'Tab'});
-    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    // The consumer handler lands on the trigger itself.
+    expect(keyTargets).toEqual([trigger]);
     fireEvent.keyDown(trigger, {key: 'ArrowDown'});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });

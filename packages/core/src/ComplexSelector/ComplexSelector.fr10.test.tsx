@@ -85,15 +85,17 @@ describe('ComplexSelector FR10 targets', () => {
         value={VALUE}
         onChange={() => {}}
         onClick={event => {
-          states.push(event.currentTarget.getAttribute('aria-expanded'));
+          states.push(event.currentTarget.getAttribute('role') ?? 'button');
+          // Neither cancelling nor stopping the press undoes the built-in
+          // toggle, which already ran on the trigger button.
           event.preventDefault();
+          event.stopPropagation();
         }}>
         {content}
       </ComplexSelector>,
     );
     const trigger = screen.getByRole('button', {name: 'Fruit'});
     fireEvent.click(trigger);
-    // The consumer ran after the toggle, and cancelling did not undo it.
     expect(states).toHaveLength(1);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
@@ -117,19 +119,20 @@ describe('ComplexSelector FR10 targets', () => {
   });
 
   it('keeps the built-in keyboard model and composes a consumer onKeyDown after it', () => {
-    const onKeyDown = vi.fn();
+    const keyTargets: EventTarget[] = [];
     render(
       <ComplexSelector
         label="Fruit"
         value={VALUE}
         onChange={() => {}}
-        onKeyDown={onKeyDown}>
+        onKeyDown={event => keyTargets.push(event.currentTarget)}>
         {content}
       </ComplexSelector>,
     );
     const trigger = screen.getByRole('button', {name: 'Fruit'});
     fireEvent.keyDown(trigger, {key: 'Tab'});
-    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    // The consumer handler lands on the trigger itself.
+    expect(keyTargets).toEqual([trigger]);
     fireEvent.keyDown(trigger, {key: 'ArrowDown'});
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
