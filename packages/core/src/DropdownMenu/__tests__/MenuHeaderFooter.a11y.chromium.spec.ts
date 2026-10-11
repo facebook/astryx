@@ -1,0 +1,132 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file MenuHeaderFooter.a11y.chromium.spec.ts
+ * @input The `Core/DropdownMenu` HeaderAndFooter story in a built Storybook
+ *   and real keyboard and mouse input.
+ * @output Real-engine proof that a menu's header and footer sit beside the
+ *   menu rather than inside it, keep their own keys and presses, and join one
+ *   Tab sequence with the menu.
+ * @position Run with `pnpm test:a11y-contract`.
+ */
+
+import {expect, test, type Page} from '@playwright/test';
+import {
+  DEFAULT_STORYBOOK_DIR,
+  serveStorybook,
+  type StaticServer,
+} from '@astryxdesign/a11y-spec/storybook';
+
+let storybook: StaticServer;
+
+test.beforeAll(async () => {
+  storybook = await serveStorybook(
+    process.env.ASTRYX_STORYBOOK_DIR ?? DEFAULT_STORYBOOK_DIR,
+  );
+});
+
+test.afterAll(async () => {
+  await storybook?.close();
+});
+
+const STORY = 'core-dropdownmenu--header-and-footer';
+const TRIGGER = '#storybook-root [aria-haspopup="menu"]';
+
+async function openMenu(page: Page) {
+  await page.goto(`${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`);
+  await page.locator(TRIGGER).click();
+  const menu = page.getByRole('menu');
+  await expect(menu).toBeVisible();
+  // A pointer open focuses the menu itself; let that land first.
+  await expect(menu).toBeFocused();
+  return menu;
+}
+
+test('the menu holds only its rows; the field and button sit beside it', async ({
+  page,
+}) => {
+  const menu = await openMenu(page);
+  const roles = await menu.evaluate(el =>
+    Array.from(el.querySelectorAll('[role]')).map(n => n.getAttribute('role')),
+  );
+  expect(new Set(roles)).toEqual(new Set(['menuitem']));
+  await expect(menu.getByRole('textbox', {name: 'Filter labels'})).toHaveCount(
+    0,
+  );
+  await expect(menu.getByRole('button', {name: 'Create label'})).toHaveCount(0);
+  await expect(
+    page.getByRole('textbox', {name: 'Filter labels'}),
+  ).toBeVisible();
+  await expect(page.getByRole('button', {name: 'Create label'})).toBeVisible();
+});
+
+test('typing into the header field filters without moving to a row', async ({
+  page,
+}) => {
+  await openMenu(page);
+  const field = page.getByRole('textbox', {name: 'Filter labels'});
+  await field.click();
+  await page.keyboard.type('de');
+  await expect(field).toHaveValue('de');
+  await expect(field).toBeFocused();
+  await expect(page.getByRole('menuitem')).toHaveText([
+    'Documentation',
+    'Design',
+  ]);
+});
+
+test('Tab walks header, menu, footer, then closes to the trigger', async ({
+  page,
+}) => {
+  const menu = await openMenu(page);
+  const field = page.getByRole('textbox', {name: 'Filter labels'});
+  const create = page.getByRole('button', {name: 'Create label'});
+
+  await page.keyboard.press('Shift+Tab');
+  await expect(field).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(menu).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('menuitem', {name: 'Bug'})).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(create).toBeFocused();
+  await expect(menu).toBeVisible();
+
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('created')).toHaveText('1');
+  await expect(menu).toBeVisible();
+
+  await page.keyboard.press('Tab');
+  await expect(menu).toBeHidden();
+  await expect(page.locator(TRIGGER)).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('Escape in the header closes the menu and returns focus to the trigger', async ({
+  page,
+}) => {
+  const menu = await openMenu(page);
+  await page.getByRole('textbox', {name: 'Filter labels'}).click();
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await expect(page.locator(TRIGGER)).toBeFocused();
+});
+
+test('a finger tap on the footer button acts and the menu stays open', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({hasTouch: true, isMobile: true});
+  const page = await context.newPage();
+  try {
+    await page.goto(
+      `${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`,
+    );
+    await page.locator(TRIGGER).tap();
+    const menu = page.getByRole('menu');
+    await expect(menu).toBeVisible();
+    await page.getByRole('button', {name: 'Create label'}).tap();
+    await expect(page.getByTestId('created')).toHaveText('1');
+    await expect(menu).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});

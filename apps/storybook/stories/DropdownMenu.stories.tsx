@@ -15,6 +15,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSubMenu,
 } from '@astryxdesign/core/DropdownMenu';
+import {Button} from '@astryxdesign/core/Button';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   PencilIcon,
@@ -1426,4 +1428,50 @@ export const SubmenuAdaptiveFixture: Story = {
       </DropdownMenu>
     </div>
   ),
+};
+
+const LABELS = ['Bug', 'Feature', 'Documentation', 'Design', 'Performance'];
+
+/**
+ * A filter field above the rows and a "Create" button below them. Both sit in
+ * the popover beside the menu, never inside it: the menu holds only its rows,
+ * so it stays a valid menu to a screen reader, and the field and button keep
+ * their own keys and presses. Tab walks field, menu, button; Tab past the
+ * button or Shift+Tab before the field closes the menu.
+ */
+export const HeaderAndFooter: Story = {
+  render: () => {
+    const [query, setQuery] = useState('');
+    const [created, setCreated] = useState(0);
+    const visible = LABELS.filter(label =>
+      label.toLowerCase().includes(query.trim().toLowerCase()),
+    );
+    return (
+      <>
+        <DropdownMenu
+          button={{label: 'Labels'}}
+          header={
+            <TextInput
+              label="Filter labels"
+              isLabelHidden
+              placeholder="Filter labels"
+              value={query}
+              onChange={setQuery}
+            />
+          }
+          footer={
+            <Button
+              label="Create label"
+              variant="ghost"
+              onClick={() => setCreated(count => count + 1)}
+            />
+          }>
+          {visible.map(label => (
+            <DropdownMenuItem key={label} label={label} onClick={() => {}} />
+          ))}
+        </DropdownMenu>
+        <output data-testid="created">{created}</output>
+      </>
+    );
+  },
 };

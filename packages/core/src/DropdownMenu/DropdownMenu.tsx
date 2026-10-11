@@ -69,6 +69,7 @@ import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 import {useMenuOverflow} from './useMenuOverflow';
+import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useMenuDrillIn} from './useMenuDrillIn';
 import {resolveMenuWidth} from './menuWidth';
@@ -88,7 +89,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {mergeProps, rtlStyles} from '../utils';
+import {isRenderable, mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useInteractionModalityTracking} from '../utils/interactionModality';
@@ -101,6 +102,16 @@ const MENU_BLOCK_CAP = '300px';
 const MENU_MAX_BLOCK_SIZE = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSize})`;
 const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(${MENU_BLOCK_CAP}, ${layerViewportInset.maxBlockSizeFallback})`;
 const MENU_TRIGGER_OPEN_BACKGROUND = `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`;
+
+/** The elements Tab reaches inside a header or footer region, in order. */
+function tabbablesIn(region: HTMLElement | null): HTMLElement[] {
+  if (region == null) {
+    return [];
+  }
+  return Array.from(
+    region.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  ).filter(element => element.tabIndex >= 0);
+}
 
 const styles = stylex.create({
   triggerOpen: {
@@ -147,6 +158,27 @@ const styles = stylex.create({
     overflowY: 'auto',
     overflowX: 'hidden',
     overscrollBehavior: 'contain',
+  },
+  // With a header or footer, the regions and the menu share one column under
+  // the menu's block cap: the regions keep their height and the menu shrinks
+  // and scrolls between them.
+  regionsFrame: {
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    maxHeight: stylex.firstThatWorks(
+      MENU_MAX_BLOCK_SIZE,
+      MENU_MAX_BLOCK_SIZE_FALLBACK,
+    ),
+  },
+  menuInFrame: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minBlockSize: 0,
+  },
+  region: {
+    flexShrink: 0,
+    padding: spacingVars['--spacing-1'],
   },
   // Scroll ownership by the browser's own signal. A menu whose rows fit keeps
   // every one-finger move: a slide over its rows stays a slide. One that
@@ -215,6 +247,12 @@ const bottomSheetStyles = stylex.create({
   },
   viewHeading: {
     outline: 'none',
+  },
+  // Caller content above or below the action list, inset to the list's
+  // content edge.
+  region: {
+    paddingInline: spacingVars['--spacing-3'],
+    paddingBlock: spacingVars['--spacing-2'],
   },
 });
 
@@ -371,6 +409,17 @@ interface DropdownMenuBaseProps extends BaseProps {
    * @default 'start'
    */
   alignment?: LayerAlignment;
+  /**
+   * Content above the menu's rows and outside the menu itself — a filter
+   * field, a toggle. The menu holds only its rows, so a control that is not
+   * a row goes here or in `footer`, never among the rows.
+   */
+  header?: ReactNode;
+  /**
+   * Content below the menu's rows and outside the menu itself — a "Create"
+   * button. See `header`.
+   */
+  footer?: ReactNode;
 
   'data-testid'?: string;
 }
@@ -508,6 +557,8 @@ function DropdownMenuBottomSheet({
   menuMaxHeight: _menuMaxHeight,
   placement: _placement,
   alignment: _alignment,
+  header,
+  footer,
   className,
   style,
   xstyle,
@@ -718,11 +769,17 @@ function DropdownMenuBottomSheet({
               {currentTitle}
             </Heading>
           </div>
+          {isRenderable(header) && (
+            <div {...stylex.props(bottomSheetStyles.region)}>{header}</div>
+          )}
           <MenuBottomSheetActionList
             items={currentItems}
             onSelect={handleSelect}
             onOpenSubmenu={item => setSubmenuPath(path => [...path, item])}
           />
+          {isRenderable(footer) && (
+            <div {...stylex.props(bottomSheetStyles.region)}>{footer}</div>
+          )}
         </div>
       </MenuBottomSheet>
     </>
@@ -741,6 +798,8 @@ function DropdownMenuPopover({
   placement = 'below',
   alignment = 'start',
   presentation: _presentation,
+  header,
+  footer,
   className,
   style,
   xstyle,
@@ -786,6 +845,9 @@ function DropdownMenuPopover({
     resetFocusReturn,
   } = useFocusReturnVisibility();
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
+  const hasRegions = isRenderable(header) || isRenderable(footer);
   // The press model is mounted below (it needs the popover); the hide path
   // above it ends the gesture in flight through this ref.
   const cancelMenuPressRef = useRef<() => void>(() => {});
@@ -991,7 +1053,13 @@ function DropdownMenuPopover({
       // otherwise leak into the page while the menu stayed open (menus-5).
       // Do NOT preventDefault — closing restores focus to the trigger, and the
       // browser's default Tab then continues from there to the next element.
+      // A header or footer with something Tab can reach in that direction
+      // takes the Tab instead, and the menu stays open.
       if (e.key === 'Tab') {
+        const region = e.shiftKey ? headerRef.current : footerRef.current;
+        if (tabbablesIn(region).length > 0) {
+          return;
+        }
         closeMenu();
         return;
       }
@@ -1003,6 +1071,32 @@ function DropdownMenuPopover({
       listNavKeyDown(e);
     },
     [listNavKeyDown, closeMenu, typeahead, ownsEvent],
+  );
+
+  // Tab past the last control of the footer, or Shift+Tab before the first
+  // control of the header, leaves the menu as Tab from its rows does: the
+  // menu closes, focus returns to the trigger, and the browser's own Tab
+  // continues from there. Between the regions, Tab moves through the menu
+  // as one stop.
+  const handleRegionKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key !== 'Tab') {
+        return;
+      }
+      const tabbables = tabbablesIn(e.currentTarget);
+      const isHeader = e.currentTarget === headerRef.current;
+      const exit = isHeader
+        ? e.shiftKey
+          ? tabbables[0]
+          : undefined
+        : e.shiftKey
+          ? undefined
+          : tabbables[tabbables.length - 1];
+      if (exit != null && exit === document.activeElement) {
+        closeMenu();
+      }
+    },
+    [closeMenu],
   );
 
   const openAndFocus = useCallback(
@@ -1215,6 +1309,38 @@ function DropdownMenuPopover({
   );
   const hasOverflow = useMenuOverflow(listRef, menuContent, popover.isOpen);
 
+  // The header and footer sit beside the menu inside the popover, never inside
+  // the role="menu" element: a menu holds only its rows.
+  const renderWithRegions = (menu: ReactNode): ReactNode =>
+    hasRegions ? (
+      <div
+        {...stylex.props(
+          styles.regionsFrame,
+          resolvedMaxHeight != null &&
+            dynamicStyles.menuMaxHeight(resolvedMaxHeight),
+        )}>
+        {isRenderable(header) && (
+          <div
+            ref={headerRef}
+            onKeyDown={handleRegionKeyDown}
+            {...stylex.props(styles.region)}>
+            {header}
+          </div>
+        )}
+        {menu}
+        {isRenderable(footer) && (
+          <div
+            ref={footerRef}
+            onKeyDown={handleRegionKeyDown}
+            {...stylex.props(styles.region)}>
+            {footer}
+          </div>
+        )}
+      </div>
+    ) : (
+      menu
+    );
+
   const triggerProps: DropdownMenuTriggerProps = {
     ref: el => {
       buttonRef.current = el;
@@ -1286,52 +1412,56 @@ function DropdownMenuPopover({
         />
       )}
       {popover.render(
-        <div
-          {...rest}
-          ref={el => {
-            listRef.current = el;
-            contentRef.current =
-              el?.closest<HTMLDivElement>('[popover]') ?? null;
-          }}
-          id={menuId}
-          role="menu"
-          // Pointer opens focus the container so arrows, typeahead, Escape and
-          // Tab remain owned by the menu without pre-highlighting an item.
-          // An overflowing menu joins the Tab order so its scrollable region is
-          // keyboard-accessible; Tab still dismisses through listKeyDown.
-          tabIndex={hasOverflow ? 0 : -1}
-          // Give the menu an accessible name from its trigger's label, so
-          // screen readers announce e.g. "Actions menu" rather than an unnamed
-          // menu (menus-13). A custom trigger names it by reference.
-          aria-label={
-            renderTrigger != null
-              ? (rest['aria-label'] as string | undefined)
-              : button.label
-          }
-          aria-labelledby={
-            renderTrigger != null && rest['aria-label'] == null
-              ? triggerId
-              : (rest['aria-labelledby'] as string | undefined)
-          }
-          onKeyDown={listKeyDown}
-          {...menuPress.menuProps}
-          {...mergeProps(
-            themeProps('dropdown-menu'),
-            stylex.props(
-              styles.dropdown,
-              resolvedMaxHeight != null &&
-                dynamicStyles.menuMaxHeight(resolvedMaxHeight),
-              hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
-              hasOverflow && styles.scrollable,
-              xstyle,
-            ),
-            className,
-            style,
-          )}>
-          <DropdownMenuContext value={contextValue}>
-            {menuContent}
-          </DropdownMenuContext>
-        </div>,
+        renderWithRegions(
+          <div
+            {...rest}
+            ref={el => {
+              listRef.current = el;
+              contentRef.current =
+                el?.closest<HTMLDivElement>('[popover]') ?? null;
+            }}
+            id={menuId}
+            role="menu"
+            // Pointer opens focus the container so arrows, typeahead, Escape and
+            // Tab remain owned by the menu without pre-highlighting an item.
+            // An overflowing menu joins the Tab order so its scrollable region is
+            // keyboard-accessible; Tab still dismisses through listKeyDown. With
+            // a header or footer the menu is one Tab stop between them.
+            tabIndex={hasOverflow || hasRegions ? 0 : -1}
+            // Give the menu an accessible name from its trigger's label, so
+            // screen readers announce e.g. "Actions menu" rather than an unnamed
+            // menu (menus-13). A custom trigger names it by reference.
+            aria-label={
+              renderTrigger != null
+                ? (rest['aria-label'] as string | undefined)
+                : button.label
+            }
+            aria-labelledby={
+              renderTrigger != null && rest['aria-label'] == null
+                ? triggerId
+                : (rest['aria-labelledby'] as string | undefined)
+            }
+            onKeyDown={listKeyDown}
+            {...menuPress.menuProps}
+            {...mergeProps(
+              themeProps('dropdown-menu'),
+              stylex.props(
+                styles.dropdown,
+                resolvedMaxHeight != null &&
+                  dynamicStyles.menuMaxHeight(resolvedMaxHeight),
+                hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
+                hasOverflow && styles.scrollable,
+                hasRegions && styles.menuInFrame,
+                xstyle,
+              ),
+              className,
+              style,
+            )}>
+            <DropdownMenuContext value={contextValue}>
+              {menuContent}
+            </DropdownMenuContext>
+          </div>,
+        ),
         {
           placement,
           alignment,

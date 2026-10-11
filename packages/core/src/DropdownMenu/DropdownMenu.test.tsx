@@ -3357,3 +3357,189 @@ describe('DropdownMenu keyboard', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('DropdownMenu header and footer', () => {
+  function LabelsMenu({onCreate}: {onCreate?: () => void}) {
+    return (
+      <DropdownMenu
+        button={{label: 'Labels'}}
+        header={<input aria-label="Filter labels" />}
+        footer={
+          <button type="button" onClick={onCreate}>
+            Create label
+          </button>
+        }>
+        <DropdownMenuItem label="Bug" />
+        <DropdownMenuItem label="Feature" />
+      </DropdownMenu>
+    );
+  }
+
+  async function open() {
+    const user = userEvent.setup();
+    render(<LabelsMenu />);
+    await user.click(screen.getByRole('button', {name: /Labels/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    // A pointer open focuses the menu itself; let that land first.
+    await waitFor(() => expect(menu).toHaveFocus());
+    return {user, menu};
+  }
+
+  it('renders the regions in the popover, outside the role="menu" element', async () => {
+    const {menu} = await open();
+    const field = screen.getByRole('textbox', {
+      name: 'Filter labels',
+      hidden: true,
+    });
+    const create = screen.getByRole('button', {
+      name: 'Create label',
+      hidden: true,
+    });
+    // The menu holds only its rows.
+    expect(menu).not.toContainElement(field);
+    expect(menu).not.toContainElement(create);
+    expect(
+      Array.from(menu.querySelectorAll('[role]')).map(el =>
+        el.getAttribute('role'),
+      ),
+    ).toEqual(['menuitem', 'menuitem']);
+    // Header before the menu, footer after it, in one popover.
+    const popoverEl = menu.closest('[popover]');
+    expect(popoverEl).toContainElement(field);
+    expect(popoverEl).toContainElement(create);
+    expect(
+      field.compareDocumentPosition(menu) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      menu.compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('makes the menu one Tab stop between the regions', async () => {
+    const {menu} = await open();
+    expect(menu).toHaveAttribute('tabindex', '0');
+  });
+
+  it('Tab from the menu moves on to the footer and keeps the menu open', async () => {
+    const {menu} = await open();
+    const hide = vi.mocked(HTMLElement.prototype.hidePopover);
+    hide.mockClear();
+    fireEvent.keyDown(menu, {key: 'Tab'});
+    expect(hide).not.toHaveBeenCalled();
+    fireEvent.keyDown(menu, {key: 'Tab', shiftKey: true});
+    expect(hide).not.toHaveBeenCalled();
+  });
+
+  it('Tab past the last footer control closes the menu', async () => {
+    await open();
+    const hide = vi.mocked(HTMLElement.prototype.hidePopover);
+    hide.mockClear();
+    const create = screen.getByRole('button', {
+      name: 'Create label',
+      hidden: true,
+    });
+    create.focus();
+    fireEvent.keyDown(create, {key: 'Tab', shiftKey: true});
+    expect(hide).not.toHaveBeenCalled();
+    create.focus();
+    expect(create).toHaveFocus();
+    fireEvent.keyDown(create, {key: 'Tab'});
+    expect(hide).toHaveBeenCalled();
+    expect(screen.getByRole('button', {name: /Labels/})).toHaveFocus();
+  });
+
+  it('Shift+Tab before the first header control closes the menu', async () => {
+    await open();
+    const hide = vi.mocked(HTMLElement.prototype.hidePopover);
+    hide.mockClear();
+    const field = screen.getByRole('textbox', {
+      name: 'Filter labels',
+      hidden: true,
+    });
+    field.focus();
+    fireEvent.keyDown(field, {key: 'Tab'});
+    expect(hide).not.toHaveBeenCalled();
+    field.focus();
+    expect(field).toHaveFocus();
+    fireEvent.keyDown(field, {key: 'Tab', shiftKey: true});
+    expect(hide).toHaveBeenCalled();
+  });
+
+  it('leaves keys typed in the header to the field', async () => {
+    const {user} = await open();
+    const field = screen.getByRole('textbox', {
+      name: 'Filter labels',
+      hidden: true,
+    });
+    await user.click(field);
+    await user.keyboard('bug');
+    expect(field).toHaveValue('bug');
+    expect(field).toHaveFocus();
+  });
+
+  it('a footer button acts on its own click and the menu stays open', async () => {
+    const user = userEvent.setup();
+    const onCreate = vi.fn();
+    render(<LabelsMenu onCreate={onCreate} />);
+    const trigger = screen.getByRole('button', {name: /Labels/});
+    await user.click(trigger);
+    await user.click(
+      screen.getByRole('button', {name: 'Create label', hidden: true}),
+    );
+    expect(onCreate).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('without a header or footer, Tab still closes and the menu stays out of the Tab order', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Item 1" />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(menu).toHaveAttribute('tabindex', '-1');
+    expect(menu.parentElement?.closest('[role="menu"]')).toBeNull();
+    fireEvent.keyDown(menu, {key: 'Tab'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('a false or empty region renders no wrapper', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}} header={false} footer="">
+        <DropdownMenuItem label="Item 1" />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(menu).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('renders the regions above and below the actions in the bottom sheet', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Labels'}}
+        presentation="bottom-sheet"
+        header={<input aria-label="Filter labels" />}
+        footer={<button type="button">Create label</button>}
+        items={[{label: 'Bug'}, {label: 'Feature'}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Labels/}));
+    const sheet = screen.getByRole('dialog', {name: 'Labels'});
+    const field = screen.getByRole('textbox', {name: 'Filter labels'});
+    const bug = screen.getByRole('button', {name: 'Bug'});
+    const create = screen.getByRole('button', {name: 'Create label'});
+    expect(sheet).toContainElement(field);
+    expect(sheet).toContainElement(create);
+    expect(
+      field.compareDocumentPosition(bug) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      bug.compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+});
