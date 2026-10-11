@@ -96,4 +96,12 @@ describe('DateRangeInput FR10 details', () => {
     expect(onClick).toHaveBeenCalledOnce();
     expect(trigger()).toHaveAttribute('aria-expanded', 'true');
   });
+
+  it('does not let a caller onClick cancel opening the calendar', () => {
+    render(
+      <DateRangeInput label="Stay" onClick={event => event.preventDefault()} />,
+    );
+    fireEvent.click(trigger());
+    expect(trigger()).toHaveAttribute('aria-expanded', 'true');
+  });
 });

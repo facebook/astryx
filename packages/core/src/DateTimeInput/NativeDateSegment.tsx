@@ -43,7 +43,7 @@ import {
   plainDateToISO,
   themeProps,
   type ISODateString,
-  composeEventHandlers,
+  chainEventHandlers,
 } from '../utils';
 import type {InputStatusType} from '../Field';
 import {nativePickerSegmentStyles as styles} from './nativePickerSegmentStyles';
@@ -286,8 +286,8 @@ export function NativeDateSegment({
           // UNCONTROLLED on purpose; see initialValueRef and the sync effect.
           defaultValue={initialValueRef.current ?? ''}
           onChange={handleChange}
-          onFocus={composeEventHandlers(handleFocus, onFocusProp)}
-          onBlur={composeEventHandlers(handleBlur, onBlurProp)}
+          onFocus={chainEventHandlers(handleFocus, onFocusProp)}
+          onBlur={chainEventHandlers(handleBlur, onBlurProp)}
           min={min}
           max={max}
           disabled={isEffectivelyDisabled && !hasDisabledMessage}

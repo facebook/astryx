@@ -100,7 +100,7 @@ import {
   focusOutlineStyles,
   getInputARIA,
   isImeKeyEvent,
-  composeEventHandlers,
+  chainEventHandlers,
   mergeProps,
   rtlStyles,
   themeProps,
@@ -1258,8 +1258,8 @@ export function TouchDateField({
         readOnly
         inputMode="none"
         onChange={() => {}}
-        onClick={composeEventHandlers(openSheet, onClickProp)}
-        onKeyDown={composeEventHandlers(handleInputKeyDown, onKeyDownProp)}
+        onClick={chainEventHandlers(openSheet, onClickProp)}
+        onKeyDown={chainEventHandlers(handleInputKeyDown, onKeyDownProp)}
         placeholder={placeholder}
         disabled={isEffectivelyDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}

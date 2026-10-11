@@ -71,7 +71,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {
   focusOutlineStyles,
   formatSharedDate,
-  composeEventHandlers,
+  chainEventHandlers,
   getInputARIA,
   mergeProps,
   parseDateInput,
@@ -621,8 +621,8 @@ export function NativeDateField({
           // mount — see `initialValueRef` and the sync effect above.
           defaultValue={initialValueRef.current ?? ''}
           onChange={handleChange}
-          onFocus={composeEventHandlers(handleFocus, onFocusProp)}
-          onBlur={composeEventHandlers(handleBlur, onBlurProp)}
+          onFocus={chainEventHandlers(handleFocus, onFocusProp)}
+          onBlur={chainEventHandlers(handleBlur, onBlurProp)}
           min={min}
           max={max}
           disabled={isEffectivelyDisabled && !showsDisabledMessage}

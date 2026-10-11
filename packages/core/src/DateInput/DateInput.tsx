@@ -186,7 +186,7 @@ export type {
   InputStatus as DateInputStatus,
   InputStatusType as DateInputStatusType,
 } from '../Field';
-import {mergeProps, isFocusDetached, composeEventHandlers} from '../utils';
+import {mergeProps, isFocusDetached, chainEventHandlers} from '../utils';
 import {joinAriaIDs} from '../utils/inputAria';
 import {
   useFieldInputStyling,
@@ -855,9 +855,9 @@ function PointerDateField({
         role="combobox"
         value={displayValue}
         onChange={handleInputChange}
-        onBlur={composeEventHandlers(handleBlur, onBlurProp)}
-        onClick={composeEventHandlers(handleInputClick, onClickProp)}
-        onKeyDown={composeEventHandlers(handleInputKeyDown, onKeyDownProp)}
+        onBlur={chainEventHandlers(handleBlur, onBlurProp)}
+        onClick={chainEventHandlers(handleInputClick, onClickProp)}
+        onKeyDown={chainEventHandlers(handleInputKeyDown, onKeyDownProp)}
         placeholder={placeholder}
         // With a disabledMessage the input keeps focusability via
         // aria-disabled so the reason is focus-discoverable; typing is

@@ -76,7 +76,7 @@ import {
   isRenderable,
   isTimeInRange,
   clampTime,
-  composeEventHandlers,
+  chainEventHandlers,
   mergeProps,
   parseISOTime,
   type ISOTimeString,
@@ -1344,8 +1344,8 @@ export function TouchDateTimeField({
             readOnly
             inputMode="none"
             onChange={() => {}}
-            onClick={composeEventHandlers(() => openSheet('date'), onClickProp)}
-            onKeyDown={composeEventHandlers(
+            onClick={chainEventHandlers(() => openSheet('date'), onClickProp)}
+            onKeyDown={chainEventHandlers(
               (event: React.KeyboardEvent<HTMLInputElement>) =>
                 handleInputKeyDown(event, 'date'),
               onKeyDownProp,

@@ -58,7 +58,7 @@ import {
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
-import {mergeProps, composeEventHandlers} from '../utils';
+import {mergeProps, chainEventHandlers} from '../utils';
 import {
   useFieldInputStyling,
   type FieldInputBaseProps,
@@ -707,7 +707,7 @@ export function DateRangeInput({
           ref={ref}
           id={id}
           type="button"
-          onClick={composeEventHandlers(handleToggle, onClickProp)}
+          onClick={chainEventHandlers(handleToggle, onClickProp)}
           // With a disabledMessage the trigger keeps focusability via
           // aria-disabled so the reason is focus-discoverable; activation is
           // still blocked by the isEffectivelyDisabled guard in handleToggle.

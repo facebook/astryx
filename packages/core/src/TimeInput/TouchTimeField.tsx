@@ -61,7 +61,7 @@ import {
   getInputARIA,
   isTimeInRange,
   mergeProps,
-  composeEventHandlers,
+  chainEventHandlers,
   parseISOTime,
   type ISOTimeString,
 } from '../utils';
@@ -470,7 +470,7 @@ export function TouchTimeField({
         readOnly
         inputMode="none"
         onChange={() => {}}
-        onClick={composeEventHandlers(openSheet, onClickProp)}
+        onClick={chainEventHandlers(openSheet, onClickProp)}
         placeholder={placeholder}
         disabled={isEffectivelyDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}

@@ -176,6 +176,25 @@ describe('TimeInput FR10 handler composition', () => {
     expect(onKeyDown).toHaveBeenCalledOnce();
   });
 
+  it('still hands a caller onKeyDown the arrow keys the typed field consumes, after the field', () => {
+    const seen: {key: string; defaultPrevented: boolean}[] = [];
+    const onChange = vi.fn();
+    render(
+      <TimeInput
+        label="Start"
+        presentation="text-input"
+        value="09:00"
+        onChange={onChange}
+        onKeyDown={event =>
+          seen.push({key: event.key, defaultPrevented: event.defaultPrevented})
+        }
+      />,
+    );
+    fireEvent.keyDown(control('input[type="text"]'), {key: 'ArrowUp'});
+    expect(onChange).toHaveBeenCalled();
+    expect(seen).toEqual([{key: 'ArrowUp', defaultPrevented: true}]);
+  });
+
   it('runs a caller onClick after the touch field opens its sheet', () => {
     const onClick = vi.fn();
     render(

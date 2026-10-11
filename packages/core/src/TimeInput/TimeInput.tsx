@@ -60,7 +60,7 @@ import {
   isTimeInRange,
   mergeProps,
   getInputARIA,
-  composeEventHandlers,
+  chainEventHandlers,
 } from '../utils';
 import {joinAriaIDs} from '../utils/inputAria';
 import {
@@ -794,9 +794,9 @@ function TimeField({
             type="text"
             value={displayValue}
             onChange={handleInputChange}
-            onFocus={composeEventHandlers(handleFocus, onFocusProp)}
-            onBlur={composeEventHandlers(handleBlur, onBlurProp)}
-            onKeyDown={composeEventHandlers(handleInputKeyDown, onKeyDownProp)}
+            onFocus={chainEventHandlers(handleFocus, onFocusProp)}
+            onBlur={chainEventHandlers(handleBlur, onBlurProp)}
+            onKeyDown={chainEventHandlers(handleInputKeyDown, onKeyDownProp)}
             placeholder={displayPlaceholder}
             // With a disabledMessage the input keeps focusability via
             // aria-disabled so the reason is focus-discoverable; typing and

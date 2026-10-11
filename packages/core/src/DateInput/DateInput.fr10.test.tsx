@@ -171,6 +171,38 @@ describe('DateInput FR10 handler composition', () => {
     expect(input).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it('still hands a caller onKeyDown the keys the field consumes, after the field', () => {
+    // The caller's handler used to sit on the wrapper and receive every key by
+    // bubbling, after the input's own handler; that order is kept.
+    const seen: {key: string; defaultPrevented: boolean}[] = [];
+    render(
+      <DateInput
+        label="Due"
+        presentation="popover"
+        onKeyDown={event =>
+          seen.push({key: event.key, defaultPrevented: event.defaultPrevented})
+        }
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('combobox', {name: 'Due'}), {
+      key: 'Enter',
+    });
+    expect(seen).toEqual([{key: 'Enter', defaultPrevented: true}]);
+  });
+
+  it('does not let a caller onClick cancel opening the calendar', () => {
+    render(
+      <DateInput
+        label="Due"
+        presentation="popover"
+        onClick={event => event.preventDefault()}
+      />,
+    );
+    const input = screen.getByRole('combobox', {name: 'Due'});
+    fireEvent.click(input);
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('runs a caller onBlur on the native field', () => {
     const onBlur = vi.fn();
     render(<DateInput label="Due" presentation="native" onBlur={onBlur} />);

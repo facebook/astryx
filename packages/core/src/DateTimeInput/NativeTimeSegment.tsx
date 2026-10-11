@@ -45,7 +45,7 @@ import {
   isTimeInRange,
   parseISOTime,
   type ISOTimeString,
-  composeEventHandlers,
+  chainEventHandlers,
 } from '../utils';
 import {nativePickerSegmentStyles as styles} from './nativePickerSegmentStyles';
 
@@ -304,8 +304,8 @@ export function NativeTimeSegment({
           // UNCONTROLLED on purpose; see initialValueRef and the sync effect.
           defaultValue={initialValueRef.current ?? ''}
           onChange={handleChange}
-          onFocus={composeEventHandlers(handleFocus, onFocusProp)}
-          onBlur={composeEventHandlers(handleBlur, onBlurProp)}
+          onFocus={chainEventHandlers(handleFocus, onFocusProp)}
+          onBlur={chainEventHandlers(handleBlur, onBlurProp)}
           min={min}
           max={max}
           step={60}

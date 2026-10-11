@@ -78,6 +78,7 @@ export {mergeProps} from './mergeProps';
 export {mergeRefs} from './mergeRefs';
 export {isFocusDetached} from './focusReturn';
 export {composeEventHandlers} from './composeEventHandlers';
+export {chainEventHandlers} from './chainEventHandlers';
 export {themeProps, themeDataAttributes} from './themeProps';
 export type {
   ClassValue,

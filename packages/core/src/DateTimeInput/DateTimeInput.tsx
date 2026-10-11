@@ -79,7 +79,7 @@ import {
   isImeKeyEvent,
   mergeProps,
   isFocusDetached,
-  composeEventHandlers,
+  chainEventHandlers,
 } from '../utils';
 import {
   plainDateFromISO,
@@ -1725,15 +1725,9 @@ function PointerDateTimeField({
                 role="combobox"
                 value={dateDisplayValue}
                 onChange={handleDateInputChange}
-                onBlur={composeEventHandlers(handleDateBlur, onBlurProp)}
-                onClick={composeEventHandlers(
-                  handleDateInputClick,
-                  onClickProp,
-                )}
-                onKeyDown={composeEventHandlers(
-                  handleDateKeyDown,
-                  onKeyDownProp,
-                )}
+                onBlur={chainEventHandlers(handleDateBlur, onBlurProp)}
+                onClick={chainEventHandlers(handleDateInputClick, onClickProp)}
+                onKeyDown={chainEventHandlers(handleDateKeyDown, onKeyDownProp)}
                 aria-labelledby={ariaLabelledByProp}
                 placeholder={placeholder}
                 // With a disabledMessage the input keeps focusability via
