@@ -74,7 +74,11 @@ export interface CommandPaletteItemProps extends Omit<
   ref?: React.Ref<HTMLDivElement>;
   /** Unique value for identification and selection. */
   value: string;
-  /** Called when this item is selected (via click or Enter). */
+  /**
+   * Called after this item is activated by pointer.
+   * Keyboard selection inside CommandPalette reports through the root
+   * `onValueChange` callback.
+   */
   onSelect?: (value: string) => void;
   /**
    * Whether this item is visually highlighted (keyboard focus).
@@ -92,7 +96,7 @@ export interface CommandPaletteItemProps extends Omit<
    * @default false
    */
   isDisabled?: boolean;
-  /** Item content. Fully custom — render icons, descriptions, shortcuts, etc. */
+  /** Non-interactive item content: labels, icons, descriptions, shortcuts, etc. */
   children: ReactNode;
 }
 
@@ -100,9 +104,10 @@ export interface CommandPaletteItemProps extends Omit<
  * A selectable item in the command palette.
  * Accepts arbitrary children for full rendering control.
  *
- * When used inside CommandPalette, registers with context for
- * keyboard navigation and selection. Can also be used
- * standalone with explicit isHighlighted/isSelected props.
+ * When used inside CommandPalette, context supplies identity, highlight,
+ * selection, and close behavior. Standalone use supports explicit visual
+ * state and pointer activation but does not provide a composite listbox
+ * keyboard model.
  *
  * @compositionHint Place inside CommandPaletteList or CommandPaletteGroup.
  *
@@ -124,6 +129,7 @@ export function CommandPaletteItem({
   xstyle,
   className,
   style,
+  id: idProp,
   onClick: onClickProp,
   onMouseEnter: onMouseEnterProp,
   ...props
@@ -188,13 +194,15 @@ export function CommandPaletteItem({
     <div
       ref={useMergedRefs(ref, itemRef)}
       {...props}
-      id={ctx && itemIndex >= 0 ? ctx.getItemId(itemIndex) : undefined}
+      id={ctx && itemIndex >= 0 ? ctx.getItemId(itemIndex) : idProp}
       role="option"
       aria-selected={isSelected}
       aria-disabled={isDisabled || undefined}
       data-value={value}
       {...pressable}
-      onClick={composeEventHandlers(onClickProp, handleClick)}
+      onClick={
+        isDisabled ? undefined : composeEventHandlers(onClickProp, handleClick)
+      }
       onMouseEnter={onMouseEnterProp}
       {...mergeProps(
         themeProps('command-palette-item'),
