@@ -715,3 +715,22 @@ describe('Lightbox zoom reset timing', () => {
     );
   });
 });
+
+describe('Lightbox with an unusable controlled index', () => {
+  it('renders without looping when index is NaN', () => {
+    expect(() =>
+      render(
+        <Lightbox
+          isOpen={false}
+          onOpenChange={() => {}}
+          media={[
+            {src: '/a.jpg', alt: 'Image A'},
+            {src: '/b.jpg', alt: 'Image B'},
+          ]}
+          index={Number.NaN}
+          onIndexChange={() => {}}
+        />,
+      ),
+    ).not.toThrow();
+  });
+});

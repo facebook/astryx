@@ -230,7 +230,7 @@ export function TransferListSelector<T extends string = string>({
   }));
   if (
     !areOrderedValuesEqual(draftSource.value, value) ||
-    draftSource.commitBehavior !== commitBehavior
+    !Object.is(draftSource.commitBehavior, commitBehavior)
   ) {
     setDraftSource({value: [...value], commitBehavior});
     setDraftValue([...value]);

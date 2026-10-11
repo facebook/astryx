@@ -112,7 +112,7 @@ export function Tour({
   // begins from the top next time isActive flips back on. Adjusted during
   // render, so no commit carries the old step past deactivation.
   const [wasActive, setWasActive] = useState(isActive);
-  if (wasActive !== isActive) {
+  if (!Object.is(wasActive, isActive)) {
     setWasActive(isActive);
     if (!isActive) {
       setActiveStepIndex(0);

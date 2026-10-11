@@ -371,7 +371,12 @@ export function Lightbox({
   // never paints at the previous item's zoom and pan.
   const currentSrc = currentItem?.src;
   const [viewedItem, setViewedItem] = useState({index, src: currentSrc});
-  if (viewedItem.index !== index || viewedItem.src !== currentSrc) {
+  // Object.is, matching the dependency comparison of the effect this replaces:
+  // a controlled index of NaN must not re-render forever.
+  if (
+    !Object.is(viewedItem.index, index) ||
+    !Object.is(viewedItem.src, currentSrc)
+  ) {
     setViewedItem({index, src: currentSrc});
     setZoom(1);
     setPan({x: 0, y: 0});
