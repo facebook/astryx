@@ -31,6 +31,17 @@
  * gate and that lint rule cannot disagree about what a key reference is. A
  * reference whose key is not statically knowable is reported as unverifiable
  * rather than passed or failed silently.
+ *
+ *   4. Slice coverage. A component in packages/core/src renders with
+ *      `useComponentTranslator(<slice>)`, where the slice is the English
+ *      catalog of one namespace (`generated-locales/en/<namespace>.generated`)
+ *      or a module-level spread of several. Every `@astryx.<namespace>.*` key
+ *      the file reads must belong to a namespace its slice carries, or the
+ *      component would show the key at runtime. A file that reads keys but
+ *      calls no translator hook (it is handed `t`) is covered by the slices
+ *      of the hook callers in its component directory. The consumer-facing
+ *      `useTranslator` and `InternationalizationContext`, which carry the
+ *      whole catalog, are not for files in packages/core/src.
  */
 
 import fs from 'node:fs';
@@ -66,6 +77,15 @@ const LOCALE_MISSING_KEYS_ARE_FATAL = false;
 /** en.json is the source; pseudo.json is generated and gitignored. Same
  * exclusions the crowdin-download workflow applies to this directory. */
 const NOT_A_SHIPPED_LOCALE = new Set(['en.json', 'pseudo.json']);
+
+/** The package whose components carry their own English slices (rule 4). */
+const SLICED_SRC_DIR = 'packages/core/src';
+const COMPONENT_HOOK = 'useComponentTranslator';
+const CONSUMER_HOOK = 'useTranslator';
+/** The public context, which binds the whole catalog to its `translate`. */
+const CONSUMER_CONTEXT = 'InternationalizationContext';
+const SLICE_MODULE_RE =
+  /\/i18n\/generated-locales\/en\/([A-Za-z0-9]+)\.generated$/;
 
 /** Translator call targets, per the i18n-key-format lint rule. */
 const TRANSLATOR_CALL_NAMES = new Set(['t', 'translator', 'translate']);
@@ -580,6 +600,187 @@ function extractKeyRefs(source, fileName) {
 }
 
 /**
+ * The namespace of an astryx key: `@astryx.button.loading` → `button`.
+ */
+function namespaceOf(key) {
+  return key.slice(KEY_PREFIX.length).split('.')[0];
+}
+
+/**
+ * Rule 4's view of one source file: which translator hooks it calls and the
+ * namespaces of the slices it passes them.
+ *
+ * A slice argument is an identifier that is either the default import of a
+ * `generated-locales/en/<namespace>.generated` module, or a module-level
+ * `const` whose initializer spreads such imports. Anything else is reported
+ * as an unresolvable slice.
+ *
+ * @param {string} source     file contents
+ * @param {string} fileName   display name (drives .tsx parsing)
+ * @returns {{hookCalls: {line: number, namespaces: string[] | null}[],
+ *            consumerHookImports: {line: number, name: string}[]}}
+ */
+function extractSliceUsage(source, fileName) {
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    fileName.endsWith('.tsx') || fileName.endsWith('.jsx')
+      ? ts.ScriptKind.TSX
+      : ts.ScriptKind.TS,
+  );
+  const lineOf = node =>
+    sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line +
+    1;
+
+  // Default imports of slice modules, by local name → namespace; and the
+  // lines where the consumer hook is imported from an i18n module.
+  const sliceImports = new Map();
+  const consumerHookImports = [];
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement)) continue;
+    if (!ts.isStringLiteral(statement.moduleSpecifier)) continue;
+    const specifier = statement.moduleSpecifier.text;
+    const clause = statement.importClause;
+    if (!clause) continue;
+    const sliceMatch = specifier.match(SLICE_MODULE_RE);
+    if (sliceMatch && clause.name) {
+      sliceImports.set(clause.name.text, sliceMatch[1]);
+    }
+    if (
+      /(^|\/)i18n(\/[^/]+)?$/.test(specifier) &&
+      clause.namedBindings &&
+      ts.isNamedImports(clause.namedBindings)
+    ) {
+      for (const element of clause.namedBindings.elements) {
+        const imported = (element.propertyName ?? element.name).text;
+        if (
+          (imported === CONSUMER_HOOK || imported === CONSUMER_CONTEXT) &&
+          !element.isTypeOnly
+        ) {
+          consumerHookImports.push({line: lineOf(element), name: imported});
+        }
+      }
+    }
+  }
+
+  // Module-level `const x = {...a, ...b}` over slice imports.
+  const merged = new Map();
+  for (const statement of sourceFile.statements) {
+    if (!ts.isVariableStatement(statement)) continue;
+    for (const decl of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(decl.name) || !decl.initializer) continue;
+      const init = unwrap(decl.initializer);
+      if (!ts.isObjectLiteralExpression(init)) continue;
+      const namespaces = [];
+      let resolvable = true;
+      for (const prop of init.properties) {
+        if (
+          ts.isSpreadAssignment(prop) &&
+          ts.isIdentifier(prop.expression) &&
+          sliceImports.has(prop.expression.text)
+        ) {
+          namespaces.push(sliceImports.get(prop.expression.text));
+        } else {
+          resolvable = false;
+        }
+      }
+      if (resolvable && namespaces.length > 0) {
+        merged.set(decl.name.text, namespaces);
+      }
+    }
+  }
+
+  const resolveSlice = node => {
+    const n = unwrap(node);
+    if (!n || !ts.isIdentifier(n)) return null;
+    if (sliceImports.has(n.text)) return [sliceImports.get(n.text)];
+    if (merged.has(n.text)) return merged.get(n.text);
+    return null;
+  };
+
+  const hookCalls = [];
+  const visit = node => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === COMPONENT_HOOK
+    ) {
+      const arg = node.arguments[0];
+      hookCalls.push({
+        line: lineOf(node),
+        namespaces: arg ? resolveSlice(arg) : null,
+      });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+
+  return {hookCalls, consumerHookImports};
+}
+
+/**
+ * Rule 4 over the sliced package: every key a file reads is carried by the
+ * slices it (or, for a file handed `t`, its component directory) renders
+ * with. Pure over the per-file facts, so it is unit-testable.
+ *
+ * @param {Map<string, {refs: {line: number, key: string}[],
+ *   hookCalls: {line: number, namespaces: string[] | null}[],
+ *   consumerHookImports: {line: number, name: string}[]}>} files  keyed by
+ *   path relative to the sliced source dir
+ * @returns {string[]}  human-readable problems (empty = covered)
+ */
+function checkSliceCoverage(files) {
+  const problems = [];
+  const coveredByDir = new Map();
+  for (const [rel, {hookCalls}] of files) {
+    const dir = rel.split('/')[0];
+    const set = coveredByDir.get(dir) ?? new Set();
+    for (const call of hookCalls) {
+      for (const ns of call.namespaces ?? []) set.add(ns);
+    }
+    coveredByDir.set(dir, set);
+  }
+  for (const [rel, {refs, hookCalls, consumerHookImports}] of files) {
+    for (const {line, name} of consumerHookImports) {
+      problems.push(
+        `${rel}:${line}  imports ${name}, which carries the whole English catalog; ` +
+          `a component renders with ${COMPONENT_HOOK}(<its slice>)` +
+          (name === CONSUMER_CONTEXT
+            ? ' and reads the locale through useLocale/useDirection'
+            : ''),
+      );
+    }
+    for (const call of hookCalls) {
+      if (call.namespaces === null) {
+        problems.push(
+          `${rel}:${call.line}  ${COMPONENT_HOOK}: the slice is not a default import of ` +
+            `generated-locales/en/<namespace>.generated, or a module-level spread of such imports`,
+        );
+      }
+    }
+    if (refs.length === 0) continue;
+    const own = new Set();
+    for (const call of hookCalls) {
+      for (const ns of call.namespaces ?? []) own.add(ns);
+    }
+    const covering =
+      hookCalls.length > 0 ? own : (coveredByDir.get(rel.split('/')[0]) ?? own);
+    const where = hookCalls.length > 0 ? 'its slice' : "its directory's slices";
+    for (const {line, key} of refs) {
+      const ns = namespaceOf(key);
+      if (!covering.has(ns)) {
+        problems.push(
+          `${rel}:${line}  ${key} is outside ${where} (${[...covering].sort().join(', ') || 'none'})`,
+        );
+      }
+    }
+  }
+  return problems;
+}
+
+/**
  * Validate the shape of the source catalog: every entry needs a usable
  * `defaultMessage` and a non-empty `description`.
  *
@@ -691,16 +892,21 @@ function main() {
   const unverifiable = [];
   let refCount = 0;
   const seen = new Set();
+  const slicedFiles = new Map();
 
   for (const dir of SRC_DIRS) {
     const abs = path.join(ROOT, dir);
     if (!fs.existsSync(abs)) continue;
     for (const file of walk(abs)) {
       const rel = path.relative(ROOT, file);
-      const {refs, unresolved} = extractKeyRefs(
-        fs.readFileSync(file, 'utf8'),
-        file,
-      );
+      const source = fs.readFileSync(file, 'utf8');
+      const {refs, unresolved} = extractKeyRefs(source, file);
+      if (dir === SLICED_SRC_DIR && !rel.includes('/i18n/')) {
+        slicedFiles.set(path.relative(abs, file), {
+          refs,
+          ...extractSliceUsage(source, file),
+        });
+      }
       refCount += refs.length;
       for (const {line, key} of refs) {
         seen.add(key);
@@ -717,6 +923,18 @@ function main() {
       title: `${missingRefs.length} key reference(s) not in en.json`,
       lines: missingRefs,
       hint: 'Add the key to packages/core/locales/en.json, or fix the typo at the call site.',
+    });
+  }
+
+  // 4. Slice coverage
+  const sliceProblems = checkSliceCoverage(slicedFiles);
+  if (sliceProblems.length > 0) {
+    errors.push({
+      title: `${sliceProblems.length} slice coverage problem(s) in ${SLICED_SRC_DIR}`,
+      lines: sliceProblems,
+      hint:
+        `Render with ${COMPONENT_HOOK}(<slice>) where the slice imports ` +
+        `generated-locales/en/<namespace>.generated for every namespace the file reads.`,
     });
   }
 
@@ -812,8 +1030,13 @@ function main() {
     process.exit(1);
   }
 
+  const slicedHookCalls = [...slicedFiles.values()].reduce(
+    (n, f) => n + f.hookCalls.length,
+    0,
+  );
   console.log(
     `✓ check:i18n-catalog — ${seen.size} key(s) over ${refCount} reference(s) resolve; ` +
+      `${slicedHookCalls} ${COMPONENT_HOOK} call(s) carry the namespaces their files read; ` +
       `${enKeys.size} en and ${translatedMessageCount} translated message(s) parsed and contract-checked; ` +
       `plural categories evaluated with runtime CLDR ${process.versions.cldr}; ` +
       `${localeFiles.length} locale(s) consistent`,
@@ -828,6 +1051,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 
 export {
   extractKeyRefs,
+  extractSliceUsage,
+  checkSliceCoverage,
   validateSourceCatalog,
   compareLocale,
   parseIcuMessage,

@@ -13,6 +13,8 @@
 import {describe, it, expect} from 'vitest';
 import {
   extractKeyRefs,
+  extractSliceUsage,
+  checkSliceCoverage,
   validateSourceCatalog,
   compareLocale,
   parseIcuMessage,
@@ -478,6 +480,142 @@ describe('ICU plural categories', () => {
     });
     expect(contract.contractProblems).toEqual([
       'argument "value" has incompatible kind: expected number; found date',
+    ]);
+  });
+});
+
+describe('extractSliceUsage — the slices a component renders with', () => {
+  const usage = source => extractSliceUsage(source, 'Test.tsx');
+
+  it('resolves a slice import passed to the component hook', () => {
+    const {hookCalls, consumerHookImports} = usage(`
+      import {useComponentTranslator} from '../i18n/useComponentTranslator';
+      import buttonMessages from '../i18n/generated-locales/en/button.generated';
+      function Button() { const t = useComponentTranslator(buttonMessages); return t('@astryx.button.loading'); }
+    `);
+    expect(hookCalls).toEqual([{line: 4, namespaces: ['button']}]);
+    expect(consumerHookImports).toEqual([]);
+  });
+
+  it('resolves a module-level spread of several slices', () => {
+    const {hookCalls} = usage(`
+      import {useComponentTranslator} from '../i18n/useComponentTranslator';
+      import dateInputMessages from '../i18n/generated-locales/en/dateInput.generated';
+      import timeInputMessages from '../i18n/generated-locales/en/timeInput.generated';
+      const messages = {...dateInputMessages, ...timeInputMessages};
+      function Field() { const t = useComponentTranslator(messages); return t('@astryx.dateInput.open'); }
+    `);
+    expect(hookCalls).toEqual([
+      {line: 6, namespaces: ['dateInput', 'timeInput']},
+    ]);
+  });
+
+  it('declares an argument it cannot trace to slice imports unresolvable', () => {
+    const {hookCalls} = usage(`
+      import {useComponentTranslator} from '../i18n/useComponentTranslator';
+      const messages = {'@astryx.button.loading': 'Loading'};
+      function Button() { const t = useComponentTranslator(messages); return t('@astryx.button.loading'); }
+    `);
+    expect(hookCalls).toEqual([{line: 4, namespaces: null}]);
+  });
+
+  it('reports a value import of the consumer hook or the public context, and not a type import', () => {
+    expect(
+      usage(`import {useLocale, useTranslator} from '../i18n';`)
+        .consumerHookImports,
+    ).toEqual([{line: 1, name: 'useTranslator'}]);
+    expect(
+      usage(`import {useTranslator} from '../../../i18n/useTranslator';`)
+        .consumerHookImports,
+    ).toEqual([{line: 1, name: 'useTranslator'}]);
+    expect(
+      usage(`import {InternationalizationContext} from '../i18n';`)
+        .consumerHookImports,
+    ).toEqual([{line: 1, name: 'InternationalizationContext'}]);
+    expect(
+      usage(
+        `import {useLocale, type TranslatorFn, type InternationalizationContextValue} from '../i18n';`,
+      ).consumerHookImports,
+    ).toEqual([]);
+  });
+});
+
+describe('checkSliceCoverage — every key a file reads is in a slice it renders with', () => {
+  const file = (refs, hookCalls, consumerHookImports = []) => ({
+    refs: refs.map((key, i) => ({line: i + 1, key})),
+    hookCalls,
+    consumerHookImports,
+  });
+
+  it('passes a file whose keys are all in its slices', () => {
+    expect(
+      checkSliceCoverage(
+        new Map([
+          [
+            'DateInput/DateInput.tsx',
+            file(
+              ['@astryx.dateInput.open', '@astryx.calendar.today'],
+              [{line: 9, namespaces: ['dateInput', 'calendar']}],
+            ),
+          ],
+        ]),
+      ),
+    ).toEqual([]);
+  });
+
+  it('names the key, the line and the slices when a key is outside them', () => {
+    expect(
+      checkSliceCoverage(
+        new Map([
+          [
+            'Button/Button.tsx',
+            file(
+              ['@astryx.button.loading'],
+              [{line: 9, namespaces: ['pagination']}],
+            ),
+          ],
+        ]),
+      ),
+    ).toEqual([
+      'Button/Button.tsx:1  @astryx.button.loading is outside its slice (pagination)',
+    ]);
+  });
+
+  it('covers a file handed `t` by the hook callers of its component directory', () => {
+    const files = new Map([
+      [
+        'PowerSearch/PowerSearchToken.tsx',
+        file([], [{line: 3, namespaces: ['powersearch']}]),
+      ],
+      [
+        'PowerSearch/formatFilterValue.ts',
+        file(['@astryx.powersearch.between'], []),
+      ],
+      ['Table/helper.ts', file(['@astryx.powersearch.between'], [])],
+    ]);
+    expect(checkSliceCoverage(files)).toEqual([
+      "Table/helper.ts:1  @astryx.powersearch.between is outside its directory's slices (none)",
+    ]);
+  });
+
+  it('reports an unresolvable slice and an import of the consumer hook', () => {
+    expect(
+      checkSliceCoverage(
+        new Map([
+          [
+            'Spinner/Spinner.tsx',
+            file(
+              ['@astryx.spinner.loading'],
+              [{line: 9, namespaces: null}],
+              [{line: 4, name: 'useTranslator'}],
+            ),
+          ],
+        ]),
+      ),
+    ).toEqual([
+      'Spinner/Spinner.tsx:4  imports useTranslator, which carries the whole English catalog; a component renders with useComponentTranslator(<its slice>)',
+      'Spinner/Spinner.tsx:9  useComponentTranslator: the slice is not a default import of generated-locales/en/<namespace>.generated, or a module-level spread of such imports',
+      'Spinner/Spinner.tsx:1  @astryx.spinner.loading is outside its slice (none)',
     ]);
   });
 });

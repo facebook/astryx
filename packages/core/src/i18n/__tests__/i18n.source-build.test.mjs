@@ -68,4 +68,15 @@ describe('the shipped i18n runtime and the English catalog', () => {
       './InternationalizationContext.js',
     );
   });
+
+  it('a component carries its own slice and not the whole catalog', async () => {
+    const imports = await compiledStaticImportsOf('Button/Button.tsx');
+    expect(imports).toContain(
+      '../i18n/generated-locales/en/button.generated.js',
+    );
+    expect(imports).toContain('../i18n/useComponentTranslator.js');
+    expect(imports).not.toContainEqual(expect.stringMatching(WHOLE_CATALOG));
+    expect(imports).not.toContain('../i18n/useTranslator.js');
+    expect(imports).not.toContain('../i18n/InternationalizationContext.js');
+  });
 });
