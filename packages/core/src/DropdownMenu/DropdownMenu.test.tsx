@@ -2639,12 +2639,16 @@ describe('DropdownMenu press model', () => {
     // dev build prefixes a debug name; the hash is the last token).
     const touchStyles = stylex.create({
       none: {touchAction: 'none'},
-      panY: {touchAction: 'pan-y'},
+      pinchZoom: {touchAction: 'pinch-zoom'},
+      panYPinchZoom: {touchAction: 'pan-y pinch-zoom'},
     });
     const hash = (style: stylex.StyleXStyles) =>
       stylex.props(style).className!.split(' ').pop()!;
-    expect(menu).toHaveClass(hash(touchStyles.none));
-    expect(menu).not.toHaveClass(hash(touchStyles.panY));
+    // Rows that fit keep every one-finger move and leave a pinch to the
+    // browser, so the page stays zoomable over the open menu.
+    expect(menu).toHaveClass(hash(touchStyles.pinchZoom));
+    expect(menu).not.toHaveClass(hash(touchStyles.none));
+    expect(menu).not.toHaveClass(hash(touchStyles.panYPinchZoom));
   });
 
   it('a mouse press on the trigger opens the menu and a drag-release acts on the row under it', () => {

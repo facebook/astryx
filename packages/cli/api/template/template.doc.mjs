@@ -48,7 +48,8 @@ export const doc = {
     {
       name: 'options.list',
       type: 'boolean',
-      description: 'List templates instead of scaffolding; refused with ERR_INVALID_ARGUMENT when a name or path is also given.',
+      description:
+        'List templates instead of scaffolding; refused with ERR_INVALID_ARGUMENT when a name or path is also given.',
       default: 'false',
     },
     {
@@ -89,7 +90,7 @@ export const doc = {
       type: 'string',
       description:
         'Destination (relative to cwd) to scaffold the template into. Its presence switches a named lookup into a copy. ' +
-        'A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; any other path is a directory, which receives page.tsx for a page template or the block\'s own file name for a block.',
+        "A path that ends in .tsx, .ts, .jsx, .js, .mjs, .cjs, .css, .scss, .json, .md or .html is the file to write; any other path is a directory, which receives page.tsx for a page template or the block's own file name for a block.",
     },
     {
       name: 'options.overwrite',
@@ -135,7 +136,7 @@ export const doc = {
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: '--cdn is combined with <name>, --list, --skeleton, --type, or --package; --list is combined with <name>, <path>, --skeleton, or --overwrite; --skeleton is combined with <path> or --overwrite',
+      when: '--cdn is combined with <name>, --list, --skeleton, --type, or --package; --list is combined with <name>, <path>, --skeleton, or --overwrite; --skeleton is combined with <path> or --overwrite; or options.list is set with a type outside page or block, or with a package that provides no templates (a valid filter that matches nothing returns an empty list instead)',
     },
     {
       code: 'ERR_UNKNOWN_TEMPLATE',

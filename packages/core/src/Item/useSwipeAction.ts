@@ -6,7 +6,8 @@
  * @file useSwipeAction.ts
  * @input Pointer events on a row's root; the root element to translate
  * @output Exports useSwipeAction — the gesture behind Item's `swipeActions`
- * @position Internal to Item; tested through Item.test.tsx
+ * @position Internal to Item, through ItemSwipeLayer (the only module that
+ *   imports it, loaded on demand); tested through Item.test.tsx
  *
  * A native-list swipe: drag a row sideways and the side's panel is uncovered.
  * Under `reveal` a release past half the panel leaves the row resting open

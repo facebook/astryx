@@ -3,9 +3,10 @@
 /**
  * @file Banner.test.tsx
  * @input Uses vitest, @testing-library/react, Banner component
- * @output Unit tests for Banner component behavior, including the
- *   'banner-frame' theme target on the outer elevation/radius painter and the
- *   'banner-icon' theme target on the status icon glyph (#4166)
+ * @output Unit tests for Banner component behavior, including default and
+ *   explicit live-region roles, the 'banner-frame' theme target on the outer
+ *   elevation/radius painter, and the 'banner-icon' theme target on the status
+ *   icon glyph (#4166)
  * @position Testing; validates Banner.tsx implementation
  *
  * SYNC: When modified, update this header
@@ -29,24 +30,26 @@ describe('Banner', () => {
     expect(screen.getByText('Test Banner')).toBeInTheDocument();
   });
 
-  it('renders info status with role="status"', () => {
-    render(<Banner status="info" title="Info" />);
-    expect(screen.getByRole('status')).toBeInTheDocument();
+  it('does not infer a live-region role from visual status', () => {
+    const statuses = ['info', 'warning', 'error', 'success'] as const;
+    for (const status of statuses) {
+      const {container, unmount} = render(
+        <Banner status={status} title={`${status} banner`} />,
+      );
+      expect(container.firstElementChild).not.toHaveAttribute('role');
+      expect(container.firstElementChild).not.toHaveAttribute('aria-live');
+      unmount();
+    }
   });
 
-  it('renders warning status with role="alert"', () => {
-    render(<Banner status="warning" title="Warning" />);
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-  });
+  it('forwards an explicit persistent or alert role', () => {
+    const {rerender} = render(
+      <Banner status="info" title="Saved" role="status" />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Saved');
 
-  it('renders error status with role="alert"', () => {
-    render(<Banner status="error" title="Error" />);
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-  });
-
-  it('renders success status with role="status"', () => {
-    render(<Banner status="success" title="Success" />);
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    rerender(<Banner status="error" title="Failed" role="alert" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Failed');
   });
 
   it('renders default icon per status with aria-hidden', () => {

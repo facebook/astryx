@@ -149,13 +149,15 @@ const styles = stylex.create({
     overscrollBehavior: 'contain',
   },
   // Scroll ownership by the browser's own signal. A menu whose rows fit keeps
-  // every finger: a slide over its rows stays a slide. One that scrolls lets
-  // the browser pan it vertically and cancel the press when it does.
-  touchNone: {
-    touchAction: 'none',
+  // every one-finger move: a slide over its rows stays a slide. One that
+  // scrolls lets the browser pan it vertically and cancel the press when it
+  // does. Both leave a two-finger pinch to the browser, so the page stays
+  // zoomable over an open menu; `pinch-zoom` admits no one-finger pan.
+  touchPinchZoom: {
+    touchAction: 'pinch-zoom',
   },
-  touchPanY: {
-    touchAction: 'pan-y',
+  touchPanYPinchZoom: {
+    touchAction: 'pan-y pinch-zoom',
     overscrollBehavior: 'contain',
   },
   // The menu's lower block cap rides on the layer box too, so the layer's
@@ -451,6 +453,48 @@ function holdInvokerThroughPress(
   doc.addEventListener('pointercancel', onPressEnd, true);
 }
 
+/** Text an assistive technology reads from `element`, `aria-hidden` left out. */
+function visibleText(element: Element): string {
+  const copy = element.cloneNode(true) as Element;
+  for (const hidden of copy.querySelectorAll('[aria-hidden="true"]')) {
+    hidden.remove();
+  }
+  return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * The name a custom trigger gives the menu it labels (`aria-labelledby` on
+ * the menu points at it): its own `aria-labelledby` targets, its
+ * `aria-label`, its text, or its `title`, in that order.
+ */
+function readAccessibleName(element: HTMLElement | null): string | undefined {
+  if (element == null) {
+    return undefined;
+  }
+  const labelledBy = element.getAttribute('aria-labelledby');
+  if (labelledBy != null && labelledBy.trim() !== '') {
+    const text = labelledBy
+      .split(/\s+/)
+      .map(id => element.ownerDocument.getElementById(id))
+      .filter((node): node is HTMLElement => node != null)
+      .map(visibleText)
+      .join(' ')
+      .trim();
+    if (text !== '') {
+      return text;
+    }
+  }
+  const label = element.getAttribute('aria-label')?.trim();
+  if (label) {
+    return label;
+  }
+  const text = visibleText(element);
+  if (text !== '') {
+    return text;
+  }
+  return element.getAttribute('title')?.trim() || undefined;
+}
+
 function DropdownMenuBottomSheet({
   button: buttonFromProps,
   renderTrigger,
@@ -722,6 +766,9 @@ function DropdownMenuPopover({
   const menuSize = button.size ?? 'md';
   const buttonRef = useRef<HTMLElement>(null);
 
+  // The name a custom trigger gives the menu, read off it as the menu opens.
+  const [triggerName, setTriggerName] = useState<string | undefined>(undefined);
+
   // Open state
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isControlled = controlledIsOpen !== undefined;
@@ -793,6 +840,9 @@ function DropdownMenuPopover({
   const handleLayerShow = useCallback(() => {
     acceptedOpenRef.current = true;
     resetFocusReturn();
+    if (renderTrigger != null) {
+      setTriggerName(readAccessibleName(buttonRef.current));
+    }
     if (notifyClickOnShowRef.current) {
       notifyClickOnShowRef.current = false;
       onClick?.();
@@ -801,7 +851,7 @@ function DropdownMenuPopover({
     if (!isControlled) {
       setInternalIsOpen(true);
     }
-  }, [isControlled, onClick, onOpenChange, resetFocusReturn]);
+  }, [isControlled, onClick, onOpenChange, renderTrigger, resetFocusReturn]);
 
   const popover = usePopover({
     onHide: handleLayerHide,
@@ -1138,8 +1188,19 @@ function DropdownMenuPopover({
 
   // The drill-in view stack for sub-menus on a phone.
   const {drillIn, wrapContent} = useMenuDrillIn(isOpen);
-  // The name a drilled-in view's Back row returns to.
-  const menuLabel = typeof button.label === 'string' ? button.label : undefined;
+  // The name a drilled-in view's Back row returns to: the menu's own name.
+  // The design system's button names the menu by its label. A custom trigger
+  // names it by reference (or the caller's `aria-label` does), so that name
+  // is read off the control as the menu opens.
+  const callerMenuLabel = rest['aria-label'];
+  const menuLabel =
+    renderTrigger != null
+      ? typeof callerMenuLabel === 'string' && callerMenuLabel.trim() !== ''
+        ? callerMenuLabel
+        : triggerName
+      : typeof button.label === 'string'
+        ? button.label
+        : undefined;
 
   const resolvedMaxHeight = menuMaxHeight == null ? null : `${menuMaxHeight}px`;
   // Context for compound items
@@ -1260,7 +1321,7 @@ function DropdownMenuPopover({
               styles.dropdown,
               resolvedMaxHeight != null &&
                 dynamicStyles.menuMaxHeight(resolvedMaxHeight),
-              hasOverflow ? styles.touchPanY : styles.touchNone,
+              hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom,
               hasOverflow && styles.scrollable,
               xstyle,
             ),

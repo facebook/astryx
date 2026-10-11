@@ -81,7 +81,7 @@ Consumer migration instructions belong in consumer docs and release notes.
 | lifecycle | `DEP-0009`                                                                                                                           |
 | delta     | With no `padding` prop and no theme padding, the Content area insets by `--spacing-4` on every logical edge and publishes that inset |
 | rollback  | Restore the unpadded default from the final-patch baseline                                                                           |
-| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0018`                                                     |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                |
 
 ## Ownership boundary
 

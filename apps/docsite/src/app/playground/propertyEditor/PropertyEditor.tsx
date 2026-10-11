@@ -98,7 +98,7 @@ function LiveNumberControl({
       onInput={liveNumber.handleInput}
       onBlur={liveNumber.handleBlur}
       onKeyDown={liveNumber.handleKeyDown}
-      xstyle={s.inputControl}
+      controlXstyle={s.inputControl}
     />
   );
 }
@@ -218,7 +218,7 @@ function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
         placeholder="value"
         value={value}
         onChange={next => commit('string', next)}
-        xstyle={s.inputControl}
+        controlXstyle={s.inputControl}
       />
     );
   } else {
