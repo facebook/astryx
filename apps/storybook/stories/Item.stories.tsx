@@ -714,8 +714,9 @@ export const GridRows: Story = {
             isSelected={row.selected}
             startContent={
               <CheckboxInput
-                aria-label={`Select ${row.label}`}
-                isChecked={row.selected}
+                label={`Select ${row.label}`}
+                isLabelHidden
+                value={row.selected}
                 onChange={() => toggle(row.id)}
                 data-select-id={row.id}
                 tabIndex={
