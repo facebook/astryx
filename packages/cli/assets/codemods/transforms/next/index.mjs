@@ -10,6 +10,9 @@
 import migrateDeprecatedThemeSurface, {
   meta as migrateDeprecatedThemeSurfaceMeta,
 } from './migrate-deprecated-theme-surface.mjs';
+import migrateFieldInputStyling, {
+  meta as migrateFieldInputStylingMeta,
+} from './migrate-field-input-styling.mjs';
 import validateDataTokenOwnership, {
   meta as validateDataTokenOwnershipMeta,
 } from './validate-data-token-ownership.mjs';
@@ -24,5 +27,10 @@ export default [
     name: 'validate-data-token-ownership',
     transform: validateDataTokenOwnership,
     meta: validateDataTokenOwnershipMeta,
+  },
+  {
+    name: 'migrate-field-input-styling',
+    transform: migrateFieldInputStyling,
+    meta: migrateFieldInputStylingMeta,
   },
 ];
