@@ -255,7 +255,10 @@ describe('ComplexSelector', () => {
       'detached',
     );
     expect(
-      screen.getByTestId('view-options').querySelectorAll('svg'),
+      screen
+        .getByTestId('view-options')
+        .closest('.astryx-complex-selector')
+        ?.querySelectorAll('svg'),
     ).toHaveLength(2);
   });
 
