@@ -172,7 +172,7 @@ describe('the released themes check', () => {
       label: 'Theme packages',
       status: 'warn',
       message: 'No @astryxdesign/theme-* packages are installed.',
-      fix: expect.stringContaining('theme add neutral --import'),
+      fix: expect.stringContaining('theme add neutral`.'),
     });
 
     installThemePackage(dir, 'neutral');
@@ -183,7 +183,7 @@ describe('the released themes check', () => {
       status: 'warn',
       message:
         'Theme package(s) installed (@astryxdesign/theme-neutral) but no theme appears wired.',
-      fix: expect.stringContaining('theme add <slug> --import'),
+      fix: expect.stringContaining('theme add <slug>`.'),
     });
     expect(unwired.fix).not.toContain('ASTRYX_THEME');
 
@@ -390,7 +390,7 @@ describe('app-theme doctor checks', () => {
 
     expect(check(await checkAppThemes(dir), 'theme-owners')).toMatchObject({
       status: 'fail',
-      fix: expect.stringContaining('theme add ocean --import'),
+      fix: expect.stringContaining('theme add ocean'),
     });
   });
 
@@ -592,9 +592,10 @@ describe('app-theme doctor checks', () => {
         id: 'theme-management',
         status: 'info',
         message: expect.stringContaining('manages no themes'),
-        fix: expect.stringContaining('theme add <slug> --import'),
+        fix: expect.stringContaining('theme add <slug>'),
       }),
     ]);
+    expect(checks[0]?.fix).not.toContain('--import');
   });
 
   it('reads astryx.theme from the app package when node_modules is hoisted to a workspace root', async () => {

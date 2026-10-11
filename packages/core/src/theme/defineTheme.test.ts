@@ -877,7 +877,7 @@ describe('pseudo-class overrides in components', () => {
     const theme = defineTheme({
       name: 'pseudo',
       components: {
-        radio: {
+        'radio-indicator': {
           base: {
             borderColor: '#8F9296',
             ':hover': {
@@ -889,11 +889,11 @@ describe('pseudo-class overrides in components', () => {
     });
     const css = generateThemeTestCSS(theme);
     // Base rule
-    expect(css).toContain('.astryx-radio {');
+    expect(css).toContain('.astryx-radio-indicator {');
     expect(css).toContain('border-color: #8F9296');
     // Pseudo rule — separate selector
     expect(css).toContain(
-      '.astryx-radio:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+      '.astryx-radio-indicator:hover:where(:not(:disabled,[aria-disabled="true"])) {',
     );
     expect(css).toContain(
       'border-color: color-mix(in srgb, #8F9296, black 20%)',
