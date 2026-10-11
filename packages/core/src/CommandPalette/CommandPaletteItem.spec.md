@@ -30,7 +30,7 @@ architecture:
     architecture:public-component-api,
   ]
 contributing: []
-system_specs: [spec:AST-017, spec:AST-020]
+system_specs: [spec:AST-017, spec:AST-020, spec:AST-058]
 ---
 
 # CommandPaletteItem component contract
@@ -45,7 +45,7 @@ system_specs: [spec:AST-017, spec:AST-020]
 | Builder impact          | Values stay unique; children stay non-interactive; CommandPalette owns composite keyboard navigation and reports keyboard selection through root `onValueChange`.   |
 | Compatibility/readiness | Victim-free `[fix]` restores promised disabled and native-passthrough behavior; the standalone keyboard contract remains unsettled.                                 |
 | Review checks           | Reject disabled activation, dropped standalone DOM identity, highlight-as-selection ARIA, nested interactive children, or a second context scroll owner.            |
-| Governing rules         | `architecture:public-component-api/INV5`; `architecture:interaction-modality`; `spec:AST-017/FR1,FR3,FR5`; `spec:AST-020/FR1,FR2`.                                  |
+| Governing rules         | `architecture:public-component-api/INV5,INV7`; `architecture:interaction-modality`; `spec:AST-017/FR1,FR3,FR5`; `spec:AST-020/FR1,FR2`; `spec:AST-058/FR9,AR1`.     |
 
 This table is a review projection; the body below is authoritative.
 
@@ -154,7 +154,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR3 — Disabled state.** Disabled items expose `aria-disabled=true`, do not
   paint interaction overlays, and suppress every pointer activation callback.
 - **AR4 — Content.** Item children contain no nested button, link, or other
-  interactive descendant whose semantics would be lost inside an option.
+  interactive descendant whose semantics would be lost inside an option,
+  following `spec:AST-058/AR1,FR9`.
 - **AR5 — Standalone gap.** A standalone option has no owning composite keyboard
   model. OQ1 must settle that public contract before runtime semantics change.
 
@@ -177,6 +178,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 - `spec:AST-017` classifies the victim-free corrections and holds OQ1 against
   silent released-contract changes.
 - `spec:AST-020` supplies accessibility evidence and adopted-pattern boundaries.
+- `spec:AST-058` forbids interactive controls inside an option until a host
+  adopts its grid contract.
 
 ## Verification map
 
