@@ -106,7 +106,10 @@ guidance owns the process used to propose and test APIs.
   owns the contract. Component-owned accessibility and behavior cannot be
   accidentally overwritten.
 - **INV6 — Styling inputs combine.** `xstyle`, `className`, and `style` compose in
-  their documented order instead of replacing one another.
+  their documented order instead of replacing one another. A family record may
+  declare an exception to root styling inputs for its members, stating the
+  replacement part inputs and its reason in a decision; `family:input-fields`
+  FR10 is one.
 - **INV7 — Event handlers compose deliberately.** Consumer handlers and built-in
   behavior use the shared cancellation contract. A consumer can cancel built-in
   behavior only where that public API promises cancellation.
