@@ -13,8 +13,10 @@
  * colors automatically adapt to any theme's color system. Themes can also
  * set an explicit syntax theme via defineTheme({ syntax: dracula }).
  *
- * 14-token architecture validated against 11 community code themes.
- * All themes map cleanly to these 14 slots.
+ * 14 token colours and the code background, validated against 11 community
+ * code themes — all of them map cleanly to those slots — plus three diff row
+ * paints (added, removed, header) that default to semantic tokens, so a
+ * syntax theme that does not set them keeps a readable diff.
  *
  * @see https://github.com/facebook/astryx/issues/1148
  */
@@ -51,6 +53,19 @@ export const syntaxTokenDefaults = {
   '--color-syntax-punctuation': 'var(--color-text-secondary)',
   // background -> muted surface
   '--color-syntax-background': 'var(--color-background-muted)',
+  // Diff rows (CodeBlock isDiff): whole-row tints behind unchanged syntax
+  // colours. Added/removed derive from the semantic success/error muted
+  // tokens; header rows (@@, ---, +++) sit on the muted surface.
+  '--color-syntax-added': 'var(--color-success-muted)',
+  '--color-syntax-removed': 'var(--color-error-muted)',
+  '--color-syntax-diff-header': 'var(--color-background-muted)',
 } as const;
 
 export type SyntaxTokenName = keyof typeof syntaxTokenDefaults;
+
+/** The three diff row slots: optional in a syntax theme, defaulted when unset. */
+export const DIFF_SYNTAX_TOKEN_NAMES = [
+  '--color-syntax-added',
+  '--color-syntax-removed',
+  '--color-syntax-diff-header',
+] as const satisfies ReadonlyArray<SyntaxTokenName>;

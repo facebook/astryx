@@ -26,7 +26,7 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import type {TextDisplay} from '../theme/types';
-import {CodeBlock, Code} from '../CodeBlock';
+import {CodeBlock, Code, parseFenceLanguage} from '../CodeBlock';
 import {CheckboxList} from '../CheckboxList/CheckboxList';
 import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
 import {Blockquote} from '../Blockquote/Blockquote';
@@ -164,6 +164,8 @@ export interface MarkdownComponents {
   code?: React.ComponentType<{
     code: string;
     language?: string;
+    /** The fence was `diff`, `patch`, or `diff-<language>`: render as a diff. */
+    isDiff?: boolean;
     sourceLines?: MarkdownSourceLines;
   }>;
   inlineCode?: React.ComponentType<{children: string}>;
@@ -1475,7 +1477,18 @@ function renderBlock(
     case 'code': {
       // Track codeblock content in cursor for accurate character counting
       cursor.offset += node.value.length;
-      const language = getMarkdownAstLegacyCodeLanguage(node) ?? 'plaintext';
+      // `diff-<lang>` fences are the diff layer over <lang>; `diff` and
+      // `patch` are the layer over plaintext. The legacy language is the info
+      // string's leading word characters, which stops at the hyphen, so the
+      // diff mapping reads the whole first word and then applies the same
+      // word rule to the language it names.
+      const legacyLanguage =
+        getMarkdownAstLegacyCodeLanguage(node) ?? 'plaintext';
+      const fence = parseFenceLanguage(node.lang ?? legacyLanguage);
+      const isDiff = fence.isDiff;
+      const language = isDiff
+        ? fence.language.match(/^\w*/)?.[0] || 'plaintext'
+        : legacyLanguage;
       // A semantic-fence proposal claims its fence before the host's code
       // renderer (spec:AST-036 FR17). The host renderer, or the default Code
       // block without one, draws every unclaimed fence and is the fallback
@@ -1486,6 +1499,7 @@ function renderBlock(
           key={index}
           code={node.value}
           language={language}
+          isDiff={isDiff}
           {...lineProp}
         />
       ) : (
@@ -1504,6 +1518,7 @@ function renderBlock(
           <CodeBlock
             code={node.value}
             language={language}
+            isDiff={isDiff}
             isCollapsible
             xstyle={[
               contentWidthValue != null

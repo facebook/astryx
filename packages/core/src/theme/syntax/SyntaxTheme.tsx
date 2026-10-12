@@ -83,10 +83,12 @@ export function useSyntaxTheme(): UseSyntaxThemeReturn | null {
     }
     const resolved: Partial<Record<SyntaxThemeTokenKey, string>> = {};
     for (const key of ALL_SYNTAX_KEYS) {
-      resolved[key] = resolveSyntaxTokenForMode(
-        ctx.theme.__inputTokens[key],
-        effectiveMode,
-      );
+      // A diff row slot the theme did not set keeps its resolved default.
+      const input = ctx.theme.__inputTokens[key];
+      resolved[key] =
+        input === undefined
+          ? ctx.theme.tokens[key]
+          : resolveSyntaxTokenForMode(input, effectiveMode);
     }
     return resolved as Record<SyntaxThemeTokenKey, string>;
   }, [ctx, effectiveMode]);

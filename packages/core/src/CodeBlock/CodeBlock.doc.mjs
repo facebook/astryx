@@ -30,7 +30,7 @@ export const docs = {
       name: 'language',
       type: 'string',
       description:
-        'Language for syntax highlighting. Use "plaintext" to disable. "diff" tints added (+) and removed (-) lines as whole rows.',
+        'Language for syntax highlighting. Use "plaintext" to disable.',
       default: "'plaintext'",
     },
     {
@@ -55,6 +55,13 @@ export const docs = {
       name: 'highlightLines',
       type: 'number[]',
       description: '1-indexed line numbers to highlight.',
+    },
+    {
+      name: 'isDiff',
+      type: 'boolean',
+      default: 'false',
+      description:
+        'Render the code as a unified diff over `language`: lines starting with + are added, - removed, @@/---/+++ are headers, anything else is context. The glyph sits in its own column and the rest of each line keeps syntax highlighting; copy returns the exact source. Markdown ```diff-<lang> fences set this.',
     },
     {
       name: 'hasCopyButton',

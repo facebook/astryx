@@ -308,20 +308,6 @@ function buildLanguagePatterns(lang: string): {
         ],
       };
 
-    case 'diff':
-    case 'patch':
-      // Unified diffs paint by LINE (see diffLineKind); token paint only dims
-      // the file and hunk headers so the changed rows stand out.
-      return {
-        defaultType: 'variable',
-        patterns: [
-          {
-            type: 'comment',
-            regex: /^(?:@@.*|diff --git.*|index [0-9a-f]+.*|---.*|\+\+\+.*)$/m,
-          },
-        ],
-      };
-
     default:
       return null;
   }
@@ -334,9 +320,51 @@ function buildLanguagePatterns(lang: string): {
 /** How a unified-diff line reads: what it adds, removes, frames, or keeps. */
 export type DiffLineKind = 'added' | 'removed' | 'header' | 'context';
 
-/** Whether a language identifier selects line-level diff paint. */
-export function isDiffLanguage(language: string | undefined): boolean {
-  return language === 'diff' || language === 'patch';
+/**
+ * Read a Markdown fence info string the way CodeBlock renders it: `diff` and
+ * `patch` are the diff layer over plaintext, `diff-<lang>` (the common
+ * convention) is the diff layer over `<lang>`, anything else is a language.
+ */
+export function parseFenceLanguage(info: string | undefined): {
+  language: string;
+  isDiff: boolean;
+} {
+  const value = (info ?? '').trim();
+  if (value === 'diff' || value === 'patch') {
+    return {language: 'plaintext', isDiff: true};
+  }
+  const layered = /^diff-(.+)$/.exec(value);
+  if (layered) {
+    return {language: layered[1], isDiff: true};
+  }
+  return {language: value || 'plaintext', isDiff: false};
+}
+
+/**
+ * Split a diff into the glyph column and the code the base language sees:
+ * every non-header line loses its first character (the `+`, `-`, or space);
+ * header lines contribute an empty line so offsets stay per line.
+ */
+export function splitDiffLines(lines: ReadonlyArray<string>): {
+  kinds: DiffLineKind[];
+  glyphs: string[];
+  content: string[];
+} {
+  const kinds: DiffLineKind[] = [];
+  const glyphs: string[] = [];
+  const content: string[] = [];
+  for (const line of lines) {
+    const kind = diffLineKind(line);
+    kinds.push(kind);
+    if (kind === 'header') {
+      glyphs.push('');
+      content.push('');
+    } else {
+      glyphs.push(line.slice(0, 1));
+      content.push(line.slice(1));
+    }
+  }
+  return {kinds, glyphs, content};
 }
 
 /**
@@ -354,8 +382,12 @@ export function diffLineKind(line: string): DiffLineKind {
   ) {
     return 'header';
   }
-  if (line.startsWith('+')) return 'added';
-  if (line.startsWith('-')) return 'removed';
+  if (line.startsWith('+')) {
+    return 'added';
+  }
+  if (line.startsWith('-')) {
+    return 'removed';
+  }
   return 'context';
 }
 

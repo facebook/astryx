@@ -88,6 +88,18 @@ export const docs = {
             [
               "--color-syntax-background",
               "var(--color-background-muted)"
+            ],
+            [
+              "--color-syntax-added",
+              "var(--color-success-muted)"
+            ],
+            [
+              "--color-syntax-removed",
+              "var(--color-error-muted)"
+            ],
+            [
+              "--color-syntax-diff-header",
+              "var(--color-background-muted)"
             ]
           ]
         }

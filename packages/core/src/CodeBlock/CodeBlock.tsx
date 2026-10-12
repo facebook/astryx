@@ -40,8 +40,7 @@ import type {DiffLineKind} from './tokenizer';
 import {
   tokenize,
   tokenizeAsync,
-  diffLineKind,
-  isDiffLanguage,
+  splitDiffLines,
   flatTokensToLines,
   SYNC_TOKENIZE_THRESHOLD,
 } from './tokenizer';
@@ -307,14 +306,46 @@ const styles = stylex.create({
   // glyph stays in the text as the cue that needs no colour. A caller's
   // highlightLines row is declared after these and keeps its background.
   lineAdded: {
-    backgroundColor: colorVars['--color-success-muted'],
+    backgroundColor: 'var(--color-syntax-added)',
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
   },
   lineRemoved: {
-    backgroundColor: colorVars['--color-error-muted'],
+    backgroundColor: 'var(--color-syntax-removed)',
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
+  },
+  // Hunk and file headers stay visible but quiet: a muted row with secondary
+  // text, never change paint.
+  lineDiffHeader: {
+    backgroundColor: 'var(--color-syntax-diff-header)',
+    color: colorVars['--color-text-secondary'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
+    paddingInline: spacingVars['--spacing-4'],
+  },
+  // The glyph column: the +, - or space of every line sits in its own track
+  // before the code, so the code column starts at the same inline offset on
+  // every line and the content's indentation reads exactly as written. The
+  // glyph is laid out as text but not selectable; the copy button still
+  // copies the original source with its glyphs.
+  lineDiff: {
+    display: 'grid',
+    gridTemplateColumns: '1ch 1fr',
+    columnGap: spacingVars['--spacing-2'],
+  },
+  lineDiffNumbered: {
+    gridTemplateColumns: 'var(--_codeblock-gutter-width) 1ch 1fr',
+  },
+  diffMarker: {
+    color: colorVars['--color-text-secondary'],
+    userSelect: 'none',
+    whiteSpace: 'pre',
+  },
+  // On a tinted row the glyph is the cue a reader without colour depends on,
+  // so it takes the row's ordinary text colour: secondary text measures under
+  // 4.5:1 on the removed tint in light.
+  diffMarkerChange: {
+    color: colorVars['--color-text-primary'],
   },
   sizeSm: {
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -357,7 +388,7 @@ const CodeChunk = React.memo(function CodeChunk({
   lines: string[];
   startIndex: number;
   highlightSet: Set<number> | null;
-  diffKinds: readonly DiffLineKind[] | null;
+  diffKinds: ReadonlyArray<DiffLineKind> | null;
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode;
   lineNumbers: boolean;
 }) {
@@ -366,17 +397,19 @@ const CodeChunk = React.memo(function CodeChunk({
       {lines.map((line, j) => {
         const i = startIndex + j;
         const diffKind = diffKinds?.[i];
-        const isChange = diffKind === 'added' || diffKind === 'removed';
         return (
           <div
             key={i}
             data-line={i + 1}
-            data-diff={isChange ? diffKind : undefined}
+            data-diff={diffKind === 'context' ? undefined : diffKind}
             {...stylex.props(
               styles.line,
               lineNumbers && styles.lineNumbered,
+              diffKinds != null && styles.lineDiff,
+              diffKinds != null && lineNumbers && styles.lineDiffNumbered,
               diffKind === 'added' && styles.lineAdded,
               diffKind === 'removed' && styles.lineRemoved,
+              diffKind === 'header' && styles.lineDiffHeader,
               (highlightSet?.has(i + 1) ?? false) && styles.lineHighlighted,
             )}>
             {renderLineContent(line, i)}
@@ -390,7 +423,7 @@ const CodeChunk = React.memo(function CodeChunk({
 function renderLines(
   lines: string[],
   highlightSet: Set<number> | null,
-  diffKinds: readonly DiffLineKind[] | null,
+  diffKinds: ReadonlyArray<DiffLineKind> | null,
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode,
   lineNumbers: boolean,
   chunkSize: number = LINE_CHUNK_SIZE,
@@ -448,6 +481,14 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
   hasLanguageLabel?: boolean;
   hasLineNumbers?: boolean;
   highlightLines?: number[];
+  /**
+   * Render the code as a unified diff over `language`: lines starting with
+   * `+` are added, `-` removed, `@@`/`---`/`+++` are headers, anything else
+   * is context. The glyph sits in its own column and the rest of every line
+   * keeps the language's syntax highlighting. Copy still returns the exact
+   * source, glyphs included.
+   */
+  isDiff?: boolean;
   hasCopyButton?: boolean;
   onCopy?: () => void;
   isWrapped?: boolean;
@@ -623,6 +664,7 @@ function SpanCodeContent({
   tokenLines,
   highlightSet,
   diffKinds,
+  diff,
   isWrapped,
   sizeStyle,
   hasLineNumbers,
@@ -631,7 +673,8 @@ function SpanCodeContent({
   lines: string[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
-  diffKinds: readonly DiffLineKind[] | null;
+  diffKinds: ReadonlyArray<DiffLineKind> | null;
+  diff: ReturnType<typeof splitDiffLines> | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
   hasLineNumbers: boolean;
@@ -644,6 +687,30 @@ function SpanCodeContent({
   const renderLineContent = useCallback(
     (line: string, lineIndex: number): React.ReactNode => {
       const tokens = tokenLines[lineIndex] ?? [];
+      if (diff) {
+        // Header rows show their raw text; every other row shows its glyph in
+        // the marker column and the base-language tokens of the rest.
+        const kind = diff.kinds[lineIndex];
+        const content = kind === 'header' ? line : diff.content[lineIndex];
+        return (
+          <>
+            <span
+              aria-hidden="true"
+              {...stylex.props(
+                styles.diffMarker,
+                (kind === 'added' || kind === 'removed') &&
+                  styles.diffMarkerChange,
+              )}>
+              {diff.glyphs[lineIndex] || ' '}
+            </span>
+            <span {...stylex.props(styles.lineContent)}>
+              {kind === 'header'
+                ? content || '\u200b'
+                : buildSpanLine(content, tokens)}
+            </span>
+          </>
+        );
+      }
       // Wrap tokens in a single element so they occupy one grid cell when line
       // numbers are on (see `lineNumbered`); an inline span is a no-op when off.
       return (
@@ -652,7 +719,7 @@ function SpanCodeContent({
         </span>
       );
     },
-    [tokenLines],
+    [tokenLines, diff],
   );
 
   return (
@@ -692,7 +759,7 @@ function RangeCodeContent({
   lines: string[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
-  diffKinds: readonly DiffLineKind[] | null;
+  diffKinds: ReadonlyArray<DiffLineKind> | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
   hasLineNumbers: boolean;
@@ -763,6 +830,7 @@ export function CodeBlock({
   hasLanguageLabel = true,
   hasLineNumbers = false,
   highlightLines,
+  isDiff = false,
   hasCopyButton = true,
   onCopy,
   isWrapped = false,
@@ -790,6 +858,7 @@ export function CodeBlock({
   });
 
   const useSpans =
+    isDiff ||
     highlightMode === 'spans' ||
     (highlightMode === 'auto' && !hasHighlightAPI()) ||
     (highlightMode === 'auto' && isSafari());
@@ -802,12 +871,19 @@ export function CodeBlock({
     return l;
   }, [code]);
 
-  const tokenLines = useTokenLines(code, language, customTokenizer);
-
-  const diffKinds = useMemo(
-    () => (isDiffLanguage(language) ? lines.map(diffLineKind) : null),
-    [language, lines],
+  // In diff mode the base language sees the code with the glyph column set
+  // aside, so a `tsx` diff still highlights as `tsx` on every line; headers
+  // contribute an empty line and are rendered as their raw text.
+  const diff = useMemo(
+    () => (isDiff ? splitDiffLines(lines) : null),
+    [isDiff, lines],
   );
+  const tokenLines = useTokenLines(
+    diff ? diff.content.join('\n') : code,
+    language,
+    customTokenizer,
+  );
+  const diffKinds = diff?.kinds ?? null;
   const highlightSet = useMemo(
     () => (highlightLines ? new Set(highlightLines) : null),
     [highlightLines],
@@ -965,6 +1041,7 @@ export function CodeBlock({
             tokenLines={tokenLines}
             highlightSet={highlightSet}
             diffKinds={diffKinds}
+            diff={diff}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
             hasLineNumbers={hasLineNumbers}

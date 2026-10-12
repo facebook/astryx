@@ -7,7 +7,8 @@ import {
   tokenizeStreaming,
   flatTokensToLines,
   diffLineKind,
-  isDiffLanguage,
+  parseFenceLanguage,
+  splitDiffLines,
 } from './tokenizer';
 import type {TokenLine} from './tokenizer';
 
@@ -185,18 +186,49 @@ describe('diffLineKind', () => {
     expect(diffLineKind('index 83db48f..bf269f4 100644')).toBe('header');
   });
 
-  it('paints only the headers as tokens, so the rows carry the change', () => {
-    const lines = tokenize('@@ -1 +1 @@\n-old\n+new\n same', 'diff');
-    expect(lines[0]).toEqual([{type: 'comment', start: 0, end: 11}]);
-    expect(lines[1]).toEqual([]);
-    expect(lines[2]).toEqual([]);
-    expect(lines[3]).toEqual([]);
+  it('splits the glyph column from the code the base language sees', () => {
+    const {kinds, glyphs, content} = splitDiffLines([
+      '@@ -1 +1 @@',
+      '-  const a = 1;',
+      '+  const a = 2;',
+      '   const b = 3;',
+      '',
+    ]);
+    expect(kinds).toEqual(['header', 'removed', 'added', 'context', 'context']);
+    expect(glyphs).toEqual(['', '-', '+', ' ', '']);
+    expect(content).toEqual([
+      '',
+      '  const a = 1;',
+      '  const a = 2;',
+      '  const b = 3;',
+      '',
+    ]);
   });
 
-  it('selects diff paint for diff and patch only', () => {
-    expect(isDiffLanguage('diff')).toBe(true);
-    expect(isDiffLanguage('patch')).toBe(true);
-    expect(isDiffLanguage('typescript')).toBe(false);
-    expect(isDiffLanguage(undefined)).toBe(false);
+  it('tokenizes the code past the glyph with the base language', () => {
+    const {content} = splitDiffLines(['-const a = 1;', '+const a = 2;']);
+    const lines = tokenize(content.join('\n'), 'typescript');
+    expect(lines[0][0]).toEqual({type: 'keyword', start: 0, end: 5});
+    expect(lines[1][0]).toEqual({type: 'keyword', start: 0, end: 5});
+  });
+
+  it('reads fence info strings: diff, patch, diff-<lang>, and a plain language', () => {
+    expect(parseFenceLanguage('diff')).toEqual({
+      language: 'plaintext',
+      isDiff: true,
+    });
+    expect(parseFenceLanguage('patch')).toEqual({
+      language: 'plaintext',
+      isDiff: true,
+    });
+    expect(parseFenceLanguage('diff-tsx')).toEqual({
+      language: 'tsx',
+      isDiff: true,
+    });
+    expect(parseFenceLanguage('tsx')).toEqual({language: 'tsx', isDiff: false});
+    expect(parseFenceLanguage(undefined)).toEqual({
+      language: 'plaintext',
+      isDiff: false,
+    });
   });
 });

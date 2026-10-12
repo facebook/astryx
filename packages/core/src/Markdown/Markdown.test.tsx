@@ -326,6 +326,23 @@ describe('Markdown', () => {
     expect(pre).toBeInTheDocument();
   });
 
+  it('renders a diff-<lang> fence as a diff over that language, and diff over plaintext', () => {
+    const {container, rerender} = render(
+      <Markdown>{'```diff-js\n-const x = 1;\n+const x = 2;\n```'}</Markdown>,
+    );
+    expect(container.querySelector('[data-diff="removed"]')).not.toBeNull();
+    expect(container.querySelector('[data-diff="added"]')).not.toBeNull();
+    // `const` keeps its js highlighting past the glyph.
+    expect(
+      container.querySelector('[data-diff="added"] .astryx-token-keyword'),
+    ).not.toBeNull();
+    rerender(<Markdown>{'```diff\n-old\n+new\n```'}</Markdown>);
+    expect(container.querySelectorAll('[data-diff]')).toHaveLength(2);
+    expect(container.querySelector('.astryx-token-keyword')).toBeNull();
+    rerender(<Markdown>{'```js\n-const x = 1;\n```'}</Markdown>);
+    expect(container.querySelector('[data-diff]')).toBeNull();
+  });
+
   it('renders links with correct href', () => {
     render(<Markdown>{'[click](https://example.com)'}</Markdown>);
     const link = screen.getByText('click');

@@ -23,8 +23,10 @@ export {
   tokenizeStreaming,
   flatTokensToLines,
   SYNC_TOKENIZE_THRESHOLD,
+  diffLineKind,
+  parseFenceLanguage,
 } from './tokenizer';
-export type {SyntaxToken, TokenLine} from './tokenizer';
+export type {SyntaxToken, TokenLine, DiffLineKind} from './tokenizer';
 
 export {
   applyHighlightRangesChunked,

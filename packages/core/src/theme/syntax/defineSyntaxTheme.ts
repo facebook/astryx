@@ -11,7 +11,11 @@
  * @see https://github.com/facebook/astryx/issues/1148
  */
 
-import {syntaxTokenDefaults, type SyntaxTokenName} from './tokens';
+import {
+  syntaxTokenDefaults,
+  DIFF_SYNTAX_TOKEN_NAMES,
+  type SyntaxTokenName,
+} from './tokens';
 import {devWarn} from '../../utils/devWarning';
 
 // =============================================================================
@@ -33,7 +37,11 @@ export type SyntaxThemeTokenKey =
   | 'attribute'
   | 'property'
   | 'punctuation'
-  | 'background';
+  | 'background'
+  | DiffSyntaxThemeTokenKey;
+
+/** The diff row slots a syntax theme MAY set; unset ones keep their defaults. */
+export type DiffSyntaxThemeTokenKey = 'added' | 'removed' | 'diff-header';
 
 /**
  * Token value — either a single string or a [light, dark] tuple.
@@ -41,11 +49,16 @@ export type SyntaxThemeTokenKey =
  */
 export type SyntaxTokenValue = string | [light: string, dark: string];
 
-/** Token map for defineSyntaxTheme input — values can be strings or tuples. */
+/**
+ * Token map for defineSyntaxTheme input — values can be strings or tuples.
+ * The diff row slots are optional: a theme that sets none keeps the defaults
+ * (semantic success/error muted tints and the muted surface).
+ */
 export type SyntaxThemeTokenInput = Record<
-  SyntaxThemeTokenKey,
+  Exclude<SyntaxThemeTokenKey, DiffSyntaxThemeTokenKey>,
   SyntaxTokenValue
->;
+> &
+  Partial<Record<DiffSyntaxThemeTokenKey, SyntaxTokenValue>>;
 
 /** Resolved token map — all values are CSS strings (tuples resolved to light-dark()). */
 export type SyntaxThemeTokenMap = Record<SyntaxThemeTokenKey, string>;
@@ -80,6 +93,16 @@ function toCSSProperty(key: SyntaxThemeTokenKey): SyntaxTokenName {
 export const ALL_SYNTAX_KEYS: SyntaxThemeTokenKey[] = Object.keys(
   syntaxTokenDefaults,
 ).map(k => k.replace(CSS_PREFIX, '') as SyntaxThemeTokenKey);
+
+const DIFF_KEYS = new Set<SyntaxThemeTokenKey>(
+  DIFF_SYNTAX_TOKEN_NAMES.map(
+    name => name.replace(CSS_PREFIX, '') as SyntaxThemeTokenKey,
+  ),
+);
+
+/** The keys every syntax theme must set: everything but the diff rows. */
+export const REQUIRED_SYNTAX_KEYS: SyntaxThemeTokenKey[] =
+  ALL_SYNTAX_KEYS.filter(key => !DIFF_KEYS.has(key));
 
 // =============================================================================
 // Helpers
@@ -138,19 +161,27 @@ export function resolveSyntaxTokenForMode(
 export function defineSyntaxTheme(
   input: SyntaxThemeInput,
 ): SyntaxThemeDefinition {
-  const missing = ALL_SYNTAX_KEYS.filter(key => !(key in input.tokens));
+  const missing = REQUIRED_SYNTAX_KEYS.filter(key => !(key in input.tokens));
   if (missing.length > 0) {
     devWarn(
       'defineSyntaxTheme',
       `"${input.name}": missing tokens: ${missing.join(', ')}. ` +
-        `All 14 syntax tokens are required.`,
+        `All ${REQUIRED_SYNTAX_KEYS.length} syntax colour tokens are required; ` +
+        `the diff row slots (added, removed, diff-header) are optional.`,
     );
   }
 
-  // Resolve tuples to light-dark() CSS strings
+  // Resolve tuples to light-dark() CSS strings. An unset diff row slot keeps
+  // its default so every existing theme renders a readable diff unchanged.
   const resolved: Partial<SyntaxThemeTokenMap> = {};
   for (const key of ALL_SYNTAX_KEYS) {
-    resolved[key] = resolveTokenValue(input.tokens[key]);
+    const value = (
+      input.tokens as Partial<Record<SyntaxThemeTokenKey, SyntaxTokenValue>>
+    )[key];
+    resolved[key] =
+      value === undefined
+        ? syntaxTokenDefaults[toCSSProperty(key)]
+        : resolveTokenValue(value);
   }
 
   return {

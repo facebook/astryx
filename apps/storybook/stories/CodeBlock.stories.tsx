@@ -98,14 +98,19 @@ export const WithHighlightedLines: Story = {
 };
 
 /**
- * A unified diff: added lines sit on a success-tinted row, removed lines on
- * an error-tinted row, and the leading +/- stays in the text so the change
- * reads without colour and copies exactly. Headers and context are plain.
+ * The diff layer over a language: `+` lines sit on a success-tinted row and
+ * `-` lines on an error-tinted row, the `@@` header is a quiet row, and the
+ * rest of every line keeps the language's syntax highlighting. The glyph has
+ * its own column, so the code's indentation lines up on every row, and copy
+ * returns the exact source with its glyphs. Markdown gets this from a
+ * ```diff-tsx fence.
  */
 export const Diff: Story = {
   args: {
-    language: 'diff',
+    language: 'tsx',
+    isDiff: true,
     title: 'Button.tsx',
+    hasLineNumbers: true,
     code: `@@ -12,7 +12,7 @@ export function Button({children, ...props}: ButtonProps) {
    return (
      <button
