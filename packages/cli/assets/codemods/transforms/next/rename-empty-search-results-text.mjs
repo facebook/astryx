@@ -70,6 +70,10 @@ const UNATTRIBUTED_COMMENT =
   'Typeahead, BaseTypeahead and ChatComposerInput triggers. This upgrade ' +
   'could not tell where this object is used; rename the key to ' +
   'emptySearchText if it reaches one of them. ';
+const OPAQUE_SPREAD_COMMENT =
+  ' TODO(astryx upgrade): emptySearchResultsText was removed. This element ' +
+  'spreads props this upgrade cannot read; if they carry ' +
+  'emptySearchResultsText, rename it to emptySearchText where they are built. ';
 const TYPE_ONLY_COMMENT =
   ' TODO(astryx upgrade): emptySearchResultsText was removed from trigger ' +
   'objects. Rename it to emptySearchText; this object is typed through a ' +
@@ -100,7 +104,14 @@ function isNeverNullish(node) {
 // `newValue ?? oldValue`: what a 0.6.x component rendered when both were set.
 /** @param {any} j @param {any} newValue @param {any} oldValue */
 function fallbackExpression(j, newValue, oldValue) {
-  return j.logicalExpression('??', newValue, oldValue);
+  // `a || b ?? c` does not parse: an `||` or `&&` operand of `??` needs its
+  // own parentheses.
+  const guard = (/** @type {any} */ value) =>
+    value?.type === 'LogicalExpression' &&
+    (value.operator === '||' || value.operator === '&&')
+      ? j.parenthesizedExpression(value)
+      : value;
+  return j.logicalExpression('??', guard(newValue), guard(oldValue));
 }
 
 /** @param {any} j @param {any} path @param {string} text */
@@ -311,6 +322,73 @@ function isTriggerType(type, typeNames) {
   return false;
 }
 
+// The local names a file binds to the given core components: named imports
+// (with aliases), default imports from `@astryxdesign/core/<Name>`, and
+// namespace imports (`<Core.Tokenizer>`). Type-only imports do not count.
+/** @param {any} root @param {any} j @param {string[]} components */
+function componentBindings(root, j, components) {
+  /** @type {Set<string>} */
+  const direct = new Set();
+  /** @type {Set<string>} */
+  const namespaces = new Set();
+  root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
+    const source = path.node.source.value;
+    if (
+      path.node.importKind === 'type' ||
+      typeof source !== 'string' ||
+      !CORE_IMPORT_RE.test(source)
+    ) {
+      return;
+    }
+    const subpath = source.split('/').at(-1);
+    for (const specifier of path.node.specifiers ?? []) {
+      if (specifier.importKind === 'type') continue;
+      if (specifier.type === 'ImportSpecifier') {
+        const imported = specifier.imported?.name ?? specifier.imported?.value;
+        if (components.includes(imported)) {
+          direct.add(specifier.local?.name ?? imported);
+        }
+      } else if (
+        specifier.type === 'ImportDefaultSpecifier' &&
+        subpath != null &&
+        components.includes(subpath)
+      ) {
+        direct.add(specifier.local.name);
+      } else if (specifier.type === 'ImportNamespaceSpecifier') {
+        namespaces.add(specifier.local.name);
+      }
+    }
+  });
+  return {direct, namespaces, components};
+}
+
+/** @param {any} name @param {{direct: Set<string>, namespaces: Set<string>, components: string[]}} bindings */
+function matchesComponent(name, bindings) {
+  if (name?.type === 'JSXIdentifier') return bindings.direct.has(name.name);
+  return (
+    name?.type === 'JSXMemberExpression' &&
+    name.object?.type === 'JSXIdentifier' &&
+    bindings.namespaces.has(name.object.name) &&
+    bindings.components.includes(name.property?.name)
+  );
+}
+
+// Only a tag whose root binding resolves to the Program scope is the imported
+// component; a parameter or local of the same name shadows it.
+/** @param {any} path @param {any} name */
+function isModuleBinding(path, name) {
+  const localName =
+    name?.type === 'JSXIdentifier'
+      ? name.name
+      : name?.type === 'JSXMemberExpression' &&
+          name.object?.type === 'JSXIdentifier'
+        ? name.object.name
+        : null;
+  if (localName == null) return false;
+  const scope = path.scope?.lookup(localName);
+  return scope?.path?.node?.type === 'Program';
+}
+
 // The expression a JSX attribute passes: its container's expression, the
 // string literal, or `true` for a bare attribute.
 /** @param {any} j @param {any} attribute */
@@ -332,7 +410,10 @@ export default function transformer(file, api) {
   // a file is read so its opaque triggers can be reported.
   if (
     !file.source.includes(OLD_NAME) &&
-    !file.source.includes('ChatComposerInput')
+    !file.source.includes('ChatComposerInput') &&
+    ![...JSX_COMPONENTS.keys()].some(component =>
+      file.source.includes(component),
+    )
   ) {
     return undefined;
   }
@@ -522,7 +603,60 @@ export default function transformer(file, api) {
       migrateTriggerObject(j, object, {todoOnly: TYPE_ONLY_COMMENT}) || changed;
   }
 
-  // 4. Every other object key of the old name in this file: an object spread
+  // 4. A spread on Tokenizer, Typeahead or BaseTypeahead whose object this
+  // file does not build (imported, or a wrapper's forwarded props) may carry
+  // the removed key, and after the removal the type checker will not notice;
+  // report it the way unreadable triggers values are reported.
+  if (reachesCore) {
+    const bindings = componentBindings(root, j, [...JSX_COMPONENTS.keys()]);
+    root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
+      const name = path.node.name;
+      if (!matchesComponent(name, bindings)) return;
+      if (!isModuleBinding(path, name)) return;
+      const attributes = path.node.attributes ?? [];
+      // An element that sets the old prop itself was handled above, with a
+      // TODO that already covers its spreads.
+      if (
+        attributes.some(
+          (/** @type {any} */ attribute) =>
+            attribute.type === 'JSXAttribute' &&
+            attribute.name?.name === OLD_NAME,
+        )
+      ) {
+        return;
+      }
+      const spreads = attributes.filter(
+        (/** @type {any} */ attribute) =>
+          attribute.type === 'JSXSpreadAttribute',
+      );
+      if (spreads.length === 0) return;
+      const unreadable = spreads.some((/** @type {any} */ spread) => {
+        const argument = unwrap(spread.argument);
+        if (argument?.type === 'ObjectExpression') return false;
+        if (argument?.type !== 'Identifier') return true;
+        const scope = path.scope?.lookup(argument.name);
+        if (!scope) return true;
+        const declared = (scope.getBindings()[argument.name] ?? []).some(
+          (/** @type {any} */ binding) => {
+            const declarator = binding.parent?.node;
+            return (
+              declarator?.type === 'VariableDeclarator' &&
+              declarator.id === binding.node &&
+              binding.parent.parent?.node?.kind === 'const' &&
+              unwrap(declarator.init)?.type === 'ObjectExpression'
+            );
+          },
+        );
+        return !declared;
+      });
+      if (unreadable) {
+        changed =
+          addStatementComment(j, path, OPAQUE_SPREAD_COMMENT) || changed;
+      }
+    });
+  }
+
+  // 5. Every other object key of the old name in this file: an object spread
   // onto a component, a trigger built here and passed along untyped, a value
   // handed to another module. The upgrade cannot attribute it, and after the
   // removal the type checker will not notice it, so it is flagged rather than

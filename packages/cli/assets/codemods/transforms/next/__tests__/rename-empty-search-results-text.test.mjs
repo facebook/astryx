@@ -243,6 +243,36 @@ const a = <ChatComposerInput triggers={mutable} />;`);
       expect(await applyTransform(output)).toBe(output);
     });
 
+    it('parenthesises an || or && operand of the ?? fallback so the output parses', async () => {
+      const output =
+        await applyTransform(`import {Typeahead} from '@astryxdesign/core';
+const a = <Typeahead emptySearchText={custom || fallback} emptySearchResultsText="Old" />;
+const b = <Typeahead emptySearchText={maybe} emptySearchResultsText={left && right} />;`);
+
+      expect(output).toContain(
+        'emptySearchText={(custom || fallback) ?? "Old"}',
+      );
+      expect(output).toContain('emptySearchText={maybe ?? (left && right)}');
+      // The result must parse: a second run reads it back.
+      expect(await applyTransform(output)).toBe(output);
+    });
+
+    it('reports a spread onto Tokenizer whose object it cannot read', async () => {
+      const output =
+        await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
+import {shared} from './shared';
+export function Wrapper(props) {
+  return <Tokenizer {...props} />;
+}
+const a = <Tokenizer {...shared} />;
+const b = <Tokenizer {...{emptySearchText: 'inline'}} />;`);
+
+      expect(
+        output.match(/spreads props this upgrade cannot read/g),
+      ).toHaveLength(2);
+      expect(await applyTransform(output)).toBe(output);
+    });
+
     it('flags a same-file object spread onto Tokenizer', async () => {
       const output =
         await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
@@ -251,6 +281,7 @@ const a = <Tokenizer {...shared} />;`);
 
       expect(output).toContain("emptySearchResultsText: 'No people match'");
       expect(output).toContain('could not tell where this object is used');
+      expect(output).not.toContain('spreads props this upgrade cannot read');
       expect(await applyTransform(output)).toBe(output);
     });
 
