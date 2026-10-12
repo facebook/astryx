@@ -18,6 +18,7 @@ import {CodeNode, CodeHighlightNode} from '@lexical/code';
 import {TableNode, TableRowNode, TableCellNode} from '@lexical/table';
 import {HorizontalRuleNode} from '@lexical/extension';
 import type {Klass, LexicalNode} from 'lexical';
+import {RichTextExtensionNode} from './markdownExtensionNode';
 
 /**
  * The default OSS node set registered with the editor: headings, quotes,
@@ -37,4 +38,7 @@ export const DEFAULT_NODES: ReadonlyArray<Klass<LexicalNode>> = [
   TableRowNode,
   TableCellNode,
   HorizontalRuleNode,
+  // Markdown plugin nodes (spec:AST-064): registered everywhere so stored
+  // state that holds them always loads.
+  RichTextExtensionNode,
 ];

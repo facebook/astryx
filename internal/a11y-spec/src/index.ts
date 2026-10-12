@@ -132,3 +132,9 @@ export {
   BREADCRUMB_PATTERN,
   type BreadcrumbStateFacts,
 } from './patterns/breadcrumb';
+
+export {
+  LANDMARK_PATTERN,
+  type LandmarkRole,
+  type LandmarkStateFacts,
+} from './patterns/landmark';

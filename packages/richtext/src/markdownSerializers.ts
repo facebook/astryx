@@ -7,8 +7,8 @@
  *   and the source-preserving import and export in markdownSource.ts.
  * @output Standalone Markdown <-> serialized EditorState helpers:
  *   markdownToEditorStateJSON, editorStateJSONToMarkdown.
- * @position Re-exported from RichTextEditor/index.ts and the @astryxdesign/richtext
- *   barrel. Complements the ref's getMarkdown() by working WITHOUT a mounted
+ * @position Exported from the server-safe `@astryxdesign/richtext/markdown`
+ *   entry and re-exported from the @astryxdesign/richtext barrel. Complements the ref's getMarkdown() by working WITHOUT a mounted
  *   editor (e.g. to produce a `defaultValue` from Markdown on the server).
  *
  * SYNC: When modified, update:
@@ -30,6 +30,7 @@ import {
   importMarkdownKeepingSource,
 } from './markdownSource';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
+import {pluginsOf, type RichTextMarkdownExtension} from './markdownExtensions';
 import type {Klass, LexicalNode} from 'lexical';
 
 /** Options shared by the Markdown serializer helpers. */
@@ -46,6 +47,13 @@ export interface MarkdownSerializerOptions {
    * editor's `nodes` prop. Required for custom node types to serialize.
    */
   nodes?: ReadonlyArray<Klass<LexicalNode>>;
+  /**
+   * Markdown plugins to recognize, each adopted with `createRichTextExtension`
+   * (spec:AST-064). Their syntax becomes extension nodes holding its exact
+   * source; without them, plugin syntax stays text. Pass the same extensions
+   * the surfaces that show the document use.
+   */
+  extensions?: ReadonlyArray<RichTextMarkdownExtension>;
 }
 
 function createSerializerEditor(nodes?: ReadonlyArray<Klass<LexicalNode>>) {
@@ -73,9 +81,10 @@ export function markdownToEditorStateJSON(
   markdown: string,
   options: MarkdownSerializerOptions = {},
 ): string {
-  const {transformers = DEFAULT_TRANSFORMERS, nodes} = options;
+  const {transformers = DEFAULT_TRANSFORMERS, nodes, extensions = []} = options;
+  const plugins = pluginsOf(extensions, transformers);
   const editor = createSerializerEditor(nodes);
-  importMarkdownKeepingSource(editor, markdown, [...transformers]);
+  importMarkdownKeepingSource(editor, markdown, [...transformers], plugins);
   return JSON.stringify(editor.getEditorState().toJSON());
 }
 

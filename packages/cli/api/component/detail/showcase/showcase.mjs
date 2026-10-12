@@ -24,9 +24,10 @@ import {findShowcase} from '../../../template/template.mjs';
  * @param {string} ctx.name - the caller's original input, used in the error message
  * @param {string|null} [ctx.packageScope] - scope block discovery + the error to a package
  * @param {boolean} [ctx.resolve] - when false, skip discovery and treat as not found
+ * @param {string} ctx.ownerPackage - the npm package that owns the component
  * @returns {Promise<import('../../component.type.mjs').ComponentDetailShowcaseResponse>}
  */
-export async function componentDetailShowcase(componentName, {cwd, name, packageScope = null, resolve = true}) {
+export async function componentDetailShowcase(componentName, {cwd, name, packageScope = null, resolve = true, ownerPackage}) {
   const match = resolve
     ? await findShowcase(componentName, cwd, packageScope ? {package: packageScope} : undefined)
     : null;
@@ -36,6 +37,7 @@ export async function componentDetailShowcase(componentName, {cwd, name, package
   }
   return {
     type: 'component.detail.showcase',
+    package: ownerPackage,
     data: {
       component: componentName,
       aspectRatio: /** @type {number} */ (match.aspectRatio),

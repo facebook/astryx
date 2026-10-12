@@ -52,10 +52,36 @@ function open(command) {
     throw new Error(`not a docs command: ${command}`);
   }
   const rest = words.slice(2);
-  const [topic, section] = rest.filter(w => !w.startsWith('--'));
+  /** @type {string[]} */
+  const positional = [];
+  /** @type {Record<string, string>} */
+  const valued = {};
+  for (let i = 0; i < rest.length; i++) {
+    const word = rest[i];
+    if (word === '--depth' || word === '--detail' || word === '--lang') {
+      valued[word.slice(2)] = rest[++i];
+    } else if (!word.startsWith('--')) {
+      positional.push(word);
+    }
+  }
+  const [topic, section] = positional;
+  const depth =
+    valued.depth == null
+      ? undefined
+      : valued.depth === 'all'
+        ? 'all'
+        : Number(valued.depth);
   return docs(topic, section, {
     index: rest.includes('--index'),
     full: rest.includes('--full'),
+    ...(depth == null
+      ? {}
+      : {
+          depth,
+          ...(valued.detail
+            ? {detail: /** @type {any} */ (valued.detail)}
+            : {}),
+        }),
   });
 }
 
@@ -536,14 +562,17 @@ describe('the docs graph', () => {
     for (const each of shownCommands(block)) {
       if (!shown.has(each)) shown.set(each, 'the agent prompt in AGENTS.md');
     }
-    // The block `astryx init` writes into an app's AGENTS.md. Its MORE CLI
+    // The block `astryx init` writes into an app's AGENTS.md. Its key-commands
     // lines are bare subcommands, each followed by its description.
     const appBlock = generateCompressedIndex('0.0.0', {invocation: 'npx astryx'});
     for (const each of shownCommands(appBlock)) {
       if (!shown.has(each)) shown.set(each, 'the agent block astryx init writes');
     }
-    const more = (appBlock.split('MORE CLI:')[1] ?? '').split(/\n\s*\n/)[0];
-    const bare = [...more.matchAll(/^ {2}(\S.*?)(?: {3,}|$)/gm)].map(m => `astryx ${m[1]}`);
+    // The compact block lists key commands after a prose lead-in, indented by
+    // two spaces. build/template/component are intentionally omitted because
+    // they are covered in the WORKFLOW section above the command list.
+    const keySection = (appBlock.split('Key ones beyond the workflow:')[1] ?? '').split(/\n\s*\n/)[0];
+    const bare = [...keySection.matchAll(/^ {2}(\S.*?)(?: {3,}|$)/gm)].map(m => `astryx ${m[1]}`);
     expect(bare.length).toBeGreaterThan(3);
     for (const each of bare) {
       if (!shown.has(each)) shown.set(each, 'the agent block astryx init writes');

@@ -184,9 +184,9 @@ export const docs = {
     },
     {
       name: 'statusVariant',
-      type: "'attached' | 'detached'",
+      type: "'attached' | 'detached' | 'tooltip'",
       description:
-        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip reveals the message in an info-tip button.',
       default: "'attached'",
     },
     {
@@ -278,10 +278,36 @@ export const docs = {
       description: 'SVG icon component displayed at the start of the input.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
+        'StyleX styles for the field container (label, control, and status together). No effect inside InputGroup (style the InputGroup instead) or in a `horizontal-labels` FormLayout. Root `xstyle`, `className`, and `style` are not accepted.',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description: 'Class name for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: 'Inline styles for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the element that paints the border and background and holds icons and end controls. Never the native input.',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: 'Class name for the visual control box.',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: 'Inline styles for the visual control box.',
     },
   ],
   components: [{name: 'BaseTypeahead'}, {name: 'TypeaheadItem'}],

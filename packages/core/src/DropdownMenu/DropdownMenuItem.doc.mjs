@@ -8,7 +8,7 @@ export const docs = {
   displayName: 'Dropdown Menu Item',
   isHiddenFromOverview: true,
   description:
-    'Helper component for custom item rendering with consistent styling.',
+    'Helper component for custom item rendering with consistent styling. Host attributes and DOM event handlers (aria-*, data-*, id, drag and drop) reach the row root, the element carrying role="menuitem".',
   playground: {
     // Standalone DropdownMenuItem has no required props, so the properties-tab
     // preview renders an empty row without seeded content. Seed a label and
@@ -94,7 +94,8 @@ export const docsZh = {
   name: 'DropdownMenuItem',
   isHiddenFromOverview: true,
   displayName: 'Dropdown Menu Item',
-  description: '用于自定义项渲染的辅助组件，提供一致的样式。',
+  description:
+    '用于自定义项渲染的辅助组件，提供一致的样式。宿主属性和 DOM 事件处理器（aria-*、data-*、id、拖放）会落在行根元素上，即带 role="menuitem" 的元素。',
   props: [
     {
       name: 'icon',

@@ -13,7 +13,11 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import type {ComponentProps, ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Markdown} from './Markdown';
-import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
+import type {
+  MarkdownComponents,
+  MarkdownInlinePlugin,
+  MarkdownSourceLines,
+} from './Markdown';
 import type {ParseOptions} from './index';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
@@ -491,6 +495,60 @@ describe('Markdown', () => {
     expect((checkboxes[1] as HTMLInputElement).checked).toBe(false);
   });
 
+  it('keeps each task item checked or open in a list that mixes task and plain items (FR23)', () => {
+    render(
+      <Markdown>
+        {'- [x] Done **task**\n- Plain item\n- [ ] Open task\n'}
+      </Markdown>,
+    );
+    // One list, in document order.
+    expect(document.querySelectorAll('ul, ol')).toHaveLength(1);
+    const items = [...document.querySelectorAll('li')];
+    expect(items.map(item => item.textContent)).toEqual([
+      expect.stringContaining('Done task'),
+      'Plain item',
+      expect.stringContaining('Open task'),
+    ]);
+    const checkbox = (item: Element | undefined) =>
+      item?.querySelector<HTMLInputElement>('input[type="checkbox"]') ?? null;
+    // Each task item shows its own read-only checkbox, named by its text.
+    expect(checkbox(items[0])?.checked).toBe(true);
+    expect(checkbox(items[2])?.checked).toBe(false);
+    expect(screen.getByRole('checkbox', {name: 'Done task'})).toBe(
+      checkbox(items[0]),
+    );
+    expect(screen.getByRole('checkbox', {name: 'Open task'})).toBe(
+      checkbox(items[2]),
+    );
+    for (const input of [checkbox(items[0]), checkbox(items[2])]) {
+      expect(input?.getAttribute('aria-readonly')).toBe('true');
+    }
+    // A plain item keeps its marker and has no checkbox.
+    expect(checkbox(items[1])).toBeNull();
+  });
+
+  it('keeps task state in mixed ordered and nested lists', () => {
+    render(
+      <Markdown>
+        {
+          '1. [ ] First step\n2. Second step\n   - [x] Nested done\n   - Nested plain\n'
+        }
+      </Markdown>,
+    );
+    expect(
+      document.querySelector('ol')?.querySelectorAll(':scope > li'),
+    ).toHaveLength(2);
+    expect(
+      screen.getByRole<HTMLInputElement>('checkbox', {name: 'First step'})
+        .checked,
+    ).toBe(false);
+    expect(
+      screen.getByRole<HTMLInputElement>('checkbox', {name: 'Nested done'})
+        .checked,
+    ).toBe(true);
+    expect(document.querySelectorAll('input[type="checkbox"]')).toHaveLength(2);
+  });
+
   it('renders tables', () => {
     render(<Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>);
     expect(document.querySelector('table')).toBeInTheDocument();
@@ -923,6 +981,7 @@ describe('Markdown', () => {
     expectTypeOf<MathRendererProps>().toEqualTypeOf<{
       value: string;
       display: 'inline' | 'block';
+      sourceLines?: MarkdownSourceLines;
     }>();
     expectTypeOf<ParseOptions>().toMatchTypeOf<{math?: boolean}>();
   });

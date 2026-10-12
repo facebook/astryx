@@ -40,17 +40,18 @@ from remaining progress without depending on visible text rendered elsewhere.
 External text may supplement the bar, but it is not a prerequisite for the bar
 to be correct.
 
-This draft now also records the current consumer anatomy and exact theming
-ownership. It still does not choose a visual treatment or change runtime
-behavior.
+This record also captures the current consumer anatomy and exact theming
+ownership. It does not choose a visual treatment; 0.7.0 only removes the four
+deprecated `progressbar*` theming aliases.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`; this draft changes no runtime behavior.
-- Compatibility class: additive documentation only; no public API, DOM, style,
-  target, or alias is added, removed, or changed.
+- Released default preserved: `yes`; canonical ProgressBar behavior is unchanged.
+- Removed aliases: 0.7.0 stops emitting `progressbar`, `progressbar-track`,
+  `progressbar-fill`, and `progressbar-mark`.
 - Controlled/uncontrolled behavior: unchanged.
-- Migration decision: `component:ProgressBar/DEC-1`.
+- Migration decision: replace those theme keys and CSS target classes with their
+  `progress-bar*` forms, or run `astryx upgrade --from 0.6.3 --apply --path .`.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -197,9 +198,8 @@ invent its form.
 ```
 
 The `Label` and `Value text` gaps are current facts, not decisions that those
-parts should remain untargeted. Deprecated `progressbar*` aliases are
-compatibility metadata, not separate anatomy or current targets. This map does
-not select a standalone visual treatment or resolve OQ1.
+parts should remain untargeted. This map does not select a standalone visual
+treatment or resolve OQ1.
 
 ## Family and system relationships
 
@@ -224,7 +224,7 @@ not select a standalone visual treatment or resolve OQ1.
 | FR1, AR1            | Real-browser visual and contrast evidence across shipped themes and color modes | Partial determinate progress for each semantic variant      | A completed or remaining segment becomes indistinguishable without text   | Future ProgressBar visual audit        |
 | FR2, FR3, AR3       | Public type and consumer-doc review                                             | No value text, built-in value text, external composed text  | A caller signal is credited with correctness the component cannot verify  | Future ProgressBar API tests           |
 | AR2                 | `ProgressBar.test.tsx`                                                          | Determinate, indeterminate, hidden label, custom value text | Accessible name or value semantics disappear when visuals change          | Future ProgressBar accessibility audit |
-| FR6                 | `ProgressBar.test.tsx` and `themingTargets.test.ts`                             | Current and deprecated target classes                       | Source, metadata, or compatibility target placement drifts                | `audit:ProgressBar/theming`            |
+| FR6                 | `ProgressBar.test.tsx` and `themingTargets.test.ts`                             | Four canonical target classes                               | Canonical placement remains covered after the 0.7 alias removal           | `audit:ProgressBar/theming`            |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                   | Canonical anatomy and four current targets                  | Missing, extra, prefixed, stale, alias-backed, or unclaimed mappings fail | `audit:ProgressBar/theming`            |
 | Theming             | Theme-target metadata checks plus browser evidence                              | Shipped themes, light and dark modes                        | A theme override bypasses the standalone distinction                      | Future ProgressBar theming audit       |
 

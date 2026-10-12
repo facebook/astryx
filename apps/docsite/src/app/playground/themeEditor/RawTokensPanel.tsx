@@ -136,7 +136,7 @@ function SpacingEditor({tokenName, value, onChange}: EditorProps) {
           value={value}
           onChange={val => onChange(tokenName, val)}
           size="sm"
-          xstyle={s.inputSm}
+          controlXstyle={s.inputSm}
         />
       }
     />
@@ -157,7 +157,7 @@ function RadiusEditor({tokenName, value, onChange}: EditorProps) {
           value={value}
           onChange={val => onChange(tokenName, val)}
           size="sm"
-          xstyle={s.inputSm}
+          controlXstyle={s.inputSm}
         />
       }
     />
@@ -192,7 +192,7 @@ function TypographyEditor({tokenName, value, onChange}: EditorProps) {
           value={value}
           onChange={val => onChange(tokenName, val)}
           size="sm"
-          xstyle={s.inputLg}
+          controlXstyle={s.inputLg}
         />
       }
     />
@@ -210,7 +210,7 @@ function GenericEditor({tokenName, value, onChange}: EditorProps) {
           value={value}
           onChange={val => onChange(tokenName, val)}
           size="sm"
-          xstyle={s.inputLg}
+          controlXstyle={s.inputLg}
         />
       }
     />

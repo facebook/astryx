@@ -342,6 +342,113 @@ test('a rule at either edge of the document adds no outer margin', async ({
   ]);
 });
 
+// component:Markdown FR23 and spec:AST-061 FR5: in a list that mixes task
+// and plain items, each task item keeps its checked state as a checkbox where
+// its marker would be, each plain item keeps its marker, and the list stays
+// one list — on both surfaces, in the same places.
+test('side by side: a list of task and plain items keeps each task checkbox and each marker', async ({
+  page,
+}) => {
+  const errors = await openStory(page, STORY.sideBySide, DESKTOP);
+  await waitForDocument(page, MARKDOWN);
+  await waitForDocument(page, RICH_TEXT);
+  const layout = (selector: string) =>
+    page.evaluate(surface => {
+      const block = document.querySelector(
+        `${surface} [data-parity-block="list-task-mixed"]`,
+      );
+      const origin = block?.getBoundingClientRect().left ?? 0;
+      const items = [...(block?.querySelectorAll('li') ?? [])];
+      const left = (element: Element | null | undefined) =>
+        element == null
+          ? null
+          : Math.round(element.getBoundingClientRect().left - origin);
+      // An item's visible text nodes: not its checkbox's label, which names
+      // the checkbox for assistive technology.
+      const visibleText = (item: Element) => {
+        const nodes: Text[] = [];
+        const walker = document.createTreeWalker(item, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          if (
+            node.textContent?.trim() &&
+            node.parentElement?.closest('label') == null
+          ) {
+            nodes.push(node as Text);
+          }
+        }
+        return nodes;
+      };
+      // Where an item's first rendered line of text starts.
+      const textStart = (item: Element) => {
+        const [first] = visibleText(item);
+        if (first == null) {
+          return null;
+        }
+        const range = document.createRange();
+        range.selectNodeContents(first);
+        return Math.round(range.getBoundingClientRect().left - origin);
+      };
+      // RichText draws each task checkbox beside the editable text and gives
+      // the item it belongs to through aria-owns.
+      const checkboxOf = (item: Element) => {
+        const owned = item.getAttribute('aria-owns');
+        const target = owned == null ? null : document.getElementById(owned);
+        return (
+          item.querySelector<HTMLInputElement>('input[type="checkbox"]') ??
+          (target instanceof HTMLInputElement
+            ? target
+            : (target?.querySelector<HTMLInputElement>(
+                'input[type="checkbox"]',
+              ) ?? null))
+        );
+      };
+      return {
+        // RichText marks the list itself; Markdown, the block around it.
+        lists:
+          (block?.matches('ul, ol') ? 1 : 0) +
+          (block?.querySelectorAll('ul, ol').length ?? 0),
+        items: items.map(item => {
+          const box = checkboxOf(item);
+          return {
+            text: visibleText(item)
+              .map(node => node.textContent)
+              .join('')
+              .trim(),
+            checked: box?.checked ?? null,
+            box: left(box),
+            textStart: textStart(item),
+          };
+        }),
+      };
+    }, selector);
+  const markdown = await layout(MARKDOWN);
+  const richText = await layout(RICH_TEXT);
+  expect(markdown.lists).toBe(1);
+  expect(richText.lists).toBe(1);
+  expect(markdown.items.map(({text, checked}) => [text, checked])).toEqual([
+    ['Mixed open task', false],
+    ['Mixed plain item', null],
+    ['Mixed done task', true],
+  ]);
+  expect(richText.items.map(({text, checked}) => [text, checked])).toEqual(
+    markdown.items.map(({text, checked}) => [text, checked]),
+  );
+  markdown.items.forEach((item, index) => {
+    const other = richText.items[index];
+    expect(
+      Math.abs((other?.textStart ?? 0) - (item.textStart ?? 0)),
+      `text of ${item.text}`,
+    ).toBeLessThanOrEqual(1);
+    if (item.box != null) {
+      expect(
+        Math.abs((other?.box ?? 0) - item.box),
+        `checkbox of ${item.text}`,
+      ).toBeLessThanOrEqual(1);
+    }
+  });
+  expect(errors).toEqual([]);
+});
+
 // spec:AST-061 FR5: each task item has one real checkbox where core
 // Markdown's is, the item stays a list item, and every list row has one
 // marker.
@@ -351,24 +458,30 @@ test('side by side: task items have one checkbox each, and list rows one marker 
   const errors = await openStory(page, STORY.sideBySide, DESKTOP);
   await waitForDocument(page, MARKDOWN);
   await waitForDocument(page, RICH_TEXT);
+  // Two in the task list, two in the list that mixes task and plain items.
   await expect(
     page.locator(`${RICH_TEXT} [data-richtext-task-checkbox] input`),
-  ).toHaveCount(2);
+  ).toHaveCount(4);
   const layout = (selector: string) =>
     page.evaluate(surface => {
       const block = document.querySelector(
         `${surface} [data-parity-block="list-task"]`,
       );
       const origin = block?.getBoundingClientRect();
-      const boxes = [
-        ...document.querySelectorAll<HTMLInputElement>(
-          `${surface} input[type="checkbox"]`,
-        ),
-      ].filter(
-        box =>
-          box.closest('[data-parity-block="list-task"]') != null ||
-          box.closest('[data-richtext-task-checkbox]') != null,
-      );
+      // Each item's checkbox: inside it in Markdown; in RichText, beside the
+      // editable text, given to the item through aria-owns.
+      const boxes = [...(block?.querySelectorAll('li') ?? [])].flatMap(item => {
+        const owned = item.getAttribute('aria-owns');
+        const target = owned == null ? null : document.getElementById(owned);
+        const box =
+          item.querySelector<HTMLInputElement>('input[type="checkbox"]') ??
+          (target instanceof HTMLInputElement
+            ? target
+            : (target?.querySelector<HTMLInputElement>(
+                'input[type="checkbox"]',
+              ) ?? null));
+        return box == null ? [] : [box];
+      });
       const label = [...(block?.querySelectorAll('li span') ?? [])].find(span =>
         span.textContent?.startsWith('Open task'),
       );

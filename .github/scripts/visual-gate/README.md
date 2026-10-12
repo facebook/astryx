@@ -10,8 +10,9 @@ post-CI, or post-merge workflow.
 
 Dispatch **CI** from `main` with `operation=release-check`. The event SHA is
 immutable for the run; the request and final `release-check` join reject a
-non-main ref or a SHA that is no longer current main. After main advances, dispatch
-again rather than reusing an earlier green run.
+non-main ref or a SHA that is not an ancestor of current main. Later fast-forward
+commits do not invalidate an earlier green run; a rewrite or divergence that
+removes the checked SHA requires a new dispatch.
 
 The existing Storybook build feeds the same **Stable visual regression**
 (`pr-visual`), `pr-a11y`, and `pr-rtl` owners. Release scope is the closed full
@@ -35,10 +36,10 @@ The full axe roster, whole-repository accessibility spec-test contracts and thei
 pixel/evidence uploads, and Probe reach sweep run only during `release-check`.
 
 Release callers must bind the CI run/attempt and all three job outcomes to its
-exact main SHA, and recheck main immediately before release mutation. The public
-[Release Process](https://github.com/facebook/astryx/wiki/Release-Process) needs a
-separate follow-up to replace constituent-PR-only gating with this dispatch; this
-CI capability does not update release automation.
+exact main SHA, and confirm that SHA remains an ancestor of current main before
+release mutation. The public
+[Release Process](https://github.com/facebook/astryx/wiki/Release-Process) uses
+the same checked-SHA boundary; later fast-forward commits are next-release input.
 
 ## Coverage and results
 

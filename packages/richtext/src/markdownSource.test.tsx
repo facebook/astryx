@@ -26,7 +26,9 @@ import {DEFAULT_NODES} from './editorNodes';
 import {normalizeListIndentation} from './markdownListIndentation';
 import {
   $restoreCharacterReferences,
+  $restoreCodeSpans,
   protectCharacterReferences,
+  protectCodeSpans,
 } from './markdownCharacterReferences';
 import {DEFAULT_TRANSFORMERS} from './markdownTable';
 import {
@@ -456,16 +458,20 @@ describe('Markdown source preservation (spec:AST-062)', () => {
       });
       editor.update(
         () => {
+          // The import reads code spans and character references through
+          // stand-ins; the reference does too.
+          const code = protectCodeSpans(
+            normalizeListIndentation(
+              markdown.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n'),
+            ),
+          );
           const {markdown: protectedMarkdown, standIns} =
-            protectCharacterReferences(
-              normalizeListIndentation(
-                markdown.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n'),
-              ),
-            );
+            protectCharacterReferences(code.markdown);
           $convertFromMarkdownString(protectedMarkdown, [
             ...DEFAULT_TRANSFORMERS,
           ]);
           $restoreCharacterReferences($getRoot(), standIns);
+          $restoreCodeSpans($getRoot(), code.spans);
           $nestFollowingLists($getRoot());
           $joinSoftLineBreaks($getRoot());
         },

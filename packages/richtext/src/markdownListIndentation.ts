@@ -17,6 +17,8 @@
 const LIST_ITEM = /^([ \t]*)([-+*]|\d{1,9}[.)])( {1,4}|\t|$)/;
 const FENCE_OPEN = /^[ \t]*(`{3,}|~{3,})/;
 const BLANK_LINE = /^[ \t]*\r?$/;
+/** A thematic break after its indentation: three or more of one marker. */
+const THEMATIC_BREAK_CONTENT = /^([-*_])(?:[ \t]*\1){2,}[ \t]*\r?$/;
 
 /** Columns of leading whitespace, with tabs stopping every four columns. */
 function columnsOf(whitespace: string): number {
@@ -55,8 +57,22 @@ export function normalizeListIndentation(markdown: string): string {
       afterBlankLine = true;
       continue;
     }
+    const leading = /^[ \t]*/.exec(line)?.[0] ?? '';
+    const indent = columnsOf(leading);
+    if (THEMATIC_BREAK_CONTENT.test(line.slice(leading.length))) {
+      // A thematic break, never an item, even where an item could start
+      // (CommonMark 0.31 §4.1). Lexical shows it only as a block of its own,
+      // so a break inside an item loses its indentation and reads as one.
+      while (open.length > 0 && indent < open[open.length - 1]) {
+        open.pop();
+      }
+      if (open.length > 0) {
+        lines[index] = line.slice(leading.length);
+      }
+      afterBlankLine = false;
+      continue;
+    }
     const item = LIST_ITEM.exec(line);
-    const indent = columnsOf(/^[ \t]*/.exec(line)?.[0] ?? '');
     if (item == null) {
       const opening = FENCE_OPEN.exec(line);
       if (opening != null) {

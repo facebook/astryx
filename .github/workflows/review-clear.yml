@@ -13,7 +13,8 @@
 # (read-only token → 403). It therefore runs on workflow_run after Review signal
 # anchors approved, changes_requested, and dismissed review events from the base
 # repository with a write-capable token. It never checks out or runs
-# PR-controlled code.
+# PR-controlled code: its decision helper comes from this workflow's own trusted
+# commit, never from the PR.
 
 name: Review clear
 
@@ -109,6 +110,33 @@ jobs:
               return;
             }
 
+            // Load the decision helper from this workflow's own commit — for a
+            // workflow_run, the default branch's head — the same trusted version
+            // review-signal runs. A PR's base can predate the helper, and the
+            // PR's own code is never fetched or run. Without the helper the gate
+            // cannot be resolved, so the run fails loudly rather than leaving
+            // the gate silently pending.
+            const DECISION_HELPER = '.github/scripts/review-signal-decision.cjs';
+            let decision;
+            try {
+              const { data: decisionFile } = await github.rest.repos.getContent({
+                owner, repo, ref: context.sha, path: DECISION_HELPER,
+              });
+              const decisionSrc = Buffer.from(decisionFile.content, 'base64').toString('utf8');
+              const decisionModule = { exports: {} };
+              new Function('module', 'exports', 'require', decisionSrc)(
+                decisionModule, decisionModule.exports,
+                () => { throw new Error('review-signal-decision.cjs must stay dependency-free'); },
+              );
+              decision = decisionModule.exports;
+            } catch (e) {
+              const reason = e.status === 404 ? 'not found' : e.message;
+              core.setFailed(
+                `Cannot resolve the code gate for PR #${prNumber}: ${DECISION_HELPER} could not be loaded at ${context.sha} (${reason}).`,
+              );
+              return;
+            }
+
             // Resolve the effective exact-head review state with the same
             // dependency-free helper review-signal uses. Also read this head's
             // latest review-required status: only the existing label or a latest
@@ -120,18 +148,8 @@ jobs:
               const reviews = await github.paginate(github.rest.pulls.listReviews, {
                 owner, repo, pull_number: prNumber, per_page: 100,
               });
-              const { data: decisionFile } = await github.rest.repos.getContent({
-                owner, repo, ref: full.base.sha,
-                path: '.github/scripts/review-signal-decision.cjs',
-              });
-              const decisionSrc = Buffer.from(decisionFile.content, 'base64').toString('utf8');
-              const decisionModule = { exports: {} };
-              new Function('module', 'exports', 'require', decisionSrc)(
-                decisionModule, decisionModule.exports,
-                () => { throw new Error('review-signal-decision.cjs must stay dependency-free'); },
-              );
               ({codeApproved, codeWithdrawn} =
-                decisionModule.exports.resolveReviewApprovals({
+                decision.resolveReviewApprovals({
                   reviews,
                   headSha,
                   engOwners: [...codeApprovers],

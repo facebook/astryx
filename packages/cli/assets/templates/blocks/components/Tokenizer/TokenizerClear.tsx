@@ -37,7 +37,7 @@ export default function TokenizerClear() {
         value={value}
         onChange={items => setValue(items)}
         hasClear
-        style={{width: 400}}
+        containerStyle={{width: 400}}
       />
     </Stack>
   );

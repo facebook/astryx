@@ -1,6 +1,7 @@
 {
   "apiVersion": 1,
   "type": "component.detail.props",
+  "package": "@acme/kit",
   "data": [
     {
       "name": "title",

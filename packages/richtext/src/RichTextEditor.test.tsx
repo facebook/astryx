@@ -42,6 +42,9 @@ import {
 import {RichTextEditorToolbar} from './RichTextEditorToolbar';
 import {registerIcons, resetIcons} from '@astryxdesign/core/Icon';
 import {EDGE_COMP_ATTR} from '@astryxdesign/core/Layout';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import {rtlStyles} from '@astryxdesign/core/utils';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {
   RichTextEditorAutoLinkPlugin,
   DEFAULT_LINK_MATCHERS,
@@ -829,7 +832,7 @@ describe('RichTextEditor', () => {
     );
     await waitFor(() => expect(screen.getByText('11/5')).toBeInTheDocument());
     // aria-live region announces the overflow for screen readers.
-    expect(screen.getByText('6 characters over limit')).toBeInTheDocument();
+    expect(screen.getByText('6 characters over the limit')).toBeInTheDocument();
   });
 
   it('associates the counter with the editor via aria-describedby', async () => {
@@ -1463,6 +1466,46 @@ describe('RichTextEditorToolbar', () => {
       resetIcons();
     }
   });
+
+  it('draws the glyphs of the theme it renders in', () => {
+    const theme = defineTheme({
+      name: 'richtext-toolbar-themed-icons',
+      icons: {
+        'richtext:bold': <svg data-testid="theme-bold" />,
+        'richtext:undo': <svg data-testid="theme-undo" />,
+      },
+    });
+    render(
+      <Theme theme={theme}>
+        <RichTextEditor label="Notes" toolbar={<RichTextEditorToolbar />} />
+      </Theme>,
+    );
+    expect(
+      screen
+        .getByRole('button', {name: 'Bold'})
+        .querySelector('[data-testid="theme-bold"]'),
+    ).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole('button', {name: 'Undo'})
+        .querySelector('[data-testid="theme-undo"]'),
+    ).toBeInTheDocument();
+  });
+
+  it('wraps only undo and redo in the RTL mirror', () => {
+    const {container} = render(
+      <RichTextEditor label="Notes" toolbar={<RichTextEditorToolbar />} />,
+    );
+    // The atomic class only; dev builds add a debug name with a dot in it.
+    const mirrorClass = (stylex.props(rtlStyles.mirror).className ?? '')
+      .split(' ')
+      .find(name => !name.includes('__'));
+    expect(mirrorClass).toBeDefined();
+    const mirrored = [
+      ...container.getElementsByClassName(mirrorClass ?? ''),
+    ].map(element => element.closest('button')?.getAttribute('aria-label'));
+    expect(mirrored).toEqual(['Undo', 'Redo']);
+  });
 });
 
 describe('linkUtils', () => {
@@ -2071,5 +2114,55 @@ describe('toolbar follows the editable props after mount', () => {
       />,
     );
     expect(screen.getByRole('button', {name: 'Bold'})).toBeDisabled();
+  });
+});
+
+describe('RichTextEditor translation', () => {
+  const FRENCH = {
+    fr: {
+      '@astryx.richTextEditor.toolbar.label': 'Mise en forme',
+      '@astryx.richTextEditor.toolbar.bold': 'Gras',
+      '@astryx.richTextEditor.toolbar.undo': 'Annuler',
+      '@astryx.richTextEditor.toolbar.blockFormat': 'Format du bloc',
+      '@astryx.richTextEditor.tabEscapeHint':
+        'Appuyez sur Échap puis Tab pour quitter l’éditeur.',
+    },
+  };
+
+  it('routes the toolbar and the Tab escape hint through the active locale', () => {
+    render(
+      <InternationalizationProvider locale="fr" overrides={FRENCH}>
+        <RichTextEditor label="Notes" toolbar={<RichTextEditorToolbar />} />
+      </InternationalizationProvider>,
+    );
+
+    expect(
+      screen.getByRole('toolbar', {name: 'Mise en forme'}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Gras'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Annuler'})).toBeInTheDocument();
+    expect(screen.getByText('Format du bloc')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveAccessibleDescription(
+      'Appuyez sur Échap puis Tab pour quitter l’éditeur.',
+    );
+  });
+
+  it('keeps caller-provided text over the translated defaults', () => {
+    render(
+      <InternationalizationProvider locale="fr" overrides={FRENCH}>
+        <RichTextEditor
+          label="Notes"
+          tabEscapeHint="Custom hint"
+          toolbar={<RichTextEditorToolbar label="Custom toolbar" />}
+        />
+      </InternationalizationProvider>,
+    );
+
+    expect(
+      screen.getByRole('toolbar', {name: 'Custom toolbar'}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveAccessibleDescription(
+      'Custom hint',
+    );
   });
 });

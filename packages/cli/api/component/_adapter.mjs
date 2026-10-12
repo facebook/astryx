@@ -38,6 +38,7 @@ import {
 } from '../../foundation/discovery/component-discovery.mjs';
 import {Project} from '../../foundation/config/project.mjs';
 import {loadComponentDoc as loadValidatedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
+import {resolveComponentReplacements} from '../../foundation/discovery/component-replacement.mjs';
 import {searchComponents} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
 
@@ -136,6 +137,38 @@ export async function loadIntegrationsSafely(cwd) {
   } catch {
     return [];
   }
+}
+
+/**
+ * Every component replacement the loaded integrations declare
+ * (spec:AST-035 FR10–FR15): the active one for each replaced Core component,
+ * and the findings Doctor reports. With no Core directory, only the opt-in
+ * and value findings are computed.
+ * @param {string|null} coreDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @returns {Promise<import('../../foundation/discovery/component-replacement.mjs').ComponentReplacements>}
+ */
+export function loadComponentReplacements(coreDir, loadedIntegrations) {
+  return resolveComponentReplacements(coreDir, loadedIntegrations);
+}
+
+/**
+ * The integration component that answers to the Core component name
+ * `dirName` for unqualified lookup, or undefined when none replaces it.
+ * @param {string} coreDir
+ * @param {import('../../foundation/integrations/integrations.mjs').LoadedIntegration[]} loadedIntegrations
+ * @param {string} dirName
+ * @returns {Promise<import('../../foundation/discovery/component-replacement.mjs').ActiveComponentReplacement | undefined>}
+ */
+export async function resolveComponentReplacement(
+  coreDir,
+  loadedIntegrations,
+  dirName,
+) {
+  if (loadedIntegrations.length === 0) return undefined;
+  return (
+    await resolveComponentReplacements(coreDir, loadedIntegrations)
+  ).forTarget(dirName);
 }
 
 /**
@@ -291,7 +324,7 @@ export class ComponentAmbiguityError extends AstryxError {
     super(
       `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
       owners.map(o => ({name: o.package, reason: 'provides this component'})),
-      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+      ERROR_CODES.ERR_AMBIGUOUS_COMPONENT,
     );
     this.candidates = owners.map(owner => ({
       package: owner.package,
@@ -342,6 +375,8 @@ export function resolveCoreSourcePath(coreDir, dirName) {
 /**
  * Resolve a bare (unscoped) name to a `.doc.mjs`: core first, then back-compat
  * externals, then a conservative fuzzy search. Throws ERR_UNKNOWN_COMPONENT
+ * for a genuinely unknown name, and ERR_AMBIGUOUS_COMPONENT when multiple
+ * packages provide the same name
  * (with candidate suggestions when close) or ERR_NO_DOC.
  * @param {string} dirName - bare component name (no `XDS` prefix)
  * @param {{coreDir: string, cwd: string, name: string}} ctx - `name` is the caller's original (prefixed) input, used in error text

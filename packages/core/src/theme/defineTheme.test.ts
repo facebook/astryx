@@ -246,9 +246,8 @@ describe('generateThemeCSS', () => {
   });
 
   it('keeps the data palette out of a theme that never mentions it', () => {
-    // That the palette IS declared is covered by `seeds the whole palette
-    // once, at :root` in generateThemeRules.test.ts. It is theme-independent,
-    // so there is nothing about it a theme can be used to assert.
+    // Canonical defaults come from the public StyleX dataVars group, so a
+    // theme that never authors data colors has nothing to serialize.
     const {component} = generateThemeCSS(defineTheme({name: 'chartless'}));
     expect(component).not.toContain('--color-data-');
   });
@@ -263,8 +262,8 @@ describe('generateThemeCSS', () => {
     // Leaving the siblings out of the theme's own block is what lets a nested
     // theme inherit a parent's override instead of shadowing it.
     expect(component).not.toContain('--color-data-categorical-orange');
-    // Defaults reach the stylesheet without entering the theme's own tokens,
-    // which are what `astryx theme build` reports as overrides.
+    // Defaults reach compiled consumer CSS without entering the theme's own
+    // tokens, which are what `astryx theme build` reports as overrides.
     expect(theme.tokens['--color-data-categorical-orange']).toBeUndefined();
   });
 
@@ -877,7 +876,7 @@ describe('pseudo-class overrides in components', () => {
     const theme = defineTheme({
       name: 'pseudo',
       components: {
-        radio: {
+        'radio-indicator': {
           base: {
             borderColor: '#8F9296',
             ':hover': {
@@ -889,11 +888,11 @@ describe('pseudo-class overrides in components', () => {
     });
     const css = generateThemeTestCSS(theme);
     // Base rule
-    expect(css).toContain('.astryx-radio {');
+    expect(css).toContain('.astryx-radio-indicator {');
     expect(css).toContain('border-color: #8F9296');
     // Pseudo rule — separate selector
     expect(css).toContain(
-      '.astryx-radio:hover:where(:not(:disabled,[aria-disabled="true"])) {',
+      '.astryx-radio-indicator:hover:where(:not(:disabled,[aria-disabled="true"])) {',
     );
     expect(css).toContain(
       'border-color: color-mix(in srgb, #8F9296, black 20%)',
@@ -1059,6 +1058,24 @@ describe('container padding mapping', () => {
     expect(css).toContain('--astryx-bottom-sheet-padding-block-start: 24px');
     expect(css).toContain('--astryx-bottom-sheet-padding-block-end: 24px');
     // The panel is the overlay boundary; the value reaches the content box
+    // through the token, never as padding on the panel itself.
+    expect(css).not.toMatch(/(^|[\s{;])padding:\s*24px 20px/);
+  });
+
+  it('maps drawer padding to its container tokens', () => {
+    const theme = defineTheme({
+      name: 'test',
+      components: {
+        drawer: {
+          base: {padding: '24px 20px'},
+        },
+      },
+    });
+    const css = generateThemeTestCSS(theme);
+    expect(css).toContain('--astryx-drawer-padding-inline: 20px');
+    expect(css).toContain('--astryx-drawer-padding-block-start: 24px');
+    expect(css).toContain('--astryx-drawer-padding-block-end: 24px');
+    // The panel is the overlay boundary; the value reaches the content area
     // through the token, never as padding on the panel itself.
     expect(css).not.toMatch(/(^|[\s{;])padding:\s*24px 20px/);
   });
