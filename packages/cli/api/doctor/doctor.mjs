@@ -23,20 +23,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import {
-  MIN_NODE_VERSION,
-  isNodeVersionSupported,
-} from '../../foundation/env/node-version.mjs';
+import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/node-version.mjs';
 import {AGENT_DOC_PATHS} from '../../foundation/agent-docs/agent-doc-state.mjs';
-import {
-  CLI_ROOT,
-  findCoreDir,
-  findInstalledPackage,
-} from '../../foundation/fs/paths.mjs';
-import {
-  explainPackageManager,
-  getCliInvocation,
-} from '../../foundation/env/package-manager.mjs';
+import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
+import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
 import {
   findConfigPath,
   Project,
@@ -60,11 +50,7 @@ import {
 } from '../docs/_adapter.mjs';
 import {typedEdges} from '../docs/node/node.mjs';
 import {detailView, indexView} from '../../foundation/doc-compiler/lenses.mjs';
-import {
-  semverCompare,
-  isValidSemver,
-  satisfiesRange,
-} from '../../foundation/env/semver.mjs';
+import {semverCompare, isValidSemver, satisfiesRange} from '../../foundation/env/semver.mjs';
 import {checkAppThemes, checkThemes} from './theme-checks.mjs';
 
 /**
@@ -96,6 +82,11 @@ import {checkAppThemes, checkThemes} from './theme-checks.mjs';
  *   could not be built, when it could not.
  * @property {Array<{package: string, code: string, severity: 'warning'|'error', message: string}>|null} [integrationIssues]
  * @property {Array<{spec: string, error: string}>|null} [autolinkFailures]
+ * @property {Array<{spec: string, label: string, error: string|null}>|null} [configuredIntegrations]
+ *   Every name astryx.config lists, from the provider ledger: the package it
+ *   reached (or failed to reach) and why loading failed, if it did. Set aside
+ *   for a provider conflict, replaced by the package being authored, or
+ *   repeated under another name all still count as configured.
  *   installed dependencies whose integration manifest could not be loaded
  *   Combined project-level integration issues, including cross-package template replacement warnings.
  * @property {Error|null} [configError] - Error thrown while resolving the config
@@ -228,9 +219,7 @@ export function checkCoreInstalled(ctx) {
       : '@astryxdesign/core could not be resolved from this project.',
     ...(found
       ? {}
-      : {
-          fix: 'Install the design system: `npm install @astryxdesign/core` (or yarn/pnpm/bun).',
-        }),
+      : {fix: 'Install the design system: `npm install @astryxdesign/core` (or yarn/pnpm/bun).'}),
   };
 }
 
@@ -249,8 +238,7 @@ export function checkVersionAlignment(ctx) {
       id: 'version-alignment',
       label: '@astryxdesign/core <-> @astryxdesign/cli alignment',
       status: 'info',
-      message:
-        'Skipped — could not read both @astryxdesign/core and @astryxdesign/cli versions.',
+      message: 'Skipped — could not read both @astryxdesign/core and @astryxdesign/cli versions.',
     };
   }
 
@@ -325,10 +313,7 @@ export async function checkConfig(ctx) {
     const {pathToFileURL} = await import('node:url');
     const mod = await import(pathToFileURL(ctx.configPath).href);
     const config = mod.default;
-    if (
-      config !== undefined &&
-      (typeof config !== 'object' || config === null)
-    ) {
+    if (config !== undefined && (typeof config !== 'object' || config === null)) {
       return {
         id: 'config',
         label: 'astryx.config.mjs',
@@ -398,10 +383,7 @@ export function checkImplicitIntegrations(ctx) {
       id,
       label,
       status: 'info',
-      message: skippedBecause(
-        ctx,
-        'the project configuration could not be read',
-      ),
+      message: skippedBecause(ctx, 'the project configuration could not be read'),
     };
   }
 
@@ -438,13 +420,9 @@ export function checkImplicitIntegrations(ctx) {
         : '';
     // A declared root counts only when it exists: the manifest's keys are a
     // claim, and `integration-issues` reports the ones that are not true.
-    const declared = [
-      'components',
-      'templates',
-      'themes',
-      'docs',
-      'codemods',
-    ].filter(root => integration[/** @type {'components'} */ (root)]);
+    const declared = ['components', 'templates', 'themes', 'docs', 'codemods'].filter(
+      root => integration[/** @type {'components'} */ (root)],
+    );
     const missing = declared.filter(root => {
       const dir = integration[/** @type {'components'} */ (root)];
       if (typeof dir !== 'string') return false;
@@ -452,16 +430,12 @@ export function checkImplicitIntegrations(ctx) {
         typeof integration.__packageDir === 'string'
           ? integration.__packageDir
           : (ctx.cwd ?? process.cwd());
-      return !fs.existsSync(
-        path.isAbsolute(dir) ? dir : path.resolve(base, dir),
-      );
+      return !fs.existsSync(path.isAbsolute(dir) ? dir : path.resolve(base, dir));
     });
     const roots = declared.filter(root => !missing.includes(root));
     const contributes = roots.length > 0 ? roots.join(', ') : 'nothing';
     const absent =
-      missing.length > 0
-        ? ` (declared ${missing.join(', ')} missing on disk)`
-        : '';
+      missing.length > 0 ? ` (declared ${missing.join(', ')} missing on disk)` : '';
     return `${integration.name}${version}${alias} from ${integration.__dependencyField}, contributing ${contributes}${absent}`;
   });
 
@@ -533,18 +507,24 @@ export function checkConfiguredIntegrations(ctx) {
       id,
       label,
       status: 'info',
-      message: skippedBecause(
-        ctx,
-        'the project configuration could not be read',
-      ),
+      message: skippedBecause(ctx, 'the project configuration could not be read'),
     };
   }
-  const configured = ctx.integrations.filter(
-    integration =>
-      !integration.__autolinked &&
-      !integration.__local &&
-      !integration.__providerConflict,
-  );
+  // What counts as configured is what astryx.config names, read from the
+  // provider ledger so a package set aside for a provider conflict, or the
+  // package being authored when its own config names it, still counts.
+  const configured =
+    ctx.configuredIntegrations ??
+    ctx.integrations
+      .filter(integration => !integration.__autolinked && !integration.__local)
+      .map(integration => ({
+        spec: integration.__spec,
+        label: integration.name ?? integration.__spec,
+        error:
+          integration.__loadError == null
+            ? null
+            : String(integration.__loadError),
+      }));
   if (configured.length === 0) {
     return {
       id,
@@ -554,14 +534,12 @@ export function checkConfiguredIntegrations(ctx) {
     };
   }
   const plural = configured.length === 1 ? '' : 's';
-  const withdrawn = configured.filter(
-    integration => integration.__loadError != null,
-  );
+  const withdrawn = configured.filter(entry => entry.error != null);
   if (withdrawn.length > 0) {
     const listed = withdrawn
       .map(
-        integration =>
-          `${integration.name ?? integration.__spec} (${firstLine(String(integration.__loadError)).slice(0, 160)})`,
+        entry =>
+          `${entry.label} (${firstLine(String(entry.error)).slice(0, 160)})`,
       )
       .join('; ');
     return {
@@ -580,7 +558,7 @@ export function checkConfiguredIntegrations(ctx) {
     id,
     label,
     status: 'pass',
-    message: `${configured.length} integration${plural} named in astryx.config loaded: ${nameIntegrations(configured)}.`,
+    message: `${configured.length} integration${plural} named in astryx.config loaded: ${configured.map(entry => entry.label).join(', ')}.`,
   };
 }
 
@@ -615,10 +593,8 @@ export function checkAgentDocs(ctx) {
     try {
       const content = fs.readFileSync(abs, 'utf-8');
       return (
-        (content.includes('<!-- ASTRYX:START -->') ||
-          content.includes('<!-- XDS:START -->')) &&
-        (content.includes('<!-- ASTRYX:END -->') ||
-          content.includes('<!-- XDS:END -->'))
+        (content.includes('<!-- ASTRYX:START -->') || content.includes('<!-- XDS:START -->')) &&
+        (content.includes('<!-- ASTRYX:END -->') || content.includes('<!-- XDS:END -->'))
       );
     } catch {
       return false;
@@ -703,12 +679,8 @@ export function checkPeerDeps(ctx) {
     // Pin the required range for anything wrong so the hint fixes it even when a
     // stale consumer range would otherwise resolve an incompatible version.
     // Quote targets containing shell metacharacters (e.g. `react@>=19.0.0`).
-    const quote = (/** @type {string} */ s) =>
-      /[<>|() ]/.test(s) ? `'${s}'` : s;
-    const targets = [
-      ...missing,
-      ...mismatched.map(m => `${m.name}@${m.want}`),
-    ].map(quote);
+    const quote = (/** @type {string} */ s) => (/[<>|() ]/.test(s) ? `'${s}'` : s);
+    const targets = [...missing, ...mismatched.map(m => `${m.name}@${m.want}`)].map(quote);
     return {
       id: 'peer-deps',
       label: '@astryxdesign/core peer dependencies',
@@ -859,10 +831,7 @@ export function checkProviderIdentity(ctx) {
       id,
       label,
       status: 'info',
-      message: skippedBecause(
-        ctx,
-        'the project configuration could not be read',
-      ),
+      message: skippedBecause(ctx, 'the project configuration could not be read'),
     };
   }
 
@@ -1094,7 +1063,7 @@ export async function checkAuthoringDocs(_ctx, options = {}) {
 
 /** How the CLI-docs audit's problems are fixed. */
 const CLI_DOCS_FIX =
-  'Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).';
+  "Set `namespace` on each CLI doc to the one that reads it: cli/commands for a command, cli/api for an API function or the output schema, error codes, and response types, and authoring for a file an author writes (and list it in AUTHORING_SELF_DOCS).";
 
 /** How the docs-tree check's problems are fixed. */
 const DOCS_TREE_FIX =
@@ -1174,7 +1143,8 @@ export async function checkDocsTree(_ctx, options = {}) {
   const id = 'docs-tree';
   const label = 'Docs tree';
   try {
-    const catalog = /** @type {any} */ (_ctx)?.docsCatalog ?? builtinCatalog();
+    const catalog =
+      /** @type {any} */ (_ctx)?.docsCatalog ?? builtinCatalog();
     const tree = options.tree ?? (await projectTree(catalog, {fresh: true}));
     const problems = tree.diagnostics
       .filter(d => d.severity === 'error')
@@ -1189,9 +1159,7 @@ export async function checkDocsTree(_ctx, options = {}) {
       );
       for (const {source, doc} of (await loadCliSelfDocs()).loaded) {
         if (CLI_DOC_NAMESPACES[doc.namespace]?.reader !== 'tree') continue;
-        if (
-          !placed.has(`@astryxdesign/cli\u0000${doc.type}\u0000${doc.name}`)
-        ) {
+        if (!placed.has(`@astryxdesign/cli\u0000${doc.type}\u0000${doc.name}`)) {
           problems.push(
             `${source} has namespace "${doc.namespace}", but no docs-tree namespace adopts it`,
           );
@@ -1254,9 +1222,7 @@ export async function checkDocsProgressiveDisclosure(ctx) {
   /** @type {string[]} */
   const problems = [];
   if (ctx.docsCatalogError) {
-    problems.push(
-      `The docs catalog could not be built: ${ctx.docsCatalogError}`,
-    );
+    problems.push(`The docs catalog could not be built: ${ctx.docsCatalogError}`);
   }
   for (const issue of ctx.docsCatalogIssues ?? []) {
     problems.push(`${issue.package ?? 'a contributed doc'}: ${issue.message}`);
@@ -1366,6 +1332,8 @@ export async function runChecks(options = {}) {
   let integrationIssues = null;
   /** @type {Array<{spec: string, error: string}>|null} */
   let autolinkFailures = null;
+  /** @type {Array<{spec: string, label: string, error: string|null}>|null} */
+  let configuredIntegrations = null;
   /** @type {string|null} */
   let projectError = null;
   /** @type {import('../../foundation/config/project.mjs').Project | null} */
@@ -1383,7 +1351,28 @@ export async function runChecks(options = {}) {
       integrations = project.loadedIntegrations;
       // An installed dependency whose manifest cannot be loaded is kept out of
       // loadedIntegrations on purpose. The provider ledger still records it.
-      autolinkFailures = [...providerLedgerOf(project).values()]
+      const ledger = [...providerLedgerOf(project).values()];
+      // Every package a configured name reached, however it was resolved.
+      configuredIntegrations = ledger
+        .filter(entry =>
+          entry.refs.some(
+            ref => ref.source === 'configured' && ref.repeat !== true,
+          ),
+        )
+        .map(entry => {
+          const ref = entry.refs.find(
+            candidate => candidate.source === 'configured',
+          );
+          return {
+            spec: ref?.spec ?? entry.label,
+            label: entry.integration?.name ?? ref?.spec ?? entry.label,
+            error:
+              entry.outcome === 'load-failed'
+                ? (entry.error ?? 'its manifest could not be loaded')
+                : null,
+          };
+        });
+      autolinkFailures = ledger
         .filter(
           entry =>
             entry.outcome === 'load-failed' &&
@@ -1422,6 +1411,7 @@ export async function runChecks(options = {}) {
     docsCatalogError,
     integrationIssues,
     autolinkFailures,
+    configuredIntegrations,
     configError,
     projectError,
   };
