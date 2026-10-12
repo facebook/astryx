@@ -3,21 +3,23 @@
 /**
  * @file Integration-content target gating tests.
  *
- * The production (`latest`) docsite must contain ZERO integration content:
- * the configured integration packages (@astryxdesign/lab et al.) are
- * canary-only (spec:AST-017). generate-data.mjs and generate-scope.mjs share
- * one admission gate (src/lib/integrationTargets.mjs); this file unit-tests
- * that gate for every target and pins the canary-side invariants that make
- * the exclusion provable from the generated artifacts.
+ * The production (`latest`) docsite documents a configured integration
+ * package only when it is a stable release; a canary-only package
+ * (@astryxdesign/lab et al., spec:AST-017) never reaches production.
+ * generate-data.mjs applies that rule once (src/lib/integrationTargets.mjs)
+ * and the other generators read its result; this file unit-tests the rule
+ * for every target and pins the canary-side invariants that make the
+ * exclusion provable from the generated artifacts.
  *
- * @input The shared integration target gate, docsite config, and the
+ * @input The shared integration admission rule, docsite config, and the
  *   canary-generated registries
- * @output Regression coverage for production exclusion of integration content
+ * @output Regression coverage for which integration content each target admits
  * @position Build-time docsite target verification
  * Run: pnpm -F @astryxdesign/docsite test
  */
 
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import {describe, expect, it} from 'vitest';
 import docsiteConfig from '../../astryx.config.mjs';
@@ -25,6 +27,7 @@ import {
   integrationContentEnabled,
   integrationPackagesForTarget,
   isStableRelease,
+  readAdmittedIntegrationPackages,
 } from '../lib/integrationTargets.mjs';
 import {blocks} from '../generated/blockRegistry';
 import {components} from '../generated/componentRegistry';
@@ -61,6 +64,27 @@ describe('integration target gate', () => {
     expect(integrationPackagesForTarget('canary', config, () => false)).toEqual(
       config.integrations,
     );
+  });
+
+  it('reads back the admitted list generate-data.mjs recorded, for the same target', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-admitted-'));
+    try {
+      expect(() => readAdmittedIntegrationPackages(dir, 'canary')).toThrow(
+        /run scripts\/generate-data\.mjs first/,
+      );
+      fs.writeFileSync(
+        path.join(dir, 'integrationPackages.json'),
+        JSON.stringify({target: 'latest', packages: ['@astryxdesign/a']}),
+      );
+      expect(readAdmittedIntegrationPackages(dir, 'latest')).toEqual([
+        '@astryxdesign/a',
+      ]);
+      expect(() => readAdmittedIntegrationPackages(dir, 'canary')).toThrow(
+        /generated for target "latest"/,
+      );
+    } finally {
+      fs.rmSync(dir, {recursive: true, force: true});
+    }
   });
 
   it('calls a manifest stable only without private or canaryOnly', () => {

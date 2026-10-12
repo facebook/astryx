@@ -107,16 +107,24 @@ function writeRegistry(filename, content) {
  * The integration packages this build documents. Canary documents every
  * configured integration and asks the CLI to confirm each one is installed.
  * `latest` documents only the configured integrations that are stable
- * releases present in the published content snapshot (the same rule as
- * generate-scope.mjs and generate-playground-types.mjs, through
- * src/lib/integrationTargets.mjs); their component docs are read from the
+ * releases present in the published content snapshot
+ * (src/lib/integrationTargets.mjs); their component docs are read from the
  * snapshot like Core's, so no workspace discovery runs.
+ *
+ * The admitted list is written to src/generated/integrationPackages.json so
+ * generate-scope.mjs and generate-playground-types.mjs document the same
+ * packages without resolving the content snapshot again.
  */
 function discoverConfiguredComponentPackages() {
   const admitted = integrationPackagesForTarget(
     DOCSITE_TARGET,
     docsiteConfig,
     admittedStableIntegration(CONTENT_ROOT),
+  );
+  fs.writeFileSync(
+    path.join(OUT_DIR, 'integrationPackages.json'),
+    JSON.stringify({target: DOCSITE_TARGET, packages: admitted}, null, 2) +
+      '\n',
   );
   if (admitted.length === 0) {
     return new Set();
