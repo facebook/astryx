@@ -127,7 +127,15 @@ and remains available through explicit Core package selection.
   canonicalises symlinks and rejects a NUL byte; an escape is
   `ERR_PATH_TRAVERSAL`. Bounded inputs are capped rather than trusted.
 - **INV11 — A broken integration degrades, it does not fail the run.** The
-  `Project` seam loads each integration independently and records the failure.
+  `Project` seam loads each integration independently and records the failure,
+  so the rest of the project keeps working. `astryx doctor` is the gate that
+  reports it: it runs every check and exits 1 when an integration named in
+  `astryx.config` cannot be loaded (not installed, no manifest, or a manifest
+  that throws or fails its schema), or when `astryx.config` imports but the CLI
+  rejects it. Every name the config lists counts, including a package set aside
+  for a provider conflict and the package being authored when its own config
+  names it. A problem inside one contribution kind (`spec:AST-035` FR9) and an
+  autolinked dependency that cannot be loaded do not fail doctor.
 - **INV12 — Human chatter never touches stdout in JSON mode.** `humanLog` and
   `humanWarn` are the only chatter primitives, and both are no-ops under
   `--json`.
@@ -364,6 +372,7 @@ non-interactive guarantee.
 | INV4      | `clients/cli/formatters/index.test.mjs`, type tests                                                                                                        | `emit` accepts a bare string, or output varies between pipe and TTY.                                                                            |
 | INV6      | `pnpm check:cli-structure`                                                                                                                                 | A command's file or its doc is missing, or sits at the wrong path.                                                                              |
 | INV8      | `clients/cli/cli-exit-codes.test.mjs`                                                                                                                      | The same condition exits differently with and without `--json`.                                                                                 |
+| INV11     | `api/doctor/doctor.test.mjs`, `clients/cli/commands/doctor.test.mjs`                                                                                       | Doctor exits 0 with a configured integration that cannot load, or exits 1 for a contribution-kind problem or an autolinked dependency alone.    |
 | INV14     | `foundation/integrations/autolink.test.mjs`, `foundation/config/project.test.mjs`                                                                          | An undeclared package contributes, or configured/local precedence changes.                                                                      |
 | INV15     | `api/integration/add-contribution.test.mjs`, `clients/cli/commands/integration-authoring.test.mjs`                                                         | Dry-run/write paths differ, a writer clobbers bytes, or the new contribution is not discoverable.                                               |
 | INV16     | `foundation/integrations/manifest-writer.test.mjs`, `api/integration/add-contribution.test.mjs`                                                            | A writer invents package policy, replaces an author entry, or local bytes lose precedence.                                                      |
