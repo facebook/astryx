@@ -87,7 +87,7 @@ export default function migrateInternationalizationContext(file, api) {
   /** @type {Set<string>} */
   const namespaceNames = new Set();
   /** @type {string | null} */
-  let providerLocalName = null;
+  let importedProviderName = null;
   /** @type {any[]} */
   const astryxImports = [];
   root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
@@ -101,7 +101,7 @@ export default function migrateInternationalizationContext(file, api) {
         if (specifier.imported?.name === CONTEXT) {
           contextNames.add(specifier.local?.name ?? CONTEXT);
         } else if (specifier.imported?.name === PROVIDER) {
-          providerLocalName = specifier.local?.name ?? PROVIDER;
+          importedProviderName = specifier.local?.name ?? PROVIDER;
         }
       } else if (specifier.type === 'ImportNamespaceSpecifier') {
         namespaceNames.add(specifier.local.name);
@@ -149,12 +149,12 @@ export default function migrateInternationalizationContext(file, api) {
   // The name a named import of the provider takes: the file's own when it has
   // one; otherwise `InternationalizationProvider`, or a free alias when the
   // module already binds that name to something else (its own wrapper, say).
-  if (providerLocalName === null) {
-    let candidate = PROVIDER;
-    for (let n = 2; boundNames.has(candidate); n += 1) {
-      candidate = `${PROVIDER}${n}`;
+  /** @type {string} */
+  let providerLocalName = importedProviderName ?? PROVIDER;
+  if (importedProviderName === null) {
+    for (let n = 2; boundNames.has(providerLocalName); n += 1) {
+      providerLocalName = `${PROVIDER}${n}`;
     }
-    providerLocalName = candidate;
   }
   // A `type` specifier of the provider proves nothing at runtime, so it does
   // not count as an import either.
