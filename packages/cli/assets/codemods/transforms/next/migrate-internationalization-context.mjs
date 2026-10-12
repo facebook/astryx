@@ -76,7 +76,7 @@ export const meta = {
   title:
     'Migrate a raw InternationalizationContext value to InternationalizationProvider',
   description:
-    'Rewrites `<InternationalizationContext value={…}>` (or its `.Provider`) to `<InternationalizationProvider locale dir messages overrides>`, the only way to configure Astryx; a `translate` field and any non-literal value are left behind a TODO.',
+    'Rewrites `<InternationalizationContext value={…}>` (or its `.Provider`) to `<InternationalizationProvider locale dir messages>` (plus `overrides` from an inline literal), the only way to configure Astryx; `translate`, a variable’s `overrides`, and any other value are left behind a TODO.',
   fileExtensions: ['.tsx', '.jsx', '.ts', '.js', '.mjs', '.cjs'],
 };
 
