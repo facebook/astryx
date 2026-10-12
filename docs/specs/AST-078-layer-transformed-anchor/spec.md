@@ -72,11 +72,12 @@ from its first frame and while the transform changes.
 ## Current-state impact
 
 - `spec:AST-059` FR8: "The one observation the runtime makes, whether the anchor
-  is in view (FR5)" becomes two observations: whether the anchor is in view, and,
-  in an engine that resolves the untransformed box, the anchor's painted box
-  while the layer is open. Each is read before the layer's first paint and
-  thereafter only while the layer is open. FR8's guarantee that a layer never
-  paints at a geometry it is about to correct is unchanged.
+  is in view (FR5)" becomes two observations. Visibility is read before the
+  layer's first paint and thereafter only when it changes, as FR8 states. In an
+  engine that resolves the untransformed box, the anchor's painted box is read
+  before the layer's first paint and thereafter only while the layer is open.
+  FR8's guarantee that a layer never paints at a geometry it is about to correct
+  is unchanged.
 - `architecture:layer-runtime`: Positioning states that anchor mode places
   against the painted box in every engine; INV12 names the second observation.
 - `useLayer` and Popover consumer docs: no change for callers; a trigger under a
