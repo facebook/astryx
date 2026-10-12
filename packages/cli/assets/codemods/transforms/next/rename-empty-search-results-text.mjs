@@ -191,7 +191,6 @@ function staticPropertyName(property) {
   return null;
 }
 
-/** @param {any} property */
 /** An object literal this transform can read in full: no spread, no computed key. */
 /** @param {any} node */
 function isReadableObject(node) {
@@ -202,6 +201,7 @@ function isReadableObject(node) {
   );
 }
 
+/** @param {any} property */
 function isDynamicProperty(property) {
   return (
     property.computed === true ||
