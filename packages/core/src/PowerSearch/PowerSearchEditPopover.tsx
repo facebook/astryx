@@ -33,6 +33,7 @@ import type {
   PartialFilter,
   FilterValue,
   OperatorValue,
+  PowerSearchOperator,
 } from './types';
 
 // Below the popover layer's 400px floor (see popoverLayerStyles in
@@ -689,6 +690,26 @@ export function PowerSearchEditPopover({
     }));
   }, [config, partialFilter.field, t]);
 
+  // An "empty" operator takes no value, so choosing one completes the filter:
+  // save it from the choice itself, once, rather than reacting to the state.
+  // The save is queued as a microtask so it runs after the Selector reporting
+  // the choice has finished closing and refocusing its trigger; a parent that
+  // closes the editor on save can then move focus without the Selector taking
+  // it back onto a node that is about to unmount.
+  const saveIfEmptyOperator = useCallback(
+    (fieldKey: string, operator: PowerSearchOperator | undefined) => {
+      if (fieldKey && operator?.value.type === 'empty') {
+        const filter: PowerSearchFilter = {
+          field: fieldKey,
+          operator: operator.key,
+          value: {type: 'empty'},
+        };
+        queueMicrotask(() => onSave(filter));
+      }
+    },
+    [onSave],
+  );
+
   const handleFieldChange = useCallback(
     (fieldKey: string) => {
       const defaultOp = config.getDefaultOperator(fieldKey);
@@ -697,8 +718,16 @@ export function PowerSearchEditPopover({
         operator: defaultOp?.key,
         value: undefined,
       });
+      // Re-choosing the current field with its current operator changes
+      // nothing, so it saves nothing.
+      if (
+        fieldKey !== partialFilter.field ||
+        defaultOp?.key !== partialFilter.operator
+      ) {
+        saveIfEmptyOperator(fieldKey, defaultOp);
+      }
     },
-    [config],
+    [config, partialFilter.field, partialFilter.operator, saveIfEmptyOperator],
   );
 
   const handleOperatorChange = useCallback(
@@ -712,25 +741,31 @@ export function PowerSearchEditPopover({
         operator: operatorKey,
         value: keepValue ? prev.value : undefined,
       }));
+      // Re-choosing the current operator changes nothing, so it saves nothing.
+      if (operatorKey !== partialFilter.operator) {
+        saveIfEmptyOperator(partialFilter.field, newOp);
+      }
     },
-    [config, partialFilter.field, currentOperator],
+    [
+      config,
+      partialFilter.field,
+      partialFilter.operator,
+      currentOperator,
+      saveIfEmptyOperator,
+    ],
   );
 
   const handleValueChange = useCallback(
     (value: FilterValue, shouldSave?: boolean) => {
-      setPartialFilter(prev => {
-        const updated = {...prev, value};
-        if (shouldSave && updated.field && updated.operator && updated.value) {
-          onSave({
-            field: updated.field,
-            operator: updated.operator,
-            value: updated.value,
-          });
-        }
-        return updated;
-      });
+      setPartialFilter(prev => ({...prev, value}));
+      // Saved from the handler, not inside the state updater: React may call
+      // an updater more than once (StrictMode does), which would save twice.
+      const {field, operator} = partialFilter;
+      if (shouldSave && field && operator && value) {
+        onSave({field, operator, value});
+      }
     },
-    [onSave],
+    [partialFilter, onSave],
   );
 
   const handleSave = useCallback(() => {
@@ -772,17 +807,6 @@ export function PowerSearchEditPopover({
   const operatorValue: OperatorValue | undefined = currentOperator?.value;
   const isEmptyType = operatorValue?.type === 'empty';
   const isNestedType = operatorValue?.type === 'nested';
-
-  // For empty type, auto-save on mount
-  useEffect(() => {
-    if (isEmptyType && partialFilter.field && partialFilter.operator) {
-      onSave({
-        field: partialFilter.field,
-        operator: partialFilter.operator,
-        value: {type: 'empty'},
-      });
-    }
-  }, [isEmptyType, partialFilter.field, partialFilter.operator, onSave]);
 
   const showOperatorSelector = operatorOptions.length > 1 || !isEmptyType;
 

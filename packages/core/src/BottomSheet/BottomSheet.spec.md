@@ -53,6 +53,36 @@ scrolling, theming reachability, and the Content area's container padding.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
+### DEP-0009 — Deprecate the unpadded default Content area of `BottomSheet`
+
+| Field            | Value                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id               | `DEP-0009`                                                                                                                                                          |
+| cleanup          | `CLN-0018`                                                                                                                                                          |
+| package          | `@astryxdesign/core`                                                                                                                                                |
+| surface          | Default inset of the `BottomSheet` Content area when no `padding` prop and no theme padding are set                                                                 |
+| old contract     | The Content area has no padding                                                                                                                                     |
+| replacement      | `padding={0}` keeps the unpadded Content area; `padding` and theme padding already resolve before the default                                                       |
+| direct authority | `component:BottomSheet` Compatibility and migration. Owners: `cixzhang`                                                                                             |
+| warning          | Consumer docs and the release notes name `DEP-0009` and `padding={0}`. No runtime warning (`spec:AST-017` FR29)                                                     |
+| migration        | Mechanical: add `padding={0}` to a BottomSheet that sets no padding, unless its only child is a padded Section or a Layout                                          |
+| codemod          | `astryx upgrade` adds `padding={0}` before any spread, skips sheets whose only child is a core Section or Layout, and marks a nested padding-less Layout for review |
+| downstream       | In-repo sheets that supply their own inset pass `padding={0}`; consumer examples rely on the default inset                                                          |
+| transition       | no prior transition                                                                                                                                                 |
+| state            | `proposed`                                                                                                                                                          |
+| open decision    | This record is draft and needs approval                                                                                                                             |
+| target plan      | `CLN-0018` in the next minor release                                                                                                                                |
+
+### CLN-0018 — BottomSheet pads its Content area by default
+
+| Field     | Value                                                                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| id        | `CLN-0018`                                                                                                                           |
+| lifecycle | `DEP-0009`                                                                                                                           |
+| delta     | With no `padding` prop and no theme padding, the Content area insets by `--spacing-4` on every logical edge and publishes that inset |
+| rollback  | Restore the unpadded default from the final-patch baseline                                                                           |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                |
+
 ## Ownership boundary
 
 **Owns**
@@ -170,9 +200,9 @@ a decision that they must remain unthemeable.
   and records that sheets retain local scrim and swipe behavior.
 - `spec:AST-025` owns effective scroll measurement, overflow and containment,
   automatic keyboard-owner selection, and focus continuity.
-- `family:overlay-dismissal` owns shared Escape and platform-close ordering and
-  records BottomSheet's current local-only adoption gap. This anatomy backfill
-  does not migrate that runtime behavior.
+- `family:overlay-dismissal` owns shared Escape and platform-close ordering. A
+  standalone BottomSheet registers with the shared stack while it is presented;
+  a switcher-hosted sheet is covered by BottomSheetSwitcher's registration.
 
 ## Verification map
 

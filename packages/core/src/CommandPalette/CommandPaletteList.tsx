@@ -59,8 +59,9 @@ export interface CommandPaletteListProps extends BaseProps<HTMLDivElement> {
  * When used inside CommandPalette, automatically gets the correct
  * ID for aria-controls linking with the input.
  *
- * @compositionHint Place inside CommandPalette, after CommandPaletteInput.
- *   Contains CommandPaletteItem and CommandPaletteGroup children.
+ * @compositionHint CommandPalette renders its own list after its input; render
+ *   this list directly only for a standalone results list. Contains
+ *   CommandPaletteItem and CommandPaletteGroup children.
  *
  * @example
  * ```

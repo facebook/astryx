@@ -3,6 +3,9 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {TimeInput} from '@astryxdesign/core/TimeInput';
+import {FormLayout} from '@astryxdesign/core/FormLayout';
+import {Text} from '@astryxdesign/core/Text';
+import {InputGroup, InputGroupText} from '@astryxdesign/core/InputGroup';
 import type {ISOTimeString} from '@astryxdesign/core';
 
 const meta: Meta<typeof TimeInput> = {
@@ -454,4 +457,117 @@ export const StatusVariantComparison: Story = {
       </div>
     );
   },
+};
+
+const CONTROL_STYLE = {outline: '2px dashed #c800ff', outlineOffset: 3};
+const CONTAINER_STYLE = {
+  backgroundColor: 'rgba(0, 150, 255, 0.16)',
+  padding: 8,
+  borderRadius: 8,
+};
+
+/**
+ * Where each styling part lands (family:input-fields FR10). The dashed outline
+ * is `controlStyle` on the visual control box. The blue tint is
+ * `containerStyle` on the Field box; in a `horizontal-labels` FormLayout and
+ * inside InputGroup no Field box renders, so there it has no effect (and warns
+ * in development).
+ */
+export const StylingParts: Story = {
+  render: () => (
+    <div style={{display: 'grid', gap: 24, maxWidth: 360}}>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">controlStyle</Text>
+        <div
+          data-parts-row="control-text-input"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="text-input"</Text>
+          <TimeInput
+            label="Start time"
+            presentation="text-input"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div data-parts-row="control-native" style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="native"</Text>
+          <TimeInput
+            label="Start time"
+            presentation="native"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="control-bottom-sheet"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="bottom-sheet"</Text>
+          <TimeInput
+            label="Start time"
+            presentation="bottom-sheet"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="control-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <TimeInput label="Start time" controlStyle={CONTROL_STYLE} />
+          </FormLayout>
+        </div>
+        <div
+          data-parts-row="control-input-group"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">InputGroup</Text>
+          <InputGroup label="Start time group">
+            <InputGroupText>At</InputGroupText>
+            <TimeInput
+              label="Start time"
+              isLabelHidden
+              controlStyle={CONTROL_STYLE}
+            />
+          </InputGroup>
+        </div>
+      </div>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">containerStyle and controlStyle</Text>
+        <div
+          data-parts-row="container-text-input"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="text-input"</Text>
+          <TimeInput
+            label="Start time"
+            presentation="text-input"
+            containerStyle={CONTAINER_STYLE}
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="container-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <TimeInput
+              label="Start time"
+              containerStyle={CONTAINER_STYLE}
+              controlStyle={CONTROL_STYLE}
+            />
+          </FormLayout>
+        </div>
+        <div
+          data-parts-row="container-input-group"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">InputGroup</Text>
+          <InputGroup label="Start time group">
+            <InputGroupText>At</InputGroupText>
+            <TimeInput
+              label="Start time"
+              isLabelHidden
+              containerStyle={CONTAINER_STYLE}
+              controlStyle={CONTROL_STYLE}
+            />
+          </InputGroup>
+        </div>
+      </div>
+    </div>
+  ),
 };

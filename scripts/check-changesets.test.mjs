@@ -146,7 +146,7 @@ describe('validateChangeset — 0.x semver coupling', () => {
   });
 });
 
-describe('checkRepository — main pull requests check format, not the release', () => {
+describe('checkRepository — main pull requests enforce the declared tier', () => {
   const roots = [];
   afterEach(() => {
     for (const root of roots.splice(0))
@@ -174,17 +174,20 @@ describe('checkRepository — main pull requests check format, not the release',
     return root;
   }
 
-  it('accepts a [breaking] Changeset while main declares a patch (FR46)', () => {
-    // Main at 0.6.7 is the next patch after 0.6.6. Release admission happens
-    // on the release branch; main's check reads no release version or tag.
-    const root = mainCheckout('0.6.7', {
+  it('refuses [breaking] while main declares the 0.6.8 patch plan (FR46)', () => {
+    const root = mainCheckout('0.6.8', {
       'remove-thing': cs(
         `'@astryxdesign/core': minor`,
         '[breaking] Remove the old thing\n@person',
       ),
     });
     const result = checkRepository(root);
-    expect(result.problems).toEqual([]);
+    expect(result.declaredVersion).toBe('0.6.8');
+    expect(result.declaredTier).toBe('patch');
+    expect(result.problems).toContain(
+      'remove-thing.md: [breaking] cannot merge while main declares patch 0.6.8. ' +
+        'Plan the minor first, or keep the change compatible through deprecation.',
+    );
     expect(result.files).toEqual(['remove-thing.md']);
   });
 
@@ -193,6 +196,62 @@ describe('checkRepository — main pull requests check format, not the release',
       'remove-thing': cs(
         `'@astryxdesign/core': minor`,
         '[breaking] Remove the old thing\n@person',
+      ),
+    });
+    const result = checkRepository(root);
+    expect(result.declaredVersion).toBe('0.7.0');
+    expect(result.declaredTier).toBe('minor');
+    expect(result.problems).toEqual([]);
+  });
+
+  it('refuses [breaking] when the fixed group declares a prerelease, not a plain minor', () => {
+    const root = mainCheckout('0.7.0-canary.3', {
+      'remove-thing': cs(
+        `'@astryxdesign/core': minor`,
+        '[breaking] Remove the old thing\n@person',
+      ),
+    });
+    const result = checkRepository(root);
+    expect(result.declaredTier).toBeNull();
+    expect(result.problems).toContain(
+      'remove-thing.md: [breaking] cannot merge until the fixed group declares one plain minor version (found 0.7.0-canary.3). ' +
+        'Plan the minor first, or keep the change compatible through deprecation.',
+    );
+  });
+
+  it('refuses [breaking] when the fixed packages disagree on the declared version', () => {
+    const root = mainCheckout('0.7.0', {
+      'remove-thing': cs(
+        `'@astryxdesign/core': minor`,
+        '[breaking] Remove the old thing\n@person',
+      ),
+    });
+    fs.mkdirSync(path.join(root, 'packages/cli'), {recursive: true});
+    fs.writeFileSync(
+      path.join(root, 'packages/cli/package.json'),
+      JSON.stringify({name: '@astryxdesign/cli', version: '0.6.9'}),
+    );
+    fs.writeFileSync(
+      path.join(root, '.changeset/config.json'),
+      JSON.stringify({
+        fixed: [['@astryxdesign/core', '@astryxdesign/cli']],
+        ignore: [],
+      }),
+    );
+    const result = checkRepository(root);
+    expect(result.declaredVersion).toBeNull();
+    expect(result.declaredTier).toBeNull();
+    expect(result.problems).toContain(
+      'remove-thing.md: [breaking] cannot merge until the fixed group declares one plain minor version (the fixed packages disagree). ' +
+        'Plan the minor first, or keep the change compatible through deprecation.',
+    );
+  });
+
+  it('still admits a non-breaking Changeset when no tier is declared', () => {
+    const root = mainCheckout('0.7.0-canary.3', {
+      'fix-thing': cs(
+        `'@astryxdesign/core': patch`,
+        '[fix] Fix the thing\n@person',
       ),
     });
     expect(checkRepository(root).problems).toEqual([]);

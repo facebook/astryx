@@ -24,9 +24,10 @@
 #          release branch and head. Stable publication from main is rejected.
 #     Version-gated and idempotent: any version already on the registry is
 #     skipped, so re-running (or a `dry-run` first) is safe.
-#   - canary: push to main only. Main declares the next planned version, so
-#     this publishes <declared>-canary.<short-sha> to the `canary` dist-tag on
-#     every push to main:
+#   - canary: push to main only. Main normally declares the next planned version,
+#     so this publishes <declared>-canary.<short-sha> to the `canary` dist-tag.
+#     The trusted release merge-back briefly leaves main equal to the stable tag;
+#     that push publishes no canary and waits for the separate next-plan PR:
 #       npm install @astryxdesign/core@canary
 #
 # Why both jobs live here instead of in deploy.yml:
@@ -201,19 +202,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether main may publish a canary
+        id: canary-scope
+        run: |
+          set -eu
+          git fetch origin 'refs/tags/v*:refs/tags/v*'
+          node scripts/release/active-release.mjs canary-eligibility
 
       # registry-url makes setup-node write the auth config `npm publish` reads.
       # The Node line in .nvmrc must stay >= 24 so npm >= 11.5.1 ships with it,
       # which OIDC trusted publishing requires.
       - name: Setup Node and pnpm
+        if: steps.canary-scope.outputs.publish == 'true'
         uses: ./.github/actions/setup
         with:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Build all packages
+        if: steps.canary-scope.outputs.publish == 'true'
         run: pnpm build
 
       - name: Publish canary versions
+        if: steps.canary-scope.outputs.publish == 'true'
         # Pure OIDC trusted publishing — no NPM_TOKEN.
         run: |
           set -eu
@@ -278,6 +291,7 @@ jobs:
           echo "Canary published: npm install @astryxdesign/core@${CANARY_VERSION}"
 
       - name: Prune old canary versions
+        if: steps.canary-scope.outputs.publish == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |

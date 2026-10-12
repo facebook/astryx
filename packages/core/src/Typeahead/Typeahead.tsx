@@ -59,7 +59,11 @@ import {
   isImeKeyEvent,
   mergeProps,
 } from '../utils';
-import type {BaseProps} from '../BaseProps';
+import {TrailingKeyDownContext} from './trailingKeyDown';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
@@ -74,10 +78,18 @@ export type {
 export type TypeaheadSize = 'sm' | 'md' | 'lg';
 
 export interface TypeaheadProps<T extends SearchableItem> extends Omit<
-  BaseProps<HTMLDivElement>,
-  'onChange'
+  FieldInputBaseProps<HTMLInputElement>,
+  'onChange' | 'onKeyDown'
 > {
-  ref?: React.Ref<HTMLDivElement>;
+  /**
+   * Key handler. Runs after the built-in key handling, so it observes every key
+   * and cannot cancel navigation, selection, or token editing. It receives keys
+   * on the combobox input and on the field's other controls (the clear button
+   * and tokens).
+   */
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
+  /** Ref forwarded to the combobox input. */
+  ref?: React.Ref<HTMLInputElement>;
   /** Accessible label (required). */
   label: string;
   /** Visually hide the label. @default false */
@@ -383,18 +395,27 @@ export function Typeahead<T extends SearchableItem>({
   debounceMs,
   onChangeQuery,
   onOpenChange,
-  onClick,
-  onBlur,
+  onKeyDown,
   width,
-  xstyle,
-  className,
-  style,
-  'data-testid': testId,
-  ...rest
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
+  id: idProp,
+  'aria-describedby': ariaDescribedByProp,
+  ...restProps
 }: TypeaheadProps<T>) {
+  const {rest, container} = useFieldInputStyling('Typeahead', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
-  const inputId = useId();
+  const generatedInputId = useId();
+  const inputId = idProp ?? generatedInputId;
   const inputLabelId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
@@ -555,21 +576,17 @@ export function Typeahead<T extends SearchableItem>({
   const typeaheadContent = (
     <>
       <div
-        {...(inputGroup ? rest : undefined)}
-        ref={useMergedRefs(
-          wrapperRef,
-          disabledMessageTooltip.ref,
-          inputGroup ? ref : undefined,
-        )}
-        data-testid={testId}
-        onClick={composeEventHandlers(
-          handleWrapperClick,
-          inputGroup ? onClick : undefined,
-        )}
-        onBlur={composeEventHandlers(
-          handleBlur,
-          inputGroup ? onBlur : undefined,
-        )}
+        ref={useMergedRefs(wrapperRef, disabledMessageTooltip.ref)}
+        onClick={handleWrapperClick}
+        onBlur={handleBlur}
+        // Keys on the field's other controls (clear button, tokens) reach a
+        // consumer onKeyDown here; keys on the input reach it through
+        // TrailingKeyDownContext after the built-in handling.
+        onKeyDown={event => {
+          if (event.target !== inputRef.current) {
+            onKeyDown?.(event);
+          }
+        }}
         {...mergeProps(
           themeProps('typeahead', {size, status: status?.type}),
           stylex.props(
@@ -581,10 +598,10 @@ export function Typeahead<T extends SearchableItem>({
             status && inputStatusFocusWithinStyles[status.type],
             isDisabled && inputWrapperStyles.disabled,
             inputGroup && groupStyles.inGroup,
-            inputGroup && xstyle,
+            controlXstyle,
           ),
-          inputGroup ? className : undefined,
-          inputGroup ? style : undefined,
+          controlClassName,
+          controlStyle,
         )}>
         {startIcon &&
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
@@ -606,37 +623,44 @@ export function Typeahead<T extends SearchableItem>({
                 xstyle={styles.tokenOverlay}
               />
             )}
-            <BaseTypeahead
-              ref={inputRef}
-              searchSource={searchSource}
-              value={value}
-              onChange={handleChange}
-              renderItem={renderItem}
-              placeholder={showToken ? undefined : placeholder}
-              hasEntriesOnFocus={hasEntriesOnFocus}
-              maxMenuItems={maxMenuItems}
-              minQueryLength={minQueryLength}
-              emptySearchText={emptySearchText}
-              isDisabled={isDisabled}
-              hasAutoFocus={hasAutoFocus}
-              isFocusableDisabled={showsDisabledMessage}
-              inputId={inputId}
-              ariaDescribedBy={ariaDescribedBy}
-              ariaLabelledBy={ariaLabelledBy}
-              onChangeQuery={onChangeQuery}
-              onOpenChange={onOpenChange}
-              debounceMs={debounceMs}
-              anchorRef={wrapperRef}
-              onKeyDown={handleKeyDown}
-              inputXStyle={showToken ? styles.inputHidden : undefined}
-              // While the token is shown the input is invisible and inert behind
-              // it — take it out of the Tab order so keyboard users don't hit a
-              // stop they cannot see (WCAG 2.4.3 / 2.4.7). It stays
-              // programmatically focusable: entering edit mode and clearing both
-              // refocus it once the token goes away.
-              inputTabIndex={showToken ? -1 : undefined}
-              size={size}
-            />
+            <TrailingKeyDownContext value={onKeyDown}>
+              <BaseTypeahead
+                {...rest}
+                ref={useMergedRefs(inputRef, ref)}
+                searchSource={searchSource}
+                value={value}
+                onChange={handleChange}
+                renderItem={renderItem}
+                placeholder={showToken ? undefined : placeholder}
+                hasEntriesOnFocus={hasEntriesOnFocus}
+                maxMenuItems={maxMenuItems}
+                minQueryLength={minQueryLength}
+                emptySearchText={emptySearchText}
+                isDisabled={isDisabled}
+                hasAutoFocus={hasAutoFocus}
+                isFocusableDisabled={showsDisabledMessage}
+                inputId={inputId}
+                ariaDescribedBy={
+                  [ariaDescribedByProp, ariaDescribedBy]
+                    .filter(Boolean)
+                    .join(' ') || undefined
+                }
+                ariaLabelledBy={ariaLabelledBy}
+                onChangeQuery={onChangeQuery}
+                onOpenChange={onOpenChange}
+                debounceMs={debounceMs}
+                anchorRef={wrapperRef}
+                onKeyDown={handleKeyDown}
+                inputXStyle={showToken ? styles.inputHidden : undefined}
+                // While the token is shown the input is invisible and inert behind
+                // it — take it out of the Tab order so keyboard users don't hit a
+                // stop they cannot see (WCAG 2.4.3 / 2.4.7). It stays
+                // programmatically focusable: entering edit mode and clearing both
+                // refocus it once the token goes away.
+                inputTabIndex={showToken ? -1 : undefined}
+                size={size}
+              />
+            </TrailingKeyDownContext>
           </div>
         </BusyIndicatorLaneProvider>
         <EndLane
@@ -666,10 +690,7 @@ export function Typeahead<T extends SearchableItem>({
 
   return (
     <Field
-      {...rest}
-      onClick={onClick}
-      onBlur={onBlur}
-      ref={ref}
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -689,10 +710,7 @@ export function Typeahead<T extends SearchableItem>({
       }
       statusVariant={statusVariant}
       labelTooltip={labelTooltip}
-      width={width}
-      xstyle={xstyle}
-      className={className}
-      style={style}>
+      width={width}>
       {typeaheadContent}
     </Field>
   );

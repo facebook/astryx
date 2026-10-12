@@ -1,5 +1,40 @@
 # @xds/core
 
+# 0.6.8
+
+#### New Features
+
+- `useTableColumnResize` now reveals its handles when the pointer enters the header. The boundaries were only drawn once the pointer was already within a handle's 8px hit area, so a resizable column gave no sign it could be resized. Every boundary now appears at border weight while the header is hovered, and the handle under the pointer still takes accent. The reveal holds while the table is scrolling sideways, so a boundary arriving under a still pointer is not mistaken for intent, and focusing a handle emphasizes that one boundary without drawing its neighbours. Pointer-only: where nothing can hover, nothing is revealed. (#6194)
+- `DropdownMenuItem` passes host attributes and DOM event handlers to its row, as `DropdownMenuCheckboxItem`, `DropdownMenuRadioItem` and `Item` already do (#7196): a row can carry `aria-current`, `aria-busy`, a `data-*` mark, an `id`, or drag-and-drop handlers. The row keeps its own role and tab stop; a caller's `onPointerMove` and `onAuxClick` run after the row's hover focus and middle-click close.
+- Add `markdownSourceLinesPlugin` to `@astryxdesign/core/Markdown/plugins` (#7286). With it installed, every block `Markdown` renders, nested blocks included, carries `data-source-line` and `data-source-line-end`: the 1-based, inclusive lines it came from. That lets a host map a selection, search hit, or comment back to the exact Markdown lines. `components` block renderers receive a matching `sourceLines` prop, and plugin renderers read lines from `node.position`. The lines come from the parse `Markdown` already runs, and without the plugin nothing changes.
+
+#### Fixes
+
+- Preserve AppShell page content, local state, and input focus when the elevated layout crosses the mobile navigation breakpoint (#7236).
+- Calendar now accepts null as an explicit controlled empty value (#7297). DateRangeInput announces required state through a valid button description, keeps pending values in its accessible name, and clears Calendar selection without reviving the previous range.
+- Keep DateTimeInput's calendar selection empty after clearing the field (#7298).
+- A DropdownMenu that a finger held on its trigger opens (after the long-press delay) stays open when that finger lifts on the trigger (#7241). The browser's light dismiss read the lift, outside the menu, as a press outside and closed the menu at once; the trigger is now held as the menu's invoker through the press, as it already was for a mouse press.
+- A mouse press on a `DropdownMenuItem` link row (`href`) that moves a few pixels no longer starts the browser's link drag (#7197). The drag cancelled the press, so the highlight stopped following the mouse and the row under the release never acted; a press dragged from one link row to another now acts on the second, as it already did for rows without an address. Link rows render `draggable="false"`.
+- Kbd: use primary text color token to meet WCAG AA contrast over neutral keycaps (#7100)
+  The default `<kbd>` text color has been updated to `--color-text-primary`, ensuring visible key glyphs exceed the 4.5:1 WCAG AA contrast ratio against the `--color-neutral` keycap background across all light and dark themes.
+- Stepper: a Stepper inside a layer opened from a step no longer picks up the outer Stepper's `--step-connector-gap` (#7287). Layer content roots (Popover and other `useLayer` surfaces, Dialog, BottomSheet, MobileNav, Lightbox, and the toast viewport) now stop that value, so the inner track starts from its `0px` default. Setting the gap on the inner Stepper or through the `stepper` theme target still works, and the gap still inherits normally outside layers.
+- `Markdown` renders a fence that a `createMarkdownFenceTransform` plugin claims through that plugin even when `components.code` is supplied (#7284). A host that drew its own code blocks lost every semantic fence, so a diagram or chart fence showed as code. `components.code` now renders every fence no plugin claims, and stays the fallback when a claimed fence's renderer declines, throws, or suspends. Hosts with only one of the two render as before.
+- Keep Table column resize handles accessible, contained, and compatible with sticky columns (#6194).
+  Resize handles stay keyboard-reachable on touch-first devices instead of disappearing from the accessibility tree. They no longer extend below the table and create stray vertical scrolling, and sticky headers keep their pinned positioning regardless of plugin order.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @cixzhang
+- @ernestt
+- @Geervan
+- @korkt-kim
+- @vjeux
+
+---
+
 # 0.6.7
 
 #### New Features

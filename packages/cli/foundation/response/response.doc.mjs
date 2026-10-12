@@ -166,7 +166,7 @@ export const doc = {
       text:
         'The process exit code is part of the contract too. Exit 0 means success, ' +
         'and every error envelope exits 1. Some commands also exit 1 with a success ' +
-        'envelope when what they report failed: a failed check (layout check, doctor ' +
+        'envelope when what they report failed: a failed check (doctor ' +
         'and its integration subcommands, integration verify, theme build ' +
         '--check), a gap report that was not delivered, an upgrade left incomplete, ' +
         'or init agent docs refused for a path outside the project. Read the ' +
