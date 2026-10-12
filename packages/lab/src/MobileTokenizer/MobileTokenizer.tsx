@@ -399,7 +399,7 @@ export function MobileTokenizer<T extends SearchableItem>({
         <BottomSheetSwitcher
           activeSheet={activeSheet}
           onActiveSheetChange={id => setActiveSheet(id as SheetId | null)}>
-          <BottomSheet sheetId="manage" label={label} height="tall">
+          <BottomSheet sheetId="manage" label={label} height="tall" padding={0}>
             <div {...stylex.props(styles.sheetBody)}>
               <div {...stylex.props(styles.filterRow)}>
                 <TextInput

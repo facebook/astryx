@@ -13,6 +13,9 @@ import migrateDeprecatedThemeSurface, {
 import migrateFieldInputStyling, {
   meta as migrateFieldInputStylingMeta,
 } from './migrate-field-input-styling.mjs';
+import preserveBottomSheetContentPadding, {
+  meta as preserveBottomSheetContentPaddingMeta,
+} from './preserve-bottom-sheet-content-padding.mjs';
 import renameEmptySearchResultsText, {
   meta as renameEmptySearchResultsTextMeta,
 } from './rename-empty-search-results-text.mjs';
@@ -35,6 +38,11 @@ export default [
     name: 'migrate-field-input-styling',
     transform: migrateFieldInputStyling,
     meta: migrateFieldInputStylingMeta,
+  },
+  {
+    name: 'preserve-bottom-sheet-content-padding',
+    transform: preserveBottomSheetContentPadding,
+    meta: preserveBottomSheetContentPaddingMeta,
   },
   {
     name: 'rename-empty-search-results-text',

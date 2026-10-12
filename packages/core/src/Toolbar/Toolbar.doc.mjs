@@ -127,7 +127,7 @@ export const docs = {
           name: 'size',
           type: "'sm' | 'md' | 'lg'",
           description:
-            'Size of the toolbar. Controls minimum height and coordinates with Button, TextInput, TabList, and Selector; children inherit this size as their default via SizeContext.',
+            'Size of the toolbar. Controls block padding and minimum height, and coordinates with Button, TextInput, TabList, and Selector; children inherit this size as their default via SizeContext. Compact (sm) toolbars use a 4px block inset while inline padding remains container-owned for alignment.',
           default: "'md'",
         },
         {
@@ -190,7 +190,7 @@ export const docsZh = {
         startContent: '起始内容（LTR 中靠左对齐）。',
         centerContent: '居中内容。切换为 CSS grid（1fr auto 1fr）。',
         endContent: '结束内容（LTR 中靠右对齐）。',
-        size: '工具栏尺寸。控制最小高度，子组件通过 SizeContext 继承此尺寸作为默认值。',
+        size: '工具栏尺寸。控制块轴内边距和最小高度，子组件通过 SizeContext 继承此尺寸作为默认值。sm 工具栏使用 4px 块轴内边距；行内内边距由容器控制以保持对齐。',
         gap: '插槽内项目间距。',
         orientation: '键盘导航方向。控制方向键方向。',
         variant: '传递给 Section 的视觉变体。',
@@ -241,7 +241,7 @@ export const docsDense = {
         startContent: 'Start-aligned content.',
         centerContent: 'Centered content; switches to 3-col grid.',
         endContent: 'End-aligned content.',
-        size: 'Toolbar size; controls min-height + cascades to children via SizeContext.',
+        size: 'Toolbar size; controls block padding + min-height and cascades to children via SizeContext. sm uses a 4px block inset; inline padding remains container-owned.',
         gap: 'Gap between slot items.',
         orientation: 'Keyboard nav direction.',
         variant: 'Visual variant for Section.',
