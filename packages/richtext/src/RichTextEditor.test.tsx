@@ -41,7 +41,7 @@ import {
 } from './markdownSerializers';
 import {RichTextEditorToolbar} from './RichTextEditorToolbar';
 import {registerIcons, resetIcons} from '@astryxdesign/core/Icon';
-import {EDGE_COMP_ATTR} from '@astryxdesign/core/Layout';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {rtlStyles} from '@astryxdesign/core/utils';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
@@ -1314,7 +1314,20 @@ describe('RichTextEditorToolbar', () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(toolbarRegion?.parentElement).toBe(editor);
+    expect(toolbarRegion).toBeInstanceOf(HTMLElement);
     expect(editorBody).toBeInstanceOf(HTMLElement);
+    // RichText owns the compact surface's 4px inline inset rather than opting
+    // its action row into Core Toolbar edge compensation.
+    expect(
+      (toolbarRegion as HTMLElement).style.getPropertyValue(
+        '--astryx-section-padding-inline-start',
+      ),
+    ).toBe(spacingVars['--spacing-1']);
+    expect(
+      (toolbarRegion as HTMLElement).style.getPropertyValue(
+        '--astryx-section-padding-inline-end',
+      ),
+    ).toBe(spacingVars['--spacing-1']);
     // Vitest's JSDOM setup does not load compiled StyleX CSS. The WithToolbar
     // story provides visual coverage for flush edges and preserved body inset;
     // here we verify that the dedicated body receives its StyleX layout.
@@ -1421,7 +1434,6 @@ describe('RichTextEditorToolbar', () => {
     const actionRow = screen.getByRole('group', {
       name: 'Formatting actions',
     });
-    expect(actionRow).toHaveAttribute(EDGE_COMP_ATTR);
     for (const name of [
       'Bold',
       'Italic',
