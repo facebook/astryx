@@ -160,6 +160,46 @@ export const docs = {
       ],
     },
     {
+      id: 'ship-only-what-you-import',
+      title: 'Ship only the styles you import',
+      content: [
+        {
+          type: 'prose',
+          text: '`astryx.css` holds every component\u2019s styles. A production build can load only the rules of the modules it ships: pass the module files in its output to `subsetStylesheet`, then load the result in place of `astryx.css`. The components you render look exactly as they do with the whole file.',
+        },
+        {
+          type: 'code',
+          lang: 'js',
+          label: 'vite.config.js',
+          code: `import {subsetStylesheet} from '@astryxdesign/core/stylesheet';
+
+const astryxSubset = {
+  name: 'astryx-subset',
+  apply: 'build',
+  generateBundle(_, bundle) {
+    const modules = Object.values(bundle).flatMap(file =>
+      file.type === 'chunk' ? Object.keys(file.modules) : [],
+    );
+    this.emitFile({
+      type: 'asset',
+      fileName: 'astryx.css',
+      source: subsetStylesheet(
+        import.meta.resolve('@astryxdesign/core/astryx.css'),
+        modules,
+      ),
+    });
+  },
+};
+
+export default {plugins: [astryxSubset]};`,
+        },
+        {
+          type: 'prose',
+          text: 'Link the emitted `astryx.css` in production and keep importing the whole file in development. Regenerate the subset on every build: it matches only the Astryx version it came from. Pass the modules of every bundle that renders Astryx, server bundles included, and subset `lab.css`, `charts.css`, or `richtext.css` the same way when you load them.',
+        },
+      ],
+    },
+    {
       id: 'what-each-file-does',
       title: 'What each import does',
       content: [

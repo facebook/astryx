@@ -220,9 +220,10 @@ const UTIL_SUBPATH_DIRS = [
  * of an existing component — each one is its own opt-in module.
  *
  * `Markdown/remark` is the limited Remark compatibility adapter
- * (`module:Markdown/remark`, `spec:AST-036` FR24).
+ * (`module:Markdown/remark`, `spec:AST-036` FR24). `stylesheet` is the
+ * Node.js-only `subsetStylesheet` build helper.
  */
-const FILE_MODULE_SUBPATH_EXPORTS = ['Markdown/remark'];
+const FILE_MODULE_SUBPATH_EXPORTS = ['Markdown/remark', 'stylesheet'];
 
 /**
  * Discover all exportable directories under src/.
