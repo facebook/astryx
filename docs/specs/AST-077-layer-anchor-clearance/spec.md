@@ -86,8 +86,13 @@ layers the product draws itself.
   time-grid views pass it as the layer's clearance. The flyouts of SideNavItem
   and of a collapsed SideNavHeading, and BreadcrumbItem's menu, which set the
   step as margins on their own layers, pass the token as the layer's clearance
-  too, so a slide keeps it. Their geometry at the default is unchanged, under
-  the default theme and under themes that rescale `--spacing-1`.
+  too, so a slide keeps it. Every listed layer keeps its gap from the anchor at
+  the default, under the default theme and under themes that rescale
+  `--spacing-1`.
+- SideNavItem's flyout and BreadcrumbItem's menu also set the step on their far
+  edge, where it stands in for the viewport gutter. They drop that margin, so
+  the runtime's gutter applies there (`spec:AST-059` FR1), and near that
+  viewport edge they flip or slide where the gutter requires it.
 
 ## Verification
 
