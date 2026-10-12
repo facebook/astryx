@@ -48,13 +48,14 @@ layers the product draws itself.
 
 ## Requirements
 
-- **FR1 — One clearance.** Every component that keeps a gap between an
-  anchor-mode layer and its anchor MUST keep the same anchor clearance. No
-  component defines its own value.
+- **FR1 — One clearance.** Every component other than a keyboard hint that keeps
+  a gap between an anchor-mode layer and its anchor MUST keep the same anchor
+  clearance. No such component defines its own value.
 - **FR2 — The theme sets it.** The anchor clearance MUST be a theme token with a
-  semantic name and a default of the 4px spacing step. A theme that sets it
-  moves every such layer in the theme's scope, wherever the layer is hosted; a
-  theme that does not set it leaves every layer at the default.
+  semantic name whose default is the theme's `--spacing-1` step, 4px in the
+  default theme. A theme that sets it moves every such layer in the theme's
+  scope, wherever the layer is hosted; a theme that does not set it leaves every
+  layer at its `--spacing-1` step.
 - **FR3 — Placement keeps it.** The clearance MUST stay on the anchor-facing edge
   after a flip and after a slide, and a position option that cannot fit with the
   clearance is not taken, as the Positioning section of
@@ -83,16 +84,18 @@ layers the product draws itself.
   MultiSelector, ComplexSelector, BaseTypeahead, PowerSearch, Tooltip,
   HoverCard, TopNavMenu, the chat trigger menu, and the lab Schedule's month and
   time-grid views pass it as the layer's clearance. The flyouts of SideNavItem
-  and of a collapsed SideNavHeading, and BreadcrumbItem's menu, set it as
-  margins on their own layers. Their geometry at the default is unchanged.
+  and of a collapsed SideNavHeading, and BreadcrumbItem's menu, which set the
+  step as margins on their own layers, pass the token as the layer's clearance
+  too, so a slide keeps it. Their geometry at the default is unchanged, under
+  the default theme and under themes that rescale `--spacing-1`.
 
 ## Verification
 
-| Contract | Verification                                                                                                                                | Representative states                                                                                                                                                      | Mutation or failure expectation                                                                                  |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| FR1      | Source review of every anchor-mode layer call site and of layer margins set by components; component unit tests of the anchor-facing margin | Each component in Current-state impact, including the SideNav flyouts, BreadcrumbItem's menu and the lab Schedule views, every placement                                   | A component passing or setting a length or spacing step of its own as its clearance                              |
-| FR2      | Theme compilation test; real-browser geometry in Chromium and WebKit                                                                        | Default theme; a theme setting the token to 8px; Popover, DropdownMenu, ComplexSelector, Tooltip, HoverCard; a layer portaled out of its JSX position under a nested theme | A gap other than 4px under the default, or a gap that ignores the themed value, including for the portaled layer |
-| FR3      | Real-browser geometry after a block flip and after a slide, LTR and RTL                                                                     | A trigger near the bottom edge; a layer wider than the room beside its trigger                                                                                             | The clearance moving to the far edge, vanishing after a flip, or a layer that fits only without it               |
+| Contract | Verification                                                                                                                                | Representative states                                                                                                                                                                                                                     | Mutation or failure expectation                                                                                                                   |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Source review of every anchor-mode layer call site and of layer margins set by components; component unit tests of the anchor-facing margin | Each component in Current-state impact, including the SideNav flyouts, BreadcrumbItem's menu and the lab Schedule views, every placement; a keyboard hint, which keeps its own gap                                                        | A component other than a keyboard hint passing or setting a length or spacing step of its own as its clearance                                    |
+| FR2      | Theme compilation test; real-browser geometry in Chromium and WebKit                                                                        | Default theme; a theme that rescales `--spacing-1` without setting the token; a theme setting the token to 8px; Popover, DropdownMenu, ComplexSelector, Tooltip, HoverCard; a layer portaled out of its JSX position under a nested theme | A gap other than the theme's `--spacing-1` step when the token is unset, or a gap that ignores the themed value, including for the portaled layer |
+| FR3      | Real-browser geometry after a block flip and after a slide, LTR and RTL                                                                     | A trigger near the bottom edge; a layer wider than the room beside its trigger; a SideNav flyout that slides                                                                                                                              | The clearance moving to the far edge, vanishing after a flip or a slide, or a layer that fits only without it                                     |
 
 ## Decision log
 
