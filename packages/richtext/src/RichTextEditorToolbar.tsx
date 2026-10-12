@@ -40,7 +40,6 @@ import {
   useEffect,
   useRef,
   useState,
-  type CSSProperties,
   type FormEvent,
   type ReactNode,
 } from 'react';
@@ -153,6 +152,8 @@ const toolbarScrollStyles = stylex.create({
   // surface overlaps 4px of that inset at each block edge, so its controls and
   // following editor body retain a 4px visual gutter.
   compactToolbar: {
+    '--astryx-section-padding-inline-start': spacingVars['--spacing-1'],
+    '--astryx-section-padding-inline-end': spacingVars['--spacing-1'],
     marginBlockStart: `calc(-1 * ${spacingVars['--spacing-1']})`,
     marginBlockEnd: `calc(-1 * ${spacingVars['--spacing-1']})`,
   },
@@ -174,20 +175,6 @@ const toolbarScrollStyles = stylex.create({
     scrollbarWidth: 'thin',
   },
 });
-
-type CompactToolbarStyle = CSSProperties &
-  Record<
-    | '--astryx-section-padding-inline-start'
-    | '--astryx-section-padding-inline-end',
-    string
-  >;
-
-// RichText owns this compact surface. Core Toolbar retains its container-owned
-// geometry; this composition narrows its Section-owned inline inset to 4px.
-const compactToolbarStyle: CompactToolbarStyle = {
-  '--astryx-section-padding-inline-start': spacingVars['--spacing-1'],
-  '--astryx-section-padding-inline-end': spacingVars['--spacing-1'],
-};
 
 /**
  * Whether `event` is the insert-link shortcut (Cmd/Ctrl+K). Uses Lexical's
@@ -912,7 +899,6 @@ export function RichTextEditorToolbar({
         label={label}
         size={size}
         xstyle={toolbarScrollStyles.compactToolbar}
-        style={compactToolbarStyle}
         startContent={
           <HStack
             gap={1}
