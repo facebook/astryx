@@ -222,6 +222,8 @@ const appTheme = defineTheme({
 });
 ```
 
+If your theme extends one of these and sets its own type scale, the phone rule replaces it on touch screens; append your own rule for the same condition with the values you want.
+
 Butter and Stone use `ratio: 1.25` and also restore `tokens: {'--text-supporting-size': '12px'}` in the rule's `value`.
 
 <!-- VISUAL_SLOT: mobile-and-touch — AppShell continuity -->
@@ -532,7 +534,7 @@ Keyboard users can reach overflowing sheet content and keep visible focus cues a
 
 ### Keep focus cues matched to the last input
 
-![An Edit profile button opens a dialog with a mouse click; nothing shows a focus ring. Pressing Tab moves into the Display name field, which shows a ring. Escape closes the dialog and the Edit profile button shows a ring. Opening again by mouse and clicking Cancel closes it with no ring on the button.](/blog/astryx-v0-7-0/dialog-focus-indicator.webp)
+![An Edit profile button opens a dialog with a mouse click; nothing shows a focus ring. Pressing Tab shows a ring on the Close button, and pressing it again moves the ring to the Display name field. Escape closes the dialog and the Edit profile button shows a ring. Opening again by mouse and clicking Cancel closes it with no ring on the button.](/blog/astryx-v0-7-0/dialog-focus-indicator.webp)
 
 _The pointer icon is added to show mouse input. Dialog's initial focus and the focus it returns on close follow the last input: the indicator shows after keyboard use and stays hidden after a mouse click or tap._
 
@@ -562,7 +564,7 @@ Other libraries can now contribute components, docs, templates, upgrade scripts,
 
 ![A terminal. The command npx @astryxdesign/cli integration add component AcmeChart is typed and runs, reporting component contribution added, [ok] AcmeChart, and the four files it created. Then npx @astryxdesign/cli integration verify runs and reports Integration package ready, [ok] @acme/charts@1.2.0, and 5 packed files with 3 of 3 required files present.](/blog/astryx-v0-7-0/cli-integration.webp)
 
-_Real output from the shipped CLI; the terminal frame is an illustration styled with Astryx tokens._
+_Real output from the shipped CLI in a package whose `package.json` already declares an `exports` map; the terminal frame is an illustration styled with Astryx tokens._
 
 ```bash
 npx @astryxdesign/cli integration add component AcmeChart
@@ -647,7 +649,7 @@ The highest-traffic API changes look like this:
 19. **`reset.css` reaches pseudo-elements and search fields** ([#7355](https://github.com/facebook/astryx/pull/7355)) — add your own later-layer `box-sizing`, border, placeholder color, or search appearance only when you need the old browser result; no codemod.
 20. **Private theme variables fail the build** ([#6872](https://github.com/facebook/astryx/pull/6872)) — fix every reported private `--_*` input instead of relying on exit 0; no codemod.
 21. **BottomSheet adds default content padding** ([#6884](https://github.com/facebook/astryx/pull/6884)) — remove duplicate caller padding or pass `padding={0}` for the old box; `preserve-bottom-sheet-content-padding` adds `padding={0}`, but remove it when your theme already sets BottomSheet padding so the theme inset remains.
-22. **Phone typography starts at 16px** ([#6699](https://github.com/facebook/astryx/pull/6699)) — take the new Neutral, Chocolate, Butter, and Stone scale as-is, or add a later touch-and-narrow theme rule to preserve 14px; no codemod.
+22. **Phone typography starts at 16px** ([#6699](https://github.com/facebook/astryx/pull/6699)) — take the new Neutral, Chocolate, Butter, and Stone scale as-is, or add a later touch-and-narrow rule to keep 14px or your own scale; no codemod.
 23. **`emptySearchResultsText` is removed** (pending [#7289](https://github.com/facebook/astryx/pull/7289)) — rename it to `emptySearchText`; `rename-empty-search-results-text` handles supported components and static trigger objects.
 24. **Core spacing follows the root font size** (pending [#7359](https://github.com/facebook/astryx/pull/7359)) — CSS variable users need no change; code that parses px converts rem with the root size or reads the computed length; no codemod.
 25. **Matcha and Y2K spacing follows the root font size** (pending [#7374](https://github.com/facebook/astryx/pull/7374)) — take the new default, which is pixel-equal at a 16px root, or override the spacing tokens in px to keep fixed sizing; no codemod.
