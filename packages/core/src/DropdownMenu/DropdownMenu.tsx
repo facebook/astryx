@@ -68,6 +68,7 @@ import {useMenuPress} from '../hooks/useMenuPress';
 import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
+import {focusForLastInput} from '../utils/focusReturn';
 import {useMenuOverflow} from './useMenuOverflow';
 import {MenuRegionsContext} from './menuRegionsContext';
 import {getFocusableElements} from '../hooks/useFocusTrap';
@@ -932,7 +933,12 @@ function DropdownMenuPopover({
       return;
     }
     prepareFocusReturn();
-    trigger.focus({preventScroll: true});
+    // After pointer input the trigger takes focus without the focus-visible
+    // ring (`component:DropdownMenu/DEC-1`). The style the helper above adds
+    // reaches only the design system's own Button; the browser's focus option
+    // also reaches a control the caller renders, which WebKit would otherwise
+    // ring after a touch pick.
+    focusForLastInput(trigger, {preventScroll: true});
   }, [isControlled, onOpenChange, prepareFocusReturn]);
 
   // Defer item focus until the layer has committed open, so focus restore
@@ -1432,8 +1438,9 @@ function DropdownMenuPopover({
     onPointerDown: menuPress.triggerProps.onPointerDown,
     onContextMenu: menuPress.triggerProps.onContextMenu,
     onKeyDown: handleButtonKeyDown,
-    // The popover's focus-return hook is a separate change; until it lands
-    // the control's focus needs no bookkeeping here.
+    // The caller's control paints its own ring, and the menu's focus return
+    // keeps the browser from drawing one after pointer input (see
+    // handleLayerHide), so its focus needs no bookkeeping here.
     onFocus: () => {},
     'aria-haspopup': 'menu',
     'aria-expanded': isOpen,
