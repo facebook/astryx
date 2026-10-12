@@ -16,7 +16,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {resolveComponentReplacement, resolveCore} from '../_adapter.mjs';
-import {assertWithin, sanitizeName, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
+import {
+  assertWithin,
+  sanitizeName,
+  PathSafetyError,
+} from '../../../foundation/fs/path-safety.mjs';
 import {checkGhCli} from '../_github.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
 import {
@@ -31,6 +35,81 @@ import {AstryxError, writeFailed} from '../../error.mjs';
 
 /** Default issue tracker for maintainer feedback after swizzling. */
 const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
+
+/**
+ * A core component reads its strings with the internal
+ * `useComponentTranslator(<its English slice>)`; neither the hook nor the
+ * slices are public (the slices are `null` in the exports map). An ejected
+ * copy lives in the app, whose public translator is `useTranslator()` — it
+ * resolves every `@astryx.*` key against the whole English catalog — so the
+ * copy reads through that instead: the hook import becomes the public one,
+ * the slice imports and a module-level merge of slices go, and each call
+ * becomes `useTranslator()`. A type-only `TranslatorFn` import rides along.
+ * The internal `useCatalogTranslator` (caller-supplied keys) is the public
+ * `useTranslator` under another name, so its import becomes an alias of it.
+ *
+ * @param {string} content
+ * @param {string} ownerPackage
+ */
+export function rewriteComponentTranslator(content, ownerPackage) {
+  if (
+    !content.includes('useComponentTranslator') &&
+    !content.includes('useCatalogTranslator')
+  ) {
+    return content;
+  }
+  const i18n = `${ownerPackage}/i18n`;
+  return (
+    content
+      // import {useCatalogTranslator} from '../i18n/useCatalogTranslator';
+      // The internal whole-catalog translator for caller-supplied keys is the
+      // public `useTranslator` under another name; the alias keeps both call
+      // sites (`t` and `tCaller`) as written.
+      .replace(
+        /import\s*\{([^}]*)\}\s*from\s+['"](?:\.\.\/)+i18n\/useCatalogTranslator['"];?/g,
+        (_m, names) => {
+          const kept = names
+            .split(',')
+            .map((/** @type {string} */ n) => n.trim())
+            .filter(Boolean)
+            .map((/** @type {string} */ n) =>
+              n === 'useCatalogTranslator'
+                ? 'useTranslator as useCatalogTranslator'
+                : n,
+            );
+          return `import {${kept.join(', ')}} from '${i18n}';`;
+        },
+      )
+      // import {useComponentTranslator[, type TranslatorFn]} from '../i18n/useComponentTranslator';
+      .replace(
+        /import\s*\{([^}]*)\}\s*from\s+['"](?:\.\.\/)+i18n\/useComponentTranslator['"];?/g,
+        (_m, names) => {
+          const kept = names
+            .split(',')
+            .map((/** @type {string} */ n) => n.trim())
+            .filter(Boolean)
+            .map((/** @type {string} */ n) =>
+              n === 'useComponentTranslator' ? 'useTranslator' : n,
+            );
+          return `import {${kept.join(', ')}} from '${i18n}';`;
+        },
+      )
+      // import xMessages from '../i18n/generated-locales/en/x.generated';
+      .replace(
+        /^import\s+\w+\s+from\s+['"](?:\.\.\/)+i18n\/generated-locales\/[^'"]+['"];?\r?\n/gm,
+        '',
+      )
+      // const messages = {...aMessages, ...bMessages};
+      .replace(
+        /^const\s+\w+\s*=\s*\{(?:\s*\.\.\.\w+Messages\s*,?)+\s*\};?\r?\n/gm,
+        '',
+      )
+      // useComponentTranslator(xMessages) -> useTranslator()
+      .replace(/\buseComponentTranslator\(\s*[\w.]+\s*\)/g, 'useTranslator()')
+      // The file header's `@input … i18n (useComponentTranslator)` note.
+      .replace(/\buseComponentTranslator\b/g, 'useTranslator')
+  );
+}
 
 /**
  * Rewrite relative imports that point outside the component directory to use
@@ -58,6 +137,7 @@ const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
  * @param {string} [ownerPackage]
  */
 export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
+  content = rewriteComponentTranslator(content, ownerPackage);
   /** @param {string} importPath */
   const mapTarget = importPath => {
     // Strip ALL leading `../` so a two-levels-up path never yields `<pkg>/..`.
@@ -270,14 +350,20 @@ export async function swizzleCopy(component, options = {}) {
     if (!owner) {
       throw new AstryxError(
         `Component "${dirName}" is not provided by package "${pkg}".`,
-        allOwners.map(o => ({name: o.package, reason: 'provides this component'})),
+        allOwners.map(o => ({
+          name: o.package,
+          reason: 'provides this component',
+        })),
         ERROR_CODES.ERR_UNKNOWN_COMPONENT,
       );
     }
   } else if (allOwners.length > 1) {
     throw new AstryxError(
       `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
-      allOwners.map(o => ({name: o.package, reason: 'provides this component'})),
+      allOwners.map(o => ({
+        name: o.package,
+        reason: 'provides this component',
+      })),
       ERROR_CODES.ERR_AMBIGUOUS_COMPONENT,
     );
   } else {
