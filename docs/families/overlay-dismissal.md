@@ -175,14 +175,16 @@ this record's current membership snapshot must be updated with it.
 - **FR8 — Each document ranks its own members.** A member belongs to the
   document of the element it registers with: Dialog, Lightbox, MobileNav,
   BottomSheet, BottomSheetSwitcher and Lab Drawer register their dialog, and a
-  focus trap its container. A member that registers no element (Tooltip,
-  HoverCard) belongs to the page's document. An Escape press or platform close
-  request is ranked only among the registered present members of the document
-  it arrives in, and FR2 and FR3 apply within that document, so a host and the
-  layers nested in it keep one order wherever they render. A member of another
-  document is never a candidate. The stack listens once in each document that
-  holds a member and stops when its last member leaves. Proposed; pending owner
-  review (DEC-2).
+  focus trap its container. An Escape press or platform close request is ranked
+  only among the registered present members of the document it arrives in, and
+  FR2 and FR3 apply within that document, so a host and the members nested in
+  it that register an element keep one order wherever they render. A member of
+  another document is never a candidate. Tooltip and HoverCard register no
+  element and read their presence from the page's document: they belong to the
+  page, and in another document they take no request, so their host handles
+  the first one. The stack listens once in each document that holds a member
+  and stops when its last member leaves. Proposed; pending owner review
+  (DEC-2).
 
 ## Allowed component variation
 
@@ -212,13 +214,14 @@ this record's current membership snapshot must be updated with it.
 | Platform close request sent to a lower Dialog | Lower Dialog stays open                        | The platform targets a host; the shared check decides whether it may close    |
 | Popover in an iframe, Dialog in the page      | Request goes to its own document's top member  | The app renders into the second document through a portal                     |
 | Popover inside Dialog in an iframe            | Popover handles the iframe's first request     | Both register their own elements, so they rank in the iframe's order          |
+| Tooltip or HoverCard inside Dialog, in iframe | The Dialog handles the first Escape there      | Hover members register no element and read presence from the page (FR8)       |
 
 ## Adoption and exceptions
 
 | Components or surface                                                                                                                                                                                                                                                                              | Adoption                                                      | Current deviation or limitation                                                                                                                                         |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Dialog, AlertDialog, Popover, DropdownMenu root, MoreMenu, Lightbox, MobileNav, Lab Drawer                                                                                                                                                                                                         | shared owner                                                  | none                                                                                                                                                                    |
-| Tooltip, HoverCard                                                                                                                                                                                                                                                                                 | shared owner with DOM presence reporting                      | Neither provides nesting depth to descendant layers                                                                                                                     |
+| Tooltip, HoverCard                                                                                                                                                                                                                                                                                 | shared owner with DOM presence reporting                      | Neither provides nesting depth to descendant layers; both read presence from the page's document, so in another document they take no request (FR8)                     |
 | Focus traps with `onEscape`                                                                                                                                                                                                                                                                        | shared owner through `useFocusTrap`                           | They provide DOM containment, not descendant depth                                                                                                                      |
 | BreadcrumbItem, ChatComposerInput, ComplexSelector, DateInput, DateRangeInput, DateTimeInput, Selector, MultiSelector, PowerSearch, BaseTypeahead, Typeahead, Tokenizer, SideNavHeading, SideNavItem, TabMenu, TopNavHeading, TopNavMenu, TopNavMegaMenu, Table, Lab TourStep, Lab ChatEmojiPicker | shared owner through `usePopover` or a composed Popover owner | Table filtering owns controlled Popover state and discards its draft on close; TourStep routes Popover close to the Tour; ChatEmojiPicker owns controlled Popover state |
 | BottomSheet, BottomSheetSwitcher                                                                                                                                                                                                                                                                   | shared owner                                                  | none                                                                                                                                                                    |
