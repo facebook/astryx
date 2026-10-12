@@ -250,9 +250,13 @@ namespace Local {
   const Ctx = Other;
   export const out = <Ctx value={v}><D /></Ctx>;
 }
+namespace Exported {
+  export const Ctx = Other;
+  export const out = <Ctx value={v}><F /></Ctx>;
+}
 export const ok = <Ctx value={x}><E /></Ctx>;`;
     const output = folded(apply(input));
-    expect(output.match(/<Ctx value=\{v\}>/g)).toHaveLength(3);
+    expect(output.match(/<Ctx value=\{v\}>/g)).toHaveLength(4);
     expect(output).toContain(
       '<InternationalizationProvider locale={w.locale} dir={w.direction} messages={w.messages}><C /></InternationalizationProvider>',
     );
@@ -393,6 +397,21 @@ const app = (
     expect(output).not.toContain('<InternationalizationProvider');
     // The comment sits inside the opening tag, not between the tags as text.
     expect(output).toMatch(/<InternationalizationContext\s+\/\* TODO/);
+  });
+
+  it('removes an Astryx import declaration it empties', () => {
+    const input = `import {InternationalizationContext} from '@astryxdesign/core';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
+const app = <InternationalizationContext value={i18n}><App /></InternationalizationContext>;`;
+    const output = apply(input);
+    expect(output).not.toContain("from '@astryxdesign/core';");
+    expect(output).not.toMatch(/^import ['"]@astryxdesign\/core['"];/m);
+    expect(output).toContain(
+      "import {InternationalizationProvider} from '@astryxdesign/core/i18n';",
+    );
+    expect(folded(output)).toContain(
+      '<InternationalizationProvider locale={i18n.locale}',
+    );
   });
 
   it('is idempotent', () => {
