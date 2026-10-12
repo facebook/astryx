@@ -44,6 +44,7 @@ import type {
   TableColumn,
   BodyRowRenderProps,
   BodyCellRenderProps,
+  HeaderCellRenderProps,
 } from '../../types';
 
 // =============================================================================
@@ -124,6 +125,8 @@ export interface UseTableRowExpansionConfig<T extends Record<string, unknown>> {
  */
 const EXPANSION_COLUMN_WIDTH_PX = 40;
 const EXPANSION_COLUMN_KEY = '__expansion';
+/** The chevron button: the spacing step, never wider than its column. */
+const CHEVRON_SIZE = `min(${spacingVars['--spacing-6']}, ${EXPANSION_COLUMN_WIDTH_PX}px)`;
 const EXPANSION_COLUMN_WIDTH = {
   type: 'pixel' as const,
   value: EXPANSION_COLUMN_WIDTH_PX,
@@ -134,8 +137,8 @@ const expansionStyles = stylex.create({
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: spacingVars['--spacing-6'],
-    height: spacingVars['--spacing-6'],
+    width: CHEVRON_SIZE,
+    height: CHEVRON_SIZE,
     backgroundColor: 'transparent',
     borderWidth: 0,
     borderStyle: 'none',
@@ -253,14 +256,24 @@ const panelIndentStyles = stylex.create({
 /**
  * The chevron sits centered in its column, as the selection checkbox does.
  *
- * The column is a fixed pixel width, but a chevron cell's insets follow the
- * spacing scale: the first column's edge inset, plus the density padding a
- * cell moves onto its right-click trigger. Laid out after both, the button ran
- * past the column's edge, which clips its hover chip and, under a larger
- * spacing scale or root font size, pushes the glyph out of view. So the cell
- * drops its own inline-start inset, and the button cancels the trigger's
- * padding (the same density step the panel indent uses) and centers itself.
+ * The column is a fixed pixel width, but its cells' insets follow the spacing
+ * scale: the first column's edge inset, plus the density padding a body cell
+ * moves onto its right-click trigger. Laid out after both, the button ran past
+ * the column's edge, which clips its hover chip and, under a larger spacing
+ * scale or root font size, pushes the glyph out of view; and the header cell's
+ * insets alone outgrow 40px at a large root, widening the column. So the
+ * header cell, which holds only a visually hidden label, drops its inline
+ * insets, the body cell drops its inline-start inset, and the button cancels
+ * the trigger's padding (the same density step the panel indent uses) and
+ * centers itself.
  */
+const chevronHeaderCellStyles = stylex.create({
+  cell: {
+    paddingInlineStart: 0,
+    paddingInlineEnd: 0,
+  },
+});
+
 const chevronCellStyles = stylex.create({
   cell: {
     paddingInlineStart: 0,
@@ -269,13 +282,13 @@ const chevronCellStyles = stylex.create({
 
 const chevronOffsetStyles = stylex.create({
   compact: {
-    marginInlineStart: `calc((${EXPANSION_COLUMN_WIDTH_PX}px - ${spacingVars['--spacing-6']}) / 2 - ${spacingVars['--spacing-2']})`,
+    marginInlineStart: `calc((${EXPANSION_COLUMN_WIDTH_PX}px - ${CHEVRON_SIZE}) / 2 - ${spacingVars['--spacing-2']})`,
   },
   balanced: {
-    marginInlineStart: `calc((${EXPANSION_COLUMN_WIDTH_PX}px - ${spacingVars['--spacing-6']}) / 2 - ${spacingVars['--spacing-3']})`,
+    marginInlineStart: `calc((${EXPANSION_COLUMN_WIDTH_PX}px - ${CHEVRON_SIZE}) / 2 - ${spacingVars['--spacing-3']})`,
   },
   spacious: {
-    marginInlineStart: `calc((${EXPANSION_COLUMN_WIDTH_PX}px - ${spacingVars['--spacing-6']}) / 2 - ${spacingVars['--spacing-4']})`,
+    marginInlineStart: `calc((${EXPANSION_COLUMN_WIDTH_PX}px - ${CHEVRON_SIZE}) / 2 - ${spacingVars['--spacing-4']})`,
   },
 });
 
@@ -439,6 +452,16 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         const withExpansion = [expansionColumn, ...columns];
         columnCountRef.current = withExpansion.length;
         return withExpansion;
+      },
+
+      transformHeaderCell(
+        props: HeaderCellRenderProps,
+        column: TableColumn<T>,
+      ): HeaderCellRenderProps {
+        // Keep the chevron column at its fixed width (chevronCellStyles).
+        return column.key === EXPANSION_COLUMN_KEY
+          ? {...props, xstyle: [...props.xstyle, chevronHeaderCellStyles.cell]}
+          : props;
       },
 
       transformBodyCell(

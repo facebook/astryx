@@ -263,21 +263,22 @@ describe('useTableRowExpansion (detail panel)', () => {
     );
   });
 
-  it('centers the chevron in its column, whatever the cell insets', () => {
+  it('keeps the chevron column free of the cell insets', () => {
     // The column is fixed pixels while a cell's insets follow the spacing
     // scale; laid out after them, the button ran past the column's edge. The
-    // cell drops its own inline-start inset, and the button cancels the
-    // trigger's density padding and centers itself in the column.
+    // body cell drops its own inline-start inset (the button then centers
+    // itself; the browser spec measures that), and the header cell drops both.
     render(<Harness initialExpanded={new Set(['a'])} />);
     const button = screen.getAllByRole('button', {name: /collapse row/i})[0];
-    expect(button).toHaveStyle({
-      marginInlineStart:
-        'calc((40px - var(--spacing-6)) / 2 - var(--spacing-3))',
-    });
     expect(
       getComputedStyle(button.closest('td') as HTMLTableCellElement)
         .paddingInlineStart,
     ).toMatch(/^0(px)?$/);
+    // The header cell holds only a hidden label; its insets alone would
+    // outgrow the 40px column at a large root font size.
+    const header = getComputedStyle(screen.getAllByRole('columnheader')[0]);
+    expect(header.paddingInlineStart).toMatch(/^0(px)?$/);
+    expect(header.paddingInlineEnd).toMatch(/^0(px)?$/);
   });
 
   describe('row divider placement', () => {

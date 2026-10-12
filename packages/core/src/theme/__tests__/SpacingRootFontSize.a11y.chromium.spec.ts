@@ -135,7 +135,8 @@ test('a detail panel keeps its place beside the first column at any root size', 
   // cell's own padding does. A larger root font size must not slide the
   // panel's content away from the first column's.
   const offsets: number[] = [];
-  for (const rootFontSizePx of [16, 20]) {
+  // 32px is text at 200%, where the column's own insets would outgrow it.
+  for (const rootFontSizePx of [16, 20, 32]) {
     await openStory(
       page,
       'core-tablerowexpansion--detail-panel',
@@ -148,7 +149,9 @@ test('a detail panel keeps its place beside the first column at any root size', 
     );
   }
   expect(Math.abs(offsets[0])).toBeLessThanOrEqual(1);
-  expect(Math.abs(offsets[1] - offsets[0])).toBeLessThan(0.5);
+  for (const offset of offsets) {
+    expect(Math.abs(offset - offsets[0])).toBeLessThan(0.5);
+  }
 });
 
 test('the expansion chevron sits inside its column at any root size or spacing scale', async ({
@@ -160,6 +163,7 @@ test('the expansion chevron sits inside its column at any root size or spacing s
   for (const [rootFontSizePx, globals] of [
     [16, ''],
     [20, ''],
+    [32, ''],
     [16, 'astryxTheme:matcha'],
   ] as const) {
     await openStory(
@@ -183,6 +187,7 @@ test('the expansion chevron sits inside its column at any root size or spacing s
       return {glyph: box(svg), cell: box(td)};
     });
     const where = `${rootFontSizePx}px root ${globals}`;
+    expect(cell.right - cell.left, where).toBeCloseTo(40, 0);
     expect(glyph.left, where).toBeGreaterThanOrEqual(cell.left);
     expect(glyph.right, where).toBeLessThanOrEqual(cell.right);
     expect(
