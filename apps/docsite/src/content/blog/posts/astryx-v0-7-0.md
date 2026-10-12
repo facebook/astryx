@@ -46,35 +46,27 @@ Forms now keep IDs, descriptions, event handlers, and test hooks you pass on the
 
 ## Menus and overlays
 
-Menus can place real controls beside their rows without weakening menu semantics, while nested layers close in the order people see them. Dialog focus, Toast layering, and menu zoom behavior now hold up across keyboard, pointer, and touch use.
+Menus place real controls beside their rows while screen readers still hear a normal menu, and nested layers close in the order people see them. Dialog focus, Toast layering, and menu zoom behavior now hold up across keyboard, pointer, and touch use.
 
 ### Put controls beside menu rows
 
 ![An open Assign reviewer dropdown. A Filter reviewers text field sits above the four name rows and a Create team button sits below them, all inside the same popover.](/blog/astryx-v0-7-0/menu-header-footer.png)
 
-_Header and footer controls stay outside the menu itself, so screen readers get valid menu semantics and Tab reaches each region in order._
+_Header and footer controls stay outside the menu itself, so screen readers hear a normal menu and Tab reaches each region in order._
 
 ```tsx
 <DropdownMenu
   button={{label: 'Assign reviewer'}}
   header={
-    <TextInput label="Filter reviewers" value={query} onChange={setQuery} />
+    <TextInput
+      label="Filter reviewers"
+      isLabelHidden
+      placeholder="Filter reviewers"
+      value={query}
+      onChange={setQuery}
+    />
   }
-  footer={<Button label="Create team" onClick={createTeam} />}
-  items={reviewerActions}
-/>
-```
-
-### Adapt menus to touch
-
-![A phone screen with a card and an Assign reviewer button. A finger taps the button and a bottom sheet slides up listing three names and a red Remove assignee action under a divider. A tap on Grace Hopper closes the sheet.](/blog/astryx-v0-7-0/mobile-adaptive-menu.webp)
-
-_The same menu keeps its anchored popover for a fine pointer and opens as a modal sheet on a compact touch screen._
-
-```tsx
-<DropdownMenu
-  button={{label: 'Assign reviewer', variant: 'primary'}}
-  presentation="adaptive"
+  footer={<Button label="Create team" variant="ghost" onClick={createTeam} />}
   items={reviewerActions}
 />
 ```
@@ -88,6 +80,7 @@ _Submenus replace the current rows instead of opening an off-screen flyout, with
 ```tsx
 <DropdownMenu button={{label: 'Actions'}}>
   <DropdownMenuItem label="Assign to me" onClick={assign} />
+  <DropdownMenuItem label="Snooze" onClick={snooze} />
   <DropdownMenuSubMenu label="Move to">
     <DropdownMenuItem label="Backlog" onClick={moveToBacklog} />
     <DropdownMenuItem label="Next release" onClick={moveToNext} />
@@ -99,7 +92,7 @@ _Submenus replace the current rows instead of opening an off-screen flyout, with
 
 ![A phone screen with a bottom sheet open over a dimmed page; inside the sheet an Assign reviewer menu is opened. The first Escape press closes only the menu and the sheet stays. The second Escape press slides the sheet away and the page is back.](/blog/astryx-v0-7-0/sheet-escape-order.webp)
 
-_One Escape closes only the inner menu; the next closes the sheet._
+_The `Esc` keycap overlay, drawn by the capture rig, shows each press; the shipped layer stack closes only the inner menu and then the sheet._
 
 **Pending merge — [#6884](https://github.com/facebook/astryx/pull/6884):** BottomSheet will add comfortable content padding by default; `padding={0}` keeps the old edge-to-edge content box.
 
@@ -124,7 +117,7 @@ Phone layouts keep their state, respect pinch zoom, and make sheets, menus, swip
 
 ![A phone list of three checklist rows. A finger drags the first row toward the left and two action panels slide out behind it: a neutral Archive and a red Delete. Tapping Archive removes the row and the list closes up.](/blog/astryx-v0-7-0/item-swipe-actions.webp)
 
-_Sideways drags reveal touch actions without hiding them from keyboard and assistive-technology users; rows without actions do not load the gesture code._
+_Sideways drags reveal touch actions without hiding them from keyboard and assistive-technology users. Rows without actions do not load the gesture code, saving about 2.7 KB (gzip) on first load._
 
 ```tsx
 <ListItem
@@ -149,11 +142,9 @@ _Sideways drags reveal touch actions without hiding them from keyboard and assis
 />
 ```
 
-### Keep date and time pickers in the design system
+### Choose the date and time picker
 
-![A phone screen with Release date and Release time fields dimmed behind a bottom sheet. The sheet holds an October 2026 calendar with month navigation, a Reset action, today ringed on the 12th, the 14th selected, and a full-width Save button.](/blog/astryx-v0-7-0/mobile-date-picker.png)
-
-_DateInput can keep Astryx's calendar on touch instead of handing the choice to the operating system._
+_Date and time fields can explicitly keep Astryx's picker on touch, use a popover, or hand off to the operating system._
 
 ```tsx
 <DateInput
@@ -162,13 +153,6 @@ _DateInput can keep Astryx's calendar on touch instead of handing the choice to 
   onChange={setDate}
   presentation="adaptive-bottom-sheet"
 />
-```
-
-![The same phone screen with the Release time field's picker open as a bottom sheet: hour, minute and AM/PM wheels with 9, 30 and AM highlighted, and a full-width Save button.](/blog/astryx-v0-7-0/mobile-time-picker.png)
-
-_TimeInput uses the same presentation choice for touch-friendly time wheels._
-
-```tsx
 <TimeInput
   label="Release time"
   value={time}
@@ -212,9 +196,9 @@ const expansion = useTableRowExpansion<Order>({
 
 ### Resize columns without losing context
 
-![A wide orders table that scrolls sideways. As the pointer moves up into the header row, a thin line appears at every column boundary. The pointer drags the boundary after Status to the right and the column widens. The table then scrolls to the right while the Customer column stays pinned at the left edge.](/blog/astryx-v0-7-0/table-column-resize.webp)
+![A wide orders table. As the pointer moves up into the header row, a thin line appears at every column boundary. The pointer drags the boundary after Status to the right and the column widens; on release the new width stays.](/blog/astryx-v0-7-0/table-column-resize.webp)
 
-_Column boundaries reveal on header hover and remain keyboard reachable; resized widths commit on release while pinned columns stay in place during horizontal scrolling._
+_Column boundaries reveal on header hover, and resized widths stay in place when the drag ends._
 
 ```tsx
 const columnResize = useTableColumnResize<Order>({
@@ -223,16 +207,8 @@ const columnResize = useTableColumnResize<Order>({
   onColumnResizeEnd: updates =>
     setColumnWidths(previous => ({...previous, ...updates})),
 });
-const stickyColumns = useTableStickyColumns<Order>({
-  startKeys: ['customer'],
-});
 
-<Table
-  data={orders}
-  columns={columns}
-  idKey="id"
-  plugins={{columnResize, stickyColumns}}
-/>;
+<Table data={orders} columns={columns} idKey="id" plugins={{columnResize}} />;
 ```
 
 <!-- VISUAL_SLOT: data-display — charts, MetadataList, TreeList, and Lightbox -->
@@ -256,7 +232,7 @@ import {markdownSoftBreaksPlugin} from '@astryxdesign/core/Markdown/plugins';
 
 ### Read frontmatter as data
 
-![A document that starts with a YAML frontmatter block, rendered twice. Before plugins, the frontmatter shows as a horizontal rule, a line of raw key: value text, and another rule above the heading. After plugins, the frontmatter is gone from the document and the host shows its parsed values as a draft badge and a title above the same heading.](/blog/astryx-v0-7-0/markdown-frontmatter.png)
+![A document that starts with a YAML frontmatter block, rendered twice. Before plugins, the frontmatter shows as a horizontal rule, a line of raw key: value text, and another rule above the heading. After plugins, the frontmatter is gone from the document and your app shows its parsed values as a draft badge and a title above the same heading.](/blog/astryx-v0-7-0/markdown-frontmatter.png)
 
 _Your app gets the frontmatter as typed data while it stays out of the rendered document._
 
@@ -415,7 +391,11 @@ function MathExpression({
 
 ## Themes and visual foundations
 
-Themes are easier to extend without losing supported browser behavior or data colors. Each comparison below uses the same scene in v0.6.0 and the current release.
+Components read more clearly in every stable theme, and data colors have one StyleX source. Each comparison below uses the same scene in v0.6.0 and the current release.
+
+### Use data colors from one StyleX source
+
+_Apps can read the same data-color values that Astryx charts and themes use._
 
 ```tsx
 import * as stylex from '@stylexjs/stylex';
@@ -518,9 +498,7 @@ npx @astryxdesign/cli integration verify
 
 ## Interaction and feedback
 
-Pressed states, clear-button focus, swipe dismissal, menu gestures, and optimistic actions now respond at the moment people expect. Apps whose rows never swipe also ship about 2.7 KB less JavaScript (gzip) on first load.
-
-**Pending merge — [#6954](https://github.com/facebook/astryx/pull/6954):** compact Toolbar rows will use a 4px top and bottom inset while keeping their side alignment, and the RichText formatting row will use 4px on every edge.
+**Pending merge — [#6954](https://github.com/facebook/astryx/pull/6954):** compact Toolbar rows will use less vertical space with a 4px top and bottom inset while keeping their side alignment, and the RichText formatting row will use 4px on every edge.
 
 <!-- VISUAL_SLOT: interaction-and-feedback — behavior as GIF/WebP; compact Toolbar as labeled Before/After -->
 

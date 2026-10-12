@@ -21,7 +21,6 @@ import {
   Table,
   useTableColumnResize,
   useTableRowExpansion,
-  useTableStickyColumns,
   type TableColumn,
 } from '@astryxdesign/core/Table';
 import {TimeInput, type ISOTimeString} from '@astryxdesign/core/TimeInput';
@@ -83,6 +82,7 @@ export function Forms() {
 
 function createTeam() {}
 function assign() {}
+function snooze() {}
 function moveToBacklog() {}
 function moveToNext() {}
 function CustomEdgeToEdgeFilters() {
@@ -98,20 +98,20 @@ export function Overlays() {
         header={
           <TextInput
             label="Filter reviewers"
+            isLabelHidden
+            placeholder="Filter reviewers"
             value={query}
             onChange={setQuery}
           />
         }
-        footer={<Button label="Create team" onClick={createTeam} />}
-        items={reviewerActions}
-      />
-      <DropdownMenu
-        button={{label: 'Assign reviewer', variant: 'primary'}}
-        presentation="adaptive"
+        footer={
+          <Button label="Create team" variant="ghost" onClick={createTeam} />
+        }
         items={reviewerActions}
       />
       <DropdownMenu button={{label: 'Actions'}}>
         <DropdownMenuItem label="Assign to me" onClick={assign} />
+        <DropdownMenuItem label="Snooze" onClick={snooze} />
         <DropdownMenuSubMenu label="Move to">
           <DropdownMenuItem label="Backlog" onClick={moveToBacklog} />
           <DropdownMenuItem label="Next release" onClick={moveToNext} />
@@ -218,9 +218,6 @@ export function DataDisplay() {
     onColumnResizeEnd: updates =>
       setColumnWidths(previous => ({...previous, ...updates})),
   });
-  const stickyColumns = useTableStickyColumns<Order>({
-    startKeys: ['customer'],
-  });
   return (
     <Table
       data={orders}
@@ -228,7 +225,7 @@ export function DataDisplay() {
       idKey="id"
       isStriped
       hasHover
-      plugins={{expansion, columnResize, stickyColumns}}
+      plugins={{expansion, columnResize}}
     />
   );
 }
