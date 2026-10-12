@@ -23,8 +23,12 @@ describe('diff row slots in a syntax theme', () => {
     expect(theme.tokens['diff-header']).toBe(
       syntaxTokenDefaults['--color-syntax-diff-header'],
     );
+    // A theme that sets no marker colour keeps its own line-number colour.
     expect(theme.tokens['added-marker']).toBe(
-      syntaxTokenDefaults['--color-syntax-added-marker'],
+      'var(--color-syntax-punctuation)',
+    );
+    expect(theme.tokens['removed-marker']).toBe(
+      'var(--color-syntax-punctuation)',
     );
     warn.mockRestore();
   });
@@ -41,9 +45,15 @@ describe('diff row slots in a syntax theme', () => {
     );
   });
 
-  it('leaves the shipped presets valid without them', () => {
+  it('leaves the shipped presets valid without them: row paints default, markers follow punctuation', () => {
     expect(dracula.tokens.added).toBe(
       syntaxTokenDefaults['--color-syntax-added'],
+    );
+    expect(dracula.tokens['added-marker']).toBe(
+      'var(--color-syntax-punctuation)',
+    );
+    expect(dracula.tokens['removed-marker']).toBe(
+      'var(--color-syntax-punctuation)',
     );
   });
 

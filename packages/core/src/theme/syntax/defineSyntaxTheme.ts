@@ -101,6 +101,12 @@ const DIFF_KEYS = new Set<SyntaxThemeTokenKey>(
   ),
 );
 
+/** The marker slots: unset in a theme, they follow that theme's punctuation. */
+const MARKER_KEYS = new Set<SyntaxThemeTokenKey>([
+  'added-marker',
+  'removed-marker',
+]);
+
 /** The keys every syntax theme must set: everything but the diff rows. */
 export const REQUIRED_SYNTAX_KEYS: SyntaxThemeTokenKey[] =
   ALL_SYNTAX_KEYS.filter(key => !DIFF_KEYS.has(key));
@@ -172,17 +178,23 @@ export function defineSyntaxTheme(
     );
   }
 
-  // Resolve tuples to light-dark() CSS strings. An unset diff row slot keeps
-  // its default so every existing theme renders a readable diff unchanged.
+  // Resolve tuples to light-dark() CSS strings. An unset diff row paint keeps
+  // its default so every existing theme renders a readable diff unchanged; an
+  // unset marker slot takes this theme's own line-number colour (its
+  // punctuation token) rather than the page theme's green and red, so the
+  // number and glyph stay legible on this theme's background in every page
+  // mode — the glyph's shape carries the meaning where the colour does not.
   const resolved: Partial<SyntaxThemeTokenMap> = {};
   for (const key of ALL_SYNTAX_KEYS) {
     const value = (
       input.tokens as Partial<Record<SyntaxThemeTokenKey, SyntaxTokenValue>>
     )[key];
     resolved[key] =
-      value === undefined
-        ? syntaxTokenDefaults[toCSSProperty(key)]
-        : resolveTokenValue(value);
+      value !== undefined
+        ? resolveTokenValue(value)
+        : MARKER_KEYS.has(key)
+          ? 'var(--color-syntax-punctuation)'
+          : syntaxTokenDefaults[toCSSProperty(key)];
   }
 
   return {

@@ -67,8 +67,9 @@ export const syntaxTokenDefaults = {
     'color-mix(in srgb, var(--color-error-muted) 25%, transparent)',
   '--color-syntax-diff-header': 'var(--color-background-muted)',
   // The margin of a changed row — its line number and +/- glyph — in the
-  // theme's tinted-text tokens, made for tinted surfaces. Code text keeps the
-  // syntax theme's colours.
+  // default theme's tinted-text tokens, made for tinted surfaces; a defined
+  // syntax theme that leaves them unset follows its own punctuation colour
+  // (see defineSyntaxTheme). Code text keeps the syntax theme's colours.
   '--color-syntax-added-marker': 'var(--color-text-green)',
   '--color-syntax-removed-marker': 'var(--color-text-red)',
 } as const;
