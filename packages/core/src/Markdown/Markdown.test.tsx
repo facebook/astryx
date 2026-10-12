@@ -344,8 +344,9 @@ describe('Markdown', () => {
   });
 
   it('hands a custom code renderer the fence word as written and nothing new', () => {
-    const seen: Record<string, unknown>[] = [];
-    const Code = (props: {code: string; language?: string}) => {
+    type CodeProps = {code: string; language?: string};
+    const seen: CodeProps[] = [];
+    const Code = (props: CodeProps) => {
       seen.push(props);
       return <pre data-testid="custom">{props.code}</pre>;
     };
