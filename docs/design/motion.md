@@ -68,14 +68,14 @@ opens on hover.
 
 - A hover-summoned layer appears at once, or with an entrance that does not
   travel and runs no longer than the shortest timed hover or press response.
-- The same layer opened by a press or a key keeps the standard entrance.
+- The same layer opened by a press or a key keeps its own entrance.
 - The entrance follows the input that opened the layer, not a per-surface
   setting.
 
 Verification is a real-browser measurement of the entrance when the same layer
-opens by hover and by a press. It fails when the hover open's entrance travels
-or runs longer than the shortest timed hover or press response, or when the
-press open loses the standard entrance.
+opens by hover, by a press, and by a key. It fails when the hover open's
+entrance travels or runs longer than the shortest timed hover or press response,
+or when the press or key open loses the layer's own entrance.
 
 ## Accessibility intent
 
@@ -117,7 +117,7 @@ The entrance therefore appears at once or runs no longer than the shortest timed
 hover or press response, and the input that opened the layer decides it, so no
 surface tunes a duration of its own.
 
-Rejected: the standard entrance for every input, which stacks the full entrance on the dwell; a duration chosen per surface, which restates a timing value at every call site.
+Rejected: the same entrance for every input, which stacks the full entrance on the dwell; a duration chosen per surface, which restates a timing value at every call site.
 
 ## Open questions
 
