@@ -55,9 +55,16 @@ export const syntaxTokenDefaults = {
   '--color-syntax-background': 'var(--color-background-muted)',
   // Diff rows (CodeBlock isDiff): whole-row tints behind unchanged syntax
   // colours. Added/removed derive from the semantic success/error muted
-  // tokens; header rows (@@, ---, +++) sit on the muted surface.
-  '--color-syntax-added': 'var(--color-success-muted)',
-  '--color-syntax-removed': 'var(--color-error-muted)',
+  // tokens at 40% strength: at full strength the secondary-grey syntax
+  // tokens (operator, punctuation, comment) measure 3.6:1 on the tints in
+  // light; at 40% every default token measures at least 4.6:1 in light and
+  // 6:1 in dark while the tint still reads (about 1.15:1 against the plain
+  // row, the same strength GitHub uses). Header rows (@@, ---, +++) sit on
+  // the muted surface.
+  '--color-syntax-added':
+    'color-mix(in srgb, var(--color-success-muted) 40%, transparent)',
+  '--color-syntax-removed':
+    'color-mix(in srgb, var(--color-error-muted) 40%, transparent)',
   '--color-syntax-diff-header': 'var(--color-background-muted)',
 } as const;
 

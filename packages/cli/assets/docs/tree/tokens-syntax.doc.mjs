@@ -91,11 +91,11 @@ export const docs = {
             ],
             [
               "--color-syntax-added",
-              "var(--color-success-muted)"
+              "color-mix(in srgb, var(--color-success-muted) 40%, transparent)"
             ],
             [
               "--color-syntax-removed",
-              "var(--color-error-muted)"
+              "color-mix(in srgb, var(--color-error-muted) 40%, transparent)"
             ],
             [
               "--color-syntax-diff-header",

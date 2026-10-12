@@ -46,10 +46,10 @@ describe('diff row slots in a syntax theme', () => {
 
   it('defaults derive from the semantic tokens, never a literal colour', () => {
     expect(syntaxTokenDefaults['--color-syntax-added']).toBe(
-      'var(--color-success-muted)',
+      'color-mix(in srgb, var(--color-success-muted) 40%, transparent)',
     );
     expect(syntaxTokenDefaults['--color-syntax-removed']).toBe(
-      'var(--color-error-muted)',
+      'color-mix(in srgb, var(--color-error-muted) 40%, transparent)',
     );
     expect(syntaxTokenDefaults['--color-syntax-diff-header']).toBe(
       'var(--color-background-muted)',
