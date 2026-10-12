@@ -36,15 +36,15 @@ system_specs: []
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                        |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | None changes. One named listbox container for result options, rendered by CommandPalette or directly for a standalone results list.                             |
-| Behavior                | The root is a `listbox` named by `label` or the translated default; inside CommandPalette it carries the context list id that the query field controls.         |
-| End-user impact         | Screen-reader users reach a named results list from the query field; overflowing results scroll inside the list instead of growing the palette.                 |
-| Builder impact          | None. CommandPalette renders its own list; standalone compositions render items and groups directly inside this one.                                            |
-| Compatibility/readiness | Observational draft with no runtime change. A standalone caller `id` is currently overwritten (FR1); the standalone keyboard model remains OQ1.                 |
-| Review checks           | Reject a second list-id owner, a role or name that consumer props can replace, dropped native or styling inputs, or a list target moved off the scrolling root. |
-| Governing rules         | `architecture:public-component-api/INV5,INV6,INV8`; `architecture:component-theming-surface`; WAI-ARIA 1.2 `listbox`.                                           |
+| Area                    | Contract                                                                                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | None changes. One named listbox container for result options, rendered by CommandPalette or directly for a standalone results list.                                                   |
+| Behavior                | The root is a `listbox` named by `label` or the translated default; inside CommandPalette it carries the context list id that the query field controls.                               |
+| End-user impact         | Screen-reader users reach a named results list from the query field; overflowing results scroll inside the list instead of growing the palette.                                       |
+| Builder impact          | None. CommandPalette renders its own list; standalone compositions render items and groups directly inside this one.                                                                  |
+| Compatibility/readiness | Observational draft with no runtime change. A standalone caller `id` is overwritten (FR1), an empty list keeps the listbox role (AR4), and the standalone keyboard model remains OQ1. |
+| Review checks           | Reject a second list-id owner, a role or name that consumer props can replace, dropped native or styling inputs, or a list target moved off the scrolling root.                       |
+| Governing rules         | `architecture:public-component-api/INV5,INV6,INV8`; `architecture:component-theming-surface`; WAI-ARIA 1.2 `listbox`.                                                                 |
 
 This table is a review projection; the body below is authoritative.
 
@@ -95,12 +95,12 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                                                                                          | Basis                                                               | Draft review state                                                                                      |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| FR1 | Native props and `ref` reach the listbox root, and consumer `className` and `style` combine with the list target and base styles. Inside CommandPalette the root id is the context list id; standalone, an absent id replaces a caller `id`. | Released source; `architecture:public-component-api/INV5,INV6,INV8` | Ref and styling verified by focused tests; the standalone `id` conflicts with INV5                      |
-| FR2 | The root exposes `role=listbox` with an accessible name from `label`, falling back to the translated default; consumer `role` and `aria-label` props do not replace them.                                                                    | Released source and docs; WAI-ARIA 1.2 `listbox`                    | Role and name verified by focused tests; precedence over consumer props is source-verified              |
-| FR3 | Inside CommandPalette, the query field's `aria-controls` names the listbox id.                                                                                                                                                               | Released source and component docs                                  | Verified by a focused composition test                                                                  |
-| FR4 | The root lays out children in one column with spacing-scale padding and gaps, grows within a flex parent, caps its height at the parent's height, and scrolls overflowing children inside itself.                                            | Released source and component docs                                  | Source-verified; the scrolling fixture renders it in a browser, but scroll geometry is not yet measured |
+| ID  | Candidate invariant                                                                                                                                                                                                                          | Basis                                                               | Draft review state                                                                                                               |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| FR1 | Native props and `ref` reach the listbox root, and consumer `className` and `style` combine with the list target and base styles. Inside CommandPalette the root id is the context list id; standalone, an absent id replaces a caller `id`. | Released source; `architecture:public-component-api/INV5,INV6,INV8` | Ref and styling verified by focused tests; the standalone `id` conflicts with INV5                                               |
+| FR2 | The root exposes `role=listbox` with an accessible name from `label`, falling back to the translated default; consumer `role` and `aria-label` props do not replace them.                                                                    | Released source and docs; WAI-ARIA 1.2 `listbox`                    | Role and name verified by focused tests; consumer-prop precedence is source-verified; the role also applies with no option (AR4) |
+| FR3 | Inside CommandPalette, the query field's `aria-controls` names the listbox id.                                                                                                                                                               | Released source and component docs                                  | Verified by a focused composition test                                                                                           |
+| FR4 | The root lays out children in one column with spacing-scale padding and gaps, grows within a flex parent, caps its height at the parent's height, and scrolls overflowing children inside itself.                                            | Released source and component docs                                  | Source-verified; the scrolling fixture renders it in a browser, but scroll geometry is not yet measured                          |
 
 ### Allowed variation
 
@@ -139,6 +139,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 - **AR3 — Standalone gap.** A standalone list exposes a listbox of options with
   no owning keyboard model. OQ1 must settle that contract before runtime
   semantics change.
+- **AR4 — Empty content.** The root keeps `role=listbox` when its children contain
+  no option, as in CommandPalette's empty states. WAI-ARIA 1.2 requires a listbox
+  to own options, so this is an open conflict, not a contract.
 
 ## Design relationships
 
