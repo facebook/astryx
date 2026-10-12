@@ -239,14 +239,14 @@ describe('diffLineKind', () => {
     expect(lines[1][0]).toEqual({type: 'keyword', start: 0, end: 5});
   });
 
-  it('reads fence info strings: diff, patch, diff-<lang>, and a plain language', () => {
+  it('reads fence info strings: diff, diff-<lang>, and a plain language (patch is just a language)', () => {
     expect(parseFenceLanguage('diff')).toEqual({
       language: 'plaintext',
       isDiff: true,
     });
     expect(parseFenceLanguage('patch')).toEqual({
-      language: 'plaintext',
-      isDiff: true,
+      language: 'patch',
+      isDiff: false,
     });
     expect(parseFenceLanguage('diff-tsx')).toEqual({
       language: 'tsx',

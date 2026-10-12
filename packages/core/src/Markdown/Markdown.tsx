@@ -164,7 +164,7 @@ export interface MarkdownComponents {
   code?: React.ComponentType<{
     code: string;
     language?: string;
-    /** The fence was `diff`, `patch`, or `diff-<language>`: render as a diff. */
+    /** The fence was `diff` or `diff-<language>`: render as a diff. */
     isDiff?: boolean;
     sourceLines?: MarkdownSourceLines;
   }>;
@@ -1477,8 +1477,8 @@ function renderBlock(
     case 'code': {
       // Track codeblock content in cursor for accurate character counting
       cursor.offset += node.value.length;
-      // `diff-<lang>` fences are the diff layer over <lang>; `diff` and
-      // `patch` are the layer over plaintext. The legacy language is the info
+      // `diff-<lang>` fences are the diff layer over <lang>; `diff` is the
+      // layer over plaintext. The legacy language is the info
       // string's leading word characters, which stops at the hyphen, so the
       // diff mapping reads the whole first word and then applies the same
       // word rule to the language it names.

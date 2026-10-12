@@ -321,16 +321,16 @@ function buildLanguagePatterns(lang: string): {
 export type DiffLineKind = 'added' | 'removed' | 'header' | 'context';
 
 /**
- * Read a Markdown fence info string the way CodeBlock renders it: `diff` and
- * `patch` are the diff layer over plaintext, `diff-<lang>` (the common
- * convention) is the diff layer over `<lang>`, anything else is a language.
+ * Read a Markdown fence info string the way CodeBlock renders it: `diff` is
+ * the diff layer over plaintext, `diff-<lang>` (the common convention) is the
+ * diff layer over `<lang>`, anything else is a language.
  */
 export function parseFenceLanguage(info: string | undefined): {
   language: string;
   isDiff: boolean;
 } {
   const value = (info ?? '').trim();
-  if (value === 'diff' || value === 'patch') {
+  if (value === 'diff') {
     return {language: 'plaintext', isDiff: true};
   }
   const layered = /^diff-(.+)$/.exec(value);
@@ -357,7 +357,9 @@ export function splitDiffLines(lines: ReadonlyArray<string>): {
   let beforeFirstHunk = true;
   for (const line of lines) {
     const kind = diffLineKind(line, {beforeFirstHunk});
-    if (line.startsWith('@@')) {beforeFirstHunk = false;}
+    if (line.startsWith('@@')) {
+      beforeFirstHunk = false;
+    }
     kinds.push(kind);
     if (kind === 'header') {
       glyphs.push('');
