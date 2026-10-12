@@ -104,6 +104,7 @@ function nameMatches(name, bindings, component) {
 // A parameter or local declaration with the imported name shadows the module
 // binding (same rule as transform-prop.mjs): only a tag whose root binding
 // resolves to the Program scope is the imported component.
+/** @param {any} elementPath @param {any} name */
 function isModuleBinding(elementPath, name) {
   const localName =
     name?.type === 'JSXIdentifier'
