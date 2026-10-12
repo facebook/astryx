@@ -40,7 +40,7 @@
 
   No codemod applies: nothing in a project's source changes; install the integration, repair its manifest, or edit `integrations` in astryx.config.
 
-  What counts as configured is every name astryx.config lists, read from the provider ledger: a package set aside for a provider conflict and the package being authored when its own config names it both count. Migration: install the integration, fix its manifest, or remove it from `integrations`; fix the astryx.config field the message names.
+  What counts as configured is every name astryx.config lists, including a package set aside for a provider conflict and the package being authored when its own config names it. Migration: install the integration, fix its manifest, or remove it from `integrations`; fix the astryx.config field the message names.
 
 - Typeahead, Tokenizer, CheckboxList, RadioList, and Slider no longer accept root `xstyle`, `className`, or `style`. Style the field with `containerXstyle`/`containerClassName`/`containerStyle` (the Field box; no effect inside InputGroup or a `horizontal-labels` FormLayout) and the visual control box with `controlXstyle`/`controlClassName`/`controlStyle`. Base props now reach the primary semantic control: the combobox input for Typeahead and Tokenizer, the `role="group"`/`role="radiogroup"` element for CheckboxList and RadioList, and the `role="slider"` thumb for Slider (the `role="group"` control in range mode). A caller `aria-describedby` is kept alongside the field's own description and status, on these components and on TextInput, TextArea, and NumberInput, which previously dropped it. CLI templates use the new props. (#7339)
   Migration: rename root `xstyle`/`className`/`style` to the part they styled before: `containerXstyle`/`containerClassName`/`containerStyle` on all five components, except a Typeahead inside InputGroup, whose root styling painted the control surface and moves to `controlXstyle`/`controlClassName`/`controlStyle`. The release's `astryx upgrade` codemod, `migrate-field-input-styling`, performs these renames on JSX usage.
@@ -81,7 +81,7 @@
   Migration: set `AGENT` and `AGENT_SESSION_ID`, which the CLI already reads, instead of the Astryx-prefixed variants. `ASTRYX_AGENT_METADATA` has no replacement variable.
 
 - Remove the deprecated component-theming compatibility surface scheduled for 0.7.0. Components now emit only canonical target classes and reflected `data-*` prop/state selectors. Theme discovery and build output no longer expose deprecated targets, and `ThemePropsOptions` plus `ComponentThemingTarget.deprecatedFor` are removed. The `theme targets --json` response drops the `ThemeTargetEntry.deprecatedFor` field, because no target it lists is deprecated. (#7302)
-  Migration: run the required codemod `migrate-deprecated-theme-surface` with `astryx upgrade --from <your 0.6 version> --apply --path .` after upgrading. Upgrade directly from your 0.6 version.
+  Migration: run the required codemod `migrate-deprecated-theme-surface` with `astryx upgrade --from <your 0.6 version> --apply --path .` after upgrading.
 
   The codemod renames removed target keys inside theme `components` maps (an imported `defineTheme()` call, an object typed as an Astryx theme, or a theme object with a static `name`), renames target classes in CSS, and replaces target-qualified bare prop/value/state classes with reflected `data-*` selectors, using every bare class the final 0.6 release emitted. It leaves dynamic/computed theme keys, unqualified or unknown classes, and CSS embedded in JavaScript/TypeScript strings for manual review. It adds `TODO(astryx upgrade)` when old and canonical keys coexist, and when a bare class Astryx once emitted has no known meaning on the target it qualifies.
 
@@ -118,7 +118,7 @@
 - Remove the `astryx layout` command group. (#7137)
   Removes the deprecated `astryx layout` command group (`expand`, `check`, `grammar`), its three response types (`layout.expand`, `layout.check`, `layout.grammar`), and the programmatic API exports (`layoutExpand`, `layoutCheck`, `layoutGrammar`).
 
-  Use `astryx build` to choose the template to start from, `astryx template` to scaffold it, and `astryx docs layout` for layout guidance. The layout guide is unaffected. The error codes `ERR_LAYOUT_PARSE` and `ERR_LAYOUT_INVALID` are retained (append-only contract).
+  Use `astryx build` to choose the template to start from, `astryx template` to scaffold it, and `astryx docs layout` for layout guidance. The layout guide is unaffected. The error codes `ERR_LAYOUT_PARSE` and `ERR_LAYOUT_INVALID` are retained.
 
   Removed JSON ids: `LayoutBlockReference.mode` `LayoutBlockReference.name` `LayoutCheckOptions.cwd` `LayoutCheckOptions.form` `LayoutCheckOptions.loose` `LayoutCheckResponse.data` `LayoutCheckResponse.data.compact` `LayoutCheckResponse.data.errors` `LayoutCheckResponse.data.form` `LayoutCheckResponse.data.outline` `LayoutCheckResponse.data.valid` `LayoutCheckResponse.data.warnings` `LayoutCheckResponse.type` `LayoutExpandOptions.cwd` `LayoutExpandOptions.form` `LayoutExpandOptions.loose` `LayoutExpandOptions.name` `LayoutExpandOptions.targetPath` `LayoutExpandResponse.data` `LayoutExpandResponse.data.blocksReferenced` `LayoutExpandResponse.data.code` `LayoutExpandResponse.data.componentsUsed` `LayoutExpandResponse.data.demoMediaReplaced` `LayoutExpandResponse.data.form` `LayoutExpandResponse.data.states` `LayoutExpandResponse.data.todos` `LayoutExpandResponse.data.warnings` `LayoutExpandResponse.data.written` `LayoutExpandResponse.type` `LayoutGrammarOptions.cwd` `LayoutGrammarResponse.data` `LayoutGrammarResponse.data.aliases` `LayoutGrammarResponse.data.text` `LayoutGrammarResponse.type` `LayoutIssue.col` `LayoutIssue.formatted` `LayoutIssue.line` `LayoutIssue.message` `LayoutIssue.suggestions`
 
@@ -146,7 +146,7 @@
 
 #### Fixes
 
-- `template` and `build` choose the install command's package manager as AST-048 FR17 and FR19 specify. The nearest directory from the target up to the workspace root that has a `packageManager` field or a lockfile decides. With neither, the command uses npm, whatever package manager launched the CLI. When that directory's lockfiles disagree and nothing it commits picks one, `installCommand` is `null` and the note names the missing packages, the directory, and the lockfiles that disagree, instead of guessing a command that would write a second lockfile. (#7343)
+- `template` and `build` follow the project's package manager. The nearest directory from the target up to the workspace root that has a `packageManager` field or a lockfile decides. With neither, the command uses npm, whatever package manager launched the CLI. When that directory's lockfiles disagree and nothing it commits picks one, `installCommand` is `null` and the note names the missing packages, the directory, and the lockfiles that disagree, instead of guessing a command that would write a second lockfile. (#7343)
 - Teach generated palette references in the full custom-theme authoring guide. (#7268)
 - Generate Neutral's runtime palette references from the stops its theme uses, and fail verification when the package or CLI template copy drifts. (#7255)
 
@@ -159,6 +159,7 @@
 Thanks to everyone who contributed to this release:
 
 - @cixzhang
+- @harjothkhara
 - @imdreamrunner
 - @josephfarina
 - @rubyycheung
