@@ -232,9 +232,11 @@ const spread = <InternationalizationContext {...props}><B /></Internationalizati
       '<InternationalizationContext {...props}><B /></InternationalizationContext>',
     );
     expect(output.match(new RegExp(EXPRESSION_TODO, 'g'))).toBeNull();
-    expect(apply(input).match(new RegExp(EXPRESSION_TODO, 'g'))).toHaveLength(
-      2,
+    const raw = apply(input);
+    expect(raw).toContain(
+      'a local named `InternationalizationProvider` shadows the provider import at this site',
     );
+    expect(raw.match(new RegExp(EXPRESSION_TODO, 'g'))).toHaveLength(1);
   });
 
   it('leaves a shadowed name and a type-only import alone', () => {
