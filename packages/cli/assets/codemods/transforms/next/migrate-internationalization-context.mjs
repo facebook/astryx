@@ -25,7 +25,9 @@
  * ambient value would mount a provider without the app's catalogs.
  *
  * Only an element whose name resolves, unshadowed, to an Astryx import is
- * rewritten (named, aliased, or namespace; a type-only import proves nothing).
+ * rewritten (named, aliased, or namespace; a type-only import proves nothing;
+ * a same-named declaration in any block, function, loop head or catch clause
+ * between the element and the module shadows it).
  * The import gains `InternationalizationProvider` under the file's existing
  * local name for it when it has one, and loses the context import when
  * nothing else reads it. A second run changes nothing.
@@ -103,13 +105,134 @@ export default function migrateInternationalizationContext(file, api) {
   });
   if (contextNames.size === 0 && namespaceNames.size === 0) return undefined;
 
-  /** The binding a JSX identifier resolves to is the module-level import. */
-  const isImportBinding = (
-    /** @type {any} */ path,
-    /** @type {string} */ name,
+  /** The identifiers a binding pattern declares. */
+  const patternNames = (
+    /** @type {any} */ node,
+    /** @type {string[]} */ out = [],
   ) => {
-    const scope = path.scope?.lookup(name);
-    return scope?.path.node.type === 'Program';
+    if (!node) return out;
+    switch (node.type) {
+      case 'Identifier':
+        out.push(node.name);
+        break;
+      case 'ObjectPattern':
+        for (const property of node.properties) {
+          patternNames(
+            property.type === 'RestElement'
+              ? property.argument
+              : property.value,
+            out,
+          );
+        }
+        break;
+      case 'ArrayPattern':
+        for (const element of node.elements) patternNames(element, out);
+        break;
+      case 'RestElement':
+        patternNames(node.argument, out);
+        break;
+      case 'AssignmentPattern':
+        patternNames(node.left, out);
+        break;
+      case 'TSParameterProperty':
+        patternNames(node.parameter, out);
+        break;
+      default:
+        break;
+    }
+    return out;
+  };
+
+  /** Whether a statement list declares `name` (as a variable, function or class). */
+  const bodyDeclares = (
+    /** @type {any[]} */ statements,
+    /** @type {string} */ name,
+  ) =>
+    statements.some((/** @type {any} */ statement) => {
+      if (statement.type === 'VariableDeclaration') {
+        return statement.declarations.some((/** @type {any} */ d) =>
+          patternNames(d.id).includes(name),
+        );
+      }
+      if (
+        statement.type === 'FunctionDeclaration' ||
+        statement.type === 'ClassDeclaration'
+      ) {
+        return statement.id?.name === name;
+      }
+      return false;
+    });
+
+  /**
+   * The binding a JSX identifier resolves to is the module-level import:
+   * no block, function, catch clause or loop head between the element and
+   * the module declares the same name. Blocks get their own scope here
+   * (`let`/`const`/`class` are block-scoped), which the generic scope model
+   * does not give them.
+   * @param {any} path a JSXElement path
+   * @param {string} name
+   */
+  const isImportBinding = (path, name) => {
+    for (let p = path.parent; p; p = p.parent) {
+      const node = p.node;
+      switch (node.type) {
+        case 'Program':
+          return !bodyDeclares(node.body, name);
+        case 'BlockStatement':
+          if (bodyDeclares(node.body, name)) return false;
+          break;
+        case 'SwitchStatement':
+          if (
+            bodyDeclares(
+              node.cases.flatMap((/** @type {any} */ c) => c.consequent),
+              name,
+            )
+          ) {
+            return false;
+          }
+          break;
+        case 'ForStatement':
+          if (
+            node.init?.type === 'VariableDeclaration' &&
+            bodyDeclares([node.init], name)
+          ) {
+            return false;
+          }
+          break;
+        case 'ForInStatement':
+        case 'ForOfStatement':
+          if (
+            node.left?.type === 'VariableDeclaration' &&
+            bodyDeclares([node.left], name)
+          ) {
+            return false;
+          }
+          break;
+        case 'FunctionDeclaration':
+        case 'FunctionExpression':
+        case 'ArrowFunctionExpression':
+        case 'ObjectMethod':
+        case 'ClassMethod':
+          if (
+            node.params.some((/** @type {any} */ param) =>
+              patternNames(param).includes(name),
+            )
+          ) {
+            return false;
+          }
+          if (node.type === 'FunctionExpression' && node.id?.name === name) {
+            return false;
+          }
+          break;
+        case 'CatchClause':
+          if (node.param && patternNames(node.param).includes(name))
+            return false;
+          break;
+        default:
+          break;
+      }
+    }
+    return false;
   };
 
   /**
