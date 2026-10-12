@@ -17,7 +17,7 @@ Astryx v0.7.0 brings together everything shipped from v0.6.1 through v0.6.8 and 
 
 ## Forms and inputs
 
-Forms now keep IDs, descriptions, event handlers, and test hooks you pass on the control that people actually use. Empty states, controlled clearing, IME input, and async picker feedback are also more reliable across the input family.
+Styling, IDs, and handlers you pass now land on the control people use, and searchable pickers can create a missing choice.
 
 ```diff
  <TextInput
@@ -73,7 +73,7 @@ const [reviewers, setReviewers] = useState(['platform']);
 
 ## Menus and overlays
 
-Menus place real controls beside their rows while screen readers still hear a normal menu, and nested layers close in the order people see them. Dialog focus, Toast layering, and menu zoom behavior now hold up across keyboard, pointer, and touch use.
+Menus hold real controls beside their rows and drill into submenus on touch; sheets, dialogs, and toasts stack, dismiss, and pad their content the way people expect.
 
 ### Put controls beside menu rows
 
@@ -126,7 +126,7 @@ _Opened by touch, a sub-menu drills into the current rows, with a Back row named
 
 ### Keep nested layers in order
 
-- **Layers and dialogs:** Escape closes the top layer first for menus, popovers, and dialogs inside a sheet. Nested layers stay inside their nearest dialog, and Dialog focus follows the last keyboard, mouse, or touch input as it opens and returns.
+- **Layers and dialogs:** Escape closes the top layer first for menus, popovers, and dialogs inside a sheet. Nested layers stay inside their nearest dialog.
 - **Toasts:** They stay visible and clickable above open dialogs.
 
 ### Give BottomSheet content room
@@ -134,8 +134,6 @@ _Opened by touch, a sub-menu drills into the current rows, with a Back row named
 ![The same bottom sheet on a phone, before and after. Before, the sheet's text and buttons run flush against the panel edges and start right under the grab handle, and the title is hidden behind it. After, the same content sits inside a comfortable inset on all sides, the title is visible below the handle, and the buttons are clear of the bottom edge.](/blog/astryx-v0-7-0/theme-bottomsheet-padding.png)
 
 _BottomSheet now adds a comfortable content inset by default; `padding={0}` keeps the old flush box._
-
-`preserve-bottom-sheet-content-padding` adds `padding={0}` to sheets that set no padding, except when their only child is a padded Section or a Layout. Nested Layouts get a TODO; if a theme already pads every BottomSheet edge, remove the codemod-added prop to keep that theme inset.
 
 ```diff
  <BottomSheet
@@ -150,7 +148,7 @@ _BottomSheet now adds a comfortable content inset by default; `padding={0}` keep
 
 ## Mobile and touch
 
-Phone layouts keep their state, respect pinch zoom, and make sheets, menus, swipe actions, and date/time pickers feel native to touch. AppShell keeps the same page mounted through its mobile breakpoint, and inputs avoid iOS focus zoom.
+Phones get 16px body text, swipe actions on rows, and a choice of date and time pickers, while pages stay mounted across the mobile breakpoint and still allow pinch zoom.
 
 ### Reveal row actions with a swipe
 
@@ -226,21 +224,17 @@ const appTheme = defineTheme({
 });
 ```
 
-If your theme extends one of these and sets its own type scale, the phone rule replaces it on touch screens; append your own rule for the same condition with the values you want.
-
-Butter and Stone use `ratio: 1.25` and also restore `tokens: {'--text-supporting-size': '12px'}` in the rule's `value`.
+If your theme extends one of these and sets its own type scale, the phone rule replaces it on touch screens; append your own rule for the same condition with the values you want. For Butter and Stone, use `ratio: 1.25` and also restore `tokens: {'--text-supporting-size': '12px'}` in the rule's `value`.
 
 ## Data display
 
-Tables keep expanded content aligned, sticky and resizable columns usable, row actions working, and scrolling contained only when the table can actually scroll. Charts, MetadataList, TreeList, and Lightbox keep labels, rows, and images readable in dense or narrow views.
+Tables keep expanded rows aligned and make column resizing easy to discover.
 
 ### Expand a row without disturbing the table
 
 ![An orders table with striped rows. The pointer clicks on a customer name and that row expands: its line items appear in a panel that starts under the Customer column, the chevron turns, and the stripes of the rows below keep alternating as before. The pointer then clicks a Refund button on another row, which does nothing to that row's expansion; clicking the row's text opens it.](/blog/astryx-v0-7-0/table-row-expansion.webp)
 
-_Expanded details align with the first data column, row striping stays stable, and buttons or links inside a row never toggle it._
-
-The row-expansion chevron also stays centered in its fixed column.
+_Expanded details align with the first data column, the chevron stays centered in its column, row striping stays stable, and buttons or links inside a row never toggle it._
 
 ```tsx
 const expansion = useTableRowExpansion<Order>({
@@ -528,7 +522,7 @@ _An Icon without an explicit size now follows its Button, so small buttons no lo
 
 ## Accessibility and localization
 
-Keyboard users can reach overflowing sheet content and keep visible focus cues as dialogs open and close. More status text, control labels, and empty states now speak the reader's language, and banners announce the actual async event instead of inferring one from color status.
+Layouts grow with the reader's text size, focus rings follow the input people actually used, and banners announce the async outcome instead of guessing from their color.
 
 ### Let layouts follow the reader's text size
 
@@ -536,9 +530,7 @@ Readers who raise their browser font size now get padding and gaps that grow wit
 
 ![The same small form card rendered at a 24px browser font size, before and after, with a second row at the default 16px. Before at 24px, the text is large but the card's padding and the gaps between the field and buttons stay as tight as at 16px. After, padding and gaps grow with the text. At 16px both versions look identical.](/blog/astryx-v0-7-0/theme-rem-spacing.png)
 
-_Spacing tokens use rem (`--spacing-N` = N × 0.25rem), so padding and gaps follow the reader's root font size the way the type scale does. Rendered pixel sizes are unchanged at the default 16px root._
-
-Matcha and Y2K's own spacing steps are rem too, so every first-party theme follows the same rule.
+_Spacing tokens use rem (`--spacing-N` = N × 0.25rem), including Matcha and Y2K's own steps; rendered pixel sizes are unchanged at the default 16px root._
 
 ### Keep focus cues matched to the last input
 
@@ -566,7 +558,7 @@ async function saveSettings() {
 
 ## CLI and integrations
 
-Other libraries can now contribute components, docs, templates, upgrade scripts, coding guidance, and source themes through the same Astryx CLI an app already uses. CLI answers are shorter and more consistent, and failures identify the input or dependency that needs attention.
+Other libraries can now contribute components, docs, templates, upgrade scripts, coding guidance, and source themes through the same Astryx CLI an app already uses. The CLI can add and verify those components, and failures name the input or dependency that needs attention.
 
 ### Add and verify an integration component
 
@@ -583,13 +575,13 @@ npx @astryxdesign/cli integration verify
 
 ## Interaction and feedback
 
-Compact toolbars now take less vertical space without shifting the controls beside them. RichText formatting rows use the same 4px inset on every edge.
+Compact toolbars take less vertical space while staying aligned with the content below them.
 
 ### Tighten a toolbar without shifting its content line
 
 ![A card with a compact toolbar of three buttons above a line of text, before and after. Before, the toolbar row is taller, with extra space above and below the buttons. After, the row is tighter with a four-pixel inset top and bottom, and the first button still sits flush with the text below it.](/blog/astryx-v0-7-0/interaction-compact-toolbar.png)
 
-_Compact toolbars use a 4px block inset so they take less vertical space. Inline padding stays owned by the surrounding Card or Section, so the controls keep the same content line as the body beside them._
+_Inline padding stays with the surrounding Card or Section, so the first button keeps the body's content line._
 
 ```tsx
 import * as stylex from '@stylexjs/stylex';
@@ -628,7 +620,7 @@ npx @astryxdesign/cli upgrade --from "$OLD_VERSION" --apply --path .
 
 The example includes Neutral; update every other stable Astryx theme in your project in the same install step.
 
-The highest-traffic API changes look like this:
+Two other easy-to-miss API changes look like this:
 
 ```diff
 - npx @astryxdesign/cli theme add neutral ./src/theme --overwrite
@@ -636,27 +628,8 @@ The highest-traffic API changes look like this:
 ```
 
 ```diff
-- <TextInput xstyle={styles.control} />
-+ <TextInput controlXstyle={styles.control} />
-
-- <Typeahead xstyle={styles.field} />
-+ <Typeahead containerXstyle={styles.field} />
-```
-
-```diff
 - .astryx-button.primary.sm
 + .astryx-button[data-variant="primary"][data-size="sm"]
-```
-
-```diff
- const announce = useAnnounce();
-
- async function saveSettings() {
-   await save();
-+  announce('Settings saved');
- }
-
- <Banner status="success" title="Settings saved" />
 ```
 
 ### All 26 breaking migrations
@@ -681,7 +654,7 @@ The highest-traffic API changes look like this:
 18. **The `layout` command group is removed** ([#7137](https://github.com/facebook/astryx/pull/7137)) — use `astryx build`, `astryx template`, and `astryx docs layout`; no codemod.
 19. **`reset.css` reaches pseudo-elements and search fields** ([#7355](https://github.com/facebook/astryx/pull/7355)) — add your own later-layer `box-sizing`, border, placeholder color, or search appearance only when you need the old browser result; no codemod.
 20. **Private theme variables fail the build** ([#6872](https://github.com/facebook/astryx/pull/6872)) — fix every reported private `--_*` input instead of relying on exit 0; no codemod.
-21. **BottomSheet adds default content padding** ([#6884](https://github.com/facebook/astryx/pull/6884)) — remove duplicate caller padding or pass `padding={0}` for the old box; `preserve-bottom-sheet-content-padding` adds `padding={0}`, but remove it when your theme already sets BottomSheet padding so the theme inset remains.
+21. **BottomSheet adds default content padding** ([#6884](https://github.com/facebook/astryx/pull/6884)) — remove duplicate caller padding or pass `padding={0}` for the old box; `preserve-bottom-sheet-content-padding` skips a sole Section or Layout, marks nested Layouts with a TODO, and otherwise adds `padding={0}`. Remove that added prop when your theme already sets BottomSheet padding so the theme inset remains.
 22. **Phone typography starts at 16px** ([#6699](https://github.com/facebook/astryx/pull/6699)) — take the new Neutral, Chocolate, Butter, and Stone scale as-is, or add a later touch-and-narrow rule to keep 14px or your own scale; no codemod.
 23. **`emptySearchResultsText` is removed** (pending [#7289](https://github.com/facebook/astryx/pull/7289)) — rename it to `emptySearchText`; `rename-empty-search-results-text` handles supported components and static trigger objects.
 24. **Core spacing follows the root font size** ([#7359](https://github.com/facebook/astryx/pull/7359)) — CSS variable users need no change; code that parses px converts rem with the root size or reads the computed length; no codemod.
