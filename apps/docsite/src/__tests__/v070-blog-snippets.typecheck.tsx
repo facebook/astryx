@@ -6,6 +6,7 @@ import * as stylex from '@stylexjs/stylex';
 import {Banner} from '@astryxdesign/core/Banner';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Kbd} from '@astryxdesign/core/Kbd';
 import {Slider} from '@astryxdesign/core/Slider';
@@ -24,6 +25,7 @@ import {
   type TableColumn,
 } from '@astryxdesign/core/Table';
 import {TimeInput, type ISOTimeString} from '@astryxdesign/core/TimeInput';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Typeahead, createStaticSource} from '@astryxdesign/core/Typeahead';
 import {Markdown} from '@astryxdesign/core/Markdown';
@@ -222,6 +224,28 @@ export function MobileAndTouch() {
         presentation="adaptive-bottom-sheet"
       />
     </>
+  );
+}
+
+function filterRows() {}
+function groupRows() {}
+function createItem() {}
+
+export function InteractionFeedback() {
+  return (
+    <Card padding={0}>
+      <Toolbar
+        label="Table actions"
+        size="sm"
+        startContent={
+          <>
+            <Button label="Filter" variant="ghost" onClick={filterRows} />
+            <Button label="Group" variant="ghost" onClick={groupRows} />
+          </>
+        }
+        endContent={<Button label="New item" onClick={createItem} />}
+      />
+    </Card>
   );
 }
 

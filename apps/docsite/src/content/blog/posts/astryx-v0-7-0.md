@@ -577,11 +577,29 @@ npx @astryxdesign/cli integration verify
 
 ## Interaction and feedback
 
-Compact toolbars will take less vertical space without shifting the controls beside them once the pending change below lands.
+Compact toolbars now take less vertical space without shifting the controls beside them. RichText formatting rows use the same 4px inset on every edge.
 
-**Pending merge — [#6954](https://github.com/facebook/astryx/pull/6954):** compact Toolbar rows will use less vertical space with a 4px top and bottom inset while keeping their side alignment, and the RichText formatting row will use 4px on every edge.
+### Tighten a toolbar without shifting its content line
 
-<!-- VISUAL_SLOT: interaction-and-feedback — behavior as GIF/WebP; compact Toolbar as labeled Before/After -->
+![A card with a compact toolbar of three buttons above a line of text, before and after. Before, the toolbar row is taller, with extra space above and below the buttons. After, the row is tighter with a four-pixel inset top and bottom, and the first button still sits flush with the text below it.](/blog/astryx-v0-7-0/interaction-compact-toolbar.png)
+
+_Compact toolbars use a 4px block inset so they take less vertical space. Inline padding stays owned by the surrounding Card or Section, so the controls keep the same content line as the body beside them._
+
+```tsx
+<Card padding={0}>
+  <Toolbar
+    label="Table actions"
+    size="sm"
+    startContent={
+      <>
+        <Button label="Filter" variant="ghost" onClick={filterRows} />
+        <Button label="Group" variant="ghost" onClick={groupRows} />
+      </>
+    }
+    endContent={<Button label="New item" onClick={createItem} />}
+  />
+</Card>
+```
 
 ## Upgrading to 0.7.0
 
