@@ -20,7 +20,7 @@ import {
   afterEach,
 } from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
-import {Profiler} from 'react';
+import {createRef, Profiler} from 'react';
 import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -154,21 +154,46 @@ describe('Tokenizer minQueryLength', () => {
 });
 
 describe('Tokenizer', () => {
-  it('forwards ref to the root field element', () => {
-    let root: HTMLDivElement | null = null;
-    render(
+  it('forwards DOM props and ref to the combobox input while preserving focus callbacks', () => {
+    const ref = createRef<HTMLInputElement>();
+    const onClick = vi.fn();
+    const onFocus = vi.fn();
+    const onBlur = vi.fn();
+    const {container} = render(
       <Tokenizer
-        ref={el => {
-          root = el;
-        }}
+        ref={ref}
+        id="members-field"
+        data-tracking="members-picker"
+        data-testid="members-input"
+        containerClassName="custom-tokenizer"
+        containerStyle={{marginTop: 7}}
         label="Members"
         searchSource={userSource}
-        value={[]}
+        value={[users[0]]}
         onChange={() => {}}
+        onClick={onClick}
+        onFocus={onFocus}
+        onBlur={onBlur}
       />,
     );
-    expect(root).toBeInstanceOf(HTMLDivElement);
-    expect(root).toHaveClass('astryx-field');
+    const input = screen.getByRole('combobox');
+    const surface = container.querySelector('.astryx-tokenizer');
+
+    expect(ref.current).toBe(input);
+    expect(input).toHaveAttribute('id', 'members-field');
+    expect(input).toHaveAttribute('data-tracking', 'members-picker');
+    expect(screen.getByTestId('members-input')).toBe(input);
+    expect(surface).toHaveAttribute('aria-label', 'Members');
+    const fieldRoot = container.querySelector('.custom-tokenizer');
+    expect(fieldRoot).toHaveClass('astryx-field');
+    expect(fieldRoot).toHaveStyle({marginTop: '7px'});
+
+    fireEvent.click(input);
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(onFocus).toHaveBeenCalledOnce();
+
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
   });
 
   it('exposes focus control through handleRef', () => {
@@ -459,10 +484,9 @@ describe('Tokenizer', () => {
         searchSource={userSource}
         value={[users[0], users[1]]}
         onChange={() => {}}
-        data-testid="tokenizer"
       />,
     );
-    const wrapper = screen.getByTestId('tokenizer');
+    const wrapper = _container.querySelector('.astryx-tokenizer')!;
     // Tokens should be direct children of the wrapper, not nested in a div
     const tokenElements = wrapper.querySelectorAll(':scope > span');
     expect(tokenElements.length).toBeGreaterThanOrEqual(2);
@@ -1918,5 +1942,32 @@ describe('Tokenizer emptySearchText', () => {
       ),
     );
     warn.mockRestore();
+  });
+});
+
+describe('Tokenizer consumer key handler order', () => {
+  it('runs onKeyDown on the input after built-in key handling, so it cannot cancel token removal', () => {
+    let currentTarget: EventTarget | null = null;
+    const onKeyDown = vi.fn((event: React.KeyboardEvent) => {
+      currentTarget = event.currentTarget;
+      event.preventDefault();
+    });
+    const onChange = vi.fn();
+    const {container} = render(
+      <Tokenizer
+        label="Members"
+        searchSource={userSource}
+        value={[users[0], users[1]]}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'Backspace'});
+    expect(onChange).toHaveBeenCalledWith([users[0]], {
+      item: users[1],
+      type: 'remove',
+    });
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect(currentTarget).toBe(screen.getByRole('combobox'));
   });
 });

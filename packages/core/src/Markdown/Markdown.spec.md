@@ -29,6 +29,7 @@ modules:
     module:Markdown/headingLinks,
     module:Markdown/remark,
     module:Markdown/softBreaks,
+    module:Markdown/sourceLines,
   ]
 families: [family:navigation-destinations]
 design_specs: []
@@ -47,6 +48,10 @@ system_specs:
     spec:AST-036/DEC-2,
     spec:AST-036/DEC-3,
     spec:AST-036/DEC-4,
+    spec:AST-061/DEC-5,
+    spec:AST-061/DEC-6,
+    spec:AST-064/DEC-6,
+    spec:AST-036/DEC-12,
   ]
 ---
 
@@ -147,6 +152,30 @@ owns the shared protocol and limited Remark compatibility profile,
 `module:Markdown/headingLinks` owns its opt-in identity projection and permalink
 composition, and this component owns aggregate application and fallback.
 
+`decodeMarkdownCharacterReferences(text)` is the character reference decoder
+`Markdown` renders with, exported from the server-safe
+`@astryxdesign/core/Markdown/parser` subpath and from
+`@astryxdesign/core/Markdown` so the RichText surfaces decode references
+exactly as `Markdown` does. It decodes valid named and numeric references in
+plain text and leaves everything else as written; the named reference table
+stays private. `spec:AST-061/DEC-5` owns its contract.
+
+`module:Markdown/sourceLines` owns the opt-in source-line stamps on rendered
+blocks and the optional `sourceLines` prop that `components` block renderers
+receive while its plugin is installed; without it no renderer receives the prop.
+
+`getMarkdownPluginCapabilities(plugin)`, exported from the server-safe
+`@astryxdesign/core/Markdown/plugins` subpath, reports only whether an entry
+declares syntax and whether it declares a transform; the entry stays opaque.
+`MarkdownPluginNodeRenderer`, exported from the client-only
+`@astryxdesign/core/Markdown/plugin-renderer` subpath, renders one parsed
+extension node with the given plugins with exactly the DOM, accessibility,
+theme targets, fallback, and failure reporting that `Markdown` presents for
+that same node — its plugin's renderer inside Markdown's error boundary and
+suspense fallback — and adds no element or theme target of its own.
+`spec:AST-064/DEC-6` owns both, so the RichText surfaces adopt plugins
+without reading their definitions or copying their rendering.
+
 ### Acceptance and implementation state
 
 The plugin clauses below are the accepted target contract for the AST-036 rollout,
@@ -218,7 +247,8 @@ text. Outside a table cell, inline code retains its authored backslashes.
 - **AV1 — Parsed content.** The number and ordering of block parts may vary with
   the Markdown source without changing their ownership.
 - **AV2 — Lists.** Ordered, unordered, and task lists share the List anatomy and
-  current `markdown-list` target.
+  current `markdown-list` target. Each level's marker style is fixed by its
+  depth, as `spec:AST-061/DEC-6` defines, not a variation.
 - **AV3 — Custom renderers.** Supported custom block renderers may replace their
   default part and own its styling without receiving a Markdown block target.
 - **AV4 — Nested primitives.** Astryx primitives used inside default blocks may
@@ -238,7 +268,7 @@ text. Outside a table cell, inline code retains its authored backslashes.
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Default block content  | Every parsed block uses its corresponding current Markdown target.                                                                                      | Block count, order, density, content width, and alignment.                                      |
 | Custom block renderers | The replaced Heading, Paragraph, Code block, Blockquote, Divider, or Image lacks the corresponding Markdown target.                                     | Replacement structure and styling.                                                              |
-| Ordered/unordered list | List carries `markdown-list`.                                                                                                                           | Marker kind, start value, item count, and nested content.                                       |
+| Ordered/unordered list | List carries `markdown-list`; each level's marker style follows its depth (`spec:AST-061/DEC-6`).                                                       | Start value, item count, and nested content.                                                    |
 | Task list              | Each task-marked item carries its own checked state; mixed task/plain items stay in one compatible list and preserve document order and nesting.        | Checked values, item content, and adjacent plain items.                                         |
 | Safe block image       | Default Image carries `markdown-image`, or a custom image renderer replaces it.                                                                         | Source and alternative text.                                                                    |
 | Unsafe block image URL | Markdown renders its fallback Image part with `markdown-image`; no custom image renderer receives the rejected URL.                                     | Alternative text shown by the fallback.                                                         |
@@ -267,6 +297,11 @@ text. Outside a table cell, inline code retains its authored backslashes.
   It withholds an unfinished block during streaming, removes a completed block
   before later transforms render the document, and makes typed metadata available
   to those later transforms and to callers of that helper.
+- A semantic-fence proposal renders before `components.code`. `components.code`
+  renders every fence no proposal claims, and a claimed fence whose plugin
+  renderer is absent, returns nothing, throws, or suspends falls back to
+  `components.code` when supplied and to the default Code block otherwise
+  (`spec:AST-036` FR17).
 - Text matching, semantic fences, and source decorations use transform helpers. Core
   may compile those helpers into indexed internal plans without exposing additional
   public phases.
@@ -378,6 +413,9 @@ and this change preserves the existing spelling exactly.
   actually scrolls. FR28 projects those claims onto Markdown's table block: it
   requires Markdown to add no competing scroll container, name, or tab stop,
   and it neither restates nor narrows what Table and the shared behavior own.
+- `spec:AST-064` owns how the RichText surfaces adopt Markdown plugins. Its
+  DEC-6 limits what this component exposes for them to the capability report
+  and the single-node renderer above.
 - Nested Astryx primitives retain ownership of their own anatomy and targets;
   Markdown owns the outer block targets listed here.
 

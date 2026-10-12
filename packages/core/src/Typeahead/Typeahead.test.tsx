@@ -20,7 +20,7 @@ import {
 } from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {Profiler, type ProfilerOnRenderCallback} from 'react';
+import {createRef, Profiler, type ProfilerOnRenderCallback} from 'react';
 import {Typeahead} from './Typeahead';
 import {readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
@@ -31,6 +31,7 @@ import {
 } from './busyIndicatorLane';
 import type {SearchSource, SearchableItem} from './types';
 import {InternationalizationProvider} from '../i18n';
+import {InputGroup} from '../InputGroup';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -737,17 +738,93 @@ describe('Typeahead', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('renders with data-testid', () => {
-    render(
+  it('forwards DOM props and ref to the combobox input while preserving edit and blur behavior', async () => {
+    const ref = createRef<HTMLInputElement>();
+    const onClick = vi.fn();
+    const onBlur = vi.fn();
+    const onChange = vi.fn();
+    const {container} = render(
       <Typeahead
+        ref={ref}
+        id="fruit-field"
+        data-tracking="fruit-picker"
+        data-testid="fruit-input"
+        containerClassName="custom-typeahead"
+        containerStyle={{marginTop: 7}}
         label="Fruit"
         searchSource={fruitSource}
-        value={null}
-        onChange={() => {}}
-        data-testid="my-typeahead"
+        value={fruits[0]}
+        onChange={onChange}
+        onClick={onClick}
+        onBlur={onBlur}
+        debounceMs={0}
       />,
     );
-    expect(screen.getByTestId('my-typeahead')).toBeInTheDocument();
+    const surface = container.querySelector<HTMLElement>('.astryx-typeahead')!;
+    const input = screen.getByRole('combobox');
+
+    expect(ref.current).toBe(input);
+    expect(screen.getByTestId('fruit-input')).toBe(input);
+    expect(input).toHaveAttribute('id', 'fruit-field');
+    expect(input).toHaveAttribute('data-tracking', 'fruit-picker');
+    expect(input).toHaveAccessibleName('Fruit');
+    const fieldRoot = container.querySelector('.custom-typeahead');
+    expect(fieldRoot).toHaveClass('astryx-field');
+    expect(fieldRoot).toHaveStyle({marginTop: '7px'});
+
+    fireEvent.click(surface);
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(input).toHaveValue('Apple');
+    fireEvent.click(input);
+    expect(onClick).toHaveBeenCalledOnce();
+
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('forwards DOM props and ref to the input inside InputGroup, with control* on the surface', async () => {
+    const ref = createRef<HTMLInputElement>();
+    const onClick = vi.fn();
+    const onBlur = vi.fn();
+    const onChange = vi.fn();
+    const {container} = render(
+      <InputGroup label="Produce">
+        <Typeahead
+          ref={ref}
+          id="fruit-field"
+          data-tracking="fruit-picker"
+          controlClassName="custom-typeahead"
+          controlStyle={{marginTop: 7}}
+          label="Fruit"
+          searchSource={fruitSource}
+          value={fruits[0]}
+          onChange={onChange}
+          onClick={onClick}
+          onBlur={onBlur}
+          debounceMs={0}
+        />
+      </InputGroup>,
+    );
+    const surface = container.querySelector<HTMLElement>('.astryx-typeahead')!;
+    const input = screen.getByRole('combobox');
+
+    expect(ref.current).toBe(input);
+    expect(input).toHaveAttribute('id', 'fruit-field');
+    expect(input).toHaveAttribute('data-tracking', 'fruit-picker');
+    expect(surface).toHaveClass('custom-typeahead');
+    expect(surface).toHaveStyle({marginTop: '7px'});
+    expect(input).toHaveAccessibleName('Produce Fruit');
+
+    fireEvent.click(surface);
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(input).toHaveValue('Apple');
+    fireEvent.click(input);
+    expect(onClick).toHaveBeenCalledOnce();
+
+    fireEvent.blur(input);
+    expect(onBlur).toHaveBeenCalledOnce();
+    expect(onChange).not.toHaveBeenCalled();
   });
 });
 
@@ -955,6 +1032,75 @@ describe('BaseTypeahead hasEntriesOnFocus', () => {
     await waitFor(() => {
       expect(input).toHaveAttribute('aria-expanded', 'true');
     });
+  });
+
+  it('reopens on click when the input was already focused and the dropdown closed without a blur (#6845)', async () => {
+    const user = userEvent.setup();
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    // A real click focuses the input (justFocusedRef suppresses the click
+    // handler's own open logic here, since handleFocus already opened it).
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    // Escape closes the dropdown via popover.hide() alone — same as
+    // selecting a result (which also re-focuses the input internally) or a
+    // composing field re-focusing this input after committing something
+    // elsewhere, the input is never actually blurred.
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(input).toHaveFocus();
+
+    // Clicking the still-focused input must reopen it — before the fix,
+    // this click dispatched no focus event (the input never lost focus) and
+    // nothing else reopened the dropdown.
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
+  it('does not double-fire an async bootstrap source on a single first click (#6848 review)', async () => {
+    // A microtask-based "did a focus event just run" flag, tried first,
+    // cleared before the click event arrived for an async source — the
+    // click path then ran openIfEligible a second time while the first
+    // bootstrap call was still in flight. The fix reads document.activeElement
+    // at pointerdown instead, which has no event-loop timing dependency.
+    const user = userEvent.setup();
+    const bootstrap = vi.fn(async (): Promise<SearchableItem[]> => {
+      await Promise.resolve();
+      return fruits.slice(0, 3);
+    });
+    render(
+      <BaseTypeahead
+        searchSource={{search: () => [], bootstrap}}
+        value={null}
+        onChange={() => {}}
+        hasEntriesOnFocus
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    expect(bootstrap).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -2175,5 +2321,71 @@ describe('emptySearchText rename', () => {
       });
       warn.mockRestore();
     });
+  });
+});
+
+describe('Typeahead consumer key handler order', () => {
+  it('runs onKeyDown on the input after built-in key handling, so it cannot cancel navigation', async () => {
+    let currentTarget: EventTarget | null = null;
+    const onKeyDown = vi.fn((event: React.KeyboardEvent) => {
+      currentTarget = event.currentTarget;
+      event.preventDefault();
+    });
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        hasEntriesOnFocus
+        onKeyDown={onKeyDown}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole('option', {hidden: true}).length,
+      ).toBeGreaterThan(0);
+    });
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect(currentTarget).toBe(screen.getByRole('combobox'));
+    expect(input).toHaveAttribute('aria-activedescendant');
+  });
+});
+
+describe('Typeahead consumer key handler target', () => {
+  it('still runs onKeyDown for keys on the clear button', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('button', {name: /clear/i}), {
+      key: 'Enter',
+    });
+    expect(onKeyDown).toHaveBeenCalledOnce();
+  });
+
+  it('runs onKeyDown once for a key on the input', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'a'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
   });
 });

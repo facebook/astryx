@@ -16,6 +16,8 @@ const {
 
 const GATE_STATUS_CONTEXT = 'spec-owner-approval';
 const READY_STATUS_PREFIX = 'spec-owner-ready/';
+const DECISION_STATUS_PREFIX = 'spec-owner-decision/';
+const DECISION_DISPATCH_TYPE = 'spec-owner-decision';
 const TRUSTED_STATUS_CREATOR = 'github-actions[bot]';
 
 // The workflow trigger filters comments with GitHub's `startsWith` against the
@@ -76,6 +78,103 @@ function describeOwnerCommandProblem(intent, headSha) {
   return null;
 }
 
+const GITHUB_LOGIN = /^[a-z0-9](?:[a-z0-9]|-(?=[a-z0-9])){0,38}$/i;
+const REQUEST_KEY = /^[A-Za-z0-9._:-]{1,64}$/;
+
+/**
+ * Read a decision a review app relays for an owner. The app authenticates the
+ * owner; the gate trusts only the configured app identity and a payload whose
+ * every field has exactly the expected shape. Returns `{decision}` or
+ * `{problem}`; a problem never decides anything.
+ */
+function parseOwnerDecisionDispatch(payload, {appLogin}) {
+  if (payload?.action !== DECISION_DISPATCH_TYPE) {
+    return {problem: 'it is not an owner-decision dispatch'};
+  }
+  const expected = typeof appLogin === 'string' ? appLogin.trim() : '';
+  if (!expected) {
+    return {problem: 'no review app is configured to relay owner decisions'};
+  }
+  const sender = payload.sender;
+  if (
+    sender?.type !== 'Bot' ||
+    typeof sender.login !== 'string' ||
+    sender.login.toLowerCase() !== expected.toLowerCase()
+  ) {
+    return {problem: 'it was not sent by the configured review app'};
+  }
+  const body = payload.client_payload ?? {};
+  const pr = body.pr;
+  if (!Number.isSafeInteger(pr) || pr <= 0) {
+    return {problem: 'it did not name a pull request number'};
+  }
+  if (
+    typeof body.headSha !== 'string' ||
+    !/^[0-9a-f]{40}$/i.test(body.headSha)
+  ) {
+    return {problem: 'it did not name one full 40-character head SHA'};
+  }
+  if (
+    typeof body.ownerLogin !== 'string' ||
+    !GITHUB_LOGIN.test(body.ownerLogin)
+  ) {
+    return {problem: 'it did not name a GitHub login'};
+  }
+  if (body.decision !== 'approve' && body.decision !== 'revoke') {
+    return {problem: 'its decision was neither approve nor revoke'};
+  }
+  if (
+    typeof body.requestKey !== 'string' ||
+    !REQUEST_KEY.test(body.requestKey)
+  ) {
+    return {problem: 'it did not carry a valid request key'};
+  }
+  return {
+    decision: {
+      pr,
+      headSha: body.headSha.toLowerCase(),
+      owner: body.ownerLogin.toLowerCase(),
+      approved: body.decision === 'approve',
+      requestKey: body.requestKey,
+    },
+  };
+}
+
+function decisionStatusDescription({approved, at, requestKey}) {
+  return `Owner ${approved ? 'approved' : 'revoked'} at ${at}. Request ${requestKey}.`;
+}
+
+/**
+ * Read relayed owner decisions back from the trusted statuses this workflow
+ * published on the head. A status names its owner in the context and its
+ * verdict and time in the description; only a handle still in `owners` counts.
+ */
+function parseDecisionStatuses(statuses, {repository, headSha, owners}) {
+  const allowed = new Set((owners ?? []).map(owner => owner.toLowerCase()));
+  const decisions = [];
+  for (const status of statuses) {
+    if (
+      !['success', 'failure'].includes(status.state) ||
+      !status.context?.startsWith(DECISION_STATUS_PREFIX) ||
+      !isTrustedWorkflowStatus(status, repository)
+    ) {
+      continue;
+    }
+    const owner = status.context
+      .slice(DECISION_STATUS_PREFIX.length)
+      .toLowerCase();
+    if (!GITHUB_LOGIN.test(owner) || !allowed.has(owner)) continue;
+    const match = status.description?.match(
+      /^Owner (approved|revoked) at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)\. Request [A-Za-z0-9._:-]{1,64}\.$/,
+    );
+    if (!match || Number.isNaN(Date.parse(match[2]))) continue;
+    const approved = match[1] === 'approved';
+    if (approved !== (status.state === 'success')) continue;
+    decisions.push({approved, at: match[2], headSha, owner, source: 'command'});
+  }
+  return decisions;
+}
+
 function candidateTime(candidate) {
   const value = Date.parse(candidate.at);
   return Number.isNaN(value) ? Number.NEGATIVE_INFINITY : value;
@@ -105,6 +204,7 @@ function resolveOwnerDecision({
   reviews,
   comments,
   readyAttestations = [],
+  relayedDecisions = [],
   dismissalEvents = [],
   owners,
   headSha,
@@ -133,6 +233,16 @@ function resolveOwnerDecision({
       approved: true,
       at: attestation.at,
       source: 'ready',
+    });
+  }
+
+  // A relayed decision is the same owner act as an exact-head command.
+  for (const decision of relayedDecisions) {
+    if (decision.headSha !== headSha) continue;
+    consider(decision.owner, {
+      approved: decision.approved,
+      at: decision.at,
+      source: 'command',
     });
   }
 
@@ -324,18 +434,23 @@ function requiresOwnerApproval(records, options = {}) {
 }
 
 module.exports = {
+  DECISION_DISPATCH_TYPE,
+  DECISION_STATUS_PREFIX,
   GATE_STATUS_CONTEXT,
   OWNER_COMMAND_PREFIXES,
   READY_STATUS_PREFIX,
   canonicalRunUrl,
+  decisionStatusDescription,
   describeOwnerCommandProblem,
   isDispatchableOwnerCommand,
   newestGateRun,
   parseAuthority,
   parseCanonicalRunId,
+  parseDecisionStatuses,
   parseKind,
   parseOwnerCommand,
   parseOwnerCommandIntent,
+  parseOwnerDecisionDispatch,
   parseOwnerFile,
   parseReadyAttestations,
   requiredApprovalGroups,

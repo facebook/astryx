@@ -24,6 +24,9 @@ import {levenshteinDistance} from '../../foundation/text/string-utils.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
+/** The package that owns Core's components, hooks, and codemods. */
+export {CORE_PROVIDER_ID as CORE_PACKAGE} from '../../foundation/identity/providers.mjs';
+
 /**
  * Locate the @astryxdesign/core package directory, or throw the same
  * ERR_CORE_NOT_FOUND envelope the flat command threw. Shared by every hook leaf.

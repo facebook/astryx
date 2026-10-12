@@ -37,6 +37,8 @@ import {
   inputStatusFocusWithinStyles,
 } from '../Field';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {useFieldInputStyling} from '../Field/fieldParts';
+import {joinAriaIDs} from '../utils/inputAria';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -62,6 +64,7 @@ import {
   parseISOTime,
   type ISOTimeString,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
 import type {TimeInputProps} from './TimeInput';
 
 const sizeStyles = stylex.create({
@@ -190,23 +193,45 @@ export function TouchTimeField({
   hasSeconds = false,
   hasClear = false,
   hourFormat = '12h',
+  // Typed-field only: the wheels step by their own options and the sheet
+  // opens on tap, so neither reaches this surface.
+  increment: _increment,
+  hasAutoFocus: _hasAutoFocus,
   placeholder: placeholderFromProps,
   size: sizeProp,
   status,
   statusVariant = 'attached',
   labelTooltip,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
+  ...restProps
 }: TimeInputProps) {
+  const {rest, container} = useFieldInputStyling('TimeInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onClick: onClickProp,
+    ...controlProps
+  } = rest;
   const t = useTranslator();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.timeInput.placeholder');
   const size = useSize(sizeProp, 'md');
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
+  const fieldLabelID = useId();
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -234,6 +259,7 @@ export function TouchTimeField({
       statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
       statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ],
     inputGroup,
   );
@@ -425,10 +451,10 @@ export function TouchTimeField({
           status && !isDisabled && inputStatusHoverShadowStyles[status.type],
           status && inputStatusFocusWithinStyles[status.type],
           inputGroup && groupStyles.inGroup,
-          xstyle,
+          controlXstyle,
         ),
-        className,
-        style,
+        controlClassName,
+        controlStyle,
       )}>
       <button
         type="button"
@@ -440,6 +466,7 @@ export function TouchTimeField({
         <Icon icon="clock" size="sm" color="secondary" />
       </button>
       <input
+        {...controlProps}
         ref={mergedInputRef}
         id={id}
         type="text"
@@ -448,7 +475,7 @@ export function TouchTimeField({
         readOnly
         inputMode="none"
         onChange={() => {}}
-        onClick={openSheet}
+        onClick={chainEventHandlers(openSheet, onClickProp)}
         placeholder={placeholder}
         disabled={isEffectivelyDisabled && !showsDisabledMessage}
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
@@ -460,7 +487,11 @@ export function TouchTimeField({
         aria-haspopup="dialog"
         aria-autocomplete="none"
         autoComplete="off"
-        aria-labelledby={ariaLabelledBy}
+        aria-labelledby={
+          ariaLabelledByProp != null
+            ? joinAriaIDs(ariaLabelledBy ?? fieldLabelID, ariaLabelledByProp)
+            : ariaLabelledBy
+        }
         {...stylex.props(styles.input)}
       />
       {isBusy && <Spinner size="sm" />}
@@ -546,10 +577,12 @@ export function TouchTimeField({
   }
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}

@@ -1,6 +1,7 @@
 {
   "apiVersion": 1,
   "type": "component.detail",
+  "package": "@acme/kit",
   "data": {
     "type": "component",
     "name": "AcmeCard",

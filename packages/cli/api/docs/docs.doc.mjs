@@ -25,7 +25,8 @@ export const doc = {
     'ones the project\'s configured integrations contribute, including any ' +
     'topic an integration replaces or extends, so it depends on the cwd. ' +
     'A route opens a node of the docs tree instead: a namespace such as ' +
-    "`cli/api` returns its children one level down, a typed doc such as " +
+    '`cli/api` returns its children one level down (`depth` reads as many ' +
+    'levels as asked, and `detail` how much of each doc below), a typed doc such as ' +
     "`cli/api/functions/search` returns its content, and a guide the tree " +
     'places (`cli/integrations/quick-start`) reads like any topic. ' +
     'Every read but the list carries `links`, the commands that move from it: ' +
@@ -83,6 +84,18 @@ export const doc = {
         "Return the topic's section index (each section's key, title, and summary), even for a topic with one section.",
     },
     {
+      name: 'options.depth',
+      type: "number | 'all'",
+      description:
+        "How many levels below a docs-tree namespace to read: 0 for the namespace alone, 1 for its children (the default), 'all' for every level. Where a read stops, a child with docs below it carries childCount. A doc with nothing below it reads the same at any depth.",
+    },
+    {
+      name: 'options.detail',
+      type: "'brief' | 'compact' | 'full'",
+      description:
+        "How much of each doc below the named one a depth read returns: brief (the default) is its identity; compact and full add its text (a guide's sections, a namespace's or typed doc's content). Given alone, it reads one level down.",
+    },
+    {
       name: 'options.cwd',
       type: 'string',
       description:
@@ -108,22 +121,30 @@ export const doc = {
     {
       type: 'docs.detail.section',
       description:
-        'One ReferenceSection of the topic, found by key or title, with token-ref and reference blocks inlined.',
+        'One ReferenceSection of the topic, found by key or title, with token-ref and reference blocks inlined. Asked of a docs-tree namespace, it is the section read of the one guide below the namespace that has the section.',
     },
     {
       type: 'docs.node',
       description:
-        "A namespace or typed doc in the docs tree, read by its route: {id, route, kind, package, title, summary, breadcrumb, slots, content}. A namespace lists each slot's children one level down; a typed doc carries its content.",
+        "A namespace or typed doc in the docs tree, read by its route: {id, route, kind, package, title, summary, breadcrumb, slots, content}. A namespace lists each slot's children one level down, or as deep as depth asks, each child carrying its own slots, childCount where the read stops, and its text at compact or full detail; a typed doc carries its content.",
     },
   ],
   throws: [
+    {
+      code: 'ERR_INVALID_ARGUMENT',
+      when: "depth is not a whole number of levels or 'all'",
+    },
+    {
+      code: 'ERR_INVALID_DETAIL',
+      when: 'detail is not brief, compact, or full',
+    },
     {
       code: 'ERR_UNKNOWN_TOPIC',
       when: 'the topic is not a string, or matches no topic and no docs-tree route',
     },
     {
       code: 'ERR_UNKNOWN_SECTION',
-      when: 'a section is requested but is empty, matches no section, matches more than one, or is asked of a docs-tree namespace or typed doc, which have no sections',
+      when: 'a section is requested but is empty, matches no section, or matches more than one; asked of a docs-tree namespace, when no guide below it or more than one has the section (suggestions name those guides); or asked of a typed doc, which has no sections',
     },
   ],
   examples: [
@@ -134,12 +155,20 @@ export const doc = {
       code: "await docs('principles', undefined, {index: true});",
     },
     {label: 'A docs-tree namespace', code: "await docs('cli/api');"},
+    {
+      label: 'Every doc below a namespace, one entry each',
+      code: "await docs('cli', undefined, {depth: 'all'});",
+    },
+    {
+      label: 'A namespace and everything below it, in full',
+      code: "await docs('cli/integrations', undefined, {depth: 'all', detail: 'full'});",
+    },
     {label: 'One API function', code: "await docs('cli/api/functions/search');"},
     {
       label: 'A whole guide from the docs tree',
       code: "await docs('cli/integrations/quick-start');",
     },
-    {label: 'One section by key', code: "await docs('tokens', 'spacing');"},
+    {label: 'One section by key', code: "await docs('spacing', 'scale');"},
   ],
   command: 'docs',
   related: ['search', 'component', 'hook', 'template'],

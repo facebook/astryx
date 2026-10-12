@@ -123,13 +123,13 @@ export const doc = {
     {
       type: 'upgrade.run',
       description:
-        'The terminal run receipt: from, to, codemods (count), integrations, agentDocs, agentDocsRefreshed, registryCompositions (when receipts are found), filesChanged, transformsApplied, modifiedFiles, protectedFiles, declinedCandidates, errors, and complete. When a protected file still requires a change, complete is false and errorCode is ERR_CODEMOD_PROTECTED; the CLI exits nonzero while preserving the structured receipt.',
+        'The terminal run receipt: from, to, codemods (count), integrations, agentDocs, agentDocsRefreshed, registryCompositions (when receipts are found), sourcePathFound (false when the resolved `path` does not exist, so nothing was scanned), filesChanged, transformsApplied, modifiedFiles, protectedFiles, declinedCandidates, errors, and complete. When a protected file still requires a change, complete is false and errorCode is ERR_CODEMOD_PROTECTED; the CLI exits nonzero while preserving the structured receipt.',
     },
   ],
   throws: [
     {
       code: 'ERR_INVALID_ARGUMENT',
-      when: '`from` is missing (and neither `list` nor `registry` is set); `list` and `registry` are both set; `registry` is combined with `from`, `force`, `codemod`, `skipCodemod`, `integration` or `installDeps`; an `integration` specifier is invalid or not installed; or astryx.config fails to load or validate and no pending config codemod repairs it',
+      when: '`from` is missing (and neither `list` nor `registry` is set); `list` and `registry` are both set; `list` is combined with `from`, `force`, `apply`, `path` (non-default), `codemod`, `skipCodemod`, `integration` or `installDeps`; `registry` is combined with `from`, `force`, `codemod`, `skipCodemod`, `integration` or `installDeps`; an `integration` specifier is invalid or not installed; or astryx.config fails to load or validate and no pending config codemod repairs it',
     },
     {code: 'ERR_INVALID_VERSION', when: '`from` is not a valid semver string'},
     {code: 'ERR_PATH_TRAVERSAL', when: '`path` resolves outside cwd'},

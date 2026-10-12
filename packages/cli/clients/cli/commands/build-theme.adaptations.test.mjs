@@ -353,7 +353,7 @@ describe('theme build adaptations', () => {
     expect(rebuiltCss).toContain('light-dark(#111111, #eeeeee)');
     expect(rebuiltCss).toContain(':root { color-scheme: light dark; }');
     expect(`${rebuilt.stdout}${rebuilt.stderr}`).toContain(
-      'Font "Revision Webfont" is named by this theme but not loaded',
+      '[note] Fonts named but not loaded: "Revision Webfont".',
     );
   });
 
@@ -519,7 +519,11 @@ describe('theme build adaptations', () => {
     );
 
     const result = await build(project, themeFile);
+    expect(result.code).toBe(1);
     expect(`${result.stdout}${result.stderr}`).toContain('private var');
+    expect(fs.existsSync(path.join(themesDir, 'rule-private.css'))).toBe(true);
+    expect(fs.existsSync(path.join(themesDir, 'rule-private.js'))).toBe(true);
+    expect(fs.existsSync(path.join(themesDir, 'rule-private.d.ts'))).toBe(true);
   });
 
   it('rejects cycles across co-matching rules before writing output', async () => {

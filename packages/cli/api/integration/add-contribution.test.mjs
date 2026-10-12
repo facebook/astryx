@@ -12,7 +12,7 @@ import {
   integrationAddTemplate,
 } from './add-contribution.mjs';
 import {validateLocalIntegration} from './validate-integration.mjs';
-import {DOCS_TREE_CLI} from '../../foundation/integrations/cli-requirement.mjs';
+import {NAMESPACE_DOCS_CLI} from '../../foundation/integrations/cli-requirement.mjs';
 
 let tmpDir;
 
@@ -355,7 +355,7 @@ describe('integrationAdd doc', () => {
 
     // The namespace doc needs a CLI that reads it, declared as an optional peer.
     const pkg = JSON.parse(fs.readFileSync(path.join(tmpDir, 'package.json'), 'utf-8'));
-    expect(pkg.peerDependencies).toEqual({'@astryxdesign/cli': `>=${DOCS_TREE_CLI}`});
+    expect(pkg.peerDependencies).toEqual({'@astryxdesign/cli': '>=0.6.4'});
     expect(pkg.peerDependenciesMeta).toEqual({'@astryxdesign/cli': {optional: true}});
 
     const second = await integrationAdd('doc', 'upgrading', {
@@ -429,7 +429,7 @@ describe('integrationAdd doc', () => {
     write('^0.6.0');
     await integrationAdd('doc', 'deploying', {cwd: tmpDir, parent: 'acme'});
     expect(JSON.parse(fs.readFileSync(file, 'utf-8')).peerDependencies).toEqual({
-      '@astryxdesign/cli': `>=${DOCS_TREE_CLI}`,
+      '@astryxdesign/cli': `>=${NAMESPACE_DOCS_CLI}`,
     });
     write('^9.1.0');
     await integrationAdd('doc', 'upgrading', {cwd: tmpDir, parent: 'acme'});

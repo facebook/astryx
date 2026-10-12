@@ -8,11 +8,16 @@ export const doc = {
   name: 'doctor integration components',
   displayName: 'astryx doctor integration components',
   namespace: 'cli/commands',
-  summary: 'Warn when integration component names conflict with Core',
+  summary: 'Check integration component names and replacements against Core',
   description:
     'Compares one local or installed integration with Core component names. A ' +
     'conflict is allowed and exits successfully, but the report recommends ' +
-    'renaming and gives the exact --package command for an intentional overlap.',
+    'renaming and gives the exact --package command for an intentional overlap. ' +
+    "It also checks each component's replaces: in a package that declares the CLI " +
+    'range that turns replacement on, a missing Core target, an invalid value, a ' +
+    'component named after a different Core component, or two replacements for one ' +
+    'Core component is an error. In a package without that range they are warnings, ' +
+    'with a warning for each such component, naming the range to declare.',
   fn: 'integrationComponentConflicts',
   args: [
     {
@@ -31,8 +36,14 @@ export const doc = {
     },
   ],
   exitCodes: [
-    {code: 0, when: 'the check completed; component conflicts are warnings'},
-    {code: 1, when: 'the integration is invalid or Core cannot be resolved'},
+    {
+      code: 0,
+      when: 'the check completed; component name conflicts, and replaces findings for a package without the CLI range, are warnings',
+    },
+    {
+      code: 1,
+      when: 'the integration is invalid, Core cannot be resolved, or a package that declares the CLI range has an invalid replaces',
+    },
   ],
   related: ['doctor integration templates', 'component'],
 };

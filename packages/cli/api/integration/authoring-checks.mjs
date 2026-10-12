@@ -24,6 +24,7 @@ import {
   discoverIntegrationComponents,
   discoverOwnedComponents,
 } from '../../foundation/discovery/component-discovery.mjs';
+import {loadComponentReplacements} from '../component/_adapter.mjs';
 import {
   discoverBuiltinTopics,
   discoverIntegrationDocs,
@@ -92,6 +93,7 @@ function addErrors(issues, errors, code) {
 export async function integrationTemplateConflicts(pkg, options = {}) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
+  const validated = resolved.found;
   const name = resolved.found ? (resolved.name ?? null) : null;
   const version = resolved.found ? (resolved.version ?? null) : null;
   const issues = [...resolved.issues];
@@ -99,7 +101,7 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
   if (!resolved.integration || name == null) {
     return {
       type: 'integration.template-conflicts',
-      data: {name, version, conflicts: [], issues},
+      data: {validated, name, version, conflicts: [], issues},
     };
   }
 
@@ -215,7 +217,7 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
 
   return {
     type: 'integration.template-conflicts',
-    data: {name, version, conflicts, issues},
+    data: {validated, name, version, conflicts, issues},
   };
 }
 
@@ -228,6 +230,7 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
 export async function integrationComponentConflicts(pkg, options = {}) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
+  const validated = resolved.found;
   const name = resolved.found ? (resolved.name ?? null) : null;
   const version = resolved.found ? (resolved.version ?? null) : null;
   const issues = [...resolved.issues];
@@ -235,7 +238,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
   if (!resolved.integration?.components || name == null) {
     return {
       type: 'integration.component-conflicts',
-      data: {name, version, conflicts: [], issues},
+      data: {validated, name, version, conflicts: [], issues},
     };
   }
 
@@ -249,7 +252,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
     });
     return {
       type: 'integration.component-conflicts',
-      data: {name, version, conflicts: [], issues},
+      data: {validated, name, version, conflicts: [], issues},
     };
   }
 
@@ -258,9 +261,28 @@ export async function integrationComponentConflicts(pkg, options = {}) {
       .filter(record => record.package === '@astryxdesign/core')
       .map(record => record.name),
   );
+  // Component replacements (spec:AST-035 FR10-FR15). A package without the
+  // CLI floor gets only warnings, so its exit code is what it was before the
+  // floor existed. An active replacement named after its own target is
+  // intentional, not a conflict.
+  const replacements = await loadComponentReplacements(coreDir, [
+    resolved.integration,
+  ]);
+  addErrors(issues, replacements.findings, 'invalid_component_replacement');
+  const intentional = new Set(
+    replacements.active
+      .filter(
+        active => active.package === name && active.name === active.target,
+      )
+      .map(active => active.name),
+  );
+
   const run = getCliInvocation(cwd);
   const conflicts = discoverIntegrationComponents(resolved.integration)
-    .filter(component => coreNames.has(component.name))
+    .filter(
+      component =>
+        coreNames.has(component.name) && !intentional.has(component.name),
+    )
     .map(component => ({
       name: component.name,
       severity: /** @type {const} */ ('warning'),
@@ -274,7 +296,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
 
   return {
     type: 'integration.component-conflicts',
-    data: {name, version, conflicts, issues},
+    data: {validated, name, version, conflicts, issues},
   };
 }
 
@@ -287,6 +309,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
 export async function integrationDocConflicts(pkg, options = {}) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
+  const validated = resolved.found;
   const name = resolved.found ? (resolved.name ?? null) : null;
   const version = resolved.found ? (resolved.version ?? null) : null;
   const issues = [...resolved.issues];
@@ -294,7 +317,7 @@ export async function integrationDocConflicts(pkg, options = {}) {
   if (!resolved.integration?.docs || name == null) {
     return {
       type: 'integration.doc-conflicts',
-      data: {name, version, findings: [], issues},
+      data: {validated, name, version, findings: [], issues},
     };
   }
 
@@ -388,6 +411,6 @@ export async function integrationDocConflicts(pkg, options = {}) {
 
   return {
     type: 'integration.doc-conflicts',
-    data: {name, version, findings, issues},
+    data: {validated, name, version, findings, issues},
   };
 }

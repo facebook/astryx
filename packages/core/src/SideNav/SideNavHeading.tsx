@@ -4,7 +4,8 @@
 
 /**
  * @file SideNavHeading.tsx
- * @input Uses React, useRef, useCallback, ReactNode, StyleX, usePopover
+ * @input Uses React, useRef, useCallback, ReactNode, StyleX, usePopover,
+ *        useMenuHover
  * @output Exports SideNavHeading component and SideNavHeadingProps
  * @position Core implementation; used inside SideNav header slot
  *
@@ -38,6 +39,7 @@ import {Tooltip} from '../Tooltip';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useSideNavCollapse} from './SideNavCollapseContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
@@ -368,6 +370,7 @@ export function SideNavHeading({
   ref,
   ...props
 }: SideNavHeadingProps) {
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const LinkComponent = useLinkComponent(as);
   const {isCollapsed} = useSideNavCollapse();
@@ -395,6 +398,12 @@ export function SideNavHeading({
     isOpen: popover.isOpen,
     isEnabled: !!menu,
     showDelay: 0,
+    // Collapsed, the flyout opens beside the icon button, so a press on the
+    // button lands outside the auto popover and the browser would light-dismiss
+    // a hover-open before the click guard can confirm it. Expanded, the panel
+    // overlaps the heading, and the trigger is a <div> whose click must not be
+    // default-prevented: it holds the heading's own links.
+    popoverId: isCollapsed ? popover.id : undefined,
   });
 
   const closeMenuCtx = useMemo(() => ({closeMenu}), [closeMenu]);
@@ -430,6 +439,7 @@ export function SideNavHeading({
           ref={collapsedSetRef as React.Ref<HTMLAnchorElement>}
           href={headingHref}
           aria-label={heading}
+          {...pressable}
           data-testid={testId}
           {...mergeProps(
             themeProps('side-nav-heading'),
@@ -452,6 +462,7 @@ export function SideNavHeading({
             ref={collapsedSetRef}
             type="button"
             aria-label={heading}
+            {...pressable}
             data-testid={testId}
             {...popover.triggerProps}
             {...triggerProps}

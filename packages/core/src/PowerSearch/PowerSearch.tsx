@@ -39,6 +39,7 @@ import type {IconType} from '../Icon';
 import type {IconName} from '../Icon/globalIconRegistry';
 import type {InputStatus, FieldStatusVariant} from '../Field';
 import {usePopover} from '../Popover/usePopover';
+import {layerViewportInset} from '../Layer/layerViewportInset.stylex';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {
   spacingVars,
@@ -117,12 +118,14 @@ const tokenValueStyles = stylex.create({
 const popoverLayerStyles = stylex.create({
   layer: {
     width: 'anchor-size(width)',
-    // Floor for comfortable editing, yielding when the available inline
-    // space cannot fit it, so the editor stays on-screen at narrow viewport
-    // widths (#4761). Percentages resolve against the position-area region
-    // (anchor start edge to viewport end), falling back to the viewport
-    // where area sizing is not honored.
-    minWidth: `min(400px, calc(100% - ${spacingVars['--spacing-4']}))`,
+    // Floor for comfortable editing, clamped by the layer runtime's viewport
+    // cap (spec:AST-059 FR7) rather than by the room beside the anchor; the
+    // runtime flips or slides the editor into view when it does not fit there
+    // (#4761).
+    minWidth: stylex.firstThatWorks(
+      `min(400px, ${layerViewportInset.maxInlineSize})`,
+      `min(400px, ${layerViewportInset.maxInlineSizeFallback})`,
+    ),
   },
 });
 
@@ -752,6 +755,25 @@ export function PowerSearch({
         return;
       }
 
+      // An "empty" operator filter has no value for the built-in editor to
+      // edit: commit it as that editor's save would, the way adding one does,
+      // instead of opening it. A consumer's `empty` Editor override still opens.
+      const operator = config.getOperator(filter.field, filter.operator);
+      if (
+        operator?.value.type === 'empty' &&
+        componentOverrides?.empty?.Editor == null
+      ) {
+        const newFilters = [...filters];
+        newFilters[index] = {
+          field: filter.field,
+          operator: filter.operator,
+          value: {type: 'empty'},
+        };
+        onChange(newFilters, 'edit', index);
+        setPopoverState({type: 'idle'});
+        return;
+      }
+
       setPopoverState({
         type: 'editing',
         filterIndex: index,
@@ -762,7 +784,15 @@ export function PowerSearch({
         },
       });
     },
-    [filters, isReadOnly, isDisabled, setPopoverState],
+    [
+      filters,
+      isReadOnly,
+      isDisabled,
+      config,
+      componentOverrides,
+      onChange,
+      setPopoverState,
+    ],
   );
 
   // Handle popover save
@@ -1084,9 +1114,9 @@ export function PowerSearch({
           statusVariant={statusVariant}
           onFocus={onFocus}
           onBlur={onBlur}
-          xstyle={xstyle}
-          className={className}
-          style={style}
+          containerXstyle={xstyle}
+          containerClassName={className}
+          containerStyle={style}
           data-testid={testId}
         />
       </div>

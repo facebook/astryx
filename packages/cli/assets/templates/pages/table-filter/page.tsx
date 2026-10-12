@@ -3250,7 +3250,7 @@ export default function TableFilterTemplate() {
         renderValue={option =>
           `${field.label} ${field.operatorLabel} ${option.label ?? option.value}`
         }
-        xstyle={active ? styles.filterFill : undefined}
+        controlXstyle={active ? styles.filterFill : undefined}
         onChange={next =>
           setFieldFilter(
             field.key,
@@ -3319,7 +3319,7 @@ export default function TableFilterTemplate() {
         }
         options={[...field.options]}
         value={multiValues[field.key]}
-        xstyle={
+        controlXstyle={
           multiValues[field.key].length > 0 ? styles.filterFill : undefined
         }
         onChange={next => setMultiValues(field.key, next)}
@@ -3342,7 +3342,7 @@ export default function TableFilterTemplate() {
       value={quoteDraft}
       onChange={commitQuote}
       contentXstyle={styles.quotePopover}
-      xstyle={hasQuoteFilter ? styles.filterFill : undefined}>
+      controlXstyle={hasQuoteFilter ? styles.filterFill : undefined}>
       {(range, onChange, close) => (
         <VStack gap={4}>
           <VStack gap={0}>
