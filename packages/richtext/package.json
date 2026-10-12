@@ -1,7 +1,7 @@
 {
   "name": "@astryxdesign/richtext",
   "displayName": "Rich Text",
-  "version": "0.1.9",
+  "version": "0.7.0",
   "description": "Astryx rich text — a Lexical-based rich text editor and viewer, styled with Astryx design tokens.",
   "author": "Meta Open Source",
   "license": "MIT",
