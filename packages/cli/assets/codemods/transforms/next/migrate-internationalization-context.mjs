@@ -272,7 +272,12 @@ export default function migrateInternationalizationContext(file, api) {
     /** @type {any[]} */ statements,
     /** @type {string} */ name,
   ) =>
-    statements.some((/** @type {any} */ statement) => {
+    statements.some((/** @type {any} */ wrapped) => {
+      // `export const …` / `export function …` inside a namespace body.
+      const statement =
+        wrapped.type === 'ExportNamedDeclaration' && wrapped.declaration
+          ? wrapped.declaration
+          : wrapped;
       if (statement.type === 'VariableDeclaration') {
         return statement.declarations.some((/** @type {any} */ d) =>
           patternNames(d.id).includes(name),
@@ -559,7 +564,8 @@ export default function migrateInternationalizationContext(file, api) {
     }
   }
 
-  // Drop the context import when the file no longer names it anywhere.
+  // Drop the context import when the file no longer names it anywhere, and
+  // an import declaration that is left with no specifier.
   for (const localName of contextNames) {
     const stillNamed =
       root
@@ -570,6 +576,7 @@ export default function migrateInternationalizationContext(file, api) {
         .size() > 0 || root.find(j.JSXIdentifier, {name: localName}).size() > 0;
     if (stillNamed) continue;
     for (const path of astryxImports) {
+      const before = (path.node.specifiers ?? []).length;
       path.node.specifiers = (path.node.specifiers ?? []).filter(
         (/** @type {any} */ s) =>
           !(
@@ -578,6 +585,7 @@ export default function migrateInternationalizationContext(file, api) {
             (s.local?.name ?? CONTEXT) === localName
           ),
       );
+      if (before > 0 && path.node.specifiers.length === 0) path.prune();
     }
   }
 
