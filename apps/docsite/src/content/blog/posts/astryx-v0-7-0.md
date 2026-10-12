@@ -77,11 +77,13 @@ Menus place real controls beside their rows while screen readers still hear a no
 
 ### Put controls beside menu rows
 
-![An open Assign reviewer dropdown. A Filter reviewers text field sits above the four name rows and a Create team button sits below them, all inside the same popover.](/blog/astryx-v0-7-0/menu-header-footer.png)
+![An open Assign reviewer dropdown. A Filter reviewers text field sits above the four name rows, and below them a Create team button with a plus icon, all inside the same popover.](/blog/astryx-v0-7-0/menu-header-footer.png)
 
 _Header and footer controls stay outside the menu itself, so screen readers hear a normal menu and Tab reaches each region in order._
 
 ```tsx
+import {PlusIcon} from '@heroicons/react/24/outline';
+
 <DropdownMenu
   button={{label: 'Assign reviewer'}}
   header={
@@ -93,16 +95,23 @@ _Header and footer controls stay outside the menu itself, so screen readers hear
       onChange={setQuery}
     />
   }
-  footer={<Button label="Create team" variant="ghost" onClick={createTeam} />}
+  footer={
+    <Button
+      label="Create team"
+      variant="secondary"
+      icon={<Icon icon={PlusIcon} />}
+      onClick={createTeam}
+    />
+  }
   items={reviewerActions}
-/>
+/>;
 ```
 
 ### Drill into submenus on a phone
 
 ![A phone screen with an Actions menu open under its button. A finger taps the Move to row, which has a chevron, and the menu's rows are replaced in place by a Back to Actions row followed by Backlog and Next release. Tapping Back returns to the first set of rows.](/blog/astryx-v0-7-0/mobile-submenu-drill-in.webp)
 
-_Submenus replace the current rows instead of opening an off-screen flyout, with a Back row named for the menu it returns to._
+_Opened by touch, a sub-menu drills into the current rows, with a Back row named for the menu it returns to. With a mouse it still opens as a flyout; set `presentation` on `DropdownMenuSubMenu` to force either mode._
 
 ```tsx
 <DropdownMenu button={{label: 'Actions'}}>
@@ -115,11 +124,10 @@ _Submenus replace the current rows instead of opening an off-screen flyout, with
 </DropdownMenu>
 ```
 
-### Close the top layer first
+### Keep nested layers in order
 
-![A phone screen with a bottom sheet open over a dimmed page; inside the sheet an Assign reviewer menu is opened. The first Escape press closes only the menu and the sheet stays. The second Escape press slides the sheet away and the page is back.](/blog/astryx-v0-7-0/sheet-escape-order.webp)
-
-The `Esc` keycap is added to show each press; one press closes only the inner menu, and the next closes the sheet.
+- **Layers and dialogs:** Escape closes the top layer first for menus, popovers, and dialogs inside a sheet. Nested layers stay inside their nearest dialog, and Dialog focus follows the last keyboard, mouse, or touch input as it opens and returns.
+- **Toasts:** They stay visible and clickable above open dialogs.
 
 ### Give BottomSheet content room
 
@@ -524,7 +532,7 @@ _Spacing tokens use rem (`--spacing-N` = N × 0.25rem), so padding and gaps foll
 
 The row-expansion chevron also stays centered in its fixed column.
 
-**Pending merge — [#7374](https://github.com/facebook/astryx/pull/7374):** Matcha and Y2K will move their own spacing steps to rem so every first-party theme follows the same rule.
+Matcha and Y2K's own spacing steps are rem too, so every first-party theme follows the same rule.
 
 ## Accessibility and localization
 
@@ -537,6 +545,8 @@ Keyboard users can reach overflowing sheet content and keep visible focus cues a
 _The pointer icon is added to show mouse input. Dialog's initial focus and the focus it returns on close follow the last input: the indicator shows after keyboard use and stays hidden after a mouse click or tap._
 
 ### Announce an async outcome
+
+Previously, Banner's visual `status` automatically chose a live-region role, so the banner's appearance—not the async action—decided when screen readers heard it. Banners are now quiet by default; announce once from the action that finished, or set a role when the Banner itself is the persistent message.
 
 ```tsx
 import {Banner} from '@astryxdesign/core/Banner';
@@ -673,7 +683,7 @@ The highest-traffic API changes look like this:
 22. **Phone typography starts at 16px** ([#6699](https://github.com/facebook/astryx/pull/6699)) — take the new Neutral, Chocolate, Butter, and Stone scale as-is, or add a later touch-and-narrow rule to keep 14px or your own scale; no codemod.
 23. **`emptySearchResultsText` is removed** (pending [#7289](https://github.com/facebook/astryx/pull/7289)) — rename it to `emptySearchText`; `rename-empty-search-results-text` handles supported components and static trigger objects.
 24. **Core spacing follows the root font size** ([#7359](https://github.com/facebook/astryx/pull/7359)) — CSS variable users need no change; code that parses px converts rem with the root size or reads the computed length; no codemod.
-25. **Matcha and Y2K spacing follows the root font size** (pending [#7374](https://github.com/facebook/astryx/pull/7374)) — take the new default, which is pixel-equal at a 16px root, or override the spacing tokens in px to keep fixed sizing; no codemod.
+25. **Matcha and Y2K spacing follows the root font size** ([#7374](https://github.com/facebook/astryx/pull/7374)) — take the new default, which is pixel-equal at a 16px root, or override the spacing tokens in px to keep fixed sizing; no codemod.
 26. **Doctor fails on unloadable configured projects** (pending [#7130](https://github.com/facebook/astryx/pull/7130)) — install or repair the named integration, remove it from config, or fix the config field in the error; no codemod.
 
 ## Thank you

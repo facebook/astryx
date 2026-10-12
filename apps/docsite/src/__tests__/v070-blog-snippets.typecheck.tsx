@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
-import {ArrowUpTrayIcon} from '@heroicons/react/24/outline';
+import {ArrowUpTrayIcon, PlusIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 import {Banner} from '@astryxdesign/core/Banner';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
@@ -159,7 +159,12 @@ export function Overlays() {
           />
         }
         footer={
-          <Button label="Create team" variant="ghost" onClick={createTeam} />
+          <Button
+            label="Create team"
+            variant="secondary"
+            icon={<Icon icon={PlusIcon} />}
+            onClick={createTeam}
+          />
         }
         items={reviewerActions}
       />
