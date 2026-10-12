@@ -686,6 +686,42 @@ describe('PR comment preview reconciliation', () => {
     );
   });
 
+  it('stands down when an earlier attempt reports after a newer attempt exists', async () => {
+    const first = identity({sourceRunAttempt: 1, sourceConclusion: 'failure'});
+    const harness = githubFixture({value: first});
+    const firstPaths = fixture(first);
+    const core = {info: vi.fn(), warning: vi.fn()};
+    // Attempt 2 is the run's latest; the event being processed is attempt 1's.
+    harness.github.rest.actions.getWorkflowRun.mockResolvedValue({
+      data: {...sourceRun(first), run_attempt: 2, conclusion: 'success'},
+    });
+    harness.github.rest.actions.getWorkflowRunAttempt = vi.fn(async () => ({
+      data: sourceRun(first),
+    }));
+
+    const result = await reconcilePrComment({
+      github: harness.github,
+      core,
+      context: {
+        repo: {owner: 'facebook', repo: 'astryx'},
+        serverUrl: 'https://github.com',
+      },
+      expectedIdentity: first,
+      analysisPath: firstPaths.analysis,
+      metadataPath: firstPaths.metadata,
+      a11yPath: firstPaths.a11y,
+      visualPath: firstPaths.visual,
+      probePreview: async () => true,
+    });
+
+    expect(result.action).toBe('none');
+    expect(harness.state.created).toHaveLength(0);
+    expect(harness.state.updated).toHaveLength(0);
+    expect(core.info).toHaveBeenCalledWith(
+      expect.stringContaining('supersedes the reported attempt 1'),
+    );
+  });
+
   it('updates one same-PR comment across repeated source attempts', async () => {
     const first = identity();
     const harness = githubFixture({value: first});

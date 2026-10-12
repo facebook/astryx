@@ -260,6 +260,38 @@ export async function confirmSourceRunIdentity({
   return actual;
 }
 
+/**
+ * The run's latest attempt number, or null when the client cannot say. A
+ * report for an earlier attempt must not replace the latest attempt's: that
+ * attempt's own completion publishes.
+ */
+export async function latestAttemptOf({github, owner, repo, sourceRunId}) {
+  const {data: run} = await github.rest.actions.getWorkflowRun({
+    owner,
+    repo,
+    run_id: positiveInteger(sourceRunId, 'source run id'),
+  });
+  const attempt = Number(run?.run_attempt);
+  return Number.isSafeInteger(attempt) && attempt > 0 ? attempt : null;
+}
+
+/** True when a newer attempt of the reported run exists. */
+async function supersededByNewerAttempt({github, owner, repo, identity, core}) {
+  const latest = await latestAttemptOf({
+    github,
+    owner,
+    repo,
+    sourceRunId: identity.sourceRunId,
+  });
+  if (latest != null && latest > identity.sourceRunAttempt) {
+    core.info(
+      `Attempt ${latest} of source run ${identity.sourceRunId} supersedes the reported attempt ${identity.sourceRunAttempt}; its own completion publishes.`,
+    );
+    return true;
+  }
+  return false;
+}
+
 export function validateAnalysisMetadata(metadata, identity) {
   if (String(metadata?.prNumber) !== String(identity.prNumber)) {
     refuse('analysis pull request does not match');
@@ -383,6 +415,9 @@ export async function reconcilePrComment({
     repo,
     expected: expectedIdentity,
   });
+  if (await supersededByNewerAttempt({github, owner, repo, identity, core})) {
+    return {action: 'none', body: null, identity};
+  }
   const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${identity.sourceRunId}`;
   const analysisReady = trustedAnalysis({
     analysisPath,
@@ -483,14 +518,19 @@ export async function reconcilePrComment({
     });
   }
 
-  // Vercel readiness can take minutes after the source run finishes. Check the
-  // current PR and CI attempt again before changing any comment.
+  // Vercel readiness can take minutes after the source run finishes. Confirm
+  // the reported attempt's identity again, and stand down if a newer attempt
+  // of the run has started since: an earlier attempt's report must not replace
+  // the latest attempt's.
   await confirmSourceRunIdentity({
     github,
     owner,
     repo,
     expected: expectedIdentity,
   });
+  if (await supersededByNewerAttempt({github, owner, repo, identity, core})) {
+    return {action: 'none', body: null, identity};
+  }
   if (
     previewOrigin &&
     (await lookupPreview({
