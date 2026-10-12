@@ -30,7 +30,9 @@
  * between the element and the module shadows it, as does a `var` anywhere in
  * the enclosing function and a named class expression's own name). The
  * provider is imported under a free name when the module already binds
- * `InternationalizationProvider` to something of its own.
+ * `InternationalizationProvider` to something of its own, and the name
+ * written must itself reach that import at the edit site. An element whose
+ * value arrives through spread props gets the TODO and no rewrite.
  * The import gains `InternationalizationProvider` under the file's existing
  * local name for it when it has one, and loses the context import when
  * nothing else reads it. A second run changes nothing.
@@ -154,10 +156,14 @@ export default function migrateInternationalizationContext(file, api) {
     }
     providerLocalName = candidate;
   }
+  // A `type` specifier of the provider proves nothing at runtime, so it does
+  // not count as an import either.
   const providerNeedsImport = !astryxImports.some((/** @type {any} */ path) =>
     (path.node.specifiers ?? []).some(
       (/** @type {any} */ s) =>
-        s.type === 'ImportSpecifier' && s.imported?.name === PROVIDER,
+        s.type === 'ImportSpecifier' &&
+        s.importKind !== 'type' &&
+        s.imported?.name === PROVIDER,
     ),
   );
 
@@ -390,12 +396,16 @@ export default function migrateInternationalizationContext(file, api) {
       (/** @type {any} */ a) =>
         a.type === 'JSXAttribute' && a.name?.name === 'value',
     );
-    if (
-      !valueAttribute ||
-      valueAttribute.value?.type !== 'JSXExpressionContainer'
-    ) {
+    if (!valueAttribute) {
+      // The value arrives through spread props: nothing to map, but the
+      // element still needs the upgrade's marker.
+      const spread = (opening.attributes ?? []).find(
+        (/** @type {any} */ a) => a.type === 'JSXSpreadAttribute',
+      );
+      if (spread && addComment(spread, TODO_EXPRESSION)) changed = true;
       return;
     }
+    if (valueAttribute.value?.type !== 'JSXExpressionContainer') return;
     const value = valueAttribute.value.expression;
 
     /** @type {any[]} */
@@ -444,6 +454,12 @@ export default function migrateInternationalizationContext(file, api) {
       return;
     }
 
+    // The name written must reach the provider import from here: a local
+    // that shadows it at the edit site would capture the element.
+    if (namespace === '' && !isImportBinding(path, providerLocalName)) {
+      if (addComment(valueAttribute, TODO_EXPRESSION)) changed = true;
+      return;
+    }
     const providerName =
       namespace === ''
         ? j.jsxIdentifier(providerLocalName)

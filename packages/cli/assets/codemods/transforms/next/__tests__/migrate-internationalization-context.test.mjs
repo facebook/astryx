@@ -197,6 +197,39 @@ const app = <InternationalizationContext value={i18n}><App /></Internationalizat
     );
   });
 
+  it('does not count a type specifier of the provider as its import', () => {
+    const input = `import {InternationalizationContext, type InternationalizationProvider} from '@astryxdesign/core/i18n';
+const app = <InternationalizationContext value={i18n}><App /></InternationalizationContext>;
+export type P = typeof InternationalizationProvider;`;
+    const output = folded(apply(input));
+    expect(output).toContain(
+      '<InternationalizationProvider2 locale={i18n.locale}',
+    );
+    expect(output).toMatch(
+      /InternationalizationProvider as InternationalizationProvider2.*from '@astryxdesign\/core\/i18n'/,
+    );
+  });
+
+  it('leaves an element behind the TODO when a local shadows the provider at the edit site, or when its value is spread in', () => {
+    const input = `import {InternationalizationContext, InternationalizationProvider} from '@astryxdesign/core/i18n';
+function Shadowing() {
+  const InternationalizationProvider = makeLocalProvider();
+  return <InternationalizationContext value={i18n}><A /></InternationalizationContext>;
+}
+const spread = <InternationalizationContext {...props}><B /></InternationalizationContext>;`;
+    const output = folded(apply(input));
+    expect(output).toContain(
+      '<InternationalizationContext value={i18n}><A /></InternationalizationContext>',
+    );
+    expect(output).toContain(
+      '<InternationalizationContext {...props}><B /></InternationalizationContext>',
+    );
+    expect(output.match(new RegExp(EXPRESSION_TODO, 'g'))).toBeNull();
+    expect(apply(input).match(new RegExp(EXPRESSION_TODO, 'g'))).toHaveLength(
+      2,
+    );
+  });
+
   it('leaves a shadowed name and a type-only import alone', () => {
     const shadowed = `import {InternationalizationContext as Ctx} from '@astryxdesign/core/i18n';
 function Row({Ctx}) {
