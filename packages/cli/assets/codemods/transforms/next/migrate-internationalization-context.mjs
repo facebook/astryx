@@ -7,21 +7,28 @@
  * configures Astryx: `useLocale`, `useDirection`, `useCollator` and every
  * core component read a runtime context that only `InternationalizationProvider`
  * writes. The provider takes the same configuration under its own prop names,
- * so the rewrite is mechanical:
+ * so the rewrite is mechanical where the value is plain:
  *
- *   <InternationalizationContext value={v}>        → <InternationalizationProvider
- *   <InternationalizationContext.Provider value={v}>   locale={v.locale}
- *                                                      dir={v.direction}
- *                                                      messages={v.messages}
- *                                                      overrides={v.overrides}>
+ *   <InternationalizationContext value={v}>          → <InternationalizationProvider
+ *   <InternationalizationContext.Provider value={v}>     locale={v.locale}
+ *                                                        dir={v.direction}
+ *                                                        messages={v.messages}
+ *                                                        overrides={v.overrides}>
  *
- * An inline object literal maps key by key and keeps only the keys it has. A
- * `translate` key has no provider input — the provider resolves from
- * `messages` and `overrides` — so it is left behind a TODO rather than
- * dropped. Only elements bound to an Astryx import are rewritten (named,
- * aliased, or namespace); the import gains `InternationalizationProvider`
- * when the file does not already have it, and loses the context import when
- * nothing else reads it.
+ * A variable maps field by field; an inline object literal maps key by key
+ * and keeps only the keys it has. The provider has no `translate` input, and
+ * `translate` is a field of every context value, so every rewrite carries a
+ * TODO naming where those strings go (`messages` or `overrides`); a literal's
+ * `translate` key is kept beside it. A value that is any other expression
+ * (a call, a spread into a literal, a conditional) is left unchanged behind a
+ * TODO that says why: a call would run once per prop, and a spread of the
+ * ambient value would mount a provider without the app's catalogs.
+ *
+ * Only an element whose name resolves, unshadowed, to an Astryx import is
+ * rewritten (named, aliased, or namespace; a type-only import proves nothing).
+ * The import gains `InternationalizationProvider` under the file's existing
+ * local name for it when it has one, and loses the context import when
+ * nothing else reads it. A second run changes nothing.
  */
 
 const PACKAGE_PATTERN = /^@(astryxdesign|xds)\/core(\/i18n)?$/u;
@@ -36,15 +43,22 @@ const PROP_FOR_KEY = new Map([
   ['overrides', 'overrides'],
 ]);
 
-const TODO =
-  ' TODO(astryx upgrade): InternationalizationProvider has no `translate` input; ' +
-  'express these strings as `messages` (per locale) or `overrides`. ';
+const TODO_PREFIX = ' TODO(astryx upgrade): ';
+const TODO_TRANSLATE =
+  `${TODO_PREFIX}InternationalizationProvider has no \`translate\` input; ` +
+  'express those strings as `messages` (a catalog per locale) or `overrides`. ';
+const TODO_EXPRESSION =
+  `${TODO_PREFIX}a raw InternationalizationContext value no longer configures Astryx; ` +
+  'mount InternationalizationProvider with this value\u2019s `locale`, `direction` (as `dir`), ' +
+  '`messages` and `overrides`. Not rewritten here: the value is an expression, ' +
+  'and a provider takes no catalogs from a parent, so a spread of the ambient ' +
+  'value would lose them and a call would run once per prop. ';
 
 export const meta = {
   title:
     'Migrate a raw InternationalizationContext value to InternationalizationProvider',
   description:
-    'Rewrites `<InternationalizationContext value={…}>` (or its `.Provider`) to `<InternationalizationProvider locale dir messages overrides>`, the only way to configure Astryx.',
+    'Rewrites `<InternationalizationContext value={…}>` (or its `.Provider`) to `<InternationalizationProvider locale dir messages overrides>`, the only way to configure Astryx; a `translate` field and any non-literal value are left behind a TODO.',
   fileExtensions: ['.tsx', '.jsx', '.ts', '.js', '.mjs', '.cjs'],
 };
 
@@ -59,11 +73,14 @@ export default function migrateInternationalizationContext(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
 
-  // Local names bound to the Astryx context (named/aliased) and namespaces.
+  // Runtime bindings to the Astryx context (named/aliased), namespaces, and
+  // the file's local name for the provider if it already imports one.
   /** @type {Set<string>} */
   const contextNames = new Set();
   /** @type {Set<string>} */
   const namespaceNames = new Set();
+  /** @type {string | null} */
+  let providerLocalName = null;
   /** @type {any[]} */
   const astryxImports = [];
   root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
@@ -73,11 +90,12 @@ export default function migrateInternationalizationContext(file, api) {
     astryxImports.push(path);
     for (const specifier of path.node.specifiers ?? []) {
       if (specifier.importKind === 'type') continue;
-      if (
-        specifier.type === 'ImportSpecifier' &&
-        specifier.imported?.name === CONTEXT
-      ) {
-        contextNames.add(specifier.local?.name ?? CONTEXT);
+      if (specifier.type === 'ImportSpecifier') {
+        if (specifier.imported?.name === CONTEXT) {
+          contextNames.add(specifier.local?.name ?? CONTEXT);
+        } else if (specifier.imported?.name === PROVIDER) {
+          providerLocalName = specifier.local?.name ?? PROVIDER;
+        }
       } else if (specifier.type === 'ImportNamespaceSpecifier') {
         namespaceNames.add(specifier.local.name);
       }
@@ -85,15 +103,24 @@ export default function migrateInternationalizationContext(file, api) {
   });
   if (contextNames.size === 0 && namespaceNames.size === 0) return undefined;
 
+  /** The binding a JSX identifier resolves to is the module-level import. */
+  const isImportBinding = (
+    /** @type {any} */ path,
+    /** @type {string} */ name,
+  ) => {
+    const scope = path.scope?.lookup(name);
+    return scope?.path.node.type === 'Program';
+  };
+
   /**
-   * The namespace a JSX name renders the context through, or `''` for a
-   * named binding, or null when the element is not the Astryx context.
-   * Accepts `Ctx`, `Ctx.Provider`, `ns.Ctx` and `ns.Ctx.Provider`.
-   * @param {any} name a JSXOpeningElement name
+   * How the element names the Astryx context: `''` for a named binding, the
+   * namespace's local name for `ns.Ctx`, or null when it is not the context
+   * (an unrelated name, or a shadowed one). Accepts a trailing `.Provider`.
+   * @param {any} path a JSXElement path
    * @returns {string | null}
    */
-  const contextNamespaceOf = name => {
-    // Peel a trailing `.Provider`.
+  const contextNamespaceOf = path => {
+    let name = path.node.openingElement.name;
     if (
       name.type === 'JSXMemberExpression' &&
       name.property?.type === 'JSXIdentifier' &&
@@ -102,26 +129,38 @@ export default function migrateInternationalizationContext(file, api) {
       name = name.object;
     }
     if (name.type === 'JSXIdentifier') {
-      return contextNames.has(name.name) ? '' : null;
+      return contextNames.has(name.name) && isImportBinding(path, name.name)
+        ? ''
+        : null;
     }
     if (
       name.type === 'JSXMemberExpression' &&
       name.object?.type === 'JSXIdentifier' &&
       name.property?.type === 'JSXIdentifier' &&
       name.property.name === CONTEXT &&
-      namespaceNames.has(name.object.name)
+      namespaceNames.has(name.object.name) &&
+      isImportBinding(path, name.object.name)
     ) {
       return name.object.name;
     }
     return null;
   };
 
+  const hasComment = (/** @type {any} */ node, /** @type {string} */ text) =>
+    (node.comments ?? []).some((/** @type {any} */ c) => c.value === text);
+  const addComment = (/** @type {any} */ node, /** @type {string} */ text) => {
+    if (hasComment(node, text)) return false;
+    node.comments ??= [];
+    node.comments.push(j.commentBlock(text, true, false));
+    return true;
+  };
+
   let changed = false;
   let needsNamedProvider = false;
   root.find(j.JSXElement).forEach((/** @type {any} */ path) => {
-    const opening = path.node.openingElement;
-    const namespace = contextNamespaceOf(opening.name);
+    const namespace = contextNamespaceOf(path);
     if (namespace === null) return;
+    const opening = path.node.openingElement;
     const valueAttribute = (opening.attributes ?? []).find(
       (/** @type {any} */ a) =>
         a.type === 'JSXAttribute' && a.name?.name === 'value',
@@ -137,50 +176,59 @@ export default function migrateInternationalizationContext(file, api) {
     /** @type {any[]} */
     const props = [];
     /** @type {any[]} */
-    const leftovers = [];
-    if (value.type === 'ObjectExpression') {
-      for (const property of value.properties) {
-        const key =
-          property.type === 'Property' || property.type === 'ObjectProperty'
-            ? (property.key.name ?? property.key.value)
-            : null;
-        const prop = key == null ? null : PROP_FOR_KEY.get(key);
-        if (prop == null) {
-          leftovers.push(property);
-          continue;
-        }
-        const expression =
-          property.shorthand && property.value.type === 'Identifier'
-            ? property.value
-            : property.value;
-        props.push(
-          j.jsxAttribute(
-            j.jsxIdentifier(prop),
-            j.jsxExpressionContainer(expression),
-          ),
-        );
-      }
-    } else {
+    const keptKeys = [];
+    if (value.type === 'Identifier') {
       for (const [key, prop] of PROP_FOR_KEY) {
         props.push(
           j.jsxAttribute(
             j.jsxIdentifier(prop),
             j.jsxExpressionContainer(
-              j.memberExpression(value, j.identifier(key)),
+              j.memberExpression(j.identifier(value.name), j.identifier(key)),
             ),
           ),
         );
       }
+    } else if (
+      value.type === 'ObjectExpression' &&
+      value.properties.every(
+        (/** @type {any} */ p) =>
+          (p.type === 'Property' || p.type === 'ObjectProperty') &&
+          !p.computed &&
+          (p.key.type === 'Identifier' ||
+            p.key.type === 'StringLiteral' ||
+            p.key.type === 'Literal'),
+      )
+    ) {
+      for (const property of value.properties) {
+        const key = property.key.name ?? property.key.value;
+        const prop = PROP_FOR_KEY.get(key);
+        if (prop == null) {
+          keptKeys.push(property);
+          continue;
+        }
+        props.push(
+          j.jsxAttribute(
+            j.jsxIdentifier(prop),
+            j.jsxExpressionContainer(property.value),
+          ),
+        );
+      }
+    } else {
+      // A call, a spread, a conditional: nothing mechanical is safe.
+      if (addComment(valueAttribute, TODO_EXPRESSION)) changed = true;
+      return;
     }
 
     const providerName =
       namespace === ''
-        ? j.jsxIdentifier(PROVIDER)
+        ? j.jsxIdentifier(providerLocalName ?? PROVIDER)
         : j.jsxMemberExpression(
             j.jsxIdentifier(namespace),
             j.jsxIdentifier(PROVIDER),
           );
-    if (namespace === '') needsNamedProvider = true;
+    if (namespace === '' && providerLocalName === null) {
+      needsNamedProvider = true;
+    }
 
     const otherAttributes = (opening.attributes ?? []).filter(
       (/** @type {any} */ a) => a !== valueAttribute,
@@ -190,61 +238,60 @@ export default function migrateInternationalizationContext(file, api) {
     if (path.node.closingElement) {
       path.node.closingElement.name = providerName;
     }
-    if (leftovers.length > 0) {
-      // Keep what has no provider input in sight, behind a TODO.
-      const kept = j.jsxExpressionContainer(j.objectExpression(leftovers));
-      const attribute = j.jsxAttribute(
-        j.jsxIdentifier('data-astryx-upgrade-leftover'),
-        kept,
+    // Every context value has a `translate`; the provider has no input for it.
+    const todo = props[props.length - 1] ?? opening;
+    if (keptKeys.length > 0) {
+      const kept = j.jsxAttribute(
+        j.jsxIdentifier('data-astryx-upgrade-translate'),
+        j.jsxExpressionContainer(j.objectExpression(keptKeys)),
       );
-      attribute.comments = [j.commentBlock(TODO, true, false)];
-      opening.attributes.push(attribute);
+      addComment(kept, TODO_TRANSLATE);
+      opening.attributes.push(kept);
+    } else {
+      addComment(todo, TODO_TRANSLATE);
     }
     changed = true;
   });
 
   if (!changed) return undefined;
 
-  // Imports: add the provider beside the context; drop the context when the
-  // file no longer names it.
-  const stillReadsContext = (/** @type {string} */ localName) =>
-    root
-      .find(j.Identifier, {name: localName})
-      .filter((/** @type {any} */ p) => {
-        const parent = p.parent?.node;
-        return !(
-          parent &&
-          (parent.type === 'ImportSpecifier' || parent.type === 'JSXIdentifier')
-        );
-      })
-      .size() > 0 || root.find(j.JSXIdentifier, {name: localName}).size() > 0;
-
   if (needsNamedProvider) {
-    const hasProvider = astryxImports.some((/** @type {any} */ path) =>
-      (path.node.specifiers ?? []).some(
-        (/** @type {any} */ s) =>
-          s.type === 'ImportSpecifier' && s.imported?.name === PROVIDER,
-      ),
-    );
     for (const path of astryxImports) {
       const specifiers = path.node.specifiers ?? [];
-      const contextSpecifier = specifiers.find(
-        (/** @type {any} */ s) =>
-          s.type === 'ImportSpecifier' && s.imported?.name === CONTEXT,
+      if (
+        !specifiers.some(
+          (/** @type {any} */ s) =>
+            s.type === 'ImportSpecifier' && s.imported?.name === CONTEXT,
+        )
+      ) {
+        continue;
+      }
+      specifiers.push(
+        j.importSpecifier(j.identifier(PROVIDER), j.identifier(PROVIDER)),
       );
-      if (!contextSpecifier) continue;
-      if (!hasProvider) {
-        specifiers.push(
-          j.importSpecifier(j.identifier(PROVIDER), j.identifier(PROVIDER)),
-        );
-      }
-      const localName = contextSpecifier.local?.name ?? CONTEXT;
-      if (!stillReadsContext(localName)) {
-        path.node.specifiers = specifiers.filter(
-          (/** @type {any} */ s) => s !== contextSpecifier,
-        );
-      }
       break;
+    }
+  }
+
+  // Drop the context import when the file no longer names it anywhere.
+  for (const localName of contextNames) {
+    const stillNamed =
+      root
+        .find(j.Identifier, {name: localName})
+        .filter(
+          (/** @type {any} */ p) => p.parent?.node.type !== 'ImportSpecifier',
+        )
+        .size() > 0 || root.find(j.JSXIdentifier, {name: localName}).size() > 0;
+    if (stillNamed) continue;
+    for (const path of astryxImports) {
+      path.node.specifiers = (path.node.specifiers ?? []).filter(
+        (/** @type {any} */ s) =>
+          !(
+            s.type === 'ImportSpecifier' &&
+            s.imported?.name === CONTEXT &&
+            (s.local?.name ?? CONTEXT) === localName
+          ),
+      );
     }
   }
 
