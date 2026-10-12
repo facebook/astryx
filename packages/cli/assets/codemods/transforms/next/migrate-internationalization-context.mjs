@@ -471,6 +471,13 @@ export default function migrateInternationalizationContext(file, api) {
       if (addComment(valueAttribute, TODO_EXPRESSION)) changed = true;
       return;
     }
+    if (props.length === 0) {
+      // Nothing to map (an empty literal, or one of unknown keys only): the
+      // TODO goes on the attribute, where it prints as a comment and not as
+      // text inside the element.
+      if (addComment(valueAttribute, TODO_TRANSLATE)) changed = true;
+      return;
+    }
 
     // The name written must reach the provider import from here: a local
     // that shadows it at the edit site would capture the element.

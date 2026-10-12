@@ -354,6 +354,25 @@ export function WithRowWording({children}: {children: ReactNode}) {
     expect(transform({source: input, path: 'test.tsx'}, api)).toBeUndefined();
   });
 
+  it('leaves an empty literal behind the TODO on its value attribute, never as text', () => {
+    const input = `import {InternationalizationContext} from '@astryxdesign/core/i18n';
+const app = (
+  <div>
+    <InternationalizationContext value={{}}>
+      <App />
+    </InternationalizationContext>
+  </div>
+);`;
+    const output = apply(input);
+    expect(folded(output)).toContain(
+      '<InternationalizationContext value={{}}>',
+    );
+    expect(output).toContain(TRANSLATE_TODO);
+    expect(output).not.toContain('<InternationalizationProvider');
+    // The comment sits inside the opening tag, not between the tags as text.
+    expect(output).toMatch(/<InternationalizationContext\s+\/\* TODO/);
+  });
+
   it('is idempotent', () => {
     const input = `import {InternationalizationContext} from '@astryxdesign/core/i18n';
 const a = <InternationalizationContext value={i18n}><A /></InternationalizationContext>;
