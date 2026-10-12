@@ -4,16 +4,24 @@
 
 #### Breaking Changes
 
-- CLN-0005 removes the deprecated `DEP-0005` copy default from `theme add`. (#7138)
+- `theme add` now imports built themes; use `theme eject` to copy theme source. (#7138)
   The old contract copied theme source with `theme add <slug> [path] [--overwrite] [--package <package>]` and returned `theme.add` JSON. The `ThemeAddResponse` type and the `theme.add` response type are removed, with their `ThemeAddResponse.type`, `ThemeAddResponse.data`, and `ThemeAddResponse.meta` fields. The replacement imports the built theme with `theme add <slug> [--package <package>]` and returns `theme.app`; `--import` remains an accepted no-op. Plain `theme add` now returns `theme.app` with the owner `package` directly after `type`. Local themes carry no package.
 
   A path after `theme add` now exits 1 with `ERR_INVALID_ARGUMENT`, and `--overwrite` exits 1 with `ERR_INVALID_OPTION`; neither writes files. To migrate a script that copied source, run `theme eject` with the same slug, path, `--overwrite`, and `--package` arguments. A script that already runs `theme add --import` keeps the same meaning and needs no change.
 
 - `init --remove-agents` says when there was nothing to remove. (#6623)
+  Migration: a consumer reading `data.removed` as a boolean keeps working; a consumer that narrowed on the literal `true` must accept the corrected value.
 - Four commands refuse silently ignored option pairs. (#7132)
+  Migration: remove the option the command was ignoring.
 - Refuse invalid input that used to silently succeed. (#7149)
+  Migration: pass a valid type or package, an integer limit, or the documented arguments, and catch `ERR_AMBIGUOUS_COMPONENT` for a multi-package name.
 - An empty-string argument no longer discards the rest of the command. (#6620)
+  Migration: remove the empty string from the invocation; omit the argument to list.
 - `doctor integration validate` exits 1 when there is no package.json. (#7150)
+  A missing package.json now produces a `no_package` error, so the existing error-severity exit rule applies. A directory with package.json but no integration manifest still exits 0.
+
+  Migration: run the command in a directory that has a `package.json`, or handle exit 1 for that case.
+
 - Move canonical data-color defaults from generated theme CSS to the public StyleX `dataVars` group. (#6834)
   Import `dataVars` from `@astryxdesign/core/theme/dataTokens.stylex` for CSS-capable code. Canvas and other non-CSS APIs continue to use `resolveThemeToken()` or `useTheme().token()`. Rebuild committed theme CSS with `astryx theme build`; concrete themes now emit only explicitly authored data-color overrides.
 
@@ -28,9 +36,9 @@
 - Doctor fails when the CLI cannot load what astryx.config asks for (#7130)
   A new `configured-integrations` check fails when an integration named in astryx.config cannot be loaded: not installed, installed without a manifest, or a manifest that throws or fails its schema. Such an integration is withdrawn whole and contributes nothing. The config check fails, instead of warning, when astryx.config imports but the CLI cannot load the project from it.
 
-  Unchanged: a problem inside one contribution kind (an invalid component doc, a missing or unreadable root, an unresolved replacement) stays a warning under `integration-issues` (spec:AST-035 FR9), and an autolinked dependency that cannot be loaded stays informational.
+  Unchanged: a problem inside one contribution kind (an invalid component doc, a missing or unreadable root, or an unresolved replacement) stays a warning under `integration-issues`, and an autolinked dependency that cannot be loaded stays informational.
 
-  Classification: incompatible-fix. Released victim: published 0.6.8 (the latest stable) exits 0 for both cases. No codemod: nothing in a project's source changes; the fix is to install the integration, repair its manifest, or edit `integrations` in astryx.config, which only the project's owner can decide.
+  No codemod applies: nothing in a project's source changes; install the integration, repair its manifest, or edit `integrations` in astryx.config.
 
   What counts as configured is every name astryx.config lists, read from the provider ledger: a package set aside for a provider conflict and the package being authored when its own config names it both count. Migration: install the integration, fix its manifest, or remove it from `integrations`; fix the astryx.config field the message names.
 
@@ -39,8 +47,19 @@
 
   Not rewritten by the codemod, so update by hand:
 
+  - `ref` and `id`, plus `data-*` (except Typeahead and Tokenizer `data-testid`, which marked the control surface), `aria-*`, and DOM event handlers such as `onClick`, previously landed on the outer Field (or were dropped by RadioList and Slider). They now land on the primary semantic control. Update code that measured, queried, or listened on the outer field, and wrap the component in your own element when you need an outer boundary.
+  - Typeahead and Tokenizer refs are now `HTMLInputElement`.
+  - A consumer `onKeyDown` on Typeahead or Tokenizer still runs after the built-in key handling, cannot cancel it, and still fires for keys on the clear button and tokens; for keys on the input it now runs on the combobox input itself.
+  - RadioList and Slider used to drop DOM event handlers; they now run after the component's own handling, so a Slider `onPointerDown`, `onKeyDown`, `onFocus`, or `onBlur` that never fired before now fires (on the thumb, or on the group in range mode).
+  - Tokenizer's `onFocus`/`onBlur` keep their meaning: focus entering or leaving the field.
+  - Styling passed through a wrapper's own props or a spread is not rewritten and now fails type-checking at that callsite.
+
+  Untyped callers get a development warning and the value is ignored.
+
+  From #5656 by @harjothkhara.
+
 - Selector, MultiSelector, and ComplexSelector no longer accept root `xstyle`, `className`, or `style`. Style the field with `containerXstyle`/`containerClassName`/`containerStyle` (the Field box; no effect inside InputGroup, a `horizontal-labels` FormLayout, or with `renderTrigger`) and the visual control box with `controlXstyle`/`controlClassName`/`controlStyle`. Base props such as `ref`, `id`, `data-*` (including `data-testid`), `aria-*`, and DOM handlers reach the trigger button that carries the combobox role (or, with `renderTrigger`, the caller's control), and a caller `aria-describedby` is kept alongside the field's own description and status instead of being replaced. Handlers keep their existing order: a ComplexSelector `onClick` on its own trigger can still cancel opening, and newly forwarded handlers (including those reaching a `renderTrigger` control) run after the built-in toggle and keyboard handling. CLI templates use the new props. (#7341)
-  Migration: rename root `xstyle`/`className`/`style` on these components to `controlXstyle`/`controlClassName`/`controlStyle`, which style the same element as before. Not a rename: a `data-testid` or other base prop now lands on the trigger button rather than the bordered box around it (query the box with `.closest()` if a test measured it), and with `renderTrigger` base props and `ref` now reach the caller's control. Rename JSX usage by hand, or with `astryx upgrade` once its `migrate-field-input-styling` transform is available; that transform does not follow styling passed through a wrapper's own props or a spread, which now fails type-checking at that callsite, so rename it there. Untyped callers get a development warning and the value is ignored.
+  Migration: rename root `xstyle`/`className`/`style` on these components to `controlXstyle`/`controlClassName`/`controlStyle`, which style the same element as before. Not a rename: a `data-testid` or other base prop now lands on the trigger button rather than the bordered box around it (query the box with `.closest()` if a test measured it), and with `renderTrigger` base props and `ref` now reach the caller's control. Rename JSX usage by hand, or run `astryx upgrade`; it runs `migrate-field-input-styling`, which does not follow styling passed through a wrapper's own props or a spread, which now fails type-checking at that callsite, so rename it there. Untyped callers get a development warning and the value is ignored.
 
   From #5656 by @harjothkhara.
 
@@ -57,12 +76,12 @@
   Migration: nothing to change to take the new phone scale. To keep the previous 14px phone scale in an app, extend the theme and append a later rule for the same condition: `defineTheme({name: 'app', extends: neutralTheme, adaptations: {rules: [{when: {pointer: 'coarse', width: {below: 'lg'}}, value: {typography: {scale: {base: 14, ratio: 1.2}}}}]}})`. For butter and stone use `ratio: 1.25` and also set `tokens: {'--text-supporting-size': '12px'}` in that rule's value, because those themes pin supporting text at 12px rather than the 11px the scale alone gives. This cannot be rewritten by a codemod: whether an app wants the floor is a product choice.
 
 - Stop reading the Astryx-owned agent variables ASTRYX_AGENT_ID, ASTRYX_AGENT_SESSION_ID, and ASTRYX_AGENT_METADATA (#7127)
-  The CLI must not define or read an Astryx-owned environment variable (spec:AST-017 FR14). The theme-import change already stopped reading ASTRYX_THEME; these three were the last. A test now fails on any `process.env.ASTRYX_*` read in the CLI source.
+  The theme-import change already stopped reading `ASTRYX_THEME`; these three were the last Astryx-owned agent variables. A test now fails on any `process.env.ASTRYX_*` read in the CLI source.
 
-  Classification: incompatible-fix. IFIX-0001 / CLN-0007. Authority: spec:AST-017 FR14 (current): "The CLI MUST NOT define or read an Astryx-owned environment variable." Released victim: published 0.6.5 and every later release read ASTRYX_AGENT_ID, ASTRYX_AGENT_SESSION_ID, and ASTRYX_AGENT_METADATA to attribute debug events to an agent and its session. Migration: set `AGENT` and `AGENT_SESSION_ID`, which the CLI already reads, instead of the Astryx-prefixed variants. ASTRYX_AGENT_METADATA has no replacement variable.
+  Migration: set `AGENT` and `AGENT_SESSION_ID`, which the CLI already reads, instead of the Astryx-prefixed variants. `ASTRYX_AGENT_METADATA` has no replacement variable.
 
 - Remove the deprecated component-theming compatibility surface scheduled for 0.7.0. Components now emit only canonical target classes and reflected `data-*` prop/state selectors. Theme discovery and build output no longer expose deprecated targets, and `ThemePropsOptions` plus `ComponentThemingTarget.deprecatedFor` are removed. The `theme targets --json` response drops the `ThemeTargetEntry.deprecatedFor` field, because no target it lists is deprecated. (#7302)
-  Migration: run the required codemod `migrate-deprecated-theme-surface` with `astryx upgrade --from <your 0.6 version> --apply --path .` after upgrading. There is no prior deprecation patch (`DEP-0013`/`CLN-0022` and `DEP-0014`/`CLN-0023`, no prior transition).
+  Migration: run the required codemod `migrate-deprecated-theme-surface` with `astryx upgrade --from <your 0.6 version> --apply --path .` after upgrading. Upgrade directly from your 0.6 version.
 
   The codemod renames removed target keys inside theme `components` maps (an imported `defineTheme()` call, an object typed as an Astryx theme, or a theme object with a static `name`), renames target classes in CSS, and replaces target-qualified bare prop/value/state classes with reflected `data-*` selectors, using every bare class the final 0.6 release emitted. It leaves dynamic/computed theme keys, unqualified or unknown classes, and CSS embedded in JavaScript/TypeScript strings for manual review. It adds `TODO(astryx upgrade)` when old and canonical keys coexist, and when a bare class Astryx once emitted has no known meaning on the target it qualifies.
 
@@ -72,8 +91,32 @@
 
   Rename theme keys and CSS target classes with this complete mapping:
 
-- Remove the `astryx layout` command group (CLN-0006) (#7137)
-  Removes the deprecated `astryx layout` command group (`expand`, `check`, `grammar`), its three response types (`layout.expand`, `layout.check`, `layout.grammar`), and the programmatic API exports (`layoutExpand`, `layoutCheck`, `layoutGrammar`). Completes the `CLN-0006` cleanup of `DEP-0006`.
+  - `base-table` → `table`
+  - `checkbox` → `checkbox-indicator`
+  - `codeblock` → `code-block`
+  - `codeblock-copy-button` → `code-block-copy-button`
+  - `codeblock-header` → `code-block-header`
+  - `codeblock-title` → `code-block-title`
+  - `date-input-clear-icon` → `input-clear-icon`
+  - `date-range-input-clear-icon` → `input-clear-icon`
+  - `hovercard` → `hover-card`
+  - `multi-selector-clear-icon` → `input-clear-icon`
+  - `navicon` → `nav-icon`
+  - `popover-surface` → `popover`
+  - `progressbar` → `progress-bar`
+  - `progressbar-fill` → `progress-bar-fill`
+  - `progressbar-mark` → `progress-bar-mark`
+  - `progressbar-track` → `progress-bar-track`
+  - `radio` → `radio-indicator`
+  - `radio-dot` → `radio-indicator-dot`
+  - `selector-clear-icon` → `input-clear-icon`
+  - `statusdot` → `status-dot`
+  - `textarea` → `text-area`
+
+  For custom CSS, replace removed bare selectors with the corresponding reflected attribute on a canonical target—for example, `.astryx-button.primary.sm` becomes `.astryx-button[data-variant="primary"][data-size="sm"]`, and `.astryx-switch.checked` becomes `.astryx-switch[data-checked="checked"]`. Review unqualified classes such as `.primary` manually because they may be application-owned.
+
+- Remove the `astryx layout` command group. (#7137)
+  Removes the deprecated `astryx layout` command group (`expand`, `check`, `grammar`), its three response types (`layout.expand`, `layout.check`, `layout.grammar`), and the programmatic API exports (`layoutExpand`, `layoutCheck`, `layoutGrammar`).
 
   Use `astryx build` to choose the template to start from, `astryx template` to scaffold it, and `astryx docs layout` for layout guidance. The layout guide is unaffected. The error codes `ERR_LAYOUT_PARSE` and `ERR_LAYOUT_INVALID` are retained (append-only contract).
 
@@ -90,7 +133,7 @@
 
   Codemod: None. A token read and parsed at runtime cannot be found and rewritten statically, and CSS uses need no rewrite.
 
-- IFIX-0006 -> CLN-0012 makes `theme build` exit 1 when it reports private `--_*` variables. (#6872)
+- `theme build` exits 1 when it reports private `--_*` variables. (#6872)
   The old contract reported private-variable errors but exited 0. The corrected contract keeps the same warnings, receipts, generated files, and `--check` output, but exits 1.
 
   To migrate, a CI step that relied on exit 0 must fix the theme's private `--_*` inputs.
@@ -110,65 +153,6 @@
 #### Documentation
 
 - Clarify release-branch codemod promotion and version ownership. (#7293)
-
-#### Other Changes
-
-- incompatible-fix `IFIX-0004` / cleanup `CLN-0010`
-
-  Migration: a consumer reading `data.removed` as a boolean keeps working; a consumer that narrowed on the literal `true` sees the corrected value.
-
-- incompatible-fix `IFIX-0005` / cleanup `CLN-0011`
-
-  Migration: remove the option the command was ignoring.
-
-- incompatible-fix `IFIX-0007` / cleanup `CLN-0013`
-
-  Migration: pass a valid type or package, an integer limit, or the documented arguments, and catch `ERR_AMBIGUOUS_COMPONENT` for a multi-package name.
-
-- incompatible-fix `IFIX-0003` / cleanup `CLN-0009`
-
-  Migration: remove the empty string from the invocation; the documented way to list is to omit the argument.
-
-- incompatible-fix `IFIX-0008` / cleanup `CLN-0014`
-
-  The no-package.json case now carries a `no_package` error-severity issue, so the existing exit rule (exit 1 on error-severity issues) covers it. A directory with package.json but no integration manifest stays exit 0 as published.
-
-  Migration: run the command in a directory that has a `package.json`, or handle exit 1 for that case.
-
-- `ref` and `id`, plus `data-*` (except Typeahead and Tokenizer `data-testid`, which marked the control surface), `aria-*`, and DOM event handlers such as `onClick`, previously landed on the outer Field (or were dropped by RadioList and Slider). They now land on the primary semantic control. Update code that measured, queried, or listened on the outer field, and wrap the component in your own element when you need an outer boundary.
-- Typeahead and Tokenizer refs are now `HTMLInputElement`.
-- A consumer `onKeyDown` on Typeahead or Tokenizer still runs after the built-in key handling, cannot cancel it, and still fires for keys on the clear button and tokens; for keys on the input it now runs on the combobox input itself.
-- RadioList and Slider used to drop DOM event handlers; they now run after the component's own handling, so a Slider `onPointerDown`, `onKeyDown`, `onFocus`, or `onBlur` that never fired before now fires (on the thumb, or on the group in range mode).
-- Tokenizer's `onFocus`/`onBlur` keep their meaning: focus entering or leaving the field.
-- Styling passed through a wrapper's own props or a spread is not rewritten and now fails type-checking at that callsite.
-
-  Untyped callers get a development warning and the value is ignored.
-
-  From #5656 by @harjothkhara.
-
-- `base-table` → `table`
-- `checkbox` → `checkbox-indicator`
-- `codeblock` → `code-block`
-- `codeblock-copy-button` → `code-block-copy-button`
-- `codeblock-header` → `code-block-header`
-- `codeblock-title` → `code-block-title`
-- `date-input-clear-icon` → `input-clear-icon`
-- `date-range-input-clear-icon` → `input-clear-icon`
-- `hovercard` → `hover-card`
-- `multi-selector-clear-icon` → `input-clear-icon`
-- `navicon` → `nav-icon`
-- `popover-surface` → `popover`
-- `progressbar` → `progress-bar`
-- `progressbar-fill` → `progress-bar-fill`
-- `progressbar-mark` → `progress-bar-mark`
-- `progressbar-track` → `progress-bar-track`
-- `radio` → `radio-indicator`
-- `radio-dot` → `radio-indicator-dot`
-- `selector-clear-icon` → `input-clear-icon`
-- `statusdot` → `status-dot`
-- `textarea` → `text-area`
-
-  For custom CSS, replace removed bare selectors with the corresponding reflected attribute on a canonical target—for example, `.astryx-button.primary.sm` becomes `.astryx-button[data-variant="primary"][data-size="sm"]`, and `.astryx-switch.checked` becomes `.astryx-switch[data-checked="checked"]`. Review unqualified classes such as `.primary` manually because they may be application-owned.
 
 #### Contributors
 
