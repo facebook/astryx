@@ -1853,7 +1853,11 @@ describe('MultiSelector', () => {
         />,
       );
 
-      const container = screen.getByTestId('fruit-multi-selector');
+      // data-testid lands on the trigger; the reason tooltip anchors to the
+      // control box around it.
+      const container = screen
+        .getByTestId('fruit-multi-selector')
+        .closest('.astryx-multi-selector') as HTMLElement;
       const tooltip = screen.getByRole('tooltip', h);
       expect(tooltip).toHaveTextContent('Select a table first');
 

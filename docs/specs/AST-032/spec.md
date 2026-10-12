@@ -187,7 +187,7 @@ name a complete registry could leave out.
 | lifecycle | `DEP-0012`                                                                                                   |
 | delta     | `IconRegistry` is `Record<IconName, ReactNode>`: a complete registry that omits `upload` fails to type-check |
 | rollback  | Restore the transitional optional `upload` from the final-patch baseline                                     |
-| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0021`                             |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                        |
 
 ## Open questions
 

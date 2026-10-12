@@ -1662,7 +1662,7 @@ function renderBlock(
               label={t('@astryx.markdown.taskList')}
               isLabelHidden
               value={checkedValues}
-              xstyle={styles.blockIndent}
+              containerXstyle={styles.blockIndent}
               isReadOnly
               density="compact">
               {node.children.map((item, i) => {

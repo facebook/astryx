@@ -95,7 +95,7 @@ connection between the closed trigger and its selection surface.
 | lifecycle | `DEP-0011`                                                                                                                                                                                                                                      |
 | delta     | With no `presentation`, a compact coarse-pointer screen opens a modal bottom sheet (trigger `aria-haspopup="dialog"`, focus moves in and returns on close); every other device keeps the anchored popover. Compound DropdownMenus are unchanged |
 | rollback  | Restore the `popover` default from the final-patch baseline                                                                                                                                                                                     |
-| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0020`                                                                                                                                                                |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                                                                                                                           |
 
 ## Ownership boundary
 

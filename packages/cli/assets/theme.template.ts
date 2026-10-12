@@ -373,7 +373,7 @@ export const myTheme = defineTheme({
   //     {
   //       // Narrow at every pointer precision.
   //       when: {width: {below: 'md'}},
-  //       value: {tokens: {'--spacing-4': '12px'}},
+  //       value: {tokens: {'--spacing-4': '0.75rem'}},
   //     },
   //     {
   //       // Taller controls under a finger or stylus at every width.

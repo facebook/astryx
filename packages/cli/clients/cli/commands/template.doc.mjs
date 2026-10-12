@@ -109,7 +109,7 @@ export const doc = {
     },
     {
       code: 1,
-      when: 'unknown or ambiguous template, no source, a path escape, or an existing target without --overwrite',
+      when: 'unknown or ambiguous template, no source, a path escape, an existing target without --overwrite, or --list with a type outside page or block or a package that provides no templates',
     },
   ],
   related: ['component', 'search', 'discover', 'init'],

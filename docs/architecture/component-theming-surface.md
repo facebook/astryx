@@ -308,7 +308,7 @@ how themes become output, or the design rationale for a component's appearance.
 | lifecycle | `DEP-0013`                                                                                                                                                                                                                                                               |
 | delta     | Components stop emitting the 21 alias classes. Theme build treats an alias key as an unknown component and suggests the canonical key. CLI discovery and generated docs list only canonical targets. `legacyNames`, `ThemePropsOptions`, and `deprecatedFor` are removed |
 | rollback  | Restore alias emission, metadata, and discovery from the final 0.6 baseline                                                                                                                                                                                              |
-| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0022`                                                                                                                                                                                         |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                                                                                                                                                    |
 
 ### DEP-0014 — Deprecate bare prop and state classes
 
@@ -337,7 +337,7 @@ how themes become output, or the design rationale for a component's appearance.
 | lifecycle | `DEP-0014`                                                                                                                 |
 | delta     | `themeProps()` emits one canonical target class and reflected `data-*` attributes; no bare prop or state class is rendered |
 | rollback  | Restore bare-class emission from the final 0.6 baseline                                                                    |
-| state     | `pending` — lands only in a minor release whose frozen manifest lists `CLN-0023`                                           |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                      |
 
 ## Change coupling
 
