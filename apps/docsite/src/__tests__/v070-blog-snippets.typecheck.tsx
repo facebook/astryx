@@ -8,6 +8,7 @@ import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Icon} from '@astryxdesign/core/Icon';
+import {HStack} from '@astryxdesign/core/HStack';
 import {Kbd} from '@astryxdesign/core/Kbd';
 import {Slider} from '@astryxdesign/core/Slider';
 import {
@@ -63,6 +64,7 @@ const styles = stylex.create({
   projectName: {width: '100%'},
   assigneeField: {width: '100%'},
   series: {backgroundColor: dataVars['--color-data-categorical-blue']},
+  toolbarBody: {padding: 16, paddingTop: 12},
 });
 
 const peopleSource = createStaticSource([
@@ -228,25 +230,23 @@ export function MobileAndTouch() {
   );
 }
 
-function filterRows() {}
-function groupRows() {}
-function createItem() {}
-
 export function InteractionFeedback() {
   return (
-    <Card>
+    <Card padding={0}>
       <Toolbar
         label="Table actions"
         size="sm"
         startContent={
-          <>
-            <Button label="Filter" variant="ghost" onClick={filterRows} />
-            <Button label="Group" variant="ghost" onClick={groupRows} />
-          </>
+          <HStack gap={1}>
+            <Button label="Filter" variant="ghost" size="sm" />
+            <Button label="Group" variant="ghost" size="sm" />
+          </HStack>
         }
-        endContent={<Button label="New item" onClick={createItem} />}
+        endContent={<Button label="New item" variant="primary" size="sm" />}
       />
-      <Text display="block">Twelve items match the current filter.</Text>
+      <div {...stylex.props(styles.toolbarBody)}>
+        <Text type="body">Twelve items match the current filter.</Text>
+      </div>
     </Card>
   );
 }

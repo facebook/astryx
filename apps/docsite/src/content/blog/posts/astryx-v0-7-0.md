@@ -586,20 +586,28 @@ Compact toolbars now take less vertical space without shifting the controls besi
 _Compact toolbars use a 4px block inset so they take less vertical space. Inline padding stays owned by the surrounding Card or Section, so the controls keep the same content line as the body beside them._
 
 ```tsx
-<Card>
+import * as stylex from '@stylexjs/stylex';
+
+const styles = stylex.create({
+  toolbarBody: {padding: 16, paddingTop: 12},
+});
+
+<Card padding={0}>
   <Toolbar
     label="Table actions"
     size="sm"
     startContent={
-      <>
-        <Button label="Filter" variant="ghost" onClick={filterRows} />
-        <Button label="Group" variant="ghost" onClick={groupRows} />
-      </>
+      <HStack gap={1}>
+        <Button label="Filter" variant="ghost" size="sm" />
+        <Button label="Group" variant="ghost" size="sm" />
+      </HStack>
     }
-    endContent={<Button label="New item" onClick={createItem} />}
+    endContent={<Button label="New item" variant="primary" size="sm" />}
   />
-  <Text display="block">Twelve items match the current filter.</Text>
-</Card>
+  <div {...stylex.props(styles.toolbarBody)}>
+    <Text type="body">Twelve items match the current filter.</Text>
+  </div>
+</Card>;
 ```
 
 ## Upgrading to 0.7.0
