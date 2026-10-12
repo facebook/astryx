@@ -30,10 +30,14 @@ const styles = stylex.create({
     maxWidth: '100%',
     height: 'auto',
     borderRadius: 'var(--radius-md, 8px)',
-    // A subtle frame so a screenshot reads as intentional on either background.
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: 'var(--color-border, rgba(0,0,0,0.12))',
+    // A subtle frame so a screenshot reads as intentional on either
+    // background. Drawn as an outline, not a border, so an `@2x` image's
+    // `width` is exactly its painted width (the site's `box-sizing:
+    // border-box` would otherwise take the frame out of it and resample).
+    outlineWidth: 1,
+    outlineStyle: 'solid',
+    outlineColor: 'var(--color-border, rgba(0,0,0,0.12))',
+    outlineOffset: 0,
   },
 });
 
