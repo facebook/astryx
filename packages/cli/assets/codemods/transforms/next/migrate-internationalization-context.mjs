@@ -285,8 +285,12 @@ export default function migrateInternationalizationContext(file, api) {
       }
       if (
         statement.type === 'FunctionDeclaration' ||
-        statement.type === 'ClassDeclaration'
+        statement.type === 'ClassDeclaration' ||
+        statement.type === 'TSDeclareFunction' ||
+        statement.type === 'TSEnumDeclaration' ||
+        statement.type === 'TSImportEqualsDeclaration'
       ) {
+        // `declare function Ctx()`, `enum Ctx`, `import Ctx = Other.Thing`.
         return statement.id?.name === name;
       }
       return false;
@@ -585,9 +589,30 @@ export default function migrateInternationalizationContext(file, api) {
             (s.local?.name ?? CONTEXT) === localName
           ),
       );
-      if (before > 0 && path.node.specifiers.length === 0) path.prune();
+      if (before > 0 && path.node.specifiers.length === 0) {
+        // Keep the comments that sat on the import (a license header, say)
+        // on whatever statement follows it.
+        const comments = path.node.comments ?? [];
+        const program = path.parent?.node;
+        if (program?.type === 'Program') {
+          const index = program.body.indexOf(path.node);
+          const next = program.body[index + 1];
+          if (next && comments.length > 0) {
+            next.comments = [...comments, ...(next.comments ?? [])];
+          }
+          program.body.splice(index, 1);
+        } else {
+          path.prune();
+        }
+      }
     }
   }
 
-  return root.toSource({quote: 'single'});
+  return (
+    root
+      .toSource({quote: 'single', objectCurlySpacing: false})
+      // Removing the statement after a directive leaves the printer's extra
+      // semicolon behind the directive.
+      .replace(/^(\s*(['"])use [\w-]+\2);;/m, '$1;')
+  );
 }

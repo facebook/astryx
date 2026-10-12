@@ -112,7 +112,7 @@ const b = <Ctx value={w}><B /></Ctx>;`;
     expect(output).toContain('</IP>');
     expect(output).not.toContain('<InternationalizationProvider');
     expect(output).toContain(
-      "import { InternationalizationProvider as IP } from '@astryxdesign/core/i18n';",
+      "import {InternationalizationProvider as IP} from '@astryxdesign/core/i18n';",
     );
   });
 
@@ -254,9 +254,17 @@ namespace Exported {
   export const Ctx = Other;
   export const out = <Ctx value={v}><F /></Ctx>;
 }
+namespace Aliased {
+  import Ctx = Other.Context;
+  export const out = <Ctx value={v}><G /></Ctx>;
+}
+namespace Declared {
+  declare function Ctx(props: {value: unknown}): null;
+  export const out = <Ctx value={v}><H /></Ctx>;
+}
 export const ok = <Ctx value={x}><E /></Ctx>;`;
     const output = folded(apply(input));
-    expect(output.match(/<Ctx value=\{v\}>/g)).toHaveLength(4);
+    expect(output.match(/<Ctx value=\{v\}>/g)).toHaveLength(6);
     expect(output).toContain(
       '<InternationalizationProvider locale={w.locale} dir={w.direction} messages={w.messages}><C /></InternationalizationProvider>',
     );
@@ -399,8 +407,10 @@ const app = (
     expect(output).toMatch(/<InternationalizationContext\s+\/\* TODO/);
   });
 
-  it('removes an Astryx import declaration it empties', () => {
-    const input = `import {InternationalizationContext} from '@astryxdesign/core';
+  it('removes an Astryx import declaration it empties, keeping its comments and the directive', () => {
+    const input = `'use client';
+// Copyright (c) Example.
+import {InternationalizationContext} from '@astryxdesign/core';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 const app = <InternationalizationContext value={i18n}><App /></InternationalizationContext>;`;
     const output = apply(input);
@@ -409,6 +419,9 @@ const app = <InternationalizationContext value={i18n}><App /></Internationalizat
     expect(output).toContain(
       "import {InternationalizationProvider} from '@astryxdesign/core/i18n';",
     );
+    expect(output).toContain('// Copyright (c) Example.');
+    expect(output).toMatch(/^'use client';\n/);
+    expect(output).not.toContain(';;');
     expect(folded(output)).toContain(
       '<InternationalizationProvider locale={i18n.locale}',
     );
