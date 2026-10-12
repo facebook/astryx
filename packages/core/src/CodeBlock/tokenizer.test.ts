@@ -230,6 +230,12 @@ describe('diffLineKind', () => {
     expect(diffLineKind('--- a/x.ts', {beforeFirstHunk: false})).toBe(
       'removed',
     );
+    // No hunk anywhere: nothing is a file header.
+    expect(splitDiffLines(['--- gone', '+++ here', ' same']).kinds).toEqual([
+      'removed',
+      'added',
+      'context',
+    ]);
   });
 
   it('tokenizes the code past the glyph with the base language', () => {

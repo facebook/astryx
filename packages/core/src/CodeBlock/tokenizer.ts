@@ -354,7 +354,9 @@ export function splitDiffLines(lines: ReadonlyArray<string>): {
   const kinds: DiffLineKind[] = [];
   const glyphs: string[] = [];
   const content: string[] = [];
-  let beforeFirstHunk = true;
+  // `---`/`+++` are headers only as a file header that precedes a hunk: a
+  // fence with no `@@` line has none.
+  let beforeFirstHunk = lines.some(line => line.startsWith('@@'));
   for (const line of lines) {
     const kind = diffLineKind(line, {beforeFirstHunk});
     if (line.startsWith('@@')) {
@@ -381,10 +383,10 @@ export function splitDiffLines(lines: ReadonlyArray<string>): {
 /**
  * Classify one line of a unified diff by its first character: `+` added,
  * `-` removed, `@@` header, anything else context. `---` / `+++` (and git's
- * `diff --git`, `index`) are headers only in file-header position — before
- * the first `@@` of the diff — so a removed line that starts with `--` is
- * never misread as a header. The glyph is part of the text and is never
- * removed.
+ * `diff --git`, `index`) are headers only as a file header that precedes a
+ * hunk (`beforeFirstHunk`: before the first `@@` of a diff that has one), so
+ * a removed line that starts with `--` is never misread as a header. The
+ * glyph is part of the text and is never removed.
  */
 export function diffLineKind(
   line: string,
