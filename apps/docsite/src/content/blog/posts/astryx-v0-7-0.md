@@ -154,7 +154,7 @@ Phone layouts keep their state, respect pinch zoom, and make sheets, menus, swip
 
 ### Reveal row actions with a swipe
 
-![A phone list of three checklist rows. A finger drags the first row toward the left and two action panels slide out behind it: a neutral Archive and a red Delete. Tapping Archive removes the row and the list closes up.](/blog/astryx-v0-7-0/item-swipe-actions.webp)
+![A phone list of three checklist rows in a card. A finger drags the first row toward the left and two action panels slide out behind it: a neutral Archive and a red Delete. Tapping Archive removes the row and the list closes up.](/blog/astryx-v0-7-0/item-swipe-actions.webp)
 
 _Sideways drags reveal touch actions without hiding them from keyboard and assistive-technology users. Rows without actions do not load the gesture code, saving about 2.7 KB (gzip) on first load._
 
