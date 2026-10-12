@@ -36,7 +36,7 @@ deciding_specs: [spec:AST-006/DEC-1, spec:AST-006/DEC-5]
 {
   "scope": "global",
   "triggers": {
-    "tokens": ["INV1", "INV3", "INV4", "INV6", "INV8"]
+    "tokens": ["INV1", "INV3", "INV4", "INV6", "INV8", "INV9"]
   }
 }
 ```
@@ -100,6 +100,16 @@ then have contradictory winners.
 - **INV8 — Theme-local names stay non-portable.** Enrolled local declarations
   remain outside the canonical vocabulary, typed helpers, generated portable
   documentation, and Core component dependencies.
+- **INV9 — Spacing tokens are rem.** The core `--spacing-*` defaults are `rem`
+  values (`--spacing-N` is `N × 0.25rem`, so `--spacing-4` is `1rem`, 16px at the
+  default root), and gaps, padding, and margins built from them follow the
+  reader's root font size the way the type scale does. A theme that overrides
+  spacing steps uses `rem` for the same reason; a step a theme pins in `px` is a
+  documented exception of that theme, not a change to the core scale. Values an
+  author writes in a custom theme are honoured as written, never converted.
+  Non-CSS consumers (`useTheme().token()`, `resolveThemeToken()`,
+  `tokenDefaults`) return the `rem` string; code that needs pixels resolves it
+  against the root font size instead of parsing a number.
 
 This record does not own:
 
@@ -151,13 +161,36 @@ AST-006 decisions 1 and 5 establish that theme-local names are additive,
 theme-family contracts rather than portable Astryx tokens. The existing portable
 vocabulary and helper architecture remain unchanged.
 
+### DEC-1 — Spacing follows the root font size
+
+**Decider:** `cixzhang`, `2026-10-12`
+
+Spacing tokens are `rem`. A reader who raises the browser's root font size gets
+proportionally larger gaps and padding, so text does not tighten inside boxes
+that stayed in pixels; at the default 16px root every step is the same pixel
+value as before. Spacing has no base-unit derivation: `defineTheme` takes spacing only as
+per-step token overrides, so nothing generates spacing values except the CLI's
+theme templates, which copy a first-party theme's steps verbatim; a scaffolded
+theme therefore emits `rem` steps once its source theme does. Theme authors keep
+control: a theme may still pin a step in `px`, and author-written values are
+never rewritten. Known costs accepted with
+the decision: fixed-width table columns lose room to larger padding at very large
+roots; the two first-party themes that pin steps in `px` (matcha, y2k) do not
+follow the root until they move to `rem`; and code that parses a spacing token
+as a pixel number reads the wrong value and no codemod can find it.
+
+Rejected: keeping spacing in `px` while type is `rem` (text grows into fixed
+boxes); converting author-written `px` in custom themes (a theme's own
+decision).
+
 ## Verification
 
-| Invariant                    | Evidence                                                                  | Failure signal                                                                                            |
-| ---------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV7             | `scripts/check-theme-template.test.mjs` and token-doc generation check    | A token family exists without a matching author-facing inventory or generated documentation               |
-| INV5                         | Domain-token exports and theme-generation tests                           | Domain names disappear from validation or require importing unused domain implementation                  |
-| INV6                         | `packages/core/src/theme/tokens.test.ts`                                  | JavaScript resolution disagrees with defaults, mode selection, references, or supported color expressions |
-| INV8                         | `defineTheme.test.ts`, template checks, and token-doc generation          | A local name enters portable helpers/docs or can conflict with a portable declaration                     |
-| Released token compatibility | Type checking plus representative package/source builds                   | A released CSS variable or typed token name disappears without an explicit migration decision             |
-| Visual defaults              | Real Chromium examples in light, dark, status, and high-contrast contexts | A changed default produces unreadable or semantically inconsistent output                                 |
+| Invariant                    | Evidence                                                                                           | Failure signal                                                                                            |
+| ---------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| INV1, INV2, INV7             | `scripts/check-theme-template.test.mjs` and token-doc generation check                             | A token family exists without a matching author-facing inventory or generated documentation               |
+| INV5                         | Domain-token exports and theme-generation tests                                                    | Domain names disappear from validation or require importing unused domain implementation                  |
+| INV6                         | `packages/core/src/theme/tokens.test.ts`                                                           | JavaScript resolution disagrees with defaults, mode selection, references, or supported color expressions |
+| INV8                         | `defineTheme.test.ts`, template checks, and token-doc generation                                   | A local name enters portable helpers/docs or can conflict with a portable declaration                     |
+| INV9                         | `tokens.test.ts` rem assertions, a real-Chromium root-font-size spec, and the theme-template check | A core spacing default in `px`, or a scaffolded theme emitting `px` steps                                 |
+| Released token compatibility | Type checking plus representative package/source builds                                            | A released CSS variable or typed token name disappears without an explicit migration decision             |
+| Visual defaults              | Real Chromium examples in light, dark, status, and high-contrast contexts                          | A changed default produces unreadable or semantically inconsistent output                                 |
