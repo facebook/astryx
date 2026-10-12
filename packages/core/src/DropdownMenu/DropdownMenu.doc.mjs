@@ -47,7 +47,7 @@ const anatomy = [
     name: 'Radio indicator',
     required: false,
     description:
-      'Decorative shared radio indicator with an additional menu-owned target.',
+      "Decorative shared radio indicator with an additional menu-owned target. It sits at the row's inline start (the inline end under a coarse pointer) unless the radio group's indicatorPosition pins one edge.",
   },
   {
     name: 'Pointer section heading',

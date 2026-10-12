@@ -23,6 +23,7 @@ import {
   DropdownMenuRadioGroupContext,
   type DropdownMenuRadioGroupContextValue,
 } from './DropdownMenuContext';
+import type {IndicatorPosition} from '../Indicator/types';
 
 const styles = stylex.create({
   // Match the menu's own inter-item rhythm (2px) so grouped radio items keep
@@ -64,6 +65,18 @@ export interface DropdownMenuRadioGroupProps extends Omit<
    */
   hasCloseOnSelect?: boolean;
   /**
+   * Which logical edge of each row carries the radio mark, with Selector's
+   * `indicatorPosition` meaning: `start` before the label, `end` at the row's
+   * inline end, on every pointer. Unset, the mark sits at the start under a
+   * fine pointer and moves to the end under a coarse one. The mark itself is
+   * the theme's `radio` indicator: a menu that wants a check instead is
+   * wrapped in a `Theme` whose theme extends the product's with
+   * `indicators: {radio: CheckIndicator}`. `ContextMenuRadioGroup` and
+   * `BreadcrumbMenuRadioGroup` are this component under other names, so they
+   * take the prop too.
+   */
+  indicatorPosition?: IndicatorPosition;
+  /**
    * The `DropdownMenuRadioItem`s that make up the group.
    */
   children: ReactNode;
@@ -91,6 +104,7 @@ export function DropdownMenuRadioGroup({
   onChange,
   label,
   hasCloseOnSelect = true,
+  indicatorPosition,
   children,
   xstyle,
   className,
@@ -98,8 +112,8 @@ export function DropdownMenuRadioGroup({
   ...rest
 }: DropdownMenuRadioGroupProps) {
   const contextValue = useMemo<DropdownMenuRadioGroupContextValue>(
-    () => ({value, onChange, hasCloseOnSelect}),
-    [value, onChange, hasCloseOnSelect],
+    () => ({value, onChange, hasCloseOnSelect, indicatorPosition}),
+    [value, onChange, hasCloseOnSelect, indicatorPosition],
   );
 
   return (
