@@ -61,8 +61,17 @@ export type SyntaxThemeTokenInput = Record<
 > &
   Partial<Record<DiffSyntaxThemeTokenKey, SyntaxTokenValue>>;
 
-/** Resolved token map — all values are CSS strings (tuples resolved to light-dark()). */
-export type SyntaxThemeTokenMap = Record<SyntaxThemeTokenKey, string>;
+/**
+ * Resolved token map — all values are CSS strings (tuples resolved to
+ * light-dark()). The diff row slots are optional here as in the input, so a
+ * map written before they existed still type-checks; an unset slot renders
+ * its default.
+ */
+export type SyntaxThemeTokenMap = Record<
+  Exclude<SyntaxThemeTokenKey, DiffSyntaxThemeTokenKey>,
+  string
+> &
+  Partial<Record<DiffSyntaxThemeTokenKey, string>>;
 
 /** Input to defineSyntaxTheme. */
 export interface SyntaxThemeInput {
@@ -218,7 +227,9 @@ export function syntaxThemeStyle(
 ): Record<string, string> {
   const vars: Record<string, string> = {};
   for (const key of ALL_SYNTAX_KEYS) {
-    vars[toCSSProperty(key)] = theme.tokens[key];
+    // An unset diff slot is left to its default rather than written empty.
+    const value = theme.tokens[key];
+    if (value !== undefined) vars[toCSSProperty(key)] = value;
   }
   return vars;
 }

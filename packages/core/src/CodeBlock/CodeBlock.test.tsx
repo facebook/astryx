@@ -141,9 +141,13 @@ describe('CodeBlock', () => {
       );
       const rows = container.querySelectorAll('[data-line]');
       const marker = (row: Element) =>
-        row.querySelector('[aria-hidden="true"]')?.textContent;
+        row.querySelector('[data-diff-marker]')?.textContent;
       expect(marker(rows[1])).toBe('-');
       expect(marker(rows[2])).toBe('+');
+      // The glyph is the source's own text, so assistive technology reads it.
+      expect(rows[1].querySelector('[data-diff-marker]')).not.toHaveAttribute(
+        'aria-hidden',
+      );
       expect(marker(rows[3])).toBe(' ');
       // The code column starts after the glyph on every line: the removed and
       // context lines' content keeps its own two-space indentation.

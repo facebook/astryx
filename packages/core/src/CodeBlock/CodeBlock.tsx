@@ -348,13 +348,23 @@ const styles = stylex.create({
     gridTemplateColumns: '1ch 1fr',
     columnGap: spacingVars['--spacing-2'],
   },
+  // With line numbers the gutter's gap (which the full-height divider sits
+  // in) has to stay between the number and the marker, so the grid has no
+  // gap of its own and the marker carries both gaps as margins.
   lineDiffNumbered: {
     gridTemplateColumns: 'var(--_codeblock-gutter-width) 1ch 1fr',
+    columnGap: 0,
   },
+  // The glyph is the source's own text: read by assistive technology, kept
+  // out of a drag selection (copy returns the exact source anyway).
   diffMarker: {
     color: colorVars['--color-text-secondary'],
     userSelect: 'none',
     whiteSpace: 'pre',
+  },
+  diffMarkerNumbered: {
+    marginInlineStart: `calc(${spacingVars['--spacing-3']} + ${borderVars['--border-width']} + ${spacingVars['--spacing-4']})`,
+    marginInlineEnd: spacingVars['--spacing-2'],
   },
   // On a tinted row the glyph is the cue a reader without colour depends on,
   // so it takes the row's marker slot like the line number does.
@@ -427,6 +437,8 @@ const CodeChunk = React.memo(function CodeChunk({
               diffKind === 'added' && styles.lineAdded,
               diffKind === 'removed' && styles.lineRemoved,
               diffKind === 'header' && styles.lineDiffHeader,
+              // Last on purpose: a highlight replaces a diff tint rather than
+              // stacking on it, so tokens keep their single-paint contrast.
               (highlightSet?.has(i + 1) ?? false) && styles.lineHighlighted,
             )}>
             {renderLineContent(line, i)}
@@ -713,9 +725,10 @@ function SpanCodeContent({
         return (
           <>
             <span
-              aria-hidden="true"
+              data-diff-marker=""
               {...stylex.props(
                 styles.diffMarker,
+                hasLineNumbers && styles.diffMarkerNumbered,
                 kind === 'added' && styles.diffMarkerAdded,
                 kind === 'removed' && styles.diffMarkerRemoved,
               )}>
@@ -737,7 +750,7 @@ function SpanCodeContent({
         </span>
       );
     },
-    [tokenLines, diff],
+    [tokenLines, diff, hasLineNumbers],
   );
 
   return (

@@ -26,7 +26,8 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import type {TextDisplay} from '../theme/types';
-import {CodeBlock, Code, parseFenceLanguage} from '../CodeBlock';
+import {CodeBlock, Code} from '../CodeBlock';
+import {parseFenceLanguage} from '../CodeBlock/tokenizer';
 import {CheckboxList} from '../CheckboxList/CheckboxList';
 import {CheckboxListItem} from '../CheckboxList/CheckboxListItem';
 import {Blockquote} from '../Blockquote/Blockquote';
