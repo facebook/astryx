@@ -8,17 +8,25 @@
  * The new prop takes a `ReactNode`, so every old `string` value stays valid
  * and the rename never changes a value.
  *
- * Rewritten:
- * - the JSX prop on imported `Tokenizer`, `Typeahead`, and `BaseTypeahead`;
+ * Rewritten, when the construct is proven to reach the component:
+ * - the JSX prop on imported `Tokenizer`, `Typeahead`, and `BaseTypeahead`,
+ *   on an element with no spread;
  * - the key on `ChatComposerInput` trigger objects written inline in its
- *   `triggers` prop, held in a same-file `const` that `triggers` names, or
- *   typed as `ChatComposerTrigger` (annotation, `as`, or `satisfies`).
+ *   `triggers` prop or held in a same-file `const` that `triggers` names,
+ *   when the object has no spread or computed key.
  *
- * When the element or object already sets `emptySearchText`, the old entry is
- * dropped, because the new name already won. A trigger object with a spread or
- * a computed key keeps its keys and gets a TODO instead: renaming could change
- * which value wins. Props spread onto the element and triggers built
- * elsewhere are out of reach; the type checker reports what remains.
+ * When the element or object already sets `emptySearchText` to a value that
+ * is never null, the old entry is dropped; when that value may be nullish the
+ * old value becomes its `??` fallback, which is what 0.6.x rendered.
+ *
+ * Reported with a TODO instead of edited: an element with a spread, a trigger
+ * object with a spread or computed key, a `triggers` value or a spread object
+ * the file does not build (imported, forwarded props, a call, an object that
+ * itself spreads something), an object reached only through a type-only
+ * `ChatComposerTrigger` import (a type-only import proves no runtime value),
+ * and any other object key of the old name in a file that imports from core.
+ * After the removal the type checker does not notice a stray old key, so
+ * nothing is left silent.
  */
 
 import {transformProp} from '../../transform-prop.mjs';
@@ -76,8 +84,9 @@ const OPAQUE_SPREAD_COMMENT =
   'emptySearchResultsText, rename it to emptySearchText where they are built. ';
 const TYPE_ONLY_COMMENT =
   ' TODO(astryx upgrade): emptySearchResultsText was removed from trigger ' +
-  'objects. Rename it to emptySearchText; this object is typed through a ' +
-  'type-only import, which does not prove it reaches ChatComposerInput. ';
+  'objects. This object is typed through a type-only import, which does not ' +
+  'prove it reaches ChatComposerInput, so it was left as written; rename the ' +
+  'key to emptySearchText if it does. ';
 
 // Values that can never be null or undefined, so an existing
 // `emptySearchText` with one of these already won in 0.6.x.
@@ -106,11 +115,24 @@ function isNeverNullish(node) {
 function fallbackExpression(j, newValue, oldValue) {
   // `a || b ?? c` does not parse: an `||` or `&&` operand of `??` needs its
   // own parentheses.
-  const guard = (/** @type {any} */ value) =>
-    value?.type === 'LogicalExpression' &&
-    (value.operator === '||' || value.operator === '&&')
-      ? j.parenthesizedExpression(value)
-      : value;
+  // A JSX attribute string keeps its source text (HTML entities, a raw
+  // backslash, a line break); inside a JS expression that text would change
+  // meaning or not parse, so a string is rebuilt from its decoded value.
+  const guard = (/** @type {any} */ value) => {
+    if (
+      value?.type === 'LogicalExpression' &&
+      (value.operator === '||' || value.operator === '&&')
+    ) {
+      return j.parenthesizedExpression(value);
+    }
+    if (
+      (value?.type === 'StringLiteral' || value?.type === 'Literal') &&
+      typeof value.value === 'string'
+    ) {
+      return j.stringLiteral(value.value);
+    }
+    return value;
+  };
   return j.logicalExpression('??', guard(newValue), guard(oldValue));
 }
 
@@ -170,6 +192,16 @@ function staticPropertyName(property) {
 }
 
 /** @param {any} property */
+/** An object literal this transform can read in full: no spread, no computed key. */
+/** @param {any} node */
+function isReadableObject(node) {
+  const value = unwrap(node);
+  return (
+    value?.type === 'ObjectExpression' &&
+    !value.properties.some(isDynamicProperty)
+  );
+}
+
 function isDynamicProperty(property) {
   return (
     property.computed === true ||
@@ -492,10 +524,12 @@ export default function transformer(file, api) {
       const value = propPath.node.value;
       if (value?.type !== 'JSXExpressionContainer') return;
       const expression = unwrap(value.expression);
+      let opaque = false;
       for (const object of triggerObjectsIn(expression)) {
         triggerObjects.add(object);
+        // `{...base, char: '@'}`: the removed key may hide in the spread.
+        if (!isReadableObject(object)) opaque = true;
       }
-      let opaque = false;
       /** @type {any[]} */
       const identifiers =
         expression?.type === 'Identifier'
@@ -549,12 +583,12 @@ export default function transformer(file, api) {
           }
           const init = unwrap(declarator.init);
           if (
-            init?.type === 'ObjectExpression' ||
+            isReadableObject(init) ||
             (init?.type === 'ArrayExpression' &&
-              init.elements.every((/** @type {any} */ element) => {
-                const item = unwrap(element);
-                return item == null || item.type === 'ObjectExpression';
-              }))
+              init.elements.every(
+                (/** @type {any} */ element) =>
+                  unwrap(element) == null || isReadableObject(element),
+              ))
           ) {
             visible = true;
           }
@@ -632,7 +666,9 @@ export default function transformer(file, api) {
       if (spreads.length === 0) return;
       const unreadable = spreads.some((/** @type {any} */ spread) => {
         const argument = unwrap(spread.argument);
-        if (argument?.type === 'ObjectExpression') return false;
+        if (argument?.type === 'ObjectExpression') {
+          return !isReadableObject(argument);
+        }
         if (argument?.type !== 'Identifier') return true;
         const scope = path.scope?.lookup(argument.name);
         if (!scope) return true;
@@ -643,7 +679,7 @@ export default function transformer(file, api) {
               declarator?.type === 'VariableDeclarator' &&
               declarator.id === binding.node &&
               binding.parent.parent?.node?.kind === 'const' &&
-              unwrap(declarator.init)?.type === 'ObjectExpression'
+              isReadableObject(declarator.init)
             );
           },
         );

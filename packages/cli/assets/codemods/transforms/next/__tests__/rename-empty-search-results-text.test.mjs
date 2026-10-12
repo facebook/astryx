@@ -65,7 +65,7 @@ const a = <Typeahead emptySearchResultsText="Old copy" emptySearchText={props.em
 const b = <Typeahead emptySearchResultsText={oldCopy} emptySearchText={maybe ? 'x' : undefined} />;`);
 
       expect(output).toContain(
-        'emptySearchText={props.emptySearchText ?? "Old copy"}',
+        "emptySearchText={props.emptySearchText ?? 'Old copy'}",
       );
       expect(output).toContain(
         "emptySearchText={(maybe ? 'x' : undefined) ?? oldCopy}",
@@ -250,7 +250,7 @@ const a = <Typeahead emptySearchText={custom || fallback} emptySearchResultsText
 const b = <Typeahead emptySearchText={maybe} emptySearchResultsText={left && right} />;`);
 
       expect(output).toContain(
-        'emptySearchText={(custom || fallback) ?? "Old"}',
+        "emptySearchText={(custom || fallback) ?? 'Old'}",
       );
       expect(output).toContain('emptySearchText={maybe ?? (left && right)}');
       // The result must parse: a second run reads it back.
@@ -270,6 +270,36 @@ const b = <Tokenizer {...{emptySearchText: 'inline'}} />;`);
       expect(
         output.match(/spreads props this upgrade cannot read/g),
       ).toHaveLength(2);
+      expect(await applyTransform(output)).toBe(output);
+    });
+
+    it('rebuilds a JSX string fallback from its decoded value', async () => {
+      const output =
+        await applyTransform(`import {Typeahead} from '@astryxdesign/core';
+const a = <Typeahead emptySearchText={copy} emptySearchResultsText="Tom &amp; Jerry \\ two
+lines" />;`);
+
+      expect(output).toContain(
+        "emptySearchText={copy ?? 'Tom & Jerry \\\\ two\\nlines'}",
+      );
+      expect(await applyTransform(output)).toBe(output);
+    });
+
+    it('reports a same-file object that itself spreads something it cannot read', async () => {
+      const output =
+        await applyTransform(`import {Tokenizer, ChatComposerInput} from '@astryxdesign/core';
+export function Wrapper(props) {
+  const tokenizerProps = {...props, debounceMs: 0};
+  return <Tokenizer {...tokenizerProps} />;
+}
+const mention = {...baseMention, char: '@'};
+const a = <ChatComposerInput triggers={[mention]} />;
+const b = <ChatComposerInput triggers={{...baseMention, char: '#'}} />;`);
+
+      expect(
+        output.match(/spreads props this upgrade cannot read/g),
+      ).toHaveLength(1);
+      expect(output.match(/this upgrade cannot read/g)).toHaveLength(3);
       expect(await applyTransform(output)).toBe(output);
     });
 
