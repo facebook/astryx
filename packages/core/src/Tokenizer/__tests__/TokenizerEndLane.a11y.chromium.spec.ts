@@ -172,6 +172,116 @@ async function sweepWhileBusy(
   return found;
 }
 
+/**
+ * Sizes the story container (a pixel width, or `max-content` for a
+ * content-sized field) and returns the field's border box.
+ */
+async function fieldBoxAt(
+  page: Page,
+  width: string,
+): Promise<{width: number; height: number}> {
+  return page.evaluate(async width => {
+    const host = document.querySelector<HTMLElement>(
+      '#storybook-root [style*="width"]',
+    );
+    const field = document.querySelector('button[aria-label="Clear all"]')
+      ?.parentElement?.parentElement;
+    if (!host || !field) {
+      throw new Error('Field or sizing container did not render');
+    }
+    host.style.width = width;
+    for (let frame = 0; frame < 4; frame++) {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    }
+    const {width: w, height: h} = field.getBoundingClientRect();
+    return {
+      width: Math.round(w * 100) / 100,
+      height: Math.round(h * 100) / 100,
+    };
+  }, width);
+}
+
+/** Adds tokens through the menu, as a person would. */
+async function addTokens(page: Page, names: string[]): Promise<void> {
+  const search = page.getByRole('combobox');
+  for (const name of names) {
+    await search.fill(name.split(' ')[0]);
+    await page.getByRole('option', {name}).click();
+    await expect(search).not.toHaveAttribute('aria-busy', 'true');
+  }
+}
+
+/**
+ * The field's box with a search settled and again with one in flight. The
+ * query is non-empty both times, so only the busy state differs.
+ */
+async function settledAndBusy(
+  page: Page,
+  width: string,
+): Promise<string | null> {
+  const search = page.getByRole('combobox');
+  await search.fill('a');
+  await expect(search).not.toHaveAttribute('aria-busy', 'true');
+  const settled = await fieldBoxAt(page, width);
+  await search.press('b');
+  await expect(search).toHaveAttribute('aria-busy', 'true');
+  const busy = await fieldBoxAt(page, width);
+  const stillBusy = (await search.getAttribute('aria-busy')) === 'true';
+  if (!stillBusy) {
+    throw new Error(`The search settled before ${width} was measured`);
+  }
+  return settled.width === busy.width && settled.height === busy.height
+    ? null
+    : `${width}: settled ${settled.width}x${settled.height}, busy ${busy.width}x${busy.height}`;
+}
+
+/**
+ * With four tokens on the Loading story, every width from 200px to 400px and a
+ * content-sized container where the field's box differs settled vs busy.
+ */
+async function busyLayoutChanges(page: Page, step: number): Promise<string[]> {
+  await addTokens(page, ['Bob Smith', 'Charlie Brown', 'Diana Prince']);
+  await expect(page.locator('.astryx-token')).toHaveCount(4);
+  const changed: string[] = [];
+  for (let width = 200; width <= 400; width += step) {
+    const change = await settledAndBusy(page, `${width}px`);
+    if (change) {
+      changed.push(change);
+    }
+  }
+  // Content-sized: the field may not widen while busy (input-fields FR1).
+  const contentSized = await settledAndBusy(page, 'max-content');
+  if (contentSized) {
+    changed.push(contentSized);
+  }
+  return changed;
+}
+
+/**
+ * The blurred, collapsed field at `width`: its border box, how many tokens
+ * show, and the "+N more" count.
+ */
+async function collapsedRowAt(page: Page, width: string): Promise<string> {
+  const box = await fieldBoxAt(page, width);
+  const row = await page.evaluate(() => {
+    const field = document.querySelector('button[aria-label="Clear all"]')
+      ?.parentElement?.parentElement;
+    if (!field) {
+      throw new Error('Field did not render');
+    }
+    const shown = [...field.querySelectorAll('.astryx-token')].filter(
+      token =>
+        token.checkVisibility({visibilityProperty: true}) &&
+        !token.closest('[aria-hidden="true"]'),
+    ).length;
+    const count = [...field.querySelectorAll('span')].find(span =>
+      /^\+\d+ more$/.test(span.textContent ?? ''),
+    );
+    return `${shown} tokens, ${count?.textContent ?? 'no count'}`;
+  });
+  return `${box.width}x${box.height}, ${row}`;
+}
+
 for (const direction of ['ltr', 'rtl'] as const) {
   test.describe(direction, () => {
     test('PowerSearch tokens (custom renderToken) wrap before the end lane', async ({
@@ -206,6 +316,54 @@ for (const direction of ['ltr', 'rtl'] as const) {
       await open(page, 'core-tokenizer--loading', direction);
       await page.getByRole('combobox').focus();
       expect(await sweepWhileBusy(page, 200, 400)).toEqual([]);
+    });
+
+    test('a search starting does not move the field or its token rows', async ({
+      page,
+    }) => {
+      test.setTimeout(240_000);
+      await open(page, 'core-tokenizer--loading', direction);
+      expect(await busyLayoutChanges(page, 4)).toEqual([]);
+    });
+
+    test('a themed, larger Spinner keeps its space too', async ({page}) => {
+      test.setTimeout(240_000);
+      await open(page, 'core-tokenizer--loading', direction);
+      // The public size var a theme sets for a named Spinner size.
+      await page.addStyleTag({
+        content: '.astryx-spinner { --spinner-diameter: 24px !important; }',
+      });
+      expect(await busyLayoutChanges(page, 8)).toEqual([]);
+    });
+
+    test('a search settling after blur does not change the collapsed row', async ({
+      page,
+    }) => {
+      test.setTimeout(240_000);
+      await open(
+        page,
+        'core-tokenizer--loading',
+        direction,
+        'tokenOverflowBehavior:unfocusedInline',
+      );
+      const search = page.getByRole('combobox');
+      await search.focus();
+      await addTokens(page, ['Bob Smith', 'Charlie Brown', 'Diana Prince']);
+      const changed: string[] = [];
+      for (let width = 200; width <= 400; width += 8) {
+        await search.focus();
+        await search.fill('');
+        await search.press('a');
+        await expect(search).toHaveAttribute('aria-busy', 'true');
+        await search.blur();
+        const busy = await collapsedRowAt(page, `${width}px`);
+        await expect(search).not.toHaveAttribute('aria-busy', 'true');
+        const settled = await collapsedRowAt(page, `${width}px`);
+        if (busy !== settled) {
+          changed.push(`${width}px: busy ${busy}, settled ${settled}`);
+        }
+      }
+      expect(changed).toEqual([]);
     });
 
     for (const mode of ['overflow-inline', 'overflow-layer']) {

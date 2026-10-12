@@ -344,6 +344,13 @@ const styles = stylex.create({
     flexShrink: 0,
     zIndex: 1,
   },
+  busySlot: {
+    display: 'flex',
+    flexShrink: 0,
+  },
+  busySlotIdle: {
+    visibility: 'hidden',
+  },
   inputAtMax: {
     width: 0,
     minWidth: 0,
@@ -537,6 +544,12 @@ const CREATABLE_ID_PREFIX = '__xds_create__';
  *
  * Renders nothing when the lane would be empty, so `useEndLaneReserve` sees no
  * element, publishes no width, and the input keeps its full content box.
+ *
+ * With `hasBusySlot` the Spinner stays mounted while idle, hidden and out of
+ * the accessibility tree, so its slot keeps the themed Spinner's own size.
+ * Token rows reserve the lane's measured width, so a Spinner that came and
+ * went with the search would re-wrap them, and widen a content-sized field,
+ * on every search.
  */
 function EndLane({
   lane,
@@ -544,6 +557,7 @@ function EndLane({
   laneXStyle,
   loadingLabel,
   hasStaticContent,
+  hasBusySlot,
   children,
 }: {
   lane: BusyIndicatorLane;
@@ -551,15 +565,22 @@ function EndLane({
   laneXStyle: stylex.StyleXStyles[];
   loadingLabel: string;
   hasStaticContent: boolean;
+  hasBusySlot: boolean;
   children: ReactNode;
 }) {
   const isBusy = useIsBusy(lane);
-  if (!isBusy && !hasStaticContent) {
+  if (!isBusy && !hasStaticContent && !hasBusySlot) {
     return null;
   }
   return (
     <div ref={laneRef} {...stylex.props(laneXStyle)}>
-      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {(isBusy || hasBusySlot) && (
+        <span
+          aria-hidden={isBusy ? undefined : true}
+          {...stylex.props(styles.busySlot, !isBusy && styles.busySlotIdle)}>
+          <Spinner size="sm" aria-label={loadingLabel} />
+        </span>
+      )}
       {children}
     </div>
   );
@@ -1089,7 +1110,11 @@ export function Tokenizer<T extends SearchableItem>({
         laneRef={laneRef}
         laneXStyle={[styles.endSection, endSectionSizeStyles[size]]}
         loadingLabel={t('@astryx.typeahead.loading')}
-        hasStaticContent={hasStaticEndLane}>
+        hasStaticContent={hasStaticEndLane}
+        // Wherever a search can run beside tokens: enabled and below
+        // maxEntries. A collapsed overflow row keeps it too, since a search
+        // started while focused can settle after focus leaves.
+        hasBusySlot={value.length > 0 && !isDisabled && !isAtMax}>
         {endContent}
         {hasClearButton && (
           <InputClearButton

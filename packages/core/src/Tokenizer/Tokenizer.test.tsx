@@ -1630,16 +1630,13 @@ describe('Tokenizer end-lane reserve', () => {
         tokenOverflowBehavior="unfocusedInline"
       />,
     );
+    // The collapsed row keeps the Spinner's slot, so the lane is up and
+    // publishing; the input still must not spend the reserve.
+    expect(reserveOf(container)).toBeTruthy();
     const input = screen.getByRole('combobox');
-    expect(input.className).not.toBe('');
-    // The reserve is the only rule that reads the lane variable; the
-    // collapsed input must not carry it.
-    const reserveClasses = new Set(
-      (laneHost(container)?.className ?? '').split(' '),
+    expect(getComputedStyle(input).paddingInlineEnd).not.toContain(
+      '--_tokenizer-end-lane-reserve',
     );
-    expect(
-      [...input.classList].some(c => reserveClasses.has(c) && c !== ''),
-    ).toBe(false);
   });
 
   it('costs no commit of its own across a whole search', async () => {
