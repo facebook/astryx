@@ -343,6 +343,31 @@ describe('Markdown', () => {
     expect(container.querySelector('[data-diff]')).toBeNull();
   });
 
+  it('hands a custom code renderer the fence word as written plus isDiff and the base language', () => {
+    const seen: Record<string, unknown>[] = [];
+    const Code = (props: {
+      code: string;
+      language?: string;
+      isDiff?: boolean;
+      diffLanguage?: string;
+    }) => {
+      seen.push(props);
+      return <pre data-testid="custom">{props.code}</pre>;
+    };
+    render(
+      <Markdown components={{code: Code}}>
+        {
+          '```diff-tsx\n-a\n+b\n```\n\n```diff\n-a\n```\n\n```tsx\nconst x = 1;\n```'
+        }
+      </Markdown>,
+    );
+    expect(seen.map(p => [p.language, p.isDiff, p.diffLanguage])).toEqual([
+      ['diff-tsx', true, 'tsx'],
+      ['diff', true, 'plaintext'],
+      ['tsx', false, undefined],
+    ]);
+  });
+
   it('renders links with correct href', () => {
     render(<Markdown>{'[click](https://example.com)'}</Markdown>);
     const link = screen.getByText('click');

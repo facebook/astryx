@@ -354,14 +354,9 @@ export function splitDiffLines(lines: ReadonlyArray<string>): {
   const kinds: DiffLineKind[] = [];
   const glyphs: string[] = [];
   const content: string[] = [];
-  // `---`/`+++` are headers only as a file header that precedes a hunk: a
-  // fence with no `@@` line has none.
-  let beforeFirstHunk = lines.some(line => line.startsWith('@@'));
-  for (const line of lines) {
-    const kind = diffLineKind(line, {beforeFirstHunk});
-    if (line.startsWith('@@')) {
-      beforeFirstHunk = false;
-    }
+  const fileHeaders = fileHeaderLines(lines);
+  lines.forEach((line, index) => {
+    const kind = diffLineKind(line, {isFileHeader: fileHeaders.has(index)});
     kinds.push(kind);
     if (kind === 'header') {
       glyphs.push('');
@@ -376,32 +371,23 @@ export function splitDiffLines(lines: ReadonlyArray<string>): {
       glyphs.push(line.slice(0, 1));
       content.push(line.slice(1));
     }
-  }
+  });
   return {kinds, glyphs, content};
 }
 
 /**
  * Classify one line of a unified diff by its first character: `+` added,
- * `-` removed, `@@` header, anything else context. `---` / `+++` (and git's
- * `diff --git`, `index`) are headers only as a file header that precedes a
- * hunk (`beforeFirstHunk`: before the first `@@` of a diff that has one), so
- * a removed line that starts with `--` is never misread as a header. The
- * glyph is part of the text and is never removed.
+ * `-` removed, `@@` header, anything else context. A `---` line directly
+ * followed by a `+++` line and then an `@@` line is a file header (both
+ * lines), wherever it occurs; every other `---`/`+++` line is removed or
+ * added, so a removed line that starts with `--` is never misread. The glyph
+ * is part of the text and is never removed.
  */
 export function diffLineKind(
   line: string,
-  {beforeFirstHunk = true}: {beforeFirstHunk?: boolean} = {},
+  {isFileHeader = false}: {isFileHeader?: boolean} = {},
 ): DiffLineKind {
-  if (line.startsWith('@@')) {
-    return 'header';
-  }
-  if (
-    beforeFirstHunk &&
-    (line.startsWith('---') ||
-      line.startsWith('+++') ||
-      line.startsWith('diff --git') ||
-      /^index [0-9a-f]+/.test(line))
-  ) {
+  if (line.startsWith('@@') || isFileHeader) {
     return 'header';
   }
   if (line.startsWith('+')) {
@@ -411,6 +397,22 @@ export function diffLineKind(
     return 'removed';
   }
   return 'context';
+}
+
+/** The indexes of the `---`/`+++` lines that form a file header before an `@@`. */
+export function fileHeaderLines(lines: ReadonlyArray<string>): Set<number> {
+  const headers = new Set<number>();
+  for (let i = 0; i + 2 < lines.length; i++) {
+    if (
+      lines[i].startsWith('---') &&
+      lines[i + 1].startsWith('+++') &&
+      lines[i + 2].startsWith('@@')
+    ) {
+      headers.add(i);
+      headers.add(i + 1);
+    }
+  }
+  return headers;
 }
 
 // ---------------------------------------------------------------------------

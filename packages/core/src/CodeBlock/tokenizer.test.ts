@@ -178,12 +178,13 @@ describe('diffLineKind', () => {
     expect(diffLineKind('')).toBe('context');
   });
 
-  it('keeps file and hunk headers out of the change rows', () => {
+  it('keeps hunk headers out of the change rows; a lone --- or +++ is a change', () => {
     expect(diffLineKind('@@ -1,3 +1,4 @@')).toBe('header');
-    expect(diffLineKind('--- a/file.ts')).toBe('header');
-    expect(diffLineKind('+++ b/file.ts')).toBe('header');
-    expect(diffLineKind('diff --git a/x b/x')).toBe('header');
-    expect(diffLineKind('index 83db48f..bf269f4 100644')).toBe('header');
+    expect(diffLineKind('--- a/file.ts')).toBe('removed');
+    expect(diffLineKind('+++ b/file.ts')).toBe('added');
+    // Lines with no glyph are context, whatever tool wrote them.
+    expect(diffLineKind('diff --git a/x b/x')).toBe('context');
+    expect(diffLineKind('index 83db48f..bf269f4 100644')).toBe('context');
   });
 
   it('splits the glyph column from the code the base language sees', () => {
@@ -205,7 +206,7 @@ describe('diffLineKind', () => {
     ]);
   });
 
-  it('treats --- and +++ as headers only before the first hunk, and keeps unindented context whole', () => {
+  it('treats a ---/+++ pair directly before @@ as a file header anywhere, and keeps unindented context whole', () => {
     const {kinds, glyphs, content} = splitDiffLines([
       '--- a/x.ts',
       '+++ b/x.ts',
@@ -214,6 +215,10 @@ describe('diffLineKind', () => {
       '---',
       '+++y;',
       'plain',
+      '--- a/y.ts',
+      '+++ b/y.ts',
+      '@@ -1 +1 @@',
+      '-old',
     ]);
     expect(kinds).toEqual([
       'header',
@@ -223,19 +228,21 @@ describe('diffLineKind', () => {
       'removed',
       'added',
       'context',
-    ]);
-    expect(glyphs).toEqual(['', '', '', '-', '-', '+', '']);
-    expect(content).toEqual(['', '', '', '-x;', '--', '++y;', 'plain']);
-    expect(diffLineKind('--- a/x.ts')).toBe('header');
-    expect(diffLineKind('--- a/x.ts', {beforeFirstHunk: false})).toBe(
+      'header',
+      'header',
+      'header',
       'removed',
-    );
-    // No hunk anywhere: nothing is a file header.
+    ]);
+    expect(glyphs.slice(0, 7)).toEqual(['', '', '', '-', '-', '+', '']);
+    expect(content.slice(3, 7)).toEqual(['-x;', '--', '++y;', 'plain']);
+    // No hunk after the pair: both lines are changes, not headers.
     expect(splitDiffLines(['--- gone', '+++ here', ' same']).kinds).toEqual([
       'removed',
       'added',
       'context',
     ]);
+    expect(diffLineKind('--- a/x.ts')).toBe('removed');
+    expect(diffLineKind('--- a/x.ts', {isFileHeader: true})).toBe('header');
   });
 
   it('tokenizes the code past the glyph with the base language', () => {

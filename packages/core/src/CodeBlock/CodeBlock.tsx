@@ -483,8 +483,8 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
   highlightLines?: number[];
   /**
    * Render the code as a unified diff over `language`: lines starting with
-   * `+` are added, `-` removed, `@@`/`---`/`+++` are headers, anything else
-   * is context. The glyph sits in its own column and the rest of every line
+   * `+` are added, `-` removed, `@@` is a hunk header (a `---`/`+++` pair
+   * directly before one is a file header), anything else is context. The glyph sits in its own column and the rest of every line
    * keeps the language's syntax highlighting. Copy still returns the exact
    * source, glyphs included.
    */

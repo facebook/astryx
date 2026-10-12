@@ -163,9 +163,12 @@ export interface MarkdownComponents {
    */
   code?: React.ComponentType<{
     code: string;
+    /** The fence's info-string word as written, `diff-tsx` included. */
     language?: string;
     /** The fence was `diff` or `diff-<language>`: render as a diff. */
     isDiff?: boolean;
+    /** With `isDiff`, the language under the diff (`plaintext` for ```diff). */
+    diffLanguage?: string;
     sourceLines?: MarkdownSourceLines;
   }>;
   inlineCode?: React.ComponentType<{children: string}>;
@@ -1486,9 +1489,11 @@ function renderBlock(
         getMarkdownAstLegacyCodeLanguage(node) ?? 'plaintext';
       const fence = parseFenceLanguage(node.lang ?? legacyLanguage);
       const isDiff = fence.isDiff;
-      const language = isDiff
+      // The language under the diff layer; the default CodeBlock renders it.
+      const diffLanguage = isDiff
         ? fence.language.match(/^\w*/)?.[0] || 'plaintext'
-        : legacyLanguage;
+        : undefined;
+      const language = diffLanguage ?? legacyLanguage;
       // A semantic-fence proposal claims its fence before the host's code
       // renderer (spec:AST-036 FR17). The host renderer, or the default Code
       // block without one, draws every unclaimed fence and is the fallback
@@ -1498,8 +1503,12 @@ function renderBlock(
         <CodeBlockComp
           key={index}
           code={node.value}
-          language={language}
+          // A supplied renderer keeps the info string as written (so an
+          // existing `language === 'diff'` check still matches) and learns
+          // the base language separately.
+          language={isDiff ? (node.lang ?? legacyLanguage) : language}
           isDiff={isDiff}
+          diffLanguage={diffLanguage}
           {...lineProp}
         />
       ) : (
