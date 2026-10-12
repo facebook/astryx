@@ -529,6 +529,11 @@ export const InScrollContainer: Story = {
   render: () => (
     <div
       data-testid="context-menu-scroller"
+      // The box scrolls but holds nothing focusable, so it needs a tab stop
+      // and a name for keyboard scrolling (axe: scrollable-region-focusable).
+      tabIndex={0}
+      role="region"
+      aria-label="Scrolling content"
       style={{width: 320, height: 160, overflowY: 'auto'}}>
       <p style={{height: 240, margin: 0}}>Scroll down to the area.</p>
       <ContextMenu
