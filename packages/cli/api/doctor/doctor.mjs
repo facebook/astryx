@@ -1351,7 +1351,29 @@ export async function runChecks(options = {}) {
       integrations = project.loadedIntegrations;
       // An installed dependency whose manifest cannot be loaded is kept out of
       // loadedIntegrations on purpose. The provider ledger still records it.
-      const ledger = [...providerLedgerOf(project).values()];
+      const ledgerMap = providerLedgerOf(project);
+      const ledger = [...ledgerMap.values()];
+      // The package that stands for a configured name: when the package
+      // being authored replaces the configured copy, the authored package's
+      // outcome is the one that matters, so a broken authored manifest fails
+      // the check even though the configured copy itself loaded. A package
+      // set aside for a provider conflict keeps its own outcome.
+      /** @param {import('../../foundation/integrations/provider-resolution.mjs').ProviderLedgerEntry} entry */
+      const standsFor = entry => {
+        let current = entry;
+        const seen = new Set();
+        while (
+          current.outcome === 'set-aside' &&
+          current.reason === 'replaced-by-authored' &&
+          current.winner != null &&
+          !seen.has(current.winner) &&
+          ledgerMap.has(current.winner)
+        ) {
+          seen.add(current.winner);
+          current = /** @type {typeof entry} */ (ledgerMap.get(current.winner));
+        }
+        return current;
+      };
       // Every package a configured name reached, however it was resolved.
       configuredIntegrations = ledger
         .filter(entry =>
@@ -1363,12 +1385,13 @@ export async function runChecks(options = {}) {
           const ref = entry.refs.find(
             candidate => candidate.source === 'configured',
           );
+          const effective = standsFor(entry);
           return {
             spec: ref?.spec ?? entry.label,
             label: entry.integration?.name ?? ref?.spec ?? entry.label,
             error:
-              entry.outcome === 'load-failed'
-                ? (entry.error ?? 'its manifest could not be loaded')
+              effective.outcome === 'load-failed'
+                ? (effective.error ?? 'its manifest could not be loaded')
                 : null,
           };
         });

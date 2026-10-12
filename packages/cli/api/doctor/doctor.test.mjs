@@ -1209,6 +1209,25 @@ describe('a configured integration that cannot load fails the gate', () => {
   );
 
   it(
+    'fails when the package being authored is named by its own config and its manifest throws',
+    async () => {
+      const {by, summary} = await report({
+        ...CORE_STUB,
+        'package.json': JSON.stringify({name: '@acme/widgets', version: '1.0.0'}),
+        'astryx.integration.mjs': 'export default {  not valid ((\n',
+        'astryx.config.mjs': "export default { integrations: ['@acme/widgets'] };\n",
+      });
+      const check = by['configured-integrations'];
+      expect(check.status).toBe('fail');
+      expect(check.message).toMatch(
+        /^1 of 1 integration named in astryx\.config could not be loaded, so it contributes nothing: @acme\/widgets \(/,
+      );
+      expect(summary.fail).toBe(1);
+    },
+    SLOW,
+  );
+
+  it(
     'still counts a configured package that was set aside for a provider conflict',
     async () => {
       const CHARTS = 'node_modules/@acme/charts';
