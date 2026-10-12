@@ -122,7 +122,7 @@ import pseudo from '@astryxdesign/core/locales/pseudo.generated.js';
         },
         {
           type: 'prose',
-          text: "Astryx components read their own strings from the English catalog rather than hardcoding them, so an app bundles only the strings of the components it renders. Your own code reads any `@astryx.*` key with `useTranslator()`:",
+          text: "Astryx components read their strings from the English catalog rather than hardcoding them. Your own code reads any `@astryx.*` key with `useTranslator()`:",
         },
         {
           type: 'code',

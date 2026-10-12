@@ -10,7 +10,10 @@
  *   context a consumer reads. Its `translate` resolves every `@astryx.*` key,
  *   falling back to the shipped English catalog, so this module carries that
  *   catalog; the components inside this package read
- *   TranslationRuntimeContext instead and carry only their own slices.
+ *   TranslationRuntimeContext instead and carry only their own slices. Both
+ *   are written by InternationalizationProvider, which is how an app
+ *   configures Astryx: a value rendered straight into this context reaches
+ *   consumers of this context and nothing inside the package.
  *
  * Separated from InternationalizationProvider.tsx so components can consume
  * the context without pulling in the full provider implementation.
