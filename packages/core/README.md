@@ -68,7 +68,7 @@ astryx gap-report                   # report a missing capability
 
 ## Resources
 
-- [Component Storybook](https://facebook.github.io/astryx/)
+- [Component Storybook](https://astryx.atmeta.com/storybook/)
 - [GitHub Repository](https://github.com/facebook/astryx)
 
 ---
@@ -153,7 +153,7 @@ No build plugins needed; Astryx ships pre-built CSS that works alongside Tailwin
 @import 'tailwindcss/utilities.css' layer(utilities);
 ```
 
-The `tailwind-theme.css` import maps system tokens to Tailwind utilities via `@theme inline`:
+The `tailwind-theme.css` import maps system tokens to Tailwind utilities via `@theme reference inline`, so the mappings generate utilities without redeclaring the tokens at runtime:
 
 ```tsx
 // Without the bridge — verbose:
@@ -261,7 +261,7 @@ The CLI writes this page for you, annotated and pinned to the version you have
 installed:
 
 ```bash
-npx astryx template --cdn        # writes cdn.template.html
+npx @astryxdesign/cli template --cdn   # writes cdn.template.html
 ```
 
 ```html

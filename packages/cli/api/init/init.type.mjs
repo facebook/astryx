@@ -29,7 +29,7 @@
 /**
  * @typedef {object} InitRemoveResponse
  * @property {'init.remove'} type
- * @property {{removed: true}} data
+ * @property {{removed: boolean}} data False when no managed agent-docs block was found, so nothing was removed.
  */
 
 /**

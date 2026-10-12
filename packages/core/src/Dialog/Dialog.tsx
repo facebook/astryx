@@ -4,7 +4,8 @@
 
 /**
  * @file Dialog.tsx
- * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext
+ * @input Uses React, DialogHTMLAttributes, ReactNode, container (Layout), DialogContext, layerTextReset,
+ *   layerStructureReset, modalOutlet, interactionModality
  * @output Exports Dialog component, DialogProps, DialogVariant, DialogPurpose types
  * @position Core implementation; consumed by index.ts, tested by Dialog.test.tsx
  *
@@ -14,6 +15,10 @@
  * Fullscreen dialogs add safe-area protection to the default padding fallback
  * while preserving explicit prop/theme padding overrides, and fade in without
  * the centered-dialog translate/scale motion.
+ *
+ * Initial focus and the focus returned on close follow the last input
+ * (docs/architecture/interaction-modality.md INV1): the shared focus indicator
+ * is hidden after a pointer press and shown after a key press.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Dialog/Dialog.doc.mjs (props table, features, implementation notes)
@@ -34,8 +39,12 @@ import {
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
+import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
+import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
+import {useModalOutlet} from '../Layer/modalOutlet';
 import {
   colorVars,
   radiusVars,
@@ -61,8 +70,38 @@ import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
 import type {DialogVariantMap} from './index';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {
+  getInteractionModality,
+  useInteractionModalityTracking,
+} from '../utils/interactionModality';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+/**
+ * Move focus programmatically so its ring follows the last input. Dialog does
+ * not render the element that opened it or the consumer's autofocus target, so
+ * the browser's focus option is the one way to reach them.
+ */
+function focusForLastInput(element: HTMLElement): void {
+  // A text-entry field paints its own focus treatment to show where typing
+  // goes, and an extra blur there can run validation or mark it touched.
+  const isTextEntry =
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLSelectElement ||
+    element.isContentEditable;
+  if (isTextEntry || getInteractionModality() !== 'pointer') {
+    element.focus();
+    return;
+  }
+  // Focusing the element that already has focus does nothing, so a ring the
+  // browser already drew would stay. WebKit draws one when showModal() or its
+  // native close moves focus itself, so clear that focus first.
+  if (element.matches(':focus-visible')) {
+    element.blur();
+  }
+  element.focus({focusVisible: false});
+}
+
 /**
  * Calculate a directional translate offset for dialog entry animation.
  * Returns a normalized vector from the trigger element toward the viewport
@@ -162,7 +201,8 @@ const styles = stylex.create({
     position: 'fixed',
     margin: 'auto',
     padding: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     backgroundColor: colorVars['--color-background-surface'],
     '--_dialog-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_dialog-radius)',
@@ -235,7 +275,8 @@ const styles = stylex.create({
   // Inline wrapper mirrors the dialog's visual styles without <dialog> behavior
   inlineWrapper: {
     padding: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     backgroundColor: colorVars['--color-background-surface'],
     '--_dialog-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_dialog-radius)',
@@ -495,6 +536,8 @@ export function Dialog({
   // for directional animation origin and focus restoration on close.
   const triggerElementRef = useRef<HTMLElement | null>(null);
 
+  useInteractionModalityTracking();
+
   // Derive dismissal behavior from purpose
   const allowEscape = purpose !== 'required';
   const allowBackdropClick = purpose === 'info';
@@ -533,7 +576,7 @@ export function Dialog({
         const autofocusTarget =
           dialog.querySelector<HTMLElement>('[data-autofocus]');
         if (autofocusTarget) {
-          autofocusTarget.focus();
+          focusForLastInput(autofocusTarget);
         }
       }
     } else {
@@ -541,10 +584,16 @@ export function Dialog({
         dialog.close();
       }
       // Return focus to the element that opened the dialog
-      triggerElementRef.current?.focus();
+      if (triggerElementRef.current) {
+        focusForLastInput(triggerElementRef.current);
+      }
       triggerElementRef.current = null;
     }
   }, [isOpen, isInline]);
+
+  // Host app-global surfaces (toasts) inside this modal while it is open, so
+  // they stay visible and operable above it.
+  useModalOutlet(dialogRef, isOpen && !isInline);
 
   // Lock body scroll when dialog is open (iOS Safari workaround)
   // Skip for inline rendering — no modal overlay to compensate for.
@@ -674,6 +723,8 @@ export function Dialog({
         {...mergeProps(
           themeProps('dialog', {variant}),
           stylex.props(
+            layerTextReset.reset,
+            layerStructureReset.reset,
             styles.inlineWrapper,
             overlayPaddingReset.reset,
             standardSizing &&
@@ -692,7 +743,9 @@ export function Dialog({
           (props as Record<string, unknown>)['data-testid'] as
             string | undefined
         }>
-        <LayerDepthProvider>{innerContent}</LayerDepthProvider>
+        <LayerDepthProvider>
+          <LayerContentBoundary>{innerContent}</LayerContentBoundary>
+        </LayerDepthProvider>
       </div>
     );
   }
@@ -706,6 +759,8 @@ export function Dialog({
       {...mergeProps(
         themeProps('dialog', {variant}),
         focusOutlineProps.focusVisible(
+          layerTextReset.reset,
+          layerStructureReset.reset,
           styles.dialog,
           overlayPaddingReset.reset,
           isOpen && styles.open,
@@ -740,7 +795,9 @@ export function Dialog({
       // imperatively in `attachDialog`; a consumer-provided aria-labelledby
       // flows through {...safeProps} above and wins.
       {...(purpose === 'required' ? {role: 'alertdialog'} : undefined)}>
-      <LayerDepthProvider>{innerContent}</LayerDepthProvider>
+      <LayerDepthProvider>
+        <LayerContentBoundary>{innerContent}</LayerContentBoundary>
+      </LayerDepthProvider>
     </dialog>
   );
 }

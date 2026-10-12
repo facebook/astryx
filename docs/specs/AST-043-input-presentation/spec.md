@@ -43,8 +43,10 @@ contracts, `architecture:public-component-api`, `family:input-fields`,
   each component, except the new surfaces DEC-3 approves. Eligibility/fallback
   behavior changes only as FR2 states (for `native`).
 - Renaming menu/selector `presentation` or their `adaptive` (OQ1).
-- Removing `nativePicker` — breaking under `spec:AST-017`, needs its own
-  record. Migration tooling follows `spec:AST-017` FR8 using the FR3 mapping.
+- Removing `nativePicker` — its concrete mapping remains owned here, while the
+  deprecation record, cleanup id, Changeset, paired-minor treatment, and migration
+  evidence follow [`spec:AST-017` FR28–FR44](../AST-017/spec.md) and the codemod
+  follows `spec:AST-040`.
 
 ## Requirements
 

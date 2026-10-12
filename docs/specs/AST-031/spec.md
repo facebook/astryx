@@ -13,7 +13,7 @@ owners: [josephfarina, cixzhang]
 affects_architecture: [architecture:cli-surface]
 affects_families: []
 affects_contributing: []
-affects_consumer_docs: [cli-integrations]
+affects_consumer_docs: [cli/integrations]
 ---
 
 # Runtime integration feature composition system spec

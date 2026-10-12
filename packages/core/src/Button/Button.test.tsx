@@ -13,8 +13,20 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Button} from './Button';
+import * as stylex from '@stylexjs/stylex';
+import {
+  hasPressedArm,
+  hasReleaseFade,
+  readsPressStrength,
+} from '../__tests__/pressState';
 import {Badge} from '../Badge/Badge';
+import {ButtonGroup} from '../ButtonGroup';
+import {IconButton} from '../IconButton';
 import {InternationalizationProvider} from '../i18n';
+
+const narrowRowProbe = stylex.create({
+  rigid: {flexShrink: 0, minWidth: 'auto'},
+});
 
 describe('Button', () => {
   // Retained, narrowed: the shared contract proves the ROLE and the accessible
@@ -493,6 +505,83 @@ describe('Button', () => {
     expect(liveRegion).toHaveTextContent('Chargement');
   });
 
+  describe('in a narrow row', () => {
+    // jsdom has no layout, so these assert the computed declarations that
+    // produce the behavior. The real-browser widths are in the PR evidence.
+    it('lets a labelled button shrink so its label truncates', () => {
+      render(<Button label="A very long button label that should truncate" />);
+      const style = getComputedStyle(screen.getByRole('button'));
+      expect(style.minWidth).toBe('0');
+      expect(style.maxWidth).toBe('100%');
+      const label = screen.getByText(
+        'A very long button label that should truncate',
+      );
+      expect(getComputedStyle(label).textOverflow).toBe('ellipsis');
+      expect(getComputedStyle(label).overflow).toBe('hidden');
+    });
+
+    it('keeps the default flex-shrink so a row can shrink the button', () => {
+      render(<Button label="Save" icon={<span>+</span>} />);
+      const style = getComputedStyle(screen.getByRole('button'));
+      // No opt-out: a labelled button (with or without an icon) shrinks.
+      expect(style.flexShrink).not.toBe('0');
+    });
+
+    it('keeps an icon-only button square instead of shrinking it', () => {
+      render(<Button label="Settings" icon={<span>⚙</span>} isIconOnly />);
+      const style = getComputedStyle(screen.getByRole('button'));
+      expect(style.flexShrink).toBe('0');
+      expect(style.maxWidth).toBe('none');
+      expect(style.aspectRatio).toBe('var(--button-icon-only-aspect)');
+    });
+
+    it('keeps IconButton square too, since it renders the icon-only mode', () => {
+      render(<IconButton label="More actions" icon={<span>⋯</span>} />);
+      const style = getComputedStyle(
+        screen.getByRole('button', {name: 'More actions'}),
+      );
+      expect(style.flexShrink).toBe('0');
+      expect(style.maxWidth).toBe('none');
+    });
+
+    it('caps an explicit width at the container instead of dropping it', () => {
+      render(<Button label="Sign in" width={240} />);
+      const button = screen.getByRole('button');
+      expect(button.getAttribute('style')).toContain('240');
+      expect(getComputedStyle(button).maxWidth).toBe('100%');
+    });
+
+    it('applies the same cap in link mode', () => {
+      render(<Button label="Read the full release notes" href="#notes" />);
+      const style = getComputedStyle(
+        screen.getByRole('link', {name: 'Read the full release notes'}),
+      );
+      expect(style.minWidth).toBe('0');
+      expect(style.maxWidth).toBe('100%');
+    });
+
+    it('shrinks inside a ButtonGroup like a standalone button', () => {
+      render(
+        <ButtonGroup label="Draft actions">
+          <Button label="Save changes to draft" />
+          <Button label="Discard" />
+        </ButtonGroup>,
+      );
+      const style = getComputedStyle(
+        screen.getByRole('button', {name: 'Save changes to draft'}),
+      );
+      expect(style.minWidth).toBe('0');
+      expect(style.maxWidth).toBe('100%');
+    });
+
+    it('lets xstyle restore a rigid button', () => {
+      render(<Button label="Cancel" xstyle={narrowRowProbe.rigid} />);
+      const style = getComputedStyle(screen.getByRole('button'));
+      expect(style.flexShrink).toBe('0');
+      expect(style.minWidth).toBe('auto');
+    });
+  });
+
   describe('elevation', () => {
     it('reflects each elevation level as a theme attribute', () => {
       const attrFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
@@ -555,5 +644,20 @@ describe('Button', () => {
     render(<Button label="Docs" href="https://example.com" />);
     const link = screen.getByRole('link');
     expect(link).not.toHaveAttribute('aria-busy');
+  });
+});
+
+describe('Button pressed state (touch)', () => {
+  it('fades the touch press out over the release, painting the pressed token at its strength on both arms', () => {
+    render(<Button label="Save" />);
+    const button = screen.getByRole('button', {name: 'Save'});
+    // The touch arms the controller writes: `on` paints the pressed token at
+    // strength 1 on the first frame; `fading` keeps the paint and runs the
+    // release animation on the machine's clock. A mouse keeps `:active`.
+    expect(button).toHaveAttribute('data-astryx-pressable');
+    expect(hasPressedArm(button)).toBe(true);
+    expect(readsPressStrength(button, '[data-astryx-press="on"]')).toBe(true);
+    expect(readsPressStrength(button)).toBe(true);
+    expect(hasReleaseFade(button)).toBe(true);
   });
 });

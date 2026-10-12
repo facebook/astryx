@@ -3,16 +3,20 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Badge} from '@astryxdesign/core/Badge';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {useState} from 'react';
 import {
   DropdownMenu,
   DropdownMenuItem,
   DropdownMenuDivider,
+  DropdownMenuGroup,
   DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSubMenu,
 } from '@astryxdesign/core/DropdownMenu';
+import {Button} from '@astryxdesign/core/Button';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {
   PencilIcon,
@@ -675,6 +679,38 @@ export const CompoundWithDescriptions: Story = {
   ),
 };
 
+export const CompoundWithGroups: Story = {
+  render: () => (
+    <DropdownMenu button={{label: 'Version'}}>
+      <DropdownMenuGroup title="Version history">
+        <DropdownMenuItem
+          icon={ArrowDownTrayIcon}
+          label="Restore this version"
+          onClick={() => console.log('Restore')}
+        />
+        <DropdownMenuItem
+          icon={DocumentDuplicateIcon}
+          label="Compare with current"
+          onClick={() => console.log('Compare')}
+        />
+      </DropdownMenuGroup>
+      <DropdownMenuDivider />
+      <DropdownMenuGroup title="Add to message">
+        <DropdownMenuItem
+          icon={ShareIcon}
+          label="As a link"
+          onClick={() => console.log('Link')}
+        />
+        <DropdownMenuItem
+          icon={DocumentPlusIcon}
+          label="As a snippet"
+          onClick={() => console.log('Snippet')}
+        />
+      </DropdownMenuGroup>
+    </DropdownMenu>
+  ),
+};
+
 export const PlacementAbove: Story = {
   render: () => (
     <DropdownMenu
@@ -1016,6 +1052,47 @@ export const ActionSheetPresentation: Story = {
   },
 };
 
+export const SectionedActionSheetPresentation: Story = {
+  name: 'Presentation / sectioned action sheet',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'Shows titled sections in the bottom-sheet presentation. Section headings and spacious action rows share the same inline content edge.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <DropdownMenu
+        presentation="bottom-sheet"
+        button={{label: 'File actions'}}
+        items={[
+          {
+            type: 'section',
+            title: 'Create',
+            items: [{label: 'New file'}, {label: 'New folder'}],
+          },
+          {
+            type: 'section',
+            title: 'Manage',
+            items: [{label: 'Share file'}, {label: 'Archive file'}],
+          },
+        ]}
+      />
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
 export const AdaptiveActionPresentation: Story = {
   name: 'Presentation / adaptive action menu',
   parameters: {
@@ -1227,5 +1304,178 @@ export const SubmenuViewportFit: Story = {
         }
       }
     }
+  },
+};
+
+export const CustomTrigger: Story = {
+  name: 'Custom trigger (any control)',
+  render: () => (
+    <DropdownMenu
+      renderTrigger={props => (
+        <IconButton
+          icon={<EllipsisHorizontalIcon />}
+          label="More actions"
+          variant="ghost"
+          {...props}
+        />
+      )}>
+      <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+      <DropdownMenuItem
+        icon={DocumentDuplicateIcon}
+        label="Duplicate"
+        onClick={() => {}}
+      />
+      <DropdownMenuItem
+        icon={TrashIcon}
+        label="Delete"
+        variant="destructive"
+        onClick={() => {}}
+      />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Any control can open a menu: `trigger` renders it and receives the props to spread — the press model (a mouse opens on press-down, a held finger opens with the finger down), the keyboard opens, the toggle click, and the ARIA wiring. The menu is named by that control through `aria-labelledby`.',
+      },
+    },
+  },
+};
+
+export const LinkRows: Story = {
+  name: 'Rows that navigate (href)',
+  render: () => (
+    <DropdownMenu button={{label: 'Places'}}>
+      <DropdownMenuItem icon={UserIcon} label="Profile" href="/profile" />
+      <DropdownMenuItem
+        icon={Cog6ToothIcon}
+        label="Settings"
+        href="/settings"
+        onClick={() => console.log('leaving for settings')}
+      />
+      <DropdownMenuItem
+        icon={ShareIcon}
+        label="Help center"
+        description="Opens in a new tab"
+        href="https://example.com/help"
+        target="_blank"
+      />
+      <DropdownMenuDivider />
+      <DropdownMenuItem
+        icon={TrashIcon}
+        label="Delete"
+        variant="destructive"
+        onClick={() => {}}
+      />
+    </DropdownMenu>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A row whose act is navigation takes an `href` and renders as a real anchor with role="menuitem", routed through LinkProvider. A ⌘-click, Ctrl-click or middle click keeps the browser\'s meaning (a new tab) and skips `onClick`; a plain click runs `onClick`, closes the menu and navigates. Enter and Space synthesize a click that keeps the key\'s modifiers.',
+      },
+    },
+  },
+};
+
+export const SubmenuDrillIn: Story = {
+  name: 'Submenu / drill-in on a phone',
+  parameters: {
+    viewport: {defaultViewport: 'mobile1'},
+    docs: {
+      description: {
+        story:
+          'On a phone (a coarse pointer, decided when the menu opened) a sub-menu row drills in: its rows replace the menu\'s rows in the same box, led by a "Back to <parent>" row; Back, Escape or ArrowLeft return to the row. `presentation="drill-in"` forces it, `"flyout"` keeps the flyout; the default `"adaptive"` follows the pointer.',
+      },
+    },
+  },
+  render: () => (
+    <DropdownMenu button={{label: 'Actions'}}>
+      <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+      <DropdownMenuSubMenu
+        icon={FolderPlusIcon}
+        label="Move to"
+        presentation="drill-in">
+        <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        <DropdownMenuItem label="Folder B" onClick={() => {}} />
+        <DropdownMenuSubMenu icon={ArchiveBoxIcon} label="Archive">
+          <DropdownMenuItem label="2025" onClick={() => {}} />
+          <DropdownMenuItem label="2024" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenuSubMenu>
+      <DropdownMenuItem icon={TrashIcon} label="Delete" onClick={() => {}} />
+    </DropdownMenu>
+  ),
+};
+
+export const SubmenuAdaptiveFixture: Story = {
+  name: 'Submenu / adaptive fixture',
+  parameters: {docs: {disable: true}},
+  render: () => (
+    <div data-testid="drill-in-fixture" style={{padding: 16}}>
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem icon={PencilIcon} label="Rename" onClick={() => {}} />
+        <DropdownMenuSubMenu icon={FolderPlusIcon} label="Move to">
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          <DropdownMenuItem label="Folder B" onClick={() => {}} />
+          <DropdownMenuSubMenu icon={ArchiveBoxIcon} label="Archive">
+            <DropdownMenuItem label="2025" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenuSubMenu>
+        <DropdownMenuItem icon={TrashIcon} label="Delete" onClick={() => {}} />
+      </DropdownMenu>
+    </div>
+  ),
+};
+
+const LABELS = ['Bug', 'Feature', 'Documentation', 'Design', 'Performance'];
+
+/**
+ * A filter field above the rows and a "Create" button below them. Both sit in
+ * the popover beside the menu, never inside it: the menu holds only its rows,
+ * so it stays a valid menu to a screen reader, and the field and button keep
+ * their own keys and presses. Tab walks field, menu, button; Tab past the
+ * button or Shift+Tab before the field closes the menu.
+ */
+export const HeaderAndFooter: Story = {
+  render: () => {
+    const [query, setQuery] = useState('');
+    const [created, setCreated] = useState(0);
+    const visible = LABELS.filter(label =>
+      label.toLowerCase().includes(query.trim().toLowerCase()),
+    );
+    return (
+      <>
+        <DropdownMenu
+          button={{label: 'Labels'}}
+          header={
+            <TextInput
+              label="Filter labels"
+              isLabelHidden
+              placeholder="Filter labels"
+              value={query}
+              onChange={setQuery}
+            />
+          }
+          footer={
+            <Button
+              label="Create label"
+              variant="ghost"
+              onClick={() => setCreated(count => count + 1)}
+            />
+          }>
+          {visible.map(label => (
+            <DropdownMenuItem key={label} label={label} onClick={() => {}} />
+          ))}
+          <DropdownMenuSubMenu label="Move to">
+            <DropdownMenuItem label="Archive" onClick={() => {}} />
+            <DropdownMenuItem label="Backlog" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>
+        <output data-testid="created">{created}</output>
+      </>
+    );
   },
 };

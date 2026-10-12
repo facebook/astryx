@@ -349,6 +349,19 @@ describe('useTableSelection', () => {
     });
   });
 
+  it('leaves product chrome outside the selection plugin', () => {
+    const {result} = renderHook(() =>
+      useTableSelection<SelectableUser>({
+        getIsItemSelected: () => false,
+        onSelectItem: vi.fn(),
+        onSelectAll: vi.fn(),
+        getIsAllSelected: () => false,
+      }),
+    );
+
+    expect(result.current.transformScrollWrapper).toBeUndefined();
+  });
+
   it('unsubscribes detached row refs instead of accumulating listeners', () => {
     const getIsItemSelected = vi.fn(() => false);
     const {result, rerender} = renderHook(() =>

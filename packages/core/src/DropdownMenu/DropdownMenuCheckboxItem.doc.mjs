@@ -24,17 +24,19 @@ export const docs = {
       name: 'icon',
       type: 'IconType',
       description:
-        'Icon to display before the label. See `npx astryx docs icons` for valid semantic names.',
+        'Icon to display before the label. See `npx @astryxdesign/cli docs icons` for valid semantic names.',
     },
     {
       name: 'value',
       type: 'boolean',
-      description: 'Whether the item is checked. Controlled; pair with onChange.',
+      description:
+        'Whether the item is checked. Controlled; pair with onChange.',
     },
     {
       name: 'onChange',
       type: '(checked: boolean) => void',
-      description: 'Callback fired with the next checked state when the item is toggled.',
+      description:
+        'Callback fired with the next checked state when the item is toggled.',
     },
     {
       name: 'isDisabled',
@@ -49,6 +51,12 @@ export const docs = {
       default: 'false',
       description:
         'Whether toggling the item closes the menu. Checkbox items default to staying open so several can be toggled in a single session.',
+    },
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLElement>',
+      description:
+        'Ref forwarded to the row root, the element carrying role="menuitemcheckbox". Register the row with an element-keyed observer or overlay.',
     },
     {
       name: 'endContent',
@@ -73,6 +81,7 @@ export const docsZh = {
     onChange: '切换该项时以下一个勾选状态触发的回调。',
     isDisabled: '该项是否禁用。',
     hasCloseOnSelect: '切换该项是否关闭菜单。默认保持打开。',
+    ref: '转发到行根元素（带 role="menuitemcheckbox" 的元素）的 ref。',
     endContent: '在标签和描述之后渲染的内容。',
   },
 };
@@ -81,7 +90,8 @@ export const docsDense = {
   name: 'DropdownMenuCheckboxItem',
   isHiddenFromOverview: true,
   displayName: 'Dropdown Menu Checkbox Item',
-  description: 'checkable menu item (menuitemcheckbox); independent boolean toggle',
+  description:
+    'checkable menu item (menuitemcheckbox); independent boolean toggle',
   propDescriptions: {
     label: 'primary label text',
     description: 'secondary text below label',
@@ -90,6 +100,7 @@ export const docsDense = {
     onChange: 'fired w/ next checked state on toggle',
     isDisabled: 'disabled; stays focusable via aria-disabled',
     hasCloseOnSelect: 'close menu on toggle (default false, stays open)',
+    ref: 'forwarded to the row root (the role="menuitemcheckbox" element)',
     endContent: 'content after label+description',
   },
 };

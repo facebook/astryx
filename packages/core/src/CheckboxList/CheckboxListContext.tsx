@@ -4,12 +4,12 @@
 
 /**
  * @file CheckboxListContext.tsx
- * @input Uses React createContext
+ * @input Uses the private layer-scoped context factory
  * @output Exports CheckboxListContext for parent-child communication
  * @position Internal context; consumed by CheckboxList.tsx and CheckboxListItem.tsx
  */
 
-import {createContext} from 'react';
+import {createLayerScopedContext} from '../Layer/layerScopedContext';
 
 export interface CheckboxListContextValue {
   value?: string[];
@@ -30,12 +30,13 @@ export interface CheckboxListContextValue {
   hasDisabledMessage?: boolean;
   isReadOnly: boolean;
   /**
-   * The value of the item with a pending `changeAction`, or null when idle.
-   * The matching item renders an in-checkbox spinner and blocks re-toggling.
+   * Values of the items whose `changeAction` is pending. Each matching item
+   * renders an in-checkbox spinner and blocks re-toggling; the list is empty
+   * when idle.
    */
-  loadingValue?: string | null;
+  loadingValues?: ReadonlyArray<string>;
 }
 
 export const CheckboxListContext =
-  createContext<CheckboxListContextValue | null>(null);
+  createLayerScopedContext<CheckboxListContextValue | null>(null);
 CheckboxListContext.displayName = 'CheckboxListContext';

@@ -45,6 +45,8 @@ export const DOC_EXPORTS = Object.freeze({
   hooks: ['default', 'docs'],
   templates: ['default', 'doc'],
   'self-docs': ['doc', 'docs', 'default'],
+  // The docs tree's own files: namespace docs and the guides it places.
+  tree: ['docs', 'default'],
 });
 
 /** How a reader imports a doc module. */
@@ -59,7 +61,7 @@ const LOADERS = Object.freeze({
 
 /**
  * @typedef {object} ReadOptions
- * @property {'components' | 'hooks' | 'templates' | 'themes' | 'self-docs'} root
+ * @property {'components' | 'hooks' | 'templates' | 'themes' | 'self-docs' | 'tree'} root
  * @property {string | null} [lang] overlay language; null reads the authored
  *   text
  * @property {string} [label] how a parse error names the file (default: its
@@ -307,14 +309,17 @@ export async function loadTopicInput(entry, lang) {
     extensions.push({
       ...(await loadTopicFile(extension.path, lang)),
       provider: extension.package,
+      providerId: extension.providerId ?? extension.package,
     });
   }
   return {
     id: entry.name,
     provider: entry.package,
+    providerId: entry.providerId ?? entry.package,
     replaces: entry.replaces ?? null,
     lang,
     base: await loadTopicFile(entry.path, lang),
     extensions,
+    ...(entry.tree === true ? {tree: true} : {}),
   };
 }

@@ -3,26 +3,38 @@
 /**
  * @file Integration authoring diagnostics against the built-in Core catalog.
  *
- * Components and templates may intentionally share a Core identity, but
- * unqualified lookup then fails closed and callers must select the package.
- * Docs have explicit `replaces` / `extends` relationships, so the check can
- * distinguish intentional ownership from an accidental same-name shadow.
+ * Templates may intentionally replace Core identities; undeclared same-id
+ * overlaps stay fail-closed and require package selection. The CLI package
+ * version gates replacement-specific fields so 0.6.x keeps its released shape.
+ * Docs have explicit `replaces` / `extends` relationships with parallel
+ * validation semantics.
+ *
+ * @input Integration packages, built-in catalogs, and the CLI release boundary.
+ * @output Typed template, component, and documentation authoring diagnostics.
+ * @position Public integration-authoring API over private discovery adapters.
  */
 
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {
+  packageDocsProblems,
+  packageReferenceProblems,
+} from '../docs/_adapter.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {
   discoverIntegrationComponents,
   discoverOwnedComponents,
 } from '../../foundation/discovery/component-discovery.mjs';
+import {loadComponentReplacements} from '../component/_adapter.mjs';
 import {
   discoverBuiltinTopics,
   discoverIntegrationDocs,
 } from '../../foundation/discovery/docs-discovery.mjs';
 import {
+  applyTemplateReplacements,
   discoverCoreTemplates,
   discoverIntegrationTemplatesForOne,
 } from '../../foundation/discovery/template-adapter.mjs';
+import {expandedTemplateConflictSchemaActive} from '../../foundation/discovery/template-conflict-release.mjs';
 import {
   validateInstalledIntegration,
   validateLocalIntegration,
@@ -48,16 +60,27 @@ async function resolveIntegration(pkg, cwd) {
 /**
  * Add discovery errors once to an issue list.
  * @param {Array<{code: string, severity: 'warning' | 'error', message: string}>} issues
- * @param {Array<{message: string} | Error>} errors
+ * @param {Array<{message: string, code?: string, severity?: 'warning' | 'error'} | Error>} errors
  * @param {string} code
  */
 function addErrors(issues, errors, code) {
   for (const error of errors) {
     const message = error.message;
-    if (issues.some(issue => issue.code === code && issue.message === message)) {
+    const issueCode =
+      'code' in error && typeof error.code === 'string' ? error.code : code;
+    const severity =
+      'severity' in error &&
+      (error.severity === 'warning' || error.severity === 'error')
+        ? error.severity
+        : 'error';
+    if (
+      issues.some(
+        issue => issue.code === issueCode && issue.message === message,
+      )
+    ) {
       continue;
     }
-    issues.push({code, severity: 'error', message});
+    issues.push({code: issueCode, severity, message});
   }
 }
 
@@ -70,14 +93,15 @@ function addErrors(issues, errors, code) {
 export async function integrationTemplateConflicts(pkg, options = {}) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
+  const validated = resolved.found;
   const name = resolved.found ? (resolved.name ?? null) : null;
   const version = resolved.found ? (resolved.version ?? null) : null;
   const issues = [...resolved.issues];
 
-  if (!resolved.integration?.templates || name == null) {
+  if (!resolved.integration || name == null) {
     return {
       type: 'integration.template-conflicts',
-      data: {name, version, conflicts: [], issues},
+      data: {validated, name, version, conflicts: [], issues},
     };
   }
 
@@ -86,6 +110,32 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
     discoverCoreTemplates(),
   ]);
   addErrors(issues, errors, 'invalid_template');
+
+  const expandedConflictSchema = expandedTemplateConflictSchemaActive();
+  const replacementResolution = applyTemplateReplacements(
+    [...coreTemplates, ...templates],
+    errors.filter(error => error.replacementTarget != null),
+  );
+  for (const error of replacementResolution.errors) {
+    if (
+      !issues.some(
+        issue => issue.code === error.code && issue.message === error.message,
+      )
+    ) {
+      issues.push({
+        code: error.code,
+        severity: error.severity,
+        message: error.message,
+      });
+    }
+  }
+  const activeReplacementIds = new Set(
+    replacementResolution.templates
+      .filter(
+        template => template.package === name && template.replaces != null,
+      )
+      .map(template => template.dirName),
+  );
 
   /** @type {Map<string, Array<{type: 'page' | 'block', name: string}>>} */
   const coreById = new Map();
@@ -101,34 +151,73 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
   }
 
   const run = getCliInvocation(cwd);
-  const conflicts = templates
-    .flatMap(template => {
-      const coreMatches = coreById.get(template.dirName);
-      if (!coreMatches) return [];
-      const command = `${run} template ${shellArg(template.dirName)} --package ${shellArg(name)}`;
-      const coreKinds = coreMatches
-        .map(match => `${match.type} "${match.name}"`)
-        .join(', ');
-      return [
-        {
+  /** @type {import('./authoring-checks.type.mjs').IntegrationTemplateConflict[]} */
+  const conflicts = [];
+  for (const template of templates) {
+    const sameIdCore = coreById.get(template.dirName);
+    const replacementIsActive = activeReplacementIds.has(template.dirName);
+
+    if (
+      expandedConflictSchema &&
+      replacementIsActive &&
+      template.replaces != null
+    ) {
+      // This branch is unreachable before the package reaches 0.7.0. Keep the
+      // published 0.6.x conflict typedef narrow until the activation change.
+      conflicts.push(
+        /** @type {any} */ ({
           id: template.dirName,
-          severity: /** @type {const} */ ('warning'),
+          severity: 'info',
+          relationship: 'replaces',
+          replaces: template.replaces,
           integrationPackage: name,
           integrationType: template.type,
           integrationName: template.name,
-          coreMatches,
+          coreMatches: coreById.get(template.replaces) ?? [],
           message:
-            `Template id "${template.dirName}" conflicts with Core (${coreKinds}). ` +
-            'Consider renaming the integration template. If you keep it, always select it with --package.',
-          command,
-        },
-      ];
-    })
-    .sort((a, b) => a.id.localeCompare(b.id));
+            `Intentional replacement: "${template.dirName}" replaces the Core template ` +
+            `"${template.replaces}" for unqualified lookup.`,
+          command: `${run} template ${shellArg(template.replaces)} --package ${shellArg('@astryxdesign/core')}`,
+        }),
+      );
+    }
+
+    if (
+      sameIdCore &&
+      !(replacementIsActive && template.replaces === template.dirName)
+    ) {
+      const coreKinds = sameIdCore
+        .map(match => `${match.type} "${match.name}"`)
+        .join(', ');
+      const compatibleKind = sameIdCore.some(
+        match => match.type === template.type,
+      );
+      conflicts.push({
+        id: template.dirName,
+        severity: 'warning',
+        ...(expandedConflictSchema ? {relationship: 'accidental'} : {}),
+        integrationPackage: name,
+        integrationType: template.type,
+        integrationName: template.name,
+        coreMatches: sameIdCore,
+        message: expandedConflictSchema
+          ? compatibleKind
+            ? `Template id "${template.dirName}" conflicts with Core (${coreKinds}). Consider renaming it, or set replaces: ${JSON.stringify(template.dirName)} in its metadata to replace the Core template.`
+            : `Template id "${template.dirName}" conflicts with Core (${coreKinds}), but a ${template.type} template cannot replace a different template kind. Rename the integration template.`
+          : `Template id "${template.dirName}" conflicts with Core (${coreKinds}). Consider renaming the integration template. If you keep it, always select it with --package.`,
+        command: `${run} template ${shellArg(template.dirName)} --package ${shellArg(name)}`,
+      });
+    }
+  }
+  conflicts.sort((a, b) =>
+    `${a.id}:${'relationship' in a ? a.relationship : ''}`.localeCompare(
+      `${b.id}:${'relationship' in b ? b.relationship : ''}`,
+    ),
+  );
 
   return {
     type: 'integration.template-conflicts',
-    data: {name, version, conflicts, issues},
+    data: {validated, name, version, conflicts, issues},
   };
 }
 
@@ -141,6 +230,7 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
 export async function integrationComponentConflicts(pkg, options = {}) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
+  const validated = resolved.found;
   const name = resolved.found ? (resolved.name ?? null) : null;
   const version = resolved.found ? (resolved.version ?? null) : null;
   const issues = [...resolved.issues];
@@ -148,7 +238,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
   if (!resolved.integration?.components || name == null) {
     return {
       type: 'integration.component-conflicts',
-      data: {name, version, conflicts: [], issues},
+      data: {validated, name, version, conflicts: [], issues},
     };
   }
 
@@ -162,7 +252,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
     });
     return {
       type: 'integration.component-conflicts',
-      data: {name, version, conflicts: [], issues},
+      data: {validated, name, version, conflicts: [], issues},
     };
   }
 
@@ -171,9 +261,28 @@ export async function integrationComponentConflicts(pkg, options = {}) {
       .filter(record => record.package === '@astryxdesign/core')
       .map(record => record.name),
   );
+  // Component replacements (spec:AST-035 FR10-FR15). A package without the
+  // CLI floor gets only warnings, so its exit code is what it was before the
+  // floor existed. An active replacement named after its own target is
+  // intentional, not a conflict.
+  const replacements = await loadComponentReplacements(coreDir, [
+    resolved.integration,
+  ]);
+  addErrors(issues, replacements.findings, 'invalid_component_replacement');
+  const intentional = new Set(
+    replacements.active
+      .filter(
+        active => active.package === name && active.name === active.target,
+      )
+      .map(active => active.name),
+  );
+
   const run = getCliInvocation(cwd);
   const conflicts = discoverIntegrationComponents(resolved.integration)
-    .filter(component => coreNames.has(component.name))
+    .filter(
+      component =>
+        coreNames.has(component.name) && !intentional.has(component.name),
+    )
     .map(component => ({
       name: component.name,
       severity: /** @type {const} */ ('warning'),
@@ -187,7 +296,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
 
   return {
     type: 'integration.component-conflicts',
-    data: {name, version, conflicts, issues},
+    data: {validated, name, version, conflicts, issues},
   };
 }
 
@@ -200,6 +309,7 @@ export async function integrationComponentConflicts(pkg, options = {}) {
 export async function integrationDocConflicts(pkg, options = {}) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
+  const validated = resolved.found;
   const name = resolved.found ? (resolved.name ?? null) : null;
   const version = resolved.found ? (resolved.version ?? null) : null;
   const issues = [...resolved.issues];
@@ -207,14 +317,15 @@ export async function integrationDocConflicts(pkg, options = {}) {
   if (!resolved.integration?.docs || name == null) {
     return {
       type: 'integration.doc-conflicts',
-      data: {name, version, findings: [], issues},
+      data: {validated, name, version, findings: [], issues},
     };
   }
 
-  const [{records, errors}, builtinTopics] = await Promise.all([
+  const [discovered, builtinTopics] = await Promise.all([
     discoverIntegrationDocs(resolved.integration),
     Promise.resolve(discoverBuiltinTopics()),
   ]);
+  const {records, errors} = discovered;
   addErrors(issues, errors, 'invalid_doc');
   const coreTopicsByKey = new Map(
     Object.keys(builtinTopics).map(topic => [topic.toLowerCase(), topic]),
@@ -276,8 +387,30 @@ export async function integrationDocConflicts(pkg, options = {}) {
     ),
   );
 
+  // The same graph checks `astryx doctor` runs in a project: the namespaces
+  // and placed guides this package adds to the docs tree, and every link in
+  // its docs (spec:AST-046, spec:AST-047).
+  if (errors.length === 0) {
+    for (const {severity, message} of await packageDocsProblems(
+      /** @type {{name: string}} */ (resolved.integration),
+      discovered,
+    )) {
+      issues.push({code: 'invalid_doc_graph', severity, message});
+    }
+
+    // A reference block includes content rather than linking to it, so one
+    // that cannot include what it names loses that content for every reader:
+    // an error, where a link that names no doc still prints as written.
+    for (const message of await packageReferenceProblems(
+      /** @type {{name: string}} */ (resolved.integration),
+      discovered,
+    )) {
+      issues.push({code: 'invalid_doc_reference', severity: 'error', message});
+    }
+  }
+
   return {
     type: 'integration.doc-conflicts',
-    data: {name, version, findings, issues},
+    data: {validated, name, version, findings, issues},
   };
 }

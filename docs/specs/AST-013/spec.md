@@ -125,8 +125,9 @@ requirements. Assistive-technology evidence remains separately owned.
 
 - **FR11 — Raising the floor is compatibility work.** Removing a supported browser,
   moving it from full behavior to reduced fallback, or removing a documented
-  fallback requires owner approval, a Changeset, user-impact and migration notes,
-  updated generated rows, actual-browser evidence for the browsers affected by the
+  fallback requires owner approval, the classification and lifecycle required by
+  [`spec:AST-017`](../AST-017/spec.md), user-impact and migration notes, updated
+  generated rows, actual-browser evidence for the browsers affected by the
   compatibility claim, and evidence that every remaining full-support and named
   explicit support row still receives full required behavior.
 - **FR12 — Component specs inherit the baseline.** Component specs link

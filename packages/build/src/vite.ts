@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
+import {createHash} from 'node:crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,9 +15,11 @@ const LIBRARY_PATTERN = 'node_modules/@astryxdesign/';
 const STYLEX_CSS_PATH = '/virtual:stylex.css';
 
 /**
- * Browser targets for lightningcss (opt-in).
- * Only needed if your StyleX version lowers light-dark() without them.
- * Exported for consumers who want to opt in explicitly.
+ * Browser targets matching Astryx's native `light-dark()` support floor.
+ *
+ * These are the source-build default so Lightning CSS preserves
+ * `light-dark()` instead of lowering it into helper variables. Consumers may
+ * supply a stricter supported floor when their product requires one.
  */
 export const LIGHTNINGCSS_TARGETS = {
   chrome: 123 << 16,
@@ -69,10 +72,12 @@ export interface AstryxVitePluginOptions {
   };
 
   /**
-   * LightningCSS browser targets. Only needed if your StyleX version
-   * lowers light-dark() without them. Most recent versions preserve
-   * light-dark() by default.
-   * @default undefined (no targets set)
+   * Lightning CSS browser targets.
+   *
+   * Defaults to Astryx's native `light-dark()` support floor. Older targets
+   * may lower `light-dark()` and are outside the supported theme contract.
+   *
+   * @default LIGHTNINGCSS_TARGETS
    */
   lightningcssTargets?: Record<string, number>;
 
@@ -124,7 +129,7 @@ export function astryxStylex(
     rootDir = process.cwd(),
     libraryPattern = LIBRARY_PATTERN,
     layers = {},
-    lightningcssTargets,
+    lightningcssTargets = LIGHTNINGCSS_TARGETS,
     stylexPrefix = 'astryx',
     stylexOverrides = {},
   } = opts;
@@ -132,19 +137,27 @@ export function astryxStylex(
   const libraryLayer = layers.library ?? 'astryx-base';
   const productLayer = layers.product ?? 'product';
 
-  // Build StyleX options with sensible defaults
+  const overrideLightningcssOptions = (
+    stylexOverrides as {lightningcssOptions?: Record<string, unknown>}
+  ).lightningcssOptions;
+
+  // Build StyleX options with sensible defaults. Merge Lightning CSS options
+  // separately so an unrelated override cannot silently discard the browser
+  // floor that keeps theme values native.
   const stylexOptions: Record<string, unknown> = {
     dev,
     runtimeInjection: false,
+    propertyValidationMode: 'throw',
     treeshakeCompensation: true,
     unstable_moduleResolution: {
       type: 'commonJS',
       rootDir,
     },
-    ...(lightningcssTargets && {
-      lightningcssOptions: {targets: lightningcssTargets},
-    }),
     ...stylexOverrides,
+    lightningcssOptions: {
+      targets: lightningcssTargets,
+      ...overrideLightningcssOptions,
+    },
   };
 
   // Inject our babel wrapper as a user plugin — it runs before the
@@ -202,18 +215,35 @@ export function astryxStylex(
         // Fallback to just @astryxdesign/core if discovery fails
       }
 
+      const corePackageDir = path.resolve(
+        rootDir,
+        'node_modules/@astryxdesign/core',
+      );
+      const coreSourceDir = path.join(corePackageDir, 'src');
+
       return {
         resolve: {
-          alias: {
-            '@astryxdesign/core/theme/tokens.stylex': path.resolve(
-              rootDir,
-              'node_modules/@astryxdesign/core/src/theme/tokens.stylex.ts',
-            ),
-            '@astryxdesign/core': path.resolve(
-              rootDir,
-              'node_modules/@astryxdesign/core/src',
-            ),
-          },
+          alias: [
+            {
+              find: /^@astryxdesign\/core\/locales\/(.+)\.generated\.js$/,
+              replacement: path.join(
+                coreSourceDir,
+                'i18n/generated-locales/$1.generated.ts',
+              ),
+            },
+            {
+              find: /^@astryxdesign\/core\/locales\/(.+)\.json$/,
+              replacement: path.join(corePackageDir, 'locales/$1.json'),
+            },
+            {
+              find: '@astryxdesign/core/theme/tokens.stylex',
+              replacement: path.join(coreSourceDir, 'theme/tokens.stylex.ts'),
+            },
+            {
+              find: '@astryxdesign/core',
+              replacement: coreSourceDir,
+            },
+          ],
         },
         optimizeDeps: {
           exclude: xdsPackages,
@@ -282,6 +312,10 @@ export function astryxStylex(
  * layer (below `astryx-theme`, so a theme can override them), product styles
  * into the product layer (above it, so an app always wins).
  *
+ * The split output is written to one dedicated shared stylesheet. Keeping the
+ * collected rules out of an entry-owned CSS asset lets every HTML entry load
+ * the same StyleX output without also importing another page's authored CSS.
+ *
  * This is the one implementation. The dev middleware and the build hook differ
  * only in when they run and what they do with the string — the partition itself
  * must not diverge, because it did: the build shipped a version that wrapped
@@ -333,11 +367,12 @@ function renderSplitLayers(
  * component overrides were silently dropped in the built app while working in
  * dev.
  *
- * This replaces that merged block with the partitioned pair. It runs in
- * `writeBundle` because StyleX emits through two different paths depending on
- * whether the bundle already has a stylesheet to append to (`generateBundle`)
- * or has to write its own file (`writeBundle`) — on disk, after both, there is
- * one case instead of two.
+ * This removes that merged block from the entry-owned stylesheet, writes the
+ * partitioned pair to a dedicated shared stylesheet, and links it from every
+ * built HTML page. It runs in `writeBundle` because StyleX emits through two
+ * different paths depending on whether the bundle already has a stylesheet to
+ * append to (`generateBundle`) or has to write its own file (`writeBundle`) —
+ * on disk, after both, there is one case instead of two.
  *
  * The block is located by an exact match against StyleX's own collector rather
  * than by looking for `@layer priority1`: a wrong guess about where the block
@@ -388,19 +423,16 @@ function buildLayerSplitPlugin(
       // patch and nothing was shipped, so this is not a failure.
       if (!outDir || !fs.existsSync(outDir)) return;
 
-      const patched: string[] = [];
+      const containingFiles: Array<{file: string; css: string; at: number}> =
+        [];
       for (const file of listCssFiles(outDir)) {
         const css = fs.readFileSync(file, 'utf-8');
         const at = css.lastIndexOf(merged);
         if (at === -1) continue;
-        fs.writeFileSync(
-          file,
-          css.slice(0, at) + split + css.slice(at + merged.length),
-        );
-        patched.push(file);
+        containingFiles.push({file, css, at});
       }
 
-      if (patched.length === 0) {
+      if (containingFiles.length === 0) {
         this.error(
           'astryx-build-layer-split: StyleX emitted rules but its CSS block ' +
             `was not found in any stylesheet under ${outDir}, so Astryx and ` +
@@ -412,7 +444,30 @@ function buildLayerSplitPlugin(
         return;
       }
 
-      linkOrphanStylesheets(outDir, patched, base);
+      if (listHtmlFiles(outDir).length === 0) {
+        for (const {file, css, at} of containingFiles) {
+          fs.writeFileSync(
+            file,
+            css.slice(0, at) + split + css.slice(at + merged.length),
+          );
+        }
+        return;
+      }
+
+      for (const {file, css, at} of containingFiles) {
+        fs.writeFileSync(
+          file,
+          css.slice(0, at) + css.slice(at + merged.length),
+        );
+      }
+
+      const hash = createHash('sha256').update(split).digest('hex').slice(0, 8);
+      const sharedStylesheet = path.join(
+        path.dirname(containingFiles[0].file),
+        `astryx-stylex-${hash}.css`,
+      );
+      fs.writeFileSync(sharedStylesheet, split);
+      linkStylesheetsForEveryPage(outDir, [sharedStylesheet], base);
     },
   };
 }
@@ -440,20 +495,21 @@ function listHtmlFiles(dir: string): string[] {
 }
 
 /**
- * Link a stylesheet the build wrote but no page loads.
+ * Ensure every built page loads the stylesheet containing StyleX's rules.
  *
  * When an app imports no CSS of its own, StyleX has no bundle asset to append
  * to, so it writes `assets/stylex.css` itself — outside Rollup's graph, which
- * means Vite's HTML plugin never learns about it and emits no `<link>`. The app
- * ships every Astryx style correctly split into layers, and a completely
- * unstyled page. Importing any stylesheet hides it, which is why it survives:
- * the moment a project has one line of its own CSS the symptom disappears.
+ * means Vite's HTML plugin never learns about it and emits no `<link>`. In a
+ * multi-page build, Vite can also attach the one merged StyleX stylesheet to
+ * only one entry. The other pages then ship valid compiled classes but load no
+ * rules for them.
  *
- * Only orphans are linked. A stylesheet already referenced by a page is Vite's,
- * and touching it would duplicate the load. A build with no HTML at all —
- * library mode — is left alone: its consumer imports the CSS themselves.
+ * Check each page independently. A stylesheet already referenced by that page
+ * is left alone; a missing reference is inserted exactly once. A build with no
+ * HTML at all — library mode — is left alone because its consumer imports the
+ * CSS themselves.
  */
-function linkOrphanStylesheets(
+function linkStylesheetsForEveryPage(
   outDir: string,
   cssFiles: string[],
   base: string,
@@ -461,25 +517,23 @@ function linkOrphanStylesheets(
   const pages = listHtmlFiles(outDir);
   if (pages.length === 0) return;
 
-  const orphans = cssFiles.filter(css => {
-    const name = path.basename(css);
-    return !pages.some(page => fs.readFileSync(page, 'utf-8').includes(name));
-  });
-  if (orphans.length === 0) return;
-
-  const links = orphans
-    .map(css => {
-      const href =
-        base.replace(/\/$/, '') +
-        '/' +
-        path.relative(outDir, css).split(path.sep).join('/');
-      return `<link rel="stylesheet" crossorigin href="${href}">`;
-    })
-    .join('\n    ');
-
   for (const page of pages) {
     const html = fs.readFileSync(page, 'utf-8');
     if (!html.includes('</head>')) continue;
+
+    const missing = cssFiles.filter(css => !html.includes(path.basename(css)));
+    if (missing.length === 0) continue;
+
+    const links = missing
+      .map(css => {
+        const href =
+          base.replace(/\/$/, '') +
+          '/' +
+          path.relative(outDir, css).split(path.sep).join('/');
+        return `<link rel="stylesheet" crossorigin href="${href}">`;
+      })
+      .join('\n    ');
+
     fs.writeFileSync(page, html.replace('</head>', `  ${links}\n  </head>`));
   }
 }
@@ -527,19 +581,30 @@ function astryxStylexLegacy(options: AstryxVitePluginLegacyOptions): Plugin[] {
   const libraryLayer = layers.library ?? 'astryx-base';
   const productLayer = layers.product ?? 'product';
 
+  const legacyLightningcssOptions = (
+    stylexOptions as {lightningcssOptions?: Record<string, unknown>}
+  ).lightningcssOptions;
+  const validatedStylexOptions = {
+    propertyValidationMode: 'throw',
+    ...(stylexOptions as any),
+    lightningcssOptions: {
+      targets: LIGHTNINGCSS_TARGETS,
+      ...legacyLightningcssOptions,
+    },
+  };
   const astryxBabelPlugin = path.resolve(__dirname, 'babel.js');
-  const existingPlugins = (stylexOptions as any).babelConfig?.plugins ?? [];
+  const existingPlugins = validatedStylexOptions.babelConfig?.plugins ?? [];
 
   const basePlugin = stylex.vite({
-    ...(stylexOptions as any),
+    ...validatedStylexOptions,
     useCSSLayers: true,
     babelConfig: {
-      ...(stylexOptions as any).babelConfig,
+      ...validatedStylexOptions.babelConfig,
       plugins: [
         [
           astryxBabelPlugin,
           {
-            ...(stylexOptions as any),
+            ...validatedStylexOptions,
             libraryPrefix: stylexPrefix,
             babelConfig: undefined,
           },
@@ -609,8 +674,9 @@ function astryxStylexLegacy(options: AstryxVitePluginLegacyOptions): Plugin[] {
       libraryPattern,
       libraryLayer,
       productLayer,
-      lightningcssOptions: (stylexOptions as {lightningcssOptions?: unknown})
-        ?.lightningcssOptions,
+      lightningcssOptions: (
+        validatedStylexOptions as {lightningcssOptions?: unknown}
+      ).lightningcssOptions,
     }),
   ];
 }

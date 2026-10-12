@@ -2441,4 +2441,39 @@ describe('BottomSheet', () => {
       );
     });
   });
+
+  describe('container padding', () => {
+    it('passes padding to the content box of a standalone sheet', () => {
+      render(
+        <BottomSheet isOpen onOpenChange={() => {}} label="Filters" padding={0}>
+          <span data-testid="sheet-child">Content</span>
+        </BottomSheet>,
+      );
+      const box = screen.getByTestId('sheet-child').parentElement!;
+      expect(
+        getComputedStyle(box).getPropertyValue(
+          '--container-padding-inline-start',
+        ),
+      ).toBe('var(--spacing-0)');
+      expect(getSheet().hasAttribute('padding')).toBe(false);
+    });
+
+    it('passes padding to the content box of a switcher sheet', () => {
+      render(
+        <BottomSheetSwitcher
+          activeSheet="details"
+          onActiveSheetChange={() => {}}>
+          <BottomSheet sheetId="details" label="Details" padding={2}>
+            <span data-testid="switcher-child">Content</span>
+          </BottomSheet>
+        </BottomSheetSwitcher>,
+      );
+      const box = screen.getByTestId('switcher-child').parentElement!;
+      expect(
+        getComputedStyle(box).getPropertyValue(
+          '--container-padding-inline-start',
+        ),
+      ).toBe('var(--spacing-2)');
+    });
+  });
 });

@@ -269,37 +269,13 @@ jobs:
                 'The current change has no visual or preview-producing scope. Visual checks are not applicable; preview links are not shown.',
             });
 
-  deploy-preview:
-    needs: resolve
-    if: >-
-      github.event.action == 'completed' &&
-      needs.resolve.outputs.valid == 'true' &&
-      needs.resolve.outputs.spec_only != 'true' &&
-      needs.resolve.outputs.tooling_only != 'true'
-    permissions:
-      actions: read
-      contents: write
-      pull-requests: read
-    uses: ./.github/workflows/deploy-preview.yml
-    with:
-      pr_number: ${{ needs.resolve.outputs.pr_number }}
-      head_sha: ${{ needs.resolve.outputs.head_sha }}
-      head_repository: ${{ needs.resolve.outputs.head_repo }}
-      head_repository_id: ${{ needs.resolve.outputs.head_repo_id }}
-      head_ref: ${{ needs.resolve.outputs.head_ref }}
-      base_repository: ${{ needs.resolve.outputs.base_repo }}
-      source_run_id: ${{ needs.resolve.outputs.run_id }}
-      source_run_attempt: ${{ needs.resolve.outputs.run_attempt }}
-      source_conclusion: ${{ needs.resolve.outputs.source_conclusion }}
-    secrets: inherit
-
   comment:
-    needs: [resolve, deploy-preview]
+    needs: resolve
     concurrency:
       group: pr-report-${{ needs.resolve.outputs.pr_number }}
       cancel-in-progress: false
-    # Pages publication may continue independently, but only the exact-head
-    # Vercel deployment can supply either Storybook or Sandbox PR links.
+    # Only the exact-head Vercel deployment supplies Storybook and Sandbox PR links.
+    # Visual evidence remains attached to the exact CI run.
     if: >-
       always() &&
       github.event.action == 'completed' &&
@@ -311,7 +287,6 @@ jobs:
       pull-requests: write
       actions: read
       deployments: read # resolve the exact-head Vercel Preview deployment
-      contents: write # immutable validated visual evidence on gh-pages
     steps:
       - name: Checkout trusted default-branch code
         uses: actions/checkout@v7
@@ -391,14 +366,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: Download trusted preview deployment result
-        if: steps.identity.outputs.valid == 'true'
-        uses: actions/download-artifact@v8
-        with:
-          name: preview-deployment-${{ steps.identity.outputs.run_id }}-${{ steps.identity.outputs.run_attempt }}
-          path: preview-deployment
-        continue-on-error: true
-
       - name: Download canonical visual report
         id: visual-download
         if: steps.identity.outputs.valid == 'true'
@@ -452,35 +419,6 @@ jobs:
             --run-id "$RUN_ID" \
             --run-attempt "$RUN_ATTEMPT"
 
-      - name: Resolve trusted visual evidence path
-        id: visual
-        if: >-
-          steps.identity.outputs.valid == 'true' &&
-          steps.visual-download.outcome == 'success'
-        env:
-          PR_NUMBER: ${{ steps.identity.outputs.pr_number }}
-          HEAD_SHA: ${{ steps.identity.outputs.head_sha }}
-          RUN_ID: ${{ steps.identity.outputs.run_id }}
-          RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
-        run: |
-          test -f trusted-visual/verdict.json
-          test -f trusted-visual/index.html
-          echo "ready=true" >> "$GITHUB_OUTPUT"
-          echo "path=pr/${PR_NUMBER}/visual/${HEAD_SHA}/${RUN_ID}/${RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
-
-      - name: Publish immutable visual evidence
-        id: publish
-        if: steps.visual.outputs.ready == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EVIDENCE_PATH: ${{ steps.visual.outputs.path }}
-        run: >
-          node .github/scripts/gh-pages-publisher.mjs immutable-path
-          --source trusted-visual
-          --destination "$EVIDENCE_PATH"
-          --scope pr-visual/evidence
-          --message "Visual evidence: ${EVIDENCE_PATH}"
-
       - name: Generate and post PR comment
         if: always() && steps.identity.outputs.valid == 'true'
         uses: actions/github-script@v9
@@ -495,8 +433,6 @@ jobs:
           RUN_ID: ${{ steps.identity.outputs.run_id }}
           RUN_ATTEMPT: ${{ steps.identity.outputs.run_attempt }}
           SOURCE_CONCLUSION: ${{ steps.identity.outputs.source_conclusion }}
-          VISUAL_PUBLISHED: ${{ steps.publish.outputs.published }}
-          VISUAL_PATH: ${{ steps.visual.outputs.path }}
         with:
           retries: 3
           script: |
@@ -520,6 +456,4 @@ jobs:
                 sourceRunAttempt: Number(process.env.RUN_ATTEMPT),
                 sourceConclusion: process.env.SOURCE_CONCLUSION,
               },
-              visualPublished: process.env.VISUAL_PUBLISHED === 'true',
-              visualReportPath: process.env.VISUAL_PATH,
             });

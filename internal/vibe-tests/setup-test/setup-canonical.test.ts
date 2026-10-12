@@ -654,9 +654,12 @@ function applyEnterpriseComposition(arm: string) {
     if (start === -1 || end === -1) {
       throw new Error('canonical enterprise dialog edit did not apply');
     }
+    // AST-038 makes inherited typography an explicit root-level choice. This
+    // host-owned composition deliberately keeps its established host type.
     next = `${next.slice(0, start)}      {dialogOpen ? (
         <Dialog
           aria-labelledby="service-dialog-title"
+          style={{fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 'inherit'}}
           className="fixture-shell block z-[50] rounded-lg border border-border bg-panel p-6 text-foreground shadow-2xl"
           data-guest-design-system
           data-mode={mode}

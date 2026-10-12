@@ -57,6 +57,7 @@ import {
   validateLoadedIntegration,
   issueError as error,
   issueWarning as warning,
+  rootProblem,
 } from '../../foundation/integrations/validate-contributions.mjs';
 
 export {validateLoadedIntegration};
@@ -71,6 +72,7 @@ export {validateLoadedIntegration};
  * @property {string} [name] Integration package name (from package.json).
  * @property {string} [version] Integration package version.
  * @property {string} [manifestFile] Absolute path to the loaded manifest.
+ * @property {'no_package_json'} [reason] Why nothing was validated (internal).
  * @property {Issue[]} issues
  * @property {import('../../foundation/integrations/integrations.mjs').LoadedIntegration} [integration]
  */
@@ -161,9 +163,24 @@ async function findUnreachableContributionIssues(packageDir, loaded) {
   /** @param {string} dir */
   async function walk(dir) {
     if (roots.some(root => pathIsInside(dir, root))) return;
-    const entries = fs
-      .readdirSync(dir, {withFileTypes: true})
-      .sort((a, b) => a.name.localeCompare(b.name));
+    let entries;
+    try {
+      entries = fs
+        .readdirSync(dir, {withFileTypes: true})
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (err) {
+      // One folder the user running astryx cannot read must not end the whole
+      // validation: name it and keep checking the rest of the package.
+      const shown = `${path.relative(packageDir, dir).split(path.sep).join('/') || '.'}/`;
+      const reason = /** @type {any} */ (err)?.code ?? String(err);
+      issues.push(
+        warning(
+          'unreadable_folder',
+          `Could not read "${shown}" (${reason}), so it was not checked for contributions outside a declared root. Fix: make it readable by the user running astryx, or remove it if it does not belong in the package.`,
+        ),
+      );
+      return;
+    }
     for (const entry of entries) {
       if (truncated) return;
       if (UNREACHABLE_SKIP_DIRS.has(entry.name)) continue;
@@ -312,7 +329,7 @@ async function validateAtPackageDir(
   // Roots + contribution checks are shared with validateLoadedIntegration so
   // the everyday-command nudge runs the exact same validators.
   issues.push(...(await validateLoadedIntegration(loaded)));
-  if (loaded.themes)
+  if (loaded.themes && !rootProblem(loaded.themes))
     issues.push(...unreadThemeFolderIssues(packageDir, loaded));
   if (scanUnreachable) {
     issues.push(
@@ -333,7 +350,7 @@ async function validateAtPackageDir(
 export async function validateLocalIntegration(cwd = process.cwd()) {
   const pkgJsonPath = findNearestPackageJson(cwd);
   if (!pkgJsonPath) {
-    return {found: false, issues: []};
+    return {found: false, reason: 'no_package_json', issues: []};
   }
   const packageDir = path.dirname(pkgJsonPath);
 
@@ -427,8 +444,10 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
 /**
  * Unified entry: validate the LOCAL integration (no `pkg`) or an INSTALLED one
  * (`pkg` given) and return the `integration.validate` envelope. The no-manifest
- * local case is guidance, not an error — it comes back with `name: null` and no
- * issues so the CLI can print a hint and stay exit-0.
+ * local case is guidance, not an error — it comes back with `validated: false`,
+ * `name: null` and no issues so the CLI can print a hint and stay exit-0.
+ * `validated` is what tells a machine consumer that empty `issues` means
+ * "nothing was checked" rather than "checked and healthy".
  *
  * This is the seam that keeps the CLI a thin wrapper: the command handler calls
  * this and only chooses how to render (human vs --json) + the exit code.
@@ -445,9 +464,14 @@ export async function validateIntegration(pkg, options = {}) {
   return {
     type: 'integration.validate',
     data: {
+      // The one bit that separates "checked and clean" from "never checked":
+      // with no manifest there is nothing to validate, and issues stays [].
+      validated: result.found,
       name: result.found ? (result.name ?? null) : null,
       version: result.found ? (result.version ?? null) : null,
-      issues: result.issues,
+      issues: result.reason === 'no_package_json'
+        ? [{code: 'no_package', severity: 'error', message: 'No package.json found. Run this command inside a package directory.'}]
+        : result.issues,
     },
   };
 }

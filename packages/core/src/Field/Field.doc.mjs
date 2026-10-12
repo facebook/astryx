@@ -136,7 +136,7 @@ export const docs = {
     {
       name: 'width',
       type: 'SizeValue',
-      description: 'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned. Prefer this over setting width via xstyle/className/style, which only size the inner control box.',
+      description: 'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned. Prefer this over setting width via xstyle/className/style, which only size the inner control box. Without a width, a row can shrink the whole field below the natural width of its control, so filter bars shrink instead of overflowing.',
     },
     {
       name: 'ref',
@@ -184,6 +184,64 @@ export const docs = {
     ],
   },
   examples: [
+    {
+      label: 'Filter bar',
+      code: `
+import {useState} from 'react';
+import {HStack} from '@astryxdesign/core/HStack';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Selector} from '@astryxdesign/core/Selector';
+import {StackItem} from '@astryxdesign/core/Stack';
+import {TextInput} from '@astryxdesign/core/TextInput';
+
+// Every Field-based input (TextInput, Selector, DateInput, ...) can be shrunk
+// by its row, so a filter bar never pushes the page sideways. Let the row wrap
+// so that on a phone the search box keeps a full line and the selectors move
+// below it; on wider screens everything stays on one line, with the search box
+// taking the free space.
+function OrdersFilterBar() {
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('Awaiting fulfillment');
+  const [region, setRegion] = useState('All regions');
+  const [sort, setSort] = useState('Newest first');
+  return (
+    <HStack gap={2} wrap="wrap" vAlign="center">
+      <StackItem size="fill">
+        <TextInput
+          label="Search orders"
+          isLabelHidden
+          placeholder="Search by order or customer"
+          startIcon={<Icon icon="search" />}
+          value={query}
+          onChange={setQuery}
+        />
+      </StackItem>
+      <Selector
+        label="Status"
+        isLabelHidden
+        options={['All statuses', 'Awaiting fulfillment', 'Shipped', 'Delivered', 'Returned']}
+        value={status}
+        onChange={setStatus}
+      />
+      <Selector
+        label="Region"
+        isLabelHidden
+        options={['All regions', 'North America', 'Europe', 'Asia Pacific']}
+        value={region}
+        onChange={setRegion}
+      />
+      <Selector
+        label="Sort"
+        isLabelHidden
+        options={['Newest first', 'Oldest first', 'Highest total']}
+        value={sort}
+        onChange={setSort}
+      />
+    </HStack>
+  );
+}
+`,
+    },
     {
       label: 'Wrap a custom control',
       code: `

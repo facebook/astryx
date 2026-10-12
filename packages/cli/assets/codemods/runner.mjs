@@ -486,7 +486,6 @@ export async function runCodemods(
       (await import('jscodeshift')).default
     );
 
-  let totalFilesChanged = 0;
   let totalTransformsApplied = 0;
   let totalValidationBlocked = 0;
   /** @type {Array<{file: string, codemod: string, error: string}>} */
@@ -554,7 +553,6 @@ export async function runCodemods(
           protectionWriteCount = writtenFiles.length;
         }
         if (result.filesChanged > 0) {
-          totalFilesChanged += result.filesChanged;
           totalTransformsApplied += 1;
         }
         continue;
@@ -577,7 +575,6 @@ export async function runCodemods(
         changedFiles.push(...result.changedFiles);
         writtenFiles.push(...result.writtenFiles);
         if (result.filesChanged > 0) {
-          totalFilesChanged += result.filesChanged;
           totalTransformsApplied += result.filesChanged;
         }
         continue;
@@ -592,7 +589,6 @@ export async function runCodemods(
       protectedFiles.push(...result.protectedFiles);
       changedFiles.push(...result.changedFiles);
       writtenFiles.push(...result.writtenFiles);
-      totalFilesChanged += result.filesChanged;
       totalTransformsApplied += result.filesChanged;
       totalValidationBlocked += result.errors.filter(
         error =>
@@ -629,6 +625,11 @@ export async function runCodemods(
       'This means a codemod produced invalid output. Please report this as a bug.',
     );
   }
+
+  // A file several codemods changed is one file. `totalTransformsApplied` is
+  // unchanged: a code or config codemod counts each file it changed, and a
+  // project codemod counts once. The two answer different questions.
+  const totalFilesChanged = new Set(changedFiles).size;
 
   if (protectedFiles.length > 0) {
     const files = [...new Set(protectedFiles.map(item => item.file))];
