@@ -294,7 +294,9 @@ export * from './MyComponent';
 Components read user-facing strings with `useComponentTranslator(<slice>)`
 rather than hardcoding them. The slice is the component's own namespace of the
 English catalog, generated under `src/i18n/generated-locales/en/`, so an app
-bundles only the strings of the components it renders:
+that neither mounts `InternationalizationProvider` nor calls `useTranslator()`
+(both carry the whole catalog) bundles only the strings of the components it
+renders:
 
 ```tsx
 import {useComponentTranslator} from '../i18n/useComponentTranslator';
