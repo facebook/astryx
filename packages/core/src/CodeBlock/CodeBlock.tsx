@@ -230,6 +230,10 @@ const styles = stylex.create({
   code: {
     display: 'block',
     flex: 1,
+    // The block grows to its longest line, so a row's paint (diff tint,
+    // highlightLines) spans the full scroll width instead of stopping at the
+    // viewport edge when the reader scrolls a long line.
+    minWidth: 'max-content',
     paddingBlock: spacingVars['--spacing-3'],
     paddingInline: spacingVars['--spacing-4'],
     margin: 0,
@@ -241,6 +245,8 @@ const styles = stylex.create({
     overflowWrap: 'normal',
   },
   codeWrapped: {
+    // Wrapped lines never overflow, and max-content would stop them wrapping.
+    minWidth: 'auto',
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-all',
     overflowWrap: 'break-word',
@@ -305,23 +311,22 @@ const styles = stylex.create({
   // the tint where the semantic text colours would not, and the leading +/-
   // glyph stays in the text as the cue that needs no colour. A caller's
   // highlightLines row is declared after these and keeps its background.
-  // A changed row is one coloured unit: the tint runs under the gutter cell
-  // too (the row spans the full width), and the line number, the glyph, and
-  // any text no syntax token paints take the row's text slot. Token spans
-  // set their own colour, so they keep it.
+  // A changed row's margin reads the change: the tint runs under the gutter
+  // cell too (the row spans the full width), and the line number and the
+  // glyph take the row's marker slot. The code — tokens and plain runs alike
+  // — keeps the syntax theme's colours, so an identifier looks the same on a
+  // changed row as on a context row.
   lineAdded: {
     backgroundColor: 'var(--color-syntax-added)',
-    color: 'var(--color-syntax-added-text)',
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
-    '::before': {color: 'var(--color-syntax-added-text)'},
+    '::before': {color: 'var(--color-syntax-added-marker)'},
   },
   lineRemoved: {
     backgroundColor: 'var(--color-syntax-removed)',
-    color: 'var(--color-syntax-removed-text)',
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
-    '::before': {color: 'var(--color-syntax-removed-text)'},
+    '::before': {color: 'var(--color-syntax-removed-marker)'},
   },
   // Hunk and file headers stay visible but quiet: a muted row with secondary
   // text, never change paint.
@@ -350,9 +355,12 @@ const styles = stylex.create({
     whiteSpace: 'pre',
   },
   // On a tinted row the glyph is the cue a reader without colour depends on,
-  // so it takes the row's text slot like the line number does.
-  diffMarkerChange: {
-    color: 'inherit',
+  // so it takes the row's marker slot like the line number does.
+  diffMarkerAdded: {
+    color: 'var(--color-syntax-added-marker)',
+  },
+  diffMarkerRemoved: {
+    color: 'var(--color-syntax-removed-marker)',
   },
   sizeSm: {
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -706,8 +714,8 @@ function SpanCodeContent({
               aria-hidden="true"
               {...stylex.props(
                 styles.diffMarker,
-                (kind === 'added' || kind === 'removed') &&
-                  styles.diffMarkerChange,
+                kind === 'added' && styles.diffMarkerAdded,
+                kind === 'removed' && styles.diffMarkerRemoved,
               )}>
               {diff.glyphs[lineIndex] || ' '}
             </span>

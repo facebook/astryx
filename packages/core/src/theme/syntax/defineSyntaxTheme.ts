@@ -42,7 +42,7 @@ export type SyntaxThemeTokenKey =
 
 /** The diff row slots a syntax theme MAY set; unset ones keep their defaults. */
 export type DiffSyntaxThemeTokenKey =
-  'added' | 'removed' | 'diff-header' | 'added-text' | 'removed-text';
+  'added' | 'removed' | 'diff-header' | 'added-marker' | 'removed-marker';
 
 /**
  * Token value — either a single string or a [light, dark] tuple.
@@ -168,7 +168,7 @@ export function defineSyntaxTheme(
       'defineSyntaxTheme',
       `"${input.name}": missing tokens: ${missing.join(', ')}. ` +
         `All ${REQUIRED_SYNTAX_KEYS.length} syntax colour tokens are required; ` +
-        `the diff row slots (added, removed, diff-header, added-text, removed-text) are optional.`,
+        `the diff row slots (added, removed, diff-header, added-marker, removed-marker) are optional.`,
     );
   }
 

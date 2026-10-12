@@ -15,7 +15,7 @@
  *
  * 14 token colours and the code background, validated against 11 community
  * code themes — all of them map cleanly to those slots — plus five diff row
- * slots (added, removed, header paints; added and removed text) that default
+ * slots (added, removed, header paints; added and removed markers) that default
  * to semantic tokens, so a syntax theme that does not set them keeps a
  * readable diff.
  *
@@ -66,10 +66,11 @@ export const syntaxTokenDefaults = {
   '--color-syntax-removed':
     'color-mix(in srgb, var(--color-error-muted) 25%, transparent)',
   '--color-syntax-diff-header': 'var(--color-background-muted)',
-  // The text of a changed row that no token paints — line number, glyph,
-  // plain code — in the theme's tinted-text tokens, made for tinted surfaces.
-  '--color-syntax-added-text': 'var(--color-text-green)',
-  '--color-syntax-removed-text': 'var(--color-text-red)',
+  // The margin of a changed row — its line number and +/- glyph — in the
+  // theme's tinted-text tokens, made for tinted surfaces. Code text keeps the
+  // syntax theme's colours.
+  '--color-syntax-added-marker': 'var(--color-text-green)',
+  '--color-syntax-removed-marker': 'var(--color-text-red)',
 } as const;
 
 export type SyntaxTokenName = keyof typeof syntaxTokenDefaults;
@@ -79,6 +80,6 @@ export const DIFF_SYNTAX_TOKEN_NAMES = [
   '--color-syntax-added',
   '--color-syntax-removed',
   '--color-syntax-diff-header',
-  '--color-syntax-added-text',
-  '--color-syntax-removed-text',
+  '--color-syntax-added-marker',
+  '--color-syntax-removed-marker',
 ] as const satisfies ReadonlyArray<SyntaxTokenName>;

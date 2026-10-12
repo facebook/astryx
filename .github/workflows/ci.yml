@@ -1344,6 +1344,16 @@ jobs:
             --project chromium \
             --output table-min-width-output
 
+      # A CodeBlock diff row's tint has to follow a long line to the end of its
+      # scroll width; jsdom has no layout, so only a real engine shows whether
+      # the paint stops at the viewport edge when the reader scrolls.
+      - name: Run CodeBlock diff row paint contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/CodeBlock/__tests__/DiffRowPaint.a11y.chromium.spec.ts \
+            --project chromium \
+            --output codeblock-diff-row-paint-output
+
       # A DropdownMenu header and footer sit beside the menu, outside its
       # role="menu" element, and join one Tab sequence with it. Focus order,
       # the popover's focus trap, the keyboard-only ring and a finger tap on a

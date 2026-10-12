@@ -102,11 +102,11 @@ export const docs = {
               "var(--color-background-muted)"
             ],
             [
-              "--color-syntax-added-text",
+              "--color-syntax-added-marker",
               "var(--color-text-green)"
             ],
             [
-              "--color-syntax-removed-text",
+              "--color-syntax-removed-marker",
               "var(--color-text-red)"
             ]
           ]

@@ -122,6 +122,25 @@ export const Diff: Story = {
   },
 };
 
+/**
+ * A diff whose changed lines run past the viewport: the row tint and the
+ * gutter tint must follow the line to the end of the scroll width, not stop at
+ * the visible edge. Toggle `isWrapped` to see the same rows wrapped instead.
+ */
+export const DiffLongLines: Story = {
+  args: {
+    language: 'tsx',
+    isDiff: true,
+    hasLineNumbers: true,
+    isWrapped: false,
+    code: `@@ -1,3 +1,3 @@
+ export function Button({children, ...props}: ButtonProps) {
+-  return <button className="astryx-button" type="button" aria-label="A deliberately long accessible label that pushes this changed line well past the width of a phone-sized viewport" {...props}>{children}</button>;
++  return <button className="astryx-button astryx-button-primary" type="button" aria-label="A deliberately long accessible label that pushes this changed line well past the width of a phone-sized viewport" {...props}>{children}</button>;
+ }`,
+  },
+};
+
 export const JSON: Story = {
   args: {
     code: `{
