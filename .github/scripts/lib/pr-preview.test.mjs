@@ -9,6 +9,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import yaml from 'yaml';
 
 import {
+  confirmSourceRunIdentity,
   PR_ANALYSIS_MARKER,
   reconcileEarlyPreviewComment,
   reconcilePrComment,
@@ -396,8 +397,24 @@ describe('trusted PR preview identity', () => {
     }
   });
 
+  it('skips a stale rerun whose pull request has moved to a newer head', async () => {
+    // The branch was pushed after the source run was rerun: the run's report
+    // has no current pull request, and the newer head has its own run.
+    const trusted = identity();
+    const moved = identity({headSha: 'e'.repeat(40)});
+    const {github} = githubFixture({value: moved});
+
+    await expect(
+      resolveWorkflowRunPullRequest({
+        github,
+        owner: 'facebook',
+        repo: 'astryx',
+        run: sourceRun(trusted),
+      }),
+    ).resolves.toBeNull();
+  });
+
   it.each([
-    ['wrong head', {headSha: 'e'.repeat(40)}],
     ['wrong head repository', {headRepository: 'someone/astryx'}],
     ['wrong base repository', {baseRepository: 'someone/astryx'}],
   ])('rejects a candidate with the %s', async (_label, overrides) => {
@@ -428,6 +445,76 @@ describe('trusted PR preview identity', () => {
         run,
       }),
     ).rejects.toThrow(/expected exactly one current pull request/);
+  });
+});
+
+describe('confirmSourceRunIdentity reads the attempt the event reported', () => {
+  it('accepts the reported attempt after a newer rerun of the same run started', async () => {
+    const expected = identity({
+      sourceRunAttempt: 1,
+      sourceConclusion: 'failure',
+    });
+    const {github} = githubFixture({value: expected});
+    // The latest attempt is a rerun still in progress; the event was for attempt 1.
+    github.rest.actions.getWorkflowRun.mockResolvedValue({
+      data: {...sourceRun(expected), run_attempt: 2, conclusion: null},
+    });
+    github.rest.actions.getWorkflowRunAttempt = vi.fn(
+      async ({attempt_number}) => ({
+        data: {...sourceRun(expected), run_attempt: attempt_number},
+      }),
+    );
+
+    await expect(
+      confirmSourceRunIdentity({
+        github,
+        owner: 'facebook',
+        repo: 'astryx',
+        expected,
+      }),
+    ).resolves.toMatchObject({
+      sourceRunId: expected.sourceRunId,
+      sourceRunAttempt: 1,
+      headSha: expected.headSha,
+    });
+    expect(github.rest.actions.getWorkflowRunAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        run_id: expected.sourceRunId,
+        attempt_number: 1,
+      }),
+    );
+  });
+
+  it('still refuses when the reported attempt tested a different head', async () => {
+    const expected = identity({sourceRunAttempt: 1});
+    const {github} = githubFixture({value: expected});
+    github.rest.actions.getWorkflowRunAttempt = vi.fn(async () => ({
+      data: {...sourceRun(expected), head_sha: 'e'.repeat(40)},
+    }));
+
+    await expect(
+      confirmSourceRunIdentity({
+        github,
+        owner: 'facebook',
+        repo: 'astryx',
+        expected,
+      }),
+    ).rejects.toThrow(/does not match/);
+  });
+
+  it('falls back to the latest attempt when the client cannot read one attempt', async () => {
+    const expected = identity({sourceRunAttempt: 1});
+    const {github} = githubFixture({value: expected});
+    delete github.rest.actions.getWorkflowRunAttempt;
+
+    await expect(
+      confirmSourceRunIdentity({
+        github,
+        owner: 'facebook',
+        repo: 'astryx',
+        expected,
+      }),
+    ).resolves.toMatchObject({sourceRunAttempt: 1});
   });
 });
 

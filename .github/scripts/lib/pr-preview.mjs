@@ -205,11 +205,14 @@ export async function resolveWorkflowRunPullRequest({
   }
   if (
     matches.length === 0 &&
-    candidates.every(pull => pull?.state !== 'open')
+    candidates.every(
+      pull => pull?.state !== 'open' || pull?.head?.sha !== run?.head_sha,
+    )
   ) {
-    // A source run can be rerun after its pull request merges. No privileged
-    // work remains when there is no open candidate, so finish without turning
-    // the trusted default-branch workflow red.
+    // A source run can be rerun after its pull request merges, or after the
+    // branch moved to a new head. Either way the run's report has no current
+    // pull request: no privileged work remains, so finish without turning the
+    // trusted default-branch workflow red. The newer head has its own run.
     return null;
   }
   if (matches.length !== 1) {
@@ -228,8 +231,24 @@ export async function confirmSourceRunIdentity({
 }) {
   const sourceRunId = positiveInteger(expected.sourceRunId, 'source run id');
   const prNumber = positiveInteger(expected.prNumber, 'pull request number');
+  const attemptNumber = positiveInteger(
+    expected.sourceRunAttempt,
+    'source run attempt',
+  );
+  // Read the exact attempt the trusted event reported. `getWorkflowRun`
+  // describes the LATEST attempt, so a rerun started after the event would make
+  // the same run look like a different identity (attempt and conclusion).
+  const readRun =
+    typeof github.rest.actions.getWorkflowRunAttempt === 'function'
+      ? github.rest.actions.getWorkflowRunAttempt({
+          owner,
+          repo,
+          run_id: sourceRunId,
+          attempt_number: attemptNumber,
+        })
+      : github.rest.actions.getWorkflowRun({owner, repo, run_id: sourceRunId});
   const [{data: run}, {data: pull}] = await Promise.all([
-    github.rest.actions.getWorkflowRun({owner, repo, run_id: sourceRunId}),
+    readRun,
     github.rest.pulls.get({owner, repo, pull_number: prNumber}),
   ]);
   const actual = identityFromPullAndRun({
