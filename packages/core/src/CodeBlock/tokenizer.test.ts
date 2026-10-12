@@ -241,6 +241,12 @@ describe('diffLineKind', () => {
       'added',
       'context',
     ]);
+    // A hunk ending in `---i;` / `+++i;` right before the next `@@` is code,
+    // not a file header: the header form has a space after the signs.
+    expect(
+      splitDiffLines(['@@ -1 +1 @@', '---i;', '+++i;', '@@ -9 +9 @@', ' x'])
+        .kinds,
+    ).toEqual(['header', 'removed', 'added', 'header', 'context']);
     expect(diffLineKind('--- a/x.ts')).toBe('removed');
     expect(diffLineKind('--- a/x.ts', {isFileHeader: true})).toBe('header');
   });

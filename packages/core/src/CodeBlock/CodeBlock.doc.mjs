@@ -61,7 +61,7 @@ export const docs = {
       type: 'boolean',
       default: 'false',
       description:
-        'Render the code as a unified diff over `language`: lines starting with + are added, - removed, @@ is a hunk header (a ---/+++ pair directly before one is a file header), anything else is context. The glyph sits in its own column and the rest of each line keeps syntax highlighting; copy returns the exact source. Markdown ```diff and ```diff-<lang> fences set this.',
+        'Render the code as a unified diff over `language`: lines starting with + are added, - removed, @@ is a hunk header (a `--- `/`+++ ` file-header pair directly before one is a header too), anything else is context. The language label reads `diff` or `<language> diff`. The glyph sits in its own column and the rest of each line keeps syntax highlighting; copy returns the exact source. Markdown ```diff and ```diff-<lang> fences set this.',
     },
     {
       name: 'hasCopyButton',

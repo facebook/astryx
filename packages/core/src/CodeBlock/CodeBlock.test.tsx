@@ -156,6 +156,15 @@ describe('CodeBlock', () => {
       expect(rows[3].querySelector('.astryx-token-keyword')).not.toBeNull();
     });
 
+    it('keeps the header and names the viewport diff / tsx diff', () => {
+      const {rerender} = render(<CodeBlock code={diff} isDiff />);
+      expect(screen.getByRole('group', {name: 'diff'})).toBeInTheDocument();
+      expect(screen.getByText('diff')).toBeInTheDocument();
+      rerender(<CodeBlock code={diff} language="tsx" isDiff />);
+      expect(screen.getByRole('group', {name: 'tsx diff'})).toBeInTheDocument();
+      expect(screen.getByText('tsx diff')).toBeInTheDocument();
+    });
+
     it('copies the exact source, glyphs included', () => {
       render(<CodeBlock code={diff} language="typescript" isDiff />);
       fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));

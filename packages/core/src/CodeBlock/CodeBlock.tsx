@@ -483,8 +483,9 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
   highlightLines?: number[];
   /**
    * Render the code as a unified diff over `language`: lines starting with
-   * `+` are added, `-` removed, `@@` is a hunk header (a `---`/`+++` pair
-   * directly before one is a file header), anything else is context. The glyph sits in its own column and the rest of every line
+   * `+` are added, `-` removed, `@@` is a hunk header (a `--- `/`+++ ` pair
+   * directly before one is a file header), anything else is context; the
+   * label reads `diff` or `<language> diff`. The glyph sits in its own column and the rest of every line
    * keeps the language's syntax highlighting. Copy still returns the exact
    * source, glyphs included.
    */
@@ -899,8 +900,18 @@ export function CodeBlock({
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   // Digits in the largest line number — sizes the gutter column width.
   const maxLineDigits = String(lines.length).length;
-  const languageLabel =
-    hasLanguageLabel && language !== 'plaintext' ? language : null;
+  // With the diff layer on, the label and viewport name say so: `diff` over
+  // plaintext, `tsx diff` over a language — so a diff keeps its header,
+  // collapse control, and a name that still matches a `diff` fence.
+  const languageLabel = !hasLanguageLabel
+    ? null
+    : isDiff
+      ? language === 'plaintext'
+        ? 'diff'
+        : `${language} diff`
+      : language !== 'plaintext'
+        ? language
+        : null;
   const showHeader = title != null || languageLabel != null;
 
   // A collapsed body must never outlive the visible header that controls it.

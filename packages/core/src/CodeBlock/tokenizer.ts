@@ -377,11 +377,12 @@ export function splitDiffLines(lines: ReadonlyArray<string>): {
 
 /**
  * Classify one line of a unified diff by its first character: `+` added,
- * `-` removed, `@@` header, anything else context. A `---` line directly
- * followed by a `+++` line and then an `@@` line is a file header (both
- * lines), wherever it occurs; every other `---`/`+++` line is removed or
- * added, so a removed line that starts with `--` is never misread. The glyph
- * is part of the text and is never removed.
+ * `-` removed, `@@` header, anything else context. A `--- ` line (with its
+ * space) directly followed by a `+++ ` line and then an `@@` line is a file
+ * header (both lines), wherever it occurs; every other `---`/`+++` line is
+ * removed or added, so a removed line that starts with `--` — `---i;`
+ * included — is never misread. The glyph is part of the text and is never
+ * removed.
  */
 export function diffLineKind(
   line: string,
@@ -399,13 +400,16 @@ export function diffLineKind(
   return 'context';
 }
 
-/** The indexes of the `---`/`+++` lines that form a file header before an `@@`. */
+/**
+ * The indexes of the `--- `/`+++ ` lines (unified-diff form, with the space)
+ * that form a file header directly before an `@@`; `---i;` is a change.
+ */
 export function fileHeaderLines(lines: ReadonlyArray<string>): Set<number> {
   const headers = new Set<number>();
   for (let i = 0; i + 2 < lines.length; i++) {
     if (
-      lines[i].startsWith('---') &&
-      lines[i + 1].startsWith('+++') &&
+      lines[i].startsWith('--- ') &&
+      lines[i + 1].startsWith('+++ ') &&
       lines[i + 2].startsWith('@@')
     ) {
       headers.add(i);
