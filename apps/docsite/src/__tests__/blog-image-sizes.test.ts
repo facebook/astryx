@@ -33,14 +33,37 @@ function png(width: number, height: number): Buffer {
 
 const tmpDirs: string[] = [];
 afterEach(() => {
-  for (const dir of tmpDirs.splice(0))
-    {fs.rmSync(dir, {recursive: true, force: true});}
+  for (const dir of tmpDirs.splice(0)) {
+    fs.rmSync(dir, {recursive: true, force: true});
+  }
 });
 
 describe('blog image facts', () => {
   it('reads a PNG natural size from its header and rejects other bytes', () => {
     expect(imageSize(png(780, 412))).toEqual({width: 780, height: 412});
     expect(imageSize(Buffer.from('not an image'))).toBeNull();
+  });
+
+  it('reads an extended WebP canvas size', () => {
+    // RIFF header + VP8X chunk: flags, then canvas width-1 and height-1 as
+    // 24-bit little-endian values.
+    const header = Buffer.alloc(30);
+    header.write('RIFF', 0, 'latin1');
+    header.writeUInt32LE(22, 4);
+    header.write('WEBP', 8, 'latin1');
+    header.write('VP8X', 12, 'latin1');
+    header.writeUInt32LE(10, 16);
+    header.writeUIntLE(1278 - 1, 24, 3);
+    header.writeUIntLE(570 - 1, 27, 3);
+    expect(imageSize(header)).toEqual({width: 1278, height: 570});
+    // The real asset agrees.
+    const real = fs.readFileSync(
+      path.resolve(
+        __dirname,
+        '../../public/blog/astryx-v0-6-0/adaptive-inputs.webp',
+      ),
+    );
+    expect(imageSize(real)?.width).toBeGreaterThan(0);
   });
 
   it('records the natural size of @2x images only, light and dark alike', () => {

@@ -65,12 +65,45 @@ function jpegSize(bytes) {
 }
 
 /**
- * The natural pixel size of a PNG or JPEG, or null for anything else.
+ * Read a WebP's canvas size (VP8X extended header, VP8 lossy, or VP8L lossless).
+ * @param {Buffer} bytes
+ * @returns {{width: number, height: number} | null}
+ */
+function webpSize(bytes) {
+  if (
+    bytes.length < 30 ||
+    bytes.toString('latin1', 0, 4) !== 'RIFF' ||
+    bytes.toString('latin1', 8, 12) !== 'WEBP'
+  ) {
+    return null;
+  }
+  const chunk = bytes.toString('latin1', 12, 16);
+  if (chunk === 'VP8X') {
+    return {
+      width: 1 + bytes.readUIntLE(24, 3),
+      height: 1 + bytes.readUIntLE(27, 3),
+    };
+  }
+  if (chunk === 'VP8 ') {
+    return {
+      width: bytes.readUInt16LE(26) & 0x3fff,
+      height: bytes.readUInt16LE(28) & 0x3fff,
+    };
+  }
+  if (chunk === 'VP8L') {
+    const bits = bytes.readUInt32LE(21);
+    return {width: 1 + (bits & 0x3fff), height: 1 + ((bits >> 14) & 0x3fff)};
+  }
+  return null;
+}
+
+/**
+ * The natural pixel size of a PNG, JPEG, or WebP, or null for anything else.
  * @param {Buffer} bytes
  * @returns {{width: number, height: number} | null}
  */
 export function imageSize(bytes) {
-  return pngSize(bytes) ?? jpegSize(bytes);
+  return pngSize(bytes) ?? jpegSize(bytes) ?? webpSize(bytes);
 }
 
 /**
