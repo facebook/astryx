@@ -10,8 +10,14 @@ import {TextInput} from '@astryxdesign/core/TextInput';
 import {Typeahead, createStaticSource} from '@astryxdesign/core/Typeahead';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import {
+  createMarkdownFenceTransform,
+  createMarkdownFrontmatter,
+  createMarkdownHeadingLinks,
+  createMarkdownPlugin,
+  createMarkdownTextTransform,
   markdownSoftBreaksPlugin,
   markdownSourceLinesPlugin,
+  type MarkdownExtensionNode,
 } from '@astryxdesign/core/Markdown/plugins';
 import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 import {useAnnounce} from '@astryxdesign/core/hooks';
@@ -81,12 +87,104 @@ export function Overlays() {
   );
 }
 
-const releaseNotes = '# Release';
+const source = '# Release';
+
+const frontmatter = createMarkdownFrontmatter({
+  name: 'release-notes',
+  parse: fields => ({
+    title: typeof fields.title === 'string' ? fields.title : 'Untitled',
+    status: typeof fields.status === 'string' ? fields.status : 'draft',
+  }),
+});
+
+const specLinks = createMarkdownPlugin({
+  name: 'spec-links',
+  apiVersion: 1,
+  transform: createMarkdownTextTransform({
+    pattern: /\bAST-(\d{3})\b/g,
+    requiredSubstrings: ['AST-'],
+    replace: match => ({
+      type: 'link',
+      url: `/specs/${match[0]}`,
+      children: [{type: 'text', value: match[0]}],
+    }),
+  }),
+});
+
+type CalloutNode = MarkdownExtensionNode<
+  'callouts',
+  'callout',
+  {readonly title: string; readonly body: string},
+  'block'
+>;
+
+const callouts = createMarkdownPlugin<'callouts', CalloutNode>({
+  name: 'callouts',
+  apiVersion: 1,
+  transform: createMarkdownFenceTransform({
+    languages: ['callout'],
+    createNode: ({code}) => {
+      const [title, ...body] = code.split('\n');
+      return {
+        type: 'extension',
+        plugin: 'callouts',
+        name: 'callout',
+        display: 'block',
+        data: {title, body: body.join(' ')},
+      };
+    },
+  }),
+  renderers: {
+    callout: {
+      render: ({node}) => (
+        <Banner
+          status="warning"
+          title={node.data.title}
+          description={node.data.body}
+        />
+      ),
+      toText: node => `${node.data.title}\n${node.data.body}`,
+    },
+  },
+});
+
+const headingLinks = createMarkdownHeadingLinks({
+  permalinkBaseUrl: 'https://astryx.atmeta.com/blog/astryx-v0-7-0',
+});
+
+function ProductMath({
+  source,
+  display,
+}: {
+  source: string;
+  display: 'inline' | 'block';
+}) {
+  return display === 'block' ? <div>{source}</div> : <span>{source}</span>;
+}
+
+function MathExpression({
+  value,
+  display,
+}: {
+  value: string;
+  display: 'inline' | 'block';
+}) {
+  return <ProductMath source={value} display={display} />;
+}
+
 export function Content() {
+  const result = frontmatter.parse(source);
+  void result;
   return (
-    <Markdown plugins={[markdownSoftBreaksPlugin, markdownSourceLinesPlugin]}>
-      {releaseNotes}
-    </Markdown>
+    <>
+      <Markdown plugins={[markdownSoftBreaksPlugin]}>{source}</Markdown>
+      <Markdown plugins={[frontmatter.plugin]}>{source}</Markdown>
+      <Markdown plugins={[specLinks]}>{source}</Markdown>
+      <Markdown plugins={[callouts]}>{source}</Markdown>
+      <Markdown plugins={[headingLinks]}>{source}</Markdown>
+      <Markdown plugins={[markdownSourceLinesPlugin]}>{source}</Markdown>
+      <Markdown components={{math: MathExpression}}>{source}</Markdown>
+    </>
   );
 }
 

@@ -13,11 +13,11 @@ tags:
   - 'Accessibility'
 ---
 
-Astryx v0.7.0 brings together everything shipped from v0.6.1 through v0.6.8 and the final changes for this minor. The release improves the experiences people touch most—forms, mobile layouts, menus, Markdown, and tables—while making theme and CLI behavior more predictable.
+Astryx v0.7.0 brings together everything shipped from v0.6.1 through v0.6.8 and the last updates for this release. The release improves the experiences people touch most—forms, mobile layouts, menus, Markdown, and tables—while making theme and CLI behavior more predictable.
 
 ## Forms and inputs
 
-Forms now keep caller IDs, descriptions, event handlers, and test hooks on the control that people actually use. Empty states, controlled clearing, IME input, and async picker feedback are also more reliable across the input family.
+Forms now keep IDs, descriptions, event handlers, and test hooks you pass on the control that people actually use. Empty states, controlled clearing, IME input, and async picker feedback are also more reliable across the input family.
 
 ```tsx
 <TextInput
@@ -78,31 +78,189 @@ Phone layouts keep their state, respect pinch zoom, and make sheets, menus, swip
 
 ## Data display
 
-Tables keep expanded content aligned, sticky and resizable columns usable, row actions working, and scrolling contained only when the table can actually scroll. Charts, MetadataList, TreeList, and Lightbox also gained smaller fixes that preserve meaning and layout in dense or narrow views.
+Tables keep expanded content aligned, sticky and resizable columns usable, row actions working, and scrolling contained only when the table can actually scroll. Charts, MetadataList, TreeList, and Lightbox keep labels, rows, and images readable in dense or narrow views.
 
 <!-- VISUAL_SLOT: data-display — separate images for row expansion, column resize, sticky columns, and narrow scrolling -->
 
 ## Markdown and content
 
-Markdown can now carry typed product semantics instead of stopping at formatted prose. Plugins cover frontmatter, math, source lines, text transforms, custom fences, heading links, and soft breaks while streaming content remains stable.
+Markdown can now turn your own syntax into real components instead of stopping at formatted text. The examples below use the same source before and after, so each plugin's effect is visible on its own.
+
+### Keep authored line breaks
+
+![The same four-line Markdown checklist rendered twice. Before plugins, the lines run together into one paragraph. After plugins, each line starts on its own line.](/blog/astryx-v0-7-0/markdown-soft-breaks.png)
+
+_Single line endings become line breaks; code and other opaque content stay unchanged._
+
+```tsx
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {markdownSoftBreaksPlugin} from '@astryxdesign/core/Markdown/plugins';
+
+<Markdown plugins={[markdownSoftBreaksPlugin]}>{source}</Markdown>;
+```
+
+### Read frontmatter as data
+
+![A document that starts with a YAML frontmatter block, rendered twice. Before plugins, the frontmatter shows as a horizontal rule, a line of raw key: value text, and another rule above the heading. After plugins, the frontmatter is gone from the document and the host shows its parsed values as a draft badge and a title above the same heading.](/blog/astryx-v0-7-0/markdown-frontmatter.png)
+
+_The host receives typed metadata while the frontmatter stays out of the rendered document._
+
+```tsx
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {createMarkdownFrontmatter} from '@astryxdesign/core/Markdown/plugins';
+
+const frontmatter = createMarkdownFrontmatter({
+  name: 'release-notes',
+  parse: fields => ({
+    title: typeof fields.title === 'string' ? fields.title : 'Untitled',
+    status: typeof fields.status === 'string' ? fields.status : 'draft',
+  }),
+});
+
+const result = frontmatter.parse(source);
+<Markdown plugins={[frontmatter.plugin]}>{source}</Markdown>;
+```
+
+### Turn product syntax into links
+
+![One sentence naming two spec ids, rendered twice. Before plugins, AST-064 and AST-069 are plain text. After plugins, both become underlined links, while the same id inside inline code stays as written.](/blog/astryx-v0-7-0/markdown-text-transform.png)
+
+_Text transforms can link product identifiers in prose without touching code spans, existing links, images, or math._
 
 ```tsx
 import {Markdown} from '@astryxdesign/core/Markdown';
 import {
-  markdownSoftBreaksPlugin,
-  markdownSourceLinesPlugin,
+  createMarkdownPlugin,
+  createMarkdownTextTransform,
 } from '@astryxdesign/core/Markdown/plugins';
 
-<Markdown plugins={[markdownSoftBreaksPlugin, markdownSourceLinesPlugin]}>
-  {releaseNotes}
-</Markdown>;
+const specLinks = createMarkdownPlugin({
+  name: 'spec-links',
+  apiVersion: 1,
+  transform: createMarkdownTextTransform({
+    pattern: /\bAST-(\d{3})\b/g,
+    requiredSubstrings: ['AST-'],
+    replace: match => ({
+      type: 'link',
+      url: `/specs/${match[0]}`,
+      children: [{type: 'text', value: match[0]}],
+    }),
+  }),
+});
+
+<Markdown plugins={[specLinks]}>{source}</Markdown>;
 ```
 
-<!-- VISUAL_SLOT: markdown-and-content — one shipped plugin per image; streaming behavior as GIF/WebP -->
+### Turn custom fences into components
+
+![A paragraph followed by a fenced code block tagged callout, rendered twice. Before plugins, the fence shows as a code block labelled callout with its two lines of text. After plugins, the same fence renders as a warning banner with the first line as its title and the second as its description.](/blog/astryx-v0-7-0/markdown-fence.png)
+
+_A declared fence language can render as a product component while every other fence keeps its normal code treatment._
+
+```tsx
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {Banner} from '@astryxdesign/core/Banner';
+import {
+  createMarkdownFenceTransform,
+  createMarkdownPlugin,
+  type MarkdownExtensionNode,
+} from '@astryxdesign/core/Markdown/plugins';
+
+type CalloutNode = MarkdownExtensionNode<
+  'callouts',
+  'callout',
+  {readonly title: string; readonly body: string},
+  'block'
+>;
+
+const callouts = createMarkdownPlugin<'callouts', CalloutNode>({
+  name: 'callouts',
+  apiVersion: 1,
+  transform: createMarkdownFenceTransform({
+    languages: ['callout'],
+    createNode: ({code}) => {
+      const [title, ...body] = code.split('\n');
+      return {
+        type: 'extension',
+        plugin: 'callouts',
+        name: 'callout',
+        display: 'block',
+        data: {title, body: body.join(' ')},
+      };
+    },
+  }),
+  renderers: {
+    callout: {
+      render: ({node}) => (
+        <Banner
+          status="warning"
+          title={node.data.title}
+          description={node.data.body}
+        />
+      ),
+      toText: node => `${node.data.title}\n${node.data.body}`,
+    },
+  },
+});
+
+<Markdown plugins={[callouts]}>{source}</Markdown>;
+```
+
+### Copy links to headings
+
+![Two headings rendered twice. Before plugins, the headings are plain. After plugins, as the pointer moves onto the first heading a small hash button appears beside it; clicking it swaps the hash for a check mark for a moment, and the button fades again when the pointer leaves.](/blog/astryx-v0-7-0/markdown-heading-links.webp)
+
+_Heading links reveal on hover or keyboard focus, copy without navigating, and briefly confirm success._
+
+```tsx
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {createMarkdownHeadingLinks} from '@astryxdesign/core/Markdown/plugins';
+
+const headingLinks = createMarkdownHeadingLinks({
+  permalinkBaseUrl: 'https://astryx.atmeta.com/blog/astryx-v0-7-0',
+});
+
+<Markdown plugins={[headingLinks]}>{source}</Markdown>;
+```
+
+### Connect rendered blocks to source lines
+
+![A paragraph, a two-item list and a quote rendered twice. Before plugins, the blocks have no annotations. After plugins, a small gutter beside each block names its source line: L1 for the paragraph, L3 and L4 for the list items, L6 for the quote.](/blog/astryx-v0-7-0/markdown-source-lines.png)
+
+_Each rendered block exposes its source lines, giving comments, selections, and search results a stable place to attach._
+
+```tsx
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {markdownSourceLinesPlugin} from '@astryxdesign/core/Markdown/plugins';
+
+<Markdown plugins={[markdownSourceLinesPlugin]}>{source}</Markdown>;
+```
+
+### Render math with your product's renderer
+
+![A sentence with an inline fraction and a display equation, rendered twice. Before, the dollar-delimited math shows as literal text. After, the inline fraction is typeset within the sentence and the equation is typeset on its own centered line.](/blog/astryx-v0-7-0/markdown-math.png)
+
+_Providing a math renderer turns on dollar-delimited parsing; your app still owns the typesetting and accessible output._
+
+```tsx
+import {Markdown} from '@astryxdesign/core/Markdown';
+
+function MathExpression({
+  value,
+  display,
+}: {
+  value: string;
+  display: 'inline' | 'block';
+}) {
+  return <ProductMath source={value} display={display} />;
+}
+
+<Markdown components={{math: MathExpression}}>{source}</Markdown>;
+```
 
 ## Themes and visual foundations
 
-Themes now have clearer component names, shorter local token names, Vite-safe `light-dark()` output, and one public StyleX source for data colors. Reset styles reach the pseudo-elements they promised to cover, and generated first-party theme CSS is checked against its source.
+Themes are easier to extend without losing supported browser behavior or data colors. Component styling names are clearer, local token names are shorter, Vite preserves `light-dark()`, and reset styles now reach the pseudo-elements they promise to cover.
 
 ```tsx
 import * as stylex from '@stylexjs/stylex';
@@ -115,15 +273,18 @@ const styles = stylex.create({
 });
 ```
 
-**Pending merge — [#7359](https://github.com/facebook/astryx/pull/7359) and [#7374](https://github.com/facebook/astryx/pull/7374):** Core, Matcha, and Y2K spacing will follow the reader's root font size while staying pixel-equal at the default 16px root.
+**Pending merge — [#7359](https://github.com/facebook/astryx/pull/7359) and [#7374](https://github.com/facebook/astryx/pull/7374):** spacing in every first-party theme will follow the reader's root font size while looking unchanged at the default 16px root.
 
 <!-- VISUAL_SLOT: themes-and-visual-foundations — real theme renders; visual changes as labeled Before/After -->
 
 ## Accessibility and localization
 
-More status text, control labels, and empty states now speak the reader's language, and keyboard users can reach content that previously disappeared behind scrolling or focus transitions. Banners no longer infer announcements from color status, so apps announce the actual async event instead.
+More status text, control labels, and empty states now speak the reader's language. Keyboard users can reach overflowing sheet content and keep visible focus cues as dialogs open and close; banners announce the actual async event instead of inferring one from color status.
 
 ```tsx
+import {Banner} from '@astryxdesign/core/Banner';
+import {useAnnounce} from '@astryxdesign/core/hooks';
+
 const announce = useAnnounce();
 
 async function saveSettings() {
@@ -145,21 +306,21 @@ npx @astryxdesign/cli integration add component AcmeChart
 npx @astryxdesign/cli integration verify
 ```
 
-**Pending merge — [#7130](https://github.com/facebook/astryx/pull/7130):** `doctor` will fail when Astryx cannot load a configured integration or project config, and it will explain what it checked or skipped.
+**Pending merge — [#7130](https://github.com/facebook/astryx/pull/7130):** `doctor` will fail when Astryx cannot load a configured integration or project config, and it will name the integrations it loaded.
 
 <!-- VISUAL_SLOT: cli-and-integrations — terminal captures only when they show shipped output not already stated in text -->
 
 ## Interaction and feedback
 
-Pressed states, clear-button focus, swipe dismissal, menu gestures, and optimistic actions now respond more consistently without adding weight to apps that do not use them. Compact Toolbar rows also get a tighter inset without losing alignment.
+Pressed states, clear-button focus, swipe dismissal, menu gestures, and optimistic actions now respond at the moment people expect. Apps whose rows never swipe also ship about 2.7 KB less JavaScript on first load.
 
-**Pending merge — [#6954](https://github.com/facebook/astryx/pull/6954):** compact Toolbar and RichText formatting rows will use the same 4px edge inset.
+**Pending merge — [#6954](https://github.com/facebook/astryx/pull/6954):** compact Toolbar rows will use a 4px top and bottom inset while keeping their side alignment, and the RichText formatting row will use 4px on every edge.
 
 <!-- VISUAL_SLOT: interaction-and-feedback — behavior as GIF/WebP; compact Toolbar as labeled Before/After -->
 
 ## Upgrading to 0.7.0
 
-Update every stable Astryx package your project uses to `0.7.0`, then run the upgrade command. It applies the safe migrations and leaves a TODO where your code needs a decision.
+Update every stable Astryx package your project uses to `0.7.0`, then run the upgrade command. It applies the migrations it can automate and adds a TODO for some ambiguous cases; 18 of the 26 changes below have no codemod, so check each one.
 
 ```bash
 OLD_VERSION=0.6.8 # replace with the Core version your project uses today
@@ -169,33 +330,59 @@ npx @astryxdesign/cli upgrade --from "$OLD_VERSION" --apply --path .
 
 The example includes Neutral; update every other stable Astryx theme in your project in the same install step.
 
+The highest-traffic API changes look like this:
+
+```diff
+- npx @astryxdesign/cli theme add neutral ./src/theme --overwrite
++ npx @astryxdesign/cli theme eject neutral ./src/theme --overwrite
+```
+
+```diff
+- <TextInput xstyle={styles.control} />
++ <TextInput controlXstyle={styles.control} />
+
+- <Typeahead xstyle={styles.field} />
++ <Typeahead containerXstyle={styles.field} />
+```
+
+```diff
+- .astryx-button.primary.sm
++ .astryx-button[data-variant="primary"][data-size="sm"]
+```
+
+```diff
+- <Banner status="success" title="Settings saved" />
++ announce('Settings saved');
++ <Banner status="success" title="Settings saved" />
+```
+
 ### All 26 breaking migrations
 
 1. **`theme add` now imports built themes** ([#7138](https://github.com/facebook/astryx/pull/7138)) — copy scripts move from `theme add <slug> <path>` to `theme eject <slug> <path>`; no codemod.
 2. **Banner announcements are explicit** ([#6630](https://github.com/facebook/astryx/pull/6630)) — move from status-derived live regions to `useAnnounce()` in the async action or an explicit persistent role; no codemod.
-3. **Previously ignored base props now work** ([#7331](https://github.com/facebook/astryx/pull/7331)) — remove props on Layout, MetadataList, NavHeadingMenuItem, or TopNavMegaMenuItem only if your code depended on them doing nothing; no codemod.
+3. **Previously ignored DOM props now work** ([#7331](https://github.com/facebook/astryx/pull/7331)) — remove props on Layout, MetadataList, NavHeadingMenuItem, or TopNavMegaMenuItem only if your code depended on them doing nothing; no codemod.
 4. **Complete icon registries include Upload** ([#7329](https://github.com/facebook/astryx/pull/7329)) — add an `upload` entry to every custom `IconRegistry`; bespoke artwork has no codemod.
 5. **`init --remove-agents` reports `removed: false`** ([#6623](https://github.com/facebook/astryx/pull/6623)) — read `data.removed` as a boolean instead of narrowing it to literal `true`; no codemod.
-6. **Conflicting CLI options are refused** ([#7132](https://github.com/facebook/astryx/pull/7132)) — remove options that list-only or removal modes previously ignored; no codemod.
+6. **Conflicting CLI options are refused** ([#7132](https://github.com/facebook/astryx/pull/7132)) — remove ignored input from `gap-report --list-categories`, `init --remove-agents`, `upgrade --list`, and `template --cdn`, `--list`, or `--skeleton`; no codemod.
 7. **Invalid CLI input no longer succeeds silently** ([#7149](https://github.com/facebook/astryx/pull/7149)) — pass valid types, packages, limits, and arguments, and handle `ERR_AMBIGUOUS_COMPONENT`; no codemod.
 8. **Empty positional arguments are rejected** ([#6620](https://github.com/facebook/astryx/pull/6620)) — omit `""` when the intended operation is to list entries; no codemod.
 9. **Integration validation needs a package** ([#7150](https://github.com/facebook/astryx/pull/7150)) — run `doctor integration validate` where `package.json` exists or handle exit 1; no codemod.
 10. **Data-color defaults move to StyleX** ([#6834](https://github.com/facebook/astryx/pull/6834)) — import `dataVars` for CSS and rebuild committed theme CSS; `validate-data-token-ownership` reports unsafe variables and stale output without rewriting them.
 11. **Date and time input styling targets the control** ([#7337](https://github.com/facebook/astryx/pull/7337)) — root styling becomes `controlXstyle`/`controlClassName`/`controlStyle`; `migrate-field-input-styling` rewrites direct Astryx JSX.
-12. **Typeahead, Tokenizer, list, and Slider styling targets the field** ([#7339](https://github.com/facebook/astryx/pull/7339)) — root styling becomes `container*`, except Typeahead inside InputGroup uses `control*`; `migrate-field-input-styling` handles direct JSX.
-13. **Selector styling targets the control** ([#7341](https://github.com/facebook/astryx/pull/7341)) — root styling becomes `control*`, while base props and refs reach the trigger; `migrate-field-input-styling` handles direct JSX.
-14. **Text input styling targets the control** ([#7336](https://github.com/facebook/astryx/pull/7336)) — root styling becomes `control*`, and caller IDs reach the native input; `migrate-field-input-styling` handles direct JSX.
+12. **Typeahead, Tokenizer, CheckboxList, RadioList, and Slider styling targets the field** ([#7339](https://github.com/facebook/astryx/pull/7339)) — root styling becomes `container*`, except Typeahead inside InputGroup uses `control*`; `migrate-field-input-styling` handles direct JSX.
+13. **Selector styling targets the control** ([#7341](https://github.com/facebook/astryx/pull/7341)) — root styling becomes `control*`, while DOM props and refs reach the trigger; `migrate-field-input-styling` handles direct JSX.
+14. **Text input styling targets the control** ([#7336](https://github.com/facebook/astryx/pull/7336)) — root styling becomes `control*`, and IDs you pass reach the native input; `migrate-field-input-styling` handles direct JSX.
 15. **Standalone filter editors do not save on open** ([#7347](https://github.com/facebook/astryx/pull/7347)) — save at the callsite that opens an already-complete empty-operator filter, or skip opening it; no codemod.
 16. **Astryx-prefixed agent variables are removed** ([#7127](https://github.com/facebook/astryx/pull/7127)) — replace `ASTRYX_AGENT_ID` and `ASTRYX_AGENT_SESSION_ID` with `AGENT` and `AGENT_SESSION_ID`; metadata has no replacement and no codemod.
-17. **Theme styling uses canonical names and data attributes** ([#7302](https://github.com/facebook/astryx/pull/7302)) — replace 21 old target aliases and bare state classes; `migrate-deprecated-theme-surface` rewrites known keys and selectors and marks ambiguous cases.
+17. **Theme styling uses current names and data attributes** ([#7302](https://github.com/facebook/astryx/pull/7302)) — replace 21 old styling names and bare state classes; `migrate-deprecated-theme-surface` rewrites known keys and selectors and marks ambiguous cases.
 18. **The `layout` command group is removed** ([#7137](https://github.com/facebook/astryx/pull/7137)) — use `astryx build`, `astryx template`, and `astryx docs layout`; no codemod.
 19. **`reset.css` reaches pseudo-elements and search fields** ([#7355](https://github.com/facebook/astryx/pull/7355)) — add your own later-layer `box-sizing`, border, placeholder color, or search appearance only when you need the old browser result; no codemod.
 20. **Private theme variables fail the build** ([#6872](https://github.com/facebook/astryx/pull/6872)) — fix every reported private `--_*` input instead of relying on exit 0; no codemod.
-21. **BottomSheet adds default content padding** (pending [#6884](https://github.com/facebook/astryx/pull/6884)) — remove duplicate caller padding or pass `padding={0}` for the old box; `preserve-bottom-sheet-content-padding` adds the safe opt-out.
+21. **BottomSheet adds default content padding** (pending [#6884](https://github.com/facebook/astryx/pull/6884)) — remove duplicate caller padding or pass `padding={0}` for the old box; `preserve-bottom-sheet-content-padding` adds `padding={0}`, but remove it when your theme already sets BottomSheet padding so the theme inset remains.
 22. **Phone typography starts at 16px** (pending [#6699](https://github.com/facebook/astryx/pull/6699)) — take the new Neutral, Chocolate, Butter, and Stone scale as-is, or add a later touch-and-narrow theme rule to preserve 14px; no codemod.
 23. **`emptySearchResultsText` is removed** (pending [#7289](https://github.com/facebook/astryx/pull/7289)) — rename it to `emptySearchText`; `rename-empty-search-results-text` handles supported components and static trigger objects.
 24. **Core spacing follows the root font size** (pending [#7359](https://github.com/facebook/astryx/pull/7359)) — CSS variable users need no change; code that parses px converts rem with the root size or reads the computed length; no codemod.
-25. **Matcha and Y2K spacing follows the root font size** (pending [#7374](https://github.com/facebook/astryx/pull/7374)) — take the byte-equal default result, or override the spacing tokens in px to keep fixed sizing; no codemod.
+25. **Matcha and Y2K spacing follows the root font size** (pending [#7374](https://github.com/facebook/astryx/pull/7374)) — take the new default, which is pixel-equal at a 16px root, or override the spacing tokens in px to keep fixed sizing; no codemod.
 26. **Doctor fails on unloadable configured projects** (pending [#7130](https://github.com/facebook/astryx/pull/7130)) — install or repair the named integration, remove it from config, or fix the config field in the error; no codemod.
 
 ## Thank you
