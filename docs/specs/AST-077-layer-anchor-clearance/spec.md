@@ -13,7 +13,8 @@ owners: [cixzhang]
 affects_architecture: [architecture:layer-runtime, architecture:theme-tokens]
 affects_families: []
 affects_contributing: []
-affects_consumer_docs: [useLayer, Popover, DropdownMenu, Tooltip, HoverCard]
+affects_consumer_docs:
+  [useLayer, Popover, DropdownMenu, Tooltip, HoverCard, theme]
 ---
 
 # Layer anchor clearance system spec
@@ -25,16 +26,20 @@ affects_consumer_docs: [useLayer, Popover, DropdownMenu, Tooltip, HoverCard]
 An anchored layer, such as a menu, a popover, a tooltip, or a selector's panel,
 floats a small gap away from the control that opened it. The size of that gap
 belongs to a product's design language: one product floats its layers 4px from
-their triggers and another 8px. Every Astryx layer keeps the same anchor
-clearance, and a theme sets it once, so all of a product's layers float the same
-distance from their triggers, including the layers the product draws itself.
+their triggers and another 8px. Every Astryx layer that keeps a gap from its
+anchor keeps the same anchor clearance, and a theme sets it once, so all of a
+product's layers float the same distance from their triggers, including the
+layers the product draws itself.
 
 ## Non-goals
 
 - The viewport gutter, the size caps, the fallback order, and the app-declared
   inset, which `spec:AST-059` owns.
-- Layers that sit on or flush with their anchor by design, such as a selector
-  panel that overlays its selected item, and layers placed at fixed coordinates.
+- Layers that sit flush with their anchor: ContextMenu at the pointer,
+  TopNavMegaMenu, TabMenu, DateInput, DateRangeInput, DateTimeInput, Selector's
+  panel when it overlays its selected item, and layers placed at fixed
+  coordinates. Whether any of them gains the clearance is outside this record.
+- Keyboard hints, which keep their own 8px gap below the control they label.
 - A clearance chosen per component or per instance.
 - The `offset` option of `useLayer`, which keeps its meaning and its flush
   default for direct callers.
@@ -52,8 +57,11 @@ distance from their triggers, including the layers the product draws itself.
   theme that does not set it leaves every layer at the default.
 - **FR3 — Placement keeps it.** The clearance MUST stay on the anchor-facing edge
   after a flip and after a slide, and a position option that cannot fit with the
-  clearance is not taken, as `architecture:layer-runtime` INV5 and
-  `spec:AST-059` FR4 require for the clearance a layer carries.
+  clearance is not taken, as the Positioning section of
+  `architecture:layer-runtime` describes for the clearance a layer carries: the
+  margin box is what must fit a position option, a flip swaps the margins with
+  the area, and a slide carries the clearance-and-gutter pair of the side it
+  lands on.
 
 ### Platform support
 
@@ -70,23 +78,25 @@ distance from their triggers, including the layers the product draws itself.
   theme-set anchor clearance; Owning code names where its token is consumed.
 - `architecture:theme-tokens`: the token vocabulary gains the clearance token,
   projected into the CLI theme template and the generated token documentation.
-- The components that pass the 4px spacing step as their layer's clearance read
-  the token instead: Popover, DropdownMenu and its sub-menus, Selector outside
-  its overlay mode, MultiSelector, ComplexSelector, BaseTypeahead, PowerSearch,
-  Tooltip, HoverCard, TopNavMenu, and the chat trigger menu. Their geometry at
-  the default is unchanged.
+- The components that keep a 4px gap from their anchor read the token instead.
+  Popover, DropdownMenu and its sub-menus, Selector outside its overlay mode,
+  MultiSelector, ComplexSelector, BaseTypeahead, PowerSearch, Tooltip,
+  HoverCard, TopNavMenu, the chat trigger menu, and the lab Schedule's month and
+  time-grid views pass it as the layer's clearance. The flyouts of SideNavItem
+  and of a collapsed SideNavHeading, and BreadcrumbItem's menu, set it as
+  margins on their own layers. Their geometry at the default is unchanged.
 
 ## Verification
 
-| Contract | Verification                                                                                         | Representative states                                                                                       | Mutation or failure expectation                                                                    |
-| -------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| FR1      | Source review of every anchor-mode layer call site; component unit tests of the anchor-facing margin | Each component in Current-state impact, every placement                                                     | A component passing a length or spacing step of its own as its clearance                           |
-| FR2      | Theme compilation test; real-browser geometry in Chromium and WebKit                                 | Default theme; a theme setting the token to 8px; Popover, DropdownMenu, ComplexSelector, Tooltip, HoverCard | A gap other than 4px under the default, or a gap that ignores the themed value                     |
-| FR3      | Real-browser geometry after a block flip and after a slide, LTR and RTL                              | A trigger near the bottom edge; a layer wider than the room beside its trigger                              | The clearance moving to the far edge, vanishing after a flip, or a layer that fits only without it |
+| Contract | Verification                                                                                                                                | Representative states                                                                                                                                                      | Mutation or failure expectation                                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| FR1      | Source review of every anchor-mode layer call site and of layer margins set by components; component unit tests of the anchor-facing margin | Each component in Current-state impact, including the SideNav flyouts, BreadcrumbItem's menu and the lab Schedule views, every placement                                   | A component passing or setting a length or spacing step of its own as its clearance                              |
+| FR2      | Theme compilation test; real-browser geometry in Chromium and WebKit                                                                        | Default theme; a theme setting the token to 8px; Popover, DropdownMenu, ComplexSelector, Tooltip, HoverCard; a layer portaled out of its JSX position under a nested theme | A gap other than 4px under the default, or a gap that ignores the themed value, including for the portaled layer |
+| FR3      | Real-browser geometry after a block flip and after a slide, LTR and RTL                                                                     | A trigger near the bottom edge; a layer wider than the room beside its trigger                                                                                             | The clearance moving to the far edge, vanishing after a flip, or a layer that fits only without it               |
 
 ## Decision log
 
-### DEC-1 (proposed) — The anchor clearance is one theme value
+### DEC-1 — The anchor clearance is one theme value
 
 **Reference:** `spec:AST-077/DEC-1`
 **Decider:** pending owner review
