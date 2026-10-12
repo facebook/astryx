@@ -70,7 +70,7 @@ export const doc = {
       name: 'extends',
       type: 'string',
       description:
-        "Name of an existing topic this doc merges onto, section by section: a section replaces the base section with the same key (its `id`, or the key its title derives), or else the one with exactly its title when either of the two has no `id`; two different `id`s never match, and a section that matches none is appended. The topic keeps the base's title and description. For correcting or adding to a topic rather than owning it. Exclusive with `replaces`.",
+        "Name of an existing topic this doc merges onto, section by section. A section replaces the base section with the same `id`, or else the one with exactly its title when either of the two has no `id`. A key derived from a title counts only against an `id`: a section without an `id` also matches a base section whose `id` is the key its title derives, and a section with an `id` also matches a base section without one whose title derives that `id`. Two different `id`s never match, two sections without an `id` whose titles differ only in case or punctuation stay separate, and a section that matches none is appended. The topic keeps the base's title and description. For correcting or adding to a topic rather than owning it. Exclusive with `replaces`.",
       example: "'theme'",
     },
     {

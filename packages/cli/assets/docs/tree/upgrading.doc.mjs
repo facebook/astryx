@@ -57,7 +57,7 @@ export const docs = {
         {
           type: 'code',
           lang: 'text',
-          code: 'Integrations: @acme/astryx-widgets\n4 codemods to run\nApplying integration codemods...\n  Rename AcmeCarousel delay to interval (v0.7.0, @acme/astryx-widgets)\n[ok]     [ok] src/Hero.tsx',
+          code: 'Integrations: @acme/astryx-widgets\n<n> codemods to run\nApplying integration codemods...\n  Rename AcmeCarousel delay to interval (v0.7.0, @acme/astryx-widgets)\n[ok]     [ok] src/Hero.tsx',
         },
         {
           type: 'list',
@@ -65,7 +65,7 @@ export const docs = {
           items: [
             '`--from` is the `@astryxdesign/core` version the app had before, and the target is the installed Core.',
             '`--integration` names your package. Without it, or an `integrations` entry in `astryx.config`, the upgrade skips your codemods, even when the app has your package installed.',
-            "The count includes Core's codemods for the same versions, which run first.",
+            "`<n>` includes Core's codemods for the same versions, which run first.",
             'Put this command in your release notes.',
           ],
         },

@@ -124,14 +124,14 @@ npx astryx upgrade --from 0.6.3 --integration @acme/astryx-widgets --apply`,
           type: 'code',
           lang: 'text',
           code: `Integrations: @acme/astryx-widgets
-4 codemods to run (dry run)
+<n> codemods to run (dry run)
 Applying integration codemods...
   Rename AcmeCarousel delay to interval (v0.7.0, @acme/astryx-widgets)
 !     ~ src/Hero.tsx (would change)`,
         },
         {
           type: 'prose',
-          text: "The count includes Core's codemods for the same versions, which run first and print above `Integrations:`. To run only yours, as when you test it, add `--codemod rename-delay`.",
+          text: "`<n>` counts Core's codemods for the same versions too: they run first and print above `Integrations:`. To run only yours, as when you test it, add `--codemod rename-delay`.",
         },
         {
           type: 'prose',
