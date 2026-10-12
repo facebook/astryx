@@ -309,12 +309,13 @@ function buildThemeTypes() {
   return files;
 }
 
-// Integration packages the canary preview scope exposes (the same shared gate
-// generate-scope.mjs uses, so production declares none). Declared as shorthand
-// ambient modules: imports resolve, typed as `any`, so the editor shows no
-// unresolved-module error on code that renders. Like the theme packages, their
-// dist is not built in CI's docsite-test job, so real declarations are left
-// for a follow-up.
+// Integration packages the preview scope exposes: the list generate-data.mjs
+// admitted for this target (every configured integration on canary; on latest
+// the ones that are stable releases), the same list generate-scope.mjs maps.
+// Declared as shorthand ambient modules: imports resolve, typed as `any`, so
+// the editor shows no unresolved-module error on code that renders. Like the
+// theme packages, their dist is not built in CI's docsite-test job, so real
+// declarations are left for a follow-up.
 function buildIntegrationTypes() {
   const files = {};
   for (const pkg of readAdmittedIntegrationPackages(
