@@ -20,9 +20,9 @@ describe('diff row slots in a syntax theme', () => {
     expect(theme.tokens.removed).toBe(
       syntaxTokenDefaults['--color-syntax-removed'],
     );
-    expect(theme.tokens['diff-header']).toBe(
-      syntaxTokenDefaults['--color-syntax-diff-header'],
-    );
+    // A defined theme that sets no header paint gets none: the header row
+    // sits on the theme's own background with punctuation text.
+    expect(theme.tokens['diff-header']).toBe('transparent');
     // A theme that sets no marker colour keeps its own line-number colour.
     expect(theme.tokens['added-marker']).toBe(
       'var(--color-syntax-punctuation)',
@@ -40,9 +40,7 @@ describe('diff row slots in a syntax theme', () => {
     });
     expect(theme.tokens.added).toBe('light-dark(#e6ffed, #1b3a24)');
     expect(theme.tokens.removed).toBe('#ffeef0');
-    expect(theme.tokens['diff-header']).toBe(
-      syntaxTokenDefaults['--color-syntax-diff-header'],
-    );
+    expect(theme.tokens['diff-header']).toBe('transparent');
   });
 
   it('leaves the shipped presets valid without them: row paints default, markers follow punctuation', () => {

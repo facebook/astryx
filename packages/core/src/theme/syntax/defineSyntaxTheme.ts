@@ -181,9 +181,11 @@ export function defineSyntaxTheme(
   // Resolve tuples to light-dark() CSS strings. An unset diff row paint keeps
   // its default so every existing theme renders a readable diff unchanged; an
   // unset marker slot takes this theme's own line-number colour (its
-  // punctuation token) rather than the page theme's green and red, so the
-  // number and glyph stay legible on this theme's background in every page
-  // mode — the glyph's shape carries the meaning where the colour does not.
+  // punctuation token) rather than the page theme's green and red, and an
+  // unset header paint is none at all (the header row sits on this theme's
+  // own background with punctuation text), so number, glyph, and header
+  // text stay legible on this theme's background in every page mode — the
+  // glyph's shape carries the meaning where the colour does not.
   const resolved: Partial<SyntaxThemeTokenMap> = {};
   for (const key of ALL_SYNTAX_KEYS) {
     const value = (
@@ -194,7 +196,9 @@ export function defineSyntaxTheme(
         ? resolveTokenValue(value)
         : MARKER_KEYS.has(key)
           ? 'var(--color-syntax-punctuation)'
-          : syntaxTokenDefaults[toCSSProperty(key)];
+          : key === 'diff-header'
+            ? 'transparent'
+            : syntaxTokenDefaults[toCSSProperty(key)];
   }
 
   return {

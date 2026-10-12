@@ -332,7 +332,9 @@ const styles = stylex.create({
   // text, never change paint.
   lineDiffHeader: {
     backgroundColor: 'var(--color-syntax-diff-header)',
-    color: colorVars['--color-text-secondary'],
+    // The syntax theme's own secondary colour: text-secondary in the default
+    // theme, the theme's punctuation colour in a defined one.
+    color: 'var(--color-syntax-punctuation)',
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
   },
