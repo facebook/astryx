@@ -72,6 +72,12 @@ const TODO_EXPRESSION =
   'and a provider takes no catalogs from a parent, so a spread of the ambient ' +
   'value would lose them and a call would run once per prop. ';
 
+const todoShadowedProvider = (/** @type {string} */ name) =>
+  `${TODO_PREFIX}a raw InternationalizationContext value no longer configures Astryx; ` +
+  `mount InternationalizationProvider with this value\u2019s \`locale\`, \`direction\` (as \`dir\`), ` +
+  `\`messages\` and \`overrides\`. Not rewritten here: a local named \`${name}\` shadows ` +
+  'the provider import at this site. ';
+
 export const meta = {
   title:
     'Migrate a raw InternationalizationContext value to InternationalizationProvider',
@@ -469,7 +475,9 @@ export default function migrateInternationalizationContext(file, api) {
     // The name written must reach the provider import from here: a local
     // that shadows it at the edit site would capture the element.
     if (namespace === '' && !isImportBinding(path, providerLocalName)) {
-      if (addComment(valueAttribute, TODO_EXPRESSION)) changed = true;
+      if (addComment(valueAttribute, todoShadowedProvider(providerLocalName))) {
+        changed = true;
+      }
       return;
     }
     const providerName =
