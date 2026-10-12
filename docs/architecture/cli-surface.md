@@ -134,10 +134,11 @@ and remains available through explicit Core package selection.
   that throws or fails its schema), or when `astryx.config` imports but the CLI
   rejects it. Every name the config lists counts, including a package set aside
   for a provider conflict and the package being authored when its own config
-  names it, and each fails `astryx doctor` only when it cannot be loaded. A
-  problem inside one contribution kind (`spec:AST-035` FR9) and an autolinked
-  dependency that cannot be loaded do not fail `astryx doctor`; its
-  `integration` subcommands keep their own exit rules.
+  names it, and each fails `astryx doctor` under this rule only when it cannot
+  be loaded. On their own, a problem inside one contribution kind
+  (`spec:AST-035` FR9) and an autolinked dependency that cannot be loaded do
+  not fail `astryx doctor`; its other checks and its `integration` subcommands
+  keep their own exit rules.
 - **INV12 — Human chatter never touches stdout in JSON mode.** `humanLog` and
   `humanWarn` are the only chatter primitives, and both are no-ops under
   `--json`.
