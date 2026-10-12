@@ -1104,6 +1104,60 @@ describe('Popover', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
       expect(trigger).toHaveFocus();
     });
+
+    it('keeps a Dialog and the Popover opened inside it in one order', () => {
+      // jsdom has no modal <dialog>; stand in for it on the second window.
+      const {prototype: dialogPrototype} =
+        secondDocument.defaultView!.HTMLDialogElement;
+      dialogPrototype.showModal = function (this: HTMLDialogElement) {
+        this.setAttribute('open', '');
+      };
+      dialogPrototype.close = function (this: HTMLDialogElement) {
+        this.removeAttribute('open');
+      };
+      const onOpenChange = vi.fn();
+      render(
+        createPortal(
+          <Dialog
+            isOpen={true}
+            onOpenChange={onOpenChange}
+            purpose="info"
+            aria-label="Host">
+            <Popover
+              label="Tip"
+              content={<button type="button">Inside</button>}>
+              <button type="button">Open tip</button>
+            </Popover>
+          </Dialog>,
+          secondDocument.body,
+        ),
+      );
+      const trigger = within(secondDocument.body).getByRole('button', {
+        name: 'Open tip',
+        hidden: true,
+      });
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      // A press in this document reaches neither layer of the other one.
+      fireEvent.keyDown(document, {key: 'Escape'});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(onOpenChange).not.toHaveBeenCalled();
+
+      // The Dialog declines a close request while the Popover is above it.
+      const closeRequest = new secondDocument.defaultView!.Event('cancel', {
+        cancelable: true,
+      });
+      fireEvent(secondDocument.querySelector('dialog')!, closeRequest);
+      expect(onOpenChange).not.toHaveBeenCalled();
+
+      // In its own document, Escape closes the Popover, then the Dialog.
+      fireEvent.keyDown(secondDocument, {key: 'Escape'});
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(onOpenChange).not.toHaveBeenCalled();
+      fireEvent.keyDown(secondDocument, {key: 'Escape'});
+      expect(onOpenChange).toHaveBeenCalledExactlyOnceWith(false);
+    });
   });
 
   describe('surface padding', () => {

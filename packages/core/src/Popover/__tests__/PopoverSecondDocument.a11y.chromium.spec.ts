@@ -179,5 +179,26 @@ for (const where of [
       await expect(trigger).toHaveAttribute('aria-expanded', 'false');
       await expect(trigger).toBeFocused();
     });
+
+    if (where !== 'page') {
+      test('an Escape press affects only the document it was made in', async ({
+        page,
+      }) => {
+        const {frame, keyboard} = await mountStory(page, where);
+        // Opened first, so one order across both documents would put the
+        // page's popover above this one.
+        const there = await open(frame, 'Pinned settings');
+        const here = await open(page.mainFrame(), 'Pinned settings');
+
+        await frame.getByRole('button', {name: 'First'}).click();
+        await keyboard.press('Escape');
+        await expect(there).toHaveAttribute('aria-expanded', 'false');
+        await expect(here).toHaveAttribute('aria-expanded', 'true');
+
+        await page.mainFrame().getByRole('button', {name: 'First'}).click();
+        await page.keyboard.press('Escape');
+        await expect(here).toHaveAttribute('aria-expanded', 'false');
+      });
+    }
   });
 }

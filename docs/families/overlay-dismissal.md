@@ -173,12 +173,16 @@ this record's current membership snapshot must be updated with it.
   the selected member's dismissal callback. Whether that request immediately
   closes the surface is owned by the member's component contract and caller.
 - **FR8 — Each document ranks its own members.** A member belongs to the
-  document of the container it registers with, or to the page's document when
-  it registers none. An Escape press or platform close request is ranked only
-  among the registered present members of the document it arrives in, and FR2
-  and FR3 apply within that document; a member of another document is never a
-  candidate. The stack listens once in each document that holds a member and
-  stops when its last member leaves. Proposed; pending owner review (DEC-2).
+  document of the element it registers with: Dialog, Lightbox, MobileNav,
+  BottomSheet, BottomSheetSwitcher and Lab Drawer register their dialog, and a
+  focus trap its container. A member that registers no element (Tooltip,
+  HoverCard) belongs to the page's document. An Escape press or platform close
+  request is ranked only among the registered present members of the document
+  it arrives in, and FR2 and FR3 apply within that document, so a host and the
+  layers nested in it keep one order wherever they render. A member of another
+  document is never a candidate. The stack listens once in each document that
+  holds a member and stops when its last member leaves. Proposed; pending owner
+  review (DEC-2).
 
 ## Allowed component variation
 
@@ -207,6 +211,7 @@ this record's current membership snapshot must be updated with it.
 | Two unrelated registered surfaces             | Later active-cycle registration is topmost     | Neither surface is treated as nested                                          |
 | Platform close request sent to a lower Dialog | Lower Dialog stays open                        | The platform targets a host; the shared check decides whether it may close    |
 | Popover in an iframe, Dialog in the page      | Request goes to its own document's top member  | The app renders into the second document through a portal                     |
+| Popover inside Dialog in an iframe            | Popover handles the iframe's first request     | Both register their own elements, so they rank in the iframe's order          |
 
 ## Adoption and exceptions
 
@@ -231,7 +236,8 @@ modality, positioning, outside-dismissal, and open-state contracts.
 | FR2, FR3, FR4, FR6 | `layerDismissalInvariants.test.tsx`                          | nested same-DOM Dialogs, Lightbox over Dialog, Dialog in BottomSheet, platform cancel, IME                                       | One request closes two surfaces, closes a host before its child, or dismisses during composition  |
 | FR1, FR2, FR3, FR7 | `layerDismissalFamilies.test.tsx`                            | Dialog, Lightbox, MobileNav, BottomSheet, Tooltip, HoverCard; controlled and blocking states                                     | A family bypasses the stack, a lower member handles a request, or controlled ownership is ignored |
 | FR1                | `useFocusTrap.test.tsx`                                      | active, nested, and deactivated traps with `onEscape`                                                                            | A dismissible trap stays off the shared stack or nested traps respond together                    |
-| FR8                | `useLayerDismissal.test.tsx`; `Popover.test.tsx`             | members in the page and a same-origin iframe; a Popover in an iframe and a Picture-in-Picture window, in Chromium                | A press in one document dismisses a member of another or reaches no member of its own             |
+| FR8                | `useLayerDismissal.test.tsx`; `Popover.test.tsx`             | members in the page and a same-origin iframe; a Popover alone and inside a Dialog, in an iframe                                  | A press in one document dismisses a member of another, or a host closes over its nested layer     |
+| FR8                | `PopoverSecondDocument.a11y.chromium.spec.ts`                | a Popover in an iframe and in a Picture-in-Picture window, alone and with one open in the page                                   | A press in the second document misses its own layer or dismisses the page's                       |
 
 ## Decision links
 
