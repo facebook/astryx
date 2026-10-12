@@ -50,7 +50,10 @@ function storyUrl(id: string): string {
   return `${storybook.origin}/iframe.html?id=${id}&viewMode=story`;
 }
 
-async function countNavigations(page: Page): Promise<() => Promise<number>> {
+async function countNavigations(
+  page: Page,
+  opensNewTab: boolean,
+): Promise<() => Promise<number>> {
   let newTabs = 0;
   page.context().on('page', opened => {
     newTabs += 1;
@@ -70,7 +73,9 @@ async function countNavigations(page: Page): Promise<() => Promise<number>> {
     // A new tab reaches the test through the browser's target events, after
     // the click or key that opened it has returned. Give it time to arrive so
     // a later reading cannot miss a navigation an earlier one started.
-    await page.waitForTimeout(NEW_TAB_SETTLE_MS);
+    if (opensNewTab) {
+      await page.waitForTimeout(NEW_TAB_SETTLE_MS);
+    }
     const inPage = await page.evaluate(
       () => (window as NavigationWindow).__a11yLinkNavigations ?? 0,
     );
@@ -97,7 +102,10 @@ async function runState(
       const subject = page.locator(SUBJECT_SELECTOR);
       await subject.waitFor({state: 'visible'});
       await expect(subject).toHaveCount(1);
-      navigations = await countNavigations(page);
+      navigations = await countNavigations(
+        page,
+        state.id === 'external-new-tab',
+      );
       return createChromiumHarness({page, cdp, subject});
     },
     activations: async () => navigations(),
@@ -107,6 +115,8 @@ async function runState(
 test('every Link expectation is exercised by at least one Link state', async ({
   page,
 }) => {
+  // Mounts every state in one test, so it gets every state's time budget.
+  test.setTimeout(30_000 * LINK_A11Y_STATES.length);
   const cdp = await page.context().newCDPSession(page);
   const results: BindingResult[] = [];
   for (const state of LINK_A11Y_STATES) {
