@@ -52,7 +52,8 @@ src/
     ├── spinbutton.*         numeric role, value, bounds, state, and arrow stepping
     ├── disclosure.*         standalone disclosure state/content semantics
     ├── breadcrumb.*         landmark, list-trail, current-page, and separator semantics
-    └── landmark.*           one component-owned landmark region's role, name, and content boundary
+    ├── landmark.*           one component-owned landmark region's role, name, and content boundary
+    └── link.*               one available link's role, name, current state, focus, and activation
 ```
 
 ## The patterns
@@ -73,6 +74,7 @@ src/
 | `disclosure`     | [APG Disclosure](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/)                                     | Standalone Collapsible triggers and their controlled content                         |
 | `breadcrumb`     | WCAG 2.2 semantics; [APG Breadcrumb](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/) as context      | Breadcrumbs landmarks, list trails, current-page state, and separators               |
 | `landmark`       | WCAG 2.2 semantics; [APG Landmark Regions](https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/) as context | LayoutHeader, LayoutContent, LayoutFooter, and LayoutPanel caller-declared landmarks |
+| `link`           | WCAG 2.2 semantics; [APG Link](https://www.w3.org/WAI/ARIA/apg/patterns/link/) role and Enter mechanics    | Link, including LinkProvider and `as` router components                              |
 
 The toggle-button contract owns the persistent-action extension of button
 semantics: the pressed state must be exposed, reversible by pointer, Enter, and
@@ -115,6 +117,19 @@ repeated navigation panels under RTL and a region nested in a main landmark.
 Role-less regions, one main landmark per page, top-level placement, and whether
 all page content sits in a landmark stay with Layout's own tests, the page, and
 AppShell; an isolated region never claims page-wide landmark completeness.
+
+The link contract owns one available navigation link: the link role, the
+exact name its binding declares, `aria-current` only when the link is the
+current item, Tab entry and exit, and exactly one navigation from Enter or from
+a pointer press released on the link, with none from a press slid off it. Every
+gate is a WCAG 2.2 outcome; the APG Link page supplies the role and Enter
+mechanics those outcomes rest on. Its first binding covers Link as a native
+anchor, an icon-only labelled link, a caller-marked current page, an external
+new-tab link, and router components supplied through LinkProvider and `as`.
+Destination safety stays with `family:navigation-destinations`, disabled links
+keep their member-owned semantics, and navigation aggregates such as
+breadcrumbs, side and top navigation, citations, and clickable cards bind
+separately.
 
 The `listbox` contract is a bounded semantic migration, not blanket APG
 interaction adoption. Its first bindings cover 21 existing scenarios across

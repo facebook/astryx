@@ -138,3 +138,9 @@ export {
   type LandmarkRole,
   type LandmarkStateFacts,
 } from './patterns/landmark';
+
+export {
+  LINK_PATTERN,
+  type LinkCurrentToken,
+  type LinkStateFacts,
+} from './patterns/link';
