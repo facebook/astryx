@@ -415,7 +415,7 @@ function MathExpression({
 
 ## Themes and visual foundations
 
-Themes are easier to extend without losing supported browser behavior or data colors. Component styling names are clearer, local token names are shorter, Vite preserves `light-dark()`, and reset styles now reach the pseudo-elements they promise to cover.
+Themes are easier to extend without losing supported browser behavior or data colors. Each comparison below uses the same scene in v0.6.0 and the current release.
 
 ```tsx
 import * as stylex from '@stylexjs/stylex';
@@ -428,9 +428,60 @@ const styles = stylex.create({
 });
 ```
 
+### Read keyboard shortcuts clearly
+
+![Three keyboard shortcuts next to their actions, shown before and after. Before, the keycap letters are mid-grey on a light grey cap and the Escape key reads ESC in capitals. After, the same keycaps use the primary text color and the key reads Esc.](/blog/astryx-v0-7-0/theme-kbd-contrast.png)
+
+_Keycap text now meets WCAG AA across every stable theme, and common key aliases render consistently._
+
+```tsx
+<Kbd keys="mod+k" />
+<Kbd keys="mod+shift+s" />
+<Kbd keys="esc" />
+```
+
+### Keep Slider marks with the fill
+
+![Two sliders with tick marks, a single value at 65 and a range from 20 to 70, shown before and after. Before, every tick mark is the same light grey, including the ones inside the filled part of the track. After, ticks inside the filled region take the fill color and ticks outside it stay on the track color.](/blog/astryx-v0-7-0/theme-slider-marks.png)
+
+_Marks at or behind the thumb use the fill color, while unfilled marks use the track color across themes._
+
+```tsx
+<Slider
+  label="Quality"
+  value={quality}
+  onChange={setQuality}
+  min={0}
+  max={100}
+  step={5}
+  marks={[
+    {value: 0, label: '0'},
+    {value: 25},
+    {value: 50, label: '50'},
+    {value: 75},
+    {value: 100, label: '100'},
+  ]}
+/>
+```
+
+### Size icons with their Button
+
+![Four buttons with leading icons in small, medium and large sizes, shown before and after. Before, the icons are the same large size on every button and crowd the small one. After, each icon matches its button: small on sm and md buttons, medium on the lg button.](/blog/astryx-v0-7-0/theme-button-icon-size.png)
+
+_An Icon without an explicit size now follows its Button, so small buttons no longer look crowded._
+
+```tsx
+<Button
+  label="Upload"
+  variant="primary"
+  icon={<Icon icon={ArrowUpTrayIcon} />}
+/>
+<Button label="Upload" size="lg" icon={<Icon icon={ArrowUpTrayIcon} />} />
+```
+
 **Pending merge — [#7359](https://github.com/facebook/astryx/pull/7359) and [#7374](https://github.com/facebook/astryx/pull/7374):** spacing in every first-party theme will follow the reader's root font size while looking unchanged at the default 16px root.
 
-<!-- VISUAL_SLOT: themes-and-visual-foundations — real theme renders; visual changes as labeled Before/After -->
+<!-- VISUAL_SLOT: themes-and-visual-foundations — pending root-relative spacing -->
 
 ## Accessibility and localization
 

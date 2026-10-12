@@ -1,10 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
+import {ArrowUpTrayIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 import {Banner} from '@astryxdesign/core/Banner';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Kbd} from '@astryxdesign/core/Kbd';
+import {Slider} from '@astryxdesign/core/Slider';
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -326,6 +330,38 @@ export function Content() {
       <Markdown plugins={[headingLinks]}>{source}</Markdown>
       <Markdown plugins={[markdownSourceLinesPlugin]}>{source}</Markdown>
       <Markdown components={{math: MathExpression}}>{source}</Markdown>
+    </>
+  );
+}
+
+export function ThemeVisuals() {
+  const [quality, setQuality] = useState(65);
+  return (
+    <>
+      <Kbd keys="mod+k" />
+      <Kbd keys="mod+shift+s" />
+      <Kbd keys="esc" />
+      <Slider
+        label="Quality"
+        value={quality}
+        onChange={setQuality}
+        min={0}
+        max={100}
+        step={5}
+        marks={[
+          {value: 0, label: '0'},
+          {value: 25},
+          {value: 50, label: '50'},
+          {value: 75},
+          {value: 100, label: '100'},
+        ]}
+      />
+      <Button
+        label="Upload"
+        variant="primary"
+        icon={<Icon icon={ArrowUpTrayIcon} />}
+      />
+      <Button label="Upload" size="lg" icon={<Icon icon={ArrowUpTrayIcon} />} />
     </>
   );
 }
