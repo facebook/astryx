@@ -14,7 +14,7 @@ Replacement:
 `emptySearchText`, shipped in 0.6.6. It takes a `ReactNode`, so every old string value stays valid. The old name is no longer in the types and is no longer read; a JavaScript caller that still passes it sees the default empty message.
 
 Migration:
-Rename `emptySearchResultsText` to `emptySearchText`. Where both are set, delete the old one: `emptySearchText` already won.
+Rename `emptySearchResultsText` to `emptySearchText`. Where both are set and `emptySearchText` is never null or undefined, delete the old one: it already won. Where `emptySearchText` may be null or undefined (a forwarded optional prop, for example), 0.6.x fell back to the old value, so write `emptySearchText={newValue ?? oldValue}`.
 
 Codemod:
-`astryx upgrade` runs `rename-empty-search-results-text`. It renames the prop on the three components and the key on trigger objects written in `triggers`, held in a same-file `const`, or typed as `ChatComposerTrigger`. A trigger object with a spread or a computed key gets a TODO instead, because renaming could change which value wins.
+`astryx upgrade` runs `rename-empty-search-results-text`. It renames the prop on the three components and the key on trigger objects written in `triggers`, held in a same-file `const`, or typed as `ChatComposerTrigger`. Where `emptySearchText` may be nullish it writes the `??` fallback. A JSX element with a spread before the old prop, and a trigger object with a spread or a computed key, get a TODO instead, because renaming could change which value wins.

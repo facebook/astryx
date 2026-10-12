@@ -58,6 +58,49 @@ const a = <Typeahead emptySearchResultsText="Old copy" emptySearchText="New copy
       expect(output).not.toContain('Old copy');
     });
 
+    it('keeps the old value as a fallback when emptySearchText may be null or undefined', async () => {
+      const output =
+        await applyTransform(`import {Typeahead} from '@astryxdesign/core';
+const a = <Typeahead emptySearchResultsText="Old copy" emptySearchText={props.emptySearchText} />;
+const b = <Typeahead emptySearchResultsText={oldCopy} emptySearchText={maybe ? 'x' : undefined} />;`);
+
+      expect(output).toContain(
+        'emptySearchText={props.emptySearchText ?? "Old copy"}',
+      );
+      expect(output).toContain(
+        "emptySearchText={(maybe ? 'x' : undefined) ?? oldCopy}",
+      );
+      expect(output).not.toContain('emptySearchResultsText');
+    });
+
+    it('keeps the old value as a fallback on a trigger whose emptySearchText may be nullish', async () => {
+      const output =
+        await applyTransform(`import type {ChatComposerTrigger} from '@astryxdesign/core';
+const t: ChatComposerTrigger = {char: '@', searchSource, onSelect, emptySearchResultsText: 'Old', emptySearchText: copy};`);
+
+      expect(output).toContain("emptySearchText: copy ?? 'Old'");
+      expect(output).not.toContain('emptySearchResultsText');
+    });
+
+    it('marks a prop that follows a spread for manual migration instead of renaming it', async () => {
+      const output =
+        await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
+const a = <Tokenizer {...rest} emptySearchResultsText="Nobody" />;`);
+
+      expect(output).toContain('TODO(astryx upgrade)');
+      expect(output).toContain('emptySearchResultsText="Nobody"');
+      expect(await applyTransform(output)).toBe(output);
+    });
+
+    it('renames a prop that precedes a spread, since the spread still wins either way', async () => {
+      const output =
+        await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
+const a = <Tokenizer emptySearchResultsText="Nobody" {...rest} />;`);
+
+      expect(output).toContain('emptySearchText="Nobody" {...rest}');
+      expect(output).not.toContain('TODO');
+    });
+
     it('leaves other packages, other components, and shadowed names alone', async () => {
       const source = `import {MobileTokenizer} from '@astryxdesign/lab';
 import {Selector} from '@astryxdesign/core';

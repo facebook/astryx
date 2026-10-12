@@ -28,9 +28,13 @@ export const meta = {
   description:
     'Renames the removed `emptySearchResultsText` prop to `emptySearchText` ' +
     'on Tokenizer, Typeahead, and BaseTypeahead, and the same key on ' +
-    'ChatComposerInput trigger objects. Drops the old entry where ' +
-    '`emptySearchText` is already set, and marks trigger objects with ' +
-    'spreads or computed keys for manual migration.',
+    'ChatComposerInput trigger objects. Where `emptySearchText` is already ' +
+    'set to a value that is never null, the old entry is dropped; where the ' +
+    'new value may be null or undefined, it becomes ' +
+    '`emptySearchText ?? emptySearchResultsText`, which is what 0.6.x ' +
+    'rendered. A JSX element with a spread before the old prop, and a ' +
+    'trigger object with a spread or computed key, get a TODO instead, ' +
+    'because renaming could change which value wins.',
 };
 
 const OLD_NAME = 'emptySearchResultsText';
@@ -49,6 +53,54 @@ const MANUAL_MIGRATION_COMMENT =
   ' TODO(astryx upgrade): emptySearchResultsText was removed. Rename it to ' +
   'emptySearchText by hand; this object has a spread or computed key, so ' +
   'check which value should win. ';
+const JSX_SPREAD_COMMENT =
+  ' TODO(astryx upgrade): emptySearchResultsText was removed. Rename it to ' +
+  'emptySearchText by hand; a spread before it may also set emptySearchText, ' +
+  'so check which value should win. ';
+
+// Values that can never be null or undefined, so an existing
+// `emptySearchText` with one of these already won in 0.6.x.
+const NEVER_NULLISH = new Set([
+  'StringLiteral',
+  'NumericLiteral',
+  'TemplateLiteral',
+  'JSXElement',
+  'JSXFragment',
+  'ObjectExpression',
+  'ArrayExpression',
+  'ArrowFunctionExpression',
+  'FunctionExpression',
+]);
+
+/** @param {any} node */
+function isNeverNullish(node) {
+  const value = unwrap(node);
+  if (!value) return false;
+  if (value.type === 'Literal') return value.value != null;
+  return NEVER_NULLISH.has(value.type);
+}
+
+// `newValue ?? oldValue`: what a 0.6.x component rendered when both were set.
+/** @param {any} j @param {any} newValue @param {any} oldValue */
+function fallbackExpression(j, newValue, oldValue) {
+  return j.logicalExpression('??', newValue, oldValue);
+}
+
+/** @param {any} j @param {any} path @param {string} text */
+function addStatementComment(j, path, text) {
+  let current = path;
+  while (current && !j.Statement.check(current.node)) {
+    current = current.parent;
+  }
+  if (!current) return false;
+  const host = current.node;
+  host.comments ??= [];
+  if (host.comments.some((/** @type {any} */ c) => c.value === text)) {
+    return false;
+  }
+  host.comments.push(j.commentBlock(text, true, false));
+  return true;
+}
 
 const TYPE_WRAPPERS = new Set([
   'TSAsExpression',
@@ -117,10 +169,18 @@ function migrateTriggerObject(j, object) {
     return true;
   }
 
-  const hasNew = object.properties.some(
+  const newProperty = object.properties.find(
     (/** @type {any} */ property) => staticPropertyName(property) === NEW_NAME,
   );
-  if (hasNew) {
+  if (newProperty) {
+    if (!isNeverNullish(newProperty.value)) {
+      newProperty.value = fallbackExpression(
+        j,
+        newProperty.value,
+        oldProperty.value,
+      );
+      if (newProperty.shorthand) newProperty.shorthand = false;
+    }
     object.properties = object.properties.filter(
       (/** @type {any} */ property) => property !== oldProperty,
     );
@@ -221,6 +281,16 @@ function isTriggerType(type, typeNames) {
   return false;
 }
 
+// The expression a JSX attribute passes: its container's expression, the
+// string literal, or `true` for a bare attribute.
+/** @param {any} j @param {any} attribute */
+function attributeExpression(j, attribute) {
+  const value = attribute.value;
+  if (value == null) return j.booleanLiteral(true);
+  if (value.type === 'JSXExpressionContainer') return value.expression;
+  return value;
+}
+
 /**
  * @param {import('../../../../authoring/codemod/type').AstryxCodemodFile} file
  * @param {import('../../../../authoring/codemod/type').CodemodTransformApi} api
@@ -244,12 +314,32 @@ export default function transformer(file, api) {
       const opening = propPath.parent?.node;
       const attributes = opening?.attributes ?? [];
       const prop = propPath.node;
-      const hasNew = attributes.some(
+      const index = attributes.indexOf(prop);
+      const spreadBefore = attributes
+        .slice(0, index)
+        .some(
+          (/** @type {any} */ attribute) =>
+            attribute.type === 'JSXSpreadAttribute',
+        );
+      if (spreadBefore) {
+        // The spread may set emptySearchText, which won in 0.6.x; renaming
+        // the later explicit prop would make the old copy win instead.
+        changed =
+          addStatementComment(j, propPath, JSX_SPREAD_COMMENT) || changed;
+        return;
+      }
+      const newProp = attributes.find(
         (/** @type {any} */ attribute) =>
           attribute.type === 'JSXAttribute' &&
           attribute.name?.name === NEW_NAME,
       );
-      if (hasNew) {
+      if (newProp) {
+        const newValue = attributeExpression(j, newProp);
+        if (!isNeverNullish(newValue)) {
+          newProp.value = j.jsxExpressionContainer(
+            fallbackExpression(j, newValue, attributeExpression(j, prop)),
+          );
+        }
         opening.attributes = attributes.filter(
           (/** @type {any} */ attribute) => attribute !== prop,
         );
