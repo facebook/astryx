@@ -3057,7 +3057,8 @@ describe('DropdownMenu focus return after a pointer pick', () => {
     // The style that keeps the ring off the design system's Button cannot
     // reach a caller's control, so the focus move itself has to: after
     // pointer input the browser is asked not to match `:focus-visible`, which
-    // WebKit otherwise does on the returned focus after a touch pick.
+    // it otherwise does on the returned focus (Chromium after a mouse pick,
+    // WebKit after a touch).
     function renderCustomMenu() {
       render(
         <DropdownMenu

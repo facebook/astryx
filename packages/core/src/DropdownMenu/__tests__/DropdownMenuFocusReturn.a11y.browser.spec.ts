@@ -11,8 +11,8 @@
  *   `component:DropdownMenu/DEC-1`): no ring after a pointer pick, the ring
  *   after a keyboard pick.
  * @position Cross-browser proof; jsdom only proves which focus call the menu
- *   makes. WebKit is the engine that rings the returned focus after a pointer
- *   pick when the menu does not ask it not to.
+ *   makes. Unless the menu asks for no ring, both engines ring the focus it
+ *   returns after a pointer pick.
  */
 
 import {expect, test, type Locator, type Page} from '@playwright/test';
