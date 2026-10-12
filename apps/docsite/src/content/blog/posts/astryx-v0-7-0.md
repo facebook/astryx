@@ -109,7 +109,7 @@ import {PlusIcon} from '@heroicons/react/24/outline';
 
 ### Drill into submenus on a phone
 
-![A phone screen with an Actions menu open under its button. A finger taps the Move to row, which has a chevron, and the menu's rows are replaced in place by a Back to Actions row followed by Backlog and Next release. Tapping Back returns to the first set of rows.](/blog/astryx-v0-7-0/mobile-submenu-drill-in.webp)
+![A phone screen with an Actions menu open under its button. A finger taps the Move to row, which has a chevron, and the menu's rows are replaced in place by a Back to Actions row followed by Backlog and Next release. Tapping Back returns to the first set of rows.](/blog/astryx-v0-7-0/mobile-submenu-drill-in@2x.webp)
 
 _Opened by touch, a sub-menu drills into the current rows, with a Back row named for the menu it returns to. With a mouse it still opens as a flyout; set `presentation` on `DropdownMenuSubMenu` to force either mode._
 
