@@ -1194,6 +1194,17 @@ jobs:
             --project chromium \
             --output table-min-width-output
 
+      # A DropdownMenu header and footer sit beside the menu, outside its
+      # role="menu" element, and join one Tab sequence with it. Focus order,
+      # the popover's focus trap, the keyboard-only ring and a finger tap on a
+      # footer control only exist in a real engine.
+      - name: Run DropdownMenu header and footer contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/MenuHeaderFooter.a11y.chromium.spec.ts \
+            --project chromium \
+            --output menu-header-footer-output
+
       # The RichTextEditor "Markdown parity" stories render one Markdown
       # document with core Markdown and RichTextEditor and measure where each
       # block lands; geometry, the read/edit switch and the scroll anchor only

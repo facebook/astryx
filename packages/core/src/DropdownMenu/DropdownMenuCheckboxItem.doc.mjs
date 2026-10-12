@@ -29,12 +29,14 @@ export const docs = {
     {
       name: 'value',
       type: 'boolean',
-      description: 'Whether the item is checked. Controlled; pair with onChange.',
+      description:
+        'Whether the item is checked. Controlled; pair with onChange.',
     },
     {
       name: 'onChange',
       type: '(checked: boolean) => void',
-      description: 'Callback fired with the next checked state when the item is toggled.',
+      description:
+        'Callback fired with the next checked state when the item is toggled.',
     },
     {
       name: 'isDisabled',
@@ -88,7 +90,8 @@ export const docsDense = {
   name: 'DropdownMenuCheckboxItem',
   isHiddenFromOverview: true,
   displayName: 'Dropdown Menu Checkbox Item',
-  description: 'checkable menu item (menuitemcheckbox); independent boolean toggle',
+  description:
+    'checkable menu item (menuitemcheckbox); independent boolean toggle',
   propDescriptions: {
     label: 'primary label text',
     description: 'secondary text below label',
