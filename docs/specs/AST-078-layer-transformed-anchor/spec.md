@@ -50,12 +50,13 @@ from its first frame and while the transform changes.
   component or caller measures the anchor to correct it.
 - **FR2 — From the first frame and while it moves.** A layer opened while its
   anchor is under a transform MUST paint against the painted box in its first
-  frame. When a transform on the anchor or an ancestor changes while the layer
-  is open, including an animated one, the layer MUST follow the painted box in
-  every frame.
+  frame. When a transform on the anchor or an ancestor starts, changes, or ends
+  while the layer is open, including an animated one, the layer MUST follow the
+  painted box in every frame.
 - **FR3 — Untransformed anchors are unchanged.** A layer whose anchor has no
   transform on it or its ancestors MUST be placed exactly as `spec:AST-059`
-  places it, with no added observation.
+  places it. In an engine that resolves the painted box, the runtime adds no
+  observation for any anchor.
 
 ### Platform support
 
@@ -72,10 +73,10 @@ from its first frame and while the transform changes.
 
 - `spec:AST-059` FR8: "The one observation the runtime makes, whether the anchor
   is in view (FR5)" becomes two observations: whether the anchor is in view, and,
-  in an engine that resolves the untransformed box, the painted box of an anchor
-  under a transform. Each is read before the layer's first paint and thereafter
-  only while it can change. FR8's guarantee that a layer never paints at a
-  geometry it is about to correct is unchanged.
+  in an engine that resolves the untransformed box, the anchor's painted box
+  while the layer is open. Each is read before the layer's first paint and
+  thereafter only while the layer is open. FR8's guarantee that a layer never
+  paints at a geometry it is about to correct is unchanged.
 - `architecture:layer-runtime`: Positioning states that anchor mode places
   against the painted box in every engine; INV12 names the second observation.
 - `useLayer` and Popover consumer docs: no change for callers; a trigger under a
@@ -83,15 +84,15 @@ from its first frame and while the transform changes.
 
 ## Verification
 
-| Contract | Verification                                                                          | Representative states                                                                            | Mutation or failure expectation                                                                                   |
-| -------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| FR1      | Real-browser geometry in Chromium and in WebKit on iOS                                | Anchor inside a box translated up; placement below and above; a block flip; an off-screen anchor | The layer's anchor-facing edge off the painted box by more than the clearance, or placed at the untransformed box |
-| FR2      | First-frame and settled rectangles; rectangles sampled each frame of a transition     | Opened while translated; translated by a 300ms transition while open                             | A first frame that differs from the settled one, or a sampled frame with the layer off the painted box            |
-| FR3      | The `Core/Layer` viewport-inset stories unchanged; a unit test of the observation set | Every existing viewport-inset story; an untransformed anchor                                     | Any geometry change for an untransformed anchor, or an observation started for it                                 |
+| Contract | Verification                                                                          | Representative states                                                                                                       | Mutation or failure expectation                                                                                       |
+| -------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| FR1      | Real-browser geometry in Chromium and in WebKit on iOS                                | Anchor inside a box translated up; placement below and above; a block flip; an off-screen anchor                            | The layer's anchor-facing edge off the painted box by more than the clearance, or placed at the untransformed box     |
+| FR2      | First-frame and settled rectangles; rectangles sampled each frame of a transition     | Opened while translated; a 300ms transition that translates the anchor's box while open, from no transform and back to none | A first frame that differs from the settled one, or a sampled frame with the layer off the painted box                |
+| FR3      | The `Core/Layer` viewport-inset stories unchanged; a unit test of the observation set | Every existing viewport-inset story; an untransformed anchor; an engine that resolves the painted box                       | Any geometry change for an untransformed anchor, or an observation started in an engine that resolves the painted box |
 
 ## Decision log
 
-### DEC-1 (proposed) — The painted box is the anchor in every engine
+### DEC-1 — The painted box is the anchor in every engine
 
 **Reference:** `spec:AST-078/DEC-1`
 **Decider:** pending owner review
@@ -103,19 +104,20 @@ the same in every engine and no component measures its anchor on its own.
 
 Rejected: a caller-supplied placement or coordinates for a transformed anchor, which the runtime can derive (`spec:AST-002/FR2`).
 
-### DEC-2 (proposed) — A transformed anchor's painted box is a second observation
+### DEC-2 — The anchor's painted box is a second observation where engines need it
 
 **Reference:** `spec:AST-078/DEC-2`
 **Decider:** pending owner review
 
 `spec:AST-059` FR8 allows the runtime one observation, anchor visibility.
 Placing against the painted box in an engine that resolves the untransformed one
-needs a second: the painted box of an anchor under a transform, read before the
-first paint and while the layer is open. It applies only to that case, so an
-untransformed anchor keeps the one observation, and a layer still never paints
-at a geometry it is about to correct.
+needs a second: the anchor's painted box, read before the first paint and while
+the layer is open, so a transform present at open, one that a keyboard or a
+sliding panel starts afterwards, and one that changes are all followed. It runs
+only in such engines and only while a layer is open, and a layer still never
+paints at a geometry it is about to correct.
 
-Rejected: measuring after paint and moving the layer, which FR8 defines as a failure.
+Rejected: measuring after paint and moving the layer, which FR8 defines as a failure; following only a transform present at open, which leaves the layer behind when a trigger starts moving after it opens.
 
 ## Open questions
 
