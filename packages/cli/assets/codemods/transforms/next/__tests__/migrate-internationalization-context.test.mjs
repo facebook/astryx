@@ -1,8 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {execFileSync} from 'node:child_process';
+import {mkdtempSync, writeFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {describe, expect, it} from 'vitest';
 import jscodeshift from 'jscodeshift';
 import transform from '../migrate-internationalization-context.mjs';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(here, '../../../../../../..');
 
 const j = jscodeshift.withParser('tsx');
 const api = {jscodeshift: j, stats: () => {}, report: () => {}};
@@ -32,12 +40,11 @@ describe('migrate-internationalization-context', () => {
 const app = <InternationalizationContext value={i18n}><App /></InternationalizationContext>;`;
     const output = apply(input);
     expect(folded(output)).toContain(
-      'locale={i18n.locale} dir={i18n.direction} messages={i18n.messages}',
+      'locale={i18n.locale} dir={i18n.direction} messages={i18n.messages}><App /></InternationalizationProvider>',
     );
-    expect(folded(output)).toContain(
-      'overrides={i18n.overrides}><App /></InternationalizationProvider>',
-    );
+    expect(output).not.toContain('overrides=');
     expect(output).toContain(TRANSLATE_TODO);
+    expect(output).toContain('pass the value’s `overrides`');
     expect(output).toContain(
       "import {InternationalizationProvider} from '@astryxdesign/core/i18n';",
     );
@@ -137,7 +144,7 @@ function F({flag}) {
     expect(output).toContain('<Ctx value={v}><A /></Ctx>; }');
     // The one unshadowed use is rewritten.
     expect(output).toContain(
-      '<InternationalizationProvider locale={w.locale} dir={w.direction} messages={w.messages} overrides={w.overrides}><B /></InternationalizationProvider>',
+      '<InternationalizationProvider locale={w.locale} dir={w.direction} messages={w.messages}><B /></InternationalizationProvider>',
     );
     // The context import stays: the file still names Ctx.
     expect(output).toMatch(
@@ -163,7 +170,7 @@ const ok = <Ctx value={x}><D /></Ctx>;`;
     expect(output.match(/<Ctx value=\{w\}>/g)).toHaveLength(2);
     expect(output).toContain('<Ctx value={v}><C /></Ctx>');
     expect(output).toContain(
-      '<InternationalizationProvider locale={x.locale} dir={x.direction} messages={x.messages} overrides={x.overrides}><D /></InternationalizationProvider>',
+      '<InternationalizationProvider locale={x.locale} dir={x.direction} messages={x.messages}><D /></InternationalizationProvider>',
     );
   });
 
@@ -177,7 +184,7 @@ function InternationalizationProvider({children}) {
       "import {InternationalizationProvider as InternationalizationProvider2} from '@astryxdesign/core/i18n';",
     );
     expect(output).toContain(
-      '<InternationalizationProvider2 locale={i18n.locale} dir={i18n.direction} messages={i18n.messages} overrides={i18n.overrides}>{children}</InternationalizationProvider2>',
+      '<InternationalizationProvider2 locale={i18n.locale} dir={i18n.direction} messages={i18n.messages}>{children}</InternationalizationProvider2>',
     );
     expect(output).toContain(
       'function InternationalizationProvider({children})',
@@ -263,6 +270,62 @@ const app = <InternationalizationContext value={v}><App /></Internationalization
       transform({source: unrelated, path: 'test.tsx'}, api),
     ).toBeUndefined();
   });
+
+  it('rewrites a variable value into output that typechecks against the real i18n types', () => {
+    // The variable's inferred type has every required field and no `overrides`.
+    const input = `import {InternationalizationContext} from '@astryxdesign/core/i18n';
+const i18n = {
+  locale: 'fr',
+  direction: 'ltr' as const,
+  messages: {},
+  translate: (key: string) => key,
+};
+export const app = <InternationalizationContext value={i18n}><div /></InternationalizationContext>;`;
+    const output = apply(input);
+    const dir = mkdtempSync(path.join(tmpdir(), 'astryx-i18n-codemod-'));
+    const typecheck = (/** @type {string} */ source) => {
+      writeFileSync(path.join(dir, 'case.tsx'), source);
+      writeFileSync(
+        path.join(dir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: {
+            strict: true,
+            noEmit: true,
+            jsx: 'react-jsx',
+            module: 'esnext',
+            moduleResolution: 'bundler',
+            target: 'es2022',
+            skipLibCheck: true,
+            paths: {
+              '@astryxdesign/core/i18n': [
+                path.join(repoRoot, 'packages/core/src/i18n/index.ts'),
+              ],
+            },
+            typeRoots: [path.join(repoRoot, 'node_modules/@types')],
+            types: ['node', 'react'],
+          },
+          files: ['case.tsx'],
+        }),
+      );
+      try {
+        execFileSync(
+          process.execPath,
+          [path.join(repoRoot, 'node_modules/typescript/bin/tsc'), '-p', dir],
+          {encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']},
+        );
+        return '';
+      } catch (error) {
+        return String(/** @type {any} */ (error).stdout ?? error);
+      }
+    };
+    expect(typecheck(output)).toBe('');
+    // The test bites: reading `overrides` off this variable is TS2339.
+    const naive = output.replace(
+      'messages={i18n.messages}',
+      'messages={i18n.messages} overrides={i18n.overrides}',
+    );
+    expect(typecheck(naive)).toContain('TS2339');
+  }, 60_000);
 
   it('is idempotent', () => {
     const input = `import {InternationalizationContext} from '@astryxdesign/core/i18n';

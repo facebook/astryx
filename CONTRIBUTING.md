@@ -312,7 +312,8 @@ A file that reads several namespaces merges their slices once at module level
 (`const messages = {...aMessages, ...bMessages}`) and passes that. Astryx's own
 strings live in `packages/core/locales/en.json`, keyed
 `@astryx.<namespace>.<name>`; `pnpm generate:i18n-runtime` emits the slices, and
-`pnpm check:i18n-catalog` fails a key read outside the file's slice. The
+`pnpm check:i18n-catalog` gains a slice-coverage rule with the component
+sweep, failing a key read outside the file's slice. The
 `@astryx/no-hardcoded-i18n-string` ESLint rule rejects a hardcoded string. For
 a prop whose default is a translated string, alias the prop and resolve it in
 the body: destructure `label: labelFromProps`, then
