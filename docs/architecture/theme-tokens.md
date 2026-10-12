@@ -107,9 +107,12 @@ then have contradictory winners.
   spacing steps uses `rem` for the same reason; a step a theme pins in `px` is a
   documented exception of that theme, not a change to the core scale. Values an
   author writes in a custom theme are honoured as written, never converted.
-  Non-CSS consumers (`useTheme().token()`, `resolveThemeToken()`,
-  `tokenDefaults`) return the `rem` string; code that needs pixels resolves it
-  against the root font size instead of parsing a number.
+  Anything that generates spacing steps — the CLI's theme templates and the
+  docsite playground's theme editor — emits `rem`. Non-CSS consumers
+  (`useTheme().token()`, `resolveThemeToken()`, `tokenDefaults`) return the
+  token's value with its unit, `rem` for the core scale and whatever unit a
+  theme pinned; code that needs pixels resolves the value against the root
+  font size instead of parsing a number.
 
 This record does not own:
 
@@ -167,17 +170,18 @@ vocabulary and helper architecture remain unchanged.
 
 Spacing tokens are `rem`. A reader who raises the browser's root font size gets
 proportionally larger gaps and padding, so text does not tighten inside boxes
-that stayed in pixels; at the default 16px root every step is the same pixel
-value as before. Spacing has no base-unit derivation: `defineTheme` takes spacing only as
-per-step token overrides, so nothing generates spacing values except the CLI's
-theme templates, which copy a first-party theme's steps verbatim; a scaffolded
-theme therefore emits `rem` steps once its source theme does. Theme authors keep
-control: a theme may still pin a step in `px`, and author-written values are
-never rewritten. Known costs accepted with
-the decision: fixed-width table columns lose room to larger padding at very large
-roots; the two first-party themes that pin steps in `px` (matcha, y2k) do not
-follow the root until they move to `rem`; and code that parses a spacing token
-as a pixel number reads the wrong value and no codemod can find it.
+that stay in pixels; at the default 16px root each step is `4px × step`.
+`defineTheme` has no spacing base unit: it takes spacing only as per-step token
+overrides. Two surfaces generate spacing steps and both emit `rem`: the CLI's
+theme templates, which copy a first-party theme's steps verbatim, and the
+docsite playground's theme editor, which derives a ramp from a base step and
+exports it as `defineTheme` source. Theme authors keep control: a theme may pin
+a step in `px` as its documented exception, and author-written values are never
+rewritten. Costs accepted with the decision: fixed-width table columns lose
+room to larger padding at very large roots; a theme whose pinned `px` steps are
+its documented exception does not follow the root for those steps; and code
+that parses a spacing token as a pixel number reads the wrong value, which no
+codemod can find.
 
 Rejected: keeping spacing in `px` while type is `rem` (text grows into fixed
 boxes); converting author-written `px` in custom themes (a theme's own
@@ -185,12 +189,12 @@ decision).
 
 ## Verification
 
-| Invariant                    | Evidence                                                                                           | Failure signal                                                                                            |
-| ---------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV7             | `scripts/check-theme-template.test.mjs` and token-doc generation check                             | A token family exists without a matching author-facing inventory or generated documentation               |
-| INV5                         | Domain-token exports and theme-generation tests                                                    | Domain names disappear from validation or require importing unused domain implementation                  |
-| INV6                         | `packages/core/src/theme/tokens.test.ts`                                                           | JavaScript resolution disagrees with defaults, mode selection, references, or supported color expressions |
-| INV8                         | `defineTheme.test.ts`, template checks, and token-doc generation                                   | A local name enters portable helpers/docs or can conflict with a portable declaration                     |
-| INV9                         | `tokens.test.ts` rem assertions, a real-Chromium root-font-size spec, and the theme-template check | A core spacing default in `px`, or a scaffolded theme emitting `px` steps                                 |
-| Released token compatibility | Type checking plus representative package/source builds                                            | A released CSS variable or typed token name disappears without an explicit migration decision             |
-| Visual defaults              | Real Chromium examples in light, dark, status, and high-contrast contexts                          | A changed default produces unreadable or semantically inconsistent output                                 |
+| Invariant                    | Evidence                                                                                           | Failure signal                                                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV2, INV7             | `scripts/check-theme-template.test.mjs` and token-doc generation check                             | A token family exists without a matching author-facing inventory or generated documentation                                |
+| INV5                         | Domain-token exports and theme-generation tests                                                    | Domain names disappear from validation or require importing unused domain implementation                                   |
+| INV6                         | `packages/core/src/theme/tokens.test.ts`                                                           | JavaScript resolution disagrees with defaults, mode selection, references, or supported color expressions                  |
+| INV8                         | `defineTheme.test.ts`, template checks, and token-doc generation                                   | A local name enters portable helpers/docs or can conflict with a portable declaration                                      |
+| INV9                         | `tokens.test.ts` rem assertions, a real-Chromium root-font-size spec, and the theme-template check | A core spacing default in `px`, or a generator (CLI template, playground editor) emitting a `px` step that no theme pinned |
+| Released token compatibility | Type checking plus representative package/source builds                                            | A released CSS variable or typed token name disappears without an explicit migration decision                              |
+| Visual defaults              | Real Chromium examples in light, dark, status, and high-contrast contexts                          | A changed default produces unreadable or semantically inconsistent output                                                  |
