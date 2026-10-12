@@ -343,7 +343,7 @@ describe('Markdown', () => {
     expect(container.querySelector('[data-diff]')).toBeNull();
   });
 
-  it('hands a custom code renderer the fence word as written and nothing new', () => {
+  it('hands a custom code renderer the leading word as today and nothing new', () => {
     type CodeProps = {code: string; language?: string};
     const seen: CodeProps[] = [];
     const Code = (props: CodeProps) => {
@@ -357,7 +357,8 @@ describe('Markdown', () => {
         }
       </Markdown>,
     );
-    expect(seen.map(p => p.language)).toEqual(['diff-tsx', 'diff', 'tsx']);
+    // The leading word characters, as today: a diff-tsx fence is `diff`.
+    expect(seen.map(p => p.language)).toEqual(['diff', 'diff', 'tsx']);
     for (const props of seen) {
       expect(Object.keys(props).sort()).toEqual(['code', 'language']);
     }

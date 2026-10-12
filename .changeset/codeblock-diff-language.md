@@ -8,5 +8,5 @@ With `isDiff`, lines starting with `+` sit on a success-tinted row, `-` on an er
 
 Markdown maps a ```diff-<lang> fence to the layer over `<lang>` (labelled `<lang> diff`) and a ```diff fence to the layer over plaintext (labelled `diff`), so a diff keeps its header, copy button, disclosure, and a viewport name that still says `diff`.
 
-Migration: a ```diff fence that should stay plain text becomes a ```text fence. A custom `components.code` renderer is unchanged: it keeps receiving the fence word as written in `language` (`diff`, `diff-tsx`), so an existing `language === 'diff'` check still matches, and receives nothing new.
+Migration: a ```diff fence that should stay plain text becomes a ```text fence. A custom `components.code` renderer is unchanged: it keeps receiving the fence's leading word characters in `language` (`diff` for both ```diff and ```diff-tsx, as today), so an existing `language === 'diff'` check still matches, and receives nothing new.
 @cixzhang

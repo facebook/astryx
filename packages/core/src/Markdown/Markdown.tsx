@@ -163,7 +163,6 @@ export interface MarkdownComponents {
    */
   code?: React.ComponentType<{
     code: string;
-    /** The fence's info-string word as written, `diff-tsx` included. */
     language?: string;
     sourceLines?: MarkdownSourceLines;
   }>;
@@ -1499,10 +1498,10 @@ function renderBlock(
         <CodeBlockComp
           key={index}
           code={node.value}
-          // A supplied renderer's contract is unchanged: it receives the
-          // info string as written (so `language === 'diff'` still matches)
-          // and nothing new; only the default path maps the diff layer.
-          language={isDiff ? (node.lang ?? legacyLanguage) : language}
+          // A supplied renderer's contract is unchanged: it keeps receiving
+          // the leading word characters (`diff` for a `diff-tsx` fence, as
+          // today) and nothing new; only the default path maps the layer.
+          language={legacyLanguage}
           {...lineProp}
         />
       ) : (
