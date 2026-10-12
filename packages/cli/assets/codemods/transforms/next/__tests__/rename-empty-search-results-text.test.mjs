@@ -49,85 +49,29 @@ const c = <Typeahead emptySearchResultsText="z" />;`);
       expect(output.match(/emptySearchText=/g)).toHaveLength(3);
     });
 
-    it('drops the old prop when emptySearchText is already set, since it already won', async () => {
+    it('renames the value as written, whatever shape it has', async () => {
+      const output =
+        await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
+const a = <Tokenizer emptySearchResultsText={compact ? 'None' : 'No matches'} />;
+const b = <Tokenizer emptySearchResultsText={props.text ?? null} />;
+const c = <Tokenizer {...props} emptySearchResultsText="After a spread" />;`);
+
+      expect(output).toContain(
+        "emptySearchText={compact ? 'None' : 'No matches'}",
+      );
+      expect(output).toContain('emptySearchText={props.text ?? null}');
+      expect(output).toContain('{...props} emptySearchText="After a spread"');
+      expect(output).not.toContain('emptySearchResultsText');
+    });
+
+    it('leaves a TODO instead of choosing when emptySearchText is already set', async () => {
       const output =
         await applyTransform(`import {Typeahead} from '@astryxdesign/core';
 const a = <Typeahead emptySearchResultsText="Old copy" emptySearchText="New copy" />;`);
 
+      expect(output).toContain('TODO(astryx upgrade)');
+      expect(output).toContain('emptySearchResultsText="Old copy"');
       expect(output).toContain('emptySearchText="New copy"');
-      expect(output).not.toContain('Old copy');
-    });
-
-    it('keeps the old value as a fallback when emptySearchText may be null or undefined', async () => {
-      const output =
-        await applyTransform(`import {Typeahead} from '@astryxdesign/core';
-const a = <Typeahead emptySearchResultsText="Old copy" emptySearchText={props.emptySearchText} />;
-const b = <Typeahead emptySearchResultsText={oldCopy} emptySearchText={maybe ? 'x' : undefined} />;`);
-
-      expect(output).toContain(
-        "emptySearchText={props.emptySearchText ?? 'Old copy'}",
-      );
-      expect(output).toContain(
-        "emptySearchText={(maybe ? 'x' : undefined) ?? oldCopy}",
-      );
-      expect(output).not.toContain('emptySearchResultsText');
-    });
-
-    it('keeps the old value as a fallback on a trigger whose emptySearchText may be nullish', async () => {
-      const output =
-        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
-const t = {char: '@', searchSource, onSelect, emptySearchResultsText: 'Old', emptySearchText: copy};
-const a = <ChatComposerInput triggers={[t]} />;`);
-
-      expect(output).toContain("emptySearchText: copy ?? 'Old'");
-      expect(output).not.toContain('emptySearchResultsText');
-    });
-
-    it('marks a prop that follows a spread for manual migration instead of renaming it', async () => {
-      const output =
-        await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
-const a = <Tokenizer {...rest} emptySearchResultsText="Nobody" />;`);
-
-      expect(output).toContain('TODO(astryx upgrade)');
-      expect(output).toContain('emptySearchResultsText="Nobody"');
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('marks a prop that precedes a spread too, since the spread may forward emptySearchText as undefined', async () => {
-      const output =
-        await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
-const a = <Tokenizer emptySearchResultsText="Nobody" {...rest} />;`);
-
-      expect(output).toContain('TODO(astryx upgrade)');
-      expect(output).toContain('emptySearchResultsText="Nobody" {...rest}');
-    });
-
-    it('adds the spread TODO once, even inside export const, on repeated runs', async () => {
-      const once =
-        await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
-export const a = <Tokenizer {...rest} emptySearchResultsText="Nobody" />;`);
-      const twice = await applyTransform(once);
-
-      expect(once.match(/TODO\(astryx upgrade\)/g)).toHaveLength(1);
-      expect(twice).toBe(once);
-    });
-
-    it('reports triggers it cannot see into instead of leaving the removed key silent', async () => {
-      const output =
-        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
-import {useMemo} from 'react';
-const base = {char: '@', searchSource, onSelect, emptySearchResultsText: 'A'};
-const all = [base];
-function A() {
-  const triggers = useMemo(() => [base], []);
-  return <ChatComposerInput triggers={triggers} />;
-}
-function B() {
-  return <ChatComposerInput triggers={all} />;
-}`);
-
-      expect(output.match(/this upgrade cannot read/g)).toHaveLength(2);
-      expect(output).toContain("emptySearchResultsText: 'A'");
       expect(await applyTransform(output)).toBe(output);
     });
 
@@ -150,335 +94,51 @@ const a = <Tokenizer emptySearchResultsText="Nobody found" />;`);
   });
 
   describe('ChatComposerInput trigger objects', () => {
-    it('renames the key on triggers written inline', async () => {
+    it('renames the key on triggers written inline, in an array or alone', async () => {
       const output =
         await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
 const a = (
   <ChatComposerInput
     triggers={[
       {char: '@', searchSource, onSelect, emptySearchResultsText: 'Nobody found'},
+      {char: '#', emptySearchResultsText: 'No tags'} as ChatComposerTrigger,
+    ]}
+  />
+);
+const b = <ChatComposerInput triggers={{char: '/', emptySearchResultsText: 'No commands'}} />;`);
+
+      expect(output).toContain("emptySearchText: 'Nobody found'");
+      expect(output).toContain("emptySearchText: 'No tags'");
+      expect(output).toContain("emptySearchText: 'No commands'");
+      expect(output).not.toContain('emptySearchResultsText');
+    });
+
+    it('leaves a TODO on a trigger with a spread or computed key, or one that already sets the new name', async () => {
+      const output =
+        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
+const a = (
+  <ChatComposerInput
+    triggers={[
+      {...base, emptySearchResultsText: 'Nobody'},
+      {[key]: 1, emptySearchResultsText: 'Nobody'},
+      {char: '@', emptySearchText: 'New', emptySearchResultsText: 'Old'},
     ]}
   />
 );`);
 
-      expect(output).toContain("emptySearchText: 'Nobody found'");
-      expect(output).not.toContain('emptySearchResultsText');
-    });
-
-    it('renames the key on a same-file const the triggers prop names', async () => {
-      const output =
-        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
-const mention = {char: '@', searchSource, onSelect, emptySearchResultsText: 'Nobody'};
-const triggers = [{char: '/', searchSource, onSelect, 'emptySearchResultsText': 'No commands'}];
-const a = <ChatComposerInput triggers={triggers} />;
-const b = <ChatComposerInput triggers={[mention]} />;`);
-
-      expect(output).toContain("emptySearchText: 'Nobody'");
-      expect(output).toContain("'emptySearchText': 'No commands'");
-      expect(output).not.toContain('emptySearchResultsText');
-    });
-
-    it('marks objects typed through a type-only import instead of renaming them', async () => {
-      // A type-only import proves only the type position (AST-040 FR1).
-      const output =
-        await applyTransform(`import type {ChatComposerTrigger} from '@astryxdesign/core';
-export const mention: ChatComposerTrigger = {char: '@', searchSource, onSelect, emptySearchResultsText: 'A'};
-export const all: ChatComposerTrigger[] = [{char: '/', searchSource, onSelect, emptySearchResultsText: 'B'}];
-export const cast = {char: '#', searchSource, onSelect, emptySearchResultsText: 'C'} satisfies ChatComposerTrigger;`);
-
-      expect(output.match(/typed through a\s+type-only import/g)).toHaveLength(
-        3,
-      );
-      expect(output).toContain("emptySearchResultsText: 'A'");
-      expect(output).toContain("emptySearchResultsText: 'B'");
-      expect(output).toContain("emptySearchResultsText: 'C'");
-      expect(output).not.toContain("emptySearchText: '");
+      expect(output.match(/TODO\(astryx upgrade\)/g)).toHaveLength(3);
+      expect(output.match(/emptySearchResultsText:/g)).toHaveLength(3);
       expect(await applyTransform(output)).toBe(output);
     });
 
-    it('renames a typed object that the runtime triggers prop also reaches', async () => {
-      const output =
-        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
-import type {ChatComposerTrigger} from '@astryxdesign/core';
-const mention: ChatComposerTrigger = {char: '@', searchSource, onSelect, emptySearchResultsText: 'A'};
-const a = <ChatComposerInput triggers={[mention]} />;`);
-
-      expect(output).toContain("emptySearchText: 'A'");
-      expect(output).not.toContain('TODO');
-    });
-
-    it('drops the old key when a reached trigger already sets emptySearchText to a value that is never nullish', async () => {
-      const output =
-        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
-const t = {char: '@', searchSource, onSelect, emptySearchResultsText: 'Old', emptySearchText: 'New'};
-const a = <ChatComposerInput triggers={t} />;`);
-
-      expect(output).toContain("emptySearchText: 'New'");
-      expect(output).not.toContain("'Old'");
-    });
-
-    it('marks a trigger with a spread for manual migration instead of renaming it', async () => {
-      const output =
-        await applyTransform(`import type {ChatComposerTrigger} from '@astryxdesign/core';
-const t: ChatComposerTrigger = {...base, emptySearchResultsText: 'Nobody'};`);
-
-      expect(output).toContain('TODO(astryx upgrade)');
-      expect(output).toContain("emptySearchResultsText: 'Nobody'");
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('flags an object key it cannot attribute instead of leaving it silent, and reports a non-const triggers value', async () => {
-      const output =
-        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
-const copy = {emptySearchResultsText: 'kept'};
-let mutable = [{emptySearchResultsText: 'kept'}];
-const a = <ChatComposerInput triggers={mutable} />;`);
-
-      expect(output).toContain("emptySearchResultsText: 'kept'");
-      expect(output).not.toContain('emptySearchText:');
-      expect(
-        output.match(/could not tell where this object is used/g),
-      ).toHaveLength(2);
-      expect(output.match(/this upgrade cannot read/g)).toHaveLength(1);
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('parenthesises an || or && operand of the ?? fallback so the output parses', async () => {
-      const output =
-        await applyTransform(`import {Typeahead} from '@astryxdesign/core';
-const a = <Typeahead emptySearchText={custom || fallback} emptySearchResultsText="Old" />;
-const b = <Typeahead emptySearchText={maybe} emptySearchResultsText={left && right} />;`);
-
-      expect(output).toContain(
-        "emptySearchText={(custom || fallback) ?? 'Old'}",
-      );
-      expect(output).toContain('emptySearchText={maybe ?? (left && right)}');
-      // The result must parse: a second run reads it back.
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('reports a spread onto Tokenizer whose object it cannot read', async () => {
-      const output =
-        await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
-import {shared} from './shared';
-export function Wrapper(props) {
-  return <Tokenizer {...props} />;
-}
-const a = <Tokenizer {...shared} />;
-const b = <Tokenizer {...{emptySearchText: 'inline'}} />;`);
-
-      expect(
-        output.match(/spreads props this upgrade cannot read/g),
-      ).toHaveLength(2);
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('rebuilds a JSX string fallback from its decoded value', async () => {
-      const output =
-        await applyTransform(`import {Typeahead} from '@astryxdesign/core';
-const a = <Typeahead emptySearchText={copy} emptySearchResultsText="Tom &amp; Jerry \\ two
-lines" />;`);
-
-      expect(output).toContain(
-        "emptySearchText={copy ?? 'Tom & Jerry \\\\ two\\nlines'}",
-      );
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('reports a same-file object that itself spreads something it cannot read', async () => {
-      const output =
-        await applyTransform(`import {Tokenizer, ChatComposerInput} from '@astryxdesign/core';
-export function Wrapper(props) {
-  const tokenizerProps = {...props, debounceMs: 0};
-  return <Tokenizer {...tokenizerProps} />;
-}
-const mention = {...baseMention, char: '@'};
-const a = <ChatComposerInput triggers={[mention]} />;
-const b = <ChatComposerInput triggers={{...baseMention, char: '#'}} />;`);
-
-      expect(
-        output.match(/spreads props this upgrade cannot read/g),
-      ).toHaveLength(1);
-      expect(output.match(/this upgrade cannot read/g)).toHaveLength(3);
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('reports a spread onto ChatComposerInput whose object it cannot read, unless explicit triggers follow', async () => {
-      const output =
-        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
-export function Wrapper(props) {
-  return <ChatComposerInput {...props} />;
-}
-export function Pinned(props) {
-  return <ChatComposerInput {...props} triggers={[]} />;
-}
-export function Overridden(props) {
-  return <ChatComposerInput triggers={[]} {...props} />;
-}`);
-
-      // Wrapper and Overridden are reported (the spread may carry triggers);
-      // Pinned's own triggers win, so it is not.
-      expect(
-        output.match(/spreads props this upgrade cannot read/g),
-      ).toHaveLength(2);
-      expect(output.indexOf('cannot read')).toBeLessThan(
-        output.indexOf('function Wrapper') + 200,
-      );
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('reads the triggers inside a same-file props object spread onto ChatComposerInput', async () => {
-      const output =
-        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
+    it('does not follow variables, helpers, or wrappers (the type checker reports what remains)', async () => {
+      const source = `import {ChatComposerInput} from '@astryxdesign/core';
 import {mentionTrigger} from './triggers';
-import {buildTriggers} from './build';
-export function Imported() {
-  const composerProps = {triggers: [mentionTrigger]};
-  return <ChatComposerInput {...composerProps} />;
-}
-export function Called() {
-  const composerProps = {triggers: buildTriggers()};
-  return <ChatComposerInput {...composerProps} />;
-}
-export function Visible() {
-  const composerProps = {triggers: [{char: '@', emptySearchResultsText: 'Nobody'}]};
-  return <ChatComposerInput {...composerProps} />;
-}`);
-
-      // An imported trigger and a call result are opaque: both reported.
-      expect(
-        output.match(/spreads props this upgrade cannot read/g),
-      ).toHaveLength(2);
-      // A trigger object the file builds is migrated, not reported.
-      expect(output).toContain("emptySearchText: 'Nobody'");
-      expect(output).not.toContain('emptySearchResultsText:');
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('never writes a ?? TypeScript rejects: null/undefined take the old value, never-nullish values drop it', async () => {
-      const output =
-        await applyTransform(`import {Tokenizer, ChatComposerInput} from '@astryxdesign/core';
-export function Cases({compact, custom}) {
-  return (
-    <>
-      <Tokenizer emptySearchText={null} emptySearchResultsText="Old" />
-      <Tokenizer emptySearchText={undefined} emptySearchResultsText="Old" />
-      <Tokenizer emptySearchText={compact ? 'None' : 'No matches'} emptySearchResultsText="Old" />
-      <Tokenizer emptySearchText={'No ' + 'matches'} emptySearchResultsText="Old" />
-      <Tokenizer emptySearchText={false} emptySearchResultsText="Old" />
-      <Tokenizer emptySearchText={custom || 'None'} emptySearchResultsText="Old" />
-      <Tokenizer emptySearchText={custom} emptySearchResultsText="Old" />
-      <ChatComposerInput triggers={[
-        {char: '@', emptySearchText: null, emptySearchResultsText: 'Nobody'},
-        {char: '#', emptySearchText: compact ? 'None' : 'No tags', emptySearchResultsText: 'No tags'},
-        {char: '/', emptySearchText: custom, emptySearchResultsText: 'No commands'},
-      ]} />
-    </>
-  );
-}`);
-
-      expect(output).toContain(`<Tokenizer emptySearchText={'Old'} />`);
-      expect(output).not.toContain('null ??');
-      expect(output).not.toContain('undefined ??');
-      expect(output).toContain(
-        `emptySearchText={compact ? 'None' : 'No matches'} />`,
-      );
-      expect(output).toContain(`emptySearchText={'No ' + 'matches'} />`);
-      expect(output).toContain(`emptySearchText={false} />`);
-      expect(output).toContain(`emptySearchText={custom || 'None'} />`);
-      expect(output).toContain(`emptySearchText={custom ?? 'Old'} />`);
-      expect(output).toMatch(/char: '@',\s*emptySearchText: 'Nobody'\s*\}/);
-      expect(output).toMatch(
-        /emptySearchText: compact \? 'None' : 'No tags'\s*\}/,
-      );
-      expect(output).toMatch(/emptySearchText: custom \?\? 'No commands'\s*\}/);
-      expect(output).not.toContain('emptySearchResultsText:');
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('classifies the remaining forms the way TypeScript does: own ?? default, unary, binary, all-nullish', async () => {
-      const output =
-        await applyTransform(`import {Tokenizer, ChatComposerInput} from '@astryxdesign/core';
-export function More({custom, flag, count, cond, maybe}) {
-  return (
-    <>
-      <Tokenizer emptySearchText={custom ?? 'None'} emptySearchResultsText="Old" />
-      <Tokenizer emptySearchText={!flag} emptySearchResultsText="Old" />
-      <Tokenizer emptySearchText={count - 1} emptySearchResultsText="Old" />
-      <Tokenizer emptySearchText={cond ? null : undefined} emptySearchResultsText="Old" />
-      <Tokenizer emptySearchText={void 0} emptySearchResultsText="Old" />
-      <Tokenizer emptySearchText={flag && maybe} emptySearchResultsText="Old" />
-      <ChatComposerInput triggers={[
-        {char: '@', emptySearchText: custom ?? 'Default', emptySearchResultsText: 'Nobody'},
-        {char: '#', emptySearchText: cond ? null : undefined, emptySearchResultsText: 'No tags'},
-      ]} />
-    </>
-  );
-}`);
-
-      expect(output).toContain(`emptySearchText={custom ?? 'None'} />`);
-      expect(output).toContain(`emptySearchText={!flag} />`);
-      expect(output).toContain(`emptySearchText={count - 1} />`);
-      expect(output).toMatch(
-        /<Tokenizer emptySearchText=\{'Old'\} \/>[\s\S]*<Tokenizer emptySearchText=\{'Old'\} \/>/,
-      );
-      expect(output).toContain(`emptySearchText={(flag && maybe) ?? 'Old'} />`);
-      expect(output).toMatch(/emptySearchText: custom \?\? 'Default'\s*\}/);
-      expect(output).toMatch(/char: '#',\s*emptySearchText: 'No tags'\s*\}/);
-      expect(output).not.toContain(`?? 'None' ??`);
-      expect(output).not.toContain('emptySearchResultsText:');
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('drops an always-nullish right operand of the new value before adding the fallback', async () => {
-      const output =
-        await applyTransform(`import {Tokenizer, ChatComposerInput} from '@astryxdesign/core';
-export function Wrapper(props) {
-  return (
-    <>
-      <Tokenizer emptySearchText={props.emptySearchText ?? null} emptySearchResultsText="No fruit" />
-      <Tokenizer emptySearchText={props.emptySearchText ?? undefined} emptySearchResultsText="No fruit" />
-      <Tokenizer emptySearchText={props.emptySearchText ?? void 0} emptySearchResultsText="No fruit" />
-      <Tokenizer emptySearchText={null ?? undefined} emptySearchResultsText="No fruit" />
-      <ChatComposerInput triggers={[
-        {char: '@', emptySearchText: props.text ?? null, emptySearchResultsText: 'Nobody'},
-      ]} />
-    </>
-  );
-}`);
-
-      expect(
-        output.match(
-          /emptySearchText=\{props\.emptySearchText \?\? 'No fruit'\} \/>/g,
-        ),
-      ).toHaveLength(3);
-      expect(output).toContain(`<Tokenizer emptySearchText={'No fruit'} />`);
-      expect(output).toMatch(/emptySearchText: props\.text \?\? 'Nobody'\s*\}/);
-      expect(output).not.toMatch(/\?\? (null|undefined|void 0) \?\?/);
-      expect(output).not.toContain('emptySearchResultsText:');
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('flags a same-file object spread onto Tokenizer', async () => {
-      const output =
-        await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
-const shared = {emptySearchResultsText: 'No people match'};
-const a = <Tokenizer {...shared} />;`);
-
-      expect(output).toContain("emptySearchResultsText: 'No people match'");
-      expect(output).toContain('could not tell where this object is used');
-      expect(output).not.toContain('spreads props this upgrade cannot read');
-      expect(await applyTransform(output)).toBe(output);
-    });
-
-    it('reports an untyped trigger imported from another module', async () => {
-      const output =
-        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
-import {mention} from './triggers';
-const a = <ChatComposerInput triggers={[mention]} />;`);
-
-      expect(output).toContain('this upgrade cannot read');
-      expect(await applyTransform(output)).toBe(output);
+const local = {char: '@', emptySearchResultsText: 'Nobody'};
+const a = <ChatComposerInput triggers={[local, mentionTrigger]} />;
+const b = <ChatComposerInput triggers={buildTriggers()} />;
+const c = <ChatComposerInput {...props} />;`;
+      expect(await applyTransform(source)).toBe(source);
     });
 
     it('leaves a file with no runtime core import alone', async () => {
