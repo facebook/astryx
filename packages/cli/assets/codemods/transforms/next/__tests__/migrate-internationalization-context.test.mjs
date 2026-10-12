@@ -327,6 +327,31 @@ export const app = <InternationalizationContext value={i18n}><div /></Internatio
     expect(typecheck(naive)).toContain('TS2339');
   }, 60_000);
 
+  it('leaves the consumer shape in the wild alone: read the ambient value, re-mount the provider', () => {
+    // Every use of the context outside Astryx that a code search found (two
+    // internal consumers, one public) has this shape; the transform over
+    // their files returned no change, and this fixture is that shape.
+    const input = `import {useContext, useMemo, type ReactNode} from 'react';
+import {InternationalizationContext, InternationalizationProvider} from '@astryxdesign/core/i18n';
+export function WithRowWording({children}: {children: ReactNode}) {
+  const i18n = useContext(InternationalizationContext);
+  const overrides = useMemo(
+    () => ({...i18n.overrides, en: {...ROW_WORDING, ...i18n.overrides?.en}}),
+    [i18n.overrides],
+  );
+  return (
+    <InternationalizationProvider
+      locale={i18n.locale}
+      messages={i18n.messages}
+      dir={i18n.direction}
+      overrides={overrides}>
+      {children}
+    </InternationalizationProvider>
+  );
+}`;
+    expect(transform({source: input, path: 'test.tsx'}, api)).toBeUndefined();
+  });
+
   it('is idempotent', () => {
     const input = `import {InternationalizationContext} from '@astryxdesign/core/i18n';
 const a = <InternationalizationContext value={i18n}><A /></InternationalizationContext>;
