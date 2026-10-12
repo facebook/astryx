@@ -372,6 +372,7 @@ describe('CI wiring parsers', () => {
       'core-',
       'lab-',
       'charts-',
+      'richtext-',
       'vega-',
     ]);
   });
