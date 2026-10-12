@@ -6,7 +6,10 @@
  * files, which can carry fields a later release dropped from `ThemingTarget`
  * (`deprecatedFor`, removed with the deprecated theming surface); emitting a
  * doc verbatim then fails the registry typecheck in production only. Project
- * every theming doc onto the fields the emitted interfaces declare.
+ * every theming doc onto the fields the emitted interfaces declare, and drop
+ * the targets a published doc marks as deprecated aliases: generated docs
+ * present only the current theming surface, never an alias as an ordinary
+ * target.
  */
 
 /** Fields of the emitted `ThemingTarget` interface, in order. */
@@ -61,14 +64,26 @@ export function projectThemingDoc(theming) {
   const doc = /** @type {Record<string, unknown>} */ (theming);
   const out = pick(doc, THEMING_DOC_FIELDS);
   if (Array.isArray(out.targets)) {
-    out.targets = out.targets.map(target =>
-      target != null && typeof target === 'object'
-        ? pick(
-            /** @type {Record<string, unknown>} */ (target),
-            THEMING_TARGET_FIELDS,
-          )
-        : target,
-    );
+    out.targets = out.targets
+      // A target that names the class superseding it is a deprecated alias
+      // from an earlier release, not part of the current theming surface.
+      .filter(
+        target =>
+          !(
+            target != null &&
+            typeof target === 'object' &&
+            /** @type {Record<string, unknown>} */ (target).deprecatedFor !=
+              null
+          ),
+      )
+      .map(target =>
+        target != null && typeof target === 'object'
+          ? pick(
+              /** @type {Record<string, unknown>} */ (target),
+              THEMING_TARGET_FIELDS,
+            )
+          : target,
+      );
   }
   if (Array.isArray(out.vars)) {
     out.vars = out.vars.map(entry =>

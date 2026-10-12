@@ -37,7 +37,7 @@ describe('generated theming docs typecheck against the emitted interfaces', () =
     expect([...fields].sort()).toEqual(emittedInterfaceFields(name).sort());
   });
 
-  it('drops a published target field the current interface no longer declares', () => {
+  it('drops a published deprecated alias target and any field the current interfaces no longer declare', () => {
     const published = {
       container: true,
       targets: [
@@ -63,7 +63,6 @@ describe('generated theming docs typecheck against the emitted interfaces', () =
       container: true,
       targets: [
         {className: 'astryx-button', visualProps: ['color'], states: ['hover']},
-        {className: 'astryx-button-old', states: ['hover']},
       ],
       vars: [{name: '--button-gap', description: 'Gap', default: '4px'}],
       derived: [{property: 'padding', vars: ['--p']}],
