@@ -442,6 +442,42 @@ describe('TabList keyboard navigation (roving tabindex)', () => {
     );
   });
 
+  it('moves the tab stop on programmatic focus without changing selection', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <>
+        <TabList value="projects" onChange={onChange}>
+          <Tab value="home" label="Home" />
+          <Tab value="projects" label="Projects" />
+          <Tab value="settings" label="Settings" />
+        </TabList>
+        <button type="button">After list</button>
+      </>,
+    );
+    const projects = screen.getByRole('button', {name: 'Projects'});
+    const settings = screen.getByRole('button', {name: 'Settings'});
+    expect(projects).toHaveAttribute('tabindex', '0');
+
+    settings.focus();
+
+    expect(settings).toHaveFocus();
+    expect(settings).toHaveAttribute('tabindex', '0');
+    expect(projects).toHaveAttribute('tabindex', '-1');
+    expect(screen.getByRole('button', {name: 'Home'})).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+    expect(projects).toHaveAttribute('aria-current', 'true');
+    expect(settings).not.toHaveAttribute('aria-current');
+    expect(onChange).not.toHaveBeenCalled();
+
+    await user.tab();
+    expect(screen.getByRole('button', {name: 'After list'})).toHaveFocus();
+    await user.tab({shift: true});
+    expect(settings).toHaveFocus();
+  });
+
   it('moves focus with ArrowRight and ArrowLeft', async () => {
     const user = userEvent.setup();
     render(
@@ -817,6 +853,35 @@ describe('TabMenu keyboard navigation (roving tabindex)', () => {
       el => el.getAttribute('tabindex') === '0',
     );
     expect(tabbable).toHaveLength(1);
+  });
+
+  it('moves the menu tab stop on programmatic focus without selecting an option', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <TabList value="home" onChange={onChange}>
+        <Tab value="home" label="Home" />
+        <TabMenu label="More" options={menuOptions} />
+      </TabList>,
+    );
+    await user.click(screen.getByRole('button', {name: /More/}));
+    const analytics = screen.getByRole('menuitemradio', {
+      name: 'Analytics',
+      hidden: true,
+    });
+    const reports = screen.getByRole('menuitemradio', {
+      name: 'Reports',
+      hidden: true,
+    });
+    expect(analytics).toHaveAttribute('tabindex', '0');
+
+    reports.focus();
+
+    expect(reports).toHaveFocus();
+    expect(reports).toHaveAttribute('tabindex', '0');
+    expect(analytics).toHaveAttribute('tabindex', '-1');
+    expect(reports).toHaveAttribute('aria-checked', 'false');
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('moves focus between items with ArrowDown and ArrowUp', async () => {
