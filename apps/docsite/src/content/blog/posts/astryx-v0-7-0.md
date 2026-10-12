@@ -240,6 +240,8 @@ Tables keep expanded content aligned, sticky and resizable columns usable, row a
 
 _Expanded details align with the first data column, row striping stays stable, and buttons or links inside a row never toggle it._
 
+The row-expansion chevron also stays centered in its fixed column.
+
 ```tsx
 const expansion = useTableRowExpansion<Order>({
   expandedKeys,
@@ -524,19 +526,19 @@ _An Icon without an explicit size now follows its Button, so small buttons no lo
 <Button label="Upload" size="lg" icon={<Icon icon={ArrowUpTrayIcon} />} />
 ```
 
-### Scale spacing with the reader's text
+## Accessibility and localization
+
+Keyboard users can reach overflowing sheet content and keep visible focus cues as dialogs open and close. More status text, control labels, and empty states now speak the reader's language, and banners announce the actual async event instead of inferring one from color status.
+
+### Let layouts follow the reader's text size
+
+Readers who raise their browser font size now get padding and gaps that grow with the text, instead of larger words squeezed into the same fixed spacing.
 
 ![The same small form card rendered at a 24px browser font size, before and after, with a second row at the default 16px. Before at 24px, the text is large but the card's padding and the gaps between the field and buttons stay as tight as at 16px. After, padding and gaps grow with the text. At 16px both versions look identical.](/blog/astryx-v0-7-0/theme-rem-spacing.png)
 
 _Spacing tokens use rem (`--spacing-N` = N × 0.25rem), so padding and gaps follow the reader's root font size the way the type scale does. Rendered pixel sizes are unchanged at the default 16px root._
 
-The row-expansion chevron also stays centered in its fixed column.
-
 Matcha and Y2K's own spacing steps are rem too, so every first-party theme follows the same rule.
-
-## Accessibility and localization
-
-Keyboard users can reach overflowing sheet content and keep visible focus cues as dialogs open and close. More status text, control labels, and empty states now speak the reader's language, and banners announce the actual async event instead of inferring one from color status.
 
 ### Keep focus cues matched to the last input
 
