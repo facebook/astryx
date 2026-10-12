@@ -2,8 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] The PowerSearch filter editor saves an "empty" operator filter (such as "is empty") exactly once, from the choice that completes it. Choosing such an operator, or switching to a field whose default operator is one, now saves from that choice instead of from an effect. The filter is no longer saved again when the parent re-renders with a new `onSave`, or twice in React StrictMode. Re-choosing the current operator or field saves nothing, and focus still returns to the search input after the editor closes. Clicking an existing empty-operator token in PowerSearch commits it once without opening the editor. Previously, a standalone `PowerSearchFilterEditor` saved as soon as it opened on an already-complete empty-operator filter, and saved again whenever it remounted. It no longer saves on open.
-
-Migration: if you relied on that save-on-open, call your own `onSave` handler with the filter at the point where you open the editor.
+[fix] The PowerSearch filter editor saves an "empty" operator filter (such as "is empty") exactly once, from the choice that completes it. Choosing such an operator, or switching to a field whose default operator is one, now saves from that choice instead of from an effect. The filter is no longer saved again when the parent re-renders with a new `onSave`, or twice in React StrictMode. Re-choosing the current operator or field saves nothing, and focus still returns to the search input after the editor closes. Clicking an existing empty-operator token in PowerSearch commits it once without opening the built-in editor; a `components.empty.Editor` override still opens.
 
 @cixzhang
