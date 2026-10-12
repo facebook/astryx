@@ -100,6 +100,14 @@ export const docs = {
             [
               "--color-syntax-diff-header",
               "var(--color-background-muted)"
+            ],
+            [
+              "--color-syntax-added-text",
+              "var(--color-text-green)"
+            ],
+            [
+              "--color-syntax-removed-text",
+              "var(--color-text-red)"
             ]
           ]
         }

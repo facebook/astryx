@@ -23,6 +23,9 @@ describe('diff row slots in a syntax theme', () => {
     expect(theme.tokens['diff-header']).toBe(
       syntaxTokenDefaults['--color-syntax-diff-header'],
     );
+    expect(theme.tokens['added-text']).toBe(
+      syntaxTokenDefaults['--color-syntax-added-text'],
+    );
     warn.mockRestore();
   });
 
@@ -53,6 +56,12 @@ describe('diff row slots in a syntax theme', () => {
     );
     expect(syntaxTokenDefaults['--color-syntax-diff-header']).toBe(
       'var(--color-background-muted)',
+    );
+    expect(syntaxTokenDefaults['--color-syntax-added-text']).toBe(
+      'var(--color-text-green)',
+    );
+    expect(syntaxTokenDefaults['--color-syntax-removed-text']).toBe(
+      'var(--color-text-red)',
     );
   });
 });

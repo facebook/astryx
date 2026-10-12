@@ -305,15 +305,23 @@ const styles = stylex.create({
   // the tint where the semantic text colours would not, and the leading +/-
   // glyph stays in the text as the cue that needs no colour. A caller's
   // highlightLines row is declared after these and keeps its background.
+  // A changed row is one coloured unit: the tint runs under the gutter cell
+  // too (the row spans the full width), and the line number, the glyph, and
+  // any text no syntax token paints take the row's text slot. Token spans
+  // set their own colour, so they keep it.
   lineAdded: {
     backgroundColor: 'var(--color-syntax-added)',
+    color: 'var(--color-syntax-added-text)',
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
+    '::before': {color: 'var(--color-syntax-added-text)'},
   },
   lineRemoved: {
     backgroundColor: 'var(--color-syntax-removed)',
+    color: 'var(--color-syntax-removed-text)',
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
+    '::before': {color: 'var(--color-syntax-removed-text)'},
   },
   // Hunk and file headers stay visible but quiet: a muted row with secondary
   // text, never change paint.
@@ -342,10 +350,9 @@ const styles = stylex.create({
     whiteSpace: 'pre',
   },
   // On a tinted row the glyph is the cue a reader without colour depends on,
-  // so it takes the row's ordinary text colour: secondary text measures under
-  // 4.5:1 on the removed tint in light.
+  // so it takes the row's text slot like the line number does.
   diffMarkerChange: {
-    color: colorVars['--color-text-primary'],
+    color: 'inherit',
   },
   sizeSm: {
     fontSize: typeScaleVars['--text-supporting-size'],
