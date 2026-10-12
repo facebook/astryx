@@ -30,7 +30,10 @@ export const meta = {
     'unpadded content box. Sheets whose only child is a Section ' +
     'or Layout are left unchanged; they render identically. A sheet with a ' +
     'nested padding-less Layout also gets a TODO comment. Remove ' +
-    '`padding={0}` and your own inset to adopt the theme padding.',
+    '`padding={0}` and your own inset to adopt the theme padding. An app ' +
+    'whose theme already sets `bottom-sheet` padding is not affected by the ' +
+    'new default; the transform cannot see the theme, so remove the added ' +
+    '`padding={0}` there to keep the theme inset.',
 };
 
 const CORE_IMPORT_RE = /^@(astryxdesign|xds)\/core(?:\/|$)/;
@@ -98,6 +101,22 @@ function nameMatches(name, bindings, component) {
   );
 }
 
+// A parameter or local declaration with the imported name shadows the module
+// binding (same rule as transform-prop.mjs): only a tag whose root binding
+// resolves to the Program scope is the imported component.
+function isModuleBinding(elementPath, name) {
+  const localName =
+    name?.type === 'JSXIdentifier'
+      ? name.name
+      : name?.type === 'JSXMemberExpression' &&
+          name.object?.type === 'JSXIdentifier'
+        ? name.object.name
+        : null;
+  if (localName == null) return false;
+  const scope = elementPath.scope?.lookup(localName);
+  return scope?.path?.node?.type === 'Program';
+}
+
 /**
  * Children that render something: drops whitespace-only text and empty
  * `{}` / `{/* comment *\/}` containers.
@@ -155,6 +174,7 @@ export default function transformer(file, api) {
   root.find(j.JSXElement).forEach((/** @type {any} */ elementPath) => {
     const opening = elementPath.node.openingElement;
     if (!nameMatches(opening.name, sheets, 'BottomSheet')) return;
+    if (!isModuleBinding(elementPath, opening.name)) return;
 
     const attributes = opening.attributes ?? [];
     const setsPadding = attributes.some(

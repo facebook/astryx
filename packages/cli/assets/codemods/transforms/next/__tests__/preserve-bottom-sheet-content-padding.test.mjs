@@ -81,6 +81,32 @@ function B() {
     );
   });
 
+  it('leaves a BottomSheet that a parameter or local binding shadows alone', async () => {
+    const source = `import {BottomSheet} from '@astryxdesign/core';
+export function Host({BottomSheet: Sheet}) {
+  return <Sheet isOpen><p>own inset</p></Sheet>;
+}
+export function Local() {
+  const BottomSheet = (props) => <div {...props} />;
+  return <BottomSheet isOpen><p>own inset</p></BottomSheet>;
+}
+`;
+    expect(await applyTransform(source)).toBe(source);
+  });
+
+  it('is idempotent: a second run changes nothing', async () => {
+    const once =
+      await applyTransform(`import {BottomSheet, Layout, VStack} from '@astryxdesign/core';
+export function A() {
+  return <BottomSheet isOpen><VStack><p>a</p></VStack></BottomSheet>;
+}
+export function B() {
+  return <BottomSheet isOpen><VStack><Layout content={<p>b</p>} /></VStack></BottomSheet>;
+}
+`);
+    expect(await applyTransform(once)).toBe(once);
+  });
+
   it('pads a sheet when the Section has a sibling or is not from core', async () => {
     const output =
       await applyTransform(`import {BottomSheet} from '@astryxdesign/core';
