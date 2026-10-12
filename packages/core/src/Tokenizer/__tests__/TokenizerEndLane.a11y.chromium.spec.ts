@@ -326,6 +326,50 @@ for (const direction of ['ltr', 'rtl'] as const) {
       expect(await busyLayoutChanges(page, 4)).toEqual([]);
     });
 
+    test('the reserved Spinner costs no frames and stays silent while idle', async ({
+      page,
+    }) => {
+      await open(page, 'core-tokenizer--loading', direction);
+      const search = page.getByRole('combobox');
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('Performance.enable');
+      // Style recalculations over a short window: a ticking ring animation
+      // recalculates every frame (about 30 in 500ms), an unrendered one does
+      // not. The idle allowance absorbs a stray one-off recalculation.
+      const recalcsOver = async (ms: number) => {
+        const count = async () => {
+          const {metrics} = await cdp.send('Performance.getMetrics');
+          return metrics.find(m => m.name === 'RecalcStyleCount')?.value ?? 0;
+        };
+        const before = await count();
+        await page.waitForTimeout(ms);
+        return (await count()) - before;
+      };
+      const spinnerState = async () =>
+        page.evaluate(() => {
+          const spinner = document
+            .querySelector('button[aria-label="Clear all"]')
+            ?.parentElement?.querySelector('[role="status"]');
+          if (!spinner) {
+            throw new Error('The lane holds no Spinner');
+          }
+          return {
+            hidden: spinner.getAttribute('aria-hidden') === 'true',
+            width: spinner.getBoundingClientRect().width,
+          };
+        });
+      const idle = await spinnerState();
+      expect(idle.hidden).toBe(true);
+      expect(await recalcsOver(500)).toBeLessThanOrEqual(2);
+      await search.focus();
+      await search.press('a');
+      await expect(search).toHaveAttribute('aria-busy', 'true');
+      const busy = await spinnerState();
+      expect(busy.hidden).toBe(false);
+      expect(await recalcsOver(500)).toBeGreaterThanOrEqual(10);
+      expect(busy.width).toBe(idle.width);
+    });
+
     test('a themed, larger Spinner keeps its space too', async ({page}) => {
       test.setTimeout(240_000);
       await open(page, 'core-tokenizer--loading', direction);

@@ -344,12 +344,10 @@ const styles = stylex.create({
     flexShrink: 0,
     zIndex: 1,
   },
-  busySlot: {
-    display: 'flex',
-    flexShrink: 0,
-  },
-  busySlotIdle: {
-    visibility: 'hidden',
+  idleSpinner: {
+    // Skips the ring's rendering, and with it the infinite arc animation,
+    // while the root keeps its own explicit, themed width and height.
+    contentVisibility: 'hidden',
   },
   inputAtMax: {
     width: 0,
@@ -545,8 +543,9 @@ const CREATABLE_ID_PREFIX = '__xds_create__';
  * Renders nothing when the lane would be empty, so `useEndLaneReserve` sees no
  * element, publishes no width, and the input keeps its full content box.
  *
- * With `hasBusySlot` the Spinner stays mounted while idle, hidden and out of
- * the accessibility tree, so its slot keeps the themed Spinner's own size.
+ * With `hasBusySlot` the Spinner stays mounted while idle, unrendered, not
+ * animating and out of the accessibility tree, so its box keeps the themed
+ * Spinner's own size.
  * Token rows reserve the lane's measured width, so a Spinner that came and
  * went with the search would re-wrap them, and widen a content-sized field,
  * on every search.
@@ -575,11 +574,15 @@ function EndLane({
   return (
     <div ref={laneRef} {...stylex.props(laneXStyle)}>
       {(isBusy || hasBusySlot) && (
-        <span
+        <Spinner
+          // Remounts when a search starts, so the ring syncs its phase on
+          // mount exactly as a newly shown Spinner did before.
+          key={isBusy ? 'busy' : 'idle'}
+          size="sm"
+          aria-label={loadingLabel}
           aria-hidden={isBusy ? undefined : true}
-          {...stylex.props(styles.busySlot, !isBusy && styles.busySlotIdle)}>
-          <Spinner size="sm" aria-label={loadingLabel} />
-        </span>
+          xstyle={isBusy ? undefined : styles.idleSpinner}
+        />
       )}
       {children}
     </div>
