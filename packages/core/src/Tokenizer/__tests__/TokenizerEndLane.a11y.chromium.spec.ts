@@ -370,6 +370,44 @@ for (const direction of ['ltr', 'rtl'] as const) {
       expect(busy.width).toBe(idle.width);
     });
 
+    test('the idle Spinner paints nothing, even when a theme styles its box', async ({
+      page,
+    }) => {
+      await page.goto(
+        `${storybook.origin}/iframe.html?id=core-tokenizer--loading&viewMode=story&globals=direction:${direction};astryxTheme:probe`,
+        {waitUntil: 'load'},
+      );
+      await page
+        .locator('button[aria-label="Clear all"]')
+        .waitFor({state: 'attached'});
+      const search = page.getByRole('combobox');
+      const spinnerPaint = async () =>
+        page.evaluate(() => {
+          const spinner = document
+            .querySelector('button[aria-label="Clear all"]')
+            ?.parentElement?.querySelector('[role="status"]');
+          if (!spinner) {
+            throw new Error('The lane holds no Spinner');
+          }
+          const style = getComputedStyle(spinner);
+          return {
+            visible: spinner.checkVisibility({visibilityProperty: true}),
+            visibility: style.visibility,
+            background: style.backgroundColor,
+          };
+        });
+      const idle = await spinnerPaint();
+      // The probe theme paints the Spinner's own box, so a box that is only
+      // content-skipped would still show beside Clear all.
+      expect(idle.background).not.toBe('rgba(0, 0, 0, 0)');
+      expect(idle.visibility).toBe('hidden');
+      expect(idle.visible).toBe(false);
+      await search.focus();
+      await search.press('a');
+      await expect(search).toHaveAttribute('aria-busy', 'true');
+      expect((await spinnerPaint()).visible).toBe(true);
+    });
+
     test('a themed, larger Spinner keeps its space too', async ({page}) => {
       test.setTimeout(240_000);
       await open(page, 'core-tokenizer--loading', direction);

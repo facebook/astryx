@@ -345,6 +345,9 @@ const styles = stylex.create({
     zIndex: 1,
   },
   idleSpinner: {
+    // Hides the Spinner's own box too, which a theme may paint, and covers
+    // engines without content-visibility. Both keep the box's size.
+    visibility: 'hidden',
     // Skips the ring's rendering, and with it the infinite arc animation,
     // while the root keeps its own explicit, themed width and height.
     contentVisibility: 'hidden',
