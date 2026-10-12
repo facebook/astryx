@@ -27,7 +27,10 @@
  * Only an element whose name resolves, unshadowed, to an Astryx import is
  * rewritten (named, aliased, or namespace; a type-only import proves nothing;
  * a same-named declaration in any block, function, loop head or catch clause
- * between the element and the module shadows it).
+ * between the element and the module shadows it, as does a `var` anywhere in
+ * the enclosing function and a named class expression's own name). The
+ * provider is imported under a free name when the module already binds
+ * `InternationalizationProvider` to something of its own.
  * The import gains `InternationalizationProvider` under the file's existing
  * local name for it when it has one, and loses the context import when
  * nothing else reads it. A second run changes nothing.
@@ -105,6 +108,59 @@ export default function migrateInternationalizationContext(file, api) {
   });
   if (contextNames.size === 0 && namespaceNames.size === 0) return undefined;
 
+  // Every identifier the module binds anywhere (declarations, imports,
+  // parameters, catch clauses, class and function names), so a provider
+  // import added here takes a name nothing else holds.
+  /** @type {Set<string>} */
+  const boundNames = new Set();
+  root.find(j.Identifier).forEach((/** @type {any} */ p) => {
+    const parent = p.parent?.node;
+    if (!parent) return;
+    const binds =
+      (parent.type === 'VariableDeclarator' && parent.id === p.node) ||
+      ((parent.type === 'FunctionDeclaration' ||
+        parent.type === 'FunctionExpression' ||
+        parent.type === 'ClassDeclaration' ||
+        parent.type === 'ClassExpression') &&
+        parent.id === p.node) ||
+      parent.type === 'ImportSpecifier' ||
+      parent.type === 'ImportDefaultSpecifier' ||
+      parent.type === 'ImportNamespaceSpecifier' ||
+      parent.type === 'CatchClause' ||
+      parent.type === 'RestElement' ||
+      parent.type === 'AssignmentPattern' ||
+      parent.type === 'ArrayPattern' ||
+      (parent.type === 'ObjectProperty' &&
+        parent.value === p.node &&
+        p.parent.parent?.node.type === 'ObjectPattern') ||
+      (parent.type === 'Property' &&
+        parent.value === p.node &&
+        p.parent.parent?.node.type === 'ObjectPattern') ||
+      ((parent.type === 'FunctionDeclaration' ||
+        parent.type === 'FunctionExpression' ||
+        parent.type === 'ArrowFunctionExpression' ||
+        parent.type === 'ObjectMethod' ||
+        parent.type === 'ClassMethod') &&
+        parent.params.includes(p.node));
+    if (binds) boundNames.add(p.node.name);
+  });
+  // The name a named import of the provider takes: the file's own when it has
+  // one; otherwise `InternationalizationProvider`, or a free alias when the
+  // module already binds that name to something else (its own wrapper, say).
+  if (providerLocalName === null) {
+    let candidate = PROVIDER;
+    for (let n = 2; boundNames.has(candidate); n += 1) {
+      candidate = `${PROVIDER}${n}`;
+    }
+    providerLocalName = candidate;
+  }
+  const providerNeedsImport = !astryxImports.some((/** @type {any} */ path) =>
+    (path.node.specifiers ?? []).some(
+      (/** @type {any} */ s) =>
+        s.type === 'ImportSpecifier' && s.imported?.name === PROVIDER,
+    ),
+  );
+
   /** The identifiers a binding pattern declares. */
   const patternNames = (
     /** @type {any} */ node,
@@ -143,6 +199,46 @@ export default function migrateInternationalizationContext(file, api) {
     return out;
   };
 
+  /**
+   * Whether a `var` named `name` is declared anywhere inside `node` without
+   * crossing into a nested function: a `var` hoists to its whole function.
+   */
+  const declaresVar = (/** @type {any} */ node, /** @type {string} */ name) => {
+    let found = false;
+    const visit = (/** @type {any} */ n) => {
+      if (found || !n || typeof n !== 'object') return;
+      if (Array.isArray(n)) {
+        n.forEach(visit);
+        return;
+      }
+      if (
+        n.type === 'FunctionDeclaration' ||
+        n.type === 'FunctionExpression' ||
+        n.type === 'ArrowFunctionExpression' ||
+        n.type === 'ObjectMethod' ||
+        n.type === 'ClassMethod'
+      ) {
+        return;
+      }
+      if (
+        n.type === 'VariableDeclaration' &&
+        n.kind === 'var' &&
+        n.declarations.some((/** @type {any} */ d) =>
+          patternNames(d.id).includes(name),
+        )
+      ) {
+        found = true;
+        return;
+      }
+      for (const key of Object.keys(n)) {
+        if (key === 'loc' || key === 'comments' || key === 'type') continue;
+        visit(n[key]);
+      }
+    };
+    visit(node);
+    return found;
+  };
+
   /** Whether a statement list declares `name` (as a variable, function or class). */
   const bodyDeclares = (
     /** @type {any[]} */ statements,
@@ -177,7 +273,9 @@ export default function migrateInternationalizationContext(file, api) {
       const node = p.node;
       switch (node.type) {
         case 'Program':
-          return !bodyDeclares(node.body, name);
+          return (
+            !bodyDeclares(node.body, name) && !declaresVar(node.body, name)
+          );
         case 'BlockStatement':
           if (bodyDeclares(node.body, name)) return false;
           break;
@@ -223,6 +321,10 @@ export default function migrateInternationalizationContext(file, api) {
           if (node.type === 'FunctionExpression' && node.id?.name === name) {
             return false;
           }
+          if (declaresVar(node.body, name)) return false;
+          break;
+        case 'ClassExpression':
+          if (node.id?.name === name) return false;
           break;
         case 'CatchClause':
           if (node.param && patternNames(node.param).includes(name))
@@ -344,12 +446,12 @@ export default function migrateInternationalizationContext(file, api) {
 
     const providerName =
       namespace === ''
-        ? j.jsxIdentifier(providerLocalName ?? PROVIDER)
+        ? j.jsxIdentifier(providerLocalName)
         : j.jsxMemberExpression(
             j.jsxIdentifier(namespace),
             j.jsxIdentifier(PROVIDER),
           );
-    if (namespace === '' && providerLocalName === null) {
+    if (namespace === '' && providerNeedsImport) {
       needsNamedProvider = true;
     }
 
@@ -390,7 +492,10 @@ export default function migrateInternationalizationContext(file, api) {
         continue;
       }
       specifiers.push(
-        j.importSpecifier(j.identifier(PROVIDER), j.identifier(PROVIDER)),
+        j.importSpecifier(
+          j.identifier(PROVIDER),
+          j.identifier(providerLocalName),
+        ),
       );
       break;
     }
