@@ -524,7 +524,9 @@ _An Icon without an explicit size now follows its Button, so small buttons no lo
 <Button label="Upload" size="lg" icon={<Icon icon={ArrowUpTrayIcon} />} />
 ```
 
-**Pending merge — [#7359](https://github.com/facebook/astryx/pull/7359) and [#7374](https://github.com/facebook/astryx/pull/7374):** spacing in every first-party theme will follow the reader's root font size while looking unchanged at the default 16px root.
+Core spacing tokens now use rem, so themes that inherit them follow the reader's root font size while keeping the same values at the default 16px root. The row-expansion chevron also stays centered in its fixed column.
+
+**Pending merge — [#7374](https://github.com/facebook/astryx/pull/7374):** Matcha and Y2K will move their own spacing steps to rem so every first-party theme follows the same rule.
 
 <!-- VISUAL_SLOT: themes-and-visual-foundations — pending root-relative spacing -->
 
@@ -678,7 +680,7 @@ The highest-traffic API changes look like this:
 21. **BottomSheet adds default content padding** ([#6884](https://github.com/facebook/astryx/pull/6884)) — remove duplicate caller padding or pass `padding={0}` for the old box; `preserve-bottom-sheet-content-padding` adds `padding={0}`, but remove it when your theme already sets BottomSheet padding so the theme inset remains.
 22. **Phone typography starts at 16px** ([#6699](https://github.com/facebook/astryx/pull/6699)) — take the new Neutral, Chocolate, Butter, and Stone scale as-is, or add a later touch-and-narrow rule to keep 14px or your own scale; no codemod.
 23. **`emptySearchResultsText` is removed** (pending [#7289](https://github.com/facebook/astryx/pull/7289)) — rename it to `emptySearchText`; `rename-empty-search-results-text` handles supported components and static trigger objects.
-24. **Core spacing follows the root font size** (pending [#7359](https://github.com/facebook/astryx/pull/7359)) — CSS variable users need no change; code that parses px converts rem with the root size or reads the computed length; no codemod.
+24. **Core spacing follows the root font size** ([#7359](https://github.com/facebook/astryx/pull/7359)) — CSS variable users need no change; code that parses px converts rem with the root size or reads the computed length; no codemod.
 25. **Matcha and Y2K spacing follows the root font size** (pending [#7374](https://github.com/facebook/astryx/pull/7374)) — take the new default, which is pixel-equal at a 16px root, or override the spacing tokens in px to keep fixed sizing; no codemod.
 26. **Doctor fails on unloadable configured projects** (pending [#7130](https://github.com/facebook/astryx/pull/7130)) — install or repair the named integration, remove it from config, or fix the config field in the error; no codemod.
 
