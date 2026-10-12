@@ -278,6 +278,28 @@ export const ok = <Ctx value={x}><E /></Ctx>;`;
     );
   });
 
+  it('sees a dotted namespace as binding its own name inside its body', () => {
+    const input = `import * as i18n from '@astryxdesign/core/i18n';
+import {InternationalizationContext as Ctx} from '@astryxdesign/core/i18n';
+namespace Outer.Ctx {
+  export const Provider = Other;
+  export const out = <Ctx.Provider value={v}><A /></Ctx.Provider>;
+}
+namespace Outer.i18n {
+  export const InternationalizationContext = Other;
+  export const out = <i18n.InternationalizationContext value={v}><B /></i18n.InternationalizationContext>;
+}
+export const ok = <Ctx value={x}><C /></Ctx>;`;
+    const output = folded(apply(input));
+    expect(output).toContain('<Ctx.Provider value={v}><A /></Ctx.Provider>');
+    expect(output).toContain(
+      '<i18n.InternationalizationContext value={v}><B /></i18n.InternationalizationContext>',
+    );
+    expect(output).toContain(
+      '<InternationalizationProvider locale={x.locale} dir={x.direction} messages={x.messages}><C /></InternationalizationProvider>',
+    );
+  });
+
   it('is not captured by a nested namespace named like the provider', () => {
     const input = `import {InternationalizationContext as Ctx} from '@astryxdesign/core/i18n';
 namespace Captures {
