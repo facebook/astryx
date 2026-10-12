@@ -6,6 +6,6 @@
 
 A sheet whose only child is a padded `Section` or a `Layout` renders as before, because both escape the inset. Content that supplies its own inset is now padded twice: drop that inset, or pass `padding={0}` to keep the unpadded content box. `astryx upgrade` ships `preserve-bottom-sheet-content-padding`, which adds `padding={0}` where needed.
 
-Migration: pass `padding={0}` to keep the unpadded content box, or drop your own inset to take the default; `astryx upgrade` adds `padding={0}` to every BottomSheet that sets no padding unless its only child is a padded Section or a Layout. An app whose theme already sets `bottom-sheet` padding is not affected by the new default; the codemod cannot see the theme, so remove the `padding={0}` it adds there to keep the theme inset.
+Migration: pass `padding={0}` to keep the unpadded content box, or drop your own inset to take the default; `astryx upgrade` adds `padding={0}` to every BottomSheet that sets no padding unless its only child is a padded Section or a Layout. An app whose theme already sets `bottom-sheet` padding on every edge is not affected by the new default; the codemod cannot see the theme, so remove the `padding={0}` it adds there to keep the theme inset. A sheet whose content wraps a `Layout` gets a TODO: `padding={0}` also removes the inset between that Layout's regions, which the Layout's own `padding` does not restore.
 
 @imdreamrunner

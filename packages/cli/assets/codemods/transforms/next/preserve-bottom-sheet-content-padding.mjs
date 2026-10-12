@@ -16,10 +16,11 @@
  * `padding={0}` goes before the first spread attribute, so a spread that
  * carries `padding` still wins.
  *
- * `padding={0}` also zeroes the Layout insets a nested `Layout` without its own
- * `padding` would otherwise default. Such a sheet still gets `padding={0}`, plus
- * a TODO comment on its statement (api.report is a stub; comments are the only
- * warning channel).
+ * `padding={0}` also zeroes the inset a nested `Layout` puts between its
+ * regions: a Layout's own `padding` restores only its outer edges, and the
+ * inner inset comes from the sheet's container chain. Such a sheet still gets
+ * `padding={0}`, plus a TODO comment on its statement (api.report is a stub;
+ * comments are the only warning channel).
  */
 
 export const meta = {
@@ -29,20 +30,23 @@ export const meta = {
     'BottomSheet elements that do not set `padding`, keeping their previous ' +
     'unpadded content box. Sheets whose only child is a Section ' +
     'or Layout are left unchanged; they render identically. A sheet with a ' +
-    'nested padding-less Layout also gets a TODO comment. Remove ' +
+    'nested Layout anywhere in its content also gets a TODO comment, because ' +
+    "padding={0} removes the inset between that Layout's regions and the " +
+    "Layout's own padding restores only its outer edges. Remove " +
     '`padding={0}` and your own inset to adopt the theme padding. An app ' +
-    'whose theme already sets `bottom-sheet` padding is not affected by the ' +
-    'new default; the transform cannot see the theme, so remove the added ' +
-    '`padding={0}` there to keep the theme inset.',
+    'whose theme already sets `bottom-sheet` padding on every edge is not ' +
+    'affected by the new default; the transform cannot see the theme, so ' +
+    'remove the added `padding={0}` there to keep the theme inset.',
 };
 
 const CORE_IMPORT_RE = /^@(astryxdesign|xds)\/core(?:\/|$)/;
 
 const TODO_COMMENT =
   ' TODO(astryx upgrade): BottomSheet now pads its content like Dialog. ' +
-  'padding={0} keeps the unpadded content box, but it also sets a nested ' +
-  "Layout's region padding to 0. Give that Layout an explicit padding, or " +
-  "drop padding={0} and the sheet content's own inset. ";
+  'padding={0} keeps the unpadded content box, but it also removes the inset ' +
+  "between a nested Layout's regions, which the Layout's own padding does " +
+  "not restore. Drop padding={0} and the sheet content's own inset, or give " +
+  'the Layout its inset another way. ';
 
 /**
  * Local JSX names bound to core components, by imported name.
@@ -195,7 +199,11 @@ export default function transformer(file, api) {
       children.length === 1 &&
       children[0].type === 'JSXElement' &&
       (nameMatches(children[0].openingElement.name, sections, 'Section') ||
-        nameMatches(children[0].openingElement.name, layouts, 'Layout'))
+        nameMatches(children[0].openingElement.name, layouts, 'Layout')) &&
+      isModuleBinding(
+        elementPath.get('children', 0),
+        children[0].openingElement.name,
+      )
     ) {
       return;
     }
@@ -215,19 +223,17 @@ export default function transformer(file, api) {
     opening.attributes = attributes;
     hasChanges = true;
 
-    const hasUnpaddedLayout =
+    // Any nested core Layout loses the inset between its regions, with or
+    // without its own padding, so every one gets the TODO.
+    const hasNestedLayout =
       j(elementPath)
         .find(j.JSXOpeningElement)
         .filter(
           (/** @type {any} */ openingPath) =>
             nameMatches(openingPath.node.name, layouts, 'Layout') &&
-            !(openingPath.node.attributes ?? []).some(
-              (/** @type {any} */ attribute) =>
-                attribute.type === 'JSXAttribute' &&
-                attribute.name?.name === 'padding',
-            ),
+            isModuleBinding(openingPath, openingPath.node.name),
         ).length > 0;
-    if (hasUnpaddedLayout) {
+    if (hasNestedLayout) {
       addTodo(j, elementPath);
     }
   });

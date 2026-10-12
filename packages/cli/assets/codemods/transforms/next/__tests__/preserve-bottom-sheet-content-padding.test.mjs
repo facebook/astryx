@@ -48,7 +48,7 @@ const a = (
     expect(await applyTransform(source)).toBe(source);
   });
 
-  it('flags a nested Layout without its own padding with a TODO', async () => {
+  it('flags every nested Layout with a TODO, with or without its own padding', async () => {
     const output =
       await applyTransform(`import {BottomSheet, Layout, VStack} from '@astryxdesign/core';
 function A() {
@@ -72,13 +72,28 @@ function B() {
 
     expect(output).toContain('<BottomSheet sheetId="a" label="A" padding={0}>');
     expect(output).toContain('<BottomSheet sheetId="b" label="B" padding={0}>');
-    expect(output.match(/TODO\(astryx upgrade\)/g)).toHaveLength(1);
+    expect(output.match(/TODO\(astryx upgrade\)/g)).toHaveLength(2);
     expect(output.indexOf('TODO(astryx upgrade)')).toBeLessThan(
       output.indexOf('sheetId="a"'),
     );
     expect(output.indexOf('TODO(astryx upgrade)')).toBeGreaterThan(
       output.indexOf('function A'),
     );
+    expect(output.lastIndexOf('TODO(astryx upgrade)')).toBeGreaterThan(
+      output.indexOf('function B'),
+    );
+  });
+
+  it('does not flag a Layout from another package or a shadowed Layout binding', async () => {
+    const output =
+      await applyTransform(`import {BottomSheet} from '@astryxdesign/core';
+import {Layout} from './my-layout';
+export function A() {
+  return <BottomSheet isOpen><Layout content={<p>b</p>} /></BottomSheet>;
+}
+`);
+    expect(output).toContain('padding={0}');
+    expect(output).not.toContain('TODO');
   });
 
   it('leaves a BottomSheet that a parameter or local binding shadows alone', async () => {
