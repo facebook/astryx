@@ -290,6 +290,95 @@ function triggerObjectsIn(node) {
 }
 
 /**
+ * Read a `triggers` value: the trigger objects this file can see (inline, or
+ * in a same-file `const` the value names) and whether any part of it — a
+ * call result, an imported or parameter identifier, a spread, a member — is
+ * one this transform cannot read. The same reading serves the prop itself and
+ * a same-file props object spread onto the element.
+ * @param {any} expression
+ * @param {any} fromScope The scope the value is read from.
+ * @returns {{opaque: boolean, objects: Set<any>}}
+ */
+function inspectTriggers(expression, fromScope) {
+  /** @type {Set<any>} */
+  const objects = new Set();
+  let opaque = false;
+  for (const object of triggerObjectsIn(expression)) {
+    objects.add(object);
+    // `{...base, char: '@'}`: the removed key may hide in the spread.
+    if (!isReadableObject(object)) opaque = true;
+  }
+  /** @type {any[]} */
+  const identifiers =
+    expression?.type === 'Identifier'
+      ? [expression]
+      : expression?.type === 'ArrayExpression'
+        ? expression.elements
+            .map((/** @type {any} */ element) => unwrap(element))
+            .filter(
+              (/** @type {any} */ element) => element?.type === 'Identifier',
+            )
+        : [];
+  const isVisibleItem = (/** @type {any} */ element) => {
+    const item = unwrap(element);
+    return (
+      item == null ||
+      item.type === 'Identifier' ||
+      item.type === 'ObjectExpression'
+    );
+  };
+  if (
+    expression?.type !== 'Identifier' &&
+    expression?.type !== 'ArrayExpression' &&
+    expression?.type !== 'ObjectExpression'
+  ) {
+    // A call (useMemo, a helper), a member, or a conditional: the
+    // objects live somewhere this transform cannot read.
+    opaque = true;
+  } else if (
+    expression.type === 'ArrayExpression' &&
+    !expression.elements.every(isVisibleItem)
+  ) {
+    opaque = true;
+  }
+  for (const identifier of identifiers) {
+    const scope = fromScope.lookup(identifier.name);
+    if (!scope) {
+      opaque = true;
+      continue;
+    }
+    const bindings = scope.getBindings()[identifier.name] ?? [];
+    let visible = false;
+    for (const binding of bindings) {
+      const declarator = binding.parent?.node;
+      if (
+        declarator?.type !== 'VariableDeclarator' ||
+        declarator.id !== binding.node ||
+        binding.parent.parent?.node?.kind !== 'const'
+      ) {
+        continue;
+      }
+      const init = unwrap(declarator.init);
+      if (
+        isReadableObject(init) ||
+        (init?.type === 'ArrayExpression' &&
+          init.elements.every(
+            (/** @type {any} */ element) =>
+              unwrap(element) == null || isReadableObject(element),
+          ))
+      ) {
+        visible = true;
+      }
+      for (const object of triggerObjectsIn(declarator.init)) {
+        objects.add(object);
+      }
+    }
+    if (!visible) opaque = true;
+  }
+  return {opaque, objects};
+}
+
+/**
  * The local names a file gives the core `ChatComposerTrigger` type.
  * @param {any} root
  * @param {any} j
@@ -549,82 +638,12 @@ export default function transformer(file, api) {
     propPath => {
       const value = propPath.node.value;
       if (value?.type !== 'JSXExpressionContainer') return;
-      const expression = unwrap(value.expression);
-      let opaque = false;
-      for (const object of triggerObjectsIn(expression)) {
-        triggerObjects.add(object);
-        // `{...base, char: '@'}`: the removed key may hide in the spread.
-        if (!isReadableObject(object)) opaque = true;
-      }
-      /** @type {any[]} */
-      const identifiers =
-        expression?.type === 'Identifier'
-          ? [expression]
-          : expression?.type === 'ArrayExpression'
-            ? expression.elements
-                .map((/** @type {any} */ element) => unwrap(element))
-                .filter(
-                  (/** @type {any} */ element) =>
-                    element?.type === 'Identifier',
-                )
-            : [];
-      const isVisibleItem = (/** @type {any} */ element) => {
-        const item = unwrap(element);
-        return (
-          item == null ||
-          item.type === 'Identifier' ||
-          item.type === 'ObjectExpression'
-        );
-      };
-      if (
-        expression?.type !== 'Identifier' &&
-        expression?.type !== 'ArrayExpression' &&
-        expression?.type !== 'ObjectExpression'
-      ) {
-        // A call (useMemo, a helper), a member, or a conditional: the
-        // objects live somewhere this transform cannot read.
-        opaque = true;
-      } else if (
-        expression.type === 'ArrayExpression' &&
-        !expression.elements.every(isVisibleItem)
-      ) {
-        opaque = true;
-      }
-      for (const identifier of identifiers) {
-        const scope = propPath.scope.lookup(identifier.name);
-        if (!scope) {
-          opaque = true;
-          continue;
-        }
-        const bindings = scope.getBindings()[identifier.name] ?? [];
-        let visible = false;
-        for (const binding of bindings) {
-          const declarator = binding.parent?.node;
-          if (
-            declarator?.type !== 'VariableDeclarator' ||
-            declarator.id !== binding.node ||
-            binding.parent.parent?.node?.kind !== 'const'
-          ) {
-            continue;
-          }
-          const init = unwrap(declarator.init);
-          if (
-            isReadableObject(init) ||
-            (init?.type === 'ArrayExpression' &&
-              init.elements.every(
-                (/** @type {any} */ element) =>
-                  unwrap(element) == null || isReadableObject(element),
-              ))
-          ) {
-            visible = true;
-          }
-          for (const object of triggerObjectsIn(declarator.init)) {
-            triggerObjects.add(object);
-          }
-        }
-        if (!visible) opaque = true;
-      }
-      if (opaque) {
+      const inspected = inspectTriggers(
+        unwrap(value.expression),
+        propPath.scope,
+      );
+      for (const object of inspected.objects) triggerObjects.add(object);
+      if (inspected.opaque) {
         changed =
           addStatementComment(j, propPath, OPAQUE_TRIGGERS_COMMENT) || changed;
       }
@@ -705,10 +724,29 @@ export default function transformer(file, api) {
           attribute.type === 'JSXSpreadAttribute',
       );
       if (spreads.length === 0) return;
+      // A props object is readable when this file builds it as a plain
+      // object literal and, for ChatComposerInput, when the `triggers` it
+      // carries can be read the way the prop itself is read: an imported
+      // trigger, a call result, or a spread inside it is opaque, and a
+      // visible trigger object is migrated here.
+      const readableProps = (/** @type {any} */ object) => {
+        if (!isReadableObject(object)) return false;
+        if (!isChat) return true;
+        const triggers = object.properties.find(
+          (/** @type {any} */ property) =>
+            staticPropertyName(property) === 'triggers',
+        );
+        if (!triggers) return true;
+        const inspected = inspectTriggers(unwrap(triggers.value), path.scope);
+        for (const trigger of inspected.objects) {
+          changed = migrateTriggerObject(j, trigger) || changed;
+        }
+        return !inspected.opaque;
+      };
       const unreadable = spreads.some((/** @type {any} */ spread) => {
         const argument = unwrap(spread.argument);
         if (argument?.type === 'ObjectExpression') {
-          return !isReadableObject(argument);
+          return !readableProps(argument);
         }
         if (argument?.type !== 'Identifier') return true;
         const scope = path.scope?.lookup(argument.name);
@@ -720,7 +758,7 @@ export default function transformer(file, api) {
               declarator?.type === 'VariableDeclarator' &&
               declarator.id === binding.node &&
               binding.parent.parent?.node?.kind === 'const' &&
-              isReadableObject(declarator.init)
+              readableProps(declarator.init)
             );
           },
         );

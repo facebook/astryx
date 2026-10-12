@@ -327,6 +327,34 @@ export function Overridden(props) {
       expect(await applyTransform(output)).toBe(output);
     });
 
+    it('reads the triggers inside a same-file props object spread onto ChatComposerInput', async () => {
+      const output =
+        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
+import {mentionTrigger} from './triggers';
+import {buildTriggers} from './build';
+export function Imported() {
+  const composerProps = {triggers: [mentionTrigger]};
+  return <ChatComposerInput {...composerProps} />;
+}
+export function Called() {
+  const composerProps = {triggers: buildTriggers()};
+  return <ChatComposerInput {...composerProps} />;
+}
+export function Visible() {
+  const composerProps = {triggers: [{char: '@', emptySearchResultsText: 'Nobody'}]};
+  return <ChatComposerInput {...composerProps} />;
+}`);
+
+      // An imported trigger and a call result are opaque: both reported.
+      expect(
+        output.match(/spreads props this upgrade cannot read/g),
+      ).toHaveLength(2);
+      // A trigger object the file builds is migrated, not reported.
+      expect(output).toContain("emptySearchText: 'Nobody'");
+      expect(output).not.toContain('emptySearchResultsText:');
+      expect(await applyTransform(output)).toBe(output);
+    });
+
     it('flags a same-file object spread onto Tokenizer', async () => {
       const output =
         await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
