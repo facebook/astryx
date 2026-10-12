@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] A `Popover` rendered into a second document through a portal, such as a same-origin iframe or a Document Picture-in-Picture window, now focuses its first control on open, keeps Tab inside, closes on Escape, and returns focus to its trigger, as it does in the page. An HTML trigger in that document stays the popover's invoker `source`.
+[fix] A `Popover` rendered into a second document through a portal, such as a same-origin iframe or a Document Picture-in-Picture window, now focuses its first control on open, keeps Tab inside, closes on Escape, and returns focus to its trigger, as it does in the page.
 
 @vjeux
