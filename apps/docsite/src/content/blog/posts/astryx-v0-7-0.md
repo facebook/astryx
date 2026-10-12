@@ -42,6 +42,8 @@ Theme authors also get shorter token names and clearer styling names for control
 
 Markdown now supports plugins for frontmatter, math, source-line annotations, text transforms, and custom code blocks. Apps provide their own math and code renderers, so the output can match the product.
 
+![The same two-line Markdown document shown twice. On the left, the raw source: a sentence with a bold version, an @ksying mention, and a fenced code block tagged checks holding two label: state lines. On the right, the rendered output with plugins: the mention renders as an avatar chip, the fence renders as a status card with a green pass badge and a yellow pending badge, and a gutter labels each block with its source lines, L1–2 and L4–7.](/blog/astryx-v0-7-0/markdown-plugins.png)
+
 Streaming content now keeps open code fences, quotes, tables, long definitions, and adjacent lists stable as text arrives. Source-line plugins also work inside lists and quotes without accepting forged offsets.
 
 ### Tables are easier to use
@@ -50,9 +52,13 @@ Expanded rows keep their details aligned, row striping stays consistent, and but
 
 Column resize handles are keyboard reachable, stay visible when the pointer enters the header, and work with sticky columns. In nested or narrow layouts, tables scroll when they need to and hand scrolling back to the page when they do not.
 
+![Two Astryx tables. On the left, an orders table with the first row expanded: its line items sit in a panel that starts under the Customer column, aligned with the row above, while the other rows keep their chevrons and status badges. On the right, a wider table scrolled sideways with the Customer column pinned; the pointer rests on the header, so every column boundary shows a thin resize line and the boundary under the pointer is drawn stronger.](/blog/astryx-v0-7-0/tables.png)
+
 ### Sheets, menus, and inputs keep their state
 
 Bottom sheets now drag more predictably, keep pinch zoom working, and let keyboard users reach overflowing content. Escape closes an inner menu, Popover, or Dialog before the sheet behind it. AppShell keeps page state and focus when it switches to or from its mobile layout.
+
+![Three phone screens side by side, each with a bottom sheet open over a dimmed page. First, an Assign reviewer menu that opened as a sheet listing three names and a red Remove assignee action. Second, a Release date field whose picker opened as a sheet calendar for October 2026 with the 14th selected and a Save button. Third, a Release time field whose picker opened as a sheet with hour, minute, and AM/PM wheels set to 9:30 AM.](/blog/astryx-v0-7-0/mobile-friendly.png)
 
 `DropdownMenu` can now place controls such as a filter field or Create button above and below the menu rows. The controls remain separate from the menu for screen readers, while Tab moves through all three areas. Drilled-in menus give their Back row a useful name, and apps can attach attributes, event handlers, and a ref to sub-menu rows. Apps without swipe actions also save about 2.7 KB gzip because `Item` loads that code only when needed.
 
