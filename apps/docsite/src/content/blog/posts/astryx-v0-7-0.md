@@ -586,7 +586,7 @@ Compact toolbars now take less vertical space without shifting the controls besi
 _Compact toolbars use a 4px block inset so they take less vertical space. Inline padding stays owned by the surrounding Card or Section, so the controls keep the same content line as the body beside them._
 
 ```tsx
-<Card padding={0}>
+<Card>
   <Toolbar
     label="Table actions"
     size="sm"
@@ -598,6 +598,7 @@ _Compact toolbars use a 4px block inset so they take less vertical space. Inline
     }
     endContent={<Button label="New item" onClick={createItem} />}
   />
+  <Text display="block">Twelve items match the current filter.</Text>
 </Card>
 ```
 

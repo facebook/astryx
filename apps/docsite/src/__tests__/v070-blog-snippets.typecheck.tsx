@@ -27,6 +27,7 @@ import {
 import {TimeInput, type ISOTimeString} from '@astryxdesign/core/TimeInput';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {TextInput} from '@astryxdesign/core/TextInput';
+import {Text} from '@astryxdesign/core/Text';
 import {Typeahead, createStaticSource} from '@astryxdesign/core/Typeahead';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
@@ -233,7 +234,7 @@ function createItem() {}
 
 export function InteractionFeedback() {
   return (
-    <Card padding={0}>
+    <Card>
       <Toolbar
         label="Table actions"
         size="sm"
@@ -245,6 +246,7 @@ export function InteractionFeedback() {
         }
         endContent={<Button label="New item" onClick={createItem} />}
       />
+      <Text display="block">Twelve items match the current filter.</Text>
     </Card>
   );
 }
