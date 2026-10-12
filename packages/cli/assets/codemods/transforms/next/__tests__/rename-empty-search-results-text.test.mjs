@@ -430,6 +430,35 @@ export function More({custom, flag, count, cond, maybe}) {
       expect(await applyTransform(output)).toBe(output);
     });
 
+    it('drops an always-nullish right operand of the new value before adding the fallback', async () => {
+      const output =
+        await applyTransform(`import {Tokenizer, ChatComposerInput} from '@astryxdesign/core';
+export function Wrapper(props) {
+  return (
+    <>
+      <Tokenizer emptySearchText={props.emptySearchText ?? null} emptySearchResultsText="No fruit" />
+      <Tokenizer emptySearchText={props.emptySearchText ?? undefined} emptySearchResultsText="No fruit" />
+      <Tokenizer emptySearchText={props.emptySearchText ?? void 0} emptySearchResultsText="No fruit" />
+      <Tokenizer emptySearchText={null ?? undefined} emptySearchResultsText="No fruit" />
+      <ChatComposerInput triggers={[
+        {char: '@', emptySearchText: props.text ?? null, emptySearchResultsText: 'Nobody'},
+      ]} />
+    </>
+  );
+}`);
+
+      expect(
+        output.match(
+          /emptySearchText=\{props\.emptySearchText \?\? 'No fruit'\} \/>/g,
+        ),
+      ).toHaveLength(3);
+      expect(output).toContain(`<Tokenizer emptySearchText={'No fruit'} />`);
+      expect(output).toMatch(/emptySearchText: props\.text \?\? 'Nobody'\s*\}/);
+      expect(output).not.toMatch(/\?\? (null|undefined|void 0) \?\?/);
+      expect(output).not.toContain('emptySearchResultsText:');
+      expect(await applyTransform(output)).toBe(output);
+    });
+
     it('flags a same-file object spread onto Tokenizer', async () => {
       const output =
         await applyTransform(`import {Tokenizer} from '@astryxdesign/core';

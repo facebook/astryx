@@ -188,9 +188,28 @@ function isAlwaysNullish(node) {
  * @param {any} j @param {any} newValue @param {any} oldValue
  */
 function mergedValue(j, newValue, oldValue) {
-  if (isAlwaysNullish(newValue)) return rebuiltString(j, oldValue);
-  if (isNeverNullish(newValue)) return null;
-  return fallbackExpression(j, newValue, oldValue);
+  const value = withoutNullishDefault(newValue);
+  if (isAlwaysNullish(value)) return rebuiltString(j, oldValue);
+  if (isNeverNullish(value)) return null;
+  return fallbackExpression(j, value, oldValue);
+}
+
+/**
+ * `x ?? null`, `x ?? undefined`, `x ?? void 0`: the right operand adds
+ * nothing, and a fallback after it would be dead (TS2871), so the old value
+ * takes its place: `x ?? old`.
+ * @param {any} node
+ */
+function withoutNullishDefault(node) {
+  const value = unwrap(node);
+  if (
+    value?.type === 'LogicalExpression' &&
+    value.operator === '??' &&
+    isAlwaysNullish(value.right)
+  ) {
+    return withoutNullishDefault(value.left);
+  }
+  return node;
 }
 
 /**
