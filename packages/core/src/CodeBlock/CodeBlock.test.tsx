@@ -119,6 +119,38 @@ describe('CodeBlock', () => {
     expect(screen.getByRole('group')).toHaveStyle({maxHeight: '0px'});
   });
 
+  describe('diff language', () => {
+    const diff = '@@ -1,2 +1,2 @@\n-const a = 1;\n+const a = 2;\n const b = 3;';
+
+    it('marks added and removed rows and leaves headers and context unmarked', () => {
+      const {container} = render(<CodeBlock code={diff} language="diff" />);
+      const rows = container.querySelectorAll('[data-line]');
+      expect(rows).toHaveLength(4);
+      expect(rows[0].getAttribute('data-diff')).toBeNull();
+      expect(rows[1].getAttribute('data-diff')).toBe('removed');
+      expect(rows[2].getAttribute('data-diff')).toBe('added');
+      expect(rows[3].getAttribute('data-diff')).toBeNull();
+    });
+
+    it('keeps the +/- glyphs in the displayed text and copies the exact source', () => {
+      render(<CodeBlock code={diff} language="diff" />);
+      expect(screen.getByText('-const a = 1;')).toBeInTheDocument();
+      expect(screen.getByText('+const a = 2;')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(diff);
+    });
+
+    it('composes with highlightLines and does not mark other languages', () => {
+      const {container, rerender} = render(
+        <CodeBlock code={diff} language="diff" highlightLines={[2]} />,
+      );
+      const removed = container.querySelector('[data-diff="removed"]');
+      expect(removed?.getAttribute('data-line')).toBe('2');
+      rerender(<CodeBlock code={diff} language="typescript" />);
+      expect(container.querySelector('[data-diff]')).toBeNull();
+    });
+  });
+
   it('copies code when the copy button is clicked', () => {
     render(<CodeBlock code="const x = 1;" language="javascript" />);
     const copyButton = screen.getByRole('button', {name: 'Copy code'});

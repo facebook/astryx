@@ -30,7 +30,7 @@ export const docs = {
       name: 'language',
       type: 'string',
       description:
-        'Language for syntax highlighting. Use "plaintext" to disable.',
+        'Language for syntax highlighting. Use "plaintext" to disable. "diff" tints added (+) and removed (-) lines as whole rows.',
       default: "'plaintext'",
     },
     {

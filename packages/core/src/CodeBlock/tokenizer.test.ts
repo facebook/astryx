@@ -6,6 +6,8 @@ import {
   tokenizeAsync,
   tokenizeStreaming,
   flatTokensToLines,
+  diffLineKind,
+  isDiffLanguage,
 } from './tokenizer';
 import type {TokenLine} from './tokenizer';
 
@@ -164,5 +166,37 @@ describe('flatTokensToLines', () => {
     // Line 1 tokens should have offsets relative to line start (13)
     expect(result[1]).toContainEqual({type: 'keyword', start: 0, end: 3});
     expect(result[1]).toContainEqual({type: 'number', start: 8, end: 9});
+  });
+});
+
+describe('diffLineKind', () => {
+  it('classifies unified-diff lines by their first character', () => {
+    expect(diffLineKind('+added line')).toBe('added');
+    expect(diffLineKind('-removed line')).toBe('removed');
+    expect(diffLineKind(' context line')).toBe('context');
+    expect(diffLineKind('')).toBe('context');
+  });
+
+  it('keeps file and hunk headers out of the change rows', () => {
+    expect(diffLineKind('@@ -1,3 +1,4 @@')).toBe('header');
+    expect(diffLineKind('--- a/file.ts')).toBe('header');
+    expect(diffLineKind('+++ b/file.ts')).toBe('header');
+    expect(diffLineKind('diff --git a/x b/x')).toBe('header');
+    expect(diffLineKind('index 83db48f..bf269f4 100644')).toBe('header');
+  });
+
+  it('paints only the headers as tokens, so the rows carry the change', () => {
+    const lines = tokenize('@@ -1 +1 @@\n-old\n+new\n same', 'diff');
+    expect(lines[0]).toEqual([{type: 'comment', start: 0, end: 11}]);
+    expect(lines[1]).toEqual([]);
+    expect(lines[2]).toEqual([]);
+    expect(lines[3]).toEqual([]);
+  });
+
+  it('selects diff paint for diff and patch only', () => {
+    expect(isDiffLanguage('diff')).toBe(true);
+    expect(isDiffLanguage('patch')).toBe(true);
+    expect(isDiffLanguage('typescript')).toBe(false);
+    expect(isDiffLanguage(undefined)).toBe(false);
   });
 });

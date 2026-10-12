@@ -97,6 +97,26 @@ export const WithHighlightedLines: Story = {
   },
 };
 
+/**
+ * A unified diff: added lines sit on a success-tinted row, removed lines on
+ * an error-tinted row, and the leading +/- stays in the text so the change
+ * reads without colour and copies exactly. Headers and context are plain.
+ */
+export const Diff: Story = {
+  args: {
+    language: 'diff',
+    title: 'Button.tsx',
+    code: `@@ -12,7 +12,7 @@ export function Button({children, ...props}: ButtonProps) {
+   return (
+     <button
+-      className="astryx-button"
++      className="astryx-button astryx-button-primary"
+       type="button"
+       {...props}>
+       {children}`,
+  },
+};
+
 export const JSON: Story = {
   args: {
     code: `{

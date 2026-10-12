@@ -308,9 +308,55 @@ function buildLanguagePatterns(lang: string): {
         ],
       };
 
+    case 'diff':
+    case 'patch':
+      // Unified diffs paint by LINE (see diffLineKind); token paint only dims
+      // the file and hunk headers so the changed rows stand out.
+      return {
+        defaultType: 'variable',
+        patterns: [
+          {
+            type: 'comment',
+            regex: /^(?:@@.*|diff --git.*|index [0-9a-f]+.*|---.*|\+\+\+.*)$/m,
+          },
+        ],
+      };
+
     default:
       return null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Diff lines
+// ---------------------------------------------------------------------------
+
+/** How a unified-diff line reads: what it adds, removes, frames, or keeps. */
+export type DiffLineKind = 'added' | 'removed' | 'header' | 'context';
+
+/** Whether a language identifier selects line-level diff paint. */
+export function isDiffLanguage(language: string | undefined): boolean {
+  return language === 'diff' || language === 'patch';
+}
+
+/**
+ * Classify one line of a unified diff by its first character: `+` added,
+ * `-` removed, `@@` / `---` / `+++` (and git's `diff --git`, `index`) header,
+ * anything else context. The glyph is part of the text and is never removed.
+ */
+export function diffLineKind(line: string): DiffLineKind {
+  if (
+    line.startsWith('@@') ||
+    line.startsWith('---') ||
+    line.startsWith('+++') ||
+    line.startsWith('diff --git') ||
+    /^index [0-9a-f]+/.test(line)
+  ) {
+    return 'header';
+  }
+  if (line.startsWith('+')) return 'added';
+  if (line.startsWith('-')) return 'removed';
+  return 'context';
 }
 
 // ---------------------------------------------------------------------------

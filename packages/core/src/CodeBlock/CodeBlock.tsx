@@ -36,9 +36,12 @@ import {mergeProps} from '../utils';
 import {useClipboard} from '../hooks/useClipboard';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
+import type {DiffLineKind} from './tokenizer';
 import {
   tokenize,
   tokenizeAsync,
+  diffLineKind,
+  isDiffLanguage,
   flatTokensToLines,
   SYNC_TOKENIZE_THRESHOLD,
 } from './tokenizer';
@@ -298,6 +301,21 @@ const styles = stylex.create({
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
   },
+  // Diff change rows: the whole row is tinted so added and removed lines read
+  // at a glance; the text keeps its ordinary colour, which stays readable on
+  // the tint where the semantic text colours would not, and the leading +/-
+  // glyph stays in the text as the cue that needs no colour. A caller's
+  // highlightLines row is declared after these and keeps its background.
+  lineAdded: {
+    backgroundColor: colorVars['--color-success-muted'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
+    paddingInline: spacingVars['--spacing-4'],
+  },
+  lineRemoved: {
+    backgroundColor: colorVars['--color-error-muted'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
+    paddingInline: spacingVars['--spacing-4'],
+  },
   sizeSm: {
     fontSize: typeScaleVars['--text-supporting-size'],
   },
@@ -332,12 +350,14 @@ const CodeChunk = React.memo(function CodeChunk({
   lines,
   startIndex,
   highlightSet,
+  diffKinds,
   renderLineContent,
   lineNumbers,
 }: {
   lines: string[];
   startIndex: number;
   highlightSet: Set<number> | null;
+  diffKinds: readonly DiffLineKind[] | null;
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode;
   lineNumbers: boolean;
 }) {
@@ -345,13 +365,18 @@ const CodeChunk = React.memo(function CodeChunk({
     <>
       {lines.map((line, j) => {
         const i = startIndex + j;
+        const diffKind = diffKinds?.[i];
+        const isChange = diffKind === 'added' || diffKind === 'removed';
         return (
           <div
             key={i}
             data-line={i + 1}
+            data-diff={isChange ? diffKind : undefined}
             {...stylex.props(
               styles.line,
               lineNumbers && styles.lineNumbered,
+              diffKind === 'added' && styles.lineAdded,
+              diffKind === 'removed' && styles.lineRemoved,
               (highlightSet?.has(i + 1) ?? false) && styles.lineHighlighted,
             )}>
             {renderLineContent(line, i)}
@@ -365,6 +390,7 @@ const CodeChunk = React.memo(function CodeChunk({
 function renderLines(
   lines: string[],
   highlightSet: Set<number> | null,
+  diffKinds: readonly DiffLineKind[] | null,
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode,
   lineNumbers: boolean,
   chunkSize: number = LINE_CHUNK_SIZE,
@@ -377,6 +403,7 @@ function renderLines(
         lines={lines}
         startIndex={0}
         highlightSet={highlightSet}
+        diffKinds={diffKinds}
         renderLineContent={renderLineContent}
         lineNumbers={lineNumbers}
       />
@@ -399,6 +426,7 @@ function renderLines(
           lines={chunkLines}
           startIndex={start}
           highlightSet={highlightSet}
+          diffKinds={diffKinds}
           renderLineContent={renderLineContent}
           lineNumbers={lineNumbers}
         />
@@ -594,6 +622,7 @@ function SpanCodeContent({
   lines,
   tokenLines,
   highlightSet,
+  diffKinds,
   isWrapped,
   sizeStyle,
   hasLineNumbers,
@@ -602,6 +631,7 @@ function SpanCodeContent({
   lines: string[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
+  diffKinds: readonly DiffLineKind[] | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
   hasLineNumbers: boolean;
@@ -634,7 +664,13 @@ function SpanCodeContent({
         hasLineNumbers && styles.codeNumbered,
         hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
+      {renderLines(
+        lines,
+        highlightSet,
+        diffKinds,
+        renderLineContent,
+        hasLineNumbers,
+      )}
     </code>
   );
 }
@@ -647,6 +683,7 @@ function RangeCodeContent({
   lines,
   tokenLines,
   highlightSet,
+  diffKinds,
   isWrapped,
   sizeStyle,
   hasLineNumbers,
@@ -655,6 +692,7 @@ function RangeCodeContent({
   lines: string[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
+  diffKinds: readonly DiffLineKind[] | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
   hasLineNumbers: boolean;
@@ -694,7 +732,13 @@ function RangeCodeContent({
         hasLineNumbers && styles.codeNumbered,
         hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
+      {renderLines(
+        lines,
+        highlightSet,
+        diffKinds,
+        renderLineContent,
+        hasLineNumbers,
+      )}
     </code>
   );
 }
@@ -760,6 +804,10 @@ export function CodeBlock({
 
   const tokenLines = useTokenLines(code, language, customTokenizer);
 
+  const diffKinds = useMemo(
+    () => (isDiffLanguage(language) ? lines.map(diffLineKind) : null),
+    [language, lines],
+  );
   const highlightSet = useMemo(
     () => (highlightLines ? new Set(highlightLines) : null),
     [highlightLines],
@@ -916,6 +964,7 @@ export function CodeBlock({
             lines={lines}
             tokenLines={tokenLines}
             highlightSet={highlightSet}
+            diffKinds={diffKinds}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
             hasLineNumbers={hasLineNumbers}
@@ -926,6 +975,7 @@ export function CodeBlock({
             lines={lines}
             tokenLines={tokenLines}
             highlightSet={highlightSet}
+            diffKinds={diffKinds}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
             hasLineNumbers={hasLineNumbers}
