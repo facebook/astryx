@@ -396,6 +396,40 @@ export function Cases({compact, custom}) {
       expect(await applyTransform(output)).toBe(output);
     });
 
+    it('classifies the remaining forms the way TypeScript does: own ?? default, unary, binary, all-nullish', async () => {
+      const output =
+        await applyTransform(`import {Tokenizer, ChatComposerInput} from '@astryxdesign/core';
+export function More({custom, flag, count, cond, maybe}) {
+  return (
+    <>
+      <Tokenizer emptySearchText={custom ?? 'None'} emptySearchResultsText="Old" />
+      <Tokenizer emptySearchText={!flag} emptySearchResultsText="Old" />
+      <Tokenizer emptySearchText={count - 1} emptySearchResultsText="Old" />
+      <Tokenizer emptySearchText={cond ? null : undefined} emptySearchResultsText="Old" />
+      <Tokenizer emptySearchText={void 0} emptySearchResultsText="Old" />
+      <Tokenizer emptySearchText={flag && maybe} emptySearchResultsText="Old" />
+      <ChatComposerInput triggers={[
+        {char: '@', emptySearchText: custom ?? 'Default', emptySearchResultsText: 'Nobody'},
+        {char: '#', emptySearchText: cond ? null : undefined, emptySearchResultsText: 'No tags'},
+      ]} />
+    </>
+  );
+}`);
+
+      expect(output).toContain(`emptySearchText={custom ?? 'None'} />`);
+      expect(output).toContain(`emptySearchText={!flag} />`);
+      expect(output).toContain(`emptySearchText={count - 1} />`);
+      expect(output).toMatch(
+        /<Tokenizer emptySearchText=\{'Old'\} \/>[\s\S]*<Tokenizer emptySearchText=\{'Old'\} \/>/,
+      );
+      expect(output).toContain(`emptySearchText={(flag && maybe) ?? 'Old'} />`);
+      expect(output).toMatch(/emptySearchText: custom \?\? 'Default'\s*\}/);
+      expect(output).toMatch(/char: '#',\s*emptySearchText: 'No tags'\s*\}/);
+      expect(output).not.toContain(`?? 'None' ??`);
+      expect(output).not.toContain('emptySearchResultsText:');
+      expect(await applyTransform(output)).toBe(output);
+    });
+
     it('flags a same-file object spread onto Tokenizer', async () => {
       const output =
         await applyTransform(`import {Tokenizer} from '@astryxdesign/core';

@@ -104,39 +104,81 @@ const NEVER_NULLISH = new Set([
 ]);
 
 /**
- * Whether a value can never be `null` or `undefined` at runtime, so a `??`
- * after it would be dead code TypeScript 5.6+ rejects (TS2869): literals,
- * booleans, a string built by `+`, a conditional or `||` whose branches are
- * themselves never nullish, and the containers.
+ * Whether a value can never be `null` or `undefined` at runtime, classified
+ * the way TypeScript does when it rejects a dead `??` (TS2869/TS2881):
+ * literals and containers; every unary operator but `void`; every binary and
+ * update operator (arithmetic, comparison, `in`, `instanceof` all produce a
+ * value); `||` and `??` whose right side is never nullish; `&&` whose two
+ * sides are; a conditional whose two branches are; the last of a sequence.
  * @param {any} node
  * @returns {boolean}
  */
 function isNeverNullish(node) {
   const value = unwrap(node);
   if (!value) return false;
-  if (value.type === 'Literal') return value.value != null;
-  if (value.type === 'BooleanLiteral') return true;
-  if (value.type === 'BinaryExpression') return value.operator === '+';
-  if (value.type === 'ConditionalExpression') {
-    return isNeverNullish(value.consequent) && isNeverNullish(value.alternate);
+  switch (value.type) {
+    case 'Literal':
+      return value.value != null;
+    case 'BooleanLiteral':
+    case 'BigIntLiteral':
+    case 'RegExpLiteral':
+    case 'TaggedTemplateExpression':
+    case 'NewExpression':
+    case 'ClassExpression':
+    case 'UpdateExpression':
+    case 'BinaryExpression':
+      return true;
+    case 'UnaryExpression':
+      return value.operator !== 'void';
+    case 'LogicalExpression':
+      return value.operator === '&&'
+        ? isNeverNullish(value.left) && isNeverNullish(value.right)
+        : isNeverNullish(value.right);
+    case 'ConditionalExpression':
+      return (
+        isNeverNullish(value.consequent) && isNeverNullish(value.alternate)
+      );
+    case 'SequenceExpression':
+      return isNeverNullish(value.expressions[value.expressions.length - 1]);
+    case 'AssignmentExpression':
+      return isNeverNullish(value.right);
+    default:
+      return NEVER_NULLISH.has(value.type);
   }
-  if (value.type === 'LogicalExpression' && value.operator === '||') {
-    return isNeverNullish(value.right);
-  }
-  return NEVER_NULLISH.has(value.type);
 }
 
 /**
- * Whether a value is the literal `null` or `undefined`, so the component
- * would have shown the old value and `??` after it is pointless (TS2871).
+ * Whether a value is always `null` or `undefined`, so the component showed
+ * the old value and a `??` after it is dead (TS2871): the literals, `void`,
+ * and `||`/`??`/conditionals built only from such values.
  * @param {any} node
+ * @returns {boolean}
  */
 function isAlwaysNullish(node) {
   const value = unwrap(node);
   if (!value) return false;
-  if (value.type === 'NullLiteral') return true;
-  if (value.type === 'Literal') return value.value === null;
-  return value.type === 'Identifier' && value.name === 'undefined';
+  switch (value.type) {
+    case 'NullLiteral':
+      return true;
+    case 'Literal':
+      return value.value === null;
+    case 'Identifier':
+      return value.name === 'undefined';
+    case 'UnaryExpression':
+      return value.operator === 'void';
+    case 'LogicalExpression':
+      return value.operator === '&&'
+        ? isAlwaysNullish(value.left) || isAlwaysNullish(value.right)
+        : isAlwaysNullish(value.left) && isAlwaysNullish(value.right);
+    case 'ConditionalExpression':
+      return (
+        isAlwaysNullish(value.consequent) && isAlwaysNullish(value.alternate)
+      );
+    case 'SequenceExpression':
+      return isAlwaysNullish(value.expressions[value.expressions.length - 1]);
+    default:
+      return false;
+  }
 }
 
 /**
