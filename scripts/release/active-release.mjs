@@ -7,8 +7,8 @@
  * (spec:AST-017 FR47); main publishes canaries only and its versions never move
  * backward (FR46, FR50).
  *
- * @input  .release marker/plan files, release refs, expected branch/head inputs
- * @output fail-closed validation receipts bound to branch + commit + plan digest
+ * @input  .release marker/plan files, authored Changesets, expected branch/head inputs
+ * @output fail-closed receipts plus the cut-time release description frozen in the plan digest
  * @position single authority used by release CI, stable publishing, and branch cleanup
  *
  * CI copies this file and lib/workspace-globs.mjs alone as trusted policy, so
@@ -32,6 +32,39 @@ const PLAN_FILE = 'plan.json';
 const SHA_RE = /^[0-9a-f]{40}$/;
 const VERSION_RE = /^\d+\.\d+\.\d+$/;
 const BRANCH_RE = /^release\/v(\d+\.\d+\.\d+)$/;
+const CHANGESET_CATEGORIES = new Set([
+  'breaking',
+  'experimental',
+  'component',
+  'feat',
+  'fix',
+  'perf',
+  'docs',
+  'chore',
+]);
+const CHANGESET_CATEGORY_ALIASES = {
+  bug: 'fix',
+  bugfix: 'fix',
+  fixes: 'fix',
+  feature: 'feat',
+  features: 'feat',
+  break: 'breaking',
+  major: 'breaking',
+  components: 'component',
+  new: 'component',
+  performance: 'perf',
+  doc: 'docs',
+  refactor: 'chore',
+  internal: 'chore',
+};
+
+function normalizeChangesetCategory(raw) {
+  const category = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  if (CHANGESET_CATEGORIES.has(category)) return category;
+  return CHANGESET_CATEGORY_ALIASES[category] ?? null;
+}
 
 function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
@@ -65,6 +98,54 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+function parseChangesetDescription(contents) {
+  const text = contents.toString('utf8').replace(/\r\n/g, '\n');
+  const parsed = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(text);
+  if (!parsed) {
+    return {
+      packages: [],
+      category: null,
+      headline: '',
+      contributors: [],
+      body: text.trim(),
+    };
+  }
+
+  const packages = parsed[1]
+    .split('\n')
+    .map(line =>
+      /^\s*['"]?([^'"]+)['"]?\s*:\s*(major|minor|patch|none)\s*$/.exec(line),
+    )
+    .filter(Boolean)
+    .map(match => ({name: match[1], bump: match[2]}));
+
+  const lines = parsed[2].split('\n');
+  const first = lines.findIndex(line => line.trim() !== '');
+  const headlineMatch =
+    first === -1 ? null : /^\s*\[([^\]]+)\]\s*(.*)$/.exec(lines[first]);
+  const contributors = [];
+  const body = [];
+  for (const line of lines.slice(first + 1)) {
+    if (/^\s*@[-\w]+(?:\s+@[-\w]+)*\s*$/.test(line)) {
+      for (const match of line.matchAll(/@([-\w]+)/g)) {
+        if (!contributors.includes(match[1])) contributors.push(match[1]);
+      }
+    } else {
+      body.push(line);
+    }
+  }
+  while (body.length && body[0].trim() === '') body.shift();
+  while (body.length && body.at(-1).trim() === '') body.pop();
+
+  return {
+    packages,
+    category: normalizeChangesetCategory(headlineMatch?.[1]),
+    headline: headlineMatch?.[2].trim() ?? '',
+    contributors,
+    body: body.join('\n'),
+  };
+}
+
 function changesetEntries(root) {
   const dir = path.join(root, '.changeset');
   return fs
@@ -73,16 +154,18 @@ function changesetEntries(root) {
     .sort()
     .map(name => {
       const relative = `.changeset/${name}`;
+      const contents = fs.readFileSync(path.join(root, relative));
       return {
         path: relative,
-        sha256: sha256(fs.readFileSync(path.join(root, relative))),
+        sha256: sha256(contents),
+        ...parseChangesetDescription(contents),
       };
     });
 }
 
 function buildPlan({root, version, branch, cutSha}) {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     version,
     branch,
     cutSha,
@@ -116,7 +199,7 @@ function validateIdentity(marker, plan) {
     errors.push('marker cutSha must be a full SHA');
   if (!/^[0-9a-f]{64}$/.test(marker?.planDigest ?? ''))
     errors.push('marker planDigest must be a SHA-256 digest');
-  if (plan?.schemaVersion !== 1) errors.push('plan schemaVersion must be 1');
+  if (plan?.schemaVersion !== 2) errors.push('plan schemaVersion must be 2');
   for (const key of ['version', 'branch', 'cutSha']) {
     if (plan?.[key] !== marker?.[key])
       errors.push(`plan ${key} must match marker`);
@@ -136,6 +219,33 @@ function validateIdentity(marker, plan) {
     seen.add(entry.path);
     if (!/^[0-9a-f]{64}$/.test(entry.sha256 ?? ''))
       errors.push(`plan has an invalid digest for ${entry.path}`);
+    if (!Array.isArray(entry.packages) || entry.packages.length === 0) {
+      errors.push(`plan has no packages for ${entry.path}`);
+    } else {
+      for (const release of entry.packages) {
+        if (
+          !release ||
+          typeof release.name !== 'string' ||
+          !['major', 'minor', 'patch', 'none'].includes(release.bump)
+        ) {
+          errors.push(`plan has an invalid package release for ${entry.path}`);
+        }
+      }
+    }
+    if (!CHANGESET_CATEGORIES.has(entry.category))
+      errors.push(`plan has an invalid category for ${entry.path}`);
+    if (typeof entry.headline !== 'string' || entry.headline.trim() === '')
+      errors.push(`plan has no headline for ${entry.path}`);
+    if (
+      !Array.isArray(entry.contributors) ||
+      entry.contributors.some(
+        value => typeof value !== 'string' || value === '',
+      )
+    ) {
+      errors.push(`plan has invalid contributors for ${entry.path}`);
+    }
+    if (typeof entry.body !== 'string')
+      errors.push(`plan has an invalid body for ${entry.path}`);
   }
   return errors;
 }

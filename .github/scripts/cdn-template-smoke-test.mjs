@@ -73,7 +73,8 @@ console.log(`scaffolded ${PAGE} pinned to ${pinned}`);
 // The pin is the owner-declared version in this checkout. It can remain
 // unpublished throughout next-plan and release-branch PRs; branch consolidation
 // writes changelogs without bumping package.json. Gating every PR on that exact
-// so on an unpublished pin we re-point the page at npm's stable `latest`
+// version being on the CDN would block the whole release train on a build that
+// cannot exist yet, so on an unpublished pin we re-point the page at npm's stable `latest`
 // dist-tag and still assert the recipe. Registry `versions` keys are not a
 // version-ordered API: the final key can be a canary that esm.sh has not built.
 const metadata = await fetch('https://registry.npmjs.org/@astryxdesign/core')

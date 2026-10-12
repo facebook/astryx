@@ -91,8 +91,12 @@ function isVisiblyFocusable(el: HTMLElement): boolean {
 
 /**
  * Get all focusable elements within a container.
+ *
+ * Exported for menus that place their own Tab stops inside a trapped layer
+ * (DropdownMenu's header and footer), so they judge reachability exactly as
+ * the trap does. Not re-exported from the package's `hooks` entry.
  */
-function getFocusableElements(container: HTMLElement): HTMLElement[] {
+export function getFocusableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(
     container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
   ).filter(isVisiblyFocusable);

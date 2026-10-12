@@ -367,14 +367,20 @@ export function Lightbox({
   // Scroll lock
   useScrollLock(isOpen);
 
-  // Reset zoom on image change
-  useEffect(() => {
-    // Reset image view state when the active media item changes.
-    // eslint-disable-next-line @eslint-react/set-state-in-effect
+  // A new media item starts unzoomed. Adjusted during render, so the new item
+  // never paints at the previous item's zoom and pan.
+  const currentSrc = currentItem?.src;
+  const [viewedItem, setViewedItem] = useState({index, src: currentSrc});
+  // Object.is, matching the dependency comparison of the effect this replaces:
+  // a controlled index of NaN must not re-render forever.
+  if (
+    !Object.is(viewedItem.index, index) ||
+    !Object.is(viewedItem.src, currentSrc)
+  ) {
+    setViewedItem({index, src: currentSrc});
     setZoom(1);
-    // eslint-disable-next-line @eslint-react/set-state-in-effect
     setPan({x: 0, y: 0});
-  }, [index, currentItem?.src]);
+  }
 
   // Announce gallery navigation to screen readers. Moving between images only
   // updates the visual counter, which is silent to assistive tech, so mirror

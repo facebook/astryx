@@ -552,7 +552,7 @@ this decision removes and make runtime/static ownership mode-dependent.
 | lifecycle | `IFIX-0009`                                                                                                                                        |
 | delta     | Runtime and built themes emit only authored data values, scoped to their theme. Explicit layer order and global `color-scheme` rules are unchanged |
 | rollback  | Restore the raw default block from the final-patch baseline                                                                                        |
-| state     | `pending` — lands only in a minor release, once `IFIX-0009` is approved and that release's frozen manifest lists `CLN-0016`                        |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                              |
 
 ## Open questions
 

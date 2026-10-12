@@ -5,7 +5,7 @@
 /**
  * @file RadioList.tsx
  * @input Uses React useId, useCallback, useRef, layer-scoped context, ReactNode, Field, InputStatus
- * @output Exports RadioList component, RadioListProps with owned group focus/disabled semantics, RadioListContext
+ * @output Exports RadioList component, RadioListProps, RadioListContext
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -30,10 +30,11 @@ import {Field} from '../Field/Field';
 import type {InputStatus} from '../Field/types';
 import {useTooltip} from '../Tooltip';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
-import {useMergedRefs} from '../hooks/useMergedRefs';
-import {mergeProps, composeEventHandlers} from '../utils';
-import {joinAriaIDs} from '../utils/inputAria';
-import type {BaseProps} from '../BaseProps';
+import {composeEventHandlers, mergeProps} from '../utils';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 
@@ -79,12 +80,10 @@ const styles = stylex.create({
 });
 
 export interface RadioListProps extends Omit<
-  BaseProps<HTMLDivElement>,
-  'onChange' | 'tabIndex' | 'aria-disabled'
+  FieldInputBaseProps<HTMLDivElement>,
+  'onChange'
 > {
-  tabIndex?: never;
-  'aria-disabled'?: never;
-  /** Ref forwarded to the semantic radiogroup element. */
+  /** Ref forwarded to the `role="radiogroup"` element. */
   ref?: React.Ref<HTMLDivElement>;
   /**
    * Label text for the radio group (always rendered for accessibility).
@@ -159,8 +158,8 @@ export interface RadioListProps extends Omit<
   size?: RadioListSize;
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
-   * (e.g. `'100%'`). Sizes the whole field so its label, control, and status stay
-   * aligned; use `xstyle`/`className`/`style` for broader presentation changes.
+   * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
+   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
    */
   width?: SizeValue;
   /**
@@ -168,7 +167,7 @@ export interface RadioListProps extends Omit<
    */
   labelTooltip?: string;
   /**
-   * Test ID for the radiogroup element.
+   * Test ID for the outer container.
    */
   'data-testid'?: string;
   /**
@@ -208,23 +207,23 @@ export function RadioList({
   status,
   labelTooltip,
   width,
-  xstyle,
-  className,
-  style,
-  hidden,
-  inert,
-  dir,
-  'aria-hidden': ariaHidden,
-  tabIndex: _tabIndex,
-  'aria-disabled': _ariaDisabled,
-  'data-testid': dataTestId,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   htmlName,
   children,
-  onFocus: onFocusProp,
-  'aria-labelledby': ariaLabelledByProp,
+  onFocus,
   'aria-describedby': ariaDescribedByProp,
   ...restProps
 }: RadioListProps) {
+  const {rest, container} = useFieldInputStyling('RadioList', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const autoName = useId();
   const name = htmlName ?? autoName;
   const inputID = useId();
@@ -254,11 +253,6 @@ export function RadioList({
     focusTrigger: 'always',
     isEnabled: showsDisabledMessage,
   });
-  const mergedGroupRef = useMergedRefs(
-    ref,
-    groupRef,
-    disabledMessageTooltip.ref,
-  );
 
   const contextValue = useMemo<RadioListContextValue>(
     () => ({
@@ -367,6 +361,7 @@ export function RadioList({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -388,31 +383,34 @@ export function RadioList({
       }
       labelTooltip={labelTooltip}
       statusVariant="detached"
-      hidden={hidden}
-      inert={inert}
-      dir={dir}
-      aria-hidden={ariaHidden}
-      width={width}
-      xstyle={xstyle}
-      className={className}
-      style={style}>
+      width={width}>
       <div
-        {...restProps}
-        ref={mergedGroupRef}
-        data-testid={dataTestId}
+        {...rest}
+        ref={el => {
+          groupRef.current = el;
+          if (typeof ref === 'function') {
+            ref(el);
+          } else if (ref) {
+            ref.current = el;
+          }
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, so attaching
+          // unconditionally is safe.
+          disabledMessageTooltip.ref(el);
+        }}
         role="radiogroup"
-        aria-labelledby={
-          // Caller ids are additive, ahead of the component-owned label id.
-          joinAriaIDs(ariaLabelledByProp, labelID)
+        aria-labelledby={labelID}
+        onFocus={composeEventHandlers(handleFocus, onFocus)}
+        aria-describedby={
+          [
+            ariaDescribedByProp,
+            description ? descriptionID : null,
+            status?.message ? statusMessageID : null,
+            showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+          ]
+            .filter(Boolean)
+            .join(' ') || undefined
         }
-        onFocus={composeEventHandlers(handleFocus, onFocusProp)}
-        aria-describedby={joinAriaIDs(
-          // Caller ids are additive, ahead of the component-owned ones.
-          ariaDescribedByProp,
-          description ? descriptionID : null,
-          status?.message ? statusMessageID : null,
-          showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-        )}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-required={isEffectivelyRequired || undefined}
         {...mergeProps(
@@ -420,7 +418,10 @@ export function RadioList({
           stylex.props(
             styles.radiogroup,
             orientation === 'vertical' ? styles.vertical : styles.horizontal,
+            controlXstyle,
           ),
+          controlClassName,
+          controlStyle,
         )}>
         <RadioListContext value={contextValue}>{children}</RadioListContext>
       </div>

@@ -184,9 +184,9 @@ automatically and sorted into place by date.
 
 ## How posts are reviewed
 
-Blog posts are reviewed against the
-**[Blog Review Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric)**.
-It's type-aware (a changelog `update`, an `engineering` deep-dive, and a
+Blog posts are reviewed against the **[Blog Review
+Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria)**.
+The rubric is type-aware (a changelog `update`, an `engineering` deep-dive, and a
 `perspective` essay are judged by different profiles), gates on accuracy
 (verifiable claims — commands, APIs, numbers — are checked against the codebase,
 and a confirmed error blocks publish), and checks substance, efficiency, craft,

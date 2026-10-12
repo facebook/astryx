@@ -9,7 +9,7 @@ superseded_by: null
 approved_by: cixzhang
 approved_at: 2026-09-20
 owners: [cixzhang, imdreamrunner]
-review_triggers: [behavior, layout, theming, accessibility, public-api]
+review_triggers: [behavior, layout, theming, accessibility]
 verified_by:
   [
     packages/core/src/Field/Field.test.tsx,
@@ -79,6 +79,10 @@ form value through a labeled field surface with a content lane. Members use
   another field primitive. BaseTypeahead is a combobox engine without a field
   surface.
 
+FR10 and DEC-7 also bind CheckboxList, RadioList, and Slider. They stay
+outside this family's geometry rules, but they compose Field, and every
+component that composes Field targets base props and styling the same way.
+
 Membership follows public responsibility, not use of `inputWrapperStyles` or
 another implementation helper.
 
@@ -88,12 +92,9 @@ another implementation helper.
   input state display, behavior, appearance, and size. Sizing and end-control
   geometry are invariants within that broader purpose, not the purpose itself.
 - `Field` owns the standalone label, description, status placement, and explicit
-  `width` seam. A member omits its nested Field when a supported InputGroup owns
-  the group label and supporting text.
-- `architecture:public-component-api/INV5` owns the shared input target split. For
-  members that expose those surfaces, this family identifies the field
-  presentation and primary semantic control or group; it does not invent a third
-  pass-through target.
+  `width` seam, and is the member's `container*` styling target under FR10 when
+  it renders a box. A member omits its nested Field when a supported InputGroup
+  owns the group label and supporting text.
 - `FormLayout` owns outer arrangement, spacing, direction, and form-level
   optionality. It does not redefine a member's internal control geometry.
 - `InputGroup` owns the fixed row height, connected outer surface, edge alignment,
@@ -115,20 +116,20 @@ another implementation helper.
 
 ## Canonical concepts
 
-| Concept            | Values or states                                               | Default semantics                                                                                                                            | Stability                                            |
-| ------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| field shell        | standalone Field or supported InputGroup path                  | One label/status owner surrounds the control                                                                                                 | shipped pattern                                      |
-| field size         | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                                                      | approved family rule                                 |
-| inline size        | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                                                 | approved rule; Selector exception below              |
-| end controls       | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                                               | approved family rule                                 |
-| grouped row        | standalone or admitted InputGroup child                        | InputGroup owns fixed height, connected edges, and group focus; the child owns its grouped adaptation                                        | approved capability contract; shipped adoption below |
-| disabled reason    | absent or component-supported `disabledMessage`                | The reason remains keyboard- and assistive-technology-reachable while mutation stays blocked                                                 | approved family rule where exposed                   |
-| input busy         | explicit `isLoading` or pending `changeAction` where exposed   | The field value is resolving or being saved                                                                                                  | approved by DEC-2 and AST-001                        |
-| focus-zoom floor   | iOS or non-iOS text entry                                      | iOS text-entry controls floor rendered text at 16 CSS px to prevent focus zoom; other platforms retain theme sizing                          | approved family rule                                 |
-| source busy        | component-owned async search or option loading                 | Supporting data work is separate from input `isLoading`                                                                                      | component/system-spec owned                          |
-| Transition Action  | absent or component-supported `changeAction`                   | Callback first, optimistic value next, Action in a transition, one busy presentation                                                         | approved family rule where exposed                   |
-| status placement   | `attached`, `detached`, or `tooltip` at the input-family layer | Attached is the default where the member supports safe overlap; detached and tooltip remain available to every input                         | approved family rule                                 |
-| public DOM targets | field presentation and primary semantic control or group       | Styling, width, and field-wide structure affect the complete field; ref, test ID, remaining DOM/ARIA, and events affect the semantic control | approved family rule                                 |
+| Concept           | Values or states                                               | Default semantics                                                                                                                    | Stability                                            |
+| ----------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| field shell       | standalone Field or supported InputGroup path                  | One label/status owner surrounds the control                                                                                         | shipped pattern                                      |
+| field size        | `sm`, `md`, `lg` where supported                               | Same-size single-line controls align without one state changing the row                                                              | approved family rule                                 |
+| inline size       | intrinsic, explicit `Field.width`, or containing layout        | A member keeps its available inline size across value and busy-state changes                                                         | approved rule; Selector exception below              |
+| end controls      | absent, clear, busy, status, disclosure, or component content  | Every rendered control has non-overlapping space; absent controls leave no unexplained reserve                                       | approved family rule                                 |
+| grouped row       | standalone or admitted InputGroup child                        | InputGroup owns fixed height, connected edges, and group focus; the child owns its grouped adaptation                                | approved capability contract; shipped adoption below |
+| disabled reason   | absent or component-supported `disabledMessage`                | The reason remains keyboard- and assistive-technology-reachable while mutation stays blocked                                         | approved family rule where exposed                   |
+| input busy        | explicit `isLoading` or pending `changeAction` where exposed   | The field value is resolving or being saved                                                                                          | approved by DEC-2 and AST-001                        |
+| focus-zoom floor  | iOS or non-iOS text entry                                      | iOS text-entry controls floor rendered text at 16 CSS px to prevent focus zoom; other platforms retain theme sizing                  | approved family rule                                 |
+| source busy       | component-owned async search or option loading                 | Supporting data work is separate from input `isLoading`                                                                              | component/system-spec owned                          |
+| Transition Action | absent or component-supported `changeAction`                   | Callback first, optimistic value next, Action in a transition, one busy presentation                                                 | approved family rule where exposed                   |
+| status placement  | `attached`, `detached`, or `tooltip` at the input-family layer | Attached is the default where the member supports safe overlap; detached and tooltip remain available to every input                 | approved family rule                                 |
+| prop targets      | base props, `container*`, `control*`                           | Base props reach the primary semantic control; `container*` reaches Field; `control*` reaches the control box; no root styling input | approved by DEC-7                                    |
 
 ## Cross-component invariants
 
@@ -188,19 +189,37 @@ another implementation helper.
   coarse-pointer environments MUST keep the active theme's type scale rather
   than inheriting the iOS floor. The platform-detection mechanism remains an
   implementation detail, but it MUST preserve those observable outcomes.
+- **FR10 — Base props reach the control; styling reaches named parts only.**
+  This is the input family's exception to base styling: where
+  `architecture:public-component-api` and `spec:AST-071` give a component a root
+  `xstyle`, `className`, and `style`, a Field-composed component has none. In
+  every component that composes Field:
+  1. `ref`, `id`, `data-*` (including `data-testid`), `aria-*`, `hidden`,
+     `inert`, `dir`, and DOM event handlers MUST reach the primary semantic
+     control: the native input, textarea, or combobox/trigger element that
+     carries the field's accessible name and value. For a group input
+     (RadioList, CheckboxList) the primary semantic control is the group element
+     (`role="radiogroup"` or `role="group"`); per-option props stay on the option
+     API.
+  2. The component's props type MUST NOT accept root `xstyle`, `className`, or
+     `style`; passing one is a type error. A development build warns when an
+     untyped caller passes one at runtime, and the value is not applied.
+  3. `containerXstyle`, `containerClassName`, and `containerStyle` MUST reach the
+     Field box when one renders. Where none renders (inside InputGroup, and in
+     horizontal-label FormLayout, where Field lays out its children directly in
+     the form's columns), they have no effect and a development build warns;
+     inside InputGroup the caller styles the group.
+  4. `controlXstyle`, `controlClassName`, and `controlStyle` MUST reach the
+     visual control box: the element that paints the field border and
+     background and contains its icons and end controls. They never target the
+     native input. Each set is one `spec:AST-071` part set.
+  5. Styling never reroutes: no layout moves `container*` to the control box or
+     `control*` to Field.
 
-- **FR10 — Public DOM targets follow function.** Where a member exposes the shared
-  styling and DOM surface, `xstyle`, `className`, `style`, dedicated `width`, and
-  field-wide structural props (`hidden`, `inert`, `dir`, and `aria-hidden`) apply
-  to the complete field presentation so label, control, description, and status
-  remain one unit. A containing layout may still own inline size; if a layout
-  removes the field's box, the member documents and uses a painted styling target.
-  `ref`, `data-testid`, remaining neutral data/ARIA/DOM props, and event handlers apply to
-  the member's primary semantic control or group. Component-owned roles, names, descriptions, states, and required behavior win
-  collisions; consumer handlers compose in the order promised by the component.
-  A member with multiple peer semantic controls or no stable primary semantic
-  target exposes a smaller explicit per-target API instead of routing broad
-  `BaseProps` to an arbitrary wrapper.
+  Component-owned value callbacks (`onChange(value)`) are typed out of base
+  props and keep their value signature. A consumer DOM handler composes with the
+  component's own handler through the shared composition helper, component-first
+  unless the API promises cancellation. No member and no layout may vary this.
 
 ## Allowed component variation
 
@@ -235,20 +254,20 @@ another implementation helper.
 
 ## Representative matrix
 
-| Member and state                                           | Shared invariant                                                                                 | Deliberate variation                                                                                          |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| TextInput / empty, valued, or input-busy                   | Stable inline size; in-flow end controls do not overlap text                                     | Native input and optional clear/status controls                                                               |
-| Selector / placeholder or selected                         | End controls and grouped row remain bounded                                                      | Standalone inline size may follow displayed content under DEC-1                                               |
-| Typeahead / empty, selected, or source-busy                | Stable inline size and one non-overlapping end area, standalone and grouped                      | Editable input becomes a selected Token; source busy is BaseTypeahead-owned                                   |
-| Tokenizer / standalone tokens, source-busy, and endContent | Stable inline size and clear content/end-control separation                                      | Standalone tokens may wrap and grow the field in the block axis                                               |
-| Tokenizer / admitted InputGroup mode                       | Group height, connected surface, semantics, and keyboard behavior remain coherent                | Grouped default uses a single-line overflow treatment; caller-selected supported overflow may vary within FR3 |
-| ComplexSelector / placeholder, selected, or input-busy     | Stable field surface and non-overlapping Spinner/disclosure                                      | Caller owns rich popup content; no shipped InputGroup support                                                 |
-| Admitted member / InputGroup                               | Compatible size/height, one outer surface/focus owner, one-row geometry, and preserved semantics | Component owns its internal grouped truncation, folding, clipping, or overflow                                |
-| Member with `disabledMessage`                              | Reason is reachable; mutation remains blocked                                                    | Component owns the focus target and Tooltip composition                                                       |
-| Member / validation status                                 | Detached and tooltip are available; attached is default only when supported                      | Component owns whether its control safely satisfies attached eligibility                                      |
-| Floored text entry / iOS touch                             | Editable text resolves to at least 16 CSS px and focus does not trigger browser zoom             | Theme size may already satisfy the floor                                                                      |
-| Floored text entry / non-iOS coarse pointer                | The active theme's type scale remains in force                                                   | Platform and input hardware may vary                                                                          |
-| Member / public DOM targeting                              | Styling and width preserve one field presentation; semantic props reach the control              | Component chooses its stable presentation and primary semantic targets under FR10                             |
+| Member and state                                                    | Shared invariant                                                                                                                                         | Deliberate variation                                                                                          |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| TextInput / empty, valued, or input-busy                            | Stable inline size; in-flow end controls do not overlap text                                                                                             | Native input and optional clear/status controls                                                               |
+| Selector / placeholder or selected                                  | End controls and grouped row remain bounded                                                                                                              | Standalone inline size may follow displayed content under DEC-1                                               |
+| Typeahead / empty, selected, or source-busy                         | Stable inline size and one non-overlapping end area, standalone and grouped                                                                              | Editable input becomes a selected Token; source busy is BaseTypeahead-owned                                   |
+| Tokenizer / standalone tokens, source-busy, and endContent          | Stable inline size and clear content/end-control separation                                                                                              | Standalone tokens may wrap and grow the field in the block axis                                               |
+| Tokenizer / admitted InputGroup mode                                | Group height, connected surface, semantics, and keyboard behavior remain coherent                                                                        | Grouped default uses a single-line overflow treatment; caller-selected supported overflow may vary within FR3 |
+| ComplexSelector / placeholder, selected, or input-busy              | Stable field surface and non-overlapping Spinner/disclosure                                                                                              | Caller owns rich popup content; no shipped InputGroup support                                                 |
+| Admitted member / InputGroup                                        | Compatible size/height, one outer surface/focus owner, one-row geometry, and preserved semantics                                                         | Component owns its internal grouped truncation, folding, clipping, or overflow                                |
+| Member with `disabledMessage`                                       | Reason is reachable; mutation remains blocked                                                                                                            | Component owns the focus target and Tooltip composition                                                       |
+| Member / validation status                                          | Detached and tooltip are available; attached is default only when supported                                                                              | Component owns whether its control safely satisfies attached eligibility                                      |
+| Floored text entry / iOS touch                                      | Editable text resolves to at least 16 CSS px and focus does not trigger browser zoom                                                                     | Theme size may already satisfy the floor                                                                      |
+| Floored text entry / non-iOS coarse pointer                         | The active theme's type scale remains in force                                                                                                           | Platform and input hardware may vary                                                                          |
+| Field-composed component / standalone, horizontal-label, InputGroup | Base props on the primary semantic control; `container*` on the Field box where one renders; `control*` on the control box; root styling is a type error | `container*` has no effect where no Field box renders                                                         |
 
 ## Adoption and exceptions
 
@@ -262,7 +281,7 @@ another implementation helper.
 | DateInput       | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | none                                                                                                                                            |
 | DateRangeInput  | Field, FormLayout, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                            | not InputGroup-compatible                                                                                                                       |
 | DateTimeInput   | Field, FormLayout, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                            | not InputGroup-compatible                                                                                                                       |
-| TimeInput       | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | horizontal-label FormLayout routes styling to the painted control; field-wide structure stays on Field                                          |
+| TimeInput       | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | none                                                                                                                                            |
 | FileInput       | Field, FormLayout, width, `isLoading`, `changeAction`, clear, status, and disabled reason                                  | no public `size`; compact and dropzone modes are component-owned                                                                                |
 | Selector        | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | DEC-1 permits standalone content-sized width                                                                                                    |
 | MultiSelector   | Field, FormLayout, InputGroup, size, width, `isLoading`, `changeAction`, clear, status, and disabled reason                | trigger-display modes remain component-owned                                                                                                    |
@@ -277,14 +296,6 @@ DEC-6 does not require unrelated components to add a new floor.
 
 ### Implementation gaps
 
-- **Public DOM targeting:** current members use incompatible routing. TextInput,
-  TextArea, and NumberInput already split presentation styling from semantic-control
-  props. DateInput, DateRangeInput, and DateTimeInput send neutral props to wrappers;
-  Typeahead, Tokenizer, and MultiSelector drop part of their advertised
-  surface; Selector uses separate styling, test-ID, and semantic targets. These are
-  conformance and compatibility gaps under FR10, not alternate family semantics.
-  Migrate each component atomically with focused target, composition, and unchanged-
-  behavior evidence; do not move released props between elements silently.
 - **Typeahead state geometry:** current main removes the intrinsic-width input
   from layout when a selected Token is shown, so a content-sized parent can
   collapse the field onto the value. Its clear control is separately positioned,
@@ -330,6 +341,35 @@ DEC-6 does not require unrelated components to add a new floor.
   evidence of an attempted implementation that derives overlap from a descendant
   `data-size`; that mechanism does not by itself establish eligibility or root-size
   ownership.
+- **Prop targets:** current components do not yet meet FR10. Every component
+  below accepts root `xstyle`/`className`/`style`, and none accepts `container*`
+  or `control*`. Today's targets:
+
+  | Component                          | Root styling reaches | Base props reach                       | Primary semantic control    | Root styling migrates to |
+  | ---------------------------------- | -------------------- | -------------------------------------- | --------------------------- | ------------------------ |
+  | TextInput                          | control box          | native input                           | native input                | `control*`               |
+  | TextArea                           | control box          | native textarea                        | native textarea             | `control*`               |
+  | NumberInput                        | control box          | native input                           | native input                | `control*`               |
+  | FileInput                          | control box          | native file input                      | native file input           | `control*`               |
+  | DateInput (pointer, native, touch) | control box          | control box                            | date input                  | `control*`               |
+  | DateRangeInput                     | control box          | control box; `ref` on a trigger button | range trigger               | `control*`               |
+  | DateTimeInput (pointer, touch)     | control box          | control box                            | date-time input             | `control*`               |
+  | TimeInput (typed, native, touch)   | control box          | not forwarded                          | time input                  | `control*`               |
+  | Selector                           | control box          | trigger button                         | trigger button              | `control*`               |
+  | MultiSelector                      | control box          | not forwarded                          | trigger button              | `control*`               |
+  | ComplexSelector                    | control box          | control box                            | trigger button              | `control*`               |
+  | Typeahead                          | Field                | Field                                  | combobox input              | `container*`             |
+  | Tokenizer                          | Field                | Field                                  | combobox input              | `container*`             |
+  | CheckboxList                       | Field                | Field                                  | `role="group"` element      | `container*`             |
+  | RadioList                          | Field                | not forwarded; `ref` on Field          | `role="radiogroup"` element | `container*`             |
+  | Slider                             | Field                | not forwarded; `ref` on the track      | slider control              | `container*`             |
+
+  Conformance is an approved removal of root
+  styling; an `astryx upgrade` codemod rewrites each component's root styling to
+  the part it reaches today, per the last column. A codemod cannot follow
+  styling passed through a product wrapper's own props or spread; FR10's type
+  error surfaces those callsites.
+
 - **Verification coverage:** current unit tests prove composition, semantics, and
   individual state behavior, but do not yet provide the complete real-browser
   inline-size/end-overlap matrix below. This current record names those
@@ -340,18 +380,18 @@ The exhaustive coverage obligation follows the membership and adoption tables.
 
 ## Verification map
 
-| Contract | Verification                                                                                                                          | Representative members and states                                                                                                 | Mutation or failure expectation                                                                                                                                            |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1      | Real-Chromium before/after inline-size measurements in block, flex-item, inline-block, grid auto-track, and explicit-width containers | TextInput baseline; Selector exception; Typeahead empty/selected/source-busy; Tokenizer zero/one/many tokens                      | Value or busy state changes the field's outer inline size outside a recorded exception                                                                                     |
-| FR2      | Real-Chromium content-box/control-box overlap matrix at narrow supported widths and LTR/RTL                                           | clear, Spinner, status, disclosure, Tokenizer `endContent`; alone and combined                                                    | Content, caret, or pointer hit area intersects a rendered end control, or stale reserve remains after it unmounts                                                          |
-| FR3      | InputGroup unit tests plus rendered size/height, surface/focus-ownership, overflow, and interaction checks                            | every admitted member; Tokenizer zero/one/many tokens, focused/unfocused, explicit/default overflow; mismatched child/group sizes | A child keeps competing outer geometry, expands or adds a row, loses connected focus/border ownership, or changes naming, keyboard, focus, editing, or selection semantics |
-| FR4      | Keyboard, pointer, and accessibility-tree tests                                                                                       | each member that exposes `disabledMessage`                                                                                        | Reason becomes unreachable, or the disabled control mutates/activates                                                                                                      |
-| FR5      | Selector and MultiSelector interaction and announcement tests from AST-001                                                            | populated options while input-busy; explicit source-pending; completed empty                                                      | Input busy suppresses supplied options or substitutes for source state                                                                                                     |
-| FR6      | Focused callback/order/optimistic/busy tests for every Action-capable mutation path                                                   | typing, selection, calendar/preset, file selection, and clear where exposed                                                       | Callback/Action order changes, optimistic feedback disappears, or a clear path bypasses the Action contract                                                                |
-| FR7      | Typeahead/Tokenizer source-busy tests and real-browser geometry checks                                                                | direct BaseTypeahead, standalone wrappers, grouped Typeahead, selected/tokenized values                                           | Busy feedback is unnamed/duplicated, `aria-busy` is absent, or source loading changes row/inline geometry                                                                  |
-| FR8      | Representative member tests plus real-browser overlap/opacity/height checks                                                           | eligible single-line direct controls; wrapped, custom, tall, and translucent controls; all three placements                       | Attached is missing where supported, appears where unsafe, or tooltip reaches direct FieldStatus                                                                           |
-| FR9      | `inputFontFloor.test.ts`, focused computed-style checks, and real iOS Safari focus evidence                                           | iOS touch, non-iOS coarse pointer, and desktop fine pointer                                                                       | iOS renders below 16 CSS px or focus zooms, or a non-iOS coarse pointer receives the iOS-only floor                                                                        |
-| FR10     | Focused DOM-target, ref, styling, event-composition, and collision tests for each supported rendering path                            | native control, semantic group, composed trigger, grouped mode, and representative unchanged consumer usage                       | A prop reaches the wrong element, is dropped, overwrites owned semantics, or styling/width stops treating the field as one layout unit                                     |
+| Contract | Verification                                                                                                                                                                                                                                  | Representative members and states                                                                                                 | Mutation or failure expectation                                                                                                                                                                                          |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR1      | Real-Chromium before/after inline-size measurements in block, flex-item, inline-block, grid auto-track, and explicit-width containers                                                                                                         | TextInput baseline; Selector exception; Typeahead empty/selected/source-busy; Tokenizer zero/one/many tokens                      | Value or busy state changes the field's outer inline size outside a recorded exception                                                                                                                                   |
+| FR2      | Real-Chromium content-box/control-box overlap matrix at narrow supported widths and LTR/RTL                                                                                                                                                   | clear, Spinner, status, disclosure, Tokenizer `endContent`; alone and combined                                                    | Content, caret, or pointer hit area intersects a rendered end control, or stale reserve remains after it unmounts                                                                                                        |
+| FR3      | InputGroup unit tests plus rendered size/height, surface/focus-ownership, overflow, and interaction checks                                                                                                                                    | every admitted member; Tokenizer zero/one/many tokens, focused/unfocused, explicit/default overflow; mismatched child/group sizes | A child keeps competing outer geometry, expands or adds a row, loses connected focus/border ownership, or changes naming, keyboard, focus, editing, or selection semantics                                               |
+| FR4      | Keyboard, pointer, and accessibility-tree tests                                                                                                                                                                                               | each member that exposes `disabledMessage`                                                                                        | Reason becomes unreachable, or the disabled control mutates/activates                                                                                                                                                    |
+| FR5      | Selector and MultiSelector interaction and announcement tests from AST-001                                                                                                                                                                    | populated options while input-busy; explicit source-pending; completed empty                                                      | Input busy suppresses supplied options or substitutes for source state                                                                                                                                                   |
+| FR6      | Focused callback/order/optimistic/busy tests for every Action-capable mutation path                                                                                                                                                           | typing, selection, calendar/preset, file selection, and clear where exposed                                                       | Callback/Action order changes, optimistic feedback disappears, or a clear path bypasses the Action contract                                                                                                              |
+| FR7      | Typeahead/Tokenizer source-busy tests and real-browser geometry checks                                                                                                                                                                        | direct BaseTypeahead, standalone wrappers, grouped Typeahead, selected/tokenized values                                           | Busy feedback is unnamed/duplicated, `aria-busy` is absent, or source loading changes row/inline geometry                                                                                                                |
+| FR8      | Representative member tests plus real-browser overlap/opacity/height checks                                                                                                                                                                   | eligible single-line direct controls; wrapped, custom, tall, and translucent controls; all three placements                       | Attached is missing where supported, appears where unsafe, or tooltip reaches direct FieldStatus                                                                                                                         |
+| FR9      | `inputFontFloor.test.ts`, focused computed-style checks, and real iOS Safari focus evidence                                                                                                                                                   | iOS touch, non-iOS coarse pointer, and desktop fine pointer                                                                       | iOS renders below 16 CSS px or focus zooms, or a non-iOS coarse pointer receives the iOS-only floor                                                                                                                      |
+| FR10     | A type test over every Field-composed component's props that fails if one accepts root `xstyle`, `className`, or `style`; per-component render tests for every base prop, `container*`, and `control*` prop and for both development warnings | every Field-composed component standalone, in horizontal-label FormLayout, and inside InputGroup where admitted                   | A component type-checks with root styling, a base prop lands off the primary semantic control, `container*` lands off the Field box or on the control box, `control*` lands off the control box, or a warning is missing |
 
 ## Decision links
 
@@ -445,32 +485,22 @@ Rejected: applying the 16px floor to every coarse pointer. Pointer precision doe
 not establish the iOS browser behavior and inflates text on Android and
 input-capable touch laptops without preventing a corresponding zoom failure.
 
-### DEC-7 — Input public DOM targets split by function
+### DEC-7 — Field-composed components forbid root styling
 
-**Decider:** `cixzhang`, `2026-09-19`
+**Decider:** `cixzhang`, `2026-10-11`
 
-An input presents one field to the builder even when it renders a field shell,
-painted wrapper, and semantic control as separate elements. Styling inputs,
-dedicated `width`, and field-wide structural props (`hidden`, `inert`, `dir`, and
-`aria-hidden`) therefore target the complete field presentation; a containing
-layout may still own inline size. The ref, test ID, remaining neutral DOM/data/ARIA
-props, and event handlers target the primary semantic control or group.
+A caller passing a base prop to a field wants the control a person operates, so
+`ref`, ids, test ids, ARIA, and handlers reach the primary semantic control. A
+field has two styleable surfaces, the whole field and its visual control box,
+and a root `xstyle` would have to pick one silently. So the family declares an
+exception to base styling: no root styling input, only `container*` for Field
+and `control*` for the control box, each one AST-071 part set. A product wrapper
+that spreads props into an input then gets a type error at the callsite, rather
+than a visual move a codemod cannot see. Each part keeps one target in every
+member and layout; where its element does not render, the part has no effect
+rather than moving to another element.
 
-This split keeps layout customization attached to the complete labeled field while
-focus, measurement, test selection, accessibility metadata, and interaction attach
-to the element that actually represents the value. Component-owned semantics and
-required behavior retain precedence; consumer handlers compose according to the
-component's documented cancellation contract.
-
-TimeInput records one containing-layout exception: horizontal-label FormLayout
-uses `display: contents` for Field, so `xstyle`, `className`, and `style` target
-the painted time-control wrapper in that mode. Field-wide structural props remain
-on Field, and ordinary standalone layouts keep styling on the complete Field.
-
-Rejected: routing every prop to Field, because semantic props and refs then miss the
-control; routing every prop to the control, because layout styling no longer treats
-the labeled field as one unit; or choosing targets independently per prop without a
-family rule.
+Rejected: keeping root `xstyle` and routing it to Field; spreads and wrappers would move styling silently.
 
 ## Open questions
 
@@ -478,10 +508,7 @@ None.
 
 ## Content boundary
 
-This record owns cross-component field behavior, including the functional public
-DOM target categories in FR10. It does not expand membership to labeled-control
-components excluded above; those components still follow
-`architecture:public-component-api/INV5`. Component props, exact DOM anatomy,
-selection/search algorithms, theme target maps, implementation mechanisms, current
-audit results, and product-specific compositions remain with their component,
-architecture, design, audit, or callsite owners.
+This record owns only cross-component field behavior. Component props,
+selection/search algorithms, visual target maps, implementation mechanisms,
+current audit results, and product-specific compositions remain with their
+component, architecture, design, audit, or callsite owners.

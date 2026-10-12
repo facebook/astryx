@@ -13,7 +13,7 @@
  * - Removes default margins, padding, and list styles
  * - Makes images block-level and responsive
  * - Resets form elements to inherit font styles
- * - Uses :where() for zero specificity (easy to override)
+ * - Uses :where() for zero specificity (pseudo-elements go outside it)
  *
  * Usage:
  *
@@ -46,7 +46,7 @@
    * Use border-box globally. Prevents padding/border from affecting
    * element dimensions — the single most impactful reset.
    */
-  :where(*, *::before, *::after) {
+  :where(*), :where(*)::before, :where(*)::after {
     box-sizing: border-box;
   }
 
@@ -54,7 +54,7 @@
    * Reset borders to 0-width solid. This lets you add a border by just
    * setting border-width — no need to also specify border-style.
    */
-  :where(*, *::before, *::after) {
+  :where(*), :where(*)::before, :where(*)::after {
     border-width: 0;
     border-style: solid;
     border-color: currentColor;
@@ -284,19 +284,19 @@
 
   /*
    * Normalize placeholder opacity (Firefox renders at reduced opacity)
-   * and set a sensible default color using the Astryx text-placeholder token.
+   * and color it with the --color-text-secondary token, or its default.
    */
-  :where(input::placeholder, textarea::placeholder) {
+  :where(input, textarea)::placeholder {
     opacity: 1;
-    color: var(--color-text-secondary, #9ca3af);
+    color: var(--color-text-secondary, light-dark(#4E606F, #AAAFB5));
   }
 
   /*
    * Remove the inner padding and cancel buttons in search inputs
    * for Chrome and Safari.
    */
-  :where([type='search']::-webkit-search-decoration,
-         [type='search']::-webkit-search-cancel-button) {
+  :where([type='search'])::-webkit-search-decoration,
+  :where([type='search'])::-webkit-search-cancel-button {
     -webkit-appearance: none;
   }
 

@@ -86,6 +86,51 @@ export async function template(name, options = {}) {
     cwd = process.cwd(),
   } = options;
 
+  if (cdn) {
+    const ignored = [
+      name ? '<name>' : null,
+      list ? '--list' : null,
+      skeleton ? '--skeleton' : null,
+      type ? '--type' : null,
+      packageFilter ? '--package' : null,
+    ].filter(Boolean);
+    if (ignored.length > 0) {
+      throw new AstryxError(
+        `\`--cdn\` cannot be combined with ${ignored.join(', ')}: the CDN starter does not use templates.`,
+        undefined,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
+  }
+  if (list) {
+    const ignored = [
+      name ? '<name>' : null,
+      targetPath ? '<path>' : null,
+      skeleton ? '--skeleton' : null,
+      overwrite ? '--overwrite' : null,
+    ].filter(Boolean);
+    if (ignored.length > 0) {
+      throw new AstryxError(
+        `\`--list\` cannot be combined with ${ignored.join(', ')}: it lists templates and does not scaffold.`,
+        undefined,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
+  }
+  if (skeleton) {
+    const ignored = [
+      targetPath ? '<path>' : null,
+      overwrite ? '--overwrite' : null,
+    ].filter(Boolean);
+    if (ignored.length > 0) {
+      throw new AstryxError(
+        `\`--skeleton\` cannot be combined with ${ignored.join(', ')}: it prints the skeleton and does not write files.`,
+        undefined,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
+  }
+
   // The CDN starter ships as an asset rather than as a discovered template, so
   // it answers before discovery — nothing here needs a name resolved.
   if (cdn) {
