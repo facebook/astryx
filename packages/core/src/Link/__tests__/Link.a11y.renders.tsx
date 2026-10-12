@@ -30,6 +30,7 @@ function RouterLink({onClick, children, ...props}: ComponentProps<'a'>) {
     target.__a11yLinkNavigations = (target.__a11yLinkNavigations ?? 0) + 1;
   };
   return (
+    // eslint-disable-next-line @astryx/no-hardcoded-anchor -- this stands in for a third-party router's own anchor, which Link receives through LinkProvider and `as`.
     <a {...props} data-a11y-link-router onClick={navigate}>
       {children}
     </a>
