@@ -70,38 +70,10 @@ import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
 import type {DialogVariantMap} from './index';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
-import {
-  getInteractionModality,
-  useInteractionModalityTracking,
-} from '../utils/interactionModality';
+import {useInteractionModalityTracking} from '../utils/interactionModality';
+import {focusForLastInput} from '../utils/focusReturn';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
-/**
- * Move focus programmatically so its ring follows the last input. Dialog does
- * not render the element that opened it or the consumer's autofocus target, so
- * the browser's focus option is the one way to reach them.
- */
-function focusForLastInput(element: HTMLElement): void {
-  // A text-entry field paints its own focus treatment to show where typing
-  // goes, and an extra blur there can run validation or mark it touched.
-  const isTextEntry =
-    element instanceof HTMLInputElement ||
-    element instanceof HTMLTextAreaElement ||
-    element instanceof HTMLSelectElement ||
-    element.isContentEditable;
-  if (isTextEntry || getInteractionModality() !== 'pointer') {
-    element.focus();
-    return;
-  }
-  // Focusing the element that already has focus does nothing, so a ring the
-  // browser already drew would stay. WebKit draws one when showModal() or its
-  // native close moves focus itself, so clear that focus first.
-  if (element.matches(':focus-visible')) {
-    element.blur();
-  }
-  element.focus({focusVisible: false});
-}
-
 /**
  * Calculate a directional translate offset for dialog entry animation.
  * Returns a normalized vector from the trigger element toward the viewport

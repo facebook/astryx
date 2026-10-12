@@ -1052,6 +1052,40 @@ export const ActionSheetPresentation: Story = {
   },
 };
 
+export const ActionSheetCustomTrigger: Story = {
+  name: 'Presentation / action sheet, custom trigger',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'A control the caller renders opens the bottom-sheet presentation. When the sheet closes, focus returns to that control, with a focus ring only after keyboard input.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <DropdownMenu
+        presentation="bottom-sheet"
+        renderTrigger={props => (
+          <IconButton
+            icon={<EllipsisHorizontalIcon />}
+            label="Project actions"
+            variant="ghost"
+            {...props}
+          />
+        )}
+        items={PROJECT_ACTIONS.map(action => ({
+          ...action,
+          onClick: () => console.log(`${action.label} selected`),
+        }))}
+      />
+    </div>
+  ),
+};
+
 export const SectionedActionSheetPresentation: Story = {
   name: 'Presentation / sectioned action sheet',
   parameters: {
