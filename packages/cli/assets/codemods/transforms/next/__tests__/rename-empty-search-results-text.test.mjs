@@ -153,6 +153,34 @@ const d = <ChatComposerInput {...props} triggers={[{char: '#', emptySearchResult
       expect(await applyTransform(output)).toBe(output);
     });
 
+    it('marks every spread onto these elements, even when the element writes neither name', async () => {
+      const output =
+        await applyTransform(`import {Tokenizer, Typeahead, ChatComposerInput} from '@astryxdesign/core';
+import {Selector} from '@astryxdesign/core';
+const people = {emptySearchResultsText: 'No people match'};
+export function Wrappers(props) {
+  return (
+    <>
+      <Tokenizer {...people} />
+      <Typeahead {...{emptySearchResultsText: 'Inline'}} />
+      <Tokenizer {...props} label="x" />
+      <ChatComposerInput {...props} />
+      <Selector {...props} />
+      <Tokenizer {...props} emptySearchText="already new" />
+    </>
+  );
+}`);
+
+      expect(
+        output.match(/spreads props that may carry either name/g),
+      ).toHaveLength(4);
+      expect(output.match(/These triggers are built elsewhere/g)).toHaveLength(
+        1,
+      );
+      expect(output).toContain('<Selector {...props} />');
+      expect(await applyTransform(output)).toBe(output);
+    });
+
     it('leaves a file with no runtime core import alone', async () => {
       const source = `import {MobileTokenizer} from '@astryxdesign/lab';
 const copy = {emptySearchResultsText: 'kept'};

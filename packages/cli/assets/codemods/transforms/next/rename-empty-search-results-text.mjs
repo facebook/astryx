@@ -14,11 +14,12 @@
  * in its `triggers` prop. Like every transform built on the helper it does
  * not follow variables, helpers, spreads, wrappers, or types. Where it cannot
  * attribute the value it leaves a TODO instead of choosing a winner: the new
- * name already set, an element with a spread (which may carry either name),
- * a `triggers` value that is not an inline object or array, or a trigger
- * object with a spread or computed key. A value forwarded through a spread is
- * the one case the type checker cannot report after the removal, which is
- * why those get the TODO.
+ * name already set, any spread onto one of these elements (whether or not the
+ * element writes the old name itself — a spread may carry either name or the
+ * triggers), a `triggers` value that is not an inline object or array, or a
+ * trigger object with a spread or computed key. A value forwarded through a
+ * spread is the one case the type checker cannot report after the removal,
+ * which is why every spread gets the TODO.
  */
 
 import {transformProp} from '../../transform-prop.mjs';
@@ -29,9 +30,9 @@ export const meta = {
     'Renames the removed `emptySearchResultsText` prop to `emptySearchText` ' +
     'on imported Tokenizer, Typeahead, and BaseTypeahead elements, and the ' +
     "same key on trigger objects written inline in ChatComposerInput's " +
-    '`triggers`. Leaves a TODO where the new name is already set, the ' +
-    'element has a spread, the triggers value is not written inline, or a ' +
-    'trigger object has a spread or computed key.',
+    '`triggers`. Leaves a TODO where the new name is already set, on every ' +
+    'spread onto these elements, where the triggers value is not written ' +
+    'inline, and on a trigger object with a spread or computed key.',
 };
 
 const OLD_NAME = 'emptySearchResultsText';
@@ -190,6 +191,60 @@ export default function transform(fileInfo, api) {
       changed = true;
     },
   );
+
+  // Every spread onto one of these elements that the prop pass did not reach
+  // (the element writes neither the old name nor, for ChatComposerInput,
+  // `triggers`): the spread may carry the removed key, so it gets the TODO.
+  for (const [component, props] of COMPONENTS) {
+    const sentinel = `__astryx_spread_${component}`;
+    root
+      .find(j.JSXOpeningElement)
+      .filter((/** @type {any} */ path) =>
+        (path.node.attributes ?? []).some(
+          (/** @type {any} */ attribute) =>
+            attribute.type === 'JSXSpreadAttribute',
+        ),
+      )
+      .forEach((/** @type {any} */ path) => {
+        const attributes = path.node.attributes ?? [];
+        const names = new Set(
+          attributes
+            .filter((/** @type {any} */ a) => a.type === 'JSXAttribute')
+            .map((/** @type {any} */ a) => a.name?.name),
+        );
+        if ([...props].some(name => names.has(name))) return;
+        // Let the shared helper decide whether this element is the imported
+        // component: give it a sentinel prop to find, then take it back.
+        const marker = j.jsxAttribute(j.jsxIdentifier(sentinel));
+        path.node.attributes = [...attributes, marker];
+        let matched = false;
+        transformProp(
+          root,
+          j,
+          {
+            matchesImport: source => CORE_IMPORT_RE.test(source),
+            components: new Map([[component, new Set([sentinel])]]),
+          },
+          propPath => {
+            if (propPath.node === marker) matched = true;
+          },
+        );
+        path.node.attributes = attributes;
+        if (!matched) return;
+        const spread = attributes.find(
+          (/** @type {any} */ attribute) =>
+            attribute.type === 'JSXSpreadAttribute',
+        );
+        changed =
+          addComment(
+            j,
+            spread,
+            component === 'ChatComposerInput'
+              ? OPAQUE_TRIGGERS_COMMENT
+              : SPREAD_COMMENT,
+          ) || changed;
+      });
+  }
 
   return changed ? root.toSource({quote: 'single'}) : null;
 }
