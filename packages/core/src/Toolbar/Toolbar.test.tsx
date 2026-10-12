@@ -12,7 +12,12 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {Toolbar} from './Toolbar';
+import {
+  paddingBlockStyles,
+  paddingInlineStyles,
+} from '../Layout/padding.stylex';
 
 describe('Toolbar', () => {
   it('renders with toolbar role', () => {
@@ -147,6 +152,30 @@ describe('Toolbar', () => {
     const toolbar = screen.getByRole('toolbar');
     expect(toolbar).toHaveAttribute('data-size', 'sm');
   });
+
+  it.each([
+    ['sm', 1],
+    ['md', 2],
+  ] as const)(
+    'uses the %s block inset without overriding container inline padding',
+    (size, blockPadding) => {
+      const {container} = render(<Toolbar label="Actions" size={size} />);
+      const sectionInner = container.querySelector('.astryx-section');
+      const expectedBlockClasses = stylex
+        .props(paddingBlockStyles[blockPadding])
+        .className?.split(' ')
+        .filter(Boolean);
+      const compactInlineClasses = stylex
+        .props(paddingInlineStyles[1])
+        .className?.split(' ')
+        .filter(Boolean);
+
+      expect(sectionInner).toBeInTheDocument();
+      expect(expectedBlockClasses).not.toHaveLength(0);
+      expect(sectionInner).toHaveClass(...(expectedBlockClasses ?? []));
+      expect(sectionInner).not.toHaveClass(...(compactInlineClasses ?? []));
+    },
+  );
 
   it('defaults to md size', () => {
     render(<Toolbar label="Actions" />);

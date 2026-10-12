@@ -40,6 +40,7 @@ import {
 import docsiteConfig from '../astryx.config.mjs';
 import {integrationContentEnabled} from '../src/lib/integrationTargets.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
+import {projectThemingDoc} from './lib/theming-doc.mjs';
 import {
   buildTypeDefinitionIndex,
   collectPropTypeRefs,
@@ -595,7 +596,9 @@ async function generateComponentRegistry() {
               isHiddenFromOverview: d.isHiddenFromOverview ?? false,
               topDescription: d.usage?.description || d.description || '',
               usage: d.usage ? sanitizeForJson(d.usage) : null,
-              theming: d.theming ? sanitizeForJson(d.theming) : null,
+              theming: d.theming
+                ? projectThemingDoc(sanitizeForJson(d.theming))
+                : null,
               playground: d.playground ? sanitizeForJson(d.playground) : null,
             };
             break;
@@ -627,7 +630,9 @@ async function generateComponentRegistry() {
         const hidden = doc.hidden ?? false;
         const topDescription = doc.usage?.description || doc.description || '';
         const usage = doc.usage ? sanitizeForJson(doc.usage) : null;
-        const theming = doc.theming ? sanitizeForJson(doc.theming) : null;
+        const theming = doc.theming
+          ? projectThemingDoc(sanitizeForJson(doc.theming))
+          : null;
         const registry = doc.registry ? sanitizeForJson(doc.registry) : null;
         const playground = doc.playground
           ? sanitizeForJson(doc.playground)
@@ -682,7 +687,7 @@ async function generateComponentRegistry() {
               theming: isHookEntry
                 ? null
                 : doc.theming
-                  ? sanitizeForJson(doc.theming)
+                  ? projectThemingDoc(sanitizeForJson(doc.theming))
                   : (parentMeta.theming ?? null),
               params: isHookEntry
                 ? Array.isArray(doc.params)

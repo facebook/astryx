@@ -754,12 +754,13 @@ main's declaration. A separate owner PR then declares the next plan across the
 fixed group, exact internal pins, and lockfile—patch successor by default,
 minor only when the owner explicitly names it.
 
-Before stable publication, a patch release self-grades its complete generated
-changelogs and draft GitHub Release notes against the public [Blog Review
+Before the Version Packages PR merges, a patch release self-grades its complete
+generated changelogs and draft GitHub Release notes against the public [Blog Review
 Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria)
-under the `update` profile. Every criterion must pass; failures are fixed on the
-release branch and the complete text is re-graded. A minor release instead requires
-Cindy's explicit human editorial approval of the changelogs, release notes, and public blog.
+under the `update` profile and records the result on that PR. Every criterion
+must pass; failures are fixed on the PR and the complete text is re-graded. A
+minor release instead requires Cindy's explicit human editorial approval of the
+changelogs, release notes, and public blog, recorded the same way.
 
 ## Finding Something to Work On
 
