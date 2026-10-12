@@ -342,8 +342,9 @@ export function parseFenceLanguage(info: string | undefined): {
 
 /**
  * Split a diff into the glyph column and the code the base language sees:
- * every non-header line loses its first character (the `+`, `-`, or space);
- * header lines contribute an empty line so offsets stay per line.
+ * every added, removed, or space-led context line loses its first character
+ * (the `+`, `-`, or space); a context line with no leading space keeps all
+ * of it; header lines contribute an empty line so offsets stay per line.
  */
 export function splitDiffLines(lines: ReadonlyArray<string>): {
   kinds: DiffLineKind[];
@@ -353,12 +354,20 @@ export function splitDiffLines(lines: ReadonlyArray<string>): {
   const kinds: DiffLineKind[] = [];
   const glyphs: string[] = [];
   const content: string[] = [];
+  let beforeFirstHunk = true;
   for (const line of lines) {
-    const kind = diffLineKind(line);
+    const kind = diffLineKind(line, {beforeFirstHunk});
+    if (line.startsWith('@@')) {beforeFirstHunk = false;}
     kinds.push(kind);
     if (kind === 'header') {
       glyphs.push('');
       content.push('');
+    } else if (kind === 'context' && !line.startsWith(' ')) {
+      // A context line without its leading space (an unindented diff, or
+      // an empty line) has no glyph: the marker column is empty and the
+      // whole line is code.
+      glyphs.push('');
+      content.push(line);
     } else {
       glyphs.push(line.slice(0, 1));
       content.push(line.slice(1));
@@ -369,16 +378,25 @@ export function splitDiffLines(lines: ReadonlyArray<string>): {
 
 /**
  * Classify one line of a unified diff by its first character: `+` added,
- * `-` removed, `@@` / `---` / `+++` (and git's `diff --git`, `index`) header,
- * anything else context. The glyph is part of the text and is never removed.
+ * `-` removed, `@@` header, anything else context. `---` / `+++` (and git's
+ * `diff --git`, `index`) are headers only in file-header position — before
+ * the first `@@` of the diff — so a removed line that starts with `--` is
+ * never misread as a header. The glyph is part of the text and is never
+ * removed.
  */
-export function diffLineKind(line: string): DiffLineKind {
+export function diffLineKind(
+  line: string,
+  {beforeFirstHunk = true}: {beforeFirstHunk?: boolean} = {},
+): DiffLineKind {
+  if (line.startsWith('@@')) {
+    return 'header';
+  }
   if (
-    line.startsWith('@@') ||
-    line.startsWith('---') ||
-    line.startsWith('+++') ||
-    line.startsWith('diff --git') ||
-    /^index [0-9a-f]+/.test(line)
+    beforeFirstHunk &&
+    (line.startsWith('---') ||
+      line.startsWith('+++') ||
+      line.startsWith('diff --git') ||
+      /^index [0-9a-f]+/.test(line))
   ) {
     return 'header';
   }

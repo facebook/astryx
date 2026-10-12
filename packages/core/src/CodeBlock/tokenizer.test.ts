@@ -205,6 +205,33 @@ describe('diffLineKind', () => {
     ]);
   });
 
+  it('treats --- and +++ as headers only before the first hunk, and keeps unindented context whole', () => {
+    const {kinds, glyphs, content} = splitDiffLines([
+      '--- a/x.ts',
+      '+++ b/x.ts',
+      '@@ -1 +1 @@',
+      '--x;',
+      '---',
+      '+++y;',
+      'plain',
+    ]);
+    expect(kinds).toEqual([
+      'header',
+      'header',
+      'header',
+      'removed',
+      'removed',
+      'added',
+      'context',
+    ]);
+    expect(glyphs).toEqual(['', '', '', '-', '-', '+', '']);
+    expect(content).toEqual(['', '', '', '-x;', '--', '++y;', 'plain']);
+    expect(diffLineKind('--- a/x.ts')).toBe('header');
+    expect(diffLineKind('--- a/x.ts', {beforeFirstHunk: false})).toBe(
+      'removed',
+    );
+  });
+
   it('tokenizes the code past the glyph with the base language', () => {
     const {content} = splitDiffLines(['-const a = 1;', '+const a = 2;']);
     const lines = tokenize(content.join('\n'), 'typescript');
