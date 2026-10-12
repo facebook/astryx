@@ -133,13 +133,15 @@ and remains available through explicit Core package selection.
 - **INV29 — `astryx doctor` fails on a configured integration that cannot
   load.** An integration named in `astryx.config` that is not installed, has
   no manifest, or whose manifest throws or fails its schema is a failed
-  `configured-integrations` check, so `doctor` exits 1; so is an
-  `astryx.config` that imports but from which the CLI cannot load the project.
-  What counts as configured is every name `astryx.config` lists, including a
-  package set aside for a provider-ID conflict and the package being authored
-  when its own config names it (its load error is the outcome that counts). An
-  installed integration the config does not name stays informational, and a
-  problem inside one contribution kind stays a warning (`spec:AST-035/FR9`).
+  `configured-integrations` check, so `doctor` exits 1; an `astryx.config`
+  that imports but from which the CLI cannot load the project is a failed
+  `config` check with the same exit. What counts as configured is every name
+  `astryx.config` lists, including a package set aside for a provider-ID
+  conflict and the package being authored when its own config names it (its
+  load error is the outcome that counts). An installed integration the config
+  does not name stays informational. This invariant covers loading only; what
+  `doctor` reports about the contributions of an integration that loads is
+  owned by the checks that read them.
 - **INV12 — Human chatter never touches stdout in JSON mode.** `humanLog` and
   `humanWarn` are the only chatter primitives, and both are no-ops under
   `--json`.
@@ -376,8 +378,7 @@ schema — gets a red `doctor` run that names the package and the reason,
 instead of a green one while every command silently runs without that
 integration's components, templates, and docs. Command runs keep degrading
 (INV11): a broken integration must never take a build or a read down with it,
-and `doctor` exists to say what is wrong. The same rule was proposed
-independently by `josephfarina`, whose draft this record supersedes. Rejected: `doctor` warns and exits 0
+and `doctor` exists to say what is wrong. Rejected: `doctor` warns and exits 0
 (the owner's CI stays green over a misconfigured project); every command fails
 on a broken integration (a read or a build stops for a problem it can work
 around); counting only the integrations that happened to load (a package set
@@ -406,7 +407,7 @@ aside or replaced by the package being authored would vanish from the count).
 | INV24     | `api/integration/add-contribution.test.mjs`, `api/integration/add-theme.test.mjs`, `foundation/discovery/theme-discovery.test.mjs`                         | New authoring emits an untyped or non-`.doc.mjs` item, adding one item edits a shared file, or an item catalog becomes authoritative.           |
 | INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
 | INV28     | `test/inv28-package-provenance.test.mjs`, `clients/cli/commands/text-json-parity.test.mjs`, `cli-api-types-verify`                                         | A result about one artifact has no envelope `package`, a listed artifact has no `package`, or text omits the package the envelope names.        |
-| INV29     | `api/doctor/doctor.test.mjs` (configured-integrations: not installed, no manifest, manifest throws; self-named authored package, direct and through a symlinked `node_modules` or `cwd`; provider-conflict set-aside)| A configured integration that cannot load leaves `doctor` at exit 0, or an installed-but-unnamed one fails it                                   |
+| INV29     | `api/doctor/doctor.test.mjs` (configured-integrations: not installed, no manifest, manifest throws; self-named authored package, direct and through a symlinked `node_modules` or `cwd`; provider-conflict set-aside; an astryx.config that imports but cannot load the project → failed `config` check)| A configured integration that cannot load leaves `doctor` at exit 0, or an installed-but-unnamed one fails it                                   |
 
 ## Open questions
 
