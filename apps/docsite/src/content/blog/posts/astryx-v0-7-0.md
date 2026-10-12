@@ -148,7 +148,7 @@ _BottomSheet now adds a comfortable content inset by default; `padding={0}` keep
 
 ## Mobile and touch
 
-Phones get 16px body text, swipe actions on rows, and a choice of date and time pickers, while pages stay mounted across the mobile breakpoint and still allow pinch zoom.
+Phones get 16px body text, swipe actions on rows, and a choice of date and time pickers.
 
 ### Reveal row actions with a swipe
 
@@ -558,7 +558,7 @@ async function saveSettings() {
 
 ## CLI and integrations
 
-Other libraries can now contribute components, docs, templates, upgrade scripts, coding guidance, and source themes through the same Astryx CLI an app already uses. The CLI can add and verify those components, and failures name the input or dependency that needs attention.
+Other libraries can now contribute components, docs, templates, upgrade scripts, coding guidance, and source themes through the same Astryx CLI an app already uses. The CLI can add and verify those components.
 
 ### Add and verify an integration component
 
