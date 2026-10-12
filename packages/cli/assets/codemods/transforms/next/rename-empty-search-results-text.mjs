@@ -36,7 +36,9 @@ export const meta = {
     'or computed key, a `triggers` value the transform cannot see into, and ' +
     'an object reached only through a type-only import get a TODO instead ' +
     'of an edit, because renaming could change which value wins or is not ' +
-    'proven in scope.',
+    'proven in scope. Any other object key of that name in a file that ' +
+    'imports these components is flagged too, since the type checker will ' +
+    'not notice it.',
 };
 
 const OLD_NAME = 'emptySearchResultsText';
@@ -63,6 +65,11 @@ const OPAQUE_TRIGGERS_COMMENT =
   ' TODO(astryx upgrade): emptySearchResultsText was removed from trigger ' +
   'objects. These triggers come from a value this upgrade cannot read; ' +
   'rename the key to emptySearchText where they are built. ';
+const UNATTRIBUTED_COMMENT =
+  ' TODO(astryx upgrade): emptySearchResultsText was removed from Tokenizer, ' +
+  'Typeahead, BaseTypeahead and ChatComposerInput triggers. This upgrade ' +
+  'could not tell where this object is used; rename the key to ' +
+  'emptySearchText if it reaches one of them. ';
 const TYPE_ONLY_COMMENT =
   ' TODO(astryx upgrade): emptySearchResultsText was removed from trigger ' +
   'objects. Rename it to emptySearchText; this object is typed through a ' +
@@ -320,10 +327,26 @@ function attributeExpression(j, attribute) {
  * @returns {string | null | undefined}
  */
 export default function transformer(file, api) {
-  if (!file.source.includes(OLD_NAME)) return undefined;
+  // A file that passes ChatComposerInput triggers it builds elsewhere carries
+  // no old name itself, yet the removed key may live in those triggers; such
+  // a file is read so its opaque triggers can be reported.
+  if (
+    !file.source.includes(OLD_NAME) &&
+    !file.source.includes('ChatComposerInput')
+  ) {
+    return undefined;
+  }
   const j = api.jscodeshift;
   const root = j(file.source);
   let changed = false;
+  const reachesCore = root
+    .find(j.ImportDeclaration)
+    .some(
+      (/** @type {any} */ path) =>
+        path.node.importKind !== 'type' &&
+        typeof path.node.source.value === 'string' &&
+        CORE_IMPORT_RE.test(path.node.source.value),
+    );
 
   // 1. The JSX prop on the three typeahead components.
   transformProp(
@@ -497,6 +520,36 @@ export default function transformer(file, api) {
   for (const object of typedOnly) {
     changed =
       migrateTriggerObject(j, object, {todoOnly: TYPE_ONLY_COMMENT}) || changed;
+  }
+
+  // 4. Every other object key of the old name in this file: an object spread
+  // onto a component, a trigger built here and passed along untyped, a value
+  // handed to another module. The upgrade cannot attribute it, and after the
+  // removal the type checker will not notice it, so it is flagged rather than
+  // left silent. A file without a runtime core import is not touched.
+  if (reachesCore) {
+    for (const type of ['ObjectProperty', 'Property']) {
+      if (!j[type]) continue;
+      root.find(j[type]).forEach((/** @type {any} */ path) => {
+        const property = path.node;
+        if (staticPropertyName(property) !== OLD_NAME) return;
+        const comments = property.comments ?? [];
+        if (
+          comments.some(
+            (/** @type {any} */ comment) =>
+              typeof comment.value === 'string' &&
+              comment.value.includes('TODO(astryx upgrade)'),
+          )
+        ) {
+          return;
+        }
+        property.comments = [
+          ...comments,
+          j.commentBlock(UNATTRIBUTED_COMMENT, true, false),
+        ];
+        changed = true;
+      });
+    }
   }
 
   return changed ? root.toSource({quote: 'single'}) : undefined;

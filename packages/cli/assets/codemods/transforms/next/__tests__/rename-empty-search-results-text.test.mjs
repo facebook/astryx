@@ -227,20 +227,48 @@ const t: ChatComposerTrigger = {...base, emptySearchResultsText: 'Nobody'};`);
       expect(await applyTransform(output)).toBe(output);
     });
 
-    it('leaves objects that are not triggers alone, and reports a non-const triggers value', async () => {
+    it('flags an object key it cannot attribute instead of leaving it silent, and reports a non-const triggers value', async () => {
       const output =
         await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
 const copy = {emptySearchResultsText: 'kept'};
 let mutable = [{emptySearchResultsText: 'kept'}];
 const a = <ChatComposerInput triggers={mutable} />;`);
 
-      expect(output).toContain(
-        "const copy = {emptySearchResultsText: 'kept'};",
-      );
-      expect(output).toContain(
-        "let mutable = [{emptySearchResultsText: 'kept'}];",
-      );
+      expect(output).toContain("emptySearchResultsText: 'kept'");
+      expect(output).not.toContain('emptySearchText:');
+      expect(
+        output.match(/could not tell where this object is used/g),
+      ).toHaveLength(2);
       expect(output.match(/this upgrade cannot read/g)).toHaveLength(1);
+      expect(await applyTransform(output)).toBe(output);
+    });
+
+    it('flags a same-file object spread onto Tokenizer', async () => {
+      const output =
+        await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
+const shared = {emptySearchResultsText: 'No people match'};
+const a = <Tokenizer {...shared} />;`);
+
+      expect(output).toContain("emptySearchResultsText: 'No people match'");
+      expect(output).toContain('could not tell where this object is used');
+      expect(await applyTransform(output)).toBe(output);
+    });
+
+    it('reports an untyped trigger imported from another module', async () => {
+      const output =
+        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
+import {mention} from './triggers';
+const a = <ChatComposerInput triggers={[mention]} />;`);
+
+      expect(output).toContain('this upgrade cannot read');
+      expect(await applyTransform(output)).toBe(output);
+    });
+
+    it('leaves a file with no runtime core import alone', async () => {
+      const source = `import {MobileTokenizer} from '@astryxdesign/lab';
+const copy = {emptySearchResultsText: 'kept'};
+const a = <MobileTokenizer {...copy} />;`;
+      expect(await applyTransform(source)).toBe(source);
     });
   });
 });
