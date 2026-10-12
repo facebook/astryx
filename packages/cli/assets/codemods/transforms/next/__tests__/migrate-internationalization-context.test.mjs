@@ -109,6 +109,42 @@ const b = <Ctx value={w}><B /></Ctx>;`;
     );
   });
 
+  it('resolves block scopes: a block-level local shadows, and a use beside one is still rewritten', () => {
+    const input = `import {InternationalizationContext as Ctx} from '@astryxdesign/core/i18n';
+let out;
+{
+  const Ctx = MyOwnContext;
+  out = <Ctx value={v}><A /></Ctx>;
+}
+function F({flag}) {
+  if (flag) {
+    const Ctx = Other;
+    return <Ctx value={v}><A /></Ctx>;
+  }
+  for (const Ctx of contexts) {
+    out = <Ctx value={v}><C /></Ctx>;
+  }
+  try {
+    run();
+  } catch (Ctx) {
+    out = <Ctx value={v}><D /></Ctx>;
+  }
+  return <Ctx value={w}><B /></Ctx>;
+}`;
+    const output = folded(apply(input));
+    // The four shadowed uses (block, if block, loop head, catch) stay as written.
+    expect(output.match(/<Ctx value=\{v\}>/g)).toHaveLength(4);
+    expect(output).toContain('<Ctx value={v}><A /></Ctx>; }');
+    // The one unshadowed use is rewritten.
+    expect(output).toContain(
+      '<InternationalizationProvider locale={w.locale} dir={w.direction} messages={w.messages} overrides={w.overrides}><B /></InternationalizationProvider>',
+    );
+    // The context import stays: the file still names Ctx.
+    expect(output).toMatch(
+      /import \{ ?InternationalizationContext as Ctx, InternationalizationProvider ?\} from '@astryxdesign\/core\/i18n';/,
+    );
+  });
+
   it('leaves a shadowed name and a type-only import alone', () => {
     const shadowed = `import {InternationalizationContext as Ctx} from '@astryxdesign/core/i18n';
 function Row({Ctx}) {
