@@ -32,9 +32,11 @@ export const meta = {
     'set to a value that is never null, the old entry is dropped; where the ' +
     'new value may be null or undefined, it becomes ' +
     '`emptySearchText ?? emptySearchResultsText`, which is what 0.6.x ' +
-    'rendered. A JSX element with a spread before the old prop, and a ' +
-    'trigger object with a spread or computed key, get a TODO instead, ' +
-    'because renaming could change which value wins.',
+    'rendered. A JSX element with a spread, a trigger object with a spread ' +
+    'or computed key, a `triggers` value the transform cannot see into, and ' +
+    'an object reached only through a type-only import get a TODO instead ' +
+    'of an edit, because renaming could change which value wins or is not ' +
+    'proven in scope.',
 };
 
 const OLD_NAME = 'emptySearchResultsText';
@@ -55,8 +57,16 @@ const MANUAL_MIGRATION_COMMENT =
   'check which value should win. ';
 const JSX_SPREAD_COMMENT =
   ' TODO(astryx upgrade): emptySearchResultsText was removed. Rename it to ' +
-  'emptySearchText by hand; a spread before it may also set emptySearchText, ' +
-  'so check which value should win. ';
+  'emptySearchText by hand; a spread on this element may also set ' +
+  'emptySearchText (even to undefined), so check which value should win. ';
+const OPAQUE_TRIGGERS_COMMENT =
+  ' TODO(astryx upgrade): emptySearchResultsText was removed from trigger ' +
+  'objects. These triggers come from a value this upgrade cannot read; ' +
+  'rename the key to emptySearchText where they are built. ';
+const TYPE_ONLY_COMMENT =
+  ' TODO(astryx upgrade): emptySearchResultsText was removed from trigger ' +
+  'objects. Rename it to emptySearchText; this object is typed through a ' +
+  'type-only import, which does not prove it reaches ChatComposerInput. ';
 
 // Values that can never be null or undefined, so an existing
 // `emptySearchText` with one of these already won in 0.6.x.
@@ -93,11 +103,21 @@ function addStatementComment(j, path, text) {
     current = current.parent;
   }
   if (!current) return false;
-  const host = current.node;
-  host.comments ??= [];
-  if (host.comments.some((/** @type {any} */ c) => c.value === text)) {
-    return false;
+  // A declaration inside `export const …` prints its comment on the export,
+  // where the next run reads it back; host the comment on the outermost
+  // statement so a second run finds it.
+  while (
+    current.parent &&
+    (current.parent.node.type === 'ExportNamedDeclaration' ||
+      current.parent.node.type === 'ExportDefaultDeclaration')
+  ) {
+    current = current.parent;
   }
+  const host = current.node;
+  const hasComment = (/** @type {any} */ node) =>
+    (node?.comments ?? []).some((/** @type {any} */ c) => c.value === text);
+  if (hasComment(host) || hasComment(host.declaration)) return false;
+  host.comments ??= [];
   host.comments.push(j.commentBlock(text, true, false));
   return true;
 }
@@ -142,30 +162,33 @@ function isDynamicProperty(property) {
 }
 
 /**
- * Rename the key on one trigger object.
  * @param {any} j
  * @param {any} object
- * @returns {boolean} whether the object changed
+ * @param {{todoOnly?: string | null}} [options]
  */
-function migrateTriggerObject(j, object) {
+function migrateTriggerObject(j, object, options = {}) {
+  /** @type {string | null} */
+  const todoOnly = options.todoOnly ?? null;
   const oldProperty = object.properties.find(
     (/** @type {any} */ property) => staticPropertyName(property) === OLD_NAME,
   );
   if (!oldProperty) return false;
 
-  if (object.properties.some(isDynamicProperty)) {
+  const todo =
+    todoOnly ??
+    (object.properties.some(isDynamicProperty)
+      ? MANUAL_MIGRATION_COMMENT
+      : null);
+  if (todo != null) {
     oldProperty.comments ??= [];
     if (
       oldProperty.comments.some(
-        (/** @type {any} */ comment) =>
-          comment.value === MANUAL_MIGRATION_COMMENT,
+        (/** @type {any} */ comment) => comment.value === todo,
       )
     ) {
       return false;
     }
-    oldProperty.comments.push(
-      j.commentBlock(MANUAL_MIGRATION_COMMENT, true, false),
-    );
+    oldProperty.comments.push(j.commentBlock(todo, true, false));
     return true;
   }
 
@@ -314,16 +337,15 @@ export default function transformer(file, api) {
       const opening = propPath.parent?.node;
       const attributes = opening?.attributes ?? [];
       const prop = propPath.node;
-      const index = attributes.indexOf(prop);
-      const spreadBefore = attributes
-        .slice(0, index)
-        .some(
-          (/** @type {any} */ attribute) =>
-            attribute.type === 'JSXSpreadAttribute',
-        );
-      if (spreadBefore) {
-        // The spread may set emptySearchText, which won in 0.6.x; renaming
-        // the later explicit prop would make the old copy win instead.
+      const hasSpread = attributes.some(
+        (/** @type {any} */ attribute) =>
+          attribute.type === 'JSXSpreadAttribute',
+      );
+      if (hasSpread) {
+        // A spread before the prop may set emptySearchText, which won in
+        // 0.6.x; a spread after it may forward emptySearchText as undefined,
+        // which would override the renamed value. Either way the winner is
+        // not knowable here.
         changed =
           addStatementComment(j, propPath, JSX_SPREAD_COMMENT) || changed;
         return;
@@ -369,6 +391,7 @@ export default function transformer(file, api) {
       for (const object of triggerObjectsIn(expression)) {
         triggerObjects.add(object);
       }
+      let opaque = false;
       /** @type {any[]} */
       const identifiers =
         expression?.type === 'Identifier'
@@ -381,10 +404,36 @@ export default function transformer(file, api) {
                     element?.type === 'Identifier',
                 )
             : [];
+      const isVisibleItem = (/** @type {any} */ element) => {
+        const item = unwrap(element);
+        return (
+          item == null ||
+          item.type === 'Identifier' ||
+          item.type === 'ObjectExpression'
+        );
+      };
+      if (
+        expression?.type !== 'Identifier' &&
+        expression?.type !== 'ArrayExpression' &&
+        expression?.type !== 'ObjectExpression'
+      ) {
+        // A call (useMemo, a helper), a member, or a conditional: the
+        // objects live somewhere this transform cannot read.
+        opaque = true;
+      } else if (
+        expression.type === 'ArrayExpression' &&
+        !expression.elements.every(isVisibleItem)
+      ) {
+        opaque = true;
+      }
       for (const identifier of identifiers) {
         const scope = propPath.scope.lookup(identifier.name);
-        if (!scope) continue;
+        if (!scope) {
+          opaque = true;
+          continue;
+        }
         const bindings = scope.getBindings()[identifier.name] ?? [];
+        let visible = false;
         for (const binding of bindings) {
           const declarator = binding.parent?.node;
           if (
@@ -394,28 +443,49 @@ export default function transformer(file, api) {
           ) {
             continue;
           }
+          const init = unwrap(declarator.init);
+          if (
+            init?.type === 'ObjectExpression' ||
+            (init?.type === 'ArrayExpression' &&
+              init.elements.every((/** @type {any} */ element) => {
+                const item = unwrap(element);
+                return item == null || item.type === 'ObjectExpression';
+              }))
+          ) {
+            visible = true;
+          }
           for (const object of triggerObjectsIn(declarator.init)) {
             triggerObjects.add(object);
           }
         }
+        if (!visible) opaque = true;
+      }
+      if (opaque) {
+        changed =
+          addStatementComment(j, propPath, OPAQUE_TRIGGERS_COMMENT) || changed;
       }
     },
   );
 
-  // 3. Objects typed as ChatComposerTrigger, wherever they are.
+  // 3. Objects typed as ChatComposerTrigger, wherever they are. A type-only
+  // import proves only the type position: such an object is not proven to
+  // reach a ChatComposerInput, so it gets a TODO rather than an edit, unless
+  // step 2 already reached it through the runtime prop.
+  /** @type {Set<any>} */
+  const typedOnly = new Set();
   const typeNames = triggerTypeNames(root, j);
   if (typeNames.names.size > 0 || typeNames.namespaces.size > 0) {
     root.find(j.VariableDeclarator).forEach((/** @type {any} */ path) => {
       if (!isTriggerType(path.node.id?.typeAnnotation, typeNames)) return;
       for (const object of triggerObjectsIn(path.node.init)) {
-        triggerObjects.add(object);
+        if (!triggerObjects.has(object)) typedOnly.add(object);
       }
     });
     for (const type of ['TSAsExpression', 'TSSatisfiesExpression']) {
       root.find(j[type]).forEach((/** @type {any} */ path) => {
         if (!isTriggerType(path.node.typeAnnotation, typeNames)) return;
         for (const object of triggerObjectsIn(path.node.expression)) {
-          triggerObjects.add(object);
+          if (!triggerObjects.has(object)) typedOnly.add(object);
         }
       });
     }
@@ -423,6 +493,10 @@ export default function transformer(file, api) {
 
   for (const object of triggerObjects) {
     changed = migrateTriggerObject(j, object) || changed;
+  }
+  for (const object of typedOnly) {
+    changed =
+      migrateTriggerObject(j, object, {todoOnly: TYPE_ONLY_COMMENT}) || changed;
   }
 
   return changed ? root.toSource({quote: 'single'}) : undefined;

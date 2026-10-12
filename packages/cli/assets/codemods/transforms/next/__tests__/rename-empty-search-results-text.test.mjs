@@ -75,8 +75,9 @@ const b = <Typeahead emptySearchResultsText={oldCopy} emptySearchText={maybe ? '
 
     it('keeps the old value as a fallback on a trigger whose emptySearchText may be nullish', async () => {
       const output =
-        await applyTransform(`import type {ChatComposerTrigger} from '@astryxdesign/core';
-const t: ChatComposerTrigger = {char: '@', searchSource, onSelect, emptySearchResultsText: 'Old', emptySearchText: copy};`);
+        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
+const t = {char: '@', searchSource, onSelect, emptySearchResultsText: 'Old', emptySearchText: copy};
+const a = <ChatComposerInput triggers={[t]} />;`);
 
       expect(output).toContain("emptySearchText: copy ?? 'Old'");
       expect(output).not.toContain('emptySearchResultsText');
@@ -92,13 +93,42 @@ const a = <Tokenizer {...rest} emptySearchResultsText="Nobody" />;`);
       expect(await applyTransform(output)).toBe(output);
     });
 
-    it('renames a prop that precedes a spread, since the spread still wins either way', async () => {
+    it('marks a prop that precedes a spread too, since the spread may forward emptySearchText as undefined', async () => {
       const output =
         await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
 const a = <Tokenizer emptySearchResultsText="Nobody" {...rest} />;`);
 
-      expect(output).toContain('emptySearchText="Nobody" {...rest}');
-      expect(output).not.toContain('TODO');
+      expect(output).toContain('TODO(astryx upgrade)');
+      expect(output).toContain('emptySearchResultsText="Nobody" {...rest}');
+    });
+
+    it('adds the spread TODO once, even inside export const, on repeated runs', async () => {
+      const once =
+        await applyTransform(`import {Tokenizer} from '@astryxdesign/core';
+export const a = <Tokenizer {...rest} emptySearchResultsText="Nobody" />;`);
+      const twice = await applyTransform(once);
+
+      expect(once.match(/TODO\(astryx upgrade\)/g)).toHaveLength(1);
+      expect(twice).toBe(once);
+    });
+
+    it('reports triggers it cannot see into instead of leaving the removed key silent', async () => {
+      const output =
+        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
+import {useMemo} from 'react';
+const base = {char: '@', searchSource, onSelect, emptySearchResultsText: 'A'};
+const all = [base];
+function A() {
+  const triggers = useMemo(() => [base], []);
+  return <ChatComposerInput triggers={triggers} />;
+}
+function B() {
+  return <ChatComposerInput triggers={all} />;
+}`);
+
+      expect(output.match(/this upgrade cannot read/g)).toHaveLength(2);
+      expect(output).toContain("emptySearchResultsText: 'A'");
+      expect(await applyTransform(output)).toBe(output);
     });
 
     it('leaves other packages, other components, and shadowed names alone', async () => {
@@ -148,23 +178,40 @@ const b = <ChatComposerInput triggers={[mention]} />;`);
       expect(output).not.toContain('emptySearchResultsText');
     });
 
-    it('renames the key on objects typed as ChatComposerTrigger', async () => {
+    it('marks objects typed through a type-only import instead of renaming them', async () => {
+      // A type-only import proves only the type position (AST-040 FR1).
       const output =
         await applyTransform(`import type {ChatComposerTrigger} from '@astryxdesign/core';
 export const mention: ChatComposerTrigger = {char: '@', searchSource, onSelect, emptySearchResultsText: 'A'};
 export const all: ChatComposerTrigger[] = [{char: '/', searchSource, onSelect, emptySearchResultsText: 'B'}];
 export const cast = {char: '#', searchSource, onSelect, emptySearchResultsText: 'C'} satisfies ChatComposerTrigger;`);
 
-      expect(output).toContain("emptySearchText: 'A'");
-      expect(output).toContain("emptySearchText: 'B'");
-      expect(output).toContain("emptySearchText: 'C'");
-      expect(output).not.toContain('emptySearchResultsText');
+      expect(output.match(/typed through a\s+type-only import/g)).toHaveLength(
+        3,
+      );
+      expect(output).toContain("emptySearchResultsText: 'A'");
+      expect(output).toContain("emptySearchResultsText: 'B'");
+      expect(output).toContain("emptySearchResultsText: 'C'");
+      expect(output).not.toContain("emptySearchText: '");
+      expect(await applyTransform(output)).toBe(output);
     });
 
-    it('drops the old key when the trigger already sets emptySearchText', async () => {
+    it('renames a typed object that the runtime triggers prop also reaches', async () => {
       const output =
-        await applyTransform(`import type {ChatComposerTrigger} from '@astryxdesign/core';
-const t: ChatComposerTrigger = {char: '@', searchSource, onSelect, emptySearchResultsText: 'Old', emptySearchText: 'New'};`);
+        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
+import type {ChatComposerTrigger} from '@astryxdesign/core';
+const mention: ChatComposerTrigger = {char: '@', searchSource, onSelect, emptySearchResultsText: 'A'};
+const a = <ChatComposerInput triggers={[mention]} />;`);
+
+      expect(output).toContain("emptySearchText: 'A'");
+      expect(output).not.toContain('TODO');
+    });
+
+    it('drops the old key when a reached trigger already sets emptySearchText to a value that is never nullish', async () => {
+      const output =
+        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
+const t = {char: '@', searchSource, onSelect, emptySearchResultsText: 'Old', emptySearchText: 'New'};
+const a = <ChatComposerInput triggers={t} />;`);
 
       expect(output).toContain("emptySearchText: 'New'");
       expect(output).not.toContain("'Old'");
@@ -180,12 +227,20 @@ const t: ChatComposerTrigger = {...base, emptySearchResultsText: 'Nobody'};`);
       expect(await applyTransform(output)).toBe(output);
     });
 
-    it('leaves objects that are not triggers alone', async () => {
-      const source = `import {ChatComposerInput} from '@astryxdesign/core';
+    it('leaves objects that are not triggers alone, and reports a non-const triggers value', async () => {
+      const output =
+        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
 const copy = {emptySearchResultsText: 'kept'};
 let mutable = [{emptySearchResultsText: 'kept'}];
-const a = <ChatComposerInput triggers={mutable} />;`;
-      expect(await applyTransform(source)).toBe(source);
+const a = <ChatComposerInput triggers={mutable} />;`);
+
+      expect(output).toContain(
+        "const copy = {emptySearchResultsText: 'kept'};",
+      );
+      expect(output).toContain(
+        "let mutable = [{emptySearchResultsText: 'kept'}];",
+      );
+      expect(output.match(/this upgrade cannot read/g)).toHaveLength(1);
     });
   });
 });
