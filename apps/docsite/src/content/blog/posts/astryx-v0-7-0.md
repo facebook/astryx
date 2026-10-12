@@ -571,57 +571,6 @@ npx @astryxdesign/cli integration add component AcmeChart
 npx @astryxdesign/cli integration verify
 ```
 
-## Interaction and feedback
-
-Compact toolbars take less vertical space while staying aligned with the content below them.
-
-### Tighten a toolbar without shifting its content line
-
-![A card with a compact toolbar of three icon buttons — filter, sort, columns — and a New item button above a line of text, before and after. Before, the toolbar row is taller, with extra space above and below the icons. After, the row is tighter with a four-pixel inset top and bottom, and the first icon still lines up with the text below it.](/blog/astryx-v0-7-0/interaction-compact-toolbar@2x.png)
-
-_Inline padding stays with the surrounding Card or Section, so the first button keeps the body's content line._
-
-```tsx
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  toolbarBody: {padding: 16, paddingTop: 12},
-});
-
-<Card padding={0}>
-  <Toolbar
-    label="Table actions"
-    size="sm"
-    startContent={
-      <HStack gap={1}>
-        <IconButton
-          label="Filter"
-          variant="ghost"
-          size="sm"
-          icon={<Icon icon="funnel" />}
-        />
-        <IconButton
-          label="Sort"
-          variant="ghost"
-          size="sm"
-          icon={<Icon icon="arrowsUpDown" />}
-        />
-        <IconButton
-          label="Columns"
-          variant="ghost"
-          size="sm"
-          icon={<Icon icon="viewColumns" />}
-        />
-      </HStack>
-    }
-    endContent={<Button label="New item" variant="primary" size="sm" />}
-  />
-  <div {...stylex.props(styles.toolbarBody)}>
-    <Text type="body">Twelve items match the current filter.</Text>
-  </div>
-</Card>;
-```
-
 ## Upgrading to 0.7.0
 
 Update every stable Astryx package your project uses to `0.7.0`, then run the upgrade command. It applies the migrations it can automate and adds a TODO for some ambiguous cases; 18 of the 26 changes below have no codemod, so check each one.

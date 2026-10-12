@@ -6,10 +6,7 @@ import * as stylex from '@stylexjs/stylex';
 import {Banner} from '@astryxdesign/core/Banner';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
-import {Card} from '@astryxdesign/core/Card';
 import {Icon} from '@astryxdesign/core/Icon';
-import {IconButton} from '@astryxdesign/core/IconButton';
-import {HStack} from '@astryxdesign/core/HStack';
 import {Kbd} from '@astryxdesign/core/Kbd';
 import {Slider} from '@astryxdesign/core/Slider';
 import {
@@ -27,9 +24,7 @@ import {
   type TableColumn,
 } from '@astryxdesign/core/Table';
 import {TimeInput, type ISOTimeString} from '@astryxdesign/core/TimeInput';
-import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {TextInput} from '@astryxdesign/core/TextInput';
-import {Text} from '@astryxdesign/core/Text';
 import {Typeahead, createStaticSource} from '@astryxdesign/core/Typeahead';
 import {Markdown} from '@astryxdesign/core/Markdown';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
@@ -65,7 +60,6 @@ const styles = stylex.create({
   projectName: {width: '100%'},
   assigneeField: {width: '100%'},
   series: {backgroundColor: dataVars['--color-data-categorical-blue']},
-  toolbarBody: {padding: 16, paddingTop: 12},
 });
 
 const peopleSource = createStaticSource([
@@ -233,43 +227,6 @@ export function MobileAndTouch() {
         presentation="adaptive-bottom-sheet"
       />
     </>
-  );
-}
-
-export function InteractionFeedback() {
-  return (
-    <Card padding={0}>
-      <Toolbar
-        label="Table actions"
-        size="sm"
-        startContent={
-          <HStack gap={1}>
-            <IconButton
-              label="Filter"
-              variant="ghost"
-              size="sm"
-              icon={<Icon icon="funnel" />}
-            />
-            <IconButton
-              label="Sort"
-              variant="ghost"
-              size="sm"
-              icon={<Icon icon="arrowsUpDown" />}
-            />
-            <IconButton
-              label="Columns"
-              variant="ghost"
-              size="sm"
-              icon={<Icon icon="viewColumns" />}
-            />
-          </HStack>
-        }
-        endContent={<Button label="New item" variant="primary" size="sm" />}
-      />
-      <div {...stylex.props(styles.toolbarBody)}>
-        <Text type="body">Twelve items match the current filter.</Text>
-      </div>
-    </Card>
   );
 }
 
