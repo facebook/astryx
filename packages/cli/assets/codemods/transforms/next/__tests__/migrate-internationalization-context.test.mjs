@@ -145,6 +145,58 @@ function F({flag}) {
     );
   });
 
+  it('counts a var anywhere in the function and a named class expression as shadows', () => {
+    const input = `import {InternationalizationContext as Ctx} from '@astryxdesign/core/i18n';
+function F({flag}) {
+  if (flag) { var Ctx = Other; }
+  return <Ctx value={w}><A /></Ctx>;
+}
+function G(list) {
+  for (var Ctx of list) {}
+  return <Ctx value={w}><B /></Ctx>;
+}
+const Shell = class Ctx {
+  render() { return <Ctx value={v}><C /></Ctx>; }
+};
+const ok = <Ctx value={x}><D /></Ctx>;`;
+    const output = folded(apply(input));
+    expect(output.match(/<Ctx value=\{w\}>/g)).toHaveLength(2);
+    expect(output).toContain('<Ctx value={v}><C /></Ctx>');
+    expect(output).toContain(
+      '<InternationalizationProvider locale={x.locale} dir={x.direction} messages={x.messages} overrides={x.overrides}><D /></InternationalizationProvider>',
+    );
+  });
+
+  it('imports the provider under a free alias when the module already binds that name', () => {
+    const wrapper = `import {InternationalizationContext} from '@astryxdesign/core/i18n';
+function InternationalizationProvider({children}) {
+  return <InternationalizationContext value={i18n}>{children}</InternationalizationContext>;
+}`;
+    const output = folded(apply(wrapper));
+    expect(output).toContain(
+      "import {InternationalizationProvider as InternationalizationProvider2} from '@astryxdesign/core/i18n';",
+    );
+    expect(output).toContain(
+      '<InternationalizationProvider2 locale={i18n.locale} dir={i18n.direction} messages={i18n.messages} overrides={i18n.overrides}>{children}</InternationalizationProvider2>',
+    );
+    expect(output).toContain(
+      'function InternationalizationProvider({children})',
+    );
+    const ownImport = `import {InternationalizationContext} from '@astryxdesign/core/i18n';
+import {InternationalizationProvider} from './provider';
+const app = <InternationalizationContext value={i18n}><App /></InternationalizationContext>;`;
+    const output2 = folded(apply(ownImport));
+    expect(output2).toContain(
+      "import {InternationalizationProvider as InternationalizationProvider2} from '@astryxdesign/core/i18n';",
+    );
+    expect(output2).toContain(
+      "import {InternationalizationProvider} from './provider';",
+    );
+    expect(output2).toContain(
+      '<InternationalizationProvider2 locale={i18n.locale}',
+    );
+  });
+
   it('leaves a shadowed name and a type-only import alone', () => {
     const shadowed = `import {InternationalizationContext as Ctx} from '@astryxdesign/core/i18n';
 function Row({Ctx}) {
