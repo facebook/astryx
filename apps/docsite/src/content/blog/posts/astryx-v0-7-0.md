@@ -42,7 +42,36 @@ Forms now keep IDs, descriptions, event handlers, and test hooks you pass on the
 
 **Pending merge — [#7289](https://github.com/facebook/astryx/pull/7289):** `emptySearchResultsText` is removed in favor of `emptySearchText`; the upgrade command handles direct component and trigger-object uses.
 
-<!-- VISUAL_SLOT: forms-and-inputs — one shipped feature per image; behavior as GIF/WebP, visual changes as labeled Before/After -->
+### Create a missing choice while searching
+
+![A Reviewers multi-select with one Platform badge. It opens with a search field and three checkbox options; typing Access leaves a single row, Create "Access". Choosing it adds an Access badge to the field and an Access option, checked, at the end of the list.](/blog/astryx-v0-7-0/multiselector-create.webp)
+
+_With `hasSearch` and `hasCreate`, a query that matches no option offers a Create row. `onChange` receives the new value with a `{type: 'create', query}` descriptor so your app can add the option._
+
+```tsx
+const [reviewerOptions, setReviewerOptions] = useState(initialReviewerOptions);
+const [reviewers, setReviewers] = useState(['platform']);
+
+<MultiSelector
+  label="Reviewers"
+  options={reviewerOptions}
+  value={reviewers}
+  onChange={(next, change) => {
+    if (change?.type === 'create') {
+      setReviewerOptions(current => [
+        ...current,
+        {value: change.query, label: change.query},
+      ]);
+    }
+    setReviewers(next);
+  }}
+  hasSearch
+  hasCreate
+  triggerDisplay="badges"
+/>;
+```
+
+<!-- VISUAL_SLOT: forms-and-inputs — IME and async picker behavior as GIF/WebP -->
 
 ## Menus and overlays
 
@@ -167,9 +196,35 @@ Date and time fields can explicitly keep Astryx's picker on touch, use a popover
 />
 ```
 
-**Pending merge — [#6699](https://github.com/facebook/astryx/pull/6699):** Neutral, Chocolate, Butter, and Stone will use a 16px text base on narrow touch screens while keeping large display text at its desktop size.
+### Read comfortably on a phone
 
-<!-- VISUAL_SLOT: mobile-and-touch — touch type scale and AppShell continuity -->
+![The same phone screen before and after. Before, the body paragraph, supporting line, field label and button label are small and the paragraph fits in two lines. After, body text and labels are larger and the paragraph wraps to three lines; the headings grow slightly, and the input text stays the same size.](/blog/astryx-v0-7-0/theme-phone-type-scale.png)
+
+_On touch devices narrower than the `lg` breakpoint, Neutral, Chocolate, Butter, and Stone floor their type base to 16px and re-derive the ratio so Display 1 keeps its desktop size. Desktop sizes are unchanged._
+
+To keep Neutral's previous 14px phone scale, append a later rule for the same condition:
+
+```tsx
+import {defineTheme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
+
+const appTheme = defineTheme({
+  name: 'app',
+  extends: neutralTheme,
+  adaptations: {
+    rules: [
+      {
+        when: {pointer: 'coarse', width: {below: 'lg'}},
+        value: {typography: {scale: {base: 14, ratio: 1.2}}},
+      },
+    ],
+  },
+});
+```
+
+Butter and Stone use `ratio: 1.25` and also restore `tokens: {'--text-supporting-size': '12px'}` in the rule's `value`.
+
+<!-- VISUAL_SLOT: mobile-and-touch — AppShell continuity -->
 
 ## Data display
 
@@ -473,7 +528,15 @@ _An Icon without an explicit size now follows its Button, so small buttons no lo
 
 ## Accessibility and localization
 
-More status text, control labels, and empty states now speak the reader's language. Keyboard users can reach overflowing sheet content and keep visible focus cues as dialogs open and close; banners announce the actual async event instead of inferring one from color status.
+Keyboard users can reach overflowing sheet content and keep visible focus cues as dialogs open and close. More status text, control labels, and empty states now speak the reader's language, and banners announce the actual async event instead of inferring one from color status.
+
+### Keep focus cues matched to the last input
+
+![An Edit profile button opens a dialog with a mouse click; nothing shows a focus ring. Pressing Tab moves into the Display name field, which shows a ring. Escape closes the dialog and the Edit profile button shows a ring. Opening again by mouse and clicking Cancel closes it with no ring on the button.](/blog/astryx-v0-7-0/dialog-focus-indicator.webp)
+
+_The pointer icon is added to show mouse input. Dialog's initial focus and the focus it returns on close follow the last input: the indicator shows after keyboard use and stays hidden after a mouse click or tap._
+
+### Announce an async outcome
 
 ```tsx
 import {Banner} from '@astryxdesign/core/Banner';
@@ -489,11 +552,17 @@ async function saveSettings() {
 <Banner status="success" title="Settings saved" />;
 ```
 
-<!-- VISUAL_SLOT: accessibility-and-localization — focus/keyboard behavior as GIF/WebP; visual contrast as labeled Before/After -->
+<!-- VISUAL_SLOT: accessibility-and-localization — overflowing sheet keyboard behavior and visual contrast -->
 
 ## CLI and integrations
 
 Other libraries can now contribute components, docs, templates, upgrade scripts, coding guidance, and source themes through the same Astryx CLI an app already uses. CLI answers are shorter and more consistent, and failures identify the input or dependency that needs attention.
+
+### Add and verify an integration component
+
+![A terminal. The command npx @astryxdesign/cli integration add component AcmeChart is typed and runs, reporting component contribution added, [ok] AcmeChart, and the four files it created. Then npx @astryxdesign/cli integration verify runs and reports Integration package ready, [ok] @acme/charts@1.2.0, and 5 packed files with 3 of 3 required files present.](/blog/astryx-v0-7-0/cli-integration.webp)
+
+_Real output from the shipped CLI; the terminal frame is an illustration styled with Astryx tokens._
 
 ```bash
 npx @astryxdesign/cli integration add component AcmeChart
@@ -502,7 +571,7 @@ npx @astryxdesign/cli integration verify
 
 **Pending merge — [#7130](https://github.com/facebook/astryx/pull/7130):** `doctor` will fail when Astryx cannot load a configured integration or project config, and it will name the integrations it loaded.
 
-<!-- VISUAL_SLOT: cli-and-integrations — terminal captures only when they show shipped output not already stated in text -->
+<!-- VISUAL_SLOT: cli-and-integrations — remaining shipped behavior only when it adds information beyond the real transcript -->
 
 ## Interaction and feedback
 
@@ -578,7 +647,7 @@ The highest-traffic API changes look like this:
 19. **`reset.css` reaches pseudo-elements and search fields** ([#7355](https://github.com/facebook/astryx/pull/7355)) — add your own later-layer `box-sizing`, border, placeholder color, or search appearance only when you need the old browser result; no codemod.
 20. **Private theme variables fail the build** ([#6872](https://github.com/facebook/astryx/pull/6872)) — fix every reported private `--_*` input instead of relying on exit 0; no codemod.
 21. **BottomSheet adds default content padding** ([#6884](https://github.com/facebook/astryx/pull/6884)) — remove duplicate caller padding or pass `padding={0}` for the old box; `preserve-bottom-sheet-content-padding` adds `padding={0}`, but remove it when your theme already sets BottomSheet padding so the theme inset remains.
-22. **Phone typography starts at 16px** (pending [#6699](https://github.com/facebook/astryx/pull/6699)) — take the new Neutral, Chocolate, Butter, and Stone scale as-is, or add a later touch-and-narrow theme rule to preserve 14px; no codemod.
+22. **Phone typography starts at 16px** ([#6699](https://github.com/facebook/astryx/pull/6699)) — take the new Neutral, Chocolate, Butter, and Stone scale as-is, or add a later touch-and-narrow theme rule to preserve 14px; no codemod.
 23. **`emptySearchResultsText` is removed** (pending [#7289](https://github.com/facebook/astryx/pull/7289)) — rename it to `emptySearchText`; `rename-empty-search-results-text` handles supported components and static trigger objects.
 24. **Core spacing follows the root font size** (pending [#7359](https://github.com/facebook/astryx/pull/7359)) — CSS variable users need no change; code that parses px converts rem with the root size or reads the computed length; no codemod.
 25. **Matcha and Y2K spacing follows the root font size** (pending [#7374](https://github.com/facebook/astryx/pull/7374)) — take the new default, which is pixel-equal at a 16px root, or override the spacing tokens in px to keep fixed sizing; no codemod.

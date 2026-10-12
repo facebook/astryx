@@ -27,6 +27,7 @@ import {TimeInput, type ISOTimeString} from '@astryxdesign/core/TimeInput';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Typeahead, createStaticSource} from '@astryxdesign/core/Typeahead';
 import {Markdown} from '@astryxdesign/core/Markdown';
+import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 import {
   createMarkdownFenceTransform,
   createMarkdownFrontmatter,
@@ -39,6 +40,21 @@ import {
 } from '@astryxdesign/core/Markdown/plugins';
 import {dataVars} from '@astryxdesign/core/theme/dataTokens.stylex';
 import {useAnnounce} from '@astryxdesign/core/hooks';
+import {defineTheme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
+
+export const phoneScaleOptOutTheme = defineTheme({
+  name: 'app',
+  extends: neutralTheme,
+  adaptations: {
+    rules: [
+      {
+        when: {pointer: 'coarse', width: {below: 'lg'}},
+        value: {typography: {scale: {base: 14, ratio: 1.2}}},
+      },
+    ],
+  },
+});
 
 const styles = stylex.create({
   projectName: {width: '100%'},
@@ -77,6 +93,39 @@ export function Forms() {
         emptySearchText="No people found"
       />
     </>
+  );
+}
+
+const initialReviewerOptions = [
+  {value: 'platform', label: 'Platform'},
+  {value: 'accessibility', label: 'Accessibility'},
+  {value: 'content', label: 'Content'},
+];
+
+export function CreateReviewerOption() {
+  const [reviewerOptions, setReviewerOptions] = useState(
+    initialReviewerOptions,
+  );
+  const [reviewers, setReviewers] = useState(['platform']);
+
+  return (
+    <MultiSelector
+      label="Reviewers"
+      options={reviewerOptions}
+      value={reviewers}
+      onChange={(next, change) => {
+        if (change?.type === 'create') {
+          setReviewerOptions(current => [
+            ...current,
+            {value: change.query, label: change.query},
+          ]);
+        }
+        setReviewers(next);
+      }}
+      hasSearch
+      hasCreate
+      triggerDisplay="badges"
+    />
   );
 }
 
