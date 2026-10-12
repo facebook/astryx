@@ -19,22 +19,25 @@ Astryx v0.7.0 brings together everything shipped from v0.6.1 through v0.6.8 and 
 
 Forms now keep IDs, descriptions, event handlers, and test hooks you pass on the control that people actually use. Empty states, controlled clearing, IME input, and async picker feedback are also more reliable across the input family.
 
-```tsx
-<TextInput
-  label="Project name"
-  value={name}
-  onChange={setName}
-  controlXstyle={styles.projectName}
-/>
+```diff
+ <TextInput
+   label="Project name"
+   value={name}
+   onChange={setName}
+-  xstyle={styles.projectName}
++  controlXstyle={styles.projectName}
+ />
 
-<Typeahead
-  label="Assignee"
-  searchSource={peopleSource}
-  value={assignee}
-  onChange={setAssignee}
-  containerXstyle={styles.assigneeField}
-  emptySearchText="No people found"
-/>
+ <Typeahead
+   label="Assignee"
+   searchSource={peopleSource}
+   value={assignee}
+   onChange={setAssignee}
+-  xstyle={styles.assigneeField}
+-  emptySearchResultsText="No people found"
++  containerXstyle={styles.assigneeField}
++  emptySearchText="No people found"
+ />
 ```
 
 **Pending merge — [#7289](https://github.com/facebook/astryx/pull/7289):** `emptySearchResultsText` is removed in favor of `emptySearchText`; the upgrade command handles direct component and trigger-object uses.
@@ -45,52 +48,204 @@ Forms now keep IDs, descriptions, event handlers, and test hooks you pass on the
 
 Menus can place real controls beside their rows without weakening menu semantics, while nested layers close in the order people see them. Dialog focus, Toast layering, and menu zoom behavior now hold up across keyboard, pointer, and touch use.
 
+### Put controls beside menu rows
+
+![An open Assign reviewer dropdown. A Filter reviewers text field sits above the four name rows and a Create team button sits below them, all inside the same popover.](/blog/astryx-v0-7-0/menu-header-footer.png)
+
+_Header and footer controls stay outside the menu itself, so screen readers get valid menu semantics and Tab reaches each region in order._
+
 ```tsx
 <DropdownMenu
-  button={{label: 'Labels'}}
-  header={<TextInput label="Filter labels" value={query} onChange={setQuery} />}
-  footer={<Button label="Create label" onClick={createLabel} />}
-  items={labelActions}
+  button={{label: 'Assign reviewer'}}
+  header={
+    <TextInput label="Filter reviewers" value={query} onChange={setQuery} />
+  }
+  footer={<Button label="Create team" onClick={createTeam} />}
+  items={reviewerActions}
 />
 ```
 
-**Pending merge — [#6884](https://github.com/facebook/astryx/pull/6884):** BottomSheet will add comfortable content padding by default; `padding={0}` keeps the old edge-to-edge content box.
+### Adapt menus to touch
+
+![A phone screen with a card and an Assign reviewer button. A finger taps the button and a bottom sheet slides up listing three names and a red Remove assignee action under a divider. A tap on Grace Hopper closes the sheet.](/blog/astryx-v0-7-0/mobile-adaptive-menu.webp)
+
+_The same menu keeps its anchored popover for a fine pointer and opens as a modal sheet on a compact touch screen._
 
 ```tsx
-<BottomSheet
-  isOpen={isOpen}
-  onOpenChange={setIsOpen}
-  label="Filters"
-  padding={0}>
-  <CustomEdgeToEdgeFilters />
-</BottomSheet>
+<DropdownMenu
+  button={{label: 'Assign reviewer', variant: 'primary'}}
+  presentation="adaptive"
+  items={reviewerActions}
+/>
 ```
 
-<!-- VISUAL_SLOT: menus-and-overlays — BottomSheet drag/scroll, layer dismissal, menu header/footer, Toast over Dialog -->
+### Drill into submenus on a phone
+
+![A phone screen with an Actions menu open under its button. A finger taps the Move to row, which has a chevron, and the menu's rows are replaced in place by a Back to Actions row followed by Backlog and Next release. Tapping Back returns to the first set of rows.](/blog/astryx-v0-7-0/mobile-submenu-drill-in.webp)
+
+_Submenus replace the current rows instead of opening an off-screen flyout, with a Back row named for the menu it returns to._
+
+```tsx
+<DropdownMenu button={{label: 'Actions'}}>
+  <DropdownMenuItem label="Assign to me" onClick={assign} />
+  <DropdownMenuSubMenu label="Move to">
+    <DropdownMenuItem label="Backlog" onClick={moveToBacklog} />
+    <DropdownMenuItem label="Next release" onClick={moveToNext} />
+  </DropdownMenuSubMenu>
+</DropdownMenu>
+```
+
+### Close the top layer first
+
+![A phone screen with a bottom sheet open over a dimmed page; inside the sheet an Assign reviewer menu is opened. The first Escape press closes only the menu and the sheet stays. The second Escape press slides the sheet away and the page is back.](/blog/astryx-v0-7-0/sheet-escape-order.webp)
+
+_One Escape closes only the inner menu; the next closes the sheet._
+
+**Pending merge — [#6884](https://github.com/facebook/astryx/pull/6884):** BottomSheet will add comfortable content padding by default; `padding={0}` keeps the old edge-to-edge content box.
+
+```diff
+ <BottomSheet
+   isOpen={isOpen}
+   onOpenChange={setIsOpen}
+   label="Filters"
++  padding={0}
+ >
+   <CustomEdgeToEdgeFilters />
+ </BottomSheet>
+```
+
+<!-- VISUAL_SLOT: menus-and-overlays — BottomSheet drag/scroll and Toast over Dialog -->
 
 ## Mobile and touch
 
 Phone layouts keep their state, respect pinch zoom, and make sheets, menus, swipe actions, and date/time pickers feel native to touch. AppShell keeps the same page mounted through its mobile breakpoint, and inputs avoid iOS focus zoom.
 
+### Reveal row actions with a swipe
+
+![A phone list of three checklist rows. A finger drags the first row toward the left and two action panels slide out behind it: a neutral Archive and a red Delete. Tapping Archive removes the row and the list closes up.](/blog/astryx-v0-7-0/item-swipe-actions.webp)
+
+_Sideways drags reveal touch actions without hiding them from keyboard and assistive-technology users; rows without actions do not load the gesture code._
+
+```tsx
+<ListItem
+  label={row.label}
+  onClick={openRow}
+  swipeActions={{
+    trailing: [
+      {
+        label: 'Archive',
+        onActivate: () => archive(row.id),
+        variant: 'neutral',
+        hasRemoval: true,
+      },
+      {
+        label: 'Delete',
+        onActivate: () => remove(row.id),
+        variant: 'destructive',
+        hasRemoval: true,
+      },
+    ],
+  }}
+/>
+```
+
+### Keep date and time pickers in the design system
+
+![A phone screen with Release date and Release time fields dimmed behind a bottom sheet. The sheet holds an October 2026 calendar with month navigation, a Reset action, today ringed on the 12th, the 14th selected, and a full-width Save button.](/blog/astryx-v0-7-0/mobile-date-picker.png)
+
+_DateInput can keep Astryx's calendar on touch instead of handing the choice to the operating system._
+
+```tsx
+<DateInput
+  label="Release date"
+  value={date}
+  onChange={setDate}
+  presentation="adaptive-bottom-sheet"
+/>
+```
+
+![The same phone screen with the Release time field's picker open as a bottom sheet: hour, minute and AM/PM wheels with 9, 30 and AM highlighted, and a full-width Save button.](/blog/astryx-v0-7-0/mobile-time-picker.png)
+
+_TimeInput uses the same presentation choice for touch-friendly time wheels._
+
+```tsx
+<TimeInput
+  label="Release time"
+  value={time}
+  onChange={setTime}
+  presentation="adaptive-bottom-sheet"
+/>
+```
+
 **Pending merge — [#6699](https://github.com/facebook/astryx/pull/6699):** Neutral, Chocolate, Butter, and Stone will use a 16px text base on narrow touch screens while keeping large display text at its desktop size.
 
-<!-- VISUAL_SLOT: mobile-and-touch — behavioral changes as GIF/WebP; touch type scale as labeled Before/After -->
+<!-- VISUAL_SLOT: mobile-and-touch — touch type scale and AppShell continuity -->
 
 ## Data display
 
 Tables keep expanded content aligned, sticky and resizable columns usable, row actions working, and scrolling contained only when the table can actually scroll. Charts, MetadataList, TreeList, and Lightbox keep labels, rows, and images readable in dense or narrow views.
 
-<!-- VISUAL_SLOT: data-display — separate images for row expansion, column resize, sticky columns, and narrow scrolling -->
+### Expand a row without disturbing the table
+
+![An orders table with striped rows. The pointer clicks on a customer name and that row expands: its line items appear in a panel that starts under the Customer column, the chevron turns, and the stripes of the rows below keep alternating as before. The pointer then clicks a Refund button on another row, which does nothing to that row's expansion; clicking the row's text opens it.](/blog/astryx-v0-7-0/table-row-expansion.webp)
+
+_Expanded details align with the first data column, row striping stays stable, and buttons or links inside a row never toggle it._
+
+```tsx
+const expansion = useTableRowExpansion<Order>({
+  expandedKeys,
+  onToggle: key => setExpandedKeys(previous => toggle(previous, key)),
+  getRowKey: order => order.id,
+  renderExpanded: order => <OrderItems order={order} />,
+  hasRowClickExpansion: true,
+});
+
+<Table
+  data={orders}
+  columns={columns}
+  idKey="id"
+  isStriped
+  hasHover
+  plugins={{expansion}}
+/>;
+```
+
+### Resize columns without losing context
+
+![A wide orders table that scrolls sideways. As the pointer moves up into the header row, a thin line appears at every column boundary. The pointer drags the boundary after Status to the right and the column widens. The table then scrolls to the right while the Customer column stays pinned at the left edge.](/blog/astryx-v0-7-0/table-column-resize.webp)
+
+_Column boundaries reveal on header hover and remain keyboard reachable; resized widths commit on release while pinned columns stay in place during horizontal scrolling._
+
+```tsx
+const columnResize = useTableColumnResize<Order>({
+  columnWidths,
+  columns,
+  onColumnResizeEnd: updates =>
+    setColumnWidths(previous => ({...previous, ...updates})),
+});
+const stickyColumns = useTableStickyColumns<Order>({
+  startKeys: ['customer'],
+});
+
+<Table
+  data={orders}
+  columns={columns}
+  idKey="id"
+  plugins={{columnResize, stickyColumns}}
+/>;
+```
+
+<!-- VISUAL_SLOT: data-display — charts, MetadataList, TreeList, and Lightbox -->
 
 ## Markdown and content
 
-Markdown can now turn your own syntax into real components instead of stopping at formatted text. The examples below use the same source before and after, so each plugin's effect is visible on its own.
+Markdown can now turn your own syntax into real components instead of stopping at formatted text. The examples below use the same source before and after, so each feature's effect is visible on its own.
 
 ### Keep authored line breaks
 
 ![The same four-line Markdown checklist rendered twice. Before plugins, the lines run together into one paragraph. After plugins, each line starts on its own line.](/blog/astryx-v0-7-0/markdown-soft-breaks.png)
 
-_Single line endings become line breaks; code and other opaque content stay unchanged._
+_Single line endings become line breaks; code blocks and inline code stay unchanged._
 
 ```tsx
 import {Markdown} from '@astryxdesign/core/Markdown';
@@ -103,7 +258,7 @@ import {markdownSoftBreaksPlugin} from '@astryxdesign/core/Markdown/plugins';
 
 ![A document that starts with a YAML frontmatter block, rendered twice. Before plugins, the frontmatter shows as a horizontal rule, a line of raw key: value text, and another rule above the heading. After plugins, the frontmatter is gone from the document and the host shows its parsed values as a draft badge and a title above the same heading.](/blog/astryx-v0-7-0/markdown-frontmatter.png)
 
-_The host receives typed metadata while the frontmatter stays out of the rendered document._
+_Your app gets the frontmatter as typed data while it stays out of the rendered document._
 
 ```tsx
 import {Markdown} from '@astryxdesign/core/Markdown';
@@ -227,7 +382,7 @@ const headingLinks = createMarkdownHeadingLinks({
 
 ![A paragraph, a two-item list and a quote rendered twice. Before plugins, the blocks have no annotations. After plugins, a small gutter beside each block names its source line: L1 for the paragraph, L3 and L4 for the list items, L6 for the quote.](/blog/astryx-v0-7-0/markdown-source-lines.png)
 
-_Each rendered block exposes its source lines, giving comments, selections, and search results a stable place to attach._
+_Illustrative gutter: the page reads each block's `data-source-line` and `data-source-line-end` attributes to attach comments, selections, and search results._
 
 ```tsx
 import {Markdown} from '@astryxdesign/core/Markdown';
@@ -240,7 +395,7 @@ import {markdownSourceLinesPlugin} from '@astryxdesign/core/Markdown/plugins';
 
 ![A sentence with an inline fraction and a display equation, rendered twice. Before, the dollar-delimited math shows as literal text. After, the inline fraction is typeset within the sentence and the equation is typeset on its own centered line.](/blog/astryx-v0-7-0/markdown-math.png)
 
-_Providing a math renderer turns on dollar-delimited parsing; your app still owns the typesetting and accessible output._
+_Providing a math renderer turns on dollar-delimited parsing; the typesetting shown is an example renderer, and your app owns the final accessible output._
 
 ```tsx
 import {Markdown} from '@astryxdesign/core/Markdown';
@@ -312,7 +467,7 @@ npx @astryxdesign/cli integration verify
 
 ## Interaction and feedback
 
-Pressed states, clear-button focus, swipe dismissal, menu gestures, and optimistic actions now respond at the moment people expect. Apps whose rows never swipe also ship about 2.7 KB less JavaScript on first load.
+Pressed states, clear-button focus, swipe dismissal, menu gestures, and optimistic actions now respond at the moment people expect. Apps whose rows never swipe also ship about 2.7 KB less JavaScript (gzip) on first load.
 
 **Pending merge — [#6954](https://github.com/facebook/astryx/pull/6954):** compact Toolbar rows will use a 4px top and bottom inset while keeping their side alignment, and the RichText formatting row will use 4px on every edge.
 
@@ -351,9 +506,14 @@ The highest-traffic API changes look like this:
 ```
 
 ```diff
-- <Banner status="success" title="Settings saved" />
-+ announce('Settings saved');
-+ <Banner status="success" title="Settings saved" />
+ const announce = useAnnounce();
+
+ async function saveSettings() {
+   await save();
++  announce('Settings saved');
+ }
+
+ <Banner status="success" title="Settings saved" />
 ```
 
 ### All 26 breaking migrations

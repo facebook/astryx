@@ -5,7 +5,22 @@ import * as stylex from '@stylexjs/stylex';
 import {Banner} from '@astryxdesign/core/Banner';
 import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
-import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuSubMenu,
+} from '@astryxdesign/core/DropdownMenu';
+import {DateInput} from '@astryxdesign/core/DateInput';
+import type {ISODateString} from '@astryxdesign/core/Calendar';
+import {ListItem} from '@astryxdesign/core/List';
+import {
+  Table,
+  useTableColumnResize,
+  useTableRowExpansion,
+  useTableStickyColumns,
+  type TableColumn,
+} from '@astryxdesign/core/Table';
+import {TimeInput, type ISOTimeString} from '@astryxdesign/core/TimeInput';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Typeahead, createStaticSource} from '@astryxdesign/core/Typeahead';
 import {Markdown} from '@astryxdesign/core/Markdown';
@@ -32,7 +47,10 @@ const peopleSource = createStaticSource([
   {id: 'ada', label: 'Ada'},
   {id: 'grace', label: 'Grace'},
 ]);
-const labelActions = [{label: 'Bug'}, {label: 'Feature'}];
+const reviewerActions = [
+  {id: 'ada', label: 'Ada Lovelace'},
+  {id: 'grace', label: 'Grace Hopper'},
+];
 
 export function Forms() {
   const [name, setName] = useState('');
@@ -59,7 +77,10 @@ export function Forms() {
   );
 }
 
-function createLabel() {}
+function createTeam() {}
+function assign() {}
+function moveToBacklog() {}
+function moveToNext() {}
 function CustomEdgeToEdgeFilters() {
   return null;
 }
@@ -69,13 +90,29 @@ export function Overlays() {
   return (
     <>
       <DropdownMenu
-        button={{label: 'Labels'}}
+        button={{label: 'Assign reviewer'}}
         header={
-          <TextInput label="Filter labels" value={query} onChange={setQuery} />
+          <TextInput
+            label="Filter reviewers"
+            value={query}
+            onChange={setQuery}
+          />
         }
-        footer={<Button label="Create label" onClick={createLabel} />}
-        items={labelActions}
+        footer={<Button label="Create team" onClick={createTeam} />}
+        items={reviewerActions}
       />
+      <DropdownMenu
+        button={{label: 'Assign reviewer', variant: 'primary'}}
+        presentation="adaptive"
+        items={reviewerActions}
+      />
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Assign to me" onClick={assign} />
+        <DropdownMenuSubMenu label="Move to">
+          <DropdownMenuItem label="Backlog" onClick={moveToBacklog} />
+          <DropdownMenuItem label="Next release" onClick={moveToNext} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>
       <BottomSheet
         isOpen={isOpen}
         onOpenChange={setIsOpen}
@@ -84,6 +121,111 @@ export function Overlays() {
         <CustomEdgeToEdgeFilters />
       </BottomSheet>
     </>
+  );
+}
+
+function openRow() {}
+function archive(_id: string) {}
+function remove(_id: string) {}
+
+export function MobileAndTouch() {
+  const row = {id: 'item-1', label: 'Release checklist'};
+  const [date, setDate] = useState<ISODateString | undefined>('2026-10-14');
+  const [time, setTime] = useState<ISOTimeString | undefined>(
+    '09:30' as ISOTimeString,
+  );
+  return (
+    <>
+      <ListItem
+        label={row.label}
+        onClick={openRow}
+        swipeActions={{
+          trailing: [
+            {
+              label: 'Archive',
+              onActivate: () => archive(row.id),
+              variant: 'neutral',
+              hasRemoval: true,
+            },
+            {
+              label: 'Delete',
+              onActivate: () => remove(row.id),
+              variant: 'destructive',
+              hasRemoval: true,
+            },
+          ],
+        }}
+      />
+      <DateInput
+        label="Release date"
+        value={date}
+        onChange={setDate}
+        presentation="adaptive-bottom-sheet"
+      />
+      <TimeInput
+        label="Release time"
+        value={time}
+        onChange={setTime}
+        presentation="adaptive-bottom-sheet"
+      />
+    </>
+  );
+}
+
+type Order = {
+  [key: string]: unknown;
+  id: string;
+  customer: string;
+  status: string;
+};
+const orders: Order[] = [
+  {id: 'order-1', customer: 'Ada Lovelace', status: 'Ready'},
+];
+const columns: TableColumn<Order>[] = [
+  {key: 'customer', header: 'Customer'},
+  {key: 'status', header: 'Status'},
+];
+function OrderItems({order}: {order: Order}) {
+  return <div>{order.id}</div>;
+}
+function toggle(previous: ReadonlySet<string>, key: string) {
+  const next = new Set(previous);
+  if (next.has(key)) {
+    next.delete(key);
+  } else {
+    next.add(key);
+  }
+  return next;
+}
+
+export function DataDisplay() {
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const expansion = useTableRowExpansion<Order>({
+    expandedKeys,
+    onToggle: key => setExpandedKeys(previous => toggle(previous, key)),
+    getRowKey: order => order.id,
+    renderExpanded: order => <OrderItems order={order} />,
+    hasRowClickExpansion: true,
+  });
+  const columnResize = useTableColumnResize<Order>({
+    columnWidths,
+    columns: columns as TableColumn<Record<string, unknown>>[],
+    onColumnResizeEnd: updates =>
+      setColumnWidths(previous => ({...previous, ...updates})),
+  });
+  const stickyColumns = useTableStickyColumns<Order>({
+    startKeys: ['customer'],
+  });
+  return (
+    <Table
+      data={orders}
+      columns={columns}
+      idKey="id"
+      isStriped
+      hasHover
+      plugins={{expansion, columnResize, stickyColumns}}
+    />
   );
 }
 
