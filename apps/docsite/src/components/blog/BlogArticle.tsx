@@ -3,12 +3,9 @@
 /**
  * @file BlogArticle.tsx
  * Full blog post layout: breadcrumb, title, byline, cover, prose, related docs.
- * Post headings carry copy-link anchors (createMarkdownHeadingLinks).
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {Markdown} from '@astryxdesign/core/Markdown';
-import {createMarkdownHeadingLinks} from '@astryxdesign/core/Markdown/plugins';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Grid} from '@astryxdesign/core/Grid';
@@ -25,7 +22,7 @@ import {POST_TYPE_LABELS} from '../../lib/blog/schema';
 import {MarkdownText} from '../MarkdownText';
 import {AuthorByline} from './AuthorByline';
 import {ReleaseCoverArt} from './ReleaseCoverArt';
-import {MarkdownImage} from './ThemedImage';
+import {BlogPostBody} from './BlogPostBody';
 import {parseReleaseVersion} from '../../lib/blog/release';
 import {layout} from '../../layout.stylex';
 
@@ -57,10 +54,6 @@ const styles = stylex.create({
     flexWrap: 'wrap',
   },
 });
-
-// Every post heading gets a stable id and the hover-revealed copy-link control.
-// One post per page, so ids are unprefixed and match the heading's own text.
-const POST_MARKDOWN_PLUGINS = [createMarkdownHeadingLinks()];
 
 export interface BlogArticleProps {
   post: BlogPost;
@@ -114,13 +107,7 @@ export function BlogArticle({post}: BlogArticleProps) {
           </AspectRatio>
         ) : null}
 
-        <Markdown
-          headingLevelStart={2}
-          contentWidth="100%"
-          components={{image: MarkdownImage}}
-          plugins={POST_MARKDOWN_PLUGINS}>
-          {post.body}
-        </Markdown>
+        <BlogPostBody body={post.body} />
 
         {post.tags.length > 0 ? (
           <HStack gap={1} xstyle={styles.tagRow}>

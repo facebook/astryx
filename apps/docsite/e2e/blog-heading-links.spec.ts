@@ -19,7 +19,20 @@ function copyButton(page: Page, heading: string) {
   return page.getByRole('button', {name: `Copy link to ${heading}`});
 }
 
-test.use({permissions: ['clipboard-read', 'clipboard-write']});
+test.use({
+  permissions: ['clipboard-read', 'clipboard-write'],
+  // Headless Chromium reports no hover-capable pointer; give it the desktop
+  // mouse a reader has, so the hover reveal is what gets exercised.
+  launchOptions: {
+    args: [
+      '--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4',
+    ],
+  },
+});
+
+async function opacity(locator: ReturnType<Page['getByRole']>) {
+  return Number(await locator.evaluate(el => getComputedStyle(el).opacity));
+}
 
 test('hovering a post heading reveals a control that copies its permalink', async ({
   page,
@@ -30,9 +43,14 @@ test('hovering a post heading reveals a control that copies its permalink', asyn
   const heading = page.getByRole('heading', {name: HEADING});
   await expect(heading).toHaveAttribute('id', HEADING_ID);
 
-  await heading.hover();
+  expect(await page.evaluate(() => matchMedia('(hover: hover)').matches)).toBe(
+    true,
+  );
   const button = copyButton(page, HEADING);
-  await expect(button).toBeVisible();
+  await page.mouse.move(0, 0);
+  await expect.poll(() => opacity(button)).toBe(0);
+  await heading.hover();
+  await expect.poll(() => opacity(button)).toBe(1);
   await button.click();
 
   const copied = await page.evaluate(() => navigator.clipboard.readText());

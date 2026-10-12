@@ -8,6 +8,7 @@
  * would link to, plus the heading-links copy control beside it.
  */
 
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe, expect, it, vi} from 'vitest';
@@ -73,5 +74,21 @@ describe('blog post headings', () => {
       m => m[1],
     );
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('create the heading-links plugin in a client module, never in the server-rendered article', () => {
+    // A plugin passed from a Server Component to the client Markdown arrives
+    // as a plain object and silently does nothing.
+    const read = (file: string) =>
+      fs.readFileSync(
+        path.resolve(__dirname, '../components/blog', file),
+        'utf8',
+      );
+    const body = read('BlogPostBody.tsx');
+    expect(body).toMatch(/^(\/\/[^\n]*\n|\s)*'use client';/);
+    expect(body).toContain('createMarkdownHeadingLinks(');
+    expect(read('BlogArticle.tsx')).not.toMatch(
+      /Markdown\/plugins|createMarkdownHeadingLinks/,
+    );
   });
 });
