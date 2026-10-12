@@ -540,6 +540,53 @@ describe('markdownSourceLinesPlugin', () => {
     );
   });
 
+  it('refuses a transform that moves a top-level block to other lines while keeping its offsets', () => {
+    const move = (nodes: ReadonlyArray<TreeNode>): TreeNode[] =>
+      nodes.map(node => {
+        const position = node.position;
+        if (
+          node.type !== 'paragraph' ||
+          position == null ||
+          position.start.line !== 20
+        ) {
+          return node;
+        }
+        return {
+          ...node,
+          position: {
+            start: {...position.start, line: 19},
+            end: {...position.end, line: 19},
+          },
+        };
+      });
+    const forge = createMarkdownPlugin({
+      apiVersion: 1,
+      name: 'test-move-lines-keep-offsets',
+      transform: document => ({
+        ...document,
+        children: move(
+          document.children as unknown as ReadonlyArray<TreeNode>,
+        ) as unknown as typeof document.children,
+      }),
+    });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {container} = render(
+      <Markdown plugins={[forge, markdownSourceLinesPlugin]}>
+        {NESTED}
+      </Markdown>,
+    );
+    expect(warning).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '"test-move-lines-keep-offsets" failed in transform',
+      ),
+      expect.anything(),
+    );
+    warning.mockRestore();
+    expect(stamps(container, '[data-source-line]')).toEqual(
+      stamps(renderDocument(NESTED, true), '[data-source-line]'),
+    );
+  });
+
   it('keeps the released DOM and renderer props byte-identical without the plugin', () => {
     const plain = renderToStaticMarkup(<Markdown>{SOURCE}</Markdown>);
     expect(
