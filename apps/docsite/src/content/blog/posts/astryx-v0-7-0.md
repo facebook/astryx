@@ -577,7 +577,7 @@ Compact toolbars take less vertical space while staying aligned with the content
 
 ### Tighten a toolbar without shifting its content line
 
-![A card with a compact toolbar of three buttons above a line of text, before and after. Before, the toolbar row is taller, with extra space above and below the buttons. After, the row is tighter with a four-pixel inset top and bottom, and the first button still sits flush with the text below it.](/blog/astryx-v0-7-0/interaction-compact-toolbar.png)
+![A card with a compact toolbar of three icon buttons — filter, sort, columns — and a New item button above a line of text, before and after. Before, the toolbar row is taller, with extra space above and below the icons. After, the row is tighter with a four-pixel inset top and bottom, and the first icon still lines up with the text below it.](/blog/astryx-v0-7-0/interaction-compact-toolbar@2x.png)
 
 _Inline padding stays with the surrounding Card or Section, so the first button keeps the body's content line._
 
@@ -594,8 +594,24 @@ const styles = stylex.create({
     size="sm"
     startContent={
       <HStack gap={1}>
-        <Button label="Filter" variant="ghost" size="sm" />
-        <Button label="Group" variant="ghost" size="sm" />
+        <IconButton
+          label="Filter"
+          variant="ghost"
+          size="sm"
+          icon={<Icon icon="funnel" />}
+        />
+        <IconButton
+          label="Sort"
+          variant="ghost"
+          size="sm"
+          icon={<Icon icon="arrowsUpDown" />}
+        />
+        <IconButton
+          label="Columns"
+          variant="ghost"
+          size="sm"
+          icon={<Icon icon="viewColumns" />}
+        />
       </HStack>
     }
     endContent={<Button label="New item" variant="primary" size="sm" />}

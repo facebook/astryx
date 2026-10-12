@@ -8,6 +8,7 @@ import {BottomSheet} from '@astryxdesign/core/BottomSheet';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Icon} from '@astryxdesign/core/Icon';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {HStack} from '@astryxdesign/core/HStack';
 import {Kbd} from '@astryxdesign/core/Kbd';
 import {Slider} from '@astryxdesign/core/Slider';
@@ -243,8 +244,24 @@ export function InteractionFeedback() {
         size="sm"
         startContent={
           <HStack gap={1}>
-            <Button label="Filter" variant="ghost" size="sm" />
-            <Button label="Group" variant="ghost" size="sm" />
+            <IconButton
+              label="Filter"
+              variant="ghost"
+              size="sm"
+              icon={<Icon icon="funnel" />}
+            />
+            <IconButton
+              label="Sort"
+              variant="ghost"
+              size="sm"
+              icon={<Icon icon="arrowsUpDown" />}
+            />
+            <IconButton
+              label="Columns"
+              variant="ghost"
+              size="sm"
+              icon={<Icon icon="viewColumns" />}
+            />
           </HStack>
         }
         endContent={<Button label="New item" variant="primary" size="sm" />}
