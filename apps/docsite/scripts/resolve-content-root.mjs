@@ -39,6 +39,7 @@ import * as path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
+import {isStableRelease} from '../src/lib/integrationTargets.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCSITE_ROOT = path.resolve(__dirname, '..');
@@ -82,8 +83,9 @@ export function getTarget() {
  *   - `astryx.canaryOnly` packages (e.g. @astryxdesign/charts, @astryxdesign/lab)
  *     — these publish only as canaries, so no stable version exists to document.
  * This mirrors the publishable predicate in .github/workflows/release.yml's
- * stable-publish step, so production documents exactly the stable release set.
- * (On canary these still appear, sourced from the workspace like everything else.)
+ * stable-publish step (`isStableRelease`), so production documents exactly the
+ * stable release set. (On canary these still appear, sourced from the
+ * workspace like everything else.)
  */
 function latestPublishablePackages() {
   const pkg = JSON.parse(
@@ -92,13 +94,7 @@ function latestPublishablePackages() {
   const deps = {...pkg.dependencies, ...pkg.devDependencies};
   return Object.keys(deps)
     .filter(name => name.startsWith('@astryxdesign/'))
-    .map(name => {
-      const short = name.slice('@astryxdesign/'.length);
-      const dir = short.startsWith('theme-')
-        ? path.join('packages', 'themes', short.slice('theme-'.length))
-        : path.join('packages', short);
-      return {name, dir};
-    })
+    .map(name => ({name, dir: packageDirFor(name)}))
     .filter(({dir}) => {
       // Read the package's own workspace manifest for its publish flags. Same
       // rule release.yml uses for the stable `latest` tag.
@@ -107,8 +103,44 @@ function latestPublishablePackages() {
         return false;
       }
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-      return manifest.private !== true && manifest.astryx?.canaryOnly !== true;
+      return isStableRelease(manifest);
     });
+}
+
+/** Monorepo-relative directory of a documented @astryxdesign/* package. */
+function packageDirFor(name) {
+  const short = name.slice('@astryxdesign/'.length);
+  return short.startsWith('theme-')
+    ? path.join('packages', 'themes', short.slice('theme-'.length))
+    : path.join('packages', short);
+}
+
+/**
+ * The `latest` admission predicate for configured integration packages (see
+ * src/lib/integrationTargets.mjs): a configured package is admitted when its
+ * workspace manifest is a stable release AND the materialized content
+ * snapshot holds it. The second half matters between a package's promotion
+ * and its first stable publish: the package is publishable, but no tarball
+ * exists at the documented version yet, so `latest` keeps documenting the
+ * release that is actually on npm.
+ *
+ * @param {string} contentRoot the resolved `latest` content root
+ * @returns {(name: string) => boolean}
+ */
+export function admittedStableIntegration(contentRoot) {
+  return name => {
+    if (typeof name !== 'string' || !name.startsWith('@astryxdesign/')) {
+      return false;
+    }
+    const dir = packageDirFor(name);
+    const manifestPath = path.join(REPO_ROOT, dir, 'package.json');
+    if (!fs.existsSync(manifestPath)) return false;
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    return (
+      isStableRelease(manifest) &&
+      fs.existsSync(path.join(contentRoot, dir, 'package.json'))
+    );
+  };
 }
 
 /** Latest published version of the version-source package, read live from npm. */
@@ -169,7 +201,7 @@ function materializeFromNpm(version, packages) {
   // and a minimal package.json marks the cache root as a private package.
   fs.writeFileSync(
     path.join(cacheRoot, 'pnpm-workspace.yaml'),
-    ["packages:", "  - 'packages/*'", "  - 'packages/themes/*'", ''].join('\n'),
+    ['packages:', "  - 'packages/*'", "  - 'packages/themes/*'", ''].join('\n'),
   );
   fs.writeFileSync(
     path.join(cacheRoot, 'package.json'),
@@ -188,6 +220,17 @@ function materializeFromNpm(version, packages) {
   try {
     for (const {name, dir} of packages) {
       const spec = `${name}@${version}`;
+      // A package that joined the stable set after the documented release
+      // has no tarball at this version until the next cut publishes one.
+      // `latest` then documents what is on npm: the package appears once its
+      // first stable release ships. Anything other than "no such version"
+      // is still an error.
+      if (!publishedVersionExists(spec)) {
+        console.log(
+          `  ${spec} is not on npm yet; it joins latest after its first stable release`,
+        );
+        continue;
+      }
       // `npm pack` downloads the exact published tarball and prints its
       // filename; --pack-destination keeps it out of the cwd.
       //
@@ -217,6 +260,29 @@ function materializeFromNpm(version, packages) {
 
   fs.writeFileSync(stamp, stampValue);
   return cacheRoot;
+}
+
+/**
+ * Whether `spec` (`name@version`) is published on npm. `npm view` exits with
+ * E404 both for a package that was never published and for a published
+ * package without that version; any other failure is a real error.
+ */
+function publishedVersionExists(spec) {
+  try {
+    // stderr is captured, not inherited: an expected E404 is read from the
+    // error, and the build log does not print it as a failure.
+    run('npm', ['view', spec, 'version', '--json'], {
+      maxBuffer: 8 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {...process.env, COREPACK_ENABLE_STRICT: '0'},
+    });
+    return true;
+  } catch (error) {
+    if (/E404/.test(String(error?.stderr ?? error))) {
+      return false;
+    }
+    throw error;
+  }
 }
 
 /**

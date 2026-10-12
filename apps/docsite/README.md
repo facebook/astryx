@@ -117,18 +117,23 @@ them. Check the theme's `## Fonts` section for the specific Google Fonts URL.
 
 1. Create the package under `packages/<name>/`
 2. Add `"@astryxdesign/<name>": "*"` to `apps/docsite/package.json` dependencies
-3. For a canary-only component package, set `astryx.canaryOnly: true` in its
-   `package.json`, add `astryx.integration.mjs` with `components: './src'`,
-   include that file in the package's `files`, and list the package in
-   `apps/docsite/astryx.config.mjs`. Keep optional showcase blocks in the
-   package too and expose their directory through the integration's `templates`
-   field; the docsite retrieves them through the CLI template API.
+3. For a component package other than Core, add `astryx.integration.mjs` with
+   `components: './src'`, include that file (and `src`) in the package's
+   `files`, and list the package in `apps/docsite/astryx.config.mjs`. Keep
+   optional showcase blocks in the package too and expose their directory
+   through the integration's `templates` field; the docsite retrieves them
+   through the CLI template API. A package that publishes only canaries also
+   sets `astryx.canaryOnly: true` in its `package.json`.
 4. Run `pnpm generate`
 
 The package appears in the sidebar, the libraries section, and gets its own
 `/docs/<name>` detail page. If the package contains `.doc.mjs` files,
 its components are extracted into `componentRegistry.ts` as well. Canary-only
 packages and components appear only on canary builds and carry a flask icon.
+A configured package that is a stable release (neither `private` nor
+`astryx.canaryOnly`) is documented on the production site too, from its
+published tarball, starting with its first stable release
+(`scripts/resolve-content-root.mjs`).
 
 ## Adding a Blog Post
 

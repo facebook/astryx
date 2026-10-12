@@ -24,6 +24,7 @@ import docsiteConfig from '../../astryx.config.mjs';
 import {
   integrationContentEnabled,
   integrationPackagesForTarget,
+  isStableRelease,
 } from '../lib/integrationTargets.mjs';
 import {blocks} from '../generated/blockRegistry';
 import {components} from '../generated/componentRegistry';
@@ -43,8 +44,32 @@ describe('integration target gate', () => {
     );
   });
 
-  it('returns no packages on latest regardless of configuration', () => {
+  it('returns no packages on latest without a stability predicate', () => {
     expect(integrationPackagesForTarget('latest', docsiteConfig)).toEqual([]);
+  });
+
+  it('admits only the configured packages the predicate calls stable, in order, on latest', () => {
+    const config = {
+      integrations: ['@astryxdesign/a', '@astryxdesign/b', '@astryxdesign/c'],
+    };
+    expect(
+      integrationPackagesForTarget('latest', config, name =>
+        ['@astryxdesign/c', '@astryxdesign/a'].includes(name),
+      ),
+    ).toEqual(['@astryxdesign/a', '@astryxdesign/c']);
+    // Canary ignores the predicate: every configured package is admitted.
+    expect(integrationPackagesForTarget('canary', config, () => false)).toEqual(
+      config.integrations,
+    );
+  });
+
+  it('calls a manifest stable only without private or canaryOnly', () => {
+    expect(isStableRelease({})).toBe(true);
+    expect(isStableRelease({private: true})).toBe(false);
+    expect(isStableRelease({astryx: {canaryOnly: true}})).toBe(false);
+    expect(isStableRelease({private: false, astryx: {canaryOnly: false}})).toBe(
+      true,
+    );
   });
 
   it('tolerates a config without an integrations list', () => {
@@ -77,32 +102,42 @@ describe('production-exclusion invariants (asserted on canary artifacts)', () =>
     }
   });
 
-  it('marks every configured integration canary-only or private, so the latest content snapshot can never materialize it', () => {
+  it('admits a configured integration on latest only when it is a stable release', () => {
     // resolve-content-root.mjs materializes the `latest` content root from the
     // packages published to the stable npm tag, excluding `private` and
-    // `astryx.canaryOnly` manifests (mirroring release.yml). As long as every
-    // configured integration carries one of those flags, the production data
-    // pipeline cannot even see its sources. Revisit this invariant before ever
-    // configuring a stable package as a docsite integration.
-    for (const name of docsiteConfig.integrations) {
+    // `astryx.canaryOnly` manifests (mirroring release.yml). The admission rule
+    // uses the same predicate, so a canary-only integration can never reach
+    // the production data pipeline, and a configured package that is a stable
+    // release is documented there once its first stable release is published.
+    const manifestOf = (name: string) => {
       const registryEntry = packages.find(pkg => pkg.name === name);
       // Present on canary (documented at all) …
       expect(
         registryEntry,
         `${name} missing from canary packageRegistry`,
       ).toBeDefined();
-      const manifest = JSON.parse(
+      return JSON.parse(
         fs.readFileSync(
           path.join(REPO_ROOT, registryEntry!.packagePath, 'package.json'),
           'utf-8',
         ),
       );
+    };
+    const admitted = new Set(
+      integrationPackagesForTarget('latest', docsiteConfig, name =>
+        isStableRelease(manifestOf(name)),
+      ),
+    );
+    for (const name of docsiteConfig.integrations) {
+      const manifest = manifestOf(name);
       const excludedFromStable =
         manifest.private === true || manifest.astryx?.canaryOnly === true;
       expect(
-        excludedFromStable,
-        `${name} is neither private nor astryx.canaryOnly — it would be eligible for the latest content snapshot`,
-      ).toBe(true);
+        admitted.has(name),
+        excludedFromStable
+          ? `${name} is private or astryx.canaryOnly and must stay off latest`
+          : `${name} is a stable release and belongs on latest`,
+      ).toBe(!excludedFromStable);
     }
   });
 
