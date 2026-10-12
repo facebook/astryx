@@ -71,8 +71,6 @@ const [reviewers, setReviewers] = useState(['platform']);
 />;
 ```
 
-<!-- VISUAL_SLOT: forms-and-inputs — IME and async picker behavior as GIF/WebP -->
-
 ## Menus and overlays
 
 Menus place real controls beside their rows while screen readers still hear a normal menu, and nested layers close in the order people see them. Dialog focus, Toast layering, and menu zoom behavior now hold up across keyboard, pointer, and touch use.
@@ -141,8 +139,6 @@ _BottomSheet now adds a comfortable content inset by default; `padding={0}` keep
    <CustomEdgeToEdgeFilters />
  </BottomSheet>
 ```
-
-<!-- VISUAL_SLOT: menus-and-overlays — BottomSheet drag/scroll and Toast over Dialog -->
 
 ## Mobile and touch
 
@@ -226,8 +222,6 @@ If your theme extends one of these and sets its own type scale, the phone rule r
 
 Butter and Stone use `ratio: 1.25` and also restore `tokens: {'--text-supporting-size': '12px'}` in the rule's `value`.
 
-<!-- VISUAL_SLOT: mobile-and-touch — AppShell continuity -->
-
 ## Data display
 
 Tables keep expanded content aligned, sticky and resizable columns usable, row actions working, and scrolling contained only when the table can actually scroll. Charts, MetadataList, TreeList, and Lightbox keep labels, rows, and images readable in dense or narrow views.
@@ -273,8 +267,6 @@ const columnResize = useTableColumnResize<Order>({
 
 <Table data={orders} columns={columns} idKey="id" plugins={{columnResize}} />;
 ```
-
-<!-- VISUAL_SLOT: data-display — charts, MetadataList, TreeList, and Lightbox -->
 
 ## Markdown and content
 
@@ -524,11 +516,15 @@ _An Icon without an explicit size now follows its Button, so small buttons no lo
 <Button label="Upload" size="lg" icon={<Icon icon={ArrowUpTrayIcon} />} />
 ```
 
-Core spacing tokens now use rem, so themes that inherit them follow the reader's root font size while keeping the same values at the default 16px root. The row-expansion chevron also stays centered in its fixed column.
+### Scale spacing with the reader's text
+
+![The same small form card rendered at a 24px browser font size, before and after, with a second row at the default 16px. Before at 24px, the text is large but the card's padding and the gaps between the field and buttons stay as tight as at 16px. After, padding and gaps grow with the text. At 16px both versions look identical.](/blog/astryx-v0-7-0/theme-rem-spacing.png)
+
+_Spacing tokens use rem (`--spacing-N` = N × 0.25rem), so padding and gaps follow the reader's root font size the way the type scale does. Rendered pixel sizes are unchanged at the default 16px root._
+
+The row-expansion chevron also stays centered in its fixed column.
 
 **Pending merge — [#7374](https://github.com/facebook/astryx/pull/7374):** Matcha and Y2K will move their own spacing steps to rem so every first-party theme follows the same rule.
-
-<!-- VISUAL_SLOT: themes-and-visual-foundations — pending root-relative spacing -->
 
 ## Accessibility and localization
 
@@ -556,8 +552,6 @@ async function saveSettings() {
 <Banner status="success" title="Settings saved" />;
 ```
 
-<!-- VISUAL_SLOT: accessibility-and-localization — overflowing sheet keyboard behavior and visual contrast -->
-
 ## CLI and integrations
 
 Other libraries can now contribute components, docs, templates, upgrade scripts, coding guidance, and source themes through the same Astryx CLI an app already uses. CLI answers are shorter and more consistent, and failures identify the input or dependency that needs attention.
@@ -574,8 +568,6 @@ npx @astryxdesign/cli integration verify
 ```
 
 **Pending merge — [#7130](https://github.com/facebook/astryx/pull/7130):** `doctor` will fail when Astryx cannot load a configured integration or project config, and it will name the integrations it loaded.
-
-<!-- VISUAL_SLOT: cli-and-integrations — remaining shipped behavior only when it adds information beyond the real transcript -->
 
 ## Interaction and feedback
 
