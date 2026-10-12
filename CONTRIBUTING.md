@@ -11,7 +11,7 @@ Key pages:
 - **[Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle)** — how components move from lab → core and templates from hidden → visible
 - **[API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)** — how we resolve API design questions
 - **[Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)** — building templates/blocks and the template grading rubric
-- **[Blog Review Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric)** — how docsite blog posts are reviewed
+- **[Blog Review Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria)** — how docsite blog posts are reviewed
 - **[Contributing with AI](https://github.com/facebook/astryx/wiki/Contributing-with-AI-Assistants)** — safe zones, spec protocol, and working with AI tools
 
 This file covers local development setup.
@@ -755,10 +755,11 @@ fixed group, exact internal pins, and lockfile—patch successor by default,
 minor only when the owner explicitly names it.
 
 Before stable publication, a patch release self-grades its complete generated
-changelogs and draft GitHub Release notes against the public Blog Review Rubric's
-`update` profile. Every criterion must pass; failures are fixed on the release
-branch and the complete text is re-graded. A minor release instead requires Cindy's
-explicit human editorial approval of the changelogs, release notes, and public blog.
+changelogs and draft GitHub Release notes against the public [Blog Review
+Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria)
+under the `update` profile. Every criterion must pass; failures are fixed on the
+release branch and the complete text is re-graded. A minor release instead requires
+Cindy's explicit human editorial approval of the changelogs, release notes, and public blog.
 
 ## Finding Something to Work On
 

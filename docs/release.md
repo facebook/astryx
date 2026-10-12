@@ -24,8 +24,10 @@ stable package is built from an immutable release tag and published with provena
    lockfile before the Version Packages PR merges.
 4. Merge the generated PR to the release branch, run exact-head branch CI, and
    clear the public editorial gate. For a patch, self-grade the complete generated
-   changelogs and draft GitHub Release notes against the public Blog Review Rubric's
-   `update` profile, record the result, and fix and re-grade every failed criterion.
+   changelogs and draft GitHub Release notes against the public [Blog Review
+   Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria)
+   under the `update` profile, record the result, and fix and re-grade every failed
+   criterion.
    A minor requires Cindy's explicit human editorial approval of the changelogs,
    release notes, and required public blog. Then tag and publish that exact branch
    head. Stable publication from `main` is refused.
