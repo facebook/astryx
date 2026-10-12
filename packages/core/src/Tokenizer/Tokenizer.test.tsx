@@ -1594,6 +1594,27 @@ describe('Tokenizer end-lane reserve', () => {
     );
   });
 
+  it('keeps token rows, not only the input, short of the lane', () => {
+    // The lane is out of flow, so a token reaching the end of the first row
+    // ran under the clear button. The field's own inline-end padding spends
+    // the reserve, and every row of tokens wraps inside it. Real geometry is
+    // proved in TokenizerEndLane.a11y.chromium.spec.ts.
+    const {container} = render(
+      <Tokenizer
+        label="Users"
+        searchSource={userSource}
+        value={[users[0]]}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    const field = laneHost(container);
+    expect(field).not.toBeNull();
+    expect(getComputedStyle(field!).paddingInlineEnd).toContain(
+      '--_tokenizer-end-lane-reserve',
+    );
+  });
+
   it('does not pad the input on the collapsed paths', () => {
     // Collapsed: with tokens truncated the input is given no width to pad —
     // `inputAtMax` zeroes its padding outright — so a reserve there would be
