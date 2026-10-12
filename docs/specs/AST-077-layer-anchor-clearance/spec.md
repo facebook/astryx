@@ -84,15 +84,18 @@ layers the product draws itself.
   MultiSelector, ComplexSelector, BaseTypeahead, PowerSearch, Tooltip,
   HoverCard, TopNavMenu, the chat trigger menu, and the lab Schedule's month and
   time-grid views pass it as the layer's clearance. The flyouts of SideNavItem
-  and of a collapsed SideNavHeading, and BreadcrumbItem's menu, which set the
-  step as margins on their own layers, pass the token as the layer's clearance
-  too, so a slide keeps it. Every listed layer keeps its gap from the anchor at
-  the default, under the default theme and under themes that rescale
-  `--spacing-1`.
-- SideNavItem's flyout and BreadcrumbItem's menu also set the step on their far
-  edge, where it stands in for the viewport gutter. They drop that margin, so
-  the runtime's gutter applies there (`spec:AST-059` FR1), and near that
-  viewport edge they flip or slide where the gutter requires it.
+  and of a collapsed SideNavHeading, which set the step as margins on their own
+  layers, pass the token as the layer's clearance too, so a slide keeps it.
+  Every layer named so far keeps its gap from the anchor at the default, under
+  the default theme and under themes that rescale `--spacing-1`.
+- SideNavItem's flyout also sets the step on its far edge, where it stands in
+  for the viewport gutter. It drops that margin, so the runtime's gutter applies
+  there (`spec:AST-059` FR1), and near that viewport edge it flips or slides
+  where the gutter requires it.
+- BreadcrumbItem's menu sets the step with a block-margin shorthand that the
+  layer's own margins outrank in the published package, so it sits flush
+  against its trigger with the runtime's gutter on its far edge. Passing the
+  token gives it the clearance, a visible gap from its trigger at the default.
 
 ## Verification
 
