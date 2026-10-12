@@ -130,6 +130,11 @@ measure against, the second navigation can't change the verdict. Most stories
 have no candidates (1378 of 1394 in a recent full sweep), so this is about half
 of D5's page loads.
 
+**One LTR load shared with D6.** D5 and D6 both scan every story, so one LTR
+load serves both: D5 reads the page before the reveal step (unless
+`--pm-reveal`), D6 after it, the same order each used on its own load. The RTL
+page loads only when either dimension found an LTR candidate.
+
 It is also a correctness fix: the old `ltr.length === 0 && rtl.length === 0`
 guard let one-sided stories fall through to a compare loop that runs
 `min(ltr, rtl) = 0` times, reporting **pass** having compared nothing.
