@@ -343,14 +343,9 @@ describe('Markdown', () => {
     expect(container.querySelector('[data-diff]')).toBeNull();
   });
 
-  it('hands a custom code renderer the fence word as written plus isDiff and the base language', () => {
+  it('hands a custom code renderer the fence word as written and nothing new', () => {
     const seen: Record<string, unknown>[] = [];
-    const Code = (props: {
-      code: string;
-      language?: string;
-      isDiff?: boolean;
-      diffLanguage?: string;
-    }) => {
+    const Code = (props: {code: string; language?: string}) => {
       seen.push(props);
       return <pre data-testid="custom">{props.code}</pre>;
     };
@@ -361,11 +356,10 @@ describe('Markdown', () => {
         }
       </Markdown>,
     );
-    expect(seen.map(p => [p.language, p.isDiff, p.diffLanguage])).toEqual([
-      ['diff-tsx', true, 'tsx'],
-      ['diff', true, 'plaintext'],
-      ['tsx', false, undefined],
-    ]);
+    expect(seen.map(p => p.language)).toEqual(['diff-tsx', 'diff', 'tsx']);
+    for (const props of seen) {
+      expect(Object.keys(props).sort()).toEqual(['code', 'language']);
+    }
   });
 
   it('renders links with correct href', () => {
