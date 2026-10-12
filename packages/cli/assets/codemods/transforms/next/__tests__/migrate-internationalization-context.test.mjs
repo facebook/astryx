@@ -262,14 +262,36 @@ namespace Declared {
   declare function Ctx(props: {value: unknown}): null;
   export const out = <Ctx value={v}><H /></Ctx>;
 }
+namespace Nested {
+  namespace Ctx { export const Provider = Other; }
+  export const out = <Ctx.Provider value={v}><I /></Ctx.Provider>;
+}
 export const ok = <Ctx value={x}><E /></Ctx>;`;
     const output = folded(apply(input));
     expect(output.match(/<Ctx value=\{v\}>/g)).toHaveLength(6);
+    expect(output).toContain('<Ctx.Provider value={v}><I /></Ctx.Provider>');
     expect(output).toContain(
       '<InternationalizationProvider locale={w.locale} dir={w.direction} messages={w.messages}><C /></InternationalizationProvider>',
     );
     expect(output).toContain(
       '<InternationalizationProvider locale={x.locale} dir={x.direction} messages={x.messages}><E /></InternationalizationProvider>',
+    );
+  });
+
+  it('is not captured by a nested namespace named like the provider', () => {
+    const input = `import {InternationalizationContext as Ctx} from '@astryxdesign/core/i18n';
+namespace Captures {
+  namespace InternationalizationProvider { export const x = 1; }
+  export const out = <Ctx value={v}><J /></Ctx>;
+}`;
+    const output = folded(apply(input));
+    // The module binds the provider's name, so the import takes a free alias
+    // and the element under that namespace renders the alias, not the namespace.
+    expect(output).toContain(
+      '<InternationalizationProvider2 locale={v.locale} dir={v.direction} messages={v.messages}><J /></InternationalizationProvider2>',
+    );
+    expect(output).toContain(
+      "import {InternationalizationProvider as InternationalizationProvider2} from '@astryxdesign/core/i18n';",
     );
   });
 

@@ -142,7 +142,11 @@ export default function migrateInternationalizationContext(file, api) {
       ((parent.type === 'FunctionDeclaration' ||
         parent.type === 'FunctionExpression' ||
         parent.type === 'ClassDeclaration' ||
-        parent.type === 'ClassExpression') &&
+        parent.type === 'ClassExpression' ||
+        parent.type === 'TSDeclareFunction' ||
+        parent.type === 'TSEnumDeclaration' ||
+        parent.type === 'TSImportEqualsDeclaration' ||
+        parent.type === 'TSModuleDeclaration') &&
         parent.id === p.node) ||
       parent.type === 'ImportSpecifier' ||
       parent.type === 'ImportDefaultSpecifier' ||
@@ -288,9 +292,11 @@ export default function migrateInternationalizationContext(file, api) {
         statement.type === 'ClassDeclaration' ||
         statement.type === 'TSDeclareFunction' ||
         statement.type === 'TSEnumDeclaration' ||
-        statement.type === 'TSImportEqualsDeclaration'
+        statement.type === 'TSImportEqualsDeclaration' ||
+        statement.type === 'TSModuleDeclaration'
       ) {
-        // `declare function Ctx()`, `enum Ctx`, `import Ctx = Other.Thing`.
+        // `declare function Ctx()`, `enum Ctx`, `import Ctx = Other.Thing`,
+        // `namespace Ctx {}`.
         return statement.id?.name === name;
       }
       return false;
