@@ -92,9 +92,15 @@ _Submenus replace the current rows instead of opening an off-screen flyout, with
 
 ![A phone screen with a bottom sheet open over a dimmed page; inside the sheet an Assign reviewer menu is opened. The first Escape press closes only the menu and the sheet stays. The second Escape press slides the sheet away and the page is back.](/blog/astryx-v0-7-0/sheet-escape-order.webp)
 
-_The `Esc` keycap overlay, drawn by the capture rig, shows each press; the shipped layer stack closes only the inner menu and then the sheet._
+The `Esc` keycap is added to show each press; one press closes only the inner menu, and the next closes the sheet.
 
-**Pending merge — [#6884](https://github.com/facebook/astryx/pull/6884):** BottomSheet will add comfortable content padding by default; `padding={0}` keeps the old edge-to-edge content box.
+### Give BottomSheet content room
+
+![The same bottom sheet on a phone, before and after. Before, the sheet's text and buttons run flush against the panel edges and start right under the grab handle, and the title is hidden behind it. After, the same content sits inside a comfortable inset on all sides, the title is visible below the handle, and the buttons are clear of the bottom edge.](/blog/astryx-v0-7-0/theme-bottomsheet-padding.png)
+
+_BottomSheet now adds a comfortable content inset by default; `padding={0}` keeps the old flush box._
+
+`preserve-bottom-sheet-content-padding` adds `padding={0}` to sheets that set no padding, except when their only child is a padded Section or a Layout. Nested Layouts get a TODO; if a theme already pads every BottomSheet edge, remove the codemod-added prop to keep that theme inset.
 
 ```diff
  <BottomSheet
@@ -144,7 +150,7 @@ _Sideways drags reveal touch actions without hiding them from keyboard and assis
 
 ### Choose the date and time picker
 
-_Date and time fields can explicitly keep Astryx's picker on touch, use a popover, or hand off to the operating system._
+Date and time fields can explicitly keep Astryx's picker on touch, use a popover, or hand off to the operating system.
 
 ```tsx
 <DateInput
@@ -391,7 +397,7 @@ function MathExpression({
 
 ## Themes and visual foundations
 
-Components read more clearly in every stable theme, and data colors have one StyleX source. Each comparison below uses the same scene in v0.6.0 and the current release.
+Components read more clearly in every stable theme, and data colors have one StyleX source.
 
 ### Use data colors from one StyleX source
 
@@ -407,6 +413,8 @@ const styles = stylex.create({
   },
 });
 ```
+
+The three comparisons below use the same scene in v0.6.0 and the current release.
 
 ### Read keyboard shortcuts clearly
 
@@ -498,6 +506,8 @@ npx @astryxdesign/cli integration verify
 
 ## Interaction and feedback
 
+Compact toolbars will take less vertical space without shifting the controls beside them once the pending change below lands.
+
 **Pending merge — [#6954](https://github.com/facebook/astryx/pull/6954):** compact Toolbar rows will use less vertical space with a 4px top and bottom inset while keeping their side alignment, and the RichText formatting row will use 4px on every edge.
 
 <!-- VISUAL_SLOT: interaction-and-feedback — behavior as GIF/WebP; compact Toolbar as labeled Before/After -->
@@ -567,7 +577,7 @@ The highest-traffic API changes look like this:
 18. **The `layout` command group is removed** ([#7137](https://github.com/facebook/astryx/pull/7137)) — use `astryx build`, `astryx template`, and `astryx docs layout`; no codemod.
 19. **`reset.css` reaches pseudo-elements and search fields** ([#7355](https://github.com/facebook/astryx/pull/7355)) — add your own later-layer `box-sizing`, border, placeholder color, or search appearance only when you need the old browser result; no codemod.
 20. **Private theme variables fail the build** ([#6872](https://github.com/facebook/astryx/pull/6872)) — fix every reported private `--_*` input instead of relying on exit 0; no codemod.
-21. **BottomSheet adds default content padding** (pending [#6884](https://github.com/facebook/astryx/pull/6884)) — remove duplicate caller padding or pass `padding={0}` for the old box; `preserve-bottom-sheet-content-padding` adds `padding={0}`, but remove it when your theme already sets BottomSheet padding so the theme inset remains.
+21. **BottomSheet adds default content padding** ([#6884](https://github.com/facebook/astryx/pull/6884)) — remove duplicate caller padding or pass `padding={0}` for the old box; `preserve-bottom-sheet-content-padding` adds `padding={0}`, but remove it when your theme already sets BottomSheet padding so the theme inset remains.
 22. **Phone typography starts at 16px** (pending [#6699](https://github.com/facebook/astryx/pull/6699)) — take the new Neutral, Chocolate, Butter, and Stone scale as-is, or add a later touch-and-narrow theme rule to preserve 14px; no codemod.
 23. **`emptySearchResultsText` is removed** (pending [#7289](https://github.com/facebook/astryx/pull/7289)) — rename it to `emptySearchText`; `rename-empty-search-results-text` handles supported components and static trigger objects.
 24. **Core spacing follows the root font size** (pending [#7359](https://github.com/facebook/astryx/pull/7359)) — CSS variable users need no change; code that parses px converts rem with the root size or reads the computed length; no codemod.
