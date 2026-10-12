@@ -17,7 +17,8 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/i18n/useTranslator.ts
  * - /packages/core/src/i18n/resolve.ts
- * - /scripts/check-i18n-catalog.mjs (the slice-coverage rule)
+ * - /scripts/check-i18n-catalog.mjs (its slice-coverage rule lands with the
+ *   component sweep)
  */
 
 import {use, useMemo} from 'react';

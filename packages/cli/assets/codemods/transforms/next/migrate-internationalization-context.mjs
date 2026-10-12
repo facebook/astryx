@@ -12,11 +12,11 @@
  *   <InternationalizationContext value={v}>          → <InternationalizationProvider
  *   <InternationalizationContext.Provider value={v}>     locale={v.locale}
  *                                                        dir={v.direction}
- *                                                        messages={v.messages}
- *                                                        overrides={v.overrides}>
+ *                                                        messages={v.messages}>
  *
- * A variable maps field by field; an inline object literal maps key by key
- * and keeps only the keys it has. The provider has no `translate` input, and
+ * A variable maps the fields every context value has (`overrides` is
+ * optional, so a variable's type may lack it; the TODO names it); an inline
+ * object literal maps key by key and keeps only the keys it has. The provider has no `translate` input, and
  * `translate` is a field of every context value, so every rewrite carries a
  * TODO naming where those strings go (`messages` or `overrides`); a literal's
  * `translate` key is kept beside it. A value that is any other expression
@@ -50,10 +50,21 @@ const PROP_FOR_KEY = new Map([
   ['overrides', 'overrides'],
 ]);
 
+/**
+ * The keys every context value has. A variable's inferred type may lack the
+ * optional `overrides`, and reading it would fail to typecheck, so a variable
+ * maps only these and the TODO names `overrides` beside `translate`.
+ */
+const REQUIRED_KEYS = ['locale', 'direction', 'messages'];
+
 const TODO_PREFIX = ' TODO(astryx upgrade): ';
 const TODO_TRANSLATE =
   `${TODO_PREFIX}InternationalizationProvider has no \`translate\` input; ` +
   'express those strings as `messages` (a catalog per locale) or `overrides`. ';
+const TODO_VARIABLE =
+  `${TODO_PREFIX}InternationalizationProvider has no \`translate\` input; ` +
+  'express those strings as `messages` (a catalog per locale) or `overrides`; ' +
+  'pass the value\u2019s `overrides`, if it has any, as `overrides`. ';
 const TODO_EXPRESSION =
   `${TODO_PREFIX}a raw InternationalizationContext value no longer configures Astryx; ` +
   'mount InternationalizationProvider with this value\u2019s `locale`, `direction` (as `dir`), ' +
@@ -413,7 +424,8 @@ export default function migrateInternationalizationContext(file, api) {
     /** @type {any[]} */
     const keptKeys = [];
     if (value.type === 'Identifier') {
-      for (const [key, prop] of PROP_FOR_KEY) {
+      for (const key of REQUIRED_KEYS) {
+        const prop = /** @type {string} */ (PROP_FOR_KEY.get(key));
         props.push(
           j.jsxAttribute(
             j.jsxIdentifier(prop),
@@ -489,7 +501,10 @@ export default function migrateInternationalizationContext(file, api) {
       addComment(kept, TODO_TRANSLATE);
       opening.attributes.push(kept);
     } else {
-      addComment(todo, TODO_TRANSLATE);
+      addComment(
+        todo,
+        value.type === 'Identifier' ? TODO_VARIABLE : TODO_TRANSLATE,
+      );
     }
     changed = true;
   });

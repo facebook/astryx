@@ -130,7 +130,8 @@ export function getResolve(
       // Fires ONLY when a key is missing from every source including the
       // caller's English fallback — a real bug (typo, stale catalog, deleted
       // key, or a component reading a key outside its own namespace slice;
-      // `check:i18n-catalog` catches the last one before it ships).
+      // `check:i18n-catalog`'s slice-coverage rule, which lands with the
+      // component sweep, catches the last one before it ships).
       // Fallback to `en` from a non-en locale is expected and stays silent,
       // matching the FormatJS / i18next default.
       warnOnce(
