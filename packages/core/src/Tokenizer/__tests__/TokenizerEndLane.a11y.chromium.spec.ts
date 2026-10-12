@@ -144,6 +144,34 @@ async function sweep(page: Page, from: number, to: number): Promise<string[]> {
   return found;
 }
 
+/**
+ * The same sweep with a search in flight at every width. The busy Spinner joins
+ * the lane only while a search runs, so each width is measured while the
+ * combobox reports `aria-busy`, typing again whenever the last search settled.
+ */
+async function sweepWhileBusy(
+  page: Page,
+  from: number,
+  to: number,
+): Promise<string[]> {
+  const search = page.getByRole('combobox');
+  const found: string[] = [];
+  for (let width = from; width <= to; width += 4) {
+    for (;;) {
+      if ((await search.getAttribute('aria-busy')) !== 'true') {
+        await search.press('a');
+        await expect(search).toHaveAttribute('aria-busy', 'true');
+      }
+      const overlaps = await overlapsAt(page, width);
+      if ((await search.getAttribute('aria-busy')) === 'true') {
+        found.push(...overlaps);
+        break;
+      }
+    }
+  }
+  return found;
+}
+
 for (const direction of ['ltr', 'rtl'] as const) {
   test.describe(direction, () => {
     test('PowerSearch tokens (custom renderToken) wrap before the end lane', async ({
@@ -170,6 +198,14 @@ for (const direction of ['ltr', 'rtl'] as const) {
         'hasClear:!true',
       );
       expect(await sweep(page, 160, 400)).toEqual([]);
+    });
+
+    test('tokens stay clear of the lane while a search is busy', async ({
+      page,
+    }) => {
+      await open(page, 'core-tokenizer--loading', direction);
+      await page.getByRole('combobox').focus();
+      expect(await sweepWhileBusy(page, 200, 400)).toEqual([]);
     });
 
     for (const mode of ['overflow-inline', 'overflow-layer']) {
