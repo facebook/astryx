@@ -34,7 +34,7 @@ function png(width: number, height: number): Buffer {
 const tmpDirs: string[] = [];
 afterEach(() => {
   for (const dir of tmpDirs.splice(0))
-    fs.rmSync(dir, {recursive: true, force: true});
+    {fs.rmSync(dir, {recursive: true, force: true});}
 });
 
 describe('blog image facts', () => {
