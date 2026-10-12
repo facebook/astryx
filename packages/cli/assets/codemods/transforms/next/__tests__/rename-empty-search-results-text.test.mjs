@@ -355,6 +355,47 @@ export function Visible() {
       expect(await applyTransform(output)).toBe(output);
     });
 
+    it('never writes a ?? TypeScript rejects: null/undefined take the old value, never-nullish values drop it', async () => {
+      const output =
+        await applyTransform(`import {Tokenizer, ChatComposerInput} from '@astryxdesign/core';
+export function Cases({compact, custom}) {
+  return (
+    <>
+      <Tokenizer emptySearchText={null} emptySearchResultsText="Old" />
+      <Tokenizer emptySearchText={undefined} emptySearchResultsText="Old" />
+      <Tokenizer emptySearchText={compact ? 'None' : 'No matches'} emptySearchResultsText="Old" />
+      <Tokenizer emptySearchText={'No ' + 'matches'} emptySearchResultsText="Old" />
+      <Tokenizer emptySearchText={false} emptySearchResultsText="Old" />
+      <Tokenizer emptySearchText={custom || 'None'} emptySearchResultsText="Old" />
+      <Tokenizer emptySearchText={custom} emptySearchResultsText="Old" />
+      <ChatComposerInput triggers={[
+        {char: '@', emptySearchText: null, emptySearchResultsText: 'Nobody'},
+        {char: '#', emptySearchText: compact ? 'None' : 'No tags', emptySearchResultsText: 'No tags'},
+        {char: '/', emptySearchText: custom, emptySearchResultsText: 'No commands'},
+      ]} />
+    </>
+  );
+}`);
+
+      expect(output).toContain(`<Tokenizer emptySearchText={'Old'} />`);
+      expect(output).not.toContain('null ??');
+      expect(output).not.toContain('undefined ??');
+      expect(output).toContain(
+        `emptySearchText={compact ? 'None' : 'No matches'} />`,
+      );
+      expect(output).toContain(`emptySearchText={'No ' + 'matches'} />`);
+      expect(output).toContain(`emptySearchText={false} />`);
+      expect(output).toContain(`emptySearchText={custom || 'None'} />`);
+      expect(output).toContain(`emptySearchText={custom ?? 'Old'} />`);
+      expect(output).toMatch(/char: '@',\s*emptySearchText: 'Nobody'\s*\}/);
+      expect(output).toMatch(
+        /emptySearchText: compact \? 'None' : 'No tags'\s*\}/,
+      );
+      expect(output).toMatch(/emptySearchText: custom \?\? 'No commands'\s*\}/);
+      expect(output).not.toContain('emptySearchResultsText:');
+      expect(await applyTransform(output)).toBe(output);
+    });
+
     it('flags a same-file object spread onto Tokenizer', async () => {
       const output =
         await applyTransform(`import {Tokenizer} from '@astryxdesign/core';

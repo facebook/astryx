@@ -103,12 +103,67 @@ const NEVER_NULLISH = new Set([
   'FunctionExpression',
 ]);
 
-/** @param {any} node */
+/**
+ * Whether a value can never be `null` or `undefined` at runtime, so a `??`
+ * after it would be dead code TypeScript 5.6+ rejects (TS2869): literals,
+ * booleans, a string built by `+`, a conditional or `||` whose branches are
+ * themselves never nullish, and the containers.
+ * @param {any} node
+ * @returns {boolean}
+ */
 function isNeverNullish(node) {
   const value = unwrap(node);
   if (!value) return false;
   if (value.type === 'Literal') return value.value != null;
+  if (value.type === 'BooleanLiteral') return true;
+  if (value.type === 'BinaryExpression') return value.operator === '+';
+  if (value.type === 'ConditionalExpression') {
+    return isNeverNullish(value.consequent) && isNeverNullish(value.alternate);
+  }
+  if (value.type === 'LogicalExpression' && value.operator === '||') {
+    return isNeverNullish(value.right);
+  }
   return NEVER_NULLISH.has(value.type);
+}
+
+/**
+ * Whether a value is the literal `null` or `undefined`, so the component
+ * would have shown the old value and `??` after it is pointless (TS2871).
+ * @param {any} node
+ */
+function isAlwaysNullish(node) {
+  const value = unwrap(node);
+  if (!value) return false;
+  if (value.type === 'NullLiteral') return true;
+  if (value.type === 'Literal') return value.value === null;
+  return value.type === 'Identifier' && value.name === 'undefined';
+}
+
+/**
+ * The value `emptySearchText` keeps when both names were set: the old value
+ * alone when the new one is always nullish, the new value alone when it can
+ * never be nullish, and `new ?? old` otherwise.
+ * @param {any} j @param {any} newValue @param {any} oldValue
+ */
+function mergedValue(j, newValue, oldValue) {
+  if (isAlwaysNullish(newValue)) return rebuiltString(j, oldValue);
+  if (isNeverNullish(newValue)) return null;
+  return fallbackExpression(j, newValue, oldValue);
+}
+
+/**
+ * A JSX attribute string keeps its source text (HTML entities, a raw
+ * backslash); as a JS expression it is rebuilt from its decoded value.
+ * @param {any} j @param {any} value
+ */
+function rebuiltString(j, value) {
+  if (
+    (value?.type === 'StringLiteral' || value?.type === 'Literal') &&
+    typeof value.value === 'string'
+  ) {
+    return j.stringLiteral(value.value);
+  }
+  return value;
 }
 
 // `newValue ?? oldValue`: what a 0.6.x component rendered when both were set.
@@ -247,12 +302,9 @@ function migrateTriggerObject(j, object, options = {}) {
     (/** @type {any} */ property) => staticPropertyName(property) === NEW_NAME,
   );
   if (newProperty) {
-    if (!isNeverNullish(newProperty.value)) {
-      newProperty.value = fallbackExpression(
-        j,
-        newProperty.value,
-        oldProperty.value,
-      );
+    const merged = mergedValue(j, newProperty.value, oldProperty.value);
+    if (merged) {
+      newProperty.value = merged;
       if (newProperty.shorthand) newProperty.shorthand = false;
     }
     object.properties = object.properties.filter(
@@ -607,11 +659,13 @@ export default function transformer(file, api) {
           attribute.name?.name === NEW_NAME,
       );
       if (newProp) {
-        const newValue = attributeExpression(j, newProp);
-        if (!isNeverNullish(newValue)) {
-          newProp.value = j.jsxExpressionContainer(
-            fallbackExpression(j, newValue, attributeExpression(j, prop)),
-          );
+        const merged = mergedValue(
+          j,
+          attributeExpression(j, newProp),
+          attributeExpression(j, prop),
+        );
+        if (merged) {
+          newProp.value = j.jsxExpressionContainer(merged);
         }
         opening.attributes = attributes.filter(
           (/** @type {any} */ attribute) => attribute !== prop,
