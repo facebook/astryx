@@ -112,14 +112,18 @@ function renameTriggerKey(j, object) {
   const old = object.properties.find(
     (/** @type {any} */ property) => staticPropertyName(property) === OLD_NAME,
   );
-  if (!old) return false;
-  const unreadable = object.properties.some(
+  const unreadable = object.properties.find(
     (/** @type {any} */ property) =>
       property.type === 'SpreadElement' ||
       property.type === 'SpreadProperty' ||
       property.computed,
   );
-  if (unreadable) return addComment(j, old, UNREADABLE_OBJECT_COMMENT);
+  // A spread or computed key may carry the removed key itself, so the
+  // object gets the TODO whether or not it writes the old name.
+  if (unreadable) {
+    return addComment(j, old ?? unreadable, UNREADABLE_OBJECT_COMMENT);
+  }
+  if (!old) return false;
   const already = object.properties.some(
     (/** @type {any} */ property) => staticPropertyName(property) === NEW_NAME,
   );

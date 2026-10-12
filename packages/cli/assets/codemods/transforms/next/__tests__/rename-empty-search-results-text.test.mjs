@@ -181,6 +181,17 @@ export function Wrappers(props) {
       expect(await applyTransform(output)).toBe(output);
     });
 
+    it('marks an inline trigger object whose keys come only from a spread, once across runs', async () => {
+      const once =
+        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
+const a = <ChatComposerInput triggers={[{...baseMention, onSelect}, {[key]: 1, onSelect}]} />;`);
+
+      expect(once.match(/has a spread or computed key/g)).toHaveLength(2);
+      const twice = await applyTransform(once);
+      expect(twice).toBe(once);
+      expect(twice.match(/TODO\(astryx upgrade\)/g)).toHaveLength(2);
+    });
+
     it('leaves a file with no runtime core import alone', async () => {
       const source = `import {MobileTokenizer} from '@astryxdesign/lab';
 const copy = {emptySearchResultsText: 'kept'};
