@@ -26,6 +26,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {
+  admittedStableIntegration,
   getTarget,
   latestStableVersion,
   materializeFromNpm,
@@ -266,5 +267,56 @@ describe('latestStableVersion', () => {
     expect(
       latestStableVersion('@astryxdesign/never-published', exec),
     ).toBeNull();
+  });
+});
+
+describe('admittedStableIntegration', () => {
+  let contentRoot: string;
+
+  beforeEach(() => {
+    contentRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-content-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(contentRoot, {recursive: true, force: true});
+  });
+
+  it('admits a stable package only once the content snapshot holds it', () => {
+    // Core is a stable release in the workspace. Before its tarball is in
+    // the snapshot (a promoted package awaiting its first stable publish)
+    // it is not admitted, so its workspace showcase blocks and playground
+    // scope stay off `latest` along with its component docs; once the
+    // snapshot holds it, it is.
+    const admitted = admittedStableIntegration(contentRoot);
+    expect(admitted('@astryxdesign/core')).toBe(false);
+
+    fs.mkdirSync(path.join(contentRoot, 'packages/core'), {recursive: true});
+    fs.writeFileSync(
+      path.join(contentRoot, 'packages/core/package.json'),
+      '{"name":"@astryxdesign/core"}',
+    );
+    expect(admitted('@astryxdesign/core')).toBe(true);
+  });
+
+  it('never admits a canary-only package, a theme dir mismatch, or a non-Astryx name', () => {
+    const admitted = admittedStableIntegration(contentRoot);
+    // @astryxdesign/lab is astryx.canaryOnly in the workspace: a snapshot
+    // entry alone cannot admit it.
+    fs.mkdirSync(path.join(contentRoot, 'packages/lab'), {recursive: true});
+    fs.writeFileSync(
+      path.join(contentRoot, 'packages/lab/package.json'),
+      '{"name":"@astryxdesign/lab"}',
+    );
+    expect(admitted('@astryxdesign/lab')).toBe(false);
+    // Themes live under packages/themes/<name>, so the plain dir does not count.
+    fs.mkdirSync(path.join(contentRoot, 'packages/theme-neutral'), {
+      recursive: true,
+    });
+    fs.writeFileSync(
+      path.join(contentRoot, 'packages/theme-neutral/package.json'),
+      '{}',
+    );
+    expect(admitted('@astryxdesign/theme-neutral')).toBe(false);
+    expect(admitted('react')).toBe(false);
   });
 });
