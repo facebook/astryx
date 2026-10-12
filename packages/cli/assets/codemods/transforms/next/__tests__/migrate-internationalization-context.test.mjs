@@ -239,6 +239,28 @@ const spread = <InternationalizationContext {...props}><B /></Internationalizati
     expect(raw.match(new RegExp(EXPRESSION_TODO, 'g'))).toHaveLength(1);
   });
 
+  it('sees a private method parameter, a static block and a namespace body as scopes', () => {
+    const input = `import {InternationalizationContext as Ctx} from '@astryxdesign/core/i18n';
+class Shell {
+  #render(Ctx) { return <Ctx value={v}><A /></Ctx>; }
+  static { const Ctx = Other; Shell.out = <Ctx value={v}><B /></Ctx>; }
+  render() { return <Ctx value={w}><C /></Ctx>; }
+}
+namespace Local {
+  const Ctx = Other;
+  export const out = <Ctx value={v}><D /></Ctx>;
+}
+export const ok = <Ctx value={x}><E /></Ctx>;`;
+    const output = folded(apply(input));
+    expect(output.match(/<Ctx value=\{v\}>/g)).toHaveLength(3);
+    expect(output).toContain(
+      '<InternationalizationProvider locale={w.locale} dir={w.direction} messages={w.messages}><C /></InternationalizationProvider>',
+    );
+    expect(output).toContain(
+      '<InternationalizationProvider locale={x.locale} dir={x.direction} messages={x.messages}><E /></InternationalizationProvider>',
+    );
+  });
+
   it('leaves a shadowed name and a type-only import alone', () => {
     const shadowed = `import {InternationalizationContext as Ctx} from '@astryxdesign/core/i18n';
 function Row({Ctx}) {

@@ -4,9 +4,9 @@
  * @file Migrate a raw `InternationalizationContext` value to the provider.
  *
  * Rendering a value straight into `InternationalizationContext` no longer
- * configures Astryx: `useLocale`, `useDirection`, `useCollator` and every
- * core component read a runtime context that only `InternationalizationProvider`
- * writes. The provider takes the same configuration under its own prop names,
+ * configures Astryx: `useLocale`, `useDirection`, `useCollator` — and each
+ * core component as it moves to its own English slice — read a runtime
+ * context that only `InternationalizationProvider` writes. The provider takes the same configuration under its own prop names,
  * so the rewrite is mechanical where the value is plain:
  *
  *   <InternationalizationContext value={v}>          → <InternationalizationProvider
@@ -26,9 +26,11 @@
  *
  * Only an element whose name resolves, unshadowed, to an Astryx import is
  * rewritten (named, aliased, or namespace; a type-only import proves nothing;
- * a same-named declaration in any block, function, loop head or catch clause
- * between the element and the module shadows it, as does a `var` anywhere in
- * the enclosing function and a named class expression's own name). The
+ * a same-named declaration in any block, `static {}` block, namespace body,
+ * function, loop head or catch clause between the element and the module
+ * shadows it, as does a parameter of any method including a private one, a
+ * `var` anywhere in the enclosing function and a named class expression's
+ * own name). The
  * provider is imported under a free name when the module already binds
  * `InternationalizationProvider` to something of its own, and the name
  * written must itself reach that import at the edit site. An element whose
@@ -159,7 +161,8 @@ export default function migrateInternationalizationContext(file, api) {
         parent.type === 'FunctionExpression' ||
         parent.type === 'ArrowFunctionExpression' ||
         parent.type === 'ObjectMethod' ||
-        parent.type === 'ClassMethod') &&
+        parent.type === 'ClassMethod' ||
+        parent.type === 'ClassPrivateMethod') &&
         parent.params.includes(p.node));
     if (binds) boundNames.add(p.node.name);
   });
@@ -239,7 +242,9 @@ export default function migrateInternationalizationContext(file, api) {
         n.type === 'FunctionExpression' ||
         n.type === 'ArrowFunctionExpression' ||
         n.type === 'ObjectMethod' ||
-        n.type === 'ClassMethod'
+        n.type === 'ClassMethod' ||
+        n.type === 'ClassPrivateMethod' ||
+        n.type === 'StaticBlock'
       ) {
         return;
       }
@@ -329,11 +334,18 @@ export default function migrateInternationalizationContext(file, api) {
             return false;
           }
           break;
+        case 'StaticBlock':
+        case 'TSModuleBlock':
+          if (bodyDeclares(node.body, name) || declaresVar(node.body, name)) {
+            return false;
+          }
+          break;
         case 'FunctionDeclaration':
         case 'FunctionExpression':
         case 'ArrowFunctionExpression':
         case 'ObjectMethod':
         case 'ClassMethod':
+        case 'ClassPrivateMethod':
           if (
             node.params.some((/** @type {any} */ param) =>
               patternNames(param).includes(name),

@@ -9,11 +9,12 @@
  * @position Context definition for client-side locale + messages: the public
  *   context a consumer reads. Its `translate` resolves every `@astryx.*` key,
  *   falling back to the shipped English catalog, so this module carries that
- *   catalog; the components inside this package read
- *   TranslationRuntimeContext instead and carry only their own slices. Both
+ *   catalog; the locale hooks inside this package read
+ *   TranslationRuntimeContext instead, and a component moves to it (carrying
+ *   only its own slice) as it adopts useComponentTranslator. Both contexts
  *   are written by InternationalizationProvider, which is how an app
  *   configures Astryx: a value rendered straight into this context reaches
- *   consumers of this context and nothing inside the package.
+ *   consumers of this context and nothing that reads the runtime context.
  *
  * Separated from InternationalizationProvider.tsx so components can consume
  * the context without pulling in the full provider implementation.
