@@ -101,7 +101,7 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: 'The config is validated at load with a strict schema: an unknown key, a misspelled one included, or a value of the wrong type makes the whole file invalid. `astryx gap-report`, `astryx discover`, and `astryx upgrade` stop with the error, and `astryx doctor` reports it as a warning. Reads such as `component`, `docs`, `search`, `template`, and `theme` carry on silently as if there were no config and no integrations, and no debug handler runs, so run `astryx doctor` after editing the file.',
+      text: 'The config is validated at load with a strict schema: an unknown key, a misspelled one included, or a value of the wrong type makes the whole file invalid. `astryx gap-report`, `astryx discover`, and `astryx upgrade` stop with the error, and `astryx doctor` fails its `config` check (exit 1). Reads such as `component`, `docs`, `search`, `template`, and `theme` carry on silently as if there were no config and no integrations, and no debug handler runs, so run `astryx doctor` after editing the file.',
     },
   ],
 };
