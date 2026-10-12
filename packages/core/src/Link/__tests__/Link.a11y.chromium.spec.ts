@@ -31,6 +31,7 @@ import {
 import {LINK_A11Y_STATES, type LinkA11yRow} from './Link.a11y.states';
 
 const SUBJECT_SELECTOR = '[data-a11y-link]';
+const NEW_TAB_SETTLE_MS = 500;
 let storybook: StaticServer;
 
 interface NavigationWindow extends Window {
@@ -66,6 +67,10 @@ async function countNavigations(page: Page): Promise<() => Promise<number>> {
     });
   });
   return async () => {
+    // A new tab reaches the test through the browser's target events, after
+    // the click or key that opened it has returned. Give it time to arrive so
+    // a later reading cannot miss a navigation an earlier one started.
+    await page.waitForTimeout(NEW_TAB_SETTLE_MS);
     const inPage = await page.evaluate(
       () => (window as NavigationWindow).__a11yLinkNavigations ?? 0,
     );

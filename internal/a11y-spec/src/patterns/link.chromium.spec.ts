@@ -40,6 +40,21 @@ function fixturePage(html: string): string {
   return `<!doctype html><html lang="en"><body><p>${html}</p><button type="button">after</button></body></html>`;
 }
 
+/**
+ * Fixtures are served from an HTTP origin rather than `setContent`'s
+ * `about:blank`, where fragment links do not navigate the way they do on a
+ * real page.
+ */
+const FIXTURE_URL = 'http://a11y-spec.test/link';
+
+async function mountFixture(page: Page, html: string): Promise<void> {
+  await page.route(FIXTURE_URL, route =>
+    route.fulfill({contentType: 'text/html', body: fixturePage(html)}),
+  );
+  await page.goto(FIXTURE_URL);
+  await page.unroute(FIXTURE_URL);
+}
+
 async function countNavigations(page: Page): Promise<void> {
   await page.evaluate(() => {
     const target = window as NavigationWindow & {
@@ -68,7 +83,7 @@ async function results(
     facts: target.facts,
     only,
     mount: async () => {
-      await page.setContent(fixturePage(target.html));
+      await mountFixture(page, target.html);
       await holdMotionStill(page);
       await countNavigations(page);
       return createChromiumHarness({
