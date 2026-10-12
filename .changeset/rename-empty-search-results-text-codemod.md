@@ -2,5 +2,5 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] `astryx upgrade` renames `emptySearchResultsText` to `emptySearchText` on `Tokenizer`, `Typeahead`, `BaseTypeahead`, and `ChatComposerInput` trigger objects, for the release that removes the old name.
+[feat] `astryx upgrade` renames `emptySearchResultsText` to `emptySearchText` on `Tokenizer`, `Typeahead`, `BaseTypeahead`, and `ChatComposerInput` trigger objects, for the release that removes the old name. (#7289)
 @cixzhang

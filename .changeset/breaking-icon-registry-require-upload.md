@@ -2,7 +2,7 @@
 '@astryxdesign/core': minor
 ---
 
-[breaking] Require `upload` on complete `IconRegistry` types
+[breaking] Require `upload` on complete `IconRegistry` types (#7329)
 @rubyycheung @cixzhang @Geervan
 
 Old usage:

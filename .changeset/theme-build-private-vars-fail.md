@@ -2,7 +2,7 @@
 '@astryxdesign/cli': minor
 ---
 
-[breaking] IFIX-0006 -> CLN-0012 makes `theme build` exit 1 when it reports private `--_*` variables.
+[breaking] IFIX-0006 -> CLN-0012 makes `theme build` exit 1 when it reports private `--_*` variables. (#6872)
 
 The old contract reported private-variable errors but exited 0. The corrected contract keeps the same warnings, receipts, generated files, and `--check` output, but exits 1.
 

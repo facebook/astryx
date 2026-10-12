@@ -2,7 +2,7 @@
 '@astryxdesign/cli': minor
 ---
 
-[breaking] Doctor fails when the CLI cannot load what astryx.config asks for
+[breaking] Doctor fails when the CLI cannot load what astryx.config asks for (#7130)
 @josephfarina
 
 A new `configured-integrations` check fails when an integration named in astryx.config cannot be loaded: not installed, installed without a manifest, or a manifest that throws or fails its schema. Such an integration is withdrawn whole and contributes nothing. The config check fails, instead of warning, when astryx.config imports but the CLI cannot load the project from it.

@@ -2,7 +2,7 @@
 '@astryxdesign/cli': minor
 ---
 
-[breaking] An empty-string argument no longer discards the rest of the command.
+[breaking] An empty-string argument no longer discards the rest of the command. (#6620)
 
 - incompatible-fix `IFIX-0003` / cleanup `CLN-0009`
 

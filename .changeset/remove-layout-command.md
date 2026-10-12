@@ -2,7 +2,7 @@
 '@astryxdesign/cli': minor
 ---
 
-[breaking] Remove the `astryx layout` command group (CLN-0006)
+[breaking] Remove the `astryx layout` command group (CLN-0006) (#7137)
 
 Removes the deprecated `astryx layout` command group (`expand`, `check`, `grammar`),
 its three response types (`layout.expand`, `layout.check`, `layout.grammar`), and

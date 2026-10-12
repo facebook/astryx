@@ -2,6 +2,6 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Teach generated palette references in the full custom-theme authoring guide.
+[fix] Teach generated palette references in the full custom-theme authoring guide. (#7268)
 
 @rubyycheung

@@ -2,7 +2,7 @@
 '@astryxdesign/core': minor
 ---
 
-[breaking] Remove the deprecated `emptySearchResultsText` prop. Use `emptySearchText`.
+[breaking] Remove the deprecated `emptySearchResultsText` prop. Use `emptySearchText`. (#7289)
 @cixzhang
 
 CLN-0001, CLN-0002, CLN-0003, and CLN-0004 complete DEP-0001 through DEP-0004 (spec:AST-056 FR7).

@@ -2,7 +2,7 @@
 '@astryxdesign/cli': minor
 ---
 
-[breaking] `init --remove-agents` says when there was nothing to remove.
+[breaking] `init --remove-agents` says when there was nothing to remove. (#6623)
 
 - incompatible-fix `IFIX-0004` / cleanup `CLN-0010`
 

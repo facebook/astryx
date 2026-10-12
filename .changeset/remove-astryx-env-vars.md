@@ -2,7 +2,7 @@
 '@astryxdesign/cli': minor
 ---
 
-[breaking] Stop reading the Astryx-owned agent variables ASTRYX_AGENT_ID, ASTRYX_AGENT_SESSION_ID, and ASTRYX_AGENT_METADATA
+[breaking] Stop reading the Astryx-owned agent variables ASTRYX_AGENT_ID, ASTRYX_AGENT_SESSION_ID, and ASTRYX_AGENT_METADATA (#7127)
 @josephfarina
 
 The CLI must not define or read an Astryx-owned environment variable (spec:AST-017 FR14). The theme-import change already stopped reading ASTRYX_THEME; these three were the last. A test now fails on any `process.env.ASTRYX_*` read in the CLI source.

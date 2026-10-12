@@ -2,7 +2,7 @@
 '@astryxdesign/cli': minor
 ---
 
-[breaking] Refuse invalid input that used to silently succeed.
+[breaking] Refuse invalid input that used to silently succeed. (#7149)
 
 - incompatible-fix `IFIX-0007` / cleanup `CLN-0013`
 

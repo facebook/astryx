@@ -2,7 +2,7 @@
 '@astryxdesign/cli': minor
 ---
 
-[breaking] Four commands refuse silently ignored option pairs.
+[breaking] Four commands refuse silently ignored option pairs. (#7132)
 
 - incompatible-fix `IFIX-0005` / cleanup `CLN-0011`
 

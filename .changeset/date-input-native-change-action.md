@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] DateInput: run changeAction with optimistic busy feedback on the native picker surface
+[fix] DateInput: run changeAction with optimistic busy feedback on the native picker surface (#7243)
 
 @cixzhang

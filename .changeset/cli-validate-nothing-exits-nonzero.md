@@ -2,7 +2,7 @@
 '@astryxdesign/cli': minor
 ---
 
-[breaking] `doctor integration validate` exits 1 when there is no package.json.
+[breaking] `doctor integration validate` exits 1 when there is no package.json. (#7150)
 
 - incompatible-fix `IFIX-0008` / cleanup `CLN-0014`
 
