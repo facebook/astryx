@@ -175,20 +175,31 @@ function latestPublishedVersion() {
  *   <cache>/package.json                 — synthetic private root manifest
  *   <cache>/packages/core/…              — @astryxdesign/core tarball
  *   <cache>/packages/themes/<name>/…     — @astryxdesign/theme-<name> tarballs
+ *
+ * `exec` runs npm and tar (tests inject a fake); `cacheDir` is where the
+ * version caches live.
  */
-function materializeFromNpm(version, packages) {
-  const cacheRoot = path.join(DOCSITE_ROOT, '.content-cache', `npm-${version}`);
+export function materializeFromNpm(
+  version,
+  packages,
+  {exec = run, cacheDir = path.join(DOCSITE_ROOT, '.content-cache')} = {},
+) {
+  const cacheRoot = path.join(cacheDir, `npm-${version}`);
   const stamp = path.join(cacheRoot, '.stamp');
-  // v2: layout is declared by a synthetic pnpm-workspace.yaml (not a
-  // package.json `workspaces` array) — bump invalidates caches from the
-  // pre-#3752 layout, which the new discovery can't read.
-  const stampValue = `v2:npm-${version}:${packages
-    .map(p => p.name)
-    .sort()
-    .join(',')}`;
+  // The stamp names the packages the cache actually holds. It is reused only
+  // when it names every expected package, so a cache built while a package
+  // awaited its first stable release (see below) is rebuilt on the next run
+  // instead of keeping that gap.
+  // v3: the stamp lists materialized packages, not expected ones. v2 declared
+  // the layout through a synthetic pnpm-workspace.yaml (pre-#3752 caches
+  // cannot be read by the new discovery).
+  const expectedStamp = stampFor(
+    version,
+    packages.map(p => p.name),
+  );
   if (
     fs.existsSync(stamp) &&
-    fs.readFileSync(stamp, 'utf-8').trim() === stampValue
+    fs.readFileSync(stamp, 'utf-8').trim() === expectedStamp
   ) {
     return cacheRoot;
   }
@@ -216,21 +227,11 @@ function materializeFromNpm(version, packages) {
     ),
   );
 
+  const materialized = [];
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-pin-'));
   try {
     for (const {name, dir} of packages) {
       const spec = `${name}@${version}`;
-      // A package that joined the stable set after the documented release
-      // has no tarball at this version until the next cut publishes one.
-      // `latest` then documents what is on npm: the package appears once its
-      // first stable release ships. Anything other than "no such version"
-      // is still an error.
-      if (!publishedVersionExists(spec)) {
-        console.log(
-          `  ${spec} is not on npm yet; it joins latest after its first stable release`,
-        );
-        continue;
-      }
       // `npm pack` downloads the exact published tarball and prints its
       // filename; --pack-destination keeps it out of the cwd.
       //
@@ -239,50 +240,96 @@ function materializeFromNpm(version, packages) {
       // makes npm hard-error EBADDEVENGINES if it discovers that manifest by
       // walking up from the cwd. The tmp dir has no package.json, so npm skips
       // the engine guard. (COREPACK_ENABLE_STRICT=0 as belt-and-suspenders.)
-      const out = run(
-        'npm',
-        ['pack', spec, '--pack-destination', tmp, '--json'],
-        {
-          cwd: tmp,
-          maxBuffer: 256 * 1024 * 1024,
-          env: {...process.env, COREPACK_ENABLE_STRICT: '0'},
-        },
-      );
+      const out = packPublished(spec, tmp, exec);
+      if (out == null) {
+        // No tarball at the documented version. For a package that has
+        // never had a stable release this is the gap between its promotion
+        // and the next cut: `latest` documents what is on npm, and the
+        // package appears once that cut publishes it. For a package with a
+        // stable release behind it, the release itself is only partly
+        // published, and the build fails as before.
+        const prior = latestStableVersion(name, exec);
+        if (prior != null) {
+          throw new Error(
+            `${spec} is not on npm, but ${name} already has stable release ${prior}: ` +
+              'the documented release is only partly published.',
+          );
+        }
+        console.log(
+          `  ${spec} is not on npm yet; ${name} joins latest after its first stable release`,
+        );
+        continue;
+      }
       const tgz = path.join(tmp, JSON.parse(out)[0].filename);
       const dest = path.join(cacheRoot, dir);
       fs.mkdirSync(dest, {recursive: true});
       // npm tarballs wrap everything under a top-level "package/" dir.
-      run('tar', ['-x', '-z', '-f', tgz, '--strip-components=1', '-C', dest]);
+      exec('tar', ['-x', '-z', '-f', tgz, '--strip-components=1', '-C', dest]);
+      materialized.push(name);
     }
   } finally {
     fs.rmSync(tmp, {recursive: true, force: true});
   }
 
-  fs.writeFileSync(stamp, stampValue);
+  fs.writeFileSync(stamp, stampFor(version, materialized));
   return cacheRoot;
 }
 
+function stampFor(version, names) {
+  return `v3:npm-${version}:${[...names].sort().join(',')}`;
+}
+
 /**
- * Whether `spec` (`name@version`) is published on npm. `npm view` exits with
- * E404 both for a package that was never published and for a published
- * package without that version; any other failure is a real error.
+ * Whether an npm error is "no such package or version": E404 for a package
+ * that is not on npm at all, ETARGET for a published package without the
+ * requested version (`npm pack` reports the latter as "No matching version").
  */
-function publishedVersionExists(spec) {
+function isNotFound(error) {
+  return /\b(?:E404|ETARGET)\b/.test(String(error?.stderr ?? error));
+}
+
+/**
+ * Download `spec`'s published tarball into `tmp` and return npm's JSON
+ * report, or null when no such version is published. Any other failure
+ * propagates.
+ */
+function packPublished(spec, tmp, exec) {
   try {
-    // stderr is captured, not inherited: an expected E404 is read from the
-    // error, and the build log does not print it as a failure.
-    run('npm', ['view', spec, 'version', '--json'], {
+    return exec('npm', ['pack', spec, '--pack-destination', tmp, '--json'], {
+      cwd: tmp,
+      maxBuffer: 256 * 1024 * 1024,
+      // stderr is read from the error, not inherited, so an expected E404
+      // does not print as a failure in the build log.
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {...process.env, COREPACK_ENABLE_STRICT: '0'},
+    });
+  } catch (error) {
+    if (isNotFound(error)) return null;
+    throw error;
+  }
+}
+
+/**
+ * The version on `name`'s stable npm dist-tag, or null when the package has
+ * never had a stable release: it is not on npm at all, or its `latest` tag
+ * still points at a prerelease placeholder (the bootstrap publish that
+ * reserves a package name before its first real release).
+ */
+export function latestStableVersion(name, exec = run) {
+  let out;
+  try {
+    out = exec('npm', ['view', name, 'dist-tags', '--json'], {
       maxBuffer: 8 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {...process.env, COREPACK_ENABLE_STRICT: '0'},
     });
-    return true;
   } catch (error) {
-    if (/E404/.test(String(error?.stderr ?? error))) {
-      return false;
-    }
+    if (isNotFound(error)) return null;
     throw error;
   }
+  const latest = JSON.parse(out)?.[PUBLISHED_DIST_TAG];
+  if (typeof latest !== 'string' || latest.includes('-')) return null;
+  return latest;
 }
 
 /**
