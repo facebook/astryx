@@ -690,8 +690,11 @@ export default function transformer(file, api) {
           attribute.name?.name === handledProp,
       );
       const lastSpreadIndex = attributes.reduce(
-        (/** @type {number} */ last, /** @type {any} */ attribute, index) =>
-          attribute.type === 'JSXSpreadAttribute' ? index : last,
+        (
+          /** @type {number} */ last,
+          /** @type {any} */ attribute,
+          /** @type {number} */ index,
+        ) => (attribute.type === 'JSXSpreadAttribute' ? index : last),
         -1,
       );
       if (handledIndex !== -1 && (!isChat || handledIndex > lastSpreadIndex)) {
