@@ -1386,13 +1386,25 @@ export async function runChecks(options = {}) {
             candidate => candidate.source === 'configured',
           );
           const effective = standsFor(entry);
+          // When node_modules/<name> links back to the package being authored,
+          // the configured and local candidates share one real path and one
+          // entry; the authored record the project kept carries the load
+          // error, so it is the outcome that counts.
+          const kept = project.loadedIntegrations.find(
+            integration =>
+              integration.__packageDir != null &&
+              integration.__packageDir === effective.key,
+          );
+          const loadError =
+            effective.outcome === 'load-failed'
+              ? (effective.error ?? 'its manifest could not be loaded')
+              : kept?.__loadError != null
+                ? String(kept.__loadError)
+                : null;
           return {
             spec: ref?.spec ?? entry.label,
             label: entry.integration?.name ?? ref?.spec ?? entry.label,
-            error:
-              effective.outcome === 'load-failed'
-                ? (effective.error ?? 'its manifest could not be loaded')
-                : null,
+            error: loadError,
           };
         });
       autolinkFailures = ledger

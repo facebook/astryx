@@ -1228,6 +1228,35 @@ describe('a configured integration that cannot load fails the gate', () => {
   );
 
   it(
+    'fails when node_modules links the configured name back to the authored package and its manifest throws',
+    async () => {
+      const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-gate-'));
+      tmpDirs.push(dir);
+      const files = {
+        ...CORE_STUB,
+        'package.json': JSON.stringify({name: '@acme/widgets', version: '1.0.0'}),
+        'astryx.integration.mjs': 'export default {  not valid ((\n',
+        'astryx.config.mjs': "export default { integrations: ['@acme/widgets'] };\n",
+      };
+      for (const [rel, content] of Object.entries(files)) {
+        const abs = path.join(dir, rel);
+        fs.mkdirSync(path.dirname(abs), {recursive: true});
+        fs.writeFileSync(abs, content);
+      }
+      fs.mkdirSync(path.join(dir, 'node_modules/@acme'), {recursive: true});
+      fs.symlinkSync(dir, path.join(dir, 'node_modules/@acme/widgets'), 'dir');
+      const {checks, summary} = (await doctor({cwd: dir})).data;
+      const by = Object.fromEntries(checks.map(c => [c.id, c]));
+      expect(by['configured-integrations'].status).toBe('fail');
+      expect(by['configured-integrations'].message).toMatch(
+        /^1 of 1 integration named in astryx\.config could not be loaded/,
+      );
+      expect(summary.fail).toBe(1);
+    },
+    SLOW,
+  );
+
+  it(
     'still counts a configured package that was set aside for a provider conflict',
     async () => {
       const CHARTS = 'node_modules/@acme/charts';
