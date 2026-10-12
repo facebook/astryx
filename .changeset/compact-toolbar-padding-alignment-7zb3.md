@@ -2,5 +2,5 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Compact Toolbar uses a 4px block inset while preserving container-owned inline alignment; the RichText formatting row opts into the matching 4px edge inset (#6954)
+[fix] Toolbar pairs 4px padding on every side with small controls, and 8px padding with medium or large controls (#6954)
 @ernestt

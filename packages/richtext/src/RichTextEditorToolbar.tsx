@@ -70,7 +70,6 @@ import {TextInput} from '@astryxdesign/core/TextInput';
 import {Button} from '@astryxdesign/core/Button';
 import {Stack} from '@astryxdesign/core/Stack';
 import {
-  EDGE_COMP_ATTR,
   HStack,
   Layout,
   LayoutContent,
@@ -165,12 +164,6 @@ const toolbarScrollStyles = stylex.create({
     scrollbarWidth: 'thin',
   },
 });
-
-// The scroll row is this standalone toolbar's sole slot child. Opting it into
-// Toolbar's container-owned edge compensation gives the formatting surface a
-// 4px inline inset at `sm` without moving generic nested Toolbar content off
-// its surrounding Card/Section content line.
-const toolbarEdgeCompensationProps = {[EDGE_COMP_ATTR]: ''};
 
 /**
  * Whether `event` is the insert-link shortcut (Cmd/Ctrl+K). Uses Lexical's
@@ -896,7 +889,6 @@ export function RichTextEditorToolbar({
         size={size}
         startContent={
           <HStack
-            {...toolbarEdgeCompensationProps}
             gap={1}
             role="group"
             aria-label={t('@astryx.richTextEditor.toolbar.actions')}

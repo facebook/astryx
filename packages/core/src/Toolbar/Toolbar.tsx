@@ -113,17 +113,16 @@ const dynamicStyles = stylex.create({
 });
 
 /**
- * Default block padding per toolbar size. Inline padding stays owned by the
- * surrounding Section/container so nested toolbars preserve the same content
- * line as adjacent body content.
+ * Default inset per toolbar size. The Toolbar owns the same density-aware
+ * padding on every edge: 4px at `sm`, and 8px at `md` and `lg`.
  */
-const defaultBlockPaddingForSize: Record<ElementSize, SpacingStep> = {
+const defaultPaddingForSize: Record<ElementSize, SpacingStep> = {
   sm: 1,
   md: 2,
   lg: 2,
 };
 
-const blockPaddingVarForSize: Record<ElementSize, string> = {
+const paddingVarForSize: Record<ElementSize, string> = {
   sm: spacingVars['--spacing-1'],
   md: spacingVars['--spacing-2'],
   lg: spacingVars['--spacing-2'],
@@ -131,7 +130,7 @@ const blockPaddingVarForSize: Record<ElementSize, string> = {
 
 /**
  * Edge compensation inset amount per toolbar size.
- * Equals container-inline-padding minus the toolbar's block padding,
+ * Equals container-inline-padding minus the Toolbar's own padding,
  * creating even spacing around edge-compensated items (ghost buttons, tabs).
  */
 const edgeCompInsetForSize: Record<ElementSize, string> = {
@@ -164,13 +163,12 @@ export interface ToolbarProps extends BaseProps<HTMLDivElement> {
    */
   label: string;
   /**
-   * Size of the toolbar. Coordinates block padding and child components through
-   * SizeContext. Inline padding remains container-owned so nested toolbars share
-   * the surrounding content line.
+   * Size of the toolbar. Coordinates four-side padding and child components
+   * through SizeContext.
    *
-   * - `'sm'`: Compact — 4px block inset, fits sm buttons/inputs (28px elements)
-   * - `'md'`: Standard — fits md buttons/inputs (32px elements)
-   * - `'lg'`: Spacious — fits lg buttons/inputs (36px elements)
+   * - `'sm'`: Compact — 4px inset, fits sm buttons/inputs (28px elements)
+   * - `'md'`: Standard — 8px inset, fits md buttons/inputs (32px elements)
+   * - `'lg'`: Spacious — 8px inset, fits lg buttons/inputs (36px elements)
    * @default 'md'
    */
   size?: ToolbarSize;
@@ -301,7 +299,8 @@ export function Toolbar({
       <Section
         ref={ref}
         variant={variant}
-        paddingBlock={defaultBlockPaddingForSize[size]}
+        paddingInline={defaultPaddingForSize[size]}
+        paddingBlock={defaultPaddingForSize[size]}
         dividers={dividers}
         xstyle={xstyle}
         className={className}
@@ -328,7 +327,7 @@ export function Toolbar({
               // tab) instead of floating down into the toolbar's padding.
               hasBottomDivider &&
                 dynamicStyles.tabIndicatorBottom(
-                  `calc(-1 * (${blockPaddingVarForSize[size]} + 1px))`,
+                  `calc(-1 * (${paddingVarForSize[size]} + 1px))`,
                 ),
             ),
           )}

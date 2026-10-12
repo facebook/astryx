@@ -41,7 +41,6 @@ import {
 } from './markdownSerializers';
 import {RichTextEditorToolbar} from './RichTextEditorToolbar';
 import {registerIcons, resetIcons} from '@astryxdesign/core/Icon';
-import {EDGE_COMP_ATTR} from '@astryxdesign/core/Layout';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {rtlStyles} from '@astryxdesign/core/utils';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
@@ -1421,7 +1420,6 @@ describe('RichTextEditorToolbar', () => {
     const actionRow = screen.getByRole('group', {
       name: 'Formatting actions',
     });
-    expect(actionRow).toHaveAttribute(EDGE_COMP_ATTR);
     for (const name of [
       'Bold',
       'Italic',

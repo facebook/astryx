@@ -13,6 +13,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
+import {Button} from '../Button';
 import {Toolbar} from './Toolbar';
 import {
   paddingBlockStyles,
@@ -156,24 +157,30 @@ describe('Toolbar', () => {
   it.each([
     ['sm', 1],
     ['md', 2],
+    ['lg', 2],
   ] as const)(
-    'uses the %s block inset without overriding container inline padding',
-    (size, blockPadding) => {
-      const {container} = render(<Toolbar label="Actions" size={size} />);
+    'uses the %s inset on every side and cascades its size to child controls',
+    (size, padding) => {
+      const {container} = render(
+        <Toolbar
+          label="Actions"
+          size={size}
+          startContent={<Button label="Action" />}
+        />,
+      );
       const sectionInner = container.querySelector('.astryx-section');
-      const expectedBlockClasses = stylex
-        .props(paddingBlockStyles[blockPadding])
-        .className?.split(' ')
-        .filter(Boolean);
-      const compactInlineClasses = stylex
-        .props(paddingInlineStyles[1])
+      const expectedPaddingClasses = stylex
+        .props(paddingInlineStyles[padding], paddingBlockStyles[padding])
         .className?.split(' ')
         .filter(Boolean);
 
       expect(sectionInner).toBeInTheDocument();
-      expect(expectedBlockClasses).not.toHaveLength(0);
-      expect(sectionInner).toHaveClass(...(expectedBlockClasses ?? []));
-      expect(sectionInner).not.toHaveClass(...(compactInlineClasses ?? []));
+      expect(expectedPaddingClasses).not.toHaveLength(0);
+      expect(sectionInner).toHaveClass(...(expectedPaddingClasses ?? []));
+      expect(screen.getByRole('button', {name: 'Action'})).toHaveAttribute(
+        'data-size',
+        size,
+      );
     },
   );
 
