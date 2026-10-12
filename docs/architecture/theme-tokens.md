@@ -101,18 +101,19 @@ then have contradictory winners.
   remain outside the canonical vocabulary, typed helpers, generated portable
   documentation, and Core component dependencies.
 - **INV9 — Spacing tokens are rem.** The core `--spacing-*` defaults are `rem`
-  values (`--spacing-N` is `N × 0.25rem`, so `--spacing-4` is `1rem`, 16px at the
-  default root), and gaps, padding, and margins built from them follow the
-  reader's root font size the way the type scale does. A theme that overrides
-  spacing steps uses `rem` for the same reason; a step a theme pins in `px` is a
-  documented exception of that theme, not a change to the core scale. Values an
-  author writes in a custom theme are honoured as written, never converted.
-  Anything that generates spacing steps — the CLI's theme templates and the
-  docsite playground's theme editor — emits `rem`. Non-CSS consumers
-  (`useTheme().token()`, `resolveThemeToken()`, `tokenDefaults`) return the
-  token's value with its unit, `rem` for the core scale and whatever unit a
-  theme pinned; code that needs pixels resolves the value against the root
-  font size instead of parsing a number.
+  values (`--spacing-N` is `N × 0.25rem`; `--spacing-4` is `1rem`, 16px at the
+  default root), so gaps, padding, and margins built from them follow the
+  reader's root font size the way the type scale does. One rule covers every
+  surface: a spacing step is `rem` unless a theme documents that step as a
+  `px` exception. A theme that overrides steps writes `rem`; a generator of
+  spacing steps (the CLI theme templates, which copy a first-party theme
+  verbatim, and the docsite playground theme editor's ramp) emits `rem`, and
+  reproduces a theme's documented `px` exception only because the theme
+  declares it. Values an author writes in a custom theme are honoured as
+  written, never converted. Non-CSS consumers (`useTheme().token()`,
+  `resolveThemeToken()`, `tokenDefaults`) return the token's value with its
+  unit; code that needs pixels resolves the value against the root font size
+  instead of parsing a number.
 
 This record does not own:
 
@@ -172,12 +173,15 @@ Spacing tokens are `rem`. A reader who raises the browser's root font size gets
 proportionally larger gaps and padding, so text does not tighten inside boxes
 that stay in pixels; at the default 16px root each step is `4px × step`.
 `defineTheme` has no spacing base unit: it takes spacing only as per-step token
-overrides. Two surfaces generate spacing steps and both emit `rem`: the CLI's
-theme templates, which copy a first-party theme's steps verbatim, and the
+overrides (`architecture:theme-authoring-contract` owns that input). Two
+surfaces generate spacing steps and both emit `rem` under INV9's one rule: the
+CLI's theme templates, which copy a first-party theme's steps verbatim, and the
 docsite playground's theme editor, which derives a ramp from a base step and
-exports it as `defineTheme` source. Theme authors keep control: a theme may pin
-a step in `px` as its documented exception, and author-written values are never
-rewritten. Costs accepted with the decision: fixed-width table columns lose
+exports it as `defineTheme` source. The visual gate's probe theme pins
+`--spacing-4` in `px` on purpose, to prove a token value flows through; it is a
+test fixture, not a generator, and keeps its pin. Theme authors keep control: a
+theme may pin a step in `px` as its documented exception, and author-written
+values are never rewritten. Costs accepted with the decision: fixed-width table columns lose
 room to larger padding at very large roots; a theme whose pinned `px` steps are
 its documented exception does not follow the root for those steps; and code
 that parses a spacing token as a pixel number reads the wrong value, which no
@@ -189,12 +193,12 @@ decision).
 
 ## Verification
 
-| Invariant                    | Evidence                                                                                           | Failure signal                                                                                                             |
-| ---------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV2, INV7             | `scripts/check-theme-template.test.mjs` and token-doc generation check                             | A token family exists without a matching author-facing inventory or generated documentation                                |
-| INV5                         | Domain-token exports and theme-generation tests                                                    | Domain names disappear from validation or require importing unused domain implementation                                   |
-| INV6                         | `packages/core/src/theme/tokens.test.ts`                                                           | JavaScript resolution disagrees with defaults, mode selection, references, or supported color expressions                  |
-| INV8                         | `defineTheme.test.ts`, template checks, and token-doc generation                                   | A local name enters portable helpers/docs or can conflict with a portable declaration                                      |
-| INV9                         | `tokens.test.ts` rem assertions, a real-Chromium root-font-size spec, and the theme-template check | A core spacing default in `px`, or a generator (CLI template, playground editor) emitting a `px` step that no theme pinned |
-| Released token compatibility | Type checking plus representative package/source builds                                            | A released CSS variable or typed token name disappears without an explicit migration decision                              |
-| Visual defaults              | Real Chromium examples in light, dark, status, and high-contrast contexts                          | A changed default produces unreadable or semantically inconsistent output                                                  |
+| Invariant                    | Evidence                                                                                                                                                                                                                                                                                                   | Failure signal                                                                                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV2, INV7             | `scripts/check-theme-template.test.mjs` and token-doc generation check                                                                                                                                                                                                                                     | A token family exists without a matching author-facing inventory or generated documentation                                                 |
+| INV5                         | Domain-token exports and theme-generation tests                                                                                                                                                                                                                                                            | Domain names disappear from validation or require importing unused domain implementation                                                    |
+| INV6                         | `packages/core/src/theme/tokens.test.ts`                                                                                                                                                                                                                                                                   | JavaScript resolution disagrees with defaults, mode selection, references, or supported color expressions                                   |
+| INV8                         | `defineTheme.test.ts`, template checks, and token-doc generation                                                                                                                                                                                                                                           | A local name enters portable helpers/docs or can conflict with a portable declaration                                                       |
+| INV9                         | `tokens.test.ts` (core defaults), `SpacingRootFontSize.a11y.chromium.spec.ts` (real-Chromium root font size), each overriding theme's `*Theme.spacing.test.ts`, `check-cli-theme-bundle.test.mjs` (bundled copies byte-equal to the packages), `theme-concentricity.test.ts` (playground ramp read in rem) | A spacing step in `px` that no theme documents as its exception: a core default, a theme override, a bundled copy, or a generated ramp step |
+| Released token compatibility | Type checking plus representative package/source builds                                                                                                                                                                                                                                                    | A released CSS variable or typed token name disappears without an explicit migration decision                                               |
+| Visual defaults              | Real Chromium examples in light, dark, status, and high-contrast contexts                                                                                                                                                                                                                                  | A changed default produces unreadable or semantically inconsistent output                                                                   |
