@@ -303,6 +303,30 @@ const b = <ChatComposerInput triggers={{...baseMention, char: '#'}} />;`);
       expect(await applyTransform(output)).toBe(output);
     });
 
+    it('reports a spread onto ChatComposerInput whose object it cannot read, unless explicit triggers follow', async () => {
+      const output =
+        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
+export function Wrapper(props) {
+  return <ChatComposerInput {...props} />;
+}
+export function Pinned(props) {
+  return <ChatComposerInput {...props} triggers={[]} />;
+}
+export function Overridden(props) {
+  return <ChatComposerInput triggers={[]} {...props} />;
+}`);
+
+      // Wrapper and Overridden are reported (the spread may carry triggers);
+      // Pinned's own triggers win, so it is not.
+      expect(
+        output.match(/spreads props this upgrade cannot read/g),
+      ).toHaveLength(2);
+      expect(output.indexOf('cannot read')).toBeLessThan(
+        output.indexOf('function Wrapper') + 200,
+      );
+      expect(await applyTransform(output)).toBe(output);
+    });
+
     it('flags a same-file object spread onto Tokenizer', async () => {
       const output =
         await applyTransform(`import {Tokenizer} from '@astryxdesign/core';

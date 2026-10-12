@@ -81,7 +81,8 @@ const UNATTRIBUTED_COMMENT =
 const OPAQUE_SPREAD_COMMENT =
   ' TODO(astryx upgrade): emptySearchResultsText was removed. This element ' +
   'spreads props this upgrade cannot read; if they carry ' +
-  'emptySearchResultsText, rename it to emptySearchText where they are built. ';
+  'emptySearchResultsText (or triggers that do), rename it to emptySearchText ' +
+  'where they are built. ';
 const TYPE_ONLY_COMMENT =
   ' TODO(astryx upgrade): emptySearchResultsText was removed from trigger ' +
   'objects. This object is typed through a type-only import, which does not ' +
@@ -363,6 +364,8 @@ function componentBindings(root, j, components) {
   const direct = new Set();
   /** @type {Set<string>} */
   const namespaces = new Set();
+  /** @type {Map<string, string>} local name → component it imports */
+  const importedByLocal = new Map();
   root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     const source = path.node.source.value;
     if (
@@ -379,6 +382,7 @@ function componentBindings(root, j, components) {
         const imported = specifier.imported?.name ?? specifier.imported?.value;
         if (components.includes(imported)) {
           direct.add(specifier.local?.name ?? imported);
+          importedByLocal.set(specifier.local?.name ?? imported, imported);
         }
       } else if (
         specifier.type === 'ImportDefaultSpecifier' &&
@@ -386,12 +390,34 @@ function componentBindings(root, j, components) {
         components.includes(subpath)
       ) {
         direct.add(specifier.local.name);
+        importedByLocal.set(specifier.local.name, subpath);
       } else if (specifier.type === 'ImportNamespaceSpecifier') {
         namespaces.add(specifier.local.name);
       }
     }
   });
-  return {direct, namespaces, components};
+  return {direct, namespaces, components, imported: importedByLocal};
+}
+
+/** The core component a JSX tag names, or null. */
+/** @param {any} name @param {{direct: Set<string>, namespaces: Set<string>, components: string[], imported?: Map<string, string>}} bindings */
+function componentOf(name, bindings) {
+  if (name?.type === 'JSXIdentifier') {
+    return bindings.imported?.get(name.name) ?? null;
+  }
+  if (
+    name?.type === 'JSXMemberExpression' &&
+    name.object?.type === 'JSXIdentifier' &&
+    bindings.namespaces.has(name.object.name)
+  ) {
+    return name.property?.name ?? null;
+  }
+  return null;
+}
+
+/** @param {any} name @param {{direct: Set<string>, namespaces: Set<string>, components: string[], imported?: Map<string, string>}} bindings */
+function isChatComponent(name, bindings) {
+  return CHAT_COMPONENTS.has(componentOf(name, bindings) ?? '');
 }
 
 /** @param {any} name @param {{direct: Set<string>, namespaces: Set<string>, components: string[]}} bindings */
@@ -637,26 +663,38 @@ export default function transformer(file, api) {
       migrateTriggerObject(j, object, {todoOnly: TYPE_ONLY_COMMENT}) || changed;
   }
 
-  // 4. A spread on Tokenizer, Typeahead or BaseTypeahead whose object this
-  // file does not build (imported, or a wrapper's forwarded props) may carry
-  // the removed key, and after the removal the type checker will not notice;
-  // report it the way unreadable triggers values are reported.
+  // 4. A spread on Tokenizer, Typeahead, BaseTypeahead or ChatComposerInput
+  // whose object this file does not build (imported, or a wrapper's forwarded
+  // props) may carry the removed key — or, for ChatComposerInput, triggers
+  // that do — and after the removal the type checker will not notice; report
+  // it the way unreadable triggers values are reported.
   if (reachesCore) {
-    const bindings = componentBindings(root, j, [...JSX_COMPONENTS.keys()]);
+    const bindings = componentBindings(root, j, [
+      ...JSX_COMPONENTS.keys(),
+      ...CHAT_COMPONENTS.keys(),
+    ]);
     root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
       const name = path.node.name;
       if (!matchesComponent(name, bindings)) return;
       if (!isModuleBinding(path, name)) return;
       const attributes = path.node.attributes ?? [];
+      const isChat = isChatComponent(name, bindings);
       // An element that sets the old prop itself was handled above, with a
-      // TODO that already covers its spreads.
-      if (
-        attributes.some(
-          (/** @type {any} */ attribute) =>
-            attribute.type === 'JSXAttribute' &&
-            attribute.name?.name === OLD_NAME,
-        )
-      ) {
+      // TODO that already covers its spreads. A ChatComposerInput whose own
+      // `triggers` follows its spreads overrides any triggers they carry, and
+      // that prop was handled above too.
+      const handledProp = isChat ? 'triggers' : OLD_NAME;
+      const handledIndex = attributes.findIndex(
+        (/** @type {any} */ attribute) =>
+          attribute.type === 'JSXAttribute' &&
+          attribute.name?.name === handledProp,
+      );
+      const lastSpreadIndex = attributes.reduce(
+        (/** @type {number} */ last, /** @type {any} */ attribute, index) =>
+          attribute.type === 'JSXSpreadAttribute' ? index : last,
+        -1,
+      );
+      if (handledIndex !== -1 && (!isChat || handledIndex > lastSpreadIndex)) {
         return;
       }
       const spreads = attributes.filter(
