@@ -206,7 +206,7 @@ this record's current membership snapshot must be updated with it.
 | --------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------- |
 | Dialog inside Dialog                          | Inner dialog handles the first request         | Dialog supplies native modality and focus behavior                            |
 | Popover inside Dialog                         | Popover handles the first Escape               | Popover supplies anchoring, portal placement, and focus policy                |
-| Tooltip or HoverCard inside Dialog            | Present hover surface handles the first Escape | Hover families decide when they are present and how controlled state responds |
+| Tooltip or HoverCard inside Dialog, in page   | Present hover surface handles the first Escape | Hover families decide when they are present and how controlled state responds |
 | Lightbox or MobileNav above a required Dialog | Top member handles the request                 | Required Dialog uses `block` only when it is topmost                          |
 | Required Dialog alone                         | Request is consumed without closing            | Dialog purpose selects `block` behavior                                       |
 | Self-owned input popup                        | Popup participates while present               | Input owns selection, focus, open state, positioning, and outside dismissal   |
