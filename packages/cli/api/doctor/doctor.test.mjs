@@ -1257,6 +1257,36 @@ describe('a configured integration that cannot load fails the gate', () => {
   );
 
   it(
+    'fails for the self-linked authored package when the working directory is itself a symlink',
+    async () => {
+      const real = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-gate-'));
+      tmpDirs.push(real);
+      const linkParent = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-gate-'));
+      tmpDirs.push(linkParent);
+      const cwd = path.join(linkParent, 'link');
+      fs.symlinkSync(real, cwd, 'dir');
+      const files = {
+        ...CORE_STUB,
+        'package.json': JSON.stringify({name: '@acme/widgets', version: '1.0.0'}),
+        'astryx.integration.mjs': 'export default {  not valid ((\n',
+        'astryx.config.mjs': "export default { integrations: ['@acme/widgets'] };\n",
+      };
+      for (const [rel, content] of Object.entries(files)) {
+        const abs = path.join(real, rel);
+        fs.mkdirSync(path.dirname(abs), {recursive: true});
+        fs.writeFileSync(abs, content);
+      }
+      fs.mkdirSync(path.join(real, 'node_modules/@acme'), {recursive: true});
+      fs.symlinkSync(real, path.join(real, 'node_modules/@acme/widgets'), 'dir');
+      const {checks, summary} = (await doctor({cwd})).data;
+      const by = Object.fromEntries(checks.map(c => [c.id, c]));
+      expect(by['configured-integrations'].status).toBe('fail');
+      expect(summary.fail).toBe(1);
+    },
+    SLOW,
+  );
+
+  it(
     'still counts a configured package that was set aside for a provider conflict',
     async () => {
       const CHARTS = 'node_modules/@acme/charts';

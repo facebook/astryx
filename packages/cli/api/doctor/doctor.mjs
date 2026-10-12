@@ -1388,18 +1388,21 @@ export async function runChecks(options = {}) {
           const effective = standsFor(entry);
           // When node_modules/<name> links back to the package being authored,
           // the configured and local candidates share one real path and one
-          // entry; the authored record the project kept carries the load
-          // error, so it is the outcome that counts.
-          const kept = project.loadedIntegrations.find(
-            integration =>
-              integration.__packageDir != null &&
-              integration.__packageDir === effective.key,
+          // entry whose outcome is the set-aside; the authored (`local`)
+          // candidate on that entry carries the load error, so it is the
+          // outcome that counts. Reading it from the ref, not by comparing
+          // paths, holds whether or not the working directory is itself a
+          // symlink.
+          const authored = effective.refs.find(
+            candidate => candidate.source === 'local',
           );
+          const authoredError =
+            authored?.integration?.__loadError ?? authored?.error ?? null;
           const loadError =
             effective.outcome === 'load-failed'
               ? (effective.error ?? 'its manifest could not be loaded')
-              : kept?.__loadError != null
-                ? String(kept.__loadError)
+              : authoredError != null
+                ? String(authoredError)
                 : null;
           return {
             spec: ref?.spec ?? entry.label,
