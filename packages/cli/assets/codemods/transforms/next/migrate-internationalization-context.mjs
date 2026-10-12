@@ -303,6 +303,18 @@ export default function migrateInternationalizationContext(file, api) {
     });
 
   /**
+   * The name a `namespace A.B.C {}` declaration binds inside its own body:
+   * the last segment (`C`); for `namespace C {}`, `C`. A dotted name parses as
+   * nested declarations, so each level's own id is its last segment.
+   * @param {any} node a TSModuleDeclaration
+   */
+  const namespaceOwnName = node => {
+    let id = node.id;
+    while (id?.type === 'TSQualifiedName') id = id.right;
+    return id?.type === 'Identifier' ? id.name : null;
+  };
+
+  /**
    * The binding a JSX identifier resolves to is the module-level import:
    * no block, function, catch clause or loop head between the element and
    * the module declares the same name. Blocks get their own scope here
@@ -354,6 +366,11 @@ export default function migrateInternationalizationContext(file, api) {
           if (bodyDeclares(node.body, name) || declaresVar(node.body, name)) {
             return false;
           }
+          break;
+        case 'TSModuleDeclaration':
+          // `namespace Outer.Ctx {}` binds `Ctx` (its last segment) inside
+          // its own body; a plain `namespace Ctx {}` binds `Ctx` likewise.
+          if (namespaceOwnName(node) === name) return false;
           break;
         case 'FunctionDeclaration':
         case 'FunctionExpression':
