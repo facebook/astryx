@@ -34,13 +34,9 @@ Styling, IDs, and handlers you pass now land on the control people use, and sear
    value={assignee}
    onChange={setAssignee}
 -  xstyle={styles.assigneeField}
--  emptySearchResultsText="No people found"
 +  containerXstyle={styles.assigneeField}
-+  emptySearchText="No people found"
  />
 ```
-
-**Pending merge — [#7289](https://github.com/facebook/astryx/pull/7289):** `emptySearchResultsText` is removed in favor of `emptySearchText`; the upgrade command handles direct component and trigger-object uses.
 
 ### Create a missing choice while searching
 
@@ -573,7 +569,7 @@ npx @astryxdesign/cli integration verify
 
 ## Upgrading to 0.7.0
 
-Update every stable Astryx package your project uses to `0.7.0`, then run the upgrade command. It applies the migrations it can automate and adds a TODO for some ambiguous cases; 18 of the 26 changes below have no codemod, so check each one.
+Update every stable Astryx package your project uses to `0.7.0`, then run the upgrade command. It applies the migrations it can automate and adds a TODO for some ambiguous cases; 18 of the 25 changes below have no codemod, so check each one.
 
 ```bash
 OLD_VERSION=0.6.8 # replace with the Core version your project uses today
@@ -595,7 +591,7 @@ Two other easy-to-miss API changes look like this:
 + .astryx-button[data-variant="primary"][data-size="sm"]
 ```
 
-### All 26 breaking migrations
+### All 25 breaking migrations
 
 1. **`theme add` now imports built themes** ([#7138](https://github.com/facebook/astryx/pull/7138)) — copy scripts move from `theme add <slug> <path>` to `theme eject <slug> <path>`; no codemod.
 2. **Banner announcements are explicit** ([#6630](https://github.com/facebook/astryx/pull/6630)) — move from status-derived live regions to `useAnnounce()` in the async action or an explicit persistent role; no codemod.
@@ -619,10 +615,9 @@ Two other easy-to-miss API changes look like this:
 20. **Private theme variables fail the build** ([#6872](https://github.com/facebook/astryx/pull/6872)) — fix every reported private `--_*` input instead of relying on exit 0; no codemod.
 21. **BottomSheet adds default content padding** ([#6884](https://github.com/facebook/astryx/pull/6884)) — remove duplicate caller padding or pass `padding={0}` for the old box; `preserve-bottom-sheet-content-padding` skips a sole Section or Layout, marks nested Layouts with a TODO, and otherwise adds `padding={0}`. Remove that added prop when your theme already sets BottomSheet padding so the theme inset remains.
 22. **Phone typography starts at 16px** ([#6699](https://github.com/facebook/astryx/pull/6699)) — take the new Neutral, Chocolate, Butter, and Stone scale as-is, or add a later touch-and-narrow rule to keep 14px or your own scale; no codemod.
-23. **`emptySearchResultsText` is removed** (pending [#7289](https://github.com/facebook/astryx/pull/7289)) — rename it to `emptySearchText`; `rename-empty-search-results-text` handles supported components and static trigger objects.
-24. **Core spacing follows the root font size** ([#7359](https://github.com/facebook/astryx/pull/7359)) — CSS variable users need no change; code that parses px converts rem with the root size or reads the computed length; no codemod.
-25. **Matcha and Y2K spacing follows the root font size** ([#7374](https://github.com/facebook/astryx/pull/7374)) — take the new default, which is pixel-equal at a 16px root, or override the spacing tokens in px to keep fixed sizing; no codemod.
-26. **Doctor fails on unloadable configured projects** ([#7130](https://github.com/facebook/astryx/pull/7130)) — install or repair the named integration, remove it from config, or fix the config field in the error; no codemod.
+23. **Core spacing follows the root font size** ([#7359](https://github.com/facebook/astryx/pull/7359)) — CSS variable users need no change; code that parses px converts rem with the root size or reads the computed length; no codemod.
+24. **Matcha and Y2K spacing follows the root font size** ([#7374](https://github.com/facebook/astryx/pull/7374)) — take the new default, which is pixel-equal at a 16px root, or override the spacing tokens in px to keep fixed sizing; no codemod.
+25. **Doctor fails on unloadable configured projects** ([#7130](https://github.com/facebook/astryx/pull/7130)) — install or repair the named integration, remove it from config, or fix the config field in the error; no codemod.
 
 ## Thank you
 
