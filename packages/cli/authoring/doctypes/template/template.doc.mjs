@@ -56,13 +56,13 @@ export const doc = {
       name: 'keywords',
       type: 'string[]',
       description:
-        "Search keywords for CLI discovery: the ideas, domains, and other names a builder might use for what the template serves (e.g. ['monitoring', 'uptime', 'on-call'] for a service-health dashboard). Lowercase. `astryx search` matches them as it matches the description and `astryx build` ranks page templates on them, so keep them out of `description`. Integration templates need @astryxdesign/cli 0.7.0 or later: earlier CLIs reject the field, drop that template, and hide the package's doc topics.",
+        "Search keywords for CLI discovery: the ideas, domains, and other names a builder might use for what the template serves (e.g. ['monitoring', 'uptime', 'on-call'] for a service-health dashboard). Lowercase. `astryx search` matches them as it matches the description and `astryx build` ranks page templates on them, so keep them out of `description`. Integration templates need @astryxdesign/cli 0.6.6 or later: earlier CLIs reject the field and drop that template, and CLIs before 0.6.4 also hide the package's doc topics.",
     },
     {
       name: 'replaces',
       type: 'string',
       description:
-        "Integration templates only: the exact id of the Core template this one replaces for unqualified lookup. Find it with `astryx --json template --list --package @astryxdesign/core`; the Core original stays selectable with `--package @astryxdesign/core`. A page replaces only a Core page and a block only a Core block. Needs @astryxdesign/cli 0.7.0 or later: earlier CLIs reject the field, drop that template, and hide the package's doc topics.",
+        "Integration templates only: the exact id of the Core template this one replaces for unqualified lookup. Find it with `astryx --json template --list --package @astryxdesign/core`; the Core original stays selectable with `--package @astryxdesign/core`. A page replaces only a Core page and a block only a Core block. Needs @astryxdesign/cli 0.6.4 or later: earlier CLIs reject the field, drop that template, and hide the package's doc topics.",
     },
     {
       name: 'isReady',

@@ -2,7 +2,7 @@
 
 /**
  * @file FieldStatus.tsx
- * @input Uses React, stylex, theme tokens, useAnnounce, Icon
+ * @input Uses React, stylex, theme tokens, useFieldStatusAnnouncement, Icon
  * @output Exports FieldStatus component, FieldStatusProps
  * @position Core implementation; consumed by Field, Switch, CheckboxInput, and the FieldStatus entrypoint
  *
@@ -10,16 +10,16 @@
  * - /packages/core/src/FieldStatus/FieldStatus.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Field/Field.doc.mjs (compat docs when public API changes)
  * - /packages/core/src/FieldStatus/index.ts (exports if types change)
+ * - /packages/core/src/FieldStatus/useFieldStatusAnnouncement.ts (announcement timing shared with Field)
  * - /packages/core/src/Field/index.ts (compat re-export if public API changes)
  * - /packages/cli/assets/templates/blocks/components/FieldStatus/ (showcase blocks)
  */
 
 'use client';
 
-import React, {useEffect} from 'react';
+import React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {useAnnounce} from '../hooks/useAnnounce';
 import {mergeProps} from '../utils';
 import {
   colorVars,
@@ -34,6 +34,7 @@ import {themeProps} from '../utils/themeProps';
 import {Icon} from '../Icon';
 import type {IconName} from '../Icon';
 import type {FieldStatusVariantMap} from './index';
+import {useFieldStatusAnnouncement} from './useFieldStatusAnnouncement';
 
 /**
  * Maps each status type to its status glyph. Mirrors the mapping the input
@@ -171,17 +172,10 @@ export function FieldStatus({
   ...rest
 }: FieldStatusProps) {
   const entryStyle = useEntryAnimation('slideDown');
-  const announce = useAnnounce();
-
-  // Announce the message through the persistently-mounted live regions.
   // Announce-on-mount is intentional: callers conditionally mount FieldStatus
   // when a status appears (and whole forms can mount with a server-side
   // validation error already present), and both cases must be heard.
-  useEffect(() => {
-    if (message) {
-      announce(message, type === 'error' ? 'assertive' : 'polite');
-    }
-  }, [announce, message, type]);
+  useFieldStatusAnnouncement(message, type);
 
   return (
     <div

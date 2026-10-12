@@ -71,6 +71,8 @@ Consumer migration instructions belong in consumer docs and release notes.
   factual backfill does not invent one.
 - Shared layer hosting, positioning, or lifecycle rules beyond the current
   records linked below.
+- The List root's accessible name, list-id application, native passthrough, and
+  overflow scrolling — owned by `component:CommandPaletteList`.
 
 ## Public concepts
 

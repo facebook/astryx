@@ -93,7 +93,7 @@ export const docs = {
     },
     {
       name: 'dateConstraints',
-      type: 'Array<(date: Date) => boolean>',
+      type: 'ReadonlyArray<(date: Date) => boolean>',
       description:
         'Array of custom constraint functions that disable specific dates.',
     },
@@ -146,7 +146,7 @@ export const docs = {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
       description:
-        'First day of week in the calendar popover. A number (0 = Sunday to 6 = Saturday) or a three-letter day name.',
+        'First day of week in Astryx calendar surfaces. A number (0 = Sunday to 6 = Saturday) or a three-letter day name; native pickers remain browser/OS-owned.',
       default: '0',
     },
     {
@@ -177,10 +177,16 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for the Field box around the label, control, and status. containerClassName and containerStyle take a class name and inline styles for the same box. No effect (development warning) where no Field box renders: inside InputGroup (style the group) and in a horizontal-labels FormLayout.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the bordered element that holds the text, icons, and end controls, never the native input. controlClassName and controlStyle take a class name and inline styles for the same box. Replaces root xstyle, className, and style, which this component does not accept.',
     },
   ],
   theming: {
@@ -191,16 +197,17 @@ export const docs = {
         states: ['disabled'],
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {
-        className: 'astryx-date-input-clear-icon',
-        deprecatedFor: 'input-clear-icon',
-      },
     ],
   },
   usage: {
     description:
       'DateInput lets the user type or pick a date from a calendar popover. Use it for scheduling, deadlines, booking dates, or any form field that needs a specific calendar date.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -294,6 +301,11 @@ export const docsZh = {
     description:
       'DateInput lets the user type or pick a date from a calendar popover. Use it for scheduling, deadlines, booking dates, or any form field that needs a specific calendar date.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -407,7 +419,7 @@ export const docsZh = {
     },
     {
       name: 'dateConstraints',
-      type: 'Array<(date: Date) => boolean>',
+      type: 'ReadonlyArray<(date: Date) => boolean>',
       description: '自定义约束函数数组，用于禁用特定日期。',
     },
     {
@@ -440,6 +452,12 @@ export const docsZh = {
       description: '通过标签末尾的信息图标显示的提示文本。',
     },
     {
+      name: 'hasClear',
+      type: 'boolean',
+      description: '有日期值时显示清除按钮。点击后清除日期。',
+      default: 'false',
+    },
+    {
       name: 'numberOfMonths',
       type: '1 | 2',
       description: '日历弹出层中同时显示的月份数量。',
@@ -449,7 +467,7 @@ export const docsZh = {
       name: 'weekStartsOn',
       type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
       description:
-        '日历弹出层中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写。',
+        'Astryx 日历表面中每周的起始日。可为数字（0=周日……6=周六）或三字母星期缩写；原生选择器仍由浏览器或操作系统控制。',
       default: '0',
     },
     {
@@ -474,10 +492,22 @@ export const docsZh = {
       default: "'touch'",
     },
     {
-      name: 'xstyle',
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        '字段宽度（数字按像素处理，字符串按原样使用，例如 “100%”）。统一调整标签、控件和状态消息的宽度。',
+    },
+    {
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        '用于布局自定义的 StyleX 样式（外边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
+        '作用于包含标签、控件和状态的 Field 容器的 StyleX 样式；containerClassName 与 containerStyle 以类名和内联样式作用于同一容器。没有 Field 容器时（InputGroup 内或 horizontal-labels FormLayout 中）不生效，并在开发环境发出警告。',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        '作用于可见控件框（带边框、包含文本、图标和末端控件的元素，而非原生 input）的 StyleX 样式；controlClassName 与 controlStyle 以类名和内联样式作用于同一元素。本组件不接受根级 xstyle、className 和 style。',
     },
   ],
   theming: {
@@ -488,10 +518,6 @@ export const docsZh = {
         states: ['disabled'],
       },
       {className: 'astryx-date-input-toggle-icon', states: ['state']},
-      {
-        className: 'astryx-date-input-clear-icon',
-        deprecatedFor: 'input-clear-icon',
-      },
     ],
   },
 };
@@ -503,6 +529,11 @@ export const docsDense = {
     description:
       'DateInput lets the user type or pick a date from a calendar popover. Use for scheduling, deadlines, booking dates, or any form field needing a calendar date.',
     bestPractices: [
+      {
+        guidance: true,
+        description:
+          "Base props such as ref, id, data-*, aria-*, and DOM event handlers go to the date input, the element that is focused and announced. A DOM handler runs after DateInput's own handler for the same event and still receives events it handled (including ones it called preventDefault on), so it cannot cancel built-in behavior.",
+      },
       {
         guidance: true,
         description:
@@ -582,6 +613,9 @@ export const docsDense = {
       "which surface draws the picker: 'adaptive-native' (default) = Astryx popover on fine, browser/OS on coarse w/ Astryx fallbacks; 'native' = browser/OS always, no fallback; 'adaptive-bottom-sheet' = popover fine / Astryx sheet coarse; 'popover'/'bottom-sheet' force Astryx. every value opens a picker (no text-only value; that is TimeInput's). use non-native for weekStartsOn/numberOfMonths/dateConstraints.",
     nativePicker:
       "deprecated, use presentation: 'touch'='adaptive-native', 'always'='native', 'never'='adaptive-bottom-sheet'. still works as released; presentation wins if both set.",
-    xstyle: 'StyleX styles for layout; must be stylex.create() value',
+    containerXstyle:
+      'Field box (label+control+status); also containerClassName/containerStyle. no effect in InputGroup or horizontal-labels FormLayout',
+    controlXstyle:
+      'visual control box (border/bg/icons), never the native input; also controlClassName/controlStyle. no root xstyle/className/style',
   },
 };

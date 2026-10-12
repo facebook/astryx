@@ -146,8 +146,13 @@ jobs:
             exit 1
           fi
           REMOTE_HEAD=$(git ls-remote origin refs/heads/main | awk '{print $1}')
-          if [ -z "$REMOTE_HEAD" ] || [ "$REMOTE_HEAD" != "$EXPECTED_HEAD" ]; then
-            echo 'Main moved before checks began; dispatch again for its new head.'
+          if [ -z "$REMOTE_HEAD" ]; then
+            echo 'Current main head is unavailable.'
+            exit 1
+          fi
+          git fetch --no-tags origin "$REMOTE_HEAD"
+          if ! git merge-base --is-ancestor "$EXPECTED_HEAD" "$REMOTE_HEAD"; then
+            echo 'Checked main commit is not an ancestor of current main.'
             exit 1
           fi
           printf 'branch=main\nhead=%s\n' "$EXPECTED_HEAD" >> "$GITHUB_OUTPUT"
@@ -262,47 +267,39 @@ jobs:
           path: release-bump-receipt.json
           retention-days: 30
 
-  release-sync:
-    name: release-sync
+  release-merge-back:
+    name: release-merge-back
     if: ${{ github.event_name == 'pull_request' && github.base_ref == 'main' }}
     # Match the stable publisher so byte parity covers the same packed manifest.
     runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:
-      - name: Checkout sync candidate
+      - name: Checkout merge-back candidate
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Detect and require the release-sync branch contract
-        id: release-sync-scope
+      - name: Detect the release-merge-back branch contract
+        id: release-merge-back-scope
         env:
-          SYNC_BRANCH: ${{ github.head_ref }}
+          MERGE_BRANCH: ${{ github.head_ref }}
         run: |
           set -eu
-          git fetch origin main
-          BASE_VERSION=$(git show origin/main:packages/core/package.json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).version))")
-          HEAD_VERSION=$(node -p "require('./packages/core/package.json').version")
-          case "$SYNC_BRANCH" in
-            chore/sync-v*-to-main)
-              VERSION=${SYNC_BRANCH#chore/sync-v}
+          case "$MERGE_BRANCH" in
+            chore/merge-v*-to-main)
+              VERSION=${MERGE_BRANCH#chore/merge-v}
               VERSION=${VERSION%-to-main}
               printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
-              test "$HEAD_VERSION" = "$VERSION"
               echo 'required=true' >> "$GITHUB_OUTPUT"
               ;;
             *)
-              if [ "$HEAD_VERSION" != "$BASE_VERSION" ]; then
-                echo 'A stable package-version change on main must use chore/sync-vX.Y.Z-to-main and pass release-sync.'
-                exit 1
-              fi
               echo 'required=false' >> "$GITHUB_OUTPUT"
               ;;
           esac
 
       - name: Fetch release authority and trusted validator
-        if: steps.release-sync-scope.outputs.required == 'true'
+        if: steps.release-merge-back-scope.outputs.required == 'true'
         run: |
           set -eu
           git fetch origin main 'refs/tags/v*:refs/tags/v*' '+refs/heads/release/v*:refs/remotes/origin/release/v*'
@@ -313,36 +310,36 @@ jobs:
           git show origin/main:scripts/lib/workspace-globs.mjs \
             > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
 
-      - name: Validate published bytes and consumed-only Changeset sync
-        if: steps.release-sync-scope.outputs.required == 'true'
+      - name: Validate published bytes and consumed-only Changeset merge-back
+        if: steps.release-merge-back-scope.outputs.required == 'true'
         env:
-          SYNC_BRANCH: ${{ github.head_ref }}
+          MERGE_BRANCH: ${{ github.head_ref }}
         run: |
           set -eu
-          VERSION=${SYNC_BRANCH#chore/sync-v}
+          VERSION=${MERGE_BRANCH#chore/merge-v}
           VERSION=${VERSION%-to-main}
           printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'
           VALIDATOR="$RUNNER_TEMP/release-policy/scripts/release/active-release.mjs"
           ACTIVE_BRANCHES=$(node "$VALIDATOR" list-active --root "$GITHUB_WORKSPACE")
-          node "$VALIDATOR" validate-sync \
+          node "$VALIDATOR" validate-merge-back \
             --root "$GITHUB_WORKSPACE" \
             --base origin/main \
             --release-ref "v$VERSION" \
             --active-branches "$ACTIVE_BRANCHES"
 
       - name: Setup Node and pnpm for published-byte verification
-        if: steps.release-sync-scope.outputs.required == 'true'
+        if: steps.release-merge-back-scope.outputs.required == 'true'
         uses: ./.github/actions/setup
         with:
           install: 'false'
 
       - name: Verify immutable tag package bytes match npm
-        if: steps.release-sync-scope.outputs.required == 'true'
+        if: steps.release-merge-back-scope.outputs.required == 'true'
         env:
-          SYNC_BRANCH: ${{ github.head_ref }}
+          MERGE_BRANCH: ${{ github.head_ref }}
         run: |
           set -eu
-          VERSION=${SYNC_BRANCH#chore/sync-v}
+          VERSION=${MERGE_BRANCH#chore/merge-v}
           VERSION=${VERSION%-to-main}
           TAG_ROOT="$RUNNER_TEMP/release-tag"
           git worktree add --detach "$TAG_ROOT" "v$VERSION"
@@ -1197,6 +1194,17 @@ jobs:
             --project chromium \
             --output table-min-width-output
 
+      # A DropdownMenu header and footer sit beside the menu, outside its
+      # role="menu" element, and join one Tab sequence with it. Focus order,
+      # the popover's focus trap, the keyboard-only ring and a finger tap on a
+      # footer control only exist in a real engine.
+      - name: Run DropdownMenu header and footer contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/DropdownMenu/__tests__/MenuHeaderFooter.a11y.chromium.spec.ts \
+            --project chromium \
+            --output menu-header-footer-output
+
       # The RichTextEditor "Markdown parity" stories render one Markdown
       # document with core Markdown and RichTextEditor and measure where each
       # block lands; geometry, the read/edit switch and the scroll anchor only
@@ -1228,7 +1236,7 @@ jobs:
             # with the base. If the base cannot be fetched, run the evidence.
             if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
               if git diff --name-only "$BASE_SHA" HEAD \
-                | grep -qE '^(apps/storybook/stories/RichTextEditor\.(markdownParity|stories)|packages/richtext/src/__tests__/MarkdownParitySandbox)'; then
+                | grep -qE '^(apps/storybook/stories/RichTextEditor\.(markdownParity|stories)|packages/richtext/src/__tests__/(MarkdownParitySandbox|RichTextView|RichTextEditorToolbar))'; then
                 should_run=true
               fi
             else
@@ -1240,8 +1248,12 @@ jobs:
             echo "Markdown, RichText, and the parity sandbox are not in PR scope; skipping parity evidence."
             exit 0
           fi
+          # The RichTextView typography and RichText toolbar layout specs share
+          # this scope, so they ride the same gate and output directory.
           pnpm exec playwright test \
             packages/richtext/src/__tests__/MarkdownParitySandbox.a11y.chromium.spec.ts \
+            packages/richtext/src/__tests__/RichTextView.a11y.chromium.spec.ts \
+            packages/richtext/src/__tests__/RichTextEditorToolbar.a11y.chromium.spec.ts \
             --project chromium \
             --output richtext-markdown-parity-output
 
@@ -1667,6 +1679,58 @@ jobs:
           path: |
             chat-tokenized-text-a11y-report.json
             test-results/chat-tokenized-text-audit-evidence/
+          retention-days: 30
+          if-no-files-found: error
+
+      # ContextMenuItem opens from a pointer gesture after the trigger renders.
+      # The focused selector wait binds axe to the open menu rather than letting
+      # the trigger's first frame satisfy generic Storybook readiness.
+      - name: Run ContextMenuItem audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ContextMenuItem:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output context-menu-item-a11y-report.json \
+            --components ContextMenuItem \
+            --ready-selector '[role="menu"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+
+      - name: Upload ContextMenuItem audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] ContextMenuItem:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: context-menu-item-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: context-menu-item-a11y-report.json
+          retention-days: 30
+          if-no-files-found: error
+
+      # DateInput's open-state audit story uses a play function to open the
+      # popover. Restricting this focused pass to that story lets the selector
+      # wait bind axe to the Calendar dialog without making every DateInput story
+      # require an open overlay.
+      - name: Run DateInput audit browser evidence
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:')
+        env:
+          ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output date-input-a11y-report.json \
+            --components DateInput \
+            --stories core-dateinput--open-calendar-audit \
+            --ready-selector '[role="dialog"]' \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+
+      - name: Upload DateInput audit evidence
+        if: always() && github.event_name == 'pull_request' && startsWith(github.event.pull_request.title, '[Component Audit] DateInput:')
+        uses: actions/upload-artifact@v7
+        with:
+          name: date-input-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: date-input-a11y-report.json
           retention-days: 30
           if-no-files-found: error
 
@@ -2364,19 +2428,26 @@ jobs:
               throw new Error('Checked-out commit does not match expected head.');
             }
             const {data} = await github.rest.git.getRef({...context.repo, ref: `heads/${branch}`});
-            if (data.object.sha !== expectedHead) {
-              throw new Error(`${branch} moved during checks; dispatch release-check again for its new head.`);
-            }
             if (branch === 'main') {
               if (process.env.CHECKED_HEAD !== expectedHead) {
                 throw new Error('Main authority check did not bind the expected head.');
               }
+              const comparison = await github.rest.repos.compareCommitsWithBasehead({
+                ...context.repo,
+                basehead: `${expectedHead}...${data.object.sha}`,
+              });
+              if (!['identical', 'ahead'].includes(comparison.data.status)) {
+                throw new Error('Checked main commit is not an ancestor of current main.');
+              }
               await core.summary
                 .addHeading('Main pre-cut checks complete')
                 .addRaw(`Exact head: ${expectedHead}\n\n`)
-                .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. A release may cut only while main still points to this exact head.')
+                .addRaw('Canonical visual, accessibility, and RTL checks completed with full scope. This exact checked commit may be used as the cut SHA while it remains in current main history; later main commits are next-release input.')
                 .write();
               return;
+            }
+            if (data.object.sha !== expectedHead) {
+              throw new Error(`${branch} moved during checks; dispatch release-check again for its new head.`);
             }
             if (!branch.startsWith('release/v')) {
               throw new Error('Post-bump release checks require a marked release branch.');

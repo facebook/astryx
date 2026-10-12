@@ -360,6 +360,9 @@ const styles = stylex.create({
     borderStartStartRadius: radiusVars['--radius-page'],
     pointerEvents: 'none',
   },
+  contentWrapper: {
+    display: 'contents',
+  },
   elevatedContentWrapper: {
     position: 'relative',
     display: 'flex',
@@ -751,13 +754,20 @@ export function AppShell({
     </LayoutContent>
   );
 
-  const mainContent = shouldElevateWithCorner ? (
-    <div {...stylex.props(styles.elevatedContentWrapper)}>
-      <div {...stylex.props(styles.elevatedBackdrop)} />
+  // Keep the parent and mainInner's position stable across breakpoints. Outside
+  // the elevated desktop layout, the wrapper generates no layout box.
+  const mainContent = (
+    <div
+      {...stylex.props(
+        shouldElevateWithCorner
+          ? styles.elevatedContentWrapper
+          : styles.contentWrapper,
+      )}>
+      {shouldElevateWithCorner && (
+        <div {...stylex.props(styles.elevatedBackdrop)} />
+      )}
       {mainInner}
     </div>
-  ) : (
-    mainInner
   );
 
   // =========================================================================

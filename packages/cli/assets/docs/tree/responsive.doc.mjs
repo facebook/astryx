@@ -16,14 +16,10 @@ export const docs = {
   description:
     'Decide what each region does as width changes: divide, reveal, resize, or swap.',
   keywords: [
-    'responsive',
     'breakpoints',
     'useMediaQuery',
-    'mobileNav',
-    'MobileNav',
     'Dialog',
     'BottomSheet',
-    'contentWidth',
     'contract',
   ],
 

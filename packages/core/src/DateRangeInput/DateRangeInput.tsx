@@ -4,7 +4,7 @@
 
 /**
  * @file DateRangeInput.tsx
- * @input Uses React, Field, Calendar (range mode), usePopover
+ * @input Uses React, Field, Calendar (range mode), VisuallyHidden, usePopover
  * @output Exports DateRangeInput component, DateRangeInputProps
  * @position Core implementation; consumed by index.ts, tested by DateRangeInput.test.tsx
  *
@@ -47,6 +47,7 @@ import {
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {
   Calendar,
   type ISODateString,
@@ -58,14 +59,18 @@ import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
-import type {BaseProps} from '../BaseProps';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
+import {joinAriaIDs} from '../utils/inputAria';
+import {
+  useFieldInputStyling,
+  type FieldInputBaseProps,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {stableClassName} from '../naming';
 import {useLocale, useTranslator} from '../i18n';
 import type {Locale} from '../i18n/types';
 
@@ -253,7 +258,7 @@ function isRangeWithinSpan(
 }
 
 export interface DateRangeInputProps extends Omit<
-  BaseProps,
+  FieldInputBaseProps<HTMLButtonElement>,
   'onChange' | 'defaultValue'
 > {
   /** Ref forwarded to the trigger button */
@@ -422,7 +427,7 @@ export interface DateRangeInputProps extends Omit<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `containerXstyle` or `controlXstyle`.
    */
   width?: SizeValue;
   /**
@@ -448,6 +453,11 @@ export interface DateRangeInputProps extends Omit<
 /**
  * A date range picker with a button trigger that opens a popover
  * containing a dual-month calendar and optional preset ranges.
+ *
+ * Base props (`ref`, `id`, `data-*`, `aria-*`, DOM event handlers) go to the range trigger.
+ * A DOM handler runs after the component's own handler for the same event
+ * and still receives events the component handled, even ones it called
+ * `preventDefault` on, so it cannot cancel built-in behavior.
  *
  * @example
  * ```
@@ -488,21 +498,40 @@ export function DateRangeInput({
   numberOfMonths = 2,
   weekStartsOn,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
-  ...rest
+  ...restProps
 }: DateRangeInputProps) {
+  const {rest, container} = useFieldInputStyling('DateRangeInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-label': ariaLabelProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onClick: onClickProp,
+    ...controlProps
+  } = rest;
   const t = useTranslator();
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =
     placeholderFromProps ?? t('@astryx.dateRangeInput.placeholder');
   const size = useSize(sizeProp, 'md');
-  const id = useId();
+  const generatedID = useId();
+  const id = idProp ?? generatedID;
+  const triggerNameID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  const requiredID = useId();
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -537,7 +566,11 @@ export function DateRangeInput({
       // The tooltip variant renders no message box; describe the input by the
       // tooltip's content instead so the status is still announced.
       statusTooltipDescribedBy,
+      // A button cannot carry aria-required. Mirror the input-family pattern
+      // by describing it with localized, visually hidden required text.
+      isEffectivelyRequired ? requiredID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -599,12 +632,13 @@ export function DateRangeInput({
     [fireChange],
   );
 
-  const triggerAriaLabel = value
+  const triggerAriaLabel = optimisticValue
     ? `${label}: ${displayValue}`
     : `${label}: ${placeholder}`;
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -633,7 +667,6 @@ export function DateRangeInput({
           // compose, so attaching unconditionally is safe.
           disabledMessageTooltip.ref(el);
         }}
-        {...rest}
         {...mergeProps(
           themeProps('date-range-input', {
             size,
@@ -649,10 +682,10 @@ export function DateRangeInput({
               !isEffectivelyDisabled &&
               inputStatusHoverShadowStyles[status.type],
             status && inputStatusFocusWithinStyles[status.type],
-            xstyle,
+            controlXstyle,
           ),
-          className,
-          style,
+          controlClassName,
+          controlStyle,
         )}>
         <button
           type="button"
@@ -679,18 +712,25 @@ export function DateRangeInput({
           />
         </button>
         <button
+          {...controlProps}
           ref={ref}
           id={id}
           type="button"
-          onClick={handleToggle}
+          onClick={chainEventHandlers(handleToggle, onClickProp)}
           // With a disabledMessage the trigger keeps focusability via
           // aria-disabled so the reason is focus-discoverable; activation is
           // still blocked by the isEffectivelyDisabled guard in handleToggle.
           disabled={isEffectivelyDisabled && !showsDisabledMessage}
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          aria-label={triggerAriaLabel}
+          // A caller aria-label replaces the trigger's name; a caller
+          // aria-labelledby is read after it (label and selected range).
+          aria-label={ariaLabelProp ?? triggerAriaLabel}
+          aria-labelledby={
+            ariaLabelledByProp != null
+              ? joinAriaIDs(triggerNameID, ariaLabelledByProp)
+              : undefined
+          }
           aria-describedby={ariaDescribedBy}
-          aria-required={isEffectivelyRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
           aria-expanded={popover.isOpen}
@@ -707,12 +747,21 @@ export function DateRangeInput({
           <InputClearButton
             label={t('@astryx.dateInput.clear', {label})}
             onClick={handleClear}
-            iconClassName={stableClassName('date-range-input-clear-icon')}
           />
+        )}
+        {ariaLabelledByProp != null && (
+          <VisuallyHidden id={triggerNameID}>
+            {ariaLabelProp ?? triggerAriaLabel}
+          </VisuallyHidden>
         )}
         {isBusy && <Spinner size="sm" />}
         {statusIcon}
       </div>
+      {isEffectivelyRequired && (
+        <VisuallyHidden id={requiredID}>
+          {t('@astryx.field.required')}
+        </VisuallyHidden>
+      )}
       {popover.render(
         <div {...stylex.props(styles.popoverLayout)}>
           {presets && presets.length > 0 && (
@@ -762,7 +811,7 @@ export function DateRangeInput({
           )}
           <Calendar
             mode="range"
-            value={value ?? undefined}
+            value={optimisticValue}
             onChange={handleRangeSelect}
             min={min}
             max={max}

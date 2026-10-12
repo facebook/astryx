@@ -28,6 +28,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useBusyIndicatorLane} from './busyIndicatorLane';
+import {useTrailingKeyDown} from './trailingKeyDown';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
@@ -55,6 +56,7 @@ import {
   groupItems,
   mergeProps,
 } from '../utils';
+import {warnOnce} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
@@ -531,6 +533,20 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<T[]>([]);
+
+  // `action` is declared on `SearchableItem` for the grid-adopting hosts;
+  // this panel has not adopted it, so it renders the item without the
+  // control and says so (spec:AST-058 FR9).
+  useEffect(() => {
+    if (results.some(item => item.action != null)) {
+      warnOnce(
+        'base-typeahead:item-action',
+        'BaseTypeahead',
+        'A result carries `action`, which the typeahead panel does not render ' +
+          'yet; the item is shown without it.',
+      );
+    }
+  }, [results]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -975,6 +991,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   );
 
   // Keyboard navigation
+  const trailingKeyDown = useTrailingKeyDown();
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       externalOnKeyDown?.(e);
@@ -1150,7 +1167,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         onFocus={composeEventHandlers(handleFocus, onFocusProp)}
         onClick={composeEventHandlers(handleClick, onClickProp)}
         onBlur={composeEventHandlers(handleBlur, onBlurProp)}
-        onKeyDown={handleKeyDown}
+        onKeyDown={
+          trailingKeyDown
+            ? event => {
+                handleKeyDown(event);
+                trailingKeyDown(event);
+              }
+            : handleKeyDown
+        }
         placeholder={placeholder}
         // When a disabled-reason tooltip is shown the input keeps focusability
         // via aria-disabled + readOnly instead of the native disabled

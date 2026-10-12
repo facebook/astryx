@@ -28,6 +28,7 @@ import jscodeshift from 'jscodeshift';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
 import {resolvePackageDir} from '../../foundation/integrations/integrations.mjs';
 import {
+  componentReplacesCliProblem,
   docsTreeCliProblem,
   keywordsCliProblem,
   replacesCliProblem,
@@ -52,6 +53,7 @@ import {
   discoverIntegrationComponents,
   resolveIntegrationImportPath,
 } from '../../foundation/discovery/component-discovery.mjs';
+import {loadComponentReplacements} from '../component/_adapter.mjs';
 import {loadComponentDoc} from '../../foundation/discovery/component-loader.mjs';
 import {discoverIntegrationTemplatesForOne} from '../../foundation/discovery/template-adapter.mjs';
 import {
@@ -1129,8 +1131,8 @@ export async function integrationPackCheck(options = {}) {
     }
   }
   // A template that sets `replaces` (spec:AST-035) or `keywords` needs a CLI
-  // that reads the field: an older CLI drops that template and hides the
-  // package's docs.
+  // that reads the field: an older CLI drops that template and can hide the
+  // package's docs. Each field has its own floor.
   if (loaded.templates) {
     const found = await discoverIntegrationTemplatesForOne(loaded).catch(
       () => ({templates: [], errors: []}),
@@ -1148,6 +1150,24 @@ export async function integrationPackCheck(options = {}) {
     const keywordsProblem = setsKeywords ? keywordsCliProblem(pkg) : null;
     if (keywordsProblem != null) {
       issues.push(error('keywords_needs_cli', keywordsProblem));
+    }
+  }
+  // A component that sets `replaces` (spec:AST-035 FR10) is applied only when
+  // the package's CLI range starts at the release that applies it. Without
+  // that range the component keeps its own name and Core stays selected, so
+  // this warns and never fails the check.
+  if (loaded.components) {
+    const found = await loadComponentReplacements(null, [loaded]).catch(() => ({
+      findings: [],
+    }));
+    // Every declaration from a package without the range is reported as
+    // inactive, whatever else is wrong with it.
+    const setsReplaces = found.findings.some(
+      finding => finding.code === 'inactive_component_replacement',
+    );
+    const problem = setsReplaces ? componentReplacesCliProblem(pkg) : null;
+    if (problem != null) {
+      issues.push(warning('component_replaces_needs_cli', problem));
     }
   }
   // A theme needs a CLI that reads typed theme descriptors: an older CLI

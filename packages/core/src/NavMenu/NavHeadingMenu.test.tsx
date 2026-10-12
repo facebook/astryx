@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
+import type {KeyboardEvent} from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {NavHeadingMenu} from './NavHeadingMenu';
@@ -147,6 +148,39 @@ describe('NavHeadingMenuItem', () => {
 });
 
 describe('keyboard navigation', () => {
+  it('keeps arrow navigation when an item handler cancels', () => {
+    const onKeyDown = vi.fn((event: KeyboardEvent) => event.preventDefault());
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="First" onKeyDown={onKeyDown} />
+        <NavHeadingMenuItem label="Second" />
+      </NavHeadingMenu>,
+    );
+    const [first, second] = screen.getAllByRole('menuitem');
+    first.focus();
+    fireEvent.keyDown(first, {key: 'ArrowDown'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect(second).toHaveFocus();
+  });
+
+  it.each(['onKeyDown', 'onKeyDownCapture'] as const)(
+    'preserves menu-level cancellation through %s',
+    handler => {
+      const cancel = vi.fn((event: KeyboardEvent) => event.preventDefault());
+      render(
+        <NavHeadingMenu {...{[handler]: cancel}}>
+          <NavHeadingMenuItem label="First" />
+          <NavHeadingMenuItem label="Second" />
+        </NavHeadingMenu>,
+      );
+      const first = screen.getAllByRole('menuitem')[0];
+      first.focus();
+      fireEvent.keyDown(first, {key: 'ArrowDown'});
+      expect(cancel).toHaveBeenCalledOnce();
+      expect(first).toHaveFocus();
+    },
+  );
+
   it('moves focus with arrow keys', async () => {
     const user = userEvent.setup();
     render(
@@ -349,5 +383,58 @@ describe('NavHeadingMenu pass-through props', () => {
     await user.keyboard('{ArrowDown}');
     expect(onKeyDown).toHaveBeenCalled();
     expect(items[1]).toHaveFocus();
+  });
+});
+
+describe('NavHeadingMenuItem pass-through props', () => {
+  it('forwards pass-through props to the item element', () => {
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem
+          label="Dashboard"
+          aria-label="Open dashboard"
+          id="nav-dashboard"
+          data-tracking="nav-item"
+          data-testid="item"
+        />
+      </NavHeadingMenu>,
+    );
+    const item = screen.getByTestId('item');
+    expect(item).toHaveAttribute('aria-label', 'Open dashboard');
+    expect(item).toHaveAttribute('id', 'nav-dashboard');
+    expect(item).toHaveAttribute('data-tracking', 'nav-item');
+  });
+
+  it('forwards event handlers to the item element', () => {
+    const handleMouseEnter = vi.fn();
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem
+          label="Dashboard"
+          onMouseEnter={handleMouseEnter}
+          data-testid="item"
+        />
+      </NavHeadingMenu>,
+    );
+    fireEvent.mouseEnter(screen.getByTestId('item'));
+    expect(handleMouseEnter).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the menuitem contract over colliding pass-throughs', () => {
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem
+          label="Dashboard"
+          data-testid="item"
+          role="button"
+          aria-disabled="false"
+          isDisabled
+        />
+      </NavHeadingMenu>,
+    );
+    // Owned role and aria-disabled win over the colliding pass-throughs.
+    const item = screen.getByTestId('item');
+    expect(item).toHaveAttribute('role', 'menuitem');
+    expect(item).toHaveAttribute('aria-disabled', 'true');
   });
 });

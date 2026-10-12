@@ -15,7 +15,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {resolveCore} from '../_adapter.mjs';
+import {resolveComponentReplacement, resolveCore} from '../_adapter.mjs';
 import {assertWithin, sanitizeName, PathSafetyError} from '../../../foundation/fs/path-safety.mjs';
 import {checkGhCli} from '../_github.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
@@ -46,12 +46,11 @@ const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
  *   - Asset files (`.json`, `.css`): exported by full subpath (e.g.
  *     `./locales/*.json`, `./reset.css`), and collapsing a two-levels-up
  *     `../../locales/x.json` would emit the invalid `<pkg>/..`.
- *   - The theme StyleX token module (`../theme/tokens.stylex`): the StyleX
- *     compiler needs the real module, which core ships as the dedicated
- *     `./theme/tokens.stylex` export (the in-repo charts consumer imports it
- *     by that exact subpath). Other `.stylex` files (e.g. a component-local
- *     `../Layer/layerAnimations.stylex`) are NOT exported by subpath, so they
- *     keep the barrel collapse.
+ *   - StyleX modules (`*.stylex`): the StyleX compiler needs the real module
+ *     path so it can resolve the styles at compile time. The barrel re-export
+ *     loses the module identity. Core exports every `.stylex` file by its
+ *     deep subpath (e.g. `./utils/focusOutline.stylex`,
+ *     `./theme/tokens.stylex`).
  *
  * @param {string} content
  * @param {string} [ownerPackage]
@@ -67,8 +66,8 @@ export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
     if (/\.(?:json|css)$/.test(last)) {
       return `${ownerPackage}/${rest}`;
     }
-    // The theme token module is a dedicated deep StyleX export.
-    if (parts[0] === 'theme' && /\.stylex(?:\.[cm]?[jt]sx?)?$/.test(last)) {
+    // StyleX modules need the deep path so the compiler can resolve them.
+    if (/\.stylex(?:\.[cm]?[jt]sx?)?$/.test(last)) {
       return `${ownerPackage}/${rest}`;
     }
     return `${ownerPackage}/${parts[0]}`;
@@ -221,6 +220,26 @@ export async function swizzleCopy(component, options = {}) {
   const coreIssuesUrl = project
     ? project.issuesUrl({package: CORE_PACKAGE})
     : undefined;
+  // An active integration replacement answers to the Core name it replaces,
+  // bare or qualified by its own package (spec:AST-035 FR11): copy it under its
+  // own name. `--package @astryxdesign/core` still copies the Core original.
+  if (pkg !== CORE_PACKAGE) {
+    const replacement = await resolveComponentReplacement(
+      coreDir,
+      loadedIntegrations,
+      dirName,
+    );
+    if (
+      replacement &&
+      (!pkg || (pkg === replacement.package && replacement.name !== dirName))
+    ) {
+      return swizzleCopy(replacement.name, {
+        ...options,
+        package: replacement.package,
+      });
+    }
+  }
+
   const allOwners = resolveOwners(coreDir, loadedIntegrations, dirName, coreIssuesUrl);
 
   if (allOwners.length === 0) {

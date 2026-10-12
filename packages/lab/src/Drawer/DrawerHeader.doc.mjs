@@ -18,7 +18,7 @@ export const docs = {
     'Header for drawers with a title, optional subtitle, close button, and start/end content slots. Same API as DialogHeader.',
   usage: {
     description:
-      'Compose DrawerHeader first inside a Drawer for a title row and, when you pass onOpenChange, a close button. Drawer renders no close button of its own. Unlike DialogHeader it does not take focus on open (Drawer uses data-autofocus) and does not name the drawer (Drawer label does).',
+      'Compose DrawerHeader in the header slot of a Layout inside the Drawer, as DialogHeader is composed in Dialog, for a title row and, when you pass onOpenChange, a close button. The Layout keeps the header on the drawer inset instead of padding it twice. Drawer renders no close button of its own. Unlike DialogHeader it does not take focus on open (Drawer uses data-autofocus) and does not name the drawer (Drawer label does).',
     anatomy: [
       {
         name: 'Header row',
@@ -89,7 +89,7 @@ export const docs = {
       name: 'hasDivider',
       type: 'boolean',
       description:
-        "Adds a border at the bottom edge. Defaults to the parent Layout's defaultHasDividers; directly inside a Drawer there is none.",
+        "Adds a border at the bottom edge. Defaults to the parent Layout's defaultHasDividers.",
     },
   ],
   playground: {
@@ -114,6 +114,7 @@ export const docs = {
       code: `
 import {useState} from 'react';
 import {Drawer, DrawerHeader} from '@astryxdesign/lab';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 
 function Inspector() {
   const [isOpen, setIsOpen] = useState(true);
@@ -121,7 +122,10 @@ function Inspector() {
   // Passing onOpenChange renders a close button that calls it with false.
   return (
     <Drawer isOpen={isOpen} onOpenChange={setIsOpen} label="Details">
-      <DrawerHeader title="Details" onOpenChange={setIsOpen} />
+      <Layout
+        header={<DrawerHeader title="Details" onOpenChange={setIsOpen} />}
+        content={<LayoutContent>Content</LayoutContent>}
+      />
     </Drawer>
   );
 }
@@ -151,7 +155,7 @@ export const docsZh = {
     '抽屉头部，包含标题、可选副标题、关闭按钮以及首尾内容插槽；API 与 DialogHeader 相同。',
   usage: {
     description:
-      '在 Drawer 中最先放置 DrawerHeader，提供标题行；传入 onOpenChange 时显示关闭按钮。Drawer 本身不渲染关闭按钮。与 DialogHeader 不同，它不会在打开时获得焦点（Drawer 使用 data-autofocus），也不为抽屉命名（由 Drawer 的 label 命名）。',
+      '像 Dialog 中的 DialogHeader 一样，把 DrawerHeader 放在 Drawer 内 Layout 的 header 插槽，提供标题行；传入 onOpenChange 时显示关闭按钮。Layout 让页眉对齐抽屉的内边距，而不是重复缩进。Drawer 本身不渲染关闭按钮。与 DialogHeader 不同，它不会在打开时获得焦点（Drawer 使用 data-autofocus），也不为抽屉命名（由 Drawer 的 label 命名）。',
     anatomy: [
       {
         name: 'Header row',
@@ -218,7 +222,7 @@ export const docsZh = {
       name: 'hasDivider',
       type: 'boolean',
       description:
-        '在底部边缘添加分隔线。默认取父级 Layout 的 defaultHasDividers；直接放在 Drawer 中时没有分隔线。',
+        '在底部边缘添加分隔线。默认取父级 Layout 的 defaultHasDividers。',
     },
   ],
   theming: {
@@ -240,7 +244,7 @@ export const docsDense = {
     'drawer header w/ title, optional subtitle, close button, start/end content slots; same API as DialogHeader',
   usage: {
     description:
-      'first child of Drawer; close button only when given onOpenChange (Drawer has none built in); no focus on open (Drawer uses data-autofocus); does not name the drawer (Drawer label does)',
+      'header slot of a Layout inside Drawer, like DialogHeader in Dialog; close button only when given onOpenChange (Drawer has none built in); no focus on open (Drawer uses data-autofocus); does not name the drawer (Drawer label does)',
     anatomy: [
       {
         name: 'Header row',
@@ -282,7 +286,6 @@ export const docsDense = {
     endContent: 'content after title, before close button',
     endContentEdgeCompensation:
       'end-content slot axes: inline | block | all; omit=automatic close-action compensation',
-    hasDivider:
-      'bottom border; default = parent Layout defaultHasDividers (none directly in Drawer)',
+    hasDivider: 'bottom border; default = parent Layout defaultHasDividers',
   },
 };

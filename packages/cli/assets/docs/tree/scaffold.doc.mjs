@@ -18,14 +18,9 @@ export const docs = {
   keywords: [
     'shell',
     'navigation',
-    'AppShell',
-    'SideNav',
-    'TopNav',
-    'MobileNav',
     'frame',
     'region',
     'width budget',
-    'contentWidth',
   ],
 
   sections: [

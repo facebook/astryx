@@ -345,7 +345,8 @@ export const ImperativeRef = {
         </div>
         <pre
           style={{
-            background: '#f5f5f5',
+            background: 'var(--color-background-muted)',
+            color: 'var(--color-text-primary)',
             padding: 12,
             borderRadius: 6,
             fontSize: 13,
@@ -413,7 +414,8 @@ export const MarkdownSerializers = {
     const roundTripped = editorStateJSONToMarkdown(json);
 
     const boxStyle = {
-      background: '#f5f5f5',
+      background: 'var(--color-background-muted)',
+      color: 'var(--color-text-primary)',
       padding: 12,
       borderRadius: 6,
       fontSize: 13,

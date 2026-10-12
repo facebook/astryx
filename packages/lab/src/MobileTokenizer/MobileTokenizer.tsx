@@ -417,7 +417,7 @@ export function MobileTokenizer<T extends SearchableItem>({
                     setQuery(next);
                     onChangeQuery?.(next);
                   }}
-                  xstyle={styles.filterInput}
+                  controlXstyle={styles.filterInput}
                 />
               </div>
               <div

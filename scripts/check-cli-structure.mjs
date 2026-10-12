@@ -38,6 +38,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {runtimeStarExports} from './lib/api-index-star-exports.mjs';
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -460,7 +461,6 @@ const INV21_KNOWN_GAPS = new Map([
   ['template/show/show.mjs', new Set(['fs', 'discovery'])],
   ['template/skeleton/skeleton.mjs', new Set(['fs', 'discovery'])],
   ['template/template.mjs', new Set(['discovery'])],
-  ['theme/add/add.mjs', new Set(['fs'])],
   ['theme/build/build.mjs', new Set(['fs', 'discovery'])],
   ['theme/palette/generate/generate.mjs', new Set(['fs'])],
   ['theme/targets/targets.mjs', new Set(['discovery'])],
@@ -575,6 +575,11 @@ const apiIndexSrc = fs.readFileSync(path.join(API, 'index.mjs'), 'utf8');
 if (/\bresolveRecordedTheme\b/u.test(apiIndexSrc)) {
   errors.push(
     'theme boundary: resolveRecordedTheme is internal and must not be exported from api/index.mjs',
+  );
+}
+for (const specifier of runtimeStarExports(apiIndexSrc)) {
+  errors.push(
+    `api boundary: api/index.mjs star exports or namespace imports ${specifier} — export each runtime function by name so FR1 and FR2 check it and internal helpers such as resolveRecordedTheme stay out of the public API`,
   );
 }
 

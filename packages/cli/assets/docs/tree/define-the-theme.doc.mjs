@@ -45,7 +45,7 @@ export const oceanTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Local imports must stay inside the theme folder. One that leaves it, such as `../../shared/colors`, fails with `invalid_theme`, and the theme disappears from `theme list`. `npx astryx theme template` writes a file that explains every `defineTheme` field. For the full token set, scope selectors, and component theming, read {@link generic:theme}.',
+          text: 'Local imports must stay inside the theme folder. One that leaves it, such as `../../shared/colors`, fails with `invalid_theme`, and the theme disappears from `theme list`. `npx astryx theme template` writes a file that explains every `defineTheme` field. For the full token set, scope selectors, and component theming, read {@link generic:author-a-theme}.',
         },
       ],
     },
