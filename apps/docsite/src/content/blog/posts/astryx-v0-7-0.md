@@ -77,7 +77,7 @@ Menus hold real controls beside their rows and drill into submenus on touch; she
 
 ### Put controls beside menu rows
 
-![An open Assign reviewer dropdown. A Filter reviewers text field sits above the four name rows, and below them a Create team button with a plus icon, all inside the same popover.](/blog/astryx-v0-7-0/menu-header-footer.png)
+![An open Assign reviewer dropdown. A Filter reviewers text field sits above the four name rows, and below them a Create team button with a plus icon, all inside the same popover.](/blog/astryx-v0-7-0/menu-header-footer@2x.png)
 
 _Header and footer controls stay outside the menu itself, so screen readers hear a normal menu and Tab reaches each region in order._
 
@@ -152,7 +152,7 @@ Phones get 16px body text, swipe actions on rows, and a choice of date and time 
 
 ### Reveal row actions with a swipe
 
-![A phone list of three checklist rows in a card. A finger drags the first row toward the left and two action panels slide out behind it: a neutral Archive and a red Delete. Tapping Archive removes the row and the list closes up.](/blog/astryx-v0-7-0/item-swipe-actions.webp)
+![A phone list of three checklist rows in a card. A finger drags the first row toward the left and two action panels slide out behind it: a neutral Archive and a red Delete. Tapping Archive removes the row and the list closes up.](/blog/astryx-v0-7-0/item-swipe-actions@2x.webp)
 
 _Sideways drags reveal touch actions without hiding them from keyboard and assistive-technology users. Rows without actions do not load the gesture code, saving about 2.7 KB (gzip) on first load._
 
@@ -571,8 +571,6 @@ npx @astryxdesign/cli integration add component AcmeChart
 npx @astryxdesign/cli integration verify
 ```
 
-**Pending merge — [#7130](https://github.com/facebook/astryx/pull/7130):** `doctor` will fail when Astryx cannot load a configured integration or project config, and it will name the integrations it loaded.
-
 ## Interaction and feedback
 
 Compact toolbars take less vertical space while staying aligned with the content below them.
@@ -659,7 +657,7 @@ Two other easy-to-miss API changes look like this:
 23. **`emptySearchResultsText` is removed** (pending [#7289](https://github.com/facebook/astryx/pull/7289)) — rename it to `emptySearchText`; `rename-empty-search-results-text` handles supported components and static trigger objects.
 24. **Core spacing follows the root font size** ([#7359](https://github.com/facebook/astryx/pull/7359)) — CSS variable users need no change; code that parses px converts rem with the root size or reads the computed length; no codemod.
 25. **Matcha and Y2K spacing follows the root font size** ([#7374](https://github.com/facebook/astryx/pull/7374)) — take the new default, which is pixel-equal at a 16px root, or override the spacing tokens in px to keep fixed sizing; no codemod.
-26. **Doctor fails on unloadable configured projects** (pending [#7130](https://github.com/facebook/astryx/pull/7130)) — install or repair the named integration, remove it from config, or fix the config field in the error; no codemod.
+26. **Doctor fails on unloadable configured projects** ([#7130](https://github.com/facebook/astryx/pull/7130)) — install or repair the named integration, remove it from config, or fix the config field in the error; no codemod.
 
 ## Thank you
 
