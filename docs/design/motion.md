@@ -66,15 +66,16 @@ opens because a hover-capable pointer rested on its trigger and no press or key
 started the opening: a tooltip, a hover card, or a menu, flyout, or popover that
 opens on hover.
 
-- A hover-summoned layer's entrance is no longer than the lightest hover or
-  press response, and it does not travel. Appearing at once conforms.
+- A hover-summoned layer appears at once, or with an entrance that does not
+  travel and runs no longer than the shortest timed hover or press response.
 - The same layer opened by a press or a key keeps the standard entrance.
 - The entrance follows the input that opened the layer, not a per-surface
   setting.
 
 Verification is a real-browser measurement of the entrance when the same layer
 opens by hover and by a press. It fails when the hover open's entrance travels
-or runs longer than the lightest hover or press response.
+or runs longer than the shortest timed hover or press response, or when the
+press open loses the standard entrance.
 
 ## Accessibility intent
 
@@ -112,9 +113,9 @@ CSS properties, or audit mechanics.
 A pointer has already waited out the hover dwell when a hover-summoned layer
 opens, so a full entrance on top makes every hover reveal feel slow, and a
 pointer sweeping across several hover triggers replays that entrance each time.
-The entrance therefore runs no longer than the lightest hover or press response,
-and the input that opened the layer decides it, so no surface tunes a duration of
-its own.
+The entrance therefore appears at once or runs no longer than the shortest timed
+hover or press response, and the input that opened the layer decides it, so no
+surface tunes a duration of its own.
 
 Rejected: the standard entrance for every input, which stacks the full entrance on the dwell; a duration chosen per surface, which restates a timing value at every call site.
 
