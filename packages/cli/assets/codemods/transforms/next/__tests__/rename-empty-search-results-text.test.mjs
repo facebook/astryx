@@ -60,8 +60,11 @@ const c = <Tokenizer {...props} emptySearchResultsText="After a spread" />;`);
         "emptySearchText={compact ? 'None' : 'No matches'}",
       );
       expect(output).toContain('emptySearchText={props.text ?? null}');
-      expect(output).toContain('{...props} emptySearchText="After a spread"');
-      expect(output).not.toContain('emptySearchResultsText');
+      // A spread may carry either name, so the element gets a TODO instead.
+      expect(output).toContain('{...props} /* TODO(astryx upgrade)');
+      expect(output).toContain('emptySearchResultsText="After a spread"');
+      expect(output).toContain('spreads props that may carry either name');
+      expect(output.match(/emptySearchResultsText/g)).toHaveLength(2);
     });
 
     it('leaves a TODO instead of choosing when emptySearchText is already set', async () => {
@@ -131,14 +134,23 @@ const a = (
       expect(await applyTransform(output)).toBe(output);
     });
 
-    it('does not follow variables, helpers, or wrappers (the type checker reports what remains)', async () => {
-      const source = `import {ChatComposerInput} from '@astryxdesign/core';
+    it('leaves a TODO on triggers it cannot read instead of following them', async () => {
+      const output =
+        await applyTransform(`import {ChatComposerInput} from '@astryxdesign/core';
 import {mentionTrigger} from './triggers';
 const local = {char: '@', emptySearchResultsText: 'Nobody'};
 const a = <ChatComposerInput triggers={[local, mentionTrigger]} />;
 const b = <ChatComposerInput triggers={buildTriggers()} />;
-const c = <ChatComposerInput {...props} />;`;
-      expect(await applyTransform(source)).toBe(source);
+const c = <ChatComposerInput triggers={useMemo(() => [t], [t])} />;
+const d = <ChatComposerInput {...props} triggers={[{char: '#', emptySearchResultsText: 'No tags'}]} />;`);
+
+      expect(output.match(/These triggers are built elsewhere/g)).toHaveLength(
+        4,
+      );
+      // The inline object beside a spread is still renamed; the spread is flagged.
+      expect(output).toContain("emptySearchText: 'No tags'");
+      expect(output).toContain("emptySearchResultsText: 'Nobody'");
+      expect(await applyTransform(output)).toBe(output);
     });
 
     it('leaves a file with no runtime core import alone', async () => {

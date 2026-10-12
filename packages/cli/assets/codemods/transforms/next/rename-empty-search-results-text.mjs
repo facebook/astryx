@@ -12,10 +12,13 @@
  * helper: the prop on an imported `Tokenizer`, `Typeahead`, or `BaseTypeahead`
  * element, and the key on `ChatComposerInput` trigger objects written inline
  * in its `triggers` prop. Like every transform built on the helper it does
- * not follow variables, helpers, spreads, wrappers, or types; where the new
- * name is already set, or a trigger object has a spread or computed key, it
- * leaves a TODO instead of choosing a winner. The type checker reports any
- * `emptySearchResultsText` it did not reach.
+ * not follow variables, helpers, spreads, wrappers, or types. Where it cannot
+ * attribute the value it leaves a TODO instead of choosing a winner: the new
+ * name already set, an element with a spread (which may carry either name),
+ * a `triggers` value that is not an inline object or array, or a trigger
+ * object with a spread or computed key. A value forwarded through a spread is
+ * the one case the type checker cannot report after the removal, which is
+ * why those get the TODO.
  */
 
 import {transformProp} from '../../transform-prop.mjs';
@@ -26,7 +29,8 @@ export const meta = {
     'Renames the removed `emptySearchResultsText` prop to `emptySearchText` ' +
     'on imported Tokenizer, Typeahead, and BaseTypeahead elements, and the ' +
     "same key on trigger objects written inline in ChatComposerInput's " +
-    '`triggers`. Leaves a TODO where the new name is already set or a ' +
+    '`triggers`. Leaves a TODO where the new name is already set, the ' +
+    'element has a spread, the triggers value is not written inline, or a ' +
     'trigger object has a spread or computed key.',
 };
 
@@ -48,6 +52,14 @@ const BOTH_SET_COMMENT =
 const UNREADABLE_OBJECT_COMMENT =
   ' TODO(astryx upgrade): emptySearchResultsText was removed. Rename it to ' +
   'emptySearchText by hand; this object has a spread or computed key. ';
+const SPREAD_COMMENT =
+  ' TODO(astryx upgrade): emptySearchResultsText was removed. This element ' +
+  'spreads props that may carry either name; rename to emptySearchText ' +
+  'where the props are built and delete the old one. ';
+const OPAQUE_TRIGGERS_COMMENT =
+  ' TODO(astryx upgrade): emptySearchResultsText was removed. These triggers ' +
+  'are built elsewhere; rename the key to emptySearchText where they are ' +
+  'built. ';
 
 const TYPE_WRAPPERS = new Set([
   'TSAsExpression',
@@ -131,25 +143,40 @@ export default function transform(fileInfo, api) {
     },
     (propPath, {component}) => {
       const prop = propPath.node;
+      const attributes = propPath.parent.node.attributes ?? [];
+      const hasSpread = attributes.some(
+        (/** @type {any} */ attribute) =>
+          attribute.type === 'JSXSpreadAttribute',
+      );
       if (component === 'ChatComposerInput') {
         // `triggers={[{...}, {...}]}` or `triggers={{...}}`: rename the key
-        // on each object written inline; anything else is out of reach.
+        // on each object written inline; a value built elsewhere, or an
+        // element whose spread may carry triggers, gets a TODO.
         const value =
           prop.value?.type === 'JSXExpressionContainer'
             ? unwrap(prop.value.expression)
             : null;
-        const objects =
+        const items =
           value?.type === 'ArrayExpression'
             ? value.elements.map((/** @type {any} */ e) => unwrap(e))
             : [value];
-        for (const object of objects) {
-          if (object?.type === 'ObjectExpression') {
-            changed = renameTriggerKey(j, object) || changed;
+        let opaque = hasSpread;
+        for (const item of items) {
+          if (item?.type === 'ObjectExpression') {
+            changed = renameTriggerKey(j, item) || changed;
+          } else {
+            opaque = true;
           }
+        }
+        if (opaque) {
+          changed = addComment(j, prop, OPAQUE_TRIGGERS_COMMENT) || changed;
         }
         return;
       }
-      const attributes = propPath.parent.node.attributes ?? [];
+      if (hasSpread) {
+        changed = addComment(j, prop, SPREAD_COMMENT) || changed;
+        return;
+      }
       const already = attributes.some(
         (/** @type {any} */ attribute) =>
           attribute.type === 'JSXAttribute' &&
