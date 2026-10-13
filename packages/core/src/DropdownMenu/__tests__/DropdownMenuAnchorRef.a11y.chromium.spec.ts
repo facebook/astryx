@@ -103,6 +103,21 @@ test('a keyboard open lands on the first row; Escape returns focus to the trigge
   await expect(trigger(page)).toBeFocused();
 });
 
+test('Shift+Tab from the menu continues from the trigger, not from the row the menu is anchored to', async ({
+  page,
+}) => {
+  // The row is the popover's invoker, but Tab closes the menu and returns
+  // focus to the trigger first, so the browser moves on from the trigger: to
+  // the field before it, which sits inside the row.
+  await mount(page);
+  await trigger(page).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('menuitem', {name: 'Everything'})).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(page.getByRole('menu')).toBeHidden();
+  await expect(page.getByRole('textbox', {name: 'Search'})).toBeFocused();
+});
+
 test('a mouse press on the trigger opens the menu; a release on a row acts on it', async ({
   page,
 }) => {

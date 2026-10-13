@@ -3301,6 +3301,87 @@ describe('DropdownMenu anchorRef', () => {
     expect(readAnchorNames(trigger)).toEqual([]);
   });
 
+  it('an anchor that unmounts mid-open leaves the menu without one until its next render, then on its trigger, held by the removed anchor', async () => {
+    let notify!: IntersectionObserverCallback;
+    const observed: Element[] = [];
+    class Observer {
+      constructor(callback: IntersectionObserverCallback) {
+        notify = callback;
+      }
+      observe(target: Element) {
+        observed.push(target);
+      }
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    vi.stubGlobal('IntersectionObserver', Observer);
+    try {
+      const user = userEvent.setup();
+      const Menu = memo(function Menu({
+        anchorRef,
+      }: {
+        anchorRef: RefObject<HTMLDivElement | null>;
+      }) {
+        return (
+          <DropdownMenu
+            anchorRef={anchorRef}
+            button={{label: 'Filter'}}
+            items={ITEMS}
+          />
+        );
+      });
+      function Page() {
+        const rowRef = useRef<HTMLDivElement>(null);
+        const [isWide, setIsWide] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setIsWide(false)}>
+              Narrow
+            </button>
+            {isWide && <div ref={rowRef} data-testid="row" />}
+            <Menu anchorRef={rowRef} />
+          </>
+        );
+      }
+      render(<Page />);
+      const trigger = screen.getByRole('button', {name: 'Filter'});
+      const row = screen.getByTestId('row');
+      const [anchorName] = readAnchorNames(row);
+      await user.click(trigger);
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+      );
+      expect(observed).toEqual([row]);
+      // The anchor unmounts during the open without a render of the memoized
+      // menu: until the menu renders, no element carries its anchor.
+      fireEvent.click(screen.getByRole('button', {name: 'Narrow'}));
+      expect(row).not.toBeInTheDocument();
+      expect(readAnchorNames(trigger)).toEqual([]);
+      // The browser reports the removed anchor out of view. That renders the
+      // menu, which reads the empty ref and falls back to its trigger.
+      act(() => {
+        notify(
+          [{isIntersecting: false} as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(readAnchorNames(trigger)).toEqual([anchorName]);
+      // The visibility read (spec:AST-059 FR5) stays on the anchor the menu
+      // opened against, so its off-screen hold lasts until the menu closes.
+      expect(observed).toEqual([row]);
+      const layer = screen
+        .getByRole('menu', {hidden: true})
+        .closest('[popover]') as HTMLElement;
+      expect(layer.style.justifySelf).toMatch(/^unsafe /);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('without anchorRef the trigger stays the anchor', () => {
     render(<DropdownMenu button={{label: 'Filter'}} items={ITEMS} />);
     const trigger = screen.getByRole('button', {name: 'Filter'});

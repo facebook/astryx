@@ -444,9 +444,11 @@ interface DropdownMenuBaseProps extends BaseProps {
    * opens and the menu's name. The ref is read whenever the menu renders,
    * every open included, as on Popover: while it is empty (an element rendered
    * only in some layouts, or a component that does not forward its ref), the
-   * trigger is the anchor, and an element that mounts or unmounts while the
-   * menu is open is followed at the menu's next render. Ignored by
-   * bottom-sheet presentation.
+   * trigger is the anchor, and an element that mounts while the menu is open
+   * is followed at the menu's next render. One that unmounts while the menu is
+   * open leaves it with no anchor until then, and the menu no longer slides to
+   * stay inside the viewport until it closes. Ignored by bottom-sheet
+   * presentation.
    *
    * @example
    * ```
