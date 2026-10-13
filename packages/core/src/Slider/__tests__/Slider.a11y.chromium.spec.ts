@@ -99,7 +99,7 @@ test('every slider expectation is exercised by a Slider state', async ({
 });
 
 for (const state of SLIDER_BINDING_STATES) {
-  test(`TreeList [${state.id}] — ${state.summary}`, async ({page}) => {
+  test(`Slider [${state.id}] — ${state.summary}`, async ({page}) => {
     const cdp = await page.context().newCDPSession(page);
     const result = await runState(page, cdp, state);
     const report = summarize(SLIDER_PATTERN, [result]);

@@ -24,9 +24,11 @@ const SCRIPT = `<script>
   const thumb = document.querySelector('[${SUBJECT_ATTRIBUTE}]');
   const num = name => Number(thumb.getAttribute(name));
   const rtl = thumb.closest('[dir="rtl"]') != null && !window.__sliderNoRtl;
-  const set = raw => {
+  // Arrow and Page results snap to the step grid, then clamp; Home and End
+  // set the bound itself, which is always an allowed value.
+  const set = (raw, snap = true) => {
     const min = num('aria-valuemin'), max = num('aria-valuemax'), step = Number(thumb.dataset.step || 1);
-    const snapped = min + Math.round((raw - min) / step) * step;
+    const snapped = snap ? min + Math.round((raw - min) / step) * step : raw;
     const next = Math.min(max, Math.max(min, Number(snapped.toFixed(10))));
     thumb.setAttribute('aria-valuenow', String(next));
   };
@@ -40,8 +42,8 @@ const SCRIPT = `<script>
       case 'ArrowLeft': case 'ArrowDown': e.preventDefault(); set(now - step); break;
       case 'PageUp': e.preventDefault(); if (!window.__sliderNoPage) set(now + step * 10); break;
       case 'PageDown': e.preventDefault(); if (!window.__sliderNoPage) set(now - step * 10); break;
-      case 'Home': e.preventDefault(); set(num('aria-valuemin')); break;
-      case 'End': e.preventDefault(); set(window.__sliderEndShort ? num('aria-valuemax') - step : num('aria-valuemax')); break;
+      case 'Home': e.preventDefault(); set(num('aria-valuemin'), false); break;
+      case 'End': e.preventDefault(); set(window.__sliderEndShort ? num('aria-valuemax') - step : num('aria-valuemax'), false); break;
     }
   });
 })();
@@ -148,7 +150,7 @@ export const SLIDER_FIXTURES: readonly SliderFixture[] = [
   {
     id: 'conforming-step-three',
     summary: 'a thumb with step 3 whose End reaches the maximum',
-    facts: facts({step: 3, value: 48}),
+    facts: facts({step: 3, value: 48, largeStep: 30}),
     html: slider({step: 3, value: 48}),
   },
   {
