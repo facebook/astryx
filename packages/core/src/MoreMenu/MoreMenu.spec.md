@@ -125,6 +125,14 @@ This draft does not change or extend MoreMenu's existing accessible label,
 tooltip, icon-only Button semantics, focus behavior, keyboard operation, or
 dismissal behavior.
 
+- **AR1 — The trigger is a Menu Button through DropdownMenu.** MoreMenu's
+  icon-only trigger adopts the APG Menu Button pattern's required parts as
+  `component:DropdownMenu/AR4` records them — `button` role, its accessible
+  label as the name, `aria-haspopup="menu"`, `aria-expanded`, `aria-controls`,
+  Enter or Space opening with focus on the first enabled row — and the same
+  named exception for ArrowDown and ArrowUp opening. MoreMenu adds nothing of
+  its own to that contract.
+
 ## Design relationships
 
 | Anatomy or state                | Design requirement                                                               | Representation authority       | Hierarchy role    | Component contract |
@@ -195,13 +203,14 @@ presentation.
 
 ## Verification map
 
-| Contract            | Verification                                                                        | Representative states                            | Mutation or failure expectation                                                                   | Audit section             |
-| ------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------- | ------------------------- |
-| FR1, FR4            | `MoreMenu.test.tsx` render, pointer, bottom-sheet, placement, and controlled suites | Default, custom icon, pointer, touch             | Replacing the composition or changing forwarded behavior fails existing render/interaction tests. | `audit:MoreMenu/anatomy`  |
-| FR2                 | MoreMenu target test, source inspection, and theming target inventories             | Closed trigger and composed menu panel           | Moving `more-menu` onto the trigger or removing it from the panel fails target evidence.          | `audit:MoreMenu/theming`  |
-| FR3                 | MoreMenu, DropdownMenu, Button, Icon, and List source/owner tests                   | Trigger, icon branches, pointer rows, touch rows | A composed part loses its owner target or is documented as a new MoreMenu-owned descendant.       | `audit:MoreMenu/theming`  |
-| Layer relationships | `MoreMenu.test.tsx`, `DropdownMenu.test.tsx`, and current layer/dismissal records   | Light dismiss, Escape, pointer, touch            | Documentation gives MoreMenu a parallel runtime or misstates the current dismissal owner.         | `audit:MoreMenu/behavior` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                       | Canonical anatomy and current target             | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.             | `audit:MoreMenu/theming`  |
+| Contract            | Verification                                                                                                   | Representative states                                                           | Mutation or failure expectation                                                                                                                                    | Audit section                  |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| FR1, FR4            | `MoreMenu.test.tsx` render, pointer, bottom-sheet, placement, and controlled suites                            | Default, custom icon, pointer, touch                                            | Replacing the composition or changing forwarded behavior fails existing render/interaction tests.                                                                  | `audit:MoreMenu/anatomy`       |
+| FR2                 | MoreMenu target test, source inspection, and theming target inventories                                        | Closed trigger and composed menu panel                                          | Moving `more-menu` onto the trigger or removing it from the panel fails target evidence.                                                                           | `audit:MoreMenu/theming`       |
+| FR3                 | MoreMenu, DropdownMenu, Button, Icon, and List source/owner tests                                              | Trigger, icon branches, pointer rows, touch rows                                | A composed part loses its owner target or is documented as a new MoreMenu-owned descendant.                                                                        | `audit:MoreMenu/theming`       |
+| AR1                 | Menu Button accessibility contract (`internal/a11y-spec`) bound to the MoreMenu trigger, in jsdom and Chromium | Default and custom-icon triggers; closed/open; Enter, Space, ArrowDown, ArrowUp | The trigger loses its label, `aria-haspopup="menu"`, `aria-expanded` or `aria-controls`, or a keyboard open does not land on the first (ArrowUp: last) enabled row | `audit:MoreMenu/accessibility` |
+| Layer relationships | `MoreMenu.test.tsx`, `DropdownMenu.test.tsx`, and current layer/dismissal records                              | Light dismiss, Escape, pointer, touch                                           | Documentation gives MoreMenu a parallel runtime or misstates the current dismissal owner.                                                                          | `audit:MoreMenu/behavior`      |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                  | Canonical anatomy and current target                                            | Missing, extra, prefixed, stale, or unclassified mappings fail repository validation.                                                                              | `audit:MoreMenu/theming`       |
 
 ## Decision log
 
