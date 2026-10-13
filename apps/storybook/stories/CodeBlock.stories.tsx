@@ -141,6 +141,18 @@ export const DiffLongLines: Story = {
   },
 };
 
+/**
+ * The code viewport is a keyboard stop only while its content overflows.
+ * This story starts fitting; the browser contract widens the code and caps
+ * the height to prove each state, and shrinks it again to prove focus stays.
+ */
+export const OverflowStop: Story = {
+  args: {
+    language: 'tsx',
+    code: 'const fits = true;',
+  },
+};
+
 export const JSON: Story = {
   args: {
     code: `{

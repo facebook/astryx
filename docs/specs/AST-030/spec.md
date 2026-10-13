@@ -116,9 +116,9 @@ they are separately named.
   and `lint` MUST continue to report on every pull request through their existing
   jobs or join jobs. A specialized lane skips owned steps inside those jobs; it
   does not remove historical required contexts. Any owned lane failure MUST fail
-  its join. The required lint context MAY admit main's published-version equality
-  only when trusted release authority proves the exact frozen merge-back is still
-  pending; the context still runs and fails closed outside that window.
+  its join. Required lint does not compare main's package declaration with the newest
+  stable release; AST-017 assigns prerelease ordering to the canary publisher and keeps
+  immutable release merge-back validation in required lint.
 - **FR8 — Initial tooling admissions.** `node-tooling` covers
   `scripts/score-ledger.mjs`, `scripts/score-ledger.test.mjs`,
   `internal/scripts/`, and `.github/workflows/crowdin-upload.yml`. It runs the

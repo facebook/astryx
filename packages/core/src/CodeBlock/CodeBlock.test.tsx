@@ -81,17 +81,19 @@ describe('CodeBlock', () => {
     expect(root).toHaveStyle({opacity: '0.75'});
   });
 
-  it('makes the scroll container keyboard-focusable', () => {
+  it('names the code viewport and gives it a tab stop only while it overflows', () => {
+    // jsdom has no layout, so the viewport fits: a fitting viewport is not a
+    // tab stop (AST-025 FR12); the overflowing states are browser evidence.
     render(<CodeBlock code="const x = 1;" language="javascript" />);
     const region = screen.getByRole('group');
-    expect(region).toHaveAttribute('tabindex', '0');
+    expect(region).not.toHaveAttribute('tabindex');
     expect(region).toHaveAttribute('aria-label', 'javascript');
+    expect(region).toHaveAttribute('data-scroll-axis', 'both');
   });
 
   it('labels the scroll region "Code" when no language label is shown', () => {
     render(<CodeBlock code="hello" hasLanguageLabel={false} />);
     const region = screen.getByRole('group');
-    expect(region).toHaveAttribute('tabindex', '0');
     expect(region).toHaveAttribute('aria-label', 'Code');
   });
 
@@ -449,9 +451,9 @@ describe('CodeBlock', () => {
 
     fireEvent.click(header);
     expect(header).toHaveAttribute('aria-expanded', 'false');
-    // Collapsed: the wrapper is inert, so the keyboard-focusable scroll
-    // container (tabIndex=0) inside it drops out of the tab order and the
-    // accessibility tree instead of remaining an invisible tab stop.
+    // Collapsed: the wrapper is inert, so the scroll container inside it
+    // drops out of the tab order and the accessibility tree instead of
+    // remaining an invisible tab stop while it overflows.
     expect(region).toHaveAttribute('inert');
     const scrollContainer = screen.getByRole('group');
     expect(scrollContainer.closest('[inert]')).toBe(region);
@@ -477,12 +479,12 @@ describe('CodeBlock', () => {
     expect(region).toHaveAttribute('inert');
     fireEvent.click(header);
     expect(header).toHaveAttribute('aria-expanded', 'true');
-    // Expanded again: inert is removed and the scroll container is a
-    // keyboard-focusable group once more.
+    // Expanded again: inert is removed and the scroll container is a named
+    // group once more (its tab stop follows overflow, see the browser spec).
     expect(region).not.toHaveAttribute('inert');
     const scrollContainer = screen.getByRole('group');
     expect(scrollContainer.closest('[inert]')).toBeNull();
-    expect(scrollContainer).toHaveAttribute('tabindex', '0');
+    expect(scrollContainer).toHaveAttribute('data-scroll-axis', 'both');
   });
 
   it('applies a per-instance syntax theme via the syntaxTheme prop', () => {
