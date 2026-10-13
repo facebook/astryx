@@ -13,6 +13,7 @@
  *   a query   → build.kit   (api/build/kit/kit.mjs)
  */
 
+import {withListingCache} from '../../foundation/fs/listing-cache.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {buildHelp} from './help/help.mjs';
@@ -40,5 +41,7 @@ export async function build(query, options = {}) {
       ERROR_CODES.ERR_INVALID_ARGUMENT,
     );
   }
-  return buildKit(query, options);
+  // The kit resolves every candidate's source and docs by walking the same
+  // tree; read each directory once for this call.
+  return withListingCache(() => buildKit(query, options));
 }
