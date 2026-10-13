@@ -2007,7 +2007,9 @@ jobs:
           set -euo pipefail
           node .github/scripts/a11y-contract-shard.mjs --shard "${{ matrix.shard }}/${{ strategy.job-total }}" > contract-files.txt
           mapfile -t FILES < contract-files.txt
-          pnpm test:a11y-contract "${FILES[@]}"
+          # The filters come before the options: `--project` takes every
+          # value after it, so filters placed after it read as project names.
+          pnpm exec playwright test "${FILES[@]}" --config playwright.config.ts --project chromium
 
       - name: Upload pressed-state pixel evidence
         if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'

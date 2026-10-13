@@ -19,6 +19,9 @@ const workflow = yaml.parse(
 );
 const jobs = workflow.jobs;
 const step = (job, name) => jobs[job].steps.find(item => item.name === name);
+const packageJson = JSON.parse(
+  fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+);
 const releaseJobs = [
   'check-scope',
   'check-components',
@@ -713,7 +716,13 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     expect(contracts.run).toContain(
       'a11y-contract-shard.mjs --shard "${{ matrix.shard }}/${{ strategy.job-total }}"',
     );
-    expect(contracts.run).toContain('pnpm test:a11y-contract "${FILES[@]}"');
+    // File filters must precede `--project`, which is variadic.
+    expect(contracts.run).toContain(
+      'pnpm exec playwright test "${FILES[@]}" --config playwright.config.ts --project chromium',
+    );
+    expect(packageJson.scripts['test:a11y-contract']).toBe(
+      'playwright test --config playwright.config.ts --project chromium',
+    );
     expect(contracts.run).toContain('set -euo pipefail');
     expect(contracts.env.A11Y_CONTRACT_WORKERS).toBe(4);
     // Shard legs that run four pages or workers get four cores.
