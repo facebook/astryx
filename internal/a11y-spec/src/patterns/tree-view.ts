@@ -570,11 +570,11 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
           'Row order within the tree follows the data the caller supplies; where the tree sits in the page is composition.',
       },
       '1.3.5-identify-input-purpose': {
-        owner: 'the binding component',
+        owner: 'the binding component and caller content',
         verifiedBy:
-          "the component's row-rendering tests (rows render no input control)",
+          "this contract's structure rows (every treeitem is a named navigation node) and source review of caller start and end content",
         reason:
-          "A tree row is a navigation node, not an input that collects information about the user; the binding's tests show rows carry no form control for autofill to name.",
+          "A tree row is a navigation node, not an input that collects information about the user; the rows carry no form control of their own, and any control a caller places in start or end content is the caller's to name for autofill.",
       },
       '1.4.1-use-of-color': {
         owner: 'the binding component and theme',
@@ -690,11 +690,11 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
           'Consistency is a property of the full set of repeated functions, not one isolated tree.',
       },
       '3.3.1-error-identification': {
-        owner: 'the binding component',
+        owner: 'the binding component and caller content',
         verifiedBy:
-          "the component's row-rendering tests (rows render no input control)",
+          "this contract's structure rows (every treeitem is a named navigation node) and source review of caller start and end content",
         reason:
-          "A tree row collects no input, so there is no entry to be in error; the binding's tests show rows carry no form control.",
+          'A tree row collects no input of its own, so there is no entry to be in error; a control a caller places in start or end content reports its own errors.',
       },
       '3.3.2-labels-or-instructions': {
         owner: 'the binding component and caller content',
