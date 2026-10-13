@@ -685,9 +685,11 @@ describe('full release scope without PR metadata or maintenance writes', () => {
       'a11y-contracts-shard',
       'Run accessibility spec-test contracts',
     );
-    expect(contracts.run).toBe(
-      'pnpm test:a11y-contract --shard=${{ matrix.shard }}/${{ strategy.job-total }}',
+    expect(contracts.run).toContain(
+      'a11y-contract-shard.mjs --shard "${{ matrix.shard }}/${{ strategy.job-total }}"',
     );
+    expect(contracts.run).toContain('pnpm test:a11y-contract "${FILES[@]}"');
+    expect(contracts.run).toContain('set -euo pipefail');
     expect(contracts.env.A11Y_CONTRACT_WORKERS).toBe(4);
     // Shard legs that run four pages or workers get four cores.
     for (const job of ['visual-scout', 'pr-a11y-shard']) {
