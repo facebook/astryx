@@ -27,6 +27,9 @@
  * @input --storybook-dir <path> --output <file> [--targets <path>]
  *   [--verified-not-applicable <path>] [--filter <csv>] [--packages <csv>]
  *   [--auto-only] [--curated-only]
+ *   [--shard <i>/<n> --shard-output <file>] audit every n-th planned item and
+ *   write only those cards; [--merge-shards <dir>] build the report from a
+ *   complete shard set without a browser (rtl-audit-shards.mjs).
  * @output JSON scorecard: D1/D5/D6 auto verdicts, curated D2/D3/D4/D7/D8/D9
  *   results, exact planned/completed scan counts, a component coverage
  *   rollup, and the worker pages replaced after a failed story

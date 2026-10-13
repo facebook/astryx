@@ -379,7 +379,25 @@ describe('ci.yml RTL package sharding', () => {
     expect(upload.with.name).toBe('rtl-audit-report-core');
     expect(upload.with['if-no-files-found']).toBe('error');
     expect(join.needs).toContain('pr-rtl-merge');
-    expect(runLines(join)).toContain("needs.pr-rtl-merge.result == 'success'");
+    // The join's --shards value: the shared result when the parts and the
+    // merge agree (success, or both skipped on an out-of-scope PR), and both
+    // results otherwise, which rtl-join.mjs rejects.
+    const expression = /--shards "\$\{\{(.*?)\}\}"/.exec(runLines(join))[1];
+    const render = (shards, merge) =>
+      new Function(
+        'S',
+        'M',
+        `return ${expression
+          .replaceAll('needs.pr-rtl-shard.result', 'S')
+          .replaceAll('needs.pr-rtl-merge.result', 'M')
+          .replaceAll('==', '===')
+          .replace("format('{0}/{1}', S, M)", '`${S}/${M}`')};`,
+      )(shards, merge);
+    expect(render('success', 'success')).toBe('success');
+    expect(render('skipped', 'skipped')).toBe('skipped');
+    expect(render('success', 'failure')).toBe('success/failure');
+    expect(render('failure', 'skipped')).toBe('failure/skipped');
+    expect(render('failure', 'failure')).toBe('failure');
   });
 });
 

@@ -2539,6 +2539,7 @@ jobs:
             --scope "${{ steps.join.outputs.components }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload RTL shard evidence
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: rtl-audit-report-core
@@ -2570,7 +2571,7 @@ jobs:
         run: |
           node .github/scripts/rtl-join.mjs \
             --check-components "${{ needs.check-components.result }}" \
-            --shards "${{ (needs.pr-rtl-shard.result == 'success' && needs.pr-rtl-merge.result == 'success') && 'success' || format('{0}/{1}', needs.pr-rtl-shard.result, needs.pr-rtl-merge.result) }}" \
+            --shards "${{ needs.pr-rtl-shard.result == needs.pr-rtl-merge.result && needs.pr-rtl-shard.result || format('{0}/{1}', needs.pr-rtl-shard.result, needs.pr-rtl-merge.result) }}" \
             --should-run "${{ needs.check-components.outputs.has_rtl_components == 'true' || needs.check-components.outputs.has_rtl_harness == 'true' || needs.check-components.outputs.force_full_component_audits == 'true' }}" \
             --force-full "${{ needs.check-components.outputs.force_full_component_audits }}" \
             --reports-dir rtl-shard-reports
