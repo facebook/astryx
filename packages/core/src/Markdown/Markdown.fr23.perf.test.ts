@@ -173,11 +173,11 @@ const FR23_PATHS = ['stable', 'recreated'] as const;
 type FR23Path = (typeof FR23_PATHS)[number];
 
 /**
- * Fresh-process attempts that decide a path after a noisy first one. A clean
- * representative set sits a few hundredths under the budget at 500 sections
- * with about ±0.04 of sample noise, so a single attempt lands over it about
- * one time in eight; a majority of nine does so about one time in five
- * hundred, while a real slowdown still exceeds it in nearly every attempt.
+ * Fresh-process attempts that decide a path after a noisy first one. On CI a
+ * clean representative set measures about 1.19 at 500 sections with about
+ * ±0.04 of sample noise, so a single attempt lands over the budget roughly
+ * one time in ten; a majority of nine does so well under one time in a
+ * thousand, while a slowdown of 0.1 or more still exceeds it nearly always.
  */
 const FR23_ATTEMPTS = 9;
 const FR23_MAJORITY = Math.floor(FR23_ATTEMPTS / 2) + 1;
@@ -203,7 +203,9 @@ function collectFR23Attempts(
   runAttempt: (sections: number) => BenchmarkResult = runSettledBenchmark,
 ): ReadonlyArray<BenchmarkResult> {
   const attempts = [runAttempt(sections)];
-  if (!exceedsFR23Budget(attempts[0])) {return attempts;}
+  if (!exceedsFR23Budget(attempts[0])) {
+    return attempts;
+  }
   while (
     attempts.length < FR23_ATTEMPTS &&
     !FR23_PATHS.every(fr23Path => pathDecided(attempts, fr23Path))
@@ -277,7 +279,9 @@ describe('Markdown FR23 helper overhead', () => {
       const attempts = collectFR23Attempts(500, () => {
         calls++;
         const next = queue.shift();
-        if (next == null) {throw new Error('asked for an unplanned attempt');}
+        if (next == null) {
+          throw new Error('asked for an unplanned attempt');
+        }
         return next;
       });
       return {attempts, calls, failing: pathsOverBudget(attempts)};
