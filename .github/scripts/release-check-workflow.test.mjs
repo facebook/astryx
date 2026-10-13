@@ -24,6 +24,7 @@ const releaseJobs = [
   'check-components',
   'build-storybook',
   'typecheck',
+  'visual-scout',
   'pr-visual',
   'pr-a11y-shard',
   'pr-a11y-audit',
@@ -226,6 +227,7 @@ describe('explicit release routing', () => {
     'pr-a11y-shard',
     'pr-a11y',
     'a11y-contracts',
+    'visual-scout',
     'pr-visual',
     'pr-rtl-shard',
   ])('blocks %s when its build fails', name => {

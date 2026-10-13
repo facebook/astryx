@@ -12,6 +12,7 @@
  *   plan     what would be captured, and why
  *   capture  take the shots
  *   check    capture, compare against the baseline, write verdict + report
+ *   scout    observe one shard of the release plan's theming-target scout
  *   accept   record that the after is the correct picture, for named shots
  *
  * Exit codes are the contract for automation: 0 clean, 1 crashed, 2 changed.
@@ -28,6 +29,13 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {capture, scout} from './lib/capture.mjs';
+import {
+  mergeScoutShards,
+  parseShard,
+  readShardFiles,
+  shardFile,
+  shardStoryIds,
+} from './lib/scout-shards.mjs';
 import {
   analyzeTargeting,
   buildVerdict,
@@ -77,11 +85,14 @@ const captureIdentity = () => ({
 
 const config = loadConfig(REPO_ROOT);
 const releaseMode = command === 'release';
+// `scout` observes a shard of exactly the release plan's scout, so it plans
+// with the same inputs and accepts no flag that could change that list.
+const releasePlanInputs = releaseMode || command === 'scout';
 const themeCatalog = readThemeCatalog(REPO_ROOT, config.baselineThemes);
 const storybookDir = path.resolve(flag('storybook-dir') ?? 'apps/storybook/dist');
 const baselineDir = path.resolve(flag('baseline') ?? '.visual-baseline');
 let outDir = path.resolve(flag('out') ?? '.visual-run');
-const tiers = releaseMode
+const tiers = releasePlanInputs
   ? RELEASE_TIERS
   : (flag('tiers') ?? config.tiers.join(',')).split(',').filter(Boolean);
 const sample = flag('sample') ? Number(flag('sample')) : null;
@@ -111,7 +122,7 @@ const storyPackages = (flag('story-packages') ?? config.stableStoryPackages.join
 /** A trusted, exact shot list used only to recapture an accepted merged result. */
 const planFile = flag('plan-file');
 if (
-  releaseMode &&
+  releasePlanInputs &&
   (flag('tiers') ||
     flag('story-packages') ||
     flag('observations') ||
@@ -171,7 +182,17 @@ function storiesToScout(stories, targets, themeOverrides) {
 }
 
 /** @returns {Promise<{shots: import('./lib/plan.mjs').Shot[], stories: ReturnType<typeof readStoryIndex>}>} */
-async function plan() {
+/** The Storybook build a run reads, as stamped by the build job (or null). */
+function storybookBuildSha() {
+  const stamp = path.join(storybookDir, 'astryx-build-sha.txt');
+  return fs.existsSync(stamp) ? fs.readFileSync(stamp, 'utf8').trim() || null : null;
+}
+
+/**
+ * @param {{scoutOnly?: boolean}} [options] `scoutOnly` returns the scout's
+ *   story list instead of a plan; `null` when this plan scouts nothing.
+ */
+async function plan({scoutOnly = false} = {}) {
   if (planFile) {
     return {
       shots: withThemeMetadata(readExactPlan(planFile), themeCatalog),
@@ -182,7 +203,7 @@ async function plan() {
     loadThemingTargets(REPO_ROOT),
     loadThemeOverrides(REPO_ROOT, config.probeTheme),
   ]);
-  const themeOverrides = releaseMode
+  const themeOverrides = releasePlanInputs
     ? Object.fromEntries(
         Object.entries(allThemeOverrides).filter(
           ([theme]) => themeCatalog[theme]?.stableVisual === true,
@@ -208,18 +229,30 @@ async function plan() {
   const themeStories = baselineVisualStories(stories, baselineManifest);
 
   let observations;
-  if (
+  const scouts =
     !has('no-scout') &&
     (tiers.includes('probe') ||
-      (tiers.includes('theme-matrix') && matrixThemes.length === 0))
-  ) {
+      (tiers.includes('theme-matrix') && matrixThemes.length === 0));
+  const storyIds = scouts
+    ? tiers.includes('probe')
+      ? stories.map(story => story.id)
+      : storiesToScout(stories, targets, themeOverrides)
+    : null;
+  if (scoutOnly) return {scoutStoryIds: storyIds};
+  if (scouts) {
     const cachePath = flag('observations');
-    if (cachePath && fs.existsSync(cachePath)) {
+    const shardDir = flag('observation-shards');
+    if (shardDir) {
+      // Shards scouted this same list on this same build in parallel jobs;
+      // the merge refuses anything less than the complete set.
+      observations = mergeScoutShards(readShardFiles(shardDir), {
+        storyIds,
+        storybookSha: storybookBuildSha(),
+      });
+      process.stderr.write(`Read ${storyIds.length} scouted stories from ${shardDir}\n`);
+    } else if (cachePath && fs.existsSync(cachePath)) {
       observations = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
     } else {
-      const storyIds = tiers.includes('probe')
-        ? stories.map(story => story.id)
-        : storiesToScout(stories, targets, themeOverrides);
       process.stderr.write(`Scouting ${storyIds.length} stories for theming targets…\n`);
       observations = await scout({
         storyIds,
@@ -615,6 +648,37 @@ function summarize(verdict, baselineExists) {
 
 async function main() {
   switch (command) {
+    case 'scout': {
+      const shard = parseShard(flag('shard'));
+      const out = flag('observations-out');
+      if (!out) throw new Error('scout needs --observations-out <file>.');
+      const {scoutStoryIds} = await plan({scoutOnly: true});
+      if (!scoutStoryIds) throw new Error('The release plan scouts nothing.');
+      const mine = shardStoryIds(scoutStoryIds, shard);
+      process.stderr.write(
+        `Scouting shard ${shard.index}/${shard.count}: ${mine.length} of ${scoutStoryIds.length} stories…\n`,
+      );
+      const observations = await scout({
+        storyIds: mine,
+        storybookDir,
+        theme: config.defaultTheme,
+        viewport: config.viewport,
+        concurrency: config.scoutConcurrency,
+      });
+      fs.mkdirSync(path.dirname(path.resolve(out)), {recursive: true});
+      fs.writeFileSync(
+        out,
+        `${JSON.stringify(
+          shardFile({
+            storyIds: scoutStoryIds,
+            shard,
+            storybookSha: storybookBuildSha(),
+            observations,
+          }),
+        )}\n`,
+      );
+      return EXIT.clean;
+    }
     case 'plan': {
       const {shots} = await plan();
       if (has('json')) {
@@ -748,7 +812,7 @@ async function main() {
     }
     default:
       process.stderr.write(
-        'Usage: gate.mjs <flaky|plan|capture|check|release|accept> [--storybook-dir dir] [--baseline dir] [--out dir] [--tiers a,b] [--sample n]\n',
+        'Usage: gate.mjs <flaky|plan|scout|capture|check|release|accept> [--storybook-dir dir] [--baseline dir] [--out dir] [--tiers a,b] [--sample n]\n',
       );
       return EXIT.crashed;
   }

@@ -2045,6 +2045,74 @@ jobs:
       - name: Verify guest fixture contrast
         run: pnpm -F @astryxdesign/vibe-tests fixtures:contrast
 
+  # The full visual plan first loads every Core story to learn which theming
+  # targets it renders, and that scout is most of the job's time. It runs here
+  # as parallel shards over exactly the release plan's story list; pr-visual
+  # joins them only when every shard succeeded, and otherwise scouts inline.
+  visual-scout:
+    name: Stable visual scout (${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: [build-storybook, check-components]
+    if: >-
+      !cancelled() &&
+      needs.build-storybook.result == 'success' &&
+      needs.check-components.result == 'success' &&
+      ((github.event_name == 'pull_request' &&
+        needs.check-components.outputs.has_stable_visual == 'true' &&
+        needs.check-components.outputs.broad_stable_visual == 'true') ||
+       (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'))
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      # If the optional theme artifact is missing, the gate builds the themes.
+      - name: Download built themes and core
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: dists-${{ needs.build-storybook.outputs.short_hash }}
+          path: packages
+
+      - name: Install Playwright
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      # Downloaded theme builds import Core's consumer-facing dist files.
+      - name: Build Core dependency for theme inspection
+        run: pnpm -F @astryxdesign/core build
+
+      - name: Scout this shard of the release plan
+        run: |
+          node .github/scripts/visual-gate/gate.mjs scout \
+            --storybook-dir apps/storybook/dist \
+            --baseline .github/visual-baseline \
+            --shard "${{ matrix.shard }}/${{ strategy.job-total }}" \
+            --observations-out ".visual-scout/observations-${{ matrix.shard }}.json"
+
+      - name: Upload scout shard
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-scout-${{ needs.build-storybook.outputs.short_hash }}-${{ matrix.shard }}
+          path: .visual-scout/observations-${{ matrix.shard }}.json
+          retention-days: 1
+          if-no-files-found: error
+
   # Stable-package visual regression and explicit baseline capture share this
   # owner. Focused PRs compare the checked-in baseline; broad PRs use the full
   # canonical plan. Maintenance captures candidates on the same runner, and a
@@ -2052,7 +2120,8 @@ jobs:
   # Audit and interaction fixtures stay with their existing browser checks.
   pr-visual:
     name: Stable visual regression
-    needs: [build-storybook, check-components, maintenance-request]
+    needs:
+      [build-storybook, check-components, maintenance-request, visual-scout]
     if: >-
       !cancelled() &&
       ((github.event_name == 'pull_request' &&
@@ -2097,6 +2166,16 @@ jobs:
         with:
           name: dists-${{ needs.build-storybook.outputs.short_hash }}
           path: packages
+
+      # Only a complete set: the gate refuses a partial or mismatched one, and
+      # without any it scouts inline as before.
+      - name: Download scout shards
+        if: (github.event_name == 'pull_request' || inputs.operation == 'release-check') && needs.visual-scout.result == 'success'
+        uses: actions/download-artifact@v8
+        with:
+          pattern: visual-scout-${{ needs.build-storybook.outputs.short_hash }}-*
+          path: .visual-scout
+          merge-multiple: true
 
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
@@ -2144,12 +2223,15 @@ jobs:
 
           echo "Stable Core components: ${COMPONENTS:-none}"
           echo "Stable themes: ${THEMES:-none}"
+          OBS_ARGS=()
+          if [ -d .visual-scout ]; then OBS_ARGS=(--observation-shards .visual-scout); fi
           set +e
           node .github/scripts/visual-gate/gate.mjs "$COMMAND" \
             --storybook-dir apps/storybook/dist \
             --baseline .github/visual-baseline \
             --out .visual-run \
             "${SCOPE_ARGS[@]}" \
+            "${OBS_ARGS[@]}" \
             --summary-output visual-summary.md
           code=$?
           set -e
@@ -2165,6 +2247,7 @@ jobs:
               --storybook-dir apps/storybook/dist \
               --baseline .github/visual-baseline \
               --out .visual-run \
+              "${OBS_ARGS[@]}" \
               --summary-output visual-summary.md
             code=$?
             set -e
@@ -2194,11 +2277,14 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         run: |
           set -eu
+          OBS_ARGS=()
+          if [ -d .visual-scout ]; then OBS_ARGS=(--observation-shards .visual-scout); fi
           set +e
           node .github/scripts/visual-gate/gate.mjs release \
             --storybook-dir apps/storybook/dist \
             --baseline .github/visual-baseline \
             --out .visual-run \
+            "${OBS_ARGS[@]}" \
             --summary-output visual-summary.md
           code=$?
           set -e
