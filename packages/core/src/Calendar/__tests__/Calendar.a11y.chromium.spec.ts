@@ -109,7 +109,7 @@ test('every grid expectation is exercised by a Calendar state', async ({
 });
 
 for (const state of CALENDAR_BINDING_STATES) {
-  test(`TreeList [${state.id}] — ${state.summary}`, async ({page}) => {
+  test(`Calendar [${state.id}] — ${state.summary}`, async ({page}) => {
     const cdp = await page.context().newCDPSession(page);
     const result = await runState(page, cdp, state);
     const report = summarize(GRID_PATTERN, [result]);

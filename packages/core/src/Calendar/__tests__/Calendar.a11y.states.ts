@@ -59,7 +59,7 @@ function facts(overrides: Partial<GridStateFacts> = {}): GridStateFacts {
   };
 }
 
-const story = (id: string) => `a11y-calendar-grid--${id}`;
+const story = (id: string) => `a11y-calendargrid--${id}`;
 
 export const CALENDAR_BINDING_STATES = [
   {
