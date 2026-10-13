@@ -159,13 +159,14 @@ replace component-owned semantic or interaction props.
   a closed row, then moves into its first child, and ArrowLeft collapses an open
   row or moves to the parent — mirrored under RTL; Home and End move to the first
   and last visible rows; Enter and Space activate the focused row; typing letters
-  moves to the next row whose label starts with them. Selection is caller-owned
-  per row (`isSelected`): the tree claims no `aria-multiselectable` and has no
-  selection keyboard, and at most one row is selected. Implementation gap until
+  moves to the next row whose label starts with them. Selection is caller-owned:
+  callers mark at most one row selected (`isSelected`); the tree does not
+  enforce it, claims no `aria-multiselectable`, and has no selection keyboard. Implementation gap until
   its fix ships: a parent row's name reads "Toggle children <label>" because the
   chevron button sits inside the `treeitem`; a plain row folds its description
   into its name; a row with `href` or `onClick` names and describes its inner
-  control rather than the row; and typeahead matches the row's whole text
+  control rather than the row; start and end content add their text and
+  control names to the row's name; and typeahead matches the row's whole text
   rather than its label.
 
 ## Design relationships
@@ -287,7 +288,7 @@ boundary callers need to address.
 **Reference:** `component:TreeList/DEC-2`
 **Decider:** `cixzhang`, `2026-10-13`
 
-TreeList already plays the Tree View's role as one widget — one Tab stop, arrows, Home/End, activation, typeahead — so it adopts the pattern's keyboard model except the optional `*` key (AR1), not only the required parts. Selection stays caller-owned with at most one row selected, so the tree never claims `aria-multiselectable` and adds no range or toggle keyboard.
+TreeList already plays the Tree View's role as one widget — one Tab stop, arrows, Home/End, activation, typeahead — so it adopts the pattern's keyboard model except the optional `*` key (AR1), not only the required parts. Callers mark at most one row selected (`isSelected`) and the tree does not enforce it, so the tree never claims `aria-multiselectable` and adds no range or toggle keyboard.
 
 Rejected: multi-select (`aria-multiselectable`, Shift/Ctrl ranges); a Tab stop per row.
 
