@@ -126,6 +126,30 @@ describe('pr-scope-touches', () => {
     expect(status).toBe(2);
   });
 
+  it('is unknown, not out of scope, for unusable arguments', () => {
+    const head = commit(origin, 'a.md', 'a');
+    checkout(head);
+    expect(touches(head, '(')).toBe(2);
+    expect(
+      spawnSync('bash', [SCRIPT, head], {cwd: clone, encoding: 'utf8'}).status,
+    ).toBe(2);
+  });
+
+  it('is loaded from the base by every workflow step that uses it', () => {
+    const workflow = fs.readFileSync(
+      path.join(path.dirname(SCRIPT), '../workflows/ci.yml'),
+      'utf8',
+    );
+    const uses = workflow.match(/pr-scope-touches\.sh/g) ?? [];
+    const fromBase =
+      workflow.match(
+        /git show "\$BASE_SHA:\.github\/scripts\/pr-scope-touches\.sh" > "\$helper"/g,
+      ) ?? [];
+    expect(uses.length).toBe(4);
+    expect(fromBase.length).toBe(uses.length);
+    expect(workflow).not.toMatch(/bash \.github\/scripts\/pr-scope-touches/);
+  });
+
   it('is unknown when the base cannot be fetched', () => {
     const head = commit(origin, 'a.md', 'a');
     checkout(head);

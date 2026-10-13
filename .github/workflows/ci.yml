@@ -1412,10 +1412,16 @@ jobs:
             fi
             # The sandbox's stories belong to no package, so compare the file
             # names the PR changes since its merge base.
-            # Exit 1 means out of scope; 0 in scope; 2 the merge base is unknown, so run.
-            scope=0
-            bash .github/scripts/pr-scope-touches.sh "$BASE_SHA" \
-              '^(apps/storybook/stories/RichTextEditor\.(markdownParity|stories)|packages/richtext/src/__tests__/(MarkdownParitySandbox|RichTextView|RichTextEditorToolbar))' || scope=$?
+            # The helper comes from the base, since an older PR head lacks it.
+            # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+            scope=2
+            helper="$(mktemp)"
+            if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+              && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+              scope=0
+              bash "$helper" "$BASE_SHA" \
+                '^(apps/storybook/stories/RichTextEditor\.(markdownParity|stories)|packages/richtext/src/__tests__/(MarkdownParitySandbox|RichTextView|RichTextEditorToolbar))' || scope=$?
+            fi
             if [ "$scope" != 1 ]; then
               should_run=true
             fi
@@ -1491,10 +1497,16 @@ jobs:
           esac
           # The contract belongs to no package, so compare the file names the
           # PR changes since its merge base.
-          # Exit 1 means out of scope; 0 in scope; 2 the merge base is unknown, so run.
-          scope=0
-          bash .github/scripts/pr-scope-touches.sh "$BASE_SHA" \
-            '^internal/a11y-spec/src/patterns/toggle-button' || scope=$?
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^internal/a11y-spec/src/patterns/toggle-button' || scope=$?
+          fi
           if [ "$scope" != 1 ]; then
             should_run=true
           fi
@@ -1534,10 +1546,16 @@ jobs:
           should_run=false
           # Layout and the contract are matched by file name so every Layout
           # region component is covered.
-          # Exit 1 means out of scope; 0 in scope; 2 the merge base is unknown, so run.
-          scope=0
-          bash .github/scripts/pr-scope-touches.sh "$BASE_SHA" \
-            '^(internal/a11y-spec/src/patterns/landmark|packages/core/src/Layout/|apps/storybook/stories/LayoutLandmarkA11y)' || scope=$?
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/landmark|packages/core/src/Layout/|apps/storybook/stories/LayoutLandmarkA11y)' || scope=$?
+          fi
           if [ "$scope" != 1 ]; then
             should_run=true
           fi
@@ -1577,10 +1595,16 @@ jobs:
           should_run=false
           # Link and the contract are matched by file name so every Link source
           # file, including LinkProvider, is covered.
-          # Exit 1 means out of scope; 0 in scope; 2 the merge base is unknown, so run.
-          scope=0
-          bash .github/scripts/pr-scope-touches.sh "$BASE_SHA" \
-            '^(internal/a11y-spec/src/patterns/link\.|packages/core/src/Link/|apps/storybook/stories/LinkA11y)' || scope=$?
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/link\.|packages/core/src/Link/|apps/storybook/stories/LinkA11y)' || scope=$?
+          fi
           if [ "$scope" != 1 ]; then
             should_run=true
           fi
