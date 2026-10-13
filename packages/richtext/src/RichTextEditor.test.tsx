@@ -313,6 +313,29 @@ describe('RichTextEditor', () => {
     expect(wrapper).toHaveAttribute('data-status', 'error');
   });
 
+  it('adds body padding at lg only, and the same classes at sm and md', () => {
+    // `editorBodySizeStyles` carries an `lg` entry alone. `sm` and `md` take
+    // the base body spacing, so they must render identically to each other
+    // and differ from `lg` — which is what the two empty entries they used to
+    // have asserted implicitly, while reading as deliberate styling.
+    const bodyClass = (size: 'sm' | 'md' | 'lg'): string => {
+      const {container} = render(<RichTextEditor label="Notes" size={size} />);
+      // The body wraps the editor root; `editorRoot` is its only child.
+      const root = container.querySelector(
+        '[class*="styles.editorRoot"]',
+      )?.parentElement;
+      expect(root).not.toBeNull();
+      return root?.className ?? '';
+    };
+
+    const sm = bodyClass('sm');
+    const md = bodyClass('md');
+    const lg = bodyClass('lg');
+
+    expect(sm).toBe(md);
+    expect(lg).not.toBe(md);
+  });
+
   it('keeps TextArea-style input visuals alongside consumer props', () => {
     const {container} = render(
       <RichTextEditor
