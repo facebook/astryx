@@ -459,7 +459,7 @@ describe('provider identity conflicts', () => {
     ]);
   });
 
-  it('reports an unversioned set-aside package whose spec is the winner\'s name', async () => {
+  it("reports an unversioned set-aside package whose spec is the winner's name", async () => {
     installPackage(
       'widgets-old',
       {name: '@acme/widgets', version: '1.0.0'},
@@ -644,22 +644,31 @@ export default {issuesUrl: 'https://example.com/issues'};
   });
 });
 
-describe('resolvePackageDir — spec must be a bare package name', () => {
-  it.each(['../../../etc', 'a/../../b', '/abs/evil', 'foo/..', '..'])(
-    'rejects a traversal/absolute spec %s',
-    spec => {
-      expect(() => resolvePackageDir(spec, '/proj')).toThrow(
-        /Invalid|outside node_modules/i,
-      );
-    },
-  );
-
-  it('accepts scoped and plain package names', () => {
-    expect(resolvePackageDir('@acme/x', '/proj')).toBe(
-      path.join('/proj', 'node_modules', '@acme', 'x'),
+describe('resolvePackageDir — spec stays inside node_modules', () => {
+  it.each([
+    '../../../etc',
+    'a/../../b',
+    '/abs/evil',
+    'foo/..',
+    '..',
+    './rel',
+    '',
+  ])('rejects a traversal/absolute spec %s', spec => {
+    expect(() => resolvePackageDir(spec, '/proj')).toThrow(
+      /Invalid|outside node_modules/i,
     );
-    expect(resolvePackageDir('lodash', '/proj')).toBe(
-      path.join('/proj', 'node_modules', 'lodash'),
+  });
+
+  it.each([
+    '@acme/x',
+    'lodash',
+    '@acme',
+    'foo/bar',
+    '@acme/x/extra',
+    'foo\\bar',
+  ])('preserves the base CLI package-name behavior for %s', spec => {
+    expect(resolvePackageDir(spec, '/proj')).toBe(
+      path.join('/proj', 'node_modules', ...spec.split('/')),
     );
   });
 });

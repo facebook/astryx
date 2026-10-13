@@ -38,6 +38,15 @@ describe('findCoreDir', () => {
     expect(findCoreDir(tmpDir)).toBe(nmCore);
   });
 
+  it('keeps the existing five-directory search bound', () => {
+    const coreDir = path.join(tmpDir, 'packages', 'core');
+    fs.mkdirSync(coreDir, {recursive: true});
+    const nested = path.join(tmpDir, 'a', 'b', 'c', 'd', 'e');
+    fs.mkdirSync(nested, {recursive: true});
+
+    expect(findCoreDir(nested)).toBeNull();
+  });
+
   it('returns null when nothing found', () => {
     expect(findCoreDir(tmpDir)).toBeNull();
   });

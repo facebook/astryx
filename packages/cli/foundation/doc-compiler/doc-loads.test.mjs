@@ -289,6 +289,10 @@ const RUNNERS = {
     runs: "each installed integration's manifest",
     sites: ['importUserModule'],
   },
+  'foundation/runtime/package-set.mjs': {
+    runs: "a host-run CLI: the project's own installed CLI when it has one, otherwise this CLI's entry, in-process",
+    sites: ['child_process.spawnSync'],
+  },
   'scripts/generate-cli-readme.mjs': {
     runs: '`astryx manifest` and the error-code and response-type docs, to write the README tables (build time, not shipped)',
     sites: ['child_process.spawnSync', 'import(<computed>)'],

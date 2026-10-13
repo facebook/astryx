@@ -4,6 +4,8 @@
  * @file `astryx doctor` project health and integration-authoring diagnostics.
  * Human output uses plain stable tokens; every leaf also has a typed JSON
  * response. Template-conflict fields follow the package release boundary.
+ * Every doctor leaf checks only the project's own install, even when the
+ * caller is running through a hosted package set.
  * Exit 1 means a check found an error, while warnings remain exit 0.
  *
  * @input Typed Doctor and integration-authoring API responses.
@@ -186,7 +188,8 @@ function printComponentConflicts(data) {
   // An [ok] after a failed check reads as a pass: say nothing it could not check.
   const failed = data.issues.some(issue => issue.severity === 'error');
   if (data.conflicts.length === 0) {
-    if (!failed) output.push(text('[ok] No component names conflict with Core.'));
+    if (!failed)
+      output.push(text('[ok] No component names conflict with Core.'));
   } else {
     output.push(
       records(data.conflicts, {
@@ -265,7 +268,7 @@ async function runIntegrationValidation(program, pkg) {
         noPackage
           ? 'Nothing was validated: no package.json found. Run this command inside a package directory.'
           : 'Nothing was validated: no astryx.integration.* found next to package.json. ' +
-            'To validate an installed integration: astryx doctor integration validate <package>',
+              'To validate an installed integration: astryx doctor integration validate <package>',
       ),
     );
   } else printIntegrationValidation(result.data);

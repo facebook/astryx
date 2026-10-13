@@ -172,6 +172,7 @@ if (isError(result)) {
 | `ERR_NODE_VERSION`                | The running Node.js version is below the supported minimum.                                                                                              |
 | `ERR_CORE_NOT_FOUND`              | `@astryxdesign/core` could not be located (not installed / not in a monorepo).                                                                           |
 | `ERR_CORE_INCOMPATIBLE`           | The installed `@astryxdesign/core` loaded but is too old for this input — it lacks a capability the CLI must call to emit correct output (upgrade core). |
+| `ERR_VERSIONS_UNAVAILABLE`        | The run cannot provide a compatible Astryx CLI and package versions. Install the project's dependencies or update the available Astryx packages.         |
 | `ERR_UNKNOWN_COMPONENT`           | No component matched the requested name.                                                                                                                 |
 | `ERR_UNKNOWN_HOOK`                | No hook matched the requested name.                                                                                                                      |
 | `ERR_UNKNOWN_TOPIC`               | No docs topic matched the requested name.                                                                                                                |

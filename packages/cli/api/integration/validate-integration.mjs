@@ -34,6 +34,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {assertWithin} from '../../foundation/fs/path-safety.mjs';
+import {withoutPackageSet} from '../../foundation/runtime/package-root.mjs';
 import {
   THEME_SLUG_RE,
   unreadThemeFolders,
@@ -450,13 +451,24 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
  * "nothing was checked" rather than "checked and healthy".
  *
  * This is the seam that keeps the CLI a thin wrapper: the command handler calls
- * this and only chooses how to render (human vs --json) + the exit code.
+ * this and only chooses how to render (human vs --json) + the exit code. It
+ * always validates the project's own install, with any hosted package set
+ * suspended for the whole check.
  *
  * @param {string} [pkg] installed package name; omit to validate the cwd package
  * @param {{cwd?: string}} [options]
  * @returns {Promise<import('./validate-integration.type.mjs').ValidateIntegrationResponse>}
  */
-export async function validateIntegration(pkg, options = {}) {
+export function validateIntegration(pkg, options = {}) {
+  return withoutPackageSet(() => validateIntegrationFromProject(pkg, options));
+}
+
+/**
+ * @param {string | undefined} pkg
+ * @param {{cwd?: string}} options
+ * @returns {Promise<import('./validate-integration.type.mjs').ValidateIntegrationResponse>}
+ */
+async function validateIntegrationFromProject(pkg, options) {
   const {cwd = process.cwd()} = options;
   const result = pkg
     ? await validateInstalledIntegration(pkg, cwd)
@@ -469,9 +481,17 @@ export async function validateIntegration(pkg, options = {}) {
       validated: result.found,
       name: result.found ? (result.name ?? null) : null,
       version: result.found ? (result.version ?? null) : null,
-      issues: result.reason === 'no_package_json'
-        ? [{code: 'no_package', severity: 'error', message: 'No package.json found. Run this command inside a package directory.'}]
-        : result.issues,
+      issues:
+        result.reason === 'no_package_json'
+          ? [
+              {
+                code: 'no_package',
+                severity: 'error',
+                message:
+                  'No package.json found. Run this command inside a package directory.',
+              },
+            ]
+          : result.issues,
     },
   };
 }

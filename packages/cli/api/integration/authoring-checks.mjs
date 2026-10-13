@@ -6,6 +6,8 @@
  * Templates may intentionally replace Core identities; undeclared same-id
  * overlaps stay fail-closed and require package selection. The CLI package
  * version gates replacement-specific fields so 0.6.x keeps its released shape.
+ * Public authoring diagnostics always inspect the project's own install; an
+ * active hosted package set is suspended for the whole check.
  * Docs have explicit `replaces` / `extends` relationships with parallel
  * validation semantics.
  *
@@ -20,6 +22,7 @@ import {
   packageReferenceProblems,
 } from '../docs/_adapter.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
+import {withoutPackageSet} from '../../foundation/runtime/package-root.mjs';
 import {
   discoverIntegrationComponents,
   discoverOwnedComponents,
@@ -90,7 +93,18 @@ function addErrors(issues, errors, code) {
  * @param {import('./authoring-checks.type.mjs').IntegrationAuthoringOptions} [options]
  * @returns {Promise<import('./authoring-checks.type.mjs').IntegrationTemplateConflictResponse>}
  */
-export async function integrationTemplateConflicts(pkg, options = {}) {
+export function integrationTemplateConflicts(pkg, options = {}) {
+  return withoutPackageSet(() =>
+    integrationTemplateConflictsFromProject(pkg, options),
+  );
+}
+
+/**
+ * @param {string | undefined} pkg
+ * @param {import('./authoring-checks.type.mjs').IntegrationAuthoringOptions} options
+ * @returns {Promise<import('./authoring-checks.type.mjs').IntegrationTemplateConflictResponse>}
+ */
+async function integrationTemplateConflictsFromProject(pkg, options) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
   const validated = resolved.found;
@@ -227,7 +241,18 @@ export async function integrationTemplateConflicts(pkg, options = {}) {
  * @param {import('./authoring-checks.type.mjs').IntegrationAuthoringOptions} [options]
  * @returns {Promise<import('./authoring-checks.type.mjs').IntegrationComponentConflictResponse>}
  */
-export async function integrationComponentConflicts(pkg, options = {}) {
+export function integrationComponentConflicts(pkg, options = {}) {
+  return withoutPackageSet(() =>
+    integrationComponentConflictsFromProject(pkg, options),
+  );
+}
+
+/**
+ * @param {string | undefined} pkg
+ * @param {import('./authoring-checks.type.mjs').IntegrationAuthoringOptions} options
+ * @returns {Promise<import('./authoring-checks.type.mjs').IntegrationComponentConflictResponse>}
+ */
+async function integrationComponentConflictsFromProject(pkg, options) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
   const validated = resolved.found;
@@ -306,7 +331,18 @@ export async function integrationComponentConflicts(pkg, options = {}) {
  * @param {import('./authoring-checks.type.mjs').IntegrationAuthoringOptions} [options]
  * @returns {Promise<import('./authoring-checks.type.mjs').IntegrationDocConflictResponse>}
  */
-export async function integrationDocConflicts(pkg, options = {}) {
+export function integrationDocConflicts(pkg, options = {}) {
+  return withoutPackageSet(() =>
+    integrationDocConflictsFromProject(pkg, options),
+  );
+}
+
+/**
+ * @param {string | undefined} pkg
+ * @param {import('./authoring-checks.type.mjs').IntegrationAuthoringOptions} options
+ * @returns {Promise<import('./authoring-checks.type.mjs').IntegrationDocConflictResponse>}
+ */
+async function integrationDocConflictsFromProject(pkg, options) {
   const {cwd = process.cwd()} = options;
   const resolved = await resolveIntegration(pkg, cwd);
   const validated = resolved.found;

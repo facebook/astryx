@@ -47,6 +47,7 @@
  *   | 'ERR_NODE_VERSION'
  *   | 'ERR_CORE_NOT_FOUND'
  *   | 'ERR_CORE_INCOMPATIBLE'
+ *   | 'ERR_VERSIONS_UNAVAILABLE'
  *   | 'ERR_UNKNOWN_COMPONENT'
  *   | 'ERR_UNKNOWN_HOOK'
  *   | 'ERR_UNKNOWN_TOPIC'
@@ -127,6 +128,12 @@ export const ERROR_CODES = Object.freeze({
    * have to call to produce correct output. Upgrading core is the fix.
    */
   ERR_CORE_INCOMPATIBLE: 'ERR_CORE_INCOMPATIBLE',
+  /**
+   * The run cannot provide a compatible Astryx CLI and package versions, so
+   * nothing ran. Installing the project's dependencies or updating the
+   * available Astryx packages is the fix.
+   */
+  ERR_VERSIONS_UNAVAILABLE: 'ERR_VERSIONS_UNAVAILABLE',
 
   // ── "Unknown <subject>" lookups ──────────────────────────────────
   /** No component matched the requested name. */

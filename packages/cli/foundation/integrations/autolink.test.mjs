@@ -128,11 +128,24 @@ describe('readDeclaredDependencies', () => {
     ]);
   });
 
-  it('refuses a key that is not a bare package name', () => {
+  it('blocks traversal while preserving the base CLI’s nested-name behavior', () => {
     writeProject(tmpDir, {
-      dependencies: {'../evil': '1', '/abs': '1', './rel': '1', ok: '1'},
+      dependencies: {
+        '../evil': '1',
+        '/abs': '1',
+        './rel': '1',
+        'foo/bar': '1',
+        '@acme/x/extra': '1',
+        'foo\\bar': '1',
+        ok: '1',
+      },
     });
-    expect(readDeclaredDependencies(tmpDir).map(e => e.name)).toEqual(['ok']);
+    expect(readDeclaredDependencies(tmpDir).map(e => e.name)).toEqual([
+      'foo/bar',
+      '@acme/x/extra',
+      'foo\\bar',
+      'ok',
+    ]);
   });
 
   it('is empty when there is no readable package.json', () => {

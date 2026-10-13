@@ -43,6 +43,7 @@ packages/cli/
     response/                  # json.mjs (emitter), parse's contract, base.d.ts, error-codes
     config/  discovery/  integrations/  text/  fs/  env/
     agent-docs/                # doc generator/injector (shared: init/upgrade/hook)
+    runtime/                   # in-process host seam: hosted package sets (cli-surface INV30)
     schemas/                   # zod/JSON schemas
     xle/                       # the ./xle layout engine (self-contained, extract-ready)
   scripts/  test-utils/        # package tooling + the in-process CLI test harness

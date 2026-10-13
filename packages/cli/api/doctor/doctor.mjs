@@ -27,6 +27,7 @@ import {MIN_NODE_VERSION, isNodeVersionSupported} from '../../foundation/env/nod
 import {AGENT_DOC_PATHS} from '../../foundation/agent-docs/agent-doc-state.mjs';
 import {CLI_ROOT, findCoreDir, findInstalledPackage} from '../../foundation/fs/paths.mjs';
 import {explainPackageManager, getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {withoutPackageSet} from '../../foundation/runtime/package-root.mjs';
 import {
   findConfigPath,
   Project,
@@ -1299,11 +1300,23 @@ export const SYNC_CHECKS = [
 /**
  * Run all diagnostic checks and return a structured report.
  *
+ * Doctor diagnoses the project's own install, so every check runs with no
+ * hosted package set active (cli-surface INV30): a package only a set could
+ * supply reads as not installed, exactly as it does for the project itself.
+ *
  * @param {object} [options]
  * @param {string} [options.cwd] - Directory to diagnose (default: process.cwd()).
  * @returns {Promise<DoctorReport>}
  */
-export async function runChecks(options = {}) {
+export function runChecks(options = {}) {
+  return withoutPackageSet(() => runProjectChecks(options));
+}
+
+/**
+ * @param {{cwd?: string}} options
+ * @returns {Promise<DoctorReport>}
+ */
+async function runProjectChecks(options) {
   const cwd = options.cwd ?? process.cwd();
   const coreDir = findCoreDir(cwd);
   // findConfigPath throws when multiple config files coexist. That's a

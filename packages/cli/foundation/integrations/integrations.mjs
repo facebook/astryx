@@ -28,6 +28,13 @@ import {
   unknownIntegrationKeys,
 } from '../../authoring/integration/schema.mjs';
 import {importUserModule, findPresentFiles} from '../fs/module-loader.mjs';
+import {
+  activePackageSet,
+  isBarePackageName,
+  packageSetDeclarations,
+  packageSetHandler,
+  resolveFromPackageSet,
+} from '../runtime/package-root.mjs';
 import {parseGapReportHandler} from '../../authoring/gap-report/parse.mjs';
 import {parseDiscoverSource} from '../../authoring/discover/parse.mjs';
 import {resolveProviders} from './provider-resolution.mjs';
@@ -74,7 +81,7 @@ import {resolveProviders} from './provider-resolution.mjs';
  *   working directory, so an author sees the exact bytes they are editing
  * @property {string} [__dependencyField] for an autolinked integration, the
  *   package.json field that declared it (`dependencies`, `devDependencies`,
- *   `optionalDependencies`)
+ *   `optionalDependencies`), or the active set's approved declaration source
  * @property {import('../../authoring/debug/type').DebugEventHandler} [__debug]
  *   the manifest module's `debug` NAMED export, when it exported a function.
  * @property {import('../../authoring/gap-report/type').GapReportHandler} [__gapReport]
@@ -84,6 +91,8 @@ import {resolveProviders} from './provider-resolution.mjs';
  * @property {import('../../authoring/discover/type').DiscoverSource} [__discover]
  *   validated catalog source from the `discover` NAMED export.
  * @property {string} [__discoverError] isolated discover-source validation error.
+ * @property {true} [__discoverFromHost] the discover source is a handler the
+ *   host supplied in place of the manifest's own export
  */
 
 /** Conventional manifest basenames, in load-precedence order. */
@@ -182,7 +191,9 @@ function parseGapReportHandlerExport(value, label) {
 function parseDiscoverSourceExport(value, label) {
   if (value === undefined) return {};
   try {
-    return {source: parseDiscoverSource(value, `${label} named export "discover"`)};
+    return {
+      source: parseDiscoverSource(value, `${label} named export "discover"`),
+    };
   } catch (error) {
     return {error: error instanceof Error ? error.message : String(error)};
   }
@@ -273,25 +284,72 @@ export async function loadManifestObject(
   return (await loadManifest(file, label, options)).manifest;
 }
 
+/** @param {string} left @param {string} right */
+function sameDirectory(left, right) {
+  if (path.resolve(left) === path.resolve(right)) return true;
+  try {
+    return fs.realpathSync(left) === fs.realpathSync(right);
+  } catch {
+    return false;
+  }
+}
+
+/** @param {string} cwd @param {string} name */
+function projectDeclaresPackage(cwd, name) {
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(cwd, 'package.json'), 'utf-8'),
+    );
+    return ['dependencies', 'devDependencies', 'optionalDependencies'].some(
+      field =>
+        pkg?.[field] != null &&
+        typeof pkg[field] === 'object' &&
+        !Array.isArray(pkg[field]) &&
+        Object.hasOwn(pkg[field], name),
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The package-name guard used before hosted sets existed. Preserve it whenever
+ * no root is serving the run; it accepts nested names but blocks traversal.
+ * @param {unknown} name
+ */
+function isProjectPackageName(name) {
+  return (
+    typeof name === 'string' &&
+    name.length > 0 &&
+    !path.isAbsolute(name) &&
+    !name.startsWith('@/') &&
+    !name.split('/').some(segment => segment === '.' || segment === '..')
+  );
+}
+
 /**
  * Resolve the directory of an installed integration package from the consumer's
  * node_modules.
  * @param {string} packageName
  * @param {string} [cwd]
+ * @param {{usePackageSet?: boolean}} [options] apply the active plan when this
+ *   lookup is loading the project's configured integration list
  */
-export function resolvePackageDir(packageName, cwd = process.cwd()) {
-  // An integration spec is a bare npm package name — never a path. Reject `..`,
-  // `.`, and absolute specs so a config can't point the loader (which then
-  // dynamically imports the manifest) at an arbitrary module outside
-  // node_modules.
-  if (
-    typeof packageName !== 'string' ||
-    packageName.length === 0 ||
-    path.isAbsolute(packageName) ||
-    packageName.split('/').some(seg => seg === '..' || seg === '.')
-  ) {
+export function resolvePackageDir(
+  packageName,
+  cwd = process.cwd(),
+  {usePackageSet = false} = {},
+) {
+  const set = usePackageSet ? activePackageSet() : null;
+  // Keep the base CLI's established package-name behavior when no hosted root
+  // serves the run. A hosted or matched set admits only bare npm names.
+  const validName =
+    set != null && set.mode !== 'project'
+      ? isBarePackageName(packageName)
+      : isProjectPackageName(packageName);
+  if (!validName) {
     throw new Error(
-      `Invalid integration package name "${packageName}". Use a bare package name (no path segments).`,
+      `Invalid integration package name "${packageName}". Use a package name with no traversal segments.`,
     );
   }
   const nodeModules = path.resolve(cwd, 'node_modules');
@@ -301,7 +359,31 @@ export function resolvePackageDir(packageName, cwd = process.cwd()) {
       `Integration "${packageName}" resolves outside node_modules.`,
     );
   }
-  return dir;
+  if (!set || set.mode === 'project') return dir;
+
+  // A package the plan declares through the active set resolves only from that
+  // root. An undeclared stray copy in the caller's node_modules is not the
+  // approved version the plan records.
+  if (packageSetDeclarations().includes(packageName)) {
+    const fromSet = resolveFromPackageSet(packageName);
+    if (fromSet) return fromSet;
+    throw new Error(`Integration package "${packageName}" is unavailable.`);
+  }
+
+  // A project package is usable only when this plan recorded its directory.
+  // Config alone does not let a stray node_modules copy bypass version planning.
+  const plannedProjectPackage = set.packages.some(
+    entry =>
+      entry.source === 'project' &&
+      entry.dir != null &&
+      sameDirectory(entry.dir, dir),
+  );
+  if (plannedProjectPackage || projectDeclaresPackage(cwd, packageName)) {
+    return dir;
+  }
+  throw new Error(
+    `Integration package "${packageName}" is not declared in this project's package.json.`,
+  );
 }
 
 /**
@@ -441,14 +523,21 @@ export async function loadLocalIntegration(packageDir, {fresh = false} = {}) {
  * Load configured integrations.
  *
  * @param {string[]} [specs] package names
- * @param {{cwd?: string, fresh?: boolean, resolveProviders?: boolean}} [options]
+ * @param {{cwd?: string, fresh?: boolean, resolveProviders?: boolean, usePackageSet?: boolean}} [options]
  *   `resolveProviders: false` leaves provider identity to a caller that
- *   resolves it once over a larger set (Project.load)
+ *   resolves it once over a larger set (Project.load). `usePackageSet: true`
+ *   applies the active plan to configured-package resolution; other callers
+ *   keep the ordinary project lookup.
  * @returns {Promise<LoadedIntegration[]>}
  */
 export async function loadIntegrations(
   specs = [],
-  {cwd = process.cwd(), fresh = false, resolveProviders = true} = {},
+  {
+    cwd = process.cwd(),
+    fresh = false,
+    resolveProviders = true,
+    usePackageSet = false,
+  } = {},
 ) {
   /** @type {LoadedIntegration[]} */
   const integrations = [];
@@ -458,7 +547,7 @@ export async function loadIntegrations(
     if (!spec || seenSpecs.has(spec)) continue;
     seenSpecs.add(spec);
 
-    const packageDir = resolvePackageDir(spec, cwd);
+    const packageDir = resolvePackageDir(spec, cwd, {usePackageSet});
     const pkgPath = path.join(packageDir, 'package.json');
     let pkg;
     try {
@@ -518,6 +607,19 @@ export async function loadIntegrations(
       manifest.providerId ?? pkg.name ?? spec,
     );
 
+    // A host running the CLI programmatically may answer this integration's
+    // discover source itself (foundation/runtime/package-root.mjs). The
+    // replacement is validated like the export it replaces, and the
+    // integration keeps its own name, so results still name this package.
+    const hostDiscover = packageSetHandler(pkg.name ?? spec, 'discover');
+    /** @type {boolean} */
+    let discoverFromHost = false;
+    if (hostDiscover !== undefined) {
+      ({source: discoverSource, error: discoverError} =
+        parseDiscoverSourceExport(hostDiscover, `Host handler for ${spec}`));
+      discoverFromHost = true;
+    }
+
     /** @param {string | null | undefined} value */
     const resolveRoot = value => {
       if (value == null) return undefined;
@@ -547,6 +649,7 @@ export async function loadIntegrations(
       __gapReportError: gapReportError,
       __discover: discoverSource,
       __discoverError: discoverError,
+      ...(discoverFromHost ? {__discoverFromHost: true} : {}),
       __spec: spec,
       __packageDir: packageDir,
       __packageExports: pkg.exports ?? null,

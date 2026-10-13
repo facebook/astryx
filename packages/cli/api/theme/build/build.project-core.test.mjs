@@ -6,6 +6,7 @@
  * A CLI run one-off (`npx @astryxdesign/cli`) has no Core beside it, and the
  * app's `<Theme>` runs on the app's Core either way, so the build loads the
  * project's installed `@astryxdesign/core` when it differs from the CLI's own.
+ * An unrelated monorepo `packages/core` never redirects Astryx metadata reads.
  * When there is no Core to use, the error names the fix for where it ran:
  * install it in an app, build it in the Astryx repository.
  */
@@ -105,6 +106,46 @@ describe('theme build generates with the Core the project installed', () => {
         .replace(/^\/\*[\s\S]*?\*\/\n/, '');
     expect(rules(app)).toBe(rules(bare));
     expect(rules(app)).toContain('#0a0a0a');
+  });
+
+  it('ignores an unrelated monorepo packages/core for Astryx metadata', async () => {
+    const mono = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'astryx-project-core-unrelated-'),
+    );
+    tmpDirs.push(mono);
+    const unrelated = path.join(mono, 'packages', 'core');
+    fs.mkdirSync(path.join(unrelated, 'src'), {recursive: true});
+    fs.writeFileSync(
+      path.join(unrelated, 'package.json'),
+      '{"name":"@acme/core","version":"1.0.0"}',
+    );
+    const app = path.join(mono, 'apps', 'web');
+    fs.mkdirSync(app, {recursive: true});
+    fs.writeFileSync(
+      path.join(app, 'package.json'),
+      '{"name":"web","type":"module"}',
+    );
+    fs.writeFileSync(
+      path.join(app, 'ocean.mjs'),
+      `export default {
+        name: 'ocean',
+        tokens: {'--color-bg': '#0a0a0a'},
+        components: {'radio-indicator': {notAState: {opacity: '0.5'}}},
+      };\n`,
+    );
+
+    const originalCwd = process.cwd();
+    try {
+      process.chdir(app);
+      const result = await themeBuild('ocean.mjs', {}, {cwd: app});
+      expect(result?.data.warnings).toEqual([
+        expect.stringContaining(
+          'Unknown prop "notAState" on component "radio-indicator"',
+        ),
+      ]);
+    } finally {
+      process.chdir(originalCwd);
+    }
   });
 
   it('keeps the CLI’s own Core when the project has none', async () => {

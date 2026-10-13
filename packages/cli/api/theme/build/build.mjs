@@ -35,7 +35,8 @@
  * ERR_CORE_INCOMPATIBLE rather than emitting CSS with those rules quietly
  * missing. That check is scoped to the adaptation capability — it is not a
  * general compatibility scheme for every export an arbitrary older core might
- * lack.
+ * lack. Core-derived indexes are cached by the resolved Core package directory,
+ * so successive in-process invocations never reuse another package set's data.
  *
  * With `{check: true}`, it compiles the same outputs in memory but writes
  * nothing: it compares each generated file against what is on disk (ignoring
@@ -60,6 +61,7 @@ import {
   findCoreDir,
   findInstalledPackage,
 } from '../../../foundation/fs/paths.mjs';
+import {activePackageSet} from '../../../foundation/runtime/package-root.mjs';
 import {
   assertWithin,
   sanitizeName,
@@ -555,17 +557,17 @@ function toPascalCase(name) {
     .join('');
 }
 
-/** @type {Promise<Record<string, Record<string, string[]>>> | null} */
-let _knownValuesIndexPromise = null;
+/** @type {Map<string, Promise<Record<string, Record<string, string[]>>>>} */
+const _knownValuesIndexPromises = new Map();
 
 /**
  * Build one target-keyed index of built-in visual-prop values from every core
  * component doc. A rendered target often lives in a sibling doc (for example,
  * `astryx-heading` is documented by Text/Heading.doc.mjs), so directory-name
  * guessing is not a valid lookup strategy.
+ * @param {string | null} [coreRoot]
  */
-async function loadKnownValuesIndex() {
-  const coreRoot = resolveCoreRoot();
+async function loadKnownValuesIndex(coreRoot = resolveCoreRoot()) {
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return {};
 
@@ -681,21 +683,40 @@ async function loadKnownValuesIndex() {
  * @returns {Promise<Record<string, string[]>>}
  */
 async function getKnownValues(componentName) {
-  _knownValuesIndexPromise ??= loadKnownValuesIndex();
-  const index = await _knownValuesIndexPromise;
+  const coreRoot = resolveCoreRoot();
+  const key = coreCacheKey(coreRoot);
+  let promise = _knownValuesIndexPromises.get(key);
+  if (!promise) {
+    promise = loadKnownValuesIndex(coreRoot);
+    _knownValuesIndexPromises.set(key, promise);
+  }
+  const index = await promise;
   return index[componentName] ?? {};
 }
 
 /**
- * Resolve `@astryxdesign/core`'s package root relative to the CLI package. Core
- * and the CLI ship as siblings (`@astryxdesign/core`, `@astryxdesign/cli`), so
- * `../../../../core` from `api/theme/build/` reaches core whether installed from
- * npm or run inside the monorepo. Returns null if it can't be found.
+ * Resolve the current invocation's `@astryxdesign/core` package root. Hosted
+ * runs use the plan-selected Core; ordinary installed and monorepo runs retain
+ * the sibling-package fallback.
  */
 function resolveCoreRoot() {
+  if (activePackageSet()) {
+    const resolved = findCoreDir(process.cwd());
+    if (resolved) return resolved;
+  }
   const cliDir = path.dirname(fileURLToPath(import.meta.url));
   const coreRoot = path.resolve(cliDir, '../../../../core');
   return fs.existsSync(coreRoot) ? coreRoot : null;
+}
+
+/** @param {string | null} coreRoot */
+function coreCacheKey(coreRoot) {
+  if (!coreRoot) return '(no-core)';
+  try {
+    return fs.realpathSync(coreRoot);
+  } catch {
+    return path.resolve(coreRoot);
+  }
 }
 
 /**
@@ -714,11 +735,12 @@ const _componentDeclCache = new Map();
  * @returns {string}
  */
 function readComponentDeclarations(pascalName) {
-  if (_componentDeclCache.has(pascalName)) {
-    return _componentDeclCache.get(pascalName) ?? '';
+  const coreRoot = resolveCoreRoot();
+  const cacheKey = `${coreCacheKey(coreRoot)}\0${pascalName}`;
+  if (_componentDeclCache.has(cacheKey)) {
+    return _componentDeclCache.get(cacheKey) ?? '';
   }
   let contents = '';
-  const coreRoot = resolveCoreRoot();
   if (coreRoot) {
     const candidates = [
       path.join(coreRoot, 'dist', pascalName, 'index.d.ts'),
@@ -735,7 +757,7 @@ function readComponentDeclarations(pascalName) {
       }
     }
   }
-  _componentDeclCache.set(pascalName, contents);
+  _componentDeclCache.set(cacheKey, contents);
   return contents;
 }
 
@@ -753,9 +775,11 @@ const _augmentationTargetCache = new Map();
  * @returns {Promise<Array<{moduleName: string, interfacePrefix: string}>>}
  */
 async function resolveAugmentationTargetCandidates(componentName) {
-  if (_augmentationTargetCache.has(componentName)) {
+  const coreRoot = resolveCoreRoot();
+  const cacheKey = `${coreCacheKey(coreRoot)}\0${componentName}`;
+  if (_augmentationTargetCache.has(cacheKey)) {
     return /** @type {Array<{moduleName: string, interfacePrefix: string}>} */ (
-      _augmentationTargetCache.get(componentName)
+      _augmentationTargetCache.get(cacheKey)
     );
   }
 
@@ -766,10 +790,9 @@ async function resolveAugmentationTargetCandidates(componentName) {
     },
   ];
 
-  const coreRoot = resolveCoreRoot();
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) {
-    _augmentationTargetCache.set(componentName, fallback);
+    _augmentationTargetCache.set(cacheKey, fallback);
     return fallback;
   }
 
@@ -847,7 +870,7 @@ async function resolveAugmentationTargetCandidates(componentName) {
     addCandidate(candidate.moduleName, candidate.interfacePrefix);
   }
   const resolved = matches;
-  _augmentationTargetCache.set(componentName, resolved);
+  _augmentationTargetCache.set(cacheKey, resolved);
   return resolved;
 }
 
@@ -1985,10 +2008,10 @@ export declare const ${iconInfo.exportName}: IconRegistry;
  * runtime states each target reflects. Returns null when docs are unavailable so
  * validation skips warnings rather than guessing from a second registry.
  *
+ * @param {string | null} [coreRoot]
  * @returns {Promise<{propsByKey: Record<string, string[]>} | null>}
  */
-async function loadKnownComponents() {
-  const coreRoot = resolveCoreRoot();
+async function loadKnownComponents(coreRoot = resolveCoreRoot()) {
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return null;
 
@@ -1996,17 +2019,19 @@ async function loadKnownComponents() {
   return Object.keys(propsByKey).length > 0 ? {propsByKey} : null;
 }
 
-/** @type {{propsByKey: Record<string, string[]>} | null | undefined} */
-let knownComponentsCache;
+/** @type {Map<string, {propsByKey: Record<string, string[]>} | null>} */
+const knownComponentsCache = new Map();
 
 /**
  * @returns {Promise<{propsByKey: Record<string, string[]>} | null>}
  */
 async function getKnownComponents() {
-  if (knownComponentsCache === undefined) {
-    knownComponentsCache = await loadKnownComponents();
+  const coreRoot = resolveCoreRoot();
+  const key = coreCacheKey(coreRoot);
+  if (!knownComponentsCache.has(key)) {
+    knownComponentsCache.set(key, await loadKnownComponents(coreRoot));
   }
-  return knownComponentsCache;
+  return knownComponentsCache.get(key) ?? null;
 }
 
 /**

@@ -120,13 +120,14 @@ async function loadConfiguredIntegrations(specs, {cwd, fresh}) {
           cwd,
           fresh,
           resolveProviders: false,
+          usePackageSet: true,
         })),
       );
     } catch (err) {
       /** @type {string|undefined} */
       let packageDir;
       try {
-        packageDir = resolvePackageDir(spec, cwd);
+        packageDir = resolvePackageDir(spec, cwd, {usePackageSet: true});
       } catch {
         // Not a bare package name: there is no install location to record.
       }

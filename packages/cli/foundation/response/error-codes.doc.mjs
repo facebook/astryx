@@ -74,6 +74,11 @@ export const doc = {
       description:
         'The installed `@astryxdesign/core` loaded but is too old for this input — it lacks a capability the CLI must call to emit correct output (upgrade core).',
     },
+    {
+      value: 'ERR_VERSIONS_UNAVAILABLE',
+      description:
+        "The run cannot provide a compatible Astryx CLI and package versions. Install the project's dependencies or update the available Astryx packages.",
+    },
 
     // "Unknown <subject>" lookups
     {
