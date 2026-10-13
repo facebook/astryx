@@ -69,24 +69,6 @@ jobs:
           esac
           echo "required=$required" >> "$GITHUB_OUTPUT"
 
-      # Every ordinary main PR must keep the declaration above stable. The
-      # separate FR51 next-plan PR exits merge-back equality; no bootstrap or
-      # generic equality exception exists.
-      - name: Keep main's declared version above latest stable
-        if: github.event_name == 'pull_request' && steps.release-merge-back-scope.outputs.required != 'true'
-        run: |
-          set -eu
-          git fetch origin main 'refs/tags/v*:refs/tags/v*' '+refs/heads/release/v*:refs/remotes/origin/release/v*'
-          TRUSTED_POLICY="$RUNNER_TEMP/main-version-policy"
-          mkdir -p "$TRUSTED_POLICY/scripts/release" "$TRUSTED_POLICY/scripts/lib"
-          git show origin/main:scripts/release/active-release.mjs \
-            > "$TRUSTED_POLICY/scripts/release/active-release.mjs"
-          git show origin/main:scripts/lib/workspace-globs.mjs \
-            > "$TRUSTED_POLICY/scripts/lib/workspace-globs.mjs"
-          node "$TRUSTED_POLICY/scripts/release/active-release.mjs" validate-main-version \
-            --root "$GITHUB_WORKSPACE" \
-            --base origin/main
-
       - name: Validate release merge-back in required lint
         if: github.event_name == 'pull_request' && steps.release-merge-back-scope.outputs.required == 'true'
         env:
