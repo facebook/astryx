@@ -353,8 +353,10 @@ export const MENU_BUTTON_PATTERN: PatternContract<MenuButtonStateFacts> =
         id: 'menu-button.open.arrow-down-focuses-first-item',
         outcome:
           'With focus on the control, ArrowDown opens the menu and places focus on its first enabled item.',
-        sources: [WCAG_2_1_1, APG_DOWN],
-        covers: ['2.1.1-keyboard', '2.4.3-focus-order', 'apg-interaction'],
+        sources: [APG_DOWN],
+        wcagOutcome:
+          'Supports WCAG 2.2 2.1.1 by keeping the implemented arrow-key open keyboard-operable; the APG recommends it, so this row is advisory until the binding record adopts it as current.',
+        covers: ['2.4.3-focus-order', 'apg-interaction'],
         appliesWhen: {
           condition:
             'the binding ships arrow-key opening, the menu starts hidden, and the control can be operated and focused',
@@ -377,8 +379,10 @@ export const MENU_BUTTON_PATTERN: PatternContract<MenuButtonStateFacts> =
         id: 'menu-button.open.arrow-up-focuses-last-item',
         outcome:
           'With focus on the control, ArrowUp opens the menu and places focus on its last enabled item.',
-        sources: [WCAG_2_1_1, APG_UP],
-        covers: ['2.1.1-keyboard', '2.4.3-focus-order', 'apg-interaction'],
+        sources: [APG_UP],
+        wcagOutcome:
+          'Supports WCAG 2.2 2.1.1 by keeping the implemented arrow-key open keyboard-operable; the APG recommends it, so this row is advisory until the binding record adopts it as current.',
+        covers: ['2.4.3-focus-order', 'apg-interaction'],
         appliesWhen: {
           condition:
             'the binding ships arrow-key opening, the menu starts hidden, and the control can be operated and focused',

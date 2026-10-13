@@ -134,15 +134,9 @@ for (const state of MENU_BUTTON_BINDING_STATES) {
     const cdp = await page.context().newCDPSession(page);
     const result = await runState(page, cdp, state);
     const report = summarize(MENU_BUTTON_PATTERN, [result]);
+    // Required rows block (AST-020 FR9); advisory rows and exact known
+    // failures report.
     expect(formatFailures(blockingResults([result]))).toBe('');
-    expect(
-      result.results.filter(
-        row =>
-          row.status !== 'pass' &&
-          row.status !== 'not-applicable' &&
-          row.status !== 'known-failure',
-      ),
-    ).toEqual([]);
     expect(report.unrunLayers).toEqual([]);
     expect(report.counts.unexpectedPass).toBe(0);
   });

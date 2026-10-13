@@ -8,11 +8,11 @@
  */
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
-import {MoreMenu} from '@astryxdesign/core/MoreMenu';
+import {renderMenuButtonState} from '../../../packages/core/src/DropdownMenu/__tests__/MenuButton.a11y.renders';
+import {MENU_BUTTON_BINDING_STATES} from '../../../packages/core/src/DropdownMenu/__tests__/MenuButton.a11y.states';
 
 const meta = {
-  title: 'A11y/Menu Button',
+  title: 'A11y/MenuButton',
   tags: ['no-visual'],
   parameters: {layout: 'padded'},
 } satisfies Meta;
@@ -20,94 +20,23 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const items = [
-  {label: 'Rename'},
-  {label: 'Duplicate'},
-  {label: 'Archive', isDisabled: true},
-  {label: 'Delete'},
-];
-
-function After() {
-  return <button type="button">After the menu</button>;
+function storyFor(
+  id: (typeof MENU_BUTTON_BINDING_STATES)[number]['id'],
+): Story {
+  const state = MENU_BUTTON_BINDING_STATES.find(
+    candidate => candidate.id === id,
+  );
+  if (state == null) {
+    throw new Error(`no Menu Button binding state "${id}"`);
+  }
+  return {render: () => renderMenuButtonState(state)};
 }
 
-export const DropdownButtonClosed: Story = {
-  render: () => (
-    <div>
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={items}
-        presentation="popover"
-      />
-      <After />
-    </div>
-  ),
-};
-
-export const DropdownButtonOpen: Story = {
-  render: () => (
-    <div>
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={items}
-        presentation="popover"
-        isMenuOpen
-        onOpenChange={() => {}}
-      />
-      <After />
-    </div>
-  ),
-};
-
-export const DropdownRenderTriggerClosed: Story = {
-  render: () => (
-    <div>
-      <DropdownMenu
-        items={items}
-        presentation="popover"
-        renderTrigger={({ref, ...props}) => (
-          <button type="button" ref={ref} {...props}>
-            Row actions
-          </button>
-        )}
-      />
-      <After />
-    </div>
-  ),
-};
-
-export const DropdownButtonDisabled: Story = {
-  render: () => (
-    <div>
-      <DropdownMenu
-        button={{label: 'Actions', isDisabled: true}}
-        items={items}
-        presentation="popover"
-      />
-      <After />
-    </div>
-  ),
-};
-
-export const MoreMenuClosed: Story = {
-  render: () => (
-    <div>
-      <MoreMenu label="More options" items={items} presentation="popover" />
-      <After />
-    </div>
-  ),
-};
-
-export const MoreMenuDisabled: Story = {
-  render: () => (
-    <div>
-      <MoreMenu
-        label="More options"
-        items={items}
-        presentation="popover"
-        isDisabled
-      />
-      <After />
-    </div>
-  ),
-};
+export const DropdownButtonClosed = storyFor('dropdown-button-closed');
+export const DropdownButtonOpen = storyFor('dropdown-button-open');
+export const DropdownRenderTriggerClosed = storyFor(
+  'dropdown-render-trigger-closed',
+);
+export const DropdownButtonDisabled = storyFor('dropdown-button-disabled');
+export const MoreMenuClosed = storyFor('more-menu-closed');
+export const MoreMenuDisabled = storyFor('more-menu-disabled');
