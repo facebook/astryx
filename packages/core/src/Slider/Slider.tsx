@@ -6,7 +6,7 @@
  * @file Slider.tsx
  * @input Uses React, useId, useRef, useCallback, Field, Tooltip, useTooltip, VisuallyHidden
  * @output Exports Slider and its props; explicit endpoints remain selectable with off-grid steps, and arrow keys visit adjacent steps
- * Modifier-only key presses do not restore the thumb focus ring.
+ * Unfilled marks share the track token. Modifier-only key presses do not restore the thumb focus ring.
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
