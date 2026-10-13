@@ -139,16 +139,19 @@ intentional decision. A `current` contract contains no unresolved rows.
   ArrowUp and ArrowDown by a week, Home and End to the first and last day of the
   week, PageUp and PageDown by a month, and Enter or Space picks the focused day.
   Implementation gap until its fix ships: PageUp and PageDown change the visible
-  month but move the focused day by a week rather than a month.
+  month but target the day a week away and, when that day is not shown, focus
+  the month's first enabled day.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                                             | Representation authority       | Hierarchy role | Component contract |
-| ---------------- | -------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
-| Month header     | Names the month and offers previous/next navigation.           | Current source and public docs | Supporting     | FR1, FR5           |
-| Day grid         | Presents the weeks and days as a named grid.                   | Current source and public docs | Prominent      | FR1, FR2, AR1      |
-| Selected day     | Marks the chosen day or range without relying on colour alone. | Current source and public docs | Prominent      | FR4, AR1           |
-| Today marker     | Marks today distinctly from selection.                         | Current source and public docs | Supporting     | AR1                |
+| Anatomy or state | Design requirement                                                     | Representation authority       | Hierarchy role | Component contract |
+| ---------------- | ---------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
+| Calendar root    | Holds the header and the grid; carries the component's theming target. | Current source and public docs | Supporting     | FR1                |
+| Month header     | Names the month and offers previous/next navigation.                   | Current source and public docs | Supporting     | FR1, FR5           |
+| Day button       | The control a date is picked with; carries the day target.             | Current source and public docs | Prominent      | FR2, FR3, AR1      |
+| Day grid         | Presents the weeks and days as a named grid.                           | Current source and public docs | Prominent      | FR1, FR2, AR1      |
+| Selected day     | Marks the chosen day or range without relying on colour alone.         | Current source and public docs | Prominent      | FR4, AR1           |
+| Today marker     | Marks today distinctly from selection.                                 | Current source and public docs | Supporting     | AR1                |
 
 ### Theming anatomy
 
@@ -156,12 +159,22 @@ intentional decision. A `current` contract contains no unresolved rows.
 
 ```json
 {
+  "Calendar root": {"target": "calendar"},
   "Month header": {"target": "calendar-nav"},
-  "Day grid": {"target": "calendar"},
-  "Selected day": {"target": "calendar-day"},
+  "Day grid": {
+    "none": {
+      "reason": "reachability-gap: No current public target reaches the grid element itself; `calendar` paints the root and `calendar-day` the day buttons."
+    }
+  },
+  "Day button": {"target": "calendar-day"},
+  "Selected day": {"inherits": "calendar-day"},
   "Today marker": {"inherits": "calendar-day"}
 }
 ```
+
+`calendar` is carried by the root element, `calendar-nav` by the previous and
+next month buttons inside the Month header, and `calendar-day` by each day
+button.
 
 ## Family and system relationships
 
@@ -170,10 +183,10 @@ intentional decision. A `current` contract contains no unresolved rows.
 
 ## Verification map
 
-| Contract | Verification                                                                                                      | Representative states                                       | Mutation or failure expectation                                                                                                       | Audit section                  |
-| -------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| FR1–FR5  | `Calendar.test.tsx` structure, selection, bounds, and navigation suites                                           | single, range, two months, bounded                          | A missing header, a second Tab stop, a pickable disabled day, an inverted range, or a focused day scrolled out of view fails.         | `audit:Calendar/behavior`      |
-| AR1      | Grid accessibility contract (`internal/a11y-spec`) bound to Calendar, in jsdom and Chromium; `useGridFocus` tests | LTR and RTL; month boundary; selected, today, disabled days | A day loses its role, name or state, two days hold a Tab stop, or an arrow, Home/End, Page or activation key stops moving or picking. | `audit:Calendar/accessibility` |
+| Contract | Verification                                                                                                                                                                                                                                             | Representative states                                       | Mutation or failure expectation                                                                                                       | Audit section                  |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| FR1–FR5  | `Calendar.test.tsx` structure, selection, bounds, and navigation suites                                                                                                                                                                                  | single, range, two months, bounded                          | A missing header, a second Tab stop, a pickable disabled day, an inverted range, or a focused day scrolled out of view fails.         | `audit:Calendar/behavior`      |
+| AR1      | `Calendar.test.tsx` (grid roles and names, roving Tab stop, month-change announcements, day names) and `useGridFocus.test.tsx` (roving tabindex, RTL mirroring, Home/End); Grid accessibility contract (`internal/a11y-spec`, pending) bound to Calendar | LTR and RTL; month boundary; selected, today, disabled days | A day loses its role, name or state, two days hold a Tab stop, or an arrow, Home/End, Page or activation key stops moving or picking. | `audit:Calendar/accessibility` |
 
 ## Decision log
 

@@ -82,10 +82,10 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept         | Closed values or states | Meaning                                                             | Availability by variant/orientation/state | Default  | Owner                   | Stability | Invalid-value behavior |
-| --------------- | ----------------------- | ------------------------------------------------------------------- | ----------------------------------------- | -------- | ----------------------- | --------- | ---------------------- |
-| `isInline`      | `true`, `false`         | Renders the content inline as a non-modal preview (`role="group"`). | Always                                    | `false`  | `component:AlertDialog` | stable    | Type-rejected          |
-| `actionVariant` | Button variants         | The action button's emphasis, destructive included.                 | Always                                    | Button's | `component:Button`      | stable    | Button's behavior      |
+| Concept         | Closed values or states | Meaning                                                             | Availability by variant/orientation/state | Default         | Owner                   | Stability | Invalid-value behavior |
+| --------------- | ----------------------- | ------------------------------------------------------------------- | ----------------------------------------- | --------------- | ----------------------- | --------- | ---------------------- |
+| `isInline`      | `true`, `false`         | Renders the content inline as a non-modal preview (`role="group"`). | Always                                    | `false`         | `component:AlertDialog` | stable    | Type-rejected          |
+| `actionVariant` | Button variants         | The action button's emphasis.                                       | Always                                    | `'destructive'` | `component:Button`      | stable    | Button's behavior      |
 
 ## Behavioral and layout contract
 
@@ -121,16 +121,18 @@ intentional decision. A `current` contract contains no unresolved rows.
 
 ### Performance and resources
 
-- **PR1 — Dialog-owned resources.** AlertDialog adds no listener, observer, or
-  timer of its own; Dialog owns the modal lifecycle.
+- **PR1 — Dialog-owned resources.** AlertDialog's only listener is the
+  small-screen media query behind the button order; Dialog owns the modal
+  lifecycle.
 
 ## Accessibility contract
 
 - **AR1 — AlertDialog adopts the APG Alert Dialog pattern** (`spec:AST-020/FR15`):
   the modal surface is `role="alertdialog"`, named by its title through
   `aria-labelledby` and described by its description through `aria-describedby`;
-  it is modal through Dialog (focus stays inside, Tab cycles its controls, and
-  focus returns to the opener on close per `component:Dialog/AR1–AR3`); initial
+  it is modal through Dialog (focus enters it and returns to the opener on close
+  per `component:Dialog/AR1–AR2`; Tab containment follows Dialog, whose record
+  leaves it open); initial
   focus lands on Cancel, the least destructive action; Escape cancels; no click
   outside dismisses it. The inline preview is not an alert dialog and carries
   `role="group"`.
@@ -178,10 +180,10 @@ The dialog surface (the Dialog element AlertDialog renders) carries `alert-dialo
 
 ## Verification map
 
-| Contract | Verification                                                                                           | Representative states                  | Mutation or failure expectation                                                                                            | Audit section                     |
-| -------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| FR1–FR5  | `AlertDialog.test.tsx` and `useImperativeAlertDialog.test.tsx`                                         | open, loading, inline, imperative      | A backdrop click closing, Escape not cancelling, the action closing by itself, or the inline path claiming the role fails. | `audit:AlertDialog/behavior`      |
-| AR1      | Alert Dialog accessibility contract (`internal/a11y-spec`) bound to AlertDialog, in jsdom and Chromium | open modal; after Escape; after Cancel | The role, name link, description link, or Cancel initial focus is lost, or a click outside dismisses the dialog.           | `audit:AlertDialog/accessibility` |
+| Contract | Verification                                                                                                                                                                                                                                        | Representative states                  | Mutation or failure expectation                                                                                            | Audit section                     |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| FR1–FR5  | `AlertDialog.test.tsx` and `useImperativeAlertDialog.test.tsx`                                                                                                                                                                                      | open, loading, inline, imperative      | A backdrop click closing, Escape not cancelling, the action closing by itself, or the inline path claiming the role fails. | `audit:AlertDialog/behavior`      |
+| AR1      | `AlertDialog.test.tsx` (role, `aria-labelledby`/`aria-describedby`, Cancel initial focus, Escape, keyboard suite) and `useImperativeAlertDialog.test.tsx`; Alert Dialog accessibility contract (`internal/a11y-spec`, pending) bound to AlertDialog | open modal; after Escape; after Cancel | The role, name link, description link, or Cancel initial focus is lost, or a click outside dismisses the dialog.           | `audit:AlertDialog/accessibility` |
 
 ## Decision log
 
