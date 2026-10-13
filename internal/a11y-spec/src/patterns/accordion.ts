@@ -410,7 +410,9 @@ export const ACCORDION_PATTERN: PatternContract<AccordionStateFacts> =
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          "Single-expansion sibling collapse is the group's own promise (component:CollapsibleGroup AR4), not an APG-required part; this becomes required once that record is current (AST-020 FR9).",
         run: async ({harness, subject}) => {
           const sibling = await harness.related('open-sibling');
           if ((await authoredExpanded(sibling)) !== true) {
@@ -441,7 +443,9 @@ export const ACCORDION_PATTERN: PatternContract<AccordionStateFacts> =
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          "The header-to-header Tab step is the group's own promise (component:CollapsibleGroup AR4); this becomes required once that record is current (AST-020 FR9).",
         run: async ({harness, subject}) => {
           const next = await harness.related('next-header');
           await focusOrFail(subject, 'Tab');
@@ -465,7 +469,9 @@ export const ACCORDION_PATTERN: PatternContract<AccordionStateFacts> =
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          "Not adopting arrow-key movement is the group's own decision (component:CollapsibleGroup AR4 and DEC-1); this becomes required once that record is current (AST-020 FR9).",
         run: async ({harness, subject}) => {
           await focusOrFail(subject, 'ArrowDown');
           await harness.press('ArrowDown');
