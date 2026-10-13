@@ -672,6 +672,10 @@ describe('full release scope without PR metadata or maintenance writes', () => {
       step('a11y-contracts', 'Run accessibility spec-test contracts').run,
     ).toBe('pnpm test:a11y-contract');
     expect(
+      step('a11y-contracts', 'Run accessibility spec-test contracts').env
+        .A11Y_CONTRACT_WORKERS,
+    ).toBe(4);
+    expect(
       step('a11y-contracts', 'Run accessibility spec-test contracts')[
         'continue-on-error'
       ],

@@ -43,9 +43,12 @@ export default defineConfig({
     'packages/*/src/**/*.a11y.chromium.spec.ts',
     'packages/*/src/**/*.a11y.browser.spec.ts',
   ],
-  // The contract mounts, focuses, and types into one page at a time; parallel
-  // workers would race over real keyboard focus.
-  workers: 1,
+  // The contract mounts, focuses, and types into one page at a time, so a spec
+  // file's tests run in order on one worker (`fullyParallel: false`). Workers
+  // are separate processes, each with its own browser, so they share no
+  // keyboard focus: more than one only spreads whole files across them. One
+  // by default; the release job sets A11Y_CONTRACT_WORKERS.
+  workers: Number(process.env.A11Y_CONTRACT_WORKERS ?? 1),
   fullyParallel: false,
   forbidOnly: isCI,
   reporter: isCI ? [['list'], ['github']] : [['list']],

@@ -1873,6 +1873,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         env:
           ASTRYX_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          A11Y_CONTRACT_WORKERS: 4
         run: pnpm test:a11y-contract
 
       - name: Upload pressed-state pixel evidence
