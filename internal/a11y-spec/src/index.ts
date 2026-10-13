@@ -141,6 +141,10 @@ export {
 
 export {SLIDER_PATTERN, type SliderStateFacts} from './patterns/slider';
 export {
+  ACCORDION_PATTERN,
+  type AccordionStateFacts,
+} from './patterns/accordion';
+export {
   LINK_PATTERN,
   type LinkCurrentToken,
   type LinkStateFacts,
