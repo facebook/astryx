@@ -151,17 +151,20 @@ replace component-owned semantic or interaction props.
 - **AR1 — TreeList adopts the APG Tree View pattern** (`spec:AST-020/FR15`), as
   one composite control: the Tree list is `role="tree"`, named by its Header
   when one is rendered and otherwise by the caller's `aria-label` or
-  `aria-labelledby`; every row is `role="treeitem"`, named by its own text (the
-  label with any description, start, and end content), `aria-expanded` when it has children,
+  `aria-labelledby`; every row is `role="treeitem"`, named by its label and described by its
+  description, `aria-expanded` when it has children,
   `aria-selected` when it is the selected row, and `aria-posinset`/`aria-setsize`
   among its siblings; children sit in a `role="group"`. One row holds the Tab stop
   (roving focus). ArrowDown/ArrowUp move between visible rows; ArrowRight expands
   a closed row, then moves into its first child, and ArrowLeft collapses an open
   row or moves to the parent — mirrored under RTL; Home and End move to the first
   and last visible rows; Enter and Space activate the focused row; typing letters
-  moves to the next row whose text starts with them. Selection is caller-owned
+  moves to the next row whose label starts with them. Selection is caller-owned
   per row (`isSelected`): the tree claims no `aria-multiselectable` and has no
-  selection keyboard, and a caller keeps one row selected.
+  selection keyboard, and at most one row is selected. Implementation gap until
+  its fix ships: a parent row's name reads "Toggle children <label>" because the
+  chevron button sits inside the `treeitem`, and a row with `href` or `onClick`
+  names its inner control by the label alone and drops the description from it.
 
 ## Design relationships
 
@@ -248,7 +251,7 @@ authorize or prohibit a future target.
 | FR2                 | `TreeList.test.tsx` and `themingTargets.test.ts`                                                                                                                           | Five local targets and their documented states                                         | Removing or moving any current local target fails focused class assertions or the global inventory.                                                                                                                                                 | `audit:TreeList/theming`       |
 | FR3                 | Source inspection plus Icon public target metadata                                                                                                                         | Expandable rows and caller-provided slots                                              | Existing focused tests do not assert the composed Icon instance; changing glyph or slot ownership requires this map and the relevant owner metadata to change.                                                                                      | `audit:TreeList/theming`       |
 | FR4                 | `TreeList.test.tsx` description rendering test and source inspection                                                                                                       | Item with description                                                                  | Removing description fails content coverage; adding a target requires an explicit map update.                                                                                                                                                       | `audit:TreeList/anatomy`       |
-| AR1                 | Tree View accessibility contract (`internal/a11y-spec`, pending) bound to TreeList, in jsdom and Chromium; `TreeList.test.tsx` and `useTreeFocus.test.tsx` keyboard suites | Flat and nested trees; expanded/collapsed; selected/unselected; LTR and RTL; typeahead | A row loses its role, text name, state or position, two rows hold a Tab stop, an arrow key stops moving or stops mirroring under RTL, Home/End or typeahead stop working, or the tree claims multi-select                                           | `audit:TreeList/accessibility` |
+| AR1                 | Tree View accessibility contract (`internal/a11y-spec`, pending) bound to TreeList, in jsdom and Chromium; `TreeList.test.tsx` and `useTreeFocus.test.tsx` keyboard suites | Flat and nested trees; expanded/collapsed; selected/unselected; LTR and RTL; typeahead | A row loses its role, label name, state or position, two rows hold a Tab stop, an arrow key stops moving or stops mirroring under RTL, Home/End or typeahead stop working, or the tree claims multi-select                                           | `audit:TreeList/accessibility` |
 | FR5, FR6, ORD1      | Focused `TreeList.test.tsx` row-identity and styling-composition coverage, required with implementation                                                                    | One input at a time; all three together; sibling rows                                  | Dropping any mechanism, applying mechanisms to different elements, targeting the `<li>`, changing the merge order, or styling a sibling row fails.                                                                                                  | `audit:TreeList/api`           |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                                              | Canonical anatomy and five current local targets                                       | Missing, extra, duplicated, prefixed, or stale mappings fail repository validation.                                                                                                                                                                 | `audit:TreeList/theming`       |
 
@@ -282,7 +285,7 @@ boundary callers need to address.
 **Reference:** `component:TreeList/DEC-2`
 **Decider:** `cixzhang`, `2026-10-13`
 
-TreeList already plays the Tree View's role as one widget — one Tab stop, arrows, Home/End, activation, typeahead — so it adopts the pattern's keyboard model in full (AR1), not only the required parts. Selection stays caller-owned, one row at a time by convention, so the tree never claims `aria-multiselectable` and adds no range or toggle keyboard.
+TreeList already plays the Tree View's role as one widget — one Tab stop, arrows, Home/End, activation, typeahead — so it adopts the pattern's keyboard model except the optional `*` key (AR1), not only the required parts. Selection stays caller-owned with at most one row selected, so the tree never claims `aria-multiselectable` and adds no range or toggle keyboard.
 
 Rejected: multi-select (`aria-multiselectable`, Shift/Ctrl ranges); a Tab stop per row.
 
