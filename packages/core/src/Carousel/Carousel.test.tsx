@@ -43,8 +43,12 @@ describe('Carousel', () => {
       </Carousel>,
     );
     // APG carousel pattern: each slide container is role=group with
-    // aria-roledescription="slide" and an "N of M" accessible name.
-    const slides = screen.getAllByRole('group');
+    // aria-roledescription="slide" and an "N of M" accessible name. The
+    // scroll container is a named group too, so select the slides by their
+    // role description.
+    const slides = screen
+      .getAllByRole('group')
+      .filter(group => group.getAttribute('aria-roledescription') === 'slide');
     expect(slides).toHaveLength(3);
     slides.forEach((slide, i) => {
       expect(slide).toHaveAttribute('aria-roledescription', 'slide');
