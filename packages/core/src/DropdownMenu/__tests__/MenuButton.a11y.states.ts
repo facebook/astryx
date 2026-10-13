@@ -140,3 +140,11 @@ export const MENU_BUTTON_EXCLUSIONS = [
       'On a compact touch display the trigger opens a bottom sheet and says aria-haspopup="dialog"; that presentation is a dialog, not a menu button, and is outside this binding by the records\' own scope (DropdownMenu AR4, MoreMenu AR1).',
   },
 ] as const;
+
+/**
+ * Expectations no binding state can exercise because every anchored trigger
+ * opens on press-down (see the `press-model-pointer-cancellation` exclusion).
+ */
+export const PRESS_MODEL_EXCLUDED_EXPECTATIONS: ReadonlyArray<string> = [
+  'menu-button.control.survives-an-aborted-press',
+];
