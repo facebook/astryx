@@ -100,10 +100,13 @@ const APG_HOME_END = apgReq(
   'Home: Moves focus to the first node in the tree without opening or closing a node. End: Moves focus to the last node in the tree that is focusable without opening a node.',
   K,
 );
-const APG_SPACE = apgReq(
-  'Space: Performs the default action (e.g. onclick event) for the focused node, when the node has one.',
-  K,
-);
+const TREELIST_AR1_ACTIVATION: AstryxRecord = {
+  standard: 'astryx',
+  id: 'component:TreeList',
+  clause: 'AR1',
+  url: 'https://github.com/facebook/astryx/blob/250fd9ac197381ec06900279efc31cbb03544ca9/packages/core/src/TreeList/TreeList.spec.md#L151-L161',
+  requirement: 'Enter and Space activate the focused row.',
+};
 const APG_ENTER = apgReq(
   'Enter: activates a node, i.e., performs its default action. For parent nodes, one possible default action is to open or close the node.',
   K,
@@ -495,7 +498,7 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         id: 'treeview.keys.enter-or-space-activates',
         outcome:
           "Enter and Space perform the node's default action: a parent without its own action opens on one and closes on the other.",
-        sources: [WCAG_2_1_1, APG_ENTER, APG_SPACE],
+        sources: [WCAG_2_1_1, APG_ENTER, TREELIST_AR1_ACTIVATION],
         covers: ['2.1.1-keyboard', 'apg-interaction'],
         appliesWhen: {
           condition:
