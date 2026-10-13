@@ -571,27 +571,70 @@ npx @astryxdesign/cli integration verify
 
 ## Upgrading to 0.7.0
 
-Update every stable Astryx package your project uses to `0.7.0`, then run the upgrade command. It applies the migrations it can automate and adds a TODO for some ambiguous cases; 18 of the 26 changes below have no codemod, so check each one.
+Start here:
 
-```bash
-OLD_VERSION=0.6.8 # replace with the Core version your project uses today
-npm i @astryxdesign/core@0.7.0 @astryxdesign/cli@0.7.0 @astryxdesign/build@0.7.0 @astryxdesign/theme-neutral@0.7.0
-npx @astryxdesign/cli upgrade --from "$OLD_VERSION" --apply --path .
-```
+1. **Pin Core and the CLI to 0.7.0**, plus every other stable Astryx package your project uses.
 
-The example includes Neutral; update every other stable Astryx theme in your project in the same install step.
+   ```bash
+   OLD_VERSION=0.6.8 # replace with the Core version your project uses today
+   npm i @astryxdesign/core@0.7.0 @astryxdesign/cli@0.7.0 @astryxdesign/build@0.7.0 @astryxdesign/theme-neutral@0.7.0
+   ```
 
-Two other easy-to-miss API changes look like this:
+   The example includes Neutral; update every other stable Astryx theme in your project in the same install step.
 
-```diff
-- npx @astryxdesign/cli theme add neutral ./src/theme --overwrite
-+ npx @astryxdesign/cli theme eject neutral ./src/theme --overwrite
-```
+2. **Run the 0.7.0 upgrade.** It rewrites supported callsites, validates data-color ownership, and leaves a TODO where it cannot choose safely.
 
-```diff
-- .astryx-button.primary.sm
-+ .astryx-button[data-variant="primary"][data-size="sm"]
-```
+   ```bash
+   npx @astryxdesign/cli upgrade --from "$OLD_VERSION" --apply --path .
+   ```
+
+3. **Check the items below.** Four need a manual code edit, ten affect CLI commands or scripts, four are visual or token changes to inspect in your app, and eight are handled or checked by the upgrade.
+
+> **Biggest risk: props that used to be ignored now reach the DOM.** Layout, MetadataList, NavHeadingMenuItem, and TopNavMegaMenuItem already accepted BaseProps, so there is no type error or codemod. Audit callsites that pass IDs, ARIA or data attributes, event handlers, or style props only if they relied on those props doing nothing.
+
+### Manual code edits — no codemod (4)
+
+- **Banner announcements are no longer inferred from status** → call `useAnnounce()` from the async transition, or add an explicit persistent role.
+- **Previously ignored BaseProps now apply** → audit the four components in the risk callout only where a passed prop was meant to stay inert.
+- **Complete icon registries require `upload`** → add an `upload` entry and artwork to every custom complete `IconRegistry`.
+- **Standalone empty-operator filters no longer save on open** → save at the callsite when opening should commit the filter, or skip opening it.
+
+### CLI commands and scripts — no codemod (10)
+
+- **`theme add` now imports built themes** → change source-copying scripts to `theme eject`; existing `theme add --import` calls need no change.
+
+  ```diff
+  - npx @astryxdesign/cli theme add neutral ./src/theme --overwrite
+  + npx @astryxdesign/cli theme eject neutral ./src/theme --overwrite
+  ```
+
+- **`init --remove-agents` reports `removed: false`** → treat `data.removed` as a boolean, not literal `true`.
+- **Conflicting CLI options are refused** → remove the formerly ignored option from affected command pairs.
+- **Invalid CLI input now fails** → pass valid types, packages, limits, and arguments, and handle `ERR_AMBIGUOUS_COMPONENT`.
+- **Empty positional arguments are rejected** → omit `""` when the intended operation is to list entries.
+- **Integration validation needs a package** → run it where `package.json` exists, or handle exit 1.
+- **Astryx-prefixed agent variables are removed** → use `AGENT` and `AGENT_SESSION_ID`; agent metadata has no replacement.
+- **The `layout` command group is removed** → use `astryx build`, `astryx template`, or `astryx docs layout`.
+- **Private theme variables fail the build** → fix every reported private `--_*` input instead of relying on exit 0.
+- **Doctor fails on unloadable configured projects** → install or repair the named integration, remove it from config, or fix the reported field.
+
+### Visual and token changes — inspect your app; usually no code (4)
+
+- **`reset.css` now reaches pseudo-elements and search fields** → do nothing unless you need the old browser result; then add a later-layer override.
+- **Phone typography starts at 16px in four themes** → take the new Neutral, Chocolate, Butter, and Stone scale, or add a touch-and-narrow override to keep 14px.
+- **Core spacing uses rem** → CSS variable users do nothing; code that parses px must convert with the root size or read the computed length.
+- **Matcha and Y2K spacing uses rem** → take the pixel-equal default at a 16px root, or override spacing tokens in px for fixed sizing.
+
+### Handled or checked by `astryx upgrade` (8)
+
+- **Data-color defaults move to StyleX** → fix anything `validate-data-token-ownership` reports, then rebuild committed theme CSS.
+- **Date and time input styling targets the control** → review the `migrate-field-input-styling` rewrite or TODO.
+- **Typeahead, Tokenizer, CheckboxList, RadioList, and Slider styling targets the field** → review the generated `container*` or `control*` prop.
+- **Selector styling targets the control** → review the rewritten control styling and forwarded trigger props.
+- **Text input styling targets the control** → review the rewritten control styling and native input ID.
+- **Theme styling uses current names and data attributes** → review rewritten keys and selectors, especially any TODO for custom CSS.
+- **BottomSheet adds default content padding** → review the generated `padding={0}` or TODO; remove the prop when your theme already supplies padding.
+- **`emptySearchResultsText` is removed** → review the rename to `emptySearchText` and any TODO on spreads or trigger objects.
 
 ### All 26 breaking migrations
 
