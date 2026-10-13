@@ -36,8 +36,8 @@ const isCI = (process.env.CI ?? '') !== '';
 
 /**
  * Worker count for the contract run: `A11Y_CONTRACT_WORKERS`, default 1 when
- * unset or empty. Only a positive integer is accepted; Playwright would treat a `NaN` count as zero
- * workers and exit green without running a test.
+ * unset or empty. Only a positive integer is accepted: Playwright would treat
+ * a `NaN` count as zero workers and exit green without running a test.
  */
 function contractWorkers(): number {
   const raw = process.env.A11Y_CONTRACT_WORKERS;
