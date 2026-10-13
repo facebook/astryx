@@ -1110,6 +1110,114 @@ jobs:
   # Skipped when no components changed. Depends only on build-storybook, so it
   # starts as soon as the storybook artifact is up (~2min) instead of waiting
   # for the slower sandbox build.
+  # The release check's full axe roster is scanned by three shard jobs and
+  # joined, with the baseline gate, in pr-a11y-audit, while pr-a11y runs the
+  # browser guards beside them. Pull requests audit only their scoped owners in
+  # pr-a11y itself, so neither runs there.
+  pr-a11y-shard:
+    name: pr-a11y (${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: [build-storybook, check-components]
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && needs.check-components.outputs.has_components == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Install Playwright
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      - name: Run accessibility audit shard
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --concurrency 4 \
+            --shard "${{ matrix.shard }}/${{ strategy.job-total }}" \
+            --shard-output "a11y-shard-${{ matrix.shard }}.json"
+
+      - name: Upload accessibility audit shard
+        uses: actions/upload-artifact@v7
+        with:
+          name: a11y-shard-${{ needs.build-storybook.outputs.short_hash }}-${{ matrix.shard }}
+          path: a11y-shard-${{ matrix.shard }}.json
+          retention-days: 1
+          if-no-files-found: error
+
+  pr-a11y-audit:
+    name: pr-a11y (full audit)
+    needs: [build-storybook, check-components, pr-a11y-shard]
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && needs.check-components.outputs.has_components == 'true' }}
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Require every audit shard
+        env:
+          SHARD_RESULT: ${{ needs.pr-a11y-shard.result }}
+        run: |
+          if [ "$SHARD_RESULT" != success ]; then
+            echo "Accessibility audit shards did not all succeed: $SHARD_RESULT"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Download accessibility audit shards
+        uses: actions/download-artifact@v8
+        with:
+          pattern: a11y-shard-${{ needs.build-storybook.outputs.short_hash }}-*
+          path: a11y-shards
+          merge-multiple: true
+
+      # Builds the report a single full run would write from the complete
+      # shard set (or fails), then applies the checked-in baseline.
+      - name: Run accessibility audit
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output a11y-report.json \
+            --merge-shards a11y-shards \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+
+      - name: Upload a11y artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: a11y-report
+          path: a11y-report.json
+          retention-days: 1
+
   pr-a11y:
     needs: [build-storybook, check-components]
     if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true'
@@ -1152,7 +1260,10 @@ jobs:
       # Fails on axe violations not present in the checked-in baseline
       # (.github/a11y-baseline.json). See CONTRIBUTING.md "Accessibility
       # audits" for the baseline workflow.
+      # Release checks scan the full roster in pr-a11y-shard and gate it in
+      # pr-a11y-audit; this job keeps the scoped PR audit and the guards.
       - name: Run accessibility audit
+        if: github.event_name == 'pull_request'
         run: |
           SCOPE_ARGS=()
           if [ "${{ github.event_name }}" = 'pull_request' ]; then
@@ -1173,7 +1284,7 @@ jobs:
       # if: always() so the report artifact (and the PR comment built from it)
       # still exists when the gate above fails.
       - name: Upload a11y artifact
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: a11y-report
@@ -2468,6 +2579,7 @@ jobs:
         pr-visual,
         pr-a11y,
         a11y-contracts,
+        pr-a11y-audit,
         pr-rtl,
       ]
     if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' }}
@@ -2486,7 +2598,7 @@ jobs:
         with:
           script: |
             const needs = JSON.parse(process.env.RELEASE_NEEDS);
-            for (const name of ['check-scope', 'check-components', 'build-storybook', 'typecheck', 'pr-visual', 'pr-a11y', 'a11y-contracts', 'pr-rtl']) {
+            for (const name of ['check-scope', 'check-components', 'build-storybook', 'typecheck', 'pr-visual', 'pr-a11y', 'a11y-contracts', 'pr-a11y-audit', 'pr-rtl']) {
               if (needs[name]?.result !== 'success') {
                 throw new Error(`Required release job ${name} did not succeed: ${needs[name]?.result}`);
               }

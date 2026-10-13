@@ -233,6 +233,7 @@ describe('ci.yml RTL package sharding', () => {
     const exactRef = '${{ github.event.pull_request.head.sha || github.sha }}';
     for (const name of [
       'build-storybook',
+      'pr-a11y-shard',
       'pr-a11y',
       'a11y-contracts',
       'pr-rtl-shard',

@@ -7,6 +7,8 @@
  * @input --storybook-dir <path> --output <file> [--components <comma-separated>]
  *   [--stories <comma-separated-story-ids>] [--port <number>]
  *   [--ready-selector <css-selector>] [--concurrency <pages, default 1>]
+ *   [--shard <i>/<n> --shard-output <file>] (scan every n-th story, write it)
+ *   [--merge-shards <dir>] (read a complete shard set instead of scanning)
  *   --baseline <path> (compare violations against a checked-in baseline)
  *   --fail-on-new (exit 1 when violations not present in the baseline exist)
  *   --update-baseline (rewrite the baseline file from this run's report)
@@ -36,6 +38,14 @@ const {
   storyKey,
 } = require('./lib/a11y-baseline');
 const {waitForStoryReadiness} = require('./lib/a11y-story-readiness');
+const {
+  mergeA11yShards,
+  parseShard,
+  readShardFiles,
+  readStorybookSha,
+  shardFile,
+  shardItems,
+} = require('./lib/a11y-shards');
 const {
   legacyBaselineStoryKeys,
   ownerForA11yStory,
@@ -73,6 +83,19 @@ const concurrencyArg = getArg('concurrency');
 const concurrency = Number(concurrencyArg ?? 1);
 if (!Number.isInteger(concurrency) || concurrency < 1) {
   throw new Error(`Invalid --concurrency value: ${concurrencyArg}`);
+}
+// A sharded audit: each `--shard i/n` job scans every n-th story and writes
+// only its per-story results; `--merge-shards` then builds the report (and
+// applies the baseline gate) from the complete set, exactly as one run would.
+const shardArg = getArg('shard');
+const shardOutput = getArg('shard-output');
+const mergeShardsDir = getArg('merge-shards');
+const shard = shardArg === null ? null : parseShard(shardArg);
+if ((shard === null) !== (shardOutput === null)) {
+  throw new Error('--shard and --shard-output must be given together');
+}
+if (shard !== null && mergeShardsDir !== null) {
+  throw new Error('--shard and --merge-shards cannot be combined');
 }
 const baselineFile = getArg('baseline');
 const readySelector = getArg('ready-selector');
@@ -343,17 +366,21 @@ async function runAccessibilityAudit() {
 
   console.log(`Auditing ${Object.keys(storyGroups).length} components`);
 
-  const server = await createServer(storybookPath, port);
-  const browser = await chromium.launch();
+  // A merge reads results; it starts no server and no browser.
+  const scanning = mergeShardsDir === null;
+  const server = scanning ? await createServer(storybookPath, port) : null;
+  const browser = scanning ? await chromium.launch() : null;
   const componentResults = {};
   const auditedStoryIds = new Set();
   let totalViolations = 0;
 
   try {
-    const context = await browser.newContext({
-      viewport: { width: 1280, height: 720 },
-      reducedMotion: 'reduce',
-    });
+    const context = scanning
+      ? await browser.newContext({
+          viewport: { width: 1280, height: 720 },
+          reducedMotion: 'reduce',
+        })
+      : null;
 
     // Scan one story on a fresh page; returns its axe violations.
     const scanStory = async (component, story) => {
@@ -424,22 +451,55 @@ async function runAccessibilityAudit() {
       ([component, componentStories]) =>
         componentStories.map(story => ({component, story})),
     );
-    const violationsByStory = new Map();
-    let next = 0;
-    let failed = false;
-    await Promise.all(
-      Array.from({length: Math.min(concurrency, queue.length)}, async () => {
-        while (!failed && next < queue.length) {
-          const {component, story} = queue[next++];
-          try {
-            violationsByStory.set(story.id, await scanStory(component, story));
-          } catch (e) {
-            failed = true;
-            throw e;
+    const queueStoryIds = queue.map(({story}) => story.id);
+    const storybookSha = readStorybookSha(storybookPath);
+    let violationsByStory = new Map();
+    if (!scanning) {
+      violationsByStory = mergeA11yShards(readShardFiles(mergeShardsDir), {
+        storyIds: queueStoryIds,
+        storybookSha,
+      });
+      console.log(
+        `Merged ${violationsByStory.size} audited stories from ${mergeShardsDir}`,
+      );
+    } else {
+      const items = shard === null ? queue : shardItems(queue, shard);
+      if (shard !== null) {
+        console.log(
+          `Shard ${shard.index}/${shard.count}: ${items.length} of ${queue.length} stories`,
+        );
+      }
+      let next = 0;
+      let failed = false;
+      await Promise.all(
+        Array.from({length: Math.min(concurrency, items.length)}, async () => {
+          while (!failed && next < items.length) {
+            const {component, story} = items[next++];
+            try {
+              violationsByStory.set(story.id, await scanStory(component, story));
+            } catch (e) {
+              failed = true;
+              throw e;
+            }
           }
-        }
-      }),
-    );
+        }),
+      );
+      if (shard !== null) {
+        fs.writeFileSync(
+          shardOutput,
+          JSON.stringify(
+            shardFile({
+              storyIds: queueStoryIds,
+              shard,
+              storybookSha,
+              violationsByStory,
+            }),
+          ),
+        );
+        console.log(`Shard results written to ${shardOutput}`);
+        return null;
+      }
+    }
 
     for (const [component, componentStories] of Object.entries(storyGroups)) {
       const componentViolations = [];
@@ -499,8 +559,8 @@ async function runAccessibilityAudit() {
       };
     }
   } finally {
-    await browser.close();
-    server.close();
+    await browser?.close();
+    server?.close();
   }
 
   const auditedStories = routed.routes
@@ -613,6 +673,8 @@ function applyBaselineGate(report) {
 
 runAccessibilityAudit()
   .then((report) => {
+    // A shard writes per-story results only; the merge run gates.
+    if (report === null) return;
     const code = applyBaselineGate(report);
     if (code !== 0) process.exitCode = code;
   })

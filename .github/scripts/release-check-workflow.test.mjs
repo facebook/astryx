@@ -25,6 +25,8 @@ const releaseJobs = [
   'build-storybook',
   'typecheck',
   'pr-visual',
+  'pr-a11y-shard',
+  'pr-a11y-audit',
   'pr-a11y',
   'a11y-contracts',
   'pr-rtl-shard',
@@ -220,14 +222,17 @@ describe('explicit release routing', () => {
     },
   );
 
-  it.each(['pr-a11y', 'a11y-contracts', 'pr-visual', 'pr-rtl-shard'])(
-    'blocks %s when its build fails',
-    name => {
-      const needs = dependencies(jobs[name]);
-      needs['build-storybook'].result = 'failure';
-      expect(runs(jobs[name], {needs})).toBe(false);
-    },
-  );
+  it.each([
+    'pr-a11y-shard',
+    'pr-a11y',
+    'a11y-contracts',
+    'pr-visual',
+    'pr-rtl-shard',
+  ])('blocks %s when its build fails', name => {
+    const needs = dependencies(jobs[name]);
+    needs['build-storybook'].result = 'failure';
+    expect(runs(jobs[name], {needs})).toBe(false);
+  });
 
   it('keeps dispatch concurrency separate and non-cancelling', () => {
     expect(workflow.concurrency.group).toContain('|| github.run_id');
@@ -368,6 +373,7 @@ describe('exact main and release branch completion', () => {
       'pr-visual',
       'pr-a11y',
       'a11y-contracts',
+      'pr-a11y-audit',
       'pr-rtl',
     ]);
   });
@@ -568,7 +574,11 @@ describe('full release scope without PR metadata or maintenance writes', () => {
   });
 
   it('runs the canonical accessibility command without a component filter for full scope', () => {
-    const audit = step('pr-a11y', 'Run accessibility audit');
+    const audit = step('pr-a11y-audit', 'Run accessibility audit');
+    expect(runs(step('pr-a11y', 'Run accessibility audit'))).toBe(false);
+    expect(step('pr-a11y-audit', 'Require every audit shard').run).toContain(
+      '"$SHARD_RESULT" != success',
+    );
     const result = shell(
       audit.run.replaceAll('${{ github.event_name }}', 'workflow_dispatch'),
       {},
@@ -581,6 +591,7 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     );
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain('--fail-on-new');
+    expect(result.stdout).toContain('--merge-shards');
     expect(result.stdout).not.toContain('--components');
     expect(audit['continue-on-error']).toBeUndefined();
     expect(
