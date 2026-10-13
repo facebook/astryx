@@ -21,6 +21,7 @@ import {
 } from './defineSyntaxTheme';
 import {useMediaQuery} from '../../hooks/useMediaQuery';
 import {useTheme} from '../useTheme';
+import {formatColor, parseColor} from '../../utils/color';
 
 // =============================================================================
 // Context
@@ -64,23 +65,16 @@ export interface UseSyntaxThemeReturn {
 const DIFF_TINT_STRENGTH = 0.25;
 
 /**
- * The colour `color-mix(in srgb, <hex> <strength>, transparent)` paints, as
- * an `rgba()` a canvas can use. Returns undefined for a colour that is not a
- * hex literal (the CSS default then stands).
+ * The colour `color-mix(in srgb, <colour> <strength>, transparent)` paints, as
+ * a value a canvas can use. Returns undefined for a colour the shared parser
+ * does not read (the CSS default then stands).
  */
-function mixWithTransparent(hex: string, strength: number): string | undefined {
-  const match = hex.trim().match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
-  if (!match) return undefined;
-  let digits = match[1];
-  if (digits.length <= 4) {
-    digits = [...digits].map(d => d + d).join('');
-  }
-  const r = parseInt(digits.slice(0, 2), 16);
-  const g = parseInt(digits.slice(2, 4), 16);
-  const b = parseInt(digits.slice(4, 6), 16);
-  const alpha =
-    digits.length === 8 ? parseInt(digits.slice(6, 8), 16) / 255 : 1;
-  return `rgba(${r}, ${g}, ${b}, ${+(alpha * strength).toFixed(4)})`;
+function mixWithTransparent(
+  colour: string,
+  strength: number,
+): string | undefined {
+  const parsed = parseColor(colour);
+  return parsed ? formatColor({...parsed, a: parsed.a * strength}) : undefined;
 }
 
 /**
@@ -119,7 +113,9 @@ export function useSyntaxTheme(): UseSyntaxThemeReturn | null {
     // the enclosing page theme's resolved tokens (the same mix the CSS
     // default makes), never from a probe outside the nearest Theme.
     for (const key of ALL_SYNTAX_KEYS) {
-      if (resolved[key] !== undefined) continue;
+      if (resolved[key] !== undefined) {
+        continue;
+      }
       const fallback = ctx.theme.tokens[key] ?? '';
       if (key === 'added-marker' || key === 'removed-marker') {
         resolved[key] = resolved.punctuation ?? fallback;

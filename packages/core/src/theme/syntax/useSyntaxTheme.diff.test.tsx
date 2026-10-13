@@ -11,6 +11,7 @@ import {render} from '@testing-library/react';
 import {describe, expect, it} from 'vitest';
 import {SyntaxTheme, useSyntaxTheme} from './SyntaxTheme';
 import {dracula} from './presets';
+import {parseColor} from '../../utils/color';
 
 function Probe({onTokens}: {onTokens: (t: Record<string, string>) => void}) {
   const syntax = useSyntaxTheme();
@@ -33,6 +34,7 @@ describe('useSyntaxTheme diff slots', () => {
     // the default strength, as rgba() a canvas can paint.
     expect(tokens.added).toMatch(/^rgba\(\d+, \d+, \d+, 0\.\d+\)$/);
     expect(tokens.removed).toMatch(/^rgba\(\d+, \d+, \d+, 0\.\d+\)$/);
+    expect(parseColor(tokens.added)?.a).toBeCloseTo(0.2 * 0.25, 3);
     expect(tokens['diff-header']).toBe('transparent');
   });
 });
