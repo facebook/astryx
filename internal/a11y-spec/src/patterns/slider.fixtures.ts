@@ -166,6 +166,12 @@ export const SLIDER_FIXTURES: readonly SliderFixture[] = [
     html: slider({label: null}),
   },
   {
+    id: 'violating-no-valuemin',
+    summary: 'a thumb with no aria-valuemin',
+    facts: facts(),
+    html: slider({omit: ['aria-valuemin']}),
+  },
+  {
     id: 'violating-no-valuemax',
     summary: 'a thumb with no aria-valuemax',
     facts: facts(),
@@ -237,6 +243,7 @@ export const CONFORMING_FIXTURES: readonly string[] = SLIDER_FIXTURES.filter(
 export const SLIDER_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   'slider.thumb.role-and-name': ['violating-role', 'violating-name'],
   'slider.thumb.value-properties': [
+    'violating-no-valuemin',
     'violating-no-valuemax',
     'violating-wrong-valuenow',
   ],

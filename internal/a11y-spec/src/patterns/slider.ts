@@ -10,6 +10,7 @@
 import {
   definePattern,
   type ApgRequirement,
+  type AstryxRecord,
   type PatternContract,
   type WcagCriterion,
 } from '../contract';
@@ -73,6 +74,14 @@ const APG_PAGE = apgReq(
   'Page Up (Optional): Increase the slider value by an amount larger than the step change made by Up Arrow. Page Down (Optional): Decrease the slider value by an amount larger than the step change made by Down Arrow.',
   K,
 );
+const SLIDER_AR1: AstryxRecord = {
+  standard: 'astryx',
+  id: 'component:Slider',
+  clause: 'AR1',
+  url: 'https://github.com/facebook/astryx/blob/250fd9ac197381ec06900279efc31cbb03544ca9/packages/core/src/Slider/Slider.spec.md#L120-L133',
+  requirement:
+    "On a horizontal track the horizontal arrows follow the track's direction — under RTL ArrowLeft increases and ArrowRight decreases; PageUp and PageDown step by ten steps; Home moves to `min` and End to `max`.",
+};
 const APG_REVERSED = apgReq(
   'In some circumstances, reversing the direction of the value change for the keys specified above could create a more intuitive experience.',
   K,
@@ -106,13 +115,20 @@ const ALWAYS = {
   test: () => true,
 };
 
-async function valueNow(subject: Subject): Promise<number> {
-  const raw = await subject.attribute('aria-valuenow');
+async function numericAttribute(
+  subject: Subject,
+  name: string,
+): Promise<number> {
+  const raw = await subject.attribute(name);
   const parsed = raw == null ? Number.NaN : Number(raw);
   if (!Number.isFinite(parsed)) {
-    throw new Error(`aria-valuenow is ${raw ?? 'absent'}, not a number`);
+    throw new Error(`${name} is ${raw ?? 'absent'}, not a number`);
   }
   return parsed;
+}
+
+async function valueNow(subject: Subject): Promise<number> {
+  return numericAttribute(subject, 'aria-valuenow');
 }
 
 function clampToStep(
@@ -190,13 +206,8 @@ export const SLIDER_PATTERN: PatternContract<SliderStateFacts> =
         enforcement: 'required',
         run: async ({subject, facts}) => {
           const now = await valueNow(subject);
-          const min = Number(await subject.attribute('aria-valuemin'));
-          const max = Number(await subject.attribute('aria-valuemax'));
-          if (!Number.isFinite(min) || !Number.isFinite(max)) {
-            throw new Error(
-              'aria-valuemin or aria-valuemax is absent or not a number',
-            );
-          }
+          const min = await numericAttribute(subject, 'aria-valuemin');
+          const max = await numericAttribute(subject, 'aria-valuemax');
           if (now !== facts.value || min !== facts.min || max !== facts.max) {
             throw new Error(
               `the thumb exposes now/min/max ${now}/${min}/${max}, not ${facts.value}/${facts.min}/${facts.max}`,
@@ -261,7 +272,7 @@ export const SLIDER_PATTERN: PatternContract<SliderStateFacts> =
         id: 'slider.keys.arrows-step',
         outcome:
           "The inline-forward arrow and Up raise the value by one step, the inline-back arrow and Down lower it, and on a right-to-left track the horizontal arrows follow the track's direction.",
-        sources: [WCAG_2_1_1, APG_ARROWS, APG_REVERSED],
+        sources: [WCAG_2_1_1, APG_ARROWS, APG_REVERSED, SLIDER_AR1],
         covers: ['2.1.1-keyboard', 'apg-interaction'],
         appliesWhen: {
           condition: 'the thumb can be changed and focused',
@@ -294,7 +305,7 @@ export const SLIDER_PATTERN: PatternContract<SliderStateFacts> =
         id: 'slider.keys.page',
         outcome:
           'Page Up and Page Down move the value by a larger amount than one step.',
-        sources: [WCAG_2_1_1, APG_PAGE],
+        sources: [WCAG_2_1_1, APG_PAGE, SLIDER_AR1],
         covers: ['2.1.1-keyboard', 'apg-interaction'],
         appliesWhen: {
           condition:
@@ -321,7 +332,7 @@ export const SLIDER_PATTERN: PatternContract<SliderStateFacts> =
       {
         id: 'slider.keys.home-end',
         outcome: 'Home sets the minimum and End sets the maximum.',
-        sources: [WCAG_2_1_1, APG_HOME_END],
+        sources: [WCAG_2_1_1, APG_HOME_END, SLIDER_AR1],
         covers: ['2.1.1-keyboard', 'apg-interaction'],
         appliesWhen: {
           condition: 'the thumb can be changed and focused',
