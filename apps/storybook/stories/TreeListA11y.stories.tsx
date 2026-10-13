@@ -30,7 +30,13 @@ export const RowNames: Story = {
           description: 'Shared with the team',
           children: [{id: 'annual', label: 'Annual report'}],
         },
-        {id: 'budget', label: 'Budget', description: 'Updated yesterday'},
+        {
+          id: 'budget',
+          label: 'Budget',
+          description: 'Updated yesterday',
+          startContent: <span>3</span>,
+          endContent: <button type="button">Pin</button>,
+        },
         {
           id: 'report',
           label: 'Report',

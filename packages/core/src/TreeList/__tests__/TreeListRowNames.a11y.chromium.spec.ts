@@ -22,6 +22,7 @@ const STORY_ID = 'a11y-treelist-row-names--row-names';
 
 const ROWS = [
   {id: 'docs', name: 'Documents', description: 'Shared with the team'},
+  // Carries start content and an end-content button: neither joins the name.
   {id: 'budget', name: 'Budget', description: 'Updated yesterday'},
   {id: 'report', name: 'Report', description: 'Opens the report'},
   {id: 'export', name: 'Export', description: 'Downloads a file'},

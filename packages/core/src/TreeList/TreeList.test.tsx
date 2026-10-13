@@ -212,6 +212,20 @@ describe('TreeList', () => {
     expect(action).toHaveAccessibleDescription('Downloads a file');
   });
 
+  it('keeps start and end content, including controls, out of the row name', () => {
+    const items: TreeListItemData[] = [
+      {
+        id: 'a',
+        label: 'Invoices',
+        startContent: <span>12</span>,
+        endContent: <button type="button">Pin folder</button>,
+      },
+    ];
+    render(<TreeList items={items} />);
+    const row = screen.getByText('Invoices').closest('li')!;
+    expect(row).toHaveAccessibleName('Invoices');
+  });
+
   it('typeahead matches the label, not the description or start content', async () => {
     const user = userEvent.setup();
     const items: TreeListItemData[] = [
