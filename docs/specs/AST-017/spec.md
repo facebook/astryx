@@ -138,27 +138,31 @@ one removal merged ahead of the decision to allow it.
 
 ## Requirements
 
-- **FR1 — Breaking changes need a released victim.** A change is breaking only
+- **FR1 — Breaking changes require caller adaptation.** A change is breaking only
   when a valid consumer scenario supported by the latest stable release of a
-  published package no longer works unchanged, or produces an incompatible
-  result under a documented stable contract. The review names that scenario and
-  the released surface it uses.
+  published package must change source or configuration to keep its code,
+  interaction, data, semantic output, or supported workflow working, or loses a
+  stable public surface. The review names that scenario and the released surface
+  it uses.
 - **FR2 — Classify against the latest stable release.** A surface added and then
   renamed, removed, or reworked before any stable release has no installed
   consumer and is not breaking. Private or ignored packages are outside the
   published compatibility promise. Promotion from a private package into a
   published package is additive from the published side.
-- **FR3 — Released contracts include behavior, not only types.** Compatibility
-  covers public exports and import paths; requiredness, accepted values, defaults,
-  return types, callbacks, and error behavior; documented interaction and
+- **FR3 — Released contracts include function and semantics, not exact appearance.**
+  Compatibility covers public exports and import paths; requiredness, accepted values,
+  defaults, return types, callbacks, and error behavior; documented interaction and
   accessibility behavior; stable CLI command names, options, exit behavior, and
-  machine-readable schemas; and other explicitly documented public extension
-  points. Internal implementation, undocumented markup, and source layout are not
-  stable merely because a consumer can observe them. A default change is judged by
-  one test (DEC-17): it is breaking when a caller who never set the prop sees their
-  shipped UI or output change, or when a documented contract promised the old default;
-  otherwise it is nonbreaking. Either way the Changeset names the old and new default
-  and the prop or option that restores the old default, which is the migration.
+  machine-readable schemas; and other explicitly documented public extension points.
+  Internal implementation, undocumented markup, source layout, and exact appearance are
+  not stable merely because a consumer can observe them. A change only to existing
+  content's appearance, spacing, typography, layout styling, or visual default is
+  nonbreaking when public API, accepted inputs, interaction, accessibility semantics,
+  data, and machine-readable output keep working. It uses `[fix]` when it restores
+  current visual authority and `[feat]` when it intentionally changes visual direction.
+  Its Changeset names the old and new appearance and how to keep the old look when a
+  supported escape exists. A default that changes a functional or semantic contract is
+  judged under FR1 instead.
 - **FR4 — Preserved old usage is nonbreaking.** A rename or replacement is
   nonbreaking when the old released call, import, option, identifier, or input
   continues to work with equivalent meaning through a compatibility alias or
@@ -755,7 +759,7 @@ lands, maintainers apply its requirement in review and release approval.
 
 | Contract  | Verification                                                                                                                                                                                                                                                                                                                                                    | Representative states                                                                                                                                                                         | Mutation or failure expectation                                                                                                                                                                                                                                       |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                                                                                                                                                                                                                                                | released export, behavior, CLI command; unreleased and private surface; a default change with and without a restoring prop                                                                    | A change is labeled from diff size or possibility alone, a released contract change is missed, or a default-only change is tagged `[breaking]` without a named victim                                                                                                 |
+| FR1–FR3   | PR compatibility statement plus latest stable package inspection                                                                                                                                                                                                                                                                                                | removed export, narrowed type, changed interaction default; visual-only spacing, typography, layout styling, or default appearance                                                            | A functional contract loss is hidden as visual-only, or a pixel-only change is tagged `[breaking]` even though callers need no source or configuration change                                                                                                         |
 | FR4–FR6   | Old-usage type/runtime/CLI regression test                                                                                                                                                                                                                                                                                                                      | alias retained, deprecation warning, broad rewrite, low-adoption caller                                                                                                                       | Contractual old usage fails despite a nonbreaking label, or risk is substituted for compatibility                                                                                                                                                                     |
 | FR7–FR8   | `pnpm check:changesets` (tag, bump, contributors, declared tier) plus FR8 migration review of `[breaking]` text                                                                                                                                                                                                                                                 | existing `[fix]`, `[feat]`, `[breaking]`, and `[experimental]` tags paired with compatible, deprecation, planned-removal, or incompatible-fix metadata                                        | A new lifecycle replaces an established tag, tag/metadata/bump diverge, an incompatible correction uses bare `[fix]`, or migration is unusable                                                                                                                        |
 | FR9–FR13  | CLI contract tests, response-schema/type snapshots, text projections, generated consumer docs, and template catalog/output tests                                                                                                                                                                                                                                | slug rename, metadata edit, source rebuild, optional field addition, command or schema change                                                                                                 | Catalog data is frozen as API, a command/schema incompatibility is mislabeled as catalog-only, or a response field lacks a complete projection                                                                                                                        |
@@ -1095,24 +1099,24 @@ Rejected: a runtime compatibility flag or branch used only to acknowledge deprec
 a warning without an available modernization path, copyable guidance that keeps
 teaching the old surface, and a migration that guesses at uncertain consumer intent.
 
-### DEC-17 — A default change is breaking when an untouched caller sees it
+### DEC-17 — Visual-only changes are compatible even when pixels change
 
 **Reference:** `spec:AST-017/DEC-17`
-**Decider:** `cixzhang`, `2026-10-11`
+**Decider:** `cixzhang`, `2026-10-12`
 
-A default change is not breaking by itself and not compatible by itself; it is judged
-by a caller who never set the prop. If that caller's UI or output visibly changes —
-content gains padding, a grid lays out differently, a popover becomes a sheet on
-touch — the change is breaking and ships as `[breaking]` in a declared minor. If that
-caller sees nothing different, it is a `[feat]` or `[fix]`. In both cases the
-Changeset names the old and new default and the prop or option that restores the old
-default; that restoring prop is the migration, so a default change needs no
-deprecation path beyond it.
+Compatibility asks whether a valid latest-stable caller must edit source or
+configuration to keep a supported functional contract working. Removing or renaming a
+public surface, narrowing an accepted type, or changing interaction, accessibility
+semantics, data, machine-readable output, or another behavior contract can therefore be
+breaking. Changing only the appearance, spacing, typography, layout styling, or visual
+default of existing content is not: it ships as `[feat]` or `[fix]` under FR3 even when
+an untouched caller sees different pixels. Its release note names the old and new
+appearance and how to keep the old look when a supported escape exists; that escape is
+guidance, not a required compatibility migration.
 
-Rejected: classifying every default change as breaking, which routes invisible
-changes through the minor for nothing; and classifying every default change as
-compatible, which lets a visible change reach callers in a patch without the minor's
-announcement.
+Rejected: treating any pixel difference as a released victim; and calling an
+interaction, semantic, data, or machine-output change visual-only because its UI also
+looks different.
 
 ### DEC-18 — Two rules and one gate
 
