@@ -407,6 +407,15 @@ export function Calendar({ref, ...props}: CalendarProps) {
       offset?: number,
       unit: NavigationUnit = 'days',
     ) => {
+      // A key that would leave the navigable range (an arrow or page past
+      // `min`/`max`) changes nothing: no month change and no pending target,
+      // so a later Previous/Next click cannot be pulled toward a stale day.
+      if (
+        (delta < 0 && !canNavigatePrevious) ||
+        (delta > 0 && !canNavigateNext)
+      ) {
+        return;
+      }
       const newPd = plainDateAddMonths(baseMonth, delta);
       const newISO = plainDateToISO(newPd);
 
@@ -443,7 +452,13 @@ export function Calendar({ref, ...props}: CalendarProps) {
         setInternalFocusDate(newPd);
       }
     },
-    [baseMonth, numberOfMonths, onFocusDateChange],
+    [
+      baseMonth,
+      canNavigateNext,
+      canNavigatePrevious,
+      numberOfMonths,
+      onFocusDateChange,
+    ],
   );
 
   // Escape key handler to cancel range selection
@@ -874,9 +889,16 @@ function MonthGrid({
       ),
     );
 
+    // The real target day, else the month's first enabled day, else — in a
+    // month with no enabled day — the first day button that can still take
+    // focus (a borrowed adjacent-month day), so focus stays in the grid
+    // rather than dropping to the page.
     const targetButton =
       buttons.find(button => button.getAttribute('data-date') === targetIso) ??
       buttons[0] ??
+      gridRef.current.querySelector<HTMLElement>(
+        'button[data-date]:not([disabled])',
+      ) ??
       null;
 
     targetButton?.focus();

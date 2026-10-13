@@ -1009,6 +1009,46 @@ describe('Calendar', () => {
       expect(document.activeElement).not.toHaveAttribute('aria-disabled');
     });
 
+    it('an arrow past max changes nothing and leaves no pending target behind', async () => {
+      const user = userEvent.setup();
+      const {rerender} = render(
+        <Calendar focusDate="2026-01-01" max="2026-01-31" />,
+      );
+      const last = getDayButton(31);
+      last.focus();
+      await user.keyboard('{ArrowRight}');
+      // January stays, focus stays on the max day.
+      expect(screen.getByRole('button', {name: 'Next month'})).toBeDisabled();
+      expect(document.activeElement).toBe(getDayButton(31));
+
+      // Later the range widens and the user clicks Next: no stale target
+      // pulls focus into the grid.
+      rerender(<Calendar focusDate="2026-01-01" max="2026-02-28" />);
+      const next = screen.getByRole('button', {name: 'Next month'});
+      await user.click(next);
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('February 2026');
+      });
+      expect(document.activeElement).toBe(next);
+    });
+
+    it('a page into a month with no enabled day keeps focus in the grid', async () => {
+      const user = userEvent.setup();
+      const noFebruary = (date: Date) => date.getMonth() !== 1;
+      render(
+        <Calendar focusDate="2026-01-01" dateConstraints={[noFebruary]} />,
+      );
+      getDayButton(15).focus();
+      await user.keyboard('{PageDown}');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('February 2026');
+      });
+      await waitFor(() => {
+        expect(document.activeElement).not.toBe(document.body);
+      });
+      expect(document.activeElement).toHaveAttribute('data-date');
+    });
+
     it('announces the next month when paging the grid with PageDown', async () => {
       const user = userEvent.setup();
       render(<Calendar focusDate="2026-01-01" />);
