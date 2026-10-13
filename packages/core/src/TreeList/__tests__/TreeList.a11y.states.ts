@@ -159,6 +159,6 @@ export const TREE_LIST_EXCLUSIONS = [
     id: 'selection-keyboard',
     owner: 'component:TreeList AR1 and DEC-2',
     reason:
-      'Selection is caller-owned (isSelected) with at most one row selected; the tree adopts no selection keyboard (Space, Shift or Control combinations) and not the optional * key, so the contract asserts only that the tree makes no multiselect claim.',
+      'Selection is caller-owned (isSelected) with at most one row selected; the tree adopts no selection keyboard (Shift or Control combinations; Space is activation, covered by the contract) and not the optional * key, so the contract asserts only that the tree makes no multiselect claim.',
   },
 ] as const;

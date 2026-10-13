@@ -10,6 +10,7 @@
 import {
   definePattern,
   type ApgRequirement,
+  type AstryxRecord,
   type PatternContract,
   type WcagCriterion,
 } from '../contract';
@@ -99,6 +100,10 @@ const APG_HOME_END = apgReq(
   'Home: Moves focus to the first node in the tree without opening or closing a node. End: Moves focus to the last node in the tree that is focusable without opening a node.',
   K,
 );
+const APG_SPACE = apgReq(
+  'Space: Performs the default action (e.g. onclick event) for the focused node, when the node has one.',
+  K,
+);
 const APG_ENTER = apgReq(
   'Enter: activates a node, i.e., performs its default action. For parent nodes, one possible default action is to open or close the node.',
   K,
@@ -111,10 +116,14 @@ const APG_FOCUS_ENTRY = apgReq(
   'When a single-select tree receives focus: if none of the nodes are selected before the tree receives focus, focus is set on the first node; if a node is selected before the tree receives focus, focus is set on the selected node.',
   K,
 );
-const APG_RTL = apgReq(
-  'When the tree is in a right-to-left context, the Right arrow and Left arrow behaviors are reversed.',
-  K,
-);
+const TREELIST_AR1_RTL: AstryxRecord = {
+  standard: 'astryx',
+  id: 'component:TreeList',
+  clause: 'AR1',
+  url: 'https://github.com/facebook/astryx/blob/250fd9ac197381ec06900279efc31cbb03544ca9/packages/core/src/TreeList/TreeList.spec.md#L151-L161',
+  requirement:
+    'ArrowRight expands a closed row, then moves into its first child, and ArrowLeft collapses an open row or moves to the parent — mirrored under RTL.',
+};
 
 /**
  * What a binding knows about one tree node (the subject) and the tree around
@@ -423,7 +432,7 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         id: 'treeview.keys.open-close-and-descend',
         outcome:
           'On a closed parent the inline-forward arrow opens it without moving focus, pressed again moves into the first child, and the inline-back arrow returns to the parent and then closes it — mirrored under right-to-left.',
-        sources: [WCAG_2_1_1, APG_RIGHT, APG_LEFT, APG_RTL],
+        sources: [WCAG_2_1_1, APG_RIGHT, APG_LEFT, TREELIST_AR1_RTL],
         covers: ['2.1.1-keyboard', 'apg-interaction'],
         appliesWhen: {
           condition: 'the node is a closed parent that can be operated',
@@ -483,33 +492,30 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         },
       },
       {
-        id: 'treeview.keys.enter-activates',
+        id: 'treeview.keys.enter-or-space-activates',
         outcome:
-          "Enter performs the node's default action: a parent without its own action opens and closes.",
-        sources: [WCAG_2_1_1, APG_ENTER],
+          "Enter and Space perform the node's default action: a parent without its own action opens on one and closes on the other.",
+        sources: [WCAG_2_1_1, APG_ENTER, APG_SPACE],
         covers: ['2.1.1-keyboard', 'apg-interaction'],
         appliesWhen: {
-          condition: 'Enter opens or closes this node and it can be operated',
+          condition:
+            'Enter or Space opens or closes this node and it can be operated',
           test: facts => facts.enterToggles && !facts.disabled,
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
-        enforcement: 'advisory',
-        advisoryBecause:
-          "Enter's default action for a parent is one the pattern permits rather than requires; this becomes required once component:TreeList AR1 is current (AST-020 FR9).",
+        enforcement: 'required',
         run: async ({harness, subject, facts}) => {
           const {close} = inlineKeys(facts.rtl);
           try {
-            await focusOrFail(subject, 'Enter');
+            await focusOrFail(subject, 'Enter and Space');
             await harness.press('Enter');
             if ((await authoredExpanded(subject)) !== !facts.expanded) {
               throw new Error('Enter did not toggle the parent node');
             }
-            await harness.press('Enter');
+            await harness.press('Space');
             if ((await authoredExpanded(subject)) !== facts.expanded) {
-              throw new Error(
-                'Enter a second time did not toggle the parent node back',
-              );
+              throw new Error('Space did not toggle the parent node back');
             }
           } finally {
             await restoreExpansion(harness, subject, facts.expanded, close);
@@ -529,9 +535,7 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
-        enforcement: 'advisory',
-        advisoryBecause:
-          'Typeahead is recommended, not required, by the pattern; this becomes required once component:TreeList AR1 is current (AST-020 FR9).',
+        enforcement: 'required',
         run: async ({harness, subject, facts}) => {
           const target = await harness.related('typeahead-target');
           await focusOrFail(subject, 'typing');
@@ -563,9 +567,11 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
           'Row order within the tree follows the data the caller supplies; where the tree sits in the page is composition.',
       },
       '1.3.5-identify-input-purpose': {
-        owner: 'not applicable',
-        verifiedBy: 'none needed',
-        reason: 'A tree node does not collect information about the user.',
+        owner: 'the binding component',
+        verifiedBy:
+          "the component's row-rendering tests (rows render no input control)",
+        reason:
+          "A tree row is a navigation node, not an input that collects information about the user; the binding's tests show rows carry no form control for autofill to name.",
       },
       '1.4.1-use-of-color': {
         owner: 'the binding component and theme',
@@ -681,15 +687,17 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
           'Consistency is a property of the full set of repeated functions, not one isolated tree.',
       },
       '3.3.1-error-identification': {
-        owner: 'not applicable',
-        verifiedBy: 'none needed',
-        reason: 'A tree node collects no input that could be in error.',
+        owner: 'the binding component',
+        verifiedBy:
+          "the component's row-rendering tests (rows render no input control)",
+        reason:
+          "A tree row collects no input, so there is no entry to be in error; the binding's tests show rows carry no form control.",
       },
       '3.3.2-labels-or-instructions': {
-        owner: 'not applicable',
-        verifiedBy: 'none needed',
+        owner: 'the binding component and caller content',
+        verifiedBy: "the component's name tests and caller content review",
         reason:
-          'A tree node collects no user input that needs form instructions.',
+          'A tree row collects no input that needs instructions; this contract proves rows are named, and the caller supplies any guidance around the tree.',
       },
       '4.1.2-name-role-value': {
         owner: 'the link and button patterns, and the binding component',
@@ -712,7 +720,7 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         verifiedBy:
           'component:TreeList AR1 and DEC-2, which adopt the model and name what is left out',
         reason:
-          "This contract encodes the Tree View structure and keyboard model. Selection keyboard (Space, Shift/Control combinations) and the optional * key are not adopted by the binding's record.",
+          "This contract encodes the Tree View structure and keyboard model. Selection keyboard (Shift/Control combinations) and the optional * key are not adopted by the binding's record; Space is activation here, not selection.",
         coversRemainderOnly: true,
       },
       'forced-colors': {

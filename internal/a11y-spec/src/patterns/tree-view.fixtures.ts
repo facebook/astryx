@@ -62,7 +62,7 @@ const SCRIPT = `<script>
       case 'ArrowLeft': e.preventDefault(); if (cur.getAttribute('aria-expanded') === 'true') toggle(cur); else { for (let j = i-1; j >= 0; j--) if (level(list[j]) < level(cur)) { focusItem(list[j]); break; } } break;
       case 'Home': e.preventDefault(); focusItem(list[0]); break;
       case 'End': e.preventDefault(); focusItem(window.__treeEndIsFirst ? list[0] : list[list.length-1]); break;
-      case 'Enter': e.preventDefault(); if (cur.hasAttribute('aria-expanded') && !window.__treeEnterInert) toggle(cur); break;
+      case 'Enter': case ' ': e.preventDefault(); if (cur.hasAttribute('aria-expanded') && !window.__treeEnterInert) toggle(cur); break;
       default:
         if (key.length === 1 && !window.__treeNoTypeahead) { const q = key.toLowerCase(); const ordered = list.slice(i+1).concat(list.slice(0, i+1)); const m = ordered.find(el => (el.querySelector('.label')?.textContent ?? '').trim().toLowerCase().startsWith(q)); if (m) { e.preventDefault(); focusItem(m); } }
     }
@@ -344,7 +344,7 @@ export const TREE_VIEW_FIXTURES: readonly TreeViewFixture[] = [
   },
   {
     id: 'violating-enter-inert',
-    summary: 'a parent node that Enter does not open',
+    summary: 'a parent node that neither Enter nor Space opens',
     facts: facts(),
     html: flag('__treeEnterInert', tree()),
   },
@@ -389,6 +389,6 @@ export const TREE_VIEW_MUTATIONS: Readonly<Record<string, readonly string[]>> =
       'violating-rtl-not-mirrored',
     ],
     'treeview.keys.home-and-end': ['violating-end-key'],
-    'treeview.keys.enter-activates': ['violating-enter-inert'],
+    'treeview.keys.enter-or-space-activates': ['violating-enter-inert'],
     'treeview.keys.typeahead': ['violating-no-typeahead'],
   };
