@@ -104,7 +104,8 @@ either component's remaining target shape.
 
 ### Transformation and precedence order
 
-- ORD1: a key result snaps to the nearest step, then clamps to the bounds.
+- ORD1: an arrow or Page key result snaps to the nearest step, then clamps to
+  the bounds; Home and End go to `min` and `max` (AR1).
 - The anatomy decision (DEC-1) introduces no value, snapping, geometry,
   interaction, or styling precedence rule of its own.
 
