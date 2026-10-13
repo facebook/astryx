@@ -282,7 +282,11 @@ function InsertControls() {
           editor.dispatchCommand(INSERT_TABLE_COMMAND, {
             columns: '3',
             rows: '3',
-            includeHeaders: true,
+            // A header ROW only. Lexical's `true` would also make the first
+            // column header cells, and GFM Markdown has no header column — so
+            // the playground's own Markdown readout would drop it and look
+            // like a round-trip bug no real document can produce.
+            includeHeaders: {rows: true, columns: false},
           })
         }
       />
@@ -446,11 +450,23 @@ const OUTPUT_TABS: ReadonlyArray<{value: OutputTab; label: string}> = [
   {value: 'view', label: 'RichTextView'},
 ];
 
-const SHORTCUTS: ReadonlyArray<{keys: string; action: string}> = [
+/**
+ * The shortcuts this surface actually answers. Bold, italic and underline are
+ * Lexical core's own key handling, and history, task checking and indentation
+ * come from plugins the editor always renders — so those rows are true however
+ * the switches stand. Cmd/Ctrl+K is registered by `RichTextEditorToolbar`, and
+ * only while its link button is on, so that row is marked and listed only then:
+ * a shortcut table that lists a dead key teaches the wrong thing.
+ */
+const SHORTCUTS: ReadonlyArray<{
+  keys: string;
+  action: string;
+  needsLinkButton?: boolean;
+}> = [
   {keys: 'mod+b', action: 'Bold'},
   {keys: 'mod+i', action: 'Italic'},
   {keys: 'mod+u', action: 'Underline'},
-  {keys: 'mod+k', action: 'Insert or edit a link'},
+  {keys: 'mod+k', action: 'Insert or edit a link', needsLinkButton: true},
   {keys: 'mod+z', action: 'Undo'},
   {keys: 'mod+shift+z', action: 'Redo'},
   {keys: 'mod+enter', action: 'Check the task item holding the caret'},
@@ -791,7 +807,7 @@ export function RichTextEditorPlayground() {
             <Switch
               size="sm"
               label="Markdown shortcuts"
-              description="Typing '# ', '- ', '- [ ] ', '> ', '```' and '|'"
+              description="Typing '# ', '- ', '- [ ] ', '> ' and '```'"
               value={hasMarkdownShortcuts}
               onChange={setHasMarkdownShortcuts}
             />
@@ -976,7 +992,10 @@ export function RichTextEditorPlayground() {
           <Divider />
           <Heading level={3}>Shortcuts</Heading>
           <div {...stylex.props(styles.group)}>
-            {SHORTCUTS.map(shortcut => (
+            {SHORTCUTS.filter(
+              shortcut =>
+                shortcut.needsLinkButton !== true || (hasToolbar && hasLink),
+            ).map(shortcut => (
               <div key={shortcut.keys} {...stylex.props(styles.shortcutRow)}>
                 <Text type="supporting">{shortcut.action}</Text>
                 <Kbd keys={shortcut.keys} />

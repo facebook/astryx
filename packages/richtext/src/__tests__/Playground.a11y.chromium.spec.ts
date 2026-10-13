@@ -155,6 +155,42 @@ test("the toolbar's endContent slot reaches the editor", async ({page}) => {
   await editor.click();
   await page.getByRole('button', {name: 'Table', exact: true}).click();
   await expect(editor.locator('table')).toHaveCount(tables + 1);
+
+  // A header ROW and no header column, in every table the editor holds. GFM
+  // has no header column, so a table carrying one is dropped by the
+  // playground's own Markdown readout and reads as a round-trip bug no real
+  // document can produce — which is what Lexical's `includeHeaders: true`
+  // would make here. Asserted across all tables rather than on the one just
+  // inserted: the insert lands wherever the caret is, so position is not a
+  // reliable handle on it. `:first-of-type`, not `:first-child` — Lexical's
+  // table opens with a `<colgroup>` and puts the rows directly in `<table>`,
+  // so no `tr` is ever a first child.
+  await expect(editor.locator('table tr:first-of-type th')).not.toHaveCount(0);
+  await expect(editor.locator('table tr:not(:first-of-type) th')).toHaveCount(
+    0,
+  );
+  expect(errors).toEqual([]);
+});
+
+test('the shortcut table lists Cmd/Ctrl+K only while the toolbar registers it', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  const linkShortcut = settings(page).getByText('Insert or edit a link');
+  await expect(linkShortcut).toBeVisible();
+
+  // The toolbar registers that key, and only while its link button is on.
+  await toggle(page, 'Link button').click();
+  await expect(linkShortcut).toHaveCount(0);
+  await toggle(page, 'Link button').click();
+  await expect(linkShortcut).toBeVisible();
+
+  await toggle(page, 'Toolbar').click();
+  await expect(linkShortcut).toHaveCount(0);
+
+  // The rows that core and the always-on plugins answer stay listed.
+  await expect(settings(page).getByText('Bold', {exact: true})).toBeVisible();
+  await expect(settings(page).getByText('Undo', {exact: true})).toBeVisible();
   expect(errors).toEqual([]);
 });
 
