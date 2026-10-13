@@ -4703,6 +4703,35 @@ describe('Selector press model', () => {
     }
   });
 
+  it('near a viewport edge the clamped list puts another option under the press: an unmoved release on it acts on nothing', () => {
+    // jsdom cannot hit-test; the document answers the press point with the
+    // option the clamped list placed there, as a browser's would.
+    vi.useFakeTimers();
+    const doc = document as Document & {
+      elementFromPoint?: (x: number, y: number) => Element | null;
+    };
+    const original = doc.elementFromPoint;
+    try {
+      const onChange = vi.fn();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+      const trigger = screen.getByRole('combobox');
+      fireEvent.pointerDown(trigger, {...mouse, clientX: 10, clientY: 10});
+      const cherry = screen.getByRole('option', {name: /Cherry/, ...h});
+      doc.elementFromPoint = () => cherry;
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      // The release lands, unmoved, on the row under the press: Cherry, not
+      // the first option the overlay would have placed there.
+      fireEvent.pointerUp(cherry, {...mouse, clientX: 12, clientY: 10});
+      expect(onChange).not.toHaveBeenCalled();
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      doc.elementFromPoint = original;
+      vi.useRealTimers();
+    }
+  });
+
   it('a release on the selected row after moving past the slop picks it, as a native pop-up does: the list closes, the value kept', () => {
     vi.useFakeTimers();
     try {

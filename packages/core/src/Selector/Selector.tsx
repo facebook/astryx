@@ -498,6 +498,8 @@ const itemSizeStyles = stylex.create({
  * a hold at the same distance).
  */
 const PRESS_ROW_SLOP_PX = 10;
+/** The row under the press is not yet known: the list has reported no row. */
+const PRESS_ROW_UNRESOLVED = -2;
 
 const STATUS_ICON_MAP: Record<SelectorStatusType, IconName> = {
   warning: 'warning',
@@ -1358,8 +1360,15 @@ export function Selector<T extends SelectorOptionType>(
   const openingPressRef = useRef<{
     clientX: number;
     clientY: number;
-    /** The index of the row the list placed under the press, or -1. */
+    /**
+     * The index of the row the list placed under the press: resolved by
+     * hit-testing the press point once the positioned list reports a row
+     * (FR2 clamps the list to the viewport, so near an edge it is not the
+     * selected row); -1 for none, `PRESS_ROW_UNRESOLVED` until then.
+     */
     pressRowIndex: number;
+    /** The overlay's row (the selected option, else the first), the fallback where the document cannot hit-test. */
+    overlayRowIndex: number;
     /** Whether the highlight has visited another row since the open. */
     leftPressRow: boolean;
   } | null>(null);
@@ -1399,9 +1408,11 @@ export function Selector<T extends SelectorOptionType>(
         setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
       }
       // With the default placement the list opens with that row over the
-      // trigger, under the pressing pointer (FR2).
+      // trigger, under the pressing pointer (FR2), unless the viewport
+      // clamped it: the row under the press is hit-tested once the list
+      // reports one.
       if (openingPressRef.current != null) {
-        openingPressRef.current.pressRowIndex = shouldOverlaySelectedItem
+        openingPressRef.current.overlayRowIndex = shouldOverlaySelectedItem
           ? Math.max(selectedIndex, 0)
           : -1;
       }
@@ -1436,7 +1447,8 @@ export function Selector<T extends SelectorOptionType>(
       openingPressRef.current = {
         clientX: event.clientX,
         clientY: event.clientY,
-        pressRowIndex: -1,
+        pressRowIndex: PRESS_ROW_UNRESOLVED,
+        overlayRowIndex: -1,
         leftPressRow: false,
       };
       const doc = event.currentTarget.ownerDocument;
@@ -1462,10 +1474,38 @@ export function Selector<T extends SelectorOptionType>(
    * when it is already the value, once the mouse moved past the slop; the
    * row under the press never selects a value nobody chose.
    */
+  /**
+   * The row under the press point, read once the positioned list reports a
+   * row: a hit test at the press coordinates, or, where the document cannot
+   * hit-test, the overlay's row.
+   */
+  const resolvePressRow = useCallback(
+    (press: NonNullable<typeof openingPressRef.current>): void => {
+      if (press.pressRowIndex !== PRESS_ROW_UNRESOLVED) {
+        return;
+      }
+      const listbox = listboxRef.current;
+      const doc = listbox?.ownerDocument;
+      if (listbox == null || typeof doc?.elementFromPoint !== 'function') {
+        press.pressRowIndex = press.overlayRowIndex;
+        return;
+      }
+      const hit = doc.elementFromPoint(press.clientX, press.clientY);
+      const row = hit?.closest<HTMLElement>('[role="option"]') ?? null;
+      press.pressRowIndex =
+        row != null && listbox.contains(row) ? optionIndexFromRow(row) : -1;
+    },
+    [optionIndexFromRow],
+  );
+
   const isOpeningReleaseOnPressRow = useCallback(
     (row: HTMLElement, release: PointerEvent): boolean => {
       const press = openingPressRef.current;
-      if (press == null || press.pressRowIndex < 0 || press.leftPressRow) {
+      if (press == null) {
+        return false;
+      }
+      resolvePressRow(press);
+      if (press.pressRowIndex < 0 || press.leftPressRow) {
         return false;
       }
       const index = optionIndexFromRow(row);
@@ -1480,7 +1520,7 @@ export function Selector<T extends SelectorOptionType>(
       const isValueRow = filteredItems[index]?.value === optimisticValue;
       return !(moved && isValueRow);
     },
-    [filteredItems, optimisticValue, optionIndexFromRow],
+    [filteredItems, optimisticValue, optionIndexFromRow, resolvePressRow],
   );
 
   const listboxPress = useMenuPress({
@@ -1490,13 +1530,14 @@ export function Selector<T extends SelectorOptionType>(
     onTriggerPress: handleTriggerPress,
     onHighlight: row => {
       const press = openingPressRef.current;
-      if (
-        press != null &&
-        row != null &&
-        press.pressRowIndex >= 0 &&
-        optionIndexFromRow(row) !== press.pressRowIndex
-      ) {
-        press.leftPressRow = true;
+      if (press != null && row != null) {
+        resolvePressRow(press);
+        if (
+          press.pressRowIndex >= 0 &&
+          optionIndexFromRow(row) !== press.pressRowIndex
+        ) {
+          press.leftPressRow = true;
+        }
       }
       if (row == null) {
         setHighlightedIndex(-1);
