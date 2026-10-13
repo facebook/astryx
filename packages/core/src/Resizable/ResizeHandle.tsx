@@ -375,6 +375,32 @@ export interface ResizeHandleProps extends Omit<
  *   hasDivider />
  * ```
  */
+
+/**
+ * Collapse an open pane, or restore a collapsed one to the size it had before
+ * it collapsed (APG window splitter: Enter "restores the splitter to its
+ * previous position"). The hook's own collapse/expand do exactly that; a
+ * hand-built `ResizableProps` without them falls back to a resize gesture to
+ * the minimum, which also cannot reopen a pane whose minimum sits below its
+ * collapse threshold.
+ */
+function toggleCollapse(resizable: ResizableProps): void {
+  if (resizable._isCollapsed) {
+    if (resizable._expand) {
+      resizable._expand();
+      return;
+    }
+  } else if (resizable._collapse) {
+    resizable._collapse();
+    return;
+  }
+  resizable._onResizeStart();
+  resizable._onResizeMove(
+    resizable._isCollapsed ? resizable._minSizePx : -resizable._size,
+  );
+  resizable._onResizeEnd();
+}
+
 export function ResizeHandle({
   direction = 'horizontal',
   position: positionMode = 'inline',
@@ -564,11 +590,7 @@ export function ResizeHandle({
         case 'Enter': {
           e.preventDefault();
           if (resizable._collapsible) {
-            resizable._onResizeStart();
-            resizable._onResizeMove(
-              resizable._isCollapsed ? resizable._minSizePx : -resizable._size,
-            );
-            resizable._onResizeEnd();
+            toggleCollapse(resizable);
           }
           break;
         }
@@ -582,11 +604,7 @@ export function ResizeHandle({
     if (isDisabled || !resizable || !resizable._collapsible) {
       return;
     }
-    resizable._onResizeStart();
-    resizable._onResizeMove(
-      resizable._isCollapsed ? resizable._minSizePx : -resizable._size,
-    );
-    resizable._onResizeEnd();
+    toggleCollapse(resizable);
   }, [isDisabled, resizable]);
 
   // --- Cleanup on unmount ---

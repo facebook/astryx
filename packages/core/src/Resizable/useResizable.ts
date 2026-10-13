@@ -177,6 +177,17 @@ export interface ResizableProps {
    * this existed has to keep compiling.
    */
   _onResizeCancel?: () => void;
+  /**
+   * Collapse the region, and expand it back to the size it had before it
+   * collapsed. A handle's Enter and double-click use these so the pane
+   * restores its previous position (APG window splitter), rather than
+   * emulating the toggle with a resize to the minimum.
+   *
+   * Optional for the same reason as `_onResizeCancel`: a hand-built object
+   * from before these existed has to keep compiling.
+   */
+  _collapse?: () => void;
+  _expand?: () => void;
   _minSizePx: number;
   _maxSizePx: number;
   _snaps: number[];
@@ -1033,6 +1044,8 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     _onResizeMove: onResizeMove,
     _onResizeEnd: onResizeEnd,
     _onResizeCancel: onResizeCancel,
+    _collapse: collapse,
+    _expand: expand,
     _minSizePx: resolvedMin,
     _maxSizePx: resolvedMax,
     _snaps: snaps,
