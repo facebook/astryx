@@ -152,6 +152,16 @@ orientation, collapsed value text, focus, pointer, or keyboard behavior. Its
 `aria-valuemin`, `aria-valuemax`, and `aria-valuenow` remain the same resolved pixel
 values used by hook state and painted geometry.
 
+- **AR1 — ResizeHandle adopts the APG Window Splitter pattern**
+  (`spec:AST-020/FR15`), as one composite control: the Handle is a focusable
+  `role="separator"` with an accessible name, `aria-orientation` (the axis the
+  divider lies along), `aria-valuemin`, `aria-valuemax`, `aria-valuenow` in pixels,
+  `aria-valuetext` while collapsed, and `aria-disabled` when disabled. ArrowRight
+  and ArrowDown grow the pane along the inline or block axis and ArrowLeft and
+  ArrowUp shrink it, the inline arrows following the reading direction under RTL,
+  with Shift for a larger step; Home moves to the minimum and End to the maximum
+  size; Enter collapses the pane and restores it.
+
 ## Design relationships
 
 | Anatomy or state | Design requirement                                                      | Representation authority       | Hierarchy role | Component contract |
@@ -198,15 +208,16 @@ not emit the documented target state.
 
 ## Verification map
 
-| Contract            | Verification                                       | Representative states                                                                                           | Mutation or failure expectation                                                                                                                    | Audit section              |
-| ------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| FR1                 | `ResizeHandle.test.tsx` plus source inspection     | Default, custom, collapsed, disabled, both axes                                                                 | Handle and Grab zone regressions fail focused tests; custom Grip replacement currently relies on source review.                                    | `audit:Resizable/anatomy`  |
-| FR2                 | Source inspection and `themingTargets.test.ts`     | Handle, Grip pill, and Grab zone                                                                                | Removing a target or documenting an unshipped Grab zone target fails evidence or inventory.                                                        | `audit:Resizable/theming`  |
-| FR3                 | `ResizeHandle.test.tsx` and `useResizable.test.ts` | Pointer, keyboard, snap, collapse, persistence                                                                  | Moving resize ownership or changing current transformations fails focused behavior coverage.                                                       | `audit:Resizable/behavior` |
-| FR4                 | Source and public metadata comparison              | Horizontal and vertical Handle                                                                                  | No current test detects that documented `direction` is absent from runtime target-state reflection.                                                | `audit:Resizable/theming`  |
-| FR5                 | Hook/utils tests, typecheck, and Chromium          | Canonical floor/ceiling/default; invalid XOR shape; SSR/hydration; basis changes; numeric `containerRef` parity | Wrong resolution, rescaling defaults, stale clamps, observer leaks, extra numeric renders/ref reads, or state/paint/storage/ARIA divergence fails. | `audit:Resizable/behavior` |
-| FR6                 | Hook type/runtime and codemod tests                | Removed alias type errors; single/multi-region inline migrations; numeric pixel bounds                          | A removed alias still type-checks, or migration changes its numeric meaning.                                                                       | `audit:Resizable/behavior` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                      | Canonical anatomy and two current targets                                                                       | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                                         | `audit:Resizable/theming`  |
+| Contract            | Verification                                                                                                                                        | Representative states                                                                                           | Mutation or failure expectation                                                                                                                      | Audit section                   |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| FR1                 | `ResizeHandle.test.tsx` plus source inspection                                                                                                      | Default, custom, collapsed, disabled, both axes                                                                 | Handle and Grab zone regressions fail focused tests; custom Grip replacement currently relies on source review.                                      | `audit:Resizable/anatomy`       |
+| AR1                 | Window Splitter accessibility contract (`internal/a11y-spec`) bound to ResizeHandle, in jsdom and Chromium; `ResizeHandle.test.tsx` keyboard suites | Inline and block axes; LTR and RTL; collapsed; disabled                                                         | The Handle loses its role, name, orientation or value properties; an arrow, Home, End or Enter stops resizing or moves against the reading direction | `audit:Resizable/accessibility` |
+| FR2                 | Source inspection and `themingTargets.test.ts`                                                                                                      | Handle, Grip pill, and Grab zone                                                                                | Removing a target or documenting an unshipped Grab zone target fails evidence or inventory.                                                          | `audit:Resizable/theming`       |
+| FR3                 | `ResizeHandle.test.tsx` and `useResizable.test.ts`                                                                                                  | Pointer, keyboard, snap, collapse, persistence                                                                  | Moving resize ownership or changing current transformations fails focused behavior coverage.                                                         | `audit:Resizable/behavior`      |
+| FR4                 | Source and public metadata comparison                                                                                                               | Horizontal and vertical Handle                                                                                  | No current test detects that documented `direction` is absent from runtime target-state reflection.                                                  | `audit:Resizable/theming`       |
+| FR5                 | Hook/utils tests, typecheck, and Chromium                                                                                                           | Canonical floor/ceiling/default; invalid XOR shape; SSR/hydration; basis changes; numeric `containerRef` parity | Wrong resolution, rescaling defaults, stale clamps, observer leaks, extra numeric renders/ref reads, or state/paint/storage/ARIA divergence fails.   | `audit:Resizable/behavior`      |
+| FR6                 | Hook type/runtime and codemod tests                                                                                                                 | Removed alias type errors; single/multi-region inline migrations; numeric pixel bounds                          | A removed alias still type-checks, or migration changes its numeric meaning.                                                                         | `audit:Resizable/behavior`      |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                       | Canonical anatomy and two current targets                                                                       | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                                                           | `audit:Resizable/theming`       |
 
 Current tests exercise Handle and Grab zone structure and behavior but do not
 render `children` to prove that custom content replaces Grip pill. That branch is
@@ -231,6 +242,12 @@ literal percentage.
 **Rejected:** parsing recursive CSS `min()` / `max()` strings. That would create a
 partial second CSS implementation without a demonstrated need for arbitrary
 composition.
+
+### The Handle is an APG window splitter
+
+**Decision:** ResizeHandle already acts as one composite control with the splitter's role, value properties, and keyboard, so it adopts the pattern in full (AR1); the inline arrows follow the reading direction because a key that moves the divider against the way it travels on screen is a defect. Decided by `cixzhang`, `2026-10-13`.
+
+**Rejected:** a separate button to collapse the pane; a direction-free ArrowLeft under RTL.
 
 ## Open questions
 
