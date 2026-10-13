@@ -361,22 +361,6 @@ export interface ResizeHandleProps extends Omit<
 }
 
 /**
- * Draggable resize handle placed between resizable panels. Renders as a thin
- * divider line with a wider invisible hit area and optional pill grip indicator.
- * Supports keyboard resizing via arrow keys and WAI-ARIA separator role.
- *
- * The pill element uses class `astryx-resize-handle-pill` for theme targeting.
- *
- * @example
- * ```
- * <ResizeHandle
- *   resizable={sidebar.props}
- *   direction="horizontal"
- *   hasDivider />
- * ```
- */
-
-/**
  * Collapse an open pane, or restore a collapsed one to the size it had before
  * it collapsed (APG window splitter: Enter "restores the splitter to its
  * previous position"). The hook's own collapse/expand do exactly that; a
@@ -400,6 +384,22 @@ function toggleCollapse(resizable: ResizableProps): void {
   );
   resizable._onResizeEnd();
 }
+
+/**
+ * Draggable resize handle placed between resizable panels. Renders as a thin
+ * divider line with a wider invisible hit area and optional pill grip indicator.
+ * Supports keyboard resizing via arrow keys and WAI-ARIA separator role.
+ *
+ * The pill element uses class `astryx-resize-handle-pill` for theme targeting.
+ *
+ * @example
+ * ```
+ * <ResizeHandle
+ *   resizable={sidebar.props}
+ *   direction="horizontal"
+ *   hasDivider />
+ * ```
+ */
 
 export function ResizeHandle({
   direction = 'horizontal',
