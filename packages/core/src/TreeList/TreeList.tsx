@@ -259,6 +259,9 @@ export function TreeList({
     onToggleExpand: handleToggle,
     onActivate: activateItem,
     hasRovingTabIndex: true,
+    // Rows are named by their label (AR1); typeahead matches that label, not
+    // the chevron toggle, start content or description.
+    _matchLabelledBy: true,
   });
 
   const handleRootKeyDown = useCallback(

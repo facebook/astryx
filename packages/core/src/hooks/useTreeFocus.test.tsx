@@ -262,6 +262,39 @@ describe('useTreeFocus activation + typeahead', () => {
     expect(screen.getByTestId('c')).toHaveFocus();
   });
 
+  it('typeahead matches whole text for a direct caller, even when an item carries aria-labelledby', () => {
+    function LabelledTree() {
+      const {treeRef, handleKeyDown, handleFocus} =
+        useTreeFocus<HTMLUListElement>({
+          hasRovingTabIndex: true,
+        });
+      return (
+        <ul
+          ref={treeRef}
+          role="tree"
+          onKeyDown={handleKeyDown}
+          onFocus={handleFocus}>
+          <li role="treeitem" tabIndex={0} data-testid="first">
+            First
+          </li>
+          <li
+            role="treeitem"
+            tabIndex={-1}
+            aria-labelledby="lbl"
+            data-testid="labelled">
+            <span>zz</span> <span id="lbl">Budget</span>
+          </li>
+        </ul>
+      );
+    }
+    render(<LabelledTree />);
+    const tree = screen.getByRole('tree');
+    screen.getByTestId('first').focus();
+    // Released behavior: the text content ("zz Budget") is what matches.
+    fireEvent.keyDown(tree, {key: 'z'});
+    expect(screen.getByTestId('labelled')).toHaveFocus();
+  });
+
   it('typeahead cycles through same-letter matches on repeated presses', () => {
     const nodes: Node[] = [
       {id: 'apple', label: 'Apple', level: 1},

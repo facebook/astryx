@@ -117,14 +117,23 @@ export interface UseTreeFocusOptions {
   ) => boolean | undefined;
 
   /**
-   * Whether typeahead is enabled: typing jumps to the next item whose label
-   * starts with the typed characters. The label is the text the item's
-   * `aria-labelledby` points at, so start content, a chevron toggle or a
-   * description never takes part; an item without `aria-labelledby` matches
-   * on its text content.
+   * Whether typeahead (jump to next item whose text starts with the typed
+   * characters) is enabled.
    * @default true
    */
   typeahead?: boolean;
+
+  /**
+   * Match typeahead against the item's `aria-labelledby` text (its label
+   * alone) instead of its whole text content, so start content, a chevron
+   * toggle or a description never takes part. TreeList passes this; the
+   * released text match stays the default for direct callers.
+   *
+   * Underscore-prefixed, undocumented and optional, like `_onResizeCancel`
+   * on `ResizableProps`: component plumbing, not public contract.
+   * @default false
+   */
+  _matchLabelledBy?: boolean;
 
   /** Reset delay for the typeahead buffer, in ms. @default 500 */
   typeaheadResetMs?: number;
@@ -180,11 +189,14 @@ export interface UseTreeFocusReturn<T extends HTMLElement = HTMLElement> {
 }
 
 /**
- * The text typeahead matches against: the row's accessible name when it is
- * authored with aria-labelledby (the label alone), otherwise its text content.
+ * The text typeahead matches against. With `matchLabelledBy`, the row's
+ * `aria-labelledby` text (the label alone) when it has one; otherwise, and by
+ * default, its text content.
  */
-function itemLabelText(item: HTMLElement): string {
-  const labelledBy = item.getAttribute('aria-labelledby');
+function itemLabelText(item: HTMLElement, matchLabelledBy: boolean): string {
+  const labelledBy = matchLabelledBy
+    ? item.getAttribute('aria-labelledby')
+    : null;
   if (labelledBy != null) {
     const label = labelledBy
       .split(/\s+/)
@@ -245,6 +257,7 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
     onActivate,
     typeahead = true,
     typeaheadResetMs = DEFAULT_TYPEAHEAD_RESET_MS,
+    _matchLabelledBy: matchLabelledBy = false,
     onActiveChange,
     hasRovingTabIndex = false,
   } = options;
@@ -422,14 +435,14 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
       const match = ordered.find(
         item =>
           !itemDisabled(item) &&
-          itemLabelText(item).toLowerCase().startsWith(query),
+          itemLabelText(item, matchLabelledBy).toLowerCase().startsWith(query),
       );
       if (match != null) {
         e.preventDefault();
         focusItem(match);
       }
     },
-    [typeaheadResetMs, itemDisabled, focusItem],
+    [typeaheadResetMs, itemDisabled, focusItem, matchLabelledBy],
   );
 
   const handleKeyDown = useCallback(
