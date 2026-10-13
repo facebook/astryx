@@ -141,3 +141,8 @@ export {
 } from './patterns/landmark';
 
 export {CAROUSEL_PATTERN, type CarouselStateFacts} from './patterns/carousel';
+export {
+  LINK_PATTERN,
+  type LinkCurrentToken,
+  type LinkStateFacts,
+} from './patterns/link';

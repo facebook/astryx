@@ -121,9 +121,8 @@ Our conventions and review rubrics live in the
 including [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions),
 [Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions),
 the [Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle),
-and the [Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)
-and [Blog Review](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric)
-rubrics. Read the relevant one before opening a PR.
+the [Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates),
+and the [Blog Review Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria). Read the relevant rubric before opening a PR.
 
 Quick start for contributors: this repo uses **Node 22+ on an active LTS line**
 and **pnpm 11**. Install pnpm directly, or enable

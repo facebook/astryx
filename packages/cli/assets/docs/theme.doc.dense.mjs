@@ -9,7 +9,7 @@ export const docsDense = {
       section: 'Wrap your app in a theme',
       title: 'Quick start',
       content: [
-        {type: 'prose', text: 'Install a theme, wrap in `<Theme>`. {@link generic:use-a-theme} for full guide.'},
+        {type: 'prose', text: "Install a theme, wrap in `<Theme>` (`import {Theme} from '@astryxdesign/core'`). {@link generic:use-a-theme} for full guide."},
       ],
     },
     {
@@ -17,6 +17,8 @@ export const docsDense = {
       title: 'Custom themes',
       content: [
         {type: 'prose', text: '`defineTheme` + token overrides + component overrides. {@link generic:author-a-theme} for full guide.'},
+        null,
+        {type: 'prose', text: "new palette: `astryx theme palette generate palette.config.json --out palette.generated.ts` → review + commit module and receipt → `import {palette} from './palette.generated';` → map semantic tokens to stable stops such as `palette.neutral.light[100]` / `palette.neutral.dark[15]`. regeneration updates mapped roles; generation does not rewrite the theme."},
       ],
     },
     {
@@ -30,7 +32,7 @@ export const docsDense = {
       section: 'Integration themes',
       title: 'Integration themes',
       content: [
-        {type: 'prose', text: 'Install integration, `astryx theme add`. {@link generic:use-a-theme} for full guide.'},
+        {type: 'prose', text: 'Install integration. `astryx theme add` imports, and `theme eject` forks source. {@link generic:use-a-theme} for full guide.'},
       ],
     },
   ],

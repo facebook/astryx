@@ -6,7 +6,7 @@
 
 import {jsonOut} from '../../../foundation/response/json.mjs';
 import {emit, section, text, records, code, record} from '../formatters/index.mjs';
-import {cliError} from '../lib/cli-error.mjs';
+import {cliError, rejectEmptyArgument} from '../lib/cli-error.mjs';
 import {template as templateApi} from '../../../api/template/template.mjs';
 import {Project} from '../../../foundation/config/project.mjs';
 import {warnOnIntegrationIssues} from '../../../foundation/integrations/integration-warnings.mjs';
@@ -66,6 +66,12 @@ export function registerTemplate(program) {
        * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, cdn?: boolean | string, overwrite?: boolean}} options
        */
       async (name, targetPath, options) => {
+      const usesName = !options.cdn && !options.list;
+      const usesPath = options.cdn
+        ? typeof options.cdn !== 'string'
+        : !options.list && !options.skeleton;
+      if (usesName) rejectEmptyArgument('name', name, 'astryx template');
+      if (usesPath) rejectEmptyArgument('path', targetPath, 'astryx template');
       const json = program.opts().json || false;
       const run = getCliInvocation();
 
@@ -137,9 +143,9 @@ export function registerTemplate(program) {
               return lines.join('\n');
             };
             emit(
-              section(`Page Templates (${pages.length})`),
+              pages.length > 0 && section(`Page Templates (${pages.length})`),
               pages.length > 0 && text(grouped(pages)),
-              section(`Block Templates (${blocks.length})`),
+              blocks.length > 0 && section(`Block Templates (${blocks.length})`),
               blocks.length > 0 && text(grouped(blocks)),
               section('Usage'),
               text(
@@ -220,7 +226,7 @@ export function registerTemplate(program) {
         }
 
         case 'template.copy': {
-          const {outputDir, fileName, demoMediaReplaced} = result.data;
+          const {outputDir, fileName, demoMediaReplaced, notes} = result.data;
           const file = `${outputDir}/${fileName}`;
           emit(
             text(`Copied template to ${file}`),
@@ -230,6 +236,7 @@ export function registerTemplate(program) {
                 `Replaced ${demoMediaReplaced} Astryx demo media reference${demoMediaReplaced === 1 ? '' : 's'} in ${file}: ` +
                   'images now show a neutral placeholder and videos have an empty source. Supply your own media there.',
               ),
+            ...notes.map(/** @param {string} note */ note => text(note)),
           );
           break;
         }

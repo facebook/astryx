@@ -292,7 +292,9 @@ export function registerComponent(program) {
             // --detail full — dense per-component docs (signature, props, theming,
             // examples). Verbatim doc block from the shared formatter. A Core slot
             // an integration component replaces prints that component, from the
-            // list result (spec:AST-035 FR11).
+            // list result (spec:AST-035 FR11). Only the result's groups print, so
+            // `--category` text shows what its JSON shows and every printed slot
+            // is covered by the replacement map built from that result.
             /** @type {Map<string, any>} */
             const replacements = new Map();
             for (const items of Object.values(result.data.components)) {
@@ -312,6 +314,7 @@ export function registerComponent(program) {
                   lang,
                   themeData,
                   replacements,
+                  categories: Object.keys(result.data.components),
                 }),
               ),
             );

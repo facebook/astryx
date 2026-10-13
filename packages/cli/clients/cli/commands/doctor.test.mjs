@@ -168,7 +168,23 @@ describe('doctor — individual checks', () => {
   it('agent-docs: INFO when no docs present', () => {
     const res = checkAgentDocs({cwd: tmpDir});
     expect(res.status).toBe('info');
-    expect(res.fix).toContain('astryx init');
+    expect(res.fix).toContain('init --features agents');
+  });
+
+  // The npm package named `astryx` is not this CLI: a project without the
+  // `astryx` bin gets the scoped package in the fix, one with it keeps the bin.
+  it('agent-docs: the fix names the scoped package when the project has no local CLI', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}');
+    const res = checkAgentDocs({cwd: tmpDir});
+    expect(res.fix).toContain('`npx @astryxdesign/cli init --features agents`');
+  });
+
+  it('agent-docs: the fix keeps `npx astryx` when the project has a local CLI', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package-lock.json'), '{}');
+    fs.mkdirSync(path.join(tmpDir, 'node_modules', '.bin'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, 'node_modules', '.bin', 'astryx'), '');
+    const res = checkAgentDocs({cwd: tmpDir});
+    expect(res.fix).toContain('`npx astryx init --features agents`');
   });
 
   it('agent-docs: WARN when docs exist without XDS markers', () => {
@@ -184,6 +200,39 @@ describe('doctor — individual checks', () => {
     );
     const res = checkAgentDocs({cwd: tmpDir});
     expect(res.status).toBe('pass');
+  });
+
+  it('agent-docs: PASS from a subfolder, reading the project root', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"app"}');
+    fs.writeFileSync(
+      path.join(tmpDir, 'AGENTS.md'),
+      '<!-- ASTRYX:START -->\nstuff\n<!-- ASTRYX:END -->\n',
+    );
+    const src = path.join(tmpDir, 'src');
+    fs.mkdirSync(src);
+    const res = checkAgentDocs({cwd: src});
+    expect(res.status).toBe('pass');
+    expect(res.message).toBe(
+      `Astryx agent docs section present in ${path.join('..', 'AGENTS.md')}.`,
+    );
+  });
+
+  it('agent-docs: reads every file init can write, Hermes included', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'HERMES.md'),
+      '<!-- ASTRYX:START -->\nstuff\n<!-- ASTRYX:END -->\n',
+    );
+    expect(checkAgentDocs({cwd: tmpDir})).toMatchObject({
+      status: 'pass',
+      message: 'Astryx agent docs section present in HERMES.md.',
+    });
+  });
+
+  it('agent-docs: INFO names what it looked for and where', () => {
+    const res = checkAgentDocs({cwd: tmpDir});
+    expect(res.status).toBe('info');
+    expect(res.message).toContain('AGENTS.md, CLAUDE.md');
+    expect(res.message).toContain('HERMES.md');
   });
 
   it('peer-deps: INFO when core not installed', () => {
@@ -351,6 +400,39 @@ describe('doctor — text output mirrors the JSON', () => {
     } finally {
       process.chdir(prevCwd);
       process.exitCode = prevExit;
+    }
+  }, 60_000);
+});
+
+describe('doctor — a configured integration that cannot load', () => {
+  it('sets exit code 1 and reports it in the JSON', async () => {
+    const dir = fs.mkdtempSync(path.join(process.cwd(), '.astryx-doctor-exit-'));
+    const prevCwd = process.cwd();
+    const prevExit = process.exitCode;
+    process.exitCode = undefined;
+    try {
+      fs.writeFileSync(path.join(dir, 'package.json'), '{"name":"app"}');
+      fs.writeFileSync(
+        path.join(dir, 'astryx.config.mjs'),
+        "export default { integrations: ['@acme/missing'] };\n",
+      );
+      const coreDir = path.join(dir, 'node_modules', '@astryxdesign', 'core');
+      fs.mkdirSync(coreDir, {recursive: true});
+      fs.writeFileSync(
+        path.join(coreDir, 'package.json'),
+        JSON.stringify({name: '@astryxdesign/core', version: '0.6.3'}),
+      );
+      process.chdir(dir);
+      await createProgram().parseAsync(['node', 'astryx', '--json', 'doctor']);
+      expect(process.exitCode).toBe(1);
+      const {data} = JSON.parse(logCalls.join('\n'));
+      expect(
+        data.checks.find(c => c.id === 'configured-integrations'),
+      ).toMatchObject({status: 'fail'});
+    } finally {
+      process.chdir(prevCwd);
+      process.exitCode = prevExit;
+      fs.rmSync(dir, {recursive: true, force: true});
     }
   }, 60_000);
 });

@@ -107,9 +107,6 @@ export const JSON_SUPPORTED = new Set([
   'doctor integration templates',
   'doctor integration components',
   'doctor integration docs',
-  'layout expand',
-  'layout check',
-  'layout grammar',
 ]);
 
 /**
@@ -268,7 +265,6 @@ const commands = [
   {name: 'gap-report', path: './commands/gap-report.mjs', register: 'registerGapReport'},
   // agent-docs folded into init — functions still importable from agent-docs.mjs
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},
-  {name: 'layout', path: './commands/layout.mjs', register: 'registerLayout'},
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
   {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
   {name: 'integration', path: './commands/integration.mjs', register: 'registerIntegration'},
@@ -362,7 +358,7 @@ export async function createProgram() {
     .addOption(
       new Option(
         '--detail <level>',
-        'Detail level for component, hook, and docs tree reads (e.g. docs cli/commands/build). Lists default to brief',
+        'Detail level for component, hook, and docs tree reads (e.g. docs cli/commands/build), and for theme build reports. Lists default to brief; theme build prints one line per built theme unless full, which adds the install example and font recipe',
       )
         .choices(['full', 'compact', 'brief'])
         .default('full'),

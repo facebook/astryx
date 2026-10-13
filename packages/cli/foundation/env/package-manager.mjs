@@ -6,7 +6,9 @@
  * The order is: the `packageManager` field a project DECLARES, then the
  * lockfiles it happens to have, then a committed package-manager config, then
  * the runner that launched us. Returns the correct command prefix for running
- * package binaries (e.g. 'npx astryx', 'yarn astryx', 'pnpm exec astryx').
+ * package binaries (e.g. 'npx astryx', 'yarn astryx', 'pnpm exec astryx'), and
+ * the scoped one-off form ('npx @astryxdesign/cli') when the `astryx` bin does
+ * not resolve from the project.
  */
 
 import * as fs from 'node:fs';
@@ -143,6 +145,76 @@ function evidenceIn(dir) {
  */
 
 /**
+ * What one directory's own files say about its package manager, by the rules
+ * {@link explainPackageManager} applies within a directory (declared field,
+ * then a single lockfile, then committed config when lockfiles tie). Returns
+ * null when the directory has neither a declaration nor a lockfile, so a caller
+ * walking up keeps looking. An ambiguous directory reports `ambiguous: true`
+ * with the lockfiles that disagree, so a caller can name them.
+ * @param {string} dir
+ * @returns {(Omit<PackageManagerResolution, 'dir'> & {lockfiles: FoundLockfile[]}) | null}
+ */
+export function decidePackageManagerIn(dir) {
+  const locks = lockfilesIn(dir);
+  const candidates = locks.map(lock => lock.pm);
+  const declared = declaredPackageManager(dir);
+
+  // The project declared one. Nothing on the filesystem outranks that.
+  if (declared) {
+    return {
+      pm: declared,
+      ambiguous: false,
+      candidates,
+      declared,
+      source: 'declared',
+      lockfiles: locks,
+      strayLockfiles: locks.filter(lock => lock.pm !== declared),
+    };
+  }
+
+  // One lockfile is unambiguous.
+  if (locks.length === 1) {
+    return {
+      pm: locks[0].pm,
+      ambiguous: false,
+      candidates,
+      declared: null,
+      source: 'lockfile',
+      lockfiles: locks,
+      strayLockfiles: [],
+    };
+  }
+
+  // Several lockfiles and no declaration: the filesystem cannot say. Only a
+  // file the project committed on purpose can.
+  if (locks.length > 1) {
+    const evidence = evidenceIn(dir).filter(pm => candidates.includes(pm));
+    if (evidence.length === 1) {
+      return {
+        pm: evidence[0],
+        ambiguous: false,
+        candidates,
+        declared: null,
+        source: 'evidence',
+        lockfiles: locks,
+        strayLockfiles: [],
+      };
+    }
+    return {
+      pm: 'npx',
+      ambiguous: true,
+      candidates,
+      declared: null,
+      source: 'none',
+      lockfiles: locks,
+      strayLockfiles: [],
+    };
+  }
+
+  return null;
+}
+
+/**
  * Detect the project's package manager, with the reasoning attached.
  * Walks up from targetDir, taking the first directory that answers.
  *
@@ -180,59 +252,16 @@ export function explainPackageManager(targetDir = process.cwd()) {
   const root = path.parse(dir).root;
 
   while (dir !== root) {
-    const locks = lockfilesIn(dir);
-    const candidates = locks.map(lock => lock.pm);
-    const declared = declaredPackageManager(dir);
-
-    // 1. The project declared one. Nothing on the filesystem outranks that.
-    if (declared) {
+    const decision = decidePackageManagerIn(dir);
+    if (decision) {
       return {
-        pm: declared,
-        ambiguous: false,
+        pm: decision.pm,
+        ambiguous: decision.ambiguous,
         dir,
-        candidates,
-        declared,
-        source: 'declared',
-        strayLockfiles: locks.filter(lock => lock.pm !== declared),
-      };
-    }
-
-    // 2. One lockfile is unambiguous.
-    if (locks.length === 1) {
-      return {
-        pm: locks[0].pm,
-        ambiguous: false,
-        dir,
-        candidates,
-        declared: null,
-        source: 'lockfile',
-        strayLockfiles: [],
-      };
-    }
-
-    // 3. Several lockfiles and no declaration: the filesystem cannot say.
-    //    Only a file the project committed on purpose can.
-    if (locks.length > 1) {
-      const evidence = evidenceIn(dir).filter(pm => candidates.includes(pm));
-      if (evidence.length === 1) {
-        return {
-          pm: evidence[0],
-          ambiguous: false,
-          dir,
-          candidates,
-          declared: null,
-          source: 'evidence',
-          strayLockfiles: [],
-        };
-      }
-      return {
-        pm: 'npx',
-        ambiguous: true,
-        dir,
-        candidates,
-        declared: null,
-        source: 'none',
-        strayLockfiles: [],
+        candidates: decision.candidates,
+        declared: decision.declared,
+        source: decision.source,
+        strayLockfiles: decision.strayLockfiles,
       };
     }
 
@@ -277,11 +306,15 @@ export function detectPackageManager(targetDir = process.cwd()) {
 export function getRunPrefix(targetDir) {
   const pm = detectPackageManager(targetDir);
   switch (pm) {
-    case 'yarn': return 'yarn';
-    case 'pnpm': return 'pnpm exec';
-    case 'bun': return 'bunx';
+    case 'yarn':
+      return 'yarn';
+    case 'pnpm':
+      return 'pnpm exec';
+    case 'bun':
+      return 'bunx';
     case 'npm':
-    default: return 'npx';
+    default:
+      return 'npx';
   }
 }
 
@@ -299,17 +332,95 @@ export const CLI_BIN = 'astryx';
  * {@link CLI_PACKAGE}, never the bare `astryx` bin. Running bare `npx astryx`
  * without the CLI installed resolves to an unrelated package on the registry.
  *
+ * Classic Yarn (1.x) has no `dlx`, so its projects get `npx`, which every
+ * Node install carries.
+ *
  * @param {string} [targetDir]
  * @returns {string} e.g. 'npx', 'pnpm dlx', 'yarn dlx', 'bunx'
  */
 export function getDlxPrefix(targetDir) {
-  const pm = detectPackageManager(targetDir);
-  switch (pm) {
-    case 'yarn': return 'yarn dlx';
-    case 'pnpm': return 'pnpm dlx';
-    case 'bun': return 'bunx';
+  const resolution = explainPackageManager(targetDir);
+  switch (resolution.pm) {
+    case 'yarn':
+      return isYarnClassic(resolution) ? 'npx' : 'yarn dlx';
+    case 'pnpm':
+      return 'pnpm dlx';
+    case 'bun':
+      return 'bunx';
     case 'npm':
-    default: return 'npx';
+    default:
+      return 'npx';
+  }
+}
+
+/**
+ * Is the project's Yarn the classic line (1.x), which has no `dlx`?
+ *
+ * Read from the signals detection trusts, in the same order: the declared
+ * `packageManager` version, then the lockfile header (`# yarn lockfile v1`
+ * is classic; Berry's lockfile carries `__metadata:`), then a committed
+ * config (`.yarnrc.yml` is Berry, a lone `.yarnrc` classic), then the
+ * runner's user agent (`yarn/1.22.21 …`). With none of them it is Berry.
+ *
+ * @param {PackageManagerResolution} resolution
+ * @returns {boolean}
+ */
+function isYarnClassic({dir}) {
+  if (dir) {
+    const declared = declaredYarnMajor(dir);
+    if (declared !== null) return declared === 1;
+    const lockfile = path.join(dir, 'yarn.lock');
+    if (fs.existsSync(lockfile)) {
+      const head = readHead(lockfile);
+      if (/^# yarn lockfile v1\b/m.test(head)) return true;
+      if (/^__metadata:/m.test(head)) return false;
+    }
+    if (fs.existsSync(path.join(dir, '.yarnrc.yml'))) return false;
+    if (fs.existsSync(path.join(dir, '.yarnrc'))) return true;
+  }
+  const agent = /^yarn\/(\d+)\./.exec(
+    String(process.env.npm_config_user_agent ?? ''),
+  );
+  return agent ? agent[1] === '1' : false;
+}
+
+/**
+ * The major version in a directory's `packageManager: "yarn@<version>"`.
+ * @param {string} dir
+ * @returns {number | null}
+ */
+function declaredYarnMajor(dir) {
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'),
+    );
+    const match = /^yarn@(\d+)(?:[.+]|$)/.exec(
+      String(pkg.packageManager ?? ''),
+    );
+    return match ? Number(match[1]) : null;
+  } catch {
+    // Best-effort: no package.json, or an unreadable one.
+    return null;
+  }
+}
+
+/**
+ * The first bytes of a file — enough for a lockfile's header.
+ * @param {string} file
+ * @returns {string}
+ */
+function readHead(file) {
+  try {
+    const fd = fs.openSync(file, 'r');
+    try {
+      const buffer = Buffer.alloc(512);
+      const bytes = fs.readSync(fd, buffer, 0, buffer.length, 0);
+      return buffer.toString('utf-8', 0, bytes);
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch {
+    return '';
   }
 }
 
@@ -319,8 +430,8 @@ export function getDlxPrefix(targetDir) {
  *
  * We sniff the entry path (`process.argv[1]`) for well-known runner-cache
  * markers. This errs safe in both directions: a false negative falls back to
- * the installed form (`<prefix> astryx`, the historical behavior), and a false
- * positive emits the always-valid scoped form (`<dlx> @astryxdesign/cli`).
+ * {@link getCliInvocation}'s on-disk check, and a false positive emits the
+ * always-valid scoped form (`<dlx> @astryxdesign/cli`).
  *
  * @returns {boolean}
  */
@@ -329,20 +440,57 @@ export function isCliOneOff() {
   return /\/_npx\/|\/dlx[-/]|\/\.bun\/install\/cache\/|\/bunx-/.test(entry);
 }
 
+/** The `astryx` bin as package managers link it, including the Windows shims. */
+const CLI_BIN_LINKS = [CLI_BIN, `${CLI_BIN}.cmd`, `${CLI_BIN}.ps1`];
+
+/**
+ * Does the bare `astryx` bin resolve from `targetDir`?
+ *
+ * A package runner finds an installed bin in `node_modules/.bin`, in the
+ * project or in a folder above it (a workspace root). When no such link
+ * exists, `npx astryx` and `bunx astryx` fetch the unrelated registry package
+ * named `astryx` instead of running this CLI, and `pnpm exec astryx` or
+ * `yarn astryx` fail. A global install, or a workspace install running in a
+ * fresh package, is exactly that case.
+ *
+ * A false negative (a layout without `node_modules/.bin`, such as Yarn Plug'n'Play)
+ * is safe: the caller suggests the scoped package, which always resolves.
+ *
+ * @param {string} [targetDir=process.cwd()]
+ * @returns {boolean}
+ */
+export function cliBinResolves(targetDir = process.cwd()) {
+  let dir = path.resolve(targetDir);
+  for (;;) {
+    const binDir = path.join(dir, 'node_modules', '.bin');
+    if (CLI_BIN_LINKS.some(name => fs.existsSync(path.join(binDir, name)))) {
+      return true;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) return false;
+    dir = parent;
+  }
+}
+
 /**
  * The safe, install-aware CLI invocation stem to suggest to users.
  *
- * - Installed / global / dev: `<run-prefix> astryx` (e.g. `pnpm exec astryx`).
- *   Bare `astryx` resolves to the local (or global) binary.
- * - One-off (npx/dlx cache): `<dlx-prefix> @astryxdesign/cli` — the bare
- *   `astryx` name isn't on disk, so npm would fetch an unrelated registry
- *   package; the scoped package always resolves to us.
+ * - The `astryx` bin resolves from `targetDir`: `<run-prefix> astryx`
+ *   (e.g. `pnpm exec astryx`).
+ * - Launched one-off (npx/dlx cache), or the bin does not resolve from
+ *   `targetDir` (a global install, a fresh package in a workspace):
+ *   `<dlx-prefix> @astryxdesign/cli`. The bare `astryx` name would make npm
+ *   fetch an unrelated registry package; the scoped package always resolves
+ *   to this CLI.
  *
- * @param {string} [targetDir]
+ * @param {string} [targetDir] the project the printed command runs in;
+ *   defaults to the working directory
  * @returns {string}
  */
 export function getCliInvocation(targetDir) {
-  if (isCliOneOff()) return `${getDlxPrefix(targetDir)} ${CLI_PACKAGE}`;
+  if (isCliOneOff() || !cliBinResolves(targetDir)) {
+    return `${getDlxPrefix(targetDir)} ${CLI_PACKAGE}`;
+  }
   return `${getRunPrefix(targetDir)} ${CLI_BIN}`;
 }
 
@@ -358,7 +506,9 @@ export function getCliInvocation(targetDir) {
  * @returns {string}
  */
 export function formatCliCommand(command, targetDir) {
-  const sub = String(command).replace(/^\s*astryx\b\s*/, '').trim();
+  const sub = String(command)
+    .replace(/^\s*astryx\b\s*/, '')
+    .trim();
   const stem = getCliInvocation(targetDir);
   return sub ? `${stem} ${sub}` : stem;
 }

@@ -89,6 +89,9 @@ describe('generateCompressedIndex', () => {
     expect(result).not.toMatch(/xstyle prop/);
     // Must warn that no compiler is present.
     expect(result).toMatch(/No StyleX\/Tailwind compiler/);
+    // Must acknowledge that some templates use StyleX and point at the doc.
+    expect(result).toMatch(/templates.*StyleX/i);
+    expect(result).toMatch(/styling-overview/);
   });
 
   it('recommends xstyle when StyleX is configured', () => {
@@ -368,6 +371,21 @@ describe('detectStylingSystem', () => {
 
   it('detects stylex when the compiler plugin is present', () => {
     writePkg({'@stylexjs/babel-plugin': '0.0.1'});
+    expect(detectStylingSystem(tmpDir)).toBe('stylex');
+  });
+
+  it('detects the official Rollup/Vite plugin', () => {
+    writePkg({'@stylexjs/rollup-plugin': '0.10.0'});
+    expect(detectStylingSystem(tmpDir)).toBe('stylex');
+  });
+
+  it('detects the official Webpack plugin', () => {
+    writePkg({'@stylexjs/webpack-plugin': '0.10.0'});
+    expect(detectStylingSystem(tmpDir)).toBe('stylex');
+  });
+
+  it('detects the official Next.js plugin', () => {
+    writePkg({'@stylexjs/nextjs-plugin': '0.10.0'});
     expect(detectStylingSystem(tmpDir)).toBe('stylex');
   });
 

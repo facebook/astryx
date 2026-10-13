@@ -81,6 +81,7 @@
  */
 
 import {defineTheme} from '@astryxdesign/core/theme';
+// import {palette} from './palette.generated';
 // import {dracula} from '@astryxdesign/core/theme/syntax';
 // import {neutralTheme} from '@astryxdesign/theme-neutral';
 
@@ -99,15 +100,25 @@ export const myTheme = defineTheme({
   // extends: neutralTheme,
 
   // ───────────────────────────────────────────────────────────────────────
-  // Scale configs — a few parameters generate a whole family of tokens.
-  // Reach for these first. They keep a theme internally consistent and cover
-  // far more ground than you would hand-write.
+  // Scale configs — concise inputs for typography, radius, and motion.
+  // The color scale remains supported for existing themes, but it is not the
+  // recommended starting point for a new palette; see its note below.
   // ───────────────────────────────────────────────────────────────────────
 
   /**
-   * Generates the neutral ramp and the accent tokens from a seed colour
-   * using the HCT perceptual model: surfaces, text, icons, borders, muted
-   * fills, hover and pressed overlays — light and dark both.
+   * Supported compatibility path for existing themes. This expands one accent
+   * seed into the neutral ramp, surfaces, text, icons, borders, muted fills,
+   * hover and pressed overlays — light and dark both. It is not an accent-only
+   * edit.
+   *
+   * For a new complete palette, run:
+   *
+   *   astryx theme palette generate palette.config.json --out palette.generated.ts
+   *
+   * Review the generated candidate, then commit the palette module and receipt.
+   * Uncomment the `palette` import above and reference its stops from semantic
+   * tokens below. Regenerating an accepted palette then updates every mapped
+   * token that keeps those references. Generation does not rewrite the theme.
    *
    *   accent        seed hex, or a [light, dark] pair to seed each scheme's
    *                 palette from its own colour; omit to keep the default
@@ -131,9 +142,10 @@ export const myTheme = defineTheme({
    * values, and the rendered DOM is the final word.
    *
    * Reference: `astryx docs color` for what each semantic role means,
-   * `astryx docs tokens` for every colour token and its light/dark default.
+   * `astryx docs tokens/tokens-color` for every colour token and its light/dark
+   * default.
    */
-  color: {accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard'},
+  // color: {accent: '#0064E0', neutralStyle: 'cool', contrast: 'standard'},
 
   /**
    * Type scale and the three font roles.
@@ -183,8 +195,8 @@ export const myTheme = defineTheme({
   // A string applies to both colour modes; a [light, dark] tuple compiles to
   // CSS light-dark(). List only what you want to change.
   //
-  // `astryx docs tokens` PRINTS THE WHOLE TABLE — every token with its light
-  // and dark default. Read it before hand-writing colours: most of what you
+  // `astryx docs tokens/tokens-color` PRINTS THE WHOLE TABLE — every colour token
+  // with its light and dark default (`astryx docs tokens` lists every category). Read it before hand-writing colours: most of what you
   // want already has a semantic name, and the defaults tell you what you are
   // moving away from.
   //
@@ -212,12 +224,17 @@ export const myTheme = defineTheme({
   //   --color-syntax-* code highlighting · --color-data-* charts
   // ───────────────────────────────────────────────────────────────────────
   tokens: {
+    // Keep generated roles connected to the accepted palette. Uncomment the
+    // import above, then map each reviewed semantic role this way.
+    // '--color-background-surface': [
+    //   palette.neutral.light[100],
+    //   palette.neutral.dark[15],
+    // ],
     '--color-accent': ['#0064E0', '#2694FE'],
     // Changing an accent means owning its on-colour: this is the label that
     // sits on top of the fill above, in each mode.
     '--color-on-accent': ['#FFFFFF', '#FFFFFF'],
     '--color-background-body': ['#F1F4F7', '#111112'],
-    '--color-background-surface': ['#FFFFFF', '#1F1F22'],
     '--focus-outline-color': 'var(--color-accent)',
     '--shadow-low': '0 1px 2px light-dark(#0000001A, #00000066)',
   },
@@ -356,7 +373,7 @@ export const myTheme = defineTheme({
   //     {
   //       // Narrow at every pointer precision.
   //       when: {width: {below: 'md'}},
-  //       value: {tokens: {'--spacing-4': '12px'}},
+  //       value: {tokens: {'--spacing-4': '0.75rem'}},
   //     },
   //     {
   //       // Taller controls under a finger or stylus at every width.

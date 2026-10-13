@@ -1131,8 +1131,8 @@ export async function integrationPackCheck(options = {}) {
     }
   }
   // A template that sets `replaces` (spec:AST-035) or `keywords` needs a CLI
-  // that reads the field: an older CLI drops that template and hides the
-  // package's docs.
+  // that reads the field: an older CLI drops that template and can hide the
+  // package's docs. Each field has its own floor.
   if (loaded.templates) {
     const found = await discoverIntegrationTemplatesForOne(loaded).catch(
       () => ({templates: [], errors: []}),
