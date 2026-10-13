@@ -18,6 +18,7 @@ import {
   getAllInjectedCss,
 } from '../__tests__/forcedColors';
 import * as stylex from '@stylexjs/stylex';
+import {useState} from 'react';
 import {Calendar} from './Calendar';
 import type {CalendarHandle, ISODateString, DateRange} from './Calendar';
 import {calendarStyles} from './styles';
@@ -45,6 +46,24 @@ function politeRegion(): HTMLElement | null {
  * "Thursday, January 15, 2026". Each button is the sole child of a
  * role="gridcell" wrapper.
  */
+/** A controlled Calendar whose owner follows the focus-date changes. */
+function ControlledFocusCalendar({
+  onFocusDateChange,
+}: {
+  onFocusDateChange: (iso: string) => void;
+}) {
+  const [focusDate, setFocusDate] = useState<ISODateString>('2026-01-01');
+  return (
+    <Calendar
+      focusDate={focusDate}
+      onFocusDateChange={iso => {
+        onFocusDateChange(iso);
+        setFocusDate(iso);
+      }}
+    />
+  );
+}
+
 function getDayButton(day: number, month = 'January', year = 2026) {
   // Match the full date pattern with the day number
   const pattern = new RegExp(`${month}\\s+${day},\\s+${year}`);
@@ -932,6 +951,25 @@ describe('Calendar', () => {
       });
     });
 
+    it('skips borrowed adjacent-month days and crosses into their month instead', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" />);
+
+      // January 1, 2026 is a Thursday: the first row borrows December 28–31.
+      getDayButton(1).focus();
+      await user.keyboard('{ArrowLeft}');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('December 2025');
+      });
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2025-12-31',
+        );
+      });
+      expect(document.activeElement).not.toHaveAttribute('aria-disabled');
+    });
+
     it('announces the next month when paging the grid with PageDown', async () => {
       const user = userEvent.setup();
       render(<Calendar focusDate="2026-01-01" />);
@@ -1149,21 +1187,23 @@ describe('Calendar', () => {
     const user = userEvent.setup();
     const handleFocusChange = vi.fn();
 
-    render(
-      <Calendar focusDate="2026-01-01" onFocusDateChange={handleFocusChange} />,
-    );
+    render(<ControlledFocusCalendar onFocusDateChange={handleFocusChange} />);
 
     // Focus Jan 28
     const day28 = getDayButton(28);
     await user.click(day28);
     day28.focus();
 
-    // Press ArrowDown — should move to Feb 4 (+7 days), not Feb 28
+    // Press ArrowDown — should move to Feb 4 (+7 days), not Feb 28. The
+    // borrowed February row in January's grid is skipped; the grid navigates
+    // to February and focuses the real day there.
     await user.keyboard('{ArrowDown}');
 
-    // After navigation, Feb 4 should be focused
-    const focusedElement = document.activeElement;
-    expect(focusedElement).toHaveAttribute('data-date', '2026-02-04');
+    expect(handleFocusChange).toHaveBeenCalledWith('2026-02-01');
+    await waitFor(() => {
+      expect(document.activeElement).toHaveAttribute('data-date', '2026-02-04');
+    });
+    expect(document.activeElement).not.toHaveAttribute('aria-disabled');
   });
 
   it('ArrowDown lands on the same weekday +7 days even when earlier days are disabled (complex-2)', async () => {
@@ -1222,9 +1262,7 @@ describe('Calendar', () => {
     const user = userEvent.setup();
     const handleFocusChange = vi.fn();
 
-    render(
-      <Calendar focusDate="2026-01-01" onFocusDateChange={handleFocusChange} />,
-    );
+    render(<ControlledFocusCalendar onFocusDateChange={handleFocusChange} />);
 
     const day28 = getDayButton(28);
     await user.click(day28);
@@ -1235,7 +1273,10 @@ describe('Calendar', () => {
     await user.keyboard('{ArrowDown}');
 
     // Feb 4 (+7 days) — resolved via data-date despite the unparseable label.
-    expect(document.activeElement).toHaveAttribute('data-date', '2026-02-04');
+    expect(handleFocusChange).toHaveBeenCalledWith('2026-02-01');
+    await waitFor(() => {
+      expect(document.activeElement).toHaveAttribute('data-date', '2026-02-04');
+    });
   });
 
   it('prev button is disabled when focusDate month contains min', () => {
