@@ -2143,7 +2143,8 @@ jobs:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
-      # If the optional theme artifact is missing, the gate builds the themes.
+      # The artifact carries the themes and the Core dist they import, built
+      # at this commit. If it is missing, the gate builds Core and the themes.
       - name: Download built themes and core
         continue-on-error: true
         uses: actions/download-artifact@v8
@@ -2153,10 +2154,6 @@ jobs:
 
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
-
-      # Downloaded theme builds import Core's consumer-facing dist files.
-      - name: Build Core dependency for theme inspection
-        run: pnpm -F @astryxdesign/core build
 
       - name: Scout this shard of the release plan
         run: |
@@ -2220,7 +2217,8 @@ jobs:
           name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
-      # If the optional theme artifact is missing, the gate builds the themes.
+      # The artifact carries the themes and the Core dist they import, built
+      # at this commit. If it is missing, the gate builds Core and the themes.
       - name: Download built themes and core
         if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
         continue-on-error: true
@@ -2241,11 +2239,6 @@ jobs:
 
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
-
-      # Downloaded theme builds import Core's consumer-facing dist files.
-      - name: Build Core dependency for theme inspection
-        if: github.event_name == 'pull_request' || inputs.operation == 'release-check'
-        run: pnpm -F @astryxdesign/core build
 
       - name: Build canonical maintenance Storybook
         if: github.event_name == 'workflow_dispatch' && inputs.operation == 'capture'
