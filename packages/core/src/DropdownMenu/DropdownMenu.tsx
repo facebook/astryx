@@ -1190,6 +1190,16 @@ function DropdownMenuPopover({
       modality: 'keyboard' | 'pointer' = 'keyboard',
       notifyClick = false,
     ): boolean => {
+      // An unavailable trigger never opens the menu. Button keeps an
+      // aria-disabled trigger focusable for its tooltip and swallows only
+      // Enter and Space, so the arrow keys, a press and a click would still
+      // arrive here; a custom trigger may be natively disabled instead.
+      if (
+        button.isDisabled === true ||
+        buttonRef.current?.matches(':disabled, [aria-disabled="true"]') === true
+      ) {
+        return false;
+      }
       acceptedOpenRef.current = false;
       notifyClickOnShowRef.current = notifyClick;
       pendingControlledOpenRef.current = isControlled;
@@ -1205,7 +1215,7 @@ function DropdownMenuPopover({
       }
       return true;
     },
-    [isControlled, popover],
+    [button.isDisabled, isControlled, popover],
   );
 
   const isMenuOpenNow = isControlled

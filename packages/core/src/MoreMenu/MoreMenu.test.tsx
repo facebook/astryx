@@ -159,6 +159,22 @@ describe('MoreMenu', () => {
     expect(button).toHaveAttribute('aria-disabled', 'true');
   });
 
+  it('keeps the menu closed from every opening key and press while disabled', async () => {
+    const user = userEvent.setup();
+    render(<MoreMenu items={defaultItems} isDisabled />);
+    const button = screen.getByRole('button', {name: 'More options'});
+    button.focus();
+    for (const key of ['{Enter}', ' ', '{ArrowDown}', '{ArrowUp}']) {
+      await user.keyboard(key);
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+    }
+    await user.pointer([
+      {keys: '[MouseLeft>]', target: button},
+      {keys: '[/MouseLeft]'},
+    ]);
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('supports custom label', () => {
     render(<MoreMenu items={defaultItems} label="Row actions" />);
     expect(
