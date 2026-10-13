@@ -140,6 +140,10 @@ export {
 } from './patterns/landmark';
 
 export {
+  ACCORDION_PATTERN,
+  type AccordionStateFacts,
+} from './patterns/accordion';
+export {
   LINK_PATTERN,
   type LinkCurrentToken,
   type LinkStateFacts,

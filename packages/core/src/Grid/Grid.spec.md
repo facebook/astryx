@@ -44,36 +44,6 @@ layout, targets, or public API.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
-### DEP-0010 — Deprecate the fixed meaning of numeric `Grid` `columns`
-
-| Field            | Value                                                                                                                                                                                               |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| id               | `DEP-0010`                                                                                                                                                                                          |
-| cleanup          | `CLN-0019`                                                                                                                                                                                          |
-| package          | `@astryxdesign/core`                                                                                                                                                                                |
-| surface          | `Grid` `columns={N}`, which renders exactly N equal tracks (`repeat(N, 1fr)`)                                                                                                                       |
-| old contract     | A numeric `columns` value is an explicit equal-width track count at every width                                                                                                                     |
-| replacement      | `columns={{count: N, isFixed: true}}` keeps exactly N tracks                                                                                                                                        |
-| direct authority | `component:Grid`, with `family:layout-primitives` representative matrix row "Grid / fixed columns". Owners: `cixzhang` (`component:Grid`); `cixzhang`, `imdreamrunner` (`family:layout-primitives`) |
-| warning          | Consumer docs and the release notes name `DEP-0010` and the fixed shape. No runtime warning (`spec:AST-017` FR29)                                                                                   |
-| migration        | Mechanical where the fixed count is wanted: rewrite `columns={N}` to `columns={{count: N, isFixed: true}}`. Keeping the number accepts the new reflow                                               |
-| codemod          | None yet. A preserving codemod is mechanical, but it would opt every caller out of the change it exists to deliver                                                                                  |
-| downstream       | In-repo fixed rows such as week rows use the fixed shape                                                                                                                                            |
-| transition       | no prior transition                                                                                                                                                                                 |
-| state            | `proposed`                                                                                                                                                                                          |
-| open decision    | This record is draft and lists new responsive behavior as a non-goal; the family matrix pins numeric columns as fixed. Both need an owner ruling                                                    |
-| target plan      | `CLN-0019` in the next minor release                                                                                                                                                                |
-
-### CLN-0019 — Numeric `columns` means at most N columns
-
-| Field     | Value                                                                                                                                                                                                 |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| id        | `CLN-0019`                                                                                                                                                                                            |
-| lifecycle | `DEP-0010`                                                                                                                                                                                            |
-| delta     | A numeric `columns` value renders up to N columns of at least 12rem and fewer when the grid is narrower; a `GridSpan` in such a grid takes the full row once the grid has fewer columns than it spans |
-| rollback  | Restore `repeat(N, 1fr)` for numeric `columns` from the final-patch baseline                                                                                                                          |
-| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                                                                                 |
-
 ## Ownership boundary
 
 **Owns**
@@ -109,6 +79,43 @@ in the canonical `Grid.doc.mjs` and the subordinate `GridSpan.doc.mjs`;
 - Caller content may render directly in Grid or inside optional GridSpan wrappers.
 - A Spanning item may span columns, rows, both, or neither while retaining the
   same target.
+
+### Responsive contract
+
+The `columns` prop decides how many column tracks Grid lays out and whether
+that count changes with the container's width. Other inputs change the result
+only by changing what `columns` has to fit: `width` and `maxWidth` set the
+container width a reflowing shape measures against; an `xstyle`, `className`,
+or `style` that sets the track template (including under a media query)
+replaces the computed one; and a numeric GridSpan wider than the grid's tracks
+makes the browser add implicit tracks to the whole grid, which later items flow
+into. No other prop changes the count.
+
+| `columns`                   | Behavior                                                                                                                                                                                                                                                    | Reflows |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `N` (number)                | Exactly N tracks that share the row equally at every container width; a child wider than its share widens its track and can push the grid past a narrow container.                                                                                          | never   |
+| `{minWidth}`                | As many tracks as fit while each stays at least `minWidth` px wide. A container narrower than `minWidth` keeps one `minWidth`-wide track that overflows it. Empty tracks keep their width.                                                                  | yes     |
+| `{minWidth, repeat: 'fit'}` | As above, and empty tracks collapse so the present items stretch across the row.                                                                                                                                                                            | yes     |
+| `{minWidth, max}`           | Up to `max` tracks, each at least `minWidth` px and never narrower than an equal share of the row; fewer tracks as the container narrows, down to one track that shrinks to the container rather than overflowing it. `repeat: 'fit'` applies the same way. | yes     |
+| omitted, `0`, or negative   | One track.                                                                                                                                                                                                                                                  | never   |
+
+- `gap` and `columnGap` count toward the width a reflowing shape has to fit, so
+  the full count is reached only when the container has room for the tracks and
+  the gaps between them. They never change the count of a numeric `columns`.
+- `height`, `minHeight`, `rowHeight`, `align`, and `justify` size or place the
+  container and its items and do not change the column count.
+- GridSpan spans `k` tracks, or the whole row for `'full'`. `'full'` never
+  adds tracks. A numeric span wider than the grid's current tracks makes the
+  browser add implicit tracks to the grid for the remainder; they persist for
+  every row, items placed before and after the span flow into them, and once
+  they exist `'full'` covers only the explicit tracks. In a reflowing grid keep
+  spans within the smallest count the grid can reach or use `'full'`.
+- For columns that reflow on small screens, use `{minWidth, max}`: `max` is
+  what lets the last track shrink to a narrow container, so `{minWidth}` alone
+  still overflows a phone narrower than `minWidth`. A numeric `columns` never
+  reflows, so a four-up numeric row on a phone renders four narrow tracks, or
+  overflows when a child cannot shrink to its share; that is the fixed
+  contract, not a defect.
 
 ### Representative states
 
@@ -178,8 +185,19 @@ relationship.
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-layout, accessibility, or API decision.
+### DEC-1 — Numeric `columns` stays fixed; reflow uses the existing object form
+
+**Decider:** `cixzhang`, `2026-10-11`
+
+`columns={N}` means exactly N equal tracks at every width, and a grid that
+reflows on small screens uses `{minWidth, max?, repeat?}`. Two shapes, one
+responsibility each: the number is the fixed contract, the object form is the
+responsive one, and the record and the docs say so where a caller first meets
+`columns`.
+
+Rejected: redefining the number as "at most N" (breaks every released numeric
+grid and needs an opt-out shape); a `{count, isFixed}` shape (duplicates the
+number and the `max` cap).
 
 ## Open questions
 
