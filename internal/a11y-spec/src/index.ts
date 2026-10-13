@@ -140,6 +140,10 @@ export {
 } from './patterns/landmark';
 
 export {
+  ALERT_DIALOG_PATTERN,
+  type AlertDialogStateFacts,
+} from './patterns/alert-dialog';
+export {
   LINK_PATTERN,
   type LinkCurrentToken,
   type LinkStateFacts,

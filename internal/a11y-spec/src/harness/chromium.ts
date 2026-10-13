@@ -85,6 +85,7 @@ const KEYS: Record<Key, string> = {
   ArrowRight: 'ArrowRight',
   ArrowUp: 'ArrowUp',
   ArrowDown: 'ArrowDown',
+  Escape: 'Escape',
 };
 
 interface AxValue {
@@ -1089,6 +1090,30 @@ export function createChromiumHarness(
         }
         throw error;
       }
+    },
+    clickBeside: async targetSubject => {
+      const target = pointerTargets.get(targetSubject);
+      if (target == null) {
+        throw new Error(
+          'the Chromium harness was asked to click beside a subject it did not create',
+        );
+      }
+      const box = await target.boundingBox();
+      if (box == null) {
+        throw new Error('the subject has no box to click beside');
+      }
+      const viewport = page.viewportSize() ?? {width: 1280, height: 720};
+      // A point outside the box but inside the viewport: above-left when
+      // there is room, else below-right.
+      const x =
+        box.x >= 8
+          ? box.x - 4
+          : Math.min(viewport.width - 2, box.x + box.width + 4);
+      const y =
+        box.y >= 8
+          ? box.y - 4
+          : Math.min(viewport.height - 2, box.y + box.height + 4);
+      await page.mouse.click(x, y);
     },
     abortedPress: async () => {
       const box = await pointerLocator.boundingBox();

@@ -194,6 +194,8 @@ export function createJsdomHarness(options: JsdomHarnessOptions): Harness {
       unobservable('real-browser', 'a real pointer activation'),
     abortedPress: async () =>
       unobservable('real-browser', 'a real pointer press'),
+    clickBeside: async () =>
+      unobservable('real-browser', 'a real pointer click beside the subject'),
     typeText: async () =>
       unobservable('real-browser', 'real keyboard text entry'),
     clearText: async () =>
