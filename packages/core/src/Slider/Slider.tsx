@@ -834,12 +834,22 @@ export function Slider({ref, ...props}: SliderProps) {
       const currentVal = values[thumbIndex];
       let newVal: number;
 
+      // On a horizontal track the keyboard follows the track's direction:
+      // under RTL the value grows toward the left, so ArrowLeft increases and
+      // ArrowRight decreases (APG Slider). Up/Down and a vertical track are
+      // direction-free.
+      const towardMax =
+        isHorizontal && isRtlElement(trackRef.current)
+          ? 'ArrowLeft'
+          : 'ArrowRight';
+      const towardMin = towardMax === 'ArrowLeft' ? 'ArrowRight' : 'ArrowLeft';
+
       switch (e.key) {
-        case 'ArrowRight':
+        case towardMax:
         case 'ArrowUp':
           newVal = currentVal + step;
           break;
-        case 'ArrowLeft':
+        case towardMin:
         case 'ArrowDown':
           newVal = currentVal - step;
           break;
@@ -888,6 +898,7 @@ export function Slider({ref, ...props}: SliderProps) {
     },
     [
       isDisabled,
+      isHorizontal,
       isRange,
       values,
       step,

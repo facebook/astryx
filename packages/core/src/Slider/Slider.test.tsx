@@ -771,6 +771,77 @@ describe('Slider', () => {
     gcsSpy.mockRestore();
   });
 
+  it('follows the mirrored track under RTL: ArrowLeft increases, ArrowRight decreases, Up/Down unchanged', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        step={1}
+        valueDisplay="none"
+        onChange={handleChange}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    const track = thumb.parentElement!;
+    const realGetComputedStyle = window.getComputedStyle;
+    const gcsSpy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        if (el === track) {
+          return {direction: 'rtl'} as CSSStyleDeclaration;
+        }
+        return realGetComputedStyle(el, pseudo ?? undefined);
+      });
+
+    fireEvent.keyDown(thumb, {key: 'ArrowLeft'});
+    expect(handleChange).toHaveBeenLastCalledWith(51);
+    fireEvent.keyDown(thumb, {key: 'ArrowRight'});
+    expect(handleChange).toHaveBeenLastCalledWith(49);
+    fireEvent.keyDown(thumb, {key: 'ArrowUp'});
+    expect(handleChange).toHaveBeenLastCalledWith(51);
+    fireEvent.keyDown(thumb, {key: 'ArrowDown'});
+    expect(handleChange).toHaveBeenLastCalledWith(49);
+
+    gcsSpy.mockRestore();
+  });
+
+  it('keeps ArrowLeft decreasing on a vertical track under RTL', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        step={1}
+        orientation="vertical"
+        valueDisplay="none"
+        onChange={handleChange}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    const track = thumb.parentElement!;
+    const realGetComputedStyle = window.getComputedStyle;
+    const gcsSpy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        if (el === track) {
+          return {direction: 'rtl'} as CSSStyleDeclaration;
+        }
+        return realGetComputedStyle(el, pseudo ?? undefined);
+      });
+
+    fireEvent.keyDown(thumb, {key: 'ArrowLeft'});
+    expect(handleChange).toHaveBeenLastCalledWith(49);
+    fireEvent.keyDown(thumb, {key: 'ArrowRight'});
+    expect(handleChange).toHaveBeenLastCalledWith(51);
+
+    gcsSpy.mockRestore();
+  });
+
   // --- Mark label click snapping ---
 
   it('clicking a mark label snaps to that mark value, not pointer position', () => {
