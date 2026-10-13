@@ -771,7 +771,9 @@ jobs:
   build-storybook:
     needs: [check-scope]
     if: ${{ (github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
-    runs-on: 2-core-ubuntu-arm
+    # Every browser lane waits for this job, and the package builds and the
+    # Storybook build run side by side (build-packages-and-storybook.mjs).
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     outputs:
@@ -816,17 +818,16 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         uses: ./.github/actions/setup
 
-      - name: Build core package
+      # The same steps as `pnpm build` and the Storybook build, overlapped: a
+      # package builds once its workspace dependencies have, and Storybook once
+      # the packages its story index records are built.
+      - name: Build packages and Storybook
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm build
+        run: node .github/scripts/build-packages-and-storybook.mjs
 
       - name: Verify package exports
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: node scripts/verify-exports.mjs
-
-      - name: Build Storybook
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/storybook build
 
       - name: Stamp Storybook source revision
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
