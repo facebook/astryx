@@ -141,6 +141,10 @@ export {
 
 export {TREE_VIEW_PATTERN, type TreeViewStateFacts} from './patterns/tree-view';
 export {
+  ACCORDION_PATTERN,
+  type AccordionStateFacts,
+} from './patterns/accordion';
+export {
   LINK_PATTERN,
   type LinkCurrentToken,
   type LinkStateFacts,
