@@ -48,6 +48,7 @@ affects_consumer_docs: [release-process, templates]
       "DEC-14",
       "DEC-17",
       "DEC-18",
+      "DEC-19",
       "FR3",
       "FR4",
       "FR5",
@@ -640,15 +641,19 @@ one removal merged ahead of the decision to allow it.
   or lowers the next plan. Merge-back preserves main's current declaration. When it
   equals or falls below the released version, FR46's canary publication check emits no
   prerelease at equality and fails below it.
-- **FR51 — The next plan is an owner change separate from merge-back.** After FR50
-  lands, a separate pull request changes every fixed-group package version, every
-  generated exact internal pin, the lockfile, and version-stamped compatibility assets
-  to the next planned version. The default is the patch successor of the released
-  version. The minor successor is used only when Cindy explicitly names that minor as
-  the next plan; pending `[breaking]` Changesets are not that decision. Other main work
-  need not wait for this bookkeeping change, but FR46 suppresses canary publication
-  until the declaration is strictly above stable. If main already carries a newer
-  owner plan, FR50 preserves it and no duplicate bump is required. The plan remains
+- **FR51 — The next plan is prepared at the cut and remains separate from merge-back.**
+  When a release cut succeeds, release tooling prepares one pull request from current
+  main that changes every fixed-group package version, every generated exact internal
+  pin, the lockfile, and version-stamped compatibility asset to the successor plan. The
+  default is the cut version's patch successor. The minor successor is used only when
+  Cindy explicitly names that minor as the next plan; pending `[breaking]` Changesets
+  are not that decision. The plan MUST NOT merge before an immutable tag or stable
+  package publication makes the cut version non-reusable. After that point it may land
+  through normal gates before or after FR50; merge-back preserves an already-landed
+  newer plan. A terminal cut with no immutable public identity closes its prepared plan
+  unmerged. If main already carries a newer owner plan, the prepared change closes or
+  refreshes instead of duplicating or lowering it. Other main work need not wait, and
+  FR46 remains the independent canary-publication safety boundary. The plan remains
   malleable under FR46 until the next cut.
 
 ### Platform support
@@ -746,9 +751,10 @@ time: strictly above stable publishes, equality skips, and lower or split declar
 fail closed. A release branch releases the cut's declaration unchanged and admits
 incompatible work only when it is a minor; the Changeset cannot choose that version
 itself. Published branch bytes squash back into current main without regeneration,
-post-cut consumption, or plan changes. A separate owner change declares the next plan—
-patch successor by default, minor only when Cindy names it—without holding unrelated
-main work.
+post-cut consumption, or plan changes. Release tooling prepares the separate successor
+plan at cut time—patch by default, minor only when Cindy names it—and holds it until the
+cut version becomes non-reusable. It may then land before or after merge-back without
+holding unrelated main work; an unpublished terminal cut closes it unmerged.
 
 These requirements alter no published package by themselves and need no Changeset.
 Authoring helpers, validators, metadata projections, compatibility snapshots, release
@@ -779,7 +785,7 @@ lands, maintainers apply its requirement in review and release approval.
 | FR48      | Category and classification admission under each declared tier                                                                                                                                                                                                                                                                                                  | patch release with `[breaking]`, patch release with a deprecation, minor release with `[breaking]`                                                                                            | Incompatible work passes in a patch release, or a deprecation is refused in one                                                                                                                                                                                       |
 | FR49      | Malformed and inconsistent declaration fixtures                                                                                                                                                                                                                                                                                                                 | disagreeing group versions, canary identifier, release version unlike the cut manifest, already-released version, skipped version, no stable tag                                              | An untrustworthy or mismatched declaration is released                                                                                                                                                                                                                |
 | FR50      | Three-way squash merge-back fixtures bound to the immutable tag, branch head, and plan digest                                                                                                                                                                                                                                                                   | exact branch outputs, frozen deletion, branch-only marker exclusion, post-cut Changeset/manifest edit, newer main declaration, merge conflict, regenerated output                             | Merge-back differs from release bytes, lands lifecycle files, consumes post-cut work, overwrites a newer main declaration or unrelated field, or chooses a version                                                                                                    |
-| FR51      | Separate next-plan manifest/pin/lockfile/compatibility-asset fixtures plus canary routing assertions                                                                                                                                                                                                                                                            | default patch successor, explicitly named minor, pre-advanced main plan, unrelated main work during equality                                                                                  | Equality publishes a canary, the default skips a patch, pending Changesets choose a minor, exact pins or compatibility assets split, or merge-back requires a duplicate bump for an existing newer plan                                                               |
+| FR51      | Cut-time successor-plan preparation plus manifest/pin/lockfile/compatibility-asset and lifecycle fixtures                                                                                                                                                                                                                                                       | default patch successor, explicitly named minor, no-publication abort, immutable tag before merge-back, pre-advanced main plan, unrelated main work during equality                           | The plan merges before the cut version is non-reusable, survives an unpublished terminal cut, skips the default patch, derives a minor from pending Changesets, splits pins/assets, or merge-back lowers or duplicates an existing newer plan                         |
 
 ## Decision log
 
@@ -1139,6 +1145,21 @@ Rejected: a lifecycle record and frozen manifest that every removal had to appea
 before merging, which duplicated the Changeset and made bookkeeping the blocker; a
 per-record transition requirement and waiver, which the patch rule already expresses;
 and dropping the manifest, which would lose the minor's migration inventory.
+
+### DEC-19 — The cut prepares but does not authorize the successor plan
+
+**Reference:** `spec:AST-017/DEC-19`
+**Decider:** pending owner review
+
+The cut knows the default successor and every file that must move together, so it
+prepares the separate plan change immediately. That change cannot merge until an
+immutable tag or stable package publication makes the cut version non-reusable. It may
+then land before or after merge-back because FR50 preserves a newer main declaration.
+A terminal cut with no immutable public identity closes the prepared change unmerged.
+
+Rejected: merging the successor before the cut version becomes non-reusable, which
+strands an unpublished terminal cut on a skipped plan; and waiting until merge-back to
+prepare information already fixed at the cut.
 
 ## Open questions
 
