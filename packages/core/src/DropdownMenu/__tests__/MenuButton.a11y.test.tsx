@@ -18,6 +18,7 @@ import {
   summarize,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
+import {MENU_BUTTON_KNOWN_FAILURES} from './MenuButton.a11y.known-failures';
 import {renderMenuButtonState} from './MenuButton.a11y.renders';
 import {
   MENU_BUTTON_BINDING_STATES,
@@ -59,6 +60,7 @@ async function checkState(
     binding: 'DropdownMenu.trigger',
     state: state.id,
     facts: state.facts,
+    knownFailures: MENU_BUTTON_KNOWN_FAILURES,
     mount: async () => {
       render(renderMenuButtonState(state));
       return createJsdomHarness({
@@ -81,6 +83,7 @@ describe('DropdownMenu and MoreMenu triggers — menu-button pattern, jsdom lane
       binding: 'DropdownMenu.trigger',
       state: state.id,
       facts: state.facts,
+      knownFailures: MENU_BUTTON_KNOWN_FAILURES,
       render: () => {
         render(renderMenuButtonState(state));
       },
@@ -108,9 +111,10 @@ describe('menu-button binding inventory', () => {
     expect(new Set(stories).size).toBe(stories.length);
   });
 
-  it('keeps menu-surface and bottom-sheet ownership explicit', () => {
+  it('keeps menu-surface, press-model and bottom-sheet ownership explicit', () => {
     expect(MENU_BUTTON_EXCLUSIONS.map(row => row.id)).toEqual([
       'menu-surface-semantics',
+      'press-model-pointer-cancellation',
       'bottom-sheet-presentation',
     ]);
     for (const exclusion of MENU_BUTTON_EXCLUSIONS) {

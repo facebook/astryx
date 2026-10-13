@@ -21,6 +21,7 @@ import {
   formatFailures,
   neverExercised,
   summarize,
+  unmatchedKnownFailures,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
 import {
@@ -32,6 +33,7 @@ import {
   serveStorybook,
   type StaticServer,
 } from '@astryxdesign/a11y-spec/storybook';
+import {MENU_BUTTON_KNOWN_FAILURES} from './MenuButton.a11y.known-failures';
 import {
   MENU_BUTTON_BINDING_STATES,
   type MenuButtonBindingState,
@@ -96,6 +98,7 @@ async function runState(
     binding: 'DropdownMenu.trigger',
     state: state.id,
     facts: state.facts,
+    knownFailures: MENU_BUTTON_KNOWN_FAILURES,
     mount: async () => {
       const {subject, related} = await mountState(page, state);
       return createChromiumHarness({page, cdp, subject, related});
@@ -112,6 +115,9 @@ test('every menu-button expectation is exercised by a DropdownMenu or MoreMenu s
     results.push(await runState(page, cdp, state));
   }
   expect(neverExercised(results)).toEqual([]);
+  expect(unmatchedKnownFailures(MENU_BUTTON_KNOWN_FAILURES, results)).toEqual(
+    [],
+  );
 });
 
 for (const state of MENU_BUTTON_BINDING_STATES) {
@@ -124,7 +130,10 @@ for (const state of MENU_BUTTON_BINDING_STATES) {
     expect(formatFailures(blockingResults([result]))).toBe('');
     expect(
       result.results.filter(
-        row => row.status !== 'pass' && row.status !== 'not-applicable',
+        row =>
+          row.status !== 'pass' &&
+          row.status !== 'not-applicable' &&
+          row.status !== 'known-failure',
       ),
     ).toEqual([]);
     expect(report.unrunLayers).toEqual([]);

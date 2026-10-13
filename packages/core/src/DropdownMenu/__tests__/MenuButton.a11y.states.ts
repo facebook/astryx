@@ -44,6 +44,7 @@ function facts(
     focusable: true,
     controls: true,
     arrowKeysOpen: true,
+    opensOnPress: true,
     ...overrides,
   };
 }
@@ -104,6 +105,18 @@ export const MENU_BUTTON_BINDING_STATES = [
     lastItem: 'Delete',
     facts: facts(),
   },
+  {
+    id: 'more-menu-disabled',
+    summary:
+      'a disabled MoreMenu trigger that stays focusable for its tooltip and must keep its menu closed',
+    storyId: story('more-menu-disabled'),
+    component: 'MoreMenu',
+    label: 'More options',
+    firstItem: 'Rename',
+    lastItem: 'Delete',
+    facts: facts({operable: false, focusable: true}),
+    disabled: true,
+  },
 ] as const satisfies ReadonlyArray<MenuButtonBindingState>;
 
 export const MENU_BUTTON_EXCLUSIONS = [
@@ -112,6 +125,13 @@ export const MENU_BUTTON_EXCLUSIONS = [
     owner: 'the menu pattern (queued) and DropdownMenu.test.tsx',
     reason:
       'Item roles, arrow navigation inside the open menu, typeahead, Escape, selection, and focus return on close are the menu surface contract. This binding proves only how the trigger exposes itself and where focus lands when it opens the menu.',
+  },
+  {
+    id: 'press-model-pointer-cancellation',
+    owner:
+      'module:DropdownMenu/useMenuPress and MenuPress.a11y.chromium.spec.ts',
+    reason:
+      "The anchored trigger opens on pointer press-down and the row under the release acts; what a release away from the trigger does is the press model's own contract, proven by its module evidence, so the generic aborted-press check does not apply here (opensOnPress).",
   },
   {
     id: 'bottom-sheet-presentation',

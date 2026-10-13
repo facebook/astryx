@@ -97,3 +97,17 @@ export const MoreMenuClosed: Story = {
     </div>
   ),
 };
+
+export const MoreMenuDisabled: Story = {
+  render: () => (
+    <div>
+      <MoreMenu
+        label="More options"
+        items={items}
+        presentation="popover"
+        isDisabled
+      />
+      <After />
+    </div>
+  ),
+};

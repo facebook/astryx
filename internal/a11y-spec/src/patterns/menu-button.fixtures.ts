@@ -60,6 +60,7 @@ function menuButton({
   menuHidden = !open,
   menuRole = 'menu',
   disabled = false,
+  focusableDisabled = false,
 }: {
   open?: boolean;
   tag?: string;
@@ -72,9 +73,10 @@ function menuButton({
   menuHidden?: boolean;
   menuRole?: string;
   disabled?: boolean;
+  focusableDisabled?: boolean;
 } = {}): string {
   const typeAttr = tag === 'button' ? ' type="button"' : '';
-  const button = `<${tag}${typeAttr} ${SUBJECT_ATTRIBUTE} id="trigger"${haspopup == null ? '' : ` aria-haspopup="${haspopup}"`}${expanded == null ? '' : ` aria-expanded="${expanded}"`}${controls == null ? '' : ` aria-controls="${controls}"`}${disabled ? ' aria-disabled="true" tabindex="-1"' : ''}${onclick === '' ? '' : ` onclick="${onclick}"`}${onkeydown === '' ? '' : ` onkeydown="${onkeydown}"`}${onpointerdown === '' ? '' : ` onpointerdown="${onpointerdown}"`}>Actions</${tag}>`;
+  const button = `<${tag}${typeAttr} ${SUBJECT_ATTRIBUTE} id="trigger"${haspopup == null ? '' : ` aria-haspopup="${haspopup}"`}${expanded == null ? '' : ` aria-expanded="${expanded}"`}${controls == null ? '' : ` aria-controls="${controls}"`}${disabled ? ' aria-disabled="true" tabindex="-1"' : focusableDisabled ? ' aria-disabled="true"' : ''}${onclick === '' ? '' : ` onclick="${onclick}"`}${onkeydown === '' ? '' : ` onkeydown="${onkeydown}"`}${onpointerdown === '' ? '' : ` onpointerdown="${onpointerdown}"`}>Actions</${tag}>`;
   const items = [1, 2, 3]
     .map(
       index =>
@@ -93,6 +95,7 @@ const facts = (
   focusable: true,
   controls: true,
   arrowKeysOpen: true,
+  opensOnPress: false,
   ...overrides,
 });
 
@@ -137,6 +140,13 @@ export const MENU_BUTTON_FIXTURES: readonly MenuButtonFixture[] = [
     summary: 'an unavailable menu button that keeps its menu hidden',
     facts: facts({operable: false, focusable: false}),
     html: menuButton({onclick: '', onkeydown: '', disabled: true}),
+  },
+  {
+    id: 'conforming-disabled-focusable',
+    summary:
+      'an unavailable menu button that stays in the Tab order (for its tooltip) and keeps its menu closed on every key and press',
+    facts: facts({operable: false, focusable: true}),
+    html: menuButton({onclick: '', onkeydown: '', focusableDisabled: true}),
   },
   {
     id: 'violating-not-a-button',
@@ -214,6 +224,17 @@ export const MENU_BUTTON_FIXTURES: readonly MenuButtonFixture[] = [
     html: menuButton({onkeydown: KEYS_UP_FIRST}),
   },
   {
+    id: 'violating-disabled-opens-on-arrow',
+    summary:
+      'an unavailable, focusable menu button that still opens on ArrowDown',
+    facts: facts({operable: false, focusable: true}),
+    html: menuButton({
+      onclick: '',
+      onkeydown: `if (event.key === 'ArrowDown') { event.preventDefault(); ${OPEN} ${FOCUS_FIRST} }`,
+      focusableDisabled: true,
+    }),
+  },
+  {
     id: 'violating-pointer-one-way',
     summary: 'a pointer opens the menu but cannot close it again',
     facts: facts(),
@@ -270,6 +291,9 @@ export const MENU_BUTTON_MUTATIONS: Readonly<
   ],
   'menu-button.open.arrow-up-focuses-last-item': [
     'violating-arrow-up-focuses-first',
+  ],
+  'menu-button.control.unavailable-stays-closed': [
+    'violating-disabled-opens-on-arrow',
   ],
   'menu-button.open.pointer-round-trip': ['violating-pointer-one-way'],
   'menu-button.control.survives-an-aborted-press': [

@@ -27,7 +27,12 @@ export function renderMenuButtonState(
   switch (state.component) {
     case 'MoreMenu':
       menu = (
-        <MoreMenu label={state.label} items={items} presentation="popover" />
+        <MoreMenu
+          label={state.label}
+          items={items}
+          presentation="popover"
+          isDisabled={state.disabled}
+        />
       );
       break;
     case 'DropdownMenu.renderTrigger':

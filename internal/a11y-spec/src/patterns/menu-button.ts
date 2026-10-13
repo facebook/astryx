@@ -39,13 +39,6 @@ const WCAG_2_5_2: WcagCriterion = {
   level: 'A',
   url: `${UNDERSTANDING}/pointer-cancellation.html`,
 };
-const WCAG_3_2_2: WcagCriterion = {
-  standard: 'wcag',
-  id: '3.2.2',
-  name: 'On Input',
-  level: 'A',
-  url: `${UNDERSTANDING}/on-input.html`,
-};
 const WCAG_4_1_2: WcagCriterion = {
   standard: 'wcag',
   id: '4.1.2',
@@ -127,6 +120,13 @@ export interface MenuButtonStateFacts {
    * item), the APG-optional keys Astryx ships for anchored menus.
    */
   readonly arrowKeysOpen: boolean;
+  /**
+   * Whether the binding opens the menu on pointer press-down (a press model
+   * where the row under the release acts) rather than on click. A press-model
+   * control cannot be judged by the aborted-press check: the press itself is
+   * the open, and its module owns what a release elsewhere does.
+   */
+  readonly opensOnPress: boolean;
 }
 
 const ALWAYS = {
@@ -366,7 +366,9 @@ export const MENU_BUTTON_PATTERN: PatternContract<MenuButtonStateFacts> =
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          "ArrowDown and ArrowUp opening are optional in the APG pattern; this becomes required once the binding's component record adopts them as current (AST-020 FR9).",
         run: async ({harness, subject}) => {
           await openWithKey(harness, subject, 'ArrowDown', 'first-item');
         },
@@ -388,7 +390,9 @@ export const MENU_BUTTON_PATTERN: PatternContract<MenuButtonStateFacts> =
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
-        enforcement: 'required',
+        enforcement: 'advisory',
+        advisoryBecause:
+          "ArrowDown and ArrowUp opening are optional in the APG pattern; this becomes required once the binding's component record adopts them as current (AST-020 FR9).",
         run: async ({harness, subject}) => {
           await openWithKey(harness, subject, 'ArrowUp', 'last-item');
         },
@@ -416,14 +420,54 @@ export const MENU_BUTTON_PATTERN: PatternContract<MenuButtonStateFacts> =
         },
       },
       {
+        id: 'menu-button.control.unavailable-stays-closed',
+        outcome:
+          'An unavailable control that still takes focus keeps its menu closed on every opening key and on a press, so a disabled trigger never surprises the user with choices it says it cannot offer.',
+        sources: [WCAG_4_1_2, APG_EXPANDED],
+        covers: ['4.1.2-name-role-value', 'apg-interaction'],
+        appliesWhen: {
+          condition:
+            'the control cannot be operated but can receive focus, and the menu starts hidden',
+          test: facts => !facts.operable && facts.focusable && !facts.open,
+        },
+        evidenceLayer: 'real-browser',
+        alsoNeeds: ['dom'],
+        enforcement: 'required',
+        run: async ({harness, subject}) => {
+          const menu = await harness.related('menu');
+          await assertOpen(subject, menu, false, 'the starting state');
+          await focusOrFail(subject, 'the opening keys');
+          for (const key of [
+            'Enter',
+            'Space',
+            'ArrowDown',
+            'ArrowUp',
+          ] as const) {
+            await harness.press(key);
+            if ((await authoredExpanded(subject)) !== false) {
+              throw new Error(
+                `an unavailable control opened its menu on ${key}`,
+              );
+            }
+          }
+          await harness.click(subject, {ignoreAvailability: true});
+          if ((await authoredExpanded(subject)) !== false) {
+            throw new Error(
+              'an unavailable control opened its menu on a press',
+            );
+          }
+        },
+      },
+      {
         id: 'menu-button.control.survives-an-aborted-press',
         outcome:
           'A press released away from the control leaves the menu hidden, so an unintended press can be cancelled.',
         sources: [WCAG_2_5_2],
         covers: ['2.5.2-pointer-cancellation'],
         appliesWhen: {
-          condition: 'the menu starts hidden and the control can be operated',
-          test: facts => !facts.open && facts.operable,
+          condition:
+            'the menu starts hidden, the control can be operated, and it opens on click rather than on press-down',
+          test: facts => !facts.open && facts.operable && !facts.opensOnPress,
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
