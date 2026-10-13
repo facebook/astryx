@@ -104,6 +104,23 @@ export const COLLAPSIBLE_GROUP_ACCORDION_STATES = [
     defaultValue: ['profile'],
     disabled: ['privacy'],
   },
+  {
+    id: 'single-disabled-expanded',
+    summary:
+      'a disabled header whose panel stays open: it says aria-disabled, leaves the Tab order, and cannot be collapsed',
+    storyId: story('single-disabled-expanded'),
+    label: 'Profile settings',
+    facts: facts({
+      expanded: true,
+      operable: false,
+      focusable: false,
+      hasNextHeader: false,
+      hasOpenSibling: false,
+    }),
+    type: 'single',
+    defaultValue: ['profile'],
+    disabled: ['profile'],
+  },
 ] as const satisfies ReadonlyArray<CollapsibleGroupAccordionState>;
 
 export const COLLAPSIBLE_GROUP_ACCORDION_EXCLUSIONS = [

@@ -73,3 +73,9 @@ export const SingleDisabledCollapsed: Story = {
     <Fixture type="single" defaultValue={['profile']} disabled={['privacy']} />
   ),
 };
+
+export const SingleDisabledExpanded: Story = {
+  render: () => (
+    <Fixture type="single" defaultValue={['profile']} disabled={['profile']} />
+  ),
+};
