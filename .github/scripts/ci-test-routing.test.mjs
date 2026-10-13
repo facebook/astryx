@@ -297,7 +297,7 @@ describe('ci.yml RTL package sharding', () => {
       'produced no explicit should_run decision',
     );
     expect(runLines(shard)).toContain('--packages "$PACKAGE"');
-    expect(runLines(shard)).toContain('--concurrency 4');
+    expect(runLines(shard)).toContain('--concurrency 8');
     expect(runLines(shard)).toContain(
       '.github/scripts/rtl-report-completion.mjs',
     );

@@ -2154,8 +2154,9 @@ jobs:
   # routing and target changes prove themselves instead of skipping their own
   # check. A policy-sensitive full run spans ~2,000 stories and exceeded the
   # single-job budget, so CI partitions it by canonical package; each shard runs
-  # four browser workers, and the stable pr-rtl join requires all five scope
-  # manifests plus a report from every applicable package.
+  # eight browser pages on its four cores (the audit waits on page loads), and
+  # the stable pr-rtl join requires all five scope manifests plus a report from
+  # every applicable package.
   # The scheduled full sweep also runs in rtl-weekly.yml.
   #
   # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
@@ -2250,7 +2251,7 @@ jobs:
             --storybook-dir apps/storybook/dist \
             --output rtl-audit-report.json \
             --packages "$PACKAGE" \
-            --concurrency 4 \
+            --concurrency 8 \
             "${FILTER_ARGS[@]}"
 
       - name: Require completed RTL shard report
