@@ -66,6 +66,10 @@ export default defineConfig({
   // by default; the release job sets A11Y_CONTRACT_WORKERS.
   workers: contractWorkers(),
   fullyParallel: false,
+  // Evidence captures photograph a whole state matrix in one test and take
+  // 25-29 s with four workers sharing four cores, against Playwright's 30 s
+  // default; a test that sets its own budget keeps it.
+  timeout: 60_000,
   forbidOnly: isCI,
   reporter: isCI ? [['list'], ['github']] : [['list']],
   // One `use` block, on the project. Motion is NOT held here: neither
