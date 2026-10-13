@@ -139,15 +139,12 @@ export {
   type LandmarkStateFacts,
 } from './patterns/landmark';
 
-<<<<<<< HEAD
-export {GRID_PATTERN, type GridStateFacts} from './patterns/grid';
-=======
 export {SLIDER_PATTERN, type SliderStateFacts} from './patterns/slider';
 export {
   ACCORDION_PATTERN,
   type AccordionStateFacts,
 } from './patterns/accordion';
->>>>>>> origin/main
+export {GRID_PATTERN, type GridStateFacts} from './patterns/grid';
 export {
   LINK_PATTERN,
   type LinkCurrentToken,
