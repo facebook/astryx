@@ -4,7 +4,8 @@
  * @file index.ts
  * @input Re-exports the browser-free surface of @astryxdesign/a11y-spec
  * @output Contract vocabulary, completeness checklist, harness seam, runner,
- *   report, the jsdom harness, and the authored pattern contracts. A pattern
+ *   report, the jsdom harness, and the authored pattern contracts, including
+ *   Carousel collection, slide, and focus semantics. A pattern
  *   exports a helper here only when a BINDING needs it — a helper the contract
  *   uses internally stays module-private.
  * @position Package entry point. The Chromium harness is deliberately NOT here:
@@ -139,6 +140,7 @@ export {
   type LandmarkStateFacts,
 } from './patterns/landmark';
 
+export {CAROUSEL_PATTERN, type CarouselStateFacts} from './patterns/carousel';
 export {
   LINK_PATTERN,
   type LinkCurrentToken,

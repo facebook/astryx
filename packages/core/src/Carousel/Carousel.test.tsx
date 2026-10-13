@@ -30,14 +30,21 @@ describe('Carousel', () => {
     expect(screen.getByTestId('item-2')).toBeInTheDocument();
   });
 
-  it('has carousel ARIA attributes', () => {
+  it('reflects the rendered child count, skipping null and boolean children', () => {
     render(
       <Carousel aria-label="Photos">
-        <div>Item</div>
+        <div>One</div>
+        {null}
+        {false}
+        <div>Two</div>
       </Carousel>,
     );
-    const region = screen.getByRole('region', {name: 'Photos'});
-    expect(region).toHaveAttribute('aria-roledescription', 'carousel');
+    expect(
+      screen.getByRole('group', {name: 'Slide 1 of 2'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('group', {name: 'Slide 2 of 2'}),
+    ).toBeInTheDocument();
   });
 
   it('exposes the focusable scroll container as a named group', () => {
@@ -50,19 +57,6 @@ describe('Carousel', () => {
     const scroller = screen.getByRole('group', {name: 'Slides'});
     expect(scroller).toHaveAttribute('tabindex', '0');
     expect(scroller).toHaveClass('astryx-carousel-scroller');
-  });
-
-  it('makes the scroll container keyboard-focusable', () => {
-    render(
-      <Carousel aria-label="Photos">
-        <div>Item</div>
-      </Carousel>,
-    );
-    // The inner scroll container overflows, so it must be reachable by
-    // keyboard (axe: scrollable-region-focusable).
-    const region = screen.getByRole('region', {name: 'Photos'});
-    const scroller = region.firstElementChild;
-    expect(scroller).toHaveAttribute('tabindex', '0');
   });
 
   it('applies data-testid', () => {
@@ -104,71 +98,6 @@ describe('Carousel', () => {
     );
     expect(screen.getByLabelText('Scroll left')).toBeInTheDocument();
     expect(screen.getByLabelText('Scroll right')).toBeInTheDocument();
-  });
-
-  describe('slide semantics', () => {
-    it('exposes each slide as a group with aria-roledescription="slide" and a positional name', () => {
-      render(
-        <Carousel aria-label="Photos">
-          <div>One</div>
-          <div>Two</div>
-          <div>Three</div>
-        </Carousel>,
-      );
-      // APG carousel pattern: each slide container is role=group with
-      // aria-roledescription="slide" and an "N of M" accessible name.
-      // The scroll container is a named group too; slides carry the slide
-      // role description.
-      const slides = screen
-        .getAllByRole('group')
-        .filter(el => el.getAttribute('aria-roledescription') === 'slide');
-      expect(slides).toHaveLength(3);
-      slides.forEach((slide, i) => {
-        expect(slide).toHaveAttribute('aria-roledescription', 'slide');
-        expect(slide).toHaveAccessibleName(`Slide ${i + 1} of 3`);
-      });
-    });
-
-    it('reflects the rendered child count, skipping null and boolean children', () => {
-      render(
-        <Carousel aria-label="Photos">
-          <div>One</div>
-          {null}
-          {false}
-          <div>Two</div>
-        </Carousel>,
-      );
-      // The scroll container is a named group too; slides carry the slide
-      // role description.
-      const slides = screen
-        .getAllByRole('group')
-        .filter(el => el.getAttribute('aria-roledescription') === 'slide');
-      expect(slides).toHaveLength(2);
-      expect(
-        screen.getByRole('group', {name: 'Slide 1 of 2'}),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('group', {name: 'Slide 2 of 2'}),
-      ).toBeInTheDocument();
-    });
-
-    it('keeps the container region semantics unchanged around labelled slides', () => {
-      render(
-        <Carousel aria-label="Gallery">
-          <div>One</div>
-          <div>Two</div>
-        </Carousel>,
-      );
-      const region = screen.getByRole('region', {name: 'Gallery'});
-      expect(region).toHaveAttribute('aria-roledescription', 'carousel');
-      // The scroll container is a named group too; slides carry the slide
-      // role description.
-      const slides = screen
-        .getAllByRole('group')
-        .filter(el => el.getAttribute('aria-roledescription') === 'slide');
-      expect(slides).toHaveLength(2);
-      slides.forEach(slide => expect(region).toContainElement(slide));
-    });
   });
 
   it('disables edge scroll buttons instead of removing them from the tab order', () => {
