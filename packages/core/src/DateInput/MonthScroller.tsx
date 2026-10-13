@@ -700,8 +700,11 @@ export function MonthScroller({
     if (!shouldRestoreFocusRef.current || focusedISO == null) {
       return;
     }
+    // A date can be mounted twice: as a real day in its own pane and as a
+    // dimmed, disabled spill copy at the edge of a neighbouring pane. Only
+    // the real day may take focus, or Enter and Space would select nothing.
     const target = scrollerRef.current?.querySelector<HTMLElement>(
-      `[data-date="${focusedISO}"]`,
+      `[data-date="${focusedISO}"]:not([data-outside])`,
     );
     if (target != null) {
       shouldRestoreFocusRef.current = false;
@@ -858,6 +861,7 @@ function MonthPane({
                 <button
                   type="button"
                   data-date={day.iso}
+                  data-outside={day.isOutside ? '' : undefined}
                   tabIndex={day.iso === tabbableISO ? 0 : -1}
                   aria-label={plainDateFormat(
                     day.date,
