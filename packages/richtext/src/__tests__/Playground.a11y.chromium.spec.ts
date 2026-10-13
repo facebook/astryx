@@ -194,6 +194,53 @@ test('the shortcut table lists Cmd/Ctrl+K only while the toolbar registers it', 
   expect(errors).toEqual([]);
 });
 
+/**
+ * Every Markdown shortcut the settings panel may promise, and what typing it
+ * must produce. The panel's description is read from the DOM and checked
+ * against this table, so a shortcut added to that sentence has to be proven
+ * here before the suite passes — the sentence is the part that goes stale
+ * (it once promised `- [ ] `, which `- ` turns into a plain bullet first, and
+ * `|`, which never converts while typing at all).
+ */
+const MARKDOWN_SHORTCUTS: ReadonlyArray<{
+  token: string;
+  type: string;
+  produces: string;
+}> = [
+  {token: '# ', type: '# a heading', produces: 'h1'},
+  {token: '- ', type: '- an item', produces: 'li'},
+  {token: '> ', type: '> a quote', produces: 'blockquote'},
+  {token: '```', type: '```ts\nconst a = 1;', produces: 'code'},
+];
+
+test('every Markdown shortcut the panel promises actually fires', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  const description =
+    (await settings(page)
+      .getByText(/^Typing /)
+      .textContent()) ?? '';
+
+  // The sentence promises exactly the shortcuts this test proves.
+  const promised = [...description.matchAll(/'([^']+)'/g)].map(
+    match => match[1],
+  );
+  expect(promised).toEqual(MARKDOWN_SHORTCUTS.map(shortcut => shortcut.token));
+
+  const editor = page.locator(EDITOR);
+  for (const {type, produces} of MARKDOWN_SHORTCUTS) {
+    await page.getByRole('button', {name: 'Clear', exact: true}).click();
+    await editor.click();
+    await page.keyboard.type(type);
+    await expect(
+      editor.locator(produces),
+      `typing ${JSON.stringify(type)} should produce <${produces}>`,
+    ).not.toHaveCount(0);
+  }
+  expect(errors).toEqual([]);
+});
+
 // The repository's Storybook audit runs axe with these exemptions; a story
 // renders inside the preview iframe, not as a whole page.
 const AXE_DISABLED_RULES = [

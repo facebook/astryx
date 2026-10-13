@@ -807,7 +807,12 @@ export function RichTextEditorPlayground() {
             <Switch
               size="sm"
               label="Markdown shortcuts"
-              description="Typing '# ', '- ', '- [ ] ', '> ' and '```'"
+              // Only shortcuts that actually fire while typing. '- [ ] ' is
+              // not one: '- ' makes the line a bullet before the brackets are
+              // typed, so the task regexp never sees a line to match and you
+              // get a bullet reading "[ ] …". Task items arrive with imported
+              // Markdown, or from Enter inside an existing task item.
+              description="Typing '# ', '- ', '> ' and '```'"
               value={hasMarkdownShortcuts}
               onChange={setHasMarkdownShortcuts}
             />
