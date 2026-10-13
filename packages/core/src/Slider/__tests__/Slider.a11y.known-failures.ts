@@ -11,20 +11,6 @@ import type {KnownFailure} from '@astryxdesign/a11y-spec';
 
 export const SLIDER_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
   {
-    expectation: 'slider.keys.arrows-step',
-    binding: 'Slider',
-    state: 'horizontal-rtl',
-    evidenceLayer: 'real-browser',
-    failureEquals:
-      'ArrowLeft (inline forward) left aria-valuenow at 39, not 41',
-    standardsReference:
-      'APG Slider keyboard interaction (reversing the direction to match the visual layout); Astryx component:Slider AR1 — on a horizontal right-to-left track ArrowLeft increases and ArrowRight decreases',
-    userImpact:
-      'On a right-to-left page a keyboard user presses the arrow that points the way the thumb travels on screen and the value moves the other way.',
-    reason:
-      'This test-only binding records the gap; the fix ships as its own spec-backed patch (red-armed RTL keyboard test).',
-  },
-  {
     expectation: 'slider.keys.home-end',
     binding: 'Slider',
     state: 'step-three',
