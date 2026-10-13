@@ -35,8 +35,10 @@ an additive target for the interactive control surface.
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive target and state reflection only; runtime,
-  default styling, DOM semantics, and public props remain unchanged
+- Compatibility class: additive target and state reflection; default styling,
+  DOM semantics, and public props remain unchanged, and the one keyboard change
+  AR1 names — the horizontal arrows follow the track's direction under RTL —
+  ships as a behavior fix
 - Controlled/uncontrolled behavior: unchanged; Slider remains controlled
 - Migration decision: none
 
@@ -62,9 +64,9 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-This adds one public theming target without adding or changing a component prop,
-value domain, or behavior. Consumer props, modes, states, and usage remain
-documented in `Slider.doc.mjs`.
+The record adds one public theming target and names the keyboard model (AR1)
+without adding or changing a component prop or value domain. Consumer props,
+modes, states, and usage remain documented in `Slider.doc.mjs`.
 
 ## Behavioral and layout contract
 
@@ -102,8 +104,10 @@ either component's remaining target shape.
 
 ### Transformation and precedence order
 
-- No new value, snapping, geometry, interaction, or styling precedence rule is
-  introduced.
+- ORD1: an arrow or Page key result snaps to the nearest step, then clamps to
+  the bounds; Home and End go to `min` and `max` (AR1).
+- The anatomy decision (DEC-1) introduces no value, snapping, geometry,
+  interaction, or styling precedence rule of its own.
 
 ### Performance and resources
 
@@ -111,9 +115,21 @@ either component's remaining target shape.
 
 ## Accessibility contract
 
-This contract does not change or extend Slider's existing accessible name, value,
-range-thumb naming, description/status association, keyboard behavior, disabled
-behavior, or value-tooltip behavior.
+The anatomy decision (DEC-1) does not change Slider's accessible name, value,
+range-thumb naming, description/status association, disabled behavior, or
+value-tooltip behavior; AR1 records the keyboard model and its one correction.
+
+- **AR1 — Slider adopts the APG Slider pattern** (`spec:AST-020/FR15`), each
+  thumb as one composite control: every thumb is `role="slider"` with an
+  accessible name (a range names each thumb), `aria-valuemin`, `aria-valuemax`,
+  `aria-valuenow`, `aria-valuetext` when a formatter changes the spoken value,
+  `aria-orientation`, and `aria-disabled` when disabled; an enabled thumb, and a
+  disabled thumb that carries a disabled message, is a Tab stop.
+  ArrowUp and ArrowDown step by `step`; on a horizontal track the horizontal
+  arrows follow the track's direction — ArrowRight increases and ArrowLeft
+  decreases under LTR, and under RTL ArrowLeft increases and ArrowRight
+  decreases; PageUp and PageDown step by ten steps; Home moves to `min` and End to `max`. Implementation gap: End snaps to the nearest step and then clamps to the bounds, so it stops short of `max` when `max` lies less than half a step above the step below it (99 for `max=100, step=3`), while ArrowRight and PageUp reach `max`. In a range, a thumb never crosses the other past the minimum
+  separation.
 
 ## Design relationships
 
@@ -198,13 +214,14 @@ separately listed value tooltip retains Tooltip's target.
 
 ## Verification map
 
-| Contract            | Verification                                                                           | Representative states                                                 | Mutation or failure expectation                                                                                      | Audit section          |
-| ------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| FR1                 | `Slider.test.tsx` structure, range, and marks suites                                   | Single, range, horizontal, vertical, marks                            | Removing or misaligning stable parts breaks existing role, position, or mark assertions.                             | `audit:Slider/anatomy` |
-| FR2                 | `Slider.test.tsx`, `themingTargets.test.ts`, generated probe theme, and Chromium       | Root, horizontal/vertical control, disabled control, track, and thumb | A target class/state is missing, undocumented, or placed outside its owning anatomy.                                 | `audit:Slider/theming` |
-| FR3                 | Source and consumer-doc review                                                         | Filled range, marks, labels, adjacent text value                      | A missing target is inaccurately documented as present or intentionally permanent.                                   | `audit:Slider/theming` |
-| FR4                 | Source inspection; focused tests cover label, status, and disabled-reason Tooltip only | Label, status, value tooltip, disabled reason                         | Shared composition or its accessible association disappears; value-tooltip composition still lacks focused coverage. | `audit:Slider/anatomy` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                                          | Canonical anatomy and four current local targets                      | Missing, extra, prefixed, stale, or unclaimed mappings fail repository validation.                                   | `audit:Slider/theming` |
+| Contract            | Verification                                                                                                                                                                                                                                                                                                                                                                    | Representative states                                                         | Mutation or failure expectation                                                                                                                                       | Audit section                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| FR1                 | `Slider.test.tsx` structure, range, and marks suites                                                                                                                                                                                                                                                                                                                            | Single, range, horizontal, vertical, marks                                    | Removing or misaligning stable parts breaks existing role, position, or mark assertions.                                                                              | `audit:Slider/anatomy`       |
+| AR1                 | Slider accessibility contract (`internal/a11y-spec`, pending) bound to Slider, in jsdom and Chromium; `Slider.test.tsx` keyboard suites, including "follows the mirrored track under RTL: ArrowLeft increases, ArrowRight decreases, Up/Down unchanged" and "keeps ArrowLeft decreasing on a vertical track under RTL"; the Page, Home/End and Up/Down cases under the contract | Single and range; horizontal LTR and RTL; vertical; disabled; formatted value | A thumb loses its role, name or value properties; an arrow, Page, Home or End key stops stepping or steps against the mirrored track; a range thumb crosses the other | `audit:Slider/accessibility` |
+| FR2                 | `Slider.test.tsx`, `themingTargets.test.ts`, generated probe theme, and Chromium                                                                                                                                                                                                                                                                                                | Root, horizontal/vertical control, disabled control, track, and thumb         | A target class/state is missing, undocumented, or placed outside its owning anatomy.                                                                                  | `audit:Slider/theming`       |
+| FR3                 | Source and consumer-doc review                                                                                                                                                                                                                                                                                                                                                  | Filled range, marks, labels, adjacent text value                              | A missing target is inaccurately documented as present or intentionally permanent.                                                                                    | `audit:Slider/theming`       |
+| FR4                 | Source inspection; focused tests cover label, status, and disabled-reason Tooltip only                                                                                                                                                                                                                                                                                          | Label, status, value tooltip, disabled reason                                 | Shared composition or its accessible association disappears; value-tooltip composition still lacks focused coverage.                                                  | `audit:Slider/anatomy`       |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                                                                                                                                                                                                                                                                   | Canonical anatomy and four current local targets                              | Missing, extra, prefixed, stale, or unclaimed mappings fail repository validation.                                                                                    | `audit:Slider/theming`       |
 
 The focused Slider suite asserts the `slider-control` target's orientation and
 disabled state. Source/metadata guards cover all four target declarations. The
@@ -223,6 +240,15 @@ The stable pointer/keyboard interaction and compositing surface is a
 consumer-recognizable part, so it carries `slider-control`. `Thumb` remains
 separate anatomy and continues to carry `slider-thumb`. This adds no default
 behavior or styling change.
+
+### DEC-2 — Each thumb is an APG slider, and horizontal arrows follow the track
+
+**Reference:** `component:Slider/DEC-2`
+**Decider:** `cixzhang`, `2026-10-13`
+
+A thumb already plays the slider role as one composite control, so it carries the pattern's value properties and its whole keyboard model (AR1). The horizontal arrows follow the track's painted direction because a key that moves the thumb against the way it travels on screen is a defect, not a convention; the vertical arrows and Up/Down are direction-free.
+
+Rejected: keeping ArrowRight as "increase" under RTL; a Tab stop or arrow model per range thumb that differs from the single thumb.
 
 ## Open questions
 

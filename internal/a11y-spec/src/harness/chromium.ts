@@ -87,6 +87,11 @@ const KEYS: Record<Key, string> = {
   ArrowDown: 'ArrowDown',
   Home: 'Home',
   End: 'End',
+<<<<<<< HEAD
+=======
+  PageUp: 'PageUp',
+  PageDown: 'PageDown',
+>>>>>>> origin/main
 };
 
 interface AxValue {
