@@ -143,7 +143,14 @@ export type Key =
   | 'ArrowRight'
   | 'ArrowUp'
   | 'ArrowDown'
+<<<<<<< HEAD
   | 'Escape';
+=======
+  | 'Home'
+  | 'End'
+  | 'PageUp'
+  | 'PageDown';
+>>>>>>> origin/main
 
 /**
  * A mounted binding, observed at whatever layers this runtime can honestly see.
