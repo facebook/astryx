@@ -73,9 +73,10 @@ const APG_CONTAINER_DESCRIPTION = apg(
 const APG_CONTAINER_LABEL = apg(
   'The carousel container has an accessible label provided by aria-labelledby or aria-label.',
 );
-const APG_SLIDE_ROLE = apg(
-  'Each slide container has either role group or role region.',
-);
+// APG, basic carousel elements: "Each slide container has role group with
+// the property aria-roledescription set to slide." Only the carousel
+// container may choose between region and group.
+const APG_SLIDE_ROLE = apg('Each slide container has role group.');
 const APG_SLIDE_DESCRIPTION = apg(
   'Each slide has aria-roledescription set to slide.',
 );
