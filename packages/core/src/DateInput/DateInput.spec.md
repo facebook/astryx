@@ -214,7 +214,7 @@ approved policy.
 - **AR8 — The month scroller is an APG grid** (`spec:AST-020/FR15`), as one
   composite control: each mounted month pane of the touch calendar's scroller
   is a `role="grid"` named for its month, with rows of `role="gridcell"` days,
-  one day per pane holding a Tab stop,
+  at most one day per pane holding a Tab stop,
   `aria-selected` on the chosen day; ArrowLeft and ArrowRight move by a day
   following the reading direction, ArrowUp and ArrowDown by a week, Home and End
   to the ends of the week, PageUp and PageDown by a month, and Enter or Space
