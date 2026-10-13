@@ -717,12 +717,13 @@ slugs and docs routes, are data and may change.
 ### Release versions
 
 - **Main declares the next version.** The fixed group's version in main's
-  `package.json` files is the next planned release. Required pull-request lint
-  does not compare that declaration with stable or an active cut. The canary
-  publisher publishes only while one plain fixed-group declaration is above newest
-  stable, skips equality, and fails below-stable or split declarations. Trusted
-  merge-back leaves main's declaration untouched; a separate owner change declares
-  the next plan after the release.
+  `package.json` files is the next planned release. Before a cut, an owner may
+  raise or lower it while it stays strictly above newest stable. Required
+  pull-request lint does not compare that declaration with stable or an active
+  cut. The canary publisher publishes only while one plain fixed-group
+  declaration is above newest stable, skips equality, and fails below-stable or
+  split declarations. Trusted merge-back leaves main's declaration untouched;
+  a separate owner change declares the next plan after the release.
 - **0.x: the category states the tier a change needs.** A `[breaking]`
   Changeset declares `minor` and is admitted only while main already declares
   the next minor. `[experimental]` and every other category declare `patch`.
