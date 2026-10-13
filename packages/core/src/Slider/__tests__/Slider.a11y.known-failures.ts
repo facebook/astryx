@@ -9,18 +9,4 @@
 
 import type {KnownFailure} from '@astryxdesign/a11y-spec';
 
-export const SLIDER_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
-  {
-    expectation: 'slider.keys.home-end',
-    binding: 'Slider',
-    state: 'step-three',
-    evidenceLayer: 'real-browser',
-    failureEquals: 'End left aria-valuenow at 99, not 100',
-    standardsReference:
-      'APG Slider keyboard interaction — End sets the slider to the last allowed value in its range; Astryx component:Slider AR1 (End moves to max)',
-    userImpact:
-      'With a step that does not divide the range, End stops one step short of the maximum while ArrowRight and PageUp can still reach it.',
-    reason:
-      'This test-only binding records the gap named in the Slider record; the endpoint fix is its own change.',
-  },
-];
+export const SLIDER_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [];
