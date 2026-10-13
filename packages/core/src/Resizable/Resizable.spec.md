@@ -161,12 +161,7 @@ values used by hook state and painted geometry.
   ArrowUp toward the start, the inline arrows following the reading direction
   under RTL, with Shift for a larger step, so the pane grows or shrinks by the
   side of the Handle it sits on; Home moves to the minimum size and End to the
-  maximum; Enter collapses a collapsible pane and restores it. Implementation gaps under `spec:AST-020/FR15`: the Handle
-  does not name the pane it resizes with `aria-controls`; Enter reopens at the
-  minimum rather than restoring the previous size the pattern expects; an
-  unbounded Handle carries no `aria-valuemax` and End does not move it; and
-  Enter does not reopen a collapsed pane whose `minSize` is below
-  `collapsedSize`.
+  maximum; Enter collapses a collapsible pane and restores it. Implementation gaps under `spec:AST-020/FR15`: Enter reopens at the minimum rather than restoring the previous size the pattern expects; an unbounded Handle carries no `aria-valuemax` and End does not move it; and Enter does not reopen a collapsed pane whose `minSize` is below `collapsedSize`.
 
 ## Design relationships
 
@@ -251,7 +246,7 @@ composition.
 
 ### The Handle is an APG window splitter
 
-**Decision:** ResizeHandle already acts as one composite control with the splitter's role, value properties, and keyboard, so it adopts the pattern's required parts and its keyboard (AR1), with `aria-controls`, the previous-size restore on Enter, `aria-valuemax` and End on an unbounded Handle, and the small-`minSize` reopen recorded as implementation gaps; the inline arrows follow the reading direction because a key that moves the divider against the way it travels on screen is a defect. Decided by `cixzhang`, `2026-10-13`.
+**Decision:** ResizeHandle already acts as one composite control with the splitter's role, value properties, and keyboard, so it adopts the pattern's required parts and its keyboard (AR1), with the previous-size restore on Enter, `aria-valuemax` and End on an unbounded Handle, and the small-`minSize` reopen recorded as implementation gaps; the inline arrows follow the reading direction because a key that moves the divider against the way it travels on screen is a defect. Decided by `cixzhang`, `2026-10-13`.
 
 **Rejected:** a separate button to collapse the pane; a direction-free ArrowLeft under RTL.
 
