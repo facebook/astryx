@@ -29,6 +29,7 @@ const releaseJobs = [
   'pr-a11y-shard',
   'pr-a11y-audit',
   'pr-a11y',
+  'a11y-contracts-shard',
   'a11y-contracts',
   'pr-rtl-shard',
   'pr-rtl-merge',
@@ -227,7 +228,7 @@ describe('explicit release routing', () => {
   it.each([
     'pr-a11y-shard',
     'pr-a11y',
-    'a11y-contracts',
+    'a11y-contracts-shard',
     'visual-scout',
     'pr-visual',
     'pr-rtl-shard',
@@ -598,7 +599,7 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     expect(result.stdout).not.toContain('--components');
     expect(audit['continue-on-error']).toBeUndefined();
     expect(
-      step('a11y-contracts', 'Run accessibility spec-test contracts').env
+      step('a11y-contracts-shard', 'Run accessibility spec-test contracts').env
         .ASTRYX_HEAD_SHA,
     ).toBe('${{ github.event.pull_request.head.sha || github.sha }}');
   });
@@ -665,9 +666,9 @@ describe('full release scope without PR metadata or maintenance writes', () => {
 
   it('keeps exhaustive a11y contracts and their artifacts release-only', () => {
     for (const [job, name] of [
-      ['a11y-contracts', 'Run accessibility spec-test contracts'],
-      ['a11y-contracts', 'Upload pressed-state pixel evidence'],
-      ['a11y-contracts', 'Upload component-audit browser evidence'],
+      ['a11y-contracts-shard', 'Run accessibility spec-test contracts'],
+      ['a11y-contracts-shard', 'Upload pressed-state pixel evidence'],
+      ['a11y-contracts-shard', 'Upload component-audit browser evidence'],
     ]) {
       expect(runs(step(job, name)), name).toBe(true);
       expect(
@@ -680,18 +681,31 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     expect(
       runs(jobs['a11y-contracts'], {event: 'pull_request', operation: ''}),
     ).toBe(false);
+    const contracts = step(
+      'a11y-contracts-shard',
+      'Run accessibility spec-test contracts',
+    );
+    expect(contracts.run).toBe(
+      'pnpm test:a11y-contract --shard=${{ matrix.shard }}/${{ strategy.job-total }}',
+    );
+    expect(contracts.env.A11Y_CONTRACT_WORKERS).toBe(4);
+    expect(contracts['continue-on-error']).toBeUndefined();
+    // The join fails closed: a failed shard, or an evidence set no shard
+    // produced, blocks release-check through a11y-contracts.
+    const join = jobs['a11y-contracts'];
+    expect(join.needs).toContain('a11y-contracts-shard');
     expect(
-      step('a11y-contracts', 'Run accessibility spec-test contracts').run,
-    ).toBe('pnpm test:a11y-contract');
-    expect(
-      step('a11y-contracts', 'Run accessibility spec-test contracts').env
-        .A11Y_CONTRACT_WORKERS,
-    ).toBe(4);
-    expect(
-      step('a11y-contracts', 'Run accessibility spec-test contracts')[
-        'continue-on-error'
-      ],
-    ).toBeUndefined();
+      step('a11y-contracts', 'Require every contract shard').run,
+    ).toContain('"$SHARD_RESULT" != success');
+    for (const name of [
+      'Join pressed-state pixel evidence',
+      'Join component-audit browser evidence',
+    ]) {
+      expect(step('a11y-contracts', name).uses).toBe(
+        'actions/upload-artifact/merge@v7',
+      );
+      expect(step('a11y-contracts', name).with['delete-merged']).toBe(true);
+    }
     for (const name of [
       'Run modal close visibility guard',
       'Run theme var reachability guard',

@@ -241,7 +241,7 @@ describe('ci.yml RTL package sharding', () => {
       'build-storybook',
       'pr-a11y-shard',
       'pr-a11y',
-      'a11y-contracts',
+      'a11y-contracts-shard',
       'pr-rtl-shard',
     ]) {
       const checkout = workflow.jobs[name].steps.find(candidate =>
