@@ -514,11 +514,12 @@ describe('Slider', () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const onChangeEnd = vi.fn();
+    // From min 1 with step 3 the grid is 1, 4, …, 100; max 101 is off it.
     render(
       <Slider
         label="Zoom"
         min={1}
-        max={100}
+        max={101}
         step={3}
         value={49}
         onChange={onChange}
@@ -528,11 +529,9 @@ describe('Slider', () => {
     const thumb = screen.getByRole('slider');
     thumb.focus();
 
-    // 1 + 33 * 3 = 100 is on the grid from min 1, but max 101 is not; with
-    // min 1 and step 3, Home must still be 1 and End must still be max.
     await user.keyboard('{End}');
-    expect(onChange).toHaveBeenLastCalledWith(100);
-    expect(onChangeEnd).toHaveBeenLastCalledWith(100);
+    expect(onChange).toHaveBeenLastCalledWith(101);
+    expect(onChangeEnd).toHaveBeenLastCalledWith(101);
 
     await user.keyboard('{Home}');
     expect(onChange).toHaveBeenLastCalledWith(1);
@@ -542,26 +541,36 @@ describe('Slider', () => {
   it('End lands on max when max is off the step grid, while arrows still snap', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    render(
-      <Slider
-        label="Zoom"
-        min={0}
-        max={100}
-        step={3}
-        value={48}
-        onChange={onChange}
-      />,
-    );
+    function Owner() {
+      const [value, setValue] = useState(48);
+      return (
+        <Slider
+          label="Zoom"
+          min={0}
+          max={100}
+          step={3}
+          value={value}
+          onChange={next => {
+            onChange(next);
+            setValue(next);
+          }}
+        />
+      );
+    }
+    render(<Owner />);
     const thumb = screen.getByRole('slider');
     thumb.focus();
 
     await user.keyboard('{End}');
     expect(onChange).toHaveBeenLastCalledWith(100);
 
-    // ORD1 for arrows and Page keys is unchanged: 48 + 3 snaps to 51.
-    onChange.mockClear();
-    await user.keyboard('{ArrowRight}');
-    expect(onChange).toHaveBeenLastCalledWith(51);
+    // ORD1 for arrows and Page keys is unchanged: from max (100, off the
+    // grid) ArrowLeft targets 97 and snaps to 96; from 96 PageUp targets 126
+    // and clamps to 100, the bound.
+    await user.keyboard('{ArrowLeft}');
+    expect(onChange).toHaveBeenLastCalledWith(96);
+    await user.keyboard('{PageUp}');
+    expect(onChange).toHaveBeenLastCalledWith(100);
   });
 
   it('fires onChangeEnd on keyboard Home/End with correct value', async () => {
