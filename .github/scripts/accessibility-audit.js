@@ -6,7 +6,7 @@
  * @description Runs accessibility audits on component stories using axe-core
  * @input --storybook-dir <path> --output <file> [--components <comma-separated>]
  *   [--stories <comma-separated-story-ids>] [--port <number>]
- *   [--ready-selector <css-selector>]
+ *   [--ready-selector <css-selector>] [--concurrency <pages, default 1>]
  *   --baseline <path> (compare violations against a checked-in baseline)
  *   --fail-on-new (exit 1 when violations not present in the baseline exist)
  *   --update-baseline (rewrite the baseline file from this run's report)
@@ -66,6 +66,14 @@ const emptyComponentSet = componentsArg !== null && components.length === 0;
 if (storiesArg !== null && requestedStories.length === 0) {
   throw new Error('--stories requires at least one story id');
 }
+// Stories scanned at once, each on its own page in the shared context. The
+// report is assembled in story order afterwards, so it does not depend on
+// which page finishes first.
+const concurrencyArg = getArg('concurrency');
+const concurrency = Number(concurrencyArg ?? 1);
+if (!Number.isInteger(concurrency) || concurrency < 1) {
+  throw new Error(`Invalid --concurrency value: ${concurrencyArg}`);
+}
 const baselineFile = getArg('baseline');
 const readySelector = getArg('ready-selector');
 const failOnNew = hasFlag('fail-on-new');
@@ -94,6 +102,36 @@ const DISABLED_RULES = [
   'page-has-heading-one', // same — not a full page
   'region',               // content doesn't need to be in landmarks in story isolation
 ];
+
+// Wait until the story stops moving before scanning it. A story can paint
+// its content and still be laying out (a scroll container sized by an effect,
+// a grid scrolled to its initial position), and axe measures whatever frame it
+// lands on: scanned mid-layout, a region that will not scroll reports
+// `scrollable-region-focusable`. Fonts, two frames, then the geometry of the
+// story root's elements sampled until two consecutive reads agree.
+async function settleLayout(page) {
+  await page.evaluate(() => document.fonts?.ready).catch(() => {});
+  await page.evaluate(
+    () =>
+      new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  let previous = null;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const geometry = await page.evaluate(() =>
+      [...document.querySelectorAll('#storybook-root *')]
+        .map(element => {
+          const box = element.getBoundingClientRect();
+          return `${Math.round(box.x)},${Math.round(box.y)},${Math.round(box.width)},${Math.round(box.height)},${element.scrollWidth},${element.scrollHeight}`;
+        })
+        .join('|'),
+    );
+    if (geometry === previous) return;
+    previous = geometry;
+    await page.waitForTimeout(25);
+  }
+}
 
 // Simple static file server
 function createServer(dir, port) {
@@ -317,79 +355,105 @@ async function runAccessibilityAudit() {
       reducedMotion: 'reduce',
     });
 
+    // Scan one story on a fresh page; returns its axe violations.
+    const scanStory = async (component, story) => {
+      const page = await context.newPage();
+      try {
+        const url = `http://localhost:${port}/iframe.html?id=${story.id}&viewMode=story`;
+        // Higher timeout to accommodate axe-core's heavier DOM analysis
+        await page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: 15000,
+        });
+        await page.addStyleTag({ content: FREEZE_CSS }).catch(() => {});
+        await waitForStoryReadiness(
+          () =>
+            page.evaluate(
+              ({expectedOrigin, storyId}) => {
+                const currentUrl = new URL(window.location.href);
+                const root = document.querySelector('#storybook-root');
+                return {
+                  url: currentUrl.href,
+                  urlMatches:
+                    currentUrl.origin === expectedOrigin &&
+                    currentUrl.pathname === '/iframe.html' &&
+                    currentUrl.searchParams.get('id') === storyId,
+                  errorVisible:
+                    document.body.classList.contains('sb-show-errordisplay') ||
+                    document.body.classList.contains('sb-show-nopreview'),
+                  mainVisible:
+                    document.body.classList.contains('sb-show-main'),
+                  hasContent:
+                    root != null &&
+                    (root.childElementCount > 0 ||
+                      (root.textContent ?? '').trim().length > 0),
+                };
+              },
+              {expectedOrigin: `http://localhost:${port}`, storyId: story.id},
+            ),
+          {timeoutMs: 5000, pollMs: 50},
+        );
+        if (readySelector != null) {
+          await page.waitForSelector(readySelector, {
+            state: 'visible',
+            timeout: 5000,
+          });
+        }
+
+        await settleLayout(page);
+
+        // Run axe-core accessibility analysis
+        const results = await new AxeBuilder({ page })
+          .disableRules(DISABLED_RULES)
+          .analyze();
+        console.log(
+          `✓ Audited: ${component} / ${story.name} - ${results.violations.length} issues`
+        );
+        return results.violations;
+      } catch (e) {
+        throw new Error(
+          `Accessibility scan failed for selected story ${story.id}: ${e.message}`,
+          {cause: e},
+        );
+      } finally {
+        await page.close();
+      }
+    };
+
+    const queue = Object.entries(storyGroups).flatMap(
+      ([component, componentStories]) =>
+        componentStories.map(story => ({component, story})),
+    );
+    const violationsByStory = new Map();
+    let next = 0;
+    let failed = false;
+    await Promise.all(
+      Array.from({length: Math.min(concurrency, queue.length)}, async () => {
+        while (!failed && next < queue.length) {
+          const {component, story} = queue[next++];
+          try {
+            violationsByStory.set(story.id, await scanStory(component, story));
+          } catch (e) {
+            failed = true;
+            throw e;
+          }
+        }
+      }),
+    );
+
     for (const [component, componentStories] of Object.entries(storyGroups)) {
       const componentViolations = [];
 
       for (const story of componentStories) {
-        const page = await context.newPage();
-
-        try {
-          const url = `http://localhost:${port}/iframe.html?id=${story.id}&viewMode=story`;
-          // Higher timeout to accommodate axe-core's heavier DOM analysis
-          await page.goto(url, {
-            waitUntil: 'domcontentloaded',
-            timeout: 15000,
+        const violations = violationsByStory.get(story.id);
+        auditedStoryIds.add(story.id);
+        if (violations.length > 0) {
+          componentViolations.push({
+            story: story.name || story.id,
+            storyId: story.id,
+            violations,
           });
-          await page.addStyleTag({ content: FREEZE_CSS }).catch(() => {});
-          await waitForStoryReadiness(
-            () =>
-              page.evaluate(
-                ({expectedOrigin, storyId}) => {
-                  const currentUrl = new URL(window.location.href);
-                  const root = document.querySelector('#storybook-root');
-                  return {
-                    url: currentUrl.href,
-                    urlMatches:
-                      currentUrl.origin === expectedOrigin &&
-                      currentUrl.pathname === '/iframe.html' &&
-                      currentUrl.searchParams.get('id') === storyId,
-                    errorVisible:
-                      document.body.classList.contains('sb-show-errordisplay') ||
-                      document.body.classList.contains('sb-show-nopreview'),
-                    mainVisible:
-                      document.body.classList.contains('sb-show-main'),
-                    hasContent:
-                      root != null &&
-                      (root.childElementCount > 0 ||
-                        (root.textContent ?? '').trim().length > 0),
-                  };
-                },
-                {expectedOrigin: `http://localhost:${port}`, storyId: story.id},
-              ),
-            {timeoutMs: 5000, pollMs: 50},
-          );
-          if (readySelector != null) {
-            await page.waitForSelector(readySelector, {
-              state: 'visible',
-              timeout: 5000,
-            });
-          }
-
-          // Run axe-core accessibility analysis
-          const results = await new AxeBuilder({ page })
-            .disableRules(DISABLED_RULES)
-            .analyze();
-          auditedStoryIds.add(story.id);
-
-          if (results.violations.length > 0) {
-            componentViolations.push({
-              story: story.name || story.id,
-              storyId: story.id,
-              violations: results.violations,
-            });
-            totalViolations += results.violations.length;
-          }
-
-          console.log(
-            `✓ Audited: ${component} / ${story.name} - ${results.violations.length} issues`
-          );
-        } catch (e) {
-          throw new Error(
-            `Accessibility scan failed for selected story ${story.id}: ${e.message}`,
-            {cause: e},
-          );
-        } finally {
-          await page.close();
+          totalViolations += violations.length;
         }
       }
 
