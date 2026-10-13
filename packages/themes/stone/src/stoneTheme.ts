@@ -56,6 +56,13 @@ const stoneSyntax = defineSyntaxTheme({
     property: ['#4e6357', '#94b2a0'], // Teal T40 / T70
     punctuation: ['#5e5e5e', '#ababb0'], // Stone Neutral T40 / T70
     background: ['#f3f3f5', '#171719'],
+    // Diff rows: the muted green/red at 25% in light and 20% in dark keep
+    // every token at or above 4.5:1 on the tint; the markers are the tinted
+    // text tokens (8.1:1 light, 8.8:1 dark on their tints).
+    added: ['#d0e9ce40', '#b4cdb233'],
+    removed: ['#f9dcd740', '#dcc0bc33'],
+    'added-marker': ['#374c36', '#d0e9ce'],
+    'removed-marker': ['#58413e', '#f9dcd7'],
   },
 });
 

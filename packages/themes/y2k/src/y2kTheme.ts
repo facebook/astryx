@@ -29,6 +29,14 @@ const y2kSyntax = defineSyntaxTheme({
     property: ['#3c6755', '#87b5a1'],
     punctuation: ['#5e5e5e', '#ababab'],
     background: ['#FFF6ED', '#190f00'],
+    // Diff rows: the muted green/red at 25% in light and 20% in dark keep
+    // every token at or above 4.5:1 on the tint. Markers: the tinted text
+    // tokens in light (7.3:1 / 7.9:1); in dark those tokens are near-black,
+    // so the string and tag colours mark the rows (5.1:1 each).
+    added: ['#C5E17A40', '#C5E17A33'],
+    removed: ['#FFC5C340', '#FFC5C333'],
+    'added-marker': ['#3a5500', '#a5af8b'],
+    'removed-marker': ['#8b1d24', '#d19f9d'],
   },
 });
 
