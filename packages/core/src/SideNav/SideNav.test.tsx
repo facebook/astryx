@@ -1010,6 +1010,20 @@ describe('SideNav resizable', () => {
     );
   });
 
+  it('keeps the generated nav id when a wrapper forwards id={undefined}', () => {
+    render(
+      <SideNav resizable id={undefined}>
+        Content
+      </SideNav>,
+    );
+    const nav = screen.getByRole('navigation');
+    expect(nav.id).not.toBe('');
+    expect(screen.getByRole('separator')).toHaveAttribute(
+      'aria-controls',
+      nav.id,
+    );
+  });
+
   it('clips the overlay drag handle within the resizable nav bounds', () => {
     render(<SideNav resizable>Content</SideNav>);
     const nav = screen.getByRole('navigation');

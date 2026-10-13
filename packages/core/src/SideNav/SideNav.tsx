@@ -612,7 +612,6 @@ export function SideNav({
   const navElement = (
     <nav
       ref={mergedNavRef}
-      id={navId}
       role="navigation"
       aria-label={t('@astryx.sideNav.label')}
       data-testid={testId}
@@ -622,7 +621,10 @@ export function SideNav({
         className,
         resizableNavStyle,
       )}
-      {...props}>
+      {...props}
+      // After the spread: a wrapper forwarding `id={undefined}` must not erase
+      // the id the resize handle's aria-controls points at.
+      id={navId}>
       {hasStickyTop && (
         <div
           {...stylex.props(
