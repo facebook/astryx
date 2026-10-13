@@ -139,6 +139,7 @@ export {
   type LandmarkStateFacts,
 } from './patterns/landmark';
 
+export {GRID_PATTERN, type GridStateFacts} from './patterns/grid';
 export {
   LINK_PATTERN,
   type LinkCurrentToken,
