@@ -123,18 +123,6 @@ export interface UseTreeFocusOptions {
    */
   typeahead?: boolean;
 
-  /**
-   * Match typeahead against the item's `aria-labelledby` text (its label
-   * alone) instead of its whole text content, so start content, a chevron
-   * toggle or a description never takes part. TreeList passes this; the
-   * released text match stays the default for direct callers.
-   *
-   * Underscore-prefixed, undocumented and optional, like `_onResizeCancel`
-   * on `ResizableProps`: component plumbing, not public contract.
-   * @default false
-   */
-  _matchLabelledBy?: boolean;
-
   /** Reset delay for the typeahead buffer, in ms. @default 500 */
   typeaheadResetMs?: number;
 
@@ -246,6 +234,33 @@ function itemLabelText(item: HTMLElement, matchLabelledBy: boolean): string {
 export function useTreeFocus<T extends HTMLElement = HTMLElement>(
   options: UseTreeFocusOptions = {},
 ): UseTreeFocusReturn<T> {
+  return useTreeFocusInternal<T>(options);
+}
+
+/**
+ * Options the package's own components can pass beyond the public hook.
+ *
+ * Not exported from the package: TreeList imports this module directly, so
+ * `UseTreeFocusOptions` stays exactly as released.
+ */
+export type UseTreeFocusInternalOptions = UseTreeFocusOptions & {
+  /**
+   * Match typeahead against the item's `aria-labelledby` text (its label
+   * alone) instead of its whole text content, so start content, a chevron
+   * toggle or a description never takes part. TreeList passes this; the
+   * released text match stays the default for direct callers.
+   * @default false
+   */
+  matchLabelledBy?: boolean;
+};
+
+/**
+ * The implementation behind {@link useTreeFocus}. Not exported from the
+ * package; the public hook calls it without the internal options.
+ */
+export function useTreeFocusInternal<T extends HTMLElement = HTMLElement>(
+  options: UseTreeFocusInternalOptions = {},
+): UseTreeFocusReturn<T> {
   const {
     itemSelector = '[role="treeitem"]',
     isItemDisabled,
@@ -257,7 +272,7 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
     onActivate,
     typeahead = true,
     typeaheadResetMs = DEFAULT_TYPEAHEAD_RESET_MS,
-    _matchLabelledBy: matchLabelledBy = false,
+    matchLabelledBy = false,
     onActiveChange,
     hasRovingTabIndex = false,
   } = options;

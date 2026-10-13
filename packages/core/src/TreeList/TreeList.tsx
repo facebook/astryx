@@ -27,7 +27,7 @@ import type {
   TreeListVariant,
 } from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
-import {useTreeFocus} from '../hooks/useTreeFocus';
+import {useTreeFocusInternal} from '../hooks/useTreeFocus';
 
 // =============================================================================
 // Types
@@ -255,14 +255,15 @@ export function TreeList({
     return false;
   }, []);
 
-  const {treeRef, handleKeyDown, handleFocus} = useTreeFocus<HTMLUListElement>({
-    onToggleExpand: handleToggle,
-    onActivate: activateItem,
-    hasRovingTabIndex: true,
-    // Rows are named by their label (AR1); typeahead matches that label, not
-    // the chevron toggle, start content or description.
-    _matchLabelledBy: true,
-  });
+  const {treeRef, handleKeyDown, handleFocus} =
+    useTreeFocusInternal<HTMLUListElement>({
+      onToggleExpand: handleToggle,
+      onActivate: activateItem,
+      hasRovingTabIndex: true,
+      // Rows are named by their label (AR1); typeahead matches that label, not
+      // the chevron toggle, start content or description.
+      matchLabelledBy: true,
+    });
 
   const handleRootKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
