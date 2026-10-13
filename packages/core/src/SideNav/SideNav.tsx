@@ -22,7 +22,13 @@
  * - /packages/cli/assets/templates/blocks/components/SideNav/ (showcase blocks)
  */
 
-import {useCallback, useImperativeHandle, useRef, type ReactNode} from 'react';
+import {
+  useCallback,
+  useId,
+  useImperativeHandle,
+  useRef,
+  type ReactNode,
+} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
@@ -440,6 +446,10 @@ export function SideNav({
   );
 
   const navRef = useRef<HTMLElement>(null);
+  // The resize handle names the pane it resizes (APG window splitter), so the
+  // nav needs an id; a consumer's own id wins.
+  const generatedNavId = useId();
+  const navId = props.id ?? generatedNavId;
   const mergedNavRef = useMergedRefs(ref, navRef);
   const collapseStateRef = useRef<SideNavCollapseState>({
     isCollapsed: false,
@@ -602,6 +612,7 @@ export function SideNav({
   const navElement = (
     <nav
       ref={mergedNavRef}
+      id={navId}
       role="navigation"
       aria-label={t('@astryx.sideNav.label')}
       data-testid={testId}
@@ -672,6 +683,7 @@ export function SideNav({
         xstyle={styles.resizableHandle}
         resizable={resizableHook.props}
         label={t('@astryx.sideNav.resizeSidebar')}
+        aria-controls={navId}
       />
     </div>
   ) : (
