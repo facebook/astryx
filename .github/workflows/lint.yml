@@ -48,9 +48,9 @@ jobs:
               >> "$GITHUB_OUTPUT"
           fi
 
-      # Merge-back is the one trusted path allowed to leave main equal to the
-      # newest stable tag (spec:AST-017 FR50). Detect it before the ordinary
-      # version guard so required lint can route to the stronger validator.
+      # Merge-back carries exact published release-branch outputs into main under
+      # trusted validation (spec:AST-017 FR50). Detect its branch contract so
+      # required lint can route it to the stronger validator.
       - name: Detect the release merge-back branch contract
         if: github.event_name == 'pull_request'
         id: release-merge-back-scope
