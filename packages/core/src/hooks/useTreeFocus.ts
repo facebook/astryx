@@ -117,8 +117,11 @@ export interface UseTreeFocusOptions {
   ) => boolean | undefined;
 
   /**
-   * Whether typeahead (jump to next item whose text starts with the typed
-   * characters) is enabled.
+   * Whether typeahead is enabled: typing jumps to the next item whose label
+   * starts with the typed characters. The label is the text the item's
+   * `aria-labelledby` points at, so start content, a chevron toggle or a
+   * description never takes part; an item without `aria-labelledby` matches
+   * on its text content.
    * @default true
    */
   typeahead?: boolean;
@@ -177,6 +180,25 @@ export interface UseTreeFocusReturn<T extends HTMLElement = HTMLElement> {
 }
 
 /**
+ * The text typeahead matches against: the row's accessible name when it is
+ * authored with aria-labelledby (the label alone), otherwise its text content.
+ */
+function itemLabelText(item: HTMLElement): string {
+  const labelledBy = item.getAttribute('aria-labelledby');
+  if (labelledBy != null) {
+    const label = labelledBy
+      .split(/\s+/)
+      .map(id => item.ownerDocument.getElementById(id)?.textContent ?? '')
+      .join(' ')
+      .trim();
+    if (label !== '') {
+      return label;
+    }
+  }
+  return (item.textContent ?? '').trim();
+}
+
+/**
  * Hook for managing roving-tabindex focus + the WAI-ARIA tree keyboard model.
  *
  * A tree is not a linear list: ArrowUp/ArrowDown/Home/End roam linearly over
@@ -208,25 +230,6 @@ export interface UseTreeFocusReturn<T extends HTMLElement = HTMLElement> {
  * </ul>
  * ```
  */
-
-/**
- * The text typeahead matches against: the row's accessible name when it is
- * authored with aria-labelledby (the label alone), otherwise its text content.
- */
-function itemLabelText(item: HTMLElement): string {
-  const labelledBy = item.getAttribute('aria-labelledby');
-  if (labelledBy != null) {
-    const label = labelledBy
-      .split(/\s+/)
-      .map(id => item.ownerDocument.getElementById(id)?.textContent ?? '')
-      .join(' ')
-      .trim();
-    if (label !== '') {
-      return label;
-    }
-  }
-  return (item.textContent ?? '').trim();
-}
 
 export function useTreeFocus<T extends HTMLElement = HTMLElement>(
   options: UseTreeFocusOptions = {},

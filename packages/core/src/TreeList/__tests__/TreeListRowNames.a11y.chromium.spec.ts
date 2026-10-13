@@ -67,16 +67,16 @@ for (const row of ROWS) {
   });
 }
 
-test('typing a letter matches the label, so a parent row is reachable even though its chevron toggle comes first in the DOM', async ({
+test('typing a letter matches the label, so a row whose text begins with start content is reachable', async ({
   page,
 }) => {
   await mount(page);
-  const exportRow = page.locator('[role="treeitem"][data-tree-id="export"]');
-  await exportRow.focus();
-  // The Documents row's text begins with the chevron toggle's own label, so a
-  // whole-text match would never find it under "d"; the label match does.
-  await page.keyboard.press('d');
+  const docsRow = page.locator('[role="treeitem"][data-tree-id="docs"]');
+  await docsRow.focus();
+  // The Budget row's text begins with its start content ("3"), so a
+  // whole-text match never finds it under "b"; the label match does.
+  await page.keyboard.press('b');
   await expect(
-    page.locator('[role="treeitem"][data-tree-id="docs"]'),
+    page.locator('[role="treeitem"][data-tree-id="budget"]'),
   ).toBeFocused();
 });
