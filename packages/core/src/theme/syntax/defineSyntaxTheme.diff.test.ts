@@ -1,7 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it, vi} from 'vitest';
-import {defineSyntaxTheme, REQUIRED_SYNTAX_KEYS} from './defineSyntaxTheme';
+import {
+  defineSyntaxTheme,
+  REQUIRED_SYNTAX_KEYS,
+  syntaxThemeStyle,
+  syntaxThemeToCSS,
+} from './defineSyntaxTheme';
 import {syntaxTokenDefaults} from './tokens';
 import {dracula} from './presets';
 
@@ -41,6 +46,17 @@ describe('diff row slots in a syntax theme', () => {
     expect(theme.tokens.added).toBe('light-dark(#e6ffed, #1b3a24)');
     expect(theme.tokens.removed).toBe('#ffeef0');
     expect(theme.tokens['diff-header']).toBe('transparent');
+  });
+
+  it('skips unset diff slots in the CSS and style output of a hand-built definition', () => {
+    const tokens = {...dracula.tokens};
+    delete (tokens as Partial<typeof tokens>).added;
+    delete (tokens as Partial<typeof tokens>)['added-marker'];
+    const theme = {...dracula, tokens};
+    expect(syntaxThemeToCSS(theme)).not.toContain('undefined');
+    expect(syntaxThemeToCSS(theme)).not.toContain('--color-syntax-added:');
+    expect(syntaxThemeStyle(theme)).not.toHaveProperty('--color-syntax-added');
+    expect(syntaxThemeStyle(theme)).toHaveProperty('--color-syntax-removed');
   });
 
   it('leaves the shipped presets valid without them: row paints default, markers follow punctuation', () => {

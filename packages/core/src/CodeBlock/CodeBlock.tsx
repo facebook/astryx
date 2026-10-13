@@ -352,7 +352,8 @@ const styles = stylex.create({
   // in) has to stay between the number and the marker, so the grid has no
   // gap of its own and the marker carries both gaps as margins.
   lineDiffNumbered: {
-    gridTemplateColumns: 'var(--_codeblock-gutter-width) 1ch 1fr',
+    // `auto`, not `1ch`: the marker's gap margins have to widen its track.
+    gridTemplateColumns: 'var(--_codeblock-gutter-width) auto 1fr',
     columnGap: 0,
   },
   // The glyph is the source's own text: read by assistive technology, kept

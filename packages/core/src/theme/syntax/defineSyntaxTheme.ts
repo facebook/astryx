@@ -236,7 +236,8 @@ export function syntaxThemeStyle(
 
 /** Convert a syntax theme to CSS declarations (no selector wrapper). */
 export function syntaxThemeToCSS(theme: SyntaxThemeDefinition): string {
-  return ALL_SYNTAX_KEYS.map(
-    key => toCSSProperty(key) + ': ' + theme.tokens[key] + ';',
-  ).join('\n  ');
+  // An unset diff slot is left to its default rather than written `undefined`.
+  return ALL_SYNTAX_KEYS.filter(key => theme.tokens[key] !== undefined)
+    .map(key => toCSSProperty(key) + ': ' + theme.tokens[key] + ';')
+    .join('\n  ');
 }
