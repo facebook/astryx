@@ -672,9 +672,9 @@ export function Slider({ref, ...props}: SliderProps) {
       if (isDisabled) {
         return;
       }
-      // Home and End pass the bound itself (`snap: false`): `min` and `max`
-      // are always allowed values even when the step grid does not land on
-      // them (max 100 with step 3 ends at 100, not 99).
+      // Home and End pass the bound itself (`snap: false`). The step grid is
+      // anchored at `min`, so Home always landed there; `max` may lie off the
+      // grid (max 100 with step 3 snapped End to 99, not 100).
       const clamped = clamp(
         snap ? snapToStep(newVal, min, step) : newVal,
         min,

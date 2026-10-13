@@ -510,7 +510,7 @@ describe('Slider', () => {
     expect(handleChangeEnd).toHaveBeenCalledWith([0.2, 0.7]);
   });
 
-  it('End reaches max and Home reaches min even when the step grid skips them', async () => {
+  it('End reaches an off-grid max from a non-zero min, and Home still reaches min', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const onChangeEnd = vi.fn();
