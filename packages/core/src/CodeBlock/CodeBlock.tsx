@@ -118,6 +118,13 @@ const styles = stylex.create({
     backgroundColor: 'var(--color-syntax-background)',
     overflow: 'hidden',
   },
+  // The viewport is a flex item of the column root. Its implied min-height
+  // would be its content while it fits (the shared capability keeps it
+  // `overflow: clip` then), so a root sized from outside could never make it
+  // shrink and scroll; 0 lets the root's bound reach it.
+  viewport: {
+    minHeight: 0,
+  },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
@@ -903,7 +910,11 @@ export function CodeBlock({
   ) : null;
 
   const codeBody = (
-    <div {...getViewportProps<HTMLDivElement>({style: scrollStyle})}>
+    <div
+      {...getViewportProps<HTMLDivElement>({
+        ...stylex.props(styles.viewport),
+        style: scrollStyle,
+      })}>
       <div
         {...getContentProps<HTMLDivElement>(
           stylex.props(

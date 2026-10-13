@@ -201,7 +201,7 @@ A per-line typed wash (an added/removed flavour of `highlightLines`) is not deci
 
 ## Open questions
 
-None. The retained `spec:AST-025/FR12` integration gap has a current owner and required outcome; it is implementation work, not an unresolved product decision.
+None.
 
 ## Content boundary
 

@@ -106,3 +106,20 @@ test('losing overflow removes the stop without moving focus', async ({
   await expect(viewport(page)).not.toBeFocused();
   await expect(viewport(page)).not.toHaveAttribute('tabindex', '0');
 });
+
+test('a root height set from outside bounds the viewport, which then scrolls', async ({
+  page,
+}) => {
+  await mount(page);
+  // The IDE template's pattern: the block fills a parent of fixed height.
+  await setArgs(page, {code: TALL, style: {height: 160}});
+  const vp = viewport(page);
+  await expect(vp).toHaveAttribute('tabindex', '0');
+  await expect(vp).toHaveAttribute('data-scrollable-block', 'true');
+  const box = await vp.boundingBox();
+  expect(box?.height ?? 0).toBeLessThan(160);
+  const scrollable = await vp.evaluate(
+    node => node.scrollHeight > node.clientHeight + 1,
+  );
+  expect(scrollable).toBe(true);
+});
