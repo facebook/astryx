@@ -104,8 +104,9 @@ either component's remaining target shape.
 
 ### Transformation and precedence order
 
-- No new value, snapping, geometry, interaction, or styling precedence rule is
-  introduced.
+- ORD1: a key result snaps to the nearest step, then clamps to the bounds.
+- The anatomy decision (DEC-1) introduces no value, snapping, geometry,
+  interaction, or styling precedence rule of its own.
 
 ### Performance and resources
 
@@ -126,10 +127,10 @@ value-tooltip behavior; AR1 records the keyboard model and its one correction.
   ArrowUp and ArrowDown step by `step`; on a horizontal track the horizontal
   arrows follow the track's direction — ArrowRight increases and ArrowLeft
   decreases under LTR, and under RTL ArrowLeft increases and ArrowRight
-  decreases; PageUp and PageDown step by ten steps; Home moves to `min` and End to `max`;
-  every key result snaps to the nearest step and then clamps to the bounds, so
-  End lands on the step nearest `max`, or on `max` itself when that step lies
-  above it. In a range, a thumb never crosses the other past the minimum
+  decreases; PageUp and PageDown step by ten steps; Home moves to `min` and End to `max`
+  (ORD1 orders the snap and clamp). Implementation gap: End snaps to the step
+  nearest `max`, so when `max` is off the step grid End stops short (99 for
+  `max=100, step=3`) while ArrowRight and PageUp reach `max`. In a range, a thumb never crosses the other past the minimum
   separation.
 
 ## Design relationships
