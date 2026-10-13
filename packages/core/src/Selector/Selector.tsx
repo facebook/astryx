@@ -1381,9 +1381,14 @@ export function Selector<T extends SelectorOptionType>(
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
       clearValue();
-      // The clear button unmounts once the value is null, which would drop
-      // focus to <body>; hand it to the trigger as `hasClear` documents.
-      triggerRef.current?.focus();
+      // A keyboard activation (detail 0) leaves focus on the clear button,
+      // which unmounts once the value is null and would drop focus to <body>;
+      // hand it to the trigger as `hasClear` documents. A pointer press never
+      // focuses the button, so there is no focus to repair, and moving it
+      // would pull it out of an open list's search input.
+      if (e.detail === 0) {
+        triggerRef.current?.focus();
+      }
     },
     [clearValue],
   );
