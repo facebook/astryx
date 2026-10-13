@@ -231,7 +231,12 @@ describe('ci.yml RTL package sharding', () => {
 
   it('binds component evidence source, Storybook bytes, and RTL code to the PR head', () => {
     const exactRef = '${{ github.event.pull_request.head.sha || github.sha }}';
-    for (const name of ['build-storybook', 'pr-a11y', 'pr-rtl-shard']) {
+    for (const name of [
+      'build-storybook',
+      'pr-a11y',
+      'a11y-contracts',
+      'pr-rtl-shard',
+    ]) {
       const checkout = workflow.jobs[name].steps.find(candidate =>
         candidate.uses?.startsWith('actions/checkout@'),
       );

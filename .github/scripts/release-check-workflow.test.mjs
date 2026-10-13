@@ -26,6 +26,7 @@ const releaseJobs = [
   'typecheck',
   'pr-visual',
   'pr-a11y',
+  'a11y-contracts',
   'pr-rtl-shard',
   'pr-rtl',
   'release-check',
@@ -219,7 +220,7 @@ describe('explicit release routing', () => {
     },
   );
 
-  it.each(['pr-a11y', 'pr-visual', 'pr-rtl-shard'])(
+  it.each(['pr-a11y', 'a11y-contracts', 'pr-visual', 'pr-rtl-shard'])(
     'blocks %s when its build fails',
     name => {
       const needs = dependencies(jobs[name]);
@@ -366,6 +367,7 @@ describe('exact main and release branch completion', () => {
       'typecheck',
       'pr-visual',
       'pr-a11y',
+      'a11y-contracts',
       'pr-rtl',
     ]);
   });
@@ -582,7 +584,7 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     expect(result.stdout).not.toContain('--components');
     expect(audit['continue-on-error']).toBeUndefined();
     expect(
-      step('pr-a11y', 'Run accessibility spec-test contracts').env
+      step('a11y-contracts', 'Run accessibility spec-test contracts').env
         .ASTRYX_HEAD_SHA,
     ).toBe('${{ github.event.pull_request.head.sha || github.sha }}');
   });
@@ -648,27 +650,29 @@ describe('full release scope without PR metadata or maintenance writes', () => {
   });
 
   it('keeps exhaustive a11y contracts, their artifacts, and Probe reach release-only', () => {
-    for (const name of [
-      'Run accessibility spec-test contracts',
-      'Upload pressed-state pixel evidence',
-      'Upload component-audit browser evidence',
-      'Check Probe theme reach',
-      'Upload Probe reach report',
+    for (const [job, name] of [
+      ['a11y-contracts', 'Run accessibility spec-test contracts'],
+      ['a11y-contracts', 'Upload pressed-state pixel evidence'],
+      ['a11y-contracts', 'Upload component-audit browser evidence'],
+      ['pr-a11y', 'Check Probe theme reach'],
+      ['pr-a11y', 'Upload Probe reach report'],
     ]) {
-      expect(runs(step('pr-a11y', name)), name).toBe(true);
+      expect(runs(step(job, name)), name).toBe(true);
       expect(
-        runs(step('pr-a11y', name), {event: 'pull_request', operation: ''}),
+        runs(step(job, name), {event: 'pull_request', operation: ''}),
         name,
       ).toBe(false);
-      expect(runs(step('pr-a11y', name), {operation: 'capture'}), name).toBe(
-        false,
-      );
+      expect(runs(step(job, name), {operation: 'capture'}), name).toBe(false);
     }
-    expect(step('pr-a11y', 'Run accessibility spec-test contracts').run).toBe(
-      'pnpm test:a11y-contract',
-    );
+    expect(runs(jobs['a11y-contracts'])).toBe(true);
     expect(
-      step('pr-a11y', 'Run accessibility spec-test contracts')[
+      runs(jobs['a11y-contracts'], {event: 'pull_request', operation: ''}),
+    ).toBe(false);
+    expect(
+      step('a11y-contracts', 'Run accessibility spec-test contracts').run,
+    ).toBe('pnpm test:a11y-contract');
+    expect(
+      step('a11y-contracts', 'Run accessibility spec-test contracts')[
         'continue-on-error'
       ],
     ).toBeUndefined();
