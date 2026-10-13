@@ -92,11 +92,10 @@ import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
 import {useLocale, useTranslator} from '../i18n';
 
-/** Imperative handle for Calendar handleRef */
-
 /** How a month navigation moves the focused day: by its row offset in days, or by whole months. */
 type NavigationUnit = 'days' | 'months';
 
+/** Imperative handle for Calendar handleRef */
 export interface CalendarHandle {
   /** Navigate the calendar to show the month containing the given date */
   navigateTo: (date: ISODateString) => void;
@@ -831,34 +830,36 @@ function MonthGrid({
     onPageDown: handlePageDown,
   });
 
-  // Handle pending focus after month navigation
+  // Handle pending focus after month navigation. Every mounted month grid
+  // sees the same pending date; only the grid showing that date's month acts,
+  // so a neighbouring grid's fallback never overrides the right target. The
+  // target is the real day in this month, never an outside-day copy; when it
+  // is disabled, the month's first enabled day takes focus instead.
   useEffect(() => {
     if (!pendingFocus || !gridRef.current) {
       return;
     }
 
-    const buttons = gridRef.current.querySelectorAll<HTMLElement>(
-      'button:not([disabled])',
-    );
-
     const targetPd = plainDateFromISO(pendingFocus);
+    if (targetPd.year !== year || targetPd.month !== month.month) {
+      return;
+    }
     const targetIso = plainDateToISO(targetPd);
 
-    let targetButton: HTMLElement | null = null;
-    for (const button of buttons) {
-      if (button.getAttribute('data-date') === targetIso) {
-        targetButton = button;
-        break;
-      }
-    }
+    const buttons = Array.from(
+      gridRef.current.querySelectorAll<HTMLElement>(
+        'button[data-date]:not([disabled]):not([aria-disabled="true"])',
+      ),
+    );
 
-    if (!targetButton && buttons.length > 0) {
-      targetButton = buttons[0];
-    }
+    const targetButton =
+      buttons.find(button => button.getAttribute('data-date') === targetIso) ??
+      buttons[0] ??
+      null;
 
     targetButton?.focus();
     onPendingFocusHandled?.();
-  }, [pendingFocus, gridRef, onPendingFocusHandled]);
+  }, [pendingFocus, gridRef, month.month, onPendingFocusHandled, year]);
 
   // Parse selection
   let selectedDate: PlainDate | null = null;

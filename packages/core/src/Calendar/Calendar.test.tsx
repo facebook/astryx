@@ -961,6 +961,30 @@ describe('Calendar', () => {
       });
     });
 
+    it("pages from the first of two months onto the right day, not the second grid's fallback", async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" numberOfMonths={2} />);
+
+      getDayButton(15).focus();
+      await user.keyboard('{PageDown}');
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'aria-label',
+          expect.stringMatching(/February 15, 2026/),
+        );
+      });
+      expect(document.activeElement).not.toHaveAttribute('aria-disabled');
+
+      await user.keyboard('{PageUp}');
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'aria-label',
+          expect.stringMatching(/January 15, 2026/),
+        );
+      });
+      expect(document.activeElement).not.toHaveAttribute('aria-disabled');
+    });
+
     it('announces the next month when paging the grid with PageDown', async () => {
       const user = userEvent.setup();
       render(<Calendar focusDate="2026-01-01" />);
