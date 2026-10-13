@@ -13,11 +13,11 @@
  *   a query   → build.kit   (api/build/kit/kit.mjs)
  */
 
-import {withListingCache} from '../../foundation/fs/listing-cache.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {buildHelp} from './help/help.mjs';
 import {buildKit} from './kit/kit.mjs';
+import {withListingCache} from './_adapter.mjs';
 
 // Barrel: surface the leaves alongside the dispatcher for the fractal shape.
 export {buildHelp, buildKit};

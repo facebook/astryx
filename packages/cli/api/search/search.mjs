@@ -1777,7 +1777,7 @@ export async function search(query, options = {}) {
 
 /**
  * @param {string} query
- * @param {Parameters<typeof search>[1]} options
+ * @param {NonNullable<Parameters<typeof search>[1]>} options
  * @returns {ReturnType<typeof search>}
  */
 async function searchOnce(query, options) {
