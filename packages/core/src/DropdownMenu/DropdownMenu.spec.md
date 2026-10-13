@@ -172,7 +172,8 @@ visibility helper.
   is not activatable.
 - **AR3 — A drilled-in sub-menu stays one menu.** On a compact touch display a
   sub-menu replaces the rows in the same menu box with a "Back to <parent>" row
-  and its own rows, focus lands on the view's heading, and Back, Escape, or
+  and its own rows; after a keyboard open focus lands on the first row after
+  Back, after a pointer open on the drilled list (the `menu`); Back, Escape, or
   ArrowLeft return to the parent view with focus restored.
 - **AR4 — The trigger adopts the APG Menu Button pattern's required parts**
   (`spec:AST-020/FR15`): the control that opens a pointer menu is a `button`
