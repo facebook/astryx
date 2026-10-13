@@ -396,8 +396,10 @@ export const ACCORDION_PATTERN: PatternContract<AccordionStateFacts> =
         id: 'accordion.group.single-collapses-sibling',
         outcome:
           'In a single-expansion group, expanding a header collapses the sibling that was open, so one panel is open at a time.',
-        sources: [WCAG_4_1_2, APG_ENTER_SPACE],
-        covers: ['4.1.2-name-role-value', 'apg-interaction'],
+        sources: [APG_ENTER_SPACE],
+        wcagOutcome:
+          'Supports WCAG 2.2 4.1.2 for the grouped behaviour; the APG and component:CollapsibleGroup AR4 define it, so this row is advisory until that record is current (AST-020 FR9).',
+        covers: ['apg-interaction'],
         appliesWhen: {
           condition:
             'the group allows one expanded panel, this header is collapsed and operable, and another header is expanded',
@@ -434,8 +436,10 @@ export const ACCORDION_PATTERN: PatternContract<AccordionStateFacts> =
         id: 'accordion.group.tab-order',
         outcome:
           'Tab moves from this header to the next header, so every header sits in the page Tab sequence.',
-        sources: [WCAG_2_1_1, APG_TAB],
-        covers: ['2.1.1-keyboard', '2.4.3-focus-order', 'apg-interaction'],
+        sources: [APG_TAB],
+        wcagOutcome:
+          'Supports WCAG 2.2 2.1.1 for the grouped behaviour; the APG and component:CollapsibleGroup AR4 define it, so this row is advisory until that record is current (AST-020 FR9).',
+        covers: ['2.4.3-focus-order', 'apg-interaction'],
         appliesWhen: {
           condition:
             'this header can receive focus and another header follows it',
@@ -461,8 +465,10 @@ export const ACCORDION_PATTERN: PatternContract<AccordionStateFacts> =
         id: 'accordion.group.arrows-do-not-move-focus',
         outcome:
           'ArrowDown and ArrowUp leave focus on the header, because this group is a set of independent disclosures, not one composite control.',
-        sources: [WCAG_2_1_1, APG_TAB],
-        covers: ['2.1.1-keyboard', '2.4.3-focus-order', 'apg-interaction'],
+        sources: [APG_TAB],
+        wcagOutcome:
+          'Supports WCAG 2.2 2.1.1 for the grouped behaviour; the APG and component:CollapsibleGroup AR4 define it, so this row is advisory until that record is current (AST-020 FR9).',
+        covers: ['2.4.3-focus-order', 'apg-interaction'],
         appliesWhen: {
           condition: 'this header can receive focus',
           test: facts => facts.focusable,
