@@ -19,8 +19,10 @@
  * The timed region inside each process is the spec's protocol, unsmoothed:
  * ten untimed warmups, then one median of nine alternating paired rounds,
  * for a stable plugin list and a recreated equivalent one, against the
- * omitted baseline. One over-budget A/B triggers two fresh-process attempts;
- * the unchanged budget fails only when at least two of the three exceed it.
+ * omitted baseline. A first attempt within budget on both paths certifies
+ * them. Otherwise up to nine fresh-process attempts decide each path on its
+ * own: a path fails the unchanged budget when a majority of the nine (five)
+ * exceed it, and collection stops as soon as both paths are decided.
  */
 
 import {execFileSync} from 'node:child_process';
@@ -166,16 +168,60 @@ function logBenchmarkResult(result: BenchmarkResult, attempt: number): void {
   );
 }
 
+/** The two paths FR23 measures; each is held to the budget on its own. */
+const FR23_PATHS = ['stable', 'recreated'] as const;
+type FR23Path = (typeof FR23_PATHS)[number];
+
+/**
+ * Fresh-process attempts that decide a path after a noisy first one. A clean
+ * representative set sits a few hundredths under the budget at 500 sections
+ * with about ±0.04 of sample noise, so a single attempt lands over it about
+ * one time in eight; a majority of nine does so about one time in five
+ * hundred, while a real slowdown still exceeds it in nearly every attempt.
+ */
+const FR23_ATTEMPTS = 9;
+const FR23_MAJORITY = Math.floor(FR23_ATTEMPTS / 2) + 1;
+
+function attemptsOverBudget(
+  attempts: ReadonlyArray<BenchmarkResult>,
+  fr23Path: FR23Path,
+): number {
+  return attempts.filter(result => result[fr23Path] > FR23_BUDGET).length;
+}
+
+/** Whether the remaining attempts can no longer change this path's verdict. */
+function pathDecided(
+  attempts: ReadonlyArray<BenchmarkResult>,
+  fr23Path: FR23Path,
+): boolean {
+  const over = attemptsOverBudget(attempts, fr23Path);
+  return over >= FR23_MAJORITY || attempts.length - over >= FR23_MAJORITY;
+}
+
 function collectFR23Attempts(
   sections: number,
   runAttempt: (sections: number) => BenchmarkResult = runSettledBenchmark,
 ): ReadonlyArray<BenchmarkResult> {
   const attempts = [runAttempt(sections)];
-  if (exceedsFR23Budget(attempts[0])) {
-    attempts.push(runAttempt(sections));
+  if (!exceedsFR23Budget(attempts[0])) {return attempts;}
+  while (
+    attempts.length < FR23_ATTEMPTS &&
+    !FR23_PATHS.every(fr23Path => pathDecided(attempts, fr23Path))
+  ) {
     attempts.push(runAttempt(sections));
   }
   return attempts;
+}
+
+/** The paths whose attempts exceed the budget in a majority of nine. */
+function pathsOverBudget(
+  attempts: ReadonlyArray<BenchmarkResult>,
+): ReadonlyArray<FR23Path> {
+  return FR23_PATHS.filter(fr23Path =>
+    attempts.length > 1
+      ? attemptsOverBudget(attempts, fr23Path) >= FR23_MAJORITY
+      : attemptsOverBudget(attempts, fr23Path) > 0,
+  );
 }
 
 describe('Markdown FR23 helper overhead', () => {
@@ -218,35 +264,102 @@ describe('Markdown FR23 helper overhead', () => {
     }
   });
 
-  it('retries one over-budget A/B twice and uses the three-attempt majority', () => {
+  describe('deciding each path from fresh-process attempts', () => {
     const result = (stable: number, recreated: number): BenchmarkResult => ({
-      sections: 200,
+      sections: 500,
       stable,
       recreated,
       control: 1,
     });
-    const passFirst = [result(1.2, 1.22)];
-    expect(collectFR23Attempts(200, () => passFirst.shift()!)).toHaveLength(1);
+    const run = (results: BenchmarkResult[]) => {
+      const queue = [...results];
+      let calls = 0;
+      const attempts = collectFR23Attempts(500, () => {
+        calls++;
+        const next = queue.shift();
+        if (next == null) {throw new Error('asked for an unplanned attempt');}
+        return next;
+      });
+      return {attempts, calls, failing: pathsOverBudget(attempts)};
+    };
 
-    const retryResults = [
-      result(1.27, 1.1),
-      result(1.2, 1.22),
-      result(1.18, 1.19),
-    ];
-    const attempts = collectFR23Attempts(200, () => retryResults.shift()!);
-    expect(attempts).toHaveLength(3);
-    expect(attempts.filter(exceedsFR23Budget)).toHaveLength(1);
+    it('certifies both paths from one attempt within budget', () => {
+      const {calls, failing} = run([result(1.2, 1.22)]);
+      expect(calls).toBe(1);
+      expect(failing).toEqual([]);
+    });
 
-    const majorityResults = [
-      result(1.27, 1.1),
-      result(1.2, 1.26),
-      result(1.18, 1.19),
-    ];
-    expect(
-      collectFR23Attempts(200, () => majorityResults.shift()!).filter(
-        exceedsFR23Budget,
-      ),
-    ).toHaveLength(2);
+    it('fails a single attempt over budget only if no retry ran', () => {
+      expect(pathsOverBudget([result(1.26, 1.2)])).toEqual(['stable']);
+    });
+
+    it('judges each path by its own majority, not either path per attempt', () => {
+      // Main run 38393555595: stable was over in attempt 1 and recreated in
+      // attempt 2, which the old either-path-per-attempt count read as a
+      // two-of-three failure although neither path was over in a majority.
+      const {attempts, failing} = run([
+        result(1.256, 1.201),
+        result(1.145, 1.275),
+        result(1.183, 1.187),
+        result(1.18, 1.2),
+        result(1.19, 1.21),
+        result(1.2, 1.22),
+        result(1.17, 1.19),
+      ]);
+      // Each path needs five attempts within budget; each had one over.
+      expect(attempts).toHaveLength(6);
+      expect(failing).toEqual([]);
+    });
+
+    it('stops as soon as both paths are decided', () => {
+      // Recreated is decided after five passes, stable after one more.
+      const {calls} = run([
+        result(1.3, 1.2),
+        result(1.2, 1.2),
+        result(1.2, 1.2),
+        result(1.2, 1.2),
+        result(1.2, 1.2),
+        result(1.2, 1.2),
+      ]);
+      expect(calls).toBe(6);
+    });
+
+    it('fails a path that is over budget in a majority of nine', () => {
+      const {attempts, failing} = run([
+        result(1.3, 1.2),
+        result(1.27, 1.2),
+        result(1.2, 1.2),
+        result(1.26, 1.21),
+        result(1.22, 1.2),
+        result(1.28, 1.19),
+        result(1.26, 1.2),
+      ]);
+      expect(attempts).toHaveLength(7);
+      expect(failing).toEqual(['stable']);
+    });
+
+    it('fails a consistent slowdown on both paths after five attempts', () => {
+      const {calls, failing} = run(
+        Array.from({length: 9}, () => result(1.4, 1.42)),
+      );
+      expect(calls).toBe(5);
+      expect(failing).toEqual(['stable', 'recreated']);
+    });
+
+    it('never runs more than nine attempts', () => {
+      const {calls} = run([
+        result(1.3, 1.3),
+        result(1.2, 1.2),
+        result(1.3, 1.3),
+        result(1.2, 1.2),
+        result(1.3, 1.3),
+        result(1.2, 1.2),
+        result(1.3, 1.3),
+        result(1.2, 1.2),
+        result(1.3, 1.3),
+      ]);
+      expect(calls).toBe(9);
+    });
   });
 
   it.each([200, 500])(
@@ -257,28 +370,32 @@ describe('Markdown FR23 helper overhead', () => {
       // attempt counts: a value over budget is machine noise, so that process
       // is replaced before its A/B result can certify or fail the helpers.
       //
-      // A single over-budget A/B is also noisy at this threshold. Retry that
-      // result twice in fresh processes and fail only when a majority (at
-      // least two of the three independent attempts) exceeds the unchanged
-      // 1.25 budget.
+      // A single over-budget A/B is also noisy at this threshold. Each path
+      // is then decided by a majority of up to nine fresh-process attempts
+      // against the unchanged 1.25 budget.
       const attempts = collectFR23Attempts(sections);
-      if (attempts.length === 3) {
+      if (attempts.length > 1) {
         console.log(
           `  ${sections} sections: first A/B exceeded ${FR23_BUDGET};` +
-            ' retried twice in fresh processes',
+            ` decided each path from ${attempts.length} fresh processes`,
         );
       }
       attempts.forEach((result, index) =>
         logBenchmarkResult(result, index + 1),
       );
-      const overBudget = attempts.filter(exceedsFR23Budget).length;
+      const failing = pathsOverBudget(attempts);
       expect(
-        overBudget,
-        `${overBudget} of ${attempts.length} fresh FR23 attempts exceeded ` +
-          `the ${FR23_BUDGET} budget`,
-      ).toBeLessThan(2);
+        failing,
+        failing
+          .map(
+            fr23Path =>
+              `${fr23Path}: ${attemptsOverBudget(attempts, fr23Path)} of ` +
+              `${attempts.length} fresh FR23 attempts exceeded the ${FR23_BUDGET} budget`,
+          )
+          .join('; '),
+      ).toEqual([]);
     },
-    300_000,
+    600_000,
   );
 
   it('fails loudly when the benchmark process cannot produce a result', () => {
