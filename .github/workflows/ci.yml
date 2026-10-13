@@ -630,7 +630,9 @@ jobs:
   test-node:
     needs: [check-scope]
     if: ${{ github.event_name != 'workflow_dispatch' && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
-    runs-on: 2-core-ubuntu-arm
+    # Vitest runs one test file per CPU beyond the first, so the 2-core runner
+    # ran this suite one file at a time (~23 min). Four cores give it three.
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:

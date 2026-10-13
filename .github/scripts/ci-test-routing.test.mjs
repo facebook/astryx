@@ -85,6 +85,12 @@ describe.each(Object.entries(WORKFLOWS))(
   (file, {lanes, scopeConditional}) => {
     const workflow = load(file);
 
+    it('gives the Node suite more than one Vitest worker', () => {
+      // Vitest uses one worker per CPU beyond the first: on two cores the
+      // suite would run one file at a time.
+      expect(workflow.jobs['test-node']['runs-on']).toBe('4-core-ubuntu');
+    });
+
     it('runs every declared Vitest project in some lane', () => {
       const projects = declaredProjects();
       expect(projects.length).toBeGreaterThan(0);
