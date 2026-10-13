@@ -175,6 +175,28 @@ describe('MoreMenu', () => {
     expect(button).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('does not carry a refused ArrowUp into a later open', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(<MoreMenu items={defaultItems} isDisabled />);
+    const button = screen.getByRole('button', {name: 'More options'});
+    button.focus();
+    await user.keyboard('{ArrowUp}');
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+
+    // Enabled again, a synthesized click (detail 0: screen-reader activation)
+    // opens on the FIRST row; the refused ArrowUp must not have armed "last".
+    rerender(<MoreMenu items={defaultItems} />);
+    fireEvent.click(button, {detail: 0});
+    await waitFor(() => {
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menuitem', {name: 'Edit', hidden: true}),
+      ).toHaveFocus();
+    });
+  });
+
   it('supports custom label', () => {
     render(<MoreMenu items={defaultItems} label="Row actions" />);
     expect(

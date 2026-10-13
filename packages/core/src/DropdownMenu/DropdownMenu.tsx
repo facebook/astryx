@@ -716,7 +716,15 @@ function DropdownMenuBottomSheet({
       openModalityRef.current = 'keyboard';
     }
   };
-  const handleSheetTriggerClick = () => {
+  const handleSheetTriggerClick = (event: React.MouseEvent<HTMLElement>) => {
+    // A caller-rendered trigger that is natively or aria-disabled must not
+    // open the sheet; the default Button already refuses its own click.
+    if (
+      event.currentTarget.matches(':disabled, [aria-disabled="true"]') ||
+      button.isDisabled === true
+    ) {
+      return;
+    }
     onClick?.();
     setOpen(!isOpen);
   };
@@ -1338,7 +1346,11 @@ function DropdownMenuPopover({
             return;
           }
           focusLastOnOpenRef.current = e.key === 'ArrowUp';
-          openAndFocus();
+          if (!openAndFocus()) {
+            // A refused open (disabled trigger) must not leave ArrowUp's
+            // "land on the last row" armed for a later open.
+            focusLastOnOpenRef.current = false;
+          }
         }
         return;
       }

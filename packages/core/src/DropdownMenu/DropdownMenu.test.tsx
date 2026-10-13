@@ -2861,6 +2861,31 @@ describe('DropdownMenu custom trigger', () => {
     );
   });
 
+  it('a disabled custom trigger never opens the menu', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        items={[{label: 'Edit'}, {label: 'Delete'}]}
+        renderTrigger={({ref, ...props}) => (
+          <button type="button" ref={ref} aria-disabled="true" {...props}>
+            Row actions
+          </button>
+        )}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Row actions'});
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.pointer([
+      {keys: '[MouseLeft>]', target: trigger},
+      {keys: '[/MouseLeft]'},
+    ]);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('a custom trigger opens from the keyboard and lands on the first row', async () => {
     const user = userEvent.setup();
     render(
