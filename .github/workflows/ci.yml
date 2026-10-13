@@ -1981,7 +1981,9 @@ jobs:
         with:
           name: pressed-state-evidence-${{ needs.build-storybook.outputs.short_hash }}-${{ matrix.shard }}
           path: test-results/pressed-state-evidence/
-          retention-days: 1
+          # A failing run keeps its evidence here (the join merges only after
+          # every leg passed, then deletes these copies).
+          retention-days: 30
           # Only the shard that ran the spec has frames; the join requires them.
           if-no-files-found: ignore
 
@@ -1995,7 +1997,7 @@ jobs:
         with:
           name: component-audit-evidence-${{ needs.build-storybook.outputs.short_hash }}-${{ matrix.shard }}
           path: test-results/chat-layout-audit-evidence/
-          retention-days: 1
+          retention-days: 30
           if-no-files-found: ignore
 
   # Joins the contract shards for release-check: every shard must pass, and
