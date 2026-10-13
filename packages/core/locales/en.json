@@ -1407,6 +1407,10 @@
     "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} over the limit",
     "description": "Screen-reader-only assertive announcement when the user has typed past a TextArea's maxLength. `{count}` is how many characters over — example: `3 characters over the limit`."
   },
+  "@astryx.inputClearButton.tooltip": {
+    "defaultMessage": "Clear",
+    "description": "Tooltip shown on hover or keyboard focus over the X button inside an input that clears its value. Verb, imperative. Shown alone beside the field, so it names only the action; the screen-reader label names the field separately."
+  },
   "@astryx.textInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the value from a TextInput. Example: `Clear Email`, `Clear Name`."

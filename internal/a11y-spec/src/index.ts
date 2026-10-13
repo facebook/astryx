@@ -142,6 +142,10 @@ export {
 
 export {CAROUSEL_PATTERN, type CarouselStateFacts} from './patterns/carousel';
 export {
+  ACCORDION_PATTERN,
+  type AccordionStateFacts,
+} from './patterns/accordion';
+export {
   LINK_PATTERN,
   type LinkCurrentToken,
   type LinkStateFacts,
