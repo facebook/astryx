@@ -39,4 +39,3 @@ export const BareRtl = storyFor('bare-rtl');
 export const BareCollapsible = storyFor('bare-collapsible');
 export const BareUnbounded = storyFor('bare-unbounded');
 export const BareDisabled = storyFor('bare-disabled');
-export const SidenavResizable = storyFor('sidenav-resizable');

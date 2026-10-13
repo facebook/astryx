@@ -9,10 +9,9 @@
  * @position Shared fixture for the ResizeHandle binding
  */
 
-import {useId, type ReactElement} from 'react';
+import type {ReactElement} from 'react';
 import {ResizeHandle} from '../ResizeHandle';
 import {useResizable} from '../useResizable';
-import {SideNav, SideNavItem, SideNavSection} from '../../SideNav';
 import type {ResizeHandleBindingState} from './ResizeHandle.a11y.states';
 
 /** The id the binding gives the pane the bare handle controls. */
@@ -64,35 +63,12 @@ function BareSplitter({state}: {state: ResizeHandleBindingState}) {
   );
 }
 
-function SideNavSplitter() {
-  const headingId = useId();
-  return (
-    <div style={{display: 'flex', height: 360}}>
-      <SideNav
-        aria-labelledby={headingId}
-        resizable
-        collapsible
-        header={<div id={headingId}>Workspace</div>}>
-        <SideNavSection title="Main">
-          <SideNavItem label="Dashboard" href="#dashboard" isSelected />
-          <SideNavItem label="Reports" href="#reports" />
-        </SideNavSection>
-      </SideNav>
-      <div style={{flex: 1, padding: 12}}>Main content</div>
-    </div>
-  );
-}
-
 export function renderResizeHandleState(
   state: ResizeHandleBindingState,
 ): ReactElement {
   return (
     <div dir={state.rtl ? 'rtl' : 'ltr'} style={{padding: 16}}>
-      {state.component === 'SideNav' ? (
-        <SideNavSplitter />
-      ) : (
-        <BareSplitter state={state} />
-      )}
+      <BareSplitter state={state} />
     </div>
   );
 }

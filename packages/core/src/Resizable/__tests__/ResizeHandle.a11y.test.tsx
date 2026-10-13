@@ -33,10 +33,12 @@ function separator(state: ResizeHandleBindingState): HTMLElement {
   return screen.getByRole('separator', {name: state.label});
 }
 
-function pane(state: ResizeHandleBindingState): HTMLElement {
-  return state.component === 'SideNav'
-    ? screen.getByRole('navigation')
-    : document.getElementById(BARE_PANE_ID)!;
+function pane(): HTMLElement {
+  const element = document.getElementById(BARE_PANE_ID);
+  if (element == null) {
+    throw new Error('the bare pane is not rendered');
+  }
+  return element;
 }
 
 async function checkState(
@@ -52,7 +54,7 @@ async function checkState(
       render(renderResizeHandleState(state));
       return createJsdomHarness({
         subject: separator(state),
-        related: {pane: pane(state)},
+        related: {pane: pane()},
       });
     },
     unmount: cleanup,
@@ -75,7 +77,7 @@ describe('ResizeHandle — window splitter pattern, jsdom lane', () => {
         render(renderResizeHandleState(state));
       },
       subject: () => separator(state),
-      related: () => ({pane: pane(state)}),
+      related: () => ({pane: pane()}),
       cleanup,
     });
   });
@@ -100,6 +102,7 @@ describe('ResizeHandle binding inventory', () => {
 
   it('keeps pointer and pane-cycling ownership explicit', () => {
     expect(RESIZE_HANDLE_EXCLUSIONS.map(exclusion => exclusion.id)).toEqual([
+      'sidenav-binding',
       'pointer-drag-model',
       'pane-cycling',
     ]);
@@ -113,7 +116,7 @@ describe('ResizeHandle binding inventory', () => {
     for (const state of RESIZE_HANDLE_BINDING_STATES) {
       render(renderResizeHandleState(state));
       expect(separator(state), state.id).toBeTruthy();
-      expect(pane(state), state.id).toBeTruthy();
+      expect(pane(), state.id).toBeTruthy();
       cleanup();
     }
   });

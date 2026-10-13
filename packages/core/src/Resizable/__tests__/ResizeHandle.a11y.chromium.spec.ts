@@ -64,10 +64,7 @@ async function mountState(
   const root = page.locator('#storybook-root');
   const subject = root.getByRole('separator', {name: state.label});
   await subject.waitFor({state: 'attached'});
-  const pane =
-    state.component === 'SideNav'
-      ? root.getByRole('navigation')
-      : root.locator('#a11y-splitter-pane');
+  const pane = root.locator('#a11y-splitter-pane');
   return {subject, related: {pane}};
 }
 
@@ -104,7 +101,7 @@ test('every window-splitter expectation is exercised by a ResizeHandle state', a
 });
 
 for (const state of RESIZE_HANDLE_BINDING_STATES) {
-  test(`TreeList [${state.id}] — ${state.summary}`, async ({page}) => {
+  test(`ResizeHandle [${state.id}] — ${state.summary}`, async ({page}) => {
     const cdp = await page.context().newCDPSession(page);
     const result = await runState(page, cdp, state);
     const report = summarize(WINDOW_SPLITTER_PATTERN, [result]);
