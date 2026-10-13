@@ -550,7 +550,7 @@ describe('Slider', () => {
           max={100}
           step={3}
           value={value}
-          onChange={next => {
+          onChange={(next: number) => {
             onChange(next);
             setValue(next);
           }}
