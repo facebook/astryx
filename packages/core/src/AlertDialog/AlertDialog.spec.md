@@ -18,7 +18,7 @@ verified_by:
     scripts/check-knowledge.mjs,
   ]
 modules: []
-families: []
+families: [family:overlay-dismissal]
 design_specs: []
 architecture:
   [
@@ -175,16 +175,19 @@ The dialog surface (the Dialog element AlertDialog renders) carries `alert-dialo
 
 - `component:Dialog` owns modality, focus return, and dismissal; AlertDialog
   composes it with `purpose="form"` semantics and the alert-dialog role.
+- `family:overlay-dismissal` lists AlertDialog as a member: it dismisses through
+  Dialog's shared owner with no deviation of its own; Escape cancels it and a
+  backdrop click does not (FR1).
 - `spec:AST-020/FR15` decides which APG parts a component adopts; AlertDialog
   adopts the Alert Dialog pattern's required parts because it already plays that
   role.
 
 ## Verification map
 
-| Contract | Verification                                                                                                                                                                                                                                                                                                           | Representative states                  | Mutation or failure expectation                                                                                  | Audit section                     |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| FR1–FR5  | `AlertDialog.test.tsx` and `useImperativeAlertDialog.test.tsx`                                                                                                                                                                                                                                                         | open, loading, inline, imperative      | Escape not cancelling, the action closing by itself, or the inline path claiming the role fails.                 | `audit:AlertDialog/behavior`      |
-| AR1      | `AlertDialog.test.tsx` (role, `aria-labelledby`/`aria-describedby`, Cancel initial focus, Escape, responsive button order, keyboard suite) and `useImperativeAlertDialog.test.tsx`; the no-backdrop-dismiss outcome and focus delegation under the Alert Dialog accessibility contract (`internal/a11y-spec`, pending) | open modal; after Escape; after Cancel | The role, name link, description link, or Cancel initial focus is lost, or a click outside dismisses the dialog. | `audit:AlertDialog/accessibility` |
+| Contract | Verification                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Representative states                  | Mutation or failure expectation                                                                                  | Audit section                     |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| FR1–FR5  | `AlertDialog.test.tsx` ("calls onOpenChange(false) on Escape", "does not call onOpenChange when action is clicked", "does not call onAction on Escape", "does not disable the cancel button while the action is loading", "exposes a named group instead, with no aria-modal") and `useImperativeAlertDialog.test.tsx` ("opens on show()", "hides on hide()")                                                                                                                                                                                                                                                                                                              | open, loading, inline, imperative      | Escape not cancelling, the action closing by itself, or the inline path claiming the role fails.                 | `audit:AlertDialog/behavior`      |
+| AR1      | `AlertDialog.test.tsx` ("renders with alertdialog role", "links title via aria-labelledby", "links description via aria-describedby", "marks cancel as the initial focus target", "keeps the initial focus target on the least destructive action", "calls onOpenChange(false) on Escape", "stacks long destructive action labels above cancel on a narrow fine-pointer screen", "reaches both buttons by Tab, cancel first", "is a modal alertdialog", "does not claim the alertdialog role") and `useImperativeAlertDialog.test.tsx`; the no-backdrop-dismiss outcome and focus delegation under the Alert Dialog accessibility contract (`internal/a11y-spec`, pending) | open modal; after Escape; after Cancel | The role, name link, description link, or Cancel initial focus is lost, or a click outside dismisses the dialog. | `audit:AlertDialog/accessibility` |
 
 ## Decision log
 
