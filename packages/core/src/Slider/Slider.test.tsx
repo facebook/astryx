@@ -510,6 +510,60 @@ describe('Slider', () => {
     expect(handleChangeEnd).toHaveBeenCalledWith([0.2, 0.7]);
   });
 
+  it('End reaches max and Home reaches min even when the step grid skips them', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onChangeEnd = vi.fn();
+    render(
+      <Slider
+        label="Zoom"
+        min={1}
+        max={100}
+        step={3}
+        value={49}
+        onChange={onChange}
+        onChangeEnd={onChangeEnd}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    thumb.focus();
+
+    // 1 + 33 * 3 = 100 is on the grid from min 1, but max 101 is not; with
+    // min 1 and step 3, Home must still be 1 and End must still be max.
+    await user.keyboard('{End}');
+    expect(onChange).toHaveBeenLastCalledWith(100);
+    expect(onChangeEnd).toHaveBeenLastCalledWith(100);
+
+    await user.keyboard('{Home}');
+    expect(onChange).toHaveBeenLastCalledWith(1);
+    expect(onChangeEnd).toHaveBeenLastCalledWith(1);
+  });
+
+  it('End lands on max when max is off the step grid, while arrows still snap', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Slider
+        label="Zoom"
+        min={0}
+        max={100}
+        step={3}
+        value={48}
+        onChange={onChange}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    thumb.focus();
+
+    await user.keyboard('{End}');
+    expect(onChange).toHaveBeenLastCalledWith(100);
+
+    // ORD1 for arrows and Page keys is unchanged: 48 + 3 snaps to 51.
+    onChange.mockClear();
+    await user.keyboard('{ArrowRight}');
+    expect(onChange).toHaveBeenLastCalledWith(51);
+  });
+
   it('fires onChangeEnd on keyboard Home/End with correct value', async () => {
     const user = userEvent.setup();
     const handleChangeEnd = vi.fn();
