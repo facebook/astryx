@@ -95,6 +95,14 @@ import {useLocale, useTranslator} from '../i18n';
 /** How a month navigation moves the focused day: by its row offset in days, or by whole months. */
 type NavigationUnit = 'days' | 'months';
 
+/** The given day of `month`, or that month's last day when it has fewer. */
+function clampDayToMonth(month: PlainDate, day: number): PlainDate {
+  const first = {year: month.year, month: month.month, day: 1};
+  // Adding a month to the 1st and stepping back a day is the month's length.
+  const lastDay = plainDateAddDays(plainDateAddMonths(first, 1), -1).day;
+  return {year: month.year, month: month.month, day: Math.min(day, lastDay)};
+}
+
 /** Imperative handle for Calendar handleRef */
 export interface CalendarHandle {
   /** Navigate the calendar to show the month containing the given date */
@@ -408,10 +416,24 @@ export function Calendar({ref, ...props}: CalendarProps) {
       // where it exists.
       if (focusedDate) {
         const currentPd = plainDateFromISO(focusedDate);
-        const targetPd =
+        let targetPd =
           unit === 'months'
             ? plainDateAddMonths(currentPd, delta)
             : plainDateAddDays(currentPd, delta * (offset ?? 7));
+        // A page from a borrowed adjacent-month day can target a month no grid
+        // shows (Dec 28 in January's first row pages to Jan 28 while February
+        // is now visible). Pull the target into the nearest visible month,
+        // keeping its day of the month, so a grid always claims the focus.
+        if (unit === 'months') {
+          const firstVisible = newPd;
+          const lastVisible = plainDateAddMonths(newPd, numberOfMonths - 1);
+          const monthIndex = (pd: PlainDate) => pd.year * 12 + pd.month;
+          if (monthIndex(targetPd) < monthIndex(firstVisible)) {
+            targetPd = clampDayToMonth(firstVisible, targetPd.day);
+          } else if (monthIndex(targetPd) > monthIndex(lastVisible)) {
+            targetPd = clampDayToMonth(lastVisible, targetPd.day);
+          }
+        }
         setPendingFocus(plainDateToISO(targetPd));
       }
 
@@ -421,7 +443,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
         setInternalFocusDate(newPd);
       }
     },
-    [baseMonth, onFocusDateChange],
+    [baseMonth, numberOfMonths, onFocusDateChange],
   );
 
   // Escape key handler to cancel range selection

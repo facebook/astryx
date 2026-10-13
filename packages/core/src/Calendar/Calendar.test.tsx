@@ -985,6 +985,30 @@ describe('Calendar', () => {
       expect(document.activeElement).not.toHaveAttribute('aria-disabled');
     });
 
+    it('pages from a borrowed adjacent-month day into the month now shown', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" />);
+
+      // Home from January 1 lands on the borrowed December 28 in the first row.
+      getDayButton(1).focus();
+      await user.keyboard('{Home}');
+      expect(document.activeElement).toHaveAttribute('data-date', '2025-12-28');
+
+      // PageDown shows February; the target (January 28) is in no grid, so
+      // focus lands on February 28 rather than falling off to the body.
+      await user.keyboard('{PageDown}');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('February 2026');
+      });
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2026-02-28',
+        );
+      });
+      expect(document.activeElement).not.toHaveAttribute('aria-disabled');
+    });
+
     it('announces the next month when paging the grid with PageDown', async () => {
       const user = userEvent.setup();
       render(<Calendar focusDate="2026-01-01" />);
