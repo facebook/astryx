@@ -20,6 +20,7 @@ import {
   declaredVersionAtRef,
   latestStableVersion,
   nextPlannedVersion,
+  pendingMergeBackVersion,
   validateMainVersions,
   validateReleaseDiff,
   validateReleaseMergeBack,
@@ -783,11 +784,13 @@ describe('main pull requests keep the declared version above newest stable (FR46
     head,
     releasedVersion = '0.6.7',
     activeCutVersion = null,
+    pendingMergeBack = null,
   ) =>
     validateMainVersions({
       fixed,
       releasedVersion,
       activeCutVersion,
+      pendingMergeBackVersion: pendingMergeBack,
       baseManifests: base,
       headManifests: head,
     });
@@ -806,6 +809,57 @@ describe('main pull requests keep the declared version above newest stable (FR46
     expect(check(at('0.6.8'), at('0.6.8'), '0.6.8', '0.6.8')).toContain(
       'main declares 0.6.8; it must stay strictly above newest stable v0.6.8',
     );
+  });
+
+  it('allows published equality only while the exact frozen merge-back is pending', () => {
+    expect(check(at('0.6.8'), at('0.6.8'), '0.6.8', '0.6.8', '0.6.8')).toEqual(
+      [],
+    );
+    expect(check(at('0.6.8'), at('0.6.8'), '0.6.8', '0.6.8')).toContain(
+      'main declares 0.6.8; it must stay strictly above newest stable v0.6.8',
+    );
+    expect(
+      check(at('0.6.8'), at('0.6.8'), '0.6.8', '0.6.8', '0.6.7'),
+    ).toContain(
+      'main declares 0.6.8; it must stay strictly above newest stable v0.6.8',
+    );
+  });
+
+  it('proves the pending window from exact authority and every frozen Changeset', () => {
+    const plan = {
+      schemaVersion: 2,
+      version: '0.6.8',
+      branch: 'release/v0.6.8',
+      cutSha: 'a'.repeat(40),
+      changesets: [
+        {
+          path: '.changeset/frozen.md',
+          sha256: 'b'.repeat(64),
+          packages: [{name: '@astryxdesign/core', bump: 'patch'}],
+          category: 'fix',
+          headline: 'Fix it',
+          contributors: ['person'],
+          body: '',
+        },
+      ],
+    };
+    const marker = buildMarker(plan);
+    const input = {
+      releasedVersion: '0.6.8',
+      activeBranches: ['release/v0.6.8'],
+      marker,
+      plan,
+      releaseHead: 'c'.repeat(40),
+      branchHead: 'c'.repeat(40),
+      baseChangesets: new Map([['.changeset/frozen.md', 'b'.repeat(64)]]),
+    };
+    expect(pendingMergeBackVersion(input)).toBe('0.6.8');
+    expect(
+      pendingMergeBackVersion({...input, baseChangesets: new Map()}),
+    ).toBeNull();
+    expect(
+      pendingMergeBackVersion({...input, branchHead: 'd'.repeat(40)}),
+    ).toBeNull();
   });
 
   it('admits only patch or minor successor as the first plan after merge-back', () => {

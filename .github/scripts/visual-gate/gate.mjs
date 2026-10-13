@@ -52,8 +52,6 @@ import {
   summarizeBaselineAccounting,
   withThemeMetadata,
 } from './lib/plan.mjs';
-import {READ_TARGETS, emptyAccumulator, fold} from './lib/probe-reach.mjs';
-import {AXES, PROBE_TOKENS, READ_AXES} from './lib/probe-axes.mjs';
 import {renderReport} from './lib/report.mjs';
 import {accept, incomparable, readBaseline} from './lib/baseline.mjs';
 import {loadConfig, loadThemeOverrides, loadThemingTargets} from './lib/sources.mjs';
@@ -645,122 +643,6 @@ async function main() {
     case 'check':
     case 'release':
       return check();
-    case 'reach': {
-      // The assertion a pixel diff cannot make: did each target's override
-      // actually arrive? No baseline, no images — the probe theme's unique
-      // per-selector colour is the fingerprint, so this is an equality test.
-      const {chromium} = await import('playwright');
-      const {serveDirectory} = await import('./lib/capture.mjs');
-      const stories = storiesInPackages(
-        readStoryIndex(
-          storybookDir,
-          Object.keys(config.excludeStories),
-          REPO_ROOT,
-        ),
-        ['*'],
-      );
-      const subject = only.length
-        ? stories.filter(story => only.some(f => story.storyId ?? story.id.includes(f)))
-        : stories;
-      const server = await serveDirectory(storybookDir);
-      const origin = `http://127.0.0.1:${server.port}`;
-      const browser = await chromium.launch();
-      const page = await browser.newPage({viewport: config.viewport});
-      const acc = emptyAccumulator();
-      const axisHits = {
-        tokens: new Set(),
-        icon: new Set(),
-        indicator: new Set(),
-        fonts: new Set(),
-        syntax: new Set(),
-      };
-      let done = 0;
-      for (const story of subject) {
-        try {
-          await page.goto(
-            `${origin}/iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story&globals=astryxTheme:${config.probeTheme};colorMode:light`,
-            {waitUntil: 'load', timeout: 30000},
-          );
-          await page.waitForSelector('#storybook-root > *', {timeout: 20000});
-          await page.evaluate(() => document.fonts.ready);
-          fold(acc, await page.evaluate(READ_TARGETS), story.id);
-          // The other five axes. A single story proves tokens and fonts; the
-          // registry swaps and syntax need a story that renders one, so these
-          // accumulate across the walk.
-          const axes = await page.evaluate(READ_AXES);
-          for (const [name, value] of Object.entries(axes.tokens)) {
-            if (value && value === PROBE_TOKENS[name]) axisHits.tokens.add(name);
-          }
-          for (const kind of Object.keys(axes.swaps)) axisHits[kind]?.add(kind);
-          if (/AstryxProbeFace/.test(axes.fontFamily)) axisHits.fonts.add('body');
-          for (const color of axes.syntax) {
-            if (/^rgb\(/.test(color)) axisHits.syntax.add(color);
-          }
-        } catch {
-          // A story that will not render contributes no readings; the visual
-          // tier reports it as a capture failure.
-        }
-        if (++done % 100 === 0) process.stderr.write(`  read ${done}/${subject.length}\n`);
-      }
-      await browser.close();
-      await server.close();
-
-      const declared = (await loadThemingTargets(REPO_ROOT)).map(t => t.key);
-      const unseen = [...new Set(declared)].filter(
-        key => !acc.verified.has(key) && !acc.failures.has(key) && !acc.shadowed.has(key),
-      );
-      // An axis with nothing rendering it is UNVERIFIABLE, not passing — the
-      // difference is the whole point, and reporting it as green is how a
-      // check ends up asserting nothing.
-      const axisReport = {
-        components: {
-          verified: acc.verified.size,
-          missed: acc.failures.size,
-          ...AXES.components,
-        },
-        tokens: {verified: axisHits.tokens.size, of: Object.keys(PROBE_TOKENS).length, ...AXES.tokens},
-        icons: {verified: axisHits.icon.size > 0, ...AXES.icons},
-        indicators: {verified: axisHits.indicator.size > 0, ...AXES.indicators},
-        fonts: {verified: axisHits.fonts.size > 0, ...AXES.fonts},
-        syntax: {verified: axisHits.syntax.size, ...AXES.syntax},
-      };
-
-      const out = {
-        version: 1,
-        generatedAt: new Date().toISOString(),
-        axes: axisReport,
-        verified: [...acc.verified].sort(),
-        failures: Object.fromEntries([...acc.failures].sort()),
-        shadowed: Object.fromEntries([...acc.shadowed].sort()),
-        neverRendered: unseen.sort(),
-      };
-      fs.mkdirSync(outDir, {recursive: true});
-      fs.writeFileSync(path.join(outDir, 'reach.json'), `${JSON.stringify(out, null, 2)}\n`);
-
-      process.stdout.write('theme axes:\n');
-      for (const [name, info] of Object.entries(axisReport)) {
-        const value =
-          typeof info.verified === 'boolean'
-            ? info.verified
-              ? 'reached'
-              : 'NOT REACHED'
-            : `${info.verified}${info.of ? `/${info.of}` : ''} reached`;
-        process.stdout.write(`  ${name.padEnd(12)} ${value}\n`);
-      }
-      process.stdout.write(
-        `\ncomponent targets\n` +
-          `reached the pixels:              ${out.verified.length}\n` +
-          `shares an element with another:  ${Object.keys(out.shadowed).length}\n` +
-          `override did NOT arrive:         ${Object.keys(out.failures).length}\n` +
-          `no story renders it:             ${out.neverRendered.length}\n`,
-      );
-      for (const [key, info] of Object.entries(out.failures).slice(0, 30)) {
-        process.stdout.write(
-          `  ${key.padEnd(30)} got ${String(info.got).padEnd(22)} want ${info.expected}  (${info.storyId})\n`,
-        );
-      }
-      return Object.keys(out.failures).length > 0 ? EXIT.changed : EXIT.clean;
-    }
     case 'flaky': {
       // A gate that cries wolf gets ignored, so the exclusion list is
       // evidence, not guesswork: capture the same build twice and name every
@@ -866,7 +748,7 @@ async function main() {
     }
     default:
       process.stderr.write(
-        'Usage: gate.mjs <flaky|plan|capture|check|release|reach|accept> [--storybook-dir dir] [--baseline dir] [--out dir] [--tiers a,b] [--sample n]\n',
+        'Usage: gate.mjs <flaky|plan|capture|check|release|accept> [--storybook-dir dir] [--baseline dir] [--out dir] [--tiers a,b] [--sample n]\n',
       );
       return EXIT.crashed;
   }

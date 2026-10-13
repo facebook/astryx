@@ -587,10 +587,13 @@ one removal merged ahead of the decision to allow it.
   branch remains bound to its cut declaration. While that cut is active and its stable
   tag does not yet exist, the active cut version is an additional floor: main's
   declaration may stay equal to it or rise, but MUST NOT be lowered below it. Once the
-  tag exists, the ordinary strict-above-stable rule applies except to FR50's trusted
-  merge-back path. The declaration MUST otherwise remain a plain
-  version strictly greater than the newest stable `vX.Y.Z` tag except for the trusted
-  release-return equality described by FR50–FR51. For example, after `v0.6.7`, changing
+  tag exists, the ordinary strict-above-stable rule applies except while that exact
+  published branch's merge-back is still pending: the tag and active branch MUST name
+  the same commit and every frozen Changeset MUST remain byte-identical on main. That
+  narrow equality window closes when merge-back consumes those Changesets. The
+  declaration MUST otherwise remain a plain version strictly greater than the newest
+  stable `vX.Y.Z` tag except for the trusted release-return equality described by
+  FR50–FR51. For example, after `v0.6.7`, changing
   `0.7.0` to `0.6.8` is valid only when no pending `[breaking]` Changeset would become
   inadmissible; the lowering pull request itself MUST be refused otherwise. Changing the
   plan to `0.6.7` or lower is not valid. When main has not advanced before merge-back,
@@ -598,12 +601,12 @@ one removal merged ahead of the decision to allow it.
   FR50 until FR51's required next-plan change. Main publishes only canaries, versioned
   `<declared version>-canary.<commit>`, and MUST NOT publish a canary from that equality
   state. Pull-request checks on main compare the declaration with the newest stable tag,
-  refuse a version at or below that tag or a split fixed group except for the trusted
-  release-return path, refuse a pending `[breaking]` Changeset while the declaration is
-  a patch, admit that category while the declaration is the minor successor, validate
-  merge-back under FR50 and the next-plan change under FR51, and validate every other
-  Changeset's format, category, bump, and coverage. Pending Changesets do not derive or
-  promote the release version.
+  admit equality only during that exact frozen merge-back window, refuse every other
+  version at or below the tag or a split fixed group, refuse a pending `[breaking]`
+  Changeset while the declaration is a patch, admit that category while the declaration is
+  the minor successor, validate merge-back under FR50 and the next-plan change under FR51,
+  and validate every other Changeset's format, category, bump, and coverage. Pending
+  Changesets do not derive or promote the release version.
 - **FR47 — A release branch releases the declared version.** A release branch's
   version is the fixed-group version declared at its cut commit. Admission, the
   release plan, Changeset consumption, changelog generation, and stable

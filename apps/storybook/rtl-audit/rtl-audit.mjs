@@ -435,31 +435,23 @@ async function detectDirectionalDecorations(page) {
   return page.evaluate(collectDirectionalDecorations).catch(() => []);
 }
 
-// Auto-discovery D6 runs every story because contextual separators often live
-// outside a component's default story. The LTR-first short-circuit avoids the
-// RTL navigation for the common case with no candidate.
-async function autoDirectionalDecorations(page, port, storyId, component) {
+// D6 contextual directional decorations: every story, because contextual
+// separators often live outside a component's default story. The verdict comes
+// from one LTR and (only when LTR found a candidate) one RTL measurement taken
+// by measureAutoStory() below.
+function decorationCard(component, storyId, ltr, rtl) {
   const card = {component, storyId, dim: 'D6-decoration', verdict: 'N-A', notes: [], decorations: 0, results: []};
-  await page.goto(storyUrl(port, storyId, false), {waitUntil: 'domcontentloaded'});
-  await settle(page);
-  const revealedL = await revealInteractionGated(page);
-  const ltr = await detectDirectionalDecorations(page);
-  if (ltr.length === 0) {
-    if (revealedL) card.notes.push('opened an interaction-gated surface before scanning');
+  if (ltr.decorations.length === 0) {
+    if (ltr.revealed) card.notes.push('opened an interaction-gated surface before scanning');
     card.notes.push('no contextual directional decorations');
     return card;
   }
-
-  await page.goto(storyUrl(port, storyId, true), {waitUntil: 'domcontentloaded'});
-  await settle(page);
-  const revealedR = await revealInteractionGated(page);
-  const rtl = await detectDirectionalDecorations(page);
-  const evaluated = evaluateDirectionalDecorations(ltr, rtl);
+  const evaluated = evaluateDirectionalDecorations(ltr.decorations, rtl.decorations);
   card.verdict = evaluated.verdict;
   card.notes.push(...evaluated.notes);
   card.results = evaluated.results;
-  card.decorations = Math.max(ltr.length, rtl.length);
-  if (revealedL || revealedR) card.notes.unshift('opened an interaction-gated surface before scanning');
+  card.decorations = Math.max(ltr.decorations.length, rtl.decorations.length);
+  if (ltr.revealed || rtl.revealed) card.notes.unshift('opened an interaction-gated surface before scanning');
   return card;
 }
 
@@ -556,17 +548,15 @@ async function detectPositioned(page) {
 }
 
 // Auto-discovery D5 for one story: compare LTR vs RTL positioned-element
-// centers about their offsetParent. Reuses settle() + the reveal step so
-// interaction-gated positioned elements (dialogs/popovers/menus) are covered,
-// not just static ones.
+// centers about their offsetParent. With --pm-reveal the measurement follows
+// the reveal step, so interaction-gated positioned elements
+// (dialogs/popovers/menus) are covered, not just static ones.
 const PM_TOL = Number(process.env.PM_TOL || 3); // px tolerance (signal gap was ~10x)
 
-async function autoPositionalMirror(page, port, storyId, component) {
+function positionalCard(component, storyId, ltrMeasure, rtlMeasure) {
   const card = {component, storyId, dim: 'D5-positional', verdict: 'N-A', notes: [], candidates: 0, fails: []};
-  await page.goto(storyUrl(port, storyId, false), {waitUntil: 'domcontentloaded'});
-  await settle(page);
-  const revealedL = PM_REVEAL ? await revealInteractionGated(page) : false;
-  const ltr = await detectPositioned(page);
+  const ltr = ltrMeasure.positioned;
+  const revealedL = PM_REVEAL && ltrMeasure.revealed;
 
   // Short-circuit before the RTL navigation: with no LTR candidate there is
   // nothing to measure an RTL center against, so the second load can't change
@@ -579,10 +569,8 @@ async function autoPositionalMirror(page, port, storyId, component) {
     return card;
   }
 
-  await page.goto(storyUrl(port, storyId, true), {waitUntil: 'domcontentloaded'});
-  await settle(page);
-  const revealedR = PM_REVEAL ? await revealInteractionGated(page) : false;
-  const rtl = await detectPositioned(page);
+  const rtl = rtlMeasure.positioned;
+  const revealedR = PM_REVEAL && rtlMeasure.revealed;
   if (revealedL || revealedR) card.notes.push('opened an interaction-gated surface before scanning');
 
   // Same reasoning in the other direction: zero comparisons is not a pass.
@@ -634,6 +622,37 @@ async function autoPositionalMirror(page, port, storyId, component) {
     card.notes.push(`every positioned candidate mirrors about its parent center (≤${PM_TOL}px)`);
   }
   return card;
+}
+
+// D5 and D6 both scan every audited story from the same LTR render, so one
+// LTR load serves both. Each dimension still reads the page at the point it
+// always did: D5 before the reveal step (unless --pm-reveal), D6 after it. The
+// RTL load runs only when either dimension found an LTR candidate, which is
+// when each of them used to load RTL on its own.
+async function measureAutoStory(page, port, storyId, rtl, {positioned, decorations}) {
+  await page.goto(storyUrl(port, storyId, rtl), {waitUntil: 'domcontentloaded'});
+  await settle(page);
+  const measure = {positioned: [], decorations: [], revealed: false};
+  if (positioned && !PM_REVEAL) measure.positioned = await detectPositioned(page);
+  if (decorations || (positioned && PM_REVEAL)) {
+    measure.revealed = await revealInteractionGated(page);
+  }
+  if (positioned && PM_REVEAL) measure.positioned = await detectPositioned(page);
+  if (decorations) measure.decorations = await detectDirectionalDecorations(page);
+  return measure;
+}
+
+async function autoPositionalAndDecorations(page, port, storyId, component) {
+  const ltr = await measureAutoStory(page, port, storyId, false, {positioned: true, decorations: true});
+  const needPositioned = ltr.positioned.length > 0;
+  const needDecorations = ltr.decorations.length > 0;
+  const rtl = needPositioned || needDecorations
+    ? await measureAutoStory(page, port, storyId, true, {positioned: needPositioned, decorations: needDecorations})
+    : null;
+  return {
+    positional: positionalCard(component, storyId, ltr, rtl),
+    decoration: decorationCard(component, storyId, ltr, rtl),
+  };
 }
 
 // Auto-discovery D1 for one story: compare LTR vs RTL directional-icon flip.
@@ -1137,42 +1156,32 @@ async function cleanupRuntime() {
         describe: ({id}) => ({phase: 'D1', storyId: id}),
       })),
     );
-    // D5 positional-mirror over every audited story.
-    const pmTargets = scopedStoryRoutes.map(({id, component}) => ({id, comp: component}));
-    pmResults.push(
-      ...(await mapPool(pmTargets, pool, {
-        scan: async ({id, comp}, workerPage) => {
-          const card = await autoPositionalMirror(workerPage, port, id, comp);
-          if (card.verdict !== 'N-A') {
-            console.error(`PM   ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} cand=${card.candidates}`);
-          }
-          return card;
-        },
-        onError: ({id, comp}, e) => {
-          console.error(`PM   ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
-          return {component: comp, storyId: id, dim: 'D5-positional', verdict: 'ERROR', notes: [String(e).slice(0, 160)], candidates: 0, fails: []};
-        },
-        describe: ({id}) => ({phase: 'D5', storyId: id}),
-      })),
-    );
-    // D6 scans every story. A directional decoration can exist only in a
-    // custom/variant story even when the default story is neutral.
-    decorationResults.push(
-      ...(await mapPool(pmTargets, pool, {
-        scan: async ({id, comp}, workerPage) => {
-          const card = await autoDirectionalDecorations(workerPage, port, id, comp);
-          if (card.verdict !== 'N-A') {
-            console.error(`DEC  ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} glyphs=${card.decorations}`);
-          }
-          return card;
-        },
-        onError: ({id, comp}, e) => {
-          console.error(`DEC  ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
-          return {component: comp, storyId: id, dim: 'D6-decoration', verdict: 'ERROR', notes: [String(e).slice(0, 160)], decorations: 0, results: []};
-        },
-        describe: ({id}) => ({phase: 'D6', storyId: id}),
-      })),
-    );
+    // D5 positional-mirror and D6 contextual decorations over every audited
+    // story, sharing one LTR load per story (see measureAutoStory).
+    const storyTargets = scopedStoryRoutes.map(({id, component}) => ({id, comp: component}));
+    const storyCards = await mapPool(storyTargets, pool, {
+      scan: async ({id, comp}, workerPage) => {
+        const cards = await autoPositionalAndDecorations(workerPage, port, id, comp);
+        if (cards.positional.verdict !== 'N-A') {
+          console.error(`PM   ${cards.positional.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} cand=${cards.positional.candidates}`);
+        }
+        if (cards.decoration.verdict !== 'N-A') {
+          console.error(`DEC  ${cards.decoration.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} ${id.padEnd(40)} glyphs=${cards.decoration.decorations}`);
+        }
+        return cards;
+      },
+      onError: ({id, comp}, e) => {
+        console.error(`PM+DEC ERROR ${comp} ${id}: ${String(e).slice(0, 120)}`);
+        const notes = [String(e).slice(0, 160)];
+        return {
+          positional: {component: comp, storyId: id, dim: 'D5-positional', verdict: 'ERROR', notes, candidates: 0, fails: []},
+          decoration: {component: comp, storyId: id, dim: 'D6-decoration', verdict: 'ERROR', notes: [...notes], decorations: 0, results: []},
+        };
+      },
+      describe: ({id}) => ({phase: 'D5+D6', storyId: id}),
+    });
+    pmResults.push(...storyCards.map(cards => cards.positional));
+    decorationResults.push(...storyCards.map(cards => cards.decoration));
   }
 
   // ---- (B) curated precision dims ----

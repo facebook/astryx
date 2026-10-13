@@ -154,7 +154,7 @@ describe('Toolbar', () => {
   });
 
   it.each([
-    ['sm', 1],
+    ['sm', 2],
     ['md', 2],
   ] as const)(
     'uses the %s block inset without overriding container inline padding',

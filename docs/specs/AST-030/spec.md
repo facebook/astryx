@@ -116,7 +116,9 @@ they are separately named.
   and `lint` MUST continue to report on every pull request through their existing
   jobs or join jobs. A specialized lane skips owned steps inside those jobs; it
   does not remove historical required contexts. Any owned lane failure MUST fail
-  its join.
+  its join. The required lint context MAY admit main's published-version equality
+  only when trusted release authority proves the exact frozen merge-back is still
+  pending; the context still runs and fails closed outside that window.
 - **FR8 — Initial tooling admissions.** `node-tooling` covers
   `scripts/score-ledger.mjs`, `scripts/score-ledger.test.mjs`,
   `internal/scripts/`, and `.github/workflows/crowdin-upload.yml`. It runs the
@@ -172,8 +174,8 @@ they are separately named.
   visual plan and unfiltered accessibility/RTL component rosters. Changed-file,
   focused, smoke, and no-op paths MUST NOT narrow release checks. PR a11y MUST
   remain scoped to changed components plus fast interaction guards; full a11y
-  sweeps, whole-repository spec-test contracts, their evidence uploads, and Probe
-  reach MUST run only for `release-check` in this workflow. Missing,
+  sweeps, whole-repository spec-test contracts, and their evidence uploads MUST
+  run only for `release-check` in this workflow. Missing,
   failed, cancelled, or skipped required work MUST block the release-check join.
   The request and join MUST verify that the checked SHA is the dispatch event SHA
   and remains an ancestor of current remote `main` at the start and completion of
@@ -318,8 +320,8 @@ shared path changed or the component set is empty. Missing or approximate analys
 fails the scoped check rather than silently claiming no work. Multi-component
 folders expand only to their own canonical component owners or existing umbrella
 Storybook routes; an exported name without either route cannot be passed to axe. The full
-accessibility roster, whole-repository spec-test contracts and their evidence
-uploads, and Probe reach sweep run only on `release-check` in this workflow.
+accessibility roster and the whole-repository spec-test contracts and their
+evidence uploads run only on `release-check` in this workflow.
 The release path retains the complete suite and cannot substitute a scoped result.
 
 Rejected: a separate workflow, per-push full audits, and treating a maintenance

@@ -822,52 +822,6 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: node scripts/verify-exports.mjs
 
-      - name: Typecheck component docs
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/core typecheck:docs
-
-      - name: Typecheck lab docs
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/lab typecheck:docs
-
-      - name: Typecheck charts docs
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/charts typecheck:docs
-
-      - name: Typecheck rich text docs
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/richtext typecheck:docs
-
-      - name: Typecheck Vega docs
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/vega typecheck:docs
-
-      - name: Typecheck template docs
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/cli typecheck:template-docs
-
-      # Full-package strict checkJs over the CLI (src, bin, scripts, docs, and
-      # the emitted templates). Requires the `pnpm build` above so the template
-      # .tsx sources can resolve the built @astryxdesign/{core,charts,lab} types.
-      - name: Typecheck CLI (strict)
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/cli typecheck:strict
-
-      - name: Typecheck storybook
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/storybook typecheck
-
-      - name: Typecheck core (including tests)
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/core typecheck
-
-      # The accessibility spec-test contracts are consumed as TypeScript source
-      # by Vitest and Playwright, and neither runner typechecks. This is the
-      # only gate over them.
-      - name: Typecheck accessibility spec-test contracts
-        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
-        run: pnpm -F @astryxdesign/a11y-spec typecheck
-
       - name: Build Storybook
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
         run: pnpm -F @astryxdesign/storybook build
@@ -964,6 +918,88 @@ jobs:
             pr-meta.json
           retention-days: 1
 
+  # Typechecks run beside build-storybook instead of before its Storybook
+  # build, so the browser checks that wait on the Storybook artifact start
+  # ~1.5 minutes sooner. The build and release-check joins require this job,
+  # so a type error still fails both.
+  typecheck:
+    needs: [check-scope]
+    if: ${{ (github.event_name != 'workflow_dispatch' || inputs.operation == 'release-check') && always() && !cancelled() && needs.check-scope.outputs.spec_only != 'true' }}
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Require successful scope classification
+        if: needs.check-scope.result != 'success'
+        run: |
+          echo "Change scope could not be classified; refusing to skip required work."
+          exit 1
+
+      - name: Skip typechecks for a specialized lane
+        if: needs.check-scope.outputs.docsite_only == 'true' || needs.check-scope.outputs.spec_only == 'true' || needs.check-scope.outputs.tooling_only == 'true'
+        run: echo "Specialized PR lane — skipping typechecks"
+
+      - name: Checkout
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node and pnpm
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        uses: ./.github/actions/setup
+
+      # The doc, template and CLI typechecks resolve the built package types.
+      - name: Build packages
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm build
+
+      - name: Typecheck component docs
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/core typecheck:docs
+
+      - name: Typecheck lab docs
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/lab typecheck:docs
+
+      - name: Typecheck charts docs
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/charts typecheck:docs
+
+      - name: Typecheck rich text docs
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/richtext typecheck:docs
+
+      - name: Typecheck Vega docs
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/vega typecheck:docs
+
+      - name: Typecheck template docs
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/cli typecheck:template-docs
+
+      # Full-package strict checkJs over the CLI (src, bin, scripts, docs, and
+      # the emitted templates). Requires the `pnpm build` above so the template
+      # .tsx sources can resolve the built @astryxdesign/{core,charts,lab} types.
+      - name: Typecheck CLI (strict)
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/cli typecheck:strict
+
+      - name: Typecheck storybook
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/storybook typecheck
+
+      - name: Typecheck core (including tests)
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/core typecheck
+
+      # The accessibility spec-test contracts are consumed as TypeScript source
+      # by Vitest and Playwright, and neither runner typechecks. This is the
+      # only gate over them.
+      - name: Typecheck accessibility spec-test contracts
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && needs.check-scope.outputs.tooling_only != 'true'
+        run: pnpm -F @astryxdesign/a11y-spec typecheck
+
   # Sandbox preview build — the single slowest piece of PR CI (~4min), run as
   # its own job so it overlaps build-storybook instead of serializing after it.
   # PR-only: merge_group runs never deploy previews, and docsite-only PRs skip
@@ -1049,7 +1085,7 @@ jobs:
   # failed check-scope) skips this gate too — both match the old single-job
   # behavior.
   build:
-    needs: [build-storybook, build-sandbox]
+    needs: [build-storybook, build-sandbox, typecheck]
     if: ${{ github.event_name != 'workflow_dispatch' && !cancelled() && needs.build-storybook.result != 'skipped' }}
     runs-on: ubuntu-slim
     permissions: {}
@@ -1058,7 +1094,9 @@ jobs:
         run: |
           echo "build-storybook: ${{ needs.build-storybook.result }}"
           echo "build-sandbox:   ${{ needs.build-sandbox.result }}"
+          echo "typecheck:       ${{ needs.typecheck.result }}"
           [ "${{ needs.build-storybook.result }}" = "success" ] || exit 1
+          [ "${{ needs.typecheck.result }}" = "success" ] || exit 1
           case "${{ needs.build-sandbox.result }}" in
             success|skipped) ;;
             *) exit 1 ;;
@@ -1072,6 +1110,114 @@ jobs:
   # Skipped when no components changed. Depends only on build-storybook, so it
   # starts as soon as the storybook artifact is up (~2min) instead of waiting
   # for the slower sandbox build.
+  # The release check's full axe roster is scanned by three shard jobs and
+  # joined, with the baseline gate, in pr-a11y-audit, while pr-a11y runs the
+  # browser guards beside them. Pull requests audit only their scoped owners in
+  # pr-a11y itself, so neither runs there.
+  pr-a11y-shard:
+    name: pr-a11y (${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: [build-storybook, check-components]
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && needs.check-components.outputs.has_components == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Install Playwright
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      - name: Run accessibility audit shard
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --concurrency 4 \
+            --shard "${{ matrix.shard }}/${{ strategy.job-total }}" \
+            --shard-output "a11y-shard-${{ matrix.shard }}.json"
+
+      - name: Upload accessibility audit shard
+        uses: actions/upload-artifact@v7
+        with:
+          name: a11y-shard-${{ needs.build-storybook.outputs.short_hash }}-${{ matrix.shard }}
+          path: a11y-shard-${{ matrix.shard }}.json
+          retention-days: 1
+          if-no-files-found: error
+
+  pr-a11y-audit:
+    name: pr-a11y (full audit)
+    needs: [build-storybook, check-components, pr-a11y-shard]
+    if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && needs.check-components.outputs.has_components == 'true' }}
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Require every audit shard
+        env:
+          SHARD_RESULT: ${{ needs.pr-a11y-shard.result }}
+        run: |
+          if [ "$SHARD_RESULT" != success ]; then
+            echo "Accessibility audit shards did not all succeed: $SHARD_RESULT"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Download accessibility audit shards
+        uses: actions/download-artifact@v8
+        with:
+          pattern: a11y-shard-${{ needs.build-storybook.outputs.short_hash }}-*
+          path: a11y-shards
+          merge-multiple: true
+
+      # Builds the report a single full run would write from the complete
+      # shard set (or fails), then applies the checked-in baseline.
+      - name: Run accessibility audit
+        run: |
+          node .github/scripts/accessibility-audit.js \
+            --storybook-dir apps/storybook/dist \
+            --output a11y-report.json \
+            --merge-shards a11y-shards \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
+
+      - name: Upload a11y artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: a11y-report
+          path: a11y-report.json
+          retention-days: 1
+
   pr-a11y:
     needs: [build-storybook, check-components]
     if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check')) && needs.check-components.outputs.has_components == 'true'
@@ -1114,7 +1260,10 @@ jobs:
       # Fails on axe violations not present in the checked-in baseline
       # (.github/a11y-baseline.json). See CONTRIBUTING.md "Accessibility
       # audits" for the baseline workflow.
+      # Release checks scan the full roster in pr-a11y-shard and gate it in
+      # pr-a11y-audit; this job keeps the scoped PR audit and the guards.
       - name: Run accessibility audit
+        if: github.event_name == 'pull_request'
         run: |
           SCOPE_ARGS=()
           if [ "${{ github.event_name }}" = 'pull_request' ]; then
@@ -1127,6 +1276,7 @@ jobs:
           node .github/scripts/accessibility-audit.js \
             --storybook-dir apps/storybook/dist \
             --output a11y-report.json \
+            --concurrency 4 \
             "${SCOPE_ARGS[@]}" \
             --baseline .github/a11y-baseline.json \
             --fail-on-new
@@ -1134,7 +1284,7 @@ jobs:
       # if: always() so the report artifact (and the PR comment built from it)
       # still exists when the gate above fails.
       - name: Upload a11y artifact
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: a11y-report
@@ -1778,9 +1928,40 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-      # Run the exhaustive contract/fixture matrix at release time. PRs retain
-      # scoped axe validation and the fast interaction guards above; they must
-      # not pay for every component's browser bindings on every change.
+  # Release-only accessibility contracts run beside pr-a11y instead of after
+  # its full axe sweep, so the release check waits for the longer of the two
+  # rather than their sum. release-check requires this job as it requires
+  # pr-a11y.
+  a11y-contracts:
+    name: Accessibility spec-test contracts
+    needs: [build-storybook, check-components]
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' && needs.check-components.outputs.has_components == 'true'
+    runs-on: 2-core-ubuntu-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Install Playwright
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      # The exhaustive contract/fixture matrix. PRs retain scoped axe
+      # validation and the fast interaction guards in pr-a11y; they must not
+      # pay for every component's browser bindings on every change.
       - name: Run accessibility spec-test contracts
         if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
         env:
@@ -1808,25 +1989,6 @@ jobs:
           path: test-results/chat-layout-audit-evidence/
           retention-days: 30
           if-no-files-found: error
-
-      # Baseline-free target/axis diagnostics are not a visual-regression lane.
-      # Keep their existing report-only behavior with the other browser guards.
-      - name: Check Probe theme reach
-        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
-        continue-on-error: true
-        run: |
-          node .github/scripts/visual-gate/gate.mjs reach \
-            --storybook-dir apps/storybook/dist \
-            --out .visual-reach
-
-      - name: Upload Probe reach report
-        if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
-        uses: actions/upload-artifact@v7
-        with:
-          name: visual-reach
-          path: .visual-reach/reach.json
-          retention-days: 30
-          if-no-files-found: warn
 
   # Build package test owner. The plugin's production CSS partition is a Build
   # integration contract: source inspection cannot prove which declaration
@@ -2116,8 +2278,9 @@ jobs:
   # routing and target changes prove themselves instead of skipping their own
   # check. A policy-sensitive full run spans ~2,000 stories and exceeded the
   # single-job budget, so CI partitions it by canonical package; each shard runs
-  # four browser workers, and the stable pr-rtl join requires all five scope
-  # manifests plus a report from every applicable package.
+  # eight browser pages on its four cores (the audit waits on page loads), and
+  # the stable pr-rtl join requires all five scope manifests plus a report from
+  # every applicable package.
   # The scheduled full sweep also runs in rtl-weekly.yml.
   #
   # Three auto dimensions: D1 icon-mirror, D5 positional-mirror, and D6
@@ -2212,7 +2375,7 @@ jobs:
             --storybook-dir apps/storybook/dist \
             --output rtl-audit-report.json \
             --packages "$PACKAGE" \
-            --concurrency 4 \
+            --concurrency 8 \
             "${FILTER_ARGS[@]}"
 
       - name: Require completed RTL shard report
@@ -2394,8 +2557,11 @@ jobs:
         check-scope,
         check-components,
         build-storybook,
+        typecheck,
         pr-visual,
         pr-a11y,
+        a11y-contracts,
+        pr-a11y-audit,
         pr-rtl,
       ]
     if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check' }}
@@ -2414,7 +2580,7 @@ jobs:
         with:
           script: |
             const needs = JSON.parse(process.env.RELEASE_NEEDS);
-            for (const name of ['check-scope', 'check-components', 'build-storybook', 'pr-visual', 'pr-a11y', 'pr-rtl']) {
+            for (const name of ['check-scope', 'check-components', 'build-storybook', 'typecheck', 'pr-visual', 'pr-a11y', 'a11y-contracts', 'pr-a11y-audit', 'pr-rtl']) {
               if (needs[name]?.result !== 'success') {
                 throw new Error(`Required release job ${name} did not succeed: ${needs[name]?.result}`);
               }

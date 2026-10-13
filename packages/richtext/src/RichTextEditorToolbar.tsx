@@ -9,7 +9,8 @@
  *   command constants, plus Astryx Toolbar / IconButton / Selector /
  *   ToggleButton / Divider / Dialog / TextInput / Button / Layout primitives.
  * @output Exports RichTextEditorToolbar (a compact formatting toolbar with a
- *   horizontally scrollable action row) and RichTextEditorToolbarProps.
+ *   RichText-owned 4px control gutter and horizontally scrollable action row)
+ *   and RichTextEditorToolbarProps.
  * @position Experimental (richtext). Drop into RichTextEditor's `toolbar` slot to
  *   add a flush top formatting toolbar. Themed via Astryx Toolbar, Selector,
  *   IconButton, and ToggleButton, so it inherits the active theme.
@@ -70,7 +71,6 @@ import {TextInput} from '@astryxdesign/core/TextInput';
 import {Button} from '@astryxdesign/core/Button';
 import {Stack} from '@astryxdesign/core/Stack';
 import {
-  EDGE_COMP_ATTR,
   HStack,
   Layout,
   LayoutContent,
@@ -81,6 +81,7 @@ import {useThemeName} from '@astryxdesign/core/theme';
 import {rtlStyles} from '@astryxdesign/core/utils';
 import {
   fontWeightVars,
+  spacingVars,
   typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {useTranslator} from '@astryxdesign/core/i18n';
@@ -147,6 +148,15 @@ const glyphStyles = stylex.create({
 });
 
 const toolbarScrollStyles = stylex.create({
+  // Core Toolbar owns an 8px block inset. This transparent RichText-only
+  // surface overlaps 4px of that inset at each block edge, so its controls and
+  // following editor body retain a 4px visual gutter.
+  compactToolbar: {
+    '--astryx-section-padding-inline-start': spacingVars['--spacing-1'],
+    '--astryx-section-padding-inline-end': spacingVars['--spacing-1'],
+    marginBlockStart: `calc(-1 * ${spacingVars['--spacing-1']})`,
+    marginBlockEnd: `calc(-1 * ${spacingVars['--spacing-1']})`,
+  },
   // The row scrolls when it runs out of room, so a control keeps its own
   // width. A Selector's field may shrink, which squeezes its label to a
   // sliver, so it sits in a slot that may not.
@@ -165,12 +175,6 @@ const toolbarScrollStyles = stylex.create({
     scrollbarWidth: 'thin',
   },
 });
-
-// The scroll row is this standalone toolbar's sole slot child. Opting it into
-// Toolbar's container-owned edge compensation gives the formatting surface a
-// 4px inline inset at `sm` without moving generic nested Toolbar content off
-// its surrounding Card/Section content line.
-const toolbarEdgeCompensationProps = {[EDGE_COMP_ATTR]: ''};
 
 /**
  * Whether `event` is the insert-link shortcut (Cmd/Ctrl+K). Uses Lexical's
@@ -894,9 +898,9 @@ export function RichTextEditorToolbar({
       <Toolbar
         label={label}
         size={size}
+        xstyle={toolbarScrollStyles.compactToolbar}
         startContent={
           <HStack
-            {...toolbarEdgeCompensationProps}
             gap={1}
             role="group"
             aria-label={t('@astryx.richTextEditor.toolbar.actions')}
