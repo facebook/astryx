@@ -1410,14 +1410,13 @@ jobs:
             if node -e "process.exit(require('./analysis.json').changedPackages?.includes('@astryxdesign/richtext') ? 0 : 1)"; then
               should_run=true
             fi
-            # The sandbox's stories belong to no package, so compare file names
-            # with the base. If the base cannot be fetched, run the evidence.
-            if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
-              if git diff --name-only "$BASE_SHA" HEAD \
-                | grep -qE '^(apps/storybook/stories/RichTextEditor\.(markdownParity|stories)|packages/richtext/src/__tests__/(MarkdownParitySandbox|RichTextView|RichTextEditorToolbar))'; then
-                should_run=true
-              fi
-            else
+            # The sandbox's stories belong to no package, so compare the file
+            # names the PR changes since its merge base.
+            # Exit 1 means out of scope; 0 in scope; 2 the merge base is unknown, so run.
+            scope=0
+            bash .github/scripts/pr-scope-touches.sh "$BASE_SHA" \
+              '^(apps/storybook/stories/RichTextEditor\.(markdownParity|stories)|packages/richtext/src/__tests__/(MarkdownParitySandbox|RichTextView|RichTextEditorToolbar))' || scope=$?
+            if [ "$scope" != 1 ]; then
               should_run=true
             fi
           fi
@@ -1490,14 +1489,13 @@ jobs:
           case ",${COMPONENTS}," in
             *,core/ToggleButton,*) should_run=true ;;
           esac
-          # The contract belongs to no package, so compare file names with the
-          # base. If the base cannot be fetched, run the evidence.
-          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
-            if git diff --name-only "$BASE_SHA" HEAD \
-              | grep -qE '^internal/a11y-spec/src/patterns/toggle-button'; then
-              should_run=true
-            fi
-          else
+          # The contract belongs to no package, so compare the file names the
+          # PR changes since its merge base.
+          # Exit 1 means out of scope; 0 in scope; 2 the merge base is unknown, so run.
+          scope=0
+          bash .github/scripts/pr-scope-touches.sh "$BASE_SHA" \
+            '^internal/a11y-spec/src/patterns/toggle-button' || scope=$?
+          if [ "$scope" != 1 ]; then
             should_run=true
           fi
           echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
@@ -1535,13 +1533,12 @@ jobs:
         run: |
           should_run=false
           # Layout and the contract are matched by file name so every Layout
-          # region component is covered. If the base cannot be fetched, run.
-          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
-            if git diff --name-only "$BASE_SHA" HEAD \
-              | grep -qE '^(internal/a11y-spec/src/patterns/landmark|packages/core/src/Layout/|apps/storybook/stories/LayoutLandmarkA11y)'; then
-              should_run=true
-            fi
-          else
+          # region component is covered.
+          # Exit 1 means out of scope; 0 in scope; 2 the merge base is unknown, so run.
+          scope=0
+          bash .github/scripts/pr-scope-touches.sh "$BASE_SHA" \
+            '^(internal/a11y-spec/src/patterns/landmark|packages/core/src/Layout/|apps/storybook/stories/LayoutLandmarkA11y)' || scope=$?
+          if [ "$scope" != 1 ]; then
             should_run=true
           fi
           echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
@@ -1579,14 +1576,12 @@ jobs:
         run: |
           should_run=false
           # Link and the contract are matched by file name so every Link source
-          # file, including LinkProvider, is covered. If the base cannot be
-          # fetched, run.
-          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
-            if git diff --name-only "$BASE_SHA" HEAD \
-              | grep -qE '^(internal/a11y-spec/src/patterns/link\.|packages/core/src/Link/|apps/storybook/stories/LinkA11y)'; then
-              should_run=true
-            fi
-          else
+          # file, including LinkProvider, is covered.
+          # Exit 1 means out of scope; 0 in scope; 2 the merge base is unknown, so run.
+          scope=0
+          bash .github/scripts/pr-scope-touches.sh "$BASE_SHA" \
+            '^(internal/a11y-spec/src/patterns/link\.|packages/core/src/Link/|apps/storybook/stories/LinkA11y)' || scope=$?
+          if [ "$scope" != 1 ]; then
             should_run=true
           fi
           echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
