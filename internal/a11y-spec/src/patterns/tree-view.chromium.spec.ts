@@ -26,7 +26,8 @@ import {
 } from './tree-view.fixtures';
 
 function fixturePage(html: string): string {
-  return `<!doctype html><html lang="en"><body>${html}<button type="button" id="after">After tree</button></body></html>`;
+  // The fixture carries its own before/after controls.
+  return `<!doctype html><html lang="en"><body>${html}</body></html>`;
 }
 
 async function results(

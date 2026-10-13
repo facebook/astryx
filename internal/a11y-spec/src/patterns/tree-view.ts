@@ -107,6 +107,10 @@ const APG_TYPEAHEAD = apgReq(
   'Type a character: focus moves to the next node with a name that starts with the typed character.',
   K,
 );
+const APG_FOCUS_ENTRY = apgReq(
+  'When a single-select tree receives focus: if none of the nodes are selected before the tree receives focus, focus is set on the first node; if a node is selected before the tree receives focus, focus is set on the selected node.',
+  K,
+);
 const APG_RTL = apgReq(
   'When the tree is in a right-to-left context, the Right arrow and Left arrow behaviors are reversed.',
   K,
@@ -357,7 +361,7 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         id: 'treeview.focus.single-tab-stop',
         outcome:
           'The whole tree is one Tab stop: Tab from before it lands on its one tabbable node, and Tab again leaves the tree.',
-        sources: [WCAG_2_1_1, WCAG_2_4_3, APG_DOWN_UP],
+        sources: [WCAG_2_1_1, WCAG_2_4_3, APG_FOCUS_ENTRY],
         covers: [
           '2.1.1-keyboard',
           '2.1.2-no-keyboard-trap',
@@ -538,18 +542,17 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
     ],
     exemptions: {
       '1.1.1-non-text-content': {
-        owner: 'the binding component',
+        owner: 'the binding component and caller content',
         verifiedBy:
           "the component's decorative-icon tests and the repository axe audit, `pnpm a11y:audit`",
         reason:
-          'The tree view contract owns trigger state and controlled-content behavior. Decorative graphics such as a chevron are binding-specific composition.',
+          'This contract owns tree structure and movement. Chevrons, row icons, and any image a caller places in a row are binding or caller composition.',
       },
       '1.3.1-info-and-relationships': {
-        owner: 'the binding component and composing page',
-        verifiedBy:
-          "the binding's component tests and page-level relationship review",
+        owner: 'the binding component and caller content',
+        verifiedBy: "the component's row tests and caller content review",
         reason:
-          'This contract encodes the optional trigger-to-content relationship. Other structure and relationships inside or around that content belong to the binding and its composition.',
+          "This contract proves the tree/group/treeitem hierarchy and each node's level and position. Relationships inside a row (a description, start or end content) are the binding's and the caller's.",
         coversRemainderOnly: true,
       },
       '1.3.2-meaningful-sequence': {
@@ -557,39 +560,36 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         verifiedBy:
           "the component's DOM-order tests and page-level reading-order review",
         reason:
-          'The page decides where the trigger and revealed section sit relative to surrounding content.',
+          'Row order within the tree follows the data the caller supplies; where the tree sits in the page is composition.',
       },
       '1.3.5-identify-input-purpose': {
-        owner: 'the composing form and caller content',
-        verifiedBy:
-          'form integration review for any user-information input inside the disclosed content',
-        reason:
-          'A tree view trigger does not itself collect information about the user.',
+        owner: 'not applicable',
+        verifiedBy: 'none needed',
+        reason: 'A tree node does not collect information about the user.',
       },
       '1.4.1-use-of-color': {
         owner: 'the binding component and theme',
-        verifiedBy: 'the repository visual gate and forced-colors review',
+        verifiedBy:
+          "the component's selected, focused and disabled state tests plus rendered review",
         reason:
-          'Color and any non-color tree view cue are rendered presentation facts, not trigger-state semantics.',
+          'Selected, focused and disabled cues are paint results owned by the binding and theme; this contract proves the programmatic states.',
       },
       '1.4.3-contrast-minimum': {
         owner: 'the binding component and theme',
-        verifiedBy:
-          'the repository axe audit over component stories plus the visual gate',
+        verifiedBy: 'the repository axe audit plus rendered contrast review',
         reason:
-          'Text contrast depends on resolved colors and backdrop in the rendered binding.',
+          'Row text contrast is a paint outcome owned by the binding and theme.',
       },
       '1.4.11-non-text-contrast': {
         owner: 'the binding component and theme',
         verifiedBy:
-          'the repository axe audit plus rendered review of the trigger boundary, state cue, and focus indicator',
+          'the repository axe audit plus rendered review of the focus indicator, guides and chevrons',
         reason:
-          'Control and tree view-cue contrast are paint outcomes owned by the binding and theme.',
+          'Focus indicator, guide line and chevron contrast are paint outcomes owned by the binding and theme.',
       },
       '2.1.1-keyboard': {
-        owner: 'the button pattern and composing page',
-        verifiedBy:
-          'BUTTON_PATTERN focus-navigation expectations plus page-level keyboard-order review',
+        owner: 'the composing page',
+        verifiedBy: 'page-level keyboard review',
         reason:
           "This contract encodes the tree's keyboard model: one Tab stop, Up/Down, Right/Left, Home/End, Enter and typeahead. Other page keyboard paths remain with the composition.",
         coversRemainderOnly: true,
@@ -605,7 +605,7 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
       '2.4.2-page-titled': {
         owner: 'the page',
         verifiedBy: 'page-level review',
-        reason: 'A tree view rendered in isolation owns no document title.',
+        reason: 'A tree rendered in isolation owns no document title.',
       },
       '2.4.3-focus-order': {
         owner: 'the composing page',
@@ -617,8 +617,10 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
       },
       '2.4.4-link-purpose': {
         owner: 'the link pattern and caller content',
-        verifiedBy: 'review of links inside or around the disclosed content',
-        reason: 'The adopted tree view trigger is a button, not a link.',
+        verifiedBy:
+          'LINK_PATTERN for rows that navigate, plus caller content review',
+        reason:
+          "A row with an address renders its own link; the link's purpose is that pattern's and the caller's.",
       },
       '2.4.6-headings-and-labels': {
         owner: 'the binding component and caller content',
@@ -628,17 +630,17 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         coversRemainderOnly: true,
       },
       '2.4.7-focus-visible': {
-        owner:
-          'the interaction-modality architecture record, binding component, and theme',
+        owner: 'the binding component and theme',
         verifiedBy:
-          "the component's focus-ring styling and the repository visual gate",
-        reason: 'A focus indicator is a paint outcome.',
+          "the component's focus-outline tests and rendered focus review",
+        reason:
+          "The focused row's indicator is a paint result owned by the binding and theme.",
       },
       '2.4.11-focus-not-obscured': {
-        owner: 'the composing page and overlay system',
-        verifiedBy: 'page-level and overlay visibility review',
+        owner: 'the composing page',
+        verifiedBy: 'page-level layout review',
         reason:
-          'Whether another surface covers the focused trigger or revealed content depends on composition.',
+          'Whether another surface covers the focused row depends on composition.',
       },
       '2.5.2-pointer-cancellation': {
         owner: 'the binding component',
@@ -647,23 +649,22 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
           "A tree node activates on click, not on pointer-down; press cancellation is the row control's generic behavior, outside this keyboard-model contract.",
       },
       '2.5.3-label-in-name': {
-        owner: 'the button pattern and caller content',
-        verifiedBy:
-          'BUTTON_PATTERN for adopters, plus binding-local visible-label and accessible-name checks',
+        owner: 'the binding component',
+        verifiedBy: "the component's accessible-name tests",
         reason:
-          'The tree view adds state to a button without changing who owns the button label and name.',
+          "Whether a row's accessible name contains its visible label is the binding's row-naming requirement.",
       },
       '2.5.8-target-size': {
-        owner: 'the binding component and composing page',
+        owner: 'the binding component and theme',
         verifiedBy:
-          "the repository axe audit's target-size rule over the trigger and neighbouring targets",
+          "the repository axe audit's target-size rule over rows and chevrons",
         reason:
-          'Target size and spacing exceptions depend on the binding geometry and neighbouring controls.',
+          'Row and chevron hit areas are geometry owned by the binding and theme.',
       },
       '3.1.1-language-of-page': {
         owner: 'the page',
-        verifiedBy: 'page-level language review',
-        reason: 'A tree view rendered in isolation owns no document language.',
+        verifiedBy: 'page-level review',
+        reason: 'A tree owns no document language.',
       },
       '3.2.2-on-input': {
         owner: 'the caller and composing page',
@@ -673,29 +674,29 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
           "Moving focus and opening a node are the tree's own keyboard model; any further context change is the caller's action.",
       },
       '3.2.4-consistent-identification': {
-        owner: 'the design system and caller content',
+        owner: 'the composing page',
         verifiedBy:
-          'this shared contract across bindings plus content review of repeated tree view labels',
+          'this shared contract across bindings plus content review of repeated row labels',
         reason:
-          'Consistency is a property of the full set of repeated functions, not one isolated tree view.',
+          'Consistency is a property of the full set of repeated functions, not one isolated tree.',
       },
       '3.3.1-error-identification': {
-        owner: 'the binding component and composing form',
-        verifiedBy: 'form-level error-state and text review',
-        reason: 'The tree view pattern defines no validation error state.',
+        owner: 'not applicable',
+        verifiedBy: 'none needed',
+        reason: 'A tree node collects no input that could be in error.',
       },
       '3.3.2-labels-or-instructions': {
-        owner: 'the composing form and caller content',
-        verifiedBy: 'form-level review of labels and instructions',
+        owner: 'not applicable',
+        verifiedBy: 'none needed',
         reason:
-          'The tree view trigger does not collect user input that needs form instructions.',
+          'A tree node collects no user input that needs form instructions.',
       },
       '4.1.2-name-role-value': {
-        owner: 'the button pattern and binding component',
+        owner: 'the link and button patterns, and the binding component',
         verifiedBy:
-          'BUTTON_PATTERN for adopters, plus binding-local role, name, and unavailable-state tests',
+          'LINK_PATTERN and BUTTON_PATTERN for the controls a row renders, plus binding-local name tests',
         reason:
-          'This contract encodes the tree and node roles and names, the expanded state, and the multiselect claim. Row controls (links, buttons) keep their own patterns.',
+          "This contract encodes the tree and node roles and names, the expanded state, and the multiselect claim. A row's inner link or button keeps its own pattern.",
         coversRemainderOnly: true,
       },
       '4.1.3-status-messages': {
@@ -704,12 +705,12 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         verifiedBy:
           'the status-message pattern and real-AT evidence under AST-009 when a change claims spoken or braille output',
         reason:
-          'Showing or hiding ordinary content is not itself a status-message contract, and this pattern makes no announcement claim.',
+          'Opening a node or moving focus is not a status-message contract, and this pattern makes no announcement claim.',
       },
       'apg-interaction': {
-        owner: 'the button pattern',
+        owner: "the binding component's record",
         verifiedBy:
-          'BUTTON_PATTERN for adopters, plus binding-local role, name, reachability, and activation tests',
+          'component:TreeList AR1 and DEC-2, which adopt the model and name what is left out',
         reason:
           "This contract encodes the Tree View structure and keyboard model. Selection keyboard (Space, Shift/Control combinations) and the optional * key are not adopted by the binding's record.",
         coversRemainderOnly: true,
@@ -726,14 +727,14 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         verifiedBy:
           "the component's reduced-motion source tests and rendered motion review",
         reason:
-          'Reveal motion is binding-specific paint over time and is not part of tree view semantics.',
+          'Expand and collapse motion is binding-specific paint over time and is not part of tree semantics.',
       },
       'at-facing-strings': {
         owner: 'the binding component and caller content',
         verifiedBy:
-          'the repository i18n catalog check and source review of authored labels and descriptions',
+          'the repository i18n catalog check and source review of authored labels',
         reason:
-          'The tree view contract introduces no string; trigger and content text come from the binding or caller.',
+          'The tree contract introduces no string; the tree name and row text come from the binding or caller.',
       },
     },
   });
