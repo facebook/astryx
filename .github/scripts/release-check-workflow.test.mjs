@@ -649,13 +649,11 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     expect(result.stdout).not.toContain('AUDIT MUST NOT RUN');
   });
 
-  it('keeps exhaustive a11y contracts, their artifacts, and Probe reach release-only', () => {
+  it('keeps exhaustive a11y contracts and their artifacts release-only', () => {
     for (const [job, name] of [
       ['a11y-contracts', 'Run accessibility spec-test contracts'],
       ['a11y-contracts', 'Upload pressed-state pixel evidence'],
       ['a11y-contracts', 'Upload component-audit browser evidence'],
-      ['pr-a11y', 'Check Probe theme reach'],
-      ['pr-a11y', 'Upload Probe reach report'],
     ]) {
       expect(runs(step(job, name)), name).toBe(true);
       expect(

@@ -1817,25 +1817,6 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-      # Baseline-free target/axis diagnostics are not a visual-regression lane.
-      # Keep their existing report-only behavior with the other browser guards.
-      - name: Check Probe theme reach
-        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
-        continue-on-error: true
-        run: |
-          node .github/scripts/visual-gate/gate.mjs reach \
-            --storybook-dir apps/storybook/dist \
-            --out .visual-reach
-
-      - name: Upload Probe reach report
-        if: always() && github.event_name == 'workflow_dispatch' && inputs.operation == 'release-check'
-        uses: actions/upload-artifact@v7
-        with:
-          name: visual-reach
-          path: .visual-reach/reach.json
-          retention-days: 30
-          if-no-files-found: warn
-
   # Release-only accessibility contracts run beside pr-a11y instead of after
   # its full axe sweep, so the release check waits for the longer of the two
   # rather than their sum. release-check requires this job as it requires
