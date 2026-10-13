@@ -49,7 +49,7 @@ function facts(
   };
 }
 
-const story = (id: string) => `a11y-menu-button--${id}`;
+const story = (id: string) => `a11y-menubutton--${id}`;
 
 export const MENU_BUTTON_BINDING_STATES = [
   {
