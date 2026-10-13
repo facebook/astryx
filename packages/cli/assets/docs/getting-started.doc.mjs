@@ -31,7 +31,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Give it a look',
-          code: 'Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list`, install the closest theme package, and run `theme add <slug> --import`; use `--package` when owners share a slug. Import `themes` and `defaultThemeSlug` from the generated module once and pass `themes[defaultThemeSlug]` to `<Theme>`. Customize with `defineTheme({extends: importedTheme, ...})`. Use `theme eject` only when I ask for an independent source fork. Default to neutral if I have no preference, and show me the result before moving on.',
+          code: 'Ask me what look and feel this app should have. Run `npx @astryxdesign/cli theme list`, install the closest theme package, and run `theme add <slug>`; use `--package` when owners share a slug. Import `themes` and `defaultThemeSlug` from the generated module once and pass `themes[defaultThemeSlug]` to `<Theme>`. Customize with `defineTheme({extends: importedTheme, ...})`. Use `theme eject` only when I ask for an independent source fork. Default to neutral if I have no preference, and show me the result before moving on.',
         },
       ],
     },
@@ -69,7 +69,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Import the reset and base styles in your global CSS. Then run `astryx theme add neutral --import`; the generated app module imports the theme’s production CSS and font CSS.',
+          text: 'Import the reset and base styles in your global CSS. Then run `astryx theme add neutral`; the generated app module imports the theme’s production CSS and font CSS.',
         },
         {
           type: 'code',

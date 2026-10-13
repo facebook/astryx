@@ -23,9 +23,16 @@ const releaseJobs = [
   'check-scope',
   'check-components',
   'build-storybook',
+  'typecheck',
+  'visual-scout',
   'pr-visual',
+  'pr-a11y-shard',
+  'pr-a11y-audit',
   'pr-a11y',
+  'a11y-contracts-shard',
+  'a11y-contracts',
   'pr-rtl-shard',
+  'pr-rtl-merge',
   'pr-rtl',
   'release-check',
 ];
@@ -99,6 +106,22 @@ function shell(script, env = {}, prefix = '') {
 const sha = 'a'.repeat(40);
 const releaseBranch = 'release/v0.6.5';
 const planDigest = 'b'.repeat(64);
+
+function mainAuthorityGit(remoteSha = sha, ancestor = true) {
+  return `MAIN_FETCHED=false
+  git() {
+    case "$1" in
+      ls-remote) printf '%s\\n' '${remoteSha}\\trefs/heads/main' ;;
+      fetch) MAIN_FETCHED=true ;;
+      merge-base)
+        [ "$MAIN_FETCHED" = true ] || return 98
+        return ${ancestor ? 0 : 1}
+        ;;
+      *) return 99 ;;
+    esac
+  }`;
+}
+
 async function githubScript(
   script,
   {
@@ -110,6 +133,7 @@ async function githubScript(
     plan = planDigest,
     needs,
     apiFails = false,
+    compareStatus = 'identical',
   } = {},
 ) {
   const summary = {
@@ -137,6 +161,12 @@ async function githubScript(
             expect(request.ref).toBe(`heads/${branch}`);
             if (apiFails) throw new Error('API unavailable');
             return {data: {object: {sha: remoteSha}}};
+          },
+        },
+        repos: {
+          async compareCommitsWithBasehead(request) {
+            expect(request.basehead).toBe(`${expectedHead}...${remoteSha}`);
+            return {data: {status: compareStatus}};
           },
         },
       },
@@ -195,14 +225,18 @@ describe('explicit release routing', () => {
     },
   );
 
-  it.each(['pr-a11y', 'pr-visual', 'pr-rtl-shard'])(
-    'blocks %s when its build fails',
-    name => {
-      const needs = dependencies(jobs[name]);
-      needs['build-storybook'].result = 'failure';
-      expect(runs(jobs[name], {needs})).toBe(false);
-    },
-  );
+  it.each([
+    'pr-a11y-shard',
+    'pr-a11y',
+    'a11y-contracts-shard',
+    'visual-scout',
+    'pr-visual',
+    'pr-rtl-shard',
+  ])('blocks %s when its build fails', name => {
+    const needs = dependencies(jobs[name]);
+    needs['build-storybook'].result = 'failure';
+    expect(runs(jobs[name], {needs})).toBe(false);
+  });
 
   it('keeps dispatch concurrency separate and non-cancelling', () => {
     expect(workflow.concurrency.group).toContain('|| github.run_id');
@@ -252,7 +286,7 @@ describe('exact main pre-cut authority', () => {
     );
   });
 
-  it('binds the run and remote main to the requested SHA', () => {
+  it('binds the run to the requested SHA in current main history', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-main-check-'));
     const output = path.join(dir, 'output');
     try {
@@ -264,7 +298,7 @@ describe('exact main pre-cut authority', () => {
           GITHUB_SHA: sha,
           GITHUB_OUTPUT: output,
         },
-        `git() { printf '%s\\n' '${sha}\trefs/heads/main'; }`,
+        mainAuthorityGit(),
       );
       expect(result.status, result.stderr).toBe(0);
       expect(fs.readFileSync(output, 'utf8')).toBe(
@@ -273,6 +307,20 @@ describe('exact main pre-cut authority', () => {
     } finally {
       fs.rmSync(dir, {recursive: true, force: true});
     }
+  });
+
+  it('accepts a checked SHA that remains an ancestor after main advances', () => {
+    const result = shell(
+      authority.run,
+      {
+        EXPECTED_HEAD: sha,
+        GITHUB_REF: 'refs/heads/main',
+        GITHUB_SHA: sha,
+        GITHUB_OUTPUT: '/dev/null',
+      },
+      mainAuthorityGit('b'.repeat(40)),
+    );
+    expect(result.status, result.stderr).toBe(0);
   });
 
   it.each([
@@ -285,12 +333,12 @@ describe('exact main pre-cut authority', () => {
     const result = shell(
       authority.run,
       {...values, EXPECTED_HEAD: sha, GITHUB_OUTPUT: '/dev/null'},
-      `git() { printf '%s\\n' '${sha}\trefs/heads/main'; }`,
+      mainAuthorityGit(),
     );
     expect(result.status).not.toBe(0);
   });
 
-  it('rejects remote main drift', () => {
+  it('rejects a checked SHA removed from current main history', () => {
     const result = shell(
       authority.run,
       {
@@ -299,10 +347,12 @@ describe('exact main pre-cut authority', () => {
         GITHUB_SHA: sha,
         GITHUB_OUTPUT: '/dev/null',
       },
-      `git() { printf '%s\\n' '${'b'.repeat(40)}\trefs/heads/main'; }`,
+      mainAuthorityGit('b'.repeat(40), false),
     );
     expect(result.status).not.toBe(0);
-    expect(result.stdout).toContain('Main moved before checks began');
+    expect(result.stdout).toContain(
+      'Checked main commit is not an ancestor of current main',
+    );
   });
 });
 
@@ -323,8 +373,11 @@ describe('exact main and release branch completion', () => {
       'check-scope',
       'check-components',
       'build-storybook',
+      'typecheck',
       'pr-visual',
       'pr-a11y',
+      'a11y-contracts',
+      'pr-a11y-audit',
       'pr-rtl',
     ]);
   });
@@ -333,6 +386,30 @@ describe('exact main and release branch completion', () => {
     await expect(
       githubScript(join, {branch: 'main', plan: '', needs: complete}),
     ).resolves.toBeUndefined();
+  });
+
+  it('accepts complete exact-main evidence after main advances', async () => {
+    await expect(
+      githubScript(join, {
+        branch: 'main',
+        remoteSha: 'b'.repeat(40),
+        compareStatus: 'ahead',
+        plan: '',
+        needs: complete,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rejects exact-main evidence removed from current main history', async () => {
+    await expect(
+      githubScript(join, {
+        branch: 'main',
+        remoteSha: 'b'.repeat(40),
+        compareStatus: 'diverged',
+        plan: '',
+        needs: complete,
+      }),
+    ).rejects.toThrow('not an ancestor of current main');
   });
 
   it('requires the successful main authority step to bind the expected head', async () => {
@@ -501,7 +578,11 @@ describe('full release scope without PR metadata or maintenance writes', () => {
   });
 
   it('runs the canonical accessibility command without a component filter for full scope', () => {
-    const audit = step('pr-a11y', 'Run accessibility audit');
+    const audit = step('pr-a11y-audit', 'Run accessibility audit');
+    expect(runs(step('pr-a11y', 'Run accessibility audit'))).toBe(false);
+    expect(step('pr-a11y-audit', 'Require every audit shard').run).toContain(
+      '"$SHARD_RESULT" != success',
+    );
     const result = shell(
       audit.run.replaceAll('${{ github.event_name }}', 'workflow_dispatch'),
       {},
@@ -514,10 +595,11 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     );
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain('--fail-on-new');
+    expect(result.stdout).toContain('--merge-shards');
     expect(result.stdout).not.toContain('--components');
     expect(audit['continue-on-error']).toBeUndefined();
     expect(
-      step('pr-a11y', 'Run accessibility spec-test contracts').env
+      step('a11y-contracts-shard', 'Run accessibility spec-test contracts').env
         .ASTRYX_HEAD_SHA,
     ).toBe('${{ github.event.pull_request.head.sha || github.sha }}');
   });
@@ -582,31 +664,48 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     expect(result.stdout).not.toContain('AUDIT MUST NOT RUN');
   });
 
-  it('keeps exhaustive a11y contracts, their artifacts, and Probe reach release-only', () => {
-    for (const name of [
-      'Run accessibility spec-test contracts',
-      'Upload pressed-state pixel evidence',
-      'Upload component-audit browser evidence',
-      'Check Probe theme reach',
-      'Upload Probe reach report',
+  it('keeps exhaustive a11y contracts and their artifacts release-only', () => {
+    for (const [job, name] of [
+      ['a11y-contracts-shard', 'Run accessibility spec-test contracts'],
+      ['a11y-contracts-shard', 'Upload pressed-state pixel evidence'],
+      ['a11y-contracts-shard', 'Upload component-audit browser evidence'],
     ]) {
-      expect(runs(step('pr-a11y', name)), name).toBe(true);
+      expect(runs(step(job, name)), name).toBe(true);
       expect(
-        runs(step('pr-a11y', name), {event: 'pull_request', operation: ''}),
+        runs(step(job, name), {event: 'pull_request', operation: ''}),
         name,
       ).toBe(false);
-      expect(runs(step('pr-a11y', name), {operation: 'capture'}), name).toBe(
-        false,
-      );
+      expect(runs(step(job, name), {operation: 'capture'}), name).toBe(false);
     }
-    expect(step('pr-a11y', 'Run accessibility spec-test contracts').run).toBe(
-      'pnpm test:a11y-contract',
-    );
+    expect(runs(jobs['a11y-contracts'])).toBe(true);
     expect(
-      step('pr-a11y', 'Run accessibility spec-test contracts')[
-        'continue-on-error'
-      ],
-    ).toBeUndefined();
+      runs(jobs['a11y-contracts'], {event: 'pull_request', operation: ''}),
+    ).toBe(false);
+    const contracts = step(
+      'a11y-contracts-shard',
+      'Run accessibility spec-test contracts',
+    );
+    expect(contracts.run).toBe(
+      'pnpm test:a11y-contract --shard=${{ matrix.shard }}/${{ strategy.job-total }}',
+    );
+    expect(contracts.env.A11Y_CONTRACT_WORKERS).toBe(4);
+    expect(contracts['continue-on-error']).toBeUndefined();
+    // The join fails closed: a failed shard, or an evidence set no shard
+    // produced, blocks release-check through a11y-contracts.
+    const join = jobs['a11y-contracts'];
+    expect(join.needs).toContain('a11y-contracts-shard');
+    expect(
+      step('a11y-contracts', 'Require every contract shard').run,
+    ).toContain('"$SHARD_RESULT" != success');
+    for (const name of [
+      'Join pressed-state pixel evidence',
+      'Join component-audit browser evidence',
+    ]) {
+      expect(step('a11y-contracts', name).uses).toBe(
+        'actions/upload-artifact/merge@v7',
+      );
+      expect(step('a11y-contracts', name).with['delete-merged']).toBe(true);
+    }
     for (const name of [
       'Run modal close visibility guard',
       'Run theme var reachability guard',
@@ -622,13 +721,11 @@ describe('full release scope without PR metadata or maintenance writes', () => {
   });
 
   it('keeps all canonical RTL packages and passes full scope to resolver and join', () => {
-    expect(jobs['pr-rtl-shard'].strategy.matrix.package).toEqual([
-      'core',
-      'lab',
-      'charts',
-      'richtext',
-      'vega',
-    ]);
+    expect([
+      ...new Set(
+        jobs['pr-rtl-shard'].strategy.matrix.include.map(leg => leg.package),
+      ),
+    ]).toEqual(['core', 'lab', 'charts', 'richtext', 'vega']);
     expect(step('pr-rtl-shard', 'Resolve RTL shard scope').run).toContain(
       '--force-full "${{ needs.check-components.outputs.force_full_component_audits }}"',
     );

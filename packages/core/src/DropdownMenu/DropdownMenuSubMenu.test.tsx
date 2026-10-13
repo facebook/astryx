@@ -7,13 +7,14 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {useState} from 'react';
+import {createRef, useState} from 'react';
 import {render, screen, waitFor, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuSubMenu} from './DropdownMenuSubMenu';
+import {IconButton} from '../IconButton';
 import {COMPACT_TOUCH_PRESENTATION_QUERY} from '../hooks/useAdaptivePresentation';
 import {rtlStyles} from '../utils';
 
@@ -397,6 +398,151 @@ describe('DropdownMenuSubMenu', () => {
         screen.getByRole('menuitem', {name: 'Archive', hidden: true}),
       ).toHaveFocus();
     });
+  });
+});
+
+describe('DropdownMenuSubMenu host attributes', () => {
+  async function openRoot(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    // A pointer open focuses the menu in a frame; let it land first.
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menu', {name: 'Actions', hidden: true}),
+      ).toHaveFocus();
+    });
+    return screen.getByRole('menuitem', {name: /Move to/, hidden: true});
+  }
+
+  it('aria-*, data-* and id reach the trigger row, and the flyout stays labelled by it', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu
+          label="Move to"
+          aria-keyshortcuts="M"
+          data-row="move"
+          id="move-row">
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    expect(trigger).toHaveAttribute('aria-keyshortcuts', 'M');
+    expect(trigger).toHaveAttribute('data-row', 'move');
+    expect(trigger).toHaveAttribute('id', 'move-row');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    expect(
+      screen.getByRole('menu', {name: 'Move to', hidden: true}),
+    ).toHaveAttribute('aria-labelledby', 'move-row');
+  });
+
+  it('a ref reaches the trigger row', async () => {
+    const user = userEvent.setup();
+    const ref = createRef<HTMLElement>();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" ref={ref}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    expect(ref.current).toBe(trigger);
+  });
+
+  it("a caller's handlers run after the row's own, and the row still opens and takes the hover focus", async () => {
+    const user = userEvent.setup();
+    const onKeyDown = vi.fn();
+    const onClick = vi.fn();
+    const onPointerMove = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Rename" onClick={() => {}} />
+        <DropdownMenuSubMenu
+          label="Move to"
+          onKeyDown={onKeyDown}
+          onClick={onClick}
+          onPointerMove={onPointerMove}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    fireEvent.pointerMove(trigger, {pointerType: 'mouse'});
+    expect(trigger).toHaveFocus();
+    expect(onPointerMove).toHaveBeenCalledTimes(1);
+    // A key the row does not consume reaches the caller.
+    fireEvent.keyDown(trigger, {key: 'm'});
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    await user.keyboard('{ArrowRight}');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    fireEvent.click(trigger, {detail: 1});
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('a stable callback ref is not re-run as the flyout opens and closes', async () => {
+    const user = userEvent.setup();
+    const ref = vi.fn<(el: HTMLElement | null) => void>();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" ref={ref}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    expect(ref).toHaveBeenLastCalledWith(trigger);
+    ref.mockClear();
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+    expect(ref).not.toHaveBeenCalled();
+  });
+
+  it("a disabled row does not pass a click on to the caller's onClick", async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu label="Move to" isDisabled onClick={onClick}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    // A programmatic or assistive-technology activation.
+    act(() => trigger.click());
+    expect(onClick).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('the row keeps its own popup state and tab stop', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuSubMenu
+          label="Move to"
+          aria-haspopup="listbox"
+          aria-expanded={true}>
+          <DropdownMenuItem label="Folder A" onClick={() => {}} />
+        </DropdownMenuSubMenu>
+      </DropdownMenu>,
+    );
+    const trigger = await openRoot(user);
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveAttribute('tabindex', '-1');
   });
 });
 
@@ -1272,5 +1418,79 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'true'),
     );
     expect(visibleRows()).toEqual(['Rename', 'Move to', 'Delete']);
+  });
+
+  describe('a menu hung off a custom trigger', () => {
+    async function drillIntoMoveTo(triggerName: RegExp | string) {
+      const user = userEvent.setup();
+      const trigger = screen.getByRole('button', {name: triggerName});
+      await user.click(trigger);
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+      );
+      fireEvent.click(await waitFor(() => shownRow('Move to')), {detail: 1});
+      await waitFor(() => shownMenu('Move to'));
+      return visibleRows()[0];
+    }
+
+    it('names its Back row after the icon button it hangs off', async () => {
+      stubCompactTouch(false);
+      render(
+        <DropdownMenu
+          renderTrigger={props => (
+            <IconButton
+              icon="moreHorizontal"
+              label="Session actions"
+              {...props}
+            />
+          )}>
+          <DropdownMenuSubMenu label="Move to" presentation="drill-in">
+            <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      expect(await drillIntoMoveTo('Session actions')).toBe(
+        'Back to Session actions',
+      );
+    });
+
+    it('names its Back row after a text trigger', async () => {
+      stubCompactTouch(false);
+      render(
+        <DropdownMenu
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              Options
+            </button>
+          )}>
+          <DropdownMenuSubMenu label="Move to" presentation="drill-in">
+            <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      expect(await drillIntoMoveTo('Options')).toBe('Back to Options');
+    });
+
+    it('takes the name the caller gave the menu with aria-label', async () => {
+      stubCompactTouch(false);
+      render(
+        <DropdownMenu
+          aria-label="Row actions"
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              …
+            </button>
+          )}>
+          <DropdownMenuSubMenu label="Move to" presentation="drill-in">
+            <DropdownMenuItem label="Folder A" onClick={() => {}} />
+          </DropdownMenuSubMenu>
+        </DropdownMenu>,
+      );
+      expect(shownMenuNamed('Row actions')).toBeDefined();
+      expect(await drillIntoMoveTo('…')).toBe('Back to Row actions');
+    });
+
+    const shownMenuNamed = (name: string) =>
+      screen.getAllByRole('menu', {name, ...h}).find(isShown);
   });
 });

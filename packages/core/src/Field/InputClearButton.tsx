@@ -71,13 +71,7 @@ export interface InputClearButtonProps {
   label: string;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
   xstyle?: stylex.StyleXStyles;
-  /**
-   * Extra class(es) for the clear glyph itself, merged onto the shared
-   * `astryx-input-clear-icon` target. Used by inputs that shipped a
-   * component-specific clear-icon target before the family converged here
-   * (e.g. `astryx-date-input-clear-icon`) to keep emitting it for backwards
-   * compatibility; new callers don't need it.
-   */
+  /** Extra class names merged onto the clear glyph beside its canonical target. */
   iconClassName?: string;
 }
 

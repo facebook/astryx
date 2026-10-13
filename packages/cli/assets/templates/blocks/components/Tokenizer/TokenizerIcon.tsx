@@ -38,7 +38,7 @@ export default function TokenizerIcon() {
         value={value}
         onChange={items => setValue(items)}
         startIcon={MagnifyingGlassIcon}
-        style={{width: 400}}
+        containerStyle={{width: 400}}
       />
     </Stack>
   );

@@ -504,6 +504,14 @@ describe('integrationPackCheck', () => {
         message:
           'Theme "ocean" exports @acme/widgets/theme.css without a complete built module and stylesheet pair. Missing partner exports alone do not block packing; add the matching export when the theme should be importable. Every declared export must resolve. Staleness is a warning until the complete importable pair is declared.',
       },
+      // A 0.6.5-built stylesheet still carries the root data-color defaults
+      // that theme output no longer emits, so it no longer matches its source.
+      {
+        code: 'theme_stylesheet_stale',
+        severity: 'warning',
+        message:
+          'Theme "ocean" stylesheet does not match themes/ocean/oceanTheme.ts. This incomplete export remains packable, but run `astryx theme build themes/ocean/oceanTheme.ts` before adding its matching export.',
+      },
     ]);
     const cli = runCliVerify();
     expect(cli.status, cli.stderr).toBe(0);
@@ -1025,9 +1033,11 @@ describe('integrationPackCheck', () => {
     expect(await codes()).toContain('replaces_needs_cli');
     peer('^0.6.0');
     expect(await codes()).toContain('replaces_needs_cli');
-    // `replaces` still needs 0.7.0.
-    peer('>=0.6.4');
+    // Published 0.6.3 rejects `replaces`; published 0.6.4 applies it.
+    peer('>=0.6.3');
     expect(await codes()).toContain('replaces_needs_cli');
+    peer('>=0.6.4');
+    expect(await codes()).not.toContain('replaces_needs_cli');
     peer('>=0.7.0');
     expect(await codes()).not.toContain('replaces_needs_cli');
   }, 120_000);
@@ -1062,6 +1072,12 @@ describe('integrationPackCheck', () => {
     expect(await codes()).toContain('keywords_needs_cli');
     peer('^0.6.0');
     expect(await codes()).toContain('keywords_needs_cli');
+    // Published 0.6.4 and 0.6.5 drop a template that sets `keywords`;
+    // published 0.6.6 reads it.
+    peer('>=0.6.5');
+    expect(await codes()).toContain('keywords_needs_cli');
+    peer('>=0.6.6');
+    expect(await codes()).not.toContain('keywords_needs_cli');
     peer('>=0.7.0');
     expect(await codes()).not.toContain('keywords_needs_cli');
   }, 120_000);

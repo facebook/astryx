@@ -34,6 +34,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {useClipboard} from '../hooks/useClipboard';
+import {useScrollableArea} from '../hooks/useScrollableArea';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {
@@ -117,6 +118,13 @@ const styles = stylex.create({
     backgroundColor: 'var(--color-syntax-background)',
     overflow: 'hidden',
   },
+  // The viewport is a flex item of the column root. Its implied min-height
+  // would be its content while it fits (the shared capability keeps it
+  // `overflow: clip` then), so a root sized from outside could never make it
+  // shrink and scroll; 0 lets the root's bound reach it.
+  viewport: {
+    minHeight: 0,
+  },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
@@ -159,10 +167,6 @@ const styles = stylex.create({
     color: 'var(--color-syntax-comment)',
     margin: 0,
     lineHeight: typeScaleVars['--text-supporting-leading'],
-  },
-  scrollContainer: {
-    overflowX: 'auto',
-    overflowY: 'auto',
   },
   codeWrapper: {
     display: 'flex',
@@ -308,7 +312,7 @@ const styles = stylex.create({
     // The copy control is a ghost IconButton (Button owns its own padding,
     // radius, and hover surface); this only tints the resting glyph to the
     // muted syntax-comment colour so it blends into the header/corner. A theme
-    // reaches it via the `codeblock-copy-button` target on the Button.
+    // reaches it via the `code-block-copy-button` target on the Button.
     color: 'var(--color-syntax-comment)',
   },
   copyButtonAbsolute: {
@@ -800,7 +804,19 @@ export function CodeBlock({
   // this is always a resolvable reference — aria-controls can be unconditional.
   const regionId = useId();
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // The code viewport enters the Tab order only while its content actually
+  // overflows (AST-025 FR12–FR13): the shared scroll capability measures
+  // both axes, keeps focus where it is when overflow goes away, and owns the
+  // overflow declarations. role="group" (not "region") so several code
+  // blocks on a page don't create duplicate same-named landmarks.
+  const {getViewportProps, getContentProps} = useScrollableArea({
+    axis: 'both',
+    keyboardAccess: {
+      owner: 'viewport',
+      role: 'group',
+      label: languageLabel ?? t('@astryx.codeBlock.code'),
+    },
+  });
   const scrollStyle: CSSProperties | undefined =
     maxHeight != null
       ? {
@@ -828,20 +844,14 @@ export function CodeBlock({
         void handleCopy();
       }}
       xstyle={[styles.copyButton, !showHeader && styles.copyButtonAbsolute]}
-      {...themeProps('code-block-copy-button', undefined, {
-        legacyNames: ['codeblock-copy-button'],
-      })}
+      {...themeProps('code-block-copy-button')}
     />
   ) : null;
 
   const headerEl = showHeader ? (
     <div
       {...mergeProps(
-        themeProps(
-          'code-block-header',
-          {size, language, container},
-          {legacyNames: ['codeblock-header']},
-        ),
+        themeProps('code-block-header', {size, language, container}),
         stylex.props(
           styles.headerRow,
           hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
@@ -874,11 +884,7 @@ export function CodeBlock({
         )}>
         <span
           {...mergeProps(
-            themeProps(
-              'code-block-title',
-              {size, language},
-              {legacyNames: ['codeblock-title']},
-            ),
+            themeProps('code-block-title', {size, language}),
             stylex.props(styles.headerTitle),
           )}>
           {canCollapse && (
@@ -905,21 +911,16 @@ export function CodeBlock({
 
   const codeBody = (
     <div
-      ref={scrollContainerRef}
-      // The scroll container is keyboard-focusable so keyboard users can
-      // scroll long or wide code that overflows the viewport. Uses
-      // role="group" (not "region") so multiple code blocks on a page don't
-      // create duplicate same-named landmarks (axe: landmark-unique).
-      tabIndex={0}
-      role="group"
-      aria-label={languageLabel ?? t('@astryx.codeBlock.code')}
-      {...mergeProps(stylex.props(styles.scrollContainer), {
+      {...getViewportProps<HTMLDivElement>({
+        ...stylex.props(styles.viewport),
         style: scrollStyle,
       })}>
       <div
-        {...stylex.props(
-          styles.codeWrapper,
-          showHeader && !hasLineNumbers && styles.codeWrapperCompact,
+        {...getContentProps<HTMLDivElement>(
+          stylex.props(
+            styles.codeWrapper,
+            showHeader && !hasLineNumbers && styles.codeWrapperCompact,
+          ),
         )}>
         {useSpans ? (
           <SpanCodeContent
@@ -950,13 +951,7 @@ export function CodeBlock({
     <pre
       ref={ref}
       {...mergeProps(
-        themeProps(
-          'code-block',
-          {size, language, container},
-          // `codeblock` ran the compound name together; keep it emitted so
-          // existing themes continue to work.
-          {legacyNames: ['codeblock']},
-        ),
+        themeProps('code-block', {size, language, container}),
         stylex.props(
           styles.root,
           dynamicStyles.width(widthProp),
@@ -974,7 +969,7 @@ export function CodeBlock({
           // While collapsed, the region is only hidden visually (0fr grid
           // row); inert also removes it from the tab order and accessibility
           // tree so keyboard users cannot Tab into the invisible scroll
-          // container (tabIndex=0). aria-controls pointing at an inert
+          // container (a tab stop while it overflows). aria-controls pointing at an inert
           // element remains a valid, resolvable reference.
           inert={isCollapsed ? true : undefined}
           {...stylex.props(

@@ -207,6 +207,52 @@ export const docs = {
           type: 'StyleXStyles',
           description: 'StyleX styles for the popup content container.',
         },
+        {
+          name: 'onClick',
+          type: '(event: MouseEvent) => void',
+          description:
+            'Click handler on the trigger. Runs before the popup opens; call preventDefault() to keep it closed. A press elsewhere in the control box goes through the trigger too. With renderTrigger it runs after the built-in toggle and cannot cancel it.',
+        },
+        {
+          name: 'onKeyDown',
+          type: '(event: KeyboardEvent) => void',
+          description:
+            'Key handler on the trigger. Runs after the built-in handling and receives every key, including the ArrowDown that opens the popup. With renderTrigger it is skipped for keys the built-in handling cancels.',
+        },
+        {
+          name: 'containerXstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for the field container (label, control, and status together). No effect inside InputGroup (style the InputGroup instead) or in a `horizontal-labels` FormLayout. Root `xstyle`, `className`, and `style` are not accepted.',
+        },
+        {
+          name: 'containerClassName',
+          type: 'string',
+          description:
+            'Class name for the field container. Same targeting as `containerXstyle`.',
+        },
+        {
+          name: 'containerStyle',
+          type: 'CSSProperties',
+          description:
+            'Inline styles for the field container. Same targeting as `containerXstyle`.',
+        },
+        {
+          name: 'controlXstyle',
+          type: 'StyleXStyles',
+          description:
+            'StyleX styles for the visual control box: the element that paints the border and background and holds the value, icons, and end controls. Never the trigger button itself.',
+        },
+        {
+          name: 'controlClassName',
+          type: 'string',
+          description: 'Class name for the visual control box.',
+        },
+        {
+          name: 'controlStyle',
+          type: 'CSSProperties',
+          description: 'Inline styles for the visual control box.',
+        },
       ],
     },
   ],
@@ -338,6 +384,18 @@ export const docsDense = {
       'Caller-rendered opener replacing the field+button; spread the given props; popup anchored to it, labelled by label.',
     handleRef: 'Imperative open/close/toggle handle.',
     onOpenChange: 'Notified on every open and close, whatever caused it.',
+    onClick:
+      'Trigger click; runs before opening, preventDefault() keeps the popup closed.',
+    onKeyDown:
+      'Trigger keys; runs after built-in handling, sees the opening ArrowDown.',
+    containerXstyle:
+      'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
+    containerClassName: 'Class name for the field container.',
+    containerStyle: 'Inline styles for the field container.',
+    controlXstyle:
+      'StyleX styles for the visual control box (border, background, icons); not the trigger button.',
+    controlClassName: 'Class name for the visual control box.',
+    controlStyle: 'Inline styles for the visual control box.',
     statusVariant:
       'How status message is placed: attached overlaps below input (detached for ghost); detached floats below w/ spacing; tooltip shows on status icon.',
     accessibility:

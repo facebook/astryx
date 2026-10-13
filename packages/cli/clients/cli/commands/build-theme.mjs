@@ -6,9 +6,11 @@
  * Thin CLI wrapper. The `build` compiler lives in the programmatic API
  * (../../api/theme/build/build.mjs); `list`/`add` delegate to the
  * ../../api/theme/list/list.mjs and ../../api/theme/add/add.mjs leaves. This
- * file only parses options, injects a logger, renders human output, and maps
- * AstryxError → cliError. Watch mode (a human-interactive, long-running loop)
- * stays here because it re-invokes `theme build` as a child process.
+ * file only parses options, injects a logger, renders human output, maps
+ * AstryxError → cliError, and turns reported private-variable errors into exit 1
+ * after preserving the build output. Watch mode (a human-interactive,
+ * long-running loop) stays here because it re-invokes `theme build` as a child
+ * process.
  *
  * The command surface (group + subcommand descriptions, args, flags) is sourced
  * from the colocated CommandDocs via `defineCommand`; this file supplies only
@@ -62,7 +64,6 @@ import {
   themePaletteGenerate,
 } from '../../../api/theme/palette/generate/generate.mjs';
 import {
-  importSpecifier,
   printBatchTrailer,
   printCompactTrailer,
   themeBuild,
@@ -230,8 +231,8 @@ async function warnOnThemeIntegrationIssues(json) {
 }
 
 /**
- * Print `theme add --list`. Its JSON stays the released `theme.list`; its text
- * names the commands of the current lifecycle stage (AST-050 FR12).
+ * Print cleanup-stage `theme add --list`. Its JSON stays the released
+ * `theme.list`; its text names the cleanup commands (AST-050 FR12).
  * @param {import('../../../api/theme/theme.type.mjs').ThemeListEntry[]} themes
  */
 function printThemeAddList(themes) {
@@ -255,7 +256,7 @@ function printThemeAddList(themes) {
       }),
     ),
     text(
-      `Import one: ${run} theme add <slug> --import [--package <package>]\n` +
+      `Import one: ${run} theme add <slug> [--package <package>]\n` +
         `Fork source: ${run} theme eject <slug> [target-path]`,
     ),
     more,
@@ -297,7 +298,7 @@ function printThemeList(themes, unmigratedCopies = []) {
         },
       }),
       text(
-        `Import one: ${run} theme add <slug> --import [--package <package>]\n` +
+        `Import one: ${run} theme add <slug> [--package <package>]\n` +
           `Fork source: ${run} theme eject <slug> [target-path]`,
       ),
       more,
@@ -633,6 +634,10 @@ export function registerTheme(program) {
       // [ok]/[warn] lines, and the install instructions are all emitted from
       // inside themeBuild via the shared logger.
       logger.setSilent(json);
+      let privateVarError = false;
+      const onPrivateVarError = () => {
+        privateVarError = true;
+      };
 
       if (options.family) {
         try {
@@ -642,11 +647,15 @@ export function registerTheme(program) {
               familyKey: /** @type {string} */ (options.familyKey),
               check: options.check,
               iconsSpecifier: options.iconsSpecifier,
+              __onPrivateVarError: onPrivateVarError,
             },
             {cwd: process.cwd()},
           );
           if (json) jsonOut(result);
-          if (result.type === 'theme.build.check' && !result.data.upToDate) {
+          if (
+            privateVarError ||
+            (result.type === 'theme.build.check' && !result.data.upToDate)
+          ) {
             process.exitCode = 1;
           }
           return NO_RESULT_SET;
@@ -674,6 +683,7 @@ export function registerTheme(program) {
             out: options.out,
             check: options.check,
             iconsSpecifier: options.iconsSpecifier,
+            __onPrivateVarError: onPrivateVarError,
           };
           let result;
           if (report) {
@@ -753,10 +763,10 @@ export function registerTheme(program) {
         );
       }
 
-      // In --check mode a stale/missing output is a failure: exit non-zero
-      // (after emitting the receipt) so CI can gate on it. The receipt is
-      // already printed above (shared logger or --json envelope).
-      if (options.check && stale) {
+      // Private-variable diagnostics are build failures even though the released
+      // output and generated files stay unchanged. Stale --check output is also
+      // a failure after its receipt has been emitted.
+      if (privateVarError || (options.check && stale)) {
         process.exitCode = 1;
       }
 
@@ -801,15 +811,14 @@ export function registerTheme(program) {
     },
   });
 
-  defineCommand(theme, themeAddCommand, {
+  const themeAddCli = defineCommand(theme, themeAddCommand, {
     fn: themeAddFn,
     action: async (
       /** @type {string | undefined} */ slug,
-      /** @type {string | undefined} */ targetPath,
-      /** @type {{list?: boolean, overwrite?: boolean, import?: boolean, package?: string}} */ options,
+      /** @type {{list?: boolean, import?: boolean, package?: string}} */ options,
     ) => {
       const json = program.opts().json || false;
-      /** @type {import('../../../api/theme/theme.type.mjs').ThemeListResponse | import('../../../api/theme/theme.type.mjs').ThemeAddResponse | import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemeListResponse | import('../../../api/theme/theme.type.mjs').ThemeAppResponse} */
       let result;
       try {
         result =
@@ -819,8 +828,6 @@ export function registerTheme(program) {
                 package: options.package,
               })
             : await themeAdd(slug, {
-                targetPath,
-                overwrite: options.overwrite,
                 import: options.import,
                 cwd: process.cwd(),
                 package: options.package,
@@ -848,44 +855,12 @@ export function registerTheme(program) {
         printThemeAddList(result.data);
         return answered;
       }
-      if (result.type === 'theme.app') {
-        printThemeApp(result);
-        return answered;
-      }
-
-      const {
-        displayName,
-        outputDir,
-        entry,
-        exportName,
-        files,
-        package: owner,
-      } = result.data;
-      const entryModule = importSpecifier(
-        outputDir,
-        entry.replace(/\.tsx?$/, ''),
-      );
-      emit(
-        text(`[ok] Added ${displayName} theme from ${owner} to ${outputDir}/`),
-        list(files.map(file => `${outputDir}/${file}`)),
-        text(
-          'Use it in your app (import path is relative to a file in src/ — adjust if yours lives elsewhere):',
-        ),
-        code(
-          "import { Theme } from '@astryxdesign/core';\n" +
-            `import { ${exportName} } from '${entryModule}';\n\n` +
-            `<Theme theme={${exportName}}>\n  <App />\n</Theme>`,
-        ),
-        text(
-          `This is your copy of the ${displayName} theme — edit ${entry} to make it your own.`,
-        ),
-      );
-      console.error(
-        `Warning: \`theme add\` source copying is deprecated (DEP-0005). Run \`${getCliInvocation()} theme eject ${result.data.slug}\` to fork source or \`${getCliInvocation()} theme add ${result.data.slug} --import\` to use the built theme.`,
-      );
+      printThemeApp(result);
       return answered;
     },
   });
+  // Reject the removed target-path argument in Commander's standard parse path.
+  themeAddCli.allowExcessArguments(false);
 
   defineCommand(theme, themeRemoveCommand, {
     fn: themeRemoveFn,
@@ -1062,22 +1037,11 @@ export function registerTheme(program) {
       emit(
         section(
           'Theming targets',
-          `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}\n(key - component - props - states - className - deprecatedFor)`,
+          `${targets.length} across ${componentCount} component${componentCount === 1 ? '' : 's'}\n(key - component - props - states - className)`,
         ),
         records(targets, {
-          fields: [
-            'key',
-            'component',
-            'props',
-            'states',
-            'className',
-            'deprecatedFor',
-          ],
+          fields: ['key', 'component', 'props', 'states', 'className'],
           layout: 'inline',
-          format: {
-            deprecatedFor: (/** @type {string|null} */ v) =>
-              v ? `deprecated; use ${v}` : '',
-          },
         }),
         text(
           [

@@ -9,7 +9,8 @@
  *   command constants, plus Astryx Toolbar / IconButton / Selector /
  *   ToggleButton / Divider / Dialog / TextInput / Button / Layout primitives.
  * @output Exports RichTextEditorToolbar (a compact formatting toolbar with a
- *   horizontally scrollable action row) and RichTextEditorToolbarProps.
+ *   RichText-owned 4px control gutter and horizontally scrollable action row)
+ *   and RichTextEditorToolbarProps.
  * @position Experimental (richtext). Drop into RichTextEditor's `toolbar` slot to
  *   add a flush top formatting toolbar. Themed via Astryx Toolbar, Selector,
  *   IconButton, and ToggleButton, so it inherits the active theme.
@@ -80,6 +81,7 @@ import {useThemeName} from '@astryxdesign/core/theme';
 import {rtlStyles} from '@astryxdesign/core/utils';
 import {
   fontWeightVars,
+  spacingVars,
   typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {useTranslator} from '@astryxdesign/core/i18n';
@@ -146,6 +148,15 @@ const glyphStyles = stylex.create({
 });
 
 const toolbarScrollStyles = stylex.create({
+  // Core Toolbar owns an 8px block inset. This transparent RichText-only
+  // surface overlaps 4px of that inset at each block edge, so its controls and
+  // following editor body retain a 4px visual gutter.
+  compactToolbar: {
+    '--astryx-section-padding-inline-start': spacingVars['--spacing-1'],
+    '--astryx-section-padding-inline-end': spacingVars['--spacing-1'],
+    marginBlockStart: `calc(-1 * ${spacingVars['--spacing-1']})`,
+    marginBlockEnd: `calc(-1 * ${spacingVars['--spacing-1']})`,
+  },
   // The row scrolls when it runs out of room, so a control keeps its own
   // width. A Selector's field may shrink, which squeezes its label to a
   // sliver, so it sits in a slot that may not.
@@ -887,6 +898,7 @@ export function RichTextEditorToolbar({
       <Toolbar
         label={label}
         size={size}
+        xstyle={toolbarScrollStyles.compactToolbar}
         startContent={
           <HStack
             gap={1}

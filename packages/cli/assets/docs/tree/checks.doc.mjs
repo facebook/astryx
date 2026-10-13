@@ -107,7 +107,7 @@ export const docs = {
             'It lists the components, templates, themes, docs, and codemods the temporary app sees, and compares them with your source.',
             "It resolves each component's `import`, and each template's public import, the way Node does, and checks that the module exports the component, or a default export for a template.",
             'For each theme, it rebuilds the source, compares the built module and production CSS with the authored outputs, and proves the module, CSS, and optional font CSS exports resolve from the packed package.',
-            'It fails a package that needs an `@astryxdesign/cli` peer and lacks it: `>=0.7.0` for a template that sets `replaces` or `keywords`, and `>=0.6.4` for a docs section, a placed guide, a doc section with an `id`, or a theme.',
+            'It fails a package that needs an `@astryxdesign/cli` peer and lacks it: `>=0.6.6` for a template that sets `keywords`, and `>=0.6.4` for a template that sets `replaces`, a docs section, a placed guide, a doc section with an `id`, or a theme.',
           ],
         },
         {

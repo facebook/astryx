@@ -61,6 +61,41 @@ connection between the closed trigger and its selection surface.
   value, focus, and form participation while removing selection-surface and
   editing affordances. `isDisabled` takes precedence when both are set.
 - `spec:AST-004/DEC-1` governs the state-derived indicator-space behavior in FR3.
+- 0.7.0 removes the `selector-clear-icon` alias; the shared clear glyph remains
+  available through `input-clear-icon`.
+- Migration decision: replace the removed theme key and CSS class with
+  `input-clear-icon` and `.astryx-input-clear-icon`, or run
+  `astryx upgrade --from 0.6.3 --apply --path .`.
+
+### DEP-0011 — Deprecate the `popover` default presentation
+
+| Field            | Value                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id               | `DEP-0011`                                                                                                                                                          |
+| cleanup          | `CLN-0020`                                                                                                                                                          |
+| package          | `@astryxdesign/core`                                                                                                                                                |
+| surface          | Default `presentation` of `Selector`, `MultiSelector`, and `DropdownMenu` with `items` (and `MoreMenu`, which forwards to it): the anchored popover on every device |
+| old contract     | With no `presentation`, the option or action list opens in an anchored, non-modal popover on every device                                                           |
+| replacement      | `presentation="popover"` keeps the anchored popover on every device; `adaptive` is released and already accepted                                                    |
+| direct authority | `component:Selector` DEC-1. Owners: `cixzhang`, `imdreamrunner`. `MultiSelector` and `DropdownMenu` have no current contract that sets this default                 |
+| warning          | Consumer docs and the release notes name `DEP-0011` and `presentation="popover"`. No runtime warning (`spec:AST-017` FR29)                                          |
+| migration        | Mechanical where the popover is wanted on every device: add `presentation="popover"`                                                                                |
+| codemod          | None by default: pinning `popover` everywhere would opt every caller out of the change. A preserving codemod is mechanical if an owner wants one                    |
+| downstream       | Guidance says to keep the default and pin `popover` only when product policy needs it                                                                               |
+| transition       | no prior transition                                                                                                                                                 |
+| state            | `proposed`                                                                                                                                                          |
+| open decision    | Current authority for the `MultiSelector` and `DropdownMenu` defaults                                                                                               |
+| target plan      | `CLN-0020` in the next minor release                                                                                                                                |
+
+### CLN-0020 — Selector, MultiSelector, and data-driven DropdownMenu default to `adaptive`
+
+| Field     | Value                                                                                                                                                                                                                                           |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id        | `CLN-0020`                                                                                                                                                                                                                                      |
+| lifecycle | `DEP-0011`                                                                                                                                                                                                                                      |
+| delta     | With no `presentation`, a compact coarse-pointer screen opens a modal bottom sheet (trigger `aria-haspopup="dialog"`, focus moves in and returns on close); every other device keeps the anchored popover. Compound DropdownMenus are unchanged |
+| rollback  | Restore the `popover` default from the final-patch baseline                                                                                                                                                                                     |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                                                                                                                           |
 
 ## Ownership boundary
 
@@ -259,8 +294,7 @@ Icon-rendered start content delegates to Icon; arbitrary `ReactNode` start conte
 is caller-owned. The default renderer and custom `renderOption` functions that
 return `SelectorOption` retain its target; only bare caller-rendered option
 content stays outside that target, while the targeted option row remains.
-`selector-clear-icon` remains a deprecated compatibility alias and does not own a
-current anatomy row.
+`input-clear-icon` is the shared canonical target for the clear glyph.
 
 This map records only shipped reachability. It does not treat the accepted,
 unimplemented option-source behavior in `spec:AST-001` as current runtime behavior.
