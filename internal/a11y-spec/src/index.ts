@@ -139,6 +139,7 @@ export {
   type LandmarkStateFacts,
 } from './patterns/landmark';
 
+export {TREE_VIEW_PATTERN, type TreeViewStateFacts} from './patterns/tree-view';
 export {
   LINK_PATTERN,
   type LinkCurrentToken,
