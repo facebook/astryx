@@ -34,6 +34,22 @@ import {defineConfig, devices} from '@playwright/test';
 // definition, so `forbidOnly` and the reporter choice cannot disagree.
 const isCI = (process.env.CI ?? '') !== '';
 
+/**
+ * Worker count for the contract run: `A11Y_CONTRACT_WORKERS`, default 1 when
+ * unset or empty. Only a positive integer is accepted; Playwright would treat a `NaN` count as zero
+ * workers and exit green without running a test.
+ */
+function contractWorkers(): number {
+  const raw = process.env.A11Y_CONTRACT_WORKERS;
+  const workers = raw ? Number(raw) : 1;
+  if (!Number.isInteger(workers) || workers < 1) {
+    throw new Error(
+      `A11Y_CONTRACT_WORKERS must be a positive integer, got "${raw}"`,
+    );
+  }
+  return workers;
+}
+
 export default defineConfig({
   testDir: '.',
   testMatch: [
@@ -48,7 +64,7 @@ export default defineConfig({
   // are separate processes, each with its own browser, so they share no
   // keyboard focus: more than one only spreads whole files across them. One
   // by default; the release job sets A11Y_CONTRACT_WORKERS.
-  workers: Number(process.env.A11Y_CONTRACT_WORKERS ?? 1),
+  workers: contractWorkers(),
   fullyParallel: false,
   forbidOnly: isCI,
   reporter: isCI ? [['list'], ['github']] : [['list']],
