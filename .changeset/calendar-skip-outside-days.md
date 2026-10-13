@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] `Calendar`: the arrow keys no longer land on a borrowed adjacent-month day (shown dimmed and exposed as disabled, so Enter and Space picked nothing); they cross into that month and focus the real day there. Clicking a borrowed day still navigates as before.
+[fix] `Calendar`: the arrow keys no longer land on a borrowed adjacent-month day (shown dimmed, exposed as disabled, and inert to Enter, Space and clicks); they cross into that month and focus the real day there, including across the two grids of a two-month view.
 
 @cixzhang
