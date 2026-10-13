@@ -19,6 +19,39 @@ class MockResizeObserver {
 vi.stubGlobal('ResizeObserver', MockResizeObserver);
 
 describe('Carousel', () => {
+  // Retained local tests (AST-021 FR6): the carousel contract keeps the
+  // aria-roledescription outcomes ADVISORY until a current Carousel record
+  // adopts the APG parts, so these component assertions remain the gate for
+  // the slide and region role descriptions. Removal blocker: component:Carousel
+  // adopting APG Carousel's aria-roledescription as current.
+  it('has carousel ARIA attributes', () => {
+    render(
+      <Carousel aria-label="Photos">
+        <div>Item</div>
+      </Carousel>,
+    );
+    const region = screen.getByRole('region', {name: 'Photos'});
+    expect(region).toHaveAttribute('aria-roledescription', 'carousel');
+  });
+
+  it('exposes each slide as a group with aria-roledescription="slide" and a positional name', () => {
+    render(
+      <Carousel aria-label="Photos">
+        <div>One</div>
+        <div>Two</div>
+        <div>Three</div>
+      </Carousel>,
+    );
+    // APG carousel pattern: each slide container is role=group with
+    // aria-roledescription="slide" and an "N of M" accessible name.
+    const slides = screen.getAllByRole('group');
+    expect(slides).toHaveLength(3);
+    slides.forEach((slide, i) => {
+      expect(slide).toHaveAttribute('aria-roledescription', 'slide');
+      expect(slide).toHaveAccessibleName(`Slide ${i + 1} of 3`);
+    });
+  });
+
   it('renders children', () => {
     render(
       <Carousel aria-label="Test carousel">
