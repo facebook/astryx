@@ -208,6 +208,26 @@ export interface UseTreeFocusReturn<T extends HTMLElement = HTMLElement> {
  * </ul>
  * ```
  */
+
+/**
+ * The text typeahead matches against: the row's accessible name when it is
+ * authored with aria-labelledby (the label alone), otherwise its text content.
+ */
+function itemLabelText(item: HTMLElement): string {
+  const labelledBy = item.getAttribute('aria-labelledby');
+  if (labelledBy != null) {
+    const label = labelledBy
+      .split(/\s+/)
+      .map(id => item.ownerDocument.getElementById(id)?.textContent ?? '')
+      .join(' ')
+      .trim();
+    if (label !== '') {
+      return label;
+    }
+  }
+  return (item.textContent ?? '').trim();
+}
+
 export function useTreeFocus<T extends HTMLElement = HTMLElement>(
   options: UseTreeFocusOptions = {},
 ): UseTreeFocusReturn<T> {
@@ -399,7 +419,7 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
       const match = ordered.find(
         item =>
           !itemDisabled(item) &&
-          (item.textContent ?? '').trim().toLowerCase().startsWith(query),
+          itemLabelText(item).toLowerCase().startsWith(query),
       );
       if (match != null) {
         e.preventDefault();
