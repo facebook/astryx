@@ -1057,16 +1057,22 @@ declaration. A separate owner change declares the patch successor by default, or
 minor successor only when Cindy names it.
 
 Required pull-request lint does not compare main's declaration with stable or an active
-cut. That check created a post-publication bootstrap cycle without protecting package
-bytes. The canary publisher is the smaller authority boundary: it publishes only when one
-plain fixed-group declaration is strictly above the newest stable tag, skips equality,
-and fails below-stable or split declarations. Changeset admission independently refuses
-`[breaking]` work on a patch plan and admits it on a declared minor.
+cut, because prerelease ordering belongs to canary publication rather than ordinary PR
+admission. The canary publisher is the smaller authority boundary: it publishes only
+when one plain fixed-group declaration is strictly above the newest stable tag, skips
+equality, and fails below-stable or split declarations. Changeset admission independently
+refuses `[breaking]` work on a patch plan and admits it on a declared minor.
 
 Rejected: deriving the version from pending Changesets, because the entry being judged
 would be its own authorization; publishing a canary at or below stable; regenerating
 release outputs during merge-back; and folding the next owner plan into shipped-byte
 reconciliation.
+
+Rejected: a dated schedule file beside `package.json`, because two declarations of the
+next version can disagree.
+
+Rejected: resetting a newer main declaration to the released version, because release-
+branch authority owns shipped outputs, not post-cut planning on main.
 
 ### DEC-16 — Deprecation acts at authoring surfaces, not production runtime
 
