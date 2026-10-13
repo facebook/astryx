@@ -25,7 +25,7 @@ import {
   type MultiSelectorHandle,
   type MultiSelectorChange,
 } from './MultiSelector';
-import {useRef} from 'react';
+import {useRef, useState} from 'react';
 import {Icon} from '../Icon';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -1593,6 +1593,55 @@ describe('MultiSelector', () => {
       );
       const clear = screen.getByRole('button', {name: 'Clear all Fruit'});
       expect(clear).not.toHaveAttribute('tabIndex', '-1');
+    });
+
+    it('returns focus to the trigger when the clear button is activated by keyboard', async () => {
+      function Controlled() {
+        const [value, setValue] = useState(['Apple', 'Banana']);
+        return (
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={value}
+            onChange={setValue}
+            hasClear
+          />
+        );
+      }
+      const user = userEvent.setup();
+      render(<Controlled />);
+      screen.getByRole('button', {name: 'Clear all Fruit'}).focus();
+      await user.keyboard('{Enter}');
+      expect(
+        screen.queryByRole('button', {name: 'Clear all Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+    });
+
+    it('leaves focus in the search input when the clear button is clicked with the list open', async () => {
+      function Controlled() {
+        const [value, setValue] = useState(['Apple', 'Banana']);
+        return (
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={value}
+            onChange={setValue}
+            hasClear
+            hasSearch
+          />
+        );
+      }
+      const user = userEvent.setup();
+      const {container} = render(<Controlled />);
+      await user.click(container.querySelector('[aria-haspopup]') as Element);
+      const search = screen.getByRole('combobox', h);
+      search.focus();
+      await user.click(screen.getByRole('button', {name: 'Clear all Fruit'}));
+      expect(
+        screen.queryByRole('button', {name: 'Clear all Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(search).toHaveFocus();
     });
 
     it('scrolls the highlighted option into view during arrow navigation', async () => {
