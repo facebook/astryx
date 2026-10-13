@@ -1565,6 +1565,50 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The accordion contract's header role and name, the page Tab step between
+      # headers, the absence of arrow-key focus movement, and the single-expansion
+      # sibling collapse are accessibility-tree and real-browser facts that jsdom
+      # cannot observe. Run the contract's own fixture proof and the
+      # CollapsibleGroup binding whenever Collapsible source, the binding's
+      # stories, or the contract changes. Its own --output directory; the JSON
+      # report is the head-bound record, uploaded next.
+      - name: Run Accordion accessibility contract
+        id: accordion-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: accordion-contract/report.json
+        run: |
+          should_run=false
+          # Collapsible and the contract are matched by file name. If the base
+          # cannot be fetched, run.
+          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
+            if git diff --name-only "$BASE_SHA" HEAD \
+              | grep -qE '^(internal/a11y-spec/src/patterns/accordion|packages/core/src/Collapsible/|apps/storybook/stories/CollapsibleGroupA11y)'; then
+              should_run=true
+            fi
+          else
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "CollapsibleGroup and the accordion contract are not in PR scope; skipping accordion evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/accordion.chromium.spec.ts \
+            packages/core/src/Collapsible/__tests__/CollapsibleGroupAccordion.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output accordion-contract-output
+
+      - name: Upload Accordion accessibility contract evidence
+        if: ${{ !cancelled() && steps.accordion-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: accordion-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: accordion-contract/
+
       # The link contract's role, name, Tab, Enter, and pointer-release outcomes
       # are accessibility-tree and real-browser facts that jsdom cannot observe.
       # Run the contract's own fixture proof and the Link binding whenever Link
