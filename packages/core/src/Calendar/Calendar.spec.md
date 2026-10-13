@@ -79,11 +79,11 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 ## Public concepts
 
-| Concept     | Closed values or states                      | Meaning                                         | Availability by variant/orientation/state | Default                                          | Owner                | Stability | Invalid-value behavior       |
-| ----------- | -------------------------------------------- | ----------------------------------------------- | ----------------------------------------- | ------------------------------------------------ | -------------------- | --------- | ---------------------------- |
-| `mode`      | `single`, `range`                            | Whether one date or a start–end pair is picked. | Always                                    | `single`                                         | `component:Calendar` | stable    | Type-rejected                |
-| Focused day | one visible day                              | The day whose button holds the grid's Tab stop. | Always                                    | selected day, else today, else first enabled day | `component:Calendar` | stable    | Clamped to the visible range |
-| Day state   | selected, in range, today, disabled, outside | What a day cell exposes and paints.             | Per cell                                  | none                                             | `component:Calendar` | stable    | Not applicable               |
+| Concept     | Closed values or states                      | Meaning                                         | Availability by variant/orientation/state | Default                                                     | Owner                | Stability | Invalid-value behavior       |
+| ----------- | -------------------------------------------- | ----------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------- | -------------------- | --------- | ---------------------------- |
+| `mode`      | `single`, `range`                            | Whether one date or a start–end pair is picked. | Always                                    | `single`                                                    | `component:Calendar` | stable    | Type-rejected                |
+| Focused day | one visible day                              | The day whose button holds the grid's Tab stop. | Always                                    | selected day (`single`), else today, else first enabled day | `component:Calendar` | stable    | Clamped to the visible range |
+| Day state   | selected, in range, today, disabled, outside | What a day cell exposes and paints.             | Per cell                                  | none                                                        | `component:Calendar` | stable    | Not applicable               |
 
 ## Behavioral and layout contract
 
@@ -133,14 +133,15 @@ intentional decision. A `current` contract contains no unresolved rows.
   weekday `columnheader` cells, week `row`s, and day `gridcell`s that carry
   `aria-selected` when selected or in range and hold one `button` named by the
   full date, which exposes `aria-current="date"` for today and `aria-disabled`
-  when disabled; one day button holds the Tab stop — the selected day, else
-  today, else the first enabled day of the month.
+  when disabled; one day button holds the Tab stop — the selected day in
+  `single` mode, else today, else the first enabled day of the month.
   ArrowLeft and ArrowRight move by a day following the reading direction,
   ArrowUp and ArrowDown by a week, Home and End to the first and last day of the
   week, PageUp and PageDown by a month, and Enter or Space picks the focused day.
-  Implementation gap until its fix ships: PageUp and PageDown change the visible
-  month but target the day a week away and, when that day is not shown, focus
-  the month's first enabled day.
+  Implementation gap: PageUp and PageDown change the visible month but target
+  the day a week away and, when that day is not shown, focus the first day
+  button in the grid that is not natively disabled, which can be an
+  adjacent-month day.
 
 ## Design relationships
 
@@ -183,10 +184,10 @@ button.
 
 ## Verification map
 
-| Contract | Verification                                                                                                                                                                                                                                             | Representative states                                       | Mutation or failure expectation                                                                                                       | Audit section                  |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| FR1–FR5  | `Calendar.test.tsx` structure, selection, bounds, and navigation suites                                                                                                                                                                                  | single, range, two months, bounded                          | A missing header, a second Tab stop, a pickable disabled day, an inverted range, or a focused day scrolled out of view fails.         | `audit:Calendar/behavior`      |
-| AR1      | `Calendar.test.tsx` (grid roles and names, roving Tab stop, month-change announcements, day names) and `useGridFocus.test.tsx` (roving tabindex, RTL mirroring, Home/End); Grid accessibility contract (`internal/a11y-spec`, pending) bound to Calendar | LTR and RTL; month boundary; selected, today, disabled days | A day loses its role, name or state, two days hold a Tab stop, or an arrow, Home/End, Page or activation key stops moving or picking. | `audit:Calendar/accessibility` |
+| Contract | Verification                                                                                                                                                                                                                                                                                                                                                    | Representative states                                       | Mutation or failure expectation                                                                                                                    | Audit section                  |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| FR1–FR5  | `Calendar.test.tsx` structure, selection, bounds, and navigation suites                                                                                                                                                                                                                                                                                         | single, range, two months, bounded                          | A missing header, a second Tab stop, a pickable disabled day, an inverted range, or a focused day scrolled out of view fails.                      | `audit:Calendar/behavior`      |
+| AR1      | `Calendar.test.tsx` (grid roles and names, `aria-multiselectable` by mode, month-change announcements, day names) and `useGridFocus.test.tsx` (roving tabindex, RTL mirroring, Home/End at hook level); the one-Tab-stop-per-month, Home/End, Page and activation keys on Calendar itself under the Grid accessibility contract (`internal/a11y-spec`, pending) | LTR and RTL; month boundary; selected, today, disabled days | A day loses its role, name or state, two days in one month hold a Tab stop, or an arrow, Home/End, Page or activation key stops moving or picking. | `audit:Calendar/accessibility` |
 
 ## Decision log
 

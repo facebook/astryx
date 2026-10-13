@@ -69,7 +69,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Owns**
 
-- The confirmation anatomy and its order: title, description, Cancel, action.
+- The confirmation anatomy and its order: title, description, then Cancel and
+  action in the order FR3 states.
 - The alert-dialog role, its name and description links, and the least-destructive
   initial focus.
 - The imperative wrapper hook.
@@ -180,10 +181,10 @@ The dialog surface (the Dialog element AlertDialog renders) carries `alert-dialo
 
 ## Verification map
 
-| Contract | Verification                                                                                                                                                                                                                                        | Representative states                  | Mutation or failure expectation                                                                                            | Audit section                     |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| FR1–FR5  | `AlertDialog.test.tsx` and `useImperativeAlertDialog.test.tsx`                                                                                                                                                                                      | open, loading, inline, imperative      | A backdrop click closing, Escape not cancelling, the action closing by itself, or the inline path claiming the role fails. | `audit:AlertDialog/behavior`      |
-| AR1      | `AlertDialog.test.tsx` (role, `aria-labelledby`/`aria-describedby`, Cancel initial focus, Escape, keyboard suite) and `useImperativeAlertDialog.test.tsx`; Alert Dialog accessibility contract (`internal/a11y-spec`, pending) bound to AlertDialog | open modal; after Escape; after Cancel | The role, name link, description link, or Cancel initial focus is lost, or a click outside dismisses the dialog.           | `audit:AlertDialog/accessibility` |
+| Contract | Verification                                                                                                                                                                                                                                                                                                           | Representative states                  | Mutation or failure expectation                                                                                            | Audit section                     |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| FR1–FR5  | `AlertDialog.test.tsx` and `useImperativeAlertDialog.test.tsx`                                                                                                                                                                                                                                                         | open, loading, inline, imperative      | A backdrop click closing, Escape not cancelling, the action closing by itself, or the inline path claiming the role fails. | `audit:AlertDialog/behavior`      |
+| AR1      | `AlertDialog.test.tsx` (role, `aria-labelledby`/`aria-describedby`, Cancel initial focus, Escape, responsive button order, keyboard suite) and `useImperativeAlertDialog.test.tsx`; the no-backdrop-dismiss outcome and focus delegation under the Alert Dialog accessibility contract (`internal/a11y-spec`, pending) | open modal; after Escape; after Cancel | The role, name link, description link, or Cancel initial focus is lost, or a click outside dismisses the dialog.           | `audit:AlertDialog/accessibility` |
 
 ## Decision log
 
