@@ -17,7 +17,9 @@
  * Both modes use useListFocus for DOM-based keyboard navigation.
  *
  * The trigger is the design system's Button (`button`) or any control the
- * caller renders (`renderTrigger`).
+ * caller renders (`renderTrigger`). The menu anchors to the trigger unless the
+ * caller names another element (`anchorRef`); the trigger keeps focus, the
+ * press model and the menu's name either way.
  *
  * A sub-menu drills in on a phone through the view stack useMenuDrillIn
  * keeps; the root shows the drilled view in place of its rows.
@@ -377,7 +379,10 @@ export type DropdownMenuPresentation = AdaptivePresentation;
  * the control. Spread them all; add your own handlers beside them.
  */
 export interface DropdownMenuTriggerProps {
-  /** Attaches the control as the menu's anchor and focus-return target. */
+  /**
+   * Attaches the control as the menu's focus-return target, and as its anchor
+   * unless the menu has an `anchorRef`.
+   */
   ref: (element: HTMLElement | null) => void;
   /** The menu points at this id with `aria-labelledby`. */
   id: string;
@@ -426,9 +431,33 @@ interface DropdownMenuBaseProps extends BaseProps {
   /**
    * Minimum popover width. The menu may grow for its content but is capped to
    * the available viewport space. Ignored by bottom-sheet presentation.
-   * Defaults to the trigger width.
+   * Defaults to the anchor's width: the trigger's, or the `anchorRef`
+   * element's.
    */
   menuWidth?: number | string;
+  /**
+   * External ref to use as the menu's anchor, as on Popover. The pointer menu
+   * is placed against this element, with `placement` and `alignment` read
+   * against it, and takes its width by default, instead of the trigger's: a
+   * menu that lines up with a toolbar or a search row wider than its control.
+   * The trigger keeps focus and focus return, the press model, the keyboard
+   * opens and the menu's name. The ref is read whenever the menu renders,
+   * every open included, as on Popover: while it is empty (an element rendered
+   * only in some layouts, or a component that does not forward its ref), the
+   * trigger is the anchor, and an element that mounts or unmounts while the
+   * menu is open is followed at the menu's next render. Ignored by
+   * bottom-sheet presentation.
+   *
+   * @example
+   * ```
+   * const rowRef = useRef<HTMLDivElement>(null);
+   * <div ref={rowRef}>
+   *   <TextInput label="Search" />
+   *   <DropdownMenu anchorRef={rowRef} alignment="end" button={{label: 'Filter'}} items={items} />
+   * </div>
+   * ```
+   */
+  anchorRef?: React.RefObject<HTMLElement | null>;
   /**
    * Maximum menu height in pixels, for a menu that must fit its rows. Lifts
    * the default 300px cap; the viewport still bounds it. Ignored by
@@ -602,6 +631,7 @@ function DropdownMenuBottomSheet({
   alignment: _alignment,
   header,
   footer,
+  anchorRef: _anchorRef,
   className,
   style,
   xstyle,
@@ -848,6 +878,7 @@ function DropdownMenuPopover({
   hasChevron = true,
   placement = 'below',
   alignment = 'start',
+  anchorRef,
   presentation: _presentation,
   header,
   footer,
@@ -978,6 +1009,44 @@ function DropdownMenuPopover({
     }
   }, [isControlled, onClick, onOpenChange, renderTrigger, resetFocusReturn]);
 
+  // An `anchorRef` (as on Popover) moves the menu's anchor off the trigger;
+  // the trigger keeps focus, the press model and the menu's name, and only
+  // positioning reads the anchor. These effects are declared before the
+  // popover so they run ahead of its layer's own layout effects in each
+  // commit: the layer reads the anchor as it opens (its first-frame
+  // visibility read and its observer, spec:AST-059 FR5/FR8), so the anchor
+  // must already be set then and must not be cleared and re-set around an
+  // open. The first follows the caller's element once it is attached (an
+  // ancestor's ref attaches after this component's effects) and whenever it
+  // changes; the second clears it when the menu unmounts or drops the ref.
+  // While the caller's element is absent (not yet attached, rendered only in
+  // some layouts, or a component that does not forward its ref), the trigger
+  // is the anchor, as BaseTypeahead falls back to its input, so the menu is
+  // never placed against nothing.
+  const anchorSetterRef = useRef<(element: HTMLElement | null) => void>(
+    () => {},
+  );
+  const appliedAnchorRef = useRef<HTMLElement | null>(null);
+  useIsomorphicLayoutEffect(() => {
+    if (anchorRef == null) {
+      return;
+    }
+    const element = anchorRef.current ?? buttonRef.current;
+    if (element !== appliedAnchorRef.current) {
+      appliedAnchorRef.current = element;
+      anchorSetterRef.current(element);
+    }
+  });
+  useIsomorphicLayoutEffect(() => {
+    if (anchorRef == null) {
+      return;
+    }
+    return () => {
+      appliedAnchorRef.current = null;
+      anchorSetterRef.current(null);
+    };
+  }, [anchorRef]);
+
   const popover = usePopover({
     onHide: handleLayerHide,
     onShow: handleLayerShow,
@@ -988,6 +1057,7 @@ function DropdownMenuPopover({
     // modal dialog would announce an unnamed dialog around the menu.
     role: 'none',
   });
+  anchorSetterRef.current = popover.triggerRef;
 
   const closeMenu = useCallback(() => {
     popover.hide();
@@ -1447,12 +1517,17 @@ function DropdownMenuPopover({
     ) : (
       menu
     );
+  // The trigger is the menu's anchor unless the caller named another element
+  // (`anchorRef`; see the effects above the popover).
+  const attachTrigger = (el: HTMLElement | null) => {
+    buttonRef.current = el;
+    if (anchorRef == null) {
+      popover.triggerRef(el);
+    }
+  };
 
   const triggerProps: DropdownMenuTriggerProps = {
-    ref: el => {
-      buttonRef.current = el;
-      popover.triggerRef(el);
-    },
+    ref: attachTrigger,
     id: triggerId,
     onClick: handleButtonClick,
     onClickCapture: handleTriggerClickCapture,
@@ -1476,8 +1551,7 @@ function DropdownMenuPopover({
         <Button
           {...button}
           ref={el => {
-            buttonRef.current = el;
-            popover.triggerRef(el);
+            attachTrigger(el);
             const consumerRef = button.ref;
             if (typeof consumerRef === 'function') {
               consumerRef(el);
