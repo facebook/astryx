@@ -3,7 +3,7 @@ title: 'Astryx v0.7.0: better mobile experiences, clearer inputs, and stronger f
 description: 'What shipped after v0.6.0: easier forms, stronger mobile behavior, composable Markdown, better data display, clearer CLI integrations, and guided migrations.'
 date: '2026-10-12'
 type: 'update'
-draft: true
+draft: false
 authors:
   - 'team'
 tags:
