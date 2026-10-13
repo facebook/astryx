@@ -656,6 +656,9 @@ async function main() {
       if (!scoutStoryIds) throw new Error('The release plan scouts nothing.');
       const mine = shardStoryIds(scoutStoryIds, shard);
       // A shard job may run on a bigger runner than the config's pages assume.
+      if (has('concurrency') && flag('concurrency') === undefined) {
+        throw new Error('--concurrency requires a value.');
+      }
       const pages = flag('concurrency') ?? String(config.scoutConcurrency);
       const concurrency = Number(pages);
       if (!Number.isInteger(concurrency) || concurrency < 1) {
