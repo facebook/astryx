@@ -1594,12 +1594,17 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_FILE: slider-contract/report.json
         run: |
           should_run=false
-          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
-            if git diff --name-only "$BASE_SHA" HEAD \
-              | grep -qE '^(internal/a11y-spec/src/patterns/slider|internal/a11y-spec/src/harness|packages/core/src/Slider/|apps/storybook/stories/SliderA11y)'; then
-              should_run=true
-            fi
-          else
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/slider|internal/a11y-spec/src/harness|packages/core/src/Slider/|apps/storybook/stories/SliderA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
             should_run=true
           fi
           echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
