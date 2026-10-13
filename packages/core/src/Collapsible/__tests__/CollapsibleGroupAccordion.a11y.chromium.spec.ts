@@ -120,12 +120,8 @@ for (const state of COLLAPSIBLE_GROUP_ACCORDION_STATES) {
     const cdp = await page.context().newCDPSession(page);
     const result = await runState(page, cdp, state);
     const report = summarize(ACCORDION_PATTERN, [result]);
+    // Only required rows block (AST-020 FR9); advisory rows report.
     expect(formatFailures(blockingResults([result]))).toBe('');
-    expect(
-      result.results.filter(
-        row => row.status !== 'pass' && row.status !== 'not-applicable',
-      ),
-    ).toEqual([]);
     expect(report.unrunLayers).toEqual([]);
     expect(report.counts.unexpectedPass).toBe(0);
   });

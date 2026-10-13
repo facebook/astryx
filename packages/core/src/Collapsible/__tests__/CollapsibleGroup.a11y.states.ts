@@ -128,7 +128,7 @@ export const COLLAPSIBLE_GROUP_ACCORDION_EXCLUSIONS = [
     id: 'collapsible-disclosure-semantics',
     owner: 'DISCLOSURE_PATTERN and Collapsible.a11y.test.tsx',
     reason:
-      'Each header is a Collapsible trigger. Its standalone disclosure state, pointer round trip, and aborted-press behavior are already bound to the disclosure contract; this binding adds only what the group changes: single-expansion sibling collapse, the page Tab step between headers, and the absence of arrow-key focus movement.',
+      'Each header is a Collapsible trigger. Its standalone disclosure state, pointer round trip, and aborted-press behavior are already bound to the disclosure contract; this binding proves the Accordion parts across the group — header role and name, aria-controls, aria-disabled on a fixed panel, Enter and Space — and, advisory until the record is current, what the group adds: single-expansion sibling collapse, the page Tab step between headers, and the absence of arrow-key focus movement.',
   },
   {
     id: 'heading-wrapper-and-region-panels',

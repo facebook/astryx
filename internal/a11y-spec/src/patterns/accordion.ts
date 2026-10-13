@@ -498,7 +498,7 @@ export const ACCORDION_PATTERN: PatternContract<AccordionStateFacts> =
         verifiedBy:
           "the binding's component tests and page-level relationship review",
         reason:
-          'This contract encodes the optional trigger-to-content relationship. Other structure and relationships inside or around that content belong to the binding and its composition.',
+          'This contract encodes the required header-to-panel relationship (aria-controls). Other structure and relationships inside or around a panel belong to the binding and its composition.',
         coversRemainderOnly: true,
       },
       '1.3.2-meaningful-sequence': {
