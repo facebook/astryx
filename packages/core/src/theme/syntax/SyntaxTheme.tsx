@@ -20,6 +20,7 @@ import {
   type SyntaxThemeTokenKey,
 } from './defineSyntaxTheme';
 import {useMediaQuery} from '../../hooks/useMediaQuery';
+import {useTheme} from '../useTheme';
 
 // =============================================================================
 // Context
@@ -59,6 +60,29 @@ export interface UseSyntaxThemeReturn {
 // Hook
 // =============================================================================
 
+/** The strength of the default diff row paints: the muted tokens at 25%. */
+const DIFF_TINT_STRENGTH = 0.25;
+
+/**
+ * The colour `color-mix(in srgb, <hex> <strength>, transparent)` paints, as
+ * an `rgba()` a canvas can use. Returns undefined for a colour that is not a
+ * hex literal (the CSS default then stands).
+ */
+function mixWithTransparent(hex: string, strength: number): string | undefined {
+  const match = hex.trim().match(/^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
+  if (!match) return undefined;
+  let digits = match[1];
+  if (digits.length <= 4) {
+    digits = [...digits].map(d => d + d).join('');
+  }
+  const r = parseInt(digits.slice(0, 2), 16);
+  const g = parseInt(digits.slice(2, 4), 16);
+  const b = parseInt(digits.slice(4, 6), 16);
+  const alpha =
+    digits.length === 8 ? parseInt(digits.slice(6, 8), 16) / 255 : 1;
+  return `rgba(${r}, ${g}, ${b}, ${+(alpha * strength).toFixed(4)})`;
+}
+
 /**
  * Access the current syntax theme's token values, resolved for the active
  * color mode. Returns null if no SyntaxTheme provider is present.
@@ -72,30 +96,9 @@ export interface UseSyntaxThemeReturn {
  *   ctx.fillStyle = syntax.token('keyword');
  * }
  */
-/**
- * Resolve a CSS colour expression (`var()`, `color-mix()`, `light-dark()`) to
- * the colour the page would paint, through a probe element. Returns the input
- * unchanged where there is no document (server) or no colour to read.
- */
-function resolveCssColor(value: string): string {
-  if (
-    typeof document === 'undefined' ||
-    !/\b(var|color-mix|light-dark)\(/.test(value)
-  ) {
-    return value;
-  }
-  const probe = document.createElement('span');
-  probe.style.color = value;
-  probe.style.position = 'absolute';
-  probe.style.visibility = 'hidden';
-  document.body.appendChild(probe);
-  const resolved = getComputedStyle(probe).color;
-  probe.remove();
-  return resolved || value;
-}
-
 export function useSyntaxTheme(): UseSyntaxThemeReturn | null {
   const ctx = use(SyntaxThemeContext);
+  const page = useTheme();
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
   const effectiveMode: 'light' | 'dark' = prefersDark ? 'dark' : 'light';
 
@@ -112,18 +115,26 @@ export function useSyntaxTheme(): UseSyntaxThemeReturn | null {
     }
     // A diff row slot the theme did not set follows its CSS default; a canvas
     // consumer needs a colour it can paint, so the marker slots take the
-    // theme's own resolved punctuation colour and the paints are read back
-    // from the page's tokens through a probe element.
+    // theme's own resolved punctuation colour and the row paints derive from
+    // the enclosing page theme's resolved tokens (the same mix the CSS
+    // default makes), never from a probe outside the nearest Theme.
     for (const key of ALL_SYNTAX_KEYS) {
       if (resolved[key] !== undefined) continue;
       const fallback = ctx.theme.tokens[key] ?? '';
-      resolved[key] =
-        key === 'added-marker' || key === 'removed-marker'
-          ? (resolved.punctuation ?? resolveCssColor(fallback))
-          : resolveCssColor(fallback);
+      if (key === 'added-marker' || key === 'removed-marker') {
+        resolved[key] = resolved.punctuation ?? fallback;
+      } else if (key === 'added' || key === 'removed') {
+        const base = page.token(
+          key === 'added' ? '--color-success-muted' : '--color-error-muted',
+        );
+        resolved[key] =
+          mixWithTransparent(base, DIFF_TINT_STRENGTH) ?? fallback;
+      } else {
+        resolved[key] = fallback;
+      }
     }
     return resolved as Record<SyntaxThemeTokenKey, string>;
-  }, [ctx, effectiveMode]);
+  }, [ctx, effectiveMode, page]);
 
   if (!ctx || !tokens) {
     return null;

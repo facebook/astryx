@@ -29,11 +29,10 @@ describe('useSyntaxTheme diff slots', () => {
     expect(tokens.punctuation).toMatch(/^#|^rgb/);
     expect(tokens['added-marker']).toBe(tokens.punctuation);
     expect(tokens['removed-marker']).toBe(tokens.punctuation);
-    // The row paints are read back from the page through a probe element;
-    // jsdom cannot compute color-mix(), so only their presence is asserted
-    // here (the browser evidence measures the painted rows).
-    for (const key of ['added', 'removed', 'diff-header']) {
-      expect(tokens[key]).toBeTruthy();
-    }
+    // The row paints derive from the page theme's resolved muted tokens at
+    // the default strength, as rgba() a canvas can paint.
+    expect(tokens.added).toMatch(/^rgba\(\d+, \d+, \d+, 0\.\d+\)$/);
+    expect(tokens.removed).toMatch(/^rgba\(\d+, \d+, \d+, 0\.\d+\)$/);
+    expect(tokens['diff-header']).toBe('transparent');
   });
 });
