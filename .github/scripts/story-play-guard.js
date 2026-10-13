@@ -99,6 +99,18 @@ const TARGETS = [
     guards:
       'on a coarse pointer, the compact combobox and full Clear all hit area remain separate in RTL as well',
   },
+  {
+    component: 'Tokenizer',
+    story: 'core-inputgroup--with-tokenizer-overflow-end-controls',
+    guards:
+      'in an InputGroup, overflowing tokens scroll beside the clear button and end content, never under them, and the end controls stay put while the row scrolls',
+  },
+  {
+    component: 'Tokenizer',
+    story: 'core-inputgroup--with-tokenizer-overflow-end-controls-rtl',
+    guards:
+      'the grouped token row and its end controls stay separate in RTL as well',
+  },
   // spec:AST-059 — the layer runtime's viewport inset. Each story is one
   // claim of the record; the guard is its rendered evidence, at a desktop
   // viewport and at a phone's, because a cap that holds only where the
