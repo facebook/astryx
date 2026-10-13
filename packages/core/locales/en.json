@@ -347,6 +347,10 @@
     "defaultMessage": "Slide {current, number} of {total, number}",
     "description": "Screen-reader accessible name for one slide in a Carousel, giving its position. `current` is the 1-based slide number; `total` is the slide count."
   },
+  "@astryx.carousel.slides": {
+    "defaultMessage": "Slides",
+    "description": "Screen-reader name for the keyboard-focusable scrolling row inside a Carousel that holds the slides. Read when a keyboard user tabs onto the row; arrow keys then scroll it."
+  },
   "@astryx.chart.label": {
     "defaultMessage": "Chart",
     "description": "Generic screen-reader name for a Chart with no primary series and no consumer-supplied title. Noun (a data visualization), not a verb."

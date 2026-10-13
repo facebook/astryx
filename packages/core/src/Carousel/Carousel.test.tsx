@@ -40,6 +40,18 @@ describe('Carousel', () => {
     expect(region).toHaveAttribute('aria-roledescription', 'carousel');
   });
 
+  it('exposes the focusable scroll container as a named group', () => {
+    render(
+      <Carousel aria-label="Featured">
+        <div>One</div>
+        <div>Two</div>
+      </Carousel>,
+    );
+    const scroller = screen.getByRole('group', {name: 'Slides'});
+    expect(scroller).toHaveAttribute('tabindex', '0');
+    expect(scroller).toHaveClass('astryx-carousel-scroller');
+  });
+
   it('makes the scroll container keyboard-focusable', () => {
     render(
       <Carousel aria-label="Photos">
@@ -105,7 +117,11 @@ describe('Carousel', () => {
       );
       // APG carousel pattern: each slide container is role=group with
       // aria-roledescription="slide" and an "N of M" accessible name.
-      const slides = screen.getAllByRole('group');
+      // The scroll container is a named group too; slides carry the slide
+      // role description.
+      const slides = screen
+        .getAllByRole('group')
+        .filter(el => el.getAttribute('aria-roledescription') === 'slide');
       expect(slides).toHaveLength(3);
       slides.forEach((slide, i) => {
         expect(slide).toHaveAttribute('aria-roledescription', 'slide');
@@ -122,7 +138,11 @@ describe('Carousel', () => {
           <div>Two</div>
         </Carousel>,
       );
-      const slides = screen.getAllByRole('group');
+      // The scroll container is a named group too; slides carry the slide
+      // role description.
+      const slides = screen
+        .getAllByRole('group')
+        .filter(el => el.getAttribute('aria-roledescription') === 'slide');
       expect(slides).toHaveLength(2);
       expect(
         screen.getByRole('group', {name: 'Slide 1 of 2'}),
@@ -141,7 +161,11 @@ describe('Carousel', () => {
       );
       const region = screen.getByRole('region', {name: 'Gallery'});
       expect(region).toHaveAttribute('aria-roledescription', 'carousel');
-      const slides = screen.getAllByRole('group');
+      // The scroll container is a named group too; slides carry the slide
+      // role description.
+      const slides = screen
+        .getAllByRole('group')
+        .filter(el => el.getAttribute('aria-roledescription') === 'slide');
       expect(slides).toHaveLength(2);
       slides.forEach(slide => expect(region).toContainElement(slide));
     });
@@ -932,5 +956,4 @@ describe('Carousel', () => {
       );
     });
   });
-
 });

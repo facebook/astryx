@@ -598,6 +598,10 @@ export function Carousel({
       aria-roledescription="carousel">
       <div
         ref={composedRef}
+        // A focusable scroll container needs a role and a name (AST-025 FR12):
+        // a keyboard user landing here hears what the arrow keys will scroll.
+        role="group"
+        aria-label={t('@astryx.carousel.slides')}
         tabIndex={0}
         onWheel={handleWheel}
         {...mergeProps(
