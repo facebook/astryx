@@ -340,6 +340,86 @@ describe('app-theme doctor checks', () => {
     expect(result.message).not.toMatch(/\n\s+at /u);
   });
 
+  it('passes theme-owners when a built module imports its stylesheet', async () => {
+    const {dir, packageDir} = await fixture();
+    write(
+      path.join(packageDir, 'dist/ocean.js'),
+      "import './ocean.css';\nimport '@acme/themes/themes/ocean.css';\nexport const oceanTheme = {name: 'ocean', tokens: {}};\n",
+    );
+
+    const checks = await checkAppThemes(dir);
+
+    expect(checks.map(item => item.status)).toEqual(Array(10).fill('pass'));
+    expect(check(checks, 'theme-owners').message).toContain(
+      'every built module loads',
+    );
+    const cli = runDoctor(dir);
+    expect(cli.status).toBe(0);
+    expect(cli.stdout).not.toContain('could not load its built module');
+  }, 30_000);
+
+  it.each([
+    [
+      'a missing dependency',
+      "import '@acme/definitely-missing-dep';\nexport const oceanTheme = {name: 'ocean', tokens: {}};\n",
+      '@acme/definitely-missing-dep',
+    ],
+    [
+      'a throwing module',
+      "throw new Error('broken theme module');\nexport const oceanTheme = {name: 'ocean', tokens: {}};\n",
+      'broken theme module',
+    ],
+  ])(
+    'still fails theme-owners when a built module imports its stylesheet and has %s',
+    async (_label, rest, detail) => {
+      const {dir, packageDir} = await fixture();
+      write(
+        path.join(packageDir, 'dist/ocean.js'),
+        `import './ocean.css';\n${rest}`,
+      );
+
+      const result = check(await checkAppThemes(dir), 'theme-owners');
+
+      expect(result).toMatchObject({id: 'theme-owners', status: 'fail'});
+      expect(result.message).toContain(
+        'Theme "ocean" from @acme/themes could not load its built module',
+      );
+      expect(result.message).toContain(detail);
+    },
+  );
+
+  it("still fails theme-owners when the theme's stylesheet export is missing", async () => {
+    const {dir, packageDir} = await fixture();
+    write(
+      path.join(packageDir, 'dist/ocean.js'),
+      "import './ocean.css';\nexport const oceanTheme = {name: 'ocean', tokens: {}};\n",
+    );
+    fs.rmSync(path.join(packageDir, 'dist/ocean.css'));
+
+    const result = check(await checkAppThemes(dir), 'theme-owners');
+
+    expect(result).toMatchObject({id: 'theme-owners', status: 'fail'});
+    expect(result.message).toContain(
+      'Missing stylesheet export @acme/themes/themes/ocean.css',
+    );
+  });
+
+  it('still fails theme-owners when another stylesheet the built module imports is missing', async () => {
+    const {dir, packageDir} = await fixture();
+    write(
+      path.join(packageDir, 'dist/ocean.js'),
+      "import './ocean.css';\nimport './fonts.css';\nexport const oceanTheme = {name: 'ocean', tokens: {}};\n",
+    );
+
+    const result = check(await checkAppThemes(dir), 'theme-owners');
+
+    expect(result).toMatchObject({id: 'theme-owners', status: 'fail'});
+    expect(result.message).toContain(
+      'Theme "ocean" from @acme/themes could not load its built module',
+    );
+    expect(result.message).toContain('fonts.css');
+  });
+
   it('fails theme-owners for an ambiguous multi-theme record', async () => {
     const {dir, packageDir} = await fixture([{slug: 'ocean'}, {slug: 'reef'}]);
     const packageFile = path.join(packageDir, 'package.json');
