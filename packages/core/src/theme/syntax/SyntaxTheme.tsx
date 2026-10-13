@@ -72,6 +72,28 @@ export interface UseSyntaxThemeReturn {
  *   ctx.fillStyle = syntax.token('keyword');
  * }
  */
+/**
+ * Resolve a CSS colour expression (`var()`, `color-mix()`, `light-dark()`) to
+ * the colour the page would paint, through a probe element. Returns the input
+ * unchanged where there is no document (server) or no colour to read.
+ */
+function resolveCssColor(value: string): string {
+  if (
+    typeof document === 'undefined' ||
+    !/\b(var|color-mix|light-dark)\(/.test(value)
+  ) {
+    return value;
+  }
+  const probe = document.createElement('span');
+  probe.style.color = value;
+  probe.style.position = 'absolute';
+  probe.style.visibility = 'hidden';
+  document.body.appendChild(probe);
+  const resolved = getComputedStyle(probe).color;
+  probe.remove();
+  return resolved || value;
+}
+
 export function useSyntaxTheme(): UseSyntaxThemeReturn | null {
   const ctx = use(SyntaxThemeContext);
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
@@ -83,12 +105,22 @@ export function useSyntaxTheme(): UseSyntaxThemeReturn | null {
     }
     const resolved: Partial<Record<SyntaxThemeTokenKey, string>> = {};
     for (const key of ALL_SYNTAX_KEYS) {
-      // A diff row slot the theme did not set keeps its resolved default.
       const input = ctx.theme.__inputTokens[key];
+      if (input !== undefined) {
+        resolved[key] = resolveSyntaxTokenForMode(input, effectiveMode);
+      }
+    }
+    // A diff row slot the theme did not set follows its CSS default; a canvas
+    // consumer needs a colour it can paint, so the marker slots take the
+    // theme's own resolved punctuation colour and the paints are read back
+    // from the page's tokens through a probe element.
+    for (const key of ALL_SYNTAX_KEYS) {
+      if (resolved[key] !== undefined) continue;
+      const fallback = ctx.theme.tokens[key] ?? '';
       resolved[key] =
-        input === undefined
-          ? ctx.theme.tokens[key]
-          : resolveSyntaxTokenForMode(input, effectiveMode);
+        key === 'added-marker' || key === 'removed-marker'
+          ? (resolved.punctuation ?? resolveCssColor(fallback))
+          : resolveCssColor(fallback);
     }
     return resolved as Record<SyntaxThemeTokenKey, string>;
   }, [ctx, effectiveMode]);
