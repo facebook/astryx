@@ -140,6 +140,10 @@ export {
 } from './patterns/landmark';
 
 export {
+  MENU_BUTTON_PATTERN,
+  type MenuButtonStateFacts,
+} from './patterns/menu-button';
+export {
   LINK_PATTERN,
   type LinkCurrentToken,
   type LinkStateFacts,
