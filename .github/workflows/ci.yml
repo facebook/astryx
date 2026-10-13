@@ -1344,6 +1344,16 @@ jobs:
             --project chromium \
             --output table-min-width-output
 
+      # A CodeBlock viewport is a Tab stop only while its code overflows; jsdom
+      # has no layout, so only a real engine shows the stop appear with a wide
+      # or capped block and stay away from a short one.
+      - name: Run CodeBlock overflow tab-stop contract
+        run: |
+          pnpm exec playwright test \
+            packages/core/src/CodeBlock/__tests__/CodeBlockOverflowStop.a11y.chromium.spec.ts \
+            --project chromium \
+            --output codeblock-overflow-stop-output
+
       # A DropdownMenu header and footer sit beside the menu, outside its
       # role="menu" element, and join one Tab sequence with it. Focus order,
       # the popover's focus trap, the keyboard-only ring and a finger tap on a
