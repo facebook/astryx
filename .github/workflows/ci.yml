@@ -72,10 +72,14 @@ jobs:
       release_head: ${{ steps.release-authority.outputs.head || steps.main-authority.outputs.head }}
       release_plan_digest: ${{ steps.release-authority.outputs.planDigest }}
     steps:
+      # Full history only where the release-branch validator reads it (tags,
+      # the cut commit, release diffs). A PR's merge commit has the base tip
+      # as a parent, and a main pre-cut check fetches current main on top, so
+      # 50 commits are plenty there; the full clone took over a minute.
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 0
+          fetch-depth: ${{ ((github.event_name == 'workflow_dispatch' && inputs['release-branch'] != 'main') || (github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/v'))) && '0' || '50' }}
 
       - name: Fetch active release refs
         if: >-

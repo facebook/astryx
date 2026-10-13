@@ -664,6 +664,31 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     expect(result.stdout).not.toContain('AUDIT MUST NOT RUN');
   });
 
+  it('clones full history only where the release-branch validator reads it', () => {
+    const checkout = jobs['check-scope'].steps.find(step =>
+      step.uses?.startsWith('actions/checkout@'),
+    );
+    const expression = String(checkout.with['fetch-depth']).replace(
+      /^\$\{\{\s*|\s*\}\}$/g,
+      '',
+    );
+    const depth = (event, branch, baseRef = '') =>
+      Function(
+        'github',
+        'inputs',
+        'startsWith',
+        `return ${expression.replaceAll('==', '===').replaceAll('!===', '!==')};`,
+      )(
+        {event_name: event, base_ref: baseRef},
+        {'release-branch': branch},
+        (value, prefix) => String(value).startsWith(prefix),
+      );
+    expect(depth('workflow_dispatch', releaseBranch)).toBe('0');
+    expect(depth('pull_request', '', 'release/v0.6.5')).toBe('0');
+    expect(depth('workflow_dispatch', 'main')).toBe('50');
+    expect(depth('pull_request', '', 'main')).toBe('50');
+  });
+
   it('keeps exhaustive a11y contracts and their artifacts release-only', () => {
     for (const [job, name] of [
       ['a11y-contracts-shard', 'Run accessibility spec-test contracts'],
