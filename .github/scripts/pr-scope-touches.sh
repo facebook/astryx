@@ -25,13 +25,20 @@ if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
 fi
 base="$1"
 pattern="$2"
-depth="${PR_SCOPE_FETCH_DEPTH:-200}"
+depth="${PR_SCOPE_FETCH_DEPTH:-200}" # first fetch, then each deepening step
 head="$(git rev-parse HEAD)" || exit 2
 
 git fetch --quiet --no-tags --depth="$depth" origin "$base" "$head" 2>/dev/null || exit 2
-merge_base="$(git merge-base "$base" "$head" 2>/dev/null)" || exit 2
+# Deepen until the merge base is reachable, however far the branch is behind.
+until merge_base="$(git merge-base "$base" "$head" 2>/dev/null)"; do
+  # Complete history and still no merge base: genuinely unknown.
+  [ "$(git rev-parse --is-shallow-repository)" = true ] || exit 2
+  git fetch --quiet --no-tags --deepen="$depth" origin "$base" "$head" 2>/dev/null || exit 2
+done
 
-changed="$(git diff --name-only "$merge_base" "$head")" || exit 2
+# --no-renames lists both sides of a move, so moving a file out of a pattern
+# still counts as touching it.
+changed="$(git diff --no-renames --name-only "$merge_base" "$head")" || exit 2
 # Not piped into `grep -q`: under pipefail its early exit can fail the pipe.
 grep -qE "$pattern" <<<"$changed"
 case $? in

@@ -111,19 +111,53 @@ describe('pr-scope-touches', () => {
     expect(touches(shared)).toBe(0);
   });
 
-  it('is unknown when the merge base is out of reach', () => {
+  it('deepens until it finds a merge base far behind the base tip', () => {
     git(origin, 'checkout', '-q', '-b', 'feature');
     const head = commit(origin, 'a.md', 'a');
     git(origin, 'checkout', '-q', 'main');
     let base = '';
-    for (let i = 0; i < 4; i++) base = commit(origin, `b${i}.md`, `b${i}`);
+    for (let i = 0; i < 7; i++) base = commit(origin, `b${i}.md`, `b${i}`);
+    base = commit(
+      origin,
+      'packages/core/src/Link/__tests__/Link.a11y.chromium.spec.ts',
+      'link contract',
+    );
     checkout(head);
     const status = spawnSync('bash', [SCRIPT, base, LINK], {
       cwd: clone,
       encoding: 'utf8',
       env: {...process.env, PR_SCOPE_FETCH_DEPTH: '2'},
     }).status;
-    expect(status).toBe(2);
+    expect(status).toBe(1);
+  });
+
+  it('is unknown for unrelated histories', () => {
+    const base = commit(origin, 'a.md', 'a');
+    git(origin, 'checkout', '-q', '--orphan', 'other');
+    git(origin, 'rm', '-rqf', '.');
+    const head = commit(origin, 'packages/x.md', 'unrelated root');
+    checkout(head);
+    expect(touches(base)).toBe(2);
+  });
+
+  it('counts moving a matching file out of the pattern', () => {
+    commit(origin, 'apps/storybook/stories/LinkA11y.stories.tsx', 'story');
+    const shared = git(origin, 'rev-parse', 'HEAD');
+    git(origin, 'checkout', '-q', '-b', 'feature');
+    git(
+      origin,
+      'mv',
+      'apps/storybook/stories/LinkA11y.stories.tsx',
+      'apps/storybook/stories/Moved.stories.tsx',
+    );
+    git(origin, 'commit', '-q', '-m', 'move');
+    checkout(git(origin, 'rev-parse', 'HEAD'));
+    expect(
+      touches(
+        shared,
+        '^(packages/core/src/Link/|apps/storybook/stories/LinkA11y)',
+      ),
+    ).toBe(0);
   });
 
   it('is unknown, not out of scope, for unusable arguments', () => {
