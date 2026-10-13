@@ -775,6 +775,11 @@ export const RichTextEditor = function RichTextEditor({
   );
 };
 
+// Keeps the editor inside `@astryx/require-baseprops-passthrough`, which only
+// checks components that assign a top-level `displayName`. Without it, a
+// dropped `className`, `style` or `xstyle` on the root stops warning.
+RichTextEditor.displayName = 'RichTextEditor';
+
 /**
  * Keys that must not cancel an armed Tab escape: Escape (arming again),
  * Tab (the escape itself) and bare modifier presses — the Shift keydown that
