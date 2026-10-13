@@ -90,13 +90,13 @@ Consumer migration instructions belong in consumer docs and release notes.
 Draft requirements identify their basis so observed code is not mistaken for an
 intentional decision. A `current` contract contains no unresolved rows.
 
-| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                      | Basis                                                                  | Draft review state |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------ |
-| FR1 | Each rendered month is one `role="grid"` named for its month and year, with a `columnheader` per weekday and one `row` per week.                                                                                                                                                                                                         | shipped source and focused tests                                       | verify             |
-| FR2 | Exactly one day button within each rendered month holds `tabIndex={0}`; every other day button in that month is `-1`.                                                                                                                                                                                                                    | shipped `useGridFocus` behavior; Grid accessibility contract (pending) | verify             |
-| FR3 | A disabled day (outside bounds or rejected by a constraint) stays in the grid, is exposed as disabled, and cannot be picked.                                                                                                                                                                                                             | shipped source and focused tests                                       | verify             |
-| FR4 | In `range` mode the first pick starts the range and the second ends it, a second pick before the start swapping the two so the end never precedes the start; `minRangeSpan`/`maxRangeSpan` bound it. Escape, or picking the start day again when `minRangeSpan` is above 1, clears an in-progress range.                                 | shipped source and focused tests                                       | verify             |
-| FR5 | Moving the focused day across a month boundary navigates the visible month so the focused day stays visible, except in a two-month Calendar, where focus can land on the second month's first enabled day instead (AR1); an arrow can also land on a borrowed adjacent-month day, which is exposed `aria-disabled` and cannot be picked. | shipped source and focused tests                                       | verify             |
+| ID  | Candidate invariant                                                                                                                                                                                                                                                                                                                                                                                                                      | Basis                                                                  | Draft review state |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------ |
+| FR1 | Each rendered month is one `role="grid"` named for its month and year, with a `columnheader` per weekday and one `row` per week.                                                                                                                                                                                                                                                                                                         | shipped source and focused tests                                       | verify             |
+| FR2 | Exactly one day button within each rendered month holds `tabIndex={0}`; every other day button in that month is `-1`.                                                                                                                                                                                                                                                                                                                    | shipped `useGridFocus` behavior; Grid accessibility contract (pending) | verify             |
+| FR3 | A disabled day (outside bounds or rejected by a constraint) stays in the grid, is exposed as disabled, and cannot be picked.                                                                                                                                                                                                                                                                                                             | shipped source and focused tests                                       | verify             |
+| FR4 | In `range` mode the first pick starts the range and the second ends it, a second pick before the start swapping the two so the end never precedes the start; `minRangeSpan`/`maxRangeSpan` bound it. Escape, or picking the start day again when `minRangeSpan` is above 1, clears an in-progress range.                                                                                                                                 | shipped source and focused tests                                       | verify             |
+| FR5 | Moving the focused day across a month boundary navigates the visible month so the focused day stays visible, except in a two-month Calendar, where focus can land in the second month's grid on the target or on its first day button that is not natively disabled, which can be an `aria-disabled` borrowed day (AR1); an arrow can also land on a borrowed adjacent-month day, which is exposed `aria-disabled` and cannot be picked. | shipped source and focused tests                                       | verify             |
 
 ### Allowed variation
 
@@ -143,12 +143,14 @@ intentional decision. A `current` contract contains no unresolved rows.
   Implementation gaps: PageUp and PageDown change the visible month but target
   the day a week away and, when that day is not shown, focus the first day
   button in the grid that is not natively disabled, which can be an
-  adjacent-month day; the arrow keys can focus a borrowed adjacent-month
-  day that is `aria-disabled`, because cell focusability checks only native
-  `disabled`; and in a two-month Calendar, a key that changes the visible
-  months can leave focus on the second month's first enabled day instead of
-  the target day, because each month grid falls back to its own first enabled
-  day.
+  adjacent-month day; the arrow keys, Home and End can focus a borrowed
+  adjacent-month day that is `aria-disabled`, because cell focusability checks
+  only native `disabled`; and in a two-month Calendar, a key that changes the
+  visible months can leave focus in the second month's grid — on its own
+  button for the target day or, failing that, on its first day button that is
+  not natively disabled, which can be an `aria-disabled` borrowed day that
+  cannot be picked — instead of the target day, because each month grid falls
+  back on its own.
 
 ## Design relationships
 
