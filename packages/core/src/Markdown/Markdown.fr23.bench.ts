@@ -18,8 +18,10 @@
  * baseline, for a stable list and a recreated equivalent one. Each ratio
  * comes from one sample, never a selection by the fastest baseline.
  *
- * The harness retries a fresh process only when the A/A control is invalid.
- * A helper-overhead failure is never retried to obtain a passing sample.
+ * The harness replaces a fresh process when its A/A control is invalid. A
+ * helper-overhead result is never discarded: after an over-budget first
+ * attempt, each path is decided by the majority of up to nine attempts, and
+ * every attempt counts.
  */
 
 import {measureMarkdownPairedRatio} from './Markdown.fr23.sampling';
