@@ -185,6 +185,8 @@ interface UseComboboxResult {
   setHighlightedIndex: (index: number) => void;
   getItemId: (index: number) => string;
   onTriggerClick: () => void;
+  /** Open the popup as a click on the closed trigger would; whether it opened. */
+  open: () => boolean;
   onKeyDown: (e: React.KeyboardEvent) => void;
   onItemSelect: (item: SelectorOptionData) => void;
   onItemMouseEnter: (item: SelectorOptionData, index: number) => void;
@@ -244,6 +246,23 @@ export function useCombobox({
     [onSelect, closeAndReset],
   );
 
+  /**
+   * Open the popup from the trigger, the highlight on the selected option (or
+   * the first). The closed half of {@link onTriggerClick}; a press that opens
+   * the popup before the click calls it directly. Returns whether it opened.
+   */
+  const open = useCallback((): boolean => {
+    if (isDisabled || isOpen) {
+      return false;
+    }
+    const didOpen = onOpen() !== false;
+    if (didOpen && !hasSearch) {
+      const selectedIndex = findSelectedIndex();
+      setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    }
+    return didOpen;
+  }, [isDisabled, isOpen, onOpen, findSelectedIndex, hasSearch]);
+
   const onTriggerClick = useCallback(() => {
     if (isDisabled) {
       return;
@@ -251,13 +270,9 @@ export function useCombobox({
     if (isOpen) {
       closeAndReset();
     } else {
-      const didOpen = onOpen() !== false;
-      if (didOpen && !hasSearch) {
-        const selectedIndex = findSelectedIndex();
-        setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
-      }
+      open();
     }
-  }, [isDisabled, isOpen, onOpen, closeAndReset, findSelectedIndex, hasSearch]);
+  }, [isDisabled, isOpen, closeAndReset, open]);
 
   // The scroll effect lives here, the highlight owner, so every consumer
   // (Selector, CommandPalette) shares one hover/keyboard split (#6077).
@@ -435,6 +450,7 @@ export function useCombobox({
     setHighlightedIndex,
     getItemId,
     onTriggerClick,
+    open,
     onKeyDown,
     onItemSelect: selectItem,
     onItemMouseEnter,

@@ -4613,6 +4613,155 @@ describe('Selector press model', () => {
       'data-astryx-menu-press',
     );
   });
+
+  // The trigger half (module FR8): a mouse opens the list on press-down.
+  const mouse = {pointerType: 'mouse', pointerId: 3, button: 0};
+
+  it("a mouse press on the closed trigger opens the list at the press, held as the invoker; the gesture's click neither toggles nor reopens", () => {
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.pointerDown(trigger, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(trigger).toHaveFocus();
+    // The browser's light dismiss reads the release over the trigger as a
+    // dismissal unless the trigger is the popover's invoker.
+    const listbox = screen.getByRole('listbox', h);
+    expect(trigger).toHaveAttribute(
+      'popovertarget',
+      listbox.closest('[popover]')!.id,
+    );
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+  });
+
+  it('the opening release over the option under the trigger acts on nothing before the settle time', () => {
+    vi.useFakeTimers();
+    try {
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={onChange}
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      fireEvent.pointerDown(trigger, mouse);
+      // The selected option overlays the trigger, so the release lands on it.
+      const banana = screen.getByRole('option', {name: /Banana/, ...h});
+      fireEvent.pointerUp(banana, mouse);
+      fireEvent.click(banana, {detail: 1});
+      expect(onChange).not.toHaveBeenCalled();
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a press-opened list picks the option a mouse drags to and lets go on', () => {
+    const onChange = vi.fn();
+    render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, mouse);
+    const cherry = screen.getByRole('option', {name: /Cherry/, ...h});
+    fireEvent.pointerMove(cherry, mouse);
+    expect(trigger).toHaveAttribute('aria-activedescendant', cherry.id);
+    fireEvent.pointerUp(cherry, mouse);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('Cherry');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('a mouse press on the trigger of an open list closes it and does not reopen it in the same gesture', () => {
+    render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, mouse);
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.pointerDown(trigger, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalledTimes(1);
+  });
+
+  it("a finger opens through its tap's click, and a held finger opens nothing", () => {
+    vi.useFakeTimers();
+    try {
+      render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+      const trigger = screen.getByRole('combobox');
+      fireEvent.pointerDown(trigger, touch);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      act(() => {
+        vi.advanceTimersByTime(600);
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      fireEvent.pointerUp(trigger, touch);
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a disabled or read-only selector ignores the press, and a secondary button opens nothing', () => {
+    const {rerender} = render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    rerender(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        isReadOnly
+      />,
+    );
+    fireEvent.pointerDown(screen.getByRole('combobox'), mouse);
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    rerender(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+    fireEvent.pointerDown(screen.getByRole('combobox'), {...mouse, button: 2});
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('a caller onPointerDown on the trigger runs first and may prevent the press-open', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        onChange={() => {}}
+        onPointerDown={event => {
+          event.preventDefault();
+        }}
+      />,
+    );
+    const trigger = screen.getByRole('combobox');
+    fireEvent.pointerDown(trigger, mouse);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.pointerUp(trigger, mouse);
+    fireEvent.click(trigger, {detail: 1});
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
 });
 
 describe('Selector in a narrow row', () => {

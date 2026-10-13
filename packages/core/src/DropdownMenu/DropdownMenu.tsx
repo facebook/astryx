@@ -65,6 +65,7 @@ import {
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {useListFocus} from '../hooks/useListFocus';
 import {useMenuPress} from '../hooks/useMenuPress';
+import {holdInvokerThroughPress} from '../Layer/holdInvokerThroughPress';
 import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
@@ -517,33 +518,6 @@ export type DropdownMenuProps =
 // at render time so it respects the active InternationalizationProvider
 // locale.
 const DEFAULT_BUTTON_I18N_KEY = '@astryx.dropdownMenu.label' as const;
-
-/**
- * Keep `control` the invoker of popover `popoverId` for the rest of the press
- * in flight, so the native light dismiss of a `popover="auto"` does not read
- * the release over the trigger as a dismissal. The attribute is dropped a
- * task after the release, once light dismiss has run.
- */
-function holdInvokerThroughPress(
-  control: HTMLElement | null,
-  popoverId: string,
-): void {
-  if (control == null) {
-    return;
-  }
-  const doc = control.ownerDocument;
-  control.setAttribute('popovertarget', popoverId);
-  const onPressEnd = () => {
-    doc.removeEventListener('pointerup', onPressEnd, true);
-    doc.removeEventListener('pointercancel', onPressEnd, true);
-    // Light dismiss runs as the pointerup default action after listeners.
-    doc.defaultView?.setTimeout(() => {
-      control.removeAttribute('popovertarget');
-    }, 0);
-  };
-  doc.addEventListener('pointerup', onPressEnd, true);
-  doc.addEventListener('pointercancel', onPressEnd, true);
-}
 
 /** Text an assistive technology reads from `element`, `aria-hidden` left out. */
 function visibleText(element: Element): string {
