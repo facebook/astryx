@@ -94,6 +94,9 @@ import {useLocale, useTranslator} from '../i18n';
 
 /** Imperative handle for Calendar handleRef */
 
+/** How a month navigation moves the focused day: by its row offset in days, or by whole months. */
+type NavigationUnit = 'days' | 'months';
+
 export interface CalendarHandle {
   /** Navigate the calendar to show the month containing the given date */
   navigateTo: (date: ISODateString) => void;
@@ -391,15 +394,25 @@ export function Calendar({ref, ...props}: CalendarProps) {
 
   // Navigation handlers
   const navigateMonth = useCallback(
-    (delta: number, focusedDate?: ISODateString, offset?: number) => {
+    (
+      delta: number,
+      focusedDate?: ISODateString,
+      offset?: number,
+      unit: NavigationUnit = 'days',
+    ) => {
       const newPd = plainDateAddMonths(baseMonth, delta);
       const newISO = plainDateToISO(newPd);
 
-      // Calculate target focus date if a focused date was provided
+      // Move the focused day with the month: an arrow crossing the month edge
+      // moves by days (its row offset); a page moves by whole months so the
+      // focused day lands in the month now shown, on the same day of the month
+      // where it exists.
       if (focusedDate) {
         const currentPd = plainDateFromISO(focusedDate);
-        const daysToMove = offset ?? 7;
-        const targetPd = plainDateAddDays(currentPd, delta * daysToMove);
+        const targetPd =
+          unit === 'months'
+            ? plainDateAddMonths(currentPd, delta)
+            : plainDateAddDays(currentPd, delta * (offset ?? 7));
         setPendingFocus(plainDateToISO(targetPd));
       }
 
@@ -587,11 +600,11 @@ export function Calendar({ref, ...props}: CalendarProps) {
               setHoveredDate(date ? plainDateToISO(date) : null)
             }
             today={today}
-            onNavigatePrevious={(focusedDate, offset) =>
-              navigateMonth(-1, focusedDate, offset)
+            onNavigatePrevious={(focusedDate, offset, unit) =>
+              navigateMonth(-1, focusedDate, offset, unit)
             }
-            onNavigateNext={(focusedDate, offset) =>
-              navigateMonth(1, focusedDate, offset)
+            onNavigateNext={(focusedDate, offset, unit) =>
+              navigateMonth(1, focusedDate, offset, unit)
             }
             pendingFocus={pendingFocus}
             onPendingFocusHandled={() => setPendingFocus(null)}
@@ -626,8 +639,16 @@ interface MonthGridProps {
   onDayClick: (date: PlainDate) => void;
   onDayHover: (date: PlainDate | null) => void;
   today: PlainDate;
-  onNavigatePrevious?: (focusedDate: ISODateString, offset: number) => void;
-  onNavigateNext?: (focusedDate: ISODateString, offset: number) => void;
+  onNavigatePrevious?: (
+    focusedDate: ISODateString,
+    offset: number,
+    unit?: NavigationUnit,
+  ) => void;
+  onNavigateNext?: (
+    focusedDate: ISODateString,
+    offset: number,
+    unit?: NavigationUnit,
+  ) => void;
   pendingFocus?: ISODateString | null;
   onPendingFocusHandled?: () => void;
 }
@@ -773,14 +794,14 @@ function MonthGrid({
   const handlePageUp = useCallback(() => {
     const focusedDate = getFocusedDate();
     if (focusedDate) {
-      onNavigatePrevious?.(focusedDate, 7);
+      onNavigatePrevious?.(focusedDate, 1, 'months');
     }
   }, [getFocusedDate, onNavigatePrevious]);
 
   const handlePageDown = useCallback(() => {
     const focusedDate = getFocusedDate();
     if (focusedDate) {
-      onNavigateNext?.(focusedDate, 7);
+      onNavigateNext?.(focusedDate, 1, 'months');
     }
   }, [getFocusedDate, onNavigateNext]);
 

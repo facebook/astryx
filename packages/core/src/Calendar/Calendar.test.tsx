@@ -932,6 +932,35 @@ describe('Calendar', () => {
       });
     });
 
+    it('moves the focused day by a month with PageDown and PageUp, into the month now shown', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-31" />);
+
+      getDayButton(31).focus();
+      await user.keyboard('{PageDown}');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('February 2026');
+      });
+      // A month, not a week: Jan 31 lands on the last day of February.
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'aria-label',
+          expect.stringMatching(/February 28, 2026/),
+        );
+      });
+
+      await user.keyboard('{PageUp}');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('January 2026');
+      });
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'aria-label',
+          expect.stringMatching(/January 28, 2026/),
+        );
+      });
+    });
+
     it('announces the next month when paging the grid with PageDown', async () => {
       const user = userEvent.setup();
       render(<Calendar focusDate="2026-01-01" />);
