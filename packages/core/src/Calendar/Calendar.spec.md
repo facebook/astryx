@@ -90,13 +90,13 @@ Consumer migration instructions belong in consumer docs and release notes.
 Draft requirements identify their basis so observed code is not mistaken for an
 intentional decision. A `current` contract contains no unresolved rows.
 
-| ID  | Candidate invariant                                                                                                                                                                                  | Basis                            | Draft review state |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------ |
-| FR1 | Each rendered month is one `role="grid"` named for its month and year, with a `columnheader` per weekday and one `row` per week.                                                                     | shipped source and focused tests | verify             |
-| FR2 | Exactly one day button within each rendered month holds `tabIndex={0}`; every other day button in that month is `-1`.                                                                                | shipped `useGridFocus` behavior  | verify             |
-| FR3 | A disabled day (outside bounds or rejected by a constraint) stays in the grid, is exposed as disabled, and cannot be picked.                                                                         | shipped source and focused tests | verify             |
-| FR4 | In `range` mode the first pick starts the range and the second ends it, a second pick before the start swapping the two so the end never precedes the start; `minRangeSpan`/`maxRangeSpan` bound it. | shipped source and focused tests | verify             |
-| FR5 | Moving the focused day across a month boundary navigates the visible month so the focused day stays visible.                                                                                         | shipped source and focused tests | verify             |
+| ID  | Candidate invariant                                                                                                                                                                                                          | Basis                                                                  | Draft review state |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------ |
+| FR1 | Each rendered month is one `role="grid"` named for its month and year, with a `columnheader` per weekday and one `row` per week.                                                                                             | shipped source and focused tests                                       | verify             |
+| FR2 | Exactly one day button within each rendered month holds `tabIndex={0}`; every other day button in that month is `-1`.                                                                                                        | shipped `useGridFocus` behavior; Grid accessibility contract (pending) | verify             |
+| FR3 | A disabled day (outside bounds or rejected by a constraint) stays in the grid, is exposed as disabled, and cannot be picked.                                                                                                 | shipped source and focused tests                                       | verify             |
+| FR4 | In `range` mode the first pick starts the range and the second ends it, a second pick before the start swapping the two so the end never precedes the start; `minRangeSpan`/`maxRangeSpan` bound it.                         | shipped source and focused tests                                       | verify             |
+| FR5 | Moving the focused day across a month boundary navigates the visible month so the focused day stays visible; an arrow can also land on a borrowed adjacent-month day, which is exposed `aria-disabled` and cannot be picked. | shipped source and focused tests                                       | verify             |
 
 ### Allowed variation
 
@@ -138,10 +138,12 @@ intentional decision. A `current` contract contains no unresolved rows.
   ArrowLeft and ArrowRight move by a day following the reading direction,
   ArrowUp and ArrowDown by a week, Home and End to the first and last day of the
   week, PageUp and PageDown by a month, and Enter or Space picks the focused day.
-  Implementation gap: PageUp and PageDown change the visible month but target
+  Implementation gaps: PageUp and PageDown change the visible month but target
   the day a week away and, when that day is not shown, focus the first day
   button in the grid that is not natively disabled, which can be an
-  adjacent-month day.
+  adjacent-month day; and the arrow keys can focus a borrowed adjacent-month
+  day that is `aria-disabled`, because cell focusability checks only native
+  `disabled`.
 
 ## Design relationships
 
@@ -184,10 +186,10 @@ button.
 
 ## Verification map
 
-| Contract | Verification                                                                                                                                                                                                                                                                                                                                                    | Representative states                                       | Mutation or failure expectation                                                                                                                    | Audit section                  |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| FR1–FR5  | `Calendar.test.tsx` structure, selection, bounds, and navigation suites                                                                                                                                                                                                                                                                                         | single, range, two months, bounded                          | A missing header, a second Tab stop, a pickable disabled day, an inverted range, or a focused day scrolled out of view fails.                      | `audit:Calendar/behavior`      |
-| AR1      | `Calendar.test.tsx` (grid roles and names, `aria-multiselectable` by mode, month-change announcements, day names) and `useGridFocus.test.tsx` (roving tabindex, RTL mirroring, Home/End at hook level); the one-Tab-stop-per-month, Home/End, Page and activation keys on Calendar itself under the Grid accessibility contract (`internal/a11y-spec`, pending) | LTR and RTL; month boundary; selected, today, disabled days | A day loses its role, name or state, two days in one month hold a Tab stop, or an arrow, Home/End, Page or activation key stops moving or picking. | `audit:Calendar/accessibility` |
+| Contract | Verification                                                                                                                                                                                                                                                                                                                                  | Representative states                                       | Mutation or failure expectation                                                                                                                    | Audit section                  |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| FR1–FR5  | `Calendar.test.tsx` structure, selection, bounds, and navigation suites                                                                                                                                                                                                                                                                       | single, range, two months, bounded                          | A missing header, a second Tab stop, a pickable disabled day, an inverted range, or a focused day scrolled out of view fails.                      | `audit:Calendar/behavior`      |
+| AR1      | `Calendar.test.tsx` (grid roles and names, `aria-multiselectable` by mode, month-change announcements, day names) and `useGridFocus.test.tsx` (roving tabindex, RTL mirroring); the one-Tab-stop-per-month (FR2), Home/End, Page and activation keys on Calendar itself under the Grid accessibility contract (`internal/a11y-spec`, pending) | LTR and RTL; month boundary; selected, today, disabled days | A day loses its role, name or state, two days in one month hold a Tab stop, or an arrow, Home/End, Page or activation key stops moving or picking. | `audit:Calendar/accessibility` |
 
 ## Decision log
 

@@ -218,8 +218,10 @@ approved policy.
   `aria-selected` on the chosen day; ArrowLeft and ArrowRight move by a day
   following the reading direction, ArrowUp and ArrowDown by a week, Home and End
   to the ends of the week, PageUp and PageDown by a month, and Enter or Space
-  picks the focused day. Implementation gap: the horizontal arrows do not follow
-  the reading direction under RTL, and PageUp/PageDown do not page by a month.
+  picks the focused day. Implementation gaps: the horizontal arrows do not follow
+  the reading direction under RTL; PageUp/PageDown do not page by a month; and
+  a keyboard move can land on a neighbouring pane's dimmed, `aria-disabled` copy
+  of the target day instead of the real day in its own pane.
 
 ## Design relationships
 
