@@ -655,6 +655,12 @@ async function main() {
       const {scoutStoryIds} = await plan({scoutOnly: true});
       if (!scoutStoryIds) throw new Error('The release plan scouts nothing.');
       const mine = shardStoryIds(scoutStoryIds, shard);
+      // A shard job may run on a bigger runner than the config's pages assume.
+      const pages = flag('concurrency') ?? String(config.scoutConcurrency);
+      const concurrency = Number(pages);
+      if (!Number.isInteger(concurrency) || concurrency < 1) {
+        throw new Error(`--concurrency must be a positive integer, got ${pages}.`);
+      }
       process.stderr.write(
         `Scouting shard ${shard.index}/${shard.count}: ${mine.length} of ${scoutStoryIds.length} stories…\n`,
       );
@@ -663,7 +669,7 @@ async function main() {
         storybookDir,
         theme: config.defaultTheme,
         viewport: config.viewport,
-        concurrency: config.scoutConcurrency,
+        concurrency,
       });
       fs.mkdirSync(path.dirname(path.resolve(out)), {recursive: true});
       fs.writeFileSync(

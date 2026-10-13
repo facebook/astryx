@@ -689,6 +689,13 @@ describe('full release scope without PR metadata or maintenance writes', () => {
       'pnpm test:a11y-contract --shard=${{ matrix.shard }}/${{ strategy.job-total }}',
     );
     expect(contracts.env.A11Y_CONTRACT_WORKERS).toBe(4);
+    // Shard legs that run four pages or workers get four cores.
+    for (const job of ['visual-scout', 'pr-a11y-shard']) {
+      expect(jobs[job]['runs-on'], job).toBe('4-core-ubuntu');
+    }
+    expect(
+      step('visual-scout', 'Scout this shard of the release plan').run,
+    ).toContain('--concurrency 4');
     // Four workers need four cores; on two the CPU-bound specs time out.
     expect(jobs['a11y-contracts-shard']['runs-on']).toBe('4-core-ubuntu');
     expect(contracts['continue-on-error']).toBeUndefined();

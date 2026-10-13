@@ -1124,7 +1124,9 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3]
-    runs-on: 2-core-ubuntu-arm
+    # Four pages on four cores: on 2-core ARM runners each shard's scan took
+    # 11.5 minutes, the release check's slowest lane after the contracts.
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:
@@ -2121,7 +2123,9 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3]
-    runs-on: 2-core-ubuntu-arm
+    # Four pages on four cores: the scout is page-load bound, and on the rig
+    # this cut a shard's scout by a quarter against two pages on two cores.
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:
@@ -2160,6 +2164,7 @@ jobs:
             --storybook-dir apps/storybook/dist \
             --baseline .github/visual-baseline \
             --shard "${{ matrix.shard }}/${{ strategy.job-total }}" \
+            --concurrency 4 \
             --observations-out ".visual-scout/observations-${{ matrix.shard }}.json"
 
       - name: Upload scout shard
