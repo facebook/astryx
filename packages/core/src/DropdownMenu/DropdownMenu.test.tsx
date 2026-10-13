@@ -2861,6 +2861,30 @@ describe('DropdownMenu custom trigger', () => {
     );
   });
 
+  it('a disabled custom trigger never opens the bottom sheet', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        items={[{label: 'Edit'}, {label: 'Delete'}]}
+        presentation="bottom-sheet"
+        renderTrigger={({ref, ...props}) => (
+          <button type="button" ref={ref} aria-disabled="true" {...props}>
+            Project actions
+          </button>
+        )}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Project actions'});
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByRole('dialog', {name: 'Project actions'}),
+    ).not.toBeInTheDocument();
+  });
+
   it('a disabled custom trigger never opens the menu', async () => {
     const user = userEvent.setup();
     render(

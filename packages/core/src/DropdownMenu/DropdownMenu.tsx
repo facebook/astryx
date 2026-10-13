@@ -719,10 +719,10 @@ function DropdownMenuBottomSheet({
   const handleSheetTriggerClick = (event: React.MouseEvent<HTMLElement>) => {
     // A caller-rendered trigger that is natively or aria-disabled must not
     // open the sheet; the default Button already refuses its own click.
-    if (
-      event.currentTarget.matches(':disabled, [aria-disabled="true"]') ||
-      button.isDisabled === true
-    ) {
+    // The DOM check covers the built-in Button too (it renders aria-disabled
+    // when focusable-disabled); a caller's own enabled control wins over a
+    // `button.isDisabled` left on the props.
+    if (event.currentTarget.matches(':disabled, [aria-disabled="true"]')) {
       return;
     }
     onClick?.();
@@ -1203,7 +1203,6 @@ function DropdownMenuPopover({
       // Enter and Space, so the arrow keys, a press and a click would still
       // arrive here; a custom trigger may be natively disabled instead.
       if (
-        button.isDisabled === true ||
         buttonRef.current?.matches(':disabled, [aria-disabled="true"]') === true
       ) {
         return false;
@@ -1223,7 +1222,7 @@ function DropdownMenuPopover({
       }
       return true;
     },
-    [button.isDisabled, isControlled, popover],
+    [isControlled, popover],
   );
 
   const isMenuOpenNow = isControlled
