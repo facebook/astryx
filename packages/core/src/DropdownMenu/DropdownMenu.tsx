@@ -716,7 +716,15 @@ function DropdownMenuBottomSheet({
       openModalityRef.current = 'keyboard';
     }
   };
-  const handleSheetTriggerClick = () => {
+  const handleSheetTriggerClick = (event: React.MouseEvent<HTMLElement>) => {
+    // A caller-rendered trigger that is natively or aria-disabled must not
+    // open the sheet; the default Button already refuses its own click.
+    // The DOM check covers the built-in Button too (it renders aria-disabled
+    // when focusable-disabled); a caller's own enabled control wins over a
+    // `button.isDisabled` left on the props.
+    if (event.currentTarget.matches(':disabled, [aria-disabled="true"]')) {
+      return;
+    }
     onClick?.();
     setOpen(!isOpen);
   };
@@ -1190,6 +1198,15 @@ function DropdownMenuPopover({
       modality: 'keyboard' | 'pointer' = 'keyboard',
       notifyClick = false,
     ): boolean => {
+      // An unavailable trigger never opens the menu. Button keeps an
+      // aria-disabled trigger focusable for its tooltip and swallows only
+      // Enter and Space, so the arrow keys, a press and a click would still
+      // arrive here; a custom trigger may be natively disabled instead.
+      if (
+        buttonRef.current?.matches(':disabled, [aria-disabled="true"]') === true
+      ) {
+        return false;
+      }
       acceptedOpenRef.current = false;
       notifyClickOnShowRef.current = notifyClick;
       pendingControlledOpenRef.current = isControlled;
@@ -1328,7 +1345,11 @@ function DropdownMenuPopover({
             return;
           }
           focusLastOnOpenRef.current = e.key === 'ArrowUp';
-          openAndFocus();
+          if (!openAndFocus()) {
+            // A refused open (disabled trigger) must not leave ArrowUp's
+            // "land on the last row" armed for a later open.
+            focusLastOnOpenRef.current = false;
+          }
         }
         return;
       }
