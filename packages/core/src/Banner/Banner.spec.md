@@ -13,6 +13,8 @@ review_triggers: [public-api, behavior, layout, theming, accessibility]
 verified_by:
   [
     packages/core/src/Banner/Banner.test.tsx,
+    packages/core/src/Banner/__tests__/Alert.a11y.test.tsx,
+    packages/core/src/Banner/__tests__/Alert.a11y.chromium.spec.ts,
     packages/core/src/theme/themingTargets.test.ts,
     scripts/check-knowledge.mjs,
   ]
@@ -26,7 +28,7 @@ architecture:
     architecture:theme-compilation,
   ]
 contributing: []
-system_specs: [spec:AST-009]
+system_specs: [spec:AST-009, spec:AST-020, spec:AST-021]
 ---
 
 # Banner component contract
@@ -163,6 +165,12 @@ genuinely urgent content that should interrupt current speech.
 Dismissal focus handoff, disclosure controls, and accessible control names remain
 unchanged.
 
+The dedicated alert-state binding exercises only Banner renders that explicitly
+request `role="alert"` through the standard DOM surface. It proves the shared
+status-message contract's DOM, accessibility-tree, and focus-preservation
+outcomes without claiming what assistive technology announces. Announcement
+wording and timing remain under AST-009.
+
 ## Design relationships
 
 | Anatomy or state        | Design requirement                                                                                 | Representation authority       | Hierarchy role | Component contract |
@@ -219,6 +227,7 @@ the visible frame that owns whole-banner elevation and silhouette.
 | FR5                 | Compiler output plus browser/computed-style evidence           | Card with and without content; elevated card                        | `banner.borderRadius` unexpectedly reaches the frame/content, or docs claim that the current route already does.                        | `audit:Banner/radius`   |
 | FR6, FR7            | Implementation PR target, compiler, probe, and component tests | Card/section across none, low, med, and high elevation              | `banner-frame` is absent, uses another name, misses an axis, or moves the existing `banner` target.                                     | `audit:Banner/theming`  |
 | FR8                 | `Banner.test.tsx`, consumer docs, Accessibility Checklist A6   | Default info/success/warning/error; explicit status and alert roles | A visual status creates a live region, an explicit role is dropped, or docs tell builders to announce by conditionally mounting Banner. | `audit:Banner/a11y`     |
+| FR8 alert state     | `Alert.a11y.test.tsx` and `Alert.a11y.chromium.spec.ts`        | Explicit urgent error; explicit urgent dismissible warning          | Role, assertive channel, complete text, atomicity, or focus preservation regresses across a message update.                             | `audit:Banner/a11y`     |
 | Theming anatomy map | `scripts/check-knowledge.mjs`                                  | Eight anatomy entries and five current targets                      | Missing, extra, prefixed, stale, or unclaimed current mappings fail validation.                                                         | `audit:Banner/theming`  |
 
 ## Decision log

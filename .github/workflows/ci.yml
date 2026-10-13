@@ -1565,6 +1565,52 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # Banner's explicit alert states expose role, assertive channel, complete
+      # text, atomicity, and focus preservation as accessibility-tree and
+      # real-browser facts that jsdom cannot observe. Run the status-message
+      # contract's own fixture proof and the Banner alert binding whenever
+      # Banner source, the binding's stories, or the contract changes. Its own
+      # --output directory; the JSON report is the head-bound record, uploaded
+      # next.
+      - name: Run Banner alert accessibility contract
+        id: banner-alert-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: banner-alert-contract/report.json
+        run: |
+          should_run=false
+          # Banner and the contract are matched by file name so every Banner
+          # source file is covered. If the base cannot be fetched, run.
+          if git fetch --quiet --depth=1 origin "$BASE_SHA"; then
+            if git diff --name-only "$BASE_SHA" HEAD \
+              | grep -qE '^(internal/a11y-spec/src/patterns/status-message|packages/core/src/Banner/|apps/storybook/stories/AlertA11y)'; then
+              should_run=true
+            fi
+          else
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "Banner and the status-message contract are not in PR scope; skipping Banner alert evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/status-message.chromium.spec.ts \
+            packages/core/src/Banner/__tests__/Alert.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output banner-alert-contract-output
+
+      - name: Upload Banner alert accessibility contract evidence
+        if: ${{ !cancelled() && steps.banner-alert-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: banner-alert-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: banner-alert-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The link contract's role, name, Tab, Enter, and pointer-release outcomes
       # are accessibility-tree and real-browser facts that jsdom cannot observe.
       # Run the contract's own fixture proof and the Link binding whenever Link
