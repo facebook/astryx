@@ -689,6 +689,8 @@ describe('full release scope without PR metadata or maintenance writes', () => {
       'pnpm test:a11y-contract --shard=${{ matrix.shard }}/${{ strategy.job-total }}',
     );
     expect(contracts.env.A11Y_CONTRACT_WORKERS).toBe(4);
+    // Four workers need four cores; on two the CPU-bound specs time out.
+    expect(jobs['a11y-contracts-shard']['runs-on']).toBe('4-core-ubuntu');
     expect(contracts['continue-on-error']).toBeUndefined();
     // The join fails closed: a failed shard, or an evidence set no shard
     // produced, blocks release-check through a11y-contracts.

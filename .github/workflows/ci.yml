@@ -1952,7 +1952,9 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3]
-    runs-on: 2-core-ubuntu-arm
+    # One core per worker: on two cores, four workers starved the CPU-bound
+    # "every expectation" specs past their timeouts.
+    runs-on: 4-core-ubuntu
     permissions:
       contents: read
     steps:
