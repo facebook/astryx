@@ -30,6 +30,7 @@ const releaseJobs = [
   'pr-a11y',
   'a11y-contracts',
   'pr-rtl-shard',
+  'pr-rtl-merge',
   'pr-rtl',
   'release-check',
 ];
@@ -700,13 +701,11 @@ describe('full release scope without PR metadata or maintenance writes', () => {
   });
 
   it('keeps all canonical RTL packages and passes full scope to resolver and join', () => {
-    expect(jobs['pr-rtl-shard'].strategy.matrix.package).toEqual([
-      'core',
-      'lab',
-      'charts',
-      'richtext',
-      'vega',
-    ]);
+    expect([
+      ...new Set(
+        jobs['pr-rtl-shard'].strategy.matrix.include.map(leg => leg.package),
+      ),
+    ]).toEqual(['core', 'lab', 'charts', 'richtext', 'vega']);
     expect(step('pr-rtl-shard', 'Resolve RTL shard scope').run).toContain(
       '--force-full "${{ needs.check-components.outputs.force_full_component_audits }}"',
     );

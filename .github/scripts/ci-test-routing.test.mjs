@@ -281,7 +281,18 @@ describe('ci.yml RTL package sharding', () => {
   });
 
   it('runs one bounded shard for every canonical component package', () => {
-    expect(shard.strategy.matrix.package).toEqual([...COMPONENT_PACKAGE_NAMES]);
+    const legs = shard.strategy.matrix.include;
+    expect([...new Set(legs.map(leg => leg.package))]).toEqual([
+      ...COMPONENT_PACKAGE_NAMES,
+    ]);
+    // Each package's parts are numbered 1..parts exactly once.
+    for (const name of COMPONENT_PACKAGE_NAMES) {
+      const parts = legs.filter(leg => leg.package === name);
+      expect(parts.map(leg => leg.part)).toEqual(
+        Array.from({length: parts[0].parts}, (_, index) => index + 1),
+      );
+      expect(new Set(parts.map(leg => leg.parts)).size).toBe(1);
+    }
     expect(shard['runs-on']).toBe('4-core-ubuntu');
     expect(shard['timeout-minutes']).toBeLessThanOrEqual(30);
     expect(shard['continue-on-error']).not.toBe(true);
@@ -336,14 +347,39 @@ describe('ci.yml RTL package sharding', () => {
   });
 
   it('publishes a distinct scope manifest and optional report for each shard', () => {
-    const upload = shard.steps.find(step =>
-      step.uses?.startsWith('actions/upload-artifact@'),
+    const upload = shard.steps.find(
+      step => step.name === 'Upload RTL shard evidence',
     );
-    expect(upload.if).toBe('always()');
+    expect(upload.if).toBe('always() && matrix.parts == 1');
     expect(upload.with.name).toBe('rtl-audit-report-${{ matrix.package }}');
     expect(upload.with.path).toContain('rtl-shard-scope.json');
     expect(upload.with.path).toContain('rtl-audit-report.json');
     expect(upload.with['if-no-files-found']).toBe('error');
+    const part = shard.steps.find(step => step.name === 'Upload RTL part');
+    expect(part.if).toBe('always() && matrix.parts > 1');
+    expect(part.with.name).toBe(
+      'rtl-audit-part-${{ matrix.package }}-${{ matrix.part }}',
+    );
+    expect(part.with['if-no-files-found']).toBe('error');
+  });
+
+  it('joins split packages into the report a whole leg would upload', () => {
+    const merge = workflow.jobs['pr-rtl-merge'];
+    expect(merge.needs).toContain('pr-rtl-shard');
+    expect(merge.if).toContain('always()');
+    const commands = runLines(merge);
+    expect(commands).toContain('--merge-shards rtl-parts');
+    expect(commands).toContain('.github/scripts/rtl-report-completion.mjs');
+    expect(commands).toContain(
+      'case "$code" in 0|1) ;; *) exit "$code" ;; esac',
+    );
+    const upload = merge.steps.find(
+      step => step.name === 'Upload RTL shard evidence',
+    );
+    expect(upload.with.name).toBe('rtl-audit-report-core');
+    expect(upload.with['if-no-files-found']).toBe('error');
+    expect(join.needs).toContain('pr-rtl-merge');
+    expect(runLines(join)).toContain("needs.pr-rtl-merge.result == 'success'");
   });
 });
 
