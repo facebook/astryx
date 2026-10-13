@@ -1120,6 +1120,34 @@ describe('DateInput — calendar surface', () => {
     expect(document.activeElement).toHaveAttribute('data-date', '2026-04-01');
   });
 
+  it('follows the reading direction under RTL: ArrowLeft moves to the next day', () => {
+    renderAndOpen(
+      <InternationalizationProvider locale="en-US" dir="rtl">
+        <Controlled initial="2026-03-10" />
+      </InternationalizationProvider>,
+    );
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 10, 2026/,
+    });
+    day.focus();
+    fireEvent.keyDown(day, {key: 'ArrowLeft'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-03-11');
+    fireEvent.keyDown(document.activeElement!, {key: 'ArrowRight'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-03-10');
+  });
+
+  it('pages by a month with PageDown and PageUp, keeping the day where it exists', () => {
+    renderAndOpen(<Controlled initial="2026-03-31" />);
+    const day = within(pane('March 2026')).getByRole('button', {
+      name: /March 31, 2026/,
+    });
+    day.focus();
+    fireEvent.keyDown(day, {key: 'PageDown'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-30');
+    fireEvent.keyDown(document.activeElement!, {key: 'PageUp'});
+    expect(document.activeElement).toHaveAttribute('data-date', '2026-03-30');
+  });
+
   it('moves a week at a time with the vertical arrows', () => {
     renderAndOpen(<Controlled initial="2026-03-10" />);
     const day = within(pane('March 2026')).getByRole('button', {

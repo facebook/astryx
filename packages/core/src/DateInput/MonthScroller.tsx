@@ -55,6 +55,7 @@ import {
   type ISODateString,
   type PlainDate,
   plainDateAddDays,
+  plainDateAddMonths,
   plainDateDayOfWeek,
   plainDateFormat,
   plainDateIsEqual,
@@ -616,9 +617,8 @@ export function MonthScroller({
 
   // Move the keyboard focus by whole days and let the scroller follow. Paging
   // by month is PageUp/PageDown; everything else is the APG grid vocabulary.
-  const moveFocus = useCallback(
-    (from: PlainDate, deltaDays: number) => {
-      const next = plainDateAddDays(from, deltaDays);
+  const moveFocusTo = useCallback(
+    (from: PlainDate, next: PlainDate) => {
       const nextIndex = monthIndexOf(next);
       if (nextIndex < minMonthIndex || nextIndex > maxMonthIndex) {
         return;
@@ -631,18 +631,33 @@ export function MonthScroller({
     },
     [minMonthIndex, maxMonthIndex, scrollToMonth],
   );
+  const moveFocus = useCallback(
+    (from: PlainDate, deltaDays: number) =>
+      moveFocusTo(from, plainDateAddDays(from, deltaDays)),
+    [moveFocusTo],
+  );
+  // A month page keeps the day of the month where it exists (Jan 31 → Feb 28).
+  const moveFocusByMonths = useCallback(
+    (from: PlainDate, deltaMonths: number) =>
+      moveFocusTo(from, plainDateAddMonths(from, deltaMonths)),
+    [moveFocusTo],
+  );
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent, date: PlainDate) => {
       // Column within the displayed week, which is what Home/End move to —
       // not the day of the month.
       const column = (plainDateDayOfWeek(date) - weekStartsOn + 7) % 7;
+      // The horizontal arrows follow the reading direction (APG grid): under
+      // RTL the next day sits to the left.
+      const forward = isRTL ? 'ArrowLeft' : 'ArrowRight';
+      const backward = isRTL ? 'ArrowRight' : 'ArrowLeft';
       switch (event.key) {
-        case 'ArrowLeft':
+        case backward:
           event.preventDefault();
           moveFocus(date, -1);
           break;
-        case 'ArrowRight':
+        case forward:
           event.preventDefault();
           moveFocus(date, 1);
           break;
@@ -662,11 +677,19 @@ export function MonthScroller({
           event.preventDefault();
           moveFocus(date, 6 - column);
           break;
+        case 'PageUp':
+          event.preventDefault();
+          moveFocusByMonths(date, -1);
+          break;
+        case 'PageDown':
+          event.preventDefault();
+          moveFocusByMonths(date, 1);
+          break;
         default:
           break;
       }
     },
-    [moveFocus, weekStartsOn],
+    [isRTL, moveFocus, moveFocusByMonths, weekStartsOn],
   );
 
   // The focused day may have been in an unmounted pane a frame ago; focus it
