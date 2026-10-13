@@ -164,8 +164,11 @@ values used by hook state and painted geometry.
   maximum; Enter collapses a collapsible pane and restores it. Implementation gaps under `spec:AST-020/FR15`: the Handle
   does not name the pane it resizes with `aria-controls`; Enter reopens at the
   minimum rather than restoring the previous size the pattern expects; an
-  unbounded Handle carries no `aria-valuemax`; and Enter does not reopen a
-  collapsed pane whose `minSize` is below `collapsedSize`.
+  unbounded Handle whose region is a pixel-only configuration inside a
+  container carries no `aria-valuemax`, because measuring that container would
+  add an observer to an atomic pixel path (Performance and resources); and
+  Enter does not reopen a collapsed pane whose `minSize` is below
+  `collapsedSize`.
 
 ## Design relationships
 
@@ -250,7 +253,7 @@ composition.
 
 ### The Handle is an APG window splitter
 
-**Decision:** ResizeHandle already acts as one composite control with the splitter's role, value properties, and keyboard, so it adopts the pattern's required parts and its keyboard (AR1), with `aria-controls`, the previous-size restore on Enter, `aria-valuemax` on an unbounded Handle, and the small-`minSize` reopen recorded as implementation gaps; the inline arrows follow the reading direction because a key that moves the divider against the way it travels on screen is a defect. Decided by `cixzhang`, `2026-10-13`.
+**Decision:** ResizeHandle already acts as one composite control with the splitter's role, value properties, and keyboard, so it adopts the pattern's required parts and its keyboard (AR1), with `aria-controls`, the previous-size restore on Enter, `aria-valuemax` on an unbounded pixel-only Handle in a container, and the small-`minSize` reopen recorded as implementation gaps; the inline arrows follow the reading direction because a key that moves the divider against the way it travels on screen is a defect. Decided by `cixzhang`, `2026-10-13`.
 
 **Rejected:** a separate button to collapse the pane; a direction-free ArrowLeft under RTL.
 
