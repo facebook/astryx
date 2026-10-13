@@ -217,7 +217,9 @@ approved policy.
   `aria-selected` on the chosen day; ArrowLeft and ArrowRight move by a day
   following the reading direction, ArrowUp and ArrowDown by a week, Home and End
   to the ends of the week, PageUp and PageDown by a month, and Enter or Space
-  picks the focused day.
+  picks the focused day. Implementation gap until its fix ships: the horizontal
+  arrows do not yet follow the reading direction under RTL, and PageUp/PageDown
+  do not yet page by a month.
 
 ## Design relationships
 

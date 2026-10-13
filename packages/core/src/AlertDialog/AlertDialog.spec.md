@@ -92,18 +92,18 @@ Consumer migration instructions belong in consumer docs and release notes.
 Draft requirements identify their basis so observed code is not mistaken for an
 intentional decision. A `current` contract contains no unresolved rows.
 
-| ID  | Candidate invariant                                                                                                                | Basis                            | Draft review state |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------ |
-| FR1 | A modal AlertDialog opens through Dialog's native modal path and a click on the backdrop does not dismiss it.                      | shipped source and focused tests | verify             |
-| FR2 | Escape and the Cancel button both call `onOpenChange(false)`; the action button calls `onAction` and leaves closing to the caller. | shipped source and focused tests | verify             |
-| FR3 | The anatomy order is title, description, Cancel, action; the action may show a loading state while `isActionLoading`.              | shipped source and focused tests | verify             |
-| FR4 | `isInline` renders the same anatomy without modality and without the alert-dialog role.                                            | shipped source and public docs   | verify             |
-| FR5 | `useImperativeAlertDialog` returns `show`, `hide`, and the element to render, and owns `isOpen`/`onOpenChange` for its caller.     | shipped source and focused tests | verify             |
+| ID  | Candidate invariant                                                                                                                                                                                                                               | Basis                            | Draft review state |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------ |
+| FR1 | A modal AlertDialog opens through Dialog's native modal path and a click on the backdrop does not dismiss it.                                                                                                                                     | shipped source and focused tests | verify             |
+| FR2 | Escape and the Cancel button both call `onOpenChange(false)`; the action button calls `onAction` and leaves closing to the caller.                                                                                                                | shipped source and focused tests | verify             |
+| FR3 | The anatomy is title, description, then the buttons: Cancel then action on wider screens, the action stacked above Cancel on small screens, Cancel keeping initial focus either way; the action may show a loading state while `isActionLoading`. | shipped source and focused tests | verify             |
+| FR4 | `isInline` renders the same anatomy without modality and without the alert-dialog role.                                                                                                                                                           | shipped source and public docs   | verify             |
+| FR5 | `useImperativeAlertDialog` returns `show`, `hide`, and the element to render, and owns `isOpen`/`onOpenChange` for its caller.                                                                                                                    | shipped source and focused tests | verify             |
 
 ### Allowed variation
 
-- **AV1 — Layout.** Button order on narrow widths and spacing follow Dialog and
-  Layout without changing FR3.
+- **AV1 — Layout.** Spacing and button width follow Dialog and Layout; the
+  small-screen stacking and order are FR3's.
 
 ### Representative states
 
@@ -137,13 +137,13 @@ intentional decision. A `current` contract contains no unresolved rows.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                                       | Representation authority | Hierarchy role | Component contract |
-| ---------------- | -------------------------------------------------------- | ------------------------ | -------------- | ------------------ |
-| Title            | Names the decision.                                      | `component:Heading`      | Prominent      | FR3, AR1           |
-| Description      | States the consequence.                                  | `component:Text`         | Supporting     | FR3, AR1           |
-| Cancel button    | The safe way out; receives initial focus.                | `component:Button`       | Supporting     | FR2, AR1           |
-| Action button    | The consequential choice, with its variant and loading.  | `component:Button`       | Prominent      | FR2, FR3           |
-| Backdrop         | Separates the dialog from the page; does not dismiss it. | `component:Dialog`       | Supporting     | FR1                |
+| Anatomy or state | Design requirement                                                                             | Representation authority | Hierarchy role | Component contract |
+| ---------------- | ---------------------------------------------------------------------------------------------- | ------------------------ | -------------- | ------------------ |
+| Title            | Names the decision.                                                                            | `component:Heading`      | Prominent      | FR3, AR1           |
+| Description      | States the consequence.                                                                        | `component:Text`         | Supporting     | FR3, AR1           |
+| Cancel button    | The safe way out; receives initial focus.                                                      | `component:Button`       | Supporting     | FR2, AR1           |
+| Action button    | The consequential choice, with its variant and loading; stacked above Cancel on small screens. | `component:Button`       | Prominent      | FR2, FR3           |
+| Backdrop         | Separates the dialog from the page; does not dismiss it.                                       | `component:Dialog`       | Supporting     | FR1                |
 
 ### Theming anatomy
 

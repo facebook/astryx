@@ -36,7 +36,7 @@ system_specs: [spec:AST-020/FR15]
 | Area                    | Contract                                                                                                                                                                                                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Public contract         | None changes. `Calendar` and `CalendarProps` are exported from `@astryxdesign/core/Calendar`; `mode` selects a single date or a range, with `value`/`defaultValue`/`onChange`, bounds, constraints, span limits, focus date, and display options. |
-| Behavior                | One or two months render as day grids; a day is picked by pointer or keyboard; the focused day is one roving Tab stop that arrow, Home/End, and Page keys move, following the reading direction.                                                  |
+| Behavior                | One or two months render as day grids; a day is picked by pointer or keyboard; each month's focused day is its one roving Tab stop that arrow, Home/End, and Page keys move, following the reading direction.                                     |
 | End-user impact         | A keyboard or screen-reader user meets a named month grid, moves through it by day, week, and month, and hears each day's name, selection, today marker, and disabled state.                                                                      |
 | Builder impact          | None.                                                                                                                                                                                                                                             |
 | Compatibility/readiness | Released behavior as observed; this draft records it and adopts the APG Grid pattern for the day grid (AR1) under `spec:AST-020/FR15`.                                                                                                            |
@@ -93,7 +93,7 @@ intentional decision. A `current` contract contains no unresolved rows.
 | ID  | Candidate invariant                                                                                                                                                                                  | Basis                            | Draft review state |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------ |
 | FR1 | Each rendered month is one `role="grid"` named for its month and year, with a `columnheader` per weekday and one `row` per week.                                                                     | shipped source and focused tests | verify             |
-| FR2 | Exactly one day button across the rendered months holds `tabIndex={0}`; every other day button is `-1`.                                                                                              | shipped `useGridFocus` behavior  | verify             |
+| FR2 | Exactly one day button within each rendered month holds `tabIndex={0}`; every other day button in that month is `-1`.                                                                                | shipped `useGridFocus` behavior  | verify             |
 | FR3 | A disabled day (outside bounds or rejected by a constraint) stays in the grid, is exposed as disabled, and cannot be picked.                                                                         | shipped source and focused tests | verify             |
 | FR4 | In `range` mode the first pick starts the range and the second ends it, a second pick before the start swapping the two so the end never precedes the start; `minRangeSpan`/`maxRangeSpan` bound it. | shipped source and focused tests | verify             |
 | FR5 | Moving the focused day across a month boundary navigates the visible month so the focused day stays visible.                                                                                         | shipped source and focused tests | verify             |
@@ -109,10 +109,10 @@ intentional decision. A `current` contract contains no unresolved rows.
 
 | State                  | Required invariant                                              | Allowed variation     |
 | ---------------------- | --------------------------------------------------------------- | --------------------- |
-| single, nothing picked | Today holds the Tab stop; no day is selected.                   | Month shown.          |
+| single, nothing picked | Today holds its month's Tab stop; no day is selected.           | Month shown.          |
 | single, picked         | The selected day is exposed as selected and holds the Tab stop. | Month shown.          |
 | range, in progress     | The start is selected; hovered days preview the range.          | Pointer position.     |
-| two months             | Both grids are named; one Tab stop across both.                 | Which month is first. |
+| two months             | Both grids are named; one Tab stop in each.                     | Which month is first. |
 | bounded                | Days outside `min`/`max` are disabled.                          | Which days.           |
 
 ### Transformation and precedence order
@@ -138,6 +138,8 @@ intentional decision. A `current` contract contains no unresolved rows.
   ArrowLeft and ArrowRight move by a day following the reading direction,
   ArrowUp and ArrowDown by a week, Home and End to the first and last day of the
   week, PageUp and PageDown by a month, and Enter or Space picks the focused day.
+  Implementation gap until its fix ships: PageUp and PageDown change the visible
+  month but move the focused day by a week rather than a month.
 
 ## Design relationships
 
