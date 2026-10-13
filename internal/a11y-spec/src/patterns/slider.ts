@@ -304,9 +304,7 @@ export const SLIDER_PATTERN: PatternContract<SliderStateFacts> =
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
-        enforcement: 'advisory',
-        advisoryBecause:
-          "Page Up and Page Down are optional in the APG pattern; this becomes required once the binding's component record adopts them as current (AST-020 FR9).",
+        enforcement: 'required',
         run: async ({harness, subject, facts}) => {
           const large = facts.largeStep ?? 0;
           await focusOrFail(subject, 'the Page keys');
