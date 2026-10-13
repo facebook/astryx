@@ -142,8 +142,10 @@ intentional decision. A `current` contract contains no unresolved rows.
   week, PageUp and PageDown by a month, and Enter or Space picks the focused day;
   an arrow skips a day disabled by bounds or a constraint and continues in the
   same direction, crossing the month edge when it must; a key whose target
-  lies past `min` or `max`, or whose direction has no enabled day left,
-  changes nothing and keeps focus where it is.
+  lies past `min` or `max` changes nothing and keeps focus where it is, and
+  so does an arrow whose direction has no enabled day within a year; a page
+  onto a day disabled by a constraint still moves the month, and focus goes
+  to that month's first enabled day, or stays in the grid when it has none.
 
 ## Design relationships
 
