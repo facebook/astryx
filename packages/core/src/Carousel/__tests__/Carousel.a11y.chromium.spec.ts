@@ -21,6 +21,7 @@ import {
   formatFailures,
   neverExercised,
   summarize,
+  unmatchedKnownFailures,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
 import {
@@ -32,6 +33,7 @@ import {
   serveStorybook,
   type StaticServer,
 } from '@astryxdesign/a11y-spec/storybook';
+import {CAROUSEL_KNOWN_FAILURES} from './Carousel.a11y.known-failures';
 import {
   CAROUSEL_BINDING_STATES,
   type CarouselBindingRow,
@@ -96,6 +98,7 @@ async function runState(
     binding: 'Carousel',
     state: state.id,
     facts: state.facts,
+    knownFailures: CAROUSEL_KNOWN_FAILURES,
     mount: async () => {
       await mountState(page, state);
       return createChromiumHarness({
@@ -125,6 +128,7 @@ test('every expectation is exercised by at least one Carousel state', async ({
     results.push(await runState(page, cdp, state));
   }
   expect(neverExercised(results)).toEqual([]);
+  expect(unmatchedKnownFailures(CAROUSEL_KNOWN_FAILURES, results)).toEqual([]);
 });
 
 for (const state of CAROUSEL_BINDING_STATES) {
@@ -135,7 +139,10 @@ for (const state of CAROUSEL_BINDING_STATES) {
     expect(formatFailures(blockingResults([result]))).toBe('');
     expect(
       result.results.filter(
-        row => row.status !== 'pass' && row.status !== 'not-applicable',
+        row =>
+          row.status !== 'pass' &&
+          row.status !== 'not-applicable' &&
+          row.status !== 'known-failure',
       ),
     ).toEqual([]);
     expect(report.unrunLayers).toEqual([]);

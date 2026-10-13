@@ -18,6 +18,7 @@ import {
   summarize,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
+import {CAROUSEL_KNOWN_FAILURES} from './Carousel.a11y.known-failures';
 import {CAROUSEL_STATE_RENDERS} from './Carousel.a11y.renders';
 import {
   CAROUSEL_BINDING_STATES,
@@ -59,6 +60,7 @@ async function checkState(state: CarouselBindingRow): Promise<BindingResult> {
     binding: 'Carousel',
     state: state.id,
     facts: state.facts,
+    knownFailures: CAROUSEL_KNOWN_FAILURES,
     mount: async () => {
       render(CAROUSEL_STATE_RENDERS[state.id]());
       return createJsdomHarness({
@@ -81,6 +83,7 @@ describe('the shared Carousel pattern, jsdom lane', () => {
       binding: 'Carousel',
       state: state.id,
       facts: state.facts,
+      knownFailures: CAROUSEL_KNOWN_FAILURES,
       render: () => {
         render(CAROUSEL_STATE_RENDERS[state.id]());
       },

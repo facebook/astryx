@@ -16,6 +16,7 @@
 import {
   definePattern,
   type ApgRequirement,
+  type AstryxRecord,
   type PatternContract,
   type WcagCriterion,
 } from '../contract';
@@ -103,6 +104,14 @@ export interface CarouselStateFacts {
 
 const APG_NOT_FORMALLY_ADOPTED =
   'The current Carousel implementation and consumer docs use this APG mechanic, but no current component record adopts it as a reusable required gate.';
+const AST_025_FR12: AstryxRecord = {
+  standard: 'astryx',
+  id: 'spec:AST-025',
+  clause: 'FR12',
+  url: 'https://github.com/facebook/astryx/blob/17044ab1e814586691db43ae6fd71b8b9bb9ceb1/docs/specs/AST-025/spec.md#L137-L141',
+  requirement:
+    'A delivery surface that assigns keyboard scrolling to the viewport MUST add it to the tab order only while at least one applicable axis is effective, and MUST provide an appropriate role and accessible name.',
+};
 const TAB_BUDGET = 10;
 
 export const CAROUSEL_PATTERN: PatternContract<CarouselStateFacts> =
@@ -283,17 +292,16 @@ export const CAROUSEL_PATTERN: PatternContract<CarouselStateFacts> =
         id: 'carousel.slide.offscreen-exposed',
         outcome:
           'A slide outside the viewport remains in the accessibility tree so assistive-technology navigation does not lose it.',
-        sources: [APG_SLIDE_ROLE],
-        wcagOutcome:
-          'Supports WCAG 2.2 1.3.1 by preserving the carousel collection for programmatic navigation.',
-        covers: ['apg-interaction'],
+        sources: [WCAG_1_3_1],
+        covers: ['1.3.1-info-and-relationships'],
         appliesWhen: {
           condition: 'the binding designates an off-screen slide',
           test: facts => facts.part === 'slide' && facts.offscreen,
         },
         evidenceLayer: 'accessibility-tree',
         enforcement: 'advisory',
-        advisoryBecause: APG_NOT_FORMALLY_ADOPTED,
+        advisoryBecause:
+          'Carousel keeps every slide in the accessibility tree because it does not rotate or hide slides, but no current component record requires that for an off-screen slide; the collection relationship (WCAG 1.3.1) is what this proves.',
         run: async ({subject}) => {
           const {role, name} = await subject.computed();
           if (role == null || name.trim() === '') {
@@ -332,6 +340,32 @@ export const CAROUSEL_PATTERN: PatternContract<CarouselStateFacts> =
           await harness.press('Tab');
           if (await subject.isFocused()) {
             throw new Error('Tab did not leave the scroll container');
+          }
+        },
+      },
+      {
+        id: 'carousel.scroller.role-and-name',
+        outcome:
+          'A scroll container that takes keyboard focus is exposed with a role and an accessible name, so a user landing on it knows what they can scroll.',
+        sources: [WCAG_4_1_2, AST_025_FR12],
+        covers: ['4.1.2-name-role-value'],
+        appliesWhen: {
+          condition: 'the binding designates a focusable scroll container',
+          test: facts => facts.part === 'scroller' && facts.focusable,
+        },
+        evidenceLayer: 'accessibility-tree',
+        enforcement: 'required',
+        run: async ({subject}) => {
+          const {role, name} = await subject.computed();
+          if (role == null || role === 'generic' || role === 'none') {
+            throw new Error(
+              'the browser exposes the focusable scroll container with no role',
+            );
+          }
+          if (name.trim() === '') {
+            throw new Error(
+              'the browser computes no accessible name for the focusable scroll container',
+            );
           }
         },
       },
@@ -507,7 +541,7 @@ export const CAROUSEL_PATTERN: PatternContract<CarouselStateFacts> =
         owner: 'Button pattern and caller slide descendants',
         verifiedBy: 'Shared component contracts and the repository axe audit',
         reason:
-          'This contract owns the collection and slide identity only; semantics of controls and arbitrary descendants remain with their own patterns.',
+          "This contract owns the collection and slide identity and the focusable scroll container's role and name; semantics of controls and arbitrary descendants remain with their own patterns.",
         coversRemainderOnly: true,
       },
       '4.1.3-status-messages': {

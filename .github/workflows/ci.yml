@@ -1607,6 +1607,8 @@ jobs:
         with:
           name: carousel-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
           path: carousel-contract/
+          retention-days: 30
+          if-no-files-found: warn
 
       # The link contract's role, name, Tab, Enter, and pointer-release outcomes
       # are accessibility-tree and real-browser facts that jsdom cannot observe.

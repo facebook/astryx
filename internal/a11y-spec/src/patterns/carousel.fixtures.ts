@@ -43,6 +43,8 @@ interface FixtureOptions {
   readonly detachFirstSlide?: boolean;
   readonly hideThirdSlide?: boolean;
   readonly scrollerTabIndex?: number;
+  readonly scrollerRole?: string | null;
+  readonly scrollerLabel?: string | null;
   readonly trapTab?: boolean;
   readonly moveFocusOnNext?: boolean;
 }
@@ -59,6 +61,8 @@ function fixtureHtml(options: FixtureOptions = {}): string {
     detachFirstSlide = false,
     hideThirdSlide = false,
     scrollerTabIndex = 0,
+    scrollerRole = 'group',
+    scrollerLabel = 'Slides',
     trapTab = false,
     moveFocusOnNext = false,
   } = options;
@@ -68,7 +72,7 @@ function fixtureHtml(options: FixtureOptions = {}): string {
   return `
     <button type="button">Before</button>
     <div${mark('container')} role="${containerRole}"${containerLabel === '' ? '' : ` aria-label="${containerLabel}"`}${containerRoleDescription === '' ? '' : ` aria-roledescription="${containerRoleDescription}"`}>
-      <div${mark('scroller')} data-a11y-related="scroller" tabindex="${scrollerTabIndex}" style="display:flex;width:120px;overflow-x:auto"${trapTab ? ` onkeydown="if (event.key === 'Tab') event.preventDefault()"` : ''}>
+      <div${mark('scroller')} data-a11y-related="scroller"${scrollerRole == null ? '' : ` role="${scrollerRole}"`}${scrollerLabel == null ? '' : ` aria-label="${scrollerLabel}"`} tabindex="${scrollerTabIndex}" style="display:flex;width:120px;overflow-x:auto"${trapTab ? ` onkeydown="if (event.key === 'Tab') event.preventDefault()"` : ''}>
         ${detachFirstSlide ? '' : first}
         <div data-a11y-related="slide-2" role="group" aria-roledescription="slide" aria-label="Slide 2 of 3" style="flex:0 0 100px">Two</div>
         <div${mark('slide-3')} data-a11y-related="slide-3" role="group" aria-roledescription="slide" aria-label="Slide 3 of 3" style="flex:0 0 100px"${hideThirdSlide ? ' aria-hidden="true"' : ''}>Three</div>
@@ -198,6 +202,22 @@ export const CAROUSEL_FIXTURES: readonly CarouselFixture[] = [
     html: fixtureHtml({subject: 'slide-3', hideThirdSlide: true}),
   },
   {
+    id: 'violating-scroller-unnamed',
+    summary: 'a focusable scroll container with no role and no accessible name',
+    facts: facts({
+      part: 'scroller',
+      scrollable: true,
+      expectedName: '',
+      slideRelations: [],
+      focusable: true,
+    }),
+    html: fixtureHtml({
+      subject: 'scroller',
+      scrollerRole: null,
+      scrollerLabel: null,
+    }),
+  },
+  {
     id: 'violating-scroller-unreachable',
     summary: 'a scroll container outside the tab sequence',
     facts: facts({
@@ -248,6 +268,7 @@ export const CAROUSEL_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
   'carousel.slide.roledescription': ['violating-slide-roledescription'],
   'carousel.collection.contains-slides': ['violating-detached-slide'],
   'carousel.slide.offscreen-exposed': ['violating-offscreen-hidden'],
+  'carousel.scroller.role-and-name': ['violating-scroller-unnamed'],
   'carousel.scroller.reachable-and-escapable': [
     'violating-scroller-unreachable',
     'violating-scroller-trap',
@@ -272,6 +293,8 @@ const EXPECTED_FAILURES: Readonly<Record<string, string>> = {
     'the binding’s "slide-1" is not contained by the carousel',
   'carousel.slide.offscreen-exposed:violating-offscreen-hidden':
     'the off-screen slide is absent from the accessibility tree',
+  'carousel.scroller.role-and-name:violating-scroller-unnamed':
+    'the browser exposes the focusable scroll container with no role',
   'carousel.scroller.reachable-and-escapable:violating-scroller-unreachable':
     '10 presses of Tab never reached the scroll container',
   'carousel.scroller.reachable-and-escapable:violating-scroller-trap':
