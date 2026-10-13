@@ -177,17 +177,6 @@ export interface ResizableProps {
    * this existed has to keep compiling.
    */
   _onResizeCancel?: () => void;
-  /**
-   * Collapse the region, and expand it back to the size it had before it
-   * collapsed. A handle's Enter and double-click use these so the pane
-   * restores its previous position (APG window splitter), rather than
-   * emulating the toggle with a resize to the minimum.
-   *
-   * Optional for the same reason as `_onResizeCancel`: a hand-built object
-   * from before these existed has to keep compiling.
-   */
-  _collapse?: () => void;
-  _expand?: () => void;
   _minSizePx: number;
   _maxSizePx: number;
   _snaps: number[];
@@ -1044,8 +1033,6 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     _onResizeMove: onResizeMove,
     _onResizeEnd: onResizeEnd,
     _onResizeCancel: onResizeCancel,
-    _collapse: collapse,
-    _expand: expand,
     _minSizePx: resolvedMin,
     _maxSizePx: resolvedMax,
     _snaps: snaps,
@@ -1054,6 +1041,7 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     _direction: direction,
     _isResizableProps: true,
   };
+  collapseControls.set(props, {collapse, expand});
 
   return {
     size: isCollapsed ? 0 : size,
@@ -1109,6 +1097,31 @@ function useMultiResizable(
 // =============================================================================
 // Public API
 // =============================================================================
+
+/**
+ * Collapse/expand for a region, keyed by the `ResizableProps` object the hook
+ * returns. A handle's Enter and double-click use them so the pane restores
+ * its previous position (APG window splitter) rather than emulating the
+ * toggle with a resize to the minimum.
+ *
+ * Kept off `ResizableProps` on purpose: that type is exported, so a new field
+ * on it — optional or underscored — is a public delta. This module-private
+ * map and {@link getCollapseControls} are the package's own channel between
+ * the hook and the handle; neither is re-exported.
+ */
+type CollapseControls = {collapse: () => void; expand: () => void};
+const collapseControls = new WeakMap<ResizableProps, CollapseControls>();
+
+/**
+ * The collapse/expand pair the hook registered for `props`, or `undefined`
+ * for a hand-built `ResizableProps` object (which the handle then toggles
+ * with a resize gesture). Internal to the package.
+ */
+export function getCollapseControls(
+  props: ResizableProps,
+): CollapseControls | undefined {
+  return collapseControls.get(props);
+}
 
 /** Removed keys must fail even when a variable bypasses excess-property checks. */
 type RejectRemovedPixelBounds<Config> = Config extends unknown

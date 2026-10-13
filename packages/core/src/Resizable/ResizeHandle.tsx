@@ -46,7 +46,7 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {mergeProps, rtlStyles} from '../utils';
-import type {ResizableProps} from './useResizable';
+import {getCollapseControls, type ResizableProps} from './useResizable';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -364,18 +364,18 @@ export interface ResizeHandleProps extends Omit<
  * Collapse an open pane, or restore a collapsed one to the size it had before
  * it collapsed (APG window splitter: Enter "restores the splitter to its
  * previous position"). The hook's own collapse/expand do exactly that; a
- * hand-built `ResizableProps` without them falls back to a resize gesture to
- * the minimum, which also cannot reopen a pane whose minimum sits below its
+ * hand-built `ResizableProps` (no registered controls) falls back to a resize
+ * gesture to the minimum, which also cannot reopen a pane whose minimum sits below its
  * collapse threshold.
  */
 function toggleCollapse(resizable: ResizableProps): void {
-  if (resizable._isCollapsed) {
-    if (resizable._expand) {
-      resizable._expand();
-      return;
+  const controls = getCollapseControls(resizable);
+  if (controls) {
+    if (resizable._isCollapsed) {
+      controls.expand();
+    } else {
+      controls.collapse();
     }
-  } else if (resizable._collapse) {
-    resizable._collapse();
     return;
   }
   resizable._onResizeStart();
