@@ -299,9 +299,7 @@ export const CAROUSEL_PATTERN: PatternContract<CarouselStateFacts> =
           test: facts => facts.part === 'slide' && facts.offscreen,
         },
         evidenceLayer: 'accessibility-tree',
-        enforcement: 'advisory',
-        advisoryBecause:
-          'Carousel keeps every slide in the accessibility tree because it does not rotate or hide slides, but no current component record requires that for an off-screen slide; the collection relationship (WCAG 1.3.1) is what this proves.',
+        enforcement: 'required',
         run: async ({subject}) => {
           const {role, name} = await subject.computed();
           if (role == null || name.trim() === '') {
