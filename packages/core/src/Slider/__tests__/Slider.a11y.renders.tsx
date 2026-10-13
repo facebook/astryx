@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 /**
  * @file Slider.a11y.renders.tsx
  * @input One Slider binding state
