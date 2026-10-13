@@ -1122,6 +1122,97 @@ describe('Calendar', () => {
       expect(document.activeElement).toHaveAttribute('data-date');
     });
 
+    it('an arrow toward a direction where every remaining day is disabled changes nothing', async () => {
+      const user = userEvent.setup();
+      // Only January 2026 is enabled: nothing after January 31 can take focus
+      // (the walk looks a year ahead, so the constraint pins the year too).
+      const januaryOnly = (date: Date) =>
+        date.getFullYear() === 2026 && date.getMonth() === 0;
+      render(
+        <Calendar focusDate="2026-01-01" dateConstraints={[januaryOnly]} />,
+      );
+      getDayButton(28).focus();
+      await user.keyboard('{ArrowDown}');
+      // No month change, no focus drop: still January 28.
+      expect(screen.getByRole('grid')).toHaveAttribute(
+        'aria-label',
+        'January 2026',
+      );
+      expect(document.activeElement).toBe(getDayButton(28));
+    });
+
+    it('an arrow resolves the next enabled day in its direction first: weekdays-only ArrowRight from Friday January 30 reaches Monday February 2', async () => {
+      const user = userEvent.setup();
+      const weekdaysOnly = (date: Date) =>
+        date.getDay() !== 0 && date.getDay() !== 6;
+      render(
+        <Calendar focusDate="2026-01-01" dateConstraints={[weekdaysOnly]} />,
+      );
+      getDayButton(30).focus();
+      await user.keyboard('{ArrowRight}');
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2026-02-02',
+        );
+      });
+      // The month paged with it: February's grid is the one shown.
+      expect(screen.getByRole('grid')).toHaveAttribute(
+        'aria-label',
+        'February 2026',
+      );
+    });
+
+    it('an arrow whose next day in range does not exist changes nothing: max January 25, ArrowDown from January 21', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" max="2026-01-25" />);
+      getDayButton(21).focus();
+      await user.keyboard('{ArrowDown}');
+      expect(politeRegion()?.textContent ?? '').not.toContain('February 2026');
+      expect(document.activeElement).toBe(getDayButton(21));
+    });
+
+    it('a page whose target lies past max changes nothing and keeps focus', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" max="2026-02-10" />);
+      getDayButton(15).focus();
+      // February 15 is past max: no page, no focus drop.
+      await user.keyboard('{PageDown}');
+      // No announcement was made (the live region never mounted) and January
+      // is still the month shown.
+      expect(politeRegion()?.textContent ?? '').not.toContain('February 2026');
+      expect(getDayButton(15)).toHaveAttribute('data-date', '2026-01-15');
+      expect(document.activeElement).toBe(getDayButton(15));
+    });
+
+    it('in a two-month view a boundary blocks only out-of-range targets, not month movement', async () => {
+      const user = userEvent.setup();
+      render(
+        <Calendar focusDate="2026-01-01" min="2026-01-01" numberOfMonths={2} />,
+      );
+      // ArrowUp from February 3 reaches January 27 — in range, in the first
+      // grid — even though Previous is disabled at the January minimum.
+      getDayButton(3, 'February').focus();
+      await user.keyboard('{ArrowUp}');
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2026-01-27',
+        );
+      });
+      // PageDown from January 15 reaches February 15, already visible: no
+      // month change, focus moves to it.
+      getDayButton(15).focus();
+      await user.keyboard('{PageDown}');
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2026-02-15',
+        );
+      });
+      expect(getDayButton(15)).toBeInTheDocument();
+    });
+
     it('announces the next month when paging the grid with PageDown', async () => {
       const user = userEvent.setup();
       render(<Calendar focusDate="2026-01-01" />);
