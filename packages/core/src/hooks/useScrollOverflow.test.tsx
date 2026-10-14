@@ -100,7 +100,8 @@ describe('useScrollOverflow', () => {
       result.current.scrollRef(el);
     });
     // A resize delivered for the hidden box (a `display: none` or a
-    // `content-visibility: hidden` ancestor reports a zero box) is skipped too.
+    // `content-visibility: hidden` ancestor reports a zero box) is skipped
+    // too; a scroll is not (the next case).
     act(() => {
       deliverResize?.([resizeEntry(el)]);
     });
@@ -136,12 +137,49 @@ describe('useScrollOverflow', () => {
     expect(result.current.overflowStart).toBe(true);
     expect(result.current.overflowEnd).toBe(true);
 
-    // Revealed at the end edge: the resize that follows the reveal measures.
+    // Revealed at the end edge with a new size: the resize that follows the
+    // reveal measures (a reveal at the same size has no resize, and relies on
+    // the scroll having been measured: the next case).
     stubRendered(el, true);
     fakeScrollBox(el, {scrollWidth: 600, clientWidth: 300, scrollLeft: 300});
     act(() => {
       deliverResize?.([resizeEntry(el)]);
     });
+    expect(result.current.overflowStart).toBe(true);
+    expect(result.current.overflowEnd).toBe(false);
+    unmount();
+  });
+
+  it('measures a scroll while hidden, so a reveal at the same size is already right', () => {
+    const el = document.createElement('div');
+    fakeScrollBox(el, {scrollWidth: 600, clientWidth: 300});
+    stubRendered(el, true);
+    const {result, unmount} = renderHook(() => useScrollOverflow());
+
+    act(() => {
+      result.current.scrollRef(el);
+    });
+    expect(result.current.overflowStart).toBe(false);
+    expect(result.current.overflowEnd).toBe(true);
+
+    // Hidden, then scrolled by script to the end edge (a selected tab's
+    // reveal under a hidden panel): the scroll is measured.
+    stubRendered(el, false);
+    const scrolled = fakeScrollBox(el, {
+      scrollWidth: 600,
+      clientWidth: 300,
+      scrollLeft: 300,
+    });
+    act(() => {
+      el.dispatchEvent(new Event('scroll'));
+    });
+    expect(totalReads(scrolled)).toBeGreaterThan(0);
+    expect(result.current.overflowStart).toBe(true);
+    expect(result.current.overflowEnd).toBe(false);
+
+    // Revealed at the same size: no resize observation comes, and none is
+    // needed.
+    stubRendered(el, true);
     expect(result.current.overflowStart).toBe(true);
     expect(result.current.overflowEnd).toBe(false);
     unmount();
