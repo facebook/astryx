@@ -107,6 +107,8 @@ function createSubject(element: Element): Subject {
     },
     textContent: async () =>
       (element.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    descendantCount: async selector =>
+      element.querySelectorAll(selector).length,
     currentExists: async () => element.isConnected,
     isConnected: async () => element.isConnected,
     computed: async () =>

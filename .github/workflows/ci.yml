@@ -1865,6 +1865,54 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # The grid contract's role and name, and its arrow, Home, End and Enter
+      # results, are accessibility-tree and real-browser facts that jsdom cannot
+      # observe. Run the contract's own fixture proof and the Calendar binding
+      # whenever Calendar, the grid-focus hook, the harness, the binding's
+      # stories, or the contract changes. Its own --output directory; the JSON
+      # report is the head-bound record, uploaded next.
+      - name: Run Grid accessibility contract
+        id: grid-contract
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: grid-contract/report.json
+        run: |
+          should_run=false
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(internal/a11y-spec/src/patterns/grid|internal/a11y-spec/src/harness|packages/core/src/Calendar/|packages/core/src/hooks/useGridFocus|apps/storybook/stories/CalendarGridA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "Calendar and the grid contract are not in PR scope; skipping grid evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            internal/a11y-spec/src/patterns/grid.chromium.spec.ts \
+            packages/core/src/Calendar/__tests__/Calendar.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output grid-contract-output
+
+      - name: Upload Grid accessibility contract evidence
+        if: ${{ !cancelled() && steps.grid-contract.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: grid-contract-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: grid-contract/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The window-splitter contract's separator role and name, its pane
       # relationship, and its arrow, Enter, Home and End results are
       # accessibility-tree and real-browser facts that jsdom cannot observe.

@@ -147,6 +147,7 @@ export {
   ACCORDION_PATTERN,
   type AccordionStateFacts,
 } from './patterns/accordion';
+export {GRID_PATTERN, type GridStateFacts} from './patterns/grid';
 export {
   ALERT_DIALOG_PATTERN,
   type AlertDialogStateFacts,

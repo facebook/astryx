@@ -1651,15 +1651,6 @@ describe('Calendar', () => {
   });
 
   describe('aria-multiselectable', () => {
-    it('sets aria-multiselectable="true" on the grid in range mode', () => {
-      render(<Calendar mode="range" focusDate="2026-01-01" />);
-
-      expect(screen.getByRole('grid')).toHaveAttribute(
-        'aria-multiselectable',
-        'true',
-      );
-    });
-
     it('does not set aria-multiselectable in single mode', () => {
       render(<Calendar focusDate="2026-01-01" />);
 

@@ -661,6 +661,7 @@ export function createChromiumHarness(
       locator.evaluate(node =>
         (node.textContent ?? '').replace(/\s+/g, ' ').trim(),
       ),
+    descendantCount: selector => locator.locator(selector).count(),
     currentExists: async () => (await locator.count()) > 0,
     isConnected: async () => {
       const element = await capturedElement();
@@ -971,6 +972,7 @@ export function createChromiumHarness(
         related.evaluate(node =>
           (node.textContent ?? '').replace(/\s+/g, ' ').trim(),
         ),
+      descendantCount: selector => related.locator(selector).count(),
       currentExists: async () => (await related.count()) > 0,
       isConnected: () => related.evaluate(node => node.isConnected),
       computed: () => computedNode(cdp, related),

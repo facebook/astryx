@@ -97,6 +97,12 @@ export interface Subject {
   textValue(): Promise<string | null>;
   /** DOM layer: the subject's authored text content, whitespace-normalized. */
   textContent(): Promise<string>;
+  /**
+   * DOM layer: how many descendants match a CSS selector (`:scope` names the
+   * subject). Structure contracts count rows and cells with it; it never
+   * reaches into component-private markup beyond ARIA roles and attributes.
+   */
+  descendantCount(selector: string): Promise<number>;
   /** DOM layer: whether a current semantic subject resolves after an update. */
   currentExists(): Promise<boolean>;
   /** DOM layer: whether the originally designated subject is still connected. */
