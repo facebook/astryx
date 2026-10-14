@@ -844,6 +844,40 @@ export const LabRadioGroup: Story = {
   },
 };
 
+/**
+ * A section of a menu that holds one radio set gives the set a `title`
+ * instead of wrapping it in a DropdownMenuGroup: the heading shows as any
+ * group heading does, and the set is one group named by it, so a screen
+ * reader announces the name once.
+ */
+export const RadioGroupWithTitle: Story = {
+  name: 'Radio group with a title',
+  render: function RadioGroupWithTitleStory() {
+    const [hidden, setHidden] = useState('hide');
+    const [showDrafts, setShowDrafts] = useState(true);
+    return (
+      <div data-testid="radio-title-fixture">
+        <DropdownMenu button={{label: 'Filter'}}>
+          <DropdownMenuCheckboxItem
+            label="Show drafts"
+            value={showDrafts}
+            onChange={setShowDrafts}
+          />
+          <DropdownMenuDivider />
+          <DropdownMenuRadioGroup
+            value={hidden}
+            onChange={setHidden}
+            title="Hidden files">
+            <DropdownMenuRadioItem value="hide" label="Hide hidden files" />
+            <DropdownMenuRadioItem value="show" label="Show hidden files" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+        <output data-testid="hidden">{hidden}</output>
+      </div>
+    );
+  },
+};
+
 export const LabSelectableSizes: Story = {
   render: function LabSelectableSizesStory() {
     const [sm, setSm] = useState('a');

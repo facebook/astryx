@@ -52,7 +52,13 @@ export const docs = {
       name: 'label',
       type: 'string',
       description:
-        'Accessible name for the group, applied as aria-label so screen readers announce the radios as a named set, e.g. "Sort by". Required. Pass aria-labelledby (via base props) instead when the name already exists as a visible element.',
+        'Accessible name for the group, applied as aria-label so screen readers announce the radios as a named set, e.g. "Sort by". Required unless title is given. Pass aria-labelledby (via base props) instead when the name already exists as a visible element. With a title too, label names the group and the title stays a visible heading.',
+    },
+    {
+      name: 'title',
+      type: 'ReactNode',
+      description:
+        'A visible heading above the radios, with the same treatment as a DropdownMenuGroup heading, that names the group through aria-labelledby. With a title, label is optional. Give a menu section that holds one radio set this title instead of wrapping the set in a DropdownMenuGroup, so the set is one group with one name rather than two nested groups announced with the same name.',
     },
     {
       name: 'hasCloseOnSelect',
@@ -79,7 +85,9 @@ export const docsZh = {
     value: '组中当前选中的值。尚无选中项时传 undefined。',
     onChange: '所选值变化时触发的回调。',
     label:
-      '组的无障碍名称，作为 aria-label 应用，以便屏幕阅读器将单选项作为命名集合朗读，例如“Sort by”。必需。当名称已作为可见元素存在时，可改用 aria-labelledby（通过基础属性）。',
+      '组的无障碍名称，作为 aria-label 应用，以便屏幕阅读器将单选项作为命名集合朗读，例如“Sort by”。未提供 title 时必需。当名称已作为可见元素存在时，可改用 aria-labelledby（通过基础属性）。同时提供 title 时，由 label 命名该组，title 仍作为可见标题显示。',
+    title:
+      '显示在单选项上方的可见标题，样式与 DropdownMenuGroup 的标题相同，并通过 aria-labelledby 为该组命名。提供 title 时 label 可省略。菜单中只包含一组单选项的分区应使用此标题，而不是用 DropdownMenuGroup 包裹该组，这样该组只是一个具有一个名称的组。',
     hasCloseOnSelect: '选择某值是否关闭菜单。默认关闭。',
     children: '组成该组的 DropdownMenuRadioItem。',
   },
@@ -93,7 +101,10 @@ export const docsDense = {
   propDescriptions: {
     value: 'selected value (undefined = none)',
     onChange: 'fired when selected value changes',
-    label: 'accessible group name (applied as aria-label); required',
+    label:
+      'accessible group name (applied as aria-label); required unless title is given',
+    title:
+      'visible heading (DropdownMenuGroup treatment) that names the group via aria-labelledby; use it instead of a DropdownMenuGroup around one radio set',
     hasCloseOnSelect: 'close menu on select (default true)',
     children: 'the DropdownMenuRadioItems',
   },
