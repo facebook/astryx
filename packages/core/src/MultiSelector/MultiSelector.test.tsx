@@ -4379,6 +4379,7 @@ describe('MultiSelector footer', () => {
     {value: 'bug', label: 'Bug'},
     {value: 'feature', label: 'Feature'},
   ];
+  const door = () => screen.getByRole('button', {name: 'Manage labels', ...h});
 
   it('renders after the list, outside the listbox', async () => {
     const user = userEvent.setup();
@@ -4393,16 +4394,16 @@ describe('MultiSelector footer', () => {
       />,
     );
     await user.click(screen.getByRole('button', {name: 'Labels'}));
-    const door = screen.getByRole('button', {name: 'Manage labels', ...h});
     const listbox = screen.getByRole('listbox', h);
-    expect(listbox.contains(door)).toBe(false);
+    expect(listbox.contains(door())).toBe(false);
     expect(
-      listbox.compareDocumentPosition(door) & Node.DOCUMENT_POSITION_FOLLOWING,
+      listbox.compareDocumentPosition(door()) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(screen.getAllByRole('option', h)).toHaveLength(2);
   });
 
-  it('Tab from the search field and from its clear button moves into the footer, keeping the panel open', async () => {
+  it('makes the popover a modal dialog named by the label, and the trigger says so', async () => {
     const user = userEvent.setup();
     render(
       <MultiSelector
@@ -4414,28 +4415,28 @@ describe('MultiSelector footer', () => {
         footer={<button type="button">Manage labels</button>}
       />,
     );
-    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(trigger);
+    const dialog = screen.getByRole('dialog', {name: 'Labels', ...h});
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
     const search = screen.getByRole('combobox', h);
-    await waitFor(() => expect(search).toHaveFocus());
-    const door = screen.getByRole('button', {name: 'Manage labels', ...h});
-
-    await user.keyboard('{Tab}');
-    expect(door).toHaveFocus();
-    expect(search).toHaveAttribute('aria-expanded', 'true');
-
-    // With a query the clear button comes first, then the footer.
-    search.focus();
-    await user.type(search, 'Bu');
-    await user.keyboard('{Tab}');
-    expect(screen.getByRole('button', {name: /^Clear/, ...h})).toHaveFocus();
-    await user.keyboard('{Tab}');
-    expect(door).toHaveFocus();
-    expect(search).toHaveAttribute('aria-expanded', 'true');
+    const listbox = screen.getByRole('listbox', h);
+    for (const part of [search, listbox, door()]) {
+      expect(dialog.contains(part)).toBe(true);
+    }
+    // The trigger names the popover that holds the dialog; the search field
+    // still names the listbox, which holds only options.
+    const controlled = document.getElementById(
+      trigger.getAttribute('aria-controls') ?? '',
+    );
+    expect(controlled?.contains(dialog)).toBe(true);
+    expect(search).toHaveAttribute('aria-controls', listbox.id);
+    expect(within(listbox).getAllByRole('option', h)).toHaveLength(2);
+    expect(within(listbox).queryAllByRole('button', h)).toEqual([]);
   });
 
-  it('Tab past the last footer control and Escape inside the footer close the popover', async () => {
-    // jsdom treats the popover layer as display:none, so user-event cannot
-    // Tab between two footer controls; the Chromium spec walks that path.
+  it('Tab and Shift+Tab cycle through the search field, its clear button and the footer, and wrap', async () => {
     const user = userEvent.setup();
     render(
       <MultiSelector
@@ -4449,22 +4450,31 @@ describe('MultiSelector footer', () => {
     );
     const trigger = screen.getByRole('button', {name: 'Labels'});
     await user.click(trigger);
-    await waitFor(() => expect(screen.getByRole('combobox', h)).toHaveFocus());
-    await user.keyboard('{Tab}');
-    const door = screen.getByRole('button', {name: 'Manage labels', ...h});
-    expect(door).toHaveFocus();
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    await user.keyboard('{Tab}');
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    const search = screen.getByRole('combobox', h);
+    await waitFor(() => expect(search).toHaveFocus());
 
-    await user.click(trigger);
-    screen.getByRole('button', {name: 'Manage labels', ...h}).focus();
-    await user.keyboard('{Escape}');
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.keyboard('{Tab}');
+    expect(door()).toHaveFocus();
+    await user.keyboard('{Tab}');
+    expect(search).toHaveFocus();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(door()).toHaveFocus();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(search).toHaveFocus();
+
+    // With a query the clear button is a stop between the field and the
+    // footer.
+    await user.type(search, 'Bu');
+    await user.keyboard('{Tab}');
+    expect(screen.getByRole('button', {name: /^Clear/, ...h})).toHaveFocus();
+    await user.keyboard('{Tab}');
+    expect(door()).toHaveFocus();
+    await user.keyboard('{Tab}');
+    expect(search).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('only Tab from the last of several footer controls closes the popover', async () => {
-    const user = userEvent.setup();
+  it('walks several footer controls, skips a hidden one, and never closes on Tab', async () => {
     render(
       <MultiSelector
         label="Labels"
@@ -4475,30 +4485,31 @@ describe('MultiSelector footer', () => {
         footer={
           <>
             <button type="button">Manage labels</button>
+            <span style={{display: 'none'}}>
+              <button type="button">Hidden</button>
+            </span>
             <button type="button">Help</button>
           </>
         }
       />,
     );
     const trigger = screen.getByRole('button', {name: 'Labels'});
-    await user.click(trigger);
-    fireEvent.keyDown(
-      screen.getByRole('button', {name: 'Manage labels', ...h}),
-      {key: 'Tab'},
-    );
+    fireEvent.click(trigger);
+    const search = screen.getByRole('combobox', h);
+    const help = screen.getByRole('button', {name: 'Help', ...h});
+    door().focus();
+    fireEvent.keyDown(door(), {key: 'Tab'});
+    expect(help).toHaveFocus();
+    fireEvent.keyDown(help, {key: 'Tab'});
+    expect(search).toHaveFocus();
+    fireEvent.keyDown(search, {key: 'Tab', shiftKey: true});
+    expect(help).toHaveFocus();
+    fireEvent.keyDown(help, {key: 'Tab', shiftKey: true});
+    expect(door()).toHaveFocus();
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    fireEvent.keyDown(screen.getByRole('button', {name: 'Help', ...h}), {
-      key: 'Tab',
-      shiftKey: true,
-    });
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    fireEvent.keyDown(screen.getByRole('button', {name: 'Help', ...h}), {
-      key: 'Tab',
-    });
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('Tab from the trigger that owns the keyboard moves into the footer', async () => {
+  it('Escape inside the footer closes the panel', async () => {
     const user = userEvent.setup();
     render(
       <MultiSelector
@@ -4506,17 +4517,45 @@ describe('MultiSelector footer', () => {
         options={OPTIONS}
         value={[]}
         onChange={() => {}}
+        hasSearch
+        footer={<button type="button">Manage labels</button>}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    await user.click(trigger);
+    door().focus();
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('without search, focus moves into the listbox, which owns the keys, and the trigger reports no option', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
         footer={<button type="button">Manage labels</button>}
       />,
     );
     const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
     await user.click(trigger);
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(trigger).toHaveFocus();
+    const listbox = screen.getByRole('listbox', h);
+    await waitFor(() => expect(listbox).toHaveFocus());
+    expect(listbox).toHaveAttribute('tabindex', '0');
+    await user.keyboard('{ArrowDown}');
+    expect(listbox.getAttribute('aria-activedescendant')).toBeTruthy();
+    expect(trigger).not.toHaveAttribute('aria-activedescendant');
+    await user.keyboard('{Enter}');
+    expect(onChange).toHaveBeenCalledTimes(1);
+
     await user.keyboard('{Tab}');
-    expect(
-      screen.getByRole('button', {name: 'Manage labels', ...h}),
-    ).toHaveFocus();
+    expect(door()).toHaveFocus();
+    await user.keyboard('{Tab}');
+    expect(listbox).toHaveFocus();
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
@@ -4540,13 +4579,13 @@ describe('MultiSelector footer', () => {
     );
     const trigger = screen.getByRole('button', {name: 'Labels'});
     await user.click(trigger);
-    await user.click(screen.getByRole('button', {name: 'Manage labels', ...h}));
+    await user.click(door());
     expect(onManage).toHaveBeenCalledTimes(1);
     expect(onChange).not.toHaveBeenCalled();
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('the bottom sheet renders it outside the listbox, and Tab from the listbox reaches it', async () => {
+  it('the bottom sheet holds it inside its own dialog, with no second one, and Tab wraps', async () => {
     const user = userEvent.setup();
     render(
       <MultiSelector
@@ -4562,12 +4601,41 @@ describe('MultiSelector footer', () => {
     trigger.focus();
     await user.keyboard('{Enter}');
     const sheet = await screen.findByRole('dialog', {name: 'Labels'});
+    expect(screen.getAllByRole('dialog', h)).toEqual([sheet]);
     const listbox = within(sheet).getByRole('listbox');
-    const door = within(sheet).getByRole('button', {name: 'Manage labels'});
-    expect(listbox.contains(door)).toBe(false);
+    const control = within(sheet).getByRole('button', {name: 'Manage labels'});
+    expect(listbox.contains(control)).toBe(false);
     await waitFor(() => expect(listbox).toHaveFocus());
     await user.keyboard('{Tab}');
-    expect(door).toHaveFocus();
+    expect(control).toHaveFocus();
+    await user.keyboard('{Tab}');
+    expect(listbox).toHaveFocus();
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(control).toHaveFocus();
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('without a footer nothing changes: no dialog, a listbox popup, and Tab closes', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    await user.click(trigger);
+    expect(screen.queryByRole('dialog', h)).toBeNull();
+    expect(trigger).toHaveAttribute(
+      'aria-controls',
+      screen.getByRole('listbox', h).id,
+    );
+    await waitFor(() => expect(screen.getByRole('combobox', h)).toHaveFocus());
+    await user.keyboard('{Tab}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 });
