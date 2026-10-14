@@ -15,7 +15,7 @@ import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {DropdownMenu} from './DropdownMenu';
+import {DropdownMenu, type DropdownMenuTriggerProps} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {DropdownMenuGroup} from './DropdownMenuGroup';
@@ -3965,6 +3965,43 @@ describe('DropdownMenu header and footer', () => {
       screen.getByRole('dialog', {name: 'Labels', hidden: true}),
     ).toHaveAttribute('aria-modal', 'true');
   });
+
+  it.each([
+    [
+      'its own <label>',
+      (props: DropdownMenuTriggerProps) => (
+        <>
+          <label htmlFor={props.id}>Labels</label>
+          <button {...props} type="button" />
+        </>
+      ),
+    ],
+    [
+      "an input button's value",
+      (props: DropdownMenuTriggerProps) => (
+        <input {...props} type="button" value="Labels" />
+      ),
+    ],
+  ])(
+    'a custom trigger named by %s names the dialog like the menu',
+    async (_label, renderTrigger) => {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          header={<input aria-label="Filter labels" />}
+          renderTrigger={renderTrigger}>
+          <DropdownMenuItem label="Bug" />
+        </DropdownMenu>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Labels'}));
+      expect(
+        screen.getByRole('dialog', {name: 'Labels', hidden: true}),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('menu', {name: 'Labels', hidden: true}),
+      ).toBeInTheDocument();
+    },
+  );
 
   it('a custom trigger with no readable name still gets a dialog, named by the default label', async () => {
     const user = userEvent.setup();

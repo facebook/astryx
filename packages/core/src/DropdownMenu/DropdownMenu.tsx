@@ -592,6 +592,24 @@ function readAccessibleName(element: HTMLElement | null): string | undefined {
   if (label) {
     return label;
   }
+  // A form control is named by its own <label>s; an input button by its value.
+  const labels =
+    'labels' in element
+      ? Array.from((element as HTMLInputElement).labels ?? [])
+      : [];
+  const labelText = labels.map(visibleText).join(' ').trim();
+  if (labelText !== '') {
+    return labelText;
+  }
+  if (
+    element instanceof HTMLInputElement &&
+    ['button', 'submit', 'reset'].includes(element.getAttribute('type') ?? '')
+  ) {
+    const value = element.value.trim();
+    if (value !== '') {
+      return value;
+    }
+  }
   const text = visibleText(element);
   if (text !== '') {
     return text;
