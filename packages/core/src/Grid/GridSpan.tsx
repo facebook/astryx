@@ -47,6 +47,9 @@ const baseStyles = stylex.create({
     minWidth: 0, // Prevent overflow in grid
     // Make span fill grid cell and stretch children
     display: 'grid',
+    // The implicit `auto` column would grow to a child's min-content width;
+    // a zero minimum keeps it inside the span.
+    gridTemplateColumns: 'minmax(0, 1fr)',
     height: '100%',
   },
 });
