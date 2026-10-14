@@ -23,6 +23,7 @@ import {
 } from './index';
 import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
 import {Divider} from '../Divider';
+import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = vi.fn(function (
@@ -1095,6 +1096,101 @@ describe('ContextMenu press model', () => {
     fireEvent.click(item('Cut'), {detail: 1});
     expect(onPaste).toHaveBeenCalledTimes(1);
     expect(onCut).not.toHaveBeenCalled();
+  });
+});
+
+describe('ContextMenu open focus', () => {
+  const ITEMS = [{label: 'Cut'}, {label: 'Copy'}, {label: 'Paste'}];
+  const menu = () => screen.getByRole('menu', {hidden: true});
+  const item = (name: string) =>
+    screen.getByRole('menuitem', {name, hidden: true});
+  // A right-click is a secondary-button pointerdown, then a contextmenu at
+  // the pointer's position.
+  function rightClick(target: Element) {
+    fireEvent.pointerDown(target, {
+      pointerType: 'mouse',
+      pointerId: 1,
+      button: 2,
+    });
+    fireEvent.contextMenu(target, {clientX: 50, clientY: 15, detail: 1});
+  }
+
+  beforeEach(() => {
+    __resetInteractionModalityForTest();
+  });
+
+  it('a right-click opens with the menu focused and no row highlighted', async () => {
+    render(
+      <ContextMenu items={ITEMS}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    rightClick(screen.getByText('Right-click me'));
+    await waitFor(() => expect(menu()).toHaveFocus());
+    expect(document.activeElement?.getAttribute('role')).toBe('menu');
+  });
+
+  it('a long press opens with the menu focused and no row highlighted', async () => {
+    // Only the long-press delay is faked; the open's focus frame stays real.
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    try {
+      render(
+        <ContextMenu items={ITEMS} data-testid="ctx">
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+      fireEvent.touchStart(screen.getByTestId('ctx'), {
+        touches: [{clientX: 20, clientY: 20}],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+    await waitFor(() => expect(menu()).toHaveFocus());
+    expect(document.activeElement?.getAttribute('role')).toBe('menu');
+  });
+
+  it('after a pointer open, ArrowDown reaches the first row', async () => {
+    render(
+      <ContextMenu items={ITEMS}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    rightClick(screen.getByText('Right-click me'));
+    await waitFor(() => expect(menu()).toHaveFocus());
+    fireEvent.keyDown(menu(), {key: 'ArrowDown'});
+    expect(item('Cut')).toHaveFocus();
+  });
+
+  it('a keyboard-invoked open still focuses the first row', async () => {
+    render(
+      <ContextMenu items={ITEMS}>
+        <button type="button">Target</button>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByRole('button', {name: 'Target'}), {
+      clientX: 0,
+      clientY: 0,
+      detail: 0,
+    });
+    await waitFor(() => expect(item('Cut')).toHaveFocus());
+  });
+
+  it('Shift+F10 reported at the focused element still focuses the first row', async () => {
+    render(
+      <ContextMenu items={ITEMS}>
+        <button type="button">Target</button>
+      </ContextMenu>,
+    );
+    const target = screen.getByRole('button', {name: 'Target'});
+    // The page was last used with a pointer, then the key: real browsers
+    // report the contextmenu at the focused element, with no detail.
+    fireEvent.pointerDown(document.body, {pointerType: 'mouse', pointerId: 1});
+    fireEvent.keyDown(target, {key: 'F10', shiftKey: true});
+    fireEvent.contextMenu(target, {clientX: 30, clientY: 12, detail: 0});
+    await waitFor(() => expect(item('Cut')).toHaveFocus());
   });
 });
 
