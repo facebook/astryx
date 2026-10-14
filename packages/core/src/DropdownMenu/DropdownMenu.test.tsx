@@ -3952,10 +3952,7 @@ describe('DropdownMenu header and footer', () => {
         header={<input aria-label="Filter labels" />}
         renderTrigger={props => (
           <button {...props} type="button">
-            <svg viewBox="0 0 16 16">
-              <title>Labels</title>
-              <circle cx="8" cy="8" r="4" />
-            </svg>
+            <img alt="Labels" src="" />
           </button>
         )}>
         <DropdownMenuItem label="Bug" />
