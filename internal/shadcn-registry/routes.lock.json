@@ -477,6 +477,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-bottom-sheet-stack",
+      "path": "components/lab/bottom-sheet-stack",
+      "aliases": []
+    },
+    {
       "name": "component-lab-chart-area",
       "path": "components/lab/chart-area",
       "aliases": []

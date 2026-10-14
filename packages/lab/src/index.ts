@@ -267,6 +267,12 @@ export {
   type MobileTokenizerChange,
 } from './MobileTokenizer';
 
+// BottomSheetStack — Lab host that stacks Core BottomSheet and
+// BottomSheetSwitcher levels in one shared dialog. Every sheet rendered under
+// the stack is one level; levels stack in tree order and only the top is
+// interactive.
+export {BottomSheetStack, type BottomSheetStackProps} from './BottomSheetStack';
+
 // RichTextEditor (RFC facebook/astryx#3899) has graduated out of @astryxdesign/lab
 // into its own canary-only package, @astryxdesign/richtext, so it can be canaried
 // independently by an adopting application. Import it from there:

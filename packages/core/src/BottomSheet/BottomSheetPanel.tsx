@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheetPanel.tsx
- * @input Uses React, StyleX, theme tokens, text/provider boundaries, container padding, sheet gestures, shared scroll behavior, and the host label
+ * @input Uses React, StyleX, theme tokens, text/provider boundaries, container padding, sheet gestures, shared scroll behavior, the host label, and the unstable_stack host reader
  * @output Internal BottomSheetPanel with a keyboard-reachable scrolling body and motion-state types
  * @position Shared presentation layer for standalone and switcher BottomSheets
  *
@@ -70,6 +70,7 @@ import {
 } from './snapOffsets';
 import {useMobileKeyboard} from './useMobileKeyboard';
 import {useSheetGestures} from './useSheetGestures';
+import {unstable_useBottomSheetStackHost as useBottomSheetStackHost} from './unstable_stack';
 
 const HEIGHT_BUDGETS = {
   hug: '92dvh',
@@ -425,6 +426,28 @@ function parseTransitionTime(value: string): number | null {
   return normalizedValue.endsWith('ms') ? time : time * 1000;
 }
 
+/**
+ * Wraps every `on*` handler in `props` so it runs only for events `ownsEvent`
+ * accepts; everything else (refs, styles) passes through untouched.
+ */
+function gateHandlers<T extends object>(
+  props: T,
+  ownsEvent: (event: {nativeEvent: Event}) => boolean,
+): T {
+  const gated: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(props)) {
+    gated[key] =
+      key.startsWith('on') && typeof value === 'function'
+        ? (event: {nativeEvent: Event}) => {
+            if (ownsEvent(event)) {
+              (value as (event: {nativeEvent: Event}) => void)(event);
+            }
+          }
+        : value;
+  }
+  return gated as T;
+}
+
 /** Internal visual and gesture surface shared by every BottomSheet host. */
 export function BottomSheetPanel({
   ref,
@@ -510,8 +533,8 @@ export function BottomSheetPanel({
 
   const {
     contentProps,
-    handleProps,
-    bodyProps,
+    handleProps: ownHandleProps,
+    bodyProps: ownBodyProps,
     bodyElementRef,
     sheetRef,
     dragOffset,
@@ -531,6 +554,31 @@ export function BottomSheetPanel({
     snapHeights,
     onScrimOpacity,
   });
+
+  // As a level of a stacking host, this panel's React handlers also receive
+  // events from a level rendered inside its content: that level's panel is
+  // portaled into its own box in the host's dialog, so DOM-wise it is outside
+  // this panel while React still bubbles its events here. Those events are
+  // the nested level's gestures, never this panel's, so the gesture handlers
+  // see only events whose native target is inside this panel. App handlers
+  // above the stack still see every event. Without a host nothing changes.
+  const isStackLevel = useBottomSheetStackHost() != null;
+  const ownsEvent = useCallback(
+    (event: {nativeEvent: Event}) =>
+      !isStackLevel ||
+      (event.nativeEvent.target instanceof Node &&
+        elementRef.current?.contains(event.nativeEvent.target) === true),
+    [isStackLevel],
+  );
+  const handleProps = useMemo(
+    () =>
+      isStackLevel ? gateHandlers(ownHandleProps, ownsEvent) : ownHandleProps,
+    [isStackLevel, ownHandleProps, ownsEvent],
+  );
+  const bodyProps = useMemo(
+    () => (isStackLevel ? gateHandlers(ownBodyProps, ownsEvent) : ownBodyProps),
+    [isStackLevel, ownBodyProps, ownsEvent],
+  );
 
   const {getViewportProps, getContentProps} = useScrollableArea({
     // The previous overflow-y:auto also computed overflow-x:auto. Keep wide

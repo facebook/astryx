@@ -221,8 +221,15 @@ const UTIL_SUBPATH_DIRS = [
  *
  * `Markdown/remark` is the limited Remark compatibility adapter
  * (`module:Markdown/remark`, `spec:AST-036` FR24).
+ *
+ * `BottomSheet/unstable_stack` is the `unstable_`-prefixed coordination
+ * context between Core sheet hosts and the Lab BottomSheetStack. It is not a
+ * public API: no docs, no root barrel export, no stability promise.
  */
-const FILE_MODULE_SUBPATH_EXPORTS = ['Markdown/remark'];
+const FILE_MODULE_SUBPATH_EXPORTS = [
+  'Markdown/remark',
+  'BottomSheet/unstable_stack',
+];
 
 /**
  * Discover all exportable directories under src/.
