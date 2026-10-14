@@ -24,6 +24,7 @@ import {Divider} from '../Divider';
 import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {spacingVars} from '../theme/tokens.stylex';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -1366,7 +1367,57 @@ describe('DropdownMenu items', () => {
   });
 });
 
+// jsdom lays nothing out, so a row gap is read from StyleX classes: a class
+// name hashes one property and its value, and the same declaration yields the
+// same class wherever it is written (the dev build adds a debug name, which
+// does not start with `x` and a hash).
+const menuRowRhythm = stylex.create({
+  column: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+  },
+  gap: {gap: spacingVars['--spacing-0-5']},
+});
+function atomicClasses(style: stylex.StyleXStyles): string[] {
+  return stylex
+    .props(style)
+    .className!.split(' ')
+    .filter(token => /^x[a-z0-9]+$/.test(token));
+}
+function expectMenuRowRhythm(element: HTMLElement) {
+  const classes = atomicClasses(menuRowRhythm.column);
+  expect(classes).toHaveLength(3);
+  for (const token of classes) {
+    expect(element).toHaveClass(token);
+  }
+}
+
 describe('DropdownMenu sections', () => {
+  it("a section keeps the menu's row gap between its heading and rows", async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'File'}}
+        items={[
+          {label: 'Rename'},
+          {
+            type: 'section',
+            title: 'Create',
+            items: [{label: 'New file'}, {label: 'New folder'}],
+          },
+          {label: 'Delete'},
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /File/}));
+    // The rows around the section are spaced by the menu's own column.
+    expectMenuRowRhythm(screen.getByRole('menu', {hidden: true}));
+    expectMenuRowRhythm(
+      screen.getByRole('group', {name: 'Create', hidden: true}),
+    );
+  });
+
   it('renders section with title', () => {
     render(
       <DropdownMenu
@@ -1564,6 +1615,48 @@ describe('DropdownMenuItem host attributes', () => {
 });
 
 describe('DropdownMenuGroup (compound mode)', () => {
+  it("keeps the menu's row gap between its heading, rows and dividers, as a radio group does", async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Version'}}>
+        <DropdownMenuItem label="Rename" onClick={() => {}} />
+        <DropdownMenuGroup title="Version history">
+          <DropdownMenuItem label="Restore" onClick={() => {}} />
+          <DropdownMenuDivider />
+          <DropdownMenuItem label="Compare" onClick={() => {}} />
+        </DropdownMenuGroup>
+        <DropdownMenuItem label="Delete" onClick={() => {}} />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Version/}));
+    expectMenuRowRhythm(screen.getByRole('menu', {hidden: true}));
+    expectMenuRowRhythm(
+      screen.getByRole('group', {name: 'Version history', hidden: true}),
+    );
+  });
+
+  it("a caller's xstyle still wins over the group's own layout", async () => {
+    const user = userEvent.setup();
+    const flush = stylex.create({group: {gap: 0}});
+    render(
+      <DropdownMenu button={{label: 'Version'}}>
+        <DropdownMenuGroup title="Version history" xstyle={flush.group}>
+          <DropdownMenuItem label="Restore" onClick={() => {}} />
+        </DropdownMenuGroup>
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Version/}));
+    const group = screen.getByRole('group', {
+      name: 'Version history',
+      hidden: true,
+    });
+    const [flushGap] = atomicClasses(flush.group);
+    const [rowGap] = atomicClasses(menuRowRhythm.gap);
+    expect(group).toHaveClass(flushGap);
+    // The group's own 2px gap class is replaced, not stacked beside it.
+    expect(group).not.toHaveClass(rowGap);
+  });
+
   it('a focusable node in the heading is not reachable by the arrow keys', async () => {
     // A heading is not a menu row, so a control inside one lands in the
     // group but outside the roving focus order. The type does not prevent
