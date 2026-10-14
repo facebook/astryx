@@ -1,6 +1,7 @@
 {
   "apiVersion": 1,
   "type": "docs.detail.section",
+  "package": "@acme/kit",
   "data": {
     "title": "Colors",
     "content": [

@@ -18,13 +18,21 @@ import {
   beforeEach,
   afterAll,
 } from 'vitest';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {
+  render,
+  renderHook,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import {renderToString} from 'react-dom/server';
 import {hydrateRoot} from 'react-dom/client';
 import {StrictMode} from 'react';
 import {Button} from '../Button/Button';
 import {Theme, defineTheme} from '../theme';
 import {HoverCard} from './HoverCard';
+import {useHoverCard} from './useHoverCard';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 
 // Store original matches to restore later
@@ -62,6 +70,43 @@ afterAll(() => {
 beforeEach(() => {
   vi.mocked(HTMLElement.prototype.showPopover).mockClear();
   vi.mocked(HTMLElement.prototype.hidePopover).mockClear();
+});
+
+describe('useHoverCard identity', () => {
+  it('keeps callback refs stable across unchanged rerenders', () => {
+    const {result, rerender} = renderHook(() => useHoverCard());
+    const firstRef = result.current.ref;
+    const firstInteractionRef = result.current.interactionRef;
+
+    rerender();
+
+    expect(result.current.ref).toBe(firstRef);
+    expect(result.current.interactionRef).toBe(firstInteractionRef);
+  });
+
+  it('does not rebind trigger listeners on rerender', () => {
+    function Harness() {
+      const card = useHoverCard();
+      return (
+        <div>
+          <span ref={card.ref}>Trigger</span>
+          {card.renderHoverCard(<div>Card</div>)}
+        </div>
+      );
+    }
+    const {getByText, rerender} = render(<Harness />);
+    const trigger = getByText('Trigger');
+    const added: string[] = [];
+    const add = trigger.addEventListener.bind(trigger);
+    trigger.addEventListener = ((type: string, ...rest: unknown[]) => {
+      added.push(type);
+      return (add as (...args: unknown[]) => void)(type, ...rest);
+    }) as typeof trigger.addEventListener;
+
+    rerender(<Harness />);
+
+    expect(added).toEqual([]);
+  });
 });
 
 describe('HoverCard', () => {
@@ -256,7 +301,7 @@ describe('HoverCard', () => {
     const innerTheme = defineTheme({
       name: 'hovercard-inner-test',
       components: {
-        hovercard: {base: {borderWidth: '7px'}},
+        'hover-card': {base: {borderWidth: '7px'}},
         button: {base: {fontWeight: '700'}},
       },
     });
@@ -1129,7 +1174,7 @@ describe('HoverCard', () => {
 });
 
 describe('HoverCard theme target names', () => {
-  it('renders the deprecated class beside the current one on the card surface', async () => {
+  it('renders only the canonical target class on the card surface', async () => {
     render(
       <HoverCard content={<span>Card content</span>} delay={0}>
         <button type="button">Trigger</button>
@@ -1140,7 +1185,7 @@ describe('HoverCard theme target names', () => {
     await waitFor(() => {
       const layer = screen.getByText('Card content').closest('[popover]');
       expect(layer).toHaveClass('astryx-hover-card');
-      expect(layer).toHaveClass('astryx-hovercard');
+      expect(layer).not.toHaveClass('astryx-hovercard');
     });
   });
 });

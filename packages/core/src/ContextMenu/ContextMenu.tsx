@@ -9,7 +9,7 @@
  * @position Core implementation; consumed by index.ts
  *
  * Right-click context menu positioned at the cursor. The cursor point is
- * captured as an offset *inside the trigger* and materialized as a zero-size
+ * captured as an offset *inside the trigger* and materialized as a 1px
  * anchor element, so the menu is positioned relative to the trigger's context
  * (via CSS anchor positioning) rather than the viewport. It therefore follows
  * the content on scroll and auto-flips at viewport edges, while still appearing
@@ -112,14 +112,16 @@ const styles = stylex.create({
     WebkitUserSelect: 'none',
     userSelect: 'none',
   },
-  // Zero-size anchor placed at the cursor point within the trigger. The menu
-  // is anchored to this element, so it sits under the cursor yet is positioned
+  // 1px anchor placed at the cursor point within the trigger. The menu is
+  // anchored to this element, so it sits under the cursor yet is positioned
   // relative to the trigger's context — it follows the content on scroll and
-  // the browser can auto-flip it against the viewport edges.
+  // the browser can auto-flip it against the viewport edges. It owns a box
+  // because WebKit counts an empty anchor box as clipped, and the default
+  // `position-visibility: anchors-visible` then hides the menu.
   cursorAnchor: {
     position: 'absolute',
-    width: 0,
-    height: 0,
+    width: '1px',
+    height: '1px',
     pointerEvents: 'none',
   },
   menu: {
@@ -143,11 +145,11 @@ const styles = stylex.create({
     WebkitTouchCallout: 'none',
   },
   // Scroll ownership by the browser's own signal; see DropdownMenu.
-  touchNone: {
-    touchAction: 'none',
+  touchPinchZoom: {
+    touchAction: 'pinch-zoom',
   },
-  touchPanY: {
-    touchAction: 'pan-y',
+  touchPanYPinchZoom: {
+    touchAction: 'pan-y pinch-zoom',
     overscrollBehavior: 'contain',
   },
   popover: {
@@ -184,6 +186,17 @@ const styles = stylex.create({
     outline: 'none',
   },
 });
+
+/**
+ * Keeps the 1px cursor anchor inside the trigger along one axis. A point in
+ * the trigger's last pixel (Shift+F10 opens on its bottom edge) steps back by
+ * that pixel: past the edge the anchor would add scrollable overflow, and a
+ * scroller whose edge meets the trigger's would clip it and hide the menu.
+ * Any other point, inside the trigger or not, stays where it is.
+ */
+function keepAnchorInside(offset: number, size: number): number {
+  return offset > size - 1 && offset <= size ? Math.max(size - 1, 0) : offset;
+}
 
 // =============================================================================
 // Types
@@ -324,7 +337,7 @@ export function ContextMenu({
 
   const menuId = useId();
   // Cursor point in the trigger's local coordinate space (offset from the
-  // trigger's top-left, in-flow). Stored here and written to the zero-size
+  // trigger's top-left, in-flow). Stored here and written to the cursor
   // anchor element so the menu is positioned relative to the trigger context
   // — it scrolls with the content instead of sitting at a fixed viewport point.
   const positionRef = useRef({x: 0, y: 0});
@@ -520,18 +533,21 @@ export function ContextMenu({
     [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
-  // Place the zero-size cursor anchor at a point in the trigger's local
+  // Place the 1px cursor anchor at a point in the trigger's local
   // coordinate space and open the menu. Positioning the anchor inside the
   // trigger (rather than storing viewport coordinates on the menu itself) is
   // what makes the menu context-relative: it scrolls with the content and the
   // browser auto-flips it against the viewport edges via CSS anchor positioning.
   const openAtLocalPoint = useCallback(
     (localX: number, localY: number, focusEl: HTMLElement | null) => {
-      positionRef.current = {x: localX, y: localY};
+      const rect = triggerRef.current?.getBoundingClientRect();
+      const x = rect ? keepAnchorInside(localX, rect.width) : localX;
+      const y = rect ? keepAnchorInside(localY, rect.height) : localY;
+      positionRef.current = {x, y};
       const anchorEl = cursorAnchorRef.current;
       if (anchorEl) {
-        anchorEl.style.left = `${localX}px`;
-        anchorEl.style.top = `${localY}px`;
+        anchorEl.style.left = `${x}px`;
+        anchorEl.style.top = `${y}px`;
       }
       // Remember the element focused before opening so we can restore it on
       // close (Escape or outside-click), instead of dropping focus to <body>.
@@ -583,7 +599,9 @@ export function ContextMenu({
   // `contextmenu` event on long-press, so a context menu is otherwise
   // unreachable on touch. Open the menu at the touch point once the press is
   // held long enough (see useLongPress for timer/move-cancel/cleanup logic).
-  const longPressHandlers = useLongPress({
+  // The hook also returns the imperative start/moveTo/cancel API the menu press
+  // model drives; only its four touch handlers belong on the trigger element.
+  const longPress = useLongPress({
     disabled: isDisabled,
     onLongPress: useCallback(
       (point: {x: number; y: number}) => {
@@ -646,7 +664,7 @@ export function ContextMenu({
         stylex.props(
           usesBottomSheet ? styles.sheetMenu : styles.menu,
           !usesBottomSheet &&
-            (hasOverflow ? styles.touchPanY : styles.touchNone),
+            (hasOverflow ? styles.touchPanYPinchZoom : styles.touchPinchZoom),
           xstyle,
         ),
         className,
@@ -714,7 +732,10 @@ export function ContextMenu({
         ref={useMergedRefs(ref, triggerRef)}
         {...triggerProps}
         onContextMenu={handleContextMenu}
-        {...longPressHandlers}
+        onTouchStart={longPress.onTouchStart}
+        onTouchMove={longPress.onTouchMove}
+        onTouchEnd={longPress.onTouchEnd}
+        onTouchCancel={longPress.onTouchCancel}
         data-testid={testId}
         {...stylex.props(
           styles.trigger,

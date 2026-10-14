@@ -74,11 +74,13 @@ describe('themeBuild() — receipt', () => {
 
     // Output paths are cwd-relative and derive from the theme name…
     expect(result?.data.outputs.css).toBe('apitheme.css');
+    expect(result?.data.outputs.cssDts).toBe('apitheme.css.d.ts');
     expect(result?.data.outputs.js).toBe('apitheme.js');
     expect(result?.data.outputs.dts).toBe('apitheme.d.ts');
     // …and every declared output actually exists on disk.
     for (const rel of [
       result?.data.outputs.css,
+      result?.data.outputs.cssDts,
       result?.data.outputs.js,
       result?.data.outputs.dts,
     ]) {
@@ -86,6 +88,9 @@ describe('themeBuild() — receipt', () => {
         fs.existsSync(path.join(tmpDir, /** @type {string} */ (rel))),
       ).toBe(true);
     }
+    expect(
+      fs.readFileSync(path.join(tmpDir, 'apitheme.css.d.ts'), 'utf8'),
+    ).toContain('export {};');
   });
 
   it('emits local tokens and preserves enrollment metadata in the built module', async () => {
@@ -377,6 +382,31 @@ describe('themeBuild() — check mode', () => {
     expect(fs.readFileSync(path.join(tmpDir, 'chk.css'), 'utf8')).toBe(before);
   });
 
+  it('accepts released outputs that do not have a CSS type stub', async () => {
+    const themeFile = path.join(tmpDir, 'released.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default { name: 'released', tokens: { '--color-bg': '#0a0a0a' } };\n`,
+    );
+    await themeBuild('released.mjs', {}, {cwd: tmpDir});
+    fs.rmSync(path.join(tmpDir, 'released.css.d.ts'));
+
+    const result = await themeBuild(
+      'released.mjs',
+      {check: true},
+      {cwd: tmpDir},
+    );
+
+    expect(result?.data.upToDate).toBe(true);
+    expect(result?.data.stale).toEqual([]);
+    expect(result?.data.checked).toEqual([
+      'released.css',
+      'released.js',
+      'released.d.ts',
+    ]);
+    expect(fs.existsSync(path.join(tmpDir, 'released.css.d.ts'))).toBe(false);
+  });
+
   it('flags a stale output when the committed CSS content drifts from the source', async () => {
     const themeFile = path.join(tmpDir, 'drift.mjs');
     fs.writeFileSync(
@@ -517,26 +547,17 @@ describe('themeBuild() — component override validation', () => {
     ]);
   });
 
-  it('warns with the exact replacement for deprecated root and media targets', () => {
+  it('deduplicates removed aliases as unknown across root and conditional layers', () => {
     const registry = {
-      propsByKey: {
-        'old-target': ['variant'],
-        'new-target': ['variant'],
-      },
-      deprecatedByKey: {'old-target': 'new-target'},
+      propsByKey: {'new-target': ['variant']},
     };
 
     expect(
       validateComponentOverridesAgainstRegistry(
         {
-          components: {
-            'old-target': {base: {color: 'red'}},
-            'new-target': {base: {color: 'blue'}},
-          },
+          components: {'old-target': {base: {color: 'red'}}},
           onDark: {
-            components: {
-              'old-target': {'variant:quiet': {color: 'pink'}},
-            },
+            components: {'old-target': {'variant:quiet': {color: 'pink'}}},
           },
           adaptations: {
             rules: [
@@ -553,31 +574,27 @@ describe('themeBuild() — component override validation', () => {
         },
         registry,
       ),
-    ).toEqual([
-      'Deprecated component target "old-target". Use "new-target" instead.',
-      'Deprecated component target "old-target" in onDark. Use "new-target" instead.',
-      'Deprecated component target "old-target" in adaptation rule 1. Use "new-target" instead.',
-    ]);
+    ).toEqual(['Unknown component "old-target".']);
   });
 
-  it('warns with the exact replacement for a supported deprecated target', async () => {
-    const themeFile = path.join(tmpDir, 'deprecated-target.mjs');
+  it('reports a removed target alias as an unknown component key', async () => {
+    const themeFile = path.join(tmpDir, 'removed-target.mjs');
     fs.writeFileSync(
       themeFile,
       `export default {
-        name: 'deprecated-target',
+        name: 'removed-target',
         tokens: {},
         components: {progressbar: {base: {color: 'red'}}},
       };\n`,
     );
 
-    const result = await themeBuild('deprecated-target.mjs', {}, {cwd: tmpDir});
+    const result = await themeBuild('removed-target.mjs', {}, {cwd: tmpDir});
 
     expect(result?.data.warnings).toContain(
-      'Deprecated component target "progressbar". Use "progress-bar" instead.',
+      'Unknown component "progressbar". Did you mean: progress-bar?',
     );
     expect(
-      fs.readFileSync(path.join(tmpDir, 'deprecated-target.css'), 'utf8'),
+      fs.readFileSync(path.join(tmpDir, 'removed-target.css'), 'utf8'),
     ).toContain('.astryx-progressbar');
   });
 });

@@ -94,6 +94,7 @@ function childIdentity(child) {
   return {
     route: child.route,
     name: child.route.slice(child.route.lastIndexOf('/') + 1),
+    package: child.provider,
     kind: child.kind,
     title: child.title,
     summary: child.summary,
@@ -310,6 +311,8 @@ export async function node(route, options = {}) {
     throw await unknownTopicError(route, found.catalog);
   return {
     type: 'docs.node',
+    // The docs tree names each node's npm package as its provider.
+    package: found.node.provider,
     data: await nodeView(found.catalog, found.tree, found.node),
   };
 }

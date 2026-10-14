@@ -1,7 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import {useMemo, useState} from 'react';
 import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {createEventFromISO} from './CalendarEvent';
@@ -1198,5 +1204,220 @@ describe('Schedule month overflow', () => {
     render(<MonthAt source={events.slice(0, 4)} />);
     expect(screen.queryByRole('button', {name: /more events?,/})).toBeNull();
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+describe('Schedule month event popover', () => {
+  // component:Schedule FR19–FR20 and AR8, on May 2026 in UTC. Wednesday May 13
+  // is busy: the conference span and Alpha review are painted, and "+3 more"
+  // counts Offsite, Bravo sync, and Charlie demo. The holiday has no content.
+  const categories: ScheduleCategory[] = [
+    {label: 'Company', color: 'blue'},
+    {label: 'Launch', color: 'green'},
+  ];
+  const timed = (id: string, title: string, day: number, hour: number) =>
+    createEventFromISO({
+      id,
+      title,
+      category: 'Company',
+      start: `2026-05-${day}T${String(hour).padStart(2, '0')}:00:00.000Z`,
+      end: `2026-05-${day}T${String(hour + 1).padStart(2, '0')}:00:00.000Z`,
+    });
+  const events: CalendarEvent[] = [
+    createEventFromISO({
+      id: 'conference',
+      title: 'Conference',
+      category: 'Launch',
+      start: '2026-05-10',
+      end: '2026-05-13',
+    }),
+    createEventFromISO({
+      id: 'hack-week',
+      title: 'Hack week',
+      category: 'Launch',
+      start: '2026-05-10',
+      end: '2026-05-12',
+    }),
+    createEventFromISO({
+      id: 'offsite',
+      title: 'Offsite',
+      category: 'Company',
+      start: '2026-05-11',
+      end: '2026-05-13',
+    }),
+    timed('alpha', 'Alpha review', 13, 9),
+    timed('bravo', 'Bravo sync', 13, 11),
+    timed('charlie', 'Charlie demo', 13, 14),
+    createEventFromISO({
+      id: 'holiday',
+      title: 'Holiday',
+      category: 'Company',
+      start: '2026-05-25',
+      end: '2026-05-25',
+    }),
+  ];
+  const renderPopover = (event: CalendarEvent) =>
+    event.id === 'holiday' ? null : <p>{event.title} details</p>;
+
+  function MonthAt({
+    source = events,
+    withPopover = true,
+  }: {
+    source?: ReadonlyArray<CalendarEvent>;
+    withPopover?: boolean;
+  }) {
+    const [date, setDate] = useState<Instant>(Date.UTC(2026, 4, 13));
+    const view = useMemo(
+      () =>
+        createScheduleMonthlyView(withPopover ? {renderPopover} : undefined),
+      [withPopover],
+    );
+    return (
+      <Schedule
+        view={view}
+        events={source}
+        categories={categories}
+        date={date}
+        focusDate={Date.UTC(2026, 4, 13)}
+        onChangeDate={setDate}
+        timezoneID="UTC"
+      />
+    );
+  }
+
+  function openDialog(): HTMLElement {
+    const dialogs = Array.from(
+      document.querySelectorAll<HTMLElement>('[role="dialog"]'),
+    ).filter(dialog => dialog.textContent !== '');
+    expect(dialogs).toHaveLength(1);
+    return dialogs[0];
+  }
+
+  const cell = (name: string) => screen.getByRole('cell', {name});
+
+  it('keeps chips painted decoration without the option', () => {
+    render(<MonthAt withPopover={false} />);
+    expect(screen.queryByRole('button', {name: /^Conference,/})).toBeNull();
+    expect(screen.getAllByRole('button', {name: /more events?,/})).toHaveLength(
+      1,
+    );
+  });
+
+  it('renders each chip with content as a named button in the cell where it starts, and the null chip as text', () => {
+    render(<MonthAt />);
+    const conference = screen.getByRole('button', {name: /^Conference,/});
+    expect(conference.getAttribute('aria-label')).toMatch(
+      /^Conference, all day, Launch, May 10\s*–\s*13, 2026$/u,
+    );
+    expect(conference).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(conference).toHaveAttribute('aria-expanded', 'false');
+    expect(conference.closest('[role="cell"]')).toBe(
+      cell('Sunday, May 10, 2026'),
+    );
+    const alpha = screen.getByRole('button', {name: /^Alpha review,/});
+    expect(alpha).toHaveAttribute(
+      'aria-label',
+      'Alpha review, 9:00 AM - 10:00 AM, Company, Wednesday, May 13, 2026',
+    );
+    expect(alpha.closest('[role="cell"]')).toBe(
+      cell('Wednesday, May 13, 2026'),
+    );
+    // Events behind "+3 more" have no chip button.
+    expect(screen.queryByRole('button', {name: /^Bravo sync,/})).toBeNull();
+    // The holiday has no content: static text with its name, never a button.
+    expect(screen.queryByRole('button', {name: /^Holiday,/})).toBeNull();
+    expect(
+      within(cell('Monday, May 25, 2026')).getByText(
+        'Holiday, all day, Company, Monday, May 25, 2026',
+      ),
+    ).toBeInTheDocument();
+    // The buttons are the cells' events: no hidden list repeats them.
+    expect(cell('Wednesday, May 13, 2026').querySelectorAll('li')).toHaveLength(
+      0,
+    );
+  });
+
+  it('names a chip as static text on each later day it covers, so no covered day reads as free', () => {
+    render(<MonthAt />);
+    const monday = cell('Monday, May 11, 2026');
+    const mention = within(monday).getByText(
+      /^Conference, all day, Launch, since Sunday, May 10, 2026$/u,
+    );
+    expect(mention.closest('button')).toBeNull();
+    expect(mention).not.toHaveAttribute('tabindex');
+    expect(
+      within(monday).queryByRole('button', {name: /^Conference,/}),
+    ).toBeNull();
+    // Tuesday is covered by three spans, two from Sunday and one from Monday.
+    const tuesday = cell('Tuesday, May 12, 2026');
+    expect(tuesday).toHaveTextContent(
+      'Hack week, all day, Launch, since Sunday, May 10, 2026',
+    );
+    expect(tuesday).toHaveTextContent(
+      'Offsite, all day, Company, since Monday, May 11, 2026',
+    );
+    // On busy Wednesday the cut Offsite is counted, not mentioned.
+    const wednesday = cell('Wednesday, May 13, 2026');
+    expect(wednesday).toHaveTextContent(/Conference, all day, Launch, since/);
+    expect(wednesday).not.toHaveTextContent(/Offsite, all day, Company, since/);
+  });
+
+  it('opens one popover named by the event with its content, switches events, and closes on Escape', () => {
+    render(<MonthAt />);
+    const conference = screen.getByRole('button', {name: /^Conference,/});
+    const alpha = screen.getByRole('button', {name: /^Alpha review,/});
+    fireEvent.click(conference);
+    expect(conference).toHaveAttribute('aria-expanded', 'true');
+    expect(openDialog()).toHaveAttribute('aria-label', 'Conference');
+    expect(openDialog()).toHaveTextContent('Conference details');
+
+    fireEvent.pointerDown(alpha);
+    fireEvent.click(alpha);
+    expect(conference).toHaveAttribute('aria-expanded', 'false');
+    expect(alpha).toHaveAttribute('aria-expanded', 'true');
+    expect(openDialog()).toHaveAttribute('aria-label', 'Alpha review');
+
+    fireEvent.keyDown(openDialog(), {key: 'Escape'});
+    expect(alpha).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('hands an event from a busy day\u2019s list to the same popover, with "+N more" as its trigger', () => {
+    render(<MonthAt />);
+    const more = screen.getByRole('button', {name: /^3 more events,/});
+    fireEvent.click(more);
+    const list = openDialog();
+    expect(list).toHaveAttribute('aria-label', 'Wednesday, May 13, 2026');
+    // jsdom does not show native popovers, so their content is queried with
+    // hidden elements included.
+    const bravo = within(list).getByRole('button', {
+      name: /^Bravo sync,/,
+      hidden: true,
+    });
+    expect(bravo).toHaveAttribute(
+      'aria-label',
+      'Bravo sync, 11:00 AM - 12:00 PM, Company, Wednesday, May 13, 2026',
+    );
+    fireEvent.click(bravo);
+    const event = openDialog();
+    expect(event).toHaveAttribute('aria-label', 'Bravo sync');
+    expect(event).toHaveTextContent('Bravo sync details');
+    expect(more).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.keyDown(event, {key: 'Escape'});
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('closes when the open chip\u2019s event leaves and moves focus to the cell where it started', () => {
+    const {rerender} = render(<MonthAt />);
+    const conference = screen.getByRole('button', {name: /^Conference,/});
+    fireEvent.click(conference);
+    expect(conference).toHaveAttribute('aria-expanded', 'true');
+    openDialog().focus();
+    rerender(
+      <MonthAt source={events.filter(event => event.id !== 'conference')} />,
+    );
+    expect(document.querySelectorAll('[role="dialog"]').length).toBeLessThan(2);
+    expect(screen.queryByRole('button', {name: /^Conference,/})).toBeNull();
+    expect(document.activeElement).toBe(cell('Sunday, May 10, 2026'));
   });
 });

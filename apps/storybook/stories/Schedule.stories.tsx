@@ -789,6 +789,59 @@ export const MonthOverflow: Story = {
   },
 };
 
+// The month-overflow fixture with renderPopover (component:Schedule FR19–
+// FR20): chips with content open the month's one popover, the company
+// holiday has none and stays static text, and a busy day's list hands an
+// event to the same popover.
+export const MonthEventPopover: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const monthEvents = useSyncExternalStore(
+      subscribeToMonthOverflowEvents,
+      getMonthOverflowEvents,
+      getMonthOverflowEvents,
+    );
+    const view = useMemo(
+      () =>
+        createScheduleMonthlyView({
+          renderPopover: event =>
+            event.id === 'holiday' ? null : (
+              <div
+                data-event-details={event.id}
+                style={{display: 'flex', flexDirection: 'column', gap: 4}}>
+                <Text type="label" weight="bold">
+                  {event.title}
+                </Text>
+                <Text type="supporting" color="secondary">
+                  {event.category ?? 'No category'} · {event.id}
+                </Text>
+              </div>
+            ),
+        }),
+      [],
+    );
+    useEffect(() => {
+      (
+        window as unknown as {
+          scheduleMonthOverflowStory?: {removeEvent: (id: string) => void};
+        }
+      ).scheduleMonthOverflowStory = {removeEvent: removeMonthOverflowEvent};
+    }, []);
+
+    return (
+      <Schedule
+        view={view}
+        events={monthEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
+      />
+    );
+  },
+};
+
 export const ViewSelectorPlugin: Story = {
   render: () => {
     const views = useMemo(
@@ -833,6 +886,94 @@ export const ViewSelectorPlugin: Story = {
         onChangeDate={setDate}
         timezoneID="America/Los_Angeles"
         plugins={plugins}
+      />
+    );
+  },
+};
+
+// A fixed UTC week for the long-span contract (component:Schedule FR21): a
+// 48-hour offsite and an exactly-24-hour handoff are all-day spans; a
+// 23-hour-59-minute shift and an overnight deploy stay in the day columns;
+// Tuesday's standup and review keep their full column width; Saturday's
+// retreat has too long a title for its times to fit.
+const longSpanEvents: CalendarEvent[] = [
+  createEventFromISO({
+    id: 'offsite',
+    title: 'Offsite',
+    category: 'Company',
+    start: '2026-05-11T09:00:00.000Z',
+    end: '2026-05-13T09:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'handoff',
+    title: 'On-call handoff',
+    category: 'Incident',
+    start: '2026-05-14T08:00:00.000Z',
+    end: '2026-05-15T08:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'retreat',
+    title: 'Leadership planning retreat',
+    category: 'Company',
+    start: '2026-05-16T06:00:00.000Z',
+    end: '2026-05-17T06:00:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'shift',
+    title: 'Long shift',
+    category: 'Focus',
+    start: '2026-05-15T00:00:00.000Z',
+    end: '2026-05-15T23:59:00.000Z',
+  }),
+  createEventFromISO({
+    id: 'deploy',
+    title: 'Late deploy',
+    category: 'Launch',
+    start: '2026-05-12T22:00:00.000Z',
+    end: '2026-05-13T02:00:00.000Z',
+  }),
+  fixtureEvent({
+    id: 'standup',
+    title: 'Standup',
+    category: 'Company',
+    day: 12,
+    start: [9],
+    end: [9, 30],
+  }),
+  fixtureEvent({
+    id: 'review',
+    title: 'Design review',
+    category: 'Design',
+    day: 12,
+    start: [10],
+    end: [11],
+  }),
+];
+
+export const LongTimedEvents: Story = {
+  render: () => {
+    const [date, setDate] = useState<Instant>(FIXTURE_DATE);
+    const view = useMemo(
+      () =>
+        createScheduleWeeklyView({
+          renderPopover: event => (
+            <Text type="label" weight="bold">
+              {event.title}
+            </Text>
+          ),
+        }),
+      [],
+    );
+
+    return (
+      <Schedule
+        view={view}
+        events={longSpanEvents}
+        categories={categories}
+        date={date}
+        focusDate={FIXTURE_DATE}
+        onChangeDate={setDate}
+        timezoneID={FIXTURE_TIMEZONE}
       />
     );
   },

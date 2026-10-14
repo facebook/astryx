@@ -42,10 +42,12 @@
  * @property {string} name Template id, as `astryx template <name>` takes it.
  * @property {string} displayName Human-facing template name.
  * @property {string} description What the page is: its layout and the ideas it serves.
+ * @property {string} package The npm package that owns this template.
  * @property {string} command The scaffold command that selects exactly this template, `astryx template <id> --type page <path>`: `<id>` is the Core id an integration replacement stands in for, else the template's own id, `<path>` is a placeholder for the file or folder to write the template to, and the `astryx` prefix is for the caller to replace with its own invocation.
  * @property {'direct' | 'closest' | 'fallback'} basis Why this template. The page ranker picks every start: it weighs each matched word by how rare it is among page templates, favors the family the idea's head names and the container it names ("in a modal"), and discounts words that only modify another. `direct` when its pick is also search's direct match (`directMatch`); `closest` when it is not; `fallback` when no template has the evidence to lead and the page starts from the app shell.
  * @property {string} reason One sentence saying the same as `basis`, for a reader.
  * @property {BuildAlternative[]} alternatives The ranker's next closest page templates (≤2), for when the start's layout is wrong.
+ * @property {string[]} [notes] Setup notes: what the template needs that the project lacks (missing packages, missing StyleX compiler). Present only when the start template imports packages the project does not have or needs a StyleX compiler the project has not configured.
  */
 
 /**
@@ -55,6 +57,7 @@
  * @property {string} name Template id, as `astryx template <name>` takes it.
  * @property {string} displayName Human-facing template name.
  * @property {string} description What the page is: its layout and the ideas it serves.
+ * @property {string} package The npm package that owns this template.
  * @property {string} command The scaffold command, in the same form as the start's.
  */
 

@@ -66,15 +66,19 @@ const CELL_TRANSFORMERS: Array<Transformer> = [
 type ColumnAlignment = 'left' | 'center' | 'right' | null;
 
 /**
- * Splits a row into trimmed cell sources: one leading pipe, trailing spaces,
- * and one trailing pipe are dropped, and the rest splits on unescaped pipes.
- * An escaped pipe stays escaped for the cell's inline import.
+ * Splits a row into trimmed cell sources: the row's indentation, one leading
+ * pipe, trailing spaces, and one trailing pipe are dropped, and the rest
+ * splits on unescaped pipes. An escaped pipe stays escaped for the cell's
+ * inline import.
  */
 function splitTableRow(line: string): Array<string> {
   let start = 0;
   let end = line.length;
-  if (line.startsWith('|')) {
-    start = 1;
+  while (start < end && (line[start] === ' ' || line[start] === '\t')) {
+    start++;
+  }
+  if (line[start] === '|') {
+    start++;
     while (start < end && line[start] === ' ') {
       start++;
     }

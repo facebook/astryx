@@ -582,6 +582,23 @@ type ResolvedOptions = {
   };
   /** Whether this parse runs inside a lazy-continuation probe. */
   readonly probing?: boolean;
+  /**
+   * Whether blocks record their source lines (`module:Markdown/sourceLines`).
+   * Set only by the source-lines plugin; otherwise no line work runs.
+   */
+  readonly sourceLines?: boolean;
+  /**
+   * 0-based document line of this parse's first input line. Internal only —
+   * the incremental parser parses slices whose lines must come out absolute.
+   */
+  readonly baseLine?: number;
+  /**
+   * 0-based document line of each input line of a nested parse. Internal only
+   * — a list item's or a blockquote's content is reassembled one line per
+   * source line, so its lines map back to the document through this table.
+   * A nested parse without it records no lines.
+   */
+  readonly lineOrigin?: ReadonlyArray<number>;
 };
 
 /**
@@ -621,6 +638,9 @@ function makeResolvedOptions(
     blockDepth: fields.blockDepth ?? 0,
     nestedParses: fields.nestedParses,
     probing: fields.probing,
+    sourceLines: fields.sourceLines,
+    baseLine: fields.baseLine,
+    lineOrigin: fields.lineOrigin,
   };
 }
 
@@ -648,16 +668,18 @@ function resolveOptions(
     });
   }
   const opts = arg as RuntimeParseOptions;
+  const plugins =
+    opts.plugins != null && opts.plugins.length > 0
+      ? prepareMarkdownPlugins(opts.plugins)
+      : undefined;
   return makeResolvedOptions({
     sourceIds: opts.sourceIds,
     autolink: opts.autolink,
     math: opts.math === true ? true : undefined,
     sourceRanges: opts.sourceRanges,
-    plugins:
-      opts.plugins != null && opts.plugins.length > 0
-        ? prepareMarkdownPlugins(opts.plugins)
-        : undefined,
+    plugins,
     isFinal: incremental ? opts.isFinal === true : true,
+    sourceLines: plugins?.sourceLines === true ? true : undefined,
   });
 }
 
@@ -673,6 +695,9 @@ function resolveOptions(
 // pass through verbatim.
 const LINK_DEFINITION_RE =
   /^ {0,3}\[([^\]^](?:\\.|[^\]\\])*)\]:[ \t]*(?:<([^<>\n]*)>|(\S+))([ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^()\n]*\)))?[ \t]*$/;
+
+/** The most characters a link label may hold (CommonMark 0.31 §4.7). */
+const MAX_LINK_LABEL_LENGTH = 999;
 
 // A line that is nothing but a title — the continuation form allowed when a
 // definition's destination is followed by its title on the next line.
@@ -831,7 +856,9 @@ function matchLinkDefinition(
   line: string,
 ): {label: string; destination: string; hasTitle: boolean} | null {
   const match = LINK_DEFINITION_RE.exec(line);
-  if (match == null) {
+  // A longer label defines nothing, so the line stays text, as a reference
+  // with that label does.
+  if (match == null || match[1].length > MAX_LINK_LABEL_LENGTH) {
     return null;
   }
   const label = normalizeLinkLabel(match[1]);
@@ -846,6 +873,172 @@ function matchLinkDefinition(
     label,
     destination: decodeLinkDestination(destination),
     hasTitle: match[4] != null,
+  };
+}
+
+/**
+ * A code fence line: up to three spaces of indentation, then three or more
+ * backticks or tildes (CommonMark 0.31 §4.5). Group 1 is the indentation and
+ * group 2 the fence.
+ */
+const FENCE_LINE = /^( {0,3})(`{3,}|~{3,})/;
+
+/**
+ * Whether `line` closes a code block opened with `fence`: a fence of the same
+ * character, at least as long, after up to three spaces of indentation, with
+ * only spaces or tabs after it (CommonMark 0.31 §4.5) — so `   ```js` inside
+ * an open block is code, not its end.
+ */
+function closesFence(line: string, fence: string): boolean {
+  const match = /^ {0,3}(`{3,}|~{3,})[ \t]*\r?$/.exec(line);
+  return (
+    match != null &&
+    match[1].startsWith(fence[0]) &&
+    match[1].length >= fence.length
+  );
+}
+
+/** Where a list item's lines sit: its marker's indentation and content. */
+interface ListItemScope {
+  /** The marker's indentation. */
+  readonly base: number;
+  /** Where the item's content starts: past the marker and its spaces. */
+  readonly content: number;
+  readonly ordered: boolean;
+}
+
+/**
+ * The list item `line` opens, read as the block parser reads one: a bullet or
+ * a number with `.` or `)` after up to nine spaces, then a space. A thematic
+ * break opens no item.
+ */
+function listItemScopeOf(line: string): ListItemScope | null {
+  if (isHorizontalRule(line)) {
+    return null;
+  }
+  const marker = /^( {0,9})([-*+]|\d+[.)]) /.exec(line);
+  if (marker == null) {
+    return null;
+  }
+  const markerEnd = marker[0].length;
+  const spacesAfter = getIndent(line.slice(markerEnd));
+  return {
+    base: marker[1].length,
+    content: spacesAfter >= 4 ? markerEnd : markerEnd + spacesAfter,
+    ordered: marker[2] !== '-' && marker[2] !== '*' && marker[2] !== '+',
+  };
+}
+
+/** What a line does to the top-level code fence. */
+type TopLevelFenceEvent = 'open' | 'close' | 'inside' | null;
+
+/**
+ * Follows the code fences that open at the top level of a document, a line at
+ * a time, as the block parser reads them. A fence indented into an open list
+ * item belongs to that item, whose own parse reads it: it neither opens nor
+ * closes a top-level fence, so a list step's fence closed at the margin leaves
+ * the margin line to open a fence of its own, as the full parse does. Scanners
+ * that run outside the block parser — streaming settlement, link definitions,
+ * display-math trimming — share it so they pair fences the same way.
+ */
+function topLevelFences(): {
+  readonly open: boolean;
+  read(lines: ReadonlyArray<string>, index: number): TopLevelFenceEvent;
+} {
+  let fence = '';
+  // The outermost open list item, and what it last read. After a blank line
+  // inside the item, the parser keeps only lines indented to its content.
+  let item: ListItemScope | null = null;
+  let itemHadBlank = false;
+  let itemFence = '';
+  let itemEndsInParagraph = false;
+  // A number other than 1 cannot interrupt an open top-level paragraph.
+  let paragraphOpen = false;
+
+  const isHeadingOrBreak = (text: string) =>
+    /^ {0,3}#{1,6}(?:[ \t]|$)/.test(text) || isHorizontalRule(text);
+
+  /** Reads a line of the open item, without the item's indentation. */
+  const readItemLine = (text: string) => {
+    if (itemFence !== '') {
+      if (closesFence(text, itemFence)) {
+        itemFence = '';
+      }
+      itemEndsInParagraph = false;
+      return;
+    }
+    const opening = FENCE_LINE.exec(text);
+    if (opening != null) {
+      itemFence = opening[2];
+      itemEndsInParagraph = false;
+      return;
+    }
+    itemEndsInParagraph = text.trim() !== '' && !isHeadingOrBreak(text);
+  };
+
+  return {
+    get open() {
+      return fence !== '';
+    },
+    read(lines, index) {
+      const line = lines[index];
+      if (fence !== '') {
+        if (closesFence(line, fence)) {
+          fence = '';
+          return 'close';
+        }
+        return 'inside';
+      }
+      if (line.trim() === '') {
+        itemHadBlank = item != null;
+        paragraphOpen = false;
+        return null;
+      }
+      const indent = getIndent(line);
+      if (
+        item != null &&
+        (itemHadBlank ? indent >= item.content : indent > item.base)
+      ) {
+        readItemLine(line.slice(Math.min(indent, item.content)));
+        return null;
+      }
+      const scope = listItemScopeOf(line);
+      if (
+        scope != null &&
+        !(
+          paragraphOpen &&
+          item == null &&
+          scope.ordered &&
+          !/^ {0,9}0*1[.)]/.test(line)
+        )
+      ) {
+        item = scope;
+        itemHadBlank = false;
+        itemFence = '';
+        paragraphOpen = false;
+        readItemLine(line.slice(scope.content));
+        return null;
+      }
+      const opening = FENCE_LINE.exec(line);
+      if (opening != null) {
+        item = null;
+        paragraphOpen = false;
+        fence = opening[2];
+        return 'open';
+      }
+      if (
+        item != null &&
+        !itemHadBlank &&
+        itemEndsInParagraph &&
+        canContinueParagraphLazily(lines, index)
+      ) {
+        // A lazy continuation line of the item's paragraph.
+        return null;
+      }
+      item = null;
+      paragraphOpen = !isHeadingOrBreak(line);
+      return null;
+    },
   };
 }
 
@@ -883,20 +1076,13 @@ function extractLinkDefinitions(
   const defs = new Map<string, string>();
   const keep = new Array<boolean>(lines.length).fill(true);
   let atBoundary = true;
-  let inFence = false;
-  let fenceMarker = '';
+  const fences = topLevelFences();
 
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
-    if (inFence) {
-      if (line.startsWith(fenceMarker)) {
-        inFence = false;
-        fenceMarker = '';
-        // The line after a closed fence begins a new block.
-        atBoundary = true;
-      } else {
-        atBoundary = false;
-      }
+    if (fences.open) {
+      // The line after a closed fence begins a new block.
+      atBoundary = fences.read(lines, index) === 'close';
       continue;
     }
     if (math) {
@@ -909,10 +1095,7 @@ function extractLinkDefinitions(
         continue;
       }
     }
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
-    if (fenceMatch) {
-      inFence = true;
-      fenceMarker = fenceMatch[1];
+    if (fences.read(lines, index) === 'open') {
       atBoundary = false;
       continue;
     }
@@ -1320,9 +1503,6 @@ interface InlineIndex {
    */
   openerClose(open: number): number;
 }
-
-/** The most characters a link label may hold (CommonMark 0.31 §4.7). */
-const MAX_LINK_LABEL_LENGTH = 999;
 
 function inlineIndexOf(
   text: string,
@@ -2924,7 +3104,21 @@ function nested(opts: ResolvedOptions): ResolvedOptions {
     sourceRanges: false,
     astPositions: false,
     blockDepth: opts.blockDepth + 1,
+    baseLine: undefined,
+    lineOrigin: undefined,
   };
+}
+
+/**
+ * The same options for content parsed out of an enclosing block whose input
+ * lines came from the document lines `origin` names. Without source lines,
+ * exactly `nested(opts)`.
+ */
+function nestedAt(
+  opts: ResolvedOptions,
+  origin: ReadonlyArray<number> | null,
+): ResolvedOptions {
+  return origin == null ? nested(opts) : {...nested(opts), lineOrigin: origin};
 }
 
 function blockExtensionColumn(line: string): number | null {
@@ -2952,7 +3146,7 @@ function isBlockStart(line: string): boolean {
   if (/^ {0,3}#{1,6} /.test(line)) {
     return true;
   }
-  if (/^(`{3,}|~{3,})/.test(line)) {
+  if (FENCE_LINE.test(line)) {
     return true;
   }
   if (isHorizontalRule(line)) {
@@ -2989,7 +3183,7 @@ function canContinueParagraphLazily(
   }
   if (
     /^ {0,3}#{1,6} /.test(line) ||
-    /^(`{3,}|~{3,})/.test(line) ||
+    FENCE_LINE.test(line) ||
     isHorizontalRule(line) ||
     QUOTE_MARKER.test(line) ||
     /^ {0,9}[-*+] /.test(line) ||
@@ -3041,8 +3235,12 @@ function sourceEndsInParagraph(source: string, opts: ResolvedOptions): boolean {
 function splitTableRow(line: string): string[] {
   let start = 0;
   let end = line.length;
-  if (line.startsWith('|')) {
-    start = 1;
+  // A row's indentation, and its leading pipe, open no cell.
+  while (start < end && (line[start] === ' ' || line[start] === '\t')) {
+    start++;
+  }
+  if (line[start] === '|') {
+    start++;
     while (start < end && line[start] === ' ') {
       start++;
     }
@@ -3162,6 +3360,7 @@ function parseList(
   ordered: boolean,
   opts: ResolvedOptions,
   interruptsLazyContinuation: (lineIndex: number) => boolean,
+  documentLineOf: ((line: number) => number) | null,
 ): {node: MarkdownAstBlockContent<RuntimeExtensionNode>; nextIndex: number} {
   const items: MarkdownAstListItem<RuntimeExtensionNode>[] = [];
   const baseIndent = getIndent(lines[startIndex]);
@@ -3189,6 +3388,7 @@ function parseList(
   const startsItem = (line: string) =>
     itemPattern.test(line) && !isHorizontalRule(line);
   while (index < lines.length && startsItem(lines[index])) {
+    const itemStart = index;
     const content = ordered
       ? lines[index].replace(new RegExp(`^ *\\d+${escDelim} `), '')
       : lines[index].replace(/^ *[-*+] /, '');
@@ -3288,11 +3488,30 @@ function parseList(
 
     const source = listItemSource(itemText, subLines, lazyLineIndexes);
 
-    items.push({
-      type: 'listItem',
-      checked,
-      children: parseMarkdownImpl(source, nested(opts)),
-    });
+    if (documentLineOf == null) {
+      items.push({
+        type: 'listItem',
+        checked,
+        children: parseMarkdownImpl(source, nested(opts)),
+      });
+    } else {
+      // The item's source holds one line per line it consumed, from its
+      // marker line to its last content line, so its lines map back
+      // one-to-one; blank lines are consumed only before more content.
+      const origin: number[] = [];
+      for (let line = itemStart; line < index; line++) {
+        origin.push(documentLineOf(line));
+      }
+      items.push({
+        type: 'listItem',
+        checked,
+        children: parseMarkdownImpl(source, nestedAt(opts, origin)),
+        position: {
+          start: {line: origin[0] + 1},
+          end: {line: origin[origin.length - 1] + 1},
+        },
+      });
+    }
 
     // CommonMark loose list: blank line(s) between items of the same style
     // and indent still form one list. Skip the blanks and continue if the
@@ -3318,6 +3537,7 @@ function parseList(
     spread: loose || undefined,
     children: items,
   };
+  listMarkerShapes.set(node, `${baseIndent}:${ordered ? delim : bullet}`);
   return {node, nextIndex: index};
 }
 
@@ -3486,12 +3706,15 @@ function parseMarkdownImpl(
   // The line each block started on, parallel to `blocks`. Only collected when
   // ranges were asked for; a block's end is resolved after the loop, since the
   // branch that produced it has already moved `index` past whatever it read.
+  // A parse records lines only when it can place them in the document: at
+  // the top level, or nested with a table of its lines' origins.
+  const documentLineOf = sourceLineResolver(opts, lineMap);
   const blockStartLines: number[] | null =
-    opts.astPositions === true ? [] : null;
+    opts.astPositions === true || documentLineOf != null ? [] : null;
   // Set only by a block that consumes blank lines as content, where the
   // positional end derivation would trim them away.
   const blockEndLines: (number | undefined)[] | null =
-    opts.astPositions === true ? [] : null;
+    blockStartLines != null ? [] : null;
   let blockStartLine = 0;
   const pushBlock = (
     node: MarkdownAstBlockContent<RuntimeExtensionNode>,
@@ -3512,12 +3735,12 @@ function parseMarkdownImpl(
     }
 
     // --- Fenced code block ---
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+    const fenceMatch = FENCE_LINE.exec(line);
     if (fenceMatch) {
-      const fence = fenceMatch[1];
+      const [opening, indentation, fence] = fenceMatch;
       // The rest of the line is the info string; its first word, after any
       // spaces, is the language (CommonMark 0.31 §4.5).
-      const info = line.slice(fence.length).trim();
+      const info = line.slice(opening.length).trim();
       const language = info.match(/^(\S+)/)?.[1] ?? null;
       const legacyLanguage = info.match(/^(\w*)/)?.[1] || null;
       const meta =
@@ -3525,10 +3748,26 @@ function parseMarkdownImpl(
           ? undefined
           : info.slice(language.length).trim() || undefined;
       const codeLines: string[] = [];
+      // Each code line loses as much indentation as the opening fence has.
+      const fenceIndentation = new RegExp(`^ {0,${indentation.length}}`);
       index++;
-      while (index < lines.length && !lines[index].startsWith(fence)) {
-        codeLines.push(lines[index]);
+      while (index < lines.length && !closesFence(lines[index], fence)) {
+        codeLines.push(lines[index].replace(fenceIndentation, ''));
         index++;
+      }
+      const closed = index < lines.length;
+      // A fence left open in the document runs to its end, whose final line
+      // ending starts no line of code (CommonMark 0.31 §4.5) — as a closed
+      // fence's code ends before its closing line. A container's content is
+      // rebuilt from its lines, so its last line is a real one: a quoted
+      // blank line stays code.
+      if (
+        opts.blockDepth === 0 &&
+        !closed &&
+        codeLines.length > 0 &&
+        lines[lines.length - 1] === ''
+      ) {
+        codeLines.pop();
       }
       index++; // skip closing fence
       // A fence owns its blank lines, and an unterminated one (mid-stream)
@@ -3657,7 +3896,18 @@ function parseMarkdownImpl(
       }
       pushBlock({
         type: 'blockquote',
-        children: parseMarkdownImpl(quoteLines.join('\n'), nested(opts)),
+        children: parseMarkdownImpl(
+          quoteLines.join('\n'),
+          nestedAt(
+            opts,
+            // Each quote line is one source line, from the quote's first on.
+            documentLineOf == null
+              ? null
+              : quoteLines.map((_, offset) =>
+                  documentLineOf(blockStartLine + offset),
+                ),
+          ),
+        ),
       });
       continue;
     }
@@ -3670,6 +3920,7 @@ function parseMarkdownImpl(
         false,
         opts,
         interruptsWithBlockExtension,
+        documentLineOf,
       );
       pushBlock(listResult.node);
       index = listResult.nextIndex;
@@ -3684,6 +3935,7 @@ function parseMarkdownImpl(
         true,
         opts,
         interruptsWithBlockExtension,
+        documentLineOf,
       );
       pushBlock(listResult.node);
       index = listResult.nextIndex;
@@ -3767,6 +4019,7 @@ function parseMarkdownImpl(
       lineMap,
       input,
       opts,
+      documentLineOf,
     );
   }
   const nestedParses = baseOpts.nestedParses?.map;
@@ -3793,13 +4046,17 @@ function stampSourceRanges(
   lineMap: number[] | undefined,
   input: string,
   opts: ResolvedOptions,
+  documentLineOf: ((line: number) => number) | null,
 ): void {
+  const withOffsets = opts.astPositions === true;
   const base = opts.baseOffset ?? 0;
   // Offset of the first character of every line of the input.
   const inputLineStarts = [0];
-  for (let i = 0; i < input.length; i++) {
-    if (input[i] === '\n') {
-      inputLineStarts.push(i + 1);
+  if (withOffsets) {
+    for (let i = 0; i < input.length; i++) {
+      if (input[i] === '\n') {
+        inputLineStarts.push(i + 1);
+      }
     }
   }
   // Stripping removes whole lines and never edits one, so a parsed line's
@@ -3822,15 +4079,60 @@ function stampSourceRanges(
     // `\r` included, since the parser reads it as part of the line too and a
     // range that dropped it would slice to something that re-parses
     // differently.
-    const end = lineStart(endLine) + lines[endLine].length;
-    blocks[i] = {
-      ...blocks[i],
-      position: {
+    // Each point is built as one literal so a parse without source lines
+    // produces exactly the `{offset}` points it always has.
+    let position: MarkdownAstPosition;
+    if (documentLineOf == null) {
+      position = {
         start: {offset: lineStart(startLine)},
-        end: {offset: end},
-      },
-    };
+        end: {offset: lineStart(endLine) + lines[endLine].length},
+      };
+    } else if (withOffsets) {
+      position = {
+        start: {
+          offset: lineStart(startLine),
+          line: documentLineOf(startLine) + 1,
+        },
+        end: {
+          offset: lineStart(endLine) + lines[endLine].length,
+          line: documentLineOf(endLine) + 1,
+        },
+      };
+    } else {
+      position = {
+        start: {line: documentLineOf(startLine) + 1},
+        end: {line: documentLineOf(endLine) + 1},
+      };
+    }
+    blocks[i] = withMarkerShapeOf(blocks[i], {...blocks[i], position});
   }
+}
+
+/**
+ * Maps a line of a parse's block loop to its 0-based document line, or `null`
+ * when this parse records no lines. Link reference definitions are stripped
+ * before the loop, so a loop line goes through `lineMap` to its input line
+ * first; a nested parse then goes through `lineOrigin` to the document, and a
+ * top-level parse adds the line its slice starts on.
+ */
+function sourceLineResolver(
+  opts: ResolvedOptions,
+  lineMap: number[] | undefined,
+): ((line: number) => number) | null {
+  if (opts.sourceLines !== true) {
+    return null;
+  }
+  const inputLine = (line: number): number =>
+    lineMap != null ? lineMap[line] : line;
+  const origin = opts.lineOrigin;
+  if (origin != null) {
+    return line => origin[inputLine(line)];
+  }
+  if (opts.astPositions !== true) {
+    return null;
+  }
+  const baseLine = opts.baseLine ?? 0;
+  return line => baseLine + inputLine(line);
 }
 
 // ---------------------------------------------------------------------------
@@ -3891,6 +4193,11 @@ type IncrementalWork = {
 type IncrementalCache = {
   /** Character offset immediately after the immutable settled prefix. */
   settledEnd: number;
+  /**
+   * Line breaks before `settledEnd`, kept only while source lines are
+   * recorded; `undefined` when unknown, counted once from the settled text.
+   */
+  settledEndLine: number | undefined;
   /** Definitions whose complete block is in the settled prefix. */
   settledLinkDefs: Map<string, string>;
   /** Definitions still in the mutable tail on the preceding call. */
@@ -3919,6 +4226,7 @@ function makeIncrementalCache(
   const {defs} = extractLinkDefinitions(state.settledText, state.math);
   const cache: IncrementalCache = {
     settledEnd: state.settledText.length,
+    settledEndLine: undefined,
     settledLinkDefs: new Map(defs),
     tailLinkDefs: new Map(),
     linkDefs: defs,
@@ -3995,8 +4303,7 @@ function findSettledBoundary(
   openFence: boolean;
   openMath: boolean;
 } {
-  let inFence = false;
-  let fenceMarker = '';
+  const fences = topLevelFences();
   let mathContainer: DisplayMathContainer | null = null;
   let suppressMathUntilBoundary = false;
   let lastBoundary = -1;
@@ -4006,16 +4313,8 @@ function findSettledBoundary(
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
 
-    if (inFence) {
-      const fenceMatch = line.match(/^(`{3,}|~{3,})/);
-      if (
-        fenceMatch &&
-        fenceMatch[1].startsWith(fenceMarker[0]) &&
-        fenceMatch[1].length >= fenceMarker.length
-      ) {
-        inFence = false;
-        fenceMarker = '';
-      }
+    if (fences.open) {
+      fences.read(lines, lineIndex);
       continue;
     }
 
@@ -4048,10 +4347,7 @@ function findSettledBoundary(
       }
     }
 
-    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
-    if (fenceMatch) {
-      inFence = true;
-      fenceMarker = fenceMatch[1];
+    if (fences.read(lines, lineIndex) === 'open') {
       boundaryBeforeFence = lastBoundary;
       continue;
     }
@@ -4071,12 +4367,12 @@ function findSettledBoundary(
   }
 
   return {
-    boundary: inFence
+    boundary: fences.open
       ? boundaryBeforeFence
       : mathContainer != null
         ? boundaryBeforeMath
         : lastBoundary,
-    openFence: inFence,
+    openFence: fences.open,
     openMath: mathContainer != null,
   };
 }
@@ -4300,24 +4596,15 @@ export function trimStreamingArtifacts(
  */
 function trimOpenDisplayMath(text: string): string {
   const lines = text.split('\n');
-  let inFence = false;
-  let fenceMarker = '';
+  const fences = topLevelFences();
   let mathContainer: DisplayMathContainer | null = null;
   let suppressMathUntilBoundary = false;
   let mathStartLine = -1;
 
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
-    if (inFence) {
-      const fence = line.match(/^(`{3,}|~{3,})/);
-      if (
-        fence != null &&
-        fence[1].startsWith(fenceMarker[0]) &&
-        fence[1].length >= fenceMarker.length
-      ) {
-        inFence = false;
-        fenceMarker = '';
-      }
+    if (fences.open) {
+      fences.read(lines, index);
       continue;
     }
     if (mathContainer != null) {
@@ -4339,10 +4626,7 @@ function trimOpenDisplayMath(text: string): string {
       suppressMathUntilBoundary = false;
     }
 
-    const fence = line.match(/^(`{3,}|~{3,})/);
-    if (fence != null) {
-      inFence = true;
-      fenceMarker = fence[1];
+    if (fences.read(lines, index) === 'open') {
       continue;
     }
     const container = suppressMathUntilBoundary
@@ -4424,8 +4708,69 @@ function trimUnsettledStructural(text: string): string {
  * document — so the slice's blocks report ranges into the whole document
  * rather than into the slice.
  */
-function atOffset(opts: ResolvedOptions, offset: number): ResolvedOptions {
-  return opts.astPositions === true ? {...opts, baseOffset: offset} : opts;
+function atOffset(
+  opts: ResolvedOptions,
+  offset: number,
+  line: number,
+): ResolvedOptions {
+  if (opts.astPositions !== true) {
+    return opts;
+  }
+  return opts.sourceLines === true
+    ? {...opts, baseOffset: offset, baseLine: line}
+    : {...opts, baseOffset: offset};
+}
+
+/** Line breaks in `text` from `start` to `end`. */
+function countLineBreaks(text: string, start = 0, end = text.length): number {
+  let count = 0;
+  for (let index = text.indexOf('\n', start); index !== -1 && index < end;) {
+    count++;
+    index = text.indexOf('\n', index + 1);
+  }
+  return count;
+}
+
+/**
+ * Each list the block parser builds, keyed to its markers: their indentation
+ * and the bullet or delimiter. The full parse continues a list only with
+ * items at the same indentation with the same bullet or delimiter.
+ */
+const listMarkerShapes = new WeakMap<object, string>();
+
+/**
+ * Whether the full parse reads `next`, a blank line after `previous`, as more
+ * of the same list: both numbered or both bulleted, with the same delimiter,
+ * and — for lists the block parser built — markers at the same indentation
+ * with the same bullet. So `- a⏎⏎* b` and ` 1. a⏎⏎2. b` stay two lists.
+ */
+function continuesList(
+  previous: MarkdownAstList<RuntimeExtensionNode>,
+  next: MarkdownAstList<RuntimeExtensionNode>,
+): boolean {
+  if (
+    previous.ordered !== next.ordered ||
+    previous.delimiter !== next.delimiter
+  ) {
+    return false;
+  }
+  const previousShape = listMarkerShapes.get(previous);
+  const nextShape = listMarkerShapes.get(next);
+  return (
+    previousShape == null || nextShape == null || previousShape === nextShape
+  );
+}
+
+/** `merged`, carrying the marker shape of the list it continues. */
+function withMarkerShapeOf<Node extends object>(
+  list: object,
+  merged: Node,
+): Node {
+  const shape = listMarkerShapes.get(list);
+  if (shape != null) {
+    listMarkerShapes.set(merged, shape);
+  }
+  return merged;
 }
 
 /**
@@ -4447,8 +4792,7 @@ function mergeSettledBlocks(
   if (
     prevLast.type === 'list' &&
     deltaFirst.type === 'list' &&
-    prevLast.ordered === deltaFirst.ordered &&
-    prevLast.delimiter === deltaFirst.delimiter
+    continuesList(prevLast, deltaFirst)
   ) {
     const merged: MarkdownAstBlockContent<RuntimeExtensionNode> = {
       type: 'list',
@@ -4467,7 +4811,11 @@ function mergeSettledBlocks(
           }
         : null),
     };
-    return [...prev.slice(0, -1), merged, ...delta.slice(1)];
+    return [
+      ...prev.slice(0, -1),
+      withMarkerShapeOf(prevLast, merged),
+      ...delta.slice(1),
+    ];
   }
   return [...prev, ...delta];
 }
@@ -4489,10 +4837,9 @@ function appendSettledBlocks(
   if (
     prevLast.type === 'list' &&
     deltaFirst.type === 'list' &&
-    prevLast.ordered === deltaFirst.ordered &&
-    prevLast.delimiter === deltaFirst.delimiter
+    continuesList(prevLast, deltaFirst)
   ) {
-    prev[prev.length - 1] = {
+    prev[prev.length - 1] = withMarkerShapeOf(prevLast, {
       type: 'list',
       ordered: prevLast.ordered,
       start: prevLast.start,
@@ -4507,7 +4854,7 @@ function appendSettledBlocks(
             },
           }
         : null),
-    };
+    });
     prev.push(...delta.slice(1));
     return true;
   }
@@ -4546,6 +4893,7 @@ function resetIncrementalCache(
   state.pluginSyntaxIdentity = undefined;
   state.math = undefined;
   cache.settledEnd = 0;
+  cache.settledEndLine = 0;
   cache.settledLinkDefs.clear();
   cache.tailLinkDefs = new Map();
   cache.linkDefs = new Map();
@@ -4702,6 +5050,11 @@ function parseMarkdownIncrementalAstBlocks(
   // fence/boundary detection, definition collection, and block construction.
   // An open fence simply keeps the suffix growing until its closing marker.
   const oldSettledEnd = cache.settledEnd;
+  // The line the settled prefix ends on, only while lines are recorded.
+  const oldSettledLine =
+    opts.sourceLines === true
+      ? (cache.settledEndLine ??= countLineBreaks(state.settledText))
+      : 0;
   const tailRaw = input.slice(oldSettledEnd);
   const tailLines = tailRaw.split('\n');
   const {boundary, openFence, openMath} = findSettledBoundary(
@@ -4761,6 +5114,10 @@ function parseMarkdownIncrementalAstBlocks(
       state.settledUpTo++;
     }
     cache.settledEnd = nextSettledEnd;
+    cache.settledEndLine =
+      opts.sourceLines === true
+        ? oldSettledLine + countLineBreaks(settledDelta)
+        : undefined;
   }
 
   // Blank lines before the tail and whitespace after it carry nothing, but the
@@ -4778,9 +5135,10 @@ function parseMarkdownIncrementalAstBlocks(
       : trimmedUnsettledInput;
   // Structural trimming holds back lines that look like an incomplete list or
   // table, which inside a fence is ordinary code: a TypeScript union or a `- `
-  // would disappear from the code block as it streams.
+  // would disappear from the code block as it streams. And an open fence's
+  // trailing blank lines are code, as in a full parse of the same text.
   const unsettledText = openFence
-    ? unsettledRaw
+    ? unsettledInput.replace(/^(?:[ \t]*\r?\n)+/, '')
     : openMath
       ? trimOpenDisplayMath(unsettledRaw)
       : trimUnsettledStructural(unsettledRaw);
@@ -4800,7 +5158,7 @@ function parseMarkdownIncrementalAstBlocks(
   } else if (settledDelta !== '') {
     const deltaBlocks = parseMarkdownImpl(
       settledDelta,
-      atOffset(parseOpts, oldSettledEnd),
+      atOffset(parseOpts, oldSettledEnd, oldSettledLine),
     );
     const mergeIndex = cache.settledAstBlocks.length - 1;
     const mergedList = appendSettledBlocks(cache.settledAstBlocks, deltaBlocks);
@@ -4837,7 +5195,14 @@ function parseMarkdownIncrementalAstBlocks(
     ? parseMarkdownImpl(
         unsettledText,
         unsettledStart >= 0
-          ? atOffset(parseOpts, unsettledStart)
+          ? atOffset(
+              parseOpts,
+              unsettledStart,
+              opts.sourceLines === true
+                ? (cache.settledEndLine ?? 0) +
+                    countLineBreaks(input, cache.settledEnd, unsettledStart)
+                : 0,
+            )
           : nested(parseOpts),
       )
     : [];

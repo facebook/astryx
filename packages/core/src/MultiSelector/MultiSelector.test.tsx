@@ -25,7 +25,7 @@ import {
   type MultiSelectorHandle,
   type MultiSelectorChange,
 } from './MultiSelector';
-import {useRef} from 'react';
+import {useRef, useState} from 'react';
 import {Icon} from '../Icon';
 import {InternationalizationProvider} from '../i18n';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -1595,6 +1595,55 @@ describe('MultiSelector', () => {
       expect(clear).not.toHaveAttribute('tabIndex', '-1');
     });
 
+    it('returns focus to the trigger when the clear button is activated by keyboard', async () => {
+      function Controlled() {
+        const [value, setValue] = useState(['Apple', 'Banana']);
+        return (
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={value}
+            onChange={setValue}
+            hasClear
+          />
+        );
+      }
+      const user = userEvent.setup();
+      render(<Controlled />);
+      screen.getByRole('button', {name: 'Clear all Fruit'}).focus();
+      await user.keyboard('{Enter}');
+      expect(
+        screen.queryByRole('button', {name: 'Clear all Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+    });
+
+    it('leaves focus in the search input when the clear button is clicked with the list open', async () => {
+      function Controlled() {
+        const [value, setValue] = useState(['Apple', 'Banana']);
+        return (
+          <MultiSelector
+            label="Fruit"
+            options={defaultOptions}
+            value={value}
+            onChange={setValue}
+            hasClear
+            hasSearch
+          />
+        );
+      }
+      const user = userEvent.setup();
+      const {container} = render(<Controlled />);
+      await user.click(container.querySelector('[aria-haspopup]') as Element);
+      const search = screen.getByRole('combobox', h);
+      search.focus();
+      await user.click(screen.getByRole('button', {name: 'Clear all Fruit'}));
+      expect(
+        screen.queryByRole('button', {name: 'Clear all Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(search).toHaveFocus();
+    });
+
     it('scrolls the highlighted option into view during arrow navigation', async () => {
       const scrollIntoView = vi.fn();
       Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
@@ -1853,7 +1902,11 @@ describe('MultiSelector', () => {
         />,
       );
 
-      const container = screen.getByTestId('fruit-multi-selector');
+      // data-testid lands on the trigger; the reason tooltip anchors to the
+      // control box around it.
+      const container = screen
+        .getByTestId('fruit-multi-selector')
+        .closest('.astryx-multi-selector') as HTMLElement;
       const tooltip = screen.getByRole('tooltip', h);
       expect(tooltip).toHaveTextContent('Select a table first');
 
@@ -2475,7 +2528,7 @@ describe('MultiSelector clear icon theme target', () => {
     return icon as HTMLElement;
   };
 
-  it('renders the astryx-input-clear-icon target (plus the legacy alias) on the clear glyph', () => {
+  it('renders only the astryx-input-clear-icon target on the clear glyph', () => {
     render(
       <MultiSelector
         label="Fruit"
@@ -2488,11 +2541,10 @@ describe('MultiSelector clear icon theme target', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // `defineTheme` — a button-level target could not reach the icon's own
-    // color/size. The original per-component name remains as a compatibility
-    // alias.
+    // color/size.
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-multi-selector-clear-icon');
+    expect(icon).not.toHaveClass('astryx-multi-selector-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
 
@@ -2513,13 +2565,12 @@ describe('MultiSelector clear icon theme target', () => {
     expect(onChange).toHaveBeenCalledWith([]);
   });
 
-  it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
-    // The clear affordance now composes the shared InputClearButton (a ghost
-    // Button with a secondary/sm glyph), so the icon carries the canonical
-    // `astryx-input-clear-icon` target plus the supported compatibility alias
-    // `astryx-multi-selector-clear-icon`. Aside from those target
-    // classes it matches the shared button's own `close`/`sm`/`secondary`
-    // glyph exactly, so the default look is defined in one place.
+  it('routes the clear glyph through the shared clear button', () => {
+    // The clear affordance composes the shared InputClearButton (a ghost Button
+    // with a secondary/sm glyph), so the icon carries the canonical
+    // `astryx-input-clear-icon` target. Aside from that target class it matches
+    // the shared button's own `close`/`sm`/`secondary` glyph exactly, so the
+    // default look is defined in one place.
     render(
       <MultiSelector
         label="Fruit"
@@ -2531,7 +2582,7 @@ describe('MultiSelector clear icon theme target', () => {
     );
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-multi-selector-clear-icon');
+    expect(icon).not.toHaveClass('astryx-multi-selector-clear-icon');
 
     const {container: refContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
@@ -2541,26 +2592,22 @@ describe('MultiSelector clear icon theme target', () => {
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
-        .filter(
-          c =>
-            c !== 'astryx-input-clear-icon' &&
-            c !== 'astryx-multi-selector-clear-icon',
-        )
+        .filter(c => c !== 'astryx-input-clear-icon')
         .sort();
 
     expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
   });
 
-  it('exposes multi-selector-clear-icon so a theme reaches the icon color, size, and hover', () => {
+  it('uses input-clear-icon so a theme reaches the icon color, size, and hover', () => {
     // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
     // (target lands on the icon element) plus this generation assertion (the
     // theme emits same-element icon rules in @layer astryx-theme) together
     // prove the seam: a same-element theme rule wins over the icon's own
     // base-layer color/size.
     const theme = defineTheme({
-      name: 'multi-selector-clear-icon-test',
+      name: 'multi-selector-shared-clear-icon-test',
       components: {
-        'multi-selector-clear-icon': {
+        'input-clear-icon': {
           base: {
             width: '12px',
             height: '12px',
@@ -2572,10 +2619,10 @@ describe('MultiSelector clear icon theme target', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-multi-selector-clear-icon {');
+    expect(css).toContain('.astryx-input-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-multi-selector-clear-icon:hover');
+    expect(css).toContain('.astryx-input-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -3186,7 +3233,7 @@ describe('MultiSelector popup theme target', () => {
       '.astryx-multi-selector-popup',
     ) as HTMLElement;
     expect(popup).not.toBeNull();
-    expect(popup).toHaveClass('astryx-popover-surface');
+    expect(popup).toHaveClass('astryx-popover');
     // The scrolling list is a descendant, not the target itself.
     expect(popup.querySelector('[role="listbox"]')).not.toBeNull();
     expect(popup.getAttribute('role')).toBeNull();
@@ -3777,5 +3824,434 @@ describe('MultiSelector hasCreate', () => {
     await user.type(screen.getByRole('combobox', h), 'Urgent');
     expect(screen.queryAllByRole('option', h)).toHaveLength(0);
     expect(screen.getByText('No results found')).toBeInTheDocument();
+  });
+});
+
+describe('MultiSelector option actions (grid)', () => {
+  const edit = vi.fn();
+  const OPTIONS = [
+    {
+      value: 'bug',
+      label: 'Bug',
+      action: (
+        <button
+          type="button"
+          onClick={() => {
+            edit('bug');
+          }}>
+          Edit Bug
+        </button>
+      ),
+    },
+    {value: 'feature', label: 'Feature'},
+    {
+      value: 'docs',
+      label: 'Docs',
+      disabled: true,
+      action: (
+        <button
+          type="button"
+          onClick={() => {
+            edit('docs');
+          }}>
+          Edit Docs
+        </button>
+      ),
+    },
+  ];
+  beforeEach(() => {
+    edit.mockClear();
+  });
+
+  it('stays a listbox when no option carries an action, and action: null is none', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={[
+          {value: 'bug', label: 'Bug', action: null},
+          {value: 'feature', label: 'Feature'},
+        ]}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    await user.click(trigger);
+    expect(screen.getByRole('listbox', h)).toBeInTheDocument();
+    expect(screen.queryByRole('grid', h)).toBeNull();
+    expect(screen.getAllByRole('option', h)).toHaveLength(2);
+  });
+
+  it('is a grid of rows with exactly two gridcells once an option carries an action', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={['bug']}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'grid');
+    await user.click(trigger);
+
+    const grid = screen.getByRole('grid', h);
+    expect(screen.queryByRole('listbox', h)).toBeNull();
+    expect(screen.queryByRole('option', h)).toBeNull();
+    expect(grid).toHaveAttribute('aria-multiselectable', 'true');
+    expect(trigger.getAttribute('aria-controls')).toBe(grid.id);
+
+    const rows = screen.getAllByRole('row', h);
+    // select-all + 3 options
+    expect(rows).toHaveLength(4);
+    for (const row of rows) {
+      const cells = Array.from(row.children);
+      expect(cells).toHaveLength(2);
+      expect(cells[0]).toHaveAttribute('role', 'gridcell');
+      expect(cells[1]).toHaveAttribute('role', 'gridcell');
+    }
+    // Every exposed child of the grid is a row.
+    expect(
+      Array.from(grid.children).every(c => c.getAttribute('role') === 'row'),
+    ).toBe(true);
+
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    expect(bug).toHaveAttribute('aria-selected', 'true');
+    expect(bug.children[1]).toContainElement(
+      screen.getByRole('button', {name: 'Edit Bug', ...h}),
+    );
+    // Rows without an action, and the select-all row, have an empty cell.
+    expect(
+      screen.getByRole('row', {name: 'Feature', ...h}).children[1],
+    ).toBeEmptyDOMElement();
+    expect(rows[0].children[1]).toBeEmptyDOMElement();
+    // The row's name is the option; the control keeps its own.
+    expect(bug).toHaveAccessibleName('Bug');
+  });
+
+  it('latches: a query that filters the actioned option out keeps the grid', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    expect(screen.getByRole('grid', h)).toBeInTheDocument();
+    await user.type(screen.getByRole('combobox', h), 'Feat');
+    expect(screen.getAllByRole('row', h).map(r => r.textContent)).toEqual([
+      'Feature',
+    ]);
+    expect(screen.getByRole('grid', h)).toBeInTheDocument();
+    // The action removed on a later render: still a grid.
+    rerender(
+      <MultiSelector
+        label="Labels"
+        options={[{value: 'feature', label: 'Feature'}]}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    expect(screen.getByRole('grid', h)).toBeInTheDocument();
+  });
+
+  it('becomes a grid when options arrive after loading, inside a section too', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(
+      <MultiSelector
+        label="Labels"
+        options={[]}
+        value={[]}
+        onChange={() => {}}
+        isLoading
+      />,
+    );
+    expect(screen.getByRole('combobox', {name: 'Labels'})).toHaveAttribute(
+      'aria-haspopup',
+      'listbox',
+    );
+    rerender(
+      <MultiSelector
+        label="Labels"
+        options={[
+          {
+            type: 'section',
+            title: 'Type',
+            options: OPTIONS,
+          },
+        ]}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'grid');
+    await user.click(trigger);
+    const group = screen.getByRole('rowgroup', {name: 'Type', ...h});
+    expect(screen.queryByRole('group', h)).toBeNull();
+    expect(group.querySelectorAll('[role="row"]')).toHaveLength(3);
+  });
+
+  it('pressing the option cell toggles; pressing the action fires only the action', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+      />,
+    );
+    await user.click(screen.getByRole('combobox', {name: 'Labels'}));
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    await user.click(bug.children[0]);
+    expect(onChange).toHaveBeenCalledWith(['bug']);
+
+    onChange.mockClear();
+    await user.click(screen.getByRole('button', {name: 'Edit Bug', ...h}));
+    expect(edit).toHaveBeenCalledWith('bug');
+    expect(onChange).not.toHaveBeenCalled();
+    // The panel stays open.
+    expect(screen.getByRole('grid', h)).toBeInTheDocument();
+
+    // A disabled option's action is the caller's control, still live.
+    await user.click(screen.getByRole('button', {name: 'Edit Docs', ...h}));
+    expect(edit).toHaveBeenCalledWith('docs');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('the inline-end arrow reaches the action cell, Enter fires it, inline-start returns', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={onChange}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    // Click-open highlights the first row, on its option cell.
+    expect(trigger).toHaveAttribute('aria-activedescendant', bug.id);
+
+    fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+    expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      bug.children[1].id,
+    );
+    fireEvent.keyDown(trigger, {key: 'Enter'});
+    expect(edit).toHaveBeenCalledWith('bug');
+    expect(onChange).not.toHaveBeenCalled();
+    // The highlight stays where it was.
+    expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      bug.children[1].id,
+    );
+
+    fireEvent.keyDown(trigger, {key: 'ArrowLeft'});
+    expect(trigger).toHaveAttribute('aria-activedescendant', bug.id);
+    fireEvent.keyDown(trigger, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(['bug']);
+
+    // A row without an action: the inline-end arrow is a no-op there, and
+    // Down from the action cell lands on the next row's option cell.
+    fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+    fireEvent.keyDown(trigger, {key: 'ArrowDown'});
+    const feature = screen.getByRole('row', {name: 'Feature', ...h});
+    expect(trigger).toHaveAttribute('aria-activedescendant', feature.id);
+    fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+    expect(trigger).toHaveAttribute('aria-activedescendant', feature.id);
+  });
+
+  it('follows visual direction under RTL', async () => {
+    const user = userEvent.setup();
+    const original = window.getComputedStyle;
+    const spy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        const style = original.call(window, el, pseudo);
+        Object.defineProperty(style, 'direction', {value: 'rtl'});
+        return style;
+      });
+    try {
+      render(
+        <MultiSelector
+          label="Labels"
+          options={OPTIONS}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      const trigger = screen.getByRole('combobox', {name: 'Labels'});
+      await user.click(trigger);
+      const bug = screen.getByRole('row', {name: 'Bug', ...h});
+      fireEvent.keyDown(trigger, {key: 'ArrowRight'});
+      expect(trigger).toHaveAttribute('aria-activedescendant', bug.id);
+      fireEvent.keyDown(trigger, {key: 'ArrowLeft'});
+      expect(trigger).toHaveAttribute(
+        'aria-activedescendant',
+        bug.children[1].id,
+      );
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('with search, Left/Right move the caret until a row is highlighted', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', h);
+    await user.type(search, 'Bu');
+    // No row highlighted: the arrow is the input's.
+    const right = fireEvent.keyDown(search, {key: 'ArrowRight'});
+    expect(right).toBe(true);
+    expect(search).not.toHaveAttribute('aria-activedescendant');
+
+    fireEvent.keyDown(search, {key: 'ArrowDown'});
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    expect(search).toHaveAttribute('aria-activedescendant', bug.id);
+    const moved = fireEvent.keyDown(search, {key: 'ArrowRight'});
+    expect(moved).toBe(false);
+    expect(search).toHaveAttribute('aria-activedescendant', bug.children[1].id);
+    fireEvent.keyDown(search, {key: 'Enter'});
+    expect(edit).toHaveBeenCalledWith('bug');
+    expect(search).toHaveValue('Bu');
+  });
+
+  it('hovering the action cell highlights that row on its action cell', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    const bug = screen.getByRole('row', {name: 'Bug', ...h});
+    const feature = screen.getByRole('row', {name: 'Feature', ...h});
+    fireEvent.mouseEnter(feature.children[0]);
+    expect(trigger).toHaveAttribute('aria-activedescendant', feature.id);
+    fireEvent.mouseEnter(bug.children[1]);
+    expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      bug.children[1].id,
+    );
+    fireEvent.mouseEnter(bug.children[0]);
+    expect(trigger).toHaveAttribute('aria-activedescendant', bug.id);
+  });
+
+  it('Tab closes the panel as before: no action control is a stop inside it', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={OPTIONS}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const trigger = screen.getByRole('combobox', {name: 'Labels'});
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(trigger, {key: 'Tab'});
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
+  it('warns in development about an action control with no accessible name', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Labels"
+          options={[
+            {value: 'bug', label: 'Bug', action: <button type="button" />},
+          ]}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Labels'}));
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(/MultiSelector[\s\S]*accessible name/),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});
+
+describe('MultiSelector create row inside a grid', () => {
+  it('is a row with exactly two gridcells, the action cell empty, and the arrow stays on the option', async () => {
+    // spec:AST-058 FR3: in a grid every row has exactly two cells, and a
+    // system-minted row is no exception. The create row has no control of
+    // its own, so its action cell is present and empty, and the inline-end
+    // arrow has nowhere to go.
+    const user = userEvent.setup();
+    const onChange =
+      vi.fn<(value: string[], change?: MultiSelectorChange) => void>();
+    render(
+      <MultiSelector
+        label="Labels"
+        options={[
+          {
+            value: 'bug',
+            label: 'Bug',
+            action: <button type="button">Edit Bug</button>,
+          },
+          {value: 'feature', label: 'Feature'},
+        ]}
+        value={[]}
+        onChange={onChange}
+        hasSearch
+        hasCreate
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: 'Labels'}));
+    const search = screen.getByRole('combobox', {hidden: true});
+    await user.type(search, 'Urgent');
+
+    const rows = screen.getAllByRole('row', {hidden: true});
+    expect(rows).toHaveLength(1);
+    const create = rows[0];
+    expect(create).toHaveTextContent('Create "Urgent"');
+    const cells = Array.from(create.children).filter(
+      c => c.getAttribute('role') === 'gridcell',
+    );
+    expect(cells).toHaveLength(2);
+    expect(cells[1]).toBeEmptyDOMElement();
+
+    await user.keyboard('{ArrowDown}{ArrowRight}{Enter}');
+    expect(onChange).toHaveBeenCalledWith(['Urgent'], {
+      type: 'create',
+      query: 'Urgent',
+    });
   });
 });

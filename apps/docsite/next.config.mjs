@@ -9,7 +9,7 @@
  * @position Next.js configuration for the existing Vercel docsite deployment.
  */
 
-import {readFileSync, readdirSync} from 'node:fs';
+import {existsSync, readFileSync, readdirSync} from 'node:fs';
 import {resolve} from 'node:path';
 
 const playgroundCookieCompatibility = readFileSync(
@@ -19,6 +19,17 @@ const playgroundCookieCompatibility = readFileSync(
   ),
   'utf8',
 );
+
+// Slugs that are not pages of their own (generate-data.mjs): a guide under a
+// docs-tree namespace opens at its section on the namespace's full page, and
+// a flat topic merged into another page opens there.
+const docRedirectsPath = resolve(
+  import.meta.dirname,
+  'src/generated/docRedirects.json',
+);
+const docRedirects = existsSync(docRedirectsPath)
+  ? JSON.parse(readFileSync(docRedirectsPath, 'utf8'))
+  : {};
 
 const stagesStaticApps =
   process.env.VERCEL_ENV === 'preview' ||
@@ -53,21 +64,18 @@ const nextConfig = {
       ],
     };
   },
-  // The CLI's integration guide became short guides under cli/integrations,
-  // each with its own page (/docs/cli-integrations-<name>). The old guide
-  // pages redirect to where their content now starts.
+  // Slugs that are not pages of their own redirect to where their text is
+  // shown (docRedirects, from generate-data.mjs): each guide of a docs-tree
+  // namespace to its section on the namespace's page, including the CLI's
+  // integration guides on the CLI Integrations and Writing docs pages.
   async redirects() {
     return [
-      {
-        source: '/docs/cli-integrations',
-        destination: '/docs/cli-integrations-overview',
-        permanent: true,
-      },
-      {
-        source: '/docs/cli-writing-docs',
-        destination: '/docs/cli-integrations-docs-add-a-topic',
-        permanent: true,
-      },
+      // Temporary: a later site version may give these guides pages again.
+      ...Object.entries(docRedirects).map(([slug, destination]) => ({
+        source: `/docs/${slug}`,
+        destination,
+        permanent: false,
+      })),
     ];
   },
   // The playground preview evaluates user-authored code, so it is the one

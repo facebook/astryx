@@ -69,7 +69,7 @@ export function registerUpgrade(program) {
           emit(
             section('Available codemods'),
             records(result.data, {
-              fields: ['name', 'title', 'version', 'optional'],
+              fields: ['name', 'package', 'title', 'version', 'optional'],
             }),
           );
         }

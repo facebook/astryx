@@ -825,9 +825,9 @@ export default defineConfig(
   // off. Must come last so it overrides the blocks above.
   //
   // The package was outside these rules until now, so turning them on finds
-  // drift that predates this scope change: 25 untranslatable strings, four
-  // props missing `ref`, and six smaller API-shape items. Failing CI on work
-  // nobody has had the chance to do would mean either reverting the scope or
+  // drift that predates this scope change: four props missing `ref` and six
+  // smaller API-shape items. Failing CI on work nobody has had the chance to
+  // do would mean either reverting the scope or
   // landing a very large mixed change, so each one stays visible as a warning
   // and is tracked separately. Everything the package is ALREADY clean on —
   // the token and DOM rules, `no-classname-clobber`, `no-physical-properties`,
@@ -839,8 +839,6 @@ export default defineConfig(
   {
     files: ['packages/richtext/src/**/*.{ts,tsx}'],
     rules: {
-      // Every user- and AT-facing string in the toolbar is a literal.
-      '@astryx/no-hardcoded-i18n-string': 'warn',
       // React 19 ref-in-props migration for the editor's public props.
       '@astryx/require-ref-prop': 'warn',
       '@eslint-react/no-forward-ref': 'warn',

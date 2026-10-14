@@ -5,7 +5,8 @@
  * @input Uses the shared checkbox contract, Chromium harness, checked-in
  *   CheckboxA11y stories, state inventory, and exact known failures
  * @output Real-browser and accessibility-tree evidence for every current
- *   checkbox-bearing Astryx component part.
+ *   checkbox-bearing Astryx component part, including state restored after a
+ *   menu's expected pointer dismissal.
  * @position Browser lane required by AST-013; it makes no real-AT claim.
  */
 
@@ -109,13 +110,29 @@ async function runState(
     knownFailures: CHECKBOX_KNOWN_FAILURES,
     mount: async () => {
       await mountState(page, state);
-      return createChromiumHarness({
+      const harness = createChromiumHarness({
         page,
         subject: subjectFor(page, state),
         pointerTarget: pointerTargetFor(page, state),
         cdp,
         visibleLabel: visibleLabelFor(page, state),
       });
+      if ((state as CheckboxBindingState).opensMenu !== true) {
+        return harness;
+      }
+      return {
+        ...harness,
+        abortedPress: async subject => {
+          await harness.abortedPress(subject);
+          const item = subjectFor(page, state);
+          await item.waitFor({state: 'hidden'});
+          await page
+            .locator('#storybook-root')
+            .getByRole('button', {name: 'View options'})
+            .click();
+          await item.waitFor({state: 'visible'});
+        },
+      };
     },
   });
 }

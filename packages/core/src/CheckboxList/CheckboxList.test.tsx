@@ -469,15 +469,15 @@ describe('CheckboxList', () => {
     );
   });
 
-  it('forwards ref, className, and style to the field root and the item row', () => {
+  it('forwards ref to the group, container* to the field root, and item styling to the row', () => {
     const listRef = createRef<HTMLDivElement>();
     const itemRef = createRef<HTMLLIElement>();
-    render(
+    const {container} = render(
       <CheckboxList
         ref={listRef}
         label="Preferences"
-        className="consumer-list"
-        style={{marginTop: 12}}
+        containerClassName="consumer-list"
+        containerStyle={{marginTop: 12}}
         value={[]}
         onChange={() => {}}>
         <CheckboxListItem
@@ -489,14 +489,13 @@ describe('CheckboxList', () => {
         />
       </CheckboxList>,
     );
-    expect(listRef.current).toContainElement(
+    expect(listRef.current).toBe(
       screen.getByRole('group', {name: 'Preferences'}),
     );
-    expect(listRef.current).toHaveClass(
-      'consumer-list',
-      'astryx-checkbox-list',
-    );
-    expect(listRef.current).toHaveStyle({marginTop: '12px'});
+    const fieldRoot = container.querySelector('.consumer-list');
+    expect(fieldRoot).toHaveClass('astryx-checkbox-list');
+    expect(fieldRoot).toHaveStyle({marginTop: '12px'});
+    expect(fieldRoot).toContainElement(listRef.current);
     const row = screen.getByRole('listitem');
     expect(itemRef.current).toBe(row);
     expect(row).toHaveClass('consumer-item', 'astryx-list-item');

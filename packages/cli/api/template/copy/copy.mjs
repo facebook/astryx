@@ -18,7 +18,8 @@ import {
 } from '../../../foundation/fs/path-safety.mjs';
 import {AstryxError, writeFailed} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
-import {replaceDemoMedia} from '../../../foundation/discovery/template-adapter.mjs';
+import {pkgOf, replaceDemoMedia} from '../../../foundation/discovery/template-adapter.mjs';
+import {analyzeTemplateNeeds} from '../../../foundation/discovery/template-needs.mjs';
 
 /**
  * Scaffold an already-resolved template to `targetPath` (relative to `cwd`) and
@@ -93,15 +94,27 @@ export function templateCopy(match, {targetPath, cwd, overwrite = false}) {
     throw writeFailed(outputFilePath, cwd, err);
   }
 
+  // Analyze what the template needs that the project lacks: external packages
+  // and the StyleX compiler. Derived from the source's own imports.
+  const {notes, missingPackages, installCommand} = analyzeTemplateNeeds(
+    outputSource,
+    cwd,
+  );
+  const missing = missingPackages;
+
   const relOutput = path.relative(cwd, outputDir) || '.';
   return {
     type: 'template.copy',
+    package: pkgOf(match),
     data: {
       template: match.dirName,
       outputDir: relOutput,
       fileName: outputFileName,
       filesCopied: 1,
       demoMediaReplaced,
+      notes,
+      missingPackages: missing,
+      installCommand,
     },
   };
 }

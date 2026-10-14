@@ -982,6 +982,39 @@ export const SemanticFence: Story = {
   ),
 };
 
+function StoryHostCode({code, language}: {code: string; language?: string}) {
+  return (
+    <figure
+      aria-label={`Host code renderer: ${language ?? 'plaintext'}`}
+      style={{
+        margin: '12px 0',
+        padding: 12,
+        border: '1px dashed currentColor',
+        borderRadius: 8,
+      }}>
+      <figcaption style={{fontSize: 12, marginBottom: 8}}>
+        Host code renderer · {language ?? 'plaintext'}
+      </figcaption>
+      <pre style={{margin: 0}}>{code}</pre>
+    </figure>
+  );
+}
+
+export const SemanticFenceWithCodeRenderer: Story = {
+  name: 'Semantic Fence With Code Renderer',
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown
+        plugins={[markdownSemanticFenceDemoPlugin]}
+        components={{code: StoryHostCode}}>
+        {
+          '# Build flow\n\nThe fence plugin claims `diagram` fences, so they render through the plugin even though the host supplies its own code renderer:\n\n```diagram Checkout to deploy\nCheckout --> Test --> Deploy\n```\n\nEvery fence no plugin claims renders through the host code renderer:\n\n```ts\nconst stage = "deploy";\n```'
+        }
+      </Markdown>
+    </div>
+  ),
+};
+
 const decorationSource =
   '# Release notes\n\nThe parser now streams incrementally.\n\nEverything else is unchanged.';
 

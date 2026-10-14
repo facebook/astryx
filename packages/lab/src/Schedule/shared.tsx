@@ -631,6 +631,25 @@ export function formatEventTimeRange(
   )}`;
 }
 
+/**
+ * An event's start and end with their dates, such as "May 11 at 9:00 AM – May
+ * 13 at 9:00 AM" in en-US, for a timed span of a day or more
+ * (component:Schedule AR2).
+ */
+export function formatEventDateTimeRange(
+  event: CalendarInstantEvent,
+  timezoneID: string,
+  locale: Locale,
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: timezoneID,
+  }).formatRange(new Date(event.start), new Date(event.end));
+}
+
 export function formatEventStartTime(
   event: CalendarInstantEvent,
   timezoneID: string,
@@ -801,14 +820,6 @@ export const styles = stylex.create({
   monthGridRow: {
     display: 'contents',
   },
-  monthEventOverlay: {
-    position: 'absolute',
-    inset: 0,
-    display: 'grid',
-    gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-    gridAutoRows: '128px',
-    pointerEvents: 'none',
-  },
   monthCell: {
     position: 'relative',
     display: 'flex',
@@ -865,22 +876,33 @@ export const styles = stylex.create({
     gap: spacingVars['--spacing-0-5'],
     minWidth: 0,
   },
-  monthEventSpan: (
-    week: number,
-    columnStart: number,
-    columnEnd: number,
-    level: number,
-  ) => ({
-    gridRow: `${week + 1}`,
-    gridColumn: `${columnStart + 1} / ${columnEnd + 2}`,
-    alignSelf: 'start',
+  // A chip lives in the cell of its first day in the week and paints across
+  // its days from there, on its level: it starts a chip inset into that cell
+  // and ends a chip inset plus one border short of its last day's edge, so
+  // it clears each day's end border the way the cells do. It rises above the
+  // cells it crosses inside the isolated surface (component:Schedule FR15,
+  // FR19).
+  monthChip: (span: number, level: number) => ({
+    position: 'absolute',
+    insetInlineStart: spacingVars['--spacing-0-5'],
+    insetBlockStart: `${MONTH_CHIP_TOP + level * MONTH_LEVEL_PITCH}px`,
+    inlineSize: `calc(${span} * 100% + ${span - 1} * ${borderVars['--border-width']} - 2 * ${spacingVars['--spacing-0-5']})`,
     minWidth: 0,
-    marginInlineStart: spacingVars['--spacing-0-5'],
-    marginInlineEnd: `calc(${spacingVars['--spacing-0-5']} + ${borderVars['--border-width']})`,
-    marginBlockStart: `${MONTH_CHIP_TOP + level * MONTH_LEVEL_PITCH}px`,
-    pointerEvents: 'auto',
     zIndex: 1,
   }),
+  // The last column's cell has no end border, so the same chip is one border
+  // narrower than its padding box.
+  monthChipInLastColumn: {
+    inlineSize: `calc(100% - 2 * ${spacingVars['--spacing-0-5']} - ${borderVars['--border-width']})`,
+  },
+  // A chip button stays above the cells it crosses, like any chip, and a
+  // focused one keeps its whole ring above the chips around it.
+  monthChipFocus: {
+    zIndex: {
+      default: 1,
+      ':focus-visible': 2,
+    },
+  },
   // A busy day's "+N more" takes the slot of the level it stands in for, with
   // a chip's insets and height, and keeps its focus ring above the chips.
   monthMoreButton: {
@@ -926,6 +948,19 @@ export const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-2'],
     maxInlineSize: '360px',
+  },
+  // A row of a day's list that opens its event: the whole row is the
+  // button, with the list row's look and the shared focus ring.
+  monthDayEventButton: {
+    inlineSize: '100%',
+    borderRadius: radiusVars['--radius-inner'],
+    backgroundColor: {
+      default: 'transparent',
+      ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
+        default: null,
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+    },
   },
   monthDayEventList: {
     display: 'flex',
