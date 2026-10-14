@@ -58,6 +58,7 @@ import {
   plainDateIsEqual,
   plainDateGetWeekNumber,
   plainDateFormat,
+  plainDateWeekFieldName,
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
@@ -94,6 +95,7 @@ import type {
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
 import {useLocale, useTranslator} from '../i18n';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 /** How a month navigation moves the focused day: by its row offset in days, or by whole months. */
 type NavigationUnit = 'days' | 'months';
@@ -353,12 +355,13 @@ export function Calendar({ref, ...props}: CalendarProps) {
     });
   }, [baseMonth, numberOfMonths]);
 
-  // A pending target lives exactly one render: when a controlled owner
-  // refuses the month change, no grid shows the target's month, and a stale
-  // target would later steal focus (and Enter) when that month does appear.
-  // Only a grid showing the target's month receives it; focus moving off the
-  // day grids (to the month header's buttons, or out of the calendar) drops
-  // it (see onBlur below).
+  // A pending target is claimed by the grid that shows its month, or dropped
+  // by the next focus move that is not onto the target day: when a controlled
+  // owner refuses the month change, no grid shows the target's month, and a
+  // stale target would later steal focus (and Enter) when that month does
+  // appear. Only a grid showing the target's month receives it; any other
+  // focus change (an arrow to another day, the month header's buttons, or out
+  // of the calendar) drops it (see onBlur below).
   const claimablePendingFocus = useMemo(() => {
     if (pendingFocus == null) {
       return null;
@@ -372,11 +375,13 @@ export function Calendar({ref, ...props}: CalendarProps) {
   }, [pendingFocus, visibleMonths]);
   const handleRootBlur = useCallback(
     (e: React.FocusEvent<HTMLDivElement>) => {
-      const staysOnDayGrid =
+      // Only the move onto the target day itself keeps the target: an arrow
+      // to any other day, a move to the header buttons, or focus leaving the
+      // calendar all drop it.
+      const movesToTarget =
         e.relatedTarget instanceof Element &&
-        e.currentTarget.contains(e.relatedTarget) &&
-        e.relatedTarget.closest('[role="grid"]') != null;
-      if (pendingFocus != null && !staysOnDayGrid) {
+        e.relatedTarget.getAttribute('data-date') === pendingFocus;
+      if (pendingFocus != null && !movesToTarget) {
         setPendingFocus(null);
       }
     },
@@ -1098,12 +1103,19 @@ function MonthGrid({
             same display:contents row so its cells align to the grid columns. */}
         <div role="row" {...stylex.props(monthGridStyles.weekRow)}>
           {hasWeekNumbers && (
+            // The corner above the week-number column is a header cell like
+            // the weekday names beside it (APG grid: every cell in a row is a
+            // gridcell, columnheader or rowheader). Its name is the locale's
+            // own word for the week field, as visually hidden text so the
+            // column stays blank and the header is not empty to axe.
             <div
+              role="columnheader"
               {...stylex.props(
                 monthGridStyles.dayName,
                 monthGridStyles.weekNumberHeader,
-              )}
-            />
+              )}>
+              <VisuallyHidden>{plainDateWeekFieldName(locale)}</VisuallyHidden>
+            </div>
           )}
           {dayNameHeaders.map(({dayOfWeek, name}) => (
             <div
