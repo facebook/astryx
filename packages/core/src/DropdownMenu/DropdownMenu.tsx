@@ -963,6 +963,14 @@ function DropdownMenuPopover({
   // ArrowUp opens with the LAST enabled row highlighted.
   const focusLastOnOpenRef = useRef(false);
 
+  // With a header or footer the dialog is named like the menu, so a custom
+  // trigger's name is needed before the first open, not only at it.
+  useIsomorphicLayoutEffect(() => {
+    if (renderTrigger != null && hasRegions && triggerName == null) {
+      setTriggerName(readAccessibleName(buttonRef.current));
+    }
+  }, [renderTrigger, hasRegions, triggerName]);
+
   const handleLayerShow = useCallback(() => {
     acceptedOpenRef.current = true;
     resetFocusReturn();
@@ -1003,8 +1011,10 @@ function DropdownMenuPopover({
     // Without a header or footer the popup's own role="menu" is the exposed
     // semantics; a dialog around it would announce an extra container. With
     // either, the popover holds controls that are not menu items, so it is a
-    // modal dialog named like the menu, with the menu inside it.
-    role: hasRegions ? 'dialog' : 'none',
+    // modal dialog named like the menu, with the menu inside it. A custom
+    // trigger's name is read off the control once it mounts, so the dialog
+    // role waits for that name rather than rendering an unnamed dialog.
+    role: hasRegions && menuLabel != null ? 'dialog' : 'none',
     dialogLabel: hasRegions ? menuLabel : undefined,
   });
 

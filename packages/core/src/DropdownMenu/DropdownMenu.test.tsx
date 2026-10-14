@@ -3914,6 +3914,37 @@ describe('DropdownMenu header and footer', () => {
     expect(controlled).not.toContainElement(trigger);
   });
 
+  it('a custom trigger with a header names the dialog and logs no unnamed-dialog warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          header={<input aria-label="Filter labels" />}
+          renderTrigger={props => (
+            <span {...props} role="button" tabIndex={0}>
+              Labels
+            </span>
+          )}>
+          <DropdownMenuItem label="Bug" />
+        </DropdownMenu>,
+      );
+      const trigger = screen.getByRole('button', {name: 'Labels'});
+      expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+      await user.click(trigger);
+      expect(
+        screen.getByRole('dialog', {name: 'Labels', hidden: true}),
+      ).toHaveAttribute('aria-modal', 'true');
+      expect(
+        warn.mock.calls.some(args =>
+          String(args[0]).includes('unnamed dialog'),
+        ),
+      ).toBe(false);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('without a header or footer, there is no dialog and the trigger points at the menu', async () => {
     const user = userEvent.setup();
     render(

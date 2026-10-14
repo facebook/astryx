@@ -195,8 +195,9 @@ visibility helper.
   the dialog on open, to the menu or its first enabled row as FR6 and FR12
   already state; Tab and Shift+Tab cycle within it (FR15); Escape closes it
   and focus returns to the trigger. The menu inside keeps AR1–AR3. The
-  trigger keeps `aria-expanded`, and its `aria-haspopup` and `aria-controls`
-  name the dialog rather than the menu.
+  trigger keeps `aria-expanded`; its `aria-haspopup` says `dialog`, and its
+  `aria-controls` names the popover that holds the dialog rather than the
+  menu, as Popover's own trigger does.
 
 ## Design relationships
 
@@ -513,10 +514,11 @@ Rejected: dropping arrow-key opening to match the rule's default; adopting the p
 **Decider:** `cixzhang`, 2026-10-13
 
 A popover that holds a menu and controls that are not menu items is not a
-menu: a screen reader told "menu" by the trigger then meets a field or a
-button it was not promised. With `header` or `footer`, the popover is
-therefore a named modal dialog with the menu inside it, the trigger says
-`aria-haspopup="dialog"`, and `aria-controls` names the dialog. Moving the
+menu: a trigger exposing `aria-haspopup="menu"` promises a menu, and the
+popover then holds a field or a button that is not one. With `header` or
+`footer`, the popover is therefore exposed as a named modal dialog with the
+menu inside it, the trigger says `aria-haspopup="dialog"`, and
+`aria-controls` names the popover that holds the dialog. Moving the
 menu role inward keeps every row a menu item and every other control outside
 the menu. Tab and Shift+Tab wrap within the dialog, as the APG Dialog
 pattern requires; Escape and a press outside close it. Without either prop
