@@ -4,7 +4,8 @@
 
 /**
  * @file Pagination.tsx
- * @input Uses React, StyleX, Button, Icon, Selector, Text; page number buttons delegate to Button.
+ * @input Uses React, StyleX, Button, HStack, Icon, Selector, Text; page number buttons delegate to Button.
+ *   HStack pairs first/previous and next/last without changing button focus behavior.
  *   Prev/next and first/last chevrons mirror under RTL via the shared rtlStyles.mirror
  *   (CSS scaleX), not a JS direction read. The input and compact variants use the
  *   chevronsLeft/chevronsRight (first/last) icons.
@@ -34,6 +35,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {Button} from '../Button';
+import {HStack} from '../HStack';
 import {Icon} from '../Icon';
 import {NumberInput} from '../NumberInput';
 import {Selector} from '../Selector';
@@ -810,79 +812,83 @@ export function Pagination({
         </div>
       )}
       <div {...stylex.props(styles.controls)}>
-        {showFirstLast && (
+        <HStack gap={variant === 'compact' ? 0 : 1} vAlign="center">
+          {showFirstLast && (
+            <Button
+              label={firstLabel}
+              tooltip={isDisabled || !hasPrevious ? undefined : firstLabel}
+              variant="ghost"
+              size={buttonSize}
+              icon={
+                <Icon
+                  icon="chevronsLeft"
+                  size={isSm ? 'sm' : 'md'}
+                  xstyle={rtlStyles.mirror}
+                />
+              }
+              onClick={handleFirst}
+              isDisabled={isDisabled || !hasPrevious}
+              isIconOnly
+            />
+          )}
+
           <Button
-            label={firstLabel}
-            tooltip={isDisabled || !hasPrevious ? undefined : firstLabel}
+            label={previousLabel}
+            tooltip={isDisabled || !hasPrevious ? undefined : previousLabel}
             variant="ghost"
             size={buttonSize}
             icon={
               <Icon
-                icon="chevronsLeft"
+                icon="chevronLeft"
                 size={isSm ? 'sm' : 'md'}
                 xstyle={rtlStyles.mirror}
               />
             }
-            onClick={handleFirst}
+            onClick={handlePrevious}
             isDisabled={isDisabled || !hasPrevious}
             isIconOnly
           />
-        )}
-
-        <Button
-          label={previousLabel}
-          tooltip={isDisabled || !hasPrevious ? undefined : previousLabel}
-          variant="ghost"
-          size={buttonSize}
-          icon={
-            <Icon
-              icon="chevronLeft"
-              size={isSm ? 'sm' : 'md'}
-              xstyle={rtlStyles.mirror}
-            />
-          }
-          onClick={handlePrevious}
-          isDisabled={isDisabled || !hasPrevious}
-          isIconOnly
-        />
+        </HStack>
 
         {renderIndicator()}
 
-        <Button
-          label={nextLabel}
-          tooltip={isDisabled || !hasNext ? undefined : nextLabel}
-          variant="ghost"
-          size={buttonSize}
-          icon={
-            <Icon
-              icon="chevronRight"
-              size={isSm ? 'sm' : 'md'}
-              xstyle={rtlStyles.mirror}
-            />
-          }
-          onClick={handleNext}
-          isDisabled={isDisabled || !hasNext}
-          isIconOnly
-        />
-
-        {showFirstLast && (
+        <HStack gap={variant === 'compact' ? 0 : 1} vAlign="center">
           <Button
-            label={lastLabel}
-            tooltip={isDisabled || !hasNext ? undefined : lastLabel}
+            label={nextLabel}
+            tooltip={isDisabled || !hasNext ? undefined : nextLabel}
             variant="ghost"
             size={buttonSize}
             icon={
               <Icon
-                icon="chevronsRight"
+                icon="chevronRight"
                 size={isSm ? 'sm' : 'md'}
                 xstyle={rtlStyles.mirror}
               />
             }
-            onClick={handleLast}
+            onClick={handleNext}
             isDisabled={isDisabled || !hasNext}
             isIconOnly
           />
-        )}
+
+          {showFirstLast && (
+            <Button
+              label={lastLabel}
+              tooltip={isDisabled || !hasNext ? undefined : lastLabel}
+              variant="ghost"
+              size={buttonSize}
+              icon={
+                <Icon
+                  icon="chevronsRight"
+                  size={isSm ? 'sm' : 'md'}
+                  xstyle={rtlStyles.mirror}
+                />
+              }
+              onClick={handleLast}
+              isDisabled={isDisabled || !hasNext}
+              isIconOnly
+            />
+          )}
+        </HStack>
       </div>
     </nav>
   );
