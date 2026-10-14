@@ -1241,22 +1241,20 @@ describe('Calendar', () => {
     it('a refused page target is dropped by an arrow to another day, so showing the months later does not select it', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
-      function Owner({allow}: {allow: boolean}) {
-        const [focusDate, setFocusDate] = useState<ISODateString>('2026-01-01');
+      function Owner({focusDate}: {focusDate: ISODateString}) {
+        // A controlled owner that ignores every requested change: the shown
+        // months move only when the test re-renders it with a new prop, with
+        // no focus change of its own.
         return (
           <Calendar
             focusDate={focusDate}
             numberOfMonths={2}
-            onFocusDateChange={next => {
-              if (allow) {
-                setFocusDate(next);
-              }
-            }}
+            onFocusDateChange={() => {}}
             onChange={onChange}
           />
         );
       }
-      const {rerender} = render(<Owner allow={false} />);
+      const {rerender} = render(<Owner focusDate="2026-01-01" />);
       getDayButton(10, 'February').focus();
       // Declined: Jan–Feb stay; focus stays on February 10.
       await user.keyboard('{PageDown}');
@@ -1265,17 +1263,16 @@ describe('Calendar', () => {
       // target, so the stale March 10 target is dropped.
       await user.keyboard('{ArrowRight}');
       expect(document.activeElement).toBe(getDayButton(11, 'February'));
-      // The owner now shows February–March.
-      rerender(<Owner allow />);
-      await user.click(getButton('Next month'));
+      // The owner now shows February–March without touching focus.
+      rerender(<Owner focusDate="2026-02-01" />);
       await waitFor(() => {
         expect(
           screen.getAllByRole('grid').map(g => g.getAttribute('aria-label')),
         ).toEqual(['February 2026', 'March 2026']);
       });
-      expect(document.activeElement).not.toBe(getDayButton(10, 'March'));
+      expect(document.activeElement).toBe(getDayButton(11, 'February'));
       await user.keyboard('{Enter}');
-      expect(onChange).not.toHaveBeenCalled();
+      expect(onChange).not.toHaveBeenCalledWith('2026-03-10');
     });
 
     it("the pending target becomes the grid's Tab stop: after a page into the second grid and after a page that moves the months, only it has tabindex 0", async () => {
