@@ -142,12 +142,10 @@ selection, and component geometry remain outside this record.
 - `family:input-fields` continues to own inline size, status placement, and
   InputGroup surface rules; this record projects those rules onto the adopted
   trigger value without changing them.
-- The Button component retains its released variant map and rendering. A
-  selector's `secondary` trigger follows the active theme's secondary Button at
-  rest, so a theme that restyles its secondary Button restyles the three selector
-  triggers with it.
-- Grouped secondary Selector and MultiSelector paths conform through the FR6
-  adaptation.
+- The Button component retains its released variant map and rendering.
+- Implementation gap: under a theme that restyles its secondary `Button`
+  (butter, chocolate, gothic, stone, y2k), the three selectors' `secondary`
+  triggers keep the default borderless, neutral fill.
 - `architecture:public-component-api` continues to own additive API admission,
   defaults, and compatibility. `architecture:component-theming-surface`
   continues to own target and visual-prop propagation.
