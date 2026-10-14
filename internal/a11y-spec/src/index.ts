@@ -153,6 +153,10 @@ export {
   type AlertDialogStateFacts,
 } from './patterns/alert-dialog';
 export {
+  WINDOW_SPLITTER_PATTERN,
+  type WindowSplitterStateFacts,
+} from './patterns/window-splitter';
+export {
   LINK_PATTERN,
   type LinkCurrentToken,
   type LinkStateFacts,
