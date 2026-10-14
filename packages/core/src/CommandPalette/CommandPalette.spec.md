@@ -64,7 +64,7 @@ surface and modal dismissal ordering to Dialog.
 - Compatibility class: behavioral and accessibility correction; empty states
   conditionally omit listbox, expanded, controls, and active-descendant ARIA
   attributes until selectable results exist; the default query accessible name
-  no longer mirrors its placeholder; empty-search announcements now mirror the
+  is independent of its placeholder; empty-search announcements mirror the
   rendered content; public props, styling, targets, and visible defaults remain
   unchanged
 - Controlled/uncontrolled behavior: unchanged
