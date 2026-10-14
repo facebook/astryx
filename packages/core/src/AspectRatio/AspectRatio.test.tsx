@@ -393,5 +393,37 @@ describe('AspectRatio', () => {
       expect(containMatch).not.toBeNull();
       expect(containMatch![1]).toContain('object-fit: contain');
     });
+
+    it('keeps the fit rules in the astryx-base layer', () => {
+      // The documented Tailwind setups declare preflight's layer between
+      // `reset` and `astryx-base`, and preflight sets `height: auto` on every
+      // img and video: a fit rule in `reset` would lose to it.
+      const stripped = resetCSS.replace(/\/\*[\s\S]*?\*\//g, '');
+      const layers: {name: string; body: string}[] = [];
+      const layerStart = /@layer\s+([\w-]+)\s*\{/g;
+      for (let match; (match = layerStart.exec(stripped));) {
+        let depth = 1;
+        let end = layerStart.lastIndex;
+        for (; end < stripped.length && depth > 0; end++) {
+          if (stripped[end] === '{') {
+            depth++;
+          } else if (stripped[end] === '}') {
+            depth--;
+          }
+        }
+        layers.push({
+          name: match[1],
+          body: stripped.slice(layerStart.lastIndex, end - 1),
+        });
+        layerStart.lastIndex = end;
+      }
+      expect(
+        layers
+          .filter(({body}) =>
+            body.includes('data-astryx-aspect-ratio-override'),
+          )
+          .map(({name}) => name),
+      ).toEqual(['astryx-base']);
+    });
   });
 });

@@ -28,6 +28,8 @@
  * Layer order: reset → astryx-base → astryx-theme
  * Consumer styles (unlayered) always override all Astryx layers.
  * The reset has the lowest priority and can be overridden by any other layer.
+ * AspectRatio's fit baseline, at the end of this file, is component styling
+ * and sits in astryx-base.
  *
  * Similar to:
  * - Tailwind CSS Preflight
@@ -198,35 +200,6 @@
   :where(img, video) {
     max-width: 100%;
     height: auto;
-  }
-
-  /* ===========================================================================
-     AspectRatio Fit Baseline
-     =========================================================================== */
-
-  /*
-   * Child sizing for AspectRatio's `fit` prop — the component marks the
-   * child's direct parent with `data-astryx-aspect-ratio-override` (carrying
-   * the fit value), and these direct-child rules size the child, so
-   * consumers don't hand-write width/height/object-fit on every media child.
-   * The marker sits on the parent itself, so the rules don't depend on
-   * AspectRatio's internal element structure or its theming surface. As with
-   * the [data-astryx-media] baseline below, the rules are zero-specificity
-   * and any styling the child sets itself still wins. `fit="center"` needs
-   * no rules here — the component centers the child from its own wrapper.
-   */
-  :where([data-astryx-aspect-ratio-override="cover"], [data-astryx-aspect-ratio-override="contain"])
-    > :where(*) {
-    width: 100%;
-    height: 100%;
-  }
-
-  :where([data-astryx-aspect-ratio-override="cover"]) > :where(img, video) {
-    object-fit: cover;
-  }
-
-  :where([data-astryx-aspect-ratio-override="contain"]) > :where(img, video) {
-    object-fit: contain;
   }
 
   /* ===========================================================================
@@ -416,5 +389,40 @@
 
   :where([data-astryx-media="light"]) {
     color-scheme: light;
+  }
+}
+
+/* ===========================================================================
+   AspectRatio Fit Baseline
+   =========================================================================== */
+
+/*
+ * Child sizing for AspectRatio's `fit` prop — the component marks the
+ * child's direct parent with `data-astryx-aspect-ratio-override` (carrying
+ * the fit value), and these direct-child rules size the child, so
+ * consumers don't hand-write width/height/object-fit on every media child.
+ * The marker sits on the parent itself, so the rules don't depend on
+ * AspectRatio's internal element structure or its theming surface. The
+ * rules are zero-specificity, so any styling the child sets itself still
+ * wins. `fit="center"` needs no rules here — the component centers the
+ * child from its own wrapper.
+ *
+ * They are component styles, so they sit in `astryx-base`, not `reset`.
+ * The documented Tailwind setups put preflight in a layer between the two,
+ * and its `img, video { height: auto }` would otherwise undo the fill.
+ */
+@layer astryx-base {
+  :where([data-astryx-aspect-ratio-override="cover"], [data-astryx-aspect-ratio-override="contain"])
+    > :where(*) {
+    width: 100%;
+    height: 100%;
+  }
+
+  :where([data-astryx-aspect-ratio-override="cover"]) > :where(img, video) {
+    object-fit: cover;
+  }
+
+  :where([data-astryx-aspect-ratio-override="contain"]) > :where(img, video) {
+    object-fit: contain;
   }
 }

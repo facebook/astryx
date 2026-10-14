@@ -70,11 +70,15 @@ test.beforeEach(async ({page}) => {
 
 test('Chromium keeps every selector the reset writes', async ({page}) => {
   // A forgiving list drops an invalid entry instead of the whole rule, so a
-  // dropped pseudo-element shows up as a shorter serialized selector.
-  const parsed = await page.evaluate(() => {
-    const layer = document.styleSheets[0].cssRules[0] as CSSLayerBlockRule;
-    return [...layer.cssRules].map(rule => (rule as CSSStyleRule).selectorText);
-  });
+  // dropped pseudo-element shows up as a shorter serialized selector. Every
+  // top-level block of the file is a layer block.
+  const parsed = await page.evaluate(() =>
+    [...document.styleSheets[0].cssRules].flatMap(layer =>
+      [...(layer as CSSLayerBlockRule).cssRules].map(
+        rule => (rule as CSSStyleRule).selectorText,
+      ),
+    ),
+  );
   expect(parsed.map(normalize)).toEqual(
     sourceSelectors(RESET_CSS).map(normalize),
   );
