@@ -13,7 +13,7 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {useState} from 'react';
+import {memo, useRef, useState, type RefObject} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
@@ -24,6 +24,7 @@ import {Divider} from '../Divider';
 import {rtlStyles} from '../utils';
 import {__resetInteractionModalityForTest} from '../utils/interactionModality';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
+import {readAnchorNames} from '../Layer/anchorName';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -3034,6 +3035,379 @@ describe('DropdownMenu menuMaxHeight', () => {
     );
     const menu = screen.getByRole('menu', {hidden: true});
     expect(menu.getAttribute('style')).toContain('min(720px, calc(100dvb');
+  });
+});
+
+describe('DropdownMenu anchorRef', () => {
+  const ITEMS = [{label: 'Mine'}, {label: 'Everyone'}];
+
+  function positionAnchorOf(menu: HTMLElement): string | undefined {
+    const layer = menu.closest('[popover]');
+    return /position-anchor:\s*([^;]+)/.exec(
+      layer?.getAttribute('style') ?? '',
+    )?.[1];
+  }
+
+  it('places the menu against the anchorRef element while the trigger keeps its wiring', async () => {
+    const user = userEvent.setup();
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      function SearchRow() {
+        const rowRef = useRef<HTMLDivElement>(null);
+        return (
+          <div ref={rowRef} data-testid="row">
+            <input aria-label="Search" />
+            <DropdownMenu
+              anchorRef={rowRef}
+              alignment="end"
+              button={{label: 'Filter'}}
+              items={ITEMS}
+            />
+          </div>
+        );
+      }
+      render(<SearchRow />);
+      const row = screen.getByTestId('row');
+      const trigger = screen.getByRole('button', {name: 'Filter'});
+      const menu = screen.getByRole('menu', {hidden: true});
+      // The row carries the menu's anchor name; the trigger carries none.
+      const [anchorName] = readAnchorNames(row);
+      expect(anchorName).toMatch(/^--astryx-layer-/);
+      expect(positionAnchorOf(menu)).toBe(anchorName);
+      expect(readAnchorNames(trigger)).toEqual([]);
+      // The trigger keeps the menu-button wiring.
+      expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+      expect(trigger).toHaveAttribute('aria-controls', menu.id);
+
+      await user.click(trigger);
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+      );
+      await user.keyboard('{Escape}');
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+      );
+      // The anchor stays on the row through the open and the close.
+      expect(readAnchorNames(row)).toEqual([anchorName]);
+      expect(readAnchorNames(trigger)).toEqual([]);
+      // The prop never reaches the DOM.
+      expect(menu).not.toHaveAttribute('anchorref');
+      expect(errors).not.toHaveBeenCalled();
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
+  it('leaves a renderTrigger control its focus, keys and name, and the anchor to anchorRef', async () => {
+    const user = userEvent.setup();
+    function Toolbar() {
+      const barRef = useRef<HTMLDivElement>(null);
+      return (
+        <div ref={barRef} data-testid="bar">
+          <DropdownMenu
+            anchorRef={barRef}
+            renderTrigger={props => (
+              <button type="button" {...props}>
+                Owner
+              </button>
+            )}>
+            <DropdownMenuItem label="Mine" onClick={() => {}} />
+          </DropdownMenu>
+        </div>
+      );
+    }
+    render(<Toolbar />);
+    const bar = screen.getByTestId('bar');
+    const trigger = screen.getByRole('button', {name: 'Owner'});
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(positionAnchorOf(menu)).toBe(readAnchorNames(bar)[0]);
+    expect(readAnchorNames(trigger)).toEqual([]);
+    // The menu is still named by its control.
+    expect(menu).toHaveAttribute('aria-labelledby', trigger.id);
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Mine', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('the layer watches the anchorRef element, so a menu whose anchor scrolls out of view holds its alignment', async () => {
+    let notify!: IntersectionObserverCallback;
+    const observed: Element[] = [];
+    class Observer {
+      constructor(callback: IntersectionObserverCallback) {
+        notify = callback;
+      }
+      observe(target: Element) {
+        observed.push(target);
+      }
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    vi.stubGlobal('IntersectionObserver', Observer);
+    try {
+      const user = userEvent.setup();
+      function SearchRow() {
+        const rowRef = useRef<HTMLDivElement>(null);
+        return (
+          <div ref={rowRef} data-testid="row">
+            <DropdownMenu
+              anchorRef={rowRef}
+              alignment="end"
+              button={{label: 'Filter'}}
+              items={ITEMS}
+            />
+          </div>
+        );
+      }
+      render(<SearchRow />);
+      await user.click(screen.getByRole('button', {name: 'Filter'}));
+      // The anchor-visibility read (spec:AST-059 FR5) watches the row, not
+      // the trigger, and the row keeps its anchor name through the open.
+      const row = screen.getByTestId('row');
+      expect(observed).toEqual([row]);
+      expect(readAnchorNames(row)).toHaveLength(1);
+      const layer = screen
+        .getByRole('menu', {hidden: true})
+        .closest('[popover]') as HTMLElement;
+      expect(layer.style.justifySelf).toBe('');
+      act(() => {
+        notify(
+          [{isIntersecting: false} as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+      });
+      expect(layer.style.justifySelf).toMatch(/^unsafe /);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('an anchorRef that is still empty as the menu opens leaves the menu on its trigger', async () => {
+    const user = userEvent.setup();
+    function Unattached() {
+      // A ref the caller never attaches: an anchor rendered only in some
+      // layouts, or a component that does not forward its ref.
+      const rowRef = useRef<HTMLDivElement>(null);
+      return (
+        <DropdownMenu
+          anchorRef={rowRef}
+          button={{label: 'Filter'}}
+          items={ITEMS}
+        />
+      );
+    }
+    render(<Unattached />);
+    const trigger = screen.getByRole('button', {name: 'Filter'});
+    const menu = screen.getByRole('menu', {hidden: true});
+    const [anchorName] = readAnchorNames(trigger);
+    expect(anchorName).toMatch(/^--astryx-layer-/);
+    expect(positionAnchorOf(menu)).toBe(anchorName);
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    expect(readAnchorNames(trigger)).toEqual([anchorName]);
+    expect(positionAnchorOf(menu)).toBe(anchorName);
+  });
+
+  it('an anchor that appears later takes over from the trigger', async () => {
+    const user = userEvent.setup();
+    function Responsive() {
+      const rowRef = useRef<HTMLDivElement>(null);
+      const [isWide, setIsWide] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setIsWide(true)}>
+            Widen
+          </button>
+          {isWide && <div ref={rowRef} data-testid="row" />}
+          <DropdownMenu
+            anchorRef={rowRef}
+            button={{label: 'Filter'}}
+            items={ITEMS}
+          />
+        </>
+      );
+    }
+    render(<Responsive />);
+    const trigger = screen.getByRole('button', {name: 'Filter'});
+    const menu = screen.getByRole('menu', {hidden: true});
+    const [anchorName] = readAnchorNames(trigger);
+    expect(positionAnchorOf(menu)).toBe(anchorName);
+    await user.click(screen.getByRole('button', {name: 'Widen'}));
+    const row = screen.getByTestId('row');
+    expect(readAnchorNames(row)).toEqual([anchorName]);
+    expect(readAnchorNames(trigger)).toEqual([]);
+  });
+
+  it('a memoized menu keeps an anchor while its anchor mounts mid-open and follows it at its next render', async () => {
+    const user = userEvent.setup();
+    const Menu = memo(function Menu({
+      anchorRef,
+    }: {
+      anchorRef: RefObject<HTMLDivElement | null>;
+    }) {
+      return (
+        <DropdownMenu
+          anchorRef={anchorRef}
+          button={{label: 'Filter'}}
+          items={ITEMS}
+        />
+      );
+    });
+    function Page() {
+      const rowRef = useRef<HTMLDivElement>(null);
+      const [isWide, setIsWide] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setIsWide(true)}>
+            Widen
+          </button>
+          {isWide && <div ref={rowRef} data-testid="row" />}
+          <Menu anchorRef={rowRef} />
+        </>
+      );
+    }
+    render(<Page />);
+    const trigger = screen.getByRole('button', {name: 'Filter'});
+    const menu = screen.getByRole('menu', {hidden: true});
+    const [anchorName] = readAnchorNames(trigger);
+    expect(positionAnchorOf(menu)).toBe(anchorName);
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    // The anchor mounts during the open without a render of the memoized
+    // menu: the menu stays open and keeps an anchor.
+    fireEvent.click(screen.getByRole('button', {name: 'Widen'}));
+    const row = screen.getByTestId('row');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      [trigger, row].filter(el => readAnchorNames(el).includes(anchorName)),
+    ).toHaveLength(1);
+    // The menu's next render, here its close, reads the ref and follows the
+    // row.
+    fireEvent.keyDown(menu, {key: 'Escape'});
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+    expect(readAnchorNames(row)).toEqual([anchorName]);
+    expect(readAnchorNames(trigger)).toEqual([]);
+  });
+
+  it('an anchor that unmounts mid-open leaves the menu without one until its next render, then on its trigger, held by the removed anchor', async () => {
+    let notify!: IntersectionObserverCallback;
+    const observed: Element[] = [];
+    class Observer {
+      constructor(callback: IntersectionObserverCallback) {
+        notify = callback;
+      }
+      observe(target: Element) {
+        observed.push(target);
+      }
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    vi.stubGlobal('IntersectionObserver', Observer);
+    try {
+      const user = userEvent.setup();
+      const Menu = memo(function Menu({
+        anchorRef,
+      }: {
+        anchorRef: RefObject<HTMLDivElement | null>;
+      }) {
+        return (
+          <DropdownMenu
+            anchorRef={anchorRef}
+            button={{label: 'Filter'}}
+            items={ITEMS}
+          />
+        );
+      });
+      function Page() {
+        const rowRef = useRef<HTMLDivElement>(null);
+        const [isWide, setIsWide] = useState(true);
+        return (
+          <>
+            <button type="button" onClick={() => setIsWide(false)}>
+              Narrow
+            </button>
+            {isWide && <div ref={rowRef} data-testid="row" />}
+            <Menu anchorRef={rowRef} />
+          </>
+        );
+      }
+      render(<Page />);
+      const trigger = screen.getByRole('button', {name: 'Filter'});
+      const row = screen.getByTestId('row');
+      const [anchorName] = readAnchorNames(row);
+      await user.click(trigger);
+      await waitFor(() =>
+        expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+      );
+      expect(observed).toEqual([row]);
+      // The anchor unmounts during the open without a render of the memoized
+      // menu: until the menu renders, no element carries its anchor.
+      fireEvent.click(screen.getByRole('button', {name: 'Narrow'}));
+      expect(row).not.toBeInTheDocument();
+      expect(readAnchorNames(trigger)).toEqual([]);
+      // The browser reports the removed anchor out of view. That renders the
+      // menu, which reads the empty ref and falls back to its trigger.
+      act(() => {
+        notify(
+          [{isIntersecting: false} as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+      });
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(readAnchorNames(trigger)).toEqual([anchorName]);
+      // The visibility read (spec:AST-059 FR5) stays on the anchor the menu
+      // opened against, so its off-screen hold lasts until the menu closes.
+      expect(observed).toEqual([row]);
+      const layer = screen
+        .getByRole('menu', {hidden: true})
+        .closest('[popover]') as HTMLElement;
+      expect(layer.style.justifySelf).toMatch(/^unsafe /);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('without anchorRef the trigger stays the anchor', () => {
+    render(<DropdownMenu button={{label: 'Filter'}} items={ITEMS} />);
+    const trigger = screen.getByRole('button', {name: 'Filter'});
+    const menu = screen.getByRole('menu', {hidden: true});
+    const names = readAnchorNames(trigger);
+    expect(names).toHaveLength(1);
+    expect(positionAnchorOf(menu)).toBe(names[0]);
+  });
+
+  it('the bottom sheet ignores anchorRef', () => {
+    function SheetRow() {
+      const rowRef = useRef<HTMLDivElement>(null);
+      return (
+        <div ref={rowRef} data-testid="row">
+          <DropdownMenu
+            anchorRef={rowRef}
+            presentation="bottom-sheet"
+            button={{label: 'Filter'}}
+            items={ITEMS}
+          />
+        </div>
+      );
+    }
+    render(<SheetRow />);
+    expect(readAnchorNames(screen.getByTestId('row'))).toEqual([]);
+    expect(document.querySelector('[anchorref]')).toBeNull();
   });
 });
 

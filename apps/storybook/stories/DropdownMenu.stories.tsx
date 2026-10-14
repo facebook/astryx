@@ -4,7 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Badge} from '@astryxdesign/core/Badge';
 import {IconButton} from '@astryxdesign/core/IconButton';
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -95,6 +95,25 @@ const readinessStyles = stylex.create({
   edgeAnchorRow: {
     display: 'flex',
     justifyContent: 'flex-end',
+  },
+});
+
+const anchorStoryStyles = stylex.create({
+  // A search row: a field and its Filter trigger. The menu lines up with the
+  // row, not with the trigger.
+  row: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-2'],
+    inlineSize: 360,
+    paddingBlockStart: spacingVars['--spacing-2'],
+    paddingBlockEnd: spacingVars['--spacing-2'],
+    paddingInlineStart: spacingVars['--spacing-2'],
+    paddingInlineEnd: spacingVars['--spacing-2'],
+  },
+  field: {
+    flexGrow: 1,
+    minInlineSize: 0,
   },
 });
 
@@ -1372,6 +1391,51 @@ export const CustomTrigger: Story = {
       description: {
         story:
           'Any control can open a menu: `trigger` renders it and receives the props to spread — the press model (a mouse opens on press-down, a held finger opens with the finger down), the keyboard opens, the toggle click, and the ARIA wiring. The menu is named by that control through `aria-labelledby`.',
+      },
+    },
+  },
+};
+
+export const AnchorRef: Story = {
+  name: 'Anchored to a row (anchorRef)',
+  render: function AnchorRefStory() {
+    const rowRef = useRef<HTMLDivElement>(null);
+    const [query, setQuery] = useState('');
+    const [showing, setShowing] = useState('Everything');
+    return (
+      <div>
+        <div
+          ref={rowRef}
+          data-testid="search-row"
+          {...stylex.props(anchorStoryStyles.row)}>
+          <div {...stylex.props(anchorStoryStyles.field)}>
+            <TextInput
+              label="Search"
+              isLabelHidden
+              placeholder="Search"
+              value={query}
+              onChange={setQuery}
+            />
+          </div>
+          <DropdownMenu
+            anchorRef={rowRef}
+            alignment="end"
+            button={{label: 'Filter'}}
+            items={['Everything', 'Mine', 'Shared with me'].map(label => ({
+              label,
+              onClick: () => setShowing(label),
+            }))}
+          />
+        </div>
+        <p data-testid="showing">Showing: {showing}</p>
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A menu that lines up with a box wider than its trigger: `anchorRef` names the search row, so the menu sits under the row with its inline end on the row's and takes the row's width. The Filter button keeps focus, the press model, the keyboard opens and the menu's name.",
       },
     },
   },
