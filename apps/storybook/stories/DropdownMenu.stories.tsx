@@ -1513,3 +1513,136 @@ export const HeaderAndFooter: Story = {
     );
   },
 };
+
+/**
+ * A sub-menu with its own filter field and "Create" button: the Labels level
+ * of a session menu. Its surface (the flyout, or the drilled-in view on a
+ * phone) is a modal dialog named by its row, beside the menu rather than
+ * inside it: Tab walks field, rows, button and wraps; Escape returns to the
+ * row. The picks are checkbox rows, so the sub-menu stays open while several
+ * are chosen.
+ */
+export const SubMenuHeaderAndFooter: Story = {
+  name: 'Submenu / header and footer',
+  render: () => {
+    const [query, setQuery] = useState('');
+    const [picked, setPicked] = useState<ReadonlyArray<string>>(['Bug']);
+    const [created, setCreated] = useState(0);
+    const visible = LABELS.filter(label =>
+      label.toLowerCase().includes(query.trim().toLowerCase()),
+    );
+    return (
+      <div data-testid="submenu-regions-fixture" style={{padding: 16}}>
+        <DropdownMenu button={{label: 'Session'}}>
+          <DropdownMenuItem
+            icon={PencilIcon}
+            label="Rename"
+            onClick={() => {}}
+          />
+          <DropdownMenuSubMenu
+            label="Labels"
+            header={
+              <TextInput
+                label="Filter labels"
+                isLabelHidden
+                placeholder="Filter labels"
+                value={query}
+                onChange={setQuery}
+              />
+            }
+            footer={
+              <Button
+                label="Create label"
+                variant="ghost"
+                onClick={() => setCreated(count => count + 1)}
+              />
+            }>
+            {visible.map(label => (
+              <DropdownMenuCheckboxItem
+                key={label}
+                label={label}
+                value={picked.includes(label)}
+                onChange={isChecked =>
+                  setPicked(current =>
+                    isChecked
+                      ? [...current, label]
+                      : current.filter(item => item !== label),
+                  )
+                }
+              />
+            ))}
+          </DropdownMenuSubMenu>
+          <DropdownMenuItem
+            icon={TrashIcon}
+            label="Delete"
+            onClick={() => {}}
+          />
+        </DropdownMenu>
+        <output data-testid="picked">{picked.join(', ')}</output>
+        <output data-testid="created">{created}</output>
+      </div>
+    );
+  },
+};
+
+/**
+ * The same Labels level in the action sheet: the sheet is already a dialog,
+ * so the level shows its own filter field and "Create" button above and below
+ * its actions, in place of the menu's own, and the field filters them live.
+ */
+export const SubMenuHeaderAndFooterActionSheet: Story = {
+  name: 'Submenu / header and footer, action sheet',
+  render: () => {
+    const [query, setQuery] = useState('');
+    const [created, setCreated] = useState(0);
+    const [last, setLast] = useState('');
+    const visible = LABELS.filter(label =>
+      label.toLowerCase().includes(query.trim().toLowerCase()),
+    );
+    return (
+      <div data-testid="submenu-regions-sheet-fixture" style={{padding: 16}}>
+        <DropdownMenu
+          button={{label: 'Session'}}
+          presentation="bottom-sheet"
+          items={[
+            {
+              label: 'Rename',
+              icon: PencilIcon,
+              onClick: () => setLast('Rename'),
+            },
+            {
+              label: 'Labels',
+              header: (
+                <TextInput
+                  label="Filter labels"
+                  isLabelHidden
+                  placeholder="Filter labels"
+                  value={query}
+                  onChange={setQuery}
+                />
+              ),
+              footer: (
+                <Button
+                  label="Create label"
+                  variant="ghost"
+                  onClick={() => setCreated(count => count + 1)}
+                />
+              ),
+              items: visible.map(label => ({
+                label,
+                onClick: () => setLast(label),
+              })),
+            },
+            {
+              label: 'Delete',
+              icon: TrashIcon,
+              onClick: () => setLast('Delete'),
+            },
+          ]}
+        />
+        <output data-testid="last">{last}</output>
+        <output data-testid="created">{created}</output>
+      </div>
+    );
+  },
+};

@@ -1494,3 +1494,480 @@ describe('DropdownMenuSubMenu drill-in on a phone', () => {
       screen.getAllByRole('menu', {name, ...h}).find(isShown);
   });
 });
+
+describe('DropdownMenuSubMenu header and footer', () => {
+  const h = {hidden: true} as const;
+  // The bottom sheet is a native dialog, which jsdom does not open.
+  beforeEach(() => {
+    HTMLDialogElement.prototype.showModal = vi.fn(function (
+      this: HTMLDialogElement,
+    ) {
+      this.setAttribute('open', '');
+    });
+    HTMLDialogElement.prototype.close = vi.fn(function (
+      this: HTMLDialogElement,
+    ) {
+      this.removeAttribute('open');
+    });
+  });
+  const isShown = (el: HTMLElement) => el.closest('[hidden]') == null;
+
+  function LabelsMenu({
+    onCreate,
+    onPick,
+    rootHeader,
+  }: {
+    onCreate?: () => void;
+    onPick?: (label: string) => void;
+    rootHeader?: React.ReactNode;
+  } = {}) {
+    return (
+      <DropdownMenu button={{label: 'Session'}} header={rootHeader}>
+        <DropdownMenuItem label="Rename" onClick={() => {}} />
+        <DropdownMenuSubMenu
+          label="Labels"
+          header={<input aria-label="Filter labels" />}
+          footer={
+            <button type="button" onClick={onCreate}>
+              Create label
+            </button>
+          }>
+          <DropdownMenuItem label="Bug" onClick={() => onPick?.('Bug')} />
+          <DropdownMenuSubMenu label="More">
+            <DropdownMenuItem label="Later" onClick={() => onPick?.('Later')} />
+          </DropdownMenuSubMenu>
+        </DropdownMenuSubMenu>
+      </DropdownMenu>
+    );
+  }
+
+  async function openLabels(props?: Parameters<typeof LabelsMenu>[0]) {
+    const user = userEvent.setup();
+    render(<LabelsMenu {...props} />);
+    const trigger = screen.getByRole('button', {name: /Session/});
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+    const rootMenu = screen.getByRole('menu', {name: 'Session', ...h});
+    // A pointer open focuses the root menu itself; let that land first.
+    await waitFor(() => expect(rootMenu).toHaveFocus());
+    const row = screen.getByRole('menuitem', {name: /Labels/, ...h});
+    fireEvent.click(row, {detail: 1});
+    const dialog = await screen.findByRole('dialog', {name: /Labels/, ...h});
+    return {user, trigger, rootMenu, row, dialog};
+  }
+
+  const field = () =>
+    screen.getByRole('textbox', {name: 'Filter labels', ...h});
+  const create = () => screen.getByRole('button', {name: 'Create label', ...h});
+  const labelsMenu = () => screen.getByRole('menu', {name: /Labels/, ...h});
+
+  it('holds the header, the rows and the footer in a dialog named by the row, outside every menu', async () => {
+    const {rootMenu, row, dialog} = await openLabels();
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(row).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(row).toHaveAttribute('aria-controls', dialog.id);
+    const menu = labelsMenu();
+    for (const part of [field(), menu, create()]) {
+      expect(dialog).toContainElement(part);
+    }
+    // The sub-menu's menu holds only its rows, and the dialog sits beside the
+    // root's menu, not inside it.
+    expect(menu).not.toContainElement(field());
+    expect(menu).not.toContainElement(create());
+    expect(rootMenu).not.toContainElement(dialog);
+    expect(rootMenu.closest('[popover]')).toContainElement(dialog);
+    expect(
+      field().compareDocumentPosition(menu) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      menu.compareDocumentPosition(create()) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('makes the rows one Tab stop, and Tab and Shift+Tab walk the regions and wrap', async () => {
+    const {row} = await openLabels();
+    const menu = labelsMenu();
+    expect(menu).toHaveAttribute('tabindex', '0');
+    // A pointer open lands on the first row.
+    const bug = screen.getByRole('menuitem', {name: 'Bug', ...h});
+    await waitFor(() => expect(bug).toHaveFocus());
+
+    fireEvent.keyDown(bug, {key: 'Tab'});
+    expect(create()).toHaveFocus();
+    fireEvent.keyDown(create(), {key: 'Tab'});
+    expect(field()).toHaveFocus();
+    fireEvent.keyDown(field(), {key: 'Tab'});
+    expect(menu).toHaveFocus();
+    fireEvent.keyDown(menu, {key: 'Tab', shiftKey: true});
+    expect(field()).toHaveFocus();
+    fireEvent.keyDown(field(), {key: 'Tab', shiftKey: true});
+    expect(create()).toHaveFocus();
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('keeps arrows and letters in the field; Escape there returns to the row and leaves the menu open', async () => {
+    const {trigger, row} = await openLabels();
+    act(() => field().focus());
+    fireEvent.keyDown(field(), {key: 'ArrowLeft'});
+    fireEvent.keyDown(field(), {key: 'b'});
+    expect(field()).toHaveFocus();
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.keyDown(field(), {key: 'Escape'});
+    await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'false'));
+    expect(row).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('an Escape that ends an IME composition in the field closes nothing', async () => {
+    const {trigger, row} = await openLabels();
+    act(() => field().focus());
+    fireEvent.keyDown(field(), {key: 'Escape', isComposing: true});
+    fireEvent.keyDown(field(), {key: 'Escape', keyCode: 229});
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+    expect(field()).toHaveFocus();
+    // The next Escape, outside the composition, returns to the row.
+    fireEvent.keyDown(field(), {key: 'Escape'});
+    await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'false'));
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('a keyboard open lands on the first row, not the field', async () => {
+    const user = userEvent.setup();
+    render(<LabelsMenu />);
+    const trigger = screen.getByRole('button', {name: /Session/});
+    await user.click(trigger);
+    const row = screen.getByRole('menuitem', {name: /Labels/, ...h});
+    act(() => row.focus());
+    fireEvent.keyDown(row, {key: 'ArrowRight'});
+    await waitFor(() =>
+      expect(screen.getByRole('menuitem', {name: 'Bug', ...h})).toHaveFocus(),
+    );
+  });
+
+  it('a press in a region acts on nothing in the menus and keeps both open', async () => {
+    const onCreate = vi.fn();
+    const onPick = vi.fn();
+    const {trigger, row} = await openLabels({onCreate, onPick});
+    fireEvent.pointerDown(field(), {pointerType: 'mouse', button: 0});
+    fireEvent.pointerUp(field(), {pointerType: 'mouse', button: 0});
+    fireEvent.click(field());
+    fireEvent.click(create());
+    expect(onCreate).toHaveBeenCalledTimes(1);
+    expect(onPick).not.toHaveBeenCalled();
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('Tab from a deeper flyout closes it and walks on from the rows', async () => {
+    await openLabels();
+    const more = screen.getByRole('menuitem', {name: /More/, ...h});
+    act(() => more.focus());
+    fireEvent.keyDown(more, {key: 'ArrowRight'});
+    const later = await waitFor(() => {
+      const el = screen.getByRole('menuitem', {name: 'Later', ...h});
+      expect(el).toHaveFocus();
+      return el;
+    });
+    fireEvent.keyDown(later, {key: 'Tab'});
+    await waitFor(() => expect(more).toHaveAttribute('aria-expanded', 'false'));
+    expect(create()).toHaveFocus();
+  });
+
+  it('a pointer leaving the flyout does not close it while focus is inside', async () => {
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    try {
+      render(<LabelsMenu />);
+      fireEvent.click(screen.getByRole('button', {name: /Session/}));
+      const row = screen.getByRole('menuitem', {name: /Labels/, ...h});
+      fireEvent.mouseEnter(row);
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(row).toHaveAttribute('aria-expanded', 'true');
+      const dialog = screen.getByRole('dialog', {name: /Labels/, ...h});
+      act(() => field().focus());
+      fireEvent.mouseLeave(dialog);
+      fireEvent.mouseLeave(row);
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(row).toHaveAttribute('aria-expanded', 'true');
+      // With focus outside it, the same leave closes it.
+      act(() => row.focus());
+      fireEvent.mouseEnter(dialog);
+      fireEvent.mouseLeave(dialog);
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(row).toHaveAttribute('aria-expanded', 'false');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("data mode passes a nested item's header and footer to its sub-menu", async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Session'}}
+        items={[
+          {label: 'Rename'},
+          {
+            label: 'Labels',
+            header: <input aria-label="Filter labels" />,
+            footer: <button type="button">Create label</button>,
+            items: [{label: 'Bug'}, {label: 'Feature'}],
+          },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Session/}));
+    fireEvent.click(screen.getByRole('menuitem', {name: /Labels/, ...h}), {
+      detail: 1,
+    });
+    const dialog = await screen.findByRole('dialog', {name: /Labels/, ...h});
+    expect(dialog).toContainElement(field());
+    expect(dialog).toContainElement(create());
+    // A leaf row carries no header or footer of its own.
+    expect(
+      screen.getByRole('menuitem', {name: 'Rename', ...h}),
+    ).not.toHaveAttribute('header');
+  });
+
+  it('a press from a menu row released on a row of the flyout acts on it, as in any flyout', async () => {
+    const onPick = vi.fn();
+    const {trigger} = await openLabels({onPick});
+    const rename = screen.getByRole('menuitem', {name: 'Rename', ...h});
+    const bug = screen.getByRole('menuitem', {name: 'Bug', ...h});
+    fireEvent.pointerDown(rename, {
+      pointerType: 'mouse',
+      pointerId: 1,
+      button: 0,
+    });
+    fireEvent.pointerMove(bug, {pointerType: 'mouse', pointerId: 1});
+    fireEvent.pointerUp(bug, {pointerType: 'mouse', pointerId: 1, button: 0});
+    expect(onPick).toHaveBeenCalledWith('Bug');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it("a mouse press from a menu row released on the flyout's field acts on nothing and closes, as outside the menu", async () => {
+    const onPick = vi.fn();
+    const {trigger} = await openLabels({onPick});
+    const rename = screen.getByRole('menuitem', {name: 'Rename', ...h});
+    fireEvent.pointerDown(rename, {
+      pointerType: 'mouse',
+      pointerId: 1,
+      button: 0,
+    });
+    fireEvent.pointerMove(field(), {pointerType: 'mouse', pointerId: 1});
+    fireEvent.pointerUp(field(), {
+      pointerType: 'mouse',
+      pointerId: 1,
+      button: 0,
+    });
+    expect(onPick).not.toHaveBeenCalled();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('without a header or footer the sub-menu is a plain flyout menu', async () => {
+    const user = userEvent.setup();
+    render(<MoveMenu />);
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const row = screen.getByRole('menuitem', {name: /Move to/, ...h});
+    fireEvent.click(row, {detail: 1});
+    await waitFor(() => expect(row).toHaveAttribute('aria-expanded', 'true'));
+    expect(row).toHaveAttribute('aria-haspopup', 'menu');
+    expect(screen.queryByRole('dialog', h)).toBeNull();
+  });
+
+  it("the bottom sheet shows a level's own header and footer in place of the menu's, live, and the menu's elsewhere", async () => {
+    const user = userEvent.setup();
+    function SheetMenu() {
+      const [query, setQuery] = useState('');
+      const labels = ['Bug', 'Feature', 'Design'].filter(label =>
+        label.toLowerCase().includes(query.toLowerCase()),
+      );
+      return (
+        <DropdownMenu
+          button={{label: 'Session'}}
+          presentation="bottom-sheet"
+          header={<input aria-label="Search actions" />}
+          footer={<button type="button">Settings</button>}
+          items={[
+            {
+              label: 'Labels',
+              header: (
+                <input
+                  aria-label="Filter labels"
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                />
+              ),
+              footer: <button type="button">Create label</button>,
+              items: labels.map(label => ({label})),
+            },
+            {label: 'Move to', items: [{label: 'Inbox'}]},
+          ]}
+        />
+      );
+    }
+    render(<SheetMenu />);
+    await user.click(screen.getByRole('button', {name: /Session/}));
+    const sheet = await screen.findByRole('dialog', {name: 'Session'});
+    const rootRegions = () => [
+      screen.queryByRole('textbox', {name: 'Search actions'}),
+      screen.queryByRole('button', {name: 'Settings'}),
+    ];
+    expect(rootRegions().every(Boolean)).toBe(true);
+
+    await user.click(screen.getByRole('button', {name: /Labels/}));
+    const filter = await screen.findByRole('textbox', {name: 'Filter labels'});
+    expect(sheet).toContainElement(
+      screen.getByRole('button', {name: 'Create label'}),
+    );
+    expect(rootRegions().some(Boolean)).toBe(false);
+
+    // The level stays live: the controlled field shows what was typed and
+    // its rows filter.
+    await user.type(filter, 'fea');
+    expect(filter).toHaveValue('fea');
+    await waitFor(() =>
+      expect(screen.queryByRole('button', {name: /Bug/})).toBeNull(),
+    );
+    expect(screen.getByRole('button', {name: /Feature/})).toBeInTheDocument();
+
+    // Back to the root: its own regions return; a level without regions of
+    // its own keeps showing the menu's.
+    await user.click(screen.getByRole('button', {name: 'Back'}));
+    await waitFor(() => expect(rootRegions().every(Boolean)).toBe(true));
+    await user.click(screen.getByRole('button', {name: /Move to/}));
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /Inbox/})).toBeInTheDocument(),
+    );
+    expect(rootRegions().every(Boolean)).toBe(true);
+    expect(screen.queryByRole('textbox', {name: 'Filter labels'})).toBeNull();
+  });
+
+  it('the bottom sheet keeps the level that was opened when another row shares its label', async () => {
+    const user = userEvent.setup();
+    function SizesMenu({withIds}: {withIds: boolean}) {
+      const [count, setCount] = useState(0);
+      const header = (name: string) => (
+        <button type="button" onClick={() => setCount(c => c + 1)}>
+          {name} {count}
+        </button>
+      );
+      return (
+        <DropdownMenu
+          button={{label: 'Format'}}
+          presentation="bottom-sheet"
+          items={[
+            {
+              label: 'Size',
+              id: withIds ? 'text-size' : undefined,
+              header: header('Text sizes'),
+              items: [{label: 'Small text'}],
+            },
+            {
+              label: 'Size',
+              id: withIds ? 'image-size' : undefined,
+              header: header('Image sizes'),
+              items: [{label: 'Small image'}],
+            },
+          ]}
+        />
+      );
+    }
+    for (const withIds of [false, true]) {
+      const {unmount} = render(<SizesMenu withIds={withIds} />);
+      await user.click(screen.getByRole('button', {name: /Format/}));
+      await user.click(screen.getAllByRole('button', {name: /^Size/})[1]);
+      await screen.findByRole('button', {name: /Small image/});
+      // The header re-renders the menu with fresh items.
+      await user.click(screen.getByRole('button', {name: /Image sizes 0/}));
+      expect(
+        screen.getByRole('button', {name: /Small image/}),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: /Small text/})).toBeNull();
+      // With an id the level is found again and stays live; without one it
+      // keeps the shape it was opened with.
+      expect(
+        screen.getByRole('button', {
+          name: withIds ? 'Image sizes 1' : 'Image sizes 0',
+        }),
+      ).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  describe('on a phone', () => {
+    const originalMatchMedia = window.matchMedia;
+    beforeEach(() => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn().mockImplementation((query: string) => ({
+          matches: query === COMPACT_TOUCH_PRESENTATION_QUERY,
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      );
+    });
+    afterEach(() => {
+      vi.stubGlobal('matchMedia', originalMatchMedia);
+    });
+
+    it('the drilled-in view holds the regions beside its menu while the root steps aside, and Escape in its field returns', async () => {
+      const {rootMenu, row, dialog} = await openLabels({
+        rootHeader: <input aria-label="Search actions" />,
+      });
+      const rootField = screen.getByRole('textbox', {
+        name: 'Search actions',
+        ...h,
+      });
+      expect(isShown(dialog)).toBe(true);
+      expect(dialog).toHaveAttribute('aria-modal', 'true');
+      expect(row).toHaveAttribute('aria-haspopup', 'dialog');
+      // The view sits beside the root's menu, which steps aside with its own
+      // header; the view leads with a Back row.
+      expect(rootMenu).not.toContainElement(dialog);
+      expect(isShown(rootMenu)).toBe(false);
+      expect(isShown(rootField)).toBe(false);
+      expect(dialog.closest('[popover]')).toBe(rootMenu.closest('[popover]'));
+      const viewRows = Array.from(
+        labelsMenu().querySelectorAll('[role="menuitem"]'),
+      )
+        .filter(el => isShown(el as HTMLElement))
+        .map(el => el.textContent);
+      expect(viewRows[0]).toBe('Back to Session');
+      for (const part of [field(), labelsMenu(), create()]) {
+        expect(dialog).toContainElement(part);
+      }
+
+      // Escape in the field returns to the row; the root comes back.
+      act(() => field().focus());
+      fireEvent.keyDown(field(), {key: 'Escape'});
+      await waitFor(() => expect(row).toHaveFocus());
+      expect(isShown(rootMenu)).toBe(true);
+      expect(isShown(rootField)).toBe(true);
+    });
+
+    it('Tab in the drilled-in view wraps through its own regions', async () => {
+      await openLabels();
+      act(() => field().focus());
+      fireEvent.keyDown(field(), {key: 'Tab'});
+      expect(labelsMenu()).toHaveFocus();
+      fireEvent.keyDown(labelsMenu(), {key: 'Tab'});
+      expect(create()).toHaveFocus();
+      fireEvent.keyDown(create(), {key: 'Tab'});
+      expect(field()).toHaveFocus();
+    });
+  });
+});

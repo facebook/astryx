@@ -17,7 +17,10 @@
  * shown view portals its rows into. The sub-menu row stays mounted (hidden)
  * while its view shows, so its rows stay live and Back can return focus to
  * it without bookkeeping. Whether a finger drove the menu is decided once,
- * when it opens, so a menu never changes shape under a pointer.
+ * when it opens, so a menu never changes shape under a pointer. A view with
+ * a header or footer renders into the root's surface host instead, beside
+ * the root's menu, and the root hides its menu while it shows
+ * (`isRegionViewShown`).
  */
 
 import {useCallback, useMemo, useState, type ReactNode} from 'react';
@@ -57,6 +60,12 @@ export interface UseMenuDrillInReturn {
   /** Whether a view is shown in place of the root's rows. */
   isDrilled: boolean;
   /**
+   * Whether the shown view has a header or footer. Such a view renders into
+   * the root's surface host, outside the root's menu, so the root hides its
+   * own menu and regions while it shows.
+   */
+  isRegionViewShown: boolean;
+  /**
    * Wrap the root's rows: hidden while a view shows, followed by the host the
    * view renders into.
    */
@@ -72,6 +81,9 @@ export interface UseMenuDrillInReturn {
 export function useMenuDrillIn(isOpen: boolean): UseMenuDrillInReturn {
   const [isCompactTouch, setIsCompactTouch] = useState(false);
   const [viewStack, setViewStack] = useState<ReadonlyArray<string>>([]);
+  const [regionViews, setRegionViews] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const [host, setHost] = useState<HTMLElement | null>(null);
   // Derived from the open transition during render (the documented pattern
   // for state that follows a prop): the pointer kind is sampled as the menu
@@ -87,11 +99,27 @@ export function useMenuDrillIn(isOpen: boolean): UseMenuDrillInReturn {
     }
   }
 
-  const push = useCallback((viewId: string) => {
-    setViewStack(stack =>
-      stack.includes(viewId) ? stack : [...stack, viewId],
-    );
-  }, []);
+  const push = useCallback(
+    (viewId: string, options?: {hasRegions?: boolean}) => {
+      setViewStack(stack =>
+        stack.includes(viewId) ? stack : [...stack, viewId],
+      );
+      setRegionViews(views => {
+        const hasRegions = options?.hasRegions === true;
+        if (views.has(viewId) === hasRegions) {
+          return views;
+        }
+        const next = new Set(views);
+        if (hasRegions) {
+          next.add(viewId);
+        } else {
+          next.delete(viewId);
+        }
+        return next;
+      });
+    },
+    [],
+  );
   const pop = useCallback(() => {
     setViewStack(stack => (stack.length === 0 ? stack : stack.slice(0, -1)));
   }, []);
@@ -102,6 +130,8 @@ export function useMenuDrillIn(isOpen: boolean): UseMenuDrillInReturn {
   );
 
   const isDrilled = viewStack.length > 0;
+  const topView = viewStack.at(-1);
+  const isRegionViewShown = topView != null && regionViews.has(topView);
 
   // The wrappers render always, not only once a view shows: a tree that
   // changed shape at push time would remount the sub-menu row, and with it the
@@ -124,5 +154,5 @@ export function useMenuDrillIn(isOpen: boolean): UseMenuDrillInReturn {
     [isDrilled],
   );
 
-  return {drillIn, isDrilled, wrapContent};
+  return {drillIn, isDrilled, isRegionViewShown, wrapContent};
 }
