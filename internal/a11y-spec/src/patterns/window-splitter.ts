@@ -237,6 +237,10 @@ export const WINDOW_SPLITTER_PATTERN: PatternContract<WindowSplitterStateFacts> 
           if (max < facts.valueMin) {
             throw new Error('aria-valuemax lies below aria-valuemin');
           }
+          const now = await valueNow(subject);
+          if (now > max) {
+            throw new Error('aria-valuenow lies above aria-valuemax');
+          }
         },
       },
       {

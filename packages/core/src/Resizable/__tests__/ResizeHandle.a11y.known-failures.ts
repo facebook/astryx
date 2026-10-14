@@ -36,4 +36,17 @@ export const RESIZE_HANDLE_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     reason:
       'A recorded gap with a reason the record owns (Performance and resources: atomic pixel paths add no observer); it closes only with a record decision, not a fix.',
   },
+  {
+    expectation: 'windowsplitter.keys.arrows-move',
+    binding: 'ResizeHandle',
+    state: 'bare-snapped',
+    evidenceLayer: 'real-browser',
+    failureEquals: 'ArrowRight (grow) left aria-valuenow at 200, not 210',
+    standardsReference:
+      'APG Window Splitter keyboard interaction — the arrow keys move the splitter; Astryx component:Resizable AR1.',
+    userImpact:
+      'A keyboard user on a region with snap points presses an arrow and nothing happens: a 10px step snaps back to the point it started on, so only a pointer drag reaches the next point.',
+    reason:
+      'This test-only binding records the gap; moving to the adjacent snap point on an arrow is a component decision for its own spec-backed patch.',
+  },
 ];

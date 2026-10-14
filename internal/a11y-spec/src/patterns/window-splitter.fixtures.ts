@@ -162,6 +162,12 @@ export const WINDOW_SPLITTER_FIXTURES: readonly WindowSplitterFixture[] = [
     html: splitter({omitMin: true}),
   },
   {
+    id: 'violating-now-above-max',
+    summary: 'a splitter announcing 200 of 100–150',
+    facts: facts(),
+    html: splitter({max: 150}),
+  },
+  {
     id: 'violating-no-valuemax',
     summary: 'a splitter with no aria-valuemax',
     facts: facts(),
@@ -237,7 +243,10 @@ export const WINDOW_SPLITTER_MUTATIONS: Readonly<
     'violating-no-valuenow',
     'violating-no-valuemin',
   ],
-  'windowsplitter.separator.maximum': ['violating-no-valuemax'],
+  'windowsplitter.separator.maximum': [
+    'violating-no-valuemax',
+    'violating-now-above-max',
+  ],
   'windowsplitter.separator.orientation': ['violating-orientation'],
   'windowsplitter.separator.controls-pane': [
     'violating-no-controls',

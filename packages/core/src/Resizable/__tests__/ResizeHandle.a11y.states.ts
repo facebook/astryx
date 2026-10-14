@@ -29,6 +29,8 @@ export interface ResizeHandleBindingState {
   readonly startsCollapsed?: boolean;
   /** Pass a `containerRef` (a pixel-only region inside a container). */
   readonly inContainer?: boolean;
+  /** Snap points for the region (`snaps`). */
+  readonly snaps?: readonly number[];
   readonly disabled?: boolean;
 }
 
@@ -137,6 +139,16 @@ export const RESIZE_HANDLE_BINDING_STATES = [
     facts: facts({valueMax: null}),
     maxSize: null,
     inContainer: true,
+  },
+  {
+    id: 'bare-snapped',
+    summary:
+      'a bare ResizeHandle whose region sets snap points [100, 200, 300, 400]: it can rest only on a snap point',
+    storyId: story('bare-snapped'),
+    component: 'ResizeHandle',
+    label: 'Resize details pane',
+    facts: facts(),
+    snaps: [100, 200, 300, 400],
   },
   {
     id: 'bare-disabled',
