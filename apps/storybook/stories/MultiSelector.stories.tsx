@@ -913,6 +913,25 @@ export const PanelFooter: Story = {
   },
 };
 
+export const PanelFooterWithoutSearch: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Labels"
+        options={[
+          {value: 'bug', label: 'Bug'},
+          {value: 'feature', label: 'Feature'},
+          {value: 'docs', label: 'Docs'},
+        ]}
+        value={value}
+        onChange={setValue}
+        footer={<Button label="Manage labels" variant="ghost" />}
+      />
+    );
+  },
+};
+
 export const RowActions: Story = {
   render: () => {
     const [value, setValue] = useState<string[]>(['feature']);
