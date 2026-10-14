@@ -668,11 +668,12 @@ one removal merged ahead of the decision to allow it.
   is required. An accessibility behavior fix requires no app-layer code change:
   existing public props, types, exports, tokens and documented usage keep working
   unchanged. It may add optional public surface (for example a new optional prop),
-  which is not breaking; it never removes, renames, or narrows existing surface. It
-  ships as a patch `[fix]`, with a release-note line when documented behavior changes;
-  its Changeset names the old and new behavior and the accessibility target it serves.
-  A change that would require apps to edit code must be redesigned so the component
-  absorbs it, or it is classified under FR1.
+  which is not breaking and is admitted under the existing rules for public additions;
+  it never removes, renames, or narrows existing surface. It ships as a patch `[fix]`,
+  with a release-note line when documented behavior changes; its Changeset names the
+  old and new behavior and the accessibility target it serves. A change that would
+  require apps to edit code must be redesigned so the component absorbs it, or it is
+  classified under FR1.
 
 ### Platform support
 
