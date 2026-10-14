@@ -844,6 +844,51 @@ export const LabRadioGroup: Story = {
   },
 };
 
+function RowsShownMenu({
+  indicatorPosition,
+}: {
+  indicatorPosition: 'start' | 'end';
+}) {
+  const [limit, setLimit] = useState('25');
+  return (
+    <DropdownMenu button={{label: 'Rows shown'}}>
+      <DropdownMenuRadioGroup
+        value={limit}
+        onChange={setLimit}
+        label="Rows shown"
+        indicatorPosition={indicatorPosition}>
+        <DropdownMenuRadioItem value="10" label="10 rows" />
+        <DropdownMenuRadioItem value="25" label="25 rows" />
+        <DropdownMenuRadioItem value="50" label="50 rows" />
+      </DropdownMenuRadioGroup>
+    </DropdownMenu>
+  );
+}
+
+export const RadioGroupMarkAtEnd: Story = {
+  render: () => <RowsShownMenu indicatorPosition="end" />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A radio group with `indicatorPosition="end"`: each row\'s radio mark sits at its inline end on every pointer, as Selector places its mark. The mark is the theme\'s `radio` indicator; the rows stay `menuitemradio` with `aria-checked`.',
+      },
+    },
+  },
+};
+
+export const RadioGroupMarkAtStart: Story = {
+  render: () => <RowsShownMenu indicatorPosition="start" />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A radio group with `indicatorPosition="start"`: each row\'s radio mark stays before its label on every pointer, including a coarse one, where an unset group moves it to the end.',
+      },
+    },
+  },
+};
+
 export const LabSelectableSizes: Story = {
   render: function LabSelectableSizesStory() {
     const [sm, setSm] = useState('a');

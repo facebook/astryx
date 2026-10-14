@@ -10,12 +10,16 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {useState} from 'react';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuCheckboxItem} from './DropdownMenuCheckboxItem';
 import {DropdownMenuRadioGroup} from './DropdownMenuRadioGroup';
 import {DropdownMenuRadioItem} from './DropdownMenuRadioItem';
+import {defineTheme} from '../theme/defineTheme';
+import {Theme} from '../theme/Theme';
+import {CheckIndicator} from '../Indicator';
 
 beforeEach(() => {
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
@@ -162,6 +166,107 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
     expect(
       uncheckedIndicator?.querySelector('.astryx-radio-indicator-dot'),
     ).not.toBeInTheDocument();
+  });
+
+  it('indicatorPosition keeps each row a menuitemradio drawing the radio mark, at either edge', async () => {
+    const user = userEvent.setup();
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      function Sort({position}: {position: 'start' | 'end'}) {
+        const [sort, setSort] = useState('newest');
+        return (
+          <DropdownMenu button={{label: `Sort ${position}`}}>
+            <DropdownMenuRadioGroup
+              value={sort}
+              onChange={setSort}
+              label={`Sort by (${position})`}
+              indicatorPosition={position}
+              hasCloseOnSelect={false}>
+              <DropdownMenuRadioItem value="newest" label="Newest" />
+              <DropdownMenuRadioItem value="oldest" label="Oldest" />
+            </DropdownMenuRadioGroup>
+          </DropdownMenu>
+        );
+      }
+      for (const position of ['start', 'end'] as const) {
+        const {unmount} = render(<Sort position={position} />);
+        await user.click(
+          screen.getByRole('button', {name: `Sort ${position}`}),
+        );
+        const group = screen.getByRole('group', {
+          name: `Sort by (${position})`,
+          hidden: true,
+        });
+        // The group consumes the prop: nothing reaches the DOM.
+        expect(group).not.toHaveAttribute('indicatorposition');
+        const rows = screen.getAllByRole('menuitemradio', {hidden: true});
+        expect(rows.map(row => row.getAttribute('aria-checked'))).toEqual([
+          'true',
+          'false',
+        ]);
+        // Every row draws the theme's radio, carrying the menu's target.
+        for (const row of rows) {
+          const mark = row.querySelector('.astryx-dropdown-menu-radio');
+          expect(mark).toHaveClass('astryx-radio-indicator');
+          expect(mark).toHaveAttribute('aria-hidden', 'true');
+        }
+        unmount();
+      }
+      expect(errors).not.toHaveBeenCalled();
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
+  it('a nested theme that extends the product theme with a check for radio marks one menu with the check', async () => {
+    const user = userEvent.setup();
+    const product = defineTheme({name: 'menu-radio-product-test'});
+    const checkMarks = defineTheme({
+      name: 'menu-radio-check-marks-test',
+      extends: product,
+      indicators: {radio: CheckIndicator},
+    });
+    function Rows({name}: {name: string}) {
+      return (
+        <DropdownMenu button={{label: name}}>
+          <DropdownMenuRadioGroup
+            value="25"
+            onChange={() => {}}
+            label={`${name} choices`}
+            indicatorPosition="end">
+            <DropdownMenuRadioItem value="10" label="10 rows" />
+            <DropdownMenuRadioItem value="25" label="25 rows" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      );
+    }
+    render(
+      <Theme theme={product}>
+        <Rows name="Plain" />
+        <Theme theme={checkMarks}>
+          <Rows name="Checked" />
+        </Theme>
+      </Theme>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Checked'}));
+    await user.click(screen.getByRole('button', {name: 'Plain'}));
+    const marks = (name: string) =>
+      Array.from(
+        screen
+          .getByRole('group', {name: `${name} choices`, hidden: true})
+          .querySelectorAll('.astryx-dropdown-menu-radio'),
+      );
+    // The scoped menu draws the check glyph on its chosen row only; the
+    // other menu keeps a radio on every row.
+    expect(marks('Checked')).toHaveLength(1);
+    expect(marks('Checked')[0]).toHaveClass('astryx-icon');
+    expect(
+      marks('Checked')[0].closest('[role="menuitemradio"]'),
+    ).toHaveAccessibleName('25 rows');
+    expect(marks('Plain')).toHaveLength(2);
+    for (const mark of marks('Plain')) {
+      expect(mark).toHaveClass('astryx-radio-indicator');
+    }
   });
 
   it('calls onChange with the selected value', async () => {

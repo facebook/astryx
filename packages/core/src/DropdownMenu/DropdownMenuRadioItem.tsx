@@ -18,7 +18,9 @@
  * (aria-hidden) — the row owns the checked state, and menu radios pick up the
  * same `radio` theming (and any theme replacement) as RadioList. This row keeps
  * the marker box: its size is derived from the menu's item size and it swaps to
- * the inline-end of the row on coarse-pointer (touch) devices via CSS `order`.
+ * the inline-end of the row on coarse-pointer (touch) devices via CSS `order`,
+ * unless the group's `indicatorPosition` pins it to one edge, as Selector's
+ * does.
  */
 
 import {useCallback, type PointerEvent, type ReactNode} from 'react';
@@ -69,6 +71,18 @@ const styles = stylex.create({
       default: 0,
       '@media (pointer: coarse)': 'auto',
     },
+  },
+  // A group's indicatorPosition pins the marker to one logical edge of the
+  // row on every pointer, as Selector's indicatorPosition does.
+  startMarker: {
+    pointerEvents: 'none',
+    order: 0,
+    marginInlineStart: 0,
+  },
+  endMarker: {
+    pointerEvents: 'none',
+    order: 1,
+    marginInlineStart: 'auto',
   },
 });
 
@@ -146,6 +160,12 @@ export function DropdownMenuRadioItem({
   const controlSize = menuSize === 'sm' ? 'sm' : 'md';
   const isChecked = groupCtx.value === value;
   const RadioControl = useIndicator('radio');
+  const markerStyle =
+    groupCtx.indicatorPosition === 'end'
+      ? styles.endMarker
+      : groupCtx.indicatorPosition === 'start'
+        ? styles.startMarker
+        : styles.marker;
 
   const handleClick = useCallback(() => {
     if (isDisabled) {
@@ -176,7 +196,7 @@ export function DropdownMenuRadioItem({
           state={isChecked ? 'checked' : 'unchecked'}
           size={controlSize}
           isDisabled={isDisabled}
-          xstyle={styles.marker}
+          xstyle={markerStyle}
           {...themeProps('dropdown-menu-radio', {
             size: controlSize,
             checked: isChecked ? 'checked' : null,

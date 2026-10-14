@@ -16,6 +16,7 @@
 
 import {createContext, use} from 'react';
 import {createLayerScopedContext} from '../Layer/layerScopedContext';
+import type {IndicatorPosition} from '../Indicator/types';
 
 /** Menu size, derived from the trigger button size. */
 export type DropdownMenuSize = 'sm' | 'md' | 'lg';
@@ -88,6 +89,12 @@ export interface DropdownMenuRadioGroupContextValue {
   onChange: (value: string) => void;
   /** Whether selecting an item should close the menu. @default true */
   hasCloseOnSelect: boolean;
+  /**
+   * Which logical edge of each row carries the radio mark, as Selector's
+   * `indicatorPosition`. Unset, the mark sits at the start under a fine
+   * pointer and at the end under a coarse one.
+   */
+  indicatorPosition?: IndicatorPosition;
 }
 
 export const DropdownMenuRadioGroupContext =
