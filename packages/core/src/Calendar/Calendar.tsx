@@ -984,8 +984,15 @@ function MonthGrid({
   } = useGridFocus<HTMLDivElement>({
     columns: 7,
     cellSelector: '[role="gridcell"]',
+    // A borrowed adjacent-month day is exposed aria-disabled (its click does
+    // nothing, but it can still take pointer focus) and may also be natively
+    // disabled by bounds or a constraint; the keyboard skips it either way
+    // and crosses into that month through the grid edge instead, so focus
+    // lands on the real day in the month now shown (FR5).
     isCellFocusable: cell =>
-      cell.querySelector('button:not([disabled])') !== null,
+      cell.querySelector(
+        'button:not([disabled]):not([aria-disabled="true"])',
+      ) !== null,
     getFocusTarget: cell => cell.querySelector<HTMLElement>('button'),
     hasRovingTabIndex: true,
     onNavigateBefore: handleNavigatePrevious,
