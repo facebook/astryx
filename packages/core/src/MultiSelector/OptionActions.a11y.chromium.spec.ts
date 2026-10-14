@@ -6,8 +6,9 @@
  *   built Storybook.
  * @output Real-engine proof for option actions: the action is visible at rest
  *   beside its row (`spec:AST-058` FR8), the keyboard reaches it through the
- *   inline-end arrow in both directions and fires it with Enter, and the
- *   highlight follows a real mouse across rows and actions.
+ *   inline-end arrow in both directions and fires it with Enter, the active
+ *   action cell draws the standard focus ring, and the highlight follows a
+ *   real mouse across rows and actions.
  * @position Run with `pnpm test:a11y-contract`; paint, pointer paths and the
  *   active descendant as an engine exposes them are not jsdom claims.
  */
@@ -141,6 +142,62 @@ test('the keyboard reaches an action through the inline-end arrow and fires it w
     .toBe('gridcell:Edit Bug');
   await search.press('ArrowLeft');
   await expect.poll(async () => activeDescendant(page)).toBe('row:Bug');
+});
+
+test('the active action cell draws the standard focus ring', async ({page}) => {
+  await page.goto(
+    `${storybook.origin}/iframe.html?id=core-multiselector--row-actions&viewMode=story`,
+  );
+  const search = page.getByRole('combobox');
+  await expect(search).toBeFocused();
+  await search.press('ArrowDown'); // select-all
+  await search.press('ArrowDown'); // Feature (no action)
+  await search.press('ArrowDown'); // Bug
+  await search.press('ArrowRight');
+  await expect
+    .poll(async () => activeDescendant(page))
+    .toBe('gridcell:Edit Bug');
+  const ring = await page.evaluate(() => {
+    const id = document.activeElement?.getAttribute('aria-activedescendant');
+    const cell = id ? document.getElementById(id) : null;
+    if (!cell) {
+      return null;
+    }
+    const cs = getComputedStyle(cell);
+    // The ring the focus tokens describe, resolved by the browser on a probe.
+    const probe = document.createElement('div');
+    probe.style.cssText =
+      'outline-width:var(--focus-outline-width);outline-style:var(--focus-outline-style);outline-color:var(--focus-outline-color);outline-offset:var(--focus-outline-offset)';
+    document.body.appendChild(probe);
+    const want = getComputedStyle(probe);
+    const result = {
+      style: cs.outlineStyle,
+      width: cs.outlineWidth,
+      color: cs.outlineColor,
+      offset: cs.outlineOffset,
+      wantStyle: want.outlineStyle,
+      wantWidth: want.outlineWidth,
+      wantColor: want.outlineColor,
+      wantOffset: want.outlineOffset,
+    };
+    probe.remove();
+    return result;
+  });
+  expect(ring).not.toBeNull();
+  expect(ring!.style).not.toBe('none');
+  expect(ring!.width).not.toBe('0px');
+  expect(ring!.style).toBe(ring!.wantStyle);
+  expect(ring!.width).toBe(ring!.wantWidth);
+  expect(ring!.color).toBe(ring!.wantColor);
+  expect(ring!.offset).toBe(ring!.wantOffset);
+  // Back on the option cell, the action cell drops the ring.
+  await search.press('ArrowLeft');
+  await expect.poll(async () => activeDescendant(page)).toBe('row:Bug');
+  const after = await page
+    .getByRole('row', {name: 'Bug'})
+    .locator('[data-multi-selector-action-cell]')
+    .evaluate(cell => getComputedStyle(cell).outlineStyle);
+  expect(after).toBe('none');
 });
 
 test('under RTL the inline-end arrow is ArrowLeft', async ({page}) => {

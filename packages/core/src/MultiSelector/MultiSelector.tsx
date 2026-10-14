@@ -50,6 +50,7 @@ import type {IndicatorPosition} from '../Indicator';
 import {Badge} from '../Badge';
 import {
   colorVars,
+  focusVars,
   sizeVars,
   spacingVars,
   radiusVars,
@@ -74,7 +75,6 @@ import {
 import {useMultiCombobox} from './hooks';
 import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
 import {devWarn, warnOnce} from '../utils/devWarning';
-import {FOCUS_OUTLINE_PARTS} from '../utils/focusOutline.stylex';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {FOCUSABLE_SELECTOR} from '../hooks/focusableSelector';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
@@ -436,11 +436,15 @@ const styles = stylex.create({
     flexShrink: 0,
     borderRadius: radiusVars['--radius-element'],
   },
+  // The standard ring, from the focus tokens themselves: inside
+  // `stylex.create` StyleX resolves an imported `defineVars` group, and a
+  // plain object such as `FOCUS_OUTLINE_PARTS` compiles to variables nothing
+  // defines.
   actionCellActive: {
-    outlineWidth: FOCUS_OUTLINE_PARTS.outlineWidth,
-    outlineStyle: FOCUS_OUTLINE_PARTS.outlineStyle,
-    outlineColor: FOCUS_OUTLINE_PARTS.outlineColor,
-    outlineOffset: FOCUS_OUTLINE_PARTS.outlineOffset,
+    outlineWidth: focusVars['--focus-outline-width'],
+    outlineStyle: focusVars['--focus-outline-style'],
+    outlineColor: focusVars['--focus-outline-color'],
+    outlineOffset: focusVars['--focus-outline-offset'],
   },
 
   // Empty state
