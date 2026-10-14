@@ -675,6 +675,32 @@ describe('ResizeHandle', () => {
     expect(separator).toHaveAttribute('aria-valuenow', '200');
   });
 
+  it('with snap points, the grow arrow opens a collapsed pane at the snap point nearest one step above its minimum', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          collapsible: true,
+          snaps: [100, 200, 300, 400],
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    // min + step is 110; the region can rest only on a point, so it opens
+    // on the nearest one (100).
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
+    // From there the arrows move between points.
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
+  });
+
   it('a grow arrow opens a hand-built collapsed region one step above its minimum', () => {
     const props: ResizableProps = {
       ...makeResizable(),
