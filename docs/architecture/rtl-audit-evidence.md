@@ -64,7 +64,7 @@ deciding_specs: []
 
 | Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                            |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Governing contract      | `design:bidirectionality` owns what correct RTL behavior means; component contracts own local adoption. No product contract changes; this record owns evidence admission and freshness.                                                                                                                                                                                             |
+| Governing contract      | `design:bidirectionality` owns what correct RTL behavior means; component contracts own local semantics, exceptions, and verification. No product contract changes; this record owns evidence admission and freshness.                                                                                                                                                              |
 | System behavior         | Every component in the live roster is accounted for; available in-scope stories are rendered LTR and RTL. Results distinguish measured, verified N/A, coverage gap, and behavior failure. Lint and rendered audit prove different claims.                                                                                                                                           |
 | End-user impact         | People reading RTL interfaces are protected by evidence that actually observed mirroring, ordering, placement, geometry, and behavior, rather than by a green report that measured nothing.                                                                                                                                                                                         |
 | Builder impact          | A new or changed component must either be measured by an applicable check or carry an explicit gap; behavior failures have no allowlist. Verified-N/A and pre-existing-debt admission await owner decisions (OQ1, OQ2).                                                                                                                                                             |
@@ -168,8 +168,8 @@ Lint and rendered audit are complementary:
   checks centering and hit-testing only; size enforcement is an open gap.
 - **INV11 — Audit state is not product intent.** This architecture owns evidence
   admission and freshness. The human meaning of correct bidirectional behavior
-  belongs in `design:bidirectionality`; component contracts own local adoption and
-  exceptions.
+  belongs in `design:bidirectionality`; component contracts own local semantics,
+  exceptions, and verification.
 - **INV12 — Fixture applicability follows semantic role.** D1 icon mirroring
   applies to artwork used as a directional control or cue. A reference fixture
   that displays caller-supplied left/right glyph geometry as data may declare D1
