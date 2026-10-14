@@ -154,20 +154,20 @@ CLI too old to finish the migration.
   A copied-composition summary names its files relative to the source folder the
   upgrade scanned. When the operation root is another folder, the human-readable
   output MUST name it.
-- **FR13 — A CLI older than the installed Core reports an incomplete
-  upgrade.** When the installed `@astryxdesign/core` is newer than both the
-  running CLI and the version the upgrade starts from, the upgrade MUST run the
-  codemods the running CLI has for the range, and its human-readable output MUST
-  report the upgrade as incomplete and MUST NOT say the code is up to date. The
+- **FR13 — A CLI older than the installed Core reports an incomplete upgrade.**
+  When the installed `@astryxdesign/core` is newer than both the running CLI and
+  the version the upgrade starts from, the upgrade MUST run the codemods the
+  running CLI has for the range, and its human-readable output MUST report the
+  upgrade as incomplete and MUST NOT say the code is up to date. The
   machine-readable result MUST carry the optional `cliBehindCore` field, present
   only in this case, with the running CLI's version and one command that
   finishes the upgrade with the CLI release matching the installed Core. That
-  command MUST repeat the run's options, MUST name the source folder the run
-  scanned so that it scans the same folder wherever it runs, and MUST quote each
-  argument for the shell of the platform it is printed on. The human-readable
-  output MUST print the command on a line of its own and say where to run it.
-  This case does not change the exit status, or what `complete` and `errorCode`
-  report under FR6.
+  command MUST work from any folder it is run in, upgrading the same project; it
+  MUST repeat the run's options, MUST name the source folder the run scanned,
+  and MUST quote each argument for the shell it targets. The human-readable
+  output MUST print the command on a line of its own, and MUST name that shell
+  unless it is a POSIX shell. This case does not change the exit status, or what
+  `complete` and `errorCode` report under FR6.
 
 ### Platform support
 
@@ -208,7 +208,7 @@ and needs no Changeset.
 | FR10     | Upgrade runs with a named source folder                    | the default from a subfolder; one folder named from a subfolder in each spelling; a folder outside the operation root                                                                                                                | A named folder read from another folder than the one the command runs in, or a folder outside the operation root that is scanned |
 | FR11     | Upgrade target detection                                   | a member whose workspace forces Core, or that declares another range or only a peer range; an unlisted project below an installed Core; a Core in a parent folder; an install without `node_modules`; no qualifying folder           | A member that misses the Core its workspace installs, or a Core above an unlisted project that counts                            |
 | FR12     | Result snapshots from a subfolder and from the root        | modified, protected, declined, error, and agent-doc paths                                                                                                                                                                            | A path in the result that does not resolve from the folder the command runs in                                                   |
-| FR13     | Upgrade runs with a CLI older than the installed Core      | no codemods left; part of the range covered; each option; a folder name with shell metacharacters on each platform                                                                                                                   | An up-to-date or complete report, a dropped option, or a printed command that scans another folder when run                      |
+| FR13     | Upgrade runs with a CLI older than the installed Core      | no codemods left; part of the range covered; each option; the printed command run inside the project, above it, and in an unrelated folder; a folder name with shell metacharacters in each targeted shell                           | An up-to-date or complete report, a dropped option, a command that misses the project elsewhere, or an unnamed non-POSIX shell   |
 
 ## Decision log
 
