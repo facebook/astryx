@@ -9,9 +9,6 @@
 
 import type {KnownFailure} from '@astryxdesign/a11y-spec';
 
-const RESTORE_REFERENCE =
-  'APG Window Splitter keyboard interaction — Enter on a collapsed pane restores the splitter to its previous position; Astryx component:Resizable AR1 (Enter collapses and restores)';
-
 export const RESIZE_HANDLE_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
   {
     expectation: 'windowsplitter.separator.maximum',
@@ -25,30 +22,5 @@ export const RESIZE_HANDLE_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
       'A screen-reader user on a handle whose region sets no maximum hears a value and a minimum but no maximum, so the range sounds open-ended and End does nothing.',
     reason:
       'This test-only binding records the gap; the fix ships as its own spec-backed patch that reports the measured basis.',
-  },
-  {
-    expectation: 'windowsplitter.keys.enter-collapses-and-restores',
-    binding: 'ResizeHandle',
-    state: 'bare-collapsible',
-    evidenceLayer: 'real-browser',
-    failureEquals: 'Enter (restore) left aria-valuenow at 100, not 200',
-    standardsReference: RESTORE_REFERENCE,
-    userImpact:
-      'A keyboard user who collapses a pane with Enter and presses Enter again gets it back at its minimum size, not the size they had.',
-    reason:
-      'This test-only binding records the gap; the fix ships as its own spec-backed patch.',
-  },
-  {
-    expectation: 'windowsplitter.keys.enter-collapses-and-restores',
-    binding: 'ResizeHandle',
-    state: 'bare-small-min',
-    evidenceLayer: 'real-browser',
-    failureEquals:
-      'a second Enter did not restore the pane (aria-valuetext still announces it collapsed)',
-    standardsReference: RESTORE_REFERENCE,
-    userImpact:
-      'A keyboard user who collapses a pane whose minimum is below its collapse threshold cannot reopen it with Enter at all: the restore resizes to the minimum, which is still inside the collapsed band.',
-    reason:
-      'This test-only binding records the gap; the fix ships as its own spec-backed patch.',
   },
 ];
