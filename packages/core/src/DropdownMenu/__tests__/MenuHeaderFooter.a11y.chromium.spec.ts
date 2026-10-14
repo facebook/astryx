@@ -31,8 +31,8 @@ test.afterAll(async () => {
 
 const STORY = 'core-dropdownmenu--header-and-footer';
 // The trigger button only: the sub-menu row inside the menu also carries
-// aria-haspopup="menu".
-const TRIGGER = '#storybook-root button[aria-haspopup="menu"]';
+// aria-haspopup. With a header and footer the trigger opens a dialog.
+const TRIGGER = '#storybook-root button[aria-haspopup="dialog"]';
 
 async function openMenu(page: Page) {
   await page.goto(`${storybook.origin}/iframe.html?id=${STORY}&viewMode=story`);
