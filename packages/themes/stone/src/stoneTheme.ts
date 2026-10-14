@@ -66,6 +66,21 @@ const stoneSyntax = defineSyntaxTheme({
   },
 });
 
+/**
+ * The secondary Button treatment. Selector, MultiSelector, and ComplexSelector
+ * reuse it for their `secondary` trigger so every secondary control in this
+ * theme matches (AST-079 FR2).
+ */
+const SECONDARY_BUTTON = {
+  backgroundColor: 'transparent',
+  borderWidth: '1.5px',
+  borderStyle: 'solid',
+  borderColor: 'var(--color-border-emphasized)',
+  ':hover': {
+    backgroundColor: 'var(--color-neutral)',
+  },
+} as const;
+
 export const stoneTheme = defineTheme({
   name: 'stone',
 
@@ -269,15 +284,7 @@ export const stoneTheme = defineTheme({
       base: {
         borderRadius: 'var(--radius-full)',
       },
-      'variant:secondary': {
-        backgroundColor: 'transparent',
-        borderWidth: '1.5px',
-        borderStyle: 'solid',
-        borderColor: 'var(--color-border-emphasized)',
-        ':hover': {
-          backgroundColor: 'var(--color-neutral)',
-        },
-      },
+      'variant:secondary': SECONDARY_BUTTON,
       'variant:destructive': {
         backgroundColor: 'var(--color-background-red)',
         color: 'var(--color-text-red)',
@@ -396,8 +403,12 @@ export const stoneTheme = defineTheme({
     'number-input': INPUT_STATUS_VARS,
     'date-input': INPUT_STATUS_VARS,
     'time-input': INPUT_STATUS_VARS,
-    selector: INPUT_STATUS_VARS,
-    'multi-selector': INPUT_STATUS_VARS,
+    selector: {...INPUT_STATUS_VARS, 'variant:secondary': SECONDARY_BUTTON},
+    'multi-selector': {
+      ...INPUT_STATUS_VARS,
+      'variant:secondary': SECONDARY_BUTTON,
+    },
+    'complex-selector': {'variant:secondary': SECONDARY_BUTTON},
     typeahead: INPUT_STATUS_VARS,
     tokenizer: INPUT_STATUS_VARS,
 

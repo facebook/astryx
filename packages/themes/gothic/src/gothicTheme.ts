@@ -52,6 +52,22 @@ const gothicSyntax = defineSyntaxTheme({
   },
 });
 
+/**
+ * The secondary Button treatment. Selector, MultiSelector, and ComplexSelector
+ * reuse it for their `secondary` trigger so every secondary control in this
+ * theme matches (AST-079 FR2).
+ *
+ * Primary inherits default — light pill with dark text via
+ * --color-accent / --color-on-accent (matches the cream badge).
+ * Secondary uses the dark-slate "neutral" badge treatment.
+ */
+const SECONDARY_BUTTON = {
+  backgroundColor: 'var(--color-background-gray)',
+  color: 'var(--color-text-gray)',
+  borderColor: 'transparent',
+  borderWidth: '0',
+} as const;
+
 export const gothicTheme = defineTheme({
   name: 'gothic',
 
@@ -236,15 +252,7 @@ export const gothicTheme = defineTheme({
 
   components: {
     button: {
-      // Primary inherits default — light pill with dark text via
-      // --color-accent / --color-on-accent (matches the cream badge).
-      // Secondary uses the dark-slate "neutral" badge treatment.
-      'variant:secondary': {
-        backgroundColor: 'var(--color-background-gray)',
-        color: 'var(--color-text-gray)',
-        borderColor: 'transparent',
-        borderWidth: '0',
-      },
+      'variant:secondary': SECONDARY_BUTTON,
       'variant:ghost': {
         ':hover': {
           backgroundColor: 'var(--color-overlay-hover)',
@@ -257,6 +265,10 @@ export const gothicTheme = defineTheme({
         color: 'var(--color-text-red)',
       },
     },
+    // Secondary selector triggers match the secondary Button (AST-079 FR2).
+    selector: {'variant:secondary': SECONDARY_BUTTON},
+    'multi-selector': {'variant:secondary': SECONDARY_BUTTON},
+    'complex-selector': {'variant:secondary': SECONDARY_BUTTON},
 
     badge: {
       base: {

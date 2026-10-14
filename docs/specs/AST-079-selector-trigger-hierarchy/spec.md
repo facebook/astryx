@@ -143,10 +143,6 @@ selection, and component geometry remain outside this record.
   InputGroup surface rules; this record projects those rules onto the adopted
   trigger value without changing them.
 - The Button component retains its released variant map and rendering.
-- Implementation gap: under a theme that restyles its secondary `Button`
-  (butter, chocolate, gothic, stone, y2k), the three selectors' `secondary`
-  triggers keep the default borderless, neutral-filled treatment instead of
-  matching it.
 - `architecture:public-component-api` continues to own additive API admission,
   defaults, and compatibility. `architecture:component-theming-surface`
   continues to own target and visual-prop propagation.
