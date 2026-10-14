@@ -15,9 +15,14 @@
  * States:
  * - `idle` — no gesture is live.
  * - `triggerPress` — a finger rests on the trigger; the menu is not open yet.
- *   A mouse skips this state: a mouse press on the trigger opens at once.
- * - `open` — the menu opened under a held pointer (a mouse press, or a finger
- *   held for the long-press delay) and the pointer has not entered it yet.
+ *   A mouse skips this state: a mouse press on the trigger opens at once. So
+ *   does a finger on a trigger whose press carries `touchOpen: 'press'`.
+ * - `open` — the menu opened under a held pointer (a mouse press, a finger's
+ *   press on a `touchOpen: 'press'` trigger, or a finger held for the
+ *   long-press delay) and the pointer has not entered it yet. A finger's
+ *   press-open is tentative: the browser has not yet decided whether the
+ *   finger is scrolling, and if it takes the gesture before the pointer
+ *   enters the menu, the open is withdrawn.
  * - `tracking` — the pointer is held and the highlight follows it.
  *
  * The settle rule: the release of the gesture that OPENED the menu acts only
@@ -51,6 +56,12 @@ export type MenuPressGesture<T> =
       phase: 'open';
       pointerType: MenuPressPointerType;
       openedAt: number;
+      /**
+       * A finger's press opened the menu before the browser decided whether
+       * the finger is scrolling. A cancel before the pointer enters the menu
+       * withdraws the open.
+       */
+      isTentative?: boolean;
     }
   | {
       phase: 'tracking';
@@ -69,6 +80,13 @@ export type MenuPressEvent<T> =
       /** The enabled row under the press when it lands inside the menu. */
       row: T | null;
       time: number;
+      /**
+       * How a finger's press on the trigger opens the menu: `'tap'` waits for
+       * the tap's click or the long-press delay, `'press'` opens at once as a
+       * mouse press does. A mouse always opens on the press.
+       * @default 'tap'
+       */
+      touchOpen?: 'tap' | 'press';
     }
   /** The menu opened while the trigger press is still held. */
   | {type: 'opened'; time: number}
@@ -85,7 +103,10 @@ export type MenuPressEvent<T> =
 
 export type MenuPressEffect<T> =
   | {type: 'none'}
-  /** A mouse pressed the trigger: open the menu now, under the held pointer. */
+  /**
+   * A mouse pressed the trigger, or a finger did with `touchOpen: 'press'`:
+   * open the menu now, under the held pointer.
+   */
   | {type: 'open'}
   | {type: 'highlight'; row: T}
   | {type: 'clear'}
@@ -180,6 +201,21 @@ function stepIdle<T>(
       effect: {type: 'open'},
     };
   }
+  if (event.touchOpen === 'press') {
+    // The trigger asked for the press itself to open the menu, as a mouse's
+    // does. The browser has not yet decided whether this finger is
+    // scrolling, so the open stays tentative until the pointer enters the
+    // menu.
+    return {
+      gesture: {
+        phase: 'open',
+        pointerType: event.pointerType,
+        openedAt: event.time,
+        isTentative: true,
+      },
+      effect: {type: 'open'},
+    };
+  }
   return {
     gesture: {
       phase: 'triggerPress',
@@ -250,8 +286,15 @@ function stepOpen<T>(
     }
     case 'cancel':
       // As above: the gesture ends, so its document listeners come off. The
-      // menu stays open — a cancelled pointer did not ask to close it.
-      return idle({type: 'settle', stray: false, dismiss: false});
+      // menu stays open — a cancelled pointer did not ask to close it —
+      // unless a finger's press opened it tentatively: then the browser took
+      // that press for a scroll or a pinch before it reached the menu, and
+      // the open is withdrawn.
+      return idle({
+        type: 'settle',
+        stray: false,
+        dismiss: gesture.isTentative === true,
+      });
     case 'down':
     case 'opened':
       return {gesture, effect: NONE};
