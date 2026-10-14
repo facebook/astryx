@@ -38,4 +38,17 @@ export const RESIZE_HANDLE_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     reason:
       'This test-only binding records the gap; the fix ships as its own spec-backed patch.',
   },
+  {
+    expectation: 'windowsplitter.keys.enter-collapses-and-restores',
+    binding: 'ResizeHandle',
+    state: 'bare-small-min',
+    evidenceLayer: 'real-browser',
+    failureEquals:
+      'a second Enter did not restore the pane (aria-valuetext still announces it collapsed)',
+    standardsReference: RESTORE_REFERENCE,
+    userImpact:
+      'A keyboard user who collapses a pane whose minimum is below its collapse threshold cannot reopen it with Enter at all: the restore resizes to the minimum, which is still inside the collapsed band.',
+    reason:
+      'This test-only binding records the gap; the fix ships as its own spec-backed patch.',
+  },
 ];

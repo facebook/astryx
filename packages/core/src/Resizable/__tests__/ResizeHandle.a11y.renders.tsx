@@ -25,6 +25,7 @@ function BareSplitter({state}: {state: ResizeHandleBindingState}) {
     maxSize: state.maxSize === null ? undefined : (state.facts.valueMax ?? 400),
     direction,
     collapsible: state.facts.collapsible,
+    collapsedSize: state.collapsedSize,
   });
   const isHorizontal = direction === 'horizontal';
   const pane = (

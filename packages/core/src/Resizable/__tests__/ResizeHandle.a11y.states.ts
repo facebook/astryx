@@ -23,6 +23,8 @@ export interface ResizeHandleBindingState {
   readonly isReversed?: boolean;
   readonly rtl?: boolean;
   readonly maxSize?: number | null;
+  /** The hook's collapse threshold, when the state sets one. */
+  readonly collapsedSize?: number;
   readonly disabled?: boolean;
 }
 
@@ -92,6 +94,16 @@ export const RESIZE_HANDLE_BINDING_STATES = [
     facts: facts({collapsible: true}),
   },
   {
+    id: 'bare-small-min',
+    summary:
+      'a bare ResizeHandle on a collapsible pane whose minimum sits below the collapse threshold',
+    storyId: story('bare-small-min'),
+    component: 'ResizeHandle',
+    label: 'Resize details pane',
+    facts: facts({collapsible: true, valueMin: 20}),
+    collapsedSize: 50,
+  },
+  {
     id: 'bare-unbounded',
     summary: 'a bare ResizeHandle whose region sets no maximum',
     storyId: story('bare-unbounded'),
@@ -117,14 +129,13 @@ export const RESIZE_HANDLE_EXCLUSIONS = [
     owner:
       'SideNav.test.tsx until SideNav binds this contract in its own change',
     reason:
-      "SideNav renders ResizeHandle in overlay position with its own collapse coupling and translated label. Its separator did not resolve within the real-browser run's budget in the first binding attempt, so SideNav is bound separately once that is understood; its known gaps (no aria-controls; Enter reopening at the minimum) stay recorded in component:Resizable AR1 and are fixed by their own patches.",
+      'SideNav renders ResizeHandle in overlay position with its own collapse coupling and translated label, and hides the handle entirely while the nav is collapsed, so the collapse-and-restore row cannot run against it as written; SideNav binds separately with states shaped for that.',
   },
   {
     id: 'pointer-drag-model',
-    owner:
-      'ResizeHandle.test.tsx pointer suites and the Chromium pointer evidence',
+    owner: 'ResizeHandle.test.tsx pointer suites',
     reason:
-      "Dragging, Escape cancelling an in-flight drag, double-click collapse, and the grab-zone geometry are pointer behavior outside the keyboard-and-semantics pattern; the component's own suites prove them.",
+      "Dragging, Escape cancelling an in-flight drag, double-click collapse, and the grab-zone geometry are pointer behavior outside the keyboard-and-semantics pattern; the component's own jsdom pointer suites prove them (ResizeHandle has no Chromium pointer suite).",
   },
   {
     id: 'pane-cycling',

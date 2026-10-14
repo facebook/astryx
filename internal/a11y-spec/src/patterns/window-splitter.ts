@@ -415,10 +415,11 @@ export const WINDOW_SPLITTER_PATTERN: PatternContract<WindowSplitterStateFacts> 
           "Where the splitter sits between its panes, and the panes' reading order, is composition.",
       },
       '1.3.5-identify-input-purpose': {
-        owner: 'not applicable',
-        verifiedBy: 'none needed',
+        owner: 'the binding component',
+        verifiedBy:
+          "this contract's role row (the separator carries role, name and value properties and no input purpose) and the component's render tests",
         reason:
-          'A splitter collects a layout position, not information about the user.',
+          "A splitter collects a layout position, not information about the user that autofill could supply; the binding's separator is the only control it renders.",
       },
       '1.4.1-use-of-color': {
         owner: 'the binding component and theme',
@@ -465,9 +466,11 @@ export const WINDOW_SPLITTER_PATTERN: PatternContract<WindowSplitterStateFacts> 
           "The splitter's place among surrounding controls depends on composition.",
       },
       '2.4.4-link-purpose': {
-        owner: 'not applicable',
-        verifiedBy: 'none needed',
-        reason: 'A splitter renders no link.',
+        owner: 'the binding component',
+        verifiedBy:
+          "this contract's role row and the component's render tests (the handle renders a separator and a grab zone, no anchor)",
+        reason:
+          'A splitter renders no link; the composing page owns any link placed around it.',
       },
       '2.4.6-headings-and-labels': {
         owner: 'the binding component and caller content',
@@ -529,15 +532,18 @@ export const WINDOW_SPLITTER_PATTERN: PatternContract<WindowSplitterStateFacts> 
           'Consistency is a property of the full set of repeated functions, not one isolated splitter.',
       },
       '3.3.1-error-identification': {
-        owner: 'not applicable',
-        verifiedBy: 'none needed',
-        reason: 'A splitter collects no input that could be in error.',
+        owner: 'the binding component and composing page',
+        verifiedBy:
+          "this contract's value rows (aria-valuenow stays within aria-valuemin/aria-valuemax, so no entry can be in error) and the composing page's form checks",
+        reason:
+          'A splitter has no free entry to validate: its value is clamped to its bounds as it changes; a form around it reports its own errors.',
       },
       '3.3.2-labels-or-instructions': {
-        owner: 'not applicable',
-        verifiedBy: 'none needed',
+        owner: 'the binding component and composing page',
+        verifiedBy:
+          "this contract's name row (every separator is labelled) and the composing page's review of any instructions around it",
         reason:
-          'A splitter collects no user input that needs form instructions.',
+          "The separator is named by its label; a splitter needs no entry instructions, and any guidance about the layout is the composing page's.",
       },
       '4.1.2-name-role-value': {
         owner: 'the binding component',
