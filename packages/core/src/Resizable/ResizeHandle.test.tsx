@@ -535,6 +535,63 @@ describe('ResizeHandle', () => {
     }
   });
 
+  it('in a reversed layout, ArrowLeft opens a collapsed pane and ArrowRight leaves it collapsed', () => {
+    // Reversed: the pane sits on the right and grows to the left.
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          collapsible: true,
+        }}
+        handleProps={{isReversed: true}}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '110');
+  });
+
+  it('under RTL, ArrowLeft opens a collapsed pane and ArrowRight leaves it collapsed', () => {
+    const rtl = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation(
+        () => ({direction: 'rtl'}) as unknown as CSSStyleDeclaration,
+      );
+    try {
+      // Not reversed, right-to-left: the pane sits on the right and grows
+      // toward the left edge of the screen.
+      render(
+        <Harness
+          config={{
+            defaultSize: 200,
+            minSize: 100,
+            maxSize: 400,
+            collapsible: true,
+          }}
+        />,
+      );
+      const separator = getSeparator();
+      act(() => separator.focus());
+      fireEvent.keyDown(separator, {key: 'Enter'});
+      expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+      fireEvent.keyDown(separator, {key: 'ArrowRight'});
+      expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+      fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+      expect(separator).not.toHaveAttribute('aria-valuetext');
+      expect(separator).toHaveAttribute('aria-valuenow', '110');
+    } finally {
+      rtl.mockRestore();
+    }
+  });
+
   it('a grow arrow opens a hand-built collapsed region one step above its minimum', () => {
     const props: ResizableProps = {
       ...makeResizable(),
