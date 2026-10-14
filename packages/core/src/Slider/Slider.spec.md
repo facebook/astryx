@@ -128,7 +128,7 @@ value-tooltip behavior; AR1 records the keyboard model and its one correction.
   ArrowUp and ArrowDown step by `step`; on a horizontal track the horizontal
   arrows follow the track's direction — ArrowRight increases and ArrowLeft
   decreases under LTR, and under RTL ArrowLeft increases and ArrowRight
-  decreases; PageUp and PageDown step by ten steps; Home moves to `min` and End to `max`. Implementation gap: End snaps to the nearest step and then clamps to the bounds, so it stops short of `max` when `max` lies less than half a step above the step below it (99 for `max=100, step=3`), while ArrowRight and PageUp reach `max`. In a range, a thumb never crosses the other past the minimum
+  decreases; PageUp and PageDown step by ten steps; Home moves to `min` and End to `max`. In a range, a thumb never crosses the other past the minimum
   separation.
 
 ## Design relationships

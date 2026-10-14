@@ -46,7 +46,7 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {mergeProps, rtlStyles} from '../utils';
-import type {ResizableProps} from './useResizable';
+import {getCollapseControls, type ResizableProps} from './useResizable';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -361,6 +361,31 @@ export interface ResizeHandleProps extends Omit<
 }
 
 /**
+ * Collapse an open pane, or restore a collapsed one to the size it had before
+ * it collapsed (APG window splitter: Enter "restores the splitter to its
+ * previous position"). The hook's own collapse/expand do exactly that; a
+ * hand-built `ResizableProps` (no registered controls) falls back to a resize
+ * gesture to the minimum, which also cannot reopen a pane whose minimum sits below its
+ * collapse threshold.
+ */
+function toggleCollapse(resizable: ResizableProps): void {
+  const controls = getCollapseControls(resizable);
+  if (controls) {
+    if (resizable._isCollapsed) {
+      controls.expand();
+    } else {
+      controls.collapse();
+    }
+    return;
+  }
+  resizable._onResizeStart();
+  resizable._onResizeMove(
+    resizable._isCollapsed ? resizable._minSizePx : -resizable._size,
+  );
+  resizable._onResizeEnd();
+}
+
+/**
  * Draggable resize handle placed between resizable panels. Renders as a thin
  * divider line with a wider invisible hit area and optional pill grip indicator.
  * Supports keyboard resizing via arrow keys and WAI-ARIA separator role.
@@ -375,6 +400,7 @@ export interface ResizeHandleProps extends Omit<
  *   hasDivider />
  * ```
  */
+
 export function ResizeHandle({
   direction = 'horizontal',
   position: positionMode = 'inline',
@@ -564,11 +590,7 @@ export function ResizeHandle({
         case 'Enter': {
           e.preventDefault();
           if (resizable._collapsible) {
-            resizable._onResizeStart();
-            resizable._onResizeMove(
-              resizable._isCollapsed ? resizable._minSizePx : -resizable._size,
-            );
-            resizable._onResizeEnd();
+            toggleCollapse(resizable);
           }
           break;
         }
@@ -582,11 +604,7 @@ export function ResizeHandle({
     if (isDisabled || !resizable || !resizable._collapsible) {
       return;
     }
-    resizable._onResizeStart();
-    resizable._onResizeMove(
-      resizable._isCollapsed ? resizable._minSizePx : -resizable._size,
-    );
-    resizable._onResizeEnd();
+    toggleCollapse(resizable);
   }, [isDisabled, resizable]);
 
   // --- Cleanup on unmount ---

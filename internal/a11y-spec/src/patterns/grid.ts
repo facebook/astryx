@@ -78,7 +78,7 @@ const ARIA_MULTISELECTABLE: WebStandardRequirement = {
   url: 'https://www.w3.org/TR/wai-aria-1.2/#aria-multiselectable',
 };
 const APG_FOCUS = apgReq(
-  'Keyboard Interaction For Data Grids: Tab: Moves focus to the next focusable element. When a grid is in focus, the focus is on a single cell or widget inside a cell; the grid contains one Tab stop, and the roving tabindex technique keeps the focused cell as the only element with tabindex="0".',
+  'Only one of the focusable elements contained by the grid is included in the page tab sequence.',
   K,
 );
 const APG_ARROWS = apgReq(
