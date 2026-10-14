@@ -46,7 +46,11 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {mergeProps, rtlStyles} from '../utils';
-import {getCollapseControls, type ResizableProps} from './useResizable';
+import {
+  getCollapseControls,
+  getEffectiveMaxPx,
+  type ResizableProps,
+} from './useResizable';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -580,6 +584,9 @@ export function ResizeHandle({
         }
         case 'End': {
           e.preventDefault();
+          // Only a configured maximum is the region's own limit; the reported
+          // stand-in for an unbounded region is where the pane *could* reach,
+          // not where End may safely move it (a recorded gap).
           if (resizable._maxSizePx !== Infinity) {
             resizable._onResizeStart();
             resizable._onResizeMove(resizable._maxSizePx - resizable._size);
@@ -638,9 +645,16 @@ export function ResizeHandle({
       : resizable._size
     : undefined;
   const ariaValueMin = resizable ? resizable._minSizePx : undefined;
+  // A separator with a value needs a maximum (WAI-ARIA, APG window splitter).
+  // Unbounded regions report the basis they can fill; a hand-built props
+  // object without it reports only a configured maximum.
+  const effectiveMax = resizable
+    ? (getEffectiveMaxPx(resizable) ??
+      (resizable._maxSizePx !== Infinity ? resizable._maxSizePx : undefined))
+    : undefined;
   const ariaValueMax =
-    resizable && resizable._maxSizePx !== Infinity
-      ? resizable._maxSizePx
+    effectiveMax != null && Number.isFinite(effectiveMax)
+      ? effectiveMax
       : undefined;
   const ariaValueText =
     resizable && isCollapsed ? t('@astryx.resizable.collapsed') : undefined;
