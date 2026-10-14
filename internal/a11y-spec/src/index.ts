@@ -140,6 +140,7 @@ export {
 } from './patterns/landmark';
 
 export {SLIDER_PATTERN, type SliderStateFacts} from './patterns/slider';
+export {TREE_VIEW_PATTERN, type TreeViewStateFacts} from './patterns/tree-view';
 export {
   ACCORDION_PATTERN,
   type AccordionStateFacts,
