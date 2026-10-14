@@ -1142,45 +1142,6 @@ describe('DateInput — calendar surface', () => {
     expect(document.activeElement).toHaveAttribute('data-date', '2026-03-10');
   });
 
-  it('pages onto the real day, not the spill copy the previous pane also shows', () => {
-    renderAndOpen(<Controlled initial="2026-03-10" />);
-    const day = within(pane('March 2026')).getByRole('button', {
-      name: /March 10, 2026/,
-    });
-    day.focus();
-    // April 10 is also mounted as a trailing spill day in the March pane.
-    fireEvent.keyDown(day, {key: 'PageDown'});
-    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-10');
-    expect(pane('April 2026')).toContainElement(
-      document.activeElement as HTMLElement,
-    );
-    expect(document.activeElement).not.toHaveAttribute('aria-disabled');
-    fireEvent.keyDown(document.activeElement!, {key: 'PageUp'});
-    expect(document.activeElement).toHaveAttribute('data-date', '2026-03-10');
-    expect(pane('March 2026')).toContainElement(
-      document.activeElement as HTMLElement,
-    );
-    expect(document.activeElement).not.toHaveAttribute('aria-disabled');
-  });
-
-  it('pages by a month with PageDown and PageUp, keeping the day where it exists', () => {
-    renderAndOpen(<Controlled initial="2026-03-31" />);
-    const day = within(pane('March 2026')).getByRole('button', {
-      name: /March 31, 2026/,
-    });
-    day.focus();
-    fireEvent.keyDown(day, {key: 'PageDown'});
-    expect(document.activeElement).toHaveAttribute('data-date', '2026-04-30');
-    expect(pane('April 2026')).toContainElement(
-      document.activeElement as HTMLElement,
-    );
-    fireEvent.keyDown(document.activeElement!, {key: 'PageUp'});
-    expect(document.activeElement).toHaveAttribute('data-date', '2026-03-30');
-    expect(pane('March 2026')).toContainElement(
-      document.activeElement as HTMLElement,
-    );
-  });
-
   it('moves a week at a time with the vertical arrows', () => {
     renderAndOpen(<Controlled initial="2026-03-10" />);
     const day = within(pane('March 2026')).getByRole('button', {

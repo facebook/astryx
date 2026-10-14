@@ -55,7 +55,6 @@ import {
   type ISODateString,
   type PlainDate,
   plainDateAddDays,
-  plainDateAddMonths,
   plainDateDayOfWeek,
   plainDateFormat,
   plainDateIsEqual,
@@ -617,8 +616,9 @@ export function MonthScroller({
 
   // Move the keyboard focus by whole days and let the scroller follow. Paging
   // by month is PageUp/PageDown; everything else is the APG grid vocabulary.
-  const moveFocusTo = useCallback(
-    (from: PlainDate, next: PlainDate) => {
+  const moveFocus = useCallback(
+    (from: PlainDate, deltaDays: number) => {
+      const next = plainDateAddDays(from, deltaDays);
       const nextIndex = monthIndexOf(next);
       if (nextIndex < minMonthIndex || nextIndex > maxMonthIndex) {
         return;
@@ -630,17 +630,6 @@ export function MonthScroller({
       }
     },
     [minMonthIndex, maxMonthIndex, scrollToMonth],
-  );
-  const moveFocus = useCallback(
-    (from: PlainDate, deltaDays: number) =>
-      moveFocusTo(from, plainDateAddDays(from, deltaDays)),
-    [moveFocusTo],
-  );
-  // A month page keeps the day of the month where it exists (Jan 31 → Feb 28).
-  const moveFocusByMonths = useCallback(
-    (from: PlainDate, deltaMonths: number) =>
-      moveFocusTo(from, plainDateAddMonths(from, deltaMonths)),
-    [moveFocusTo],
   );
 
   const handleKeyDown = useCallback(
@@ -677,19 +666,11 @@ export function MonthScroller({
           event.preventDefault();
           moveFocus(date, 6 - column);
           break;
-        case 'PageUp':
-          event.preventDefault();
-          moveFocusByMonths(date, -1);
-          break;
-        case 'PageDown':
-          event.preventDefault();
-          moveFocusByMonths(date, 1);
-          break;
         default:
           break;
       }
     },
-    [isRTL, moveFocus, moveFocusByMonths, weekStartsOn],
+    [isRTL, moveFocus, weekStartsOn],
   );
 
   // The focused day may have been in an unmounted pane a frame ago; focus it
