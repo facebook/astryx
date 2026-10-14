@@ -372,6 +372,33 @@ export interface ResizeHandleProps extends Omit<
  * gesture to the minimum, which also cannot reopen a pane whose minimum sits below its
  * collapse threshold.
  */
+/**
+ * The snap point `count` points away from the region's current size in
+ * `direction` (+1 grows, -1 shrinks), within the region's bounds; the nearest
+ * end point when fewer remain, and the current size when it is already there.
+ */
+function adjacentSnapPoint(
+  resizable: ResizableProps,
+  direction: 1 | -1,
+  count: number,
+): number {
+  const points = [...resizable._snaps]
+    .filter(p => p >= resizable._minSizePx && p <= resizable._maxSizePx)
+    .sort((a, b) => a - b);
+  if (points.length === 0) {
+    return resizable._size;
+  }
+  const size = resizable._size;
+  const ahead =
+    direction > 0
+      ? points.filter(p => p > size)
+      : points.filter(p => p < size).reverse();
+  if (ahead.length === 0) {
+    return size;
+  }
+  return ahead[Math.min(count, ahead.length) - 1];
+}
+
 function toggleCollapse(resizable: ResizableProps): void {
   const controls = getCollapseControls(resizable);
   if (controls) {
@@ -592,6 +619,22 @@ export function ResizeHandle({
               );
               resizable._onResizeEnd();
             }
+            break;
+          }
+          if (resizable._snaps.length > 0) {
+            // With snap points the region can rest only on a point, so a
+            // pixel step would snap straight back; the arrow moves to the
+            // adjacent point in its direction instead (Shift, two points),
+            // staying within the bounds.
+            resizable._onResizeStart();
+            resizable._onResizeMove(
+              adjacentSnapPoint(
+                resizable,
+                grows(e.key) ? 1 : -1,
+                e.shiftKey ? 2 : 1,
+              ) - resizable._size,
+            );
+            resizable._onResizeEnd();
             break;
           }
           const direction =

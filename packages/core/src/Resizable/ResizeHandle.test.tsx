@@ -592,6 +592,89 @@ describe('ResizeHandle', () => {
     }
   });
 
+  it('with snap points, an arrow moves to the adjacent point in its direction and Shift moves two, clamped to the ends', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          snaps: [100, 200, 300, 400],
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    // A 10px step would snap straight back to 200; the arrow reaches the
+    // next point instead.
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuenow', '300');
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
+    fireEvent.keyDown(separator, {key: 'ArrowRight', shiftKey: true});
+    expect(separator).toHaveAttribute('aria-valuenow', '400');
+    // Already at the last point: the grow arrow changes nothing.
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuenow', '400');
+    // Shift past the first point clamps to it.
+    fireEvent.keyDown(separator, {key: 'ArrowLeft', shiftKey: true});
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
+    fireEvent.keyDown(separator, {key: 'ArrowLeft', shiftKey: true});
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
+  });
+
+  it('with snap points, the arrows follow the reversed layout and the reading direction', () => {
+    const rtl = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation(
+        () => ({direction: 'rtl'}) as unknown as CSSStyleDeclaration,
+      );
+    try {
+      // Reversed under RTL: the two inversions cancel, so ArrowRight grows.
+      render(
+        <Harness
+          config={{
+            defaultSize: 200,
+            minSize: 100,
+            maxSize: 400,
+            snaps: [100, 200, 300, 400],
+          }}
+          handleProps={{isReversed: true}}
+        />,
+      );
+      const separator = getSeparator();
+      act(() => separator.focus());
+      fireEvent.keyDown(separator, {key: 'ArrowRight'});
+      expect(separator).toHaveAttribute('aria-valuenow', '300');
+      fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+      expect(separator).toHaveAttribute('aria-valuenow', '200');
+    } finally {
+      rtl.mockRestore();
+    }
+  });
+
+  it('with snap points in a reversed layout, ArrowLeft moves to the next point and ArrowRight to the previous', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          snaps: [100, 200, 300, 400],
+        }}
+        handleProps={{isReversed: true}}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuenow', '300');
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
+  });
+
   it('a grow arrow opens a hand-built collapsed region one step above its minimum', () => {
     const props: ResizableProps = {
       ...makeResizable(),
