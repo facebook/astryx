@@ -202,6 +202,88 @@ describe('ResizeHandle', () => {
     expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
   });
 
+  it('restores the previous size, not the minimum, when Enter reopens a collapsed pane', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 300,
+          minSize: 100,
+          maxSize: 400,
+          collapsible: true,
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    expect(separator).toHaveAttribute('aria-valuenow', '300');
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '300');
+  });
+
+  it('restores the previous size, not the minimum, when a double-click reopens a collapsed pane', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 300,
+          minSize: 100,
+          maxSize: 400,
+          collapsible: true,
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    expect(separator).toHaveAttribute('aria-valuenow', '300');
+    fireEvent.doubleClick(separator);
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    fireEvent.doubleClick(separator);
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '300');
+  });
+
+  it('reopens on a double-click even when the minimum size sits below the collapse threshold', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 20,
+          maxSize: 400,
+          collapsible: true,
+          collapsedSize: 50,
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    fireEvent.doubleClick(separator);
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    fireEvent.doubleClick(separator);
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
+  });
+
+  it('reopens on Enter even when the minimum size sits below the collapse threshold', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 20,
+          maxSize: 400,
+          collapsible: true,
+          collapsedSize: 50,
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
+  });
+
   it('keeps aria-valuenow >= aria-valuemin and announces "Collapsed" while collapsed', () => {
     render(
       <Harness
@@ -243,7 +325,8 @@ describe('ResizeHandle', () => {
 
     fireEvent.keyDown(separator, {key: 'Enter'}); // expand again
     expect(separator).not.toHaveAttribute('aria-valuetext');
-    expect(separator).toHaveAttribute('aria-valuenow', '100');
+    // Back to the size it had before collapsing, not the minimum.
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
   });
 
   // --- Disabled guard ---
