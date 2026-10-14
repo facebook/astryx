@@ -104,8 +104,8 @@ export const docs = {
     {
       name: 'presentation',
       type: "'popover' | 'bottom-sheet' | 'adaptive'",
-      description: 'Presentation policy forwarded to DropdownMenu. `adaptive` keeps the anchored popover on pointer-based layouts and uses a BottomSheet at 768px and below when the primary pointer is coarse.',
-      default: "'popover'",
+      description: 'Presentation policy forwarded to DropdownMenu. The default, `adaptive`, keeps the anchored popover on pointer-based layouts and uses a BottomSheet at 768px and below when the primary pointer is coarse. `popover` stays anchored everywhere.',
+      default: "'adaptive'",
     },
     {
       name: 'onOpenChange',
@@ -140,7 +140,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use for overflow or secondary actions; keep primary actions visible outside the menu.' },
       { guidance: true, description: 'Use dividers or sections to group related actions when the menu has many items.' },
-      { guidance: true, description: 'Use `presentation="adaptive"` when the visible overflow trigger should open a thumb-reachable BottomSheet on compact touch devices.' },
+      { guidance: true, description: 'Keep the default presentation (`adaptive`) so the visible overflow trigger opens a thumb-reachable BottomSheet on compact touch devices; set `presentation="popover"` only when the menu must stay anchored on phones.' },
       { guidance: false, description: 'Hide primary actions inside a MoreMenu; they should be directly visible.' },
     ],
   },
@@ -204,8 +204,8 @@ export const docsZh = {
     {
       name: 'presentation',
       type: "'popover' | 'bottom-sheet' | 'adaptive'",
-      description: '菜单呈现策略。`adaptive` 在指针布局中使用锚定浮层，在主指针为粗略指针且宽度不超过 768px 时使用 BottomSheet。',
-      default: "'popover'",
+      description: '菜单呈现策略，转发给 DropdownMenu。默认值 `adaptive` 在指针布局中使用锚定浮层，在主指针为粗略指针且宽度不超过 768px 时使用 BottomSheet。`popover` 在所有设备上都保持锚定。',
+      default: "'adaptive'",
     },
     {
       name: 'xstyle',
@@ -225,7 +225,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Use for overflow or secondary actions; keep primary actions visible outside the menu.' },
       { guidance: true, description: 'Use dividers or sections to group related actions when the menu has many items.' },
-      { guidance: true, description: 'Use `presentation="adaptive"` when the visible overflow trigger should open a thumb-reachable BottomSheet on compact touch devices.' },
+      { guidance: true, description: 'Keep the default presentation (`adaptive`) so the visible overflow trigger opens a thumb-reachable BottomSheet on compact touch devices; set `presentation="popover"` only when the menu must stay anchored on phones.' },
       { guidance: false, description: 'Hide primary actions inside a MoreMenu; they should be directly visible.' },
     ],
   },
@@ -242,7 +242,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use for overflow or secondary actions; keep primary actions visible outside the menu.' },
       { guidance: true, description: 'Use dividers or sections to group related actions when the menu has many items.' },
-      { guidance: true, description: 'Use `presentation="adaptive"` when the visible overflow trigger should open a thumb-reachable BottomSheet on compact touch devices.' },
+      { guidance: true, description: 'Keep the default presentation (`adaptive`) so the visible overflow trigger opens a thumb-reachable BottomSheet on compact touch devices; set `presentation="popover"` only when the menu must stay anchored on phones.' },
       { guidance: false, description: 'Hide primary actions inside a MoreMenu; they should be directly visible.' },
     ],
   },
