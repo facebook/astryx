@@ -1,5 +1,13 @@
 # @xds/theme-gothic
 
+# 0.7.0
+
+---
+
+# 0.6.8
+
+---
+
 # 0.6.7
 
 #### New Features

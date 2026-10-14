@@ -24,13 +24,18 @@ import {
   useTransition,
   type ReactNode,
 } from 'react';
-import type {BaseProps} from '../BaseProps';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {SizeValue} from '../utils/types';
 import {Field} from '../Field/Field';
 import type {InputStatus} from '../Field/types';
 import {List} from '../List/List';
 import type {ListDensity} from '../List/ListContext';
 import {useTooltip} from '../Tooltip';
+import * as stylex from '@stylexjs/stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {
@@ -41,10 +46,10 @@ import {
 const EMPTY_ARRAY: string[] = [];
 
 export interface CheckboxListProps extends Omit<
-  BaseProps<HTMLDivElement>,
+  FieldInputBaseProps<HTMLDivElement>,
   'onChange'
 > {
-  /** Ref forwarded to the root element */
+  /** Ref forwarded to the `role="group"` element. */
   ref?: React.Ref<HTMLDivElement>;
   /**
    * Label text for the checkbox group (always rendered for accessibility).
@@ -159,12 +164,20 @@ export function CheckboxList({
   children,
   ref,
   width,
-  xstyle,
-  className,
-  style,
-  'data-testid': dataTestId,
-  ...rest
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
+  'aria-describedby': ariaDescribedByProp,
+  ...restProps
 }: CheckboxListProps) {
+  const {rest, container} = useFieldInputStyling('CheckboxList', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const inputID = useId();
   const labelID = useId();
   const descriptionID = useId();
@@ -241,9 +254,6 @@ export function CheckboxList({
 
   return (
     <Field
-      {...rest}
-      ref={ref}
-      data-testid={dataTestId}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -263,20 +273,27 @@ export function CheckboxList({
       }
       statusVariant="detached"
       width={width}
-      xstyle={xstyle}
-      {...mergeProps(themeProps('checkbox-list'), {className, style})}>
+      xstyle={container.xstyle}
+      {...mergeProps(themeProps('checkbox-list'), {
+        className: container.className,
+        style: container.style,
+      })}>
       <CheckboxListContext value={contextValue}>
         <div
-          ref={el => {
-            // Anchor + hover/focus listeners for the disabled-message tooltip.
-            // Handlers are gated internally by isEnabled, so attaching
-            // unconditionally is safe.
-            disabledMessageTooltip.ref(el);
-          }}
+          {...rest}
+          // The disabled-message tooltip anchors here; its handlers are gated
+          // internally by isEnabled, so attaching unconditionally is safe.
+          ref={useMergedRefs(ref, disabledMessageTooltip.ref)}
+          {...mergeProps(
+            stylex.props(controlXstyle),
+            controlClassName,
+            controlStyle,
+          )}
           role="group"
           aria-labelledby={labelID}
           aria-describedby={
             [
+              ariaDescribedByProp,
               description ? descriptionID : null,
               status?.message ? statusMessageID : null,
               showsDisabledMessage ? disabledMessageTooltip.describedBy : null,

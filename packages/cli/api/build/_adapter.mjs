@@ -24,6 +24,13 @@ import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {analyzeTemplateNeeds} from '../../foundation/discovery/template-needs.mjs';
 
 /**
+ * Runs one build with a single directory listing per path: the kit resolves
+ * every candidate's source and docs by walking the same tree, which does not
+ * change during the call.
+ */
+export {withListingCache} from '../../foundation/fs/listing-cache.mjs';
+
+/**
  * A page template the kit can recommend starting from.
  * @typedef {object} PageTemplate
  * @property {string} name The template's own id, as search reports it.

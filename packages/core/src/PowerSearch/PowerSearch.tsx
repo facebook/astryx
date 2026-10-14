@@ -755,6 +755,25 @@ export function PowerSearch({
         return;
       }
 
+      // An "empty" operator filter has no value for the built-in editor to
+      // edit: commit it as that editor's save would, the way adding one does,
+      // instead of opening it. A consumer's `empty` Editor override still opens.
+      const operator = config.getOperator(filter.field, filter.operator);
+      if (
+        operator?.value.type === 'empty' &&
+        componentOverrides?.empty?.Editor == null
+      ) {
+        const newFilters = [...filters];
+        newFilters[index] = {
+          field: filter.field,
+          operator: filter.operator,
+          value: {type: 'empty'},
+        };
+        onChange(newFilters, 'edit', index);
+        setPopoverState({type: 'idle'});
+        return;
+      }
+
       setPopoverState({
         type: 'editing',
         filterIndex: index,
@@ -765,7 +784,15 @@ export function PowerSearch({
         },
       });
     },
-    [filters, isReadOnly, isDisabled, setPopoverState],
+    [
+      filters,
+      isReadOnly,
+      isDisabled,
+      config,
+      componentOverrides,
+      onChange,
+      setPopoverState,
+    ],
   );
 
   // Handle popover save
@@ -1087,9 +1114,9 @@ export function PowerSearch({
           statusVariant={statusVariant}
           onFocus={onFocus}
           onBlur={onBlur}
-          xstyle={xstyle}
-          className={className}
-          style={style}
+          containerXstyle={xstyle}
+          containerClassName={className}
+          containerStyle={style}
           data-testid={testId}
         />
       </div>

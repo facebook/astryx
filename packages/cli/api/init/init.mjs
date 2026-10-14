@@ -18,6 +18,8 @@
 
 import {run} from './run/run.mjs';
 import {remove} from './remove/remove.mjs';
+import {AstryxError} from '../error.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
 export {getNextSteps} from './run/run.mjs';
 
@@ -42,7 +44,27 @@ export {getNextSteps} from './run/run.mjs';
  */
 export async function init(options = {}, {cwd = process.cwd()} = {}) {
   if (options.removeAgents) {
+    const ignored = [
+      options.features ? '--features' : null,
+      options.all ? '--all' : null,
+      options.agent ? '--agent' : null,
+      options.agentDocsPath ? '--agent-docs-path' : null,
+    ].filter(Boolean);
+    if (ignored.length > 0) {
+      throw new AstryxError(
+        `\`--remove-agents\` cannot be combined with ${ignored.join(', ')}: it removes the managed block and ignores install options.`,
+        undefined,
+        ERROR_CODES.ERR_INVALID_ARGUMENT,
+      );
+    }
     return remove({cwd});
+  }
+  if (options.all && options.features) {
+    throw new AstryxError(
+      '`--all` and `--features` cannot be used together: `--all` installs every feature, so a feature list is redundant.',
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
   }
   return run(options, {cwd});
 }

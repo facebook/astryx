@@ -10,8 +10,23 @@
  */
 
 import {use, useRef} from 'react';
-import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest';
-import {act, fireEvent, render, screen} from '@testing-library/react';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  it,
+  expect,
+  vi,
+} from 'vitest';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import {rulesDeclaredFor} from '../__tests__/pressState';
 import userEvent from '@testing-library/user-event';
 import {Item} from './Item';
@@ -607,6 +622,26 @@ describe('Item', () => {
 });
 
 describe('swipeActions', () => {
+  // The panels and the gesture are loaded lazily (React.lazy + Suspense), so
+  // the first row with swipe actions renders them a tick after it mounts.
+  // Mount one once up front: the resolved module is cached on the lazy
+  // component, and every row below renders its panels synchronously.
+  beforeAll(async () => {
+    render(
+      <Item
+        label="Warm"
+        data-testid="warm"
+        swipeActions={{leading: [{label: 'Unread', onActivate: () => {}}]}}
+      />,
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('warm').querySelector('[data-swipe-panel]'),
+      ).not.toBeNull();
+    });
+    cleanup();
+  });
+
   beforeEach(() => {
     // The gesture reads the clock for its fling test and its settle timers:
     // fake both, and space the moves out the way a finger does.

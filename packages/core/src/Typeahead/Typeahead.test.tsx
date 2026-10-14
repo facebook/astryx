@@ -239,7 +239,7 @@ describe('BaseTypeahead', () => {
         value={null}
         onChange={() => {}}
         debounceMs={0}
-        emptySearchResultsText="No results found"
+        emptySearchText="No results found"
       />,
     );
     const input = screen.getByRole('combobox');
@@ -260,7 +260,7 @@ describe('BaseTypeahead', () => {
         value={null}
         onChange={() => {}}
         debounceMs={0}
-        emptySearchResultsText="No results found"
+        emptySearchText="No results found"
       />,
     );
     const input = screen.getByRole('combobox');
@@ -738,20 +738,19 @@ describe('Typeahead', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('forwards DOM props and ref while preserving edit and blur behavior', async () => {
-    const ref = createRef<HTMLDivElement>();
+  it('forwards DOM props and ref to the combobox input while preserving edit and blur behavior', async () => {
+    const ref = createRef<HTMLInputElement>();
     const onClick = vi.fn();
     const onBlur = vi.fn();
     const onChange = vi.fn();
-    render(
+    const {container} = render(
       <Typeahead
         ref={ref}
         id="fruit-field"
         data-tracking="fruit-picker"
-        data-testid="fruit-surface"
-        aria-label="Picker region"
-        className="custom-typeahead"
-        style={{marginTop: 7}}
+        data-testid="fruit-input"
+        containerClassName="custom-typeahead"
+        containerStyle={{marginTop: 7}}
         label="Fruit"
         searchSource={fruitSource}
         value={fruits[0]}
@@ -761,16 +760,22 @@ describe('Typeahead', () => {
         debounceMs={0}
       />,
     );
-    const surface = screen.getByTestId('fruit-surface');
+    const surface = container.querySelector<HTMLElement>('.astryx-typeahead')!;
     const input = screen.getByRole('combobox');
 
-    expect(ref.current).toHaveClass('astryx-field');
-    expect(surface).toHaveClass('astryx-typeahead');
+    expect(ref.current).toBe(input);
+    expect(screen.getByTestId('fruit-input')).toBe(input);
+    expect(input).toHaveAttribute('id', 'fruit-field');
+    expect(input).toHaveAttribute('data-tracking', 'fruit-picker');
     expect(input).toHaveAccessibleName('Fruit');
+    const fieldRoot = container.querySelector('.custom-typeahead');
+    expect(fieldRoot).toHaveClass('astryx-field');
+    expect(fieldRoot).toHaveStyle({marginTop: '7px'});
 
     fireEvent.click(surface);
     await waitFor(() => expect(input).toHaveFocus());
     expect(input).toHaveValue('Apple');
+    fireEvent.click(input);
     expect(onClick).toHaveBeenCalledOnce();
 
     fireEvent.blur(input);
@@ -778,21 +783,19 @@ describe('Typeahead', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('forwards DOM props and ref inside InputGroup without replacing built-in handlers', async () => {
-    const ref = createRef<HTMLDivElement>();
+  it('forwards DOM props and ref to the input inside InputGroup, with control* on the surface', async () => {
+    const ref = createRef<HTMLInputElement>();
     const onClick = vi.fn();
     const onBlur = vi.fn();
     const onChange = vi.fn();
-    render(
+    const {container} = render(
       <InputGroup label="Produce">
         <Typeahead
           ref={ref}
           id="fruit-field"
           data-tracking="fruit-picker"
-          data-testid="fruit-surface"
-          aria-label="Picker region"
-          className="custom-typeahead"
-          style={{marginTop: 7}}
+          controlClassName="custom-typeahead"
+          controlStyle={{marginTop: 7}}
           label="Fruit"
           searchSource={fruitSource}
           value={fruits[0]}
@@ -803,20 +806,20 @@ describe('Typeahead', () => {
         />
       </InputGroup>,
     );
-    const surface = screen.getByTestId('fruit-surface');
+    const surface = container.querySelector<HTMLElement>('.astryx-typeahead')!;
     const input = screen.getByRole('combobox');
 
-    expect(ref.current).toBe(surface);
-    expect(surface).toHaveAttribute('id', 'fruit-field');
-    expect(surface).toHaveAttribute('data-tracking', 'fruit-picker');
-    expect(surface).toHaveAttribute('aria-label', 'Picker region');
-    expect(surface).toHaveClass('astryx-typeahead', 'custom-typeahead');
+    expect(ref.current).toBe(input);
+    expect(input).toHaveAttribute('id', 'fruit-field');
+    expect(input).toHaveAttribute('data-tracking', 'fruit-picker');
+    expect(surface).toHaveClass('custom-typeahead');
     expect(surface).toHaveStyle({marginTop: '7px'});
     expect(input).toHaveAccessibleName('Produce Fruit');
 
     fireEvent.click(surface);
     await waitFor(() => expect(input).toHaveFocus());
     expect(input).toHaveValue('Apple');
+    fireEvent.click(input);
     expect(onClick).toHaveBeenCalledOnce();
 
     fireEvent.blur(input);
@@ -2186,9 +2189,9 @@ describe('the value is bounded by the content lane', () => {
 });
 
 // `emptySearchResultsText` was renamed to `emptySearchText` and widened from
-// `string` to `ReactNode` (`spec:AST-056` FR1). It is a released prop with a
-// victim, so the replacement ships first and the old name keeps working
-// through the overlap (`spec:AST-017` FR28, FR29).
+// `string` to `ReactNode` (`spec:AST-056` FR1). The overlap ended in a minor
+// release (`CLN-0001`–`CLN-0004`, `spec:AST-017` FR31): the old name is no
+// longer part of the type and is no longer read.
 describe('emptySearchText rename', () => {
   function searchForNothing() {
     fireEvent.change(screen.getByRole('combobox'), {
@@ -2219,8 +2222,10 @@ describe('emptySearchText rename', () => {
       });
     });
 
-    it('keeps the deprecated name working, and says it is deprecated', async () => {
+    it('no longer reads the removed emptySearchResultsText (CLN-0002)', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      // The unknown prop reaches the root element, which React reports.
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       render(
         <Typeahead
           label="Fruit"
@@ -2228,47 +2233,21 @@ describe('emptySearchText rename', () => {
           value={null}
           onChange={() => {}}
           debounceMs={0}
+          // @ts-expect-error -- removed in the minor release (CLN-0002)
           emptySearchResultsText="Nothing ripe"
         />,
       );
       searchForNothing();
 
       await waitFor(() => {
-        expect(screen.getByText('Nothing ripe')).toBeInTheDocument();
+        expect(screen.getByText('No results found')).toBeInTheDocument();
       });
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Typeahead: `emptySearchResultsText` is deprecated; use `emptySearchText`',
-        ),
+      expect(screen.queryByText('Nothing ripe')).not.toBeInTheDocument();
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('is deprecated'),
       );
       warn.mockRestore();
-    });
-
-    it('lets the new name win when both are set, and warns', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      render(
-        <Typeahead
-          label="Fruit"
-          searchSource={fruitSource}
-          value={null}
-          onChange={() => {}}
-          debounceMs={0}
-          emptySearchResultsText="Old copy"
-          emptySearchText="New copy"
-        />,
-      );
-      searchForNothing();
-
-      await waitFor(() => {
-        expect(screen.getByText('New copy')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('Old copy')).not.toBeInTheDocument();
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Typeahead: `emptySearchResultsText` and `emptySearchText` are both set',
-        ),
-      );
-      warn.mockRestore();
+      error.mockRestore();
     });
   });
 
@@ -2298,14 +2277,16 @@ describe('emptySearchText rename', () => {
       });
     });
 
-    it('announces the deprecated name unchanged', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    it('no longer announces the removed emptySearchResultsText (CLN-0003)', async () => {
+      // The unknown prop reaches the root element, which React reports.
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
       render(
         <BaseTypeahead
           searchSource={fruitSource}
           value={null}
           onChange={() => {}}
           debounceMs={0}
+          // @ts-expect-error -- removed in the minor release (CLN-0003)
           emptySearchResultsText="Nothing ripe"
         />,
       );
@@ -2314,9 +2295,79 @@ describe('emptySearchText rename', () => {
       await waitFor(() => {
         expect(
           document.querySelector('[data-astryx-live-region="polite"]'),
-        ).toHaveTextContent('Nothing ripe');
+        ).toHaveTextContent('No results found');
       });
-      warn.mockRestore();
+      expect(
+        document.querySelector('[data-astryx-live-region="polite"]')
+          ?.textContent,
+      ).not.toContain('Nothing ripe');
+      error.mockRestore();
     });
+  });
+});
+
+describe('Typeahead consumer key handler order', () => {
+  it('runs onKeyDown on the input after built-in key handling, so it cannot cancel navigation', async () => {
+    let currentTarget: EventTarget | null = null;
+    const onKeyDown = vi.fn((event: React.KeyboardEvent) => {
+      currentTarget = event.currentTarget;
+      event.preventDefault();
+    });
+    const {container} = render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        hasEntriesOnFocus
+        onKeyDown={onKeyDown}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.focus(input);
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole('option', {hidden: true}).length,
+      ).toBeGreaterThan(0);
+    });
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
+    expect(currentTarget).toBe(screen.getByRole('combobox'));
+    expect(input).toHaveAttribute('aria-activedescendant');
+  });
+});
+
+describe('Typeahead consumer key handler target', () => {
+  it('still runs onKeyDown for keys on the clear button', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={fruits[0]}
+        onChange={() => {}}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('button', {name: /clear/i}), {
+      key: 'Enter',
+    });
+    expect(onKeyDown).toHaveBeenCalledOnce();
+  });
+
+  it('runs onKeyDown once for a key on the input', () => {
+    const onKeyDown = vi.fn();
+    render(
+      <Typeahead
+        label="Fruit"
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        onKeyDown={onKeyDown}
+      />,
+    );
+    fireEvent.keyDown(screen.getByRole('combobox'), {key: 'a'});
+    expect(onKeyDown).toHaveBeenCalledOnce();
   });
 });

@@ -146,7 +146,7 @@ the highlight is DOM focus per `module:DropdownMenu/useMenuPress` AR1.
 | Touch action row     | Presents one data-driven touch action or drill-in entry using ListItem.           | `component:List`               | Prominent         | FR1, FR3, FR4      |
 
 The `context-menu` target intentionally appears on both alternative painted
-menu surfaces. Trigger area content stays caller-owned and the zero-size cursor
+menu surfaces. Trigger area content stays caller-owned and the 1px cursor
 anchor is positioning infrastructure rather than consumer anatomy.
 
 ### Theming anatomy

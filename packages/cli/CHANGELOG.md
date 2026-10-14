@@ -1,5 +1,192 @@
 # @xds/cli
 
+# 0.7.0
+
+#### Breaking Changes
+
+- `theme add` now imports built themes; use `theme eject` to copy theme source. (#7138)
+  The old contract copied theme source with `theme add <slug> [path] [--overwrite] [--package <package>]` and returned `theme.add` JSON. The `ThemeAddResponse` type and the `theme.add` response type are removed, with their `ThemeAddResponse.type`, `ThemeAddResponse.data`, and `ThemeAddResponse.meta` fields. The replacement imports the built theme with `theme add <slug> [--package <package>]` and returns `theme.app`; `--import` remains an accepted no-op. Plain `theme add` now returns `theme.app` with the owner `package` directly after `type`. Local themes carry no package.
+
+  A path after `theme add` now exits 1 with `ERR_INVALID_ARGUMENT`, and `--overwrite` exits 1 with `ERR_INVALID_OPTION`; neither writes files. To migrate a script that copied source, run `theme eject` with the same slug, path, `--overwrite`, and `--package` arguments. A script that already runs `theme add --import` keeps the same meaning and needs no change.
+
+- `init --remove-agents` says when there was nothing to remove. (#6623)
+  Migration: a consumer reading `data.removed` as a boolean keeps working; a consumer that narrowed on the literal `true` must accept the corrected value.
+- Four commands refuse silently ignored option pairs. (#7132)
+  Migration: remove the option the command was ignoring.
+- Refuse invalid input that used to silently succeed. (#7149)
+  Migration: pass a valid type or package, an integer limit, or the documented arguments, and catch `ERR_AMBIGUOUS_COMPONENT` for a multi-package name.
+- An empty-string argument no longer discards the rest of the command. (#6620)
+  Migration: remove the empty string from the invocation; omit the argument to list.
+- `doctor integration validate` exits 1 when there is no package.json. (#7150)
+  A missing package.json now produces a `no_package` error, so the existing error-severity exit rule applies. A directory with package.json but no integration manifest still exits 0.
+
+  Migration: run the command in a directory that has a `package.json`, or handle exit 1 for that case.
+
+- Move canonical data-color defaults from generated theme CSS to the public StyleX `dataVars` group. (#6834)
+  Import `dataVars` from `@astryxdesign/core/theme/dataTokens.stylex` for CSS-capable code. Canvas and other non-CSS APIs continue to use `resolveThemeToken()` or `useTheme().token()`. Rebuild committed theme CSS with `astryx theme build`; concrete themes now emit only explicitly authored data-color overrides.
+
+  Old usage: Generated theme CSS owned the canonical `--color-data-*` root defaults.
+
+  Replacement: The public StyleX `dataVars` group in `@astryxdesign/core/theme/dataTokens.stylex` owns the defaults; concrete themes emit only explicitly authored data-color overrides.
+
+  Migration: Import `dataVars` from `@astryxdesign/core/theme/dataTokens.stylex` for CSS-capable code. Canvas and other non-CSS APIs continue to use `resolveThemeToken()` or `useTheme().token()`. Rebuild committed theme CSS with `astryx theme build`.
+
+  Codemod: `astryx upgrade` runs `validate-data-token-ownership`, which rewrites nothing and reports fallback-less `var(--color-data-*)` uses (whole or embedded source strings, and stylesheets) and stale generated theme CSS for manual migration.
+
+- Doctor fails when the CLI cannot load what astryx.config asks for (#7130)
+  A new `configured-integrations` check fails when an integration named in astryx.config cannot be loaded: not installed, installed without a manifest, or a manifest that throws or fails its schema. Such an integration is withdrawn whole and contributes nothing. The config check fails, instead of warning, when astryx.config imports but the CLI cannot load the project from it.
+
+  Unchanged: a problem inside one contribution kind (an invalid component doc, a missing or unreadable root, or an unresolved replacement) stays a warning under `integration-issues`, and an autolinked dependency that cannot be loaded stays informational.
+
+  No codemod applies: nothing in a project's source changes; install the integration, repair its manifest, or edit `integrations` in astryx.config.
+
+  What counts as configured is every name astryx.config lists, including a package set aside for a provider conflict and the package being authored when its own config names it. Migration: install the integration, fix its manifest, or remove it from `integrations`; fix the astryx.config field the message names.
+
+- Typeahead, Tokenizer, CheckboxList, RadioList, and Slider no longer accept root `xstyle`, `className`, or `style`. Style the field with `containerXstyle`/`containerClassName`/`containerStyle` (the Field box; no effect inside InputGroup or a `horizontal-labels` FormLayout) and the visual control box with `controlXstyle`/`controlClassName`/`controlStyle`. Base props now reach the primary semantic control: the combobox input for Typeahead and Tokenizer, the `role="group"`/`role="radiogroup"` element for CheckboxList and RadioList, and the `role="slider"` thumb for Slider (the `role="group"` control in range mode). A caller `aria-describedby` is kept alongside the field's own description and status, on these components and on TextInput, TextArea, and NumberInput, which previously dropped it. CLI templates use the new props. (#7339)
+  Migration: rename root `xstyle`/`className`/`style` to the part they styled before: `containerXstyle`/`containerClassName`/`containerStyle` on all five components, except a Typeahead inside InputGroup, whose root styling painted the control surface and moves to `controlXstyle`/`controlClassName`/`controlStyle`. The release's `astryx upgrade` codemod, `migrate-field-input-styling`, performs these renames on JSX usage.
+
+  Not rewritten by the codemod, so update by hand:
+
+  - `ref` and `id`, plus `data-*` (except Typeahead and Tokenizer `data-testid`, which marked the control surface), `aria-*`, and DOM event handlers such as `onClick`, previously landed on the outer Field (or were dropped by RadioList and Slider). They now land on the primary semantic control. Update code that measured, queried, or listened on the outer field, and wrap the component in your own element when you need an outer boundary.
+  - Typeahead and Tokenizer refs are now `HTMLInputElement`.
+  - A consumer `onKeyDown` on Typeahead or Tokenizer still runs after the built-in key handling, cannot cancel it, and still fires for keys on the clear button and tokens; for keys on the input it now runs on the combobox input itself.
+  - RadioList and Slider used to drop DOM event handlers; they now run after the component's own handling, so a Slider `onPointerDown`, `onKeyDown`, `onFocus`, or `onBlur` that never fired before now fires (on the thumb, or on the group in range mode).
+  - Tokenizer's `onFocus`/`onBlur` keep their meaning: focus entering or leaving the field.
+  - Styling passed through a wrapper's own props or a spread is not rewritten and now fails type-checking at that callsite.
+
+  Untyped callers get a development warning and the value is ignored.
+
+  From #5656 by @harjothkhara.
+
+- Selector, MultiSelector, and ComplexSelector no longer accept root `xstyle`, `className`, or `style`. Style the field with `containerXstyle`/`containerClassName`/`containerStyle` (the Field box; no effect inside InputGroup, a `horizontal-labels` FormLayout, or with `renderTrigger`) and the visual control box with `controlXstyle`/`controlClassName`/`controlStyle`. Base props such as `ref`, `id`, `data-*` (including `data-testid`), `aria-*`, and DOM handlers reach the trigger button that carries the combobox role (or, with `renderTrigger`, the caller's control), and a caller `aria-describedby` is kept alongside the field's own description and status instead of being replaced. Handlers keep their existing order: a ComplexSelector `onClick` on its own trigger can still cancel opening, and newly forwarded handlers (including those reaching a `renderTrigger` control) run after the built-in toggle and keyboard handling. CLI templates use the new props. (#7341)
+  Migration: rename root `xstyle`/`className`/`style` on these components to `controlXstyle`/`controlClassName`/`controlStyle`, which style the same element as before. Not a rename: a `data-testid` or other base prop now lands on the trigger button rather than the bordered box around it (query the box with `.closest()` if a test measured it), and with `renderTrigger` base props and `ref` now reach the caller's control. Rename JSX usage by hand, or run `astryx upgrade`; it runs `migrate-field-input-styling`, which does not follow styling passed through a wrapper's own props or a spread, which now fails type-checking at that callsite, so rename it there. Untyped callers get a development warning and the value is ignored.
+
+  From #5656 by @harjothkhara.
+
+- TextInput, TextArea, NumberInput, and FileInput no longer accept root `xstyle`, `className`, or `style`. Style the field with `containerXstyle`/`containerClassName`/`containerStyle` (the Field box; no effect inside InputGroup or a `horizontal-labels` FormLayout) and the visual control box with `controlXstyle`/`controlClassName`/`controlStyle`. Base props such as `ref`, `id`, `data-*`, `aria-*`, and DOM handlers reach the native control, and a caller `id` is now honored there. CLI templates use the new props. (#7336)
+  Migration: rename root `xstyle`/`className`/`style` on these components to `controlXstyle`/`controlClassName`/`controlStyle`, which style the same element as before. `astryx upgrade` rewrites JSX usage; styling passed through a wrapper's own props or a spread is not rewritten and now fails type-checking at that callsite, so rename it there. Untyped callers get a development warning and the value is ignored. Not rewritten by the codemod: a caller `id` used to be replaced by a generated one and now reaches the native control (the label stays associated), so remove an `id` you passed but relied on being ignored. Other base props already reached the native control and are unchanged.
+
+  From #5656 by @harjothkhara.
+
+- matcha's and y2k's spacing steps are rem (`--spacing-2: 0.75rem`), so their gaps and padding follow the reader's root font size like the core scale. Every step is the same pixel value at the default 16px root; a reader with a larger root font size now sees proportionally larger spacing on these themes. The CLI's copies of both theme templates and the annotated theme template's spacing example change the same way. (#7374)
+  Migration: nothing to change to take the new behaviour. To keep fixed pixel spacing on one of these themes, extend it and override the steps in px, which is honoured as written: `defineTheme({name: 'app', extends: matchaTheme, tokens: {'--spacing-2': '12px'}})`.
+- On touch devices narrower than the `lg` breakpoint (`(width < 1024px) and (pointer: coarse)`), the 14px-base first-party themes now floor their type base to 16px and re-derive the ratio so Display 1 keeps its desktop size: neutral and chocolate (base 14, ratio 1.2 → 1.1736) and butter and stone (base 14, ratio 1.25 → 1.2225). On phones, body, label and code text rise from 14px to 16px; supporting text, the headings and Display 2 and 3 grow by 1–2px; only Display 1 holds its desktop size. Desktop sizes are unchanged. gothic, matcha and y2k already use a 16px base and need no rule. The CLI's theme templates carry the same rule, so a newly scaffolded theme gets it too. (#6699)
+  An app theme that extends one of these four themes and sets its own `typography.scale` or type-size tokens inherits this rule, and on touch + narrow screens the rule replaces those values (a base-18 child drops to a 16px body and a 42px Display 1). Append your own rule for the same condition with the values you want; a later rule for the same condition wins.
+
+  Migration: nothing to change to take the new phone scale. To keep the previous 14px phone scale in an app, extend the theme and append a later rule for the same condition: `defineTheme({name: 'app', extends: neutralTheme, adaptations: {rules: [{when: {pointer: 'coarse', width: {below: 'lg'}}, value: {typography: {scale: {base: 14, ratio: 1.2}}}}]}})`. For butter and stone use `ratio: 1.25` and also set `tokens: {'--text-supporting-size': '12px'}` in that rule's value, because those themes pin supporting text at 12px rather than the 11px the scale alone gives. This cannot be rewritten by a codemod: whether an app wants the floor is a product choice.
+
+- Stop reading the Astryx-owned agent variables ASTRYX_AGENT_ID, ASTRYX_AGENT_SESSION_ID, and ASTRYX_AGENT_METADATA (#7127)
+  The theme-import change already stopped reading `ASTRYX_THEME`; these three were the last Astryx-owned agent variables. A test now fails on any `process.env.ASTRYX_*` read in the CLI source.
+
+  Migration: set `AGENT` and `AGENT_SESSION_ID`, which the CLI already reads, instead of the Astryx-prefixed variants. `ASTRYX_AGENT_METADATA` has no replacement variable.
+
+- Remove the deprecated component-theming compatibility surface scheduled for 0.7.0. Components now emit only canonical target classes and reflected `data-*` prop/state selectors. Theme discovery and build output no longer expose deprecated targets, and `ThemePropsOptions` plus `ComponentThemingTarget.deprecatedFor` are removed. The `theme targets --json` response drops the `ThemeTargetEntry.deprecatedFor` field, because no target it lists is deprecated. (#7302)
+  Migration: run the required codemod `migrate-deprecated-theme-surface` with `astryx upgrade --from <your 0.6 version> --apply --path .` after upgrading.
+
+  The codemod renames removed target keys inside theme `components` maps (an imported `defineTheme()` call, an object typed as an Astryx theme, or a theme object with a static `name`), renames target classes in CSS, and replaces target-qualified bare prop/value/state classes with reflected `data-*` selectors, using every bare class the final 0.6 release emitted. It leaves dynamic/computed theme keys, unqualified or unknown classes, and CSS embedded in JavaScript/TypeScript strings for manual review. It adds `TODO(astryx upgrade)` when old and canonical keys coexist, and when a bare class Astryx once emitted has no known meaning on the target it qualifies.
+
+  The four per-component clear-icon aliases all become the shared `input-clear-icon`, which styles every input's clear icon. In CSS the codemod keeps each rule on its component with `:where(.astryx-<component> *)`, which adds no specificity. Theme keys cannot carry that scope, so the codemod adds a TODO naming the CSS selector to use.
+
+  Code that passed `{legacyNames}` to `themeProps()` or set `deprecatedFor` in a component doc should delete that argument or field; the canonical target is unchanged.
+
+  Rename theme keys and CSS target classes with this complete mapping:
+
+  - `base-table` → `table`
+  - `checkbox` → `checkbox-indicator`
+  - `codeblock` → `code-block`
+  - `codeblock-copy-button` → `code-block-copy-button`
+  - `codeblock-header` → `code-block-header`
+  - `codeblock-title` → `code-block-title`
+  - `date-input-clear-icon` → `input-clear-icon`
+  - `date-range-input-clear-icon` → `input-clear-icon`
+  - `hovercard` → `hover-card`
+  - `multi-selector-clear-icon` → `input-clear-icon`
+  - `navicon` → `nav-icon`
+  - `popover-surface` → `popover`
+  - `progressbar` → `progress-bar`
+  - `progressbar-fill` → `progress-bar-fill`
+  - `progressbar-mark` → `progress-bar-mark`
+  - `progressbar-track` → `progress-bar-track`
+  - `radio` → `radio-indicator`
+  - `radio-dot` → `radio-indicator-dot`
+  - `selector-clear-icon` → `input-clear-icon`
+  - `statusdot` → `status-dot`
+  - `textarea` → `text-area`
+
+  For custom CSS, replace removed bare selectors with the corresponding reflected attribute on a canonical target—for example, `.astryx-button.primary.sm` becomes `.astryx-button[data-variant="primary"][data-size="sm"]`, and `.astryx-switch.checked` becomes `.astryx-switch[data-checked="checked"]`. Review unqualified classes such as `.primary` manually because they may be application-owned.
+
+- Remove the `astryx layout` command group. (#7137)
+  Removes the deprecated `astryx layout` command group (`expand`, `check`, `grammar`), its three response types (`layout.expand`, `layout.check`, `layout.grammar`), and the programmatic API exports (`layoutExpand`, `layoutCheck`, `layoutGrammar`).
+
+  Use `astryx build` to choose the template to start from, `astryx template` to scaffold it, and `astryx docs layout` for layout guidance. The layout guide is unaffected. The error codes `ERR_LAYOUT_PARSE` and `ERR_LAYOUT_INVALID` are retained.
+
+  Removed JSON ids: `LayoutBlockReference.mode` `LayoutBlockReference.name` `LayoutCheckOptions.cwd` `LayoutCheckOptions.form` `LayoutCheckOptions.loose` `LayoutCheckResponse.data` `LayoutCheckResponse.data.compact` `LayoutCheckResponse.data.errors` `LayoutCheckResponse.data.form` `LayoutCheckResponse.data.outline` `LayoutCheckResponse.data.valid` `LayoutCheckResponse.data.warnings` `LayoutCheckResponse.type` `LayoutExpandOptions.cwd` `LayoutExpandOptions.form` `LayoutExpandOptions.loose` `LayoutExpandOptions.name` `LayoutExpandOptions.targetPath` `LayoutExpandResponse.data` `LayoutExpandResponse.data.blocksReferenced` `LayoutExpandResponse.data.code` `LayoutExpandResponse.data.componentsUsed` `LayoutExpandResponse.data.demoMediaReplaced` `LayoutExpandResponse.data.form` `LayoutExpandResponse.data.states` `LayoutExpandResponse.data.todos` `LayoutExpandResponse.data.warnings` `LayoutExpandResponse.data.written` `LayoutExpandResponse.type` `LayoutGrammarOptions.cwd` `LayoutGrammarResponse.data` `LayoutGrammarResponse.data.aliases` `LayoutGrammarResponse.data.text` `LayoutGrammarResponse.type` `LayoutIssue.col` `LayoutIssue.formatted` `LayoutIssue.line` `LayoutIssue.message` `LayoutIssue.suggestions`
+
+- Spacing tokens are rem (`--spacing-2: 0.5rem`), so gaps and padding follow the reader's root font size the way the type scale does. Every token value is unchanged at the default 16px root. (#7359)
+  One change shows at the default root: the `useTableRowExpansion` chevron now sits centered in its fixed 40px column instead of running past its edge (its button moves from 24–48px to 8–32px of the column). Under a theme with a larger spacing scale, such as matcha, the chevron is visible again and the detail panel lines up with the first column instead of starting 20px past it.
+
+  Old usage: The `--spacing-*` defaults were fixed px (`--spacing-2: 8px`), so `useTheme().token()`, `resolveThemeToken()`, `tokenDefaults` and `spacingDefaults` returned px strings, and spacing stayed the same size when a reader raised the browser font size.
+
+  Replacement: The defaults are rem with the same value at a 16px root (`--spacing-2: 0.5rem`, `--spacing-4: 1rem`), and those readers return the rem string.
+
+  Migration: CSS that reads `var(--spacing-*)` needs no change. Code that parses a spacing token as a px number converts the rem value with the root font size, or reads the element's computed length. A theme that wants fixed px spacing sets the tokens back, for example `defineTheme({tokens: {'--spacing-2': '8px'}})`.
+
+  Codemod: None. A token read and parsed at runtime cannot be found and rewritten statically, and CSS uses need no rewrite.
+
+- `theme build` exits 1 when it reports private `--_*` variables. (#6872)
+  The old contract reported private-variable errors but exited 0. The corrected contract keeps the same warnings, receipts, generated files, and `--check` output, but exits 1.
+
+  To migrate, a CI step that relied on exit 0 must fix the theme's private `--_*` inputs.
+
+#### New Features
+
+- `astryx upgrade` adds `padding={0}` to BottomSheet elements that do not set `padding`, keeping their unpadded content box now that BottomSheet pads like Dialog. Sheets whose only child is a Section or a Layout are left unchanged. A sheet with a Layout anywhere in its content also gets a TODO comment, because `padding={0}` removes the inset between that Layout's regions and the Layout's own `padding` restores only its outer edges. A shadowed `BottomSheet` binding is left alone, and a second run changes nothing. (#6884)
+- `astryx upgrade` runs `migrate-field-input-styling`, which renames root `xstyle`/`className`/`style` on Field-composed inputs to the part they styled before: `controlXstyle`/`controlClassName`/`controlStyle` on TextInput, TextArea, NumberInput, FileInput, DateInput, DateRangeInput, DateTimeInput, TimeInput, Selector, MultiSelector, and ComplexSelector, and `containerXstyle`/`containerClassName`/`containerStyle` on Typeahead, Tokenizer, CheckboxList, RadioList, and Slider. It rewrites JSX written directly on an Astryx import (named, aliased, or namespace). Spreads and wrappers that forward their own styling props are left for manual migration, and a callsite that already sets the target prop gets a TODO instead of a rename. (#7342)
+- `astryx upgrade` renames `emptySearchResultsText` to `emptySearchText` on `Tokenizer`, `Typeahead`, `BaseTypeahead`, and `ChatComposerInput` trigger objects, for the release that removes the old name. (#7289)
+
+#### Fixes
+
+- `template` and `build` follow the project's package manager. The nearest directory from the target up to the workspace root that has a `packageManager` field or a lockfile decides. With neither, the command uses npm, whatever package manager launched the CLI. When that directory's lockfiles disagree and nothing it commits picks one, `installCommand` is `null` and the note names the missing packages, the directory, and the lockfiles that disagree, instead of guessing a command that would write a second lockfile. (#7343)
+- Teach generated palette references in the full custom-theme authoring guide. (#7268)
+- Generate Neutral's runtime palette references from the stops its theme uses, and fail verification when the package or CLI template copy drifts. (#7255)
+
+#### Documentation
+
+- Clarify release-branch codemod promotion and version ownership. (#7293)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @harjothkhara
+- @imdreamrunner
+- @josephfarina
+- @rubyycheung
+- @vjeux
+
+---
+
+# 0.6.8
+
+#### Fixes
+
+- A template that sets `replaces` needs `@astryxdesign/cli` 0.6.4, and one that sets `keywords` needs 0.6.6, not 0.7.0 (#7265).
+  Published 0.6.4 applies a template's `replaces`, and published 0.6.6 reads its `keywords`. `integration verify` asked for `">=0.7.0"` for both, a range no released CLI satisfies, and npm leaves the CLI uninstalled in an app that installs a package with that optional peer. `integration verify` now accepts `">=0.6.4"` for `replaces` and `">=0.6.6"` for `keywords`, and still refuses a range that admits an older CLI. Its messages now say what older CLIs do. Before 0.6.6 a template that sets `keywords` is dropped, and before 0.6.4 the package's doc topics are hidden too.
+
+#### Documentation
+
+- Guide new theme authors to the palette generator and keep the broad color scale opt-in in generated theme templates (#6795).
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @josephfarina
+- @rubyycheung
+
+---
+
 # 0.6.7
 
 #### New Features

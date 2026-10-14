@@ -170,7 +170,11 @@ export const doc = {
     },
     {
       code: 'ERR_UNKNOWN_COMPONENT',
-      when: 'name is not a string, resolves to no known component, is provided by multiple packages (pass options.package), or is absent from the requested options.package',
+      when: 'name is not a string, resolves to no known component, or is absent from the requested options.package',
+    },
+    {
+      code: 'ERR_AMBIGUOUS_COMPONENT',
+      when: 'the component is provided by multiple packages (pass options.package to disambiguate)',
     },
     {
       code: 'ERR_UNKNOWN_PACKAGE',

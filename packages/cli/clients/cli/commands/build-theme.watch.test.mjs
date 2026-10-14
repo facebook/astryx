@@ -124,7 +124,8 @@ describe('theme build --watch', () => {
       const rebuilt = await waitFor(
         () => {
           try {
-            if (fs.readFileSync(cssFile, 'utf-8').includes('#010203')) return true;
+            if (fs.readFileSync(cssFile, 'utf-8').includes('#010203'))
+              return true;
           } catch {
             // CSS mid-write; fall through to re-touch.
           }
@@ -156,6 +157,63 @@ describe('theme build --watch', () => {
     expect(exited).toBe(true);
     expect(stdout).toMatch(/Stopped watching/);
   }, 30_000);
+
+  it('stops at once when interrupted mid-rebuild, and drops a queued change', async () => {
+    const themeFile = path.join(tmpDir, 'ws.mjs');
+    fs.writeFileSync(
+      themeFile,
+      `export default { name: 'ws', tokens: { '--color-bg': '#ffffff' } };\n`,
+    );
+    // Top-level await holds every rebuild of this version in progress for 20 s,
+    // far longer than a stop may take.
+    const slow =
+      `await new Promise(resolve => setTimeout(resolve, 20000));\n` +
+      `export default { name: 'ws', tokens: { '--color-bg': '#010203' } };\n`;
+
+    const child = spawn(
+      process.execPath,
+      [CLI_BIN, 'theme', 'build', 'ws.mjs', '--watch'],
+      {cwd: tmpDir, env: {...process.env, FORCE_COLOR: '0'}},
+    );
+    let stdout = '';
+    child.stdout.on('data', d => (stdout += d.toString()));
+    child.stderr.on('data', d => (stdout += d.toString()));
+    const exited = new Promise(resolve =>
+      child.once('exit', () => resolve(Date.now())),
+    );
+
+    let stoppedAt;
+    try {
+      expect(await waitFor(() => /Watching/i.test(stdout))).toBe(true);
+      // Start the slow rebuild, re-touching in case a watch event is dropped.
+      const started = await waitFor(
+        () => {
+          if (/rebuilding ws\.mjs/.test(stdout)) return true;
+          fs.writeFileSync(themeFile, slow);
+          return false;
+        },
+        {timeout: 20000, interval: 200},
+      );
+      expect(started).toBe(true);
+      // Queue a change behind the rebuild in progress (debounce is 100 ms).
+      fs.writeFileSync(themeFile, `${slow}// queued\n`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } finally {
+      stoppedAt = Date.now();
+      child.kill('SIGINT');
+    }
+
+    const exitedAt = await Promise.race([
+      exited,
+      new Promise(resolve => setTimeout(() => resolve(null), 15000)),
+    ]);
+    if (exitedAt === null) child.kill('SIGKILL');
+    // Finishing the interrupted rebuild, or starting the queued one, takes 20 s.
+    expect(exitedAt).not.toBeNull();
+    expect(exitedAt - stoppedAt).toBeLessThan(10000);
+    expect(stdout.match(/rebuilding/g)).toHaveLength(1);
+    expect(stdout.trimEnd().endsWith('Stopped watching.')).toBe(true);
+  }, 60_000);
 
   it.each([
     [[], false],
@@ -219,7 +277,10 @@ describe('theme build --watch', () => {
       );
       expect(built).toBe(true);
       await waitFor(() => /Watching w1\.mjs, w2\.mjs/.test(stdout));
-      const firstCssBefore = fs.readFileSync(path.join(tmpDir, 'w1.css'), 'utf-8');
+      const firstCssBefore = fs.readFileSync(
+        path.join(tmpDir, 'w1.css'),
+        'utf-8',
+      );
 
       const changed = `export default { name: 'w2', tokens: { '--color-bg': '#010203' } };\n`;
       fs.writeFileSync(second, changed);
