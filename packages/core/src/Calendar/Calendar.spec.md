@@ -144,9 +144,8 @@ intentional decision. A `current` contract contains no unresolved rows.
   same direction, crossing the month edge when it must; a key whose target
   lies past `min` or `max` changes nothing and keeps focus where it is, and
   so does an arrow whose direction has no enabled day within a year; a page
-  onto a day disabled by a constraint moves the month and focuses that
-  month's first enabled day, and changes nothing when that month has no
-  enabled day.
+  onto a day disabled by a constraint focuses that month's first enabled day
+  instead, and changes nothing when that month has no enabled day.
 
 ## Design relationships
 
