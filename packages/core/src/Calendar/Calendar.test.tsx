@@ -71,6 +71,20 @@ function getDayButton(day: number, month = 'January', year = 2026) {
 }
 
 describe('Calendar', () => {
+  it("with week numbers, the header row's corner cell is a named columnheader, so every row child is a grid cell", () => {
+    render(<Calendar focusDate="2026-01-01" hasWeekNumbers />);
+    const grid = screen.getByRole('grid');
+    const stray = grid.querySelectorAll(
+      '[role="row"] > :not([role="gridcell"]):not([role="columnheader"]):not([role="rowheader"])',
+    );
+    expect(stray).toHaveLength(0);
+    // Named from CLDR ("week" in en-US), as visually hidden text.
+    expect(
+      within(grid).getByRole('columnheader', {name: 'week'}),
+    ).toBeInTheDocument();
+    expect(within(grid).getAllByRole('rowheader').length).toBeGreaterThan(0);
+  });
+
   // ─── Basic Rendering ─────────────────────────────────────────
   it('forwards ref to the calendar root element', () => {
     let root: HTMLDivElement | null = null;
@@ -236,6 +250,31 @@ describe('Calendar', () => {
 
     expect(handleChange).toHaveBeenCalledTimes(1);
     expect(handleChange).toHaveBeenCalledWith('2026-01-15', expect.any(Date));
+  });
+
+  it('shows years 1-99 as themselves, not as 1900-1999', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <Calendar
+        value="0001-01-15"
+        onChange={handleChange}
+        focusDate="0001-01-01"
+      />,
+    );
+
+    expect(screen.getByRole('grid', {name: 'January 1'})).toBeInTheDocument();
+    const day15 = getDayButton(15, 'January', 1);
+    expect(day15).toHaveAccessibleName(/^Monday, January 15, 1\b/);
+    expect(day15.closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+
+    await user.click(getDayButton(20, 'January', 1));
+    expect(handleChange).toHaveBeenCalledWith('0001-01-20', expect.any(Date));
+    expect(handleChange.mock.calls[0][1].getFullYear()).toBe(1);
   });
 
   it('keeps null single selection empty until the parent accepts a date', async () => {
@@ -1319,6 +1358,43 @@ describe('Calendar', () => {
       expect(document.activeElement).not.toBe(getDayButton(15, 'February'));
       await user.keyboard('{Enter}');
       expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('a refused page target is dropped by an arrow to another day, so showing the months later does not select it', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      function Owner({focusDate}: {focusDate: ISODateString}) {
+        // A controlled owner that ignores every requested change: the shown
+        // months move only when the test re-renders it with a new prop, with
+        // no focus change of its own.
+        return (
+          <Calendar
+            focusDate={focusDate}
+            numberOfMonths={2}
+            onFocusDateChange={() => {}}
+            onChange={onChange}
+          />
+        );
+      }
+      const {rerender} = render(<Owner focusDate="2026-01-01" />);
+      getDayButton(10, 'February').focus();
+      // Declined: Jan–Feb stay; focus stays on February 10.
+      await user.keyboard('{PageDown}');
+      expect(document.activeElement).toBe(getDayButton(10, 'February'));
+      // An arrow to February 11 is a focus move to a day other than the
+      // target, so the stale March 10 target is dropped.
+      await user.keyboard('{ArrowRight}');
+      expect(document.activeElement).toBe(getDayButton(11, 'February'));
+      // The owner now shows February–March without touching focus.
+      rerender(<Owner focusDate="2026-02-01" />);
+      await waitFor(() => {
+        expect(
+          screen.getAllByRole('grid').map(g => g.getAttribute('aria-label')),
+        ).toEqual(['February 2026', 'March 2026']);
+      });
+      expect(document.activeElement).toBe(getDayButton(11, 'February'));
+      await user.keyboard('{Enter}');
+      expect(onChange).not.toHaveBeenCalledWith('2026-03-10');
     });
 
     it("the pending target becomes the grid's Tab stop: after a page into the second grid and after a page that moves the months, only it has tabindex 0", async () => {

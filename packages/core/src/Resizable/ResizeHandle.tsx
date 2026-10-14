@@ -46,7 +46,11 @@ import {
 } from '../theme/tokens.stylex';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {mergeProps, rtlStyles} from '../utils';
-import type {ResizableProps} from './useResizable';
+import {
+  getCollapseControls,
+  getEffectiveMaxPx,
+  type ResizableProps,
+} from './useResizable';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -361,6 +365,31 @@ export interface ResizeHandleProps extends Omit<
 }
 
 /**
+ * Collapse an open pane, or restore a collapsed one to the size it had before
+ * it collapsed (APG window splitter: Enter "restores the splitter to its
+ * previous position"). The hook's own collapse/expand do exactly that; a
+ * hand-built `ResizableProps` (no registered controls) falls back to a resize
+ * gesture to the minimum, which also cannot reopen a pane whose minimum sits below its
+ * collapse threshold.
+ */
+function toggleCollapse(resizable: ResizableProps): void {
+  const controls = getCollapseControls(resizable);
+  if (controls) {
+    if (resizable._isCollapsed) {
+      controls.expand();
+    } else {
+      controls.collapse();
+    }
+    return;
+  }
+  resizable._onResizeStart();
+  resizable._onResizeMove(
+    resizable._isCollapsed ? resizable._minSizePx : -resizable._size,
+  );
+  resizable._onResizeEnd();
+}
+
+/**
  * Draggable resize handle placed between resizable panels. Renders as a thin
  * divider line with a wider invisible hit area and optional pill grip indicator.
  * Supports keyboard resizing via arrow keys and WAI-ARIA separator role.
@@ -375,6 +404,7 @@ export interface ResizeHandleProps extends Omit<
  *   hasDivider />
  * ```
  */
+
 export function ResizeHandle({
   direction = 'horizontal',
   position: positionMode = 'inline',
@@ -554,6 +584,9 @@ export function ResizeHandle({
         }
         case 'End': {
           e.preventDefault();
+          // Only a configured maximum is the region's own limit; the reported
+          // stand-in for an unbounded region is where the pane *could* reach,
+          // not where End may safely move it (a recorded gap).
           if (resizable._maxSizePx !== Infinity) {
             resizable._onResizeStart();
             resizable._onResizeMove(resizable._maxSizePx - resizable._size);
@@ -564,11 +597,7 @@ export function ResizeHandle({
         case 'Enter': {
           e.preventDefault();
           if (resizable._collapsible) {
-            resizable._onResizeStart();
-            resizable._onResizeMove(
-              resizable._isCollapsed ? resizable._minSizePx : -resizable._size,
-            );
-            resizable._onResizeEnd();
+            toggleCollapse(resizable);
           }
           break;
         }
@@ -582,11 +611,7 @@ export function ResizeHandle({
     if (isDisabled || !resizable || !resizable._collapsible) {
       return;
     }
-    resizable._onResizeStart();
-    resizable._onResizeMove(
-      resizable._isCollapsed ? resizable._minSizePx : -resizable._size,
-    );
-    resizable._onResizeEnd();
+    toggleCollapse(resizable);
   }, [isDisabled, resizable]);
 
   // --- Cleanup on unmount ---
@@ -620,9 +645,16 @@ export function ResizeHandle({
       : resizable._size
     : undefined;
   const ariaValueMin = resizable ? resizable._minSizePx : undefined;
+  // A separator with a value needs a maximum (WAI-ARIA, APG window splitter).
+  // Unbounded regions report the basis they can fill; a hand-built props
+  // object without it reports only a configured maximum.
+  const effectiveMax = resizable
+    ? (getEffectiveMaxPx(resizable) ??
+      (resizable._maxSizePx !== Infinity ? resizable._maxSizePx : undefined))
+    : undefined;
   const ariaValueMax =
-    resizable && resizable._maxSizePx !== Infinity
-      ? resizable._maxSizePx
+    effectiveMax != null && Number.isFinite(effectiveMax)
+      ? effectiveMax
       : undefined;
   const ariaValueText =
     resizable && isCollapsed ? t('@astryx.resizable.collapsed') : undefined;
