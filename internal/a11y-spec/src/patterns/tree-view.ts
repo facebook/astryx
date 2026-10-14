@@ -100,6 +100,14 @@ const APG_HOME_END = apgReq(
   'Home: Moves focus to the first node in the tree without opening or closing a node. End: Moves focus to the last node in the tree that is focusable without opening a node.',
   K,
 );
+const TREELIST_AR1_LEVEL: AstryxRecord = {
+  standard: 'astryx',
+  id: 'component:TreeList',
+  clause: 'AR1',
+  url: 'https://github.com/facebook/astryx/blob/458a74c2a65a44c1fc7f76266e812e6d47213080/packages/core/src/TreeList/TreeList.spec.md#L155-L157',
+  requirement:
+    'every row is role="treeitem", named by its label and described by its description, aria-expanded when it has children, aria-selected when it is the selected row, aria-level for its depth, and aria-posinset/aria-setsize among its siblings.',
+};
 const TREELIST_AR1_ACTIVATION: AstryxRecord = {
   standard: 'astryx',
   id: 'component:TreeList',
@@ -212,7 +220,7 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
     pattern: 'treeview',
     url: APG_URL,
     scope:
-      "A tree's role and name; each node's treeitem role, name, expanded state, child group, and level/position; one Tab stop for the whole tree; Up/Down, Right/Left (mirrored under RTL), Home/End, Enter and typeahead movement.",
+      "A tree's role and name; each node's treeitem role, name, expanded state, child group, and level/position; one Tab stop for the whole tree; Up/Down, Right/Left (mirrored under RTL), Home/End, Enter or Space activation and typeahead movement.",
     expectations: [
       {
         id: 'treeview.tree.role-and-name',
@@ -329,7 +337,7 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         id: 'treeview.item.level-and-position',
         outcome:
           'The node states its depth and its place among its siblings, so a user hears "level 2, 3 of 5" instead of guessing from indentation.',
-        sources: [WCAG_1_3_1, APG_LEVEL],
+        sources: [WCAG_1_3_1, APG_LEVEL, TREELIST_AR1_LEVEL],
         covers: ['1.3.1-info-and-relationships', 'apg-interaction'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'dom',
@@ -487,11 +495,15 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         run: async ({harness, subject}) => {
           const first = await harness.related('first');
           const last = await harness.related('last');
+          const before = await authoredExpanded(subject);
           await focusOrFail(subject, 'Home');
           await harness.press('End');
           await expectFocused(last, 'End');
           await harness.press('Home');
           await expectFocused(first, 'Home');
+          if ((await authoredExpanded(subject)) !== before) {
+            throw new Error("Home or End changed the node's expanded state");
+          }
         },
       },
       {
@@ -600,7 +612,7 @@ export const TREE_VIEW_PATTERN: PatternContract<TreeViewStateFacts> =
         owner: 'the composing page',
         verifiedBy: 'page-level keyboard review',
         reason:
-          "This contract encodes the tree's keyboard model: one Tab stop, Up/Down, Right/Left, Home/End, Enter and typeahead. Other page keyboard paths remain with the composition.",
+          "This contract encodes the tree's keyboard model: one Tab stop, Up/Down, Right/Left, Home/End, Enter or Space and typeahead. Other page keyboard paths remain with the composition.",
         coversRemainderOnly: true,
       },
       '2.1.2-no-keyboard-trap': {
