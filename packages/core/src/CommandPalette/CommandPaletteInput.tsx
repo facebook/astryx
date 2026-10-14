@@ -187,15 +187,23 @@ export function CommandPaletteInput({
   const handleValueChange = onValueChange ?? ctx?.setSearch;
   const accessibleLabel = props['aria-label'] ?? label ?? placeholder;
   const hasEndContent = isRenderable(endContent);
+  // A popup attribute the caller passes is caller-owned even while its value
+  // is undefined (`aria-expanded={open || undefined}`), so the role stays
+  // stable as the caller's popup opens and closes, and a present value is
+  // passed through unchanged.
+  const callerSets = (key: keyof typeof props) => Object.hasOwn(props, key);
   const callerOwnsPopup =
     !ctx &&
     (props.role === 'combobox' ||
-      props['aria-expanded'] != null ||
-      props['aria-autocomplete'] != null ||
-      props['aria-controls'] != null ||
-      props['aria-activedescendant'] != null);
-  const standaloneRole =
-    props.role ?? (callerOwnsPopup ? 'combobox' : 'searchbox');
+      callerSets('aria-expanded') ||
+      callerSets('aria-autocomplete') ||
+      callerSets('aria-controls') ||
+      callerSets('aria-activedescendant'));
+  const standaloneRole = callerSets('role')
+    ? props.role
+    : callerOwnsPopup
+      ? 'combobox'
+      : 'searchbox';
 
   // When rendered inside an inline dialog, disable auto-focus by default
   // to avoid stealing focus from the surrounding page.
@@ -243,13 +251,18 @@ export function CommandPaletteInput({
         aria-expanded={
           ctx
             ? ctx.isOpen
-            : (props['aria-expanded'] ?? (callerOwnsPopup || undefined))
+            : callerSets('aria-expanded')
+              ? props['aria-expanded']
+              : callerOwnsPopup || undefined
         }
         aria-autocomplete={
           ctx
             ? 'list'
-            : (props['aria-autocomplete'] ??
-              (callerOwnsPopup ? 'list' : undefined))
+            : callerSets('aria-autocomplete')
+              ? props['aria-autocomplete']
+              : callerOwnsPopup
+                ? 'list'
+                : undefined
         }
         aria-controls={ctx ? ctx.listId : props['aria-controls']}
         aria-activedescendant={

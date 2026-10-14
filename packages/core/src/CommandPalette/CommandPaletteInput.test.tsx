@@ -93,6 +93,43 @@ describe('CommandPaletteInput', () => {
     expect(input).toHaveAttribute('aria-autocomplete', 'list');
   });
 
+  it('keeps a toggling caller popup a combobox with its own values', () => {
+    function CallerPopup({open}: {open: boolean}) {
+      return (
+        <CommandPaletteInput
+          aria-expanded={open || undefined}
+          aria-controls={open ? 'caller-list' : undefined}
+        />
+      );
+    }
+    const {rerender} = render(<CallerPopup open={false} />);
+
+    const closed = screen.getByRole('combobox');
+    expect(closed).not.toHaveAttribute('aria-expanded');
+    expect(closed).not.toHaveAttribute('aria-controls');
+
+    rerender(<CallerPopup open />);
+    const open = screen.getByRole('combobox');
+    expect(open).toHaveAttribute('aria-expanded', 'true');
+    expect(open).toHaveAttribute('aria-controls', 'caller-list');
+
+    rerender(<CallerPopup open={false} />);
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-expanded');
+  });
+
+  it('omits an explicitly undefined aria-expanded beside a caller list', () => {
+    render(
+      <CommandPaletteInput
+        aria-expanded={undefined}
+        aria-controls="caller-list"
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    expect(input).not.toHaveAttribute('aria-expanded');
+    expect(input).toHaveAttribute('aria-controls', 'caller-list');
+  });
+
   it('has an accessible name by default', () => {
     render(<CommandPaletteInput />);
     expect(screen.getByRole('searchbox')).toHaveAttribute(
