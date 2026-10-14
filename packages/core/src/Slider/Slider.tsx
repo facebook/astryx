@@ -668,11 +668,18 @@ export function Slider({ref, ...props}: SliderProps) {
   );
 
   const updateValue = useCallback(
-    (thumbIndex: number, newVal: number) => {
+    (thumbIndex: number, newVal: number, snap = true) => {
       if (isDisabled) {
         return;
       }
-      const clamped = clamp(snapToStep(newVal, min, step), min, max);
+      // Home and End pass the bound itself (`snap: false`). The step grid is
+      // anchored at `min`, so Home always landed there; `max` may lie off the
+      // grid (max 100 with step 3 snapped End to 99, not 100).
+      const clamped = clamp(
+        snap ? snapToStep(newVal, min, step) : newVal,
+        min,
+        max,
+      );
 
       if (isRange) {
         const currentValues = [...values] as [number, number];
@@ -863,8 +870,13 @@ export function Slider({ref, ...props}: SliderProps) {
       }
 
       e.preventDefault();
-      const clamped = clamp(snapToStep(newVal, min, step), min, max);
-      updateValue(thumbIndex, newVal);
+      const toBound = e.key === 'Home' || e.key === 'End';
+      const clamped = clamp(
+        toBound ? newVal : snapToStep(newVal, min, step),
+        min,
+        max,
+      );
+      updateValue(thumbIndex, newVal, !toBound);
 
       // Compute exact post-update values so onChangeEnd reports the correct
       // value even before React batches the state update.
