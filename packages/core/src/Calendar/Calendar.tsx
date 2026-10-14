@@ -656,6 +656,7 @@ function MonthGrid({
   onPendingFocusHandled,
 }: MonthGridProps) {
   const locale = useLocale();
+  const t = useTranslator();
   const year = month.year;
 
   // Use hooks for days generation and constraints
@@ -900,7 +901,13 @@ function MonthGrid({
             same display:contents row so its cells align to the grid columns. */}
         <div role="row" {...stylex.props(monthGridStyles.weekRow)}>
           {hasWeekNumbers && (
+            // The corner above the week-number column is a header cell like
+            // the weekday names beside it (APG grid: every cell in a row is a
+            // gridcell, columnheader or rowheader); its name is screen-reader
+            // only so the column stays visually blank.
             <div
+              role="columnheader"
+              aria-label={t('@astryx.calendar.weekNumberHeader')}
               {...stylex.props(
                 monthGridStyles.dayName,
                 monthGridStyles.weekNumberHeader,

@@ -52,6 +52,19 @@ function getDayButton(day: number, month = 'January', year = 2026) {
 }
 
 describe('Calendar', () => {
+  it("with week numbers, the header row's corner cell is a named columnheader, so every row child is a grid cell", () => {
+    render(<Calendar focusDate="2026-01-01" hasWeekNumbers />);
+    const grid = screen.getByRole('grid');
+    const stray = grid.querySelectorAll(
+      '[role="row"] > :not([role="gridcell"]):not([role="columnheader"]):not([role="rowheader"])',
+    );
+    expect(stray).toHaveLength(0);
+    expect(
+      within(grid).getByRole('columnheader', {name: 'Week'}),
+    ).toBeInTheDocument();
+    expect(within(grid).getAllByRole('rowheader').length).toBeGreaterThan(0);
+  });
+
   // ─── Basic Rendering ─────────────────────────────────────────
   it('forwards ref to the calendar root element', () => {
     let root: HTMLDivElement | null = null;
