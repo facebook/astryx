@@ -1117,6 +1117,18 @@ export function createChromiumHarness(
         box.y >= 8
           ? box.y - 4
           : Math.min(viewport.height - 2, box.y + box.height + 4);
+      const inside =
+        x >= box.x &&
+        x <= box.x + box.width &&
+        y >= box.y &&
+        y <= box.y + box.height;
+      if (inside) {
+        // A subject that fills the viewport leaves no point beside it; a
+        // click on the subject itself would prove nothing about dismissal.
+        throw new Error(
+          'the subject fills the viewport, so there is no point beside it to click',
+        );
+      }
       await page.mouse.click(x, y);
     },
     abortedPress: async () => {

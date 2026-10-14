@@ -102,7 +102,7 @@ test('every alert-dialog expectation is exercised by an AlertDialog state', asyn
 });
 
 for (const state of ALERT_DIALOG_BINDING_STATES) {
-  test(`TreeList [${state.id}] — ${state.summary}`, async ({page}) => {
+  test(`AlertDialog [${state.id}] — ${state.summary}`, async ({page}) => {
     const cdp = await page.context().newCDPSession(page);
     const result = await runState(page, cdp, state);
     const report = summarize(ALERT_DIALOG_PATTERN, [result]);

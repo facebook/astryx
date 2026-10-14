@@ -15,6 +15,7 @@ import {
 } from '../contract';
 
 const APG_URL = 'https://www.w3.org/WAI/ARIA/apg/patterns/alertdialog/';
+const APG_DIALOG_URL = 'https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/';
 const UNDERSTANDING = 'https://www.w3.org/WAI/WCAG22/Understanding';
 
 const WCAG_1_3_1: WcagCriterion = {
@@ -45,6 +46,14 @@ const apgReq = (requirement: string, anchor: string): ApgRequirement => ({
   requirement,
   url: `${APG_URL}#${anchor}`,
 });
+// The Alert Dialog page defers keyboard behaviour to the Dialog (Modal)
+// pattern; its focus note and Escape row are quoted from that page.
+const apgDialogReq = (requirement: string, anchor: string): ApgRequirement => ({
+  standard: 'apg',
+  pattern: 'dialog-modal',
+  requirement,
+  url: `${APG_DIALOG_URL}#${anchor}`,
+});
 const A = 'wai-ariaroles,states,andproperties';
 const K = 'keyboardinteraction';
 const APG_ROLE = apgReq(
@@ -63,11 +72,11 @@ const APG_MODAL = apgReq(
   "An alert dialog is a modal dialog that interrupts the user's workflow to communicate an important message and acquire a response.",
   'about-this-pattern',
 );
-const APG_FOCUS = apgReq(
-  'When a dialog opens, focus moves to an element inside the dialog; if the dialog is limited to interactions that confirm or cancel an irreversible action, focus is set on the least destructive action.',
+const APG_FOCUS = apgDialogReq(
+  'When a dialog opens, focus moves to an element contained in the dialog. Generally, focus is initially set on the first focusable element. However, the most appropriate focus placement will depend on the nature and size of the content. [...] it may be advisable to set focus on the least destructive action.',
   K,
 );
-const APG_ESCAPE = apgReq('Escape: Closes the dialog.', K);
+const APG_ESCAPE = apgDialogReq('Escape: Closes the dialog.', K);
 
 /**
  * What a binding knows about one alert dialog (the subject). The binding also
