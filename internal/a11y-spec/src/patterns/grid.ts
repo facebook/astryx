@@ -11,6 +11,8 @@ import type {Subject} from '../harness';
 import {
   definePattern,
   type ApgRequirement,
+  type AstryxRecord,
+  type WebStandardRequirement,
   type PatternContract,
   type WcagCriterion,
 } from '../contract';
@@ -65,12 +67,19 @@ const APG_NAME = apgReq(
   A,
 );
 const APG_SELECTION = apgReq(
-  'If the grid supports selection, when a cell or row is selected, the selected element has aria-selected set true. If multiple cells may be selected, aria-multiselectable is set to true on the grid.',
+  'If the grid supports selection, when a cell or row is selected, the selected element has aria-selected set true.',
   A,
 );
+const ARIA_MULTISELECTABLE: WebStandardRequirement = {
+  standard: 'web-standard',
+  specification: 'WAI-ARIA 1.2',
+  requirement:
+    'aria-multiselectable: Indicates that the user may select more than one item from the current selectable descendants.',
+  url: 'https://www.w3.org/TR/wai-aria-1.2/#aria-multiselectable',
+};
 const APG_FOCUS = apgReq(
-  'The grid is one Tab stop: a roving tabindex gives exactly one cell (or one element inside a cell) tabindex 0 and the others -1, so Tab moves into the grid once and the arrow keys move within it.',
-  'keyboardinteraction',
+  'Keyboard Interaction For Data Grids: Tab: Moves focus to the next focusable element. When a grid is in focus, the focus is on a single cell or widget inside a cell; the grid contains one Tab stop, and the roving tabindex technique keeps the focused cell as the only element with tabindex="0".',
+  K,
 );
 const APG_ARROWS = apgReq(
   'Right Arrow: Moves focus one cell to the right. Left Arrow: Moves focus one cell to the left. Down Arrow: Moves focus one cell down. Up Arrow: Moves focus one cell up.',
@@ -80,10 +89,13 @@ const APG_HOME_END = apgReq(
   'Home: moves focus to the first cell in the row that contains focus. End: moves focus to the last cell in the row that contains focus.',
   K,
 );
-const APG_ACTIVATE = apgReq(
-  'Enter or Space: performs the default action for the focused cell, when the cell has one.',
-  K,
-);
+const CALENDAR_AR1_ACTIVATE: AstryxRecord = {
+  standard: 'astryx',
+  id: 'component:Calendar',
+  clause: 'AR1',
+  url: 'https://github.com/facebook/astryx/blob/66d7146e5aeb8e983b6803c3571a8e871135a35c/packages/core/src/Calendar/Calendar.spec.md#L141-L143',
+  requirement: 'Enter or Space picks the focused day.',
+};
 
 /**
  * What a binding knows about one grid (the subject). The binding also
@@ -219,7 +231,7 @@ export const GRID_PATTERN: PatternContract<GridStateFacts> =
         id: 'grid.selection.exposed',
         outcome:
           'Selected cells say so, and a grid that can hold several selections says that too.',
-        sources: [WCAG_4_1_2, APG_SELECTION],
+        sources: [WCAG_4_1_2, APG_SELECTION, ARIA_MULTISELECTABLE],
         covers: ['4.1.2-name-role-value', 'apg-interaction'],
         appliesWhen: ALWAYS,
         evidenceLayer: 'dom',
@@ -322,7 +334,7 @@ export const GRID_PATTERN: PatternContract<GridStateFacts> =
         id: 'grid.keys.enter-activates',
         outcome:
           "Enter performs the focused cell's default action: here, it selects the cell.",
-        sources: [APG_ACTIVATE],
+        sources: [WCAG_2_1_1, CALENDAR_AR1_ACTIVATE],
         wcagOutcome:
           "Supports WCAG 2.2 2.1.1 by keeping the cell's action keyboard-operable; the APG leaves the action to the author and the binding record names it, so this row is advisory until that record is current (AST-020 FR9).",
         covers: ['apg-interaction'],

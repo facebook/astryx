@@ -30,4 +30,5 @@ function storyFor(id: (typeof CALENDAR_BINDING_STATES)[number]['id']): Story {
 
 export const SingleSelected = storyFor('single-selected');
 export const SingleRtl = storyFor('single-rtl');
+export const SingleWeekNumbers = storyFor('single-week-numbers');
 export const RangeTwoMonths = storyFor('range-two-months');

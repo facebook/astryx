@@ -43,6 +43,7 @@ function BoundCalendar({state}: {state: CalendarBindingState}) {
       onChange={setSingle}
       focusDate={START_ISO}
       numberOfMonths={state.numberOfMonths ?? 1}
+      hasWeekNumbers={state.hasWeekNumbers}
     />
   );
 }

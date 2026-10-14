@@ -35,6 +35,8 @@ export interface CalendarBindingState {
   readonly mode: 'single' | 'range';
   readonly value?: ISODateString | DateRange;
   readonly numberOfMonths?: 1 | 2;
+  /** Render ISO week numbers in a leading column (`hasWeekNumbers`). */
+  readonly hasWeekNumbers?: boolean;
   readonly rtl?: boolean;
 }
 
@@ -84,6 +86,17 @@ export const CALENDAR_BINDING_STATES = [
     facts: facts({rtl: true, selectedCount: 1}),
   },
   {
+    id: 'single-week-numbers',
+    summary:
+      'a single-mode Calendar with week numbers: the header row gains a corner cell before the weekday headers',
+    storyId: story('single-week-numbers'),
+    gridName: 'January 2026',
+    mode: 'single',
+    value: '2026-01-20',
+    hasWeekNumbers: true,
+    facts: facts({selectedCount: 1}),
+  },
+  {
     id: 'range-two-months',
     summary:
       'a two-month range Calendar with January 20–22 selected; the first grid is the subject',
@@ -111,8 +124,9 @@ export const CALENDAR_EXCLUSIONS = [
   },
   {
     id: 'page-keys-and-pointer',
-    owner: 'Calendar.test.tsx (Page-key and pointer selection suites)',
+    owner:
+      'Calendar.test.tsx pointer selection suites; Page-key focus targets are the gap component:Calendar AR1 records',
     reason:
-      'PageUp/PageDown move by a month (author-determined in the APG) and pointer selection are outside this keyboard-and-structure contract.',
+      "PageUp/PageDown move by a month (author-determined in the APG) and pointer selection are outside this keyboard-and-structure contract. Today Calendar.test.tsx covers only the PageDown month announcement ('announces the next month when paging the grid with PageDown'); where Page-key focus lands, and PageUp, are the recorded AR1 gap that its own fix closes with tests.",
   },
 ] as const;

@@ -20,6 +20,7 @@ import {
   checkAccessibilitySpec,
   formatFailures,
   neverExercised,
+  unmatchedKnownFailures,
   summarize,
   type BindingResult,
 } from '@astryxdesign/a11y-spec';
@@ -38,6 +39,7 @@ import {
   START_ISO,
   type CalendarBindingState,
 } from './Calendar.a11y.states';
+import {CALENDAR_KNOWN_FAILURES} from './Calendar.a11y.known-failures';
 
 let storybook: StaticServer;
 
@@ -90,6 +92,7 @@ async function runState(
     binding: 'Calendar',
     state: state.id,
     facts: state.facts,
+    knownFailures: CALENDAR_KNOWN_FAILURES,
     mount: async () => {
       const {subject, related} = await mountState(page, state);
       return createChromiumHarness({page, cdp, subject, related});
@@ -106,6 +109,7 @@ test('every grid expectation is exercised by a Calendar state', async ({
     results.push(await runState(page, cdp, state));
   }
   expect(neverExercised(results)).toEqual([]);
+  expect(unmatchedKnownFailures(CALENDAR_KNOWN_FAILURES, results)).toEqual([]);
 });
 
 for (const state of CALENDAR_BINDING_STATES) {

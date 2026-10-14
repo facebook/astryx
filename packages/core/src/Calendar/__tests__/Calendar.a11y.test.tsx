@@ -26,6 +26,7 @@ import {
   START_ISO,
   type CalendarBindingState,
 } from './Calendar.a11y.states';
+import {CALENDAR_KNOWN_FAILURES} from './Calendar.a11y.known-failures';
 
 function grid(state: CalendarBindingState): HTMLElement {
   return screen.getByRole('grid', {name: state.gridName});
@@ -65,6 +66,7 @@ async function checkState(state: CalendarBindingState): Promise<BindingResult> {
     binding: 'Calendar',
     state: state.id,
     facts: state.facts,
+    knownFailures: CALENDAR_KNOWN_FAILURES,
     mount: async () => {
       render(renderCalendarState(state));
       return createJsdomHarness({subject: grid(state), related: related()});
@@ -84,6 +86,7 @@ describe('Calendar — grid pattern, jsdom lane', () => {
       binding: 'Calendar',
       state: state.id,
       facts: state.facts,
+      knownFailures: CALENDAR_KNOWN_FAILURES,
       render: () => {
         render(renderCalendarState(state));
       },
