@@ -48,6 +48,32 @@ deciding_specs: []
 
 # Internationalization architecture
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "accessibility": ["INV1", "INV1a", "INV7"],
+    "behavior": [
+      "INV1",
+      "INV1a",
+      "INV3",
+      "INV4",
+      "INV5",
+      "INV7",
+      "INV8",
+      "INV9",
+      "INV10"
+    ],
+    "compatibility": ["INV2", "INV9", "INV10"],
+    "layout": ["INV11", "INV12"],
+    "public-api": ["INV1", "INV1a", "INV2", "INV7", "INV9", "INV10"],
+    "react-runtime": ["INV3", "INV4", "INV11", "INV12", "INV13"]
+  }
+}
+```
+
 ## Contract at a glance
 
 | Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -71,6 +97,30 @@ i18n runtime alongside Astryx.
 
 This record defines the library's catalog and locale boundaries. Consumer setup
 and examples remain in `astryx docs internationalization`.
+
+### Cross-cutting component contract
+
+The global routes project shared i18n claims into component and module reviews
+when their semantic triggers match. They do not require each component to repeat
+these rules or add a backlink merely to receive them. An accessibility review
+loads string ownership and string-output claims; a behavior review also loads
+locale, fallback, formatting, and calendar claims. Catalog generation and provider
+internals are not universal component requirements merely because they share this
+record.
+
+Component and module contracts own which content is Astryx-authored versus
+caller-authored, the semantic role of a content prop, local formatting inputs,
+state-dependent behavior, and the evidence that proves those local outcomes.
+Shared string ownership, helper boundaries, deterministic locale defaults, and
+Gregorian calendar requirements remain here. `component:InternationalizationProvider`
+owns the provider's local API and precedence contract, not a second set of rules
+for every component.
+
+Review applies only the matched claims within their stated scope and resolves the
+direct component, module, or family owner for the exact delta. A local exception
+must name its semantic boundary and remain consistent with current shared
+claims; a missing local spec or existing implementation does not create an
+exemption. Draft routes do not supply governing authority.
 
 ## System model
 
