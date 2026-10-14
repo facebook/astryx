@@ -132,8 +132,8 @@ export const CALENDAR_EXCLUSIONS = [
   {
     id: 'page-keys-and-pointer',
     owner:
-      'Calendar.test.tsx pointer selection suites; Page-key focus targets are the gap component:Calendar AR1 records',
+      'Calendar.test.tsx: the Page-key cases ("moves the focused day by a month with PageDown and PageUp, into the month now shown", "a page into a month with no enabled day changes nothing and keeps focus", "a page onto a day disabled by a constraint moves the month and focuses its first enabled day", "a page whose target lies past max changes nothing and keeps focus", "in a two-month view PageDown from the second month moves both months and a later Next click selects no stale day") and the pointer selection suites',
     reason:
-      "PageUp/PageDown move by a month (author-determined in the APG) and pointer selection are outside this keyboard-and-structure contract. Today Calendar.test.tsx covers only the PageDown month announcement ('announces the next month when paging the grid with PageDown'); where Page-key focus lands, and PageUp, are the recorded AR1 gap that its own fix closes with tests.",
+      'PageUp/PageDown move by a month (author-determined in the APG, defined by component:Calendar AR1) and pointer selection are outside this keyboard-and-structure contract; the component tests own them.',
   },
 ] as const;
