@@ -163,15 +163,16 @@ values used by hook state and painted geometry.
   or shrinks by the side of the Handle it sits on; Home moves to the minimum
   size and End to the maximum; Enter collapses a collapsible pane and restores
   it. An unbounded Handle reports a measured stand-in as `aria-valuemax`: the
-  window's extent along its axis, or its container's content box while a
-  percentage bound observes it, never below its current size or, while
-  collapsed, its minimum. Implementation gaps under `spec:AST-020/FR15`: the
-  Handle names the pane it resizes with `aria-controls` only when its caller
-  passes one (SideNav does); an unbounded Handle in a container sized only in
-  pixels carries no `aria-valuemax`, because measuring that container would add
-  an observer to an atomic pixel path (Performance and resources); End does not
-  move an unbounded Handle; and a plain arrow cannot reopen a collapsed pane
-  whose `collapsedSize` (40 px by default) is larger than one 10 px step.
+  window's extent along its axis when no container is supplied, or its
+  container's content box while a percentage bound observes it, never below its
+  current size or, while collapsed, its minimum. Implementation gaps under
+  `spec:AST-020/FR15`: the Handle names the pane it resizes with `aria-controls`
+  only when its caller passes one (SideNav does); an unbounded Handle in a
+  container that no percentage bound observes carries no `aria-valuemax`,
+  because measuring that container would add an observer to a region whose
+  bounds are all in pixels (Performance and resources); End does not move an
+  unbounded Handle; and a plain arrow cannot reopen a collapsed pane whose
+  `collapsedSize` (40 px by default) is larger than one 10 px step.
 
 ## Design relationships
 
@@ -256,7 +257,7 @@ composition.
 
 ### The Handle is an APG window splitter
 
-**Decision:** ResizeHandle already acts as one composite control with the splitter's role, value properties, and keyboard, so it adopts the pattern's required parts and its keyboard (AR1), with `aria-controls` the caller does not pass, `aria-valuemax` on an unbounded Handle in a pixel-only container, End on an unbounded Handle, and the plain-arrow reopen of a collapsed pane recorded as implementation gaps; the inline arrows follow the reading direction because a key that moves the divider against the way it travels on screen is a defect. Decided by `cixzhang`, `2026-10-13`.
+**Decision:** ResizeHandle already acts as one composite control with the splitter's role, value properties, and keyboard, so it adopts the pattern's required parts and its keyboard (AR1), with `aria-controls` the caller does not pass, `aria-valuemax` on an unbounded Handle in a container that no percentage bound observes, End on an unbounded Handle, and the plain-arrow reopen of a collapsed pane recorded as implementation gaps; the inline arrows follow the reading direction because a key that moves the divider against the way it travels on screen is a defect. Decided by `cixzhang`, `2026-10-13`.
 
 **Rejected:** a separate button to collapse the pane; a direction-free ArrowLeft under RTL.
 
