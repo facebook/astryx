@@ -51,7 +51,7 @@ src/
     ├── listbox.*            listbox, group, and option semantics
     ├── spinbutton.*         numeric role, value, bounds, state, and arrow stepping
     ├── disclosure.*         standalone disclosure state/content semantics
-    ├── window-splitter.*    a focusable resize separator's role, name, position/bounds, pane relationship, and arrow/Enter/Home/End keys
+    ├── window-splitter.*    a focusable resize separator's role, name, position/bounds, pane relationship, and arrow/Enter keys (Home/End advisory)
     ├── grid.*               a composite grid's role, name, row/cell structure, single Tab stop, selection, and arrow/Home/End/Enter keys
     ├── alert-dialog.*       a confirmation surface's alertdialog role, title/message references, modality, initial focus, Escape and click-beside dismissal
     ├── carousel.*           non-rotating collection, slide, off-screen, and focus semantics

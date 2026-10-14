@@ -31,6 +31,8 @@ export interface ResizeHandleBindingState {
   readonly inContainer?: boolean;
   /** Snap points for the region (`snaps`). */
   readonly snaps?: ReadonlyArray<number>;
+  /** Render the documented minimal usage: no `aria-controls` passed. */
+  readonly withoutControls?: boolean;
   readonly disabled?: boolean;
 }
 
@@ -149,6 +151,16 @@ export const RESIZE_HANDLE_BINDING_STATES = [
     label: 'Resize details pane',
     facts: facts(),
     snaps: [100, 200, 300, 400],
+  },
+  {
+    id: 'bare-documented-usage',
+    summary:
+      'the documented minimal usage — <ResizeHandle direction resizable={region.props} /> with no aria-controls passed',
+    storyId: story('bare-documented-usage'),
+    component: 'ResizeHandle',
+    label: 'Resize details pane',
+    facts: facts(),
+    withoutControls: true,
   },
   {
     id: 'bare-disabled',

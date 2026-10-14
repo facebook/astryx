@@ -36,4 +36,17 @@ export const RESIZE_HANDLE_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     reason:
       'This test-only binding records the gap; moving to the adjacent snap point on an arrow is a component decision for its own spec-backed patch.',
   },
+  {
+    expectation: 'windowsplitter.separator.controls-pane',
+    binding: 'ResizeHandle',
+    state: 'bare-documented-usage',
+    evidenceLayer: 'dom',
+    failureEquals: 'the splitter carries no aria-controls',
+    standardsReference:
+      'APG Window Splitter states and properties: the separator has aria-controls set to the id of the primary pane; Astryx component:Resizable AR1 (the Handle names the pane it resizes with aria-controls only when its caller passes one).',
+    userImpact:
+      'A screen-reader user on a handle rendered the documented minimal way hears a separator with no named pane; the relationship exists only when the caller wires it (SideNav does).',
+    reason:
+      'A recorded gap the record owns: whether the Handle should derive the pane relationship itself is a component decision for its own spec-backed patch.',
+  },
 ];

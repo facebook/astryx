@@ -50,7 +50,7 @@ function BareSplitter({state}: {state: ResizeHandleBindingState}) {
       direction={direction}
       isReversed={state.isReversed}
       isDisabled={state.disabled}
-      aria-controls={BARE_PANE_ID}
+      aria-controls={state.withoutControls ? undefined : BARE_PANE_ID}
     />
   );
   return (
