@@ -20,14 +20,7 @@
  * - /packages/cli/assets/templates/blocks/components/ChatMessage/ (block examples)
  */
 
-import {
-  createElement,
-  Fragment,
-  isValidElement,
-  type ReactNode,
-  useMemo,
-  useId,
-} from 'react';
+import {type ReactNode, useMemo, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -59,18 +52,15 @@ export interface ChatMessageProps extends BaseProps<HTMLElement> {
   children: ReactNode;
   /**
    * Avatar content rendered beside a non-system message.
-   * Booleans, empty strings, and arrays, Fragments, or synchronous iterables
-   * with no renderable descendants do not create a slot. Non-Fragment elements
-   * are treated as content; component output is not inspected. Cyclic composite
-   * content is rejected.
+   * `null`, booleans, and empty strings create no slot; any other content that
+   * renders nothing collapses its slot.
    */
   avatar?: ReactNode;
   /**
    * Sender name rendered above the message body.
-   * Booleans, empty strings, and arrays, Fragments, or synchronous iterables
-   * with no renderable descendants use the translated sender fallback label.
-   * Non-Fragment elements are treated as content; component output is not
-   * inspected. Cyclic composite content is rejected.
+   * `null`, booleans, and empty strings create no slot, and the message is
+   * labelled by the translated sender fallback; any other content that renders
+   * nothing collapses its slot and falls back to the same label.
    * Use when the first child is raw content (not a bubble).
    * If the first child is a ChatMessageBubble, put the name on the
    * bubble's `name` prop instead — it aligns with the bubble's padding.
@@ -78,96 +68,14 @@ export interface ChatMessageProps extends BaseProps<HTMLElement> {
   name?: ReactNode;
   /**
    * Metadata rendered below the message body.
-   * Booleans, empty strings, and arrays, Fragments, or synchronous iterables
-   * with no renderable descendants do not create a slot. Non-Fragment elements
-   * are treated as content; component output is not inspected. Cyclic composite
-   * content is rejected.
+   * `null`, booleans, and empty strings create no slot; any other content that
+   * renders nothing collapses its slot.
    * Use when the last child is raw content (not a bubble).
    * If the last child is a ChatMessageBubble, put metadata on the
    * bubble's `metadata` prop instead — it aligns with the bubble's padding.
    */
   metadata?: ReactNode;
   density?: ChatDensity;
-}
-
-type SlotContentInspection = {
-  content: ReactNode;
-  hasContent: boolean;
-};
-
-const emptySlot: SlotContentInspection = {content: null, hasContent: false};
-
-function getInspectedContent(child: SlotContentInspection): ReactNode {
-  return child.content;
-}
-
-function inspectSlotContent(
-  node: ReactNode,
-  ancestors: Set<object> = new Set(),
-): SlotContentInspection {
-  if (!isRenderable(node)) {
-    return {content: node, hasContent: false};
-  }
-
-  if (Array.isArray(node)) {
-    if (ancestors.has(node)) {
-      throw new TypeError('ChatMessage slot content cannot contain a cycle');
-    }
-    ancestors.add(node);
-    try {
-      const children = node.map(child => inspectSlotContent(child, ancestors));
-      return {
-        content: children.map(getInspectedContent),
-        hasContent: children.some(child => child.hasContent),
-      };
-    } finally {
-      ancestors.delete(node);
-    }
-  }
-
-  if (isValidElement<{children?: ReactNode}>(node) && node.type === Fragment) {
-    if (ancestors.has(node)) {
-      throw new TypeError('ChatMessage slot content cannot contain a cycle');
-    }
-    ancestors.add(node);
-    try {
-      const children = inspectSlotContent(node.props.children, ancestors);
-      return {
-        content: createElement(Fragment, {key: node.key}, children.content),
-        hasContent: children.hasContent,
-      };
-    } finally {
-      ancestors.delete(node);
-    }
-  }
-
-  if (typeof node === 'object' && node !== null) {
-    const iterator = (node as Iterable<ReactNode>)[Symbol.iterator];
-    if (typeof iterator === 'function') {
-      if (ancestors.has(node)) {
-        throw new TypeError('ChatMessage slot content cannot contain a cycle');
-      }
-      ancestors.add(node);
-      try {
-        const children: SlotContentInspection[] = [];
-        for (const child of node as Iterable<ReactNode>) {
-          children.push(inspectSlotContent(child, ancestors));
-        }
-        return {
-          // Materialize iterables so one-shot iterators are not consumed before
-          // React renders the slot.
-          content: children.map(getInspectedContent),
-          hasContent: children.some(child => child.hasContent),
-        };
-      } finally {
-        ancestors.delete(node);
-      }
-    }
-  }
-
-  // Non-Fragment elements are content. Component output cannot be inspected
-  // without executing caller code.
-  return {content: node, hasContent: true};
 }
 
 const styles = stylex.create({
@@ -197,7 +105,11 @@ const styles = stylex.create({
     flexDirection: 'row',
     justifyContent: 'center',
   },
+  // Slot wrappers collapse when the caller's content renders nothing, so an
+  // empty Fragment or a component that returns null leaves no gap. Content is
+  // never inspected to decide this.
   avatarWrap: {
+    display: {default: null, ':empty': 'none'},
     flexShrink: 0,
     ':has(~ * [data-chat-name])': {
       marginBlockStart: spacingVars['--spacing-5'],
@@ -220,11 +132,15 @@ const styles = stylex.create({
     alignItems: 'flex-end',
   },
   name: {
+    display: {default: null, ':empty': 'none'},
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-secondary'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     marginBlockEnd: spacingVars['--spacing-1'],
+  },
+  metadata: {
+    display: {default: null, ':empty': 'none'},
   },
   childrenWrap: {
     display: 'flex',
@@ -322,9 +238,9 @@ export function ChatMessage({
         : styles.childrenAssistant;
 
   const isSystem = sender === 'system';
-  const avatarSlot = isSystem ? emptySlot : inspectSlotContent(avatar);
-  const nameSlot = isSystem ? emptySlot : inspectSlotContent(name);
-  const metadataSlot = isSystem ? emptySlot : inspectSlotContent(metadata);
+  const hasAvatar = !isSystem && isRenderable(avatar);
+  const hasName = !isSystem && isRenderable(name);
+  const hasMetadata = !isSystem && isRenderable(metadata);
   const nameId = useId();
 
   return (
@@ -333,31 +249,28 @@ export function ChatMessage({
         {...rest}
         ref={ref}
         data-testid={testId}
-        aria-label={
-          !nameSlot.hasContent
-            ? t('@astryx.chatMessage.messageFrom', {sender})
-            : undefined
-        }
-        aria-labelledby={nameSlot.hasContent ? nameId : undefined}
+        // The visible name labels the article. When it renders no text, the
+        // label reference resolves to nothing and the accessible name falls
+        // back to aria-label (accessible name computation 1.2, step 2B).
+        aria-label={t('@astryx.chatMessage.messageFrom', {sender})}
+        aria-labelledby={hasName ? nameId : undefined}
         {...mergeProps(
           themeProps('chat-message', {sender, density}),
           stylex.props(
             styles.root,
             rootAlignment,
-            avatarSlot.hasContent && rootGap,
+            hasAvatar && rootGap,
             xstyle,
           ),
           className,
           styleProp,
         )}>
-        {avatarSlot.hasContent && (
-          <div {...stylex.props(styles.avatarWrap)}>{avatarSlot.content}</div>
-        )}
+        {hasAvatar && <div {...stylex.props(styles.avatarWrap)}>{avatar}</div>}
 
         <div {...stylex.props(styles.contentColumn, columnAlignment)}>
-          {nameSlot.hasContent && (
+          {hasName && (
             <div id={nameId} {...stylex.props(styles.name)}>
-              {nameSlot.content}
+              {name}
             </div>
           )}
 
@@ -370,7 +283,9 @@ export function ChatMessage({
             {children}
           </div>
 
-          {metadataSlot.hasContent && <div>{metadataSlot.content}</div>}
+          {hasMetadata && (
+            <div {...stylex.props(styles.metadata)}>{metadata}</div>
+          )}
         </div>
       </article>
     </ChatMessageContext>

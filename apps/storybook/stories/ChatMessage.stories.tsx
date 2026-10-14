@@ -21,6 +21,10 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+function RendersNothing() {
+  return null;
+}
+
 export const Default: Story = {
   render: () => (
     <div
@@ -84,6 +88,26 @@ export const Default: Story = {
             </ChatMessageBubble>
           </ChatMessage>
         </ChatMessageList>
+      </section>
+
+      <section
+        aria-label="Slots that render nothing"
+        style={{display: 'flex', flexDirection: 'column', gap: 20}}>
+        <ChatMessage
+          sender="assistant"
+          avatar={<RendersNothing />}
+          name={<></>}
+          metadata={[]}>
+          <ChatMessageBubble>
+            Empty avatar, name, and metadata slots collapse; the message keeps
+            its fallback label.
+          </ChatMessageBubble>
+        </ChatMessage>
+        <ChatMessage sender="user" avatar={false} name="" metadata={false}>
+          <ChatMessageBubble>
+            Booleans and empty strings render no slot.
+          </ChatMessageBubble>
+        </ChatMessage>
       </section>
 
       <section

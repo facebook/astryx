@@ -43,7 +43,7 @@ export const docs = {
       name: 'avatar',
       type: 'ReactNode',
       description:
-        'Avatar element rendered beside the message. Typically Avatar. Booleans, empty strings, and arrays, Fragments, or synchronous iterables with no renderable descendants do not create a slot. Non-Fragment elements are treated as content; component output is not inspected. Cyclic composite content is rejected.',
+        'Avatar element rendered beside the message. Typically Avatar. `null`, booleans, and empty strings create no slot; any other content that renders nothing collapses its slot.',
       slotElements: [
         {
           __element: 'Avatar',
@@ -58,13 +58,13 @@ export const docs = {
       name: 'name',
       type: 'ReactNode',
       description:
-        "Sender name rendered above the message body. Booleans, empty strings, and arrays, Fragments, or synchronous iterables with no renderable descendants use the translated sender fallback label. Non-Fragment elements are treated as content; component output is not inspected. Cyclic composite content is rejected. Use when the first child is raw content (not a bubble). If the first child is a bubble, put the name on the bubble's `name` prop instead.",
+        "Sender name rendered above the message body; it labels the message. `null`, booleans, and empty strings create no slot, and any other content that renders nothing collapses its slot; either way the message is labelled by the translated sender fallback. Use when the first child is raw content (not a bubble). If the first child is a bubble, put the name on the bubble's `name` prop instead.",
     },
     {
       name: 'metadata',
       type: 'ReactNode',
       description:
-        "Metadata rendered below the message body. Booleans, empty strings, and arrays, Fragments, or synchronous iterables with no renderable descendants do not create a slot. Non-Fragment elements are treated as content; component output is not inspected. Cyclic composite content is rejected. Use when the last child is raw content (not a bubble). If the last child is a bubble, put metadata on the bubble's `metadata` prop instead.",
+        "Metadata rendered below the message body. `null`, booleans, and empty strings create no slot; any other content that renders nothing collapses its slot. Use when the last child is raw content (not a bubble). If the last child is a bubble, put metadata on the bubble's `metadata` prop instead.",
       slotElements: [
         {
           __element: 'Text',
@@ -94,10 +94,10 @@ export const docsZh = {
     children:
       '自由内容：气泡、资源列表、工具调用、图片。非气泡的自定义子内容默认与消息边缘齐平，可用 ghost 变体的 ChatMessageBubble 包裹使其与气泡文本列对齐。',
     avatar:
-      '消息旁边渲染的头像元素。通常是 Avatar。布尔值、空字符串以及不含可渲染后代的数组、Fragment 或同步 iterable 不会创建槽位；非 Fragment 元素会被视为内容，组件输出不会被预先检查；循环复合内容会被拒绝。',
-    name: '消息正文上方渲染的发送者名称。布尔值、空字符串以及不含可渲染后代的数组、Fragment 或同步 iterable 会改用本地化发送者标签；非 Fragment 元素会被视为内容，组件输出不会被预先检查；循环复合内容会被拒绝。当第一个子元素不是气泡时使用。',
+      '消息旁边渲染的头像元素。通常是 Avatar。`null`、布尔值和空字符串不会创建槽位；其他不渲染任何内容的值会让槽位折叠。',
+    name: '消息正文上方渲染的发送者名称，并作为消息的标签。`null`、布尔值和空字符串不会创建槽位，其他不渲染任何内容的值会让槽位折叠；两种情况都改用本地化发送者标签。当第一个子元素不是气泡时使用。',
     metadata:
-      '消息正文下方渲染的元数据。布尔值、空字符串以及不含可渲染后代的数组、Fragment 或同步 iterable 不会创建槽位；非 Fragment 元素会被视为内容，组件输出不会被预先检查；循环复合内容会被拒绝。当最后一个子元素不是气泡时使用。',
+      '消息正文下方渲染的元数据。`null`、布尔值和空字符串不会创建槽位；其他不渲染任何内容的值会让槽位折叠。当最后一个子元素不是气泡时使用。',
     density: '视觉密度。未设置时从列表上下文继承。',
   },
 };
@@ -112,12 +112,12 @@ export const docsDense = {
     children:
       'free-form: bubbles, assets, tool calls, images; wrap non-bubble content in a ghost bubble to align with bubble text column',
     avatar:
-      'avatar beside msg; inspectably empty scalars/arrays/Fragments/iterables omit slot; non-Fragment elements count as content; cycles rejected',
-    name: 'sender name above body; inspectably empty scalars/arrays/Fragments/iterables use fallback label; non-Fragment elements count as content; cycles rejected; use when first child is raw',
+      'avatar beside msg; null/boolean/"" omit slot; content rendering nothing collapses slot',
+    name: 'sender name above body; labels msg; null/boolean/"" omit slot, content rendering nothing collapses it; both fall back to translated sender label; use when first child is raw',
     displayName:
       'sender name above body; use when first child is raw (not bubble)',
     metadata:
-      'metadata below body; inspectably empty scalars/arrays/Fragments/iterables omit slot; non-Fragment elements count as content; cycles rejected; use when last child is raw',
+      'metadata below body; null/boolean/"" omit slot; content rendering nothing collapses slot; use when last child is raw',
     density: 'visual density; inherited from list context if unset',
   },
 };
