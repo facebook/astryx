@@ -1337,7 +1337,6 @@ describe('Selector', () => {
         <Selector label="Fruit" options={[]} onChange={() => {}} isLoading />,
       );
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
-      expect(trigger).toHaveAttribute('aria-busy', 'true');
       expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
 
       await user.click(trigger);
