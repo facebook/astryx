@@ -9,6 +9,7 @@
  * SYNC: When Calendar.tsx changes, update tests accordingly
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {act, render, screen, within, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -1108,6 +1109,92 @@ describe('Calendar', () => {
         ).toEqual(['March 2026', 'April 2026']);
       });
       expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('a controlled owner that refuses the month change leaves no stale target to steal focus or Enter later', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      function RefusingOwner() {
+        const [focusDate, setFocusDate] = useState<string>('2026-01-01');
+        const [allow, setAllow] = useState(false);
+        return (
+          <>
+            <button type="button" onClick={() => setAllow(true)}>
+              allow
+            </button>
+            <Calendar
+              focusDate={focusDate}
+              onFocusDateChange={next => {
+                if (allow) {
+                  setFocusDate(next);
+                }
+              }}
+              onChange={onChange}
+            />
+          </>
+        );
+      }
+      render(<RefusingOwner />);
+      getDayButton(15).focus();
+      // PageDown asks for February; the owner refuses, so January stays and
+      // focus does not move.
+      await user.keyboard('{PageDown}');
+      expect(screen.getByRole('grid')).toHaveAttribute(
+        'aria-label',
+        'January 2026',
+      );
+      expect(document.activeElement).toBe(getDayButton(15));
+      // Later the owner lets February show (through the Next button): the
+      // old February 15 target must not grab focus, and Enter on whatever is
+      // focused must not pick it.
+      await user.click(screen.getByRole('button', {name: 'allow'}));
+      await user.click(getButton('Next month'));
+      await waitFor(() => {
+        expect(screen.getByRole('grid')).toHaveAttribute(
+          'aria-label',
+          'February 2026',
+        );
+      });
+      expect(document.activeElement).not.toBe(getDayButton(15, 'February'));
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("the pending target becomes the grid's Tab stop: after PageDown and after an arrow into the second grid, only it has tabindex 0", async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" numberOfMonths={2} />);
+      // Per grid: the day buttons with tabindex 0 (each grid keeps at most one;
+      // a borrowed copy in the other grid may share the date).
+      const stops = (gridName: string) =>
+        Array.from(
+          screen
+            .getByRole('grid', {name: gridName})
+            .querySelectorAll<HTMLElement>('button[data-date]'),
+        ).filter(button => button.tabIndex === 0);
+      // An arrow from January 31 into February's grid.
+      getDayButton(31).focus();
+      await user.keyboard('{ArrowRight}');
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2026-02-01',
+        );
+      });
+      expect(
+        stops('February 2026').map(b => b.getAttribute('data-date')),
+      ).toEqual(['2026-02-01']);
+      expect(stops('January 2026')).toHaveLength(1);
+      // PageDown from February 1 moves both months; March 1 is the one stop.
+      await user.keyboard('{PageDown}');
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2026-03-01',
+        );
+      });
+      expect(stops('March 2026').map(b => b.getAttribute('data-date'))).toEqual(
+        ['2026-03-01'],
+      );
+      expect(stops('February 2026')).toHaveLength(1);
     });
 
     it('a page whose target lies past max changes nothing and keeps focus', async () => {
