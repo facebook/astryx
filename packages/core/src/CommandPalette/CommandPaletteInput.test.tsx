@@ -130,6 +130,32 @@ describe('CommandPaletteInput', () => {
     expect(input).toHaveAttribute('aria-controls', 'caller-list');
   });
 
+  it.each([
+    ['aria-owns', {'aria-owns': 'caller-list'}],
+    ['aria-haspopup="listbox"', {'aria-haspopup': 'listbox' as const}],
+    ['aria-haspopup={true}', {'aria-haspopup': true}],
+  ])(
+    'keeps a field wired to its popup only through %s a combobox',
+    (_label, popupProps) => {
+      render(<CommandPaletteInput {...popupProps} />);
+
+      const input = screen.getByRole('combobox');
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(input).toHaveAttribute('aria-autocomplete', 'list');
+    },
+  );
+
+  it.each([
+    ['false', false],
+    ['"false"', 'false' as const],
+  ])('stays a searchbox when aria-haspopup is %s', (_label, value) => {
+    render(<CommandPaletteInput aria-haspopup={value} />);
+
+    const input = screen.getByRole('searchbox');
+    expect(input).not.toHaveAttribute('aria-expanded');
+    expect(input).not.toHaveAttribute('aria-autocomplete');
+  });
+
   it('has an accessible name by default', () => {
     render(<CommandPaletteInput />);
     expect(screen.getByRole('searchbox')).toHaveAttribute(

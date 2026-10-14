@@ -191,14 +191,21 @@ export function CommandPaletteInput({
   // is undefined (`aria-expanded={open || undefined}`), so the role stays
   // stable as the caller's popup opens and closes, and a present value is
   // passed through unchanged.
+  // `aria-haspopup` counts unless it says there is no popup.
   const callerSets = (key: keyof typeof props) => Object.hasOwn(props, key);
+  const callerDeclaresPopup =
+    callerSets('aria-haspopup') &&
+    props['aria-haspopup'] !== false &&
+    props['aria-haspopup'] !== 'false';
   const callerOwnsPopup =
     !ctx &&
     (props.role === 'combobox' ||
       callerSets('aria-expanded') ||
       callerSets('aria-autocomplete') ||
       callerSets('aria-controls') ||
-      callerSets('aria-activedescendant'));
+      callerSets('aria-owns') ||
+      callerSets('aria-activedescendant') ||
+      callerDeclaresPopup);
   const standaloneRole = callerSets('role')
     ? props.role
     : callerOwnsPopup
