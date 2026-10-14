@@ -127,7 +127,9 @@ current Astryx record adopts it as an additional required gate.
 The combobox contract owns the named control, expanded/busy/read-only state,
 its relationship to a rendered popup, and a declared active descendant. Its
 first Selector binding covers closed, open, read-only, busy, and bottom-sheet
-trigger states plus the search input with an active option.
+trigger states plus the search input with an active option. While a binding's
+own modal dialog popup makes the combobox inert, the browser correctly leaves it
+out of the accessibility tree, so the identity expectation does not apply there.
 Popup contents keep the existing listbox contract. `spec:AST-020/FR15` adopts
 the APG Combobox required parts, including Tab plus Enter or Space activation,
 wherever a part plays the combobox role; each adopter's record names them and its

@@ -34,6 +34,7 @@ const baseFacts: ComboboxStateFacts = {
   activeDescendant: false,
   readOnly: false,
   busy: false,
+  inertUnderOwnModal: false,
 };
 
 export const SELECTOR_COMBOBOX_SCENARIOS: ReadonlyArray<SelectorComboboxScenario> =
@@ -89,6 +90,9 @@ export const SELECTOR_COMBOBOX_SCENARIOS: ReadonlyArray<SelectorComboboxScenario
         popupRole: 'dialog',
         popupVisible: true,
         activeDescendant: true,
+        // The modal sheet makes the trigger inert, so the browser leaves it
+        // out of the accessibility tree until the sheet closes.
+        inertUnderOwnModal: true,
       },
     },
     {

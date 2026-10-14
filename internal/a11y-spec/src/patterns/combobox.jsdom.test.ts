@@ -98,6 +98,22 @@ describe('Combobox contract — completeness', () => {
   });
 });
 
+describe('Combobox contract — identity applicability under a modal popup', () => {
+  it('skips identity only while its own modal dialog popup makes the combobox inert', async () => {
+    const modal = resultFor(
+      await resultsFor(comboboxFixture('conforming-modal-sheet-button')),
+      'combobox.identity.named',
+    );
+    expect(modal.status).toBe('not-applicable');
+
+    const claimWithoutModal = resultFor(
+      await resultsFor(comboboxFixture('inert-claim-without-modal-dialog')),
+      'combobox.identity.named',
+    );
+    expect(claimWithoutModal.status).not.toBe('not-applicable');
+  });
+});
+
 describe('Combobox contract — the jsdom harness stays within its evidence boundary', () => {
   it('runs DOM expectations and reports accessibility-tree expectations as unrun', async () => {
     const results = await resultsFor(comboboxFixture('conforming-open-input'));

@@ -90,6 +90,12 @@ export interface ComboboxStateFacts {
   readonly readOnly: boolean;
   /** Whether the component's option source or value transition is pending. */
   readonly busy: boolean;
+  /**
+   * Whether the binding's own open modal dialog popup makes the combobox inert,
+   * so the browser correctly leaves it out of the accessibility tree until the
+   * popup closes.
+   */
+  readonly inertUnderOwnModal: boolean;
 }
 
 const ALWAYS = {
@@ -110,7 +116,16 @@ export const COMBOBOX_PATTERN: PatternContract<ComboboxStateFacts> =
           'The browser exposes one named combobox so a person can find and distinguish the selection control.',
         sources: [WCAG_4_1_2],
         covers: ['4.1.2-name-role-value'],
-        appliesWhen: ALWAYS,
+        appliesWhen: {
+          condition:
+            'the combobox is in the accessibility tree: no open modal dialog popup of its own makes it inert',
+          test: facts =>
+            !(
+              facts.inertUnderOwnModal &&
+              facts.popupVisible &&
+              facts.popupRole === 'dialog'
+            ),
+        },
         evidenceLayer: 'accessibility-tree',
         enforcement: 'required',
         run: async ({subject, facts}) => {

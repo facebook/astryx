@@ -22,6 +22,7 @@ const openFacts: ComboboxStateFacts = {
   activeDescendant: true,
   readOnly: false,
   busy: false,
+  inertUnderOwnModal: false,
 };
 
 const closedFacts: ComboboxStateFacts = {
@@ -55,6 +56,21 @@ const fixtures: Readonly<Record<string, ComboboxFixture>> = {
     id: 'conforming-busy-input',
     facts: {...closedFacts, busy: true},
     html: '<input data-combobox-subject role="combobox" aria-label="Fruit" aria-expanded="false" aria-busy="true">',
+  },
+  'conforming-modal-sheet-button': {
+    id: 'conforming-modal-sheet-button',
+    facts: {
+      ...openFacts,
+      popupRole: 'dialog',
+      activeDescendant: false,
+      inertUnderOwnModal: true,
+    },
+    html: '<button data-combobox-subject role="combobox" aria-label="Fruit" aria-expanded="true" aria-controls="fruit-sheet" aria-haspopup="dialog">Apple</button><dialog data-combobox-popup data-combobox-show-modal id="fruit-sheet" aria-label="Fruit"><div role="listbox" aria-label="Fruit choices"><div role="option" aria-selected="true">Apple</div></div></dialog>',
+  },
+  'inert-claim-without-modal-dialog': {
+    id: 'inert-claim-without-modal-dialog',
+    facts: {...openFacts, activeDescendant: false, inertUnderOwnModal: true},
+    html: '<input data-combobox-subject role="button" aria-label="Fruit" aria-expanded="true" aria-controls="fruit-list" aria-haspopup="listbox"><div data-combobox-popup id="fruit-list" role="listbox"><div role="option">Apple</div></div>',
   },
   'wrong-role': {
     id: 'wrong-role',
@@ -118,10 +134,15 @@ export const CONFORMING_COMBOBOX_FIXTURES = [
   'conforming-closed-input',
   'conforming-readonly-button',
   'conforming-busy-input',
+  'conforming-modal-sheet-button',
 ] as const;
 
 export const COMBOBOX_MUTATIONS: Readonly<Record<string, readonly string[]>> = {
-  'combobox.identity.named': ['wrong-role', 'missing-name'],
+  'combobox.identity.named': [
+    'wrong-role',
+    'missing-name',
+    'inert-claim-without-modal-dialog',
+  ],
   'combobox.state.expanded': ['open-exposed-collapsed'],
   'combobox.popup.relationship': ['broken-popup-reference', 'wrong-popup-kind'],
   'combobox.active-descendant.owned': [

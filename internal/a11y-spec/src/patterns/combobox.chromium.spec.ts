@@ -45,6 +45,15 @@ async function results(
     only,
     mount: async () => {
       await page.setContent(fixturePage(target.html));
+      // A modal popup fixture opens as a real modal so the browser makes the
+      // combobox behind it inert, as a modal sheet does.
+      await page.evaluate(() => {
+        for (const dialog of document.querySelectorAll<HTMLDialogElement>(
+          'dialog[data-combobox-show-modal]',
+        )) {
+          dialog.showModal();
+        }
+      });
       await holdMotionStill(page);
       const related: Record<string, Locator> = {};
       const popup = page.locator(COMBOBOX_POPUP_SELECTOR);
