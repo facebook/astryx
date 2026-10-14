@@ -1676,6 +1676,50 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # A treeitem's computed name and description are accessibility-tree facts
+      # jsdom approximates but a browser decides. Run the TreeList row-naming
+      # evidence whenever TreeList, its focus hook, or the story changes.
+      - name: Run TreeList row-naming evidence
+        id: treelist-row-names
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PLAYWRIGHT_JSON_OUTPUT_FILE: treelist-row-names/report.json
+        run: |
+          should_run=false
+          # The helper comes from the base, since an older PR head lacks it.
+          # Exit 1 means out of scope; 0 in scope; 2 unknown, so run.
+          scope=2
+          helper="$(mktemp)"
+          if git fetch --quiet --no-tags --depth=1 origin "$BASE_SHA" \
+            && git show "$BASE_SHA:.github/scripts/pr-scope-touches.sh" > "$helper"; then
+            scope=0
+            bash "$helper" "$BASE_SHA" \
+              '^(packages/core/src/TreeList/|packages/core/src/hooks/useTreeFocus|apps/storybook/stories/TreeListA11y)' || scope=$?
+          fi
+          if [ "$scope" != 1 ]; then
+            should_run=true
+          fi
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+          if [ "$should_run" != true ]; then
+            echo "TreeList is not in PR scope; skipping row-naming evidence."
+            exit 0
+          fi
+          pnpm exec playwright test \
+            packages/core/src/TreeList/__tests__/TreeListRowNames.a11y.chromium.spec.ts \
+            --project chromium \
+            --reporter list,json \
+            --output treelist-row-names-output
+
+      - name: Upload TreeList row-naming evidence
+        if: ${{ !cancelled() && steps.treelist-row-names.outputs.should_run == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: treelist-row-names-evidence-${{ needs.build-storybook.outputs.short_hash }}
+          path: treelist-row-names/
+          retention-days: 30
+          if-no-files-found: warn
+
       # The window-splitter contract's separator role and name, its pane
       # relationship, and its arrow, Enter, Home and End results are
       # accessibility-tree and real-browser facts that jsdom cannot observe.

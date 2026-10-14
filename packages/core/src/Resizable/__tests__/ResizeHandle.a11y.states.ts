@@ -135,7 +135,14 @@ export const RESIZE_HANDLE_EXCLUSIONS = [
     id: 'pointer-drag-model',
     owner: 'ResizeHandle.test.tsx pointer suites',
     reason:
-      "Dragging, Escape cancelling an in-flight drag, double-click collapse, and the grab-zone geometry are pointer behavior outside the keyboard-and-semantics pattern; the component's own jsdom pointer suites prove them (ResizeHandle has no Chromium pointer suite).",
+      "Dragging (pointer capture on the grab zone, ignoring a pointer that does not own the drag, ending on pointercancel or lost capture), double-click collapse and restore, and the grab-zone geometry are pointer behavior outside the keyboard-and-semantics pattern; the component's own jsdom pointer suites prove them. ResizeHandle has no Escape cancel and no Chromium pointer suite.",
+  },
+  {
+    id: 'starts-collapsed',
+    owner:
+      'ResizeHandle.test.tsx collapse suites until a collapsed-start state joins this binding',
+    reason:
+      "A pane that is already collapsed takes no arrow growth: ArrowRight (or the axis's grow key) leaves a collapsed handle where it is, and only Enter or a double-click reopens it. The required arrows row assumes an open pane, so a state that starts collapsed is not bound here; its keyboard behaviour is proven by the component's collapse tests and would need an arrows row conditioned on the collapsed state to bind.",
   },
   {
     id: 'pane-cycling',

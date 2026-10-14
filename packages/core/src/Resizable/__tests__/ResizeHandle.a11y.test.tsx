@@ -104,6 +104,7 @@ describe('ResizeHandle binding inventory', () => {
     expect(RESIZE_HANDLE_EXCLUSIONS.map(exclusion => exclusion.id)).toEqual([
       'sidenav-binding',
       'pointer-drag-model',
+      'starts-collapsed',
       'pane-cycling',
     ]);
     for (const exclusion of RESIZE_HANDLE_EXCLUSIONS) {

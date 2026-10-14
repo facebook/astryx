@@ -495,9 +495,9 @@ export const WINDOW_SPLITTER_PATTERN: PatternContract<WindowSplitterStateFacts> 
       '2.5.2-pointer-cancellation': {
         owner: 'the binding component',
         verifiedBy:
-          "the component's pointer drag, cancel and double-click tests",
+          "the component's pointer suites: capture on the grab zone, moves from a pointer that does not own the drag are ignored, a drag that ends normally reports no cancel, pointercancel and lost capture end the gesture, and double-click collapse/restore",
         reason:
-          "A splitter moves through the drag itself; the pointer model (including Escape cancel) is the binding's and outside this keyboard contract.",
+          "A splitter moves through the drag itself (the down event starts a reversible gesture; releasing ends it), so the pointer model is the binding's and outside this keyboard contract. The handle has no Escape cancel; the browser's pointercancel and lost capture are what end an interrupted drag.",
       },
       '2.5.3-label-in-name': {
         owner: 'the binding component',
