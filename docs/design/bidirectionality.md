@@ -31,14 +31,14 @@ deciding_specs: [spec:AST-020]
 {
   "scope": "global",
   "triggers": {
-    "accessibility": ["DR2", "DR8", "DR11", "DR12"],
-    "interaction": ["DR6", "DR8", "DR11", "DR12", "DR13"],
-    "layering": ["DR7"],
-    "layout": ["DR1", "DR2", "DR3", "DR7", "DR9"],
-    "navigation": ["DR3", "DR4", "DR6", "DR11"],
+    "accessibility": ["DR1", "DR2", "DR8", "DR10", "DR11", "DR12"],
+    "interaction": ["DR1", "DR6", "DR8", "DR10", "DR11", "DR12", "DR13"],
+    "layering": ["DR7", "DR10"],
+    "layout": ["DR1", "DR2", "DR3", "DR7", "DR9", "DR10"],
+    "navigation": ["DR1", "DR3", "DR4", "DR5", "DR6", "DR10", "DR11"],
     "react-runtime": ["DR9"],
-    "responsive": ["DR3", "DR14"],
-    "scrolling": ["DR6", "DR13"],
+    "responsive": ["DR1", "DR3", "DR10", "DR14"],
+    "scrolling": ["DR1", "DR6", "DR10", "DR13"],
     "styling": ["DR3", "DR4", "DR5", "DR9", "DR10"],
     "visual": ["DR1", "DR4", "DR5", "DR10"]
   }
@@ -180,8 +180,9 @@ do not replace the human intent in this record.
 No component record currently adopts this draft. Once current, the explicit
 global routes supply the matched RTL relationships to component and module
 reviews without requiring a backlink from each component. A visual change loads
-artwork meaning and exceptions; navigation and interaction load their own
-directional outcomes. The routes do not make every glyph directional, require a
+artwork meaning and exceptions; navigation, interaction, and scrolling load their
+own directional outcomes together with the semantic-exception boundary. The routes
+do not make every glyph directional, require a
 particular implementation, or settle the open questions below.
 
 Component, module, and family contracts own their local semantic relationships:
