@@ -1055,7 +1055,7 @@ describe('Calendar', () => {
       expect(document.activeElement).not.toHaveAttribute('aria-disabled');
     });
 
-    it('pages from a borrowed adjacent-month day into the month now shown', async () => {
+    it('pages from a borrowed adjacent-month day onto the real day in the month already shown', async () => {
       const user = userEvent.setup();
       render(<Calendar focusDate="2026-01-01" />);
 
@@ -1067,18 +1067,19 @@ describe('Calendar', () => {
       borrowed.focus();
       expect(document.activeElement).toBe(borrowed);
 
-      // PageDown shows February; the target (January 28) is in no grid, so
-      // focus lands on February 28 rather than falling off to the body.
+      // PageDown targets January 28, which January's grid already shows: no
+      // month change, focus moves there and never to a borrowed copy.
       await user.keyboard('{PageDown}');
-      await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('February 2026');
-      });
       await waitFor(() => {
         expect(document.activeElement).toHaveAttribute(
           'data-date',
-          '2026-02-28',
+          '2026-01-28',
         );
       });
+      expect(screen.getByRole('grid')).toHaveAttribute(
+        'aria-label',
+        'January 2026',
+      );
       expect(document.activeElement).not.toHaveAttribute('aria-disabled');
     });
 
@@ -1105,21 +1106,81 @@ describe('Calendar', () => {
       expect(document.activeElement).toBe(next);
     });
 
-    it('a page into a month with no enabled day keeps focus in the grid', async () => {
+    it('a page into a month with no enabled day changes nothing and keeps focus', async () => {
       const user = userEvent.setup();
-      const noFebruary = (date: Date) => date.getMonth() !== 1;
+      // Only January 1–15 is enabled: February has no enabled day at all.
+      const earlyJanuaryOnly = (date: Date) =>
+        date.getFullYear() === 2026 &&
+        date.getMonth() === 0 &&
+        date.getDate() <= 15;
       render(
-        <Calendar focusDate="2026-01-01" dateConstraints={[noFebruary]} />,
+        <Calendar
+          focusDate="2026-01-01"
+          dateConstraints={[earlyJanuaryOnly]}
+        />,
       );
-      getDayButton(15).focus();
+      getDayButton(10).focus();
+      await user.keyboard('{PageDown}');
+      expect(screen.getByRole('grid')).toHaveAttribute(
+        'aria-label',
+        'January 2026',
+      );
+      expect(document.activeElement).toBe(getDayButton(10));
+    });
+
+    it('a page onto a day disabled by a constraint moves the month and focuses its first enabled day', async () => {
+      const user = userEvent.setup();
+      // February 1–14 disabled; February 15 onwards enabled.
+      const noEarlyFebruary = (date: Date) =>
+        !(date.getMonth() === 1 && date.getDate() < 15);
+      render(
+        <Calendar focusDate="2026-01-01" dateConstraints={[noEarlyFebruary]} />,
+      );
+      getDayButton(10).focus();
       await user.keyboard('{PageDown}');
       await waitFor(() => {
-        expect(politeRegion()).toHaveTextContent('February 2026');
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2026-02-15',
+        );
       });
+      expect(screen.getByRole('grid')).toHaveAttribute(
+        'aria-label',
+        'February 2026',
+      );
+    });
+
+    it('in a two-month view PageDown from the second month moves both months and a later Next click selects no stale day', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Calendar
+          focusDate="2026-01-01"
+          numberOfMonths={2}
+          onChange={onChange}
+        />,
+      );
+      getDayButton(10, 'February').focus();
+      await user.keyboard('{PageDown}');
+      // March 10 is in no shown grid, so the months move (Feb + Mar) and
+      // focus lands on March 10.
       await waitFor(() => {
-        expect(document.activeElement).not.toBe(document.body);
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2026-03-10',
+        );
       });
-      expect(document.activeElement).toHaveAttribute('data-date');
+      expect(
+        screen.getAllByRole('grid').map(g => g.getAttribute('aria-label')),
+      ).toEqual(['February 2026', 'March 2026']);
+      // A later Next click pages again without selecting anything.
+      await user.click(getButton('Next month'));
+      await waitFor(() => {
+        expect(
+          screen.getAllByRole('grid').map(g => g.getAttribute('aria-label')),
+        ).toEqual(['March 2026', 'April 2026']);
+      });
+      expect(onChange).not.toHaveBeenCalled();
     });
 
     it('an arrow toward a direction where every remaining day is disabled changes nothing', async () => {
