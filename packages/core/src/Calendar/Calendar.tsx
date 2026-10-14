@@ -55,6 +55,7 @@ import {
   plainDateIsEqual,
   plainDateGetWeekNumber,
   plainDateFormat,
+  plainDateWeekFieldName,
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
@@ -91,6 +92,7 @@ import type {
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
 import {useLocale, useTranslator} from '../i18n';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 /** Imperative handle for Calendar handleRef */
 
@@ -900,12 +902,19 @@ function MonthGrid({
             same display:contents row so its cells align to the grid columns. */}
         <div role="row" {...stylex.props(monthGridStyles.weekRow)}>
           {hasWeekNumbers && (
+            // The corner above the week-number column is a header cell like
+            // the weekday names beside it (APG grid: every cell in a row is a
+            // gridcell, columnheader or rowheader). Its name is the locale's
+            // own word for the week field, as visually hidden text so the
+            // column stays blank and the header is not empty to axe.
             <div
+              role="columnheader"
               {...stylex.props(
                 monthGridStyles.dayName,
                 monthGridStyles.weekNumberHeader,
-              )}
-            />
+              )}>
+              <VisuallyHidden>{plainDateWeekFieldName(locale)}</VisuallyHidden>
+            </div>
           )}
           {dayNameHeaders.map(({dayOfWeek, name}) => (
             <div
