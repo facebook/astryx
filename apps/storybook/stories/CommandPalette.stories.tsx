@@ -7,7 +7,7 @@
  * 1. No props beyond searchSource — default input, footer, rendering
  * 2. renderItem — custom item content, grouping still automatic
  */
-import {useState, useMemo} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   CommandPalette,
@@ -469,6 +469,33 @@ export const ThemedGroupHeading: Story = {
 export const AuditMatrix: Story = {
   tags: ['visual-theme-matrix'],
   render: function Render() {
+    // React entangles async transitions that are in flight together, so a
+    // never-settling bootstrap started beside the other palettes' would keep
+    // them busy too. Mount the pending palette only after the grouped and
+    // empty results have rendered without a spinner, so only it is busy.
+    const matrixRef = useRef<HTMLDivElement>(null);
+    const [isPendingMountable, setIsPendingMountable] = useState(false);
+    useEffect(() => {
+      const matrix = matrixRef.current;
+      if (matrix == null) {
+        return;
+      }
+      const hasSettled = () =>
+        matrix.querySelector('[role="option"]') != null &&
+        matrix.querySelector('.astryx-spinner') == null;
+      if (hasSettled()) {
+        setIsPendingMountable(true);
+        return;
+      }
+      const observer = new MutationObserver(() => {
+        if (hasSettled()) {
+          observer.disconnect();
+          setIsPendingMountable(true);
+        }
+      });
+      observer.observe(matrix, {childList: true, subtree: true});
+      return () => observer.disconnect();
+    }, []);
     const groupedSource = useMemo(
       () =>
         createStaticSource([
@@ -503,6 +530,7 @@ export const AuditMatrix: Story = {
 
     return (
       <div
+        ref={matrixRef}
         data-command-palette-audit-matrix
         style={{
           display: 'flex',
@@ -553,16 +581,18 @@ export const AuditMatrix: Story = {
         </section>
         <section style={panelStyle}>
           <h2 style={headingStyle}>Pending bootstrap</h2>
-          <CommandPalette
-            isOpen
-            isInline
-            role="region"
-            label="Pending command palette"
-            onOpenChange={() => {}}
-            searchSource={pendingSource}
-            width="100%"
-            maxHeight={420}
-          />
+          {isPendingMountable && (
+            <CommandPalette
+              isOpen
+              isInline
+              role="region"
+              label="Pending command palette"
+              onOpenChange={() => {}}
+              searchSource={pendingSource}
+              width="100%"
+              maxHeight={420}
+            />
+          )}
         </section>
       </div>
     );
