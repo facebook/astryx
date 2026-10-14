@@ -68,6 +68,7 @@ function splitter({
   label = 'Resize sidebar' as string | null,
   controls = 'primary-pane' as string | null,
   omitNow = false,
+  omitMin = false,
 }: {
   now?: number;
   min?: number;
@@ -81,8 +82,9 @@ function splitter({
   label?: string | null;
   controls?: string | null;
   omitNow?: boolean;
+  omitMin?: boolean;
 } = {}): string {
-  return `<div style="display:flex;width:600px;height:200px"><div id="primary-pane" style="width:${now}px;background:#eee">Primary</div><div ${SUBJECT_ATTRIBUTE} role="${role}" tabindex="${disabled ? -1 : 0}" data-step="${step}" data-increase-key="${increaseKey}" data-collapsible="${collapsible}"${omitNow ? '' : ` aria-valuenow="${now}"`} aria-valuemin="${min}"${max == null ? '' : ` aria-valuemax="${max}"`}${orientationAttr == null ? '' : ` aria-orientation="${orientationAttr}"`}${label == null ? '' : ` aria-label="${label}"`}${controls == null ? '' : ` aria-controls="${controls}"`}${disabled ? ' aria-disabled="true"' : ''} style="width:8px;background:#888"></div><div style="flex:1">Secondary</div></div>${SCRIPT}`;
+  return `<div style="display:flex;width:600px;height:200px"><div id="primary-pane" style="width:${now}px;background:#eee">Primary</div><div ${SUBJECT_ATTRIBUTE} role="${role}" tabindex="${disabled ? -1 : 0}" data-step="${step}" data-increase-key="${increaseKey}" data-collapsible="${collapsible}"${omitNow ? '' : ` aria-valuenow="${now}"`} ${omitMin ? '' : ` aria-valuemin="${min}"`}${max == null ? '' : ` aria-valuemax="${max}"`}${orientationAttr == null ? '' : ` aria-orientation="${orientationAttr}"`}${label == null ? '' : ` aria-label="${label}"`}${controls == null ? '' : ` aria-controls="${controls}"`}${disabled ? ' aria-disabled="true"' : ''} style="width:8px;background:#888"></div><div style="flex:1">Secondary</div></div>${SCRIPT}`;
 }
 
 const facts = (
@@ -152,6 +154,12 @@ export const WINDOW_SPLITTER_FIXTURES: readonly WindowSplitterFixture[] = [
     summary: 'a splitter with no aria-valuenow',
     facts: facts(),
     html: splitter({omitNow: true}),
+  },
+  {
+    id: 'violating-no-valuemin',
+    summary: 'a splitter with no aria-valuemin',
+    facts: facts(),
+    html: splitter({omitMin: true}),
   },
   {
     id: 'violating-no-valuemax',
@@ -225,7 +233,10 @@ export const WINDOW_SPLITTER_MUTATIONS: Readonly<
     'violating-role',
     'violating-name',
   ],
-  'windowsplitter.separator.position-and-minimum': ['violating-no-valuenow'],
+  'windowsplitter.separator.position-and-minimum': [
+    'violating-no-valuenow',
+    'violating-no-valuemin',
+  ],
   'windowsplitter.separator.maximum': ['violating-no-valuemax'],
   'windowsplitter.separator.orientation': ['violating-orientation'],
   'windowsplitter.separator.controls-pane': [

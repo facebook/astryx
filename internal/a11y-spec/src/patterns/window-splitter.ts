@@ -116,13 +116,20 @@ const OPPOSITE: Record<WindowSplitterStateFacts['increaseKey'], Key> = {
   ArrowDown: 'ArrowUp',
 };
 
-async function valueNow(subject: Subject): Promise<number> {
-  const raw = await subject.attribute('aria-valuenow');
+async function numericAttribute(
+  subject: Subject,
+  name: string,
+): Promise<number> {
+  const raw = await subject.attribute(name);
   const parsed = raw == null ? Number.NaN : Number(raw);
   if (!Number.isFinite(parsed)) {
-    throw new Error(`aria-valuenow is ${raw ?? 'absent'}, not a number`);
+    throw new Error(`${name} is ${raw ?? 'absent'}, not a number`);
   }
   return parsed;
+}
+
+async function valueNow(subject: Subject): Promise<number> {
+  return numericAttribute(subject, 'aria-valuenow');
 }
 
 async function focusOrFail(subject: Subject, forWhat: string): Promise<void> {
@@ -195,10 +202,7 @@ export const WINDOW_SPLITTER_PATTERN: PatternContract<WindowSplitterStateFacts> 
         enforcement: 'required',
         run: async ({subject, facts}) => {
           const now = await valueNow(subject);
-          const min = Number(await subject.attribute('aria-valuemin'));
-          if (!Number.isFinite(min)) {
-            throw new Error('aria-valuemin is absent or not a number');
-          }
+          const min = await numericAttribute(subject, 'aria-valuemin');
           if (now !== facts.valueNow || min !== facts.valueMin) {
             throw new Error(
               `the splitter exposes now/min ${now}/${min}, not ${facts.valueNow}/${facts.valueMin}`,
@@ -348,8 +352,8 @@ export const WINDOW_SPLITTER_PATTERN: PatternContract<WindowSplitterStateFacts> 
         sources: [WCAG_2_1_1, APG_HOME_END],
         covers: ['2.1.1-keyboard', 'apg-interaction'],
         appliesWhen: {
-          condition: 'the splitter can be moved and exposes a maximum',
-          test: facts => facts.operable && facts.valueMax != null,
+          condition: 'the splitter can be moved',
+          test: facts => facts.operable,
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],
@@ -361,6 +365,9 @@ export const WINDOW_SPLITTER_PATTERN: PatternContract<WindowSplitterStateFacts> 
           await harness.press('Home');
           await expectValue(subject, facts.valueMin, 'Home');
           await harness.press('End');
+          // Without a configured maximum End leaves the splitter where it is
+          // (the binding's record names that as a gap), so the row reports what
+          // End does rather than skipping the state.
           await expectValue(subject, facts.valueMax ?? facts.valueNow, 'End');
         },
       },

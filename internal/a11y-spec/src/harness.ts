@@ -146,7 +146,8 @@ export type Key =
   | 'Home'
   | 'End'
   | 'PageUp'
-  | 'PageDown';
+  | 'PageDown'
+  | 'Escape';
 
 /**
  * A mounted binding, observed at whatever layers this runtime can honestly see.
@@ -194,6 +195,13 @@ export interface Harness {
    * press, slide off, let go.
    */
   abortedPress(subject: Subject): Promise<void>;
+  /**
+   * Real-browser layer: click just outside the subject's box, the way a
+   * person clicks the dimmed page beside a modal surface. What that click
+   * lands on (a backdrop, an inert page) is the subject's own business; the
+   * harness only puts the pointer there.
+   */
+  clickBeside(subject: Subject): Promise<void>;
   /** Real-browser layer: type text into the focused subject. */
   typeText(subject: Subject, text: string): Promise<void>;
   /** Real-browser layer: select and delete all text from the subject. */

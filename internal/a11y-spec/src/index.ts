@@ -148,6 +148,10 @@ export {
   type AccordionStateFacts,
 } from './patterns/accordion';
 export {
+  ALERT_DIALOG_PATTERN,
+  type AlertDialogStateFacts,
+} from './patterns/alert-dialog';
+export {
   WINDOW_SPLITTER_PATTERN,
   type WindowSplitterStateFacts,
 } from './patterns/window-splitter';
