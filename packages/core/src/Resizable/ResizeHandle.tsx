@@ -558,20 +558,40 @@ export function ResizeHandle({
       const step = e.shiftKey ? KEYBOARD_LARGE_STEP : KEYBOARD_STEP;
       const rtl = isHorizontal ? getRTLMultiplier() : 1;
 
+      // The pane's grow direction on this key: ArrowRight/Down grow unless the
+      // layout is reversed or, on the inline axis, right-to-left.
+      const grows = (key: string) =>
+        (key === 'ArrowRight' || key === 'ArrowDown'
+          ? 1
+          : key === 'ArrowLeft' || key === 'ArrowUp'
+            ? -1
+            : 0) *
+          (isHorizontal ? rtl : 1) *
+          sign >
+        0;
+
       switch (e.key) {
         case 'ArrowRight':
-        case 'ArrowDown': {
-          e.preventDefault();
-          resizable._onResizeStart();
-          resizable._onResizeMove(step * (isHorizontal ? rtl : 1) * sign);
-          resizable._onResizeEnd();
-          break;
-        }
+        case 'ArrowDown':
         case 'ArrowLeft':
         case 'ArrowUp': {
           e.preventDefault();
+          if (resizable._isCollapsed) {
+            // A collapsed pane answers only the grow arrow, by reopening at the
+            // size it had before it collapsed (APG window splitter: the arrow
+            // moves the separator; a step smaller than the collapse threshold
+            // would otherwise leave it in place). The shrink arrow is a no-op.
+            if (grows(e.key)) {
+              toggleCollapse(resizable);
+            }
+            break;
+          }
+          const direction =
+            e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1;
           resizable._onResizeStart();
-          resizable._onResizeMove(-step * (isHorizontal ? rtl : 1) * sign);
+          resizable._onResizeMove(
+            direction * step * (isHorizontal ? rtl : 1) * sign,
+          );
           resizable._onResizeEnd();
           break;
         }

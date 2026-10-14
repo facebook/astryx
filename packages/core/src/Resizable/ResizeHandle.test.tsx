@@ -452,6 +452,81 @@ describe('ResizeHandle', () => {
     expect(separator).toHaveAttribute('aria-valuenow', '200');
   });
 
+  it('a grow arrow reopens a collapsed pane at its previous size; the shrink arrow leaves it collapsed', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          collapsible: true,
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    // Shrinking a collapsed pane changes nothing.
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    // One grow step would stay below the collapse threshold (40px) and leave
+    // the pane collapsed; instead the arrow reopens it where it was.
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '200');
+  });
+
+  it('a grow arrow reopens a collapsed pane in the reversed layout and under RTL too', () => {
+    const rtl = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation(
+        () => ({direction: 'rtl'}) as unknown as CSSStyleDeclaration,
+      );
+    try {
+      // Reversed + RTL: the pane sits on the right and grows to the left on
+      // screen, which under RTL is ArrowRight again.
+      render(
+        <Harness
+          config={{
+            defaultSize: 200,
+            minSize: 100,
+            maxSize: 400,
+            collapsible: true,
+          }}
+          handleProps={{isReversed: true}}
+        />,
+      );
+      const separator = getSeparator();
+      act(() => separator.focus());
+      fireEvent.keyDown(separator, {key: 'Enter'});
+      expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+      fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+      expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+      fireEvent.keyDown(separator, {key: 'ArrowRight'});
+      expect(separator).not.toHaveAttribute('aria-valuetext');
+      expect(separator).toHaveAttribute('aria-valuenow', '200');
+    } finally {
+      rtl.mockRestore();
+    }
+  });
+
+  it('a grow arrow reopens a hand-built collapsed region at its minimum', () => {
+    const props: ResizableProps = {
+      ...makeResizable(),
+      _isCollapsed: true,
+      _size: 0,
+      _collapsible: true,
+    };
+    render(<ResizeHandle resizable={props} label="Resize" />);
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    // No registered controls: the toggle falls back to a resize to the
+    // minimum, which is what reopens a hand-built region.
+    expect(props._onResizeMove).toHaveBeenCalledWith(props._minSizePx);
+  });
+
   it('reopens on Enter even when the minimum size sits below the collapse threshold', () => {
     render(
       <Harness
