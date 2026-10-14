@@ -1159,7 +1159,7 @@ describe('Calendar', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it("the pending target becomes the grid's Tab stop: after PageDown and after an arrow into the second grid, only it has tabindex 0", async () => {
+    it("the pending target becomes the grid's Tab stop: after a page into the second grid and after a page that moves the months, only it has tabindex 0", async () => {
       const user = userEvent.setup();
       render(<Calendar focusDate="2026-01-01" numberOfMonths={2} />);
       // Per grid: the day buttons with tabindex 0 (each grid keeps at most one;
@@ -1170,29 +1170,30 @@ describe('Calendar', () => {
             .getByRole('grid', {name: gridName})
             .querySelectorAll<HTMLElement>('button[data-date]'),
         ).filter(button => button.tabIndex === 0);
-      // An arrow from January 31 into February's grid.
-      getDayButton(31).focus();
-      await user.keyboard('{ArrowRight}');
-      await waitFor(() => {
-        expect(document.activeElement).toHaveAttribute(
-          'data-date',
-          '2026-02-01',
-        );
-      });
-      expect(
-        stops('February 2026').map(b => b.getAttribute('data-date')),
-      ).toEqual(['2026-02-01']);
-      expect(stops('January 2026')).toHaveLength(1);
-      // PageDown from February 1 moves both months; March 1 is the one stop.
+      // PageDown from January 15 lands on February 15 in the second grid —
+      // not February's default stop (its first day), so the stop must move.
+      getDayButton(15).focus();
       await user.keyboard('{PageDown}');
       await waitFor(() => {
         expect(document.activeElement).toHaveAttribute(
           'data-date',
-          '2026-03-01',
+          '2026-02-15',
+        );
+      });
+      expect(
+        stops('February 2026').map(b => b.getAttribute('data-date')),
+      ).toEqual(['2026-02-15']);
+      expect(stops('January 2026')).toHaveLength(1);
+      // PageDown again moves both months; March 15 is March's one stop.
+      await user.keyboard('{PageDown}');
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2026-03-15',
         );
       });
       expect(stops('March 2026').map(b => b.getAttribute('data-date'))).toEqual(
-        ['2026-03-01'],
+        ['2026-03-15'],
       );
       expect(stops('February 2026')).toHaveLength(1);
     });
