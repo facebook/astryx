@@ -4,6 +4,9 @@
  * @file renderDropdownItems.tsx
  * @output Converts data-driven menu items into DropdownMenuItem components
  * @position Utility; used by DropdownMenu to unify data-driven and compound paths
+ *
+ * A `{type: 'section'}` entry renders as DropdownMenuGroup does: a
+ * `role="group"` whose heading and rows keep the menu's row gap.
  */
 
 import type {ReactElement, ReactNode} from 'react';
@@ -25,6 +28,13 @@ import type {
 } from './DropdownMenu';
 
 const styles = stylex.create({
+  // The menu's own row gap (2px) inside the section's role="group" wrapper,
+  // as DropdownMenuGroup and DropdownMenuRadioGroup repeat it.
+  section: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+  },
   sectionHeading: {
     paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-2'],
@@ -85,7 +95,8 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
         <div
           key={getSectionKey(option, i)}
           role="group"
-          aria-label={option.title}>
+          aria-label={option.title}
+          {...stylex.props(styles.section)}>
           {option.title && (
             <div
               aria-hidden="true"
