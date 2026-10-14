@@ -13,7 +13,11 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import type {ComponentProps, ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Markdown} from './Markdown';
-import type {MarkdownComponents, MarkdownInlinePlugin} from './Markdown';
+import type {
+  MarkdownComponents,
+  MarkdownInlinePlugin,
+  MarkdownSourceLines,
+} from './Markdown';
 import type {ParseOptions} from './index';
 import {stubMatchMedia} from '../__tests__/stubMatchMedia';
 import {parseOutlineFromMarkdown} from '../Outline/parseOutlineFromMarkdown';
@@ -320,6 +324,44 @@ describe('Markdown', () => {
     // CodeBlock renders in a <pre>
     const pre = document.querySelector('pre');
     expect(pre).toBeInTheDocument();
+  });
+
+  it('renders a diff-<lang> fence as a diff over that language, and diff over plaintext', () => {
+    const {container, rerender} = render(
+      <Markdown>{'```diff-js\n-const x = 1;\n+const x = 2;\n```'}</Markdown>,
+    );
+    expect(container.querySelector('[data-diff="removed"]')).not.toBeNull();
+    expect(container.querySelector('[data-diff="added"]')).not.toBeNull();
+    // `const` keeps its js highlighting past the glyph.
+    expect(
+      container.querySelector('[data-diff="added"] .astryx-token-keyword'),
+    ).not.toBeNull();
+    rerender(<Markdown>{'```diff\n-old\n+new\n```'}</Markdown>);
+    expect(container.querySelectorAll('[data-diff]')).toHaveLength(2);
+    expect(container.querySelector('.astryx-token-keyword')).toBeNull();
+    rerender(<Markdown>{'```js\n-const x = 1;\n```'}</Markdown>);
+    expect(container.querySelector('[data-diff]')).toBeNull();
+  });
+
+  it('hands a custom code renderer the leading word as today and nothing new', () => {
+    type CodeProps = {code: string; language?: string};
+    const seen: CodeProps[] = [];
+    const Code = (props: CodeProps) => {
+      seen.push(props);
+      return <pre data-testid="custom">{props.code}</pre>;
+    };
+    render(
+      <Markdown components={{code: Code}}>
+        {
+          '```diff-tsx\n-a\n+b\n```\n\n```diff\n-a\n```\n\n```tsx\nconst x = 1;\n```'
+        }
+      </Markdown>,
+    );
+    // The leading word characters, as today: a diff-tsx fence is `diff`.
+    expect(seen.map(p => p.language)).toEqual(['diff', 'diff', 'tsx']);
+    for (const props of seen) {
+      expect(Object.keys(props).sort()).toEqual(['code', 'language']);
+    }
   });
 
   it('renders links with correct href', () => {
@@ -977,6 +1019,7 @@ describe('Markdown', () => {
     expectTypeOf<MathRendererProps>().toEqualTypeOf<{
       value: string;
       display: 'inline' | 'block';
+      sourceLines?: MarkdownSourceLines;
     }>();
     expectTypeOf<ParseOptions>().toMatchTypeOf<{math?: boolean}>();
   });

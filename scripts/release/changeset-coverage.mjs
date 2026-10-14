@@ -788,8 +788,8 @@ export function checkReleasedIds({
         `      Scripts read released JSON ids, so removing or renaming one is incompatible\n` +
         `      (spec:AST-017 FR3, FR13). Restore \`${token}\`, or classify the removal in a\n` +
         `      Changeset naming '${CLI_PACKAGE}':\n` +
-        `        - a [breaking] Changeset whose text names \`${token}\` (admitted only once a minor\n` +
-        `          is scheduled; see check:changesets), or\n` +
+        `        - a [breaking] Changeset whose text names \`${token}\` (it ships only in a minor\n` +
+        `          release, so main must declare the next minor before the cut), or\n` +
         `        - a paragraph beginning "Compatibility:" that names \`${token}\` and says why a\n` +
         `          consumer of ${releasedLabel} keeps working.`,
     );

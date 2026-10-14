@@ -40,6 +40,15 @@ const gothicSyntax = defineSyntaxTheme({
     property: '#7cc5b3', // Verdigris
     punctuation: '#7a8290', // Mid neutral
     background: '#101314',
+    // Diff rows on the near-black background: any lighter wash lowers every
+    // light token's contrast, so the rows take opaque hues at the
+    // background's own luminance — a deep green and a deep red that read as
+    // colour, not brightness — and every token keeps the contrast it has on
+    // the plain background. Markers: forest moss and blood crimson.
+    added: '#081408',
+    removed: '#1e0a0a',
+    'added-marker': '#a3c987',
+    'removed-marker': '#d97580',
   },
 });
 

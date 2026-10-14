@@ -29,7 +29,8 @@ describe('astryx theme list', () => {
     expect(status).toBe(0);
     expect(stdout).toMatch(/^slug:\s+neutral$/m);
     expect(stdout).toMatch(/^package:\s+@astryxdesign\/cli$/m);
-    expect(stdout).toMatch(/Import one: .*theme add <slug> --import/m);
+    expect(stdout).toMatch(/Import one: .*theme add <slug>/m);
+    expect(stdout).not.toContain('theme add <slug> --import');
     expect(stdout).toMatch(/Fork source: .*theme eject <slug>/m);
     expect(stdout).toMatch(/More themes in packages you could add: .*discover theme$/m);
   });

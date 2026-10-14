@@ -177,6 +177,28 @@ export interface UseTreeFocusReturn<T extends HTMLElement = HTMLElement> {
 }
 
 /**
+ * The text typeahead matches against. With `matchLabelledBy`, the row's
+ * `aria-labelledby` text (the label alone) when it has one; otherwise, and by
+ * default, its text content.
+ */
+function itemLabelText(item: HTMLElement, matchLabelledBy: boolean): string {
+  const labelledBy = matchLabelledBy
+    ? item.getAttribute('aria-labelledby')
+    : null;
+  if (labelledBy != null) {
+    const label = labelledBy
+      .split(/\s+/)
+      .map(id => item.ownerDocument.getElementById(id)?.textContent ?? '')
+      .join(' ')
+      .trim();
+    if (label !== '') {
+      return label;
+    }
+  }
+  return (item.textContent ?? '').trim();
+}
+
+/**
  * Hook for managing roving-tabindex focus + the WAI-ARIA tree keyboard model.
  *
  * A tree is not a linear list: ArrowUp/ArrowDown/Home/End roam linearly over
@@ -208,8 +230,38 @@ export interface UseTreeFocusReturn<T extends HTMLElement = HTMLElement> {
  * </ul>
  * ```
  */
+
 export function useTreeFocus<T extends HTMLElement = HTMLElement>(
   options: UseTreeFocusOptions = {},
+): UseTreeFocusReturn<T> {
+  // The flag is pinned off here so an untyped options object cannot smuggle
+  // it through the public hook.
+  return useTreeFocusInternal<T>({...options, matchLabelledBy: false});
+}
+
+/**
+ * Options the package's own components can pass beyond the public hook.
+ *
+ * Not exported from the package: TreeList imports this module directly, so
+ * `UseTreeFocusOptions` stays exactly as released.
+ */
+export type UseTreeFocusInternalOptions = UseTreeFocusOptions & {
+  /**
+   * Match typeahead against the item's `aria-labelledby` text (its label
+   * alone) instead of its whole text content, so start content, a chevron
+   * toggle or a description never takes part. TreeList passes this; the
+   * released text match stays the default for direct callers.
+   * @default false
+   */
+  matchLabelledBy?: boolean;
+};
+
+/**
+ * The implementation behind {@link useTreeFocus}. Not exported from the
+ * package; the public hook calls it without the internal options.
+ */
+export function useTreeFocusInternal<T extends HTMLElement = HTMLElement>(
+  options: UseTreeFocusInternalOptions = {},
 ): UseTreeFocusReturn<T> {
   const {
     itemSelector = '[role="treeitem"]',
@@ -222,6 +274,7 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
     onActivate,
     typeahead = true,
     typeaheadResetMs = DEFAULT_TYPEAHEAD_RESET_MS,
+    matchLabelledBy = false,
     onActiveChange,
     hasRovingTabIndex = false,
   } = options;
@@ -399,14 +452,14 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
       const match = ordered.find(
         item =>
           !itemDisabled(item) &&
-          (item.textContent ?? '').trim().toLowerCase().startsWith(query),
+          itemLabelText(item, matchLabelledBy).toLowerCase().startsWith(query),
       );
       if (match != null) {
         e.preventDefault();
         focusItem(match);
       }
     },
-    [typeaheadResetMs, itemDisabled, focusItem],
+    [typeaheadResetMs, itemDisabled, focusItem, matchLabelledBy],
   );
 
   const handleKeyDown = useCallback(

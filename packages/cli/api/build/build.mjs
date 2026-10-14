@@ -13,8 +13,11 @@
  *   a query   → build.kit   (api/build/kit/kit.mjs)
  */
 
+import {AstryxError} from '../error.mjs';
+import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 import {buildHelp} from './help/help.mjs';
 import {buildKit} from './kit/kit.mjs';
+import {withListingCache} from './_adapter.mjs';
 
 // Barrel: surface the leaves alongside the dispatcher for the fractal shape.
 export {buildHelp, buildKit};
@@ -31,5 +34,14 @@ export async function build(query, options = {}) {
   if (!query || !String(query).trim()) {
     return buildHelp();
   }
-  return buildKit(query, options);
+  if (options.limit != null && (!Number.isInteger(options.limit) || options.limit <= 0)) {
+    throw new AstryxError(
+      `Invalid limit "${options.limit}". Must be a positive integer.`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_ARGUMENT,
+    );
+  }
+  // The kit resolves every candidate's source and docs by walking the same
+  // tree; read each directory once for this call.
+  return withListingCache(() => buildKit(query, options));
 }

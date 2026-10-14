@@ -510,6 +510,69 @@ describe('Slider', () => {
     expect(handleChangeEnd).toHaveBeenCalledWith([0.2, 0.7]);
   });
 
+  it('End reaches an off-grid max from a non-zero min, and Home still reaches min', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onChangeEnd = vi.fn();
+    // From min 1 with step 3 the grid is 1, 4, …, 100; max 101 is off it.
+    render(
+      <Slider
+        label="Zoom"
+        min={1}
+        max={101}
+        step={3}
+        value={49}
+        onChange={onChange}
+        onChangeEnd={onChangeEnd}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    thumb.focus();
+
+    await user.keyboard('{End}');
+    expect(onChange).toHaveBeenLastCalledWith(101);
+    expect(onChangeEnd).toHaveBeenLastCalledWith(101);
+
+    await user.keyboard('{Home}');
+    expect(onChange).toHaveBeenLastCalledWith(1);
+    expect(onChangeEnd).toHaveBeenLastCalledWith(1);
+  });
+
+  it('End lands on max when max is off the step grid, while arrows still snap', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    function Owner() {
+      const [value, setValue] = useState(48);
+      return (
+        <Slider
+          label="Zoom"
+          min={0}
+          max={100}
+          step={3}
+          value={value}
+          onChange={(next: number) => {
+            onChange(next);
+            setValue(next);
+          }}
+        />
+      );
+    }
+    render(<Owner />);
+    const thumb = screen.getByRole('slider');
+    thumb.focus();
+
+    await user.keyboard('{End}');
+    expect(onChange).toHaveBeenLastCalledWith(100);
+
+    // ORD1 for arrows and Page keys is unchanged: from max (100, off the
+    // grid) ArrowLeft targets 97 and snaps to 96; from 96 PageUp targets 126
+    // and clamps to 100, the bound.
+    await user.keyboard('{ArrowLeft}');
+    expect(onChange).toHaveBeenLastCalledWith(96);
+    await user.keyboard('{PageUp}');
+    expect(onChange).toHaveBeenLastCalledWith(100);
+  });
+
   it('fires onChangeEnd on keyboard Home/End with correct value', async () => {
     const user = userEvent.setup();
     const handleChangeEnd = vi.fn();
@@ -704,6 +767,77 @@ describe('Slider', () => {
     // (the mirror of the LTR value 22).
     fireEvent.pointerDown(track, {clientX: 50, clientY: 10, pointerId: 1});
     expect(handleChange).toHaveBeenLastCalledWith(78);
+
+    gcsSpy.mockRestore();
+  });
+
+  it('follows the mirrored track under RTL: ArrowLeft increases, ArrowRight decreases, Up/Down unchanged', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        step={1}
+        valueDisplay="none"
+        onChange={handleChange}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    const track = thumb.parentElement!;
+    const realGetComputedStyle = window.getComputedStyle;
+    const gcsSpy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        if (el === track) {
+          return {direction: 'rtl'} as CSSStyleDeclaration;
+        }
+        return realGetComputedStyle(el, pseudo ?? undefined);
+      });
+
+    fireEvent.keyDown(thumb, {key: 'ArrowLeft'});
+    expect(handleChange).toHaveBeenLastCalledWith(51);
+    fireEvent.keyDown(thumb, {key: 'ArrowRight'});
+    expect(handleChange).toHaveBeenLastCalledWith(49);
+    fireEvent.keyDown(thumb, {key: 'ArrowUp'});
+    expect(handleChange).toHaveBeenLastCalledWith(51);
+    fireEvent.keyDown(thumb, {key: 'ArrowDown'});
+    expect(handleChange).toHaveBeenLastCalledWith(49);
+
+    gcsSpy.mockRestore();
+  });
+
+  it('keeps ArrowLeft decreasing on a vertical track under RTL', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        step={1}
+        orientation="vertical"
+        valueDisplay="none"
+        onChange={handleChange}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    const track = thumb.parentElement!;
+    const realGetComputedStyle = window.getComputedStyle;
+    const gcsSpy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        if (el === track) {
+          return {direction: 'rtl'} as CSSStyleDeclaration;
+        }
+        return realGetComputedStyle(el, pseudo ?? undefined);
+      });
+
+    fireEvent.keyDown(thumb, {key: 'ArrowLeft'});
+    expect(handleChange).toHaveBeenLastCalledWith(49);
+    fireEvent.keyDown(thumb, {key: 'ArrowRight'});
+    expect(handleChange).toHaveBeenLastCalledWith(51);
 
     gcsSpy.mockRestore();
   });

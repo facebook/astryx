@@ -74,7 +74,7 @@ export const doc = {
       name: 'options.listCategories',
       type: 'boolean',
       description:
-        'Return categories without resolving a route or writing; the component and every other option are ignored.',
+        'Return categories without resolving a route or writing; the component and every other option are refused with ERR_INVALID_ARGUMENT.',
       default: 'false',
     },
     {
