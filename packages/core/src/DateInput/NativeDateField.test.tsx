@@ -20,7 +20,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import {DateInput} from './DateInput';
 import type * as NativeDateSegments from './nativeDateSegments';
 import {
@@ -194,6 +194,48 @@ describe('DateInput nativePicker', () => {
     fireEvent.change(getInput(), {target: {value: '2026-03-21'}});
 
     expect(onChange).toHaveBeenCalledExactlyOnceWith('2026-03-21');
+  });
+
+  it('runs changeAction after onChange and exposes the pending state', async () => {
+    stubPointer(true);
+    const calls: string[] = [];
+    let resolveAction: () => void = () => {};
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          calls.push('changeAction');
+          resolveAction = resolve;
+        }),
+    );
+    const onChange = vi.fn(() => calls.push('onChange'));
+    render(
+      <DateInput
+        label="Date"
+        onChange={onChange}
+        changeAction={changeAction}
+      />,
+    );
+
+    fireEvent.change(getInput(), {target: {value: '2026-03-21'}});
+
+    expect(calls).toEqual(['onChange', 'changeAction']);
+    expect(changeAction).toHaveBeenCalledExactlyOnceWith('2026-03-21');
+    expect(getInput()).not.toBeDisabled();
+    expect(getInput()).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expect(screen.getByText('March 21, 2026')).toBeInTheDocument();
+
+    fireEvent.change(getInput(), {target: {value: '2026-03-22'}});
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(changeAction).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('March 21, 2026')).toBeInTheDocument();
+
+    await act(async () => resolveAction());
+
+    fireEvent.change(getInput(), {target: {value: '2026-03-22'}});
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(changeAction).toHaveBeenNthCalledWith(2, '2026-03-22');
+    await act(async () => resolveAction());
   });
 
   it('fires onChange with undefined when the control is emptied', () => {
@@ -527,6 +569,36 @@ describe('DateInput nativePicker', () => {
 
     expect(onChange).toHaveBeenCalledWith(undefined);
     expect(getInput()).not.toHaveFocus();
+  });
+
+  it('runs clear through changeAction after onChange', async () => {
+    stubPointer(true);
+    const calls: string[] = [];
+    let resolveAction: () => void = () => {};
+    const changeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          calls.push('changeAction');
+          resolveAction = resolve;
+        }),
+    );
+    const onChange = vi.fn(() => calls.push('onChange'));
+    render(
+      <DateInput
+        label="Date"
+        value="2026-03-21"
+        hasClear
+        onChange={onChange}
+        changeAction={changeAction}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText('Clear Date'));
+
+    expect(calls).toEqual(['onChange', 'changeAction']);
+    expect(changeAction).toHaveBeenCalledExactlyOnceWith(undefined);
+    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    await act(async () => resolveAction());
   });
 
   it('disables the control and its toggle when isDisabled', () => {

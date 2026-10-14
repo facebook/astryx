@@ -535,7 +535,7 @@ describe('ListInput', () => {
     expect(addedAnimationIndex).toBeGreaterThanOrEqual(0);
     expect(animate).toHaveBeenCalledTimes(1);
     expect(animate.mock.calls[addedAnimationIndex]).toEqual([
-      [{transform: 'translateY(8px)'}, {transform: 'translateY(0)'}],
+      [{transform: 'translateY(0.5rem)'}, {transform: 'translateY(0)'}],
       {
         duration: 230,
         easing: 'cubic-bezier(0.24, 1, 0.4, 1)',

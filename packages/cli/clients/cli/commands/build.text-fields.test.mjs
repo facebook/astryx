@@ -75,7 +75,7 @@ describe('build kit text fields mirror the JSON keys', () => {
     expect(data.pages.length).toBeGreaterThan(0);
     const human = await runCli(['build', 'contact form'], REPO);
     expect(human.stdout).toContain(
-      `Keyword search matched these page templates: ${data.pages.map(p => p.name).join(', ')}.`,
+      `Keyword search matched these page templates: ${data.pages.map(p => `${p.name} (${p.package})`).join(', ')}.`,
     );
   }, SLOW);
 });

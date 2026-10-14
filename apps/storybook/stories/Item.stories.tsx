@@ -9,6 +9,7 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Text} from '@astryxdesign/core/Text';
 import {Stack} from '@astryxdesign/core/Layout';
+import {List, ListItem} from '@astryxdesign/core/List';
 
 const storyStyles = stylex.create({
   iconCircle: {
@@ -29,6 +30,9 @@ import {
   BellIcon,
   ChatBubbleLeftIcon,
   MagnifyingGlassIcon,
+  ArchiveBoxIcon,
+  EnvelopeIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Item> = {
@@ -273,4 +277,120 @@ export const AlignStart: Story = {
       endContent={<Text color="secondary">Just now</Text>}
     />
   ),
+};
+
+/**
+ * Swipe actions, as a mail list uses them: on a touch screen a drag toward
+ * the inline start uncovers Archive and Delete (Delete outermost, so a long
+ * drag or a fling fires it); a drag toward the inline end uncovers a
+ * read/unread toggle. Under `reveal` (the default) the row rests open with
+ * every entry a real button. Every verb is also in the row's own content, so
+ * a mouse and a keyboard reach it without the gesture. `List` clips the rows
+ * in the inline axis for the slide.
+ */
+export const SwipeActions: Story = {
+  render: () => {
+    const [rows, setRows] = useState(() =>
+      Array.from({length: 6}, (_, index) => ({
+        id: index,
+        isUnread: index % 2 === 0,
+        label: `Message ${index + 1}`,
+      })),
+    );
+    const remove = (id: number) =>
+      setRows(current => current.filter(row => row.id !== id));
+    const toggleRead = (id: number) =>
+      setRows(current =>
+        current.map(row =>
+          row.id === id ? {...row, isUnread: !row.isUnread} : row,
+        ),
+      );
+    return (
+      <List>
+        {rows.map(row => (
+          <ListItem
+            key={row.id}
+            label={row.label}
+            description={row.isUnread ? 'Unread' : 'Read'}
+            onClick={() => {}}
+            endContent={
+              <Text color="secondary">
+                {row.isUnread ? 'Mark read' : 'Mark unread'} · Archive · Delete
+              </Text>
+            }
+            swipeActions={{
+              leading: [
+                {
+                  label: row.isUnread ? 'Read' : 'Unread',
+                  icon: <Icon icon={EnvelopeIcon} size="sm" />,
+                  onActivate: () => toggleRead(row.id),
+                },
+              ],
+              trailing: [
+                {
+                  label: 'Archive',
+                  icon: <Icon icon={ArchiveBoxIcon} size="sm" />,
+                  onActivate: () => remove(row.id),
+                  variant: 'neutral',
+                  hasRemoval: true,
+                },
+                {
+                  label: 'Delete',
+                  icon: <Icon icon={TrashIcon} size="sm" />,
+                  onActivate: () => remove(row.id),
+                  variant: 'destructive',
+                  hasRemoval: true,
+                },
+              ],
+            }}
+          />
+        ))}
+        {rows.length === 0 && <ListItem label="All done." />}
+      </List>
+    );
+  },
+};
+
+/**
+ * `swipeBehavior="commit"`: one verb per side; a release past the commit
+ * point slides the row out and fires it, and nothing rests. The panel is
+ * presentational.
+ */
+export const SwipeCommit: Story = {
+  render: () => {
+    const [rows, setRows] = useState(() =>
+      Array.from({length: 5}, (_, index) => ({
+        id: index,
+        label: `Notification ${index + 1}`,
+      })),
+    );
+    const remove = (id: number) =>
+      setRows(current => current.filter(row => row.id !== id));
+    return (
+      <List>
+        {rows.map(row => (
+          <ListItem
+            key={row.id}
+            label={row.label}
+            description="Swipe toward the start to dismiss"
+            onClick={() => {}}
+            endContent={<Text color="secondary">Dismiss</Text>}
+            swipeBehavior="commit"
+            swipeActions={{
+              trailing: [
+                {
+                  label: 'Dismiss',
+                  icon: <Icon icon={TrashIcon} size="sm" />,
+                  onActivate: () => remove(row.id),
+                  variant: 'destructive',
+                  hasRemoval: true,
+                },
+              ],
+            }}
+          />
+        ))}
+        {rows.length === 0 && <ListItem label="All caught up." />}
+      </List>
+    );
+  },
 };

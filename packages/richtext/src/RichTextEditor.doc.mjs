@@ -135,8 +135,9 @@ export const docs = {
       name: 'tabEscapeHint',
       type: 'string',
       description:
-        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Override to localize; pass "" to omit.',
-      default: "'Press Escape then Tab to move focus out of the editor.'",
+        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Translated for the active locale; override to change the text, or pass "" to omit.',
+      default:
+        "'Press Escape then Tab to move focus out of the editor.' (translated)",
     },
     {
       name: 'maxLength',
@@ -223,7 +224,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Add a formatting toolbar with toolbar={<RichTextEditorToolbar />}. The dedicated slot places it edge-to-edge at the top of the field, before the padded editing surface, with correct keyboard order. It uses small Astryx Toolbar controls: undo/redo, a divided block-format Selector for paragraphs/headings/lists/quotes, then divided inline ToggleButtons for bold/italic/underline/strikethrough/code and links. The complete action row scrolls horizontally when space is tight, keeping every control directly available without a More menu. The Selector keeps its default adaptive placement. Compose extra controls via endContent.',
+          'Add a formatting toolbar with toolbar={<RichTextEditorToolbar />}. The dedicated slot places it edge-to-edge at the top of the field, before the padded editing surface, with a RichText-owned 4px control gutter and correct keyboard order. It uses small Astryx Toolbar controls: undo/redo, a divided block-format Selector for paragraphs/headings/lists/quotes, then divided inline ToggleButtons for bold/italic/underline/strikethrough/code and links. The complete action row scrolls horizontally when space is tight, keeping every control directly available without a More menu. The Selector keeps its default adaptive placement. Compose extra controls via endContent.',
       },
       {
         guidance: true,
@@ -238,7 +239,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG. A theme can restyle any glyph without forking the toolbar: registerIcons({'richtext:bold': <MyBoldIcon />}) from @astryxdesign/core/Icon. registerIcons now accepts arbitrary extension keys, and getExtendedIcon(key, fallback) resolves them; the same pattern any library can use to make its own icons theme-overridable.",
+          "The toolbar's glyphs are themeable. Each control resolves its icon from the core icon registry under a stable richtext:* key (see RICHTEXT_ICON_KEYS), falling back to a bundled inline SVG. A theme restyles any glyph without forking the toolbar by naming its key: defineTheme({icons: {'richtext:bold': <MyBoldIcon />}}). Undo and redo mirror under right-to-left direction, whichever glyph draws them.",
       },
       {
         guidance: false,

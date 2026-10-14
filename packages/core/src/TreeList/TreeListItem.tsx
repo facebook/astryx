@@ -557,6 +557,11 @@ export function TreeListItem({
   return (
     <li
       role="treeitem"
+      // The row is named by its label alone and described by its description
+      // (APG tree view): without these the name would be the row's whole text,
+      // chevron button label and description included.
+      aria-labelledby={labelId}
+      aria-describedby={description != null ? descriptionId : undefined}
       aria-expanded={hasChildren ? isExpanded : undefined}
       aria-selected={isSelected || undefined}
       aria-disabled={isDisabled || undefined}

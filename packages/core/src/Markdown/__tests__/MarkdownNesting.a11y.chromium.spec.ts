@@ -94,7 +94,7 @@ test.describe('Markdown renders deeply nested input', () => {
       await expect(page.locator('#storybook-root')).toContainText('deepest');
       const depth = await renderedDepth(page);
       expect(depth).toBeGreaterThan(50);
-      expect(depth).toBeLessThanOrEqual(101);
+      expect(depth).toBeLessThanOrEqual(100);
       expect(errors).toEqual([]);
     });
   }

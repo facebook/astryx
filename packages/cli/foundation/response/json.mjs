@@ -7,7 +7,7 @@
  * The contract has four guarantees, enforced here and in index.mjs:
  *
  *   1. EVERY emission in --json mode is a single valid JSON envelope.
- *      Success: { apiVersion, type, data }
+ *      Success: { apiVersion, type, package?, data, meta? }
  *      Error:   { apiVersion, error, code, suggestions? }
  *      The `code` is a stable, machine-readable identifier (see
  *      error-codes.mjs). Consumers should branch on `code`, never on the
@@ -87,16 +87,20 @@ export function humanWarn(...args) {
  * Output a JSON response envelope and mark it handled.
  *
  * Structural serializer: pass a command/API result straight through as
- * `{type, data, meta?}`. There is no central response union — the correctness
- * of the `type` discriminator is guaranteed at each API function's `@returns`
- * (that's the fractal source-of-truth point), not by a map in this file.
+ * `{type, package?, data, meta?}`. There is no central response union — the
+ * correctness of the `type` discriminator is guaranteed at each API function's
+ * `@returns` (that's the fractal source-of-truth point), not by a map in this
+ * file. `package` names the npm package that owns the one thing the result is
+ * about (spec cli-surface INV28); it is written directly after `type`.
  *
- * @param {{type: string, data: unknown, meta?: Record<string, unknown>}} response
+ * @param {{type: string, package?: string, data: unknown, meta?: Record<string, unknown>}} response
  * @returns {void}
  */
 export function jsonOut(response) {
   /** @type {any} */
-  const envelope = {apiVersion: API_VERSION, type: response.type, data: response.data};
+  const envelope = {apiVersion: API_VERSION, type: response.type};
+  if (response.package !== undefined) envelope.package = response.package;
+  envelope.data = response.data;
   if (response.meta !== undefined) envelope.meta = response.meta;
   // Serialize BEFORE marking handled. If JSON.stringify throws (a circular
   // reference or a BigInt in `data` — an author bug in a command's return

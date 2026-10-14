@@ -47,6 +47,7 @@ export type {
   MarkdownSource,
   MarkdownComponents,
   MarkdownInlinePlugin,
+  MarkdownSourceLines,
 } from './Markdown';
 
 export {

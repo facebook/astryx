@@ -114,9 +114,9 @@ export const docs = {
     },
     {
       name: 'statusVariant',
-      type: "'attached' | 'detached'",
+      type: "'attached' | 'detached' | 'tooltip'",
       description:
-        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip reveals the message in an info-tip button.',
       default: "'attached'",
     },
     {
@@ -178,13 +178,6 @@ export const docs = {
       type: 'ReactNode',
       description:
         'Content shown when the query matched nothing. Takes a ReactNode, so the dead end can carry a link or a create row. Announced in a polite live region as the text it renders, read from the DOM; aria-hidden parts stay out of both, and content that renders no text announces nothing. null counts as not given, like undefined, and falls through to the default; pass an empty string to render nothing.',
-      default: "'No results found'",
-    },
-    {
-      name: 'emptySearchResultsText',
-      type: 'string',
-      description:
-        'Deprecated: renamed to emptySearchText, which takes a ReactNode rather than a string, so every existing value stays valid. Still works exactly as released; emptySearchText wins when both are set.',
       default: "'No results found'",
     },
     {
@@ -265,10 +258,36 @@ export const docs = {
       description: 'Fires when focus leaves the tokenizer input.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value; not an inline style object like style={{}}.',
+        'StyleX styles for the field container (label, control, and status together). No effect inside InputGroup (style the InputGroup instead) or in a `horizontal-labels` FormLayout. Root `xstyle`, `className`, and `style` are not accepted.',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description: 'Class name for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: 'Inline styles for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the element that paints the border and background and holds icons and end controls. Never the native input.',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: 'Class name for the visual control box.',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: 'Inline styles for the visual control box.',
     },
   ],
   theming: {
@@ -463,9 +482,9 @@ export const docsZh = {
     },
     {
       name: 'statusVariant',
-      type: "'attached' | 'detached'",
+      type: "'attached' | 'detached' | 'tooltip'",
       description:
-        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距；tooltip 在状态图标的提示气泡中显示消息。',
       default: "'attached'",
     },
     {
@@ -534,13 +553,6 @@ export const docsZh = {
       default: "'No results found'",
     },
     {
-      name: 'emptySearchResultsText',
-      type: 'string',
-      description:
-        '已弃用：改名为 emptySearchText，其类型由 string 放宽为 ReactNode，原有取值全部仍然有效。仍按已发布行为工作；两者同时设置时以 emptySearchText 为准。',
-      default: "'No results found'",
-    },
-    {
       name: 'hasAutoFocus',
       type: 'boolean',
       description:
@@ -585,10 +597,36 @@ export const docsZh = {
       description: '用于 focus() 和 blur() 控制的命令式句柄。',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        '\u7528\u4e8e\u5e03\u5c40\u81ea\u5b9a\u4e49\u7684 StyleX \u6837\u5f0f\uff08\u5916\u8fb9\u8ddd\u3001\u5b9a\u4f4d\u3001\u5c3a\u5bf8\uff09\u3002\u5fc5\u987b\u662f stylex.create() \u7684\u503c; \u4e0d\u80fd\u662f\u5185\u8054\u6837\u5f0f\u5bf9\u8c61\u5982 style={{}}\u3002',
+        '字段容器（标签、控件和状态整体）的 StyleX 样式。在 InputGroup 内（请改为设置 InputGroup 的样式）或 `horizontal-labels` FormLayout 中无效。不接受根级 `xstyle`、`className` 和 `style`。',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description: '字段容器的类名，作用目标同 `containerXstyle`。',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: '字段容器的内联样式，作用目标同 `containerXstyle`。',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        '可视控件框的 StyleX 样式：绘制边框和背景并包含图标与尾部控件的元素，而非原生输入元素。',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: '可视控件框的类名。',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: '可视控件框的内联样式。',
     },
   ],
   theming: {
@@ -742,6 +780,12 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
+    containerXstyle: 'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
+    containerClassName: 'Class name for the field container.',
+    containerStyle: 'Inline styles for the field container.',
+    controlXstyle: 'StyleX styles for the visual control box (border, background, icons); not the native input.',
+    controlClassName: 'Class name for the visual control box.',
+    controlStyle: 'Inline styles for the visual control box.',
     label: 'Accessible label for input.',
     searchSource:
       'Data source w/ search+bootstrap methods for populating dropdown.',
@@ -760,7 +804,7 @@ export const docsDense = {
     htmlName: 'HTML name attr; one hidden input per selected item id.',
     status: 'Validation status w/ type+message for error/warning/success.',
     statusVariant:
-      'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
+      'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip shows on status icon.',
     isLabelHidden: 'Visually hides label; keeps a11y.',
     description: 'Helper text below label.',
     isRequired: 'Marks field required.',
@@ -773,8 +817,6 @@ export const docsDense = {
     minQueryLength:
       'Min query length before searching. Menu stays closed below it, except the hasCreate entry.',
     emptySearchText: 'Content when the query matched nothing. ReactNode.',
-    emptySearchResultsText:
-      'deprecated, use emptySearchText (ReactNode). still works as released; emptySearchText wins if both set.',
     hasAutoFocus: 'Auto-focus input on mount.',
     size: 'Input+token size.',
     debounceMs: 'Search debounce delay ms. 0 for sync sources.',
@@ -783,7 +825,5 @@ export const docsDense = {
       'Icon at input start, before tokens. Icon name, SVG component, or ReactNode.',
     endContent: 'Content at input row end. For buttons, counts, controls.',
     handleRef: 'Imperative handle for focus() and blur() control.',
-    xstyle:
-      'StyleX layout styles (margins, positioning). Must be stylex.create() value.',
   },
 };

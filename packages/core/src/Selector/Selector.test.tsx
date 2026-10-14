@@ -423,12 +423,12 @@ describe('Selector', () => {
 
     // Every row has a radio, selected or not.
     for (const option of options) {
-      expect(option.querySelector('.astryx-radio')).not.toBeNull();
+      expect(option.querySelector('.astryx-radio-indicator')).not.toBeNull();
     }
 
     // And exactly the selected one is filled.
     const filled = options.filter(
-      o => o.querySelector('.astryx-radio-dot') != null,
+      o => o.querySelector('.astryx-radio-indicator-dot') != null,
     );
     expect(filled).toHaveLength(1);
     expect(filled[0]).toHaveTextContent('Banana');
@@ -820,6 +820,58 @@ describe('Selector', () => {
       );
       await user.click(screen.getByRole('button', {name: 'Clear Fruit'}));
       expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('returns focus to the trigger when the clear button is activated by keyboard', async () => {
+      function Controlled() {
+        const [value, setValue] = useState<string | null>('Banana');
+        return (
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value={value}
+            onChange={setValue}
+            hasClear
+          />
+        );
+      }
+      const user = userEvent.setup();
+      render(<Controlled />);
+      screen.getByRole('button', {name: 'Clear Fruit'}).focus();
+      await user.keyboard('{Enter}');
+      expect(
+        screen.queryByRole('button', {name: 'Clear Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+    });
+
+    it('leaves focus in the search input when the clear button is clicked with the list open', async () => {
+      function Controlled() {
+        const [value, setValue] = useState<string | null>('Banana');
+        return (
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value={value}
+            onChange={setValue}
+            hasClear
+            hasSearch
+          />
+        );
+      }
+      const user = userEvent.setup();
+      render(<Controlled />);
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole('combobox', {
+        name: 'Search options',
+        hidden: true,
+      });
+      search.focus();
+      await user.click(screen.getByRole('button', {name: 'Clear Fruit'}));
+      expect(
+        screen.queryByRole('button', {name: 'Clear Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(search).toHaveFocus();
     });
 
     it('clears the value via Delete on the focused trigger', async () => {
@@ -2485,7 +2537,11 @@ describe('Selector', () => {
         />,
       );
 
-      const container = screen.getByTestId('fruit-selector');
+      // data-testid lands on the trigger; the reason tooltip anchors to the
+      // control box around it.
+      const container = screen
+        .getByTestId('fruit-selector')
+        .closest('.astryx-selector') as HTMLElement;
       const tooltip = screen.getByRole('tooltip', h);
       expect(tooltip).toHaveTextContent('You need the Editor role');
 
@@ -3136,7 +3192,7 @@ describe('Selector clear icon theme target', () => {
     return icon as HTMLElement;
   };
 
-  it('renders the astryx-input-clear-icon target (plus the legacy alias) on the clear glyph', () => {
+  it('renders only the astryx-input-clear-icon target on the clear glyph', () => {
     render(
       <Selector
         label="Fruit"
@@ -3149,11 +3205,10 @@ describe('Selector clear icon theme target', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // `defineTheme` — a button-level target could not reach the icon's own
-    // color/size. The original per-component name remains as a compatibility
-    // alias.
+    // color/size.
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-selector-clear-icon');
+    expect(icon).not.toHaveClass('astryx-selector-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
 
@@ -3174,13 +3229,12 @@ describe('Selector clear icon theme target', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
-    // The clear affordance now composes the shared InputClearButton (a ghost
-    // Button with a secondary/sm glyph), so the icon carries the canonical
-    // `astryx-input-clear-icon` target plus the supported compatibility alias
-    // `astryx-selector-clear-icon`. Aside from those target classes
-    // it matches the shared button's own `close`/`sm`/`secondary` glyph
-    // exactly, so the default look is defined in one place.
+  it('routes the clear glyph through the shared clear button', () => {
+    // The clear affordance composes the shared InputClearButton (a ghost Button
+    // with a secondary/sm glyph), so the icon carries the canonical
+    // `astryx-input-clear-icon` target. Aside from that target class it matches
+    // the shared button's own `close`/`sm`/`secondary` glyph exactly, so the
+    // default look is defined in one place.
     render(
       <Selector
         label="Fruit"
@@ -3192,7 +3246,7 @@ describe('Selector clear icon theme target', () => {
     );
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-selector-clear-icon');
+    expect(icon).not.toHaveClass('astryx-selector-clear-icon');
 
     const {container: refContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
@@ -3202,26 +3256,22 @@ describe('Selector clear icon theme target', () => {
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
-        .filter(
-          c =>
-            c !== 'astryx-input-clear-icon' &&
-            c !== 'astryx-selector-clear-icon',
-        )
+        .filter(c => c !== 'astryx-input-clear-icon')
         .sort();
 
     expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
   });
 
-  it('exposes selector-clear-icon so a theme reaches the icon color, size, and hover', () => {
+  it('uses input-clear-icon so a theme reaches the icon color, size, and hover', () => {
     // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
     // (target lands on the icon element) plus this generation assertion (the
     // theme emits same-element icon rules in @layer astryx-theme) together
     // prove the seam: a same-element theme rule wins over the icon's own
     // base-layer color/size.
     const theme = defineTheme({
-      name: 'selector-clear-icon-test',
+      name: 'selector-shared-clear-icon-test',
       components: {
-        'selector-clear-icon': {
+        'input-clear-icon': {
           base: {
             width: '12px',
             height: '12px',
@@ -3233,10 +3283,10 @@ describe('Selector clear icon theme target', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-selector-clear-icon {');
+    expect(css).toContain('.astryx-input-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-selector-clear-icon:hover');
+    expect(css).toContain('.astryx-input-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -3898,7 +3948,7 @@ describe('Selector indicatorPosition', () => {
           indicatorPosition === 'start'
             ? row.firstElementChild
             : row.lastElementChild;
-        const radio = row.querySelector('.astryx-radio');
+        const radio = row.querySelector('.astryx-radio-indicator');
         const content = row.querySelector('.astryx-selector-option');
         expect(markColumn).toHaveStyle({display: 'inline-flex'});
         expect(radio).not.toBeNull();
@@ -3945,7 +3995,7 @@ describe('Selector popup theme target', () => {
 
       const popup = document.querySelector('.astryx-selector-popup');
       expect(popup).not.toBeNull();
-      expect(popup).toHaveClass('astryx-popover-surface');
+      expect(popup).toHaveClass('astryx-popover');
       expect(popup?.querySelector('[role="listbox"]')).not.toBeNull();
     },
   );
@@ -4587,7 +4637,7 @@ describe('Selector press model', () => {
     }
   });
 
-  it('the listbox owns touch scrolling: touch-action none while the options fit', async () => {
+  it('the listbox owns touch scrolling: touch-action pinch-zoom while the options fit', async () => {
     const user = userEvent.setup();
     render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
     await user.click(screen.getByRole('combobox'));
@@ -4597,12 +4647,14 @@ describe('Selector press model', () => {
     // build prefixes a debug name; the hash is the last token).
     const touchStyles = stylex.create({
       none: {touchAction: 'none'},
-      panY: {touchAction: 'pan-y'},
+      pinchZoom: {touchAction: 'pinch-zoom'},
+      panYPinchZoom: {touchAction: 'pan-y pinch-zoom'},
     });
     const hash = (style: stylex.StyleXStyles) =>
       stylex.props(style).className!.split(' ').pop()!;
-    expect(listbox).toHaveClass(hash(touchStyles.none));
-    expect(listbox).not.toHaveClass(hash(touchStyles.panY));
+    expect(listbox).toHaveClass(hash(touchStyles.pinchZoom));
+    expect(listbox).not.toHaveClass(hash(touchStyles.none));
+    expect(listbox).not.toHaveClass(hash(touchStyles.panYPinchZoom));
   });
 
   it('marks the listbox as carrying the press model', async () => {
@@ -4612,5 +4664,70 @@ describe('Selector press model', () => {
     expect(screen.getByRole('listbox', h)).toHaveAttribute(
       'data-astryx-menu-press',
     );
+  });
+});
+
+describe('Selector in a narrow row', () => {
+  it('lets a row shrink a standalone selector instead of overflowing', () => {
+    const {container} = render(
+      <Selector
+        label="Status"
+        options={['Awaiting fulfillment', 'Shipped']}
+        value="Awaiting fulfillment"
+        onChange={() => {}}
+      />,
+    );
+    const root = container.querySelector('.astryx-field')!;
+    expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+
+  it('keeps an explicit width alongside the reset', () => {
+    const {container} = render(
+      <Selector
+        label="Qty"
+        options={['1', '2']}
+        value="1"
+        onChange={() => {}}
+        width={80}
+      />,
+    );
+    const root = container.querySelector('.astryx-field')!;
+    expect(root.getAttribute('style')).toContain('80');
+    expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+});
+
+describe('Selector and option actions (not adopted)', () => {
+  it('renders the option without the control and warns in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[
+            {
+              value: 'apple',
+              label: 'Apple',
+              action: <button type="button">Edit Apple</button>,
+            },
+          ]}
+          value={undefined}
+          onChange={() => {}}
+        />,
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+      expect(
+        screen.queryByRole('button', {name: 'Edit Apple', hidden: true}),
+      ).toBeNull();
+      expect(
+        screen.getByRole('option', {name: 'Apple', hidden: true}),
+      ).toBeInTheDocument();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(/Selector[\s\S]*action/),
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

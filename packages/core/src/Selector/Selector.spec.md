@@ -45,17 +45,59 @@ connection between the closed trigger and its selection surface.
 
 ## Compatibility and migration
 
-- Released defaults and behavior remain unchanged by this record.
+- Released defaults and behavior are unchanged except the `presentation`
+  default, which DEC-1 sets.
 - `indicatorPosition` defaults to `end`; a rendered selection mark occupies
   space at that logical edge, while an empty resolved indicator occupies none.
-- `presentation` defaults to `popover`. `bottom-sheet` is an explicit modal
-  presentation, and `adaptive` selects it on compact coarse-pointer screens.
+- `presentation` defaults to `adaptive` (DEC-1): the modal bottom sheet on
+  compact coarse-pointer screens and the anchored popover otherwise. `popover`
+  and `bottom-sheet` pin one surface on every device. The default is a
+  stable-default change, so it ships as `[breaking]` in a scheduled minor under
+  `spec:AST-017`; callers that need the anchored popover on every device pass
+  `popover`.
 - `hasClear` changes the value contract to include `null`; that distinction is
   already part of the public type.
 - `isReadOnly` is additive and defaults to `false`. It preserves the selected
   value, focus, and form participation while removing selection-surface and
   editing affordances. `isDisabled` takes precedence when both are set.
+- `secondary` is an additive trigger variant. `input` remains the default;
+  existing `input` and `ghost` callers keep their released behavior.
 - `spec:AST-004/DEC-1` governs the state-derived indicator-space behavior in FR3.
+- 0.7.0 removes the `selector-clear-icon` alias; the shared clear glyph remains
+  available through `input-clear-icon`.
+- Migration decision: replace the removed theme key and CSS class with
+  `input-clear-icon` and `.astryx-input-clear-icon`, or run
+  `astryx upgrade --from 0.6.3 --apply --path .`.
+
+### DEP-0011 — Deprecate the `popover` default presentation
+
+| Field            | Value                                                                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id               | `DEP-0011`                                                                                                                                                          |
+| cleanup          | `CLN-0020`                                                                                                                                                          |
+| package          | `@astryxdesign/core`                                                                                                                                                |
+| surface          | Default `presentation` of `Selector`, `MultiSelector`, and `DropdownMenu` with `items` (and `MoreMenu`, which forwards to it): the anchored popover on every device |
+| old contract     | With no `presentation`, the option or action list opens in an anchored, non-modal popover on every device                                                           |
+| replacement      | `presentation="popover"` keeps the anchored popover on every device; `adaptive` is released and already accepted                                                    |
+| direct authority | `component:Selector` DEC-1. Owners: `cixzhang`, `imdreamrunner`. `MultiSelector` and `DropdownMenu` have no current contract that sets this default                 |
+| warning          | Consumer docs and the release notes name `DEP-0011` and `presentation="popover"`. No runtime warning (`spec:AST-017` FR29)                                          |
+| migration        | Mechanical where the popover is wanted on every device: add `presentation="popover"`                                                                                |
+| codemod          | None by default: pinning `popover` everywhere would opt every caller out of the change. A preserving codemod is mechanical if an owner wants one                    |
+| downstream       | Guidance says to keep the default and pin `popover` only when product policy needs it                                                                               |
+| transition       | no prior transition                                                                                                                                                 |
+| state            | `proposed`                                                                                                                                                          |
+| open decision    | Current authority for the `MultiSelector` and `DropdownMenu` defaults                                                                                               |
+| target plan      | `CLN-0020` in the next minor release                                                                                                                                |
+
+### CLN-0020 — Selector, MultiSelector, and data-driven DropdownMenu default to `adaptive`
+
+| Field     | Value                                                                                                                                                                                                                                           |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id        | `CLN-0020`                                                                                                                                                                                                                                      |
+| lifecycle | `DEP-0011`                                                                                                                                                                                                                                      |
+| delta     | With no `presentation`, a compact coarse-pointer screen opens a modal bottom sheet (trigger `aria-haspopup="dialog"`, focus moves in and returns on close); every other device keeps the anchored popover. Compound DropdownMenus are unchanged |
+| rollback  | Restore the `popover` default from the final-patch baseline                                                                                                                                                                                     |
+| state     | `pending` — lands in a declared minor with its `[breaking]` Changeset                                                                                                                                                                           |
 
 ## Ownership boundary
 
@@ -82,15 +124,15 @@ connection between the closed trigger and its selection surface.
 This table names semantic concepts reviewers need. Prop syntax, complete defaults,
 and examples remain in `Selector.doc.mjs`.
 
-| Concept                | Closed values or states                | Meaning                                                  | Availability by variant/orientation/state | Default   | Owner    | Stability | Invalid-value behavior          |
-| ---------------------- | -------------------------------------- | -------------------------------------------------------- | ----------------------------------------- | --------- | -------- | --------- | ------------------------------- |
-| trigger variant        | `input`, `ghost`                       | Form-field or toolbar presentation                       | All trigger states                        | `input`   | Selector | released  | TypeScript rejects other values |
-| size                   | `sm`, `md`, `lg`                       | Trigger and option-row density                           | All presentations                         | `md`      | Selector | released  | TypeScript rejects other values |
-| selected-mark position | `start`, `end`                         | Logical edge containing a rendered selection mark        | Every option row                          | `end`     | Selector | released  | TypeScript rejects other values |
-| presentation           | `popover`, `bottom-sheet`, `adaptive`  | Anchored pointer surface or modal compact-touch surface  | All trigger variants                      | `popover` | Selector | released  | TypeScript rejects other values |
-| popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox` | Selector | released  | No separate role prop is public |
-| option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither   | Selector | released  | Unknown states are not emitted  |
-| read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`   | Caller   | additive  | Boolean normalization           |
+| Concept                | Closed values or states                | Meaning                                                  | Availability by variant/orientation/state | Default    | Owner    | Stability                      | Invalid-value behavior          |
+| ---------------------- | -------------------------------------- | -------------------------------------------------------- | ----------------------------------------- | ---------- | -------- | ------------------------------ | ------------------------------- |
+| trigger variant        | `input`, `secondary`, `ghost`          | Form-field or button-aligned toolbar presentation        | All trigger states                        | `input`    | Selector | released; `secondary` additive | TypeScript rejects other values |
+| size                   | `sm`, `md`, `lg`                       | Trigger and option-row density                           | All presentations                         | `md`       | Selector | released                       | TypeScript rejects other values |
+| selected-mark position | `start`, `end`                         | Logical edge containing a rendered selection mark        | Every option row                          | `end`      | Selector | released                       | TypeScript rejects other values |
+| presentation           | `popover`, `bottom-sheet`, `adaptive`  | Anchored pointer surface or modal compact-touch surface  | All trigger variants                      | `adaptive` | Selector | released                       | TypeScript rejects other values |
+| popup semantics        | `listbox`; modal dialog containing one | Semantics follow the active presentation                 | Popover; bottom sheet                     | `listbox`  | Selector | released                       | No separate role prop is public |
+| option-row state       | `selected`, `disabled`                 | Stable theming state on each option row                  | Every rendered option                     | neither    | Selector | released                       | Unknown states are not emitted  |
+| read-only state        | `false`, `true`                        | Preserves and submits value without selection affordance | Closed trigger                            | `false`    | Caller   | additive                       | Boolean normalization           |
 
 ## Behavioral and layout contract
 
@@ -124,7 +166,7 @@ These requirements describe shipped behavior on current `main`.
 | closed with no value     | Label and placeholder identify the field                                                  | Consumer placeholder text                                  |
 | closed with a value      | Selected option is represented in the trigger                                             | Custom `renderValue` content                               |
 | pointer / popover        | Anchored surface exposes the listbox without modal-dialog semantics                       | Default or explicit placement                              |
-| compact coarse pointer   | BottomSheet exposes a modal dialog containing the listbox                                 | Explicit `bottom-sheet` or resolved `adaptive`             |
+| compact coarse pointer   | BottomSheet exposes a modal dialog containing the listbox                                 | Default or explicit `adaptive`, or explicit `bottom-sheet` |
 | searching                | Visible options, keyboard navigation, and announced result count use one filter           | Consumer search and empty text                             |
 | loading                  | Trigger is busy; empty and no-results output is suppressed                                | Consumer loading duration                                  |
 | disabled with reason     | Trigger remains focusable enough to expose the reason while activation stays blocked      | Consumer reason text                                       |
@@ -177,13 +219,21 @@ These requirements describe shipped behavior on current `main`.
 
 No current design spec is linked.
 
-| Anatomy or state                 | Current representation requirement                                                                 | Representation authority   | Hierarchy role          | Component contract |
-| -------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------- | ----------------------- | ------------------ |
-| selected mark and option spacing | Empty resolved marks collapse; visible marks retain space, so row label geometry may vary by state | `spec:AST-004/DEC-1`       | supporting              | FR3                |
-| input versus ghost trigger       | none recorded                                                                                      | existing released behavior | form or toolbar control | Public concepts    |
+| Anatomy or state                 | Current representation requirement                                                                                        | Representation authority | Hierarchy role              | Component contract |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------ | --------------------------- | ------------------ |
+| selected mark and option spacing | Empty resolved marks collapse; visible marks retain space, so row label geometry may vary by state                        | `spec:AST-004/DEC-1`     | supporting                  | FR3                |
+| trigger variants                 | `input` reads as a form field; `secondary` matches adjacent secondary `Button`s; `ghost` matches adjacent ghost `Button`s | `component:Selector/DD1` | form or peer action control | Public concepts    |
 
 The first row implements the state-derived spacing decision in
 `spec:AST-004/DEC-1`.
+
+### Design decisions
+
+<!-- design-decisions:v1 -->
+
+| ID  | Decision                                                                        | Intent or reason                                                                                                                          | Applies to                                           | Allowed variation                                                                               |
+| --- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| DD1 | A `secondary` Selector matches the visual role of adjacent secondary `Button`s. | A mixed toolbar or navigation area reads as one action hierarchy instead of making the Selector look like a form field or a ghost action. | The secondary trigger at rest and through its states | Themes may choose exact tokens while preserving parity with their secondary `Button` treatment. |
 
 ### Theming anatomy
 
@@ -254,8 +304,7 @@ Icon-rendered start content delegates to Icon; arbitrary `ReactNode` start conte
 is caller-owned. The default renderer and custom `renderOption` functions that
 return `SelectorOption` retain its target; only bare caller-rendered option
 content stays outside that target, while the targeted option row remains.
-`selector-clear-icon` remains a deprecated compatibility alias and does not own a
-current anatomy row.
+`input-clear-icon` is the shared canonical target for the clear glyph.
 
 This map records only shipped reachability. It does not treat the accepted,
 unimplemented option-source behavior in `spec:AST-001` as current runtime behavior.
@@ -294,8 +343,19 @@ new theming target.
 
 ## Decision log
 
-No component-local future decision is recorded here. FR3 implements the
-system decision owned by `spec:AST-004/DEC-1`.
+FR3 implements the system decision owned by `spec:AST-004/DEC-1`.
+
+### DEC-1 — Default presentation is `adaptive`
+
+**Reference:** `component:Selector/DEC-1`
+**Decider:** `cixzhang`, `2026-10-06`
+
+An omitted `presentation` resolves `adaptive` (FR4): the modal bottom sheet on
+compact coarse-pointer screens and the anchored popover elsewhere, so
+fine-pointer and large-screen output matches `popover`. `adaptive` keeps its
+width-and-pointer query; a pointer-only test belongs to `spec:AST-043` OQ1.
+Rejected: keeping `popover` as the default, because a phone then gets a
+pointer-sized anchored list unless the caller opts in.
 
 ## Open questions
 

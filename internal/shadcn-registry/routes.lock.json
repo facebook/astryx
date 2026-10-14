@@ -1991,6 +1991,16 @@
       "aliases": []
     },
     {
+      "name": "example-drawer-header-with-close-button",
+      "path": "examples/drawer-header/with-close-button",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-header-with-subtitle-and-end-content",
+      "path": "examples/drawer-header/with-subtitle-and-end-content",
+      "aliases": []
+    },
+    {
       "name": "example-drawer-mobile-the-56px-page-reveal-default",
       "path": "examples/drawer/mobile-the-56px-page-reveal-default",
       "aliases": []
@@ -4251,6 +4261,11 @@
       "aliases": []
     },
     {
+      "name": "showcase-drawer-header-default",
+      "path": "showcases/drawer-header/default",
+      "aliases": []
+    },
+    {
       "name": "showcase-drawer-basic",
       "path": "showcases/drawer/basic",
       "aliases": []
@@ -5003,6 +5018,16 @@
     {
       "name": "template-table",
       "path": "templates/table",
+      "aliases": []
+    },
+    {
+      "name": "template-table-collapsible",
+      "path": "templates/table-collapsible",
+      "aliases": []
+    },
+    {
+      "name": "template-table-comparison",
+      "path": "templates/table-comparison",
       "aliases": []
     },
     {

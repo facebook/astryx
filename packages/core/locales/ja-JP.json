@@ -523,14 +523,6 @@
     "defaultMessage": "この {itemName} はすでに{boundary, select, first {先頭} last {末尾} other {}}です。",
     "description": "Screen-reader-only live announcement when an arrow-key reorder attempt has no effect because the record is already at that end of the list. `{itemName}` is the consumer's singular noun for one record; `{boundary}` is always exactly \"first\" or \"last\"."
   },
-  "@astryx.markdownHeadingLinks.copied": {
-    "defaultMessage": "リンクをコピーしました",
-    "description": "Accessible name on the Markdown heading copy button and text announced to a polite live region for ~1.5s after a successful copy. Sentence meaning \"Link copied\"; pairs with `markdownHeadingLinks.copy`."
-  },
-  "@astryx.markdownHeadingLinks.copy": {
-    "defaultMessage": "{heading} へのリンクをコピー",
-    "description": "Accessible name on the Markdown heading copy button in its default state. `{heading}` is the heading's plain text, or its generated id when the text is empty; pairs with `markdownHeadingLinks.copied`."
-  },
   "@astryx.markdown.taskList": {
     "defaultMessage": "タスクリスト",
     "description": "Screen-reader-only accessible name for a GitHub-flavored Markdown task list (rendered from `- [ ] item` / `- [x] done` syntax)."
@@ -1488,3 +1480,4 @@
     "description": "Default summary on the closed trigger of a lab TransferListSelector, stating how many options are currently chosen. Consumers usually override this with a domain phrase (e.g. \"7 columns\")."
   }
 }
+

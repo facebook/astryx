@@ -39,7 +39,7 @@ export default function TokenizerEndContent() {
         value={value}
         onChange={items => setValue(items)}
         endContent={<Button label="Apply" variant="primary" size="sm" />}
-        style={{width: 400}}
+        containerStyle={{width: 400}}
       />
     </Stack>
   );

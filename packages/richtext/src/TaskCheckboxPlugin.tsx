@@ -49,7 +49,11 @@ const styles = stylex.create({
   checkbox: {
     position: 'absolute',
   },
-  placement: (top: number, left: number) => ({top, left}),
+  placement: (top: number, left: number) => ({
+    top,
+    // eslint-disable-next-line @astryx/no-physical-properties -- intentional: `left` is a measured viewport coordinate, already resolved for direction above (`isRightToLeft ? box.right - CHECKBOX_SIZE : box.left`). `insetInlineStart` would flip the anchor edge again in RTL and double-correct the offset.
+    left,
+  }),
 });
 
 /** The width of core CheckboxInput's small control. */

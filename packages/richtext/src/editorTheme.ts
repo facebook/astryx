@@ -271,7 +271,10 @@ const editorTheme = stylex.create({
   link: {
     color: colorVars['--color-text-accent'],
     textDecoration: 'underline',
-    cursor: 'pointer',
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
   textBold: {fontWeight: fontWeightVars['--font-weight-semibold']},
   textItalic: {fontStyle: 'italic'},
