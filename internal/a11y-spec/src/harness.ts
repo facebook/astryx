@@ -153,8 +153,7 @@ export type Key =
   | 'End'
   | 'PageUp'
   | 'PageDown'
-  | 'Escape'
-  | 'End';
+  | 'Escape';
 
 /**
  * A mounted binding, observed at whatever layers this runtime can honestly see.
