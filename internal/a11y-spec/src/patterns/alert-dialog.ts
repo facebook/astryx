@@ -241,8 +241,8 @@ export const ALERT_DIALOG_PATTERN: PatternContract<AlertDialogStateFacts> =
           'A click on the dimmed page beside the surface does not dismiss it, so an accidental click never discards the decision.',
         sources: [APG_MODAL],
         wcagOutcome:
-          'Supports WCAG 2.2 3.2.2 by keeping the question on screen until the user answers it; the binding record states the rule, so this row is advisory until it is current (AST-020 FR9).',
-        covers: ['3.2.2-on-input', 'apg-interaction'],
+          "Keeps the question on screen until the user answers it, so a stray click cannot discard an irreversible choice unanswered (APG Alert Dialog: a modal that interrupts the workflow to acquire a response). No WCAG success criterion maps to it — 3.2.2 covers changing a control's setting, which a click beside the dialog is not; the binding record states the rule, so this row is advisory until it is current (AST-020 FR9).",
+        covers: ['apg-interaction'],
         appliesWhen: {
           condition:
             'the surface is modal and a click beside it is not meant to close it',
@@ -385,10 +385,10 @@ export const ALERT_DIALOG_PATTERN: PatternContract<AlertDialogStateFacts> =
       },
       '3.2.2-on-input': {
         owner: 'the caller and composing page',
-        verifiedBy: 'integration review of what a caller does with onAction',
+        verifiedBy:
+          'integration review of what a caller does with onAction and in response to the dialog closing',
         reason:
-          "This contract proves a click beside the surface changes nothing; what the confirmed action does is the caller's.",
-        coversRemainderOnly: true,
+          "3.2.2 governs changing the setting of a user interface component; an alert dialog has no setting to change, and a click beside it is not input to a control. What the confirmed action does, and whether closing the dialog changes context, is the caller's and the composing page's.",
       },
       '3.2.4-consistent-identification': {
         owner: 'the composing page',
