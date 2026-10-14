@@ -149,6 +149,10 @@ export {
 } from './patterns/accordion';
 export {GRID_PATTERN, type GridStateFacts} from './patterns/grid';
 export {
+  ALERT_DIALOG_PATTERN,
+  type AlertDialogStateFacts,
+} from './patterns/alert-dialog';
+export {
   LINK_PATTERN,
   type LinkCurrentToken,
   type LinkStateFacts,
