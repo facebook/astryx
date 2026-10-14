@@ -577,12 +577,15 @@ export function ResizeHandle({
         case 'ArrowUp': {
           e.preventDefault();
           if (resizable._isCollapsed) {
-            // A collapsed pane answers only the grow arrow, by reopening at the
-            // size it had before it collapsed (APG window splitter: the arrow
-            // moves the separator; a step smaller than the collapse threshold
-            // would otherwise leave it in place). The shrink arrow is a no-op.
+            // A collapsed pane answers only the grow arrow: it opens one step
+            // above its minimum, the value the separator announces while
+            // collapsed (APG window splitter: the arrow moves the separator
+            // from where it is; a bare step would stay below the collapse
+            // threshold and leave it in place). The shrink arrow is a no-op.
             if (grows(e.key)) {
-              toggleCollapse(resizable);
+              resizable._onResizeStart();
+              resizable._onResizeMove(resizable._minSizePx + step);
+              resizable._onResizeEnd();
             }
             break;
           }
