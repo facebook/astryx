@@ -365,29 +365,23 @@ export interface ResizeHandleProps extends Omit<
 }
 
 /**
- * Collapse an open pane, or restore a collapsed one to the size it had before
- * it collapsed (APG window splitter: Enter "restores the splitter to its
- * previous position"). The hook's own collapse/expand do exactly that; a
- * hand-built `ResizableProps` (no registered controls) falls back to a resize
- * gesture to the minimum, which also cannot reopen a pane whose minimum sits below its
- * collapse threshold.
- */
-/**
  * The snap point `count` points away from the region's current size in
- * `direction` (+1 grows, -1 shrinks), within the region's bounds; the nearest
- * end point when fewer remain, and the current size when it is already there.
+ * `direction` (+1 grows, -1 shrinks). A point beyond `minSize` or `maxSize`
+ * counts as that bound; the nearest end point serves when fewer remain, and
+ * the current size when it is already there.
  */
 function adjacentSnapPoint(
   resizable: ResizableProps,
   direction: 1 | -1,
   count: number,
 ): number {
-  const points = [...resizable._snaps]
-    .filter(p => p >= resizable._minSizePx && p <= resizable._maxSizePx)
-    .sort((a, b) => a - b);
-  if (points.length === 0) {
-    return resizable._size;
-  }
+  const points = [
+    ...new Set(
+      resizable._snaps.map(p =>
+        Math.min(resizable._maxSizePx, Math.max(resizable._minSizePx, p)),
+      ),
+    ),
+  ].sort((a, b) => a - b);
   const size = resizable._size;
   const ahead =
     direction > 0
@@ -399,6 +393,14 @@ function adjacentSnapPoint(
   return ahead[Math.min(count, ahead.length) - 1];
 }
 
+/**
+ * Collapse an open pane, or restore a collapsed one to the size it had before
+ * it collapsed (APG window splitter: Enter "restores the splitter to its
+ * previous position"). The hook's own collapse/expand do exactly that; a
+ * hand-built `ResizableProps` (no registered controls) falls back to a resize
+ * gesture to the minimum, which also cannot reopen a pane whose minimum sits below its
+ * collapse threshold.
+ */
 function toggleCollapse(resizable: ResizableProps): void {
   const controls = getCollapseControls(resizable);
   if (controls) {

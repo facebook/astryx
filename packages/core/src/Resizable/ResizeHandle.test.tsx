@@ -625,6 +625,33 @@ describe('ResizeHandle', () => {
     expect(separator).toHaveAttribute('aria-valuenow', '100');
   });
 
+  it('with snap points past the bounds, a point beyond maxSize or minSize counts as that bound', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          snaps: [50, 100, 200, 300, 450],
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'End'});
+    expect(separator).toHaveAttribute('aria-valuenow', '400');
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuenow', '300');
+    // The 450 point counts as the 400 bound.
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuenow', '400');
+    fireEvent.keyDown(separator, {key: 'Home'});
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
+    // The 50 point counts as the 100 bound: nothing below it.
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuenow', '100');
+  });
+
   it('with snap points, the arrows follow the reversed layout and the reading direction', () => {
     const rtl = vi
       .spyOn(window, 'getComputedStyle')
