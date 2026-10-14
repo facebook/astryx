@@ -91,7 +91,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import {isRenderable, mergeProps, rtlStyles} from '../utils';
+import {isImeKeyEvent, isRenderable, mergeProps, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {
@@ -155,6 +155,41 @@ function isInsideHiddenWrapper(
 function focusRegionControl(element: HTMLElement): boolean {
   element.focus();
   return element.ownerDocument.activeElement === element;
+}
+
+// A single-line text field in the header works as a combobox's input whose
+// list is the menu: ArrowDown moves on to the rows. Fields whose arrows mean
+// something of their own (a number, a range, a multi-line text) keep them.
+const TEXT_ENTRY_TYPES = new Set([
+  'text',
+  'search',
+  'email',
+  'url',
+  'tel',
+  'password',
+]);
+
+function isTextEntryField(
+  element: EventTarget | null,
+): element is HTMLInputElement {
+  return (
+    element instanceof HTMLInputElement &&
+    TEXT_ENTRY_TYPES.has(
+      (element.getAttribute('type') ?? 'text').trim().toLowerCase(),
+    )
+  );
+}
+
+/** An unmodified arrow press outside an IME composition. */
+function isPlainArrow(e: React.KeyboardEvent, key: string): boolean {
+  return (
+    e.key === key &&
+    !e.altKey &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    !e.shiftKey &&
+    !isImeKeyEvent(e.nativeEvent)
+  );
 }
 
 const styles = stylex.create({
@@ -1220,6 +1255,27 @@ function DropdownMenuPopover({
         closeMenu();
         return;
       }
+      // ArrowUp on the first row returns to the header's text field, the
+      // way it came, instead of wrapping to the last row.
+      if (isPlainArrow(e, 'ArrowUp') && hasRegions) {
+        const firstRow = getMenuItems().find(
+          item =>
+            item.getAttribute('aria-disabled') !== 'true' &&
+            !item.hasAttribute('disabled'),
+        );
+        const field = tabbablesIn(headerRef.current)
+          .filter(isTextEntryField)
+          .at(-1);
+        if (
+          firstRow != null &&
+          field != null &&
+          document.activeElement === firstRow &&
+          focusRegionControl(field)
+        ) {
+          e.preventDefault();
+          return;
+        }
+      }
       // Type-to-focus next; if it consumed a printable key, stop here.
       if (typeahead.onKeyDown(e)) {
         e.preventDefault();
@@ -1234,17 +1290,29 @@ function DropdownMenuPopover({
       ownsEvent,
       hasRegions,
       moveDialogTab,
+      getMenuItems,
     ],
   );
 
   // Tab from a header or footer control moves through the same dialog cycle.
+  // ArrowDown in a text field of the header moves on to the first row, as
+  // from a combobox's input to its list; the field keeps every other key.
   const handleRegionKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (e.key === 'Tab') {
         moveDialogTab(e);
+        return;
+      }
+      if (
+        isPlainArrow(e, 'ArrowDown') &&
+        isTextEntryField(e.target) &&
+        headerRef.current?.contains(e.target) === true &&
+        focusFirst()
+      ) {
+        e.preventDefault();
       }
     },
-    [moveDialogTab],
+    [moveDialogTab, focusFirst],
   );
 
   const openAndFocus = useCallback(

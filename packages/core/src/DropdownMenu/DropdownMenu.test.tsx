@@ -11,7 +11,14 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {readFileSync} from 'node:fs';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+  createEvent,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
@@ -4074,5 +4081,121 @@ describe('DropdownMenu header and footer', () => {
     expect(
       bug.compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+});
+
+describe('DropdownMenu header field arrows', () => {
+  const h = {hidden: true} as const;
+
+  async function openWith(
+    header: React.ReactNode,
+    rows: React.ReactNode = (
+      <>
+        <DropdownMenuItem label="Bug" />
+        <DropdownMenuItem label="Feature" />
+        <DropdownMenuItem label="Design" />
+      </>
+    ),
+  ) {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Labels'}}
+        header={header}
+        footer={<button type="button">Create label</button>}>
+        {rows}
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Labels/}));
+    const menu = screen.getByRole('menu', h);
+    await waitFor(() => expect(menu).toHaveFocus());
+    return {user, menu};
+  }
+  const row = (name: string) => screen.getByRole('menuitem', {name, ...h});
+  const field = () =>
+    screen.getByRole('textbox', {name: 'Filter labels', ...h});
+
+  it('ArrowDown in a text field of the header moves to the first row', async () => {
+    await openWith(<input aria-label="Filter labels" />);
+    act(() => field().focus());
+    const event = createEvent.keyDown(field(), {key: 'ArrowDown'});
+    fireEvent(field(), event);
+    expect(row('Bug')).toHaveFocus();
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('ArrowUp on the first row returns to the field; on another row it moves up', async () => {
+    await openWith(<input aria-label="Filter labels" type="search" />);
+    act(() => row('Feature').focus());
+    fireEvent.keyDown(row('Feature'), {key: 'ArrowUp'});
+    expect(row('Bug')).toHaveFocus();
+    const event = createEvent.keyDown(row('Bug'), {key: 'ArrowUp'});
+    fireEvent(row('Bug'), event);
+    expect(
+      screen.getByRole('searchbox', {name: 'Filter labels', ...h}),
+    ).toHaveFocus();
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('skips a disabled first row both ways', async () => {
+    await openWith(
+      <input aria-label="Filter labels" />,
+      <>
+        <DropdownMenuItem label="Bug" isDisabled />
+        <DropdownMenuItem label="Feature" />
+      </>,
+    );
+    act(() => field().focus());
+    fireEvent.keyDown(field(), {key: 'ArrowDown'});
+    expect(row('Feature')).toHaveFocus();
+    fireEvent.keyDown(row('Feature'), {key: 'ArrowUp'});
+    expect(field()).toHaveFocus();
+  });
+
+  it('returns to the last text field when the header holds more than one control', async () => {
+    await openWith(
+      <>
+        <input aria-label="Scope" />
+        <input aria-label="Filter labels" />
+        <button type="button">Clear</button>
+      </>,
+    );
+    act(() => row('Bug').focus());
+    fireEvent.keyDown(row('Bug'), {key: 'ArrowUp'});
+    expect(field()).toHaveFocus();
+  });
+
+  it('a modified arrow, an IME composition, or a field with arrows of its own keeps the key', async () => {
+    await openWith(
+      <>
+        <input aria-label="Filter labels" />
+        <input aria-label="Count" type="number" />
+        <textarea aria-label="Notes" />
+      </>,
+    );
+    act(() => field().focus());
+    fireEvent.keyDown(field(), {key: 'ArrowDown', shiftKey: true});
+    expect(field()).toHaveFocus();
+    fireEvent.keyDown(field(), {key: 'ArrowDown', isComposing: true});
+    expect(field()).toHaveFocus();
+    for (const name of ['Count', 'Notes']) {
+      const control = screen.getByRole(
+        name === 'Count' ? 'spinbutton' : 'textbox',
+        {
+          name,
+          ...h,
+        },
+      );
+      act(() => control.focus());
+      fireEvent.keyDown(control, {key: 'ArrowDown'});
+      expect(control).toHaveFocus();
+    }
+  });
+
+  it('without a text field in the header, ArrowUp on the first row wraps as before', async () => {
+    await openWith(<button type="button">Clear</button>);
+    act(() => row('Bug').focus());
+    fireEvent.keyDown(row('Bug'), {key: 'ArrowUp'});
+    expect(row('Design')).toHaveFocus();
   });
 });
