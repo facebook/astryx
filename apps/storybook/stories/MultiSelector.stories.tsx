@@ -5,6 +5,7 @@ import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {useState} from 'react';
 import {Button} from '@astryxdesign/core/Button';
 import {IconButton} from '@astryxdesign/core/IconButton';
+import {InputGroup, InputGroupText} from '@astryxdesign/core/InputGroup';
 import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
@@ -449,6 +450,43 @@ export const SecondaryVariant: Story = {
     await userEvent.keyboard('{Escape}');
     trigger.blur();
   },
+};
+
+// Secondary trigger as the first, middle, and last member of an InputGroup:
+// it keeps its neutral fill and takes the group's row height and seam edges.
+export const SecondaryInInputGroup: Story = {
+  render: () => {
+    const selector = (label: string) => (
+      <MultiSelector
+        label={label}
+        isLabelHidden
+        variant="secondary"
+        options={['Name', 'Email', 'Role']}
+        value={['Name']}
+        onChange={() => {}}
+      />
+    );
+    return (
+      <div
+        data-secondary-input-group-matrix
+        style={{display: 'grid', gap: 16, width: 320}}>
+        <InputGroup label="Secondary first" isLabelHidden>
+          {selector('Columns first')}
+          <InputGroupText>cols</InputGroupText>
+        </InputGroup>
+        <InputGroup label="Secondary middle" isLabelHidden>
+          <InputGroupText>#</InputGroupText>
+          {selector('Columns middle')}
+          <InputGroupText>cols</InputGroupText>
+        </InputGroup>
+        <InputGroup label="Secondary last" isLabelHidden>
+          <InputGroupText>#</InputGroupText>
+          {selector('Columns last')}
+        </InputGroup>
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
 };
 
 // Status variants

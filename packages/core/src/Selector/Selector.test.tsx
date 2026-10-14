@@ -38,6 +38,7 @@ import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {spacingVars} from '../theme/tokens.stylex';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
+import {groupStyles} from '../InputGroup/groupStyles';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -2512,6 +2513,67 @@ describe('Selector', () => {
         group.getAttribute('aria-describedby'),
       );
       expect(screen.getByText('#')).toBeInTheDocument();
+    });
+
+    it.each(['input', 'secondary'] as const)(
+      'gives a grouped %s trigger the connected group geometry in every position',
+      variant => {
+        const groupClasses = stylex
+          .props(groupStyles.inGroup)
+          .className!.split(' ');
+        const selector = (label: string) => (
+          <Selector
+            label={label}
+            isLabelHidden
+            variant={variant}
+            options={OPTIONS}
+          />
+        );
+        render(
+          <>
+            <InputGroup label="First">
+              {selector('Channel first')}
+              <InputGroupText>#</InputGroupText>
+            </InputGroup>
+            <InputGroup label="Middle">
+              <InputGroupText>#</InputGroupText>
+              {selector('Channel middle')}
+              <InputGroupText>@</InputGroupText>
+            </InputGroup>
+            <InputGroup label="Last">
+              <InputGroupText>#</InputGroupText>
+              {selector('Channel last')}
+            </InputGroup>
+          </>,
+        );
+
+        // The group's row height, seam radii, and focus stacking all come from
+        // these classes; their :first-child and last-item selectors resolve the
+        // position. A secondary trigger keeps its fill but must not keep its
+        // own standalone edges or width.
+        for (const position of ['first', 'middle', 'last']) {
+          const trigger = screen.getByRole('combobox', {
+            name: new RegExp(`Channel ${position}`),
+          });
+          const box = trigger.closest('.astryx-selector') as HTMLElement;
+          const classes = new Set(box.className.split(' '));
+          expect(groupClasses.every(c => classes.has(c))).toBe(true);
+        }
+      },
+    );
+
+    it('keeps a standalone secondary trigger out of the group geometry', () => {
+      const groupClasses = stylex
+        .props(groupStyles.inGroup)
+        .className!.split(' ');
+      render(
+        <Selector label="Channel" variant="secondary" options={OPTIONS} />,
+      );
+      const box = screen
+        .getByRole('combobox')
+        .closest('.astryx-selector') as HTMLElement;
+      const classes = new Set(box.className.split(' '));
+      expect(groupClasses.some(c => classes.has(c))).toBe(false);
     });
 
     it('keeps disabled reasons described when grouped', () => {

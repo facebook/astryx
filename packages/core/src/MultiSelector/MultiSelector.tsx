@@ -2520,7 +2520,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               status &&
               !isDisabled &&
               inputStatusHoverShadowStyles[status.type],
-            variant === 'input' && inputGroup && groupStyles.inGroup,
+            // Grouped secondary triggers keep their neutral fill but take the
+            // group's row height, connected edge radii, and focus stacking.
+            variant !== 'ghost' && inputGroup && groupStyles.inGroup,
             controlXstyle,
           ),
           controlClassName,

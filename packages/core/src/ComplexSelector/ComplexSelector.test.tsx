@@ -263,6 +263,11 @@ describe('ComplexSelector', () => {
   });
 
   it('applies distinct trigger chrome to the secondary variant', () => {
+    // data-testid reaches the native control; the variant is on the trigger root.
+    const triggerRoot = () =>
+      screen
+        .getByTestId('view-options')
+        .closest('.astryx-complex-selector') as HTMLElement;
     const {rerender} = render(
       <ComplexSelector
         label="View options"
@@ -272,7 +277,7 @@ describe('ComplexSelector', () => {
         {() => <div>Columns</div>}
       </ComplexSelector>,
     );
-    const inputClasses = screen.getByTestId('view-options').className;
+    const inputClasses = triggerRoot().className;
 
     rerender(
       <ComplexSelector
@@ -283,7 +288,7 @@ describe('ComplexSelector', () => {
         {() => <div>Columns</div>}
       </ComplexSelector>,
     );
-    const secondary = screen.getByTestId('view-options');
+    const secondary = triggerRoot();
     const secondaryClasses = secondary.className;
     expect(secondary).toHaveAttribute('data-variant', 'secondary');
 
@@ -296,7 +301,7 @@ describe('ComplexSelector', () => {
         {() => <div>Columns</div>}
       </ComplexSelector>,
     );
-    const ghostClasses = screen.getByTestId('view-options').className;
+    const ghostClasses = triggerRoot().className;
 
     expect(secondaryClasses).not.toBe(inputClasses);
     expect(secondaryClasses).not.toBe(ghostClasses);
