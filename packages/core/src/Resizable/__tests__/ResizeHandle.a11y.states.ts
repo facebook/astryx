@@ -140,9 +140,9 @@ export const RESIZE_HANDLE_EXCLUSIONS = [
   {
     id: 'starts-collapsed',
     owner:
-      'ResizeHandle.test.tsx collapse suites until a collapsed-start state joins this binding',
+      'ResizeHandle.test.tsx keyboard suites until a collapsed-start state joins this binding',
     reason:
-      "A pane that is already collapsed takes no arrow growth: ArrowRight (or the axis's grow key) leaves a collapsed handle where it is, and only Enter or a double-click reopens it. The required arrows row assumes an open pane, so a state that starts collapsed is not bound here; its keyboard behaviour is proven by the component's collapse tests and would need an arrows row conditioned on the collapsed state to bind.",
+      "A pane that starts collapsed answers the keyboard differently: a plain arrow step stays below the collapse threshold and leaves the pane collapsed, while Shift+Arrow (the large step), Home, End, Enter and a double-click reopen it. The required arrows row assumes an open pane, so a collapsed-start state is not bound here; it would need an arrows row conditioned on the collapsed state. The component's keyboard tests start expanded, so this remains an uncovered state rather than a proven one.",
   },
   {
     id: 'pane-cycling',
