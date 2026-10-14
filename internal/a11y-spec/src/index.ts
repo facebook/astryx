@@ -139,6 +139,7 @@ export {
   type LandmarkStateFacts,
 } from './patterns/landmark';
 
+export {SLIDER_PATTERN, type SliderStateFacts} from './patterns/slider';
 export {
   ACCORDION_PATTERN,
   type AccordionStateFacts,
