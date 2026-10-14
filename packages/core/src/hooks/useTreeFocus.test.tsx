@@ -262,12 +262,16 @@ describe('useTreeFocus activation + typeahead', () => {
     expect(screen.getByTestId('c')).toHaveFocus();
   });
 
-  it('typeahead matches whole text for a direct caller, even when an item carries aria-labelledby', () => {
+  it('typeahead matches whole text for a direct caller, even when an item carries aria-labelledby and the options smuggle the internal flag', () => {
     function LabelledTree() {
+      // An untyped options object trying to reach the internal flag through
+      // the public hook: it must have no effect.
+      const smuggled = {
+        hasRovingTabIndex: true,
+        matchLabelledBy: true,
+      } as Record<string, unknown>;
       const {treeRef, handleKeyDown, handleFocus} =
-        useTreeFocus<HTMLUListElement>({
-          hasRovingTabIndex: true,
-        });
+        useTreeFocus<HTMLUListElement>(smuggled);
       return (
         <ul
           ref={treeRef}

@@ -234,7 +234,9 @@ function itemLabelText(item: HTMLElement, matchLabelledBy: boolean): string {
 export function useTreeFocus<T extends HTMLElement = HTMLElement>(
   options: UseTreeFocusOptions = {},
 ): UseTreeFocusReturn<T> {
-  return useTreeFocusInternal<T>(options);
+  // The flag is pinned off here so an untyped options object cannot smuggle
+  // it through the public hook.
+  return useTreeFocusInternal<T>({...options, matchLabelledBy: false});
 }
 
 /**
