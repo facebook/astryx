@@ -148,8 +148,9 @@ function isInsideHiddenWrapper(
 }
 
 /**
- * Move focus to a region control. Reports whether focus actually arrived, so a
- * caller can close the menu instead of stranding focus on the page.
+ * Move focus to a Tab stop in the dialog. Reports whether focus actually
+ * arrived, so a caller can fall back to the menu instead of stranding focus on
+ * the page.
  */
 function focusRegionControl(element: HTMLElement): boolean {
   element.focus();
@@ -978,15 +979,33 @@ function DropdownMenuPopover({
     }
   }, [isControlled, onClick, onOpenChange, renderTrigger, resetFocusReturn]);
 
+  // The menu's name: the dialog around it with a header or footer, and the
+  // Back row of a drilled-in view ("Back to <this>"), both read it.
+  // The design system's button names the menu by its label. A custom trigger
+  // names it by reference (or the caller's `aria-label` does), so that name
+  // is read off the control as the menu opens.
+  const callerMenuLabel = rest['aria-label'];
+  const menuLabel =
+    renderTrigger != null
+      ? typeof callerMenuLabel === 'string' && callerMenuLabel.trim() !== ''
+        ? callerMenuLabel
+        : triggerName
+      : typeof button.label === 'string'
+        ? button.label
+        : undefined;
+
   const popover = usePopover({
     onHide: handleLayerHide,
     onShow: handleLayerShow,
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
-    // The popup's own role="menu" is the exposed semantics; wrapping it in a
-    // modal dialog would announce an unnamed dialog around the menu.
-    role: 'none',
+    // Without a header or footer the popup's own role="menu" is the exposed
+    // semantics; a dialog around it would announce an extra container. With
+    // either, the popover holds controls that are not menu items, so it is a
+    // modal dialog named like the menu, with the menu inside it.
+    role: hasRegions ? 'dialog' : 'none',
+    dialogLabel: hasRegions ? menuLabel : undefined,
   });
 
   const closeMenu = useCallback(() => {
@@ -1085,6 +1104,50 @@ function DropdownMenuPopover({
     });
   }, [popover.isOpen, focusFirst, focusLast, listRef]);
 
+  // With a header or footer the popover is a modal dialog: Tab and Shift+Tab
+  // walk the header's controls, the menu as one stop, then the footer's
+  // controls, and wrap at either end. The key is handled here in full, so the
+  // popover's own focus trap, which listens on the document, never reads it a
+  // second time.
+  const moveDialogTab = useCallback(
+    (e: React.KeyboardEvent, isFromFlyout = false) => {
+      const menu = listRef.current;
+      if (menu == null) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      const cycle = [
+        ...tabbablesIn(headerRef.current),
+        menu,
+        ...tabbablesIn(footerRef.current),
+      ];
+      if (cycle.length === 1) {
+        // Nothing else to reach: focus stays in the menu. From a flyout that
+        // has just closed itself, that is the menu's own stop.
+        if (isFromFlyout) {
+          menu.focus();
+        }
+        return;
+      }
+      const active = document.activeElement;
+      const menuIndex = cycle.indexOf(menu);
+      // A row, or a row of an open flyout, counts as the menu's stop.
+      let index = menu.contains(active)
+        ? menuIndex
+        : cycle.findIndex(el => el === active || el.contains(active));
+      if (index < 0) {
+        index = menuIndex;
+      }
+      const step = e.shiftKey ? -1 : 1;
+      const next = cycle[(index + step + cycle.length) % cycle.length];
+      if (!focusRegionControl(next)) {
+        menu.focus();
+      }
+    },
+    [listRef],
+  );
+
   // Extend useListFocus with Enter/Space activation + typeahead
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -1095,18 +1158,7 @@ function DropdownMenuPopover({
         // itself as the key bubbled up, and the root moves focus on as Tab
         // from one of its own rows would.
         if (e.key === 'Tab' && hasRegions) {
-          const region = e.shiftKey ? headerRef.current : footerRef.current;
-          const tabbables = tabbablesIn(region);
-          e.stopPropagation();
-          const target = e.shiftKey
-            ? tabbables[tabbables.length - 1]
-            : tabbables[0];
-          if (target != null) {
-            e.preventDefault();
-          }
-          if (target == null || !focusRegionControl(target)) {
-            closeMenu();
-          }
+          moveDialogTab(e, true);
         }
         return;
       }
@@ -1128,30 +1180,15 @@ function DropdownMenuPopover({
         }
         return;
       }
-      // APG menu-button pattern: Tab closes the menu. Menu items are
-      // tabIndex={-1} so the focus trap has nothing trappable and Tab would
-      // otherwise leak into the page while the menu stayed open (menus-5).
-      // Do NOT preventDefault — closing restores focus to the trigger, and the
-      // browser's default Tab then continues from there to the next element.
-      // A header or footer with something Tab can reach in that direction
-      // takes the Tab instead, and the menu stays open.
+      // With a header or footer the popover is a dialog and Tab wraps inside
+      // it. Without either, the APG menu-button pattern: Tab closes the menu.
+      // Menu items are tabIndex={-1} so the focus trap has nothing trappable
+      // and Tab would otherwise leak into the page while the menu stayed open
+      // (menus-5). Do NOT preventDefault — closing restores focus to the
+      // trigger, and the browser's default Tab then continues from there.
       if (e.key === 'Tab') {
-        const region = e.shiftKey ? headerRef.current : footerRef.current;
-        const tabbables = tabbablesIn(region);
-        if (tabbables.length > 0) {
-          // From a row, the browser's Shift+Tab would stop on the menu element
-          // itself — the row's ancestor and a Tab stop — before reaching the
-          // header. The menu is one stop, so go straight to the header.
-          if (e.shiftKey && e.target !== listRef.current) {
-            e.preventDefault();
-            // The popover's focus trap listens on the document and would read
-            // this same Shift+Tab against the field just focused — the trap's
-            // first element — and wrap to the footer. This key is handled.
-            e.stopPropagation();
-            if (!focusRegionControl(tabbables[tabbables.length - 1])) {
-              closeMenu();
-            }
-          }
+        if (hasRegions) {
+          moveDialogTab(e);
           return;
         }
         closeMenu();
@@ -1164,33 +1201,24 @@ function DropdownMenuPopover({
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead, ownsEvent, listRef, hasRegions],
+    [
+      listNavKeyDown,
+      closeMenu,
+      typeahead,
+      ownsEvent,
+      hasRegions,
+      moveDialogTab,
+    ],
   );
 
-  // Tab past the last control of the footer, or Shift+Tab before the first
-  // control of the header, leaves the menu as Tab from its rows does: the
-  // menu closes, focus returns to the trigger, and the browser's own Tab
-  // continues from there. Between the regions, Tab moves through the menu
-  // as one stop.
+  // Tab from a header or footer control moves through the same dialog cycle.
   const handleRegionKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.key !== 'Tab') {
-        return;
-      }
-      const tabbables = tabbablesIn(e.currentTarget);
-      const isHeader = e.currentTarget === headerRef.current;
-      const exit = isHeader
-        ? e.shiftKey
-          ? tabbables[0]
-          : undefined
-        : e.shiftKey
-          ? undefined
-          : tabbables[tabbables.length - 1];
-      if (exit != null && exit === document.activeElement) {
-        closeMenu();
+      if (e.key === 'Tab') {
+        moveDialogTab(e);
       }
     },
-    [closeMenu],
+    [moveDialogTab],
   );
 
   const openAndFocus = useCallback(
@@ -1389,20 +1417,6 @@ function DropdownMenuPopover({
 
   // The drill-in view stack for sub-menus on a phone.
   const {drillIn, wrapContent} = useMenuDrillIn(isOpen);
-  // The name a drilled-in view's Back row returns to: the menu's own name.
-  // The design system's button names the menu by its label. A custom trigger
-  // names it by reference (or the caller's `aria-label` does), so that name
-  // is read off the control as the menu opens.
-  const callerMenuLabel = rest['aria-label'];
-  const menuLabel =
-    renderTrigger != null
-      ? typeof callerMenuLabel === 'string' && callerMenuLabel.trim() !== ''
-        ? callerMenuLabel
-        : triggerName
-      : typeof button.label === 'string'
-        ? button.label
-        : undefined;
-
   const resolvedMaxHeight = menuMaxHeight == null ? null : `${menuMaxHeight}px`;
   // Context for compound items
   const contextValue = useMemo<DropdownMenuContextValue>(
@@ -1463,9 +1477,9 @@ function DropdownMenuPopover({
     // keeps the browser from drawing one after pointer input (see
     // handleLayerHide), so its focus needs no bookkeeping here.
     onFocus: () => {},
-    'aria-haspopup': 'menu',
+    'aria-haspopup': hasRegions ? 'dialog' : 'menu',
     'aria-expanded': isOpen,
-    'aria-controls': menuId,
+    'aria-controls': hasRegions ? popover.id : menuId,
   };
 
   return (
@@ -1513,9 +1527,9 @@ function DropdownMenuPopover({
             button.onFocus?.(event);
             onFocusReturnTargetFocus();
           }}
-          aria-haspopup="menu"
+          aria-haspopup={hasRegions ? 'dialog' : 'menu'}
           aria-expanded={isOpen}
-          aria-controls={menuId}
+          aria-controls={hasRegions ? popover.id : menuId}
           data-testid={testId}
         />
       )}
