@@ -163,7 +163,9 @@ one removal merged ahead of the decision to allow it.
   Its Changeset names the old and new appearance and how to keep the old look when a
   supported escape exists. A default that changes a functional or semantic contract is
   judged under FR1 instead. Its Changeset names the old and new default and the prop or
-  option that restores the old default, which is the migration.
+  option that restores the old default, which is the migration. A change to documented
+  interaction or accessibility behavior made for accessibility conformance is
+  classified under FR52.
 - **FR4 — Preserved old usage is nonbreaking.** A rename or replacement is
   nonbreaking when the old released call, import, option, identifier, or input
   continues to work with equivalent meaning through a compatibility alias or
@@ -176,7 +178,8 @@ one removal merged ahead of the decision to allow it.
   released faulty behavior must change. When a supported consumer relies on that
   behavior and the correction breaks the consumer, FR32–FR35 classify it as an
   incompatible fix even though the implementation violated authority. A proposal
-  that intentionally replaces the documented contract is not a fix.
+  that intentionally replaces the documented contract is not a fix, except an
+  accessibility behavior fix under FR52.
 - **FR6 — Risk does not override compatibility.** Low adoption, low likelihood,
   engineering approval, or confidence that affected callers are uncommon does not
   make an incompatible released contract nonbreaking. Conversely, implementation
@@ -490,11 +493,15 @@ one removal merged ahead of the decision to allow it.
   the correction breaks code, interaction, persisted data, output, or a supported
   workflow, the correction is `[breaking]` and follows FR31 for the declared tier,
   stating the corrected contract and the migration. A visible correction with no valid
-  released victim remains `[fix]` under FR5.
+  released victim remains `[fix]` under FR5. An accessibility behavior fix is not a
+  breaking correction: FR52 classifies it.
 - **FR33 — A correction's authority and victim are named.** The `[breaking]`
   Changeset or its pull request names the pre-existing authority the released behavior
   violated, a latest-stable reproducer, and the migration. Without pre-existing
   authority, the proposal is a new contract decision for the direct owner, not a fix.
+  For an accessibility behavior fix, the authority is the conformance target FR52
+  names, and the owner records any behavior decision the fix needs in the component's
+  record.
 - **FR34 — A correction follows the same tier rule.** In a declared minor a breaking
   correction merges on its `[breaking]` Changeset. When `main` declares a patch, the
   patch ships the corrected opt-in or adapter beside the old behavior (FR28) and the
@@ -651,6 +658,18 @@ one removal merged ahead of the decision to allow it.
   until the declaration is strictly above stable. If main already carries a newer
   owner plan, FR50 preserves it and no duplicate bump is required. The plan remains
   malleable under FR46 until the next cut.
+- **FR52 — Accessibility behavior fixes are not breaking.** A change whose purpose is
+  to make a released component conform to its accessibility target — a WCAG 2.2 Level
+  A or AA success criterion, the required parts of an APG pattern the component adopts
+  under `spec:AST-020/FR15`, or a current accessibility requirement in its record — is
+  `[fix]` and patch-eligible, even when it replaces documented interaction or
+  accessibility behavior: roles, accessible names, states and properties, focus
+  movement, and keyboard behavior. No deprecation precedes it and no coexistence path
+  is required. It stays an ordinary compatibility change when it also removes or
+  renames a public surface, narrows accepted inputs, changes data or machine-readable
+  output, or requires a caller to edit source or configuration to keep working; those
+  parts follow FR1. Its Changeset names the old and new behavior and the accessibility
+  target it serves.
 
 ### Platform support
 
@@ -781,6 +800,7 @@ lands, maintainers apply its requirement in review and release approval.
 | FR49      | Malformed and inconsistent declaration fixtures                                                                                                                                                                                                                                                                                                                 | disagreeing group versions, canary identifier, release version unlike the cut manifest, already-released version, skipped version, no stable tag                                              | An untrustworthy or mismatched declaration is released                                                                                                                                                                                                                |
 | FR50      | Three-way squash merge-back fixtures bound to the immutable tag, branch head, and plan digest                                                                                                                                                                                                                                                                   | exact branch outputs, frozen deletion, branch-only marker exclusion, post-cut Changeset/manifest edit, newer main declaration, merge conflict, regenerated output                             | Merge-back differs from release bytes, lands lifecycle files, consumes post-cut work, overwrites a newer main declaration or unrelated field, or chooses a version                                                                                                    |
 | FR51      | Separate next-plan manifest/pin/lockfile/compatibility-asset fixtures plus canary routing assertions                                                                                                                                                                                                                                                            | default patch successor, explicitly named minor, pre-advanced main plan, unrelated main work during equality                                                                                  | Equality publishes a canary, the default skips a patch, pending Changesets choose a minor, exact pins or compatibility assets split, or merge-back requires a duplicate bump for an existing newer plan                                                               |
+| FR52      | Changeset classification review naming the old and new behavior and its accessibility target, plus the governing component record's accessibility evidence                                                                                                                                                                                                      |
 
 ## Decision log
 
@@ -1142,6 +1162,24 @@ Rejected: a lifecycle record and frozen manifest that every removal had to appea
 before merging, which duplicated the Changeset and made bookkeeping the blocker; a
 per-record transition requirement and waiver, which the patch rule already expresses;
 and dropping the manifest, which would lose the minor's migration inventory.
+
+### DEC-19 — Accessibility behavior fixes are not breaking
+
+**Reference:** `spec:AST-017/DEC-19`
+**Decider:** `cixzhang`, `2026-10-14`
+
+Every user of a component that misses its accessibility target is harmed until the
+fix ships, and the people harmed most are the ones least able to work around it.
+Holding such a fix for a planned minor, or shipping it behind an opt-in beside the
+inaccessible behavior, keeps that harm in place to protect callers who depended on
+behavior that excluded someone. So a change made for accessibility conformance is a
+`[fix]` in the patch line even when it replaces documented roles, names, states, focus
+or keyboard behavior. The boundary is the caller's code: a fix that also removes a
+public surface, narrows an input, or changes data or machine output is classified for
+those parts as any other change.
+
+Rejected: classifying accessibility corrections as breaking whenever a released
+caller observes the old behavior, which delays every conformance fix to a minor.
 
 ## Open questions
 
