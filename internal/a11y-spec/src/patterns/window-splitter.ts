@@ -96,6 +96,12 @@ export interface WindowSplitterStateFacts {
   readonly operable: boolean;
   /** Whether Enter collapses and restores the primary pane. */
   readonly collapsible: boolean;
+  /**
+   * Whether the pane starts collapsed. The collapse-and-restore row assumes
+   * an open pane, so it does not run here; the arrow row still does, since a
+   * collapsed pane must still answer the keyboard.
+   */
+  readonly startsCollapsed?: boolean;
 }
 
 const ALWAYS = {
@@ -308,8 +314,10 @@ export const WINDOW_SPLITTER_PATTERN: PatternContract<WindowSplitterStateFacts> 
         sources: [WCAG_2_1_1, APG_ENTER],
         covers: ['2.1.1-keyboard', '4.1.2-name-role-value', 'apg-interaction'],
         appliesWhen: {
-          condition: 'the pane is collapsible and the splitter can be moved',
-          test: facts => facts.collapsible && facts.operable,
+          condition:
+            'the pane is collapsible, starts open, and the splitter can be moved',
+          test: facts =>
+            facts.collapsible && facts.operable && !facts.startsCollapsed,
         },
         evidenceLayer: 'real-browser',
         alsoNeeds: ['dom'],

@@ -25,6 +25,8 @@ export interface ResizeHandleBindingState {
   readonly maxSize?: number | null;
   /** The hook's collapse threshold, when the state sets one. */
   readonly collapsedSize?: number;
+  /** Start the pane collapsed (`defaultIsCollapsed`). */
+  readonly startsCollapsed?: boolean;
   readonly disabled?: boolean;
 }
 
@@ -104,6 +106,17 @@ export const RESIZE_HANDLE_BINDING_STATES = [
     collapsedSize: 50,
   },
   {
+    id: 'bare-start-collapsed',
+    summary:
+      'a bare ResizeHandle on a pane that starts collapsed: it announces the minimum as its value',
+    storyId: story('bare-start-collapsed'),
+    component: 'ResizeHandle',
+    label: 'Resize details pane',
+    // Collapsed, the handle announces the minimum (100) as its value.
+    facts: facts({collapsible: true, startsCollapsed: true, valueNow: 100}),
+    startsCollapsed: true,
+  },
+  {
     id: 'bare-unbounded',
     summary: 'a bare ResizeHandle whose region sets no maximum',
     storyId: story('bare-unbounded'),
@@ -136,13 +149,6 @@ export const RESIZE_HANDLE_EXCLUSIONS = [
     owner: 'ResizeHandle.test.tsx pointer suites',
     reason:
       "Dragging (pointer capture on the grab zone, ignoring a pointer that does not own the drag, ending on pointercancel or lost capture), double-click collapse and restore, and the grab-zone geometry are pointer behavior outside the keyboard-and-semantics pattern; the component's own jsdom pointer suites prove them. ResizeHandle has no Escape cancel and no Chromium pointer suite.",
-  },
-  {
-    id: 'starts-collapsed',
-    owner:
-      'ResizeHandle.test.tsx keyboard suites until a collapsed-start state joins this binding',
-    reason:
-      "A pane that starts collapsed answers the keyboard differently: a plain arrow step stays below the collapse threshold and leaves the pane collapsed, while Shift+Arrow (the large step), Home, End, Enter and a double-click reopen it. The required arrows row assumes an open pane, so a collapsed-start state is not bound here; it would need an arrows row conditioned on the collapsed state. The component's keyboard tests start expanded, so this remains an uncovered state rather than a proven one.",
   },
   {
     id: 'pane-cycling',

@@ -23,4 +23,17 @@ export const RESIZE_HANDLE_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     reason:
       'This test-only binding records the gap; the fix ships as its own spec-backed patch that reports the measured basis.',
   },
+  {
+    expectation: 'windowsplitter.keys.arrows-move',
+    binding: 'ResizeHandle',
+    state: 'bare-start-collapsed',
+    evidenceLayer: 'real-browser',
+    failureEquals: 'ArrowRight (grow) left aria-valuenow at 100, not 110',
+    standardsReference:
+      'APG Window Splitter keyboard interaction — the arrow keys move the splitter; Astryx component:Resizable AR1.',
+    userImpact:
+      'A keyboard user on a pane that starts collapsed presses the grow arrow and nothing happens: a plain step stays below the collapse threshold, so only Shift+Arrow, Home, End, Enter or a double-click reopens it.',
+    reason:
+      'This test-only binding records the gap; whether a plain arrow should reopen a collapsed pane is a component decision for its own spec-backed patch.',
+  },
 ];

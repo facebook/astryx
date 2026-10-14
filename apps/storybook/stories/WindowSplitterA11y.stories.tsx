@@ -38,5 +38,6 @@ export const BareReversed = storyFor('bare-reversed');
 export const BareRtl = storyFor('bare-rtl');
 export const BareCollapsible = storyFor('bare-collapsible');
 export const BareSmallMin = storyFor('bare-small-min');
+export const BareStartCollapsed = storyFor('bare-start-collapsed');
 export const BareUnbounded = storyFor('bare-unbounded');
 export const BareDisabled = storyFor('bare-disabled');
