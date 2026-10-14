@@ -3,33 +3,23 @@
 /**
  * @file integrationTargets.mjs
  *
- * Single decision point for whether a docsite content target admits workspace
- * integration packages (their component docs, runnable blocks, and playground
+ * Single decision point for which configured integration packages a docsite
+ * content target admits (their component docs, runnable blocks, and playground
  * scope modules).
  *
- * @input A resolved docsite target ('canary' | 'latest') and the docsite
- *   astryx.config
- * @output Whether integration content is admitted, and the admitted package
- *   names in configuration order
+ * @input A resolved docsite target ('canary' | 'latest'), the docsite
+ *   astryx.config, and the packages the `latest` snapshot documents
+ * @output The admitted package names in configuration order
  * @position Shared by scripts/generate-data.mjs, scripts/generate-scope.mjs and
- *   scripts/generate-playground-types.mjs so the production-exclusion rule
- *   cannot drift between generators. The
- *   production (`latest`) site must contain zero integration content — the
- *   configured packages are canary-only (e.g. @astryxdesign/lab, spec:AST-017).
+ *   scripts/generate-playground-types.mjs so the admission rule cannot drift
+ *   between generators. Canary admits every configured integration. The
+ *   production (`latest`) site documents published stable releases only
+ *   (spec:AST-033 FR5), so it admits a configured integration only once that
+ *   package has released stable and the `latest` snapshot holds it
+ *   (scripts/resolve-content-root.mjs). Canary-only packages (e.g.
+ *   @astryxdesign/lab, spec:AST-017) never reach the snapshot.
  *   Unit-tested directly in src/__tests__/integration-targets.test.ts.
  */
-
-/**
- * Integration content (workspace packages beyond @astryxdesign/core) is only
- * ever admitted on the canary target. `latest` documents the published stable
- * release, which never includes canary-only packages.
- *
- * @param {string} target resolved docsite target ('canary' | 'latest')
- * @returns {boolean}
- */
-export function integrationContentEnabled(target) {
-  return target === 'canary';
-}
 
 /**
  * The integration packages a target admits, in configuration order (the order
@@ -39,9 +29,15 @@ export function integrationContentEnabled(target) {
  *
  * @param {string} target resolved docsite target ('canary' | 'latest')
  * @param {{integrations?: unknown}} [config] the docsite astryx.config module
- * @returns {string[]} admitted package names; empty off-canary
+ * @param {Iterable<string> | null} [latestPackages] the packages the `latest`
+ *   snapshot documents; ignored on canary
+ * @returns {string[]} admitted package names
  */
-export function integrationPackagesForTarget(target, config) {
-  if (!integrationContentEnabled(target)) return [];
-  return Array.isArray(config?.integrations) ? [...config.integrations] : [];
+export function integrationPackagesForTarget(target, config, latestPackages = null) {
+  const configured = Array.isArray(config?.integrations)
+    ? [...config.integrations]
+    : [];
+  if (target === 'canary') return configured;
+  const documented = new Set(latestPackages ?? []);
+  return configured.filter(name => documented.has(name));
 }

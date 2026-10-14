@@ -18,18 +18,20 @@ import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import docsiteConfig from '../astryx.config.mjs';
-import {getTarget} from './resolve-content-root.mjs';
+import {getTarget, latestDocumentedPackageNames} from './resolve-content-root.mjs';
 import {integrationPackagesForTarget} from '../src/lib/integrationTargets.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const CORE_PKG = resolve(ROOT, '../../packages/core/package.json');
 const OUT = resolve(ROOT, 'src/generated/playground-scope.ts');
-// Shared with generate-data.mjs so the canary-only admission rule for
-// integration packages cannot drift between the two generators.
+// Shared with generate-data.mjs so the admission rule for integration
+// packages cannot drift between the two generators.
+const target = getTarget();
 const integrationPackages = integrationPackagesForTarget(
-  getTarget(),
+  target,
   docsiteConfig,
+  target === 'latest' ? latestDocumentedPackageNames() : null,
 );
 
 const HEADER = `// Copyright (c) Meta Platforms, Inc. and affiliates.

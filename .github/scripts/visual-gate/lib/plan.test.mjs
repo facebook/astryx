@@ -479,7 +479,7 @@ describe('readStoryIndex package metadata', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'visual-index-'));
     for (const [dir, manifest] of [
       ['packages/core', {name: '@astryxdesign/core'}],
-      ['packages/charts', {name: '@astryxdesign/charts', private: true, astryx: {canaryOnly: true}}],
+      ['packages/charts', {name: '@astryxdesign/charts'}],
       ['packages/lab', {name: '@astryxdesign/lab', private: true, astryx: {canaryOnly: true}}],
       ['packages/themes/neutral', {name: '@astryxdesign/theme-neutral', private: false}],
       ['packages/themes/probe', {name: '@astryxdesign/theme-probe', private: true}],
@@ -519,7 +519,7 @@ describe('readStoryIndex package metadata', () => {
       const indexed = readStoryIndex(dist, [], root);
       expect(indexed.find(value => value.id === 'core-button--default')).toMatchObject({packageName: '@astryxdesign/core', stableVisual: true});
       expect(indexed.find(value => value.id === 'core-composite--default')).toMatchObject({packageNames: ['@astryxdesign/core'], stableVisual: true});
-      expect(indexed.find(value => value.id === 'charts-bar--default')).toMatchObject({packageName: '@astryxdesign/charts', stableVisual: false});
+      expect(indexed.find(value => value.id === 'charts-bar--default')).toMatchObject({packageName: '@astryxdesign/charts', stableVisual: true});
       expect(indexed.find(value => value.id === 'lab-thing--default')).toMatchObject({packageName: '@astryxdesign/lab', stableVisual: false});
       expect(indexed.find(value => value.id === 'core-layer--default')).toMatchObject({packageName: '@astryxdesign/core', stableVisual: true});
       expect(indexed.find(value => value.id === 'core-probe--default')).toMatchObject({packageName: '@astryxdesign/theme-probe', stableVisual: false});
@@ -634,11 +634,11 @@ describe('readStoryIndex package metadata', () => {
         total: 974,
         plannedCurrentStable: 882,
         policyExcluded: 0,
-        intentionallyExcluded: 92,
-        preservedLegacy: 0,
+        intentionallyExcluded: 64,
+        preservedLegacy: 28,
         unclassified: 0,
       });
-      expect(Object.keys(account.manifest.shots)).toHaveLength(882);
+      expect(Object.keys(account.manifest.shots)).toHaveLength(910);
     } finally {
       fs.rmSync(root, {recursive: true, force: true});
     }

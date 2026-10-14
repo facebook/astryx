@@ -48,6 +48,8 @@ const REPO_ROOT = path.resolve(DOCSITE_ROOT, '..', '..');
 const PUBLISHED_DIST_TAG = 'latest';
 /** Package whose published version defines the release the docsite pins to. */
 const VERSION_SOURCE_PKG = '@astryxdesign/core';
+/** The snapshot's list of the packages `latest` documents, beside its stamp. */
+const DOCUMENTED_FILE = 'documented.json';
 
 function run(cmd, args, opts = {}) {
   return execFileSync(cmd, args, {encoding: 'utf-8', ...opts});
@@ -71,21 +73,68 @@ export function getTarget() {
 }
 
 /**
- * The docsite's @astryxdesign/* dependencies that are documented on the
- * `latest` (production) site: the ones actually published to the stable npm
- * `latest` dist-tag. Mapped to the monorepo-relative dir each occupies (so the
- * materialized cache mirrors REPO_ROOT's layout — themes under
- * packages/themes/<name>, everything else under packages/<name>).
- *
- * Packages that never reach the stable tag are EXCLUDED from `latest`:
- *   - `private` packages, and
- *   - `astryx.canaryOnly` packages (e.g. @astryxdesign/charts, @astryxdesign/lab)
- *     — these publish only as canaries, so no stable version exists to document.
- * This mirrors the publishable predicate in .github/workflows/release.yml's
- * stable-publish step, so production documents exactly the stable release set.
- * (On canary these still appear, sourced from the workspace like everything else.)
+ * `npm view <spec> <field> --json`, or null when npm has no such package or no
+ * such version.
+ * @param {string} spec
+ * @param {string} field
+ * @returns {unknown}
  */
-function latestPublishablePackages() {
+function npmView(spec, field) {
+  let out;
+  try {
+    out = run('npm', ['view', spec, field, '--json'], {
+      maxBuffer: 8 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  } catch (error) {
+    if (/\bE404\b/.test(String(error?.stderr ?? ''))) return null;
+    throw error;
+  }
+  return out ? JSON.parse(out) : null;
+}
+
+/**
+ * Whether a package belongs on `latest`, which documents published stable
+ * releases only (spec:AST-033 FR5). A package whose npm `latest` tag is
+ * missing or a prerelease (such as `0.0.0-bootstrap.0`) has never released
+ * stable, so there are no stable docs to pin: it stays off `latest` until its
+ * first stable release. A package that has released stable but lacks the
+ * pinned version is an error, because the fixed group releases together and a
+ * missing version means a broken release.
+ * @param {string} name
+ * @param {string} version the release `latest` pins
+ * @param {(spec: string, field: string) => unknown} [view] npm lookup
+ * @returns {boolean}
+ */
+export function isReleasedStable(name, version, view = npmView) {
+  const tags = /** @type {{latest?: unknown} | null} */ (view(name, 'dist-tags'));
+  const latest = typeof tags?.latest === 'string' ? tags.latest : null;
+  if (latest == null || latest.includes('-')) return false;
+  if (view(`${name}@${version}`, 'version') == null) {
+    throw new Error(
+      `${name} has released stable (latest is ${latest}) but ${name}@${version} is not on npm. The stable release is incomplete.`,
+    );
+  }
+  return true;
+}
+
+/**
+ * The docsite's @astryxdesign/* dependencies that are documented on the
+ * `latest` (production) site: the ones actually published as stable. Mapped to
+ * the monorepo-relative dir each occupies (so the materialized cache mirrors
+ * REPO_ROOT's layout — themes under packages/themes/<name>, everything else
+ * under packages/<name>).
+ *
+ * A package is EXCLUDED from `latest` when:
+ *   - it is `private`, or `astryx.canaryOnly` (e.g. @astryxdesign/lab): it
+ *     publishes only as canaries, the publishable predicate in
+ *     .github/workflows/release.yml's stable-publish step; or
+ *   - it is publishable but has not released stable yet (isReleasedStable), so
+ *     it joins `latest` with its first stable release and never before.
+ * (On canary these still appear, sourced from the workspace like everything else.)
+ * @param {string} version the release `latest` pins
+ */
+function latestPublishablePackages(version) {
   const pkg = JSON.parse(
     fs.readFileSync(path.join(DOCSITE_ROOT, 'package.json'), 'utf-8'),
   );
@@ -99,7 +148,7 @@ function latestPublishablePackages() {
         : path.join('packages', short);
       return {name, dir};
     })
-    .filter(({dir}) => {
+    .filter(({name, dir}) => {
       // Read the package's own workspace manifest for its publish flags. Same
       // rule release.yml uses for the stable `latest` tag.
       const manifestPath = path.join(REPO_ROOT, dir, 'package.json');
@@ -107,7 +156,16 @@ function latestPublishablePackages() {
         return false;
       }
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-      return manifest.private !== true && manifest.astryx?.canaryOnly !== true;
+      if (manifest.private === true || manifest.astryx?.canaryOnly === true) {
+        return false;
+      }
+      if (!isReleasedStable(name, version)) {
+        console.log(
+          `${name} is not on latest: it has no stable release yet (its first stable release adds it).`,
+        );
+        return false;
+      }
+      return true;
     });
 }
 
@@ -150,7 +208,8 @@ function materializeFromNpm(version, packages) {
   // v2: layout is declared by a synthetic pnpm-workspace.yaml (not a
   // package.json `workspaces` array) — bump invalidates caches from the
   // pre-#3752 layout, which the new discovery can't read.
-  const stampValue = `v2:npm-${version}:${packages
+  // v3: the snapshot also records the packages it documents (DOCUMENTED_FILE).
+  const stampValue = `v3:npm-${version}:${packages
     .map(p => p.name)
     .sort()
     .join(',')}`;
@@ -215,12 +274,17 @@ function materializeFromNpm(version, packages) {
     fs.rmSync(tmp, {recursive: true, force: true});
   }
 
+  fs.writeFileSync(
+    path.join(cacheRoot, DOCUMENTED_FILE),
+    JSON.stringify(packages.map(p => p.name).sort()),
+  );
   fs.writeFileSync(stamp, stampValue);
   return cacheRoot;
 }
 
 /**
- * Returns {target, contentRoot, cliRoot, version} for the current target.
+ * Returns {target, contentRoot, cliRoot, version, packages} for the current
+ * target; `packages` names what `latest` documents, and is null on canary.
  * contentRoot mirrors REPO_ROOT layout (has packages/* and pnpm-workspace.yaml).
  */
 export function resolveContentRoot() {
@@ -232,12 +296,13 @@ export function resolveContentRoot() {
       contentRoot: REPO_ROOT,
       cliRoot: path.join(REPO_ROOT, 'packages', 'cli'),
       version: null,
+      packages: null,
     };
   }
 
   // latest
   const version = latestPublishedVersion();
-  const packages = latestPublishablePackages();
+  const packages = latestPublishablePackages(version);
   const contentRoot = materializeFromNpm(version, packages);
   return {
     target,
@@ -252,7 +317,29 @@ export function resolveContentRoot() {
     // from the real workspace; only the documented DATA is pinned.
     cliRoot: path.join(REPO_ROOT, 'packages', 'cli'),
     version,
+    // The packages `latest` documents (latestPublishablePackages).
+    packages: packages.map(p => p.name),
   };
+}
+
+/**
+ * The packages the `latest` site documents, for the generators that run after
+ * generate-data.mjs: read from the snapshot it materialized for the current
+ * release, or worked out the same way when there is none yet.
+ * @returns {string[]}
+ */
+export function latestDocumentedPackageNames() {
+  const version = latestPublishedVersion();
+  const documented = path.join(
+    DOCSITE_ROOT,
+    '.content-cache',
+    `npm-${version}`,
+    DOCUMENTED_FILE,
+  );
+  if (fs.existsSync(documented)) {
+    return JSON.parse(fs.readFileSync(documented, 'utf-8'));
+  }
+  return latestPublishablePackages(version).map(p => p.name);
 }
 
 // CLI usage: `node resolve-content-root.mjs` prints the resolution as JSON.
