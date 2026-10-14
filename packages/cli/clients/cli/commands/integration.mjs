@@ -101,7 +101,7 @@ export function registerIntegration(program) {
   // still parses its own options.
   integration.allowUnknownOption(true);
 
-  defineCommand(integration, integrationAddCommand, {
+  const addCmd = defineCommand(integration, integrationAddCommand, {
     fn: integrationAddFn,
     action: async (kind, name, options) => {
       const json = program.opts().json || false;
@@ -115,6 +115,7 @@ export function registerIntegration(program) {
           extends: options.extends,
           parent: options.parent,
           to: options.to,
+          from: options.from,
         });
       } catch (error) {
         const err =
@@ -156,6 +157,7 @@ export function registerIntegration(program) {
       return NO_RESULT_SET;
     },
   });
+  addCmd.allowExcessArguments(false);
 
   defineCommand(integration, integrationVerifyCommand, {
     fn: integrationPackCheckFn,
@@ -168,8 +170,9 @@ export function registerIntegration(program) {
     fn: integrationPackCheckFn,
     action: async options => {
       if (!options.check) {
+        // One way forward: the new name. `npm pack` is what builds a tarball.
         return cliError(
-          'Pass --check to verify the integration tarball, or run `astryx integration verify`.',
+          '`integration pack` is now `integration verify`: run `astryx integration verify` to check the package the way npm will publish it. To build the tarball, run `npm pack`.',
           {code: ERROR_CODES.ERR_INVALID_ARGUMENT},
         );
       }

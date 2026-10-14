@@ -362,6 +362,11 @@
       "aliases": []
     },
     {
+      "name": "component-dropdown-menu-group",
+      "path": "components/dropdown-menu-group",
+      "aliases": []
+    },
+    {
       "name": "component-dropdown-menu-item",
       "path": "components/dropdown-menu-item",
       "aliases": []
@@ -1986,6 +1991,16 @@
       "aliases": []
     },
     {
+      "name": "example-drawer-header-with-close-button",
+      "path": "examples/drawer-header/with-close-button",
+      "aliases": []
+    },
+    {
+      "name": "example-drawer-header-with-subtitle-and-end-content",
+      "path": "examples/drawer-header/with-subtitle-and-end-content",
+      "aliases": []
+    },
+    {
       "name": "example-drawer-mobile-the-56px-page-reveal-default",
       "path": "examples/drawer/mobile-the-56px-page-reveal-default",
       "aliases": []
@@ -2008,6 +2023,11 @@
     {
       "name": "example-drawer-width-budget-pixels-or-any-css-length",
       "path": "examples/drawer/width-budget-pixels-or-any-css-length",
+      "aliases": []
+    },
+    {
+      "name": "example-dropdown-menu-group-selectable-rows",
+      "path": "examples/dropdown-menu-group/selectable-rows",
       "aliases": []
     },
     {
@@ -3801,6 +3821,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-press-feedback",
+      "path": "hooks/use-press-feedback",
+      "aliases": []
+    },
+    {
       "name": "hook-use-resizable",
       "path": "hooks/use-resizable",
       "aliases": []
@@ -4236,8 +4261,18 @@
       "aliases": []
     },
     {
+      "name": "showcase-drawer-header-default",
+      "path": "showcases/drawer-header/default",
+      "aliases": []
+    },
+    {
       "name": "showcase-drawer-basic",
       "path": "showcases/drawer/basic",
+      "aliases": []
+    },
+    {
+      "name": "showcase-dropdown-menu-group-default",
+      "path": "showcases/dropdown-menu-group/default",
       "aliases": []
     },
     {
@@ -4983,6 +5018,16 @@
     {
       "name": "template-table",
       "path": "templates/table",
+      "aliases": []
+    },
+    {
+      "name": "template-table-collapsible",
+      "path": "templates/table-collapsible",
+      "aliases": []
+    },
+    {
+      "name": "template-table-comparison",
+      "path": "templates/table-comparison",
       "aliases": []
     },
     {

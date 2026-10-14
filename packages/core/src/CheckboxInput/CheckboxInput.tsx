@@ -46,13 +46,22 @@ import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, rtlStyles} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import {useIndicatorFocusRing} from '../hooks/useIndicatorFocusRing';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {useIndicator} from '../Indicator';
 import {themeProps} from '../utils/themeProps';
 import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+
+// The touch press's paint, declared by the shared overlay styles on the
+// element the controller writes to (`pressedAlpha`) at the press's strength,
+// 1 while on and 1 → 0 over the release, and inherited resolved by the layer
+// that paints it. See interactionOverlay.stylex.ts.
+const pressedOverlayImage = 'var(--_press-paint-image)';
+
 const styles = stylex.create({
   container: {
     display: 'flex',
@@ -72,6 +81,10 @@ const styles = stylex.create({
   },
   // The owner paints this layer over the resolved indicator, so a theme
   // replacement cannot accidentally drop the component's pressed contract.
+  // Two pointers, two press models (see interactionOverlay.stylex.ts): a
+  // mouse keeps `:active`; under a coarse pointer that arm is dropped and the
+  // touch press controller writes `data-astryx-press` on the row, which this layer
+  // reads off the same scope marker as the hover tint.
   indicatorPressOverlay: {
     '::after': {
       content: '""',
@@ -81,8 +94,26 @@ const styles = stylex.create({
       pointerEvents: 'none',
       backgroundColor: {
         default: 'transparent',
-        [stylex.when.ancestor(':active', indicatorScope)]:
-          colorVars['--color-overlay-pressed'],
+        [stylex.when.ancestor(':active', indicatorScope)]: {
+          default: colorVars['--color-overlay-pressed'],
+          '@media (pointer: coarse)': 'transparent',
+        },
+      },
+      // The touch press, as an image layer over the colour: an image change is
+      // discrete, so no transition can delay the onset, and the strength the
+      // row's `pressedAlpha` arms own (1 while on, 1 → 0 over the release) is
+      // what moves. Coarse pointers only, like the drop above.
+      backgroundImage: {
+        default: null,
+        [stylex.when.ancestor('[data-astryx-press="on"]', indicatorScope)]: {
+          default: null,
+          '@media (pointer: coarse)': pressedOverlayImage,
+        },
+        [stylex.when.ancestor('[data-astryx-press="fading"]', indicatorScope)]:
+          {
+            default: null,
+            '@media (pointer: coarse)': pressedOverlayImage,
+          },
       },
     },
   },
@@ -306,6 +337,9 @@ export function CheckboxInput({
   'aria-describedby': ariaDescribedByProp,
   ...rest
 }: CheckboxInputProps) {
+  // The row is the pressable: the overlay's pressed arm reads the row's
+  // scope marker, the way the indicator's hover tint does.
+  const pressable = usePressFeedback();
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -407,12 +441,17 @@ export function CheckboxInput({
           // unconditionally is safe.
           disabledMessageTooltip.interactionRef(el);
         }}
+        {...(isDisabled ? undefined : pressable)}
         {...stylex.props(
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
           // Hover and focus reach the checkbox visual through this ancestor
           // marker rather than props, so the whole row drives it.
           !isDisabled && indicatorScope,
+          // The touch press's strength and release live on the row the
+          // controller writes to; the layer over the checkbox box inherits
+          // and paints it.
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
         )}>
         <div
           {...stylex.props(

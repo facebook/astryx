@@ -53,7 +53,7 @@ const anatomy = [
     name: 'Pointer section heading',
     required: false,
     description:
-      'Heading that labels a data-driven section in an anchored menu.',
+      'Heading that labels a group of rows in an anchored menu: a data-driven section or a compound DropdownMenuGroup.',
   },
   {
     name: 'Pointer divider',
@@ -226,6 +226,18 @@ export const docs = {
       type: 'number',
       description:
         'Maximum height in pixels for the popover presentation, for a menu that must fit its rows. Lifts the default 300px cap; the viewport still bounds it.',
+    },
+    {
+      name: 'header',
+      type: 'ReactNode',
+      description:
+        'Content above the rows and outside the menu itself — a filter field, a toggle. A menu holds only its rows, so a control that is not a row goes here or in `footer`, never among the rows. It keeps its own keys and presses; Tab moves from it into the menu, and Shift+Tab before its first control closes the menu. The bottom sheet shows it above the actions.',
+    },
+    {
+      name: 'footer',
+      type: 'ReactNode',
+      description:
+        'Content below the rows and outside the menu itself — a "Create" button. Tab from the menu moves into it, and Tab past its last control closes the menu. The bottom sheet shows it below the actions.',
     },
     {
       name: 'placement',

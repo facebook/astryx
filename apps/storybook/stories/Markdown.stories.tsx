@@ -226,6 +226,50 @@ export const LazyContinuations: Story = {
   },
 };
 
+const NESTED_LIST_DEPTHS = Array.from({length: 9}, (_, depth) => depth);
+
+export const NestedLists: Story = {
+  name: 'Nested lists',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Each nesting level draws its own marker: bulleted lists cycle disc, circle, square and numbered lists cycle decimal, lower-alpha, lower-roman, counting lists of either kind. A numbered list keeps its start.',
+      },
+    },
+  },
+  args: {
+    children: [
+      '## Bulleted',
+      '',
+      ...NESTED_LIST_DEPTHS.map(
+        depth => `${'  '.repeat(depth)}- Bullet at depth ${depth}`,
+      ),
+      '',
+      '## Numbered',
+      '',
+      ...NESTED_LIST_DEPTHS.map(
+        depth => `${'   '.repeat(depth)}1. Number at depth ${depth}`,
+      ),
+      '',
+      '## Mixed',
+      '',
+      '- Mixed at depth 0',
+      '  1. Mixed at depth 1',
+      '     - Mixed at depth 2',
+      '       1. Mixed at depth 3',
+      '',
+      '## Starts',
+      '',
+      '26. Start 26',
+      '',
+      'A paragraph ends that list.',
+      '',
+      '0. Start 0',
+    ].join('\n'),
+  },
+};
+
 export const ShiftedHeadings: Story = {
   name: 'Shifted Headings (start at h3)',
   args: {
@@ -932,6 +976,39 @@ export const SemanticFence: Story = {
       <Markdown plugins={[markdownSemanticFenceDemoPlugin]}>
         {
           '# Build flow\n\n```diagram Checkout to deploy\nCheckout --> Test --> Deploy\n```\n\nThe plugin renderer presents typed data only for declared languages. Other fences keep the ordinary copyable code fallback:\n\n```text\npnpm test\n```'
+        }
+      </Markdown>
+    </div>
+  ),
+};
+
+function StoryHostCode({code, language}: {code: string; language?: string}) {
+  return (
+    <figure
+      aria-label={`Host code renderer: ${language ?? 'plaintext'}`}
+      style={{
+        margin: '12px 0',
+        padding: 12,
+        border: '1px dashed currentColor',
+        borderRadius: 8,
+      }}>
+      <figcaption style={{fontSize: 12, marginBottom: 8}}>
+        Host code renderer · {language ?? 'plaintext'}
+      </figcaption>
+      <pre style={{margin: 0}}>{code}</pre>
+    </figure>
+  );
+}
+
+export const SemanticFenceWithCodeRenderer: Story = {
+  name: 'Semantic Fence With Code Renderer',
+  render: () => (
+    <div style={{maxWidth: 680}}>
+      <Markdown
+        plugins={[markdownSemanticFenceDemoPlugin]}
+        components={{code: StoryHostCode}}>
+        {
+          '# Build flow\n\nThe fence plugin claims `diagram` fences, so they render through the plugin even though the host supplies its own code renderer:\n\n```diagram Checkout to deploy\nCheckout --> Test --> Deploy\n```\n\nEvery fence no plugin claims renders through the host code renderer:\n\n```ts\nconst stage = "deploy";\n```'
         }
       </Markdown>
     </div>

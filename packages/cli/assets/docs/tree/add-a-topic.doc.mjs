@@ -64,7 +64,7 @@ export const docs = {
           style: 'unordered',
           items: [
             'Content blocks are `prose`, `code`, `list`, and `table`, as shown; `heading`, with a `level` from 3 to 6 and a `text`; and `token-ref`, which inlines a token table from another topic.',
-            '`id` is optional: a stable key for the section. Without it, the key comes from the title. A stable CLI before 0.7.0 cannot read `id`; see {@link generic:versioning}.',
+            '`id` is optional: a stable key for the section. Without it, the key comes from the title. A stable CLI before 0.6.4 cannot read `id`; see {@link generic:versioning}.',
             'Replace the `Overview` placeholder that `integration add` writes. Every field is in {@link generic:authoring}.',
           ],
         },

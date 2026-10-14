@@ -4,7 +4,8 @@
  * @file index.ts
  * @input Re-exports the browser-free surface of @astryxdesign/a11y-spec
  * @output Contract vocabulary, completeness checklist, harness seam, runner,
- *   report, the jsdom harness, and the authored pattern contracts. A pattern
+ *   report, the jsdom harness, and the authored pattern contracts, including
+ *   Carousel collection, slide, and focus semantics. A pattern
  *   exports a helper here only when a BINDING needs it — a helper the contract
  *   uses internally stays module-private.
  * @position Package entry point. The Chromium harness is deliberately NOT here:
@@ -119,6 +120,11 @@ export {
 } from './patterns/spinbutton';
 
 export {
+  TOGGLE_BUTTON_PATTERN,
+  type ToggleButtonStateFacts,
+} from './patterns/toggle-button';
+
+export {
   DISCLOSURE_PATTERN,
   type DisclosureStateFacts,
 } from './patterns/disclosure';
@@ -127,3 +133,31 @@ export {
   BREADCRUMB_PATTERN,
   type BreadcrumbStateFacts,
 } from './patterns/breadcrumb';
+
+export {
+  LANDMARK_PATTERN,
+  type LandmarkRole,
+  type LandmarkStateFacts,
+} from './patterns/landmark';
+
+export {SLIDER_PATTERN, type SliderStateFacts} from './patterns/slider';
+export {TREE_VIEW_PATTERN, type TreeViewStateFacts} from './patterns/tree-view';
+export {CAROUSEL_PATTERN, type CarouselStateFacts} from './patterns/carousel';
+export {
+  ACCORDION_PATTERN,
+  type AccordionStateFacts,
+} from './patterns/accordion';
+export {GRID_PATTERN, type GridStateFacts} from './patterns/grid';
+export {
+  ALERT_DIALOG_PATTERN,
+  type AlertDialogStateFacts,
+} from './patterns/alert-dialog';
+export {
+  WINDOW_SPLITTER_PATTERN,
+  type WindowSplitterStateFacts,
+} from './patterns/window-splitter';
+export {
+  LINK_PATTERN,
+  type LinkCurrentToken,
+  type LinkStateFacts,
+} from './patterns/link';

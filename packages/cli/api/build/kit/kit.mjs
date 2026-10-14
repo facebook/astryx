@@ -27,13 +27,20 @@
  * the invocation stays the renderer's job.
  */
 
-import {search} from '../../search/search.mjs';
+import {search, searchedComponents} from '../../search/search.mjs';
 import {findCoreDir} from '../../../foundation/fs/paths.mjs';
 import {AstryxError} from '../../error.mjs';
 import {ERROR_CODES} from '../../../foundation/response/error-codes.mjs';
 import {getResultCoverage} from '../../search/coverage.mjs';
-import {loadPageTemplates} from '../_adapter.mjs';
-import {pickAlternatives, pickStart, rankPages} from './rank.mjs';
+import {loadComponents, loadPageTemplates, loadWeights, templateSetupNotes} from '../_adapter.mjs';
+import {
+  asksForNewPage,
+  ideaKind,
+  pickAlternatives,
+  pickStart,
+  rankPages,
+} from './rank.mjs';
+import {weighStart} from './weights.mjs';
 
 /** A page at/above this score is a confident direct match. */
 const PAGE_DIRECT = 95;
@@ -113,10 +120,29 @@ const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
  */
 const asTemplate = t => ({
   name: t.name,
+  package: t.package,
   displayName: t.displayName,
   description: t.description,
   command: `${t.command} <path>`,
 });
+
+/**
+ * Why a part of a page, or a change to a page the builder already has, starts
+ * where it does (spec:AST-048/FR3, FR9): the rest of the start's reason, or
+ * null for a whole page.
+ * @param {import('./rank.mjs').IdeaKind} kind
+ * @param {boolean} inPage whether the start is the page the idea names
+ * @returns {string | null}
+ */
+function placement(kind, inPage) {
+  if (kind === 'edit')
+    return 'the idea changes a page you already have, so keep it and add blocks to it; a new page starts from the app shell.';
+  if (kind === 'part')
+    return inPage
+      ? 'the idea is a part of a page, so it starts from the page it names.'
+      : 'the idea is a part of a page and names no page, so it starts from the app shell.';
+  return null;
+}
 
 /**
  * The template to start from: the ready page the ranker puts first when it
@@ -129,12 +155,14 @@ const asTemplate = t => ({
  * the reason names it, so the reader knows why the kit starts elsewhere.
  *
  * @param {import('./rank.mjs').RankedPage[]} ranked
+ * @param {import('./rank.mjs').IdeaKind} kind
  * @param {SearchResultEntry[]} pages
  * @param {boolean} directMatch
  * @param {PageTemplate[]} catalog
+ * @param {string} idea
  * @returns {Omit<BuildStart, 'alternatives'> | null}
  */
-function chooseStart(ranked, pages, directMatch, catalog) {
+function chooseStart(ranked, kind, pages, directMatch, catalog, idea) {
   const direct = directMatch ? pages[0].name : null;
   const unready =
     direct && !catalog.some(t => t.name === direct) ? direct : null;
@@ -142,20 +170,52 @@ function chooseStart(ranked, pages, directMatch, catalog) {
   // match the ranker outweighed is named, and so are the loose page matches
   // search listed when the kit falls back to the shell.
   const loose = pages.map(p => `\`${p.name}\``).join(', ');
-  const pick = pickStart(ranked);
+  /**
+   * A part's or an edit's reason, naming a direct match that is not the start.
+   * @param {string} place
+   * @param {string} startName
+   */
+  const placed = (place, startName) =>
+    direct && direct !== startName
+      ? `Search matched \`${direct}\` by name, but ${place}`
+      : place[0].toUpperCase() + place.slice(1);
+  const proposed = pickStart(ranked, kind);
+  // The checked-in word weights (weights.mjs), blended with the ranker's
+  // scores, decide the start of a whole page. A part or an edit starts where
+  // the ranker's placement rules put it (spec:AST-048/FR3).
+  const weighed =
+    kind === 'page'
+      ? weighStart(idea, ranked, proposed, catalog, {
+          weights: loadWeights(),
+          newPage: asksForNewPage(idea, catalog),
+        })
+      : undefined;
+  // A shell start keeps the shell the ranker named, if any, and never replaces
+  // the template the ranker chose for a page search matched directly.
+  const pick =
+    weighed === undefined
+      ? proposed
+      : weighed === null
+        ? proposed?.family === 'Shell' || (proposed && direct && !unready)
+          ? proposed
+          : null
+        : (ranked.find(r => r.name === weighed) ?? proposed);
   const closest = pick && catalog.find(t => t.name === pick.name);
-  if (closest) {
+  if (pick && closest) {
     const agrees = closest.name === direct;
+    const place = placement(kind, pick.base && pick.familyNamed);
     return {
       ...asTemplate(closest),
       basis: agrees ? 'direct' : 'closest',
-      reason: agrees
-        ? 'Matches the idea.'
-        : unready
-          ? `\`${unready}\` matches but is not ready yet; this is the closest ready template.`
-          : direct
-            ? `Search matched \`${direct}\` by name, but this template fits more of the idea.`
-            : 'The closest template; none is exactly this page.',
+      reason: unready
+        ? `\`${unready}\` matches but is not ready yet; this is the closest ready template.`
+        : place
+          ? placed(place, closest.name)
+          : agrees
+            ? 'Matches the idea.'
+            : direct
+              ? `Search matched \`${direct}\` by name, but this template fits more of the idea.`
+              : 'The closest template; none is exactly this page.',
     };
   }
   for (const id of FALLBACK_STARTS) {
@@ -163,19 +223,26 @@ function chooseStart(ranked, pages, directMatch, catalog) {
     if (shell) {
       // The shell can also be the ranker's best guess without the evidence to
       // lead ("horizontal site navigation"); say so rather than "no match".
-      const nearest = ranked[0]?.name === shell.name && ranked[0].hits > 0;
+      const nearest =
+        (ranked[0]?.name === shell.name && ranked[0].hits > 0) ||
+        (weighed === null && !!proposed && proposed.family !== 'Shell');
+      const place = placement(kind, false);
       return {
         ...asTemplate(shell),
         basis: 'fallback',
         reason: unready
           ? `\`${unready}\` matches but is not ready yet, so start from the app shell.`
-          : direct
-            ? `Search matched \`${direct}\` by name, but too little of the idea fits it, so start from the app shell.`
-            : nearest
-              ? 'No template is a clear match; the app shell is the closest.'
-              : loose
-                ? `Search matched ${loose} only loosely, so start from the app shell.`
-                : 'No template matched, so start from the app shell.',
+          : place
+            ? placed(place, shell.name)
+            : direct
+              ? weighed === null
+                ? `Search matched \`${direct}\` by name, but the app shell is the closer start.`
+                : `Search matched \`${direct}\` by name, but too little of the idea fits it, so start from the app shell.`
+              : nearest
+                ? 'No template is a clear match; the app shell is the closest.'
+                : loose
+                  ? `Search matched ${loose} only loosely, so start from the app shell.`
+                  : 'No template matched, so start from the app shell.',
       };
     }
   }
@@ -301,8 +368,18 @@ export async function buildKit(query, options = {}) {
   const wantsPages = !type || type === 'template';
   const catalog = wantsPages ? await loadPageTemplates(cwd) : [];
   const ranked = wantsPages ? rankPages(query, catalog) : [];
+  // A part of a page starts where it lives (spec:AST-048/FR3); the project's
+  // own components say what a part is. The search above already gathered them
+  // unless it was narrowed to templates.
+  const kind = wantsPages
+    ? ideaKind(
+        query,
+        catalog,
+        searchedComponents(result) ?? (await loadComponents(cwd)),
+      )
+    : 'page';
   const chosen = wantsPages
-    ? chooseStart(ranked, matchedPages, directMatch, catalog)
+    ? chooseStart(ranked, kind, matchedPages, directMatch, catalog, query)
     : null;
   // Name the ranker's next two templates beside the start: the reader judges
   // meaning better than keywords do, and an acceptable template is in these
@@ -315,6 +392,17 @@ export async function buildKit(query, options = {}) {
       return t ? [asTemplate(t)] : [];
     }),
   };
+
+  // Analyze what the start template needs that the project lacks (external
+  // packages, StyleX compiler). Only the start — alternatives are suggestions,
+  // not commitments, so reporting their needs would be noise.
+  if (start) {
+    const startTemplate = catalog.find(t => t.name === start.name);
+    if (startTemplate) {
+      const notes = templateSetupNotes(startTemplate, cwd);
+      if (notes.length > 0) start.notes = notes;
+    }
+  }
 
   // What to try when the kit comes back thin. Keyword search over a design
   // system misses in a predictable way — the reader's words and the package's

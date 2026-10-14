@@ -35,6 +35,7 @@ import {
   generateColumns,
   defaultCellRenderer,
   resolveColumnWidths,
+  resolveTableMinWidth,
 } from './columnUtils';
 import {TableRow} from './TableRow';
 import {TableCell} from './TableCell';
@@ -511,16 +512,23 @@ function BaseTableInner<T extends Record<string, unknown>>({
   const hasData = data != null && data.length > 0;
   const hasColumns = resolvedColumns.length > 0;
 
-  // Style precedence: consumer style < the computed column min-width
-  // (structural — derived from column defs, so it
-  // must win when present; when absent, a consumer minWidth survives).
-  const tableStyle: React.CSSProperties = {
+  // The table is at least as wide as the column floors require and at least
+  // as wide as any minWidth the consumer (or a plugin) set: whichever is
+  // larger wins, so column floors never shrink a consumer's minimum.
+  const mergedStyle: React.CSSProperties = {
     ...tableRenderProps.htmlProps.style,
     ...style,
-    ...(resolvedWidths.tableMinWidth > 0
-      ? {minWidth: `${resolvedWidths.tableMinWidth}px`}
-      : null),
   };
+  const tableStyle: React.CSSProperties =
+    resolvedWidths.tableMinWidth > 0
+      ? {
+          ...mergedStyle,
+          minWidth: resolveTableMinWidth(
+            mergedStyle.minWidth,
+            resolvedWidths.tableMinWidth,
+          ),
+        }
+      : mergedStyle;
 
   let tableElement: ReactNode = (
     <table
@@ -528,12 +536,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
       {...(ariaRowCount != null ? {'aria-rowcount': ariaRowCount} : null)}
       {...tableRenderProps.htmlProps}
       {...mergeProps(
-        themeProps('table', undefined, {
-          // `base-table` was a second root on the same <table> element that
-          // `table` names; themes styling it keep working until the next
-          // major.
-          legacyNames: ['base-table'],
-        }),
+        themeProps('table'),
         stylex.props(...tableRenderProps.xstyle, xstyle),
         [tableRenderProps.htmlProps.className, className]
           .filter(Boolean)

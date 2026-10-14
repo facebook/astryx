@@ -38,6 +38,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 import type {TokenColorMap} from './index';
 
@@ -300,6 +301,10 @@ export function Token({
   ref,
   ...rest
 }: TokenProps) {
+  // Constant marker props; the hook's only effect is installing the shared
+  // document controller once, so the token's output stays a pure function
+  // of its props.
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
   const role = useInteractiveRole({href, onClick, isDisabled});
@@ -346,6 +351,7 @@ export function Token({
         <LinkComponent
           ref={ref as React.Ref<HTMLAnchorElement>}
           href={href as string}
+          {...pressable}
           {...mergeProps(
             themeProps('token', {color, size}),
             focusOutlineProps.focusVisible(
@@ -385,6 +391,7 @@ export function Token({
         endContent={endContent}
         removeButton={removeButton}
         linkStyleProps={stylex.props(styles.invisibleButton)}
+        {...pressable}
         labelContent={
           <span
             {...stylex.props(
@@ -427,6 +434,7 @@ export function Token({
       <span
         ref={ref}
         onClick={isDisabled ? undefined : handleContainerClick}
+        {...pressable}
         {...mergeProps(
           themeProps('token', {color, size}),
           focusOutlineProps.focusWithin(

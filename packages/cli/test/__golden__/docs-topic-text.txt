@@ -1,3 +1,5 @@
+package: @acme/kit
+
 # Acme guide
 
 How zorblax cards fit together.

@@ -80,7 +80,9 @@ export interface CommandPaletteProps<
 
   /**
    * Per-item render function. Receives the item and whether it is currently selected.
-   * Auto-grouping by `auxiliaryData.group` is preserved.
+   * Return non-interactive presentation content; buttons and links cannot be
+   * nested inside the rendered option. Auto-grouping by `auxiliaryData.group`
+   * is preserved.
    * When omitted, renders each item's `label` text.
    */
   renderItem?: (item: T, isSelected: boolean) => ReactNode;

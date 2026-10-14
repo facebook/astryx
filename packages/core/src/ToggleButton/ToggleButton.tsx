@@ -29,6 +29,7 @@ import type {Elevation} from '../utils/types';
 import {useToggleButtonGroup} from './ToggleButtonGroup';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {mergeProps} from '../utils/mergeProps';
 
 // =============================================================================
 // Styles
@@ -255,7 +256,7 @@ export function ToggleButton({
   tooltip,
   value,
   xstyle,
-  className: _className,
+  className,
   style,
   ...props
 }: ToggleButtonProps): ReactNode {
@@ -343,10 +344,13 @@ export function ToggleButton({
       aria-pressed={isPressed}
       icon={resolvedIcon}
       tooltip={tooltip}
-      {...themeProps('toggle-button', {
-        isPressed: isPressed ? 'true' : 'false',
-        elevation,
-      })}
+      {...mergeProps(
+        themeProps('toggle-button', {
+          isPressed: isPressed ? 'true' : 'false',
+          elevation,
+        }),
+        className,
+      )}
       xstyle={[isPressed ? pressedStyles.background : undefined, xstyle]}
       style={style}
       onClick={handleClick}

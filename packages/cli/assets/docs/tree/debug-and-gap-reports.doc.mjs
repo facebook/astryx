@@ -174,7 +174,7 @@ message:     Rerun with --confirm-public to file this report.`,
         },
         {
           type: 'prose',
-          text: 'One handler anywhere in the app, from the app or from any package, turns the fallback off for every report. See {@link command:gap-report}.',
+          text: 'One handler anywhere in the app, from the app or from any package, turns the fallback off for every report. So does a listed package that fails to load: the CLI cannot tell whether it has a handler, so the report fails for that package instead of going to another tracker. See {@link command:gap-report}.',
         },
       ],
     },

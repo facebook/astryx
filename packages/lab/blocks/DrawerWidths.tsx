@@ -11,7 +11,7 @@
 import {useState} from 'react';
 import {Drawer, DrawerHeader} from '@astryxdesign/lab';
 import {Button} from '@astryxdesign/core/Button';
-import {Section} from '@astryxdesign/core/Section';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {HStack} from '@astryxdesign/core/Stack';
 import {Text} from '@astryxdesign/core/Text';
 
@@ -36,12 +36,18 @@ export default function DrawerWidths() {
         onOpenChange={setIsOpen}
         label="Width budget"
         width={width}>
-        <DrawerHeader title="Width budget" onOpenChange={setIsOpen} />
-        <Section padding={4}>
-          <Text type="body">
-            Width: {typeof width === 'number' ? `${width}px` : width}
-          </Text>
-        </Section>
+        <Layout
+          header={
+            <DrawerHeader title="Width budget" onOpenChange={setIsOpen} />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">
+                Width: {typeof width === 'number' ? `${width}px` : width}
+              </Text>
+            </LayoutContent>
+          }
+        />
       </Drawer>
     </>
   );

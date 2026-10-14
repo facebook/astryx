@@ -236,7 +236,7 @@ copying.
 | FR4 | Who resolves the query is settled by who owns the choices, and is not restated per component. A component that holds its own choice set resolves the query itself, matching case-insensitively on each choice's displayed label at minimum, and exposes a boolean to turn the query input on. A component whose presented choices ARE the query's result takes a required `searchSource`. Both kinds reach the same observable states: a narrowed list, an empty result, and `emptyText`.                                                         | DEC-2; `spec:AST-002` FR16                                                   | Proposed; shipped behavior, unspecified |
 | FR5 | A capability that cannot function without a typed query MUST have exactly one switch, and MUST report through the component's primary change callback with a descriptor naming the kind of change, rather than through a handler prop of its own. A caller MUST NOT be able to express a configuration that renders nothing and reports nothing, which `hasCreate && hasSearch && onCreate != null` permits whenever any one piece is missing. Enabling it on a component with no query input MUST warn in development rather than fail silently. | DEC-3; `spec:AST-002` FR15 (never silently render a broken state)            | Proposed; no evidence on `main`         |
 | FR6 | A new search-related capability is admitted under `spec:AST-002` against this record, or not at all. A new top-level prop whose name carries the word `search` MUST name the state or capability it governs in the vocabulary this record fixes, and MUST NOT introduce a second name for a state one of these props already expresses.                                                                                                                                                                                                           | DEC-4; `spec:AST-002` FR1, FR5, DEC-1                                        | Proposed; no evidence on `main`         |
-| FR7 | Every prop this record renames is a released public surface with a victim, so it MUST follow `spec:AST-017` FR28–FR31: the replacement ships first, old usage stays equivalent through the overlap, each old prop gets a `DEP-*` id and a distinct `CLN-*` id, and removal happens only in a minor whose frozen manifest carries both. While both exist, a component given both MUST resolve to the new prop and MUST fire a development warning.                                                                                                 | `architecture:public-component-api` INV9; `spec:AST-017` FR1, FR3, FR28–FR31 | Proposed; cycle not started             |
+| FR7 | Every prop this record renames is a released public surface with a victim, so it MUST follow `spec:AST-017` FR28–FR31: the replacement ships first, old usage stays equivalent through the overlap, and removal happens in a declared minor with a `[breaking]` Changeset naming the replacement. While both exist, a component given both MUST resolve to the new prop and MUST fire a development warning.                                                                                                                                      | `architecture:public-component-api` INV9; `spec:AST-017` FR1, FR3, FR28–FR31 | Proposed; cycle not started             |
 
 ### Accessibility contract
 
@@ -297,10 +297,9 @@ coexist indefinitely, not replace.
   carries `@deprecated` naming its replacement, and behaves exactly as before
   (`spec:AST-017` FR28, FR29). During the overlap a component reads both and
   the new prop wins, with one development warning on conflict (FR7).
-- Each old prop gets a `DEP-*` id and a distinct `CLN-*` id. Removal happens in
-  a later minor only when both ids are in that minor's frozen manifest
-  (`spec:AST-017` FR31). This record sets no clock; FR30 forbids reading
-  release cadence as one.
+- Removal happens in a later declared minor with a `[breaking]` Changeset that
+  names the replacement (`spec:AST-017` FR31). This record sets no clock; FR30
+  forbids reading release cadence as one.
 - A caller who passed a `string` needs no edit beyond the name: the type only
   widens, so every existing value stays valid.
 
@@ -372,7 +371,7 @@ describes, so `Tokenizer` already conforms and changes nothing.
 | FR5, AR1  | Per-adopter suites plus their live-region assertions                                              | A string `emptyText`; an element `emptyText`; the adjacent "no choices at all" state                      | A differently named or typed key, or an announcement that does not carry what the element rendered, fails. This is the gap AR1 names on `main` today.               |
 | FR6, FR7  | Type-level checks plus per-adopter suites                                                         | `onCreate` given with `search` present; `onCreate` given with `search` absent                             | A create affordance reachable without search, a boolean gating a handler, or a silently inert configuration, fails.                                                 |
 | FR8       | Per-adopter suites                                                                                | Typing; clearing; programmatic change                                                                     | A callback that suppresses the component's own resolution, or a component requiring it, fails.                                                                      |
-| FR9       | Overlap suites on each adopter plus the release lifecycle's manifest checks                       | Old prop alone; key alone; both given; neither                                                            | Old usage changing behavior, a silent win for the old prop, a missing `DEP-*`/`CLN-*` pair, or a removal absent from the frozen minor manifest, fails.              |
+| FR9       | Overlap suites on each adopter plus the declared-tier Changeset check                             | Old prop alone; key alone; both given; neither                                                            | Old usage changing behavior, a silent win for the old prop, a missing `DEP-*`/`CLN-*` pair, or a removal absent from the frozen minor manifest, fails.              |
 | FR10, AR2 | Public-API review against this record; per-adopter accessible-name assertions                     | A proposed new search capability; each adopter's query input, named and unnamed                           | A new top-level `search*` prop admitted, or a query input whose only name is its placeholder, fails.                                                                |
 
 Known verification gap: none of the suites above exist on `main`, and no
@@ -504,8 +503,8 @@ review without anybody restructuring a component.
 
   `cixzhang`, 2026-10-02: `emptySearchResultsText` is marked `@deprecated`
   pointing at `emptySearchText`, both work through the overlap, and removal
-  happens in a later minor under `spec:AST-017` FR28–FR31. The cost is three
-  `DEP-*`/`CLN-*` pairs and one doubled prop on three components, which is
+  happens in a later minor under `spec:AST-017` FR28–FR31. The cost is one
+  doubled prop on three components, which is
   what FR7 already describes — far less than the nine pairs the rejected
   object form would have cost. The rename is codemoddable even where a caller
   spreads props, because the value's meaning does not change and the type only

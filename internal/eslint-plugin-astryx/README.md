@@ -1010,8 +1010,8 @@ assumed, and none has an instance in the repo except the last:
   look for colours is a different rule.
 - **A `.css` file**, which ESLint never parses. There is one live instance:
   `packages/core/src/reset.css:291` reads
-  `var(--color-text-secondary, #9ca3af)` — the same defensive-fallback shape as
-  the `Sankey` hits, and it rides with them.
+  `var(--color-text-secondary, light-dark(#4E606F, #AAAFB5))` — the same
+  defensive-fallback shape as the `Sankey` hits, and it rides with them.
 
 Everything else the rule reaches, and a probe confirms it: a `const`, an object
 property, an array element, an enum member, a computed key, a template

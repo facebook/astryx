@@ -645,9 +645,11 @@ describe('field menu sizing', () => {
     const listbox = screen.getByRole('listbox', {hidden: true});
     const popover = listbox.closest('[popover]');
     expect(popover).not.toBeNull();
-    expect((popover as HTMLElement).style.getPropertyValue('--x-width')).toBe(
-      '480px',
-    );
+    // Clamped to the layer runtime's viewport cap, never to the room beside
+    // the field (spec:AST-059 FR2, FR7).
+    expect(
+      (popover as HTMLElement).style.getPropertyValue('--x-width'),
+    ).toMatch(/^min\(480px, calc\(100vw - /);
   });
 });
 
@@ -728,6 +730,51 @@ describe('field menu grouping', () => {
           {hidden: true},
         ),
       ).toHaveLength(0);
+    });
+  });
+});
+
+describe('field menu after the search source changes', () => {
+  it('opens the new field menu on the first click after a config change', async () => {
+    const user = userEvent.setup();
+    // A caller that loads field options asynchronously hands PowerSearch a
+    // new config, which builds a new search source.
+    const loadedConfig: PowerSearchConfig = {
+      ...config,
+      fields: [
+        ...config.fields,
+        {
+          key: 'owner',
+          label: 'Owner',
+          defaultOperator: 'is',
+          operators: [{key: 'is', label: 'is', value: {type: 'string'}}],
+        },
+      ],
+    };
+    const renderSearch = (searchConfig: PowerSearchConfig) => (
+      <>
+        <PowerSearch config={searchConfig} filters={[]} onChange={() => {}} />
+        <button type="button">Sort</button>
+      </>
+    );
+    const {rerender} = render(renderSearch(config));
+    const input = screen.getByRole('combobox');
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    await user.click(screen.getByRole('button', {name: 'Sort'}));
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    rerender(renderSearch(loadedConfig));
+    await user.click(input);
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(
+        screen.getByRole('option', {name: /Owner/, hidden: true}),
+      ).toBeInTheDocument();
     });
   });
 });
