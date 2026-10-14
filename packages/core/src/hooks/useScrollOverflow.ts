@@ -6,10 +6,16 @@
  * @file useScrollOverflow.ts
  * @input Uses React useRef, useState, useCallback, useEffect
  * @output Exports useScrollOverflow hook for tracking scroll position edges
- * @position Core hook; used by Carousel for fade-edge and button state
+ * @position Core hook; used by Carousel and TabList for fade-edge and button
+ *   state
  *
  * Observes a scroll container and reports whether content overflows at the
- * start, end, or both edges. Updates on scroll and resize.
+ * start, end, or both edges. Updates on scroll and resize, while the container
+ * is rendered: a layout read on an element the browser is not rendering (an
+ * ancestor with `display: none`, or a `content-visibility: hidden` subtree)
+ * either answers zeros or makes the browser lay out that whole hidden subtree
+ * for the answer, so the hook keeps its last state until the resize that
+ * follows the reveal.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
@@ -25,6 +31,20 @@ export interface ScrollOverflowState {
   overflowEnd: boolean;
   /** Whether the container has any overflow at all */
   hasOverflow: boolean;
+}
+
+/**
+ * Whether the browser is rendering `el`, so a layout read on it answers for a
+ * real box. `checkVisibility` is false under a `display: none` ancestor and
+ * inside a `content-visibility: hidden` subtree (or a skipped
+ * `content-visibility: auto` one, with the option), and it answers without
+ * rendering that subtree. A browser without it measures as before.
+ */
+function isRendered(el: HTMLElement): boolean {
+  return (
+    typeof el.checkVisibility !== 'function' ||
+    el.checkVisibility({contentVisibilityAuto: true})
+  );
 }
 
 /**
@@ -51,7 +71,10 @@ export function useScrollOverflow() {
 
   const measure = useCallback(() => {
     const el = elRef.current;
-    if (!el) {
+    // A container the browser is not rendering has no edges to report, and
+    // reading its layout would make the browser render the hidden subtree it
+    // sits in. The resize observation that follows the reveal measures again.
+    if (!el || !isRendered(el)) {
       return;
     }
 
