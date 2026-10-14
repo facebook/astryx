@@ -40,12 +40,6 @@ function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
 }
 
-/**
- * Helper to find a day button by its day number.
- * Day buttons are native <button> elements with aria-labels like
- * "Thursday, January 15, 2026". Each button is the sole child of a
- * role="gridcell" wrapper.
- */
 /** A controlled Calendar whose owner follows the focus-date changes. */
 function ControlledFocusCalendar({
   onFocusDateChange,
@@ -64,6 +58,12 @@ function ControlledFocusCalendar({
   );
 }
 
+/**
+ * Helper to find a day button by its day number.
+ * Day buttons are native <button> elements with aria-labels like
+ * "Thursday, January 15, 2026". Each button is the sole child of a
+ * role="gridcell" wrapper.
+ */
 function getDayButton(day: number, month = 'January', year = 2026) {
   // Match the full date pattern with the day number
   const pattern = new RegExp(`${month}\\s+${day},\\s+${year}`);
@@ -1231,6 +1231,93 @@ describe('Calendar', () => {
       await user.keyboard('{ArrowDown}');
       expect(politeRegion()?.textContent ?? '').not.toContain('February 2026');
       expect(document.activeElement).toBe(getDayButton(21));
+    });
+
+    it('a controlled owner that refuses the month change leaves no stale target to steal focus or Enter later', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      function RefusingOwner() {
+        const [focusDate, setFocusDate] = useState<string>('2026-01-01');
+        const [allow, setAllow] = useState(false);
+        return (
+          <>
+            <button type="button" onClick={() => setAllow(true)}>
+              allow
+            </button>
+            <Calendar
+              focusDate={focusDate}
+              onFocusDateChange={next => {
+                if (allow) {
+                  setFocusDate(next);
+                }
+              }}
+              onChange={onChange}
+            />
+          </>
+        );
+      }
+      render(<RefusingOwner />);
+      getDayButton(15).focus();
+      // PageDown asks for February; the owner refuses, so January stays and
+      // focus does not move.
+      await user.keyboard('{PageDown}');
+      expect(screen.getByRole('grid')).toHaveAttribute(
+        'aria-label',
+        'January 2026',
+      );
+      expect(document.activeElement).toBe(getDayButton(15));
+      // Later the owner lets February show (through the Next button): the
+      // old February 15 target must not grab focus, and Enter on whatever is
+      // focused must not pick it.
+      await user.click(screen.getByRole('button', {name: 'allow'}));
+      await user.click(getButton('Next month'));
+      await waitFor(() => {
+        expect(screen.getByRole('grid')).toHaveAttribute(
+          'aria-label',
+          'February 2026',
+        );
+      });
+      expect(document.activeElement).not.toBe(getDayButton(15, 'February'));
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("the pending target becomes the grid's Tab stop: after a page into the second grid and after a page that moves the months, only it has tabindex 0", async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" numberOfMonths={2} />);
+      // Per grid: the day buttons with tabindex 0 (each grid keeps at most one;
+      // a borrowed copy in the other grid may share the date).
+      const stops = (gridName: string) =>
+        Array.from(
+          screen
+            .getByRole('grid', {name: gridName})
+            .querySelectorAll<HTMLElement>('button[data-date]'),
+        ).filter(button => button.tabIndex === 0);
+      // PageDown from January 15 lands on February 15 in the second grid —
+      // not February's default stop (its first day), so the stop must move.
+      getDayButton(15).focus();
+      await user.keyboard('{PageDown}');
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2026-02-15',
+        );
+      });
+      expect(
+        stops('February 2026').map(b => b.getAttribute('data-date')),
+      ).toEqual(['2026-02-15']);
+      expect(stops('January 2026')).toHaveLength(1);
+      // PageDown again moves both months; March 15 is March's one stop.
+      await user.keyboard('{PageDown}');
+      await waitFor(() => {
+        expect(document.activeElement).toHaveAttribute(
+          'data-date',
+          '2026-03-15',
+        );
+      });
+      expect(stops('March 2026').map(b => b.getAttribute('data-date'))).toEqual(
+        ['2026-03-15'],
+      );
+      expect(stops('February 2026')).toHaveLength(1);
     });
 
     it('a page whose target lies past max changes nothing and keeps focus', async () => {

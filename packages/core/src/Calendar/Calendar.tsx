@@ -353,6 +353,37 @@ export function Calendar({ref, ...props}: CalendarProps) {
     });
   }, [baseMonth, numberOfMonths]);
 
+  // A pending target lives exactly one render: when a controlled owner
+  // refuses the month change, no grid shows the target's month, and a stale
+  // target would later steal focus (and Enter) when that month does appear.
+  // Only a grid that is rendering the target's month ever receives it, and
+  // focus leaving the calendar drops it (see onBlur below).
+  const claimablePendingFocus = useMemo(() => {
+    if (pendingFocus == null) {
+      return null;
+    }
+    const target = plainDateFromISO(pendingFocus);
+    return visibleMonths.some(
+      pd => pd.year === target.year && pd.month === target.month,
+    )
+      ? pendingFocus
+      : null;
+  }, [pendingFocus, visibleMonths]);
+  const handleRootBlur = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      if (
+        pendingFocus != null &&
+        !(
+          e.relatedTarget instanceof Node &&
+          e.currentTarget.contains(e.relatedTarget)
+        )
+      ) {
+        setPendingFocus(null);
+      }
+    },
+    [pendingFocus],
+  );
+
   // Format month header
   const monthYearLabel = useMemo(() => {
     if (numberOfMonths === 1) {
@@ -653,6 +684,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
     <div
       ref={ref}
       {...rest}
+      onBlur={composeEventHandlers(rest.onBlur, handleRootBlur)}
       {...mergeProps(
         themeProps('calendar', {mode}),
         stylex.props(calendarStyles.calendar, xstyle),
@@ -733,7 +765,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
             onNavigateNext={(focusedDate, offset, unit) =>
               navigateMonth(1, focusedDate, offset, unit)
             }
-            pendingFocus={pendingFocus}
+            pendingFocus={claimablePendingFocus}
             onPendingFocusHandled={() => setPendingFocus(null)}
           />
         ))}
@@ -999,7 +1031,17 @@ function MonthGrid({
       ) ??
       null;
 
-    targetButton?.focus();
+    if (targetButton != null) {
+      // The target becomes this grid's one Tab stop before it takes focus,
+      // the way the hook's own arrow moves do (FR2): a programmatic focus
+      // alone would leave the stop on the day the grid mounted with.
+      for (const button of gridRef.current.querySelectorAll<HTMLElement>(
+        'button[data-date]',
+      )) {
+        button.tabIndex = button === targetButton ? 0 : -1;
+      }
+      targetButton.focus();
+    }
     onPendingFocusHandled?.();
   }, [pendingFocus, gridRef, month.month, onPendingFocusHandled, year]);
 
