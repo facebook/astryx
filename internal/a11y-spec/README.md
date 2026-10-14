@@ -126,11 +126,12 @@ current Astryx record adopts it as an additional required gate.
 
 The combobox contract owns the named control, expanded/busy/read-only state,
 its relationship to a rendered popup, and a declared active descendant. Its
-first Selector binding covers closed, open, read-only, and busy trigger states.
-Popup contents keep the existing listbox contract. Keyboard and selection
-policy stay with each binding's owner: under `spec:AST-020/FR15` an adopter's
-component record names the APG Combobox parts it adopts, and no adopter record
-names them yet.
+first Selector binding covers closed, open, read-only, busy, and bottom-sheet
+trigger states plus the search input with an active option.
+Popup contents keep the existing listbox contract. `spec:AST-020/FR15` adopts
+the APG Combobox required parts, including Tab plus Enter or Space activation,
+wherever a part plays the combobox role; each adopter's record names them and its
+interaction suites verify the keyboard and selection parts.
 
 The landmark contract owns one component-owned landmark region: the role the
 binding declares, the label it declares, and the content the region bounds. It

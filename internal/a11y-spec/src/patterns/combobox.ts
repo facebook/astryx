@@ -8,10 +8,11 @@
  *   Popup contents and binding-specific selection policy retain their own owners.
  *
  * Required outcomes come from WCAG 2.2 A/AA, WAI-ARIA 1.2, and the current
- * Astryx read-only selection-input contract. Under `spec:AST-020/FR15` each
- * adopter's component record names the APG Combobox parts it adopts; until a
- * record names them, APG keyboard and interaction guidance stays with that
- * binding's owner and is context here.
+ * Astryx read-only selection-input contract. `spec:AST-020/FR15` adopts the
+ * APG Combobox required parts, including Tab plus Enter or Space activation,
+ * wherever a part plays the combobox role; each adopter's record names them and
+ * its own interaction suites verify the keyboard parts. This contract encodes
+ * the semantic parts only.
  */
 
 import {
@@ -315,7 +316,7 @@ export const COMBOBOX_PATTERN: PatternContract<ComboboxStateFacts> =
         verifiedBy:
           'Binding-specific keyboard suites and real-browser interaction tests',
         reason:
-          'Under spec:AST-020/FR15 each adopter record names the keyboard parts it adopts; button triggers, editable inputs, anchored popups, and modal sheets differ, and no adopter record names them yet.',
+          'spec:AST-020/FR15 adopts Tab plus Enter or Space activation wherever a part plays the combobox role; button triggers, editable inputs, anchored popups, and modal sheets reach it differently, so each adopter record names its keyboard parts and its interaction suites verify them.',
       },
       '2.1.2-no-keyboard-trap': {
         owner: 'Binding popup, Layer, and dismissal owners',
@@ -424,7 +425,7 @@ export const COMBOBOX_PATTERN: PatternContract<ComboboxStateFacts> =
         verifiedBy:
           'Binding-specific interaction suites and exact current component records',
         reason:
-          'Under spec:AST-020/FR15 the APG Combobox parts an adopter takes are named by its own component record; no adopter record names them yet.',
+          'spec:AST-020/FR15 decides which APG Combobox parts an adopter takes from the role its part plays; the adopter record names them and its interaction suites verify the interaction parts.',
       },
       'forced-colors': {
         owner: 'Binding component, popup contents, and active theme',
