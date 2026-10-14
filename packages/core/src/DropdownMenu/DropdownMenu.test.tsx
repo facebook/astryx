@@ -3945,6 +3945,47 @@ describe('DropdownMenu header and footer', () => {
     }
   });
 
+  it('an icon-only custom trigger with a header still gets a named dialog', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        header={<input aria-label="Filter labels" />}
+        renderTrigger={props => (
+          <button {...props} type="button">
+            <svg viewBox="0 0 16 16">
+              <title>Labels</title>
+              <circle cx="8" cy="8" r="4" />
+            </svg>
+          </button>
+        )}>
+        <DropdownMenuItem label="Bug" />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(trigger);
+    expect(
+      screen.getByRole('dialog', {name: 'Labels', hidden: true}),
+    ).toHaveAttribute('aria-modal', 'true');
+  });
+
+  it('a custom trigger with no readable name still gets a dialog, named by the default label', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        footer={<button type="button">Create label</button>}
+        renderTrigger={props => (
+          <button {...props} type="button" data-testid="bare" />
+        )}>
+        <DropdownMenuItem label="Bug" />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByTestId('bare'));
+    const dialog = screen.getByRole('dialog', {hidden: true});
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog.getAttribute('aria-label')?.trim()).not.toBe('');
+  });
+
   it('without a header or footer, there is no dialog and the trigger points at the menu', async () => {
     const user = userEvent.setup();
     render(

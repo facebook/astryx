@@ -552,6 +552,17 @@ function visibleText(element: Element): string {
   for (const hidden of copy.querySelectorAll('[aria-hidden="true"]')) {
     hidden.remove();
   }
+  // An icon-only control is named by its image's alt, an inner aria-label, or
+  // an svg title rather than by text, so those count as its contents too.
+  for (const named of copy.querySelectorAll('img[alt], [aria-label]')) {
+    const name =
+      named.getAttribute(named.tagName === 'IMG' ? 'alt' : 'aria-label') ?? '';
+    named.replaceWith(copy.ownerDocument.createTextNode(` ${name} `));
+  }
+  for (const svg of copy.querySelectorAll('svg')) {
+    const title = svg.querySelector('title')?.textContent ?? '';
+    svg.replaceWith(copy.ownerDocument.createTextNode(` ${title} `));
+  }
   return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
@@ -963,8 +974,10 @@ function DropdownMenuPopover({
   // ArrowUp opens with the LAST enabled row highlighted.
   const focusLastOnOpenRef = useRef(false);
 
-  // With a header or footer the dialog is named like the menu, so a custom
-  // trigger's name is needed before the first open, not only at it.
+  // Synchronizes the dialog's name from the custom trigger's DOM, an external
+  // system React does not own: the rendered control's accessible name is only
+  // readable once it mounts. With a header or footer the dialog is named like
+  // the menu, so that name is needed before the first open, not only at it.
   useIsomorphicLayoutEffect(() => {
     if (renderTrigger != null && hasRegions && triggerName == null) {
       setTriggerName(readAccessibleName(buttonRef.current));
@@ -1012,10 +1025,13 @@ function DropdownMenuPopover({
     // semantics; a dialog around it would announce an extra container. With
     // either, the popover holds controls that are not menu items, so it is a
     // modal dialog named like the menu, with the menu inside it. A custom
-    // trigger's name is read off the control once it mounts, so the dialog
-    // role waits for that name rather than rendering an unnamed dialog.
-    role: hasRegions && menuLabel != null ? 'dialog' : 'none',
-    dialogLabel: hasRegions ? menuLabel : undefined,
+    // trigger's name is read off the control once it mounts; until then, or
+    // when the control exposes no readable name, the dialog takes the default
+    // menu label, so it is never unnamed and never loses its role.
+    role: hasRegions ? 'dialog' : 'none',
+    dialogLabel: hasRegions
+      ? (menuLabel ?? t(DEFAULT_BUTTON_I18N_KEY))
+      : undefined,
   });
 
   const closeMenu = useCallback(() => {
