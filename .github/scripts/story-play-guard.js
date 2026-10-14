@@ -78,7 +78,7 @@ const TARGETS = [
     component: 'ChartTheming',
     story: 'lab-charttheming-colorpicker--end-user-choices',
     guards:
-      'Automatic, theme, custom, mode switching, and Reset preserve the documented chart-color intent',
+      'Automatic, theme, custom, mode switching, and Reset update the selected chart color',
   },
   {
     component: 'ChartTheming',

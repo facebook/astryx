@@ -52,6 +52,7 @@ function NativeCanvasChart() {
   const fontSize = token('--text-supporting-size');
   const radius = useCssLengthInPixels(token('--radius-element'));
 
+  // Synchronize the canvas 2D bitmap with the resolved theme values.
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext('2d');

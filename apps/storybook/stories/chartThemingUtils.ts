@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useEffect, useState} from 'react';
+import {useLayoutEffect, useState} from 'react';
 
 /** Resolve a concrete CSS length before passing it to a numeric renderer API. */
 function cssLengthToPixels(value: string): number {
@@ -27,7 +27,8 @@ function cssLengthToPixels(value: string): number {
 export function useCssLengthInPixels(value: string): number {
   const [pixels, setPixels] = useState(0);
 
-  useEffect(() => {
+  // Measure the hidden probe's laid-out inline size before the renderer paints.
+  useLayoutEffect(() => {
     setPixels(cssLengthToPixels(value));
   }, [value]);
 
