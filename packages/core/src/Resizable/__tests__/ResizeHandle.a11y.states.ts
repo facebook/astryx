@@ -30,7 +30,7 @@ export interface ResizeHandleBindingState {
   /** Pass a `containerRef` (a pixel-only region inside a container). */
   readonly inContainer?: boolean;
   /** Snap points for the region (`snaps`). */
-  readonly snaps?: readonly number[];
+  readonly snaps?: ReadonlyArray<number>;
   readonly disabled?: boolean;
 }
 
