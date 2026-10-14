@@ -25,6 +25,26 @@ deciding_specs: [spec:AST-020]
 
 # Bidirectionality design specification
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "accessibility": ["DR2", "DR8", "DR11", "DR12"],
+    "interaction": ["DR6", "DR8", "DR11", "DR12", "DR13"],
+    "layering": ["DR7"],
+    "layout": ["DR1", "DR2", "DR3", "DR7", "DR9"],
+    "navigation": ["DR3", "DR4", "DR6", "DR11"],
+    "react-runtime": ["DR9"],
+    "responsive": ["DR3", "DR14"],
+    "scrolling": ["DR6", "DR13"],
+    "styling": ["DR3", "DR4", "DR5", "DR9", "DR10"],
+    "visual": ["DR1", "DR4", "DR5", "DR10"]
+  }
+}
+```
+
 ## User intent
 
 People should understand and operate the same Astryx interface whether their
@@ -157,11 +177,26 @@ do not replace the human intent in this record.
 
 ## Component contract links
 
-No component record currently adopts this draft. Candidate adopters include every
-component with inline-axis layout, directional artwork, ordering, scrolling,
-dragging, overlay placement, keyboard navigation, or pointer/touch geometry.
-Component records should link the specific DR they implement when this record is
-promoted to `current`.
+No component record currently adopts this draft. Once current, the explicit
+global routes supply the matched RTL relationships to component and module
+reviews without requiring a backlink from each component. A visual change loads
+artwork meaning and exceptions; navigation and interaction load their own
+directional outcomes. The routes do not make every glyph directional, require a
+particular implementation, or settle the open questions below.
+
+Component, module, and family contracts own their local semantic relationships:
+which artwork is a navigation cue versus data, which parts are leading/trailing,
+which keyboard/scroll actions they expose, supported states, target-size
+requirements, and the tests that prove those outcomes. They cite a specific shared
+DR when a local requirement or exception needs that relationship; they do not
+copy a universal RTL checklist or redefine the shared rules.
+
+Review resolves the direct owner for the exact delta and applies only the matched
+shared claims within their stated scope. Local exceptions require a consistent
+semantic reason under DR5/DR10, not an implicit override of current authority.
+The global marker does not make this draft authoritative. Runtime/helper
+responsibility remains in `architecture:internationalization`; RTL audit evidence
+and deliberate D1 exemption review remain in `architecture:rtl-audit-evidence`.
 
 ## Decision log
 
