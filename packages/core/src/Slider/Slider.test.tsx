@@ -618,6 +618,29 @@ describe('Slider', () => {
 
   // --- Pointer handling ---
 
+  it('reaches an off-grid max when dragging to the endpoint', () => {
+    const onChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={0}
+        min={0}
+        max={100}
+        step={3}
+        valueDisplay="none"
+        onChange={onChange}
+      />,
+    );
+    const thumb = screen.getByRole('slider');
+    const track = thumb.parentElement!;
+    track.getBoundingClientRect = () => new DOMRect(0, 0, 220, 20);
+
+    fireEvent.pointerDown(thumb, {clientX: 10, clientY: 10, pointerId: 1});
+    fireEvent.pointerMove(track, {clientX: 210, clientY: 10, pointerId: 1});
+
+    expect(onChange).toHaveBeenLastCalledWith(100);
+  });
+
   it('fires onChangeEnd on pointer up after pointer down', () => {
     const handleChange = vi.fn();
     const handleChangeEnd = vi.fn();
@@ -843,6 +866,26 @@ describe('Slider', () => {
   });
 
   // --- Mark label click snapping ---
+
+  it('clicking an off-grid max mark selects max, not pointer position', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        min={0}
+        max={100}
+        step={3}
+        onChange={handleChange}
+        marks={[{value: 100, label: '100'}]}
+      />,
+    );
+    const markLabel = screen.getByTestId('slider-mark-label');
+
+    fireEvent.pointerDown(markLabel, {clientX: 1, clientY: 10, pointerId: 1});
+
+    expect(handleChange).toHaveBeenCalledWith(100);
+  });
 
   it('clicking a mark label snaps to that mark value, not pointer position', () => {
     const handleChange = vi.fn();
