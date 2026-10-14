@@ -138,10 +138,10 @@ intentional decision. A `current` contract contains no unresolved rows.
   that month and enabled, else the month's first enabled day; a month with no
   enabled day has no Tab stop.
   ArrowLeft and ArrowRight move by a day following the reading direction,
-  ArrowUp and ArrowDown by a week, Home and End to the first and last day of the
+  ArrowUp and ArrowDown by a week, Home and End to the first and last enabled day of the
   week, PageUp and PageDown by a month, and Enter or Space picks the focused day;
   an arrow skips a day disabled by a constraint and continues in the
-  same direction, crossing the month edge when it must; a key whose target
+  same direction, crossing the month edge when it must; an arrow or Page key whose target
   lies past `min` or `max` changes nothing and keeps focus where it is, and
   so does an arrow whose direction has no enabled day within a year; a page
   onto a day disabled by a constraint focuses that month's first enabled day

@@ -219,18 +219,6 @@ interface CalendarRangeProps extends CalendarBaseProps {
 
 export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
 
-// =============================================================================
-// Main Component
-// =============================================================================
-
-/**
- * A calendar component for selecting dates or date ranges.
- *
- * @example
- * ```
- * <Calendar value={selectedDate} onChange={setSelectedDate} />
- * ```
- */
 /** The first day of `month`'s month that `isDisabled` allows, or null. */
 function firstEnabledDayOfMonth(
   month: PlainDate,
@@ -246,6 +234,18 @@ function firstEnabledDayOfMonth(
   return null;
 }
 
+// =============================================================================
+// Main Component
+// =============================================================================
+
+/**
+ * A calendar component for selecting dates or date ranges.
+ *
+ * @example
+ * ```
+ * <Calendar value={selectedDate} onChange={setSelectedDate} />
+ * ```
+ */
 export function Calendar({ref, ...props}: CalendarProps) {
   const t = useTranslator();
   const locale = useLocale();
