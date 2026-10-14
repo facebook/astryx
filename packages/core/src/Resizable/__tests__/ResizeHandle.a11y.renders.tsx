@@ -9,7 +9,7 @@
  * @position Shared fixture for the ResizeHandle binding
  */
 
-import type {ReactElement} from 'react';
+import {useRef, type ReactElement} from 'react';
 import {ResizeHandle} from '../ResizeHandle';
 import {useResizable} from '../useResizable';
 import type {ResizeHandleBindingState} from './ResizeHandle.a11y.states';
@@ -19,7 +19,9 @@ export const BARE_PANE_ID = 'a11y-splitter-pane';
 
 function BareSplitter({state}: {state: ResizeHandleBindingState}) {
   const direction = state.direction ?? 'horizontal';
+  const containerRef = useRef<HTMLDivElement>(null);
   const region = useResizable({
+    containerRef: state.inContainer ? containerRef : undefined,
     defaultSize: state.facts.valueNow,
     minSize: state.facts.valueMin,
     maxSize: state.maxSize === null ? undefined : (state.facts.valueMax ?? 400),
@@ -52,6 +54,7 @@ function BareSplitter({state}: {state: ResizeHandleBindingState}) {
   );
   return (
     <div
+      ref={containerRef}
       style={{
         display: 'flex',
         flexDirection: isHorizontal ? 'row' : 'column',

@@ -23,4 +23,17 @@ export const RESIZE_HANDLE_KNOWN_FAILURES: ReadonlyArray<KnownFailure> = [
     reason:
       'This test-only binding records the gap; whether a plain arrow should reopen a collapsed pane is a component decision for its own spec-backed patch.',
   },
+  {
+    expectation: 'windowsplitter.separator.maximum',
+    binding: 'ResizeHandle',
+    state: 'bare-unbounded-in-container',
+    evidenceLayer: 'dom',
+    failureEquals: 'the splitter exposes no aria-valuemax',
+    standardsReference:
+      'WAI-ARIA separator (focusable): aria-valuemax; APG Window Splitter states and properties; Astryx component:Resizable AR1 (an unbounded Handle in a container that no percentage bound observes carries no aria-valuemax, because measuring that container would add an observer to a region whose bounds are all in pixels).',
+    userImpact:
+      'A screen-reader user on a handle whose pixel-only region sits in a container and sets no maximum hears a value and a minimum but no maximum.',
+    reason:
+      'A recorded gap with a reason the record owns (Performance and resources: atomic pixel paths add no observer); it closes only with a record decision, not a fix.',
+  },
 ];

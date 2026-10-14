@@ -40,4 +40,5 @@ export const BareCollapsible = storyFor('bare-collapsible');
 export const BareSmallMin = storyFor('bare-small-min');
 export const BareStartCollapsed = storyFor('bare-start-collapsed');
 export const BareUnbounded = storyFor('bare-unbounded');
+export const BareUnboundedInContainer = storyFor('bare-unbounded-in-container');
 export const BareDisabled = storyFor('bare-disabled');

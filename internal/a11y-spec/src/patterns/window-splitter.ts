@@ -365,10 +365,18 @@ export const WINDOW_SPLITTER_PATTERN: PatternContract<WindowSplitterStateFacts> 
           await harness.press('Home');
           await expectValue(subject, facts.valueMin, 'Home');
           await harness.press('End');
-          // Without a configured maximum End leaves the splitter where it is
-          // (the binding's record names that as a gap), so the row reports what
-          // End does rather than skipping the state.
-          await expectValue(subject, facts.valueMax ?? facts.valueNow, 'End');
+          // End should reach the maximum the separator exposes. Without a
+          // configured maximum that is the reported stand-in (or, when none is
+          // exposed, there is nowhere for End to go: it stays at the minimum
+          // Home just reached). The row reports what End does rather than
+          // skipping the state.
+          const exposedMax = await subject.attribute('aria-valuemax');
+          const endTarget =
+            facts.valueMax ??
+            (exposedMax != null && Number.isFinite(Number(exposedMax))
+              ? Number(exposedMax)
+              : facts.valueMin);
+          await expectValue(subject, endTarget, 'End');
         },
       },
       {

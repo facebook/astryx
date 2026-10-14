@@ -27,6 +27,8 @@ export interface ResizeHandleBindingState {
   readonly collapsedSize?: number;
   /** Start the pane collapsed (`defaultIsCollapsed`). */
   readonly startsCollapsed?: boolean;
+  /** Pass a `containerRef` (a pixel-only region inside a container). */
+  readonly inContainer?: boolean;
   readonly disabled?: boolean;
 }
 
@@ -124,6 +126,17 @@ export const RESIZE_HANDLE_BINDING_STATES = [
     label: 'Resize details pane',
     facts: facts({valueMax: null}),
     maxSize: null,
+  },
+  {
+    id: 'bare-unbounded-in-container',
+    summary:
+      'a bare ResizeHandle whose pixel-only region sets no maximum and passes a containerRef: the first useResizable example',
+    storyId: story('bare-unbounded-in-container'),
+    component: 'ResizeHandle',
+    label: 'Resize details pane',
+    facts: facts({valueMax: null}),
+    maxSize: null,
+    inContainer: true,
   },
   {
     id: 'bare-disabled',
