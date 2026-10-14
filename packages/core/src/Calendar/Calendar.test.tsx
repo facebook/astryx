@@ -1237,7 +1237,7 @@ describe('Calendar', () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       function RefusingOwner() {
-        const [focusDate, setFocusDate] = useState<string>('2026-01-01');
+        const [focusDate, setFocusDate] = useState<ISODateString>('2026-01-01');
         const [allow, setAllow] = useState(false);
         return (
           <>
