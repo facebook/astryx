@@ -1159,6 +1159,46 @@ describe('Calendar', () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
+    it('a refused target is dropped when focus leaves the day grid, so a later Next click plus Enter picks nothing', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      function Owner({allow}: {allow: boolean}) {
+        const [focusDate, setFocusDate] = useState<ISODateString>('2026-01-01');
+        return (
+          <Calendar
+            focusDate={focusDate}
+            onFocusDateChange={next => {
+              if (allow) {
+                setFocusDate(next);
+              }
+            }}
+            onChange={onChange}
+          />
+        );
+      }
+      const {rerender} = render(<Owner allow={false} />);
+      getDayButton(15).focus();
+      // Refused: January stays, focus stays on January 15.
+      await user.keyboard('{PageDown}');
+      expect(document.activeElement).toBe(getDayButton(15));
+      // Focus moves off the day grid onto the Next button; the owner then
+      // allows month changes without any focus change of its own.
+      act(() => getButton('Next month').focus());
+      rerender(<Owner allow />);
+      await user.click(getButton('Next month'));
+      await waitFor(() => {
+        expect(screen.getByRole('grid')).toHaveAttribute(
+          'aria-label',
+          'February 2026',
+        );
+      });
+      // The stale February 15 target must not have taken focus; Enter on
+      // whatever is focused picks nothing.
+      expect(document.activeElement).not.toBe(getDayButton(15, 'February'));
+      await user.keyboard('{Enter}');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it("the pending target becomes the grid's Tab stop: after a page into the second grid and after a page that moves the months, only it has tabindex 0", async () => {
       const user = userEvent.setup();
       render(<Calendar focusDate="2026-01-01" numberOfMonths={2} />);
