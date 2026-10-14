@@ -123,6 +123,13 @@ export const CALENDAR_EXCLUSIONS = [
       'An arrow at the edge of a month crosses into the neighbouring month and focuses the real day there; the APG grid pattern stops at the edge, and the record defines the crossing. Every binding state therefore starts mid-month, and the crossing stays with the component tests.',
   },
   {
+    id: 'disabled-day-arrows',
+    owner:
+      'Calendar.test.tsx (bounds and dateConstraints suites) and component:Calendar AR1',
+    reason:
+      "An arrow that meets a day disabled by `min`/`max` or a `dateConstraints` rule skips it and continues in the same direction, crossing the month edge when it must — a behaviour the Calendar record defines (AR1) beyond the APG grid's one-cell step, so this contract's arrow row keeps its states free of disabled days. Calendar.test.tsx proves the skip ('ArrowUp skips a disabled cell in the same column to the next enabled row (complex-2)', the weekdays-only and max-bound arrow cases) and owns it.",
+  },
+  {
     id: 'page-keys-and-pointer',
     owner:
       'Calendar.test.tsx pointer selection suites; Page-key focus targets are the gap component:Calendar AR1 records',

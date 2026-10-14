@@ -79,7 +79,7 @@ const ARIA_MULTISELECTABLE: WebStandardRequirement = {
 };
 const APG_FOCUS = apgReq(
   'Only one of the focusable elements contained by the grid is included in the page tab sequence.',
-  K,
+  'about-this-pattern',
 );
 const APG_ARROWS = apgReq(
   'Right Arrow: Moves focus one cell to the right. Left Arrow: Moves focus one cell to the left. Down Arrow: Moves focus one cell down. Up Arrow: Moves focus one cell up.',

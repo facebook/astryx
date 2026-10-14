@@ -117,6 +117,7 @@ describe('Calendar binding inventory', () => {
   it('keeps edge crossing, Page keys and pointer selection explicitly owned elsewhere', () => {
     expect(CALENDAR_EXCLUSIONS.map(exclusion => exclusion.id)).toEqual([
       'month-edge-crossing',
+      'disabled-day-arrows',
       'page-keys-and-pointer',
     ]);
     for (const exclusion of CALENDAR_EXCLUSIONS) {
