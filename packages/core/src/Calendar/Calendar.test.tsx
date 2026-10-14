@@ -59,8 +59,9 @@ describe('Calendar', () => {
       '[role="row"] > :not([role="gridcell"]):not([role="columnheader"]):not([role="rowheader"])',
     );
     expect(stray).toHaveLength(0);
+    // Named from CLDR ("week" in en-US), as visually hidden text.
     expect(
-      within(grid).getByRole('columnheader', {name: 'Week'}),
+      within(grid).getByRole('columnheader', {name: 'week'}),
     ).toBeInTheDocument();
     expect(within(grid).getAllByRole('rowheader').length).toBeGreaterThan(0);
   });

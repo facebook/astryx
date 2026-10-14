@@ -299,10 +299,6 @@
     "defaultMessage": "Next month",
     "description": "Screen-reader-only label on the right-arrow button in a Calendar's month header (navigates one month forward). Pairs with `calendar.previousMonth`."
   },
-  "@astryx.calendar.weekNumberHeader": {
-    "defaultMessage": "Week",
-    "description": "Screen-reader-only name of the blank header cell above the week-number column in a Calendar with hasWeekNumbers (a columnheader like the weekday names beside it)."
-  },
   "@astryx.calendar.daySelected": {
     "defaultMessage": "{date}, selected",
     "description": "Accessible name for the Calendar day button that is the current single-mode selection. `{date}` is the localized full date, e.g. \"Thursday, January 15, 2026\". The trailing state word tells screen-reader users the focused day is selected."
