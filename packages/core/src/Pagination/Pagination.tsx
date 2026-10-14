@@ -185,10 +185,10 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
   },
   controlsPaired: {
-    gap: 0,
+    gap: spacingVars['--spacing-0'],
   },
   infoTextInset: {
-    paddingInline: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
   },
   ellipsis: {
     display: 'inline-flex',
@@ -589,8 +589,9 @@ export function Pagination({
       ? (hasFirstLastProp ?? true)
       : variant === 'compact' && hasFirstLastProp === true;
   const showFirstLast = hasFirstLast && computedTotalPages != null;
-  // Compact pairs each first/last button flush with its prev/next neighbour so
-  // the arrows read as two groups; the readout keeps its usual spacing.
+  // Compact pairs each first/last button flush with its prev/next neighbour and
+  // insets the readout, so the visible gap between the chevrons and between a
+  // chevron and the text comes out about the same.
   const isCompactFirstLast = variant === 'compact' && showFirstLast;
 
   const renderIndicator = () => {
