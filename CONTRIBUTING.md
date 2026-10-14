@@ -11,7 +11,7 @@ Key pages:
 - **[Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle)** — how components move from lab → core and templates from hidden → visible
 - **[API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)** — how we resolve API design questions
 - **[Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)** — building templates/blocks and the template grading rubric
-- **[Blog Review Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric)** — how docsite blog posts are reviewed
+- **[Blog Review Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria)** — how docsite blog posts are reviewed
 - **[Contributing with AI](https://github.com/facebook/astryx/wiki/Contributing-with-AI-Assistants)** — safe zones, spec protocol, and working with AI tools
 
 This file covers local development setup.
@@ -650,6 +650,13 @@ This wrapper:
 3. **Captures the contributor(s)** — defaults to your `gh`/git identity, so credit is recorded at authoring time (not reconstructed from the release bot's commit).
 4. **Derives the semver bump from the category** — a `[breaking]` change bumps the minor; `[experimental]` and every other category bump the patch (see below).
 
+Choose `[breaking]` only when a valid consumer of the latest stable release must
+change source or configuration to keep a supported functional contract working,
+or loses a stable public surface. A change only to existing content's appearance,
+spacing, typography, layout styling, or visual default uses `[fix]` or `[feat]`
+even when its pixels change. Its release note names the old and new appearance
+and how to keep the old look when a supported escape exists.
+
 It writes a normal `.changeset/<id>.md` — commit it with your PR. The body looks like:
 
 ```md
@@ -711,10 +718,12 @@ slugs and docs routes, are data and may change.
 
 - **Main declares the next version.** The fixed group's version in main's
   `package.json` files is the next planned release. Before a cut, an owner may
-  raise or lower it while it stays strictly above newest stable. While an
-  untagged cut is active, main may stay equal to that cut or rise, but cannot be
-  lowered below it. After the tag, ordinary PRs must be strictly above stable;
-  trusted merge-back is the only equality exception and publishes no canary.
+  raise or lower it while it stays strictly above newest stable. Required
+  pull-request lint does not compare that declaration with stable or an active
+  cut. The canary publisher publishes only while one plain fixed-group
+  declaration is above newest stable, skips equality, and fails below-stable or
+  split declarations. Trusted merge-back leaves main's declaration untouched;
+  a separate owner change declares the next plan after the release.
 - **0.x: the category states the tier a change needs.** A `[breaking]`
   Changeset declares `minor` and is admitted only while main already declares
   the next minor. `[experimental]` and every other category declare `patch`.
@@ -754,11 +763,13 @@ main's declaration. A separate owner PR then declares the next plan across the
 fixed group, exact internal pins, and lockfile—patch successor by default,
 minor only when the owner explicitly names it.
 
-Before stable publication, a patch release self-grades its complete generated
-changelogs and draft GitHub Release notes against the public Blog Review Rubric's
-`update` profile. Every criterion must pass; failures are fixed on the release
-branch and the complete text is re-graded. A minor release instead requires Cindy's
-explicit human editorial approval of the changelogs, release notes, and public blog.
+Before the Version Packages PR merges, a patch release self-grades its complete
+generated changelogs and draft GitHub Release notes against the public [Blog Review
+Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric#three-required-scored-criteria)
+under the `update` profile and records the result on that PR. Every criterion
+must pass; failures are fixed on the PR and the complete text is re-graded. A
+minor release instead requires Cindy's explicit human editorial approval of the
+changelogs, release notes, and public blog, recorded the same way.
 
 ## Finding Something to Work On
 

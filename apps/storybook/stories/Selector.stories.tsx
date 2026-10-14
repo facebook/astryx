@@ -783,10 +783,10 @@ export const SizeVariants: Story = {
         styles.getPropertyValue(`--size-element-${trigger.dataset.size}`),
       );
       const height = trigger.getBoundingClientRect().height;
-      if (
-        trigger.dataset.testid === 'large-text' ||
-        trigger.dataset.testid === 'large-custom'
-      ) {
+      // `data-testid` lands on the trigger button inside the control box.
+      const testId =
+        trigger.querySelector<HTMLElement>('[data-testid]')?.dataset.testid;
+      if (testId === 'large-text' || testId === 'large-custom') {
         // Text larger than the token can hold keeps its whole line box.
         const walker = document.createTreeWalker(trigger, NodeFilter.SHOW_TEXT);
         let text: Node | null = walker.nextNode();
@@ -814,7 +814,7 @@ export const SizeVariants: Story = {
         expect(textBox.top).toBeGreaterThanOrEqual(clip.top - 0.5);
         expect(textBox.bottom).toBeLessThanOrEqual(clip.bottom + 0.5);
         expect(height).toBeGreaterThan(size);
-      } else if (trigger.dataset.testid?.endsWith('-multiline')) {
+      } else if (testId?.endsWith('-multiline')) {
         // Two text rows, plus whatever padding remains once the first row
         // fills the token (padding never goes below zero).
         const row = Number.parseFloat(styles.lineHeight);

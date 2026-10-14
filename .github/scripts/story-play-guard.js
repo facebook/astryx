@@ -195,6 +195,19 @@ const TARGETS = [
     },
   ]),
   {
+    component: 'FormLayout (phone)',
+    story: 'core-formlayout--horizontal-labels',
+    viewport: {width: 390, height: 844},
+    guards:
+      'below the 480px collapse, horizontal-labels controls fill the column, including a Selector with a short value',
+  },
+  {
+    component: 'FormLayout',
+    story: 'core-formlayout--horizontal-labels',
+    viewport: {width: 481, height: 844},
+    guards: 'just above the collapse, labels stay beside their controls',
+  },
+  {
     component: 'TabList',
     story: 'core-tablist--full-bleed-geometry',
     guards:

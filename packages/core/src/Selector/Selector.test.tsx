@@ -822,6 +822,58 @@ describe('Selector', () => {
       expect(onChange).toHaveBeenCalledWith(null);
     });
 
+    it('returns focus to the trigger when the clear button is activated by keyboard', async () => {
+      function Controlled() {
+        const [value, setValue] = useState<string | null>('Banana');
+        return (
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value={value}
+            onChange={setValue}
+            hasClear
+          />
+        );
+      }
+      const user = userEvent.setup();
+      render(<Controlled />);
+      screen.getByRole('button', {name: 'Clear Fruit'}).focus();
+      await user.keyboard('{Enter}');
+      expect(
+        screen.queryByRole('button', {name: 'Clear Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+    });
+
+    it('leaves focus in the search input when the clear button is clicked with the list open', async () => {
+      function Controlled() {
+        const [value, setValue] = useState<string | null>('Banana');
+        return (
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value={value}
+            onChange={setValue}
+            hasClear
+            hasSearch
+          />
+        );
+      }
+      const user = userEvent.setup();
+      render(<Controlled />);
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole('combobox', {
+        name: 'Search options',
+        hidden: true,
+      });
+      search.focus();
+      await user.click(screen.getByRole('button', {name: 'Clear Fruit'}));
+      expect(
+        screen.queryByRole('button', {name: 'Clear Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(search).toHaveFocus();
+    });
+
     it('clears the value via Delete on the focused trigger', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -2485,7 +2537,11 @@ describe('Selector', () => {
         />,
       );
 
-      const container = screen.getByTestId('fruit-selector');
+      // data-testid lands on the trigger; the reason tooltip anchors to the
+      // control box around it.
+      const container = screen
+        .getByTestId('fruit-selector')
+        .closest('.astryx-selector') as HTMLElement;
       const tooltip = screen.getByRole('tooltip', h);
       expect(tooltip).toHaveTextContent('You need the Editor role');
 

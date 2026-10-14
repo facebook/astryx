@@ -50,6 +50,7 @@
  */
 
 import React, {
+  use,
   useCallback,
   useEffect,
   useId,
@@ -63,6 +64,7 @@ import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
+import {MenuRegionsContext} from './menuRegionsContext';
 import {Item} from '../Item';
 import {useLayer} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
@@ -92,8 +94,6 @@ import {
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
   activateMenuItem,
-  hostedControlOf,
-  isTextEntry,
 } from './menuItemRoles';
 import {
   DropdownMenuContext,
@@ -358,6 +358,7 @@ export function DropdownMenuSubMenu(
 
   const t = useTranslator();
   const menuCtx = useDropdownMenuContext();
+  const rootHasRegions = use(MenuRegionsContext);
   const menuSize = menuCtx?.menuSize ?? 'md';
   const canOpen = !isDisabled;
 
@@ -430,9 +431,6 @@ export function DropdownMenuSubMenu(
     // Menus wrap.
     wrap: true,
     hasPaging: true,
-    // Arrows, Home and End leave a text field this level hosts only at its
-    // caret's edge.
-    hasCaretGuard: true,
     onEscape: () => close({focusTrigger: true}),
   });
   // A drilled-in list scrolls with the root menu, not on its own.
@@ -660,6 +658,13 @@ export function DropdownMenuSubMenu(
   // stopPropagation needed — each level self-filters.
   const handleContentKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // In a menu with a header or footer, Tab leaves the whole flyout stack:
+      // every open level closes as the key bubbles past it — this one's own
+      // rows or a deeper level's — and the root menu moves focus to a region.
+      if (e.key === 'Tab' && rootHasRegions) {
+        close({focusTrigger: false});
+        return;
+      }
       if (!ownsEvent(e)) {
         return;
       }
@@ -674,14 +679,7 @@ export function DropdownMenuSubMenu(
         close({focusTrigger: true});
         return;
       }
-      // A key pressed in a control this level hosts beside its rows is that
-      // control's (see DropdownMenu); a text field also keeps Left and Right.
-      const hosted = hostedControlOf(e.target, menuRef.current);
-      const isHostedText = hosted != null && isTextEntry(hosted);
       if (e.key === 'Enter' || e.key === ' ') {
-        if (hosted != null) {
-          return;
-        }
         e.preventDefault();
         // A held key's auto-repeat never activates.
         if (e.repeat) {
@@ -703,18 +701,18 @@ export function DropdownMenuSubMenu(
           ? window.getComputedStyle(menuRef.current).direction === 'rtl'
           : false;
       const closeKey = isRtl ? 'ArrowRight' : 'ArrowLeft';
-      if (e.key === closeKey && !isHostedText) {
+      if (e.key === closeKey) {
         e.preventDefault();
         close({focusTrigger: true});
         return;
       }
-      if (!isHostedText && typeahead.onKeyDown(e)) {
+      if (typeahead.onKeyDown(e)) {
         e.preventDefault();
         return;
       }
       listNavKeyDown(e);
     },
-    [ownsEvent, close, listNavKeyDown, typeahead, menuRef],
+    [ownsEvent, close, listNavKeyDown, typeahead, menuRef, rootHasRegions],
   );
 
   // Re-provide the menu context so nested items behave exactly like top-level

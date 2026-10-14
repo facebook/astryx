@@ -2,7 +2,11 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect, userEvent, waitFor, within} from 'storybook/test';
 import {DateInput} from '@astryxdesign/core/DateInput';
+import {FormLayout} from '@astryxdesign/core/FormLayout';
+import {Text} from '@astryxdesign/core/Text';
+import {InputGroup, InputGroupText} from '@astryxdesign/core/InputGroup';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
@@ -555,6 +559,42 @@ export const Clearable: Story = {
   },
 };
 
+/**
+ * Selects a date, clears the controlled value, and reopens the calendar. The
+ * final frame is the regression endpoint: an empty field with no selected day.
+ */
+export const ClearedCalendarSelection: Story = {
+  tags: ['visual-baseline'],
+  render: args => {
+    const [value, setValue] = useState<ISODateString | undefined>('2026-04-06');
+    return <DateInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Event date',
+    hasClear: true,
+    min: '2026-04-01',
+    max: '2026-04-30',
+    presentation: 'popover',
+  },
+  play: async ({canvasElement}) => {
+    const canvas = within(canvasElement);
+
+    await userEvent.click(canvas.getByRole('button', {name: 'Open calendar'}));
+    await userEvent.click(canvas.getByRole('button', {name: /April 15, 2026/}));
+    await userEvent.click(
+      canvas.getByRole('button', {name: 'Clear Event date'}),
+    );
+    await expect(canvas.getByRole('combobox')).toHaveValue('');
+    await userEvent.click(canvas.getByRole('button', {name: 'Open calendar'}));
+
+    await waitFor(() => {
+      expect(
+        canvas.queryAllByRole('gridcell', {selected: true, hidden: true}),
+      ).toHaveLength(0);
+    });
+  },
+};
+
 export const ClearableWithStatus: Story = {
   render: args => {
     const [value, setValue] = useState<ISODateString | undefined>('2026-04-06');
@@ -680,4 +720,115 @@ export const ThemedCalendarToggleIcon: Story = {
       </Theme>
     );
   },
+};
+
+const CONTROL_STYLE = {outline: '2px dashed #c800ff', outlineOffset: 3};
+const CONTAINER_STYLE = {
+  backgroundColor: 'rgba(0, 150, 255, 0.16)',
+  padding: 8,
+  borderRadius: 8,
+};
+
+/**
+ * Where each styling part lands (family:input-fields FR10). The dashed outline
+ * is `controlStyle` on the visual control box. The blue tint is
+ * `containerStyle` on the Field box; in a `horizontal-labels` FormLayout and
+ * inside InputGroup no Field box renders, so there it has no effect (and warns
+ * in development).
+ */
+export const StylingParts: Story = {
+  render: () => (
+    <div style={{display: 'grid', gap: 24, maxWidth: 360}}>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">controlStyle</Text>
+        <div data-parts-row="control-popover" style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="popover"</Text>
+          <DateInput
+            label="Due date"
+            presentation="popover"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div data-parts-row="control-native" style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="native"</Text>
+          <DateInput
+            label="Due date"
+            presentation="native"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="control-bottom-sheet"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="bottom-sheet"</Text>
+          <DateInput
+            label="Due date"
+            presentation="bottom-sheet"
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="control-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <DateInput label="Due date" controlStyle={CONTROL_STYLE} />
+          </FormLayout>
+        </div>
+        <div
+          data-parts-row="control-input-group"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">InputGroup</Text>
+          <InputGroup label="Due date group">
+            <InputGroupText>At</InputGroupText>
+            <DateInput
+              label="Due date"
+              isLabelHidden
+              controlStyle={CONTROL_STYLE}
+            />
+          </InputGroup>
+        </div>
+      </div>
+      <div style={{display: 'grid', gap: 12}}>
+        <Text type="label">containerStyle and controlStyle</Text>
+        <div
+          data-parts-row="container-popover"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">presentation="popover"</Text>
+          <DateInput
+            label="Due date"
+            presentation="popover"
+            containerStyle={CONTAINER_STYLE}
+            controlStyle={CONTROL_STYLE}
+          />
+        </div>
+        <div
+          data-parts-row="container-form-layout"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">horizontal-labels FormLayout</Text>
+          <FormLayout direction="horizontal-labels">
+            <DateInput
+              label="Due date"
+              containerStyle={CONTAINER_STYLE}
+              controlStyle={CONTROL_STYLE}
+            />
+          </FormLayout>
+        </div>
+        <div
+          data-parts-row="container-input-group"
+          style={{display: 'grid', gap: 4}}>
+          <Text type="supporting">InputGroup</Text>
+          <InputGroup label="Due date group">
+            <InputGroupText>At</InputGroupText>
+            <DateInput
+              label="Due date"
+              isLabelHidden
+              containerStyle={CONTAINER_STYLE}
+              controlStyle={CONTROL_STYLE}
+            />
+          </InputGroup>
+        </div>
+      </div>
+    </div>
+  ),
 };

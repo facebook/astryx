@@ -909,7 +909,7 @@ export default function ComponentScoresPage() {
                     hasClear
                     variant="ghost"
                     size="sm"
-                    xstyle={styles.filterToken}
+                    controlXstyle={styles.filterToken}
                   />
                   <Selector
                     label="Package"
@@ -923,7 +923,7 @@ export default function ComponentScoresPage() {
                     hasClear
                     variant="ghost"
                     size="sm"
-                    xstyle={styles.filterToken}
+                    controlXstyle={styles.filterToken}
                   />
                   <Text type="supporting" color="secondary">
                     {visible.length}{' '}

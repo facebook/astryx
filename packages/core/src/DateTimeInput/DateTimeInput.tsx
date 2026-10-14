@@ -80,6 +80,8 @@ import {
   mergeProps,
   isFocusDetached,
 } from '../utils';
+import {chainEventHandlers} from '../utils/chainEventHandlers';
+import {joinAriaIDs} from '../utils/inputAria';
 import {
   plainDateFromISO,
   plainDateToISO,
@@ -87,7 +89,10 @@ import {
   DATE_FORMAT_LONG,
 } from '../utils/plainDate';
 
-import type {BaseProps} from '../BaseProps';
+import {
+  useFieldInputStyling,
+  type FieldInputBaseProps,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useMediaQuery} from '../hooks/useMediaQuery';
@@ -284,7 +289,7 @@ const sizeStyles = stylex.create({
 });
 
 export interface DateTimeInputProps extends Omit<
-  BaseProps,
+  FieldInputBaseProps<HTMLInputElement>,
   'onChange' | 'defaultValue'
 > {
   /** Ref forwarded to the date input element */
@@ -466,7 +471,7 @@ export interface DateTimeInputProps extends Omit<
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
-   * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
+   * stay aligned, unlike setting width via `containerXstyle` or `controlXstyle`.
    */
   width?: SizeValue;
   /**
@@ -619,15 +624,32 @@ function PointerDateTimeField({
   numberOfMonths = 1,
   weekStartsOn,
   width,
-  xstyle,
-  className,
-  style,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
   ref,
   nativeMode = 'off',
-  ...rest
+  ...restProps
 }: DateTimeInputProps & {
   nativeMode?: 'off' | 'adaptive' | 'forced' | 'legacy';
 }) {
+  const {rest, container} = useFieldInputStyling('DateTimeInput', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
+  const {
+    id: idProp,
+    'aria-describedby': ariaDescribedByProp,
+    'aria-labelledby': ariaLabelledByProp,
+    onBlur: onBlurProp,
+    onClick: onClickProp,
+    onKeyDown: onKeyDownProp,
+    ...controlProps
+  } = rest;
   const t = useTranslator();
   const locale = useLocale();
   const usesNativePicker = nativeMode !== 'off';
@@ -652,7 +674,15 @@ function PointerDateTimeField({
   const timePlaceholder =
     timePlaceholderFromProps ?? t('@astryx.dateTimeInput.timePlaceholder');
   const size = useSize(sizeProp, 'md');
-  const dateInputId = useId();
+  const generatedID = useId();
+  const dateInputId = idProp ?? generatedID;
+  const fieldLabelID = useId();
+  // A caller aria-labelledby names the date input together with the field's
+  // own label.
+  const controlLabelledBy =
+    ariaLabelledByProp != null
+      ? joinAriaIDs(fieldLabelID, ariaLabelledByProp)
+      : undefined;
   const timeInputId = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -706,6 +736,7 @@ function PointerDateTimeField({
       status?.message ? statusMessageID : null,
       statusTooltipDescribedBy,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+      ariaDescribedByProp,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -1582,10 +1613,12 @@ function PointerDateTimeField({
 
   return (
     <Field
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={dateInputId}
+      labelID={ariaLabelledByProp != null ? fieldLabelID : undefined}
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -1604,7 +1637,6 @@ function PointerDateTimeField({
       width={width}>
       <div
         ref={disabledMessageTooltip.ref}
-        {...rest}
         {...mergeProps(
           themeProps('date-time-input', {
             size,
@@ -1614,10 +1646,10 @@ function PointerDateTimeField({
           stylex.props(
             styles.row,
             usesNativePicker && styles.nativeRow,
-            xstyle,
+            controlXstyle,
           ),
-          className,
-          style,
+          controlClassName,
+          controlStyle,
         )}>
         {/* Date input */}
         <div
@@ -1655,6 +1687,13 @@ function PointerDateTimeField({
               isBusy={isBusy}
               statusType={status?.type}
               ariaDescribedBy={ariaDescribedBy}
+              controlProps={{
+                ...controlProps,
+                'aria-labelledby': controlLabelledBy,
+                onBlur: onBlurProp,
+                onClick: onClickProp,
+                onKeyDown: onKeyDownProp,
+              }}
             />
           ) : (
             <>
@@ -1688,15 +1727,17 @@ function PointerDateTimeField({
                 />
               </button>
               <input
+                {...controlProps}
                 ref={mergedDateInputRef}
                 id={dateInputId}
                 type="text"
                 role="combobox"
                 value={dateDisplayValue}
                 onChange={handleDateInputChange}
-                onBlur={handleDateBlur}
-                onClick={handleDateInputClick}
-                onKeyDown={handleDateKeyDown}
+                onBlur={chainEventHandlers(handleDateBlur, onBlurProp)}
+                onClick={chainEventHandlers(handleDateInputClick, onClickProp)}
+                onKeyDown={chainEventHandlers(handleDateKeyDown, onKeyDownProp)}
+                aria-labelledby={controlLabelledBy}
                 placeholder={placeholder}
                 // With a disabledMessage the input keeps focusability via
                 // aria-disabled so the reason is focus-discoverable; typing is
@@ -1952,6 +1993,11 @@ PointerDateTimeField.displayName = 'PointerDateTimeField';
  * surfaces (`spec:AST-043`). Native modes use OS-owned date and time controls
  * in Astryx field chrome; the deprecated `nativePicker` maps to the same
  * surfaces (FR3).
+ *
+ * Base props (`ref`, `id`, `data-*`, `aria-*`, DOM event handlers) go to the date input.
+ * A DOM handler runs after the component's own handler for the same event
+ * and still receives events the component handled, even ones it called
+ * `preventDefault` on, so it cannot cancel built-in behavior.
  */
 export function DateTimeInput(props: DateTimeInputProps) {
   const isTouch = useMediaQuery(TOUCH_POINTER_QUERY);

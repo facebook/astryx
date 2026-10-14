@@ -18,7 +18,8 @@ export const doc = {
   description:
     'Runs a series of diagnostics: Node version, ' +
     '@astryxdesign/core install and version alignment with the CLI, installed ' +
-    'themes and wiring, astryx.config validity, integrations linked from ' +
+    'themes and wiring, astryx.config validity, whether every integration ' +
+    'astryx.config names loads (a failed one fails the run), integrations linked from ' +
     'package.json without a config entry, core peer dependencies, ' +
     'integration provider identity and contribution issues, agent docs, the ' +
     'detected package manager, and the health of the docs the CLI reads (authoring ' +

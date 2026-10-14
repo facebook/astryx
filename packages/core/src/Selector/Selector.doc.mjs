@@ -354,10 +354,56 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'xstyle',
+      name: 'onClick',
+      type: '(event: MouseEvent) => void',
+      description:
+        'Click handler on the trigger button. Runs before the selector toggles its surface; preventDefault() does not keep it closed.',
+    },
+    {
+      name: 'onFocus',
+      type: '(event: FocusEvent) => void',
+      description:
+        "Focus handler on the trigger button. Runs before the selector's own focus handling.",
+    },
+    {
+      name: 'onKeyDown',
+      type: '(event: KeyboardEvent) => void',
+      description:
+        'Key handler on the trigger button. Runs after the built-in keyboard model and is skipped for keys it handles and cancels.',
+    },
+    {
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
+        'StyleX styles for the field container (label, control, and status together). No effect inside InputGroup (style the InputGroup instead) or in a `horizontal-labels` FormLayout. Root `xstyle`, `className`, and `style` are not accepted.',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description:
+        'Class name for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description:
+        'Inline styles for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the element that paints the border and background and holds the value, icons, and end controls. Never the trigger button itself.',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: 'Class name for the visual control box.',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: 'Inline styles for the visual control box.',
     },
   ],
   components: [{name: 'SelectorOption'}],

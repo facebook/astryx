@@ -9,7 +9,7 @@
  * @position Core implementation; consumed by index.ts
  *
  * Right-click context menu positioned at the cursor. The cursor point is
- * captured as an offset *inside the trigger* and materialized as a zero-size
+ * captured as an offset *inside the trigger* and materialized as a 1px
  * anchor element, so the menu is positioned relative to the trigger's context
  * (via CSS anchor positioning) rather than the viewport. It therefore follows
  * the content on scroll and auto-flips at viewport edges, while still appearing
@@ -61,8 +61,6 @@ import {
   MENU_ITEM_SELECTOR,
   MENU_BOUNDARY_SELECTOR,
   activateMenuItem,
-  hostedControlOf,
-  isTextEntry,
 } from '../DropdownMenu/menuItemRoles';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useMenuDrillIn} from '../DropdownMenu/useMenuDrillIn';
@@ -114,14 +112,16 @@ const styles = stylex.create({
     WebkitUserSelect: 'none',
     userSelect: 'none',
   },
-  // Zero-size anchor placed at the cursor point within the trigger. The menu
-  // is anchored to this element, so it sits under the cursor yet is positioned
+  // 1px anchor placed at the cursor point within the trigger. The menu is
+  // anchored to this element, so it sits under the cursor yet is positioned
   // relative to the trigger's context — it follows the content on scroll and
-  // the browser can auto-flip it against the viewport edges.
+  // the browser can auto-flip it against the viewport edges. It owns a box
+  // because WebKit counts an empty anchor box as clipped, and the default
+  // `position-visibility: anchors-visible` then hides the menu.
   cursorAnchor: {
     position: 'absolute',
-    width: 0,
-    height: 0,
+    width: '1px',
+    height: '1px',
     pointerEvents: 'none',
   },
   menu: {
@@ -186,6 +186,17 @@ const styles = stylex.create({
     outline: 'none',
   },
 });
+
+/**
+ * Keeps the 1px cursor anchor inside the trigger along one axis. A point in
+ * the trigger's last pixel (Shift+F10 opens on its bottom edge) steps back by
+ * that pixel: past the edge the anchor would add scrollable overflow, and a
+ * scroller whose edge meets the trigger's would clip it and hide the menu.
+ * Any other point, inside the trigger or not, stays where it is.
+ */
+function keepAnchorInside(offset: number, size: number): number {
+  return offset > size - 1 && offset <= size ? Math.max(size - 1, 0) : offset;
+}
 
 // =============================================================================
 // Types
@@ -326,7 +337,7 @@ export function ContextMenu({
 
   const menuId = useId();
   // Cursor point in the trigger's local coordinate space (offset from the
-  // trigger's top-left, in-flow). Stored here and written to the zero-size
+  // trigger's top-left, in-flow). Stored here and written to the cursor
   // anchor element so the menu is positioned relative to the trigger context
   // — it scrolls with the content instead of sitting at a fixed viewport point.
   const positionRef = useRef({x: 0, y: 0});
@@ -418,9 +429,6 @@ export function ContextMenu({
     // Menus wrap from the last row to the first and back.
     wrap: true,
     hasPaging: true,
-    // Arrows, Home and End leave a text field the menu hosts only at its
-    // caret's edge.
-    hasCaretGuard: true,
     onEscape: closeMenu,
   });
 
@@ -490,13 +498,7 @@ export function ContextMenu({
       if (!ownsEvent(e)) {
         return;
       }
-      // A key pressed in a control the menu hosts beside its rows is that
-      // control's; see DropdownMenu.
-      const hosted = hostedControlOf(e.target, listRef.current);
       if (e.key === 'Enter' || e.key === ' ') {
-        if (hosted != null) {
-          return;
-        }
         e.preventDefault();
         // A held key's auto-repeat never activates.
         if (e.repeat) {
@@ -522,27 +524,30 @@ export function ContextMenu({
         closeMenu();
         return;
       }
-      if (!(hosted != null && isTextEntry(hosted)) && typeahead.onKeyDown(e)) {
+      if (typeahead.onKeyDown(e)) {
         e.preventDefault();
         return;
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, closeMenu, typeahead, ownsEvent, listRef],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
-  // Place the zero-size cursor anchor at a point in the trigger's local
+  // Place the 1px cursor anchor at a point in the trigger's local
   // coordinate space and open the menu. Positioning the anchor inside the
   // trigger (rather than storing viewport coordinates on the menu itself) is
   // what makes the menu context-relative: it scrolls with the content and the
   // browser auto-flips it against the viewport edges via CSS anchor positioning.
   const openAtLocalPoint = useCallback(
     (localX: number, localY: number, focusEl: HTMLElement | null) => {
-      positionRef.current = {x: localX, y: localY};
+      const rect = triggerRef.current?.getBoundingClientRect();
+      const x = rect ? keepAnchorInside(localX, rect.width) : localX;
+      const y = rect ? keepAnchorInside(localY, rect.height) : localY;
+      positionRef.current = {x, y};
       const anchorEl = cursorAnchorRef.current;
       if (anchorEl) {
-        anchorEl.style.left = `${localX}px`;
-        anchorEl.style.top = `${localY}px`;
+        anchorEl.style.left = `${x}px`;
+        anchorEl.style.top = `${y}px`;
       }
       // Remember the element focused before opening so we can restore it on
       // close (Escape or outside-click), instead of dropping focus to <body>.
