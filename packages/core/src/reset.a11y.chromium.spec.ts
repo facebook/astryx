@@ -176,7 +176,10 @@ test('a date or time field is as tall as a text field with the same styles', asy
   const heights = await page
     .locator('#fields input')
     .evaluateAll(inputs =>
-      inputs.map(input => [input.type, input.getBoundingClientRect().height]),
+      inputs.map(input => [
+        input.getAttribute('type'),
+        input.getBoundingClientRect().height,
+      ]),
     );
   const textHeight = heights[0][1];
   expect(heights).toEqual(types.map(type => [type, textHeight]));
