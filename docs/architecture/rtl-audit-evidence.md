@@ -37,6 +37,29 @@ deciding_specs: []
 
 # RTL audit evidence architecture
 
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "testing": [
+      "INV1",
+      "INV2",
+      "INV3",
+      "INV4",
+      "INV6",
+      "INV9",
+      "INV10",
+      "INV12",
+      "INV13",
+      "INV14",
+      "INV16"
+    ]
+  }
+}
+```
+
 ## Contract at a glance
 
 | Area                    | Contract                                                                                                                                                                                                                                                                                                                                                                            |
@@ -64,6 +87,16 @@ credited with proving more than it observed. A reference fixture's dimension-lev
 non-applicability is distinct from a component-wide verified-N/A declaration.
 The former describes one story's semantics; the latter requires evidence for the
 whole component.
+
+The global `testing` route supplies shared evidence and exclusion-review claims
+when an RTL test, evidence claim, or exemption is relevant to the change. It does
+not supply component behavior or visual intent: `design:bidirectionality` owns
+those relationships, and component/module contracts own local states and their
+verification maps. Matching this route neither requires every component to
+implement the audit runner nor imports workflow topology, unresolved N/A/debt
+admission, or gate-rollout decisions as universal component rules. Review applies
+only the routed claims within their stated evidence scope; draft routes remain
+non-authoritative.
 
 ## System model
 
