@@ -102,14 +102,18 @@ const styles = stylex.create({
   // The cap is on the layer box itself: content wider than the viewport
   // overflows inside the layer, where the composing component decides
   // whether it scrolls or clips; the box never leaves the viewport.
+  //
+  // Each full value goes to `firstThatWorks` inside `calc()`: StyleX compiles a
+  // `defineConsts` member passed on its own as a CSS variable it never
+  // defines, so the full value would never apply (see layerViewportInset).
   viewportFit: {
     boxSizing: 'border-box',
     maxInlineSize: stylex.firstThatWorks(
-      layerViewportInset.maxInlineSize,
+      `calc(${layerViewportInset.maxInlineSize})`,
       layerViewportInset.maxInlineSizeFallback,
     ),
     maxBlockSize: stylex.firstThatWorks(
-      layerViewportInset.maxBlockSize,
+      `calc(${layerViewportInset.maxBlockSize})`,
       layerViewportInset.maxBlockSizeFallback,
     ),
   },
@@ -120,25 +124,25 @@ const styles = stylex.create({
   // (see layerSlideRules.ts).
   gutterInlineEnd: {
     marginInlineEnd: stylex.firstThatWorks(
-      layerViewportInset.gutterInline,
+      `calc(${layerViewportInset.gutterInline})`,
       layerViewportInset.gutterInlineFallback,
     ),
   },
   gutterInlineStart: {
     marginInlineStart: stylex.firstThatWorks(
-      layerViewportInset.gutterInline,
+      `calc(${layerViewportInset.gutterInline})`,
       layerViewportInset.gutterInlineFallback,
     ),
   },
   gutterBlockEnd: {
     marginBlockEnd: stylex.firstThatWorks(
-      layerViewportInset.gutterBlock,
+      `calc(${layerViewportInset.gutterBlock})`,
       layerViewportInset.gutterBlockFallback,
     ),
   },
   gutterBlockStart: {
     marginBlockStart: stylex.firstThatWorks(
-      layerViewportInset.gutterBlock,
+      `calc(${layerViewportInset.gutterBlock})`,
       layerViewportInset.gutterBlockFallback,
     ),
   },

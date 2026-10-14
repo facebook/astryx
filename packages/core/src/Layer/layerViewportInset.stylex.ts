@@ -57,7 +57,13 @@ const GUTTER_BLOCK = `calc(max(${SPACING}, env(safe-area-inset-top, 0px), env(sa
 /**
  * The viewport gutter and the caps derived from it. Every value has an
  * `env()`-less fallback for engines without safe-area support; pair them with
- * `stylex.firstThatWorks(cap, capFallback)`.
+ * `stylex.firstThatWorks(\`calc(${cap})\`, capFallback)`.
+ *
+ * Never pass a member to `firstThatWorks` on its own. StyleX does not support
+ * a constant there: it treats the member's reference as a CSS variable, nests
+ * the fallback inside it (`var(--x…, fallback)`), and never defines that
+ * variable, so the browser always takes the fallback. Inside `calc()`, or any
+ * larger value such as `min(300px, ${cap})`, the member is inlined.
  */
 export const layerViewportInset = stylex.defineConsts({
   /** Gutter from the block-start viewport edge. */

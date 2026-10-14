@@ -180,8 +180,10 @@ const styles = stylex.create({
     // selection: a held finger is driving the highlight.
     WebkitTouchCallout: 'none',
     userSelect: 'none',
+    // Inside `calc()`: a `defineConsts` member passed to `firstThatWorks` on
+    // its own compiles to a CSS variable StyleX never defines.
     maxInlineSize: stylex.firstThatWorks(
-      layerViewportInset.maxInlineSize,
+      `calc(${layerViewportInset.maxInlineSize})`,
       layerViewportInset.maxInlineSizeFallback,
     ),
     maxHeight: stylex.firstThatWorks(

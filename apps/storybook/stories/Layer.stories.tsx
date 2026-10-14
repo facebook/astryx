@@ -476,6 +476,24 @@ const viewportStyles = stylex.create({
       'repeating-linear-gradient(to bottom, transparent 0 39px, var(--color-border-default) 39px 40px)',
   },
   explicitWidth: (width: number) => ({width}),
+  // Pinned to the viewport, as an app shell is, so the document itself does
+  // not scroll: in a document that scrolls, WebKit 26 shifts an anchored
+  // layer against the document's scroll height rather than the viewport.
+  fixedCanvas: {
+    position: 'fixed',
+    inset: 0,
+    minBlockSize: 0,
+  },
+  // The surface fills the layer box and scrolls inside it, so what you see is
+  // the runtime's own cap rather than a cap the surface sets itself.
+  layerColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  fillLayer: {
+    minBlockSize: 0,
+    maxBlockSize: 'none',
+  },
   bottomBar: {
     position: 'fixed',
     insetBlockEnd: 0,
@@ -518,6 +536,7 @@ function ViewportLayer({
   canvasXstyle,
   extra,
   isOpenInitially = false,
+  isSurfaceFillingLayer = false,
 }: {
   at: Pos;
   placement?: Placement;
@@ -528,6 +547,7 @@ function ViewportLayer({
   canvasXstyle?: stylex.StyleXStyles;
   extra?: React.ReactNode;
   isOpenInitially?: boolean;
+  isSurfaceFillingLayer?: boolean;
 }) {
   const layer = useLayer({mode: 'context', lightDismiss: true});
   const openedRef = useRef(false);
@@ -552,12 +572,21 @@ function ViewportLayer({
         />
       </div>
       {layer.render(
-        <div {...stylex.props(viewportStyles.surface)}>{children}</div>,
+        <div
+          {...stylex.props(
+            viewportStyles.surface,
+            isSurfaceFillingLayer && viewportStyles.fillLayer,
+          )}>
+          {children}
+        </div>,
         {
           placement,
           alignment,
           offset: 4,
-          xstyle: width != null ? viewportStyles.explicitWidth(width) : null,
+          xstyle: [
+            width != null && viewportStyles.explicitWidth(width),
+            isSurfaceFillingLayer && viewportStyles.layerColumn,
+          ],
         },
       )}
       {extra}
@@ -887,6 +916,41 @@ export const TallerThanTheViewport: Story = {
       r.layer.right > r.vw - GUTTER + TOLERANCE
     ) {
       fail(`Layer ${fmt(r.layer)} leaves the inline gutter`);
+    }
+  },
+};
+
+const TALL_LAYER_BAR = 68;
+
+export const TallerThanTheViewportAboveABar: Story = {
+  name: 'Viewport inset: taller than the viewport, above a declared bar',
+  parameters: viewportParameters,
+  render: () => (
+    <LayerProvider inset={{blockEnd: TALL_LAYER_BAR}}>
+      <ViewportLayer
+        at={{top: 120, left: 40}}
+        canvasXstyle={viewportStyles.fixedCanvas}
+        isSurfaceFillingLayer
+        caption={`FR3, FR6 — Content 2000px tall over a ${TALL_LAYER_BAR}px bar the app declares. The layer box is capped to the visible viewport minus both block gutters, so it ends ${GUTTER}px above the bar; on a phone, the visible viewport is the one the browser's toolbars leave.`}
+        extra={
+          <div
+            data-testid="bar"
+            {...stylex.props(
+              viewportStyles.bottomBar,
+              viewportStyles.barHeight(TALL_LAYER_BAR),
+            )}>
+            persistent bar — {TALL_LAYER_BAR}px, outside layout flow
+          </div>
+        }>
+        <div {...stylex.props(viewportStyles.tall)}>2000px of rows</div>
+      </ViewportLayer>
+    </LayerProvider>
+  ),
+  play: async ({canvasElement}) => {
+    const r = await open(canvasElement);
+    assertAboveBar(r, TALL_LAYER_BAR, 'taller than the viewport');
+    if (r.layer.top < -TOLERANCE) {
+      fail(`Layer ${fmt(r.layer)} leaves the top of the viewport`);
     }
   },
 };

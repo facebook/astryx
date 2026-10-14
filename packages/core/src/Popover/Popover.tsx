@@ -268,15 +268,18 @@ const styles = stylex.create({
   // The painted surface is capped to the viewport with the layer runtime's
   // one definition (spec:AST-059 FR2, FR3): the layer box above it caps the
   // block axis itself and leaves the inline axis to the surface, so a flip is
-  // still chosen when the surface does not fit beside the trigger.
+  // still chosen when the surface does not fit beside the trigger. Each full
+  // value goes inside `calc()`: a `defineConsts` member passed to
+  // `firstThatWorks` on its own compiles to a CSS variable StyleX never
+  // defines.
   surfaceViewportFit: {
     boxSizing: 'border-box',
     maxInlineSize: stylex.firstThatWorks(
-      layerViewportInset.maxInlineSize,
+      `calc(${layerViewportInset.maxInlineSize})`,
       layerViewportInset.maxInlineSizeFallback,
     ),
     maxBlockSize: stylex.firstThatWorks(
-      layerViewportInset.maxBlockSize,
+      `calc(${layerViewportInset.maxBlockSize})`,
       layerViewportInset.maxBlockSizeFallback,
     ),
   },
