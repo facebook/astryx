@@ -14,8 +14,8 @@
  * is rendered: a layout read on an element the browser is not rendering (an
  * ancestor with `display: none`, or a `content-visibility: hidden` subtree)
  * either answers zeros or makes the browser lay out that whole hidden subtree
- * for the answer, so the hook keeps its last state until the resize that
- * follows the reveal.
+ * for the answer, so the hook keeps its last state until the resize
+ * observation that follows the reveal (one frame after it paints).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
@@ -35,16 +35,15 @@ export interface ScrollOverflowState {
 
 /**
  * Whether the browser is rendering `el`, so a layout read on it answers for a
- * real box. `checkVisibility` is false under a `display: none` ancestor and
- * inside a `content-visibility: hidden` subtree (or a skipped
- * `content-visibility: auto` one, with the option), and it answers without
- * rendering that subtree. A browser without it measures as before.
+ * real box. `checkVisibility()` is false under a `display: none` ancestor and
+ * inside a `content-visibility: hidden` subtree, and it answers without
+ * rendering that subtree. Not `contentVisibilityAuto`: a freshly inserted,
+ * on-screen `content-visibility: auto` section counts as skipped until the
+ * next rendering update, and a strip mounted into one would paint its first
+ * frame unmeasured. A browser without `checkVisibility` measures as before.
  */
 function isRendered(el: HTMLElement): boolean {
-  return (
-    typeof el.checkVisibility !== 'function' ||
-    el.checkVisibility({contentVisibilityAuto: true})
-  );
+  return typeof el.checkVisibility !== 'function' || el.checkVisibility();
 }
 
 /**
