@@ -73,6 +73,7 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {useMenuPress} from '../hooks/useMenuPress';
+import type {MenuPressPointerType} from '../hooks/menuPressGesture';
 import {useMenuOverflow} from '../DropdownMenu/useMenuOverflow';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
@@ -99,6 +100,7 @@ import {useTranslator} from '../i18n';
 import type {AdaptivePresentation} from '../hooks/useAdaptivePresentation';
 import {SelectorBottomSheet} from './SelectorBottomSheet';
 import {useSelectorPresentation} from './useSelectorPresentation';
+import {holdInvokerThroughPress} from '../Layer/holdInvokerThroughPress';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
 
 const styles = stylex.create({
@@ -519,6 +521,16 @@ const itemSizeStyles = stylex.create({
   },
   lg: {},
 });
+
+/**
+ * How far the mouse that pressed the trigger may drift before its release on
+ * the row placed under the press point counts as a pick of the row it
+ * already selects, rather than a click on the trigger (`useLongPress` cancels
+ * a hold at the same distance).
+ */
+const PRESS_ROW_SLOP_PX = 10;
+/** The row under the press is not yet known: the list has reported no row. */
+const PRESS_ROW_UNRESOLVED = -2;
 
 const STATUS_ICON_MAP: Record<SelectorStatusType, IconName> = {
   warning: 'warning',
@@ -1366,10 +1378,201 @@ export function Selector<T extends SelectorOptionType>(
     filteredItems.length,
     surface.isOpen,
   );
+  // A mouse opens the listbox on press-down (the trigger half of the press
+  // model, `module:DropdownMenu/useMenuPress` FR8): the list is up while the
+  // button is still down, and a drag into it that lets go over an option
+  // picks that option, as a native pop-up button does. Pressing the trigger
+  // of an open list closes it, and the click of that same gesture (reported
+  // by `isTriggerClickFromPress`) neither toggles nor reopens. Only the
+  // popover presentation opens on press: the modal sheet covers the trigger,
+  // so the opening release would land outside it and dismiss it. A finger
+  // keeps its tap: a held finger opens nothing here.
+  const pressActedRef = useRef(false);
+  // The opening gesture, while the mouse that pressed the trigger is still
+  // down: where it pressed, the row the list placed under that point, and
+  // whether the highlight has since visited another row.
+  const openingPressRef = useRef<{
+    clientX: number;
+    clientY: number;
+    /**
+     * The index of the row the list placed under the press: resolved by
+     * hit-testing the press point once the positioned list reports a row
+     * (FR2 clamps the list to the viewport, so near an edge it is not the
+     * selected row); -1 for none, `PRESS_ROW_UNRESOLVED` until then.
+     */
+    pressRowIndex: number;
+    /** The overlay's row (the selected option, else the first), the fallback where the document cannot hit-test. */
+    overlayRowIndex: number;
+    /** Whether the highlight has visited another row since the open. */
+    leftPressRow: boolean;
+  } | null>(null);
+  const handleTriggerPress = useCallback(
+    (pointerType: MenuPressPointerType): boolean => {
+      pressActedRef.current = false;
+      if (
+        pointerType !== 'mouse' ||
+        isDisabled ||
+        isEffectivelyReadOnly ||
+        surface.activePresentation !== 'popover'
+      ) {
+        openingPressRef.current = null;
+        return false;
+      }
+      pressActedRef.current = true;
+      if (surface.isOpen) {
+        openingPressRef.current = null;
+        surface.hide();
+        return false;
+      }
+      // The press opens the list before the browser's own mousedown has
+      // focused the trigger, so the popover would remember whatever was
+      // focused BEFORE the press as the element to hand focus back to.
+      // Focusing the trigger first gives it the state a click-open has.
+      triggerRef.current?.focus({preventScroll: true});
+      const didOpen = surface.show();
+      if (!didOpen) {
+        openingPressRef.current = null;
+        return false;
+      }
+      // The highlight a click-open gives: the selected option, else the first.
+      const selectedIndex = filteredItems.findIndex(
+        item => item.value === optimisticValue,
+      );
+      if (!hasSearch) {
+        setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+      }
+      // With the default placement the list opens with that row over the
+      // trigger, under the pressing pointer (FR2), unless the viewport
+      // clamped it: the row under the press is hit-tested once the list
+      // reports one.
+      if (openingPressRef.current != null) {
+        openingPressRef.current.overlayRowIndex = shouldOverlaySelectedItem
+          ? Math.max(selectedIndex, 0)
+          : -1;
+      }
+      // The listbox is `popover="auto"`: the browser's light dismiss would
+      // read the release of this very press, on the trigger outside the
+      // popover, as a dismissal. The trigger stays the popover's invoker
+      // through the press.
+      holdInvokerThroughPress(triggerRef.current, popover.id);
+      return true;
+    },
+    [
+      filteredItems,
+      hasSearch,
+      isDisabled,
+      isEffectivelyReadOnly,
+      optimisticValue,
+      popover.id,
+      setHighlightedIndex,
+      shouldOverlaySelectedItem,
+      surface,
+    ],
+  );
+
+  // The trigger's own pointerdown, ahead of the model's: remember where a
+  // mouse pressed, and forget it a task after the release (the model's `act`
+  // runs inside the release itself).
+  const handleTriggerPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      if (event.pointerType !== 'mouse' || event.button !== 0) {
+        return;
+      }
+      openingPressRef.current = {
+        clientX: event.clientX,
+        clientY: event.clientY,
+        pressRowIndex: PRESS_ROW_UNRESOLVED,
+        overlayRowIndex: -1,
+        leftPressRow: false,
+      };
+      const doc = event.currentTarget.ownerDocument;
+      const onPressEnd = () => {
+        doc.removeEventListener('pointerup', onPressEnd, true);
+        doc.removeEventListener('pointercancel', onPressEnd, true);
+        doc.defaultView?.setTimeout(() => {
+          openingPressRef.current = null;
+        }, 0);
+      };
+      doc.addEventListener('pointerup', onPressEnd, true);
+      doc.addEventListener('pointercancel', onPressEnd, true);
+    },
+    [],
+  );
+
+  /**
+   * Whether the opening gesture's release over `row` is a click on the
+   * trigger rather than a pick: with the default placement the list opens
+   * with a row under the pressing pointer (the selected option, or the first
+   * when nothing is selected), so a slow or slightly shaky click would land
+   * on it. That row acts only once the highlight has visited another row, or,
+   * when it is already the value, once the mouse moved past the slop; the
+   * row under the press never selects a value nobody chose.
+   */
+  /**
+   * The row under the press point, read once the positioned list reports a
+   * row: a hit test at the press coordinates, or, where the document cannot
+   * hit-test, the overlay's row.
+   */
+  const resolvePressRow = useCallback(
+    (press: NonNullable<typeof openingPressRef.current>): void => {
+      if (press.pressRowIndex !== PRESS_ROW_UNRESOLVED) {
+        return;
+      }
+      const listbox = listboxRef.current;
+      const doc = listbox?.ownerDocument;
+      if (listbox == null || typeof doc?.elementFromPoint !== 'function') {
+        press.pressRowIndex = press.overlayRowIndex;
+        return;
+      }
+      const hit = doc.elementFromPoint(press.clientX, press.clientY);
+      const row = hit?.closest<HTMLElement>('[role="option"]') ?? null;
+      press.pressRowIndex =
+        row != null && listbox.contains(row) ? optionIndexFromRow(row) : -1;
+    },
+    [optionIndexFromRow],
+  );
+
+  const isOpeningReleaseOnPressRow = useCallback(
+    (row: HTMLElement, release: PointerEvent): boolean => {
+      const press = openingPressRef.current;
+      if (press == null) {
+        return false;
+      }
+      resolvePressRow(press);
+      if (press.pressRowIndex < 0 || press.leftPressRow) {
+        return false;
+      }
+      const index = optionIndexFromRow(row);
+      if (index !== press.pressRowIndex) {
+        return false;
+      }
+      const moved =
+        Math.hypot(
+          release.clientX - press.clientX,
+          release.clientY - press.clientY,
+        ) > PRESS_ROW_SLOP_PX;
+      const isValueRow = filteredItems[index]?.value === optimisticValue;
+      return !(moved && isValueRow);
+    },
+    [filteredItems, optimisticValue, optionIndexFromRow, resolvePressRow],
+  );
+
   const listboxPress = useMenuPress({
     menuRef: listboxRef,
+    triggerRef,
     itemSelector: '[role="option"]:not([aria-disabled="true"])',
+    onTriggerPress: handleTriggerPress,
     onHighlight: row => {
+      const press = openingPressRef.current;
+      if (press != null && row != null) {
+        resolvePressRow(press);
+        if (
+          press.pressRowIndex >= 0 &&
+          optionIndexFromRow(row) !== press.pressRowIndex
+        ) {
+          press.leftPressRow = true;
+        }
+      }
       if (row == null) {
         setHighlightedIndex(-1);
         return;
@@ -1384,7 +1587,12 @@ export function Selector<T extends SelectorOptionType>(
         onItemMouseEnter(item, index);
       }
     },
-    onActivate: row => {
+    onActivate: (row, release) => {
+      // The opening gesture let go on the row the list placed under the
+      // press: a click on the trigger, not a pick. The list stays open.
+      if (isOpeningReleaseOnPressRow(row, release)) {
+        return;
+      }
       const item = filteredItems[optionIndexFromRow(row)];
       if (item != null) {
         onItemSelect(item);
@@ -1392,6 +1600,16 @@ export function Selector<T extends SelectorOptionType>(
     },
     onDismiss: surface.hide,
   });
+
+  // The press already opened or closed the list; its click is spent. A
+  // finger's press acts on nothing here, so its click toggles as it always
+  // did, a long hold included.
+  const handleTriggerClick = useCallback(() => {
+    if (listboxPress.isTriggerClickFromPress() && pressActedRef.current) {
+      return;
+    }
+    onTriggerClick();
+  }, [listboxPress, onTriggerClick]);
 
   const handleTriggerKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -1888,6 +2106,13 @@ export function Selector<T extends SelectorOptionType>(
     // runs on the trigger before the press bubbles to the control box's
     // toggle, as it always has.
     onKeyDown: composeEventHandlers(handleTriggerKeyDown, onKeyDownProp),
+    // The press model's trigger half: a mouse press opens the list. A caller
+    // `onPointerDown` from `rest` runs first and may prevent it.
+    onPointerDown: composeEventHandlers(
+      rest.onPointerDown,
+      handleTriggerPointerDown,
+      listboxPress.triggerProps.onPointerDown,
+    ),
     onFocus: event => {
       onFocus?.(event);
       surface.onTriggerFocus(event);
@@ -1911,7 +2136,7 @@ export function Selector<T extends SelectorOptionType>(
           // compose, so attaching unconditionally is safe.
           disabledMessageTooltip.ref(el);
         }}
-        onClick={onTriggerClick}
+        onClick={handleTriggerClick}
         {...pressable}
         {...mergeProps(
           themeProps('selector', {
