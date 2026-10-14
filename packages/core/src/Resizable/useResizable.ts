@@ -303,6 +303,9 @@ function persistState(key: string, state: PersistedResizableState): void {
 
 /** The released compatibility basis when there is no window to measure. */
 const SERVER_BASIS = 1200;
+
+/** A store that never changes on its own; the snapshot is re-read on render. */
+const noopSubscribe = () => () => {};
 const DEFAULT_SIZE_FALLBACK = 250;
 const RESIZABLE_SIZE_GUIDANCE =
   'Use a non-negative number of pixels, an exact "Npx" string, an exact ' +
@@ -699,6 +702,23 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     () => SERVER_BASIS,
   );
 
+  // The window's extent along the hook's axis, for the REPORTED maximum of an
+  // unbounded region (never for clamping). Read through the same store shape
+  // so a server-rendered handle hydrates with no maximum and gains the real
+  // one on the first client render, instead of a hydration mismatch. It takes
+  // no resize subscription: an unbounded pixel region observes nothing
+  // (component:Resizable Performance and resources).
+  const windowExtent = useSyncExternalStore(
+    noopSubscribe,
+    () =>
+      typeof window === 'undefined'
+        ? null
+        : direction === 'vertical'
+          ? window.innerHeight
+          : window.innerWidth,
+    () => null,
+  );
+
   // With a container, its content box is the basis; without one, the released
   // viewport basis. Before a supplied container has been measured — the first
   // render, the server, and any moment it is display:none or detached — the
@@ -1026,6 +1046,29 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // percentage bound stays pinned to the container size at grab time.
   const onResizeCancel = releaseGestureBasis;
 
+  // The maximum a handle REPORTS (End uses only a configured maximum). A
+  // configured maximum wins. Otherwise a measured extent stands in — the
+  // container's content box while a percentage bound already observes it, or
+  // the window's extent along the axis — and never drops below the current size, so
+  // `aria-valuenow` can never exceed `aria-valuemax` (a saved, default, or
+  // pre-resize size may already be larger than the window). An unobserved
+  // container reports nothing: measuring it would add an observer to an
+  // atomic pixel path.
+  const measuredBasisForMax = hasContainer
+    ? hasPositiveMeasurement && observeContainerBasis
+      ? containerBasis
+      : null
+    : windowExtent;
+  // Never below the announced value either: a collapsed pane announces the
+  // resolved minimum as its value, so the stand-in floors there as well, and
+  // `aria-valuemax` can never fall under `aria-valuemin`.
+  const effectiveMaxPx =
+    resolvedMax !== Infinity
+      ? resolvedMax
+      : measuredBasisForMax == null
+        ? undefined
+        : Math.max(measuredBasisForMax, isCollapsed ? resolvedMin : size);
+
   const props: ResizableProps = {
     _size: isCollapsed ? 0 : size,
     _isCollapsed: isCollapsed,
@@ -1042,6 +1085,15 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     _isResizableProps: true,
   };
   collapseControls.set(props, {collapse, expand});
+  // Without a configured maximum the basis stands in — only when it is a
+  // real measurement (an observed container, or the window), never the
+  // temporary 1200px placeholder (component:Resizable Performance: atomic
+  // pixel paths add no observer, so an unobserved container stays unknown).
+  // The released no-container basis is the window WIDTH on both axes; a
+  // vertical region's reported maximum reads the window height instead.
+  if (effectiveMaxPx != null) {
+    effectiveMaxima.set(props, effectiveMaxPx);
+  }
 
   return {
     size: isCollapsed ? 0 : size,
@@ -1111,6 +1163,23 @@ function useMultiResizable(
  */
 type CollapseControls = {collapse: () => void; expand: () => void};
 const collapseControls = new WeakMap<ResizableProps, CollapseControls>();
+
+/**
+ * The maximum an unbounded region reports as `aria-valuemax`: a measured
+ * extent that stands in for the missing configured maximum — the container's
+ * content box on the active axis while a percentage bound already observes
+ * it, or the window's extent along the axis — floored at the current size
+ * and, while collapsed, at the resolved minimum. The region is never clamped
+ * to it; it is what the separator announces. Kept off the exported
+ * `ResizableProps` for the same reason as the collapse controls;
+ * `getEffectiveMaxPx` is internal.
+ */
+const effectiveMaxima = new WeakMap<ResizableProps, number>();
+
+/** The reported maximum for `props`, or `undefined` for a hand-built object. */
+export function getEffectiveMaxPx(props: ResizableProps): number | undefined {
+  return effectiveMaxima.get(props);
+}
 
 /**
  * The collapse/expand pair the hook registered for `props`, or `undefined`

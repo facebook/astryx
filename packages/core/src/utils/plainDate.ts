@@ -352,6 +352,31 @@ export function plainDateFormat(
   }).format(plainDateToDate(pd));
 }
 
+/**
+ * The locale's name for the "week of year" date field ("week", "Woche", "週"),
+ * from CLDR through `Intl.DisplayNames`. Calendar names its week-number
+ * column header with it, so no catalog string is needed for a word the
+ * platform already carries in every locale.
+ *
+ * `Intl.DisplayNames` with `type: 'dateTimeField'` is inside the Baseline − 2
+ * support tier (Chrome 106, Safari 15.4, Firefox 110). Should a host lack it
+ * or return nothing, the field's English CLDR name stands in rather than an
+ * empty header.
+ */
+export function plainDateWeekFieldName(locale: Locale = 'en'): string {
+  try {
+    const name = new Intl.DisplayNames(locale, {type: 'dateTimeField'}).of(
+      'weekOfYear',
+    );
+    if (name != null && name !== '') {
+      return name;
+    }
+  } catch {
+    // Fall through to the English CLDR value.
+  }
+  return 'week';
+}
+
 // =============================================================================
 // Shared date-only format vocabulary
 // =============================================================================

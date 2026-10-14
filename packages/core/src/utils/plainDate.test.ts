@@ -30,6 +30,7 @@ import {
   formatSharedDate,
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
+  plainDateWeekFieldName,
 } from './plainDate';
 import type {ISODateString} from './dateTypes';
 
@@ -697,5 +698,16 @@ describe('formatSharedDate', () => {
     expect(formatSharedDate(pd, 'date_long', 'es-ES')).toBe(
       '25 de enero de 2026',
     );
+  });
+});
+
+describe('plainDateWeekFieldName', () => {
+  it("returns the locale's CLDR name for the week field", () => {
+    expect(plainDateWeekFieldName('en-US')).toBe('week');
+    expect(plainDateWeekFieldName('de-DE')).toBe('Woche');
+  });
+
+  it('never returns an empty name', () => {
+    expect(plainDateWeekFieldName('zxx').length).toBeGreaterThan(0);
   });
 });

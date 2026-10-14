@@ -15,8 +15,11 @@
  * which is bound to the region's `_size`.
  */
 
+import {useRef} from 'react';
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent, act} from '@testing-library/react';
+import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
+import {hydrateRoot} from 'react-dom/client';
+import {renderToString} from 'react-dom/server';
 import {ResizeHandle} from './ResizeHandle';
 import type {ResizeHandleProps} from './ResizeHandle';
 import {useResizable} from './useResizable';
@@ -128,6 +131,192 @@ describe('ResizeHandle', () => {
     act(() => separator.focus());
     fireEvent.keyDown(separator, {key: 'Home'});
     expect(separator).toHaveAttribute('aria-valuenow', '100');
+  });
+
+  it('reports the window basis as aria-valuemax when no maximum is configured; End leaves an unbounded region alone', () => {
+    const previous = window.innerWidth;
+    window.innerWidth = 1000;
+    try {
+      render(<Harness config={{defaultSize: 200, minSize: 100}} />);
+      const separator = getSeparator();
+      // ARIA needs a maximum on a separator with a value: the basis the hook
+      // resolves against stands in for an unbounded one.
+      expect(separator).toHaveAttribute('aria-valuemax', '1000');
+      // End still moves only to a configured maximum: the stand-in says how
+      // far the pane could reach, not where the handle may safely go
+      // (component:Resizable records the End gap).
+      act(() => separator.focus());
+      fireEvent.keyDown(separator, {key: 'End'});
+      expect(separator).toHaveAttribute('aria-valuenow', '200');
+    } finally {
+      window.innerWidth = previous;
+    }
+  });
+
+  it('server-renders an unbounded handle with no maximum and reports the window extent after hydration, with no hydration error', async () => {
+    const previous = window.innerWidth;
+    window.innerWidth = 1000;
+    const probe = <Harness config={{defaultSize: 200, minSize: 100}} />;
+    const serverHTML = renderToString(probe);
+    // The server has no window: no aria-valuemax in the markup.
+    expect(serverHTML).not.toContain('aria-valuemax');
+    const container = document.createElement('div');
+    container.innerHTML = serverHTML;
+    document.body.appendChild(container);
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const recoverableErrors: unknown[] = [];
+    let root: ReturnType<typeof hydrateRoot>;
+    try {
+      await act(async () => {
+        root = hydrateRoot(container, probe, {
+          onRecoverableError: error => recoverableErrors.push(error),
+        });
+      });
+      // The first client render reads the window through the store and
+      // reports it; a render-time window read would mismatch the server
+      // markup (or, read only once, leave the attribute missing).
+      await waitFor(() =>
+        expect(container.querySelector('[role="separator"]')).toHaveAttribute(
+          'aria-valuemax',
+          '1000',
+        ),
+      );
+      expect(recoverableErrors).toEqual([]);
+      expect(
+        consoleError.mock.calls.filter(call =>
+          String(call[0] ?? '')
+            .toLowerCase()
+            .includes('hydrat'),
+        ),
+      ).toEqual([]);
+    } finally {
+      await act(async () => root!.unmount());
+      consoleError.mockRestore();
+      container.remove();
+      window.innerWidth = previous;
+    }
+  });
+
+  it('never reports a maximum below the current size, and End does not shrink the region', () => {
+    const previous = window.innerWidth;
+    window.innerWidth = 500;
+    try {
+      // A default (or saved, or pre-resize) size larger than the window.
+      render(<Harness config={{defaultSize: 800, minSize: 100}} />);
+      const separator = getSeparator();
+      expect(separator).toHaveAttribute('aria-valuenow', '800');
+      expect(separator).toHaveAttribute('aria-valuemax', '800');
+      act(() => separator.focus());
+      fireEvent.keyDown(separator, {key: 'End'});
+      expect(separator).toHaveAttribute('aria-valuenow', '800');
+    } finally {
+      window.innerWidth = previous;
+    }
+  });
+
+  it('never reports aria-valuemax below aria-valuemin while collapsed in a small window', () => {
+    const previous = window.innerWidth;
+    window.innerWidth = 375;
+    try {
+      render(
+        <Harness
+          config={{defaultSize: 500, minSize: 400, collapsible: true}}
+        />,
+      );
+      const separator = getSeparator();
+      act(() => separator.focus());
+      fireEvent.keyDown(separator, {key: 'Enter'});
+      expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+      expect(separator).toHaveAttribute('aria-valuemin', '400');
+      expect(
+        Number(separator.getAttribute('aria-valuemax')),
+      ).toBeGreaterThanOrEqual(400);
+    } finally {
+      window.innerWidth = previous;
+    }
+  });
+
+  it('reports the window height, not the width, for an unbounded vertical region', () => {
+    const previousWidth = window.innerWidth;
+    const previousHeight = window.innerHeight;
+    window.innerWidth = 1000;
+    window.innerHeight = 700;
+    try {
+      render(
+        <Harness
+          config={{defaultSize: 200, minSize: 100, direction: 'vertical'}}
+          handleProps={{direction: 'vertical'}}
+        />,
+      );
+      const separator = getSeparator();
+      expect(separator).toHaveAttribute('aria-valuemax', '700');
+    } finally {
+      window.innerWidth = previousWidth;
+      window.innerHeight = previousHeight;
+    }
+  });
+
+  it('reports the container basis as aria-valuemax while a percentage bound already observes it', () => {
+    function ContainerHarness() {
+      const containerRef = useRef<HTMLDivElement>(null);
+      const region = useResizable({
+        defaultSize: 200,
+        minSize: '10%',
+        containerRef,
+      });
+      return (
+        <div ref={containerRef}>
+          <ResizeHandle resizable={region.props} label="Resize" />
+        </div>
+      );
+    }
+    // jsdom has no ResizeObserver; a stub lets the hook subscribe, and the
+    // content box is measured through clientWidth minus padding.
+    class StubResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('ResizeObserver', StubResizeObserver);
+    const clientWidth = vi
+      .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+      .mockReturnValue(640);
+    const computedStyle = vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+      paddingTop: '0px',
+      paddingBottom: '0px',
+      paddingLeft: '0px',
+      paddingRight: '0px',
+    } as unknown as CSSStyleDeclaration);
+    try {
+      render(<ContainerHarness />);
+      expect(getSeparator()).toHaveAttribute('aria-valuemax', '640');
+    } finally {
+      clientWidth.mockRestore();
+      computedStyle.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('reports no aria-valuemax for an unbounded pixel-only region in a container, which stays unobserved', () => {
+    function ContainerHarness() {
+      const containerRef = useRef<HTMLDivElement>(null);
+      const region = useResizable({
+        defaultSize: 200,
+        minSize: 100,
+        containerRef,
+      });
+      return (
+        <div ref={containerRef}>
+          <ResizeHandle resizable={region.props} label="Resize" />
+        </div>
+      );
+    }
+    render(<ContainerHarness />);
+    // component:Resizable Performance: atomic pixel paths add no observer, so
+    // the hook never measures this container and reports no stand-in.
+    expect(getSeparator()).not.toHaveAttribute('aria-valuemax');
   });
 
   it('jumps to the maximum on End', () => {
