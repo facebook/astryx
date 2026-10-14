@@ -793,8 +793,9 @@ export function PowerSearchEditPopover({
       if (isImeKeyEvent(e.nativeEvent)) {
         return;
       }
-      // A focused button owns its Enter: Cancel cancels and Delete deletes.
-      // Only Enter from the field, operator, and value controls saves.
+      // A focused button owns its Enter: Cancel cancels, Delete deletes, and
+      // the date picker's calendar button opens the calendar. Enter in a
+      // text or number value field still saves.
       if (e.key === 'Enter' && e.target instanceof HTMLButtonElement) {
         return;
       }
