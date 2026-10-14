@@ -140,6 +140,7 @@ export {
   type LandmarkStateFacts,
 } from './patterns/landmark';
 
+export {SLIDER_PATTERN, type SliderStateFacts} from './patterns/slider';
 export {CAROUSEL_PATTERN, type CarouselStateFacts} from './patterns/carousel';
 export {
   ACCORDION_PATTERN,

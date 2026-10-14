@@ -219,6 +219,31 @@ describe('Calendar', () => {
     expect(handleChange).toHaveBeenCalledWith('2026-01-15', expect.any(Date));
   });
 
+  it('shows years 1-99 as themselves, not as 1900-1999', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <Calendar
+        value="0001-01-15"
+        onChange={handleChange}
+        focusDate="0001-01-01"
+      />,
+    );
+
+    expect(screen.getByRole('grid', {name: 'January 1'})).toBeInTheDocument();
+    const day15 = getDayButton(15, 'January', 1);
+    expect(day15).toHaveAccessibleName(/^Monday, January 15, 1\b/);
+    expect(day15.closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+
+    await user.click(getDayButton(20, 'January', 1));
+    expect(handleChange).toHaveBeenCalledWith('0001-01-20', expect.any(Date));
+    expect(handleChange.mock.calls[0][1].getFullYear()).toBe(1);
+  });
+
   it('keeps null single selection empty until the parent accepts a date', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

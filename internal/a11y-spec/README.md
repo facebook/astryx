@@ -51,10 +51,11 @@ src/
     ├── listbox.*            listbox, group, and option semantics
     ├── spinbutton.*         numeric role, value, bounds, state, and arrow stepping
     ├── disclosure.*         standalone disclosure state/content semantics
+    ├── carousel.*           non-rotating collection, slide, off-screen, and focus semantics
+    ├── slider.*             a thumb's role, name, values, text, orientation, and arrow/Page/Home/End keys (RTL-mirrored arrows)
     ├── accordion.*          a group's header role and name, panel state, single-expansion collapse, page Tab order
     ├── breadcrumb.*         landmark, list-trail, current-page, and separator semantics
     ├── landmark.*           one component-owned landmark region's role, name, and content boundary
-    ├── carousel.*           non-rotating collection, slide, off-screen, and focus semantics
     └── link.*               one available link's role, name, current state, focus, and activation
 ```
 
@@ -77,7 +78,8 @@ src/
 | `accordion`      | [APG Accordion](https://www.w3.org/WAI/ARIA/apg/patterns/accordion/) required parts                        | CollapsibleGroup headers: button role and name, expanded state, controlled panel, Enter/Space, single-expansion sibling collapse, page Tab order, no arrow-key movement (single-expansion collapse, grouped Tab order, no arrow movement are advisory until `component:CollapsibleGroup` AR4 is current) |
 | `breadcrumb`     | WCAG 2.2 semantics; [APG Breadcrumb](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/) as context      | Breadcrumbs landmarks, list trails, current-page state, and separators                                                                                                                                                                                                                                   |
 | `landmark`       | WCAG 2.2 semantics; [APG Landmark Regions](https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/) as context | LayoutHeader, LayoutContent, LayoutFooter, and LayoutPanel caller-declared landmarks                                                                                                                                                                                                                     |
-| `carousel`       | [APG Carousel](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/) and WCAG 2.2 semantics                  | Carousel container, slides, scroll area, and stable navigation-control focus         |
+| `slider`         | [APG Slider](https://www.w3.org/WAI/ARIA/apg/patterns/slider/) role, values, name, orientation and keys    | Slider thumbs: role, name, now/min/max, value text, orientation, arrows (RTL-mirrored), Page, Home/End, disabled keeps value                                                                                                                                                                             |
+| `carousel`       | [APG Carousel](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/) and WCAG 2.2 semantics                  | Carousel container, slides, scroll area, and stable navigation-control focus                                                                                                                                                                                                                             |
 | `link`           | WCAG 2.2 semantics; [APG Link](https://www.w3.org/WAI/ARIA/apg/patterns/link/) role and Enter mechanics    | Link, including LinkProvider and `as` router components                                                                                                                                                                                                                                                  |
 
 The toggle-button contract owns the persistent-action extension of button
@@ -122,13 +124,6 @@ Role-less regions, one main landmark per page, top-level placement, and whether
 all page content sits in a landmark stay with Layout's own tests, the page, and
 AppShell; an isolated region never claims page-wide landmark completeness.
 
-The `carousel` contract starts with the non-rotating Carousel behavior Astryx already
-ships. It covers the labelled collection, positional slide identity, semantic
-containment including an off-screen slide, keyboard entry and exit for the native
-scroll area, and focus preservation when an available navigation control is used.
-Button activation, scroll distance, looping, snapping, paint, and motion retain their
-existing component or pattern owners; the binding adds direct Chromium evidence for
-keyboard panning and reduced motion without pretending those are tree facts.
 The link contract owns one available navigation link: the link role, the
 exact name its binding declares, `aria-current` only when the link is the
 current item, Tab entry and exit, and exactly one navigation from Enter or from
