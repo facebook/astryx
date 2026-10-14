@@ -45,8 +45,12 @@ export interface DropdownMenuDrillIn {
   viewStack: ReadonlyArray<string>;
   /** The element a shown view renders its rows into (a portal target). */
   host: HTMLElement | null;
-  /** Show a sub-menu's view in place of the current rows. */
-  push: (viewId: string) => void;
+  /**
+   * Show a sub-menu's view in place of the current rows. A view with a header
+   * or footer (`hasRegions`) renders into the root's `surfaceHost` instead of
+   * `host`, and the root hides its own menu and regions while it shows.
+   */
+  push: (viewId: string, options?: {hasRegions?: boolean}) => void;
   /** Return to the rows the shown view replaced. */
   pop: () => void;
 }
@@ -63,6 +67,14 @@ export interface DropdownMenuContextValue {
    * row reads "Back to <this>".
    */
   menuLabel?: string;
+  /**
+   * An element the root renders inside its popover but outside every
+   * `role="menu"` element. A sub-menu with a header or footer renders its
+   * surface there (its flyout layer, or its drilled-in view), so the
+   * controls it hosts are never inside a menu. Absent under a root that
+   * provides none; the surface then renders in place.
+   */
+  surfaceHost?: HTMLElement | null;
 }
 
 export const DropdownMenuContext =

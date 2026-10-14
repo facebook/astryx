@@ -53,9 +53,9 @@ function getSectionKey(section: DropdownMenuSection, index: number): string {
  * focus. Position is the safe default because a menu's rows are usually fixed;
  * a menu whose items reorder or filter needs `id` for the same reason.
  *
- * `items` selects the submenu shape rather than being an item prop, and `id` is
- * identity for React rather than something `DropdownMenuItem` renders, so both
- * are stripped. Every remaining field of `DropdownMenuItemData` is a
+ * `items` selects the submenu shape rather than being an item prop, `header`
+ * and `footer` belong to that sub-menu, and `id` is identity for React rather
+ * than something `DropdownMenuItem` renders, so all four are stripped. Every remaining field of `DropdownMenuItemData` is a
  * `DropdownMenuItem` prop by construction (the type is `Pick`ed from
  * `DropdownMenuItemProps`), so the data path forwards them wholesale and can't
  * silently drop a field the data API advertises.
@@ -64,7 +64,13 @@ function renderLeafItem(
   item: DropdownMenuItemData,
   index: number,
 ): ReactElement {
-  const {items: _submenuItems, id: _id, ...itemProps} = item;
+  const {
+    items: _submenuItems,
+    id: _id,
+    header: _header,
+    footer: _footer,
+    ...itemProps
+  } = item;
   return <DropdownMenuItem key={getItemKey(item, index)} {...itemProps} />;
 }
 
@@ -111,7 +117,9 @@ export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
             key={getItemKey(option, i)}
             icon={option.icon}
             label={option.label}
-            isDisabled={option.isDisabled}>
+            isDisabled={option.isDisabled}
+            header={option.header}
+            footer={option.footer}>
             {renderDropdownItems(option.items)}
           </DropdownMenuSubMenu>,
         );
