@@ -184,6 +184,12 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
   },
+  controlsPaired: {
+    gap: 0,
+  },
+  infoTextInset: {
+    paddingInline: spacingVars['--spacing-1'],
+  },
   ellipsis: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -583,6 +589,9 @@ export function Pagination({
       ? (hasFirstLastProp ?? true)
       : variant === 'compact' && hasFirstLastProp === true;
   const showFirstLast = hasFirstLast && computedTotalPages != null;
+  // Compact pairs each first/last button flush with its prev/next neighbour so
+  // the arrows read as two groups; the readout keeps its usual spacing.
+  const isCompactFirstLast = variant === 'compact' && showFirstLast;
 
   const renderIndicator = () => {
     switch (variant) {
@@ -657,7 +666,11 @@ export function Pagination({
           return null;
         }
         return (
-          <span {...stylex.props(styles.infoText)}>
+          <span
+            {...stylex.props(
+              styles.infoText,
+              isCompactFirstLast && styles.infoTextInset,
+            )}>
             <Text type="body" size="sm" color="secondary">
               {t('@astryx.pagination.pageOfTotal', {
                 current: optimisticPage,
@@ -809,7 +822,11 @@ export function Pagination({
           />
         </div>
       )}
-      <div {...stylex.props(styles.controls)}>
+      <div
+        {...stylex.props(
+          styles.controls,
+          isCompactFirstLast && styles.controlsPaired,
+        )}>
         {showFirstLast && (
           <Button
             label={firstLabel}
