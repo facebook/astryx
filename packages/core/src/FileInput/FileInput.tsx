@@ -63,7 +63,8 @@ import {
 } from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import fileInputMessages from '../i18n/generated-locales/en/fileInput.generated';
 import type {TranslatorFn} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
@@ -467,7 +468,7 @@ export function FileInput({
     containerClassName,
     containerStyle,
   });
-  const t = useTranslator();
+  const t = useComponentTranslator(fileInputMessages);
   const generatedID = useId();
   const id = idProp ?? generatedID;
   const descriptionID = useId();

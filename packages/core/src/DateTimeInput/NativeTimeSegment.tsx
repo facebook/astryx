@@ -34,7 +34,8 @@ import type {InputStatusType} from '../Field';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {useMergedRefs} from '../hooks/useMergedRefs';
 import {Icon} from '../Icon';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import timeInputMessages from '../i18n/generated-locales/en/timeInput.generated';
 import type {ThemeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {
@@ -124,7 +125,7 @@ export function NativeTimeSegment({
     onBlur: onBlurProp,
     ...inputProps
   } = controlProps ?? {};
-  const t = useTranslator();
+  const t = useComponentTranslator(timeInputMessages);
   const isTouchPointer = useMediaQuery('(pointer: coarse)');
   const internalInputRef = useRef<HTMLInputElement | null>(null);
   const mergedInputRef = useMergedRefs(inputRef, internalInputRef);

@@ -79,8 +79,19 @@ import {useMergedRefs} from '../hooks/useMergedRefs';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
-import {useLocale, useTranslator} from '../i18n';
+import {useLocale} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import dateInputMessages from '../i18n/generated-locales/en/dateInput.generated';
+import dateRangeInputMessages from '../i18n/generated-locales/en/dateRangeInput.generated';
+import fieldMessages from '../i18n/generated-locales/en/field.generated';
 import type {Locale} from '../i18n/types';
+
+// The English strings this module reads: the namespaces its keys name.
+const messages = {
+  ...dateInputMessages,
+  ...dateRangeInputMessages,
+  ...fieldMessages,
+};
 
 export type {DateRange} from '../Calendar';
 
@@ -528,7 +539,7 @@ export function DateRangeInput({
     onClick: onClickProp,
     ...controlProps
   } = rest;
-  const t = useTranslator();
+  const t = useComponentTranslator(messages);
   const locale = useLocale();
   const isEffectivelyRequired = useResolvedRequired({isRequired, isOptional});
   const placeholder =

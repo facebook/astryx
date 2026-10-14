@@ -18,7 +18,8 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import type {BaseProps} from '../BaseProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import mobileNavMessages from '../i18n/generated-locales/en/mobileNav.generated';
 
 export interface MobileNavToggleProps extends Pick<
   BaseProps,
@@ -67,7 +68,7 @@ export function MobileNavToggle({
   className,
   style,
 }: MobileNavToggleProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(mobileNavMessages);
   const label = labelFromProps ?? t('@astryx.mobileNav.toggle.open');
   const {
     isMobile,

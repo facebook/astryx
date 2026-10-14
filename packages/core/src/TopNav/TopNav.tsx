@@ -21,7 +21,8 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import topNavMessages from '../i18n/generated-locales/en/topNav.generated';
 import {TopNavSlotContext} from './TopNavContext';
 import {useTopNavRenderMode} from './TopNavRenderContext';
 import {useTopNavMobileContent} from './TopNavMobileContentContext';
@@ -185,7 +186,7 @@ export function TopNav({
   ref,
   ...props
 }: TopNavProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(topNavMessages);
   const label = labelFromProps ?? t('@astryx.topNav.landmarkLabel');
   const renderMode = useTopNavRenderMode();
   const mobileContent = useTopNavMobileContent();

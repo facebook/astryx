@@ -64,7 +64,8 @@ import {
 import {useSideNavRenderMode} from './SideNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import sideNavItemMessages from '../i18n/generated-locales/en/sideNavItem.generated';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
 // =============================================================================
@@ -447,7 +448,7 @@ export function SideNavItem({
   // The row (or, collapsed, the trigger/link/button) is the pressable; the
   // expand toggle inside it is its own.
   const pressable = usePressFeedback();
-  const t = useTranslator();
+  const t = useComponentTranslator(sideNavItemMessages);
   const {isCollapsed} = useSideNavCollapse();
   const renderMode = useSideNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();

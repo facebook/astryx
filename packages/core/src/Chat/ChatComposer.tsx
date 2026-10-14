@@ -52,7 +52,8 @@ import {ChatComposerContext} from './ChatContext';
 import type {ChatComposerInputControl} from './ChatContext';
 import {ChatSendButton} from './ChatSendButton';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import chatMessages from '../i18n/generated-locales/en/chat.generated';
 import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 import {
   getInteractionModality,
@@ -343,7 +344,7 @@ function isComposerEditor(target: EventTarget | null): target is HTMLElement {
  * ```
  */
 export function ChatComposer(props: ChatComposerProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(chatMessages);
   const {
     ref,
     onSubmit,

@@ -55,7 +55,8 @@ import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import appShellMessages from '../i18n/generated-locales/en/appShell.generated';
 import {useThemeDefinition} from '../theme/useTheme';
 import {
   DEFAULT_WIDTH_BREAKPOINTS,
@@ -473,7 +474,7 @@ export function AppShell({
   ref,
   ...rest
 }: AppShellProps) {
-  const t = useTranslator();
+  const t = useComponentTranslator(appShellMessages);
   const activeTheme = useThemeDefinition();
   // =========================================================================
   // Parse mobileNav prop — normalize to config, custom element, or disabled

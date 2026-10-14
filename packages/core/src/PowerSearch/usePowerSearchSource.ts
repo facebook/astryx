@@ -15,7 +15,8 @@
 import {useMemo} from 'react';
 import type {SearchSource} from '../Typeahead/types';
 import {groupItems} from '../utils';
-import {useTranslator} from '../i18n';
+import {useComponentTranslator} from '../i18n/useComponentTranslator';
+import powersearchMessages from '../i18n/generated-locales/en/powersearch.generated';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
 import type {InternalConfig} from './useInternalConfig';
 import type {PowerSearchItem, PowerSearchOperator, FilterValue} from './types';
@@ -29,7 +30,7 @@ export function usePowerSearchSource(
   config: InternalConfig,
   maxTypedResults: number,
 ): SearchSource<PowerSearchItem> {
-  const t = useTranslator();
+  const t = useComponentTranslator(powersearchMessages);
   return useMemo(() => {
     const allItems = buildFieldItems(config);
     // Resolver stays inline — `t()` internally memoizes both catalog
