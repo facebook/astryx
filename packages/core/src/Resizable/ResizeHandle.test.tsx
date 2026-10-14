@@ -478,6 +478,29 @@ describe('ResizeHandle', () => {
     expect(separator).toHaveAttribute('aria-valuenow', '110');
   });
 
+  it('a grow arrow opens a collapsed pane at its collapsedSize when the minimum sits below it', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 20,
+          maxSize: 400,
+          collapsible: true,
+          collapsedSize: 50,
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    // min + step (30) would still be below the 50px threshold, so the pane
+    // opens at the threshold instead.
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '50');
+  });
+
   it('a grow arrow opens a collapsed pane in the reversed layout and under RTL too', () => {
     const rtl = vi
       .spyOn(window, 'getComputedStyle')

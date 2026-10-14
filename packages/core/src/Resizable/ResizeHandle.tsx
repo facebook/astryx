@@ -579,12 +579,17 @@ export function ResizeHandle({
           if (resizable._isCollapsed) {
             // A collapsed pane answers only the grow arrow: it opens one step
             // above its minimum, the value the separator announces while
-            // collapsed (APG window splitter: the arrow moves the separator
-            // from where it is; a bare step would stay below the collapse
-            // threshold and leave it in place). The shrink arrow is a no-op.
+            // collapsed, or at the collapse threshold when that is larger (APG
+            // window splitter: the arrow moves the separator from where it is;
+            // a bare step would stay below the threshold and leave it in
+            // place). The shrink arrow is a no-op.
             if (grows(e.key)) {
               resizable._onResizeStart();
-              resizable._onResizeMove(resizable._minSizePx + step);
+              // At least the collapse threshold, or the move would stay
+              // collapsed when the minimum sits below it.
+              resizable._onResizeMove(
+                Math.max(resizable._minSizePx + step, resizable._collapsedSize),
+              );
               resizable._onResizeEnd();
             }
             break;
