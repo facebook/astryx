@@ -7,7 +7,7 @@
  * @input The menu's live `items` and the bottom sheet's path of opened rows
  * @output `openSheetLevel`, the path entry for a row the sheet opens, and
  *   `resolveSheetLevel`, the opened level as the caller renders it now
- * @position Internal; used by the DropdownMenu bottom sheet.
+ * @position Internal; used by the DropdownMenu and ContextMenu bottom sheets.
  *
  * The sheet remembers each row it opened as the row was then, where it sat
  * among its level's rows, how many rows the level had, and whether its text
