@@ -114,11 +114,16 @@
 
   /*
    * Links inherit color and text-decoration. Style them intentionally
-   * rather than relying on browser-default blue/purple.
+   * rather than relying on browser-default blue/purple. Safari before 26.2
+   * reads `text-decoration` as the line alone: its prefixed shorthand
+   * carries the style and color, and the thickness needs its longhand.
+   * Remove both once Safari 26.2 is the oldest supported Safari.
    */
   :where(a) {
     color: inherit;
+    -webkit-text-decoration: inherit;
     text-decoration: inherit;
+    text-decoration-thickness: inherit;
   }
 
   /*
