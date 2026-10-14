@@ -644,6 +644,9 @@ export function Slider({ref, ...props}: SliderProps) {
         percent = 1 - travelFraction(clientY - rect.top, rect.height);
       }
       percent = clamp(percent, 0, 1);
+      if (percent === 1) {
+        return max;
+      }
       const raw = min + percent * (max - min);
       return clamp(snapToStep(raw, min, step), min, max);
     },
@@ -767,7 +770,7 @@ export function Slider({ref, ...props}: SliderProps) {
         pressedThumbIndex >= 0 ? pressedThumbIndex : getClosestThumb(newVal);
       draggingThumbRef.current = thumbIndex;
       setDraggingThumb(thumbIndex);
-      updateValue(thumbIndex, newVal);
+      updateValue(thumbIndex, newVal, newVal !== max);
 
       // Focus the thumb that owns this drag.
       thumbs?.[thumbIndex]?.focus();
@@ -782,7 +785,7 @@ export function Slider({ref, ...props}: SliderProps) {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       }
     },
-    [isDisabled, getValueFromPosition, getClosestThumb, updateValue],
+    [isDisabled, getValueFromPosition, getClosestThumb, updateValue, max],
   );
 
   const handlePointerMove = useCallback(
@@ -791,9 +794,9 @@ export function Slider({ref, ...props}: SliderProps) {
         return;
       }
       const newVal = getValueFromPosition(e.clientX, e.clientY);
-      updateValue(draggingThumbRef.current, newVal);
+      updateValue(draggingThumbRef.current, newVal, newVal !== max);
     },
-    [isDisabled, getValueFromPosition, updateValue],
+    [isDisabled, getValueFromPosition, updateValue, max],
   );
 
   const handlePointerUp = useCallback(
