@@ -51,6 +51,8 @@ import {
   plainDateSetFirstOfMonth,
   plainDateAddMonths,
   plainDateAddDays,
+  plainDateDiffDays,
+  getDaysInMonth,
   plainDateIsAfter,
   plainDateIsBefore,
   plainDateIsEqual,
@@ -95,14 +97,6 @@ import {useLocale, useTranslator} from '../i18n';
 
 /** How a month navigation moves the focused day: by its row offset in days, or by whole months. */
 type NavigationUnit = 'days' | 'months';
-
-/** The given day of `month`, or that month's last day when it has fewer. */
-function clampDayToMonth(month: PlainDate, day: number): PlainDate {
-  const first = {year: month.year, month: month.month, day: 1};
-  // Adding a month to the 1st and stepping back a day is the month's length.
-  const lastDay = plainDateAddDays(plainDateAddMonths(first, 1), -1).day;
-  return {year: month.year, month: month.month, day: Math.min(day, lastDay)};
-}
 
 /** Imperative handle for Calendar handleRef */
 export interface CalendarHandle {
@@ -237,6 +231,21 @@ export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
  * <Calendar value={selectedDate} onChange={setSelectedDate} />
  * ```
  */
+/** The first day of `month`'s month that `isDisabled` allows, or null. */
+function firstEnabledDayOfMonth(
+  month: PlainDate,
+  isDisabled: (pd: PlainDate) => boolean,
+): PlainDate | null {
+  const days = getDaysInMonth(month.year, month.month);
+  for (let day = 1; day <= days; day += 1) {
+    const pd = {year: month.year, month: month.month, day};
+    if (!isDisabled(pd)) {
+      return pd;
+    }
+  }
+  return null;
+}
+
 export function Calendar({ref, ...props}: CalendarProps) {
   const t = useTranslator();
   const locale = useLocale();
@@ -462,48 +471,40 @@ export function Calendar({ref, ...props}: CalendarProps) {
       // minimum), and a direction with no enabled day left changes nothing
       // rather than dropping focus.
       const currentPd = plainDateFromISO(focusedDate);
+      const inRange = (pd: PlainDate) =>
+        !(minDateForKeys && plainDateIsBefore(pd, minDateForKeys)) &&
+        !(maxDateForKeys && plainDateIsAfter(pd, maxDateForKeys));
       let targetPd: PlainDate;
       if (unit === 'months') {
+        // A page targets the same day of the month a month away (clamped to
+        // that month's length). Past `min`/`max` nothing moves; a month with
+        // no enabled day is no destination either, the same as an arrow with
+        // no enabled day in its direction; a target disabled by a constraint
+        // lands on that month's first enabled day instead.
         const candidate = plainDateAddMonths(currentPd, delta);
-        // A page from a borrowed adjacent-month day can target a month no
-        // grid will show (Dec 28 in January's first row pages to Jan 28 while
-        // February is now visible): pull it into the months that will be
-        // shown, keeping its day of the month.
-        const shownAfter = monthIndex(plainDateAddMonths(baseMonth, delta));
-        const lastAfter = shownAfter + numberOfMonths - 1;
-        targetPd =
-          monthIndex(candidate) < shownAfter
-            ? clampDayToMonth(
-                plainDateAddMonths(baseMonth, delta),
-                candidate.day,
-              )
-            : monthIndex(candidate) > lastAfter
-              ? clampDayToMonth(
-                  plainDateAddMonths(baseMonth, delta + numberOfMonths - 1),
-                  candidate.day,
-                )
-              : candidate;
-        // A target past `min`/`max` is out of range: nothing moves. A target
-        // disabled by a constraint still pages the month: its grid resolves
-        // the pending focus to its first enabled day, or keeps focus in the
-        // grid when none is enabled.
-        if (
-          (minDateForKeys && plainDateIsBefore(targetPd, minDateForKeys)) ||
-          (maxDateForKeys && plainDateIsAfter(targetPd, maxDateForKeys))
-        ) {
+        if (!inRange(candidate)) {
           return;
         }
+        if (isRootDateDisabled(candidate)) {
+          const firstEnabled = firstEnabledDayOfMonth(
+            candidate,
+            isRootDateDisabled,
+          );
+          if (firstEnabled == null) {
+            return;
+          }
+          targetPd = firstEnabled;
+        } else {
+          targetPd = candidate;
+        }
       } else {
-        // Walk the arrow's direction to the first enabled day, within a
-        // year; past `min`/`max` or with every day disabled, nothing moves.
+        // Walk the arrow's direction to the first enabled day, up to a year
+        // away; past `min`/`max` or with every day disabled, nothing moves.
         const step = delta * (offset ?? 7);
         let candidate = plainDateAddDays(currentPd, step);
         let found: PlainDate | null = null;
-        for (let hops = 0; hops < 366; hops += 1) {
-          if (
-            (minDateForKeys && plainDateIsBefore(candidate, minDateForKeys)) ||
-            (maxDateForKeys && plainDateIsAfter(candidate, maxDateForKeys))
-          ) {
+        while (Math.abs(plainDateDiffDays(currentPd, candidate)) <= 366) {
+          if (!inRange(candidate)) {
             return;
           }
           if (!isRootDateDisabled(candidate)) {
@@ -518,24 +519,21 @@ export function Calendar({ref, ...props}: CalendarProps) {
         targetPd = found;
       }
 
-      // Focus moves to the target; the months change only when the target
-      // (or, for a page, the paged month) is not already shown.
+      // Focus moves to the target; the months change only when the target's
+      // month is not already shown. The view shifts the least it can in the
+      // key's direction, so the target month becomes the first (backwards)
+      // or last (forwards) month shown.
       const resolved: PlainDate = targetPd;
-      const targetMonth =
-        unit === 'months'
-          ? monthIndex(plainDateAddMonths(baseMonth, delta))
-          : monthIndex(resolved);
+      const targetMonth = monthIndex(resolved);
       setPendingFocus(plainDateToISO(resolved));
       if (targetMonth >= firstShown && targetMonth <= lastShown) {
         return;
       }
       const targetFirst = {year: resolved.year, month: resolved.month, day: 1};
       const newPd =
-        unit === 'months'
-          ? plainDateAddMonths(baseMonth, delta)
-          : targetMonth < firstShown
-            ? targetFirst
-            : plainDateAddMonths(targetFirst, -(numberOfMonths - 1));
+        targetMonth < firstShown
+          ? targetFirst
+          : plainDateAddMonths(targetFirst, -(numberOfMonths - 1));
       if (onFocusDateChange) {
         onFocusDateChange(plainDateToISO(newPd));
       } else {
