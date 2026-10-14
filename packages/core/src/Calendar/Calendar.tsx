@@ -356,8 +356,9 @@ export function Calendar({ref, ...props}: CalendarProps) {
   // A pending target lives exactly one render: when a controlled owner
   // refuses the month change, no grid shows the target's month, and a stale
   // target would later steal focus (and Enter) when that month does appear.
-  // Only a grid that is rendering the target's month ever receives it, and
-  // focus leaving the calendar drops it (see onBlur below).
+  // Only a grid showing the target's month receives it; focus moving off the
+  // day grids (to the month header's buttons, or out of the calendar) drops
+  // it (see onBlur below).
   const claimablePendingFocus = useMemo(() => {
     if (pendingFocus == null) {
       return null;
@@ -371,13 +372,11 @@ export function Calendar({ref, ...props}: CalendarProps) {
   }, [pendingFocus, visibleMonths]);
   const handleRootBlur = useCallback(
     (e: React.FocusEvent<HTMLDivElement>) => {
-      if (
-        pendingFocus != null &&
-        !(
-          e.relatedTarget instanceof Node &&
-          e.currentTarget.contains(e.relatedTarget)
-        )
-      ) {
+      const staysOnDayGrid =
+        e.relatedTarget instanceof Element &&
+        e.currentTarget.contains(e.relatedTarget) &&
+        e.relatedTarget.closest('[role="grid"]') != null;
+      if (pendingFocus != null && !staysOnDayGrid) {
         setPendingFocus(null);
       }
     },
