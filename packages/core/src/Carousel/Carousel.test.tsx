@@ -82,6 +82,16 @@ describe('Carousel', () => {
     expect(
       screen.getByRole('group', {name: 'Slide 2 of 2'}),
     ).toBeInTheDocument();
+    // Exactly two slides render: null and false children produce no empty
+    // slide (child filtering stays component-owned). The scroller is a named
+    // group too, so count the slides by their role description.
+    expect(
+      screen
+        .getAllByRole('group')
+        .filter(
+          group => group.getAttribute('aria-roledescription') === 'slide',
+        ),
+    ).toHaveLength(2);
   });
 
   it('exposes the focusable scroll container as a named group', () => {
