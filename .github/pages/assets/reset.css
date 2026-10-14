@@ -235,10 +235,12 @@
 
   /*
    * Form elements should inherit font styles from their parent rather
-   * than using the browser's default font stack.
+   * than using the browser's default font stack. `letter-spacing` is not
+   * part of `font`, and the browser sets it to `normal` on these elements.
    */
   :where(button, input, optgroup, select, textarea) {
     font: inherit;
+    letter-spacing: inherit;
     color: inherit;
     margin: 0;
     padding: 0;
