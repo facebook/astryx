@@ -106,7 +106,7 @@ export function themeModuleCandidates(projectDir) {
 function validThemeRecord(value, label) {
   if (!isRecord(value) || !isRecord(value.themes)) {
     throw new ThemeStateError(
-      `${label} must carry a static ${THEME_RECORD_MARKER} header. Regenerate it with \`astryx theme add <slug> --import\`.`,
+      `${label} must carry a static ${THEME_RECORD_MARKER} header. Regenerate it with \`astryx theme add <slug>\`.`,
     );
   }
   const keys = Object.keys(value);
@@ -159,7 +159,7 @@ export function parseThemeModuleRecord(source, label = 'theme module') {
     .filter(line => /^\s*\*\s*@astryx-theme-record\s+/u.test(line));
   if (recordLines.length !== 1) {
     throw new ThemeStateError(
-      `${label} must carry exactly one static ${THEME_RECORD_MARKER} header. Regenerate it with \`astryx theme add <slug> --import\`.`,
+      `${label} must carry exactly one static ${THEME_RECORD_MARKER} header. Regenerate it with \`astryx theme add <slug>\`.`,
     );
   }
   const payload = recordLines[0].replace(
@@ -318,7 +318,7 @@ export function readThemeState(cwd = process.cwd()) {
 export function renderThemeModule(themes, defaultSlug, typescript) {
   if (!themes.some(theme => theme.slug === defaultSlug)) {
     throw new ThemeStateError(
-      `Default theme "${defaultSlug}" is not added. Run \`astryx theme add ${defaultSlug} --import\` first.`,
+      `Default theme "${defaultSlug}" is not added. Run \`astryx theme add ${defaultSlug}\` first.`,
     );
   }
   /** @type {string[]} */

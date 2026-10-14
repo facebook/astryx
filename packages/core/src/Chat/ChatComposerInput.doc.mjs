@@ -98,7 +98,7 @@ export const docs = {
       name: 'triggers',
       type: 'ChatComposerTrigger[]',
       description:
-        'Trigger definitions for typeahead menus. Each trigger specifies a character (@ or /), a search source, and an onSelect handler that returns the token to insert. Per-trigger emptySearchText (ReactNode) is the message when the query matched nothing; the older emptySearchResultsText (string) is deprecated and still works.',
+        'Trigger definitions for typeahead menus. Each trigger specifies a character (@ or /), a search source, and an onSelect handler that returns the token to insert. Per-trigger emptySearchText (ReactNode) is the message when the query matched nothing.',
     },
     {
       name: 'debounceMs',
@@ -174,7 +174,7 @@ export const docsZh = {
     placeholder: '输入为空时显示的占位文本。',
     maxRows: '滚动前的最大可见行数。紧凑布局中使用较小值。',
     triggers:
-      '菜单的触发定义。每个触发器指定字符（@ 或 /）、搜索源和返回要插入标记的 onSelect 处理器。每个触发器的 emptySearchText（ReactNode）用于查询无匹配结果时的提示；旧的 emptySearchResultsText（string）已弃用，但仍可使用。',
+      '菜单的触发定义。每个触发器指定字符（@ 或 /）、搜索源和返回要插入标记的 onSelect 处理器。每个触发器的 emptySearchText（ReactNode）用于查询无匹配结果时的提示。',
     debounceMs: '异步搜索源的去抖动延迟，避免过多网络请求。',
     hasHistory: '启用 ArrowUp/Down 回溯之前提交的消息。',
     label: '屏幕阅读器播报的无障碍标签。',
@@ -205,7 +205,7 @@ export const docsDense = {
     placeholder: 'placeholder when empty',
     maxRows: 'max visible rows before scroll; lower for compact layouts',
     triggers:
-      'typeahead trigger defs; character(@/)+searchSource+onSelect returning token; emptySearchText (ReactNode) for no matches, emptySearchResultsText deprecated',
+      'typeahead trigger defs; character(@/)+searchSource+onSelect returning token; emptySearchText (ReactNode) for no matches',
     debounceMs: 'debounce for async search to avoid excess requests',
     hasHistory: 'ArrowUp/Down to recall previous submissions',
     label: 'a11y label for screen readers',

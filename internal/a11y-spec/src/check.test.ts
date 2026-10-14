@@ -50,6 +50,7 @@ function harness(observes: readonly EvidenceLayer[]): Harness {
     references: async () => true,
     click: async () => {},
     abortedPress: async () => {},
+    clickBeside: async () => {},
     typeText: async () => {},
     clearText: async () => {},
     press: async () => {},

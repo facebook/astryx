@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
+import {expect} from 'storybook/test';
 import {FormLayout} from '@astryxdesign/core/FormLayout';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Selector} from '@astryxdesign/core/Selector';
@@ -109,6 +110,31 @@ export const HorizontalLabels: Story = {
         />
       </FormLayout>
     );
+  },
+  // Run by .github/scripts/story-play-guard.js at a phone and a 481px viewport.
+  play: async ({canvasElement}) => {
+    const layout = canvasElement.querySelector(
+      '[data-direction="horizontal-labels"]',
+    );
+    if (!layout) {
+      throw new Error('Expected a horizontal-labels FormLayout');
+    }
+    await expect(layout.children).toHaveLength(3);
+    const layoutWidth = layout.getBoundingClientRect().width;
+    const collapsed = window.matchMedia('(max-width: 480px)').matches;
+    // Each Field is display: contents, so its label wrapper and control
+    // wrapper are the layout's items.
+    for (const field of Array.from(layout.children)) {
+      const label = field.children[0].getBoundingClientRect();
+      const control = field.children[1].children[0].getBoundingClientRect();
+      if (collapsed) {
+        // Stacked: every control fills the column, whatever its value's width.
+        await expect(control.width).toBeCloseTo(layoutWidth, 0);
+      } else {
+        // Two columns: the label sits to the left of its control.
+        await expect(label.right).toBeLessThanOrEqual(control.left);
+      }
+    }
   },
 };
 

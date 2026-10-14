@@ -565,7 +565,7 @@ export function resolveRecordedThemes(state, available) {
     );
     if (!theme) {
       throw new AstryxError(
-        `Added theme "${slug}" from ${owner} is unavailable. Reinstall the package or restore the local theme, then run \`astryx theme add ${slug} --import --package ${owner}\`.`,
+        `Added theme "${slug}" from ${owner} is unavailable. Reinstall the package or restore the local theme, then run \`astryx theme add ${slug} --package ${owner}\`.`,
         undefined,
         ERROR_CODES.ERR_UNKNOWN_THEME,
       );
@@ -732,7 +732,7 @@ export async function removeThemeFromApp(slug, options = {}) {
   const recordedSlug = recordedThemeSlug(state, slug);
   if (!state.configured || recordedSlug == null) {
     throw new AstryxError(
-      `Theme "${slug}" is not added. Run \`astryx theme add ${slug} --import\` first.`,
+      `Theme "${slug}" is not added. Run \`astryx theme add ${slug}\` first.`,
       undefined,
       ERROR_CODES.ERR_UNKNOWN_THEME,
     );
@@ -776,7 +776,7 @@ export async function useThemeInApp(slug, options = {}) {
   const recordedSlug = recordedThemeSlug(state, slug);
   if (!state.configured || recordedSlug == null) {
     throw new AstryxError(
-      `Theme "${slug}" is not added. Run \`astryx theme add ${slug} --import\` first.`,
+      `Theme "${slug}" is not added. Run \`astryx theme add ${slug}\` first.`,
       undefined,
       ERROR_CODES.ERR_UNKNOWN_THEME,
     );

@@ -23,9 +23,10 @@
  * the selected theme's parsed bindings and inheritance, never from comment or
  * string contents. A registry that cannot be preserved fails before output
  * generation, including in check mode. Errors throw AstryxError (with a stable
- * code). Human progress is emitted through the shared `logger`
- * (silent by default), so the CLI keeps its exact output while a programmatic
- * caller stays quiet.
+ * code). Private-variable diagnostics keep their released warnings and generated
+ * files; an internal callback lets the CLI make only the process status fail.
+ * Human progress is emitted through the shared `logger` (silent by default), so
+ * the CLI keeps its exact output while a programmatic caller stays quiet.
  *
  * The installed `@astryxdesign/core` is an independently versioned optional
  * peer, so it can be older than the CLI. A theme that uses only baseline
@@ -72,7 +73,7 @@ import {logger} from '../../logger.mjs';
 import {loadComponentDoc} from '../../../foundation/discovery/component-loader.mjs';
 import {
   collectThemingTargets,
-  targetValidationRegistry,
+  targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
 import {
   collectUnloadedFonts,
@@ -98,14 +99,12 @@ import {resolveIconImports} from './icon-imports.mjs';
 // capability instead, required only by a theme that actually uses it:
 // requiring it unconditionally made every theme build — adaptations or not —
 // fail against an older published core. This is a targeted allowance for that
-// one capability, not a general scheme; the other two optional reads below
-// (`generateOnMediaCSS`, `dataTokenDefaults`) both exist in every core that
-// ships adaptations' predecessor surface.
+// one capability, not a general scheme; `generateOnMediaCSS` exists in every
+// core that ships adaptations' predecessor surface.
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
 /** @type {any} */ let _generateAdaptationCSS = null;
-/** @type {any} */ let _dataTokenDefaults = null;
 /**
  * The whole `@astryxdesign/core/theme` namespace. A theme file handed a
  * wrapped core must still get every export the installed one has, including
@@ -128,7 +127,6 @@ try {
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
   _generateAdaptationCSS = coreTheme.generateAdaptationCSS;
-  _dataTokenDefaults = coreTheme.dataTokenDefaults;
   try {
     _coreRootModule = await import('@astryxdesign/core');
   } catch {
@@ -155,7 +153,6 @@ try {
  *   generateThemeRulesSplit: any,
  *   generateOnMediaCSS: any,
  *   generateAdaptationCSS: any,
- *   dataTokenDefaults: any,
  * }} CoreBindings
  */
 
@@ -172,7 +169,6 @@ const _cliCore = {
   generateThemeRulesSplit: _generateThemeRulesSplit,
   generateOnMediaCSS: _generateOnMediaCSS,
   generateAdaptationCSS: _generateAdaptationCSS,
-  dataTokenDefaults: _dataTokenDefaults,
 };
 
 /**
@@ -187,7 +183,6 @@ function setCore(core) {
   _generateThemeRulesSplit = core.generateThemeRulesSplit;
   _generateOnMediaCSS = core.generateOnMediaCSS;
   _generateAdaptationCSS = core.generateAdaptationCSS;
-  _dataTokenDefaults = core.dataTokenDefaults;
 }
 
 /**
@@ -294,7 +289,6 @@ async function loadProjectCore(cwd) {
     generateThemeRulesSplit: themeModule.generateThemeRulesSplit,
     generateOnMediaCSS: themeModule.generateOnMediaCSS,
     generateAdaptationCSS: themeModule.generateAdaptationCSS,
-    dataTokenDefaults: themeModule.dataTokenDefaults,
   };
 }
 
@@ -752,10 +746,8 @@ const _augmentationTargetCache = new Map();
  * Resolve a rendered theme class token (the key without `astryx-`) to candidate
  * public core subpaths and interface prefixes that may own its augmentable prop
  * maps. Some tokens are subtargets documented by a parent component
- * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`), and some
- * deprecated tokens still omit word separators (`progressbar`, `statusdot`)
- * while the public API keeps `ProgressBar`/`StatusDot` casing. Component docs
- * are the source of truth for the target token → owning component relationship.
+ * (`avatar-status-dot` augments `@astryxdesign/core/Avatar`). Component docs are
+ * the source of truth for the target token → owning component relationship.
  *
  * @param {string} componentName
  * @returns {Promise<Array<{moduleName: string, interfacePrefix: string}>>}
@@ -832,8 +824,7 @@ async function resolveAugmentationTargetCandidates(componentName) {
 
       // Try the exact rendered token first for documented subtargets such as
       // avatar-status-dot → AvatarStatusDotVariantMap, then the owning public
-      // component name for the deprecated unhyphenated tokens such as
-      // progressbar → ProgressBarVariantMap/statusdot → StatusDotVariantMap.
+      // component name (for example, ProgressBar for progress-bar-fill).
       addCandidate(moduleName, toPascalCase(componentName));
       addCandidate(moduleName, moduleName);
       if (Array.isArray(doc?.components)) {
@@ -1991,30 +1982,25 @@ export declare const ${iconInfo.exportName}: IconRegistry;
 
 /**
  * Load known theme target keys from core component docs: the visual props AND
- * runtime states each target reflects, plus canonical replacements for
- * deprecated target keys. Deprecated targets remain accepted for compatibility,
- * but every use receives actionable build guidance. Returns null when docs are
- * unavailable so validation skips warnings rather than guessing from a second
- * registry.
+ * runtime states each target reflects. Returns null when docs are unavailable so
+ * validation skips warnings rather than guessing from a second registry.
  *
- * @returns {Promise<{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>} | null>}
+ * @returns {Promise<{propsByKey: Record<string, string[]>} | null>}
  */
 async function loadKnownComponents() {
   const coreRoot = resolveCoreRoot();
   const coreSrc = coreRoot ? path.join(coreRoot, 'src') : null;
   if (!coreSrc || !fs.existsSync(coreSrc)) return null;
 
-  const registry = targetValidationRegistry(
-    await collectThemingTargets(coreSrc),
-  );
-  return Object.keys(registry.propsByKey).length > 0 ? registry : null;
+  const propsByKey = targetsByKey(await collectThemingTargets(coreSrc));
+  return Object.keys(propsByKey).length > 0 ? {propsByKey} : null;
 }
 
-/** @type {{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>} | null | undefined} */
+/** @type {{propsByKey: Record<string, string[]>} | null | undefined} */
 let knownComponentsCache;
 
 /**
- * @returns {Promise<{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>} | null>}
+ * @returns {Promise<{propsByKey: Record<string, string[]>} | null>}
  */
 async function getKnownComponents() {
   if (knownComponentsCache === undefined) {
@@ -2027,7 +2013,7 @@ async function getKnownComponents() {
  * Validate component overrides against one discovered target registry.
  *
  * @param {{components?: Record<string, Record<string, unknown>>, onDark?: {components?: Record<string, Record<string, unknown>>}, onLight?: {components?: Record<string, Record<string, unknown>>}, __onDark?: {components?: Record<string, Record<string, unknown>>}, __onLight?: {components?: Record<string, Record<string, unknown>>}}} themeDef
- * @param {{propsByKey: Record<string, string[]>, deprecatedByKey: Record<string, string>}} knownComponents
+ * @param {{propsByKey: Record<string, string[]>}} knownComponents
  * @returns {string[]}
  */
 export function validateComponentOverridesAgainstRegistry(
@@ -2053,9 +2039,8 @@ export function validateComponentOverridesAgainstRegistry(
     }
   }
 
-  for (const {name: layerName, components} of layers) {
+  for (const {components} of layers) {
     for (const [component, rules] of Object.entries(components)) {
-      const location = layerName === 'base' ? '' : ` in ${layerName}`;
       if (!(component in knownComponents.propsByKey)) {
         const similar = Object.keys(knownComponents.propsByKey)
           .filter(k => {
@@ -2079,13 +2064,6 @@ export function validateComponentOverridesAgainstRegistry(
           similar.length > 0 ? ` Did you mean: ${similar.join(', ')}?` : '';
         warnings.push(`Unknown component "${component}".${hint}`);
         continue;
-      }
-
-      const replacement = knownComponents.deprecatedByKey[component];
-      if (replacement != null) {
-        warnings.push(
-          `Deprecated component target "${component}"${location}. Use "${replacement}" instead.`,
-        );
       }
 
       const knownProps = knownComponents.propsByKey[component];
@@ -2114,7 +2092,7 @@ export function validateComponentOverridesAgainstRegistry(
 
 /**
  * Validate component overrides in a theme definition.
- * Warns on unknown component names, deprecated targets, and unknown prop names.
+ * Warns on unknown component and prop names.
  *
  * @param {{components?: Record<string, Record<string, unknown>>, onDark?: {components?: Record<string, Record<string, unknown>>}, onLight?: {components?: Record<string, Record<string, unknown>>}, __onDark?: {components?: Record<string, Record<string, unknown>>}, __onLight?: {components?: Record<string, Record<string, unknown>>}}} themeDef
  * @returns {Promise<string[]>}
@@ -2331,7 +2309,7 @@ function validateHeadingTypeAugmentationSupport(themeDef) {
  * `logger` (silent by default).
  *
  * @param {string} file - Theme file path, resolved against `cwd`.
- * @param {{out?: string, check?: boolean, iconsSpecifier?: string, __prepareFamily?: boolean, __familyLoader?: any, __familyInterception?: any}} [options] -
+ * @param {{out?: string, check?: boolean, iconsSpecifier?: string, __prepareFamily?: boolean, __familyLoader?: any, __familyInterception?: any, __onPrivateVarError?: () => void}} [options] -
  *   `out` overrides the output CSS path; `check` compares against on-disk outputs
  *   instead of writing. `iconsSpecifier` overrides the icon registry import
  *   specifier in the generated module (e.g. `./icons.mjs`); when omitted, the
@@ -2488,6 +2466,7 @@ async function themeBuildInternal(
     logger.error(`  [error] ${source}${e}`);
   }
   if (privateVarErrors.length > 0) {
+    options.__onPrivateVarError?.();
     logger.error(
       `\n  ${source}${privateVarErrors.length} private var error(s). Use standard CSS properties instead.`,
     );
@@ -2753,26 +2732,8 @@ async function themeBuildInternal(
       logger.log(`${source}No overrides found; nothing to build.`);
       return null;
     }
-    // The data-token defaults are theme-independent and go in @layer
-    // astryx-base, below the theme's own overrides. Formatted here from the
-    // public `dataTokenDefaults` export, byte for byte as the `<Theme>`
-    // runtime emits it — build-theme.data-tokens.test.mjs is the drift guard.
-    // Placed after the reset block and before the theme block: a layer's order
-    // is fixed by where it is first declared, so emitting it anywhere else in
-    // the file would invert reset < astryx-base < astryx-theme for a consumer
-    // who imports this stylesheet on its own.
-    const baseCss = _dataTokenDefaults
-      ? `:root {\n${Object.entries(_dataTokenDefaults)
-          .map(([name, value]) => `  ${name}: ${value};`)
-          .join('\n')}\n}`
-      : '';
-    if (baseCss) {
-      cssParts.splice(
-        prose.length > 0 ? 1 : 0,
-        0,
-        `@layer astryx-base {\n${baseCss}\n}`,
-      );
-    }
+    cssParts.unshift('@layer reset, astryx-base, astryx-theme;');
+    const baseCss = '';
     cssPlan = {
       base: baseCss,
       prose,
@@ -3246,7 +3207,7 @@ async function preloadFamilySource(filePath, loader, interception) {
   finally { patch.undo(); }
 }
 
-/** @param {string[]} files @param {{familyKey: string, check?: boolean, iconsSpecifier?: string}} options @param {{cwd?: string}} [ctx] */
+/** @param {string[]} files @param {{familyKey: string, check?: boolean, iconsSpecifier?: string, __onPrivateVarError?: () => void}} options @param {{cwd?: string}} [ctx] */
 export async function themeBuildFamily(
   files,
   options,
@@ -3283,7 +3244,7 @@ export async function themeBuildFamily(
     }
     const file = source.file;
     // prettier-ignore
-    const member = await themeBuildInternal(file, {iconsSpecifier: options.iconsSpecifier, __prepareFamily: true, __familyLoader: familyLoader, __familyInterception: familyInterception}, {cwd});
+    const member = await themeBuildInternal(file, {iconsSpecifier: options.iconsSpecifier, __prepareFamily: true, __familyLoader: familyLoader, __familyInterception: familyInterception, __onPrivateVarError: options.__onPrivateVarError}, {cwd});
     if (!member || member.type) {
       throw new AstryxError(
         `Theme family member "${file}" did not produce a complete build plan.`,

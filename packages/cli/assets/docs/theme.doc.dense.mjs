@@ -32,7 +32,7 @@ export const docsDense = {
       section: 'Integration themes',
       title: 'Integration themes',
       content: [
-        {type: 'prose', text: 'Install integration, `astryx theme add`. {@link generic:use-a-theme} for full guide.'},
+        {type: 'prose', text: 'Install integration. `astryx theme add` imports, and `theme eject` forks source. {@link generic:use-a-theme} for full guide.'},
       ],
     },
   ],

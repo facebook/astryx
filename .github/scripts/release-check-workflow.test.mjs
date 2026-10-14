@@ -19,13 +19,23 @@ const workflow = yaml.parse(
 );
 const jobs = workflow.jobs;
 const step = (job, name) => jobs[job].steps.find(item => item.name === name);
+const packageJson = JSON.parse(
+  fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+);
 const releaseJobs = [
   'check-scope',
   'check-components',
   'build-storybook',
+  'typecheck',
+  'visual-scout',
   'pr-visual',
+  'pr-a11y-shard',
+  'pr-a11y-audit',
   'pr-a11y',
+  'a11y-contracts-shard',
+  'a11y-contracts',
   'pr-rtl-shard',
+  'pr-rtl-merge',
   'pr-rtl',
   'release-check',
 ];
@@ -218,14 +228,18 @@ describe('explicit release routing', () => {
     },
   );
 
-  it.each(['pr-a11y', 'pr-visual', 'pr-rtl-shard'])(
-    'blocks %s when its build fails',
-    name => {
-      const needs = dependencies(jobs[name]);
-      needs['build-storybook'].result = 'failure';
-      expect(runs(jobs[name], {needs})).toBe(false);
-    },
-  );
+  it.each([
+    'pr-a11y-shard',
+    'pr-a11y',
+    'a11y-contracts-shard',
+    'visual-scout',
+    'pr-visual',
+    'pr-rtl-shard',
+  ])('blocks %s when its build fails', name => {
+    const needs = dependencies(jobs[name]);
+    needs['build-storybook'].result = 'failure';
+    expect(runs(jobs[name], {needs})).toBe(false);
+  });
 
   it('keeps dispatch concurrency separate and non-cancelling', () => {
     expect(workflow.concurrency.group).toContain('|| github.run_id');
@@ -362,8 +376,11 @@ describe('exact main and release branch completion', () => {
       'check-scope',
       'check-components',
       'build-storybook',
+      'typecheck',
       'pr-visual',
       'pr-a11y',
+      'a11y-contracts',
+      'pr-a11y-audit',
       'pr-rtl',
     ]);
   });
@@ -564,7 +581,11 @@ describe('full release scope without PR metadata or maintenance writes', () => {
   });
 
   it('runs the canonical accessibility command without a component filter for full scope', () => {
-    const audit = step('pr-a11y', 'Run accessibility audit');
+    const audit = step('pr-a11y-audit', 'Run accessibility audit');
+    expect(runs(step('pr-a11y', 'Run accessibility audit'))).toBe(false);
+    expect(step('pr-a11y-audit', 'Require every audit shard').run).toContain(
+      '"$SHARD_RESULT" != success',
+    );
     const result = shell(
       audit.run.replaceAll('${{ github.event_name }}', 'workflow_dispatch'),
       {},
@@ -577,10 +598,11 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     );
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain('--fail-on-new');
+    expect(result.stdout).toContain('--merge-shards');
     expect(result.stdout).not.toContain('--components');
     expect(audit['continue-on-error']).toBeUndefined();
     expect(
-      step('pr-a11y', 'Run accessibility spec-test contracts').env
+      step('a11y-contracts-shard', 'Run accessibility spec-test contracts').env
         .ASTRYX_HEAD_SHA,
     ).toBe('${{ github.event.pull_request.head.sha || github.sha }}');
   });
@@ -645,31 +667,90 @@ describe('full release scope without PR metadata or maintenance writes', () => {
     expect(result.stdout).not.toContain('AUDIT MUST NOT RUN');
   });
 
-  it('keeps exhaustive a11y contracts, their artifacts, and Probe reach release-only', () => {
-    for (const name of [
-      'Run accessibility spec-test contracts',
-      'Upload pressed-state pixel evidence',
-      'Upload component-audit browser evidence',
-      'Check Probe theme reach',
-      'Upload Probe reach report',
+  it('clones full history only where the release-branch validator reads it', () => {
+    const checkout = jobs['check-scope'].steps.find(step =>
+      step.uses?.startsWith('actions/checkout@'),
+    );
+    const expression = String(checkout.with['fetch-depth']).replace(
+      /^\$\{\{\s*|\s*\}\}$/g,
+      '',
+    );
+    const depth = (event, branch, baseRef = '') =>
+      Function(
+        'github',
+        'inputs',
+        'startsWith',
+        `return ${expression.replaceAll('==', '===').replaceAll('!===', '!==')};`,
+      )(
+        {event_name: event, base_ref: baseRef},
+        {'release-branch': branch},
+        (value, prefix) => String(value).startsWith(prefix),
+      );
+    expect(depth('workflow_dispatch', releaseBranch)).toBe('0');
+    expect(depth('pull_request', '', 'release/v0.6.5')).toBe('0');
+    expect(depth('workflow_dispatch', 'main')).toBe('50');
+    expect(depth('pull_request', '', 'main')).toBe('50');
+  });
+
+  it('keeps exhaustive a11y contracts and their artifacts release-only', () => {
+    for (const [job, name] of [
+      ['a11y-contracts-shard', 'Run accessibility spec-test contracts'],
+      ['a11y-contracts-shard', 'Upload pressed-state pixel evidence'],
+      ['a11y-contracts-shard', 'Upload component-audit browser evidence'],
     ]) {
-      expect(runs(step('pr-a11y', name)), name).toBe(true);
+      expect(runs(step(job, name)), name).toBe(true);
       expect(
-        runs(step('pr-a11y', name), {event: 'pull_request', operation: ''}),
+        runs(step(job, name), {event: 'pull_request', operation: ''}),
         name,
       ).toBe(false);
-      expect(runs(step('pr-a11y', name), {operation: 'capture'}), name).toBe(
-        false,
-      );
+      expect(runs(step(job, name), {operation: 'capture'}), name).toBe(false);
     }
-    expect(step('pr-a11y', 'Run accessibility spec-test contracts').run).toBe(
-      'pnpm test:a11y-contract',
-    );
+    expect(runs(jobs['a11y-contracts'])).toBe(true);
     expect(
-      step('pr-a11y', 'Run accessibility spec-test contracts')[
-        'continue-on-error'
-      ],
-    ).toBeUndefined();
+      runs(jobs['a11y-contracts'], {event: 'pull_request', operation: ''}),
+    ).toBe(false);
+    const contracts = step(
+      'a11y-contracts-shard',
+      'Run accessibility spec-test contracts',
+    );
+    expect(contracts.run).toContain(
+      'a11y-contract-shard.mjs --shard "${{ matrix.shard }}/${{ strategy.job-total }}"',
+    );
+    // File filters must precede `--project`, which is variadic.
+    expect(contracts.run).toContain(
+      'pnpm exec playwright test "${FILES[@]}" --config playwright.config.ts --project chromium',
+    );
+    expect(packageJson.scripts['test:a11y-contract']).toBe(
+      'playwright test --config playwright.config.ts --project chromium',
+    );
+    expect(contracts.run).toContain('set -euo pipefail');
+    expect(contracts.env.A11Y_CONTRACT_WORKERS).toBe(4);
+    // Shard legs that run four pages or workers get four cores.
+    for (const job of ['visual-scout', 'pr-a11y-shard']) {
+      expect(jobs[job]['runs-on'], job).toBe('4-core-ubuntu');
+    }
+    expect(
+      step('visual-scout', 'Scout this shard of the release plan').run,
+    ).toContain('--concurrency 4');
+    // Four workers need four cores; on two the CPU-bound specs time out.
+    expect(jobs['a11y-contracts-shard']['runs-on']).toBe('4-core-ubuntu');
+    expect(contracts['continue-on-error']).toBeUndefined();
+    // The join fails closed: a failed shard, or an evidence set no shard
+    // produced, blocks release-check through a11y-contracts.
+    const join = jobs['a11y-contracts'];
+    expect(join.needs).toContain('a11y-contracts-shard');
+    expect(
+      step('a11y-contracts', 'Require every contract shard').run,
+    ).toContain('"$SHARD_RESULT" != success');
+    for (const name of [
+      'Join pressed-state pixel evidence',
+      'Join component-audit browser evidence',
+    ]) {
+      expect(step('a11y-contracts', name).uses).toBe(
+        'actions/upload-artifact/merge@v7',
+      );
+      expect(step('a11y-contracts', name).with['delete-merged']).toBe(true);
+    }
     for (const name of [
       'Run modal close visibility guard',
       'Run theme var reachability guard',
@@ -685,13 +766,11 @@ describe('full release scope without PR metadata or maintenance writes', () => {
   });
 
   it('keeps all canonical RTL packages and passes full scope to resolver and join', () => {
-    expect(jobs['pr-rtl-shard'].strategy.matrix.package).toEqual([
-      'core',
-      'lab',
-      'charts',
-      'richtext',
-      'vega',
-    ]);
+    expect([
+      ...new Set(
+        jobs['pr-rtl-shard'].strategy.matrix.include.map(leg => leg.package),
+      ),
+    ]).toEqual(['core', 'lab', 'charts', 'richtext', 'vega']);
     expect(step('pr-rtl-shard', 'Resolve RTL shard scope').run).toContain(
       '--force-full "${{ needs.check-components.outputs.force_full_component_audits }}"',
     );

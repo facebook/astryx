@@ -10,6 +10,7 @@ import * as fs from 'node:fs';
 import {createRequire} from 'node:module';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {listDir, pathExists} from './listing-cache.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -231,7 +232,7 @@ export function listComponents(coreDir) {
  * @returns {boolean}
  */
 export function existsCaseExact(targetPath, rootDir) {
-  if (!fs.existsSync(targetPath)) return false;
+  if (!pathExists(targetPath)) return false;
 
   const rel = path.relative(rootDir, targetPath);
   if (rel === '') return true;
@@ -241,7 +242,7 @@ export function existsCaseExact(targetPath, rootDir) {
   for (const segment of rel.split(path.sep)) {
     let entries;
     try {
-      entries = fs.readdirSync(dir);
+      entries = listDir(dir);
     } catch {
       return false;
     }

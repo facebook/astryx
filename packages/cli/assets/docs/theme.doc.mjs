@@ -39,7 +39,7 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Quick start',
-          code: 'astryx theme add stone --import   # use an existing theme\nastryx theme eject stone            # fork its source to customize\nastryx theme build src/themes/stone/stoneTheme.ts',
+          code: 'astryx theme add stone   # use an existing theme\nastryx theme eject stone # fork its source to customize\nastryx theme build src/themes/stone/stoneTheme.ts',
         },
         {
           type: 'prose',
@@ -74,7 +74,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Install an integration and Astryx discovers its themes automatically. Import one with `astryx theme add <name> --import --package <integration>`. Use `theme eject` only for an independent source fork. For the full walkthrough, see {@link generic:use-a-theme}.',
+          text: 'Install an integration and Astryx discovers its themes automatically. Import one with `astryx theme add <name> --package <integration>`. Use `theme eject` only for an independent source fork. For the full walkthrough, see {@link generic:use-a-theme}.',
         },
       ],
     },

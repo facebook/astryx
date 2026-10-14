@@ -255,7 +255,10 @@ describe('ComplexSelector', () => {
       'detached',
     );
     expect(
-      screen.getByTestId('view-options').querySelectorAll('svg'),
+      screen
+        .getByTestId('view-options')
+        .closest('.astryx-complex-selector')
+        ?.querySelectorAll('svg'),
     ).toHaveLength(2);
   });
 
@@ -390,7 +393,7 @@ describe('ComplexSelector popup theme target', () => {
     // that inner box cannot paint the popup's background or radius, which is
     // what a theme reaches for this class to do.
     expect(popup).toHaveAttribute('role', 'dialog');
-    expect(popup).toHaveClass('astryx-popover-surface');
+    expect(popup).toHaveClass('astryx-popover');
     expect(popup.querySelector('[id]')).not.toBeNull();
     expect(popup).toContainElement(
       screen.getByRole('button', {name: 'Done', ...h}),

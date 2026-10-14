@@ -6,7 +6,6 @@ import {useState} from 'react';
 import {Table} from '../../Table';
 import type {TableColumn} from '../../types';
 import {useTableRowExpansion} from './useTableRowExpansion';
-import {spacingDefaults} from '../../../theme/tokens.stylex';
 import {InternationalizationProvider} from '../../../i18n';
 
 // popover mock for context-menu tests
@@ -236,25 +235,50 @@ describe('useTableRowExpansion (detail panel)', () => {
     // content does: the chevron column's width plus a cell's own padding.
     render(<Harness initialExpanded={new Set(['a'])} />);
     expect(screen.getByTestId('panel').closest('td')).toHaveStyle({
-      paddingInlineStart: 'calc(var(--spacing-10) + var(--spacing-3))',
+      paddingInlineStart: 'calc(40px + var(--spacing-3))',
     });
   });
 
   it('tracks the table density it is rendered at', () => {
     render(<Harness initialExpanded={new Set(['a'])} density="spacious" />);
     expect(screen.getByTestId('panel').closest('td')).toHaveStyle({
-      paddingInlineStart: 'calc(var(--spacing-10) + var(--spacing-4))',
+      paddingInlineStart: 'calc(40px + var(--spacing-4))',
     });
   });
 
-  it('sizes the chevron column at the spacing token the panel indents by', () => {
-    // The column width is a number the layout does arithmetic on, so it cannot
-    // be a token reference — but the panel's indent, which has to line up with
-    // the first column, spells it as `--spacing-10`. Pin the two together so a
-    // change to the scale cannot silently unalign them.
+  it("indents the panel by the chevron column's own width", () => {
+    // The column width is a number the layout does arithmetic on, so it stays
+    // in pixels at every root font size. The panel's indent has to line up
+    // with the first column, so it spells the same pixels, not a rem spacing
+    // token. Pin the two together so neither can move without the other.
     render(<Harness initialExpanded={new Set(['a'])} />);
     const chevronHeader = screen.getAllByRole('columnheader')[0];
-    expect(chevronHeader).toHaveStyle({width: spacingDefaults['--spacing-10']});
+    const columnWidth = getComputedStyle(chevronHeader).width;
+    const panelCell = screen
+      .getByTestId('panel')
+      .closest('td') as HTMLTableCellElement;
+    expect(columnWidth).toBe('40px');
+    expect(getComputedStyle(panelCell).paddingInlineStart).toMatch(
+      new RegExp(`^calc\\(${columnWidth} \\+ `),
+    );
+  });
+
+  it('keeps the chevron column free of the cell insets', () => {
+    // The column is fixed pixels while a cell's insets follow the spacing
+    // scale; laid out after them, the button ran past the column's edge. The
+    // body cell drops its own inline-start inset (the button then centers
+    // itself; the browser spec measures that), and the header cell drops both.
+    render(<Harness initialExpanded={new Set(['a'])} />);
+    const button = screen.getAllByRole('button', {name: /collapse row/i})[0];
+    expect(
+      getComputedStyle(button.closest('td') as HTMLTableCellElement)
+        .paddingInlineStart,
+    ).toMatch(/^0(px)?$/);
+    // The header cell holds only a hidden label; its insets alone would
+    // outgrow the 40px column at a large root font size.
+    const header = getComputedStyle(screen.getAllByRole('columnheader')[0]);
+    expect(header.paddingInlineStart).toMatch(/^0(px)?$/);
+    expect(header.paddingInlineEnd).toMatch(/^0(px)?$/);
   });
 
   describe('row divider placement', () => {
