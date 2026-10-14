@@ -622,7 +622,10 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
   // the empty state is never unmounted and re-added mid-search (which flashed).
   const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
   const showEmptySearch = search !== '' && optimisticResults.length === 0;
-  useAnnounceRenderedText(emptyStateRef, showEmptySearch, search);
+  // Announce only once the search settles: while it is pending, optimistic
+  // narrowing can empty the list before the source answers, which would
+  // speak "No results" early or wrongly.
+  useAnnounceRenderedText(emptyStateRef, showEmptySearch && !isPending, search);
 
   let listContent: ReactNode;
   if (showEmptyBootstrap) {

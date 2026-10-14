@@ -647,6 +647,66 @@ describe('CommandPalette', () => {
       });
     });
 
+    it('waits for a narrowed search to settle before announcing no results', async () => {
+      const resolvers: ((items: SearchableItem[]) => void)[] = [];
+      const source: SearchSource = {
+        bootstrap: () => [
+          {id: 'home', label: 'Home'},
+          {id: 'settings', label: 'Settings'},
+        ],
+        async search(): Promise<SearchableItem[]> {
+          return new Promise<SearchableItem[]>(resolve => {
+            resolvers.push(resolve);
+          });
+        },
+      };
+      const spoken: string[] = [];
+      const observer = new MutationObserver(() => {
+        const text = politeRegion()?.textContent ?? '';
+        if (text !== '' && spoken.at(-1) !== text) {
+          spoken.push(text);
+        }
+      });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+      try {
+        render(
+          <CommandPalette
+            isOpen={true}
+            onOpenChange={() => {}}
+            searchSource={source}
+          />,
+        );
+        await waitFor(() =>
+          expect(screen.getByText('Home')).toBeInTheDocument(),
+        );
+        const input = screen.getByRole('combobox');
+
+        fireEvent.change(input, {target: {value: 'e'}});
+        await act(async () =>
+          resolvers.shift()?.(source.bootstrap() as SearchableItem[]),
+        );
+        await waitFor(() => expect(spoken.at(-1)).toBe('2 results'));
+
+        // Optimistic narrowing empties the list while the source is still
+        // answering; the source then finds one match.
+        fireEvent.change(input, {target: {value: 'ez'}});
+        await act(async () => {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        });
+        await act(async () =>
+          resolvers.shift()?.([{id: 'settings', label: 'Settings'}]),
+        );
+        await waitFor(() => expect(spoken.at(-1)).toBe('1 result'));
+        expect(spoken).not.toContain('No results');
+      } finally {
+        observer.disconnect();
+      }
+    });
+
     it('announces loading politely while a search is in flight', async () => {
       // A source whose searches never resolve, so the palette stays busy and
       // only the loading announcement can reach the live region.
