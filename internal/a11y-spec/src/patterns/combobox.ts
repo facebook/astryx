@@ -8,9 +8,10 @@
  *   Popup contents and binding-specific selection policy retain their own owners.
  *
  * Required outcomes come from WCAG 2.2 A/AA, WAI-ARIA 1.2, and the current
- * Astryx read-only selection-input contract. APG Combobox guidance is context
- * only because no current Astryx record adopts one APG combobox interaction
- * model across every combobox adopter.
+ * Astryx read-only selection-input contract. Under `spec:AST-020/FR15` each
+ * adopter's component record names the APG Combobox parts it adopts; until a
+ * record names them, APG keyboard and interaction guidance stays with that
+ * binding's owner and is context here.
  */
 
 import {
@@ -314,7 +315,7 @@ export const COMBOBOX_PATTERN: PatternContract<ComboboxStateFacts> =
         verifiedBy:
           'Binding-specific keyboard suites and real-browser interaction tests',
         reason:
-          'Astryx combobox adopters intentionally use different trigger, input, popup, and selection models; no current record adopts one APG keyboard set across all of them.',
+          'Under spec:AST-020/FR15 each adopter record names the keyboard parts it adopts; button triggers, editable inputs, anchored popups, and modal sheets differ, and no adopter record names them yet.',
       },
       '2.1.2-no-keyboard-trap': {
         owner: 'Binding popup, Layer, and dismissal owners',
@@ -423,7 +424,7 @@ export const COMBOBOX_PATTERN: PatternContract<ComboboxStateFacts> =
         verifiedBy:
           'Binding-specific interaction suites and exact current component records',
         reason:
-          'No current Astryx record adopts one APG Combobox interaction model across button triggers, editable inputs, anchored popups, and modal sheets.',
+          'Under spec:AST-020/FR15 the APG Combobox parts an adopter takes are named by its own component record; no adopter record names them yet.',
       },
       'forced-colors': {
         owner: 'Binding component, popup contents, and active theme',
