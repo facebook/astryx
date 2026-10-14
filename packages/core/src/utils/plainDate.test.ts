@@ -149,6 +149,14 @@ describe('plainDateToDate / plainDateFromDate', () => {
     expect(d.getDate()).toBe(15);
     expect(plainDateFromDate(d)).toEqual(pd);
   });
+
+  it('keeps years 1-99 instead of mapping them to 1900-1999', () => {
+    const pd: PlainDate = {year: 1, month: 1, day: 15};
+    const d = plainDateToDate(pd);
+    expect(d.getFullYear()).toBe(1);
+    expect(d.getDay()).toBe(1); // 0001-01-15 is a Monday
+    expect(plainDateFromDate(d)).toEqual(pd);
+  });
 });
 
 describe('plainDateToday', () => {
@@ -361,6 +369,15 @@ describe('plainDateDiffDays', () => {
       ),
     ).toBe(2);
   });
+
+  it('counts across the year 99 to 100 boundary', () => {
+    expect(
+      plainDateDiffDays(
+        {year: 99, month: 12, day: 31},
+        {year: 100, month: 1, day: 1},
+      ),
+    ).toBe(1);
+  });
 });
 
 describe('plainDateToInstant / plainDateFromInstant', () => {
@@ -392,6 +409,20 @@ describe('plainDateToInstant / plainDateFromInstant', () => {
         30,
       ),
     ).toBe(Date.UTC(2026, 4, 13, 16, 30));
+  });
+
+  it('keeps years 1-99 instead of mapping them to 1900-1999', () => {
+    const date: PlainDate = {year: 1, month: 1, day: 15};
+    // 0001-01-01T00:00:00Z is -62135596800000
+    expect(plainDateToInstant(date, 'UTC', 9, 30)).toBe(
+      -62135596800000 + (14 * 24 + 9) * 3600000 + 30 * 60000,
+    );
+    expect(
+      plainDateFromInstant(
+        plainDateToInstant(date, 'America/Los_Angeles'),
+        'America/Los_Angeles',
+      ),
+    ).toEqual(date);
   });
 });
 
@@ -578,6 +609,11 @@ describe('plainDateGetWeekNumber', () => {
 
   it('returns week 1 for Jan 4 (always in ISO week 1)', () => {
     expect(plainDateGetWeekNumber({year: 2026, month: 1, day: 4})).toBe(1);
+  });
+
+  it('keeps years 1-99 instead of mapping them to 1900-1999', () => {
+    // 0004-01-01 is a Thursday (ISO week 1); 1904-01-01 was a Friday.
+    expect(plainDateGetWeekNumber({year: 4, month: 1, day: 1})).toBe(1);
   });
 });
 
