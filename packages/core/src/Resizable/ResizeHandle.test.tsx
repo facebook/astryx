@@ -452,6 +452,161 @@ describe('ResizeHandle', () => {
     expect(separator).toHaveAttribute('aria-valuenow', '200');
   });
 
+  it('a grow arrow opens a collapsed pane one step above its minimum; the shrink arrow leaves it collapsed', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          collapsible: true,
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    // Shrinking a collapsed pane changes nothing.
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    // One bare grow step would stay below the collapse threshold (40px) and
+    // leave the pane collapsed; instead the arrow opens it one step above the
+    // minimum it announced (100 → 110).
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '110');
+  });
+
+  it('a grow arrow opens a collapsed pane at its collapsedSize when the minimum sits below it', () => {
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 20,
+          maxSize: 400,
+          collapsible: true,
+          collapsedSize: 50,
+        }}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    // min + step (30) would still be below the 50px threshold, so the pane
+    // opens at the threshold instead.
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '50');
+  });
+
+  it('a grow arrow opens a collapsed pane in the reversed layout and under RTL too', () => {
+    const rtl = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation(
+        () => ({direction: 'rtl'}) as unknown as CSSStyleDeclaration,
+      );
+    try {
+      // Reversed + RTL: the pane sits on the right and grows to the left on
+      // screen, which under RTL is ArrowRight again.
+      render(
+        <Harness
+          config={{
+            defaultSize: 200,
+            minSize: 100,
+            maxSize: 400,
+            collapsible: true,
+          }}
+          handleProps={{isReversed: true}}
+        />,
+      );
+      const separator = getSeparator();
+      act(() => separator.focus());
+      fireEvent.keyDown(separator, {key: 'Enter'});
+      expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+      fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+      expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+      fireEvent.keyDown(separator, {key: 'ArrowRight'});
+      expect(separator).not.toHaveAttribute('aria-valuetext');
+      expect(separator).toHaveAttribute('aria-valuenow', '110');
+    } finally {
+      rtl.mockRestore();
+    }
+  });
+
+  it('in a reversed layout, ArrowLeft opens a collapsed pane and ArrowRight leaves it collapsed', () => {
+    // Reversed: the pane sits on the right and grows to the left.
+    render(
+      <Harness
+        config={{
+          defaultSize: 200,
+          minSize: 100,
+          maxSize: 400,
+          collapsible: true,
+        }}
+        handleProps={{isReversed: true}}
+      />,
+    );
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'Enter'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+    fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+    expect(separator).not.toHaveAttribute('aria-valuetext');
+    expect(separator).toHaveAttribute('aria-valuenow', '110');
+  });
+
+  it('under RTL, ArrowLeft opens a collapsed pane and ArrowRight leaves it collapsed', () => {
+    const rtl = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation(
+        () => ({direction: 'rtl'}) as unknown as CSSStyleDeclaration,
+      );
+    try {
+      // Not reversed, right-to-left: the pane sits on the right and grows
+      // toward the left edge of the screen.
+      render(
+        <Harness
+          config={{
+            defaultSize: 200,
+            minSize: 100,
+            maxSize: 400,
+            collapsible: true,
+          }}
+        />,
+      );
+      const separator = getSeparator();
+      act(() => separator.focus());
+      fireEvent.keyDown(separator, {key: 'Enter'});
+      expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+      fireEvent.keyDown(separator, {key: 'ArrowRight'});
+      expect(separator).toHaveAttribute('aria-valuetext', 'Collapsed');
+      fireEvent.keyDown(separator, {key: 'ArrowLeft'});
+      expect(separator).not.toHaveAttribute('aria-valuetext');
+      expect(separator).toHaveAttribute('aria-valuenow', '110');
+    } finally {
+      rtl.mockRestore();
+    }
+  });
+
+  it('a grow arrow opens a hand-built collapsed region one step above its minimum', () => {
+    const props: ResizableProps = {
+      ...makeResizable(),
+      _isCollapsed: true,
+      _size: 0,
+      _collapsible: true,
+    };
+    render(<ResizeHandle resizable={props} label="Resize" />);
+    const separator = getSeparator();
+    act(() => separator.focus());
+    fireEvent.keyDown(separator, {key: 'ArrowRight'});
+    // The same move as the hook's own region: minimum plus one step.
+    expect(props._onResizeMove).toHaveBeenCalledWith(props._minSizePx + 10);
+  });
+
   it('reopens on Enter even when the minimum size sits below the collapse threshold', () => {
     render(
       <Harness
