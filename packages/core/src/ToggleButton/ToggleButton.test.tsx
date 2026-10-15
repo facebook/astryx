@@ -497,6 +497,57 @@ describe('ToggleButton', () => {
     expect(button).not.toHaveAttribute('aria-busy', 'true');
     await act(async () => {});
   });
+
+  // A wrapper that renders the toggle as its trigger (a tooltip or popover
+  // trigger, for example) hands it an onClick. That onClick used to replace
+  // the toggle's own handler, so activation requested no next state.
+  it('still requests the next state when the caller also passes onClick', async () => {
+    const calls: string[] = [];
+    const onClick = vi.fn(() => calls.push('onClick'));
+    const onPressedChange = vi.fn(() => calls.push('onPressedChange'));
+
+    render(
+      <ToggleButton
+        label="Compact"
+        isPressed={false}
+        onClick={onClick}
+        onPressedChange={onPressedChange}
+      />,
+    );
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', {name: 'Compact'}));
+
+    expect(onPressedChange).toHaveBeenCalledExactlyOnceWith(
+      true,
+      expect.anything(),
+    );
+    expect(calls).toEqual(['onClick', 'onPressedChange']);
+  });
+
+  it('lets a caller onClick cancel the toggle with preventDefault', async () => {
+    const onPressedChange = vi.fn();
+    const pressedChangeAction = vi.fn();
+
+    render(
+      <ToggleButton
+        label="Compact"
+        isPressed={false}
+        onClick={event => event.preventDefault()}
+        onPressedChange={onPressedChange}
+        pressedChangeAction={pressedChangeAction}
+      />,
+    );
+
+    const button = screen.getByRole('button', {name: 'Compact'});
+    fireEvent.click(button);
+
+    expect(onPressedChange).not.toHaveBeenCalled();
+    expect(pressedChangeAction).not.toHaveBeenCalled();
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    await act(async () => {});
+  });
 });
 
 // =============================================================================
@@ -720,6 +771,27 @@ describe.each(['single', 'multiple'] as const)(
       );
       expect(onPressedChange).not.toHaveBeenCalled();
       expect(pressedChangeAction).not.toHaveBeenCalled();
+    });
+
+    it('still asks the group to toggle a member that receives an onClick', async () => {
+      const onChange = vi.fn();
+      const onClick = vi.fn();
+      const groupProps =
+        type === 'single'
+          ? {type, value: null, onChange}
+          : {type, value: [], onChange};
+      render(
+        <ToggleButtonGroup {...groupProps} label="View">
+          <ToggleButton value="grid" label="Grid" onClick={onClick} />
+        </ToggleButtonGroup>,
+      );
+
+      await userEvent.setup().click(screen.getByRole('button', {name: 'Grid'}));
+
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(
+        type === 'single' ? 'grid' : ['grid'],
+      );
     });
   },
 );
