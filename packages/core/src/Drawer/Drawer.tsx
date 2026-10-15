@@ -123,7 +123,8 @@ const styles = stylex.create({
     position: 'fixed',
     margin: 0,
     padding: 0,
-    border: 'none',
+    borderWidth: 0,
+    borderStyle: 'none',
     // Square corners: the drawer is flush with the viewport edge on three
     // sides, so a radius would only ever cut the two edge-adjacent corners.
     borderRadius: 0,
