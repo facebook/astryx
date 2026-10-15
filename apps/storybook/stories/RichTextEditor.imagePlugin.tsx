@@ -65,11 +65,13 @@ import {useLexicalEditable} from '@lexical/react/useLexicalEditable';
 import {useLexicalNodeSelection} from '@lexical/react/useLexicalNodeSelection';
 import {
   $createParagraphNode,
+  $createRangeSelection,
   $getNodeByKey,
   $getSelection,
   $insertNodes,
   $isNodeSelection,
   $isRootOrShadowRoot,
+  $setSelection,
   CLICK_COMMAND,
   COMMAND_PRIORITY_EDITOR,
   COMMAND_PRIORITY_LOW,
@@ -696,12 +698,58 @@ function hasImageFiles(files: FileList): boolean {
   return [...files].some(file => file.type.startsWith('image/'));
 }
 
-function insertFiles(editor: LexicalEditor, files: FileList): void {
+/**
+ * The document position a pointer event is over, as a DOM range. Lexical's
+ * own drop handling does this with `@lexical/clipboard`'s `caretFromPoint`,
+ * which is not a Storybook dependency; the two browser APIs it wraps are
+ * right here.
+ */
+function rangeFromPoint(x: number, y: number): Range | null {
+  const withCaretPosition = document as Document & {
+    caretPositionFromPoint?: (
+      x: number,
+      y: number,
+    ) => {offsetNode: Node; offset: number} | null;
+  };
+  const position = withCaretPosition.caretPositionFromPoint?.(x, y);
+  if (position != null) {
+    const range = document.createRange();
+    range.setStart(position.offsetNode, position.offset);
+    range.collapse(true);
+    return range;
+  }
+  const withCaretRange = document as Document & {
+    caretRangeFromPoint?: (x: number, y: number) => Range | null;
+  };
+  return withCaretRange.caretRangeFromPoint?.(x, y) ?? null;
+}
+
+/**
+ * Inserts the image files of a paste or a drop. A drop names the point it
+ * landed on: this handler consumes `DROP_COMMAND` ahead of the rich-text
+ * handler that would have moved the selection there, so it has to move the
+ * selection itself, or the image arrives wherever the caret already was.
+ */
+function insertFiles(
+  editor: LexicalEditor,
+  files: FileList,
+  point?: {readonly x: number; readonly y: number},
+): void {
   void readImageFiles(files).then(payloads => {
-    for (const payload of payloads) {
-      if (payload.src !== '') {
-        editor.dispatchCommand(INSERT_IMAGE_COMMAND, payload);
-      }
+    const usable = payloads.filter(payload => payload.src !== '');
+    if (usable.length === 0) {
+      return;
+    }
+    const range = point ? rangeFromPoint(point.x, point.y) : null;
+    if (range !== null) {
+      editor.update(() => {
+        const selection = $createRangeSelection();
+        selection.applyDOMRange(range);
+        $setSelection(selection);
+      });
+    }
+    for (const payload of usable) {
+      editor.dispatchCommand(INSERT_IMAGE_COMMAND, payload);
     }
   });
 }
@@ -743,7 +791,7 @@ export function RichTextImagesPlugin() {
               return false;
             }
             event.preventDefault();
-            insertFiles(editor, files);
+            insertFiles(editor, files, {x: event.clientX, y: event.clientY});
             return true;
           },
           COMMAND_PRIORITY_LOW,

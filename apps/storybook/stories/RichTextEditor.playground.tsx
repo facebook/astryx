@@ -825,6 +825,12 @@ export function RichTextEditorPlayground() {
               {tab === 'view' ? (
                 <div {...stylex.props(styles.viewSurface)}>
                   <RichTextView
+                    // RichTextView reads `nodes` once, when it builds its own
+                    // editor. A view mounted while images were off cannot
+                    // parse state holding one, and renders its empty fallback
+                    // — the whole document gone — so it is rebuilt with the
+                    // node list, as the editor is.
+                    key={hasImages ? 'with-images' : 'without-images'}
                     value={stateJSON}
                     {...(extensions ? {markdownExtensions: extensions} : {})}
                     {...(nodes ? {nodes} : {})}

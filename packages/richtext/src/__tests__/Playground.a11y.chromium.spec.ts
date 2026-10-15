@@ -562,6 +562,81 @@ test('an image file dropped or pasted into the editor becomes an image', async (
   expect(errors).toEqual([]);
 });
 
+test('a dropped image lands where it was dropped, not at the caret', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  // The caret is at the very start of the document…
+  await page.locator(EDITOR).click();
+  await page.keyboard.press('ControlOrMeta+Home');
+
+  // …and the file is dropped on the last paragraph, far from it. The plugin
+  // consumes DROP_COMMAND ahead of the rich-text handler that would have
+  // moved the selection to the drop point, so it has to do that itself.
+  const target = page.locator(`${EDITOR} > p`).last();
+  // The drop point is a VIEWPORT coordinate, which is what the browser gives
+  // a real drop and what `caretPositionFromPoint` reads; the seeded document
+  // is taller than the viewport, so the target has to be on screen first.
+  await target.scrollIntoViewIfNeeded();
+  const box = await target.boundingBox();
+  const dropAt = {x: box!.x + box!.width / 2, y: box!.y + box!.height / 2};
+  await page.evaluate(async ({x, y}: {x: number; y: number}) => {
+    const pixel =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const blob = await (await fetch(pixel)).blob();
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([blob], 'placed.png', {type: 'image/png'}));
+    document
+      .querySelector('[data-playground-editor] [role="textbox"]')
+      ?.dispatchEvent(
+        new DragEvent('drop', {
+          bubbles: true,
+          cancelable: true,
+          clientX: x,
+          clientY: y,
+          dataTransfer: transfer,
+        }),
+      );
+  }, dropAt);
+
+  await expect(page.locator(IMAGE)).toHaveCount(1);
+  // Where it was dropped. Position, not block identity: inserting at a caret
+  // inside a paragraph splits it, so the image lands in a paragraph of its
+  // own between the halves — which is correct, and is not the element that
+  // was dropped on.
+  const landed = await page.locator(IMAGE).boundingBox();
+  expect(
+    Math.abs(landed!.y - dropAt.y),
+    'the image is at the drop point, not at the caret',
+  ).toBeLessThan(80);
+  // The caret was in the heading, at the top of a document taller than this.
+  const heading = await page.locator(`${EDITOR} h1`).boundingBox();
+  expect(landed!.y - heading!.y).toBeGreaterThan(200);
+  expect(errors).toEqual([]);
+});
+
+test('the RichTextView readout survives the image node arriving under it', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  const output = page.locator('[data-playground-output]');
+
+  // The view reads `nodes` once, when it builds its own editor. Opened while
+  // images are off, it would then fail to parse state holding one and render
+  // its empty fallback — the whole document gone, not just the image.
+  await toggle(page, 'Images').click();
+  await page.getByRole('tab', {name: 'RichTextView'}).click();
+  await expect(output.locator('table')).toHaveCount(1);
+
+  await toggle(page, 'Images').click();
+  await insertSampleImage(page);
+  await page.getByRole('tab', {name: 'RichTextView'}).click();
+  await expect(output.locator('img')).toHaveCount(1);
+  // The document is still under it, not an empty fallback.
+  await expect(output.locator('table')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
 test('the story has no axe violations', async ({page}) => {
   const errors = await openStory(page);
   const results = await new AxeBuilder({page})
