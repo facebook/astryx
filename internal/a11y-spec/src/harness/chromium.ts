@@ -314,8 +314,12 @@ async function computedNode(
   }
 }
 
-/** Pages whose clock `abortedPress` already installed; Playwright installs once per page. */
-const pagesWithClock = new WeakSet<Page>();
+/**
+ * How long `abortedPress` holds the press before sliding off: past the
+ * longest press-timing delay a component uses (DropdownMenu's 300 ms settle
+ * delay, the 500 ms long press).
+ */
+const ABORTED_PRESS_HOLD_MS = 700;
 
 /**
  * Stop transitions before an expectation reads state, so nothing measures a
@@ -1188,26 +1192,16 @@ export function createChromiumHarness(
         );
       }
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-      // The gesture is one quick slide-off, so its timing must not depend on
-      // the machine. A component that times the press (a settle delay or a
-      // press-and-hold) otherwise sees a longer press whenever the runner or
-      // the page is slow, and the same build reports a different outcome.
-      // The page's clock and timers stand still from press to release, then
-      // run on from where they stopped.
-      if (!pagesWithClock.has(page)) {
-        await page.clock.install();
-        pagesWithClock.add(page);
-      }
-      // A few milliseconds ahead: pausing at a time the page has already
-      // passed is refused.
-      await page.clock.pauseAt(await page.evaluate(() => Date.now() + 20));
-      try {
-        await page.mouse.down();
-        await page.mouse.move(releaseX, releaseY);
-        await page.mouse.up();
-      } finally {
-        await page.clock.resume();
-      }
+      await page.mouse.down();
+      // Hold the press before sliding off, as a person who changes their mind
+      // does. A press released at once has a duration set by the machine: a
+      // component that times the press (DropdownMenu ignores the release of an
+      // opening press shorter than its settle delay) then reports a different
+      // outcome on a loaded runner than on an idle one. Holding past any such
+      // delay gives every machine the same gesture.
+      await page.waitForTimeout(ABORTED_PRESS_HOLD_MS);
+      await page.mouse.move(releaseX, releaseY);
+      await page.mouse.up();
     },
     typeText: async (_subject, text) => {
       await locator.focus();
