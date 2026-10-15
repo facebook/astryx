@@ -13,7 +13,9 @@
  *   and RichTextEditorToolbarProps.
  * @position Experimental (richtext). Drop into RichTextEditor's `toolbar` slot to
  *   add a flush top formatting toolbar. Themed via Astryx Toolbar, Selector,
- *   IconButton, and ToggleButton, so it inherits the active theme.
+ *   IconButton, and ToggleButton, so it inherits the active theme. Base props
+ *   pass through to the Astryx Toolbar exactly as Toolbar places them
+ *   (spec:AST-061/DEC-8).
  *
  * SYNC: When modified, update:
  * - /packages/richtext/src/index.ts (exports)
@@ -42,6 +44,7 @@ import {
   useState,
   type FormEvent,
   type ReactNode,
+  type Ref,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
@@ -61,6 +64,7 @@ import {
 } from '@lexical/list';
 import {$getNearestNodeOfType, mergeRegister} from '@lexical/utils';
 import {TOGGLE_LINK_COMMAND, $isLinkNode, $createLinkNode} from '@lexical/link';
+import type {BaseProps} from '@astryxdesign/core';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Selector, type SelectorOptionType} from '@astryxdesign/core/Selector';
@@ -451,7 +455,14 @@ function DirectionalGlyph({children}: {children: ReactNode}) {
   );
 }
 
-export interface RichTextEditorToolbarProps {
+export interface RichTextEditorToolbarProps extends BaseProps<HTMLDivElement> {
+  /**
+   * Ref to the toolbar's root element. Base props pass through to the
+   * underlying Astryx `Toolbar`: the ref, `className`, `style`, and `xstyle`
+   * reach its root, and `data-*`, `aria-*`, and DOM handlers reach the
+   * `role="toolbar"` element inside it.
+   */
+  ref?: Ref<HTMLDivElement>;
   /**
    * Accessible label for the toolbar element.
    * @default 'Text formatting', translated for the active locale
@@ -495,7 +506,7 @@ export interface RichTextEditorToolbarProps {
    * create same-tab links.
    * @default true
    */
-  linkOpensInNewTab?: boolean;
+  hasNewTabLinks?: boolean;
   /**
    * Extra items rendered at the end of the toolbar (after a divider). Use this
    * to compose product-specific controls (e.g. mentions, AI) alongside the
@@ -530,8 +541,11 @@ export function RichTextEditorToolbar({
   size = 'sm',
   hasLink = true,
   promptForUrl,
-  linkOpensInNewTab = true,
+  hasNewTabLinks = true,
   endContent,
+  xstyle,
+  ref,
+  ...rest
 }: RichTextEditorToolbarProps) {
   const [editor] = useLexicalComposerContext();
   const themeName = useThemeName();
@@ -680,7 +694,7 @@ export function RichTextEditorToolbar({
       }
 
       restoreLinkSelection();
-      const linkAttributes = linkOpensInNewTab
+      const linkAttributes = hasNewTabLinks
         ? {target: '_blank', rel: 'noopener noreferrer'}
         : {};
       const handled = editor.dispatchCommand(TOGGLE_LINK_COMMAND, {
@@ -699,7 +713,7 @@ export function RichTextEditorToolbar({
       }
       return true;
     },
-    [editor, linkOpensInNewTab, restoreLinkSelection],
+    [editor, hasNewTabLinks, restoreLinkSelection],
   );
 
   const toggleLink = useCallback(() => {
@@ -896,9 +910,11 @@ export function RichTextEditorToolbar({
   return (
     <>
       <Toolbar
+        {...rest}
+        ref={ref}
         label={label}
         size={size}
-        xstyle={toolbarScrollStyles.compactToolbar}
+        xstyle={[toolbarScrollStyles.compactToolbar, xstyle]}
         startContent={
           <HStack
             gap={1}
