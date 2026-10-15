@@ -3,7 +3,8 @@
 /**
  * @file List.stories.tsx
  * @input List, ListItem, and Storybook args
- * @output List examples, including bounded inline edge compensation
+ * @output List examples, including flush rows and bounded inline edge
+ *   compensation
  * @position Storybook demonstrations for List consumers
  */
 
@@ -38,6 +39,12 @@ const meta: Meta<typeof List> = {
     hasDividers: {
       control: 'boolean',
       description: 'Whether to show dividers between items',
+    },
+    isFlush: {
+      control: 'boolean',
+      description:
+        "Remove each item's inline inset so row text lines up with the " +
+        'header, the dividers, and sibling content',
     },
     edgeCompensation: {
       control: 'select',
@@ -124,6 +131,33 @@ export const Spacious: Story = {
       />
     </List>
   ),
+};
+
+export const Flush: Story = {
+  args: {isFlush: true, hasDividers: true},
+  render: args => (
+    <div>
+      <Text type="label" size="lg">
+        Order items
+      </Text>
+      <List {...args}>
+        <ListItem label="Solstice Mug" description="Ceramic, 12 oz" />
+        <ListItem label="Meridian Notebook" description="Dot grid, A5" />
+        <ListItem label="Field Pen" description="0.5 mm, black ink" />
+      </List>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "isFlush removes each item's inline inset, so row text starts on " +
+          'the same line as the heading and the ends of the dividers, with no ' +
+          'container padding required. Turn it off to compare with the ' +
+          'default inset.',
+      },
+    },
+  },
 };
 
 const inlineEdgeCompensationContainerStyle: CSSProperties & {

@@ -4,9 +4,10 @@
 
 /**
  * @file ListItem.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens, List edge compensation,
- *   CheckboxInput, and the marker or task checkbox a ListMarkerScope sets
- *   (Markdown's nested lists and the task items of mixed lists)
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, List flush rows
+ *   and edge compensation, CheckboxInput, and the marker or task checkbox a
+ *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
+ *   lists)
  * @output Exports ListItem component, ListItemProps type
  * @position Core implementation; consumed by List, index.ts, tested by List.test.tsx
  *
@@ -23,6 +24,7 @@
 
 import {use, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
@@ -141,6 +143,13 @@ export interface ListItemProps extends BaseProps<HTMLLIElement> {
 const styles = stylex.create({
   withCounter: {
     counterIncrement: 'astryx-list',
+  },
+  // List's isFlush removes the row's built-in inline inset by zeroing
+  // --_item-inset-inline, the variable Item derives its paddingInline from
+  // and inline edge compensation reads, so the two cannot disagree: a flush
+  // row has no inset left to compensate.
+  flushInlineInset: {
+    '--_item-inset-inline': '0px',
   },
   // List's inline edge compensation cancels as much of the row's built-in
   // inline inset as the container padding allows (e.g. under a heading).
@@ -305,6 +314,7 @@ export function ListItem({
   const ctx = use(ListContext);
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
+  const isFlush = ctx?.isFlush ?? false;
   const listStyle = ctx?.listStyle ?? 'none';
   const edgeCompensation = ctx?.edgeCompensation;
   const hasMarkers = listStyle !== 'none';
@@ -361,13 +371,16 @@ export function ListItem({
       isDisabled={isDisabled}
       isSelected={isSelected}
       density={density}
-      xstyle={[
-        hasMarkers && styles.withCounter,
-        hasDividers && styles.withDivider,
-        hasDividers && embeddedStyles.noRadius,
-        edgeCompensation === 'inline' && styles.inlineEdgeCompensation,
-        xstyle,
-      ]}
+      xstyle={
+        [
+          hasMarkers && styles.withCounter,
+          hasDividers && styles.withDivider,
+          hasDividers && embeddedStyles.noRadius,
+          isFlush && styles.flushInlineInset,
+          edgeCompensation === 'inline' && styles.inlineEdgeCompensation,
+          xstyle,
+        ] as StyleXStyles
+      }
       {...mergeProps(themeProps('list-item'), {className, style})}
       {...restProps}
     />

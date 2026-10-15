@@ -5,10 +5,10 @@
 /**
  * @file ListContext.tsx
  * @input Layer-scoped React context
- * @output Exports ListContext for sharing density, dividers, marker style,
- *   and optional inline edge compensation between List and ListItem, and
- *   ListMarkerScope, which sets the marker for the items inside it, or a
- *   task item's checkbox in its place
+ * @output Exports ListContext for sharing density, dividers, flush rows,
+ *   marker style, and optional inline edge compensation between List and
+ *   ListItem, and ListMarkerScope, which sets the marker for the items
+ *   inside it, or a task item's checkbox in its place
  * @position Internal context; consumed by List.tsx and ListItem.tsx
  */
 
@@ -35,6 +35,7 @@ export interface ListTaskMarker {
 export interface ListContextValue {
   density: ListDensity;
   hasDividers: boolean;
+  isFlush: boolean;
   listStyle: ListMarkerStyle;
   edgeCompensation?: 'inline';
   /**

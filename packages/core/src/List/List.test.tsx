@@ -3,7 +3,8 @@
 /**
  * @file List.test.tsx
  * @input Uses vitest, @testing-library/react, List, ListItem
- * @output Unit tests for List and ListItem, including bounded inline edge compensation
+ * @output Unit tests for List and ListItem, including flush rows and bounded
+ *   inline edge compensation
  * @position Testing; validates List.tsx and ListItem.tsx implementation
  *
  * SYNC: When modified, update this header
@@ -370,6 +371,91 @@ describe('List', () => {
     const {container} = render(<ListItem label="Standalone" />);
     expect(container.querySelector('li')!.className).not.toContain(
       'inlineEdgeCompensation',
+    );
+  });
+
+  // ===========================================================================
+  // Flush rows
+  // ===========================================================================
+
+  /** The declarations of the inline inset variable that reach the row. */
+  function insetDeclarations(item: Element): string[] {
+    return rulesDeclaredFor(item).filter(rule =>
+      rule.includes('--_item-inset-inline:'),
+    );
+  }
+
+  const ZERO_INSET = /--_item-inset-inline:\s*0(px)?\s*;/;
+
+  it('keeps the item inline inset by default', () => {
+    const {container} = render(
+      <List>
+        <ListItem label="Item" />
+      </List>,
+    );
+    const item = container.querySelector('li')!;
+    expect(item.className).not.toContain('flushInlineInset');
+    const insets = insetDeclarations(item);
+    expect(insets).toHaveLength(1);
+    expect(insets[0]).not.toMatch(ZERO_INSET);
+  });
+
+  it('removes the inline inset of every item, static or interactive, when isFlush is set', () => {
+    const {container} = render(
+      <List isFlush header={<span>Items</span>}>
+        <ListItem label="Static" />
+        <ListItem label="Button" onClick={() => {}} />
+        <ListItem label="Link" href="/docs" />
+      </List>,
+    );
+    const items = container.querySelectorAll('li');
+    expect(items).toHaveLength(3);
+    for (const item of items) {
+      expect(item.className).toContain('flushInlineInset');
+    }
+    // The list and its header keep their geometry.
+    const ul = container.querySelector('ul')!;
+    expect(ul.className).not.toContain('flushInlineInset');
+    expect(ul.parentElement?.className).not.toContain('flushInlineInset');
+  });
+
+  it('resolves the shared inset variable to zero at every density', () => {
+    // Item derives paddingInline from --_item-inset-inline and edge
+    // compensation reads it, so the one declaration that reaches the row must
+    // be the flush zero, including over spacious density's wider inset.
+    for (const density of ['compact', 'balanced', 'spacious'] as const) {
+      const {container, unmount} = render(
+        <List isFlush density={density}>
+          <ListItem label="Item" />
+        </List>,
+      );
+      const item = container.querySelector('li')!;
+      expect(item).toHaveAttribute('data-density', density);
+      const insets = insetDeclarations(item);
+      expect(insets).toHaveLength(1);
+      expect(insets[0]).toMatch(ZERO_INSET);
+      unmount();
+    }
+  });
+
+  it('leaves edge compensation nothing to cancel on a flush list', () => {
+    // Both apply; the cancelling margin reads the zeroed inset, so it is
+    // min(0px, container padding) = 0 and the row stays in place.
+    const {container} = render(
+      <List isFlush edgeCompensation="inline">
+        <ListItem label="Item" />
+      </List>,
+    );
+    const item = container.querySelector('li')!;
+    expect(item.className).toContain('flushInlineInset');
+    expect(item.className).toContain('inlineEdgeCompensation');
+    expect(insetDeclarations(item)[0]).toMatch(ZERO_INSET);
+  });
+
+  it('keeps the inset of a ListItem outside a List', () => {
+    const {container} = render(<ListItem label="Standalone" />);
+    expect(container.querySelector('li')!.className).not.toContain(
+      'flushInlineInset',
     );
   });
 

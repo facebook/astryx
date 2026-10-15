@@ -5,7 +5,7 @@
 /**
  * @file List.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens, ListContext
- *   with optional inline edge compensation
+ *   with optional flush rows and inline edge compensation
  * @output Exports List component, ListProps, ListDensity, ListStyle types
  * @position Core implementation; consumed by index.ts, tested by List.test.tsx
  *
@@ -58,6 +58,17 @@ export interface ListProps extends BaseProps<
    * @default false
    */
   hasDividers?: boolean;
+
+  /**
+   * Removes every item's built-in inline inset, so item content starts and
+   * ends at the list's inline edges: on the same line as the header, the
+   * ends of the dividers, and sibling content such as a section heading.
+   * Needs no container padding. Rows keep their size, hit target, and hover
+   * and selection backgrounds, which then meet the content edge, so the
+   * default inset suits interactive rows best.
+   * @default false
+   */
+  isFlush?: boolean;
 
   /**
    * Compensates for each item's built-in inline inset, up to the container
@@ -148,9 +159,11 @@ const dynamicStyles = stylex.create({
  * Renders semantic `<ul>` or `<ol>` elements with configurable density,
  * dividers, marker styles, and an optional header.
  *
- * Set `edgeCompensation="inline"` to compensate for the items' inline inset
- * up to the container padding available on each edge, for alignment with
- * sibling content such as a section heading.
+ * Set `isFlush` to remove the items' inline inset, so item content lines up
+ * with the header, the dividers, and sibling content such as a section
+ * heading. Set `edgeCompensation="inline"` instead to keep the inset around
+ * hover and selection backgrounds and cancel it against the container padding
+ * available on each edge.
  *
  * @example
  * ```
@@ -168,6 +181,7 @@ export function List({
   children,
   density = 'balanced',
   hasDividers = false,
+  isFlush = false,
   edgeCompensation,
   header,
   listStyle = 'none',
@@ -184,8 +198,8 @@ export function List({
   const Tag = isOrdered ? 'ol' : 'ul';
 
   const contextValue = useMemo(
-    () => ({density, hasDividers, listStyle, edgeCompensation}),
-    [density, hasDividers, listStyle, edgeCompensation],
+    () => ({density, hasDividers, isFlush, listStyle, edgeCompensation}),
+    [density, hasDividers, isFlush, listStyle, edgeCompensation],
   );
 
   const listElement = (

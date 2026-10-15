@@ -42,6 +42,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isFlush',
+      type: 'boolean',
+      description:
+        "Remove every item's built-in inline inset, so item content starts and ends at the list's inline edges: on the same line as the header, the ends of the dividers, and sibling content such as a section heading. Needs no container padding. Rows keep their size, hit target, and hover and selection backgrounds, which then meet the content edge. Keep the default inset for interactive rows, or use edgeCompensation inside a padded container to keep it while moving row text toward the heading.",
+      default: 'false',
+    },
+    {
       name: 'edgeCompensation',
       type: "'inline'",
       description:
@@ -89,6 +96,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
       { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
+      { guidance: true, description: 'Set isFlush when static items sit under a heading or between dividers, so their text lines up with both.' },
       { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
       { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
       { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
@@ -109,6 +117,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
       { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
+      { guidance: true, description: 'Set isFlush when static items sit under a heading or between dividers, so their text lines up with both.' },
       { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
       { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
       { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
@@ -132,6 +141,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
       { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
+      { guidance: true, description: 'Set isFlush when static items sit under a heading or between dividers, so their text lines up with both.' },
       { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
       { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
       { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
