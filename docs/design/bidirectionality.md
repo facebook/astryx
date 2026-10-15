@@ -3,11 +3,11 @@ schema_version: 1
 template_version: 2
 kind: design
 id: design:bidirectionality
-authority: draft
+authority: current
 archive_reason: null
 superseded_by: null
-approved_by: null
-approved_at: null
+approved_by: nynexman4464
+approved_at: 2026-10-15
 owners: [nynexman4464, cixzhang, rubyycheung]
 review_triggers: [visual, interaction, accessibility]
 verified_by:
@@ -171,15 +171,15 @@ Bidirectionality applies to relationships rather than one shared DOM anatomy.
 
 ## Visual references
 
-No normative screenshots are required for this draft. Repo-owned component stories
-and relationship-based LTR/RTL audit output provide implementation evidence; they
-do not replace the human intent in this record.
+No normative screenshots are required for this record. Repo-owned component
+stories and relationship-based LTR/RTL audit output provide implementation
+evidence; they do not replace the human intent in this record.
 
 ## Component contract links
 
-No component record currently adopts this draft. Once current, the explicit
-global routes supply the matched RTL relationships to component and module
-reviews without requiring a backlink from each component. A visual change loads
+No component record currently links this record. The explicit global routes
+supply the matched RTL relationships to component and module reviews without
+requiring a backlink from each component. A visual change loads
 artwork meaning and exceptions; navigation, interaction, and scrolling load their
 own directional outcomes together with the semantic-exception boundary. The routes
 do not make every glyph directional, require a
@@ -195,15 +195,21 @@ copy a universal RTL checklist or redefine the shared rules.
 Review resolves the direct owner for the exact delta and applies only the matched
 shared claims within their stated scope. Local exceptions require a consistent
 semantic reason under DR5/DR10, not an implicit override of current authority.
-The global marker does not make this draft authoritative. Runtime/helper
-responsibility remains in `architecture:internationalization`; RTL audit evidence
-and deliberate D1 exemption review remain in `architecture:rtl-audit-evidence`.
+Runtime/helper responsibility remains in `architecture:internationalization`;
+RTL audit evidence and deliberate D1 exemption review remain in
+`architecture:rtl-audit-evidence`.
 
 ## Decision log
 
-No authoritative decision is recorded here until an eligible owner approves the
-exact record. DR1–DR14 describe the intended bidirectional relationships; audit
-admission and implementation evidence remain with their separate owners.
+### DEC-1 — Adopt DR1–DR14 as the shared bidirectional relationships
+
+**Reference:** `design:bidirectionality/DEC-1`
+**Decider:** `nynexman4464`, `2026-10-15`
+
+People reading in either direction get the same task meaning, reading order,
+and interaction outcomes when components follow DR1–DR14. Audit admission and
+implementation evidence remain with their separate owners, and the open
+questions below stay undecided.
 
 ## Open questions
 

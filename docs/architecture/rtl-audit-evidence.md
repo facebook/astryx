@@ -278,7 +278,7 @@ required evidence distinction; the component/composition contract owns the minim
 - `.github/workflows/rtl-weekly.yml` — full-roster scheduled audit.
 - `internal/eslint-plugin-astryx/no-physical-properties.js` — source-provable
   physical/logical declaration constraints.
-- `design:bidirectionality` — candidate human product intent, owned separately.
+- `design:bidirectionality` — human product intent, owned separately.
 
 The shipped RTL mechanics themselves still lack one canonical architecture owner.
 A follow-up `architecture:bidirectional-layout` record should own CSS logical
