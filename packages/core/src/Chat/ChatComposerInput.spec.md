@@ -193,7 +193,7 @@ add a theming target or decide a new visual state.
 ### DEC-1 — Trigger queries are non-destructive and act only on current results
 
 **Reference:** `component:ChatComposerInput/DEC-1`
-**Decider:** `cixzhang`, `2026-10-06`; pending-search Enter, `2026-10-14`; cross-trigger continuation, `2026-10-14`
+**Decider:** `cixzhang`, `2026-10-06`; pending-search Enter, `2026-10-14`; cross-trigger continuation applies the same reference-composer direction, `2026-10-14`
 
 Only the caller knows whether its suggestions contain spaces, so multi-word
 queries are a per-trigger opt-in and single-token triggers such as commands keep
