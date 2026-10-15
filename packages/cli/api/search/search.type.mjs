@@ -20,7 +20,7 @@
  * @property {number} score - Relevance score (higher is better).
  * @property {string} reason - Human-readable reason the candidate matched (e.g. `keyword "button"`).
  * @property {string} description - One-line description, when available.
- * @property {string} command - Follow-up command to act on this result (e.g. `astryx component Button`, or `astryx theme add --import neutral` for a theme).
+ * @property {string} command - Follow-up command to act on this result (e.g. `astryx component Button`, or `astryx theme add neutral` for a theme).
  * @property {string} [import] - Import path — present for component and hook results.
  * @property {string} [title] - Doc title — present for doc results.
  * @property {string} [section] - Section key — present when a doc result is one section of a topic; `command` reads only that section.

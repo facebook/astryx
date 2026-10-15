@@ -30,7 +30,7 @@ export const doc = {
     {
       value: 'init.remove',
       description:
-        'Confirmation that the managed agent-docs block was removed (`data.removed: true`) — returned when --remove-agents is set.',
+        'The removal receipt — returned when --remove-agents is set: `data.removed` is true when a managed agent-docs block was found and removed, and false when there was none to remove.',
     },
     // component
     {
@@ -50,11 +50,13 @@ export const doc = {
     },
     {
       value: 'component.detail.props',
-      description: "Just one component's props table (ComponentPropDoc[]). The envelope's package names the npm package that owns the component.",
+      description:
+        "Just one component's props table (ComponentPropDoc[]). The envelope's package names the npm package that owns the component.",
     },
     {
       value: 'component.detail.source',
-      description: "One component's source file, as {component, source}. The envelope's package names the npm package that owns the component.",
+      description:
+        "One component's source file, as {component, source}. The envelope's package names the npm package that owns the component.",
     },
     {
       value: 'component.detail.showcase',
@@ -86,7 +88,7 @@ export const doc = {
     {
       value: 'docs.detail.section',
       description:
-        'One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open its topic index and the sections before and after it). The envelope\'s package names the npm package that wrote the section.',
+        "One ReferenceSection of a topic, found by key or title, with token-ref blocks inlined, plus links ({up, previous, next}: the commands that open its topic index and the sections before and after it). The envelope's package names the npm package that wrote the section.",
     },
     {
       value: 'docs.node',
@@ -161,7 +163,7 @@ export const doc = {
     {
       value: 'swizzle.copy',
       description:
-        'An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling. The envelope\'s package names the same owning package.',
+        "An eject receipt: component name, owning package, output directory, files-copied count, the written file names, whether any file uses StyleX, and, when the owner has an issues URL, feedback ({issuesUrl, ghCommand?}): where to report the gap that led to swizzling. The envelope's package names the same owning package.",
     },
 
     // gap reports
@@ -194,7 +196,7 @@ export const doc = {
     {
       value: 'template.copy',
       description:
-        'A scaffold receipt: template id, output directory, written file name, file count, and demoMediaReplaced (how many Astryx demo media references were replaced with placeholders for you to swap for your own media). The envelope\'s package names the npm package that owns the template.',
+        "A scaffold receipt: template id, output directory, written file name, file count, demoMediaReplaced (how many Astryx demo media references were replaced with placeholders), notes (setup notes naming what the template needs that the project lacks — missing packages, missing StyleX compiler; empty when satisfied), missingPackages (external package names the template imports that are not in the project), and installCommand (a ready-to-run install command with the detected package manager and workspace version ranges; null when nothing is missing, or when several lockfiles leave the package manager undetermined). The envelope's package names the npm package that owns the template.",
     },
 
     {
@@ -207,7 +209,7 @@ export const doc = {
     {
       value: 'hook.list',
       description:
-        'The hook catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry. The envelope\'s package is @astryxdesign/core, the only package that ships hooks.',
+        "The hook catalog grouped by category: `detail` (the level: names | compact | full) and `components`, the grouped map of hook names, brief entries, or a full HookDoc per entry. The envelope's package is @astryxdesign/core, the only package that ships hooks.",
     },
     {
       value: 'hook.detail',
@@ -242,11 +244,6 @@ export const doc = {
         'Every bundled, installed package, and local theme as a ThemeListEntry[]. Each entry has slug, displayName, description, maintained, owner package or local root, source, added, and default fields. Optional meta.unmigratedCopies names earlier descriptor-less copies, their missing descriptor, and the upgrade command; those copies are not data entries.',
     },
     {
-      value: 'theme.add',
-      description:
-        'The released source-copy receipt: slug, displayName, maintained flag, owner package, outputDir, source entry, exportName, and files. Its additive meta.deprecations entry names DEP-0005 and the source-fork/import replacements.',
-    },
-    {
       value: 'theme.app',
       description:
         'The app theme record after add, remove, or use. It includes every added theme and its built imports, the default slug, generated module path, and the command change. After add, the envelope package names the npm package that owns the added theme; a local theme has none.',
@@ -264,7 +261,7 @@ export const doc = {
     {
       value: 'theme.targets',
       description:
-        'The whole themeable surface: the echoed filter, componentCount, and targets, one per theming target — {key, className, component, props, states, deprecatedFor?}, where props and states are its legal override keys and deprecatedFor names the canonical replacement key.',
+        'The whole themeable surface: the echoed filter, componentCount, and targets, one per theming target — {key, className, component, props, states}, where props and states are its legal override keys.',
     },
     {
       value: 'theme.palette.generate',
@@ -335,7 +332,7 @@ export const doc = {
     {
       value: 'integration.validate',
       description:
-        'The validation result: validated (false when no integration manifest was found, so nothing was checked and the empty issues list proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
+        'The validation result: validated (false when nothing was validated: with no package.json the issues list carries one no_package error so the command exits 1, and with a package.json but no integration manifest the issues list is empty and proves nothing), the package name and version (both null when validated is false) plus issues, an AstryxIntegrationIssue[] of {code, severity: warning | error, message}.',
     },
     {
       value: 'integration.template-conflicts',
@@ -351,23 +348,6 @@ export const doc = {
       value: 'integration.doc-conflicts',
       description:
         'validated (false when no integration manifest was found, so nothing was inspected), the integration identity, structural issues, and Core doc overlaps. Each finding includes `severity` (`info` | `error`) and `relationship` (`replaces` | `extends` | `accidental`).',
-    },
-
-    // layout (XLE/XLO)
-    {
-      value: 'layout.expand',
-      description:
-        'The expansion: parsed form, generated TSX code, componentsUsed, states (count of useState hooks scaffolded), todos, blocksReferenced (each {name, mode}), warnings, written (the output path, or null when nothing was written), and demoMediaReplaced (count of demo media placeholders).',
-    },
-    {
-      value: 'layout.check',
-      description:
-        'The validation result: a valid flag, the detected form, errors (each with line/col, message, formatted text, and suggestions), warnings, and the expression re-printed in both canonical surfaces (compact and outline).',
-    },
-    {
-      value: 'layout.grammar',
-      description:
-        "The XLE/XLO grammar cheatsheet: a text field with the full reference plus an aliases map (short name → canonical component) generated from this install's registry.",
     },
   ],
 };

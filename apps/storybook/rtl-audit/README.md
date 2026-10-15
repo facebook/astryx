@@ -24,7 +24,10 @@ independent auto passes: **D1 (icon-mirror)**, **D5 (positional-mirror)**, and
 > a missing policy, empty or unmatched path set, unresolved component list, or
 > registry/classifier/workflow mutation runs the full audit rather than accepting
 > an empty scope. CI partitions that full scope into one bounded shard per
-> canonical package, each with four browser workers; the stable `pr-rtl` context
+> canonical package, each with eight browser workers. Core, the largest, runs as
+> three parts (`--shard i/3`, every third D1 target, story and curated target)
+> that `pr-rtl-merge` joins with `--merge-shards` into the report a whole Core
+> leg would write; a missing or mismatched part fails the join. The stable `pr-rtl` context
 > succeeds only after all five scope manifests arrive and every applicable
 > package produces a report whose requested package/filter, duplicate-free exact
 > D1/D5/D6 identities, and nonzero planned/completed scans match. When trusted
@@ -129,6 +132,11 @@ returns `N-A` immediately and the RTL page is never loaded — with nothing to
 measure against, the second navigation can't change the verdict. Most stories
 have no candidates (1378 of 1394 in a recent full sweep), so this is about half
 of D5's page loads.
+
+**One LTR load shared with D6.** D5 and D6 both scan every story, so one LTR
+load serves both: D5 reads the page before the reveal step (unless
+`--pm-reveal`), D6 after it, the same order each used on its own load. The RTL
+page loads only when either dimension found an LTR candidate.
 
 It is also a correctness fix: the old `ltr.length === 0 && rtl.length === 0`
 guard let one-sided stories fall through to a compare loop that runs

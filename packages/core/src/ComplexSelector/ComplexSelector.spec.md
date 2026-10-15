@@ -23,7 +23,7 @@ design_specs: []
 architecture:
   [architecture:component-theming-surface, architecture:layer-runtime]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-079/DEC-1]
 ---
 
 # ComplexSelector component contract
@@ -98,7 +98,8 @@ remain documented in `ComplexSelector.doc.mjs`.
 
 ### Representative states
 
-- Input and ghost variants use the same six-part anatomy and current targets.
+- Input, secondary, and ghost variants use the same six-part anatomy and current
+  targets.
 - The start slot is absent when `startIcon` is omitted. When present, exactly
   one of Icon-rendered start icon or Caller-rendered start content applies.
 - The Popup remains mounted in both states: it is hidden while closed and shown
@@ -188,13 +189,17 @@ caller-owned ReactNode content.
 
 ## Decision log
 
-- **DEC-1 — Anchored mode through `renderTrigger`.** A picker anchored in a row the
-  caller owns cannot host the Field shell or a nested button. The caller
-  renders the control and spreads the given props; the component keeps owning
-  open state through the existing `handleRef`/`onOpenChange`. Rejected: an
-  `anchorRef` plus a controlled `isOpen`, per the rule already written on
-  `ComplexSelectorHandle`. Proposed in a pull request; FR5 becomes policy only
-  when an owner approves this record.
+- **DEC-1 — Anchored mode through `renderTrigger`.**
+
+  **Decider:** pending owner review
+
+  A picker anchored in a row the caller owns cannot host the Field shell or a
+  nested button. The caller renders the control and spreads the given props; the
+  component keeps owning open state through the existing
+  `handleRef`/`onOpenChange`.
+
+  Rejected: an `anchorRef` plus a controlled `isOpen`, per the rule already
+  written on `ComplexSelectorHandle`.
 
 ## Open questions
 

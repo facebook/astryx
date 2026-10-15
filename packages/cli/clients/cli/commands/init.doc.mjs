@@ -27,13 +27,13 @@ export const doc = {
       param: 'options.features',
       description:
         'Comma-separated features: agents (agent docs), theme (writes theme.template.ts), template (prints the page-building commands; writes no file). ' +
-        'An unknown feature exits 1 with ERR_UNKNOWN_FEATURE. Ignored with --all or --remove-agents',
+        'An unknown feature exits 1 with ERR_UNKNOWN_FEATURE. Refused with --all or --remove-agents',
     },
     {
       flag: '--all',
       param: 'options.all',
       description:
-        'Install all features (agents, theme, template); overrides --features. Prints their guidance instead of the getting-started steps',
+        'Install all features (agents, theme, template); refused with --features. Prints their guidance instead of the getting-started steps',
     },
     {
       flag: '--remove-agents',
@@ -41,7 +41,7 @@ export const doc = {
       description:
         'Remove the managed block from AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, .cursorrules, .hermes.md and HERMES.md ' +
         "(deleting AGENTS.md or .claude/CLAUDE.md when only init's heading is left) and do nothing else. " +
-        '--features, --all, --agent and --agent-docs-path are ignored; a file written with --agent-docs-path keeps its block',
+        '--features, --all, --agent and --agent-docs-path are refused; a file written with --agent-docs-path keeps its block',
     },
     {
       flag: '--agent <tool>',
@@ -74,7 +74,7 @@ export const doc = {
     },
     {
       code: 1,
-      when: 'an unknown --agent or feature, or an --agent-docs-path outside the project',
+      when: 'an unknown --agent or feature, an --agent-docs-path outside the project, --remove-agents combined with install options, or --all with --features (ERR_INVALID_ARGUMENT)',
     },
   ],
   related: ['doctor', 'upgrade', 'build', 'theme'],

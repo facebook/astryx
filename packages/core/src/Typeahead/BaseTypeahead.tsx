@@ -5,7 +5,7 @@
 /**
  * @file BaseTypeahead.tsx
  * @input Uses React, StyleX, usePopover, TypeaheadItem
- * @output Exports BaseTypeahead with focused-input menu reactivation
+ * @output Exports BaseTypeahead; focus bootstraps a replaced search source
  * @position Core implementation; used by Typeahead and Tokenizer
  *
  * Pure combobox engine: input, search, keyboard navigation, dropdown.
@@ -28,11 +28,11 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useBusyIndicatorLane} from './busyIndicatorLane';
+import {useTrailingKeyDown} from './trailingKeyDown';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useAnnounceRenderedText} from '../hooks/useAnnounceRenderedText';
-import {useRenamedProp} from '../hooks/useRenamedProp';
 import {useHighlightedOptionScroll} from '../hooks/useHighlightedOptionScroll';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {isImeKeyEvent} from '../utils/ime';
@@ -55,6 +55,7 @@ import {
   groupItems,
   mergeProps,
 } from '../utils';
+import {warnOnce} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
@@ -140,18 +141,6 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * @default 'No results found'
    */
   emptySearchText?: ReactNode;
-
-  /**
-   * Text shown when no results found.
-   * @default 'No results found'
-   * @deprecated `DEP-0003`. Renamed to `emptySearchText`, which takes a
-   * `ReactNode` rather than a `string` — every existing value stays valid
-   * (`spec:AST-056` FR1, FR7). Still works exactly as released;
-   * `emptySearchText` wins when both are set. Removal is `CLN-0003`, in a
-   * later minor whose frozen manifest carries both ids (`spec:AST-017`
-   * FR31).
-   */
-  emptySearchResultsText?: string;
 
   /**
    * Whether the input is disabled.
@@ -463,7 +452,6 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   maxMenuItems = 10,
   menuWidth,
   minQueryLength = 1,
-  emptySearchResultsText: deprecatedEmptySearchResultsText,
   emptySearchText: emptySearchTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
@@ -498,13 +486,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const placeholder =
     placeholderFromProps ?? t('@astryx.typeahead.searchPlaceholder');
   const emptySearchText =
-    useRenamedProp<ReactNode>({
-      component: 'BaseTypeahead',
-      deprecated: 'emptySearchResultsText',
-      deprecatedValue: deprecatedEmptySearchResultsText,
-      replacement: 'emptySearchText',
-      value: emptySearchTextFromProps,
-    }) ?? t('@astryx.typeahead.emptySearchResults');
+    emptySearchTextFromProps ?? t('@astryx.typeahead.emptySearchResults');
   // The empty-state row carries the message visually, and the live region has
   // to speak the same words. `emptySearchText` takes a ReactNode, so they are
   // read off the rendered row after it renders rather than guessed from the
@@ -531,6 +513,20 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<T[]>([]);
+
+  // `action` is declared on `SearchableItem` for the grid-adopting hosts;
+  // this panel has not adopted it, so it renders the item without the
+  // control and says so (spec:AST-058 FR9).
+  useEffect(() => {
+    if (results.some(item => item.action != null)) {
+      warnOnce(
+        'base-typeahead:item-action',
+        'BaseTypeahead',
+        'A result carries `action`, which the typeahead panel does not render ' +
+          'yet; the item is shown without it.',
+      );
+    }
+  }, [results]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -614,6 +610,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // in the closure are stale (a selection cleared them) and shouldn't
   // be re-shown.
   const resultsGenRef = useRef(0);
+  // The generation at which the current searchSource took over. Results
+  // populated before it (resultsGenRef below this) came from a replaced
+  // source: they can never be re-shown, so focus bootstraps the new source.
+  const sourceGenRef = useRef(0);
 
   // Results still arriving from a replaced source must not land in the new
   // one's menu.
@@ -621,7 +621,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   if (prevSearchSourceRef.current !== searchSource) {
     prevSearchSourceRef.current.cancel?.();
     prevSearchSourceRef.current = searchSource;
-    searchGenRef.current++;
+    sourceGenRef.current = ++searchGenRef.current;
   }
 
   // Layer for dropdown
@@ -893,11 +893,21 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   // Shared by handleFocus and handleClick: bootstrap entries if none are
   // loaded yet, or re-show cached results that haven't been invalidated by
   // a selection since (comparing the two generation refs catches that).
+  // Results cached from a replaced search source count as none, so focusing
+  // an empty field bootstraps the new source instead of opening nothing.
+  // Results a selection invalidated still keep the menu closed when the
+  // selection returns focus to the input.
   const openIfEligible = useCallback(() => {
     if (isDisabled) {
       return;
     }
-    if (hasEntriesOnFocus && results.length === 0 && query.length === 0) {
+    const hasResultsFromCurrentSource =
+      results.length > 0 && resultsGenRef.current >= sourceGenRef.current;
+    if (
+      hasEntriesOnFocus &&
+      !hasResultsFromCurrentSource &&
+      query.length === 0
+    ) {
       void performBootstrap();
     } else if (
       results.length > 0 &&
@@ -975,6 +985,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   );
 
   // Keyboard navigation
+  const trailingKeyDown = useTrailingKeyDown();
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       externalOnKeyDown?.(e);
@@ -1150,7 +1161,14 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         onFocus={composeEventHandlers(handleFocus, onFocusProp)}
         onClick={composeEventHandlers(handleClick, onClickProp)}
         onBlur={composeEventHandlers(handleBlur, onBlurProp)}
-        onKeyDown={handleKeyDown}
+        onKeyDown={
+          trailingKeyDown
+            ? event => {
+                handleKeyDown(event);
+                trailingKeyDown(event);
+              }
+            : handleKeyDown
+        }
         placeholder={placeholder}
         // When a disabled-reason tooltip is shown the input keeps focusability
         // via aria-disabled + readOnly instead of the native disabled

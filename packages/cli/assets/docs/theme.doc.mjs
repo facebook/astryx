@@ -17,13 +17,13 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Install a theme package, wrap your app in `<Theme>`, and pick light or dark mode. For the full guide — available themes, integration themes, dark mode, nested themes, and production builds — see {@link generic:use-a-theme}.',
+          text: 'Install a theme, import it with the CLI, and wire the generated module once. For the full guide — available themes, integration themes, dark mode, nested themes, and production builds — see {@link generic:use-a-theme}.',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Basic theme setup',
-          code: "import {Theme} from '@astryxdesign/core';\nimport {neutralTheme} from '@astryxdesign/theme-neutral';\n\nfunction App() {\n  return (\n    <Theme theme={neutralTheme}>\n      <YourApp />\n    </Theme>\n  );\n}",
+          label: 'Wire the generated module once',
+          code: "import {Theme} from '@astryxdesign/core';\nimport {themes, defaultThemeSlug} from './astryx-themes';\n\nfunction App() {\n  return (\n    <Theme theme={themes[defaultThemeSlug]}>\n      <YourApp />\n    </Theme>\n  );\n}",
         },
       ],
     },
@@ -39,7 +39,17 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Quick start',
-          code: 'astryx theme template    # annotated starter file\nastryx theme add stone   # copy an existing theme\nastryx theme build ./src/themes/my-theme.ts',
+          code: 'astryx theme add stone   # use an existing theme\nastryx theme eject stone # fork its source to customize\nastryx theme build src/themes/stone/stoneTheme.ts',
+        },
+        {
+          type: 'prose',
+          text: 'For a new coordinated color system, run `astryx theme palette generate palette.config.json --out palette.generated.ts`. Review and commit the generated palette module and receipt, import its `palette` export, then reference stable stops from semantic tokens. Regenerating an accepted palette updates every mapped token that keeps those references; generation does not rewrite the theme.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Map semantic tokens to generated palette stops',
+          code: "import {defineTheme} from '@astryxdesign/core/theme';\nimport {palette} from './palette.generated';\n\nconst myTheme = defineTheme({\n  name: 'my-theme',\n  tokens: {\n    '--color-background-surface': [\n      palette.neutral.light[100],\n      palette.neutral.dark[15],\n    ],\n  },\n});",
         },
       ],
     },
@@ -64,7 +74,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Install an integration and Astryx discovers its themes automatically. Copy one into your project with `astryx theme add <name> --package <integration>`. For the full walkthrough, see {@link generic:use-a-theme}.',
+          text: 'Install an integration and Astryx discovers its themes automatically. Import one with `astryx theme add <name> --package <integration>`. Use `theme eject` only for an independent source fork. For the full walkthrough, see {@link generic:use-a-theme}.',
         },
       ],
     },

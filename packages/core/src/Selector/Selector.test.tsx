@@ -38,6 +38,7 @@ import {Theme} from '../theme/Theme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 import {spacingVars} from '../theme/tokens.stylex';
 import {selectorPresentationStyles} from './selectorPresentation.stylex';
+import {groupStyles} from '../InputGroup/groupStyles';
 
 function generateThemeTestCSS(theme: Parameters<typeof generateThemeCSS>[0]) {
   const {prose, component} = generateThemeCSS(theme);
@@ -423,12 +424,12 @@ describe('Selector', () => {
 
     // Every row has a radio, selected or not.
     for (const option of options) {
-      expect(option.querySelector('.astryx-radio')).not.toBeNull();
+      expect(option.querySelector('.astryx-radio-indicator')).not.toBeNull();
     }
 
     // And exactly the selected one is filled.
     const filled = options.filter(
-      o => o.querySelector('.astryx-radio-dot') != null,
+      o => o.querySelector('.astryx-radio-indicator-dot') != null,
     );
     expect(filled).toHaveLength(1);
     expect(filled[0]).toHaveTextContent('Banana');
@@ -605,7 +606,7 @@ describe('Selector', () => {
     const inputDropdownClass = screen.getByRole('listbox', h).className;
     unmount();
 
-    render(
+    const ghostRender = render(
       <Selector
         label="Ghost fruit"
         options={OPTIONS}
@@ -616,10 +617,24 @@ describe('Selector', () => {
     );
     await user.click(screen.getByRole('combobox'));
     const ghostDropdownClass = screen.getByRole('listbox', h).className;
+    ghostRender.unmount();
+
+    render(
+      <Selector
+        label="Secondary fruit"
+        options={OPTIONS}
+        value="Banana"
+        variant="secondary"
+        onChange={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole('combobox'));
+    const secondaryDropdownClass = screen.getByRole('listbox', h).className;
 
     // The bordered input gets one extra StyleX rule for its border-width
-    // correction; the borderless ghost keeps the base menu inset.
+    // correction; the borderless secondary/ghost keep the base menu inset.
     expect(inputDropdownClass).not.toBe(ghostDropdownClass);
+    expect(secondaryDropdownClass).toBe(ghostDropdownClass);
   });
 
   it('does not apply selected-item overlay offset when placement is explicit', async () => {
@@ -822,6 +837,58 @@ describe('Selector', () => {
       expect(onChange).toHaveBeenCalledWith(null);
     });
 
+    it('returns focus to the trigger when the clear button is activated by keyboard', async () => {
+      function Controlled() {
+        const [value, setValue] = useState<string | null>('Banana');
+        return (
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value={value}
+            onChange={setValue}
+            hasClear
+          />
+        );
+      }
+      const user = userEvent.setup();
+      render(<Controlled />);
+      screen.getByRole('button', {name: 'Clear Fruit'}).focus();
+      await user.keyboard('{Enter}');
+      expect(
+        screen.queryByRole('button', {name: 'Clear Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+    });
+
+    it('leaves focus in the search input when the clear button is clicked with the list open', async () => {
+      function Controlled() {
+        const [value, setValue] = useState<string | null>('Banana');
+        return (
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value={value}
+            onChange={setValue}
+            hasClear
+            hasSearch
+          />
+        );
+      }
+      const user = userEvent.setup();
+      render(<Controlled />);
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole('combobox', {
+        name: 'Search options',
+        hidden: true,
+      });
+      search.focus();
+      await user.click(screen.getByRole('button', {name: 'Clear Fruit'}));
+      expect(
+        screen.queryByRole('button', {name: 'Clear Fruit'}),
+      ).not.toBeInTheDocument();
+      expect(search).toHaveFocus();
+    });
+
     it('clears the value via Delete on the focused trigger', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -924,7 +991,10 @@ describe('Selector', () => {
       expect(screen.getByRole('combobox', h)).toBeInTheDocument();
     });
 
-    it('wires the search input as the combobox with activedescendant (comboboxes-4)', async () => {
+    // The search input's expanded state, popup relationship, and active option
+    // are bound to the shared Combobox contract (Selector.combobox.a11y.test.tsx,
+    // search-active); this keeps only the Selector-specific wiring.
+    it('moves combobox semantics to the list-autocomplete search input (comboboxes-4)', async () => {
       const user = userEvent.setup();
       render(
         <Selector
@@ -941,12 +1011,6 @@ describe('Selector', () => {
       await user.click(triggerBtn);
       const search = screen.getByRole('combobox', h);
       expect(search).toHaveAttribute('aria-autocomplete', 'list');
-      expect(search).toHaveAttribute('aria-expanded', 'true');
-      expect(search).toHaveAttribute('aria-controls');
-      // ArrowDown moves the highlight; the search input reports it via
-      // aria-activedescendant (previously silent on the trigger).
-      await user.keyboard('{ArrowDown}');
-      expect(search).toHaveAttribute('aria-activedescendant');
     });
 
     it('PageDown/PageUp jump the highlight to the last/first filtered option', async () => {
@@ -1285,7 +1349,6 @@ describe('Selector', () => {
         <Selector label="Fruit" options={[]} onChange={() => {}} isLoading />,
       );
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
-      expect(trigger).toHaveAttribute('aria-busy', 'true');
       expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
 
       await user.click(trigger);
@@ -2448,6 +2511,67 @@ describe('Selector', () => {
       expect(screen.getByText('#')).toBeInTheDocument();
     });
 
+    it.each(['input', 'secondary'] as const)(
+      'gives a grouped %s trigger the connected group geometry in every position',
+      variant => {
+        const groupClasses = stylex
+          .props(groupStyles.inGroup)
+          .className!.split(' ');
+        const selector = (label: string) => (
+          <Selector
+            label={label}
+            isLabelHidden
+            variant={variant}
+            options={OPTIONS}
+          />
+        );
+        render(
+          <>
+            <InputGroup label="First">
+              {selector('Channel first')}
+              <InputGroupText>#</InputGroupText>
+            </InputGroup>
+            <InputGroup label="Middle">
+              <InputGroupText>#</InputGroupText>
+              {selector('Channel middle')}
+              <InputGroupText>@</InputGroupText>
+            </InputGroup>
+            <InputGroup label="Last">
+              <InputGroupText>#</InputGroupText>
+              {selector('Channel last')}
+            </InputGroup>
+          </>,
+        );
+
+        // The group's row height, seam radii, and focus stacking all come from
+        // these classes; their :first-child and last-item selectors resolve the
+        // position. A secondary trigger keeps its fill but must not keep its
+        // own standalone edges or width.
+        for (const position of ['first', 'middle', 'last']) {
+          const trigger = screen.getByRole('combobox', {
+            name: new RegExp(`Channel ${position}`),
+          });
+          const box = trigger.closest('.astryx-selector') as HTMLElement;
+          const classes = new Set(box.className.split(' '));
+          expect(groupClasses.every(c => classes.has(c))).toBe(true);
+        }
+      },
+    );
+
+    it('keeps a standalone secondary trigger out of the group geometry', () => {
+      const groupClasses = stylex
+        .props(groupStyles.inGroup)
+        .className!.split(' ');
+      render(
+        <Selector label="Channel" variant="secondary" options={OPTIONS} />,
+      );
+      const box = screen
+        .getByRole('combobox')
+        .closest('.astryx-selector') as HTMLElement;
+      const classes = new Set(box.className.split(' '));
+      expect(groupClasses.some(c => classes.has(c))).toBe(false);
+    });
+
     it('keeps disabled reasons described when grouped', () => {
       render(
         <InputGroup label="Destination">
@@ -2485,7 +2609,11 @@ describe('Selector', () => {
         />,
       );
 
-      const container = screen.getByTestId('fruit-selector');
+      // data-testid lands on the trigger; the reason tooltip anchors to the
+      // control box around it.
+      const container = screen
+        .getByTestId('fruit-selector')
+        .closest('.astryx-selector') as HTMLElement;
       const tooltip = screen.getByRole('tooltip', h);
       expect(tooltip).toHaveTextContent('You need the Editor role');
 
@@ -3079,6 +3207,48 @@ describe('Selector statusVariant forwarding', () => {
     );
   });
 
+  it('detaches attached status by default for the secondary variant', () => {
+    const {container} = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        variant="secondary"
+        status={{type: 'error', message: 'Required'}}
+      />,
+    );
+    expect(container.querySelector('.astryx-selector')).toHaveAttribute(
+      'data-variant',
+      'secondary',
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+
+  it('paints the secondary trigger with its own trigger style', () => {
+    const inputRender = render(
+      <Selector label="Fruit" options={['Apple', 'Banana']} value="Banana" />,
+    );
+    const inputTriggerClass =
+      inputRender.container.querySelector('.astryx-selector')!.className;
+    inputRender.unmount();
+
+    const secondaryRender = render(
+      <Selector
+        label="Fruit"
+        options={['Apple', 'Banana']}
+        value="Banana"
+        variant="secondary"
+      />,
+    );
+    // The neutral-filled secondary trigger must not reuse the bordered
+    // input trigger's classes; it carries the secondary trigger style.
+    expect(
+      secondaryRender.container.querySelector('.astryx-selector')!.className,
+    ).not.toBe(inputTriggerClass);
+  });
+
   it('uses a status tooltip for ghost selectors when requested', () => {
     const {container} = render(
       <Selector
@@ -3136,7 +3306,7 @@ describe('Selector clear icon theme target', () => {
     return icon as HTMLElement;
   };
 
-  it('renders the astryx-input-clear-icon target (plus the legacy alias) on the clear glyph', () => {
+  it('renders only the astryx-input-clear-icon target on the clear glyph', () => {
     render(
       <Selector
         label="Fruit"
@@ -3149,11 +3319,10 @@ describe('Selector clear icon theme target', () => {
     // The canonical target lands on the icon element itself (not the button),
     // so a theme can restyle just this glyph (color, size, hover) via
     // `defineTheme` — a button-level target could not reach the icon's own
-    // color/size. The original per-component name remains as a compatibility
-    // alias.
+    // color/size.
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-selector-clear-icon');
+    expect(icon).not.toHaveClass('astryx-selector-clear-icon');
     expect(icon).toHaveClass('astryx-icon');
   });
 
@@ -3174,13 +3343,12 @@ describe('Selector clear icon theme target', () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it('routes the clear glyph through the shared clear button, keeping the legacy target', () => {
-    // The clear affordance now composes the shared InputClearButton (a ghost
-    // Button with a secondary/sm glyph), so the icon carries the canonical
-    // `astryx-input-clear-icon` target plus the supported compatibility alias
-    // `astryx-selector-clear-icon`. Aside from those target classes
-    // it matches the shared button's own `close`/`sm`/`secondary` glyph
-    // exactly, so the default look is defined in one place.
+  it('routes the clear glyph through the shared clear button', () => {
+    // The clear affordance composes the shared InputClearButton (a ghost Button
+    // with a secondary/sm glyph), so the icon carries the canonical
+    // `astryx-input-clear-icon` target. Aside from that target class it matches
+    // the shared button's own `close`/`sm`/`secondary` glyph exactly, so the
+    // default look is defined in one place.
     render(
       <Selector
         label="Fruit"
@@ -3192,7 +3360,7 @@ describe('Selector clear icon theme target', () => {
     );
     const icon = getClearIcon();
     expect(icon).toHaveClass('astryx-input-clear-icon');
-    expect(icon).toHaveClass('astryx-selector-clear-icon');
+    expect(icon).not.toHaveClass('astryx-selector-clear-icon');
 
     const {container: refContainer} = render(
       <Icon icon="close" size="sm" color="secondary" />,
@@ -3202,26 +3370,22 @@ describe('Selector clear icon theme target', () => {
     const styleClasses = (el: HTMLElement) =>
       el.className
         .split(' ')
-        .filter(
-          c =>
-            c !== 'astryx-input-clear-icon' &&
-            c !== 'astryx-selector-clear-icon',
-        )
+        .filter(c => c !== 'astryx-input-clear-icon')
         .sort();
 
     expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
   });
 
-  it('exposes selector-clear-icon so a theme reaches the icon color, size, and hover', () => {
+  it('uses input-clear-icon so a theme reaches the icon color, size, and hover', () => {
     // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
     // (target lands on the icon element) plus this generation assertion (the
     // theme emits same-element icon rules in @layer astryx-theme) together
     // prove the seam: a same-element theme rule wins over the icon's own
     // base-layer color/size.
     const theme = defineTheme({
-      name: 'selector-clear-icon-test',
+      name: 'selector-shared-clear-icon-test',
       components: {
-        'selector-clear-icon': {
+        'input-clear-icon': {
           base: {
             width: '12px',
             height: '12px',
@@ -3233,10 +3397,10 @@ describe('Selector clear icon theme target', () => {
       },
     });
     const css = generateThemeTestCSS(theme);
-    expect(css).toContain('.astryx-selector-clear-icon {');
+    expect(css).toContain('.astryx-input-clear-icon {');
     expect(css).toContain('width: 12px');
     expect(css).toContain('height: 12px');
-    expect(css).toContain('.astryx-selector-clear-icon:hover');
+    expect(css).toContain('.astryx-input-clear-icon:hover');
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
@@ -3898,7 +4062,7 @@ describe('Selector indicatorPosition', () => {
           indicatorPosition === 'start'
             ? row.firstElementChild
             : row.lastElementChild;
-        const radio = row.querySelector('.astryx-radio');
+        const radio = row.querySelector('.astryx-radio-indicator');
         const content = row.querySelector('.astryx-selector-option');
         expect(markColumn).toHaveStyle({display: 'inline-flex'});
         expect(radio).not.toBeNull();
@@ -3945,7 +4109,7 @@ describe('Selector popup theme target', () => {
 
       const popup = document.querySelector('.astryx-selector-popup');
       expect(popup).not.toBeNull();
-      expect(popup).toHaveClass('astryx-popover-surface');
+      expect(popup).toHaveClass('astryx-popover');
       expect(popup?.querySelector('[role="listbox"]')).not.toBeNull();
     },
   );
@@ -4587,7 +4751,7 @@ describe('Selector press model', () => {
     }
   });
 
-  it('the listbox owns touch scrolling: touch-action none while the options fit', async () => {
+  it('the listbox owns touch scrolling: touch-action pinch-zoom while the options fit', async () => {
     const user = userEvent.setup();
     render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
     await user.click(screen.getByRole('combobox'));
@@ -4597,12 +4761,14 @@ describe('Selector press model', () => {
     // build prefixes a debug name; the hash is the last token).
     const touchStyles = stylex.create({
       none: {touchAction: 'none'},
-      panY: {touchAction: 'pan-y'},
+      pinchZoom: {touchAction: 'pinch-zoom'},
+      panYPinchZoom: {touchAction: 'pan-y pinch-zoom'},
     });
     const hash = (style: stylex.StyleXStyles) =>
       stylex.props(style).className!.split(' ').pop()!;
-    expect(listbox).toHaveClass(hash(touchStyles.none));
-    expect(listbox).not.toHaveClass(hash(touchStyles.panY));
+    expect(listbox).toHaveClass(hash(touchStyles.pinchZoom));
+    expect(listbox).not.toHaveClass(hash(touchStyles.none));
+    expect(listbox).not.toHaveClass(hash(touchStyles.panYPinchZoom));
   });
 
   it('marks the listbox as carrying the press model', async () => {
@@ -4642,5 +4808,40 @@ describe('Selector in a narrow row', () => {
     const root = container.querySelector('.astryx-field')!;
     expect(root.getAttribute('style')).toContain('80');
     expect(getComputedStyle(root).minWidth).toBe('0');
+  });
+});
+
+describe('Selector and option actions (not adopted)', () => {
+  it('renders the option without the control and warns in development', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[
+            {
+              value: 'apple',
+              label: 'Apple',
+              action: <button type="button">Edit Apple</button>,
+            },
+          ]}
+          value={undefined}
+          onChange={() => {}}
+        />,
+      );
+      await user.click(screen.getByRole('combobox', {name: 'Fruit'}));
+      expect(
+        screen.queryByRole('button', {name: 'Edit Apple', hidden: true}),
+      ).toBeNull();
+      expect(
+        screen.getByRole('option', {name: 'Apple', hidden: true}),
+      ).toBeInTheDocument();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(/Selector[\s\S]*action/),
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

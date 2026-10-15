@@ -40,7 +40,7 @@ export default function TokenizerOverflow() {
           value={inlineValue}
           onChange={items => setInlineValue(items)}
           tokenOverflowBehavior="unfocusedInline"
-          style={{width: 400, maxWidth: 400}}
+          containerStyle={{width: 400, maxWidth: 400}}
         />
       </Stack>
       <Stack direction="vertical" gap={1}>
@@ -54,7 +54,7 @@ export default function TokenizerOverflow() {
           value={layerValue}
           onChange={items => setLayerValue(items)}
           tokenOverflowBehavior="unfocusedLayer"
-          style={{width: 400, maxWidth: 400}}
+          containerStyle={{width: 400, maxWidth: 400}}
         />
       </Stack>
     </Stack>

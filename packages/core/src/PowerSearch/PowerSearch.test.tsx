@@ -733,3 +733,48 @@ describe('field menu grouping', () => {
     });
   });
 });
+
+describe('field menu after the search source changes', () => {
+  it('opens the new field menu on the first click after a config change', async () => {
+    const user = userEvent.setup();
+    // A caller that loads field options asynchronously hands PowerSearch a
+    // new config, which builds a new search source.
+    const loadedConfig: PowerSearchConfig = {
+      ...config,
+      fields: [
+        ...config.fields,
+        {
+          key: 'owner',
+          label: 'Owner',
+          defaultOperator: 'is',
+          operators: [{key: 'is', label: 'is', value: {type: 'string'}}],
+        },
+      ],
+    };
+    const renderSearch = (searchConfig: PowerSearchConfig) => (
+      <>
+        <PowerSearch config={searchConfig} filters={[]} onChange={() => {}} />
+        <button type="button">Sort</button>
+      </>
+    );
+    const {rerender} = render(renderSearch(config));
+    const input = screen.getByRole('combobox');
+
+    await user.click(input);
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+    });
+    await user.click(screen.getByRole('button', {name: 'Sort'}));
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+
+    rerender(renderSearch(loadedConfig));
+    await user.click(input);
+
+    await waitFor(() => {
+      expect(input).toHaveAttribute('aria-expanded', 'true');
+      expect(
+        screen.getByRole('option', {name: /Owner/, hidden: true}),
+      ).toBeInTheDocument();
+    });
+  });
+});

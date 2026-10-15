@@ -180,20 +180,20 @@ export const matchaTheme = defineTheme({
     // =========================================================================
     // Spacing
     // =========================================================================
-    '--spacing-0-5': '3px',
-    '--spacing-1': '6px',
-    '--spacing-1-5': '9px',
-    '--spacing-2': '12px',
-    '--spacing-3': '18px',
-    '--spacing-4': '24px',
-    '--spacing-5': '30px',
-    '--spacing-6': '36px',
-    '--spacing-7': '42px',
-    '--spacing-8': '48px',
-    '--spacing-9': '54px',
-    '--spacing-10': '60px',
-    '--spacing-11': '66px',
-    '--spacing-12': '72px',
+    '--spacing-0-5': '0.1875rem',
+    '--spacing-1': '0.375rem',
+    '--spacing-1-5': '0.5625rem',
+    '--spacing-2': '0.75rem',
+    '--spacing-3': '1.125rem',
+    '--spacing-4': '1.5rem',
+    '--spacing-5': '1.875rem',
+    '--spacing-6': '2.25rem',
+    '--spacing-7': '2.625rem',
+    '--spacing-8': '3rem',
+    '--spacing-9': '3.375rem',
+    '--spacing-10': '3.75rem',
+    '--spacing-11': '4.125rem',
+    '--spacing-12': '4.5rem',
 
     // =========================================================================
     // Radius — soft and rounded

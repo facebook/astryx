@@ -784,7 +784,7 @@ describe('ContextMenu compound mode', () => {
   });
 
   describe('cursor anchor positioning (#3465)', () => {
-    // The menu is anchored to a zero-size element placed at the cursor point
+    // The menu is anchored to a 1px element placed at the cursor point
     // *inside the trigger*, so it is positioned relative to the trigger's
     // context (scroll-follow + auto-flip) rather than the viewport.
     function getCursorAnchor(trigger: HTMLElement): HTMLElement {
@@ -795,7 +795,7 @@ describe('ContextMenu compound mode', () => {
       return anchor;
     }
 
-    it('renders a zero-size cursor anchor inside the trigger', () => {
+    it('renders a 1px cursor anchor inside the trigger', () => {
       render(
         <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
           <div>Right-click me</div>
@@ -806,6 +806,9 @@ describe('ContextMenu compound mode', () => {
       // Carries an anchor-name so the menu can be anchored to it via CSS
       // anchor positioning (context mode), not fixed viewport coordinates.
       expect(anchor.style.anchorName).toMatch(/^--astryx-layer-/);
+      // Owns a box: WebKit counts an empty anchor box inside a scroll
+      // container as clipped, and `position-visibility` hides the menu.
+      expect(anchor).toHaveStyle({width: '1px', height: '1px'});
     });
 
     it('places the cursor anchor at the pointer position relative to the trigger', () => {
@@ -851,7 +854,37 @@ describe('ContextMenu compound mode', () => {
       fireEvent.contextMenu(trigger, {clientX: 0, clientY: 0, detail: 0});
       const anchor = getCursorAnchor(trigger);
       expect(anchor.style.left).toBe('0px');
-      expect(anchor.style.top).toBe('20px');
+      // The 1px anchor steps back into the trigger's last pixel row, so its
+      // bottom edge (where the menu starts) is still the trigger's bottom.
+      expect(anchor.style.top).toBe('19px');
+    });
+
+    it('keeps the anchor inside the trigger at its end edges, and nowhere else', () => {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      const trigger = screen.getByTestId('ctx');
+      trigger.getBoundingClientRect = () =>
+        ({
+          left: 100,
+          top: 50,
+          right: 300,
+          bottom: 150,
+          width: 200,
+          height: 100,
+        }) as DOMRect;
+      const anchor = getCursorAnchor(trigger);
+      // A point on the trigger's end edges steps back by the anchor's pixel.
+      fireEvent.contextMenu(trigger, {clientX: 300, clientY: 150, detail: 1});
+      expect(anchor.style.left).toBe('199px');
+      expect(anchor.style.top).toBe('99px');
+      // A point past the trigger (content overflowing it) stays at the
+      // pointer, as does a point on the trigger's start edges.
+      fireEvent.contextMenu(trigger, {clientX: 320, clientY: 50, detail: 1});
+      expect(anchor.style.left).toBe('220px');
+      expect(anchor.style.top).toBe('0px');
     });
   });
 });

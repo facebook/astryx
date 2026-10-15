@@ -98,9 +98,9 @@ export interface UseLayerDismissalReturn {
  * routes each Escape press to the top-most REGISTERED layer, so one press
  * dismisses exactly one of them. Dialog (and what is built on it), Popover and
  * the menus built on it, ContextMenu, Tooltip, HoverCard, Lightbox, MobileNav,
- * BottomSheetSwitcher and lab's `Drawer` register today.
+ * BottomSheet, BottomSheetSwitcher and lab's `Drawer` register today.
  *
- * `BottomSheet`, `CommandPalette`, `DropdownMenuSubMenu`, and
+ * `CommandPalette`, `DropdownMenuSubMenu`, and
  * `PowerSearchEditPopover` still run their own Escape listeners. They stay safe
  * next to the stack only because each claims the press at element level, and the
  * stack stands down on an already-`defaultPrevented` press — but a registered

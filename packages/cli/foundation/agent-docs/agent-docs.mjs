@@ -26,6 +26,7 @@ import {assertWithin, PathSafetyError} from '../fs/path-safety.mjs';
 import {getCliInvocation} from '../env/package-manager.mjs';
 import {discoverComponents} from '../discovery/component-discovery.mjs';
 import {Project} from '../config/project.mjs';
+import {cliRootNamespaceNames} from '../doc-compiler/tree.mjs';
 import {humanLog} from '../response/json.mjs';
 import {ERROR_CODES} from '../response/error-codes.mjs';
 import {
@@ -335,6 +336,9 @@ export function detectStylingSystem(targetDir) {
     // Key off a StyleX *compiler* plugin — the runtime alone won't render.
     const stylexCompilers = [
       '@stylexjs/babel-plugin',
+      '@stylexjs/rollup-plugin',
+      '@stylexjs/webpack-plugin',
+      '@stylexjs/nextjs-plugin',
       'vite-plugin-stylex',
       'unplugin-stylex',
       '@stylexswc/unplugin',
@@ -452,9 +456,9 @@ export function generateCompressedIndex(
   } else if (stylingSystem === 'tailwind') {
     lines.push('- Style with component props first, then Tailwind utilities backed by tokens. No raw hex/px.');
   } else {
-    lines.push("- Style with component props first, then tokens (var(--color-*|--spacing-*|--radius-*)). No raw hex/px. No StyleX/Tailwind compiler here — don't use xstyle/utility classes.");
+    lines.push("- Style with component props first, then tokens (var(--color-*|--spacing-*|--radius-*)). No raw hex/px. No StyleX/Tailwind compiler here — don't use xstyle/utility classes directly. Some templates use StyleX and need a compiler plugin; see `astryx docs styling-overview`.");
   }
-  lines.push('- Palettes and custom colors go through the theme, never :root overrides. See `astryx docs theme`.');
+  lines.push('- Palettes and custom colors go through the theme, never :root overrides. Run `astryx theme add <slug>` to import; `theme eject <slug>` only forks source. See `astryx docs theme`.');
   // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
   // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
   // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.
@@ -484,6 +488,7 @@ export function generateCompressedIndex(
           .map(f => f.match(/^([\w-]+)\.doc\.mjs$/))
           .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
           .map(m => m[1])
+          .concat(cliRootNamespaceNames())
           .sort()
       : []);
   if (resolvedTopics.length > 0) {
@@ -552,7 +557,18 @@ export async function renderAgentDocsBlock(
       `Cannot render agent docs because integration ${packageLabel} has invalid agentDocs: ${invalidAgentDocs.__agentDocsError}`,
     );
   }
-  const topics = (await project.docs()).names();
+  const catalog = await project.docs();
+  // Every name `astryx docs <name>` opens: the flat topics, and each root
+  // namespace of the docs tree (a topic split into guides keeps its name).
+  const topics = [
+    ...catalog.names(),
+    ...cliRootNamespaceNames(),
+    ...catalog.treeInputs.flatMap(inputs =>
+      inputs.namespaces
+        .filter(input => !input.doc?.placement?.parent)
+        .map(input => input.doc.name),
+    ),
+  ];
   const agentDocs = project.loadedIntegrations.flatMap(integration => {
     const append = integration.agentDocs?.append ?? [];
     if (append.length === 0) return [];
@@ -757,6 +773,7 @@ function assertTargetsWithin(targetDir, relPaths) {
 /**
  * Remove Astryx section from all known agent doc files.
  * @param {string} targetDir
+ * @returns {string[]} the project-relative files a block was removed from.
  * @throws {PathSafetyError} `ERR_PATH_TRAVERSAL` when a file it would change
  *   resolves outside `targetDir`; nothing is changed.
  */
@@ -773,11 +790,14 @@ export function removeAgentDocs(targetDir) {
     throw new PathSafetyError(err.message, ERROR_CODES.ERR_PATH_TRAVERSAL);
   }
 
+  /** @type {string[]} */
+  const removedFrom = [];
   for (const p of allPaths) {
     const filePath = path.join(targetDir, p);
     // Delete if empty for files we created (AGENTS.md, .claude/CLAUDE.md)
     const deleteIfEmpty = p === AGENTS_MD || p === CLAUDE_DIR_MD;
     if (removeXdsBlock(filePath, {deleteIfEmpty})) {
+      removedFrom.push(p);
       if (!fs.existsSync(filePath)) {
         humanLog(`[ok] Removed empty ${p}`);
       } else {
@@ -785,6 +805,7 @@ export function removeAgentDocs(targetDir) {
       }
     }
   }
+  return removedFrom;
 }
 
 /**

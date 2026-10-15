@@ -680,3 +680,76 @@ describe('validated separates "checked and clean" from "never checked"', () => {
     expect(summarizeIssues(res.data.issues).errors).toBeGreaterThan(0);
   });
 });
+
+describe('unreadable folders are reported, never fatal', () => {
+  // Root reads every folder, so permission cases cannot be staged as root.
+  const asRoot = typeof process.getuid === 'function' && process.getuid() === 0;
+  /** @type {string[]} */
+  const locked = [];
+  afterEach(() => {
+    while (locked.length) fs.chmodSync(locked.pop(), 0o755);
+  });
+  /** @param {string} dir */
+  const lock = dir => {
+    fs.chmodSync(dir, 0o000);
+    locked.push(dir);
+  };
+
+  it.skipIf(asRoot)(
+    'names a folder it cannot read and checks the rest of the package',
+    async () => {
+      const pkgDir = path.join(tmpDir, 'pkg');
+      writePackage(pkgDir, {
+        manifest: "export default { components: './components' };\n",
+      });
+      fs.mkdirSync(path.join(pkgDir, 'components'));
+      fs.mkdirSync(path.join(pkgDir, 'cache'));
+      lock(path.join(pkgDir, 'cache'));
+      const result = await validateLocalIntegration(pkgDir);
+      expect(byCode(result.issues, 'unreadable_folder')).toEqual([
+        expect.objectContaining({
+          severity: 'warning',
+          message: expect.stringContaining('Could not read "cache/" (EACCES)'),
+        }),
+      ]);
+      expect(summarizeIssues(result.issues).errors).toBe(0);
+    },
+  );
+
+  it.skipIf(asRoot)(
+    'reports a declared root it cannot read as unreadable_root',
+    async () => {
+      const pkgDir = path.join(tmpDir, 'pkg');
+      writePackage(pkgDir, {
+        manifest:
+          "export default { codemods: './codemods', themes: './themes' };\n",
+      });
+      fs.mkdirSync(path.join(pkgDir, 'codemods'));
+      fs.mkdirSync(path.join(pkgDir, 'themes'));
+      lock(path.join(pkgDir, 'codemods'));
+      lock(path.join(pkgDir, 'themes'));
+      const result = await validateLocalIntegration(pkgDir);
+      expect(
+        byCode(result.issues, 'unreadable_root').map(issue => issue.message),
+      ).toEqual([
+        expect.stringMatching(/^Declared codemods root cannot be read \(EACCES\)/),
+        expect.stringMatching(/^Declared themes root cannot be read \(EACCES\)/),
+      ]);
+    },
+  );
+
+  it('reports a declared root that is a file as invalid_root', async () => {
+    const pkgDir = path.join(tmpDir, 'pkg');
+    writePackage(pkgDir, {
+      manifest: "export default { codemods: './codemods.mjs' };\n",
+    });
+    fs.writeFileSync(path.join(pkgDir, 'codemods.mjs'), 'export default {};\n');
+    const result = await validateLocalIntegration(pkgDir);
+    expect(byCode(result.issues, 'invalid_root')).toEqual([
+      expect.objectContaining({
+        severity: 'error',
+        message: expect.stringContaining('is a file, not a folder'),
+      }),
+    ]);
+  });
+});

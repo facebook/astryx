@@ -17,6 +17,7 @@ import {
   findDoctorCoreDir,
   findDoctorInstalledPackage,
   isLocalThemeOwner,
+  listDoctorThemePackages,
   listProjectSourceFiles,
   planThemeAppWrite,
   readPackageJson,
@@ -52,6 +53,8 @@ const CHECKS = [
   ['theme-global-rules', 'Cross-theme global CSS rules'],
 ];
 
+const APP_THEME_CHECK_IDS = new Set(CHECKS.map(([id]) => id));
+
 /**
  * @param {string} message
  * @param {Error|null} [moduleError]
@@ -66,7 +69,7 @@ function unavailableChecks(message, moduleError = null) {
       moduleError && id === 'theme-module' ? moduleError.message : message,
     ...(moduleError && id === 'theme-module'
       ? {
-          fix: 'Keep one CLI-generated astryx-themes.ts or astryx-themes.js file, then run `astryx theme add <slug> --import`.',
+          fix: 'Keep one CLI-generated astryx-themes.ts or astryx-themes.js file, then run `astryx theme add <slug>`.',
         }
       : {}),
   }));
@@ -98,12 +101,12 @@ function refreshThemeCommand(projectDir, run, available, slug, owner) {
   );
   if (!isLocalThemeOwner(owner)) {
     const selector = theme?.package ?? owner;
-    return `npm install ${owner}@latest; ${run} theme add ${slug} --import --package ${selector}`;
+    return `npm install ${owner}@latest; ${run} theme add ${slug} --package ${selector}`;
   }
   const source = theme
     ? relative(projectDir, path.join(theme.sourceDir, theme.entry))
     : projectPath(path.join(owner, slug, `${slug}Theme.ts`));
-  return `${run} theme build ${source}; ${run} theme add ${slug} --import`;
+  return `${run} theme build ${source}; ${run} theme add ${slug}`;
 }
 
 /** @param {string} source */
@@ -386,6 +389,117 @@ function unmigratedCopyCheck(projectDir) {
 }
 
 /**
+ * Whether the app's package.json names a theme in `astryx.theme`.
+ * @param {string} cwd
+ */
+function appPackageNamesTheme(cwd) {
+  let state;
+  try {
+    state = readThemeState(cwd);
+  } catch {
+    return false;
+  }
+  const pkg = readPackageJson(state.packageFile);
+  return Boolean(pkg?.astryx?.theme);
+}
+
+/**
+ * The `themes` check that every released doctor report carries. Its id is
+ * stable, so it stays beside the app-theme checks. Without a generated theme
+ * module it reports what it always has: whether an `@astryxdesign/theme-*`
+ * package is installed, and whether the app's package.json names a theme in
+ * `astryx.theme`. With a generated module it reports the overall result of the
+ * app-theme checks.
+ * @param {string} cwd
+ * @param {DoctorCheck[]} appChecks - the checks {@link checkAppThemes} returned
+ * @returns {DoctorCheck}
+ */
+export function checkThemes(cwd, appChecks) {
+  const label = 'Theme packages';
+  const managed = appChecks.some(
+    check => APP_THEME_CHECK_IDS.has(check.id) && check.status !== 'info',
+  );
+  if (managed) {
+    // A check passes only on its own evidence, so the rollup passes only when
+    // every check it summarizes passed. An `info` result here means a check
+    // could not prove its evidence.
+    const needsWork = appChecks.filter(
+      check => check.status === 'fail' || check.status === 'warn',
+    );
+    const unproven = appChecks.filter(check => check.status === 'info');
+    if (needsWork.length > 0) {
+      const ids = needsWork.map(check => check.id).join(', ');
+      return {
+        id: 'themes',
+        label,
+        status: needsWork.some(check => check.status === 'fail')
+          ? 'fail'
+          : 'warn',
+        message:
+          needsWork.length === 1
+            ? `One theme check needs attention: ${ids}.`
+            : `${needsWork.length} theme checks need attention: ${ids}.`,
+        fix:
+          needsWork.length === 1
+            ? `Follow the fix on the ${ids} check.`
+            : `Follow the fix on each of these checks: ${ids}.`,
+      };
+    }
+    if (unproven.length > 0) {
+      const ids = unproven.map(check => check.id).join(', ');
+      return {
+        id: 'themes',
+        label,
+        status: 'info',
+        message:
+          unproven.length === 1
+            ? `One theme check could not prove its result: ${ids}.`
+            : `${unproven.length} theme checks could not prove their results: ${ids}.`,
+        fix:
+          unproven.length === 1
+            ? `See the ${ids} check.`
+            : `See each of these checks: ${ids}.`,
+      };
+    }
+    return {
+      id: 'themes',
+      label,
+      status: 'pass',
+      message:
+        'App themes come from the generated theme module, and every theme check passes.',
+    };
+  }
+
+  const run = getCliInvocation(cwd);
+  const packages = listDoctorThemePackages(cwd);
+  if (packages.length === 0) {
+    return {
+      id: 'themes',
+      label,
+      status: 'warn',
+      message: 'No @astryxdesign/theme-* packages are installed.',
+      fix: `Install a theme, e.g. \`npm install @astryxdesign/theme-neutral\`, then add it to the app with \`${run} theme add neutral\`.`,
+    };
+  }
+  const names = packages.join(', ');
+  if (!appPackageNamesTheme(cwd)) {
+    return {
+      id: 'themes',
+      label,
+      status: 'warn',
+      message: `Theme package(s) installed (${names}) but no theme appears wired.`,
+      fix: `Add one to the app with \`${run} theme add <slug>\`.`,
+    };
+  }
+  return {
+    id: 'themes',
+    label,
+    status: 'pass',
+    message: `Theme package(s) installed (${names}); wired via package.json astryx.theme.`,
+  };
+}
+
+/**
  * Run all ten app-theme checks.
  * @param {string} cwd
  * @returns {Promise<DoctorCheck[]>}
@@ -424,7 +538,7 @@ export async function checkAppThemes(cwd) {
         message: state.legacyTheme
           ? `The CLI manages no themes. The released package.json astryx.theme value ${JSON.stringify(state.legacyTheme)} remains active.`
           : 'The CLI manages no themes because this project has no generated theme module.',
-        fix: `Start managing app themes with \`${run} theme add <slug> --import\`.`,
+        fix: `Start managing app themes with \`${run} theme add <slug>\`.`,
       },
     ];
     const migration = unmigratedCopyCheck(state.projectDir);
@@ -542,7 +656,7 @@ export async function checkAppThemes(cwd) {
       label: 'Theme owners and built imports',
       status: 'fail',
       message: 'The generated record has no added themes.',
-      fix: `${run} theme add <slug> --import`,
+      fix: `${run} theme add <slug>`,
     });
   } else if (discoveryError) {
     checks.push({
@@ -550,7 +664,7 @@ export async function checkAppThemes(cwd) {
       label: 'Theme owners and built imports',
       status: 'fail',
       message: discoveryError.message,
-      fix: `${run} theme add <slug> --import`,
+      fix: `${run} theme add <slug>`,
     });
   } else if (resolutionProblems.length > 0) {
     checks.push({
@@ -622,7 +736,7 @@ export async function checkAppThemes(cwd) {
       label: 'App imports the theme module',
       status: 'warn',
       message: `Could not prove that project source imports ${state.module.path}${importEvidence.parseFailures ? `; ${importEvidence.parseFailures} source file(s) could not be parsed` : ''}.`,
-      fix: `Import {themes, defaultThemeSlug} from the generated module and render <Theme theme={themes[defaultThemeSlug]}>.`,
+      fix: `Import {themes, defaultThemeSlug} from the generated module and {Theme} from '@astryxdesign/core', then render <Theme theme={themes[defaultThemeSlug]}>.`,
     });
   }
 
@@ -889,7 +1003,7 @@ export async function checkAppThemes(cwd) {
           fix:
             ownerEntries.length > 0
               ? `${run} theme use ${ownerEntries[0][0]}`
-              : `${run} theme add <slug> --import`,
+              : `${run} theme add <slug>`,
         },
   );
 
@@ -969,7 +1083,7 @@ export async function checkAppThemes(cwd) {
     if (localWarnings.length > 0) {
       fontWarningFixes.push(
         `Add <slug>.fonts.css beside each built local theme output, then ${localWarnings
-          .map(problem => `${run} theme add ${problem.theme.slug} --import`)
+          .map(problem => `${run} theme add ${problem.theme.slug}`)
           .join('; ')}.`,
       );
     }
