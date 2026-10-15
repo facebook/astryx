@@ -873,12 +873,12 @@ describe('SideNavItem', () => {
         <SideNavItem label="General" href="/settings/general" />
       </SideNavItem>,
     );
-    const inner = () =>
-      screen.getByRole('group', {hidden: true}).firstElementChild!;
-    expect(declaredOn(inner(), 'overflow')).toEqual(['visible']);
+    const group = () => screen.getByRole('group', {hidden: true});
+    expect(declaredOn(group(), 'overflow')).toEqual(['visible']);
+    expect(declaredOn(group().firstElementChild!, 'overflow')).toEqual([]);
 
     await user.click(screen.getByRole('button', {name: 'Settings'}));
-    expect(declaredOn(inner(), 'overflow')).toContain('hidden');
+    expect(declaredOn(group(), 'overflow')).toEqual(['hidden']);
   });
 
   it('puts the indent on the primary link of a nested actions row', () => {

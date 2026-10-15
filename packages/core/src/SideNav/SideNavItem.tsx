@@ -115,43 +115,40 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     pointerEvents: 'auto',
   },
+  // The group clips its rows only for the 0fr collapse animation. Nested rows
+  // sit flush with the group, so a permanent clip would cut off their focus
+  // ring, which paints outside the row. The expanded group therefore stops
+  // clipping once it has finished opening: `overflow` is discrete, so it rides
+  // the same transition with `allow-discrete` and a delay equal to the open
+  // duration, holding `hidden` until the rows' height has settled. Collapsing
+  // flips back to `hidden` at once (no delay on the collapsed state), so
+  // nothing spills while the group closes.
   childrenCollapsible: {
     display: 'grid',
     gridTemplateRows: '1fr',
-    transitionProperty: 'grid-template-rows',
+    overflow: 'visible',
+    transitionProperty: 'grid-template-rows, overflow',
+    transitionBehavior: 'allow-discrete',
     transitionDuration: {
-      default: durationVars['--duration-medium'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
+      default: `${durationVars['--duration-medium']}, 0s`,
+      '@media (prefers-reduced-motion: reduce)': '0s, 0s',
+    },
+    transitionDelay: {
+      default: `0s, ${durationVars['--duration-medium']}`,
+      '@media (prefers-reduced-motion: reduce)': '0s, 0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   childrenCollapsed: {
     gridTemplateRows: '0fr',
+    overflow: 'hidden',
+    transitionDelay: '0s, 0s',
   },
   // No inline padding: nested rows fill the full width of the nav list, and
-  // each row carries its own indent (`indentStyles` below).
-  //
-  // The clip exists only for the 0fr collapse animation. Nested rows sit flush
-  // with this box, so a permanent clip would cut off the focus ring, which
-  // paints outside the row. The expanded group therefore stops clipping once
-  // it has finished opening: `overflow` is discrete, and `allow-discrete` with
-  // a delay equal to the open duration holds `hidden` until the row height
-  // has settled. Collapsing flips back to `hidden` at once (no delay on the
-  // collapsed state), so nothing spills while the group closes.
+  // each row carries its own indent (`indentStyles` below). `minHeight: 0`
+  // lets the 0fr track shrink this item to nothing; the group clips it.
   childrenInner: {
     minHeight: 0,
-    overflow: 'visible',
-    transitionProperty: 'overflow',
-    transitionBehavior: 'allow-discrete',
-    transitionDuration: '0s',
-    transitionDelay: {
-      default: durationVars['--duration-medium'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-  },
-  childrenInnerCollapsed: {
-    overflow: 'hidden',
-    transitionDelay: '0s',
   },
   expandChevron: {
     display: 'inline-flex',
@@ -902,11 +899,7 @@ export function SideNavItem({
             styles.childrenCollapsible,
             isItemCollapsed && styles.childrenCollapsed,
           )}>
-          <div
-            {...stylex.props(
-              styles.childrenInner,
-              isItemCollapsed && styles.childrenInnerCollapsed,
-            )}>
+          <div {...stylex.props(styles.childrenInner)}>
             <span id={`${id}-label`} hidden>
               {label}
             </span>
