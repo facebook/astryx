@@ -217,9 +217,13 @@ another implementation helper.
      `control*` to Field.
 
   Component-owned value callbacks (`onChange(value)`) are typed out of base
-  props and keep their value signature. A consumer DOM handler composes with the
-  component's own handler through the shared composition helper, component-first
-  unless the API promises cancellation. No member and no layout may vary this.
+  props and keep their value signature. Retargeting a base prop changes the
+  element a consumer DOM handler reaches, not its order or cancellation behavior:
+  a component keeps the order and cancellation it released and states any order
+  that differs from component-first composition in its docs and JSDoc. A handler
+  a component forwards for the first time composes component-first through the
+  shared composition helper. No component and no layout may vary the prop
+  targets.
 
 - **FR11 — The clear control's tooltip names the action, not the field.**
   Every member's clear control MUST show the localized generic tooltip "Clear"
@@ -508,6 +512,23 @@ member and layout; where its element does not render, the part has no effect
 rather than moving to another element.
 
 Rejected: keeping root `xstyle` and routing it to Field; spreads and wrappers would move styling silently.
+
+### DEC-8 — Prop retargeting keeps each component's handler order
+
+**Decider:** `cixzhang`, `2026-10-11`
+
+When a consumer handler runs relative to the component's own, and whether it can
+cancel built-in behavior, are released interaction behavior that
+`architecture:public-component-api` INV9 keeps stable. Moving base props to the
+semantic control changes which element a consumer handler reaches, not that
+behavior, so a component keeps the order and cancellation it released and
+documents any order that differs from component-first composition.
+Component-first cancelling composition applies only to handlers a component
+forwards for the first time.
+
+Rejected: composing every retargeted handler component-first; a consumer that
+cancels built-in behavior, or that observes events the component cancels, would
+change behavior with no API change to signal it.
 
 ### DEC-9 — The clear tooltip names only the action
 

@@ -216,7 +216,7 @@ export const docs = {
           name: 'variant',
           type: "'input' | 'secondary' | 'ghost'",
           description:
-            'Visual trigger style. input is the bordered input treatment for forms; secondary is borderless and neutral-filled, matching secondary buttons for navs and toolbars; ghost is borderless and transparent, matching ghost buttons for toolbar usage.',
+            'Visual trigger style. input is the bordered input treatment for forms; secondary matches the secondary buttons of the active theme (borderless and neutral-filled by default) for navs and toolbars; ghost is borderless and transparent, matching ghost buttons for toolbar usage.',
           default: "'input'",
         },
         {
@@ -693,7 +693,7 @@ export const docsDense = {
         placeholder: 'text when nothing selected',
         size: 'size variant',
         variant:
-          'visual trigger style: input bordered control, secondary neutral-filled control, or ghost transparent control',
+          'visual trigger style: input bordered control, secondary control matching the theme secondary buttons, or ghost transparent control',
         triggerDisplay: 'how to show selected in trigger',
         formatValue:
           'formats count/labels trigger text; receives selected items',
