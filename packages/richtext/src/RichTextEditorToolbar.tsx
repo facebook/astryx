@@ -459,8 +459,9 @@ export interface RichTextEditorToolbarProps extends BaseProps<HTMLDivElement> {
   /**
    * Ref to the toolbar's root element. Base props pass through to the
    * underlying Astryx `Toolbar`: the ref, `className`, `style`, and `xstyle`
-   * reach its root, and `data-*`, `aria-*`, and DOM handlers reach the
-   * `role="toolbar"` element inside it.
+   * reach its root, and `data-*`, other `aria-*` attributes, and DOM
+   * handlers reach the `role="toolbar"` element inside it. The toolbar names
+   * itself, so pass `label` rather than `aria-label`.
    */
   ref?: Ref<HTMLDivElement>;
   /**

@@ -229,7 +229,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Links: the toolbar Link button (on by default; disable with hasLink={false}) and Cmd/Ctrl+K open an Astryx Dialog. The form preserves the Lexical selection while focus moves into the URL input and supports add, update, remove, Escape, and focus return. Pass promptForUrl only when integrating an existing synchronous URL flow. Entered URLs are sanitized (only http/https/mailto/tel are written; javascript:/data: are rejected). Links open in a new tab by default: target=_blank and rel=noopener noreferrer are written into the link node data; set hasNewTabLinks={false} for same-tab links. The toolbar takes base props and passes them to the Astryx Toolbar it renders: ref, className, style and xstyle on its root; data-*, aria-* and DOM handlers on the toolbar element.',
+          'Links: the toolbar Link button (on by default; disable with hasLink={false}) and Cmd/Ctrl+K open an Astryx Dialog. The form preserves the Lexical selection while focus moves into the URL input and supports add, update, remove, Escape, and focus return. Pass promptForUrl only when integrating an existing synchronous URL flow. Entered URLs are sanitized (only http/https/mailto/tel are written; javascript:/data: are rejected). Links open in a new tab by default: target=_blank and rel=noopener noreferrer are written into the link node data; set hasNewTabLinks={false} for same-tab links. The toolbar takes base props and passes them to the Astryx Toolbar it renders: ref, className, style and xstyle on its root; data-*, other aria-* attributes and DOM handlers on the toolbar element (name it with label, not aria-label).',
       },
       {
         guidance: true,
