@@ -4,19 +4,20 @@
  * @file markdownLink.ts
  * @input Uses @lexical/link and @lexical/markdown (LINK).
  * @output Exports LINK_KEEPING_DESTINATIONS, Lexical's link transformer with
- *   one change: it writes a destination so it reads back, one holding a space
- *   in angle brackets and one whose parentheses do not balance with each
- *   parenthesis escaped, while a balanced destination is written as it is.
- *   Import is Lexical's own, which reads every CommonMark destination and
- *   title shape, an angle-bracket destination (`<https://e.com/a b>`)
- *   included.
+ *   one change on export. Import is Lexical's own, which reads every
+ *   CommonMark destination and title shape, an angle-bracket destination
+ *   (`<https://e.com/a b>`) included, and decodes backslash escapes and
+ *   character references in both. A destination that needs no escape is
+ *   written by Lexical's export too, which escapes parentheses and an `&`
+ *   that starts a character reference (`https://e.com/a_(b)` as
+ *   `https://e.com/a_\(b\)`). One that holds whitespace or opens with `<`
+ *   is written here in angle brackets, and one with a backslash or
+ *   unbalanced parentheses with those escaped; both escape a
+ *   reference-starting `&` as Lexical does, so every link reads back as
+ *   the same link, whether it was imported or made in the editor
+ *   (spec:AST-062 FR3).
  * @position Replaces Lexical's LINK in DEFAULT_TRANSFORMERS and in table
- *   cells (markdownTable.ts). Import reads balanced parentheses in a
- *   destination and backslash escapes (markdownCharacterReferences.ts), so a
- *   destination written this way — `https://e.com/a(b` as
- *   `https://e.com/a\(b` — reads back as the same link, whether it was
- *   imported or made in the editor (spec:AST-062 FR3). A balanced
- *   destination is written as it is.
+ *   cells (markdownTable.ts).
  */
 
 import {$isAutoLinkNode, $isLinkNode} from '@lexical/link';
@@ -36,6 +37,17 @@ function isBalanced(url: string): boolean {
     }
   }
   return depth === 0;
+}
+
+/**
+ * `value` with every `&` that would start a character reference written as
+ * `&#38;`, since import decodes references in a destination and a title.
+ */
+function escapeCharacterReferences(value: string): string {
+  return value.replace(
+    /&(?=#\d+;|#[Xx][\dA-Fa-f]+;|[A-Za-z][\dA-Za-z]*;)/g,
+    '&#38;',
+  );
 }
 
 /** `url` as a Markdown destination that reads back as `url`. */
@@ -65,9 +77,10 @@ export const LINK_KEEPING_DESTINATIONS: TextMatchTransformer = {
       return LINK.export?.(node, exportChildren, exportFormat) ?? null;
     }
     const text = exportChildren(node);
+    const written = escapeCharacterReferences(destination);
     const title = node.getTitle();
     return title == null || title === ''
-      ? `[${text}](${destination})`
-      : `[${text}](${destination} "${title.replace(/([\\"])/g, '\\$1')}")`;
+      ? `[${text}](${written})`
+      : `[${text}](${written} "${escapeCharacterReferences(title).replace(/([\\"])/g, '\\$1')}")`;
   },
 };

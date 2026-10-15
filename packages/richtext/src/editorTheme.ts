@@ -67,13 +67,20 @@ const editorTheme = stylex.create({
   paragraph: {
     // The first block's leading margin would stack with the input inset, so
     // the first line aligns with TextArea and the empty-editor placeholder.
+    // A Markdown plugin block takes this style and is a decorator, so at
+    // either edge of the document it sits beside Lexical's zero-size caret
+    // boundary element (see `hr`) and takes no outer margin there either.
     marginBlockStart: {
       default: TEXT_BLOCK_SPACE,
       ':first-child': spacingVars['--spacing-0'],
+      ':is([data-lexical-decorator-boundary]:first-child + *)':
+        spacingVars['--spacing-0'],
     },
     marginBlockEnd: {
       default: TEXT_BLOCK_SPACE,
       ':last-child': spacingVars['--spacing-0'],
+      ':has(+ [data-lexical-decorator-boundary]:last-child)':
+        spacingVars['--spacing-0'],
     },
     maxWidth: PROSE_MEASURE,
     // The base reset gives every <p> body weight and primary color; a
