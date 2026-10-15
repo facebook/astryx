@@ -33,7 +33,7 @@ const anatomy = [
     name: 'List',
     required: true,
     description:
-      'Scrollable listbox containing the current results or Empty state.',
+      'Scrollable results container: a listbox while selectable results exist, otherwise the Empty state as plain content.',
   },
   {
     name: 'Item',
@@ -245,7 +245,17 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Provide a specific label when more than one command palette can appear in the same product surface.',
+      },
+      {
+        guidance: true,
+        description:
           'Keep renderItem content non-interactive; each rendered row is one option, so buttons and links cannot be nested inside it.',
+      },
+      {
+        guidance: false,
+        description:
+          'Intercept query-field keyboard events without preserving active IME composition and native Home/End caret movement.',
       },
       {
         guidance: false,
@@ -281,7 +291,17 @@ export const docsZh = {
       {
         guidance: true,
         description:
+          'Provide a specific label when more than one command palette can appear in the same product surface.',
+      },
+      {
+        guidance: true,
+        description:
           'Keep renderItem content non-interactive; each rendered row is one option, so buttons and links cannot be nested inside it.',
+      },
+      {
+        guidance: false,
+        description:
+          'Intercept query-field keyboard events without preserving active IME composition and native Home/End caret movement.',
       },
       {
         guidance: false,
@@ -319,7 +339,17 @@ export const docsDense = {
       {
         guidance: true,
         description:
+          'Provide a specific label when more than one command palette can appear in the same product surface.',
+      },
+      {
+        guidance: true,
+        description:
           'Keep renderItem content non-interactive; each rendered row is one option, so buttons and links cannot be nested inside it.',
+      },
+      {
+        guidance: false,
+        description:
+          'Intercept query-field keyboard events without preserving active IME composition and native Home/End caret movement.',
       },
       {
         guidance: false,

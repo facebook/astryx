@@ -16,6 +16,7 @@ applies_to:
     packages/core/src/Dialog/,
     packages/lab/src/Drawer/,
     packages/core/src/DropdownMenu/,
+    packages/core/src/ContextMenu/,
     packages/core/src/Tooltip/,
     packages/core/src/HoverCard/,
     packages/core/src/Toast/,
@@ -34,8 +35,10 @@ verified_by:
     packages/core/src/Layer/layerDismissalInvariants.test.tsx,
     packages/core/src/Popover/Popover.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenu.test.tsx,
+    packages/core/src/ContextMenu/ContextMenu.test.tsx,
     packages/core/src/DropdownMenu/DropdownMenuSubMenu.test.tsx,
     packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx,
+    packages/core/src/CommandPalette/CommandPalette.test.tsx,
     packages/core/src/hooks/useFocusTrap.test.tsx,
     packages/core/src/hooks/useMenuHover.test.tsx,
     packages/core/src/Toast/ToastViewport.test.tsx,
@@ -238,8 +241,8 @@ contract. The current shared stack registers present layers with `close` or
 active-cycle registration sequence. `useFocusTrap` adapts an active trap with `onEscape` into
 that stack.
 
-Tooltip, HoverCard, Dialog, Lab Drawer, Popover, DropdownMenu, Lightbox,
-MobileNav, BottomSheet, and BottomSheetSwitcher all register with the shared
+Tooltip, HoverCard, Dialog, Lab Drawer, Popover, DropdownMenu, ContextMenu,
+Lightbox, MobileNav, BottomSheet, and BottomSheetSwitcher all register with the shared
 stack. Tooltip and HoverCard report current DOM presence; Popover and
 DropdownMenu register through `useFocusTrap`; Dialog, Lightbox, MobileNav,
 BottomSheet, BottomSheetSwitcher, and Lab Drawer additionally ask
@@ -326,8 +329,10 @@ handoff survive. Toast state lives inside the viewport. A viewport rendered with
 `isTopLayer={false}` stays in place.
 
 CommandPalette composes native Dialog. Its normal launcher presentation therefore
-uses `showModal()`; its documentation/showcase `isInline` path does not. It
-currently handles Escape on its own element as well as composing Dialog.
+uses `showModal()`; its documentation/showcase `isInline` path does not. The
+modal path delegates Escape to Dialog's shared dismissal registration. Only the
+inline preview closes from CommandPalette's local key handler because it is not a
+registered layer.
 
 Banner and FieldStatus are in-flow. `useAnnounce` is nonvisual. AlertDialog,
 imperative Dialog, Lightbox, and ordinary Popover-family surfaces are
@@ -395,7 +400,6 @@ Current gaps are observable facts, not current target behavior:
   gesture claim or one association model.
 - Toast's root and fallback hosts remain behind the other native modals:
   Lightbox, MobileNav, and a scrim BottomSheet or BottomSheetSwitcher.
-- CommandPalette's local Escape handler bypasses shared owner selection.
 - The reduced browser fallback is not documented as non-equivalent.
 - Existing tests simulate Popover `toggle` and DOM nesting; they do not prove
   native pointer light dismissal, top-layer/modal ordering, real anchor geometry,

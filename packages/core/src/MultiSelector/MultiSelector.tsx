@@ -762,7 +762,8 @@ export interface MultiSelectorProps<
   /**
    * Visual style of the selector trigger.
    * - 'input': bordered input-style trigger for forms
-   * - 'secondary': borderless, neutral-filled trigger matching secondary buttons
+   * - 'secondary': matches the theme's secondary buttons (borderless and
+   *   neutral-filled by default)
    * - 'ghost': borderless, transparent trigger matching ghost buttons
    * @default 'input'
    */

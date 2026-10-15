@@ -39,6 +39,15 @@
     }
   },
   {
+    "component": "CommandPaletteInput",
+    "storyId": "core-commandpaletteinput--standalone",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": ".astryx-command-palette-input > span:first-child",
+      "next": "[data-testid=\"input-end-content\"]"
+    }
+  },
+  {
     "component": "Center",
     "storyId": "core-center--padding-per-edge",
     "dims": ["D8"],
@@ -186,6 +195,15 @@
     "selectors": {
       "prev": ".astryx-chat-message-bubble[data-sender=\"assistant\"]",
       "next": ".astryx-chat-message-bubble[data-sender=\"user\"]"
+    }
+  },
+  {
+    "component": "ChatMessage",
+    "storyId": "core-chatmessage--default",
+    "dims": ["D2"],
+    "selectors": {
+      "prev": "section[aria-label=\"Density precedence\"] article[data-sender=\"assistant\"] .astryx-chat-message-bubble",
+      "next": "section[aria-label=\"Density precedence\"] article[data-sender=\"user\"] .astryx-chat-message-bubble"
     }
   },
   {
