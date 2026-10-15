@@ -129,6 +129,35 @@ describe('ClickableCard', () => {
     expect(link).toHaveAttribute('target', '_blank');
   });
 
+  // A new-tab link gets the same rel every other Astryx link adds for
+  // target="_blank", so keyboard and context-menu opens neither expose the
+  // opener nor send the referrer.
+  it('adds rel="noopener noreferrer" to a target="_blank" link', () => {
+    render(
+      <ClickableCard
+        label="External"
+        href="https://example.com"
+        target="_blank">
+        Content
+      </ClickableCard>,
+    );
+    expect(screen.getByRole('link', {name: 'External'})).toHaveAttribute(
+      'rel',
+      'noopener noreferrer',
+    );
+  });
+
+  it('adds no rel to a same-tab link', () => {
+    render(
+      <ClickableCard label="Nav card" href="/settings">
+        Content
+      </ClickableCard>,
+    );
+    expect(screen.getByRole('link', {name: 'Nav card'})).not.toHaveAttribute(
+      'rel',
+    );
+  });
+
   it('disabled button is disabled and the surface runs nothing', () => {
     const handleClick = vi.fn();
     render(

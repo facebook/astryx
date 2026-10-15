@@ -45,6 +45,7 @@ import type {CardVariant} from '../Card/Card';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {useLinkComponent} from '../Link/useLinkComponent';
+import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
@@ -315,6 +316,8 @@ export function ClickableCard({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const interactiveRef = useRef<HTMLElement | null>(null);
   const LinkComponent = useLinkComponent();
+  // The same rel every Astryx link adds for target="_blank".
+  const {rel: linkRel} = computeTargetAndRel(target, undefined);
 
   const {onClick, onMouseUp} = useClickableContainer({
     containerRef,
@@ -376,6 +379,7 @@ export function ClickableCard({
           ref={interactiveRef as React.Ref<HTMLAnchorElement>}
           href={isDisabled ? undefined : href}
           target={isDisabled ? undefined : target}
+          rel={isDisabled ? undefined : linkRel}
           onClick={isDisabled ? preventDisabledLinkClick : undefined}
           role={isDisabled ? 'link' : undefined}
           aria-label={label}
