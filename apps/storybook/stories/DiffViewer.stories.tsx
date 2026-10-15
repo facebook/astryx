@@ -130,18 +130,25 @@ const LONG_LINE_FILE =
 `)[0];
 
 /**
- * A right-to-left page with lines wider than the viewer: the hunk area stays
- * left-to-right like a code editor, so every line opens at its start, while
- * the file header and the annotation row follow the page.
+ * A right-to-left page with lines wider than the viewer. The hunk area stays
+ * left-to-right like a code editor, so every line opens at its start. The file
+ * header and comment text follow the page. Comment rows belong to the code
+ * layout: each comment reads from its side's right edge and, like the code
+ * beside it, may need a horizontal scroll to bring into view.
  */
 export const RightToLeft: Story = {
   args: {
     file: LONG_LINE_FILE,
     viewMode: 'split',
-    renderLineAnnotation: (ref: DiffViewerLineRef) =>
-      ref.side === 'new' && ref.lineNumber === 2 ? (
-        <Text type="body">تحقق من تاريخ انتهاء الخصم قبل الدمج.</Text>
-      ) : null,
+    renderLineAnnotation: (ref: DiffViewerLineRef) => {
+      if (ref.side === 'old' && ref.lineNumber === 2) {
+        return <Text type="body">كان الخصم لا يتحقق من تاريخ الانتهاء.</Text>;
+      }
+      if (ref.side === 'new' && ref.lineNumber === 2) {
+        return <Text type="body">تحقق من تاريخ انتهاء الخصم قبل الدمج.</Text>;
+      }
+      return null;
+    },
   },
   decorators: [
     Story => (
@@ -293,6 +300,26 @@ export const ReviewComments: Story = {
         />
       </VStack>
     );
+  },
+};
+
+/**
+ * A multi-sentence comment wraps within the width the code sets; it never
+ * widens the table.
+ */
+export const LongComment: Story = {
+  args: {
+    renderLineAnnotation: (ref: DiffViewerLineRef) =>
+      ref.side === 'new' && ref.lineNumber === 13 ? (
+        <Text type="body">
+          Rounding once after the subtotal fixes the drift we saw on large
+          carts, but it changes totals for carts that relied on per-item
+          rounding. Before this lands, check the receipt snapshots, confirm the
+          discount still applies to gift cards, and add a test with a 33%
+          discount on three items so the rounding rule is pinned. If any partner
+          integrations read the per-item totals, they need a heads-up as well.
+        </Text>
+      ) : null,
   },
 };
 
