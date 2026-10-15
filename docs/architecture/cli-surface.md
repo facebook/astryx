@@ -21,6 +21,7 @@ verified_by:
     foundation/agent-docs/agent-docs.test.mjs,
     foundation/agent-docs/agent-docs.path-safety.test.mjs,
     clients/cli/commands/init.behavior.test.mjs,
+    api/init/remove/remove.test.mjs,
     foundation/integrations/autolink.test.mjs,
     foundation/integrations/manifest-writer.test.mjs,
     foundation/integrations/contribution-inventory.test.mjs,
@@ -188,6 +189,9 @@ and remains available through explicit Core package selection.
     settings folder itself never does. Init reports the folder it refused and
     still succeeds, and removing a block there stays allowed.
   - Upgrade refreshes every copy where it is and moves none.
+  - `--remove-agents` removes the block at the project root and in the working
+    folder. Every file it would change resolves inside its own folder, or it
+    changes nothing.
 - **INV14 — An installed integration is discoverable without configuration, and
   autolinking it can only add.** A dependency the project DECLARES in
   package.json, and that ships a root `astryx.integration.*` manifest, is
@@ -363,7 +367,7 @@ updated in the same pull request when it moves an invariant:
 - changing local, configured, or autolinked integration precedence;
 - changing an integration item descriptor, the theme directory boundary, or the consumer copy contract;
 - changing which files hold the agent-docs block, how init finds the project
-  root, or where it refuses to write agent docs (INV31).
+  root, where it refuses to write agent docs, or where it removes them (INV31).
 
 `pnpm check:cli-structure` enforces the layout. The contract tests listed in
 `verified_by` enforce the envelope, the exit codes, the error codes, and the
@@ -463,7 +467,7 @@ of version control, so that a fresh clone has none.
 | INV25     | `foundation/discovery/cli-self-docs.test.mjs`, `api/doctor/doctor.test.mjs`                                                                                | A CLI doc with no namespace, a namespace no topic reads, or no section in its topic passes doctor.                                              |
 | INV28     | `test/inv28-package-provenance.test.mjs`, `clients/cli/commands/text-json-parity.test.mjs`, `cli-api-types-verify`                                         | A result about one artifact has no envelope `package`, a listed artifact has no `package`, or text omits the package the envelope names.        |
 | INV29     | `api/doctor/doctor.test.mjs` (configured-integrations: not installed, no manifest, manifest throws; self-named authored package, direct and through a symlinked `node_modules` or `cwd`; provider-conflict set-aside; an astryx.config that imports but cannot load the project → failed `config` check)| A configured integration that cannot load leaves `doctor` at exit 0, or an installed-but-unnamed one fails it                                   |
-| INV31     | `foundation/agent-docs/agent-docs.test.mjs`, `foundation/agent-docs/agent-docs.path-safety.test.mjs`, `clients/cli/commands/init.behavior.test.mjs`, `clients/cli/commands/doctor.test.mjs` | A layout test finds the block missing from a file INV31 names or present in a file it excludes, a managed import of a block-less `AGENTS.md` passes doctor, or agent docs land in the home folder or in a settings folder outside a project. |
+| INV31     | `foundation/agent-docs/agent-docs.test.mjs`, `foundation/agent-docs/agent-docs.path-safety.test.mjs`, `clients/cli/commands/init.behavior.test.mjs`, `api/init/remove/remove.test.mjs`, `clients/cli/commands/doctor.test.mjs` | A layout test finds the block missing from a file INV31 names or present in a file it excludes, a managed import of a block-less `AGENTS.md` passes doctor, agent docs land in the home folder or in a settings folder outside a project, or `--remove-agents` leaves a block at the project root or in the working folder. |
 
 ## Open questions
 
