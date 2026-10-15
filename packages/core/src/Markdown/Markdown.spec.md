@@ -50,6 +50,7 @@ system_specs:
     spec:AST-036/DEC-4,
     spec:AST-061/DEC-5,
     spec:AST-061/DEC-6,
+    spec:AST-061/DEC-9,
     spec:AST-064/DEC-6,
     spec:AST-036/DEC-12,
   ]
@@ -66,12 +67,12 @@ rendering, and native typed document-start frontmatter. They may separately opt 
 renderer for both inline and display expressions. The parser accepts matching
 explicit options. Plugins and math change nothing when absent; the default Code
 block path renders `diff` and `diff-<language>` fences as CodeBlock's diff layer
-(FR29), and every other parsing, rendering, styling, and streaming behavior is
-the released one.
+(FR29) and wraps every fence's long lines (`spec:AST-061` FR5, DEC-9), and every
+other parsing, rendering, styling, and streaming behavior is the released one.
 
 ## Compatibility and migration
 
-- Released default preserved: `yes`, except the default Code block path for `diff` fences (FR29, below)
+- Released default preserved: `yes`, except the default Code block path for `diff` fences (FR29, below) and its long-line wrap (below)
 - Compatibility class: additive, opt-in public API, with one visible default-path
   rendering change (FR29, below); existing parser nodes, DOM, styling, targets,
   dollar-delimited text, `components`, and `inlinePlugins` remain unchanged unless
@@ -87,7 +88,13 @@ the released one.
   a `<language> diff` label; the header, copy, disclosure, and viewport name
   stay, and a supplied `code` renderer's contract is unchanged. The way back to
   plain text is a `text` fence or a custom `code` renderer. Every other fence
-  is unchanged.
+  is unchanged apart from the wrap below.
+- Default-path wrap change (`spec:AST-061` FR5, DEC-9), visual and not breaking:
+  the default Code block wraps long lines instead of scrolling them sideways, so
+  a fence whose lines no longer overflow also no longer takes the conditional
+  scroll-region tab stop. Text, line numbers, syntax colours, copy output, and a
+  supplied `code` renderer's contract are unchanged. The way back to sideways
+  scrolling is a custom `code` renderer.
 - Default-path layout change (FR26–FR28): a default table's columns may become
   wider than the released fixed buckets, never narrower; header labels wrap
   instead of truncating; a table that squashed its columns may now scroll.

@@ -746,15 +746,15 @@ for (const viewport of [PHONE, DESKTOP, {width: 2200, height: 900}] as const) {
         keys: ['code-fence', 'code-plain', 'code-unknown', 'code-long'],
       },
     );
-    // Where the two frames are equally wide, a long line breaks into the same
-    // lines on both surfaces, so the block is as tall in read as in edit mode
-    // (DEC-9). At phone width the editor's field inset makes its frame
-    // narrower, so there a long line may take more lines in the editor.
-    for (const key of ['code-fence', 'code-long']) {
-      const frame = frames.find(candidate => candidate.key === key);
-      const block = (geometry: SurfaceGeometry) =>
-        geometry.blocks.find(candidate => candidate.key === key);
-      if (frame != null && Math.abs(frame.richText - frame.markdown) <= 2) {
+    // Above phone width a long line wraps into the same number of lines on
+    // both surfaces (DEC-9): at 1440px `code-long` wraps to two lines on each,
+    // so the block is as tall in read as in edit mode. At phone width the
+    // editor's field inset leaves its frame 18px narrower, so a long line
+    // there may take one more line in the editor (FR9's edit-mode inset).
+    if (viewport.width !== PHONE.width) {
+      for (const key of ['code-fence', 'code-long']) {
+        const block = (geometry: SurfaceGeometry) =>
+          geometry.blocks.find(candidate => candidate.key === key);
         expect(
           Math.abs(
             (block(richText)?.height ?? 0) - (block(markdown)?.height ?? 0),
