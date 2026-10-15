@@ -921,7 +921,7 @@ export function RichTextEditorPlayground() {
             <Switch
               size="sm"
               label="Markdown plugins"
-              description="The demo mention and callout plugins, adopted with createRichTextExtension"
+              description="The demo mention and callout plugins, adopted with createRichTextExtension. Switching re-imports the document from Markdown, where images do not survive."
               value={hasMarkdownPlugins}
               onChange={toggleMarkdownPlugins}
             />

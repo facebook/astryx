@@ -42,7 +42,10 @@ test.afterAll(async () => {
   await storybook?.close();
 });
 
-async function openStory(page: Page): Promise<string[]> {
+async function openStory(
+  page: Page,
+  direction: 'ltr' | 'rtl' = 'ltr',
+): Promise<string[]> {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(String(error)));
   page.on('console', message => {
@@ -52,7 +55,7 @@ async function openStory(page: Page): Promise<string[]> {
   });
   await page.setViewportSize({width: 1440, height: 900});
   await page.goto(
-    `${storybook.origin}/iframe.html?id=${STORY}&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:ltr`,
+    `${storybook.origin}/iframe.html?id=${STORY}&viewMode=story&globals=astryxTheme:neutral;colorMode:light;direction:${direction}`,
     {waitUntil: 'load'},
   );
   await expect(page.locator(EDITOR)).toBeVisible();
@@ -386,7 +389,7 @@ test('a selected image resizes by its handle and by its controls, and removes it
   expect(errors).toEqual([]);
 });
 
-test("Enter opens a selected image's controls, and Escape leaves them", async ({
+test("Enter opens a selected image's controls, activates them, and Escape leaves", async ({
   page,
 }) => {
   const errors = await openStory(page);
@@ -400,8 +403,54 @@ test("Enter opens a selected image's controls, and Escape leaves them", async ({
     page.getByRole('button', {name: 'Smaller', exact: true}),
   ).toBeFocused();
 
+  // Enter pressed ON a control bubbles back to the editor, where the image is
+  // still the selected node: the handler that opened the controls has to let
+  // that keystroke through, or every control is dead to the keyboard.
+  const before = await imageWidth(page);
+  await page.keyboard.press('Enter');
+  await expect
+    .poll(() => imageWidth(page), {message: 'Enter on Smaller narrows it'})
+    .toBeLessThan(before - 1);
+
+  const narrowed = await imageWidth(page);
+  await page.keyboard.press('Tab');
+  await expect(
+    page.getByRole('button', {name: 'Larger', exact: true}),
+  ).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect
+    .poll(() => imageWidth(page), {message: 'Enter on Larger widens it'})
+    .toBeGreaterThan(narrowed + 1);
+
   await page.keyboard.press('Escape');
   await expect(page.locator(EDITOR)).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
+test('the resize handle follows the drag in a right-to-left document', async ({
+  page,
+}) => {
+  // The handle sits on the inline end, which is the image's LEFT edge here,
+  // so dragging it outward lowers clientX. A width that followed the axis
+  // rather than the drag would shrink the image instead.
+  const errors = await openStory(page, 'rtl');
+  await insertSampleImage(page);
+  await page.locator(IMAGE).click();
+  // Narrow it first: at its own width the picture is already near the
+  // measure, and `max-width: 100%` would absorb the drag.
+  await page.getByRole('button', {name: 'Smaller', exact: true}).click();
+  await page.getByRole('button', {name: 'Smaller', exact: true}).click();
+  const before = await imageWidth(page);
+
+  const handle = page.locator('[data-playground-image-handle]');
+  const box = await handle.boundingBox();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box!.x + box!.width / 2 - 80, box!.y, {steps: 8});
+  await page.mouse.up();
+  await expect
+    .poll(() => imageWidth(page), {message: 'dragging outward widens it'})
+    .toBeGreaterThan(before + 40);
   expect(errors).toEqual([]);
 });
 
@@ -440,6 +489,12 @@ test('turning the image node off takes the document back through Markdown', asyn
   const errors = await openStory(page);
   await insertSampleImage(page);
   await expect(page.locator(IMAGE)).toHaveCount(1);
+
+  // Every switch that re-imports the document from Markdown drops the images
+  // with it, so each one says so where a reader decides to flip it.
+  await expect(settings(page)).toContainText(
+    'Markdown, where images do not survive',
+  );
 
   // `nodes` is read at construction, so the switch rebuilds the editor. State
   // holding an image cannot be parsed without the node registered, so the

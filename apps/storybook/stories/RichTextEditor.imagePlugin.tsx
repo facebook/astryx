@@ -205,7 +205,12 @@ const styles = stylex.create({
     insetBlockEnd: 0,
     width: '0.875rem',
     height: '0.875rem',
-    cursor: 'nwse-resize',
+    // The handle sits on the inline end, which is the image's left edge in a
+    // right-to-left document, so the diagonal it drags along flips with it.
+    cursor: {
+      default: 'nwse-resize',
+      ':is([dir="rtl"] *)': 'nesw-resize',
+    },
     backgroundColor: colorVars['--color-accent'],
     borderRadius: radiusVars['--radius-inner'],
     touchAction: 'none',
@@ -454,21 +459,24 @@ function ImageComponent({
       }
       const startX = event.clientX;
       const startWidth = image.getBoundingClientRect().width;
+      // The handle is on the inline end, so in a right-to-left document it is
+      // the image's LEFT edge: dragging it outward lowers clientX, and the
+      // width has to follow the drag rather than the axis.
+      const towardsWider =
+        getComputedStyle(handle).direction === 'rtl' ? -1 : 1;
+      const widthAt = (clientX: number) =>
+        Math.max(MIN_WIDTH, startWidth + (clientX - startX) * towardsWider);
       // The pointer owns the gesture until it is lifted, so a fast drag that
       // leaves the handle still resizes — and still ends.
       handle.setPointerCapture(event.pointerId);
       const onMove = (moveEvent: PointerEvent) => {
-        setDraggedWidth(
-          Math.max(MIN_WIDTH, startWidth + (moveEvent.clientX - startX)),
-        );
+        setDraggedWidth(widthAt(moveEvent.clientX));
       };
       const onEnd = (endEvent: PointerEvent) => {
         handle.removeEventListener('pointermove', onMove);
         handle.releasePointerCapture(endEvent.pointerId);
         setDraggedWidth(null);
-        writeWidth(
-          Math.max(MIN_WIDTH, startWidth + (endEvent.clientX - startX)),
-        );
+        writeWidth(widthAt(endEvent.clientX));
       };
       handle.addEventListener('pointermove', onMove);
       handle.addEventListener('pointerup', onEnd, {once: true});
@@ -481,10 +489,15 @@ function ImageComponent({
    * Enter, on a selected image, moves focus to its controls. Tab is bound to
    * indentation inside the editor, so without this the controls would be
    * keyboard-unreachable — the same route the Lexical playground gives its
-   * caption button.
+   * caption button. Enter pressed ON a control bubbles back through here, and
+   * must be left alone: swallowing it would cancel the button's activation.
    */
   const $onEnter = useCallback(
     (event: KeyboardEvent | null) => {
+      const target = event?.target;
+      if (target instanceof Node && actionsRef.current?.contains(target)) {
+        return false;
+      }
       const selection = $getSelection();
       if (
         !$isNodeSelection(selection) ||
