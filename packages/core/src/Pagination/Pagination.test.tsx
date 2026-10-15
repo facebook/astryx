@@ -120,6 +120,28 @@ describe('Pagination', () => {
       ).toBeInTheDocument();
     });
 
+    it('does not introduce Stack theme targets around navigation controls', () => {
+      const {rerender} = render(
+        <Pagination page={3} onChange={() => {}} totalPages={5} />,
+      );
+      expect(
+        screen.getByRole('navigation').querySelector('.astryx-stack'),
+      ).toBeNull();
+
+      rerender(
+        <Pagination
+          page={3}
+          onChange={() => {}}
+          totalPages={5}
+          variant="compact"
+          hasFirstLast
+        />,
+      );
+      expect(
+        screen.getByRole('navigation').querySelector('.astryx-stack'),
+      ).toBeNull();
+    });
+
     it('gives the prev/next carets a hover tooltip matching their accessible name', () => {
       // The carets are icon-only, so sighted users need a visible label on
       // hover, not just the accessible name. The tooltip reuses the same
