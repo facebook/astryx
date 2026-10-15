@@ -396,9 +396,11 @@ const editorTheme = stylex.create({
       default: WIDE_BLOCK_SPACE,
       ':last-child': spacingVars['--spacing-0'],
     },
+    // Long lines wrap exactly as core CodeBlock's wrapped lines do, so a code
+    // block is as tall here as in core Markdown (spec:AST-061 FR5, DEC-9).
     whiteSpace: 'pre-wrap',
-    // An unbroken token wider than the block (a long URL or hash) wraps too.
-    overflowWrap: 'anywhere',
+    wordBreak: 'break-all',
+    overflowWrap: 'break-word',
   },
 });
 
