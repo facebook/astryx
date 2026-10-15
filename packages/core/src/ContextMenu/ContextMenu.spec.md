@@ -194,8 +194,9 @@ anchor is positioning infrastructure rather than consumer anatomy.
   joins shared Escape ordering through `useLayerDismissal`; touch hosting delegates
   to BottomSheet.
 - `family:overlay-dismissal` owns shared Escape and platform-close ordering.
-  ContextMenu's pointer presentation is a shared-stack adopter; BottomSheet retains
-  its current local-only adoption gap.
+  ContextMenu's pointer presentation is a shared-stack adopter; the touch
+  presentation delegates dismissal to BottomSheet, which is also a shared-stack
+  owner.
 
 ## Verification map
 

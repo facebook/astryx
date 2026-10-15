@@ -9,6 +9,7 @@
  */
 
 import {useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -39,11 +40,16 @@ function NestedDismissibleLayer({onDismiss}: {onDismiss: () => void}) {
     getContainer: () => containerRef.current,
   });
 
-  return isOpen ? (
-    <button ref={containerRef} type="button">
-      Nested layer
-    </button>
-  ) : null;
+  // Portaled outside the menu's DOM, so only the layer depth ContextMenu
+  // provides can rank it above the menu.
+  return isOpen
+    ? createPortal(
+        <button ref={containerRef} type="button">
+          Nested layer
+        </button>,
+        document.body,
+      )
+    : null;
 }
 
 beforeEach(() => {
