@@ -384,11 +384,12 @@ const NEW_SIDE_VISIBLE_INLINE_SIZE =
 /** Marks the first column header of a split view's new side, for measuring. */
 const NEW_SIDE_ATTRIBUTE = 'data-diff-new-side';
 /**
- * A visible slice of the new side narrower than this cannot hold a word, so
- * the new side counts as starting past the edge (its note then needs a scroll,
- * like its code).
+ * A visible slice of the new side narrower than this cannot hold a usable
+ * comment (text plus its actions), so the new side counts as starting past
+ * the edge: its note keeps the whole visible width and is reached by
+ * scrolling, like its code.
  */
-const MIN_NEW_SIDE_VISIBLE_PX = 48;
+const MIN_NEW_SIDE_VISIBLE_PX = 240;
 
 const styles = stylex.create({
   root: {
@@ -770,16 +771,14 @@ export function DiffViewer({
       const visible = viewport.clientWidth;
       viewport.style.setProperty(VISIBLE_INLINE_SIZE, `${visible}px`);
       const newSide = viewport.querySelector(`[${NEW_SIDE_ATTRIBUTE}]`);
-      const table = newSide?.closest('table');
-      if (newSide == null || table == null) {
+      if (!(newSide instanceof HTMLElement)) {
         viewport.style.removeProperty(NEW_SIDE_VISIBLE_INLINE_SIZE);
         return;
       }
-      // Both boxes move together when scrolled, so this is the offset from
-      // the start of the scroll.
-      const start =
-        newSide.getBoundingClientRect().left -
-        table.getBoundingClientRect().left;
+      // Layout pixels, like clientWidth: unaffected by scrolling and by
+      // ancestor transforms (a dialog's opening scale). The header cell's
+      // offset parent is the table, or a positioned box the table starts at.
+      const start = newSide.offsetLeft;
       const newSideVisible = visible - start;
       viewport.style.setProperty(
         NEW_SIDE_VISIBLE_INLINE_SIZE,
