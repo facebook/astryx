@@ -258,6 +258,18 @@ export {
   type LogStreamLevel,
 } from './LogStream';
 
+// DiffViewer — the structured diff model and the unified-diff parser
+export {
+  parseUnifiedDiff,
+  type DiffViewerFile,
+  type DiffViewerFileStatus,
+  type DiffViewerHunk,
+  type DiffViewerLine,
+  type DiffViewerLineKind,
+  type DiffViewerLineRef,
+  type DiffViewerSide,
+} from './DiffViewer';
+
 // MobileTokenizer — Lab prototype (stack layer 1) of the touch Tokenizer
 // flow: summary trigger + stacked manage/add BottomSheets. Graduates to
 // Core Tokenizer presentation="bottom-sheet" (stack layer 2).
