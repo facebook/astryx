@@ -75,7 +75,9 @@ import {markdownDemoPlugins} from './Markdown.demoPlugins';
 import {
   IMAGE_NODE_TYPE,
   ImageNode,
-  InsertImageControl,
+  InsertImageButton,
+  InsertImageDialog,
+  InsertImageProvider,
   RichTextImagesPlugin,
 } from './RichTextEditor.imagePlugin';
 import {MARKDOWN_PARITY_SOURCE} from './RichTextEditor.markdownParityFixture';
@@ -327,7 +329,7 @@ function InsertControls({hasImages}: {readonly hasImages: boolean}) {
           })
         }
       />
-      {hasImages && <InsertImageControl />}
+      {hasImages && <InsertImageButton />}
     </>
   );
 }
@@ -692,440 +694,454 @@ export function RichTextEditorPlayground() {
         };
 
   return (
-    <div data-playground="" {...stylex.props(styles.playground)}>
-      <Banner
-        status="info"
-        title="RichTextEditor playground"
-        description="One editor, every feature. Switch features on the right and watch them meet on the same document; the panel below reads that editor's Markdown, HTML, state, node tree, and read-only render."
-      />
+    // The image button sits in the toolbar and its dialog in the plugins
+    // slot, two places the editor renders separately, so their shared open
+    // state comes from a provider above the editor.
+    <InsertImageProvider>
+      <div data-playground="" {...stylex.props(styles.playground)}>
+        <Banner
+          status="info"
+          title="RichTextEditor playground"
+          description="One editor, every feature. Switch features on the right and watch them meet on the same document; the panel below reads that editor's Markdown, HTML, state, node tree, and read-only render."
+        />
 
-      <div {...stylex.props(styles.columns)}>
-        {/* ---------------------------------------------------------- */}
-        {/* The one editor                                              */}
-        {/* ---------------------------------------------------------- */}
-        <VStack gap={3}>
-          <div data-playground-editor="">
-            <RichTextEditor
-              key={mountKey}
-              ref={editorRef}
-              label="Playground"
-              isLabelHidden={isLabelHidden}
-              description={
-                hasDescription
-                  ? 'Bold, italic, lists, task lists, quotes, links, code blocks and tables.'
-                  : undefined
-              }
-              placeholder="Write something, or load a document below…"
-              defaultValue={seed}
-              onChange={handleChange}
-              size={size}
-              minHeight="12rem"
-              isReadOnly={isReadOnly}
-              isDisabled={isDisabled}
-              isRequired={isRequired}
-              isOptional={isOptional}
-              hasAutoFocus={hasAutoFocus}
-              status={status}
-              statusVariant={statusVariant}
-              maxLength={hasCharacterLimit ? 500 : undefined}
-              hasMarkdownShortcuts={hasMarkdownShortcuts}
-              {...(transformers ? {transformers} : {})}
-              {...(extensions ? {markdownExtensions: extensions} : {})}
-              {...(nodes ? {nodes} : {})}
-              toolbar={
-                hasToolbar ? (
-                  <RichTextEditorToolbar
-                    size={toolbarSize}
-                    hasLink={hasLink}
-                    hasNewTabLinks={hasNewTabLinks}
-                    endContent={
-                      hasInsertControls ? (
-                        <InsertControls hasImages={hasImages} />
-                      ) : null
-                    }
-                  />
-                ) : undefined
-              }
-              plugins={
-                <>
-                  {hasAutoLink && <RichTextEditorAutoLinkPlugin />}
-                  {hasImages && <RichTextImagesPlugin />}
-                </>
-              }
-            />
-          </div>
-
-          <div data-playground-stats="" {...stylex.props(styles.stats)}>
-            <Text type="supporting">{stats.characters} characters</Text>
-            <Text type="supporting">{stats.words} words</Text>
-            <Text type="supporting">{stats.blocks} top-level blocks</Text>
-            <Text type="supporting">{stats.nodes} nodes</Text>
-            {stats.images > 0 && (
-              <Text type="supporting">
-                {stats.images === 1 ? '1 image' : `${stats.images} images`}
-              </Text>
-            )}
-          </div>
-
-          <div {...stylex.props(styles.actions)}>
-            <Button
-              size="sm"
-              label="Focus"
-              onClick={() => editorRef.current?.focus()}
-            />
-            <Button
-              size="sm"
-              label="Clear"
-              onClick={() => editorRef.current?.clear()}
-            />
-            <Button
-              size="sm"
-              label="Reload document"
-              onClick={() => reseed(draft, serializerOptions)}
-            />
-            <Button
-              size="sm"
-              label="Markdown → import box"
-              tooltip="Export what the editor holds now into the import box, to re-import it"
-              onClick={() =>
-                setDraft(
-                  editorRef.current?.getMarkdown() ??
-                    editorStateJSONToMarkdown(stateJSON, serializerOptions),
-                )
-              }
-            />
-          </div>
-
+        <div {...stylex.props(styles.columns)}>
           {/* ---------------------------------------------------------- */}
-          {/* Output panel                                                */}
+          {/* The one editor                                              */}
           {/* ---------------------------------------------------------- */}
-          <div {...stylex.props(styles.panel)}>
-            <TabList
-              value={tab}
-              onChange={value => setTab(value as OutputTab)}
-              role="tablist"
-              size="sm"
-              hasDivider>
-              {OUTPUT_TABS.map(({value, label}) => (
-                <Tab
-                  key={value}
-                  value={value}
-                  label={label}
-                  panelId={`${outputID}-${value}`}
-                />
-              ))}
-            </TabList>
-            <div
-              id={`${outputID}-${tab}`}
-              role="tabpanel"
-              tabIndex={0}
-              aria-label={`${OUTPUT_TABS.find(t => t.value === tab)?.label} output`}
-              data-playground-output={tab}
-              {...stylex.props(styles.panelScroller)}>
-              {tab === 'view' ? (
-                <div {...stylex.props(styles.viewSurface)}>
-                  <RichTextView
-                    // RichTextView reads `nodes` once, when it builds its own
-                    // editor. A view mounted while images were off cannot
-                    // parse state holding one, and renders its empty fallback
-                    // — the whole document gone — so it is rebuilt with the
-                    // node list, as the editor is.
-                    key={hasImages ? 'with-images' : 'without-images'}
-                    value={stateJSON}
-                    {...(extensions ? {markdownExtensions: extensions} : {})}
-                    {...(nodes ? {nodes} : {})}
-                  />
-                </div>
-              ) : (
-                <>
-                  {tab === 'markdown' && stats.images > 0 && (
-                    <Text type="supporting">
-                      {stats.images === 1
-                        ? 'One image is'
-                        : `${stats.images} images are`}{' '}
-                      missing from this Markdown. RichText&apos;s default
-                      transformer array is internal, and the transformers prop
-                      replaces it whole rather than extending it, so a caller
-                      cannot add an image transformer without giving up tables,
-                      task lists and the rest of the dialect. An image still
-                      reaches the editor state, the HTML export and
-                      RichTextView.
-                    </Text>
-                  )}
-                  <pre {...stylex.props(styles.output)}>
-                    {tab === 'markdown'
-                      ? markdown
-                      : tab === 'html'
-                        ? html
-                        : tab === 'tree'
-                          ? tree
-                          : stateJSON}
-                  </pre>
-                </>
+          <VStack gap={3}>
+            <div data-playground-editor="">
+              <RichTextEditor
+                key={mountKey}
+                ref={editorRef}
+                label="Playground"
+                isLabelHidden={isLabelHidden}
+                description={
+                  hasDescription
+                    ? 'Bold, italic, lists, task lists, quotes, links, code blocks and tables.'
+                    : undefined
+                }
+                placeholder="Write something, or load a document below…"
+                defaultValue={seed}
+                onChange={handleChange}
+                size={size}
+                minHeight="12rem"
+                isReadOnly={isReadOnly}
+                isDisabled={isDisabled}
+                isRequired={isRequired}
+                isOptional={isOptional}
+                hasAutoFocus={hasAutoFocus}
+                status={status}
+                statusVariant={statusVariant}
+                maxLength={hasCharacterLimit ? 500 : undefined}
+                hasMarkdownShortcuts={hasMarkdownShortcuts}
+                {...(transformers ? {transformers} : {})}
+                {...(extensions ? {markdownExtensions: extensions} : {})}
+                {...(nodes ? {nodes} : {})}
+                toolbar={
+                  hasToolbar ? (
+                    <RichTextEditorToolbar
+                      size={toolbarSize}
+                      hasLink={hasLink}
+                      hasNewTabLinks={hasNewTabLinks}
+                      endContent={
+                        hasInsertControls ? (
+                          <InsertControls hasImages={hasImages} />
+                        ) : null
+                      }
+                    />
+                  ) : undefined
+                }
+                plugins={
+                  <>
+                    {hasAutoLink && <RichTextEditorAutoLinkPlugin />}
+                    {hasImages && (
+                      <>
+                        <RichTextImagesPlugin />
+                        {/* Outside the toolbar: a Toolbar is a roving tab stop,
+                          so a dialog rendered in its endContent cannot be
+                          tabbed through. RichTextEditorToolbar puts its own
+                          link dialog beside the toolbar for the same reason. */}
+                        <InsertImageDialog />
+                      </>
+                    )}
+                  </>
+                }
+              />
+            </div>
+
+            <div data-playground-stats="" {...stylex.props(styles.stats)}>
+              <Text type="supporting">{stats.characters} characters</Text>
+              <Text type="supporting">{stats.words} words</Text>
+              <Text type="supporting">{stats.blocks} top-level blocks</Text>
+              <Text type="supporting">{stats.nodes} nodes</Text>
+              {stats.images > 0 && (
+                <Text type="supporting">
+                  {stats.images === 1 ? '1 image' : `${stats.images} images`}
+                </Text>
               )}
             </div>
-          </div>
-        </VStack>
 
-        {/* ---------------------------------------------------------- */}
-        {/* Settings                                                    */}
-        {/* ---------------------------------------------------------- */}
-        <div data-playground-settings="" {...stylex.props(styles.panel)}>
-          <Heading level={3}>Plugins</Heading>
-          <div {...stylex.props(styles.group)}>
-            <Switch
-              size="sm"
-              label="Toolbar"
-              description="RichTextEditorToolbar in the editor's toolbar slot"
-              value={hasToolbar}
-              onChange={setHasToolbar}
-            />
-            <Switch
-              size="sm"
-              label="Insert controls"
-              description="Table, rule, mention and image, in the toolbar's endContent slot"
-              value={hasInsertControls}
-              onChange={setHasInsertControls}
-              isDisabled={!hasToolbar}
-              disabledMessage="Turn the toolbar on to reach its endContent slot."
-            />
-            <Switch
-              size="sm"
-              label="Link button"
-              value={hasLink}
-              onChange={setHasLink}
-              isDisabled={!hasToolbar}
-              disabledMessage="The link button lives in the toolbar."
-            />
-            <Switch
-              size="sm"
-              label="Links open in a new tab"
-              value={hasNewTabLinks}
-              onChange={setHasNewTabLinks}
-              isDisabled={!hasToolbar || !hasLink}
-              disabledMessage="Turn the toolbar's link button on first."
-            />
-            <Switch
-              size="sm"
-              label="Autolink"
-              description="RichTextEditorAutoLinkPlugin: typed and pasted URLs"
-              value={hasAutoLink}
-              onChange={setHasAutoLink}
-            />
-            <Switch
-              size="sm"
-              label="Markdown shortcuts"
-              // Only shortcuts that actually fire while typing. '- [ ] ' is
-              // not one: '- ' makes the line a bullet before the brackets are
-              // typed, so the task regexp never sees a line to match and you
-              // get a bullet reading "[ ] …". Task items arrive with imported
-              // Markdown, or from Enter inside an existing task item.
-              description="Typing '# ', '- ', '> ' and '```'"
-              value={hasMarkdownShortcuts}
-              onChange={setHasMarkdownShortcuts}
-            />
-            <Switch
-              size="sm"
-              label="Markdown plugins"
-              description="The demo mention and callout plugins, adopted with createRichTextExtension. Switching re-imports the document from Markdown, where images do not survive."
-              value={hasMarkdownPlugins}
-              onChange={toggleMarkdownPlugins}
-            />
-            <Switch
-              size="sm"
-              label="Images"
-              description="A custom ImageNode through the nodes prop: insert from the toolbar, drop or paste an image file, drag the handle to resize"
-              value={hasImages}
-              onChange={toggleImages}
-            />
-            <Switch
-              size="sm"
-              label="Restricted transformers"
-              description="Only bold, italic, inline code and bullets — in shortcuts AND in the Markdown export"
-              value={isRestricted}
-              onChange={setIsRestricted}
-            />
-            {DEMO_PLUGINS.refused.length > 0 && (
-              <Text type="supporting">
-                Refused by createRichTextExtension:{' '}
-                {DEMO_PLUGINS.refused.map(entry => entry.plugin).join(', ')} —
-                RichText never runs a plugin's transform, so a transform plugin
-                stays on the read-only Markdown surface.
-              </Text>
-            )}
-          </div>
-
-          <Divider />
-          <Heading level={3}>Field</Heading>
-          <div {...stylex.props(styles.group)}>
-            <Selector
-              size="sm"
-              label="Editor size"
-              value={size}
-              onChange={value => setSize(value as RichTextEditorSize)}
-              options={[
-                {value: 'sm', label: 'sm'},
-                {value: 'md', label: 'md'},
-                {value: 'lg', label: 'lg'},
-              ]}
-            />
-            <Selector
-              size="sm"
-              label="Toolbar size"
-              value={toolbarSize}
-              onChange={value => setToolbarSize(value as 'sm' | 'md' | 'lg')}
-              isDisabled={!hasToolbar}
-              options={[
-                {value: 'sm', label: 'sm'},
-                {value: 'md', label: 'md'},
-                {value: 'lg', label: 'lg'},
-              ]}
-            />
-            <Selector
-              size="sm"
-              label="Status"
-              value={statusType === '' ? 'none' : statusType}
-              onChange={value =>
-                setStatusType(
-                  value === 'none' ? '' : (value as RichTextEditorStatusType),
-                )
-              }
-              options={[
-                {value: 'none', label: 'None'},
-                {value: 'error', label: 'Error'},
-                {value: 'warning', label: 'Warning'},
-                {value: 'success', label: 'Success'},
-              ]}
-            />
-            <Selector
-              size="sm"
-              label="Status placement"
-              value={statusVariant}
-              onChange={value =>
-                setStatusVariant(value as 'attached' | 'detached' | 'tooltip')
-              }
-              isDisabled={statusType === ''}
-              options={[
-                {value: 'attached', label: 'attached'},
-                {value: 'detached', label: 'detached'},
-                {value: 'tooltip', label: 'tooltip'},
-              ]}
-            />
-            <Switch
-              size="sm"
-              label="Read-only"
-              description="Not editable, full opacity, still focusable"
-              value={isReadOnly}
-              onChange={setIsReadOnly}
-            />
-            <Switch
-              size="sm"
-              label="Disabled"
-              description="Wins over read-only"
-              value={isDisabled}
-              onChange={setIsDisabled}
-            />
-            <Switch
-              size="sm"
-              label="Required"
-              value={isRequired}
-              onChange={next => {
-                setIsRequired(next);
-                if (next) {
-                  setIsOptional(false);
-                }
-              }}
-            />
-            <Switch
-              size="sm"
-              label="Optional"
-              description="Mutually exclusive with required"
-              value={isOptional}
-              onChange={next => {
-                setIsOptional(next);
-                if (next) {
-                  setIsRequired(false);
-                }
-              }}
-            />
-            <Switch
-              size="sm"
-              label="Autofocus"
-              description="Read at construction, so the editor is rebuilt around the content it holds"
-              value={hasAutoFocus}
-              onChange={next => {
-                setHasAutoFocus(next);
-                remount();
-              }}
-            />
-            <Switch
-              size="sm"
-              label="Hide label"
-              value={isLabelHidden}
-              onChange={setIsLabelHidden}
-            />
-            <Switch
-              size="sm"
-              label="Description"
-              value={hasDescription}
-              onChange={setHasDescription}
-            />
-            <Switch
-              size="sm"
-              label="Character limit (500)"
-              value={hasCharacterLimit}
-              onChange={setHasCharacterLimit}
-            />
-          </div>
-
-          <Divider />
-          <Heading level={3}>Document</Heading>
-          <div {...stylex.props(styles.group)}>
-            <Selector
-              size="sm"
-              label="Load a document"
-              value={documentKey}
-              onChange={value => loadDocument(value as DocumentKey)}
-              options={Object.entries(DOCUMENTS).map(([value, entry]) => ({
-                value,
-                label: entry.label,
-              }))}
-            />
-            <TextArea
-              size="sm"
-              label="Markdown in"
-              description="markdownToEditorStateJSON(…) seeds the editor"
-              rows={8}
-              value={draft}
-              onChange={setDraft}
-            />
-            <HStack gap={2}>
+            <div {...stylex.props(styles.actions)}>
               <Button
                 size="sm"
-                variant="primary"
-                label="Load into the editor"
+                label="Focus"
+                onClick={() => editorRef.current?.focus()}
+              />
+              <Button
+                size="sm"
+                label="Clear"
+                onClick={() => editorRef.current?.clear()}
+              />
+              <Button
+                size="sm"
+                label="Reload document"
                 onClick={() => reseed(draft, serializerOptions)}
               />
-            </HStack>
-          </div>
+              <Button
+                size="sm"
+                label="Markdown → import box"
+                tooltip="Export what the editor holds now into the import box, to re-import it"
+                onClick={() =>
+                  setDraft(
+                    editorRef.current?.getMarkdown() ??
+                      editorStateJSONToMarkdown(stateJSON, serializerOptions),
+                  )
+                }
+              />
+            </div>
 
-          <Divider />
-          <Heading level={3}>Shortcuts</Heading>
-          <div {...stylex.props(styles.group)}>
-            {SHORTCUTS.filter(
-              shortcut =>
-                (shortcut.needsLinkButton !== true ||
-                  (hasToolbar && hasLink)) &&
-                (shortcut.needsImages !== true || hasImages),
-            ).map(shortcut => (
-              <div key={shortcut.keys} {...stylex.props(styles.shortcutRow)}>
-                <Text type="supporting">{shortcut.action}</Text>
-                <Kbd keys={shortcut.keys} />
+            {/* ---------------------------------------------------------- */}
+            {/* Output panel                                                */}
+            {/* ---------------------------------------------------------- */}
+            <div {...stylex.props(styles.panel)}>
+              <TabList
+                value={tab}
+                onChange={value => setTab(value as OutputTab)}
+                role="tablist"
+                size="sm"
+                hasDivider>
+                {OUTPUT_TABS.map(({value, label}) => (
+                  <Tab
+                    key={value}
+                    value={value}
+                    label={label}
+                    panelId={`${outputID}-${value}`}
+                  />
+                ))}
+              </TabList>
+              <div
+                id={`${outputID}-${tab}`}
+                role="tabpanel"
+                tabIndex={0}
+                aria-label={`${OUTPUT_TABS.find(t => t.value === tab)?.label} output`}
+                data-playground-output={tab}
+                {...stylex.props(styles.panelScroller)}>
+                {tab === 'view' ? (
+                  <div {...stylex.props(styles.viewSurface)}>
+                    <RichTextView
+                      // RichTextView reads `nodes` once, when it builds its own
+                      // editor. A view mounted while images were off cannot
+                      // parse state holding one, and renders its empty fallback
+                      // — the whole document gone — so it is rebuilt with the
+                      // node list, as the editor is.
+                      key={hasImages ? 'with-images' : 'without-images'}
+                      value={stateJSON}
+                      {...(extensions ? {markdownExtensions: extensions} : {})}
+                      {...(nodes ? {nodes} : {})}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    {tab === 'markdown' && stats.images > 0 && (
+                      <Text type="supporting">
+                        {stats.images === 1
+                          ? 'One image is'
+                          : `${stats.images} images are`}{' '}
+                        missing from this Markdown. RichText&apos;s default
+                        transformer array is internal, and the transformers prop
+                        replaces it whole rather than extending it, so a caller
+                        cannot add an image transformer without giving up
+                        tables, task lists and the rest of the dialect. An image
+                        still reaches the editor state, the HTML export and
+                        RichTextView.
+                      </Text>
+                    )}
+                    <pre {...stylex.props(styles.output)}>
+                      {tab === 'markdown'
+                        ? markdown
+                        : tab === 'html'
+                          ? html
+                          : tab === 'tree'
+                            ? tree
+                            : stateJSON}
+                    </pre>
+                  </>
+                )}
               </div>
-            ))}
+            </div>
+          </VStack>
+
+          {/* ---------------------------------------------------------- */}
+          {/* Settings                                                    */}
+          {/* ---------------------------------------------------------- */}
+          <div data-playground-settings="" {...stylex.props(styles.panel)}>
+            <Heading level={3}>Plugins</Heading>
+            <div {...stylex.props(styles.group)}>
+              <Switch
+                size="sm"
+                label="Toolbar"
+                description="RichTextEditorToolbar in the editor's toolbar slot"
+                value={hasToolbar}
+                onChange={setHasToolbar}
+              />
+              <Switch
+                size="sm"
+                label="Insert controls"
+                description="Table, rule, mention and image, in the toolbar's endContent slot"
+                value={hasInsertControls}
+                onChange={setHasInsertControls}
+                isDisabled={!hasToolbar}
+                disabledMessage="Turn the toolbar on to reach its endContent slot."
+              />
+              <Switch
+                size="sm"
+                label="Link button"
+                value={hasLink}
+                onChange={setHasLink}
+                isDisabled={!hasToolbar}
+                disabledMessage="The link button lives in the toolbar."
+              />
+              <Switch
+                size="sm"
+                label="Links open in a new tab"
+                value={hasNewTabLinks}
+                onChange={setHasNewTabLinks}
+                isDisabled={!hasToolbar || !hasLink}
+                disabledMessage="Turn the toolbar's link button on first."
+              />
+              <Switch
+                size="sm"
+                label="Autolink"
+                description="RichTextEditorAutoLinkPlugin: typed and pasted URLs"
+                value={hasAutoLink}
+                onChange={setHasAutoLink}
+              />
+              <Switch
+                size="sm"
+                label="Markdown shortcuts"
+                // Only shortcuts that actually fire while typing. '- [ ] ' is
+                // not one: '- ' makes the line a bullet before the brackets are
+                // typed, so the task regexp never sees a line to match and you
+                // get a bullet reading "[ ] …". Task items arrive with imported
+                // Markdown, or from Enter inside an existing task item.
+                description="Typing '# ', '- ', '> ' and '```'"
+                value={hasMarkdownShortcuts}
+                onChange={setHasMarkdownShortcuts}
+              />
+              <Switch
+                size="sm"
+                label="Markdown plugins"
+                description="The demo mention and callout plugins, adopted with createRichTextExtension. Switching re-imports the document from Markdown, where images do not survive."
+                value={hasMarkdownPlugins}
+                onChange={toggleMarkdownPlugins}
+              />
+              <Switch
+                size="sm"
+                label="Images"
+                description="A custom ImageNode through the nodes prop: insert from the toolbar, drop or paste an image file, drag the handle to resize"
+                value={hasImages}
+                onChange={toggleImages}
+              />
+              <Switch
+                size="sm"
+                label="Restricted transformers"
+                description="Only bold, italic, inline code and bullets — in shortcuts AND in the Markdown export"
+                value={isRestricted}
+                onChange={setIsRestricted}
+              />
+              {DEMO_PLUGINS.refused.length > 0 && (
+                <Text type="supporting">
+                  Refused by createRichTextExtension:{' '}
+                  {DEMO_PLUGINS.refused.map(entry => entry.plugin).join(', ')} —
+                  RichText never runs a plugin's transform, so a transform
+                  plugin stays on the read-only Markdown surface.
+                </Text>
+              )}
+            </div>
+
+            <Divider />
+            <Heading level={3}>Field</Heading>
+            <div {...stylex.props(styles.group)}>
+              <Selector
+                size="sm"
+                label="Editor size"
+                value={size}
+                onChange={value => setSize(value as RichTextEditorSize)}
+                options={[
+                  {value: 'sm', label: 'sm'},
+                  {value: 'md', label: 'md'},
+                  {value: 'lg', label: 'lg'},
+                ]}
+              />
+              <Selector
+                size="sm"
+                label="Toolbar size"
+                value={toolbarSize}
+                onChange={value => setToolbarSize(value as 'sm' | 'md' | 'lg')}
+                isDisabled={!hasToolbar}
+                options={[
+                  {value: 'sm', label: 'sm'},
+                  {value: 'md', label: 'md'},
+                  {value: 'lg', label: 'lg'},
+                ]}
+              />
+              <Selector
+                size="sm"
+                label="Status"
+                value={statusType === '' ? 'none' : statusType}
+                onChange={value =>
+                  setStatusType(
+                    value === 'none' ? '' : (value as RichTextEditorStatusType),
+                  )
+                }
+                options={[
+                  {value: 'none', label: 'None'},
+                  {value: 'error', label: 'Error'},
+                  {value: 'warning', label: 'Warning'},
+                  {value: 'success', label: 'Success'},
+                ]}
+              />
+              <Selector
+                size="sm"
+                label="Status placement"
+                value={statusVariant}
+                onChange={value =>
+                  setStatusVariant(value as 'attached' | 'detached' | 'tooltip')
+                }
+                isDisabled={statusType === ''}
+                options={[
+                  {value: 'attached', label: 'attached'},
+                  {value: 'detached', label: 'detached'},
+                  {value: 'tooltip', label: 'tooltip'},
+                ]}
+              />
+              <Switch
+                size="sm"
+                label="Read-only"
+                description="Not editable, full opacity, still focusable"
+                value={isReadOnly}
+                onChange={setIsReadOnly}
+              />
+              <Switch
+                size="sm"
+                label="Disabled"
+                description="Wins over read-only"
+                value={isDisabled}
+                onChange={setIsDisabled}
+              />
+              <Switch
+                size="sm"
+                label="Required"
+                value={isRequired}
+                onChange={next => {
+                  setIsRequired(next);
+                  if (next) {
+                    setIsOptional(false);
+                  }
+                }}
+              />
+              <Switch
+                size="sm"
+                label="Optional"
+                description="Mutually exclusive with required"
+                value={isOptional}
+                onChange={next => {
+                  setIsOptional(next);
+                  if (next) {
+                    setIsRequired(false);
+                  }
+                }}
+              />
+              <Switch
+                size="sm"
+                label="Autofocus"
+                description="Read at construction, so the editor is rebuilt around the content it holds"
+                value={hasAutoFocus}
+                onChange={next => {
+                  setHasAutoFocus(next);
+                  remount();
+                }}
+              />
+              <Switch
+                size="sm"
+                label="Hide label"
+                value={isLabelHidden}
+                onChange={setIsLabelHidden}
+              />
+              <Switch
+                size="sm"
+                label="Description"
+                value={hasDescription}
+                onChange={setHasDescription}
+              />
+              <Switch
+                size="sm"
+                label="Character limit (500)"
+                value={hasCharacterLimit}
+                onChange={setHasCharacterLimit}
+              />
+            </div>
+
+            <Divider />
+            <Heading level={3}>Document</Heading>
+            <div {...stylex.props(styles.group)}>
+              <Selector
+                size="sm"
+                label="Load a document"
+                value={documentKey}
+                onChange={value => loadDocument(value as DocumentKey)}
+                options={Object.entries(DOCUMENTS).map(([value, entry]) => ({
+                  value,
+                  label: entry.label,
+                }))}
+              />
+              <TextArea
+                size="sm"
+                label="Markdown in"
+                description="markdownToEditorStateJSON(…) seeds the editor"
+                rows={8}
+                value={draft}
+                onChange={setDraft}
+              />
+              <HStack gap={2}>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  label="Load into the editor"
+                  onClick={() => reseed(draft, serializerOptions)}
+                />
+              </HStack>
+            </div>
+
+            <Divider />
+            <Heading level={3}>Shortcuts</Heading>
+            <div {...stylex.props(styles.group)}>
+              {SHORTCUTS.filter(
+                shortcut =>
+                  (shortcut.needsLinkButton !== true ||
+                    (hasToolbar && hasLink)) &&
+                  (shortcut.needsImages !== true || hasImages),
+              ).map(shortcut => (
+                <div key={shortcut.keys} {...stylex.props(styles.shortcutRow)}>
+                  <Text type="supporting">{shortcut.action}</Text>
+                  <Kbd keys={shortcut.keys} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </InsertImageProvider>
   );
 }

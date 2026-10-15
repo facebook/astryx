@@ -8,7 +8,8 @@
  *   Text, TextInput) for the insert dialog and the selected image's controls.
  * @output The playground's image plugin: `ImageNode` with `$createImageNode`,
  *   `$isImageNode` and `IMAGE_NODE_TYPE`; `INSERT_IMAGE_COMMAND`;
- *   `RichTextImagesPlugin`; `InsertImageControl`; and `IMAGE_SAMPLES`.
+ *   `RichTextImagesPlugin`; `InsertImageProvider` with `InsertImageButton`
+ *   and `InsertImageDialog`; and `IMAGE_SAMPLES`.
  * @position Storybook-only, for the RichText/RichTextEditor Playground story —
  *   the Astryx counterpart of the Lexical playground's images plugin. Nothing
  *   here lives in `@astryxdesign/richtext`: the node arrives through the
@@ -30,8 +31,11 @@
  */
 
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -839,15 +843,69 @@ export function RichTextImagesPlugin() {
 type ImageSource = 'sample' | 'url' | 'file';
 
 /**
- * The toolbar's image button and its dialog, built on the toolbar's public
- * `endContent` slot: it reaches the editor through `useLexicalComposerContext`,
- * like any consumer-authored control. Three sources, as the Lexical
+ * Whether the insert dialog is open. The button lives in the toolbar's
+ * `endContent` and the dialog does NOT: a `Toolbar` is a roving tab stop, so
+ * everything inside it is `tabindex="-1"`, and a dialog rendered there cannot
+ * be tabbed through at all. `RichTextEditorToolbar` renders its own link
+ * dialog as a sibling of the toolbar for the same reason; a consumer-authored
+ * control reaches that position through the editor's `plugins` slot, so the
+ * two halves are joined by this context rather than by the tree.
+ */
+const InsertImageContext = createContext<{
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+} | null>(null);
+
+function useInsertImage() {
+  const value = useContext(InsertImageContext);
+  if (value === null) {
+    throw new Error(
+      'InsertImageButton and InsertImageDialog need an InsertImageProvider around the editor.',
+    );
+  }
+  return value;
+}
+
+/** Holds the dialog's open state for the button and the dialog. */
+export function InsertImageProvider({children}: {children: ReactNode}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const value = useMemo(() => ({isOpen, setIsOpen}), [isOpen]);
+  return (
+    <InsertImageContext.Provider value={value}>
+      {children}
+    </InsertImageContext.Provider>
+  );
+}
+
+/**
+ * The toolbar's image button, for the toolbar's public `endContent` slot. It
+ * reaches the editor through `useLexicalComposerContext()`, like any
+ * consumer-authored control; `InsertImageDialog` goes in the `plugins` slot.
+ */
+export function InsertImageButton() {
+  const isEditable = useLexicalEditable();
+  const {isOpen, setIsOpen} = useInsertImage();
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      label="Image"
+      isDisabled={!isEditable}
+      aria-haspopup="dialog"
+      aria-expanded={isOpen}
+      onClick={() => setIsOpen(true)}
+    />
+  );
+}
+
+/**
+ * The insert dialog, for the editor's `plugins` slot — outside the toolbar,
+ * so its controls keep their own tab order. Three sources, as the Lexical
  * playground's image dialog has: a sample, a URL, and a file from the machine.
  */
-export function InsertImageControl() {
+export function InsertImageDialog() {
   const [editor] = useLexicalComposerContext();
-  const isEditable = useLexicalEditable();
-  const [isOpen, setIsOpen] = useState(false);
+  const {isOpen, setIsOpen} = useInsertImage();
   const [source, setSource] = useState<ImageSource>('sample');
   const [sampleKey, setSampleKey] = useState(IMAGE_SAMPLES[0].key);
   const [url, setUrl] = useState('');
@@ -901,116 +959,106 @@ export function InsertImageControl() {
   }, [alt, close, editor, src]);
 
   return (
-    <>
-      <Button
-        size="sm"
-        variant="ghost"
-        label="Image"
-        isDisabled={!isEditable}
-        tooltip="Insert an image"
-        onClick={() => setIsOpen(true)}
-      />
-      <Dialog
-        isOpen={isOpen}
-        onOpenChange={open => (open ? setIsOpen(true) : close())}
-        purpose="form"
-        width={460}>
-        <Layout
-          header={
-            <DialogHeader
-              title="Insert image"
-              subtitle="A sample, a URL, or a file from this machine."
-              onOpenChange={() => close()}
-            />
-          }
-          content={
-            <LayoutContent>
-              <VStack gap={3}>
-                <SegmentedControl
-                  size="sm"
-                  label="Image source"
-                  value={source}
-                  onChange={value => setSource(value as ImageSource)}>
-                  <SegmentedControlItem value="sample" label="Sample" />
-                  <SegmentedControlItem value="url" label="URL" />
-                  <SegmentedControlItem value="file" label="File" />
-                </SegmentedControl>
+    <Dialog
+      isOpen={isOpen}
+      onOpenChange={open => (open ? setIsOpen(true) : close())}
+      purpose="form"
+      width={460}>
+      <Layout
+        header={
+          <DialogHeader
+            title="Insert image"
+            subtitle="A sample, a URL, or a file from this machine."
+            onOpenChange={() => close()}
+          />
+        }
+        content={
+          <LayoutContent>
+            <VStack gap={3}>
+              <SegmentedControl
+                size="sm"
+                label="Image source"
+                value={source}
+                onChange={value => setSource(value as ImageSource)}>
+                <SegmentedControlItem value="sample" label="Sample" />
+                <SegmentedControlItem value="url" label="URL" />
+                <SegmentedControlItem value="file" label="File" />
+              </SegmentedControl>
 
-                {source === 'sample' && (
-                  <VStack gap={2}>
-                    <SegmentedControl
-                      size="sm"
-                      label="Sample image"
-                      layout="fill"
-                      value={sampleKey}
-                      onChange={setSampleKey}>
-                      {IMAGE_SAMPLES.map(entry => (
-                        <SegmentedControlItem
-                          key={entry.key}
-                          value={entry.key}
-                          label={entry.label}
-                        />
-                      ))}
-                    </SegmentedControl>
-                    <img
-                      alt={sample.altText}
-                      src={sample.src}
-                      {...stylex.props(styles.preview)}
-                    />
-                  </VStack>
-                )}
-
-                {source === 'url' && (
-                  <TextInput
+              {source === 'sample' && (
+                <VStack gap={2}>
+                  <SegmentedControl
                     size="sm"
-                    label="Image URL"
-                    description="Any URL the page can load, including a data URL."
-                    placeholder="https://example.com/photo.jpg"
-                    value={url}
-                    onChange={setUrl}
-                    hasAutoFocus
+                    label="Sample image"
+                    layout="fill"
+                    value={sampleKey}
+                    onChange={setSampleKey}>
+                    {IMAGE_SAMPLES.map(entry => (
+                      <SegmentedControlItem
+                        key={entry.key}
+                        value={entry.key}
+                        label={entry.label}
+                      />
+                    ))}
+                  </SegmentedControl>
+                  <img
+                    alt={sample.altText}
+                    src={sample.src}
+                    {...stylex.props(styles.preview)}
                   />
-                )}
+                </VStack>
+              )}
 
-                {source === 'file' && (
-                  <FileInput
-                    label="Image file"
-                    description="Read in the browser as a data URL; nothing is uploaded."
-                    accept="image/*"
-                    mode="dropzone"
-                    value={file}
-                    onChange={onFileChange}
-                  />
-                )}
-
+              {source === 'url' && (
                 <TextInput
                   size="sm"
-                  label="Alt text"
-                  description="What the image says, for people who cannot see it."
-                  placeholder={
-                    source === 'sample' ? sample.altText : 'Describe the image'
-                  }
-                  value={altText}
-                  onChange={setAltText}
+                  label="Image URL"
+                  description="Any URL the page can load, including a data URL."
+                  placeholder="https://example.com/photo.jpg"
+                  value={url}
+                  onChange={setUrl}
+                  hasAutoFocus
                 />
-              </VStack>
-            </LayoutContent>
-          }
-          footer={
-            <LayoutFooter>
-              <HStack gap={2} hAlign="end">
-                <Button label="Cancel" onClick={close} />
-                <Button
-                  variant="primary"
-                  label="Insert image"
-                  isDisabled={src === ''}
-                  onClick={insert}
+              )}
+
+              {source === 'file' && (
+                <FileInput
+                  label="Image file"
+                  description="Read in the browser as a data URL; nothing is uploaded."
+                  accept="image/*"
+                  mode="dropzone"
+                  value={file}
+                  onChange={onFileChange}
                 />
-              </HStack>
-            </LayoutFooter>
-          }
-        />
-      </Dialog>
-    </>
+              )}
+
+              <TextInput
+                size="sm"
+                label="Alt text"
+                description="What the image says, for people who cannot see it."
+                placeholder={
+                  source === 'sample' ? sample.altText : 'Describe the image'
+                }
+                value={altText}
+                onChange={setAltText}
+              />
+            </VStack>
+          </LayoutContent>
+        }
+        footer={
+          <LayoutFooter>
+            <HStack gap={2} hAlign="end">
+              <Button label="Cancel" onClick={close} />
+              <Button
+                variant="primary"
+                label="Insert image"
+                isDisabled={src === ''}
+                onClick={insert}
+              />
+            </HStack>
+          </LayoutFooter>
+        }
+      />
+    </Dialog>
   );
 }

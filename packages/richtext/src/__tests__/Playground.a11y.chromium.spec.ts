@@ -664,6 +664,34 @@ test('a file dropped onto a decorator lands beside it, not at the top', async ({
   expect(errors).toEqual([]);
 });
 
+test('the insert dialog is tabbable, outside the toolbar roving tab stop', async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  const button = page.getByRole('button', {name: 'Image', exact: true});
+  await button.focus();
+  await expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('heading', {name: 'Insert image'})).toBeVisible();
+
+  // A Toolbar is a roving tab stop: everything inside it is tabindex="-1", so
+  // a dialog rendered in its endContent could not be tabbed through at all.
+  // The dialog goes in the editor's plugins slot instead, beside the toolbar
+  // — which is where RichTextEditorToolbar puts its own link dialog.
+  const insert = page.getByRole('button', {name: 'Insert image', exact: true});
+  for (let press = 0; press < 12; press += 1) {
+    if (await insert.evaluate(el => el === document.activeElement)) {
+      break;
+    }
+    await page.keyboard.press('Tab');
+  }
+  await expect(insert).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  await expect(page.locator(IMAGE)).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
 test('the RichTextView readout survives the image node arriving under it', async ({
   page,
 }) => {
