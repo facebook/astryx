@@ -127,8 +127,15 @@ export const MENU_BUTTON_EXCLUSIONS = [
   },
   {
     id: 'bottom-sheet-presentation',
-    owner: 'component:DropdownMenu FR13 and the modal-dialog pattern',
+    owner: 'component:DropdownMenu AR4 and the modal-dialog pattern',
     reason:
-      'On a compact touch display the trigger opens a bottom sheet and says aria-haspopup="dialog"; that presentation is a dialog, not a menu button, and is outside this binding by the records\' own scope (DropdownMenu AR4, MoreMenu AR1).',
+      'On a compact touch display the trigger opens a bottom sheet and says aria-haspopup="dialog"; that presentation is a dialog, not a menu button, and AR4 places it outside this pattern (MoreMenu AR1 follows DropdownMenu).',
+  },
+  {
+    id: 'header-footer-popover',
+    owner:
+      'component:DropdownMenu AR4 and AR5 (the popover adopts the modal-dialog pattern)',
+    reason:
+      'A pointer menu with a header or footer opens a popover that holds the menu beside caller regions, so its trigger says aria-haspopup="dialog" and controls the popover; AR4 places it outside this pattern and AR5 gives it the dialog pattern, so none of these menu-button states renders one.',
   },
 ] as const;

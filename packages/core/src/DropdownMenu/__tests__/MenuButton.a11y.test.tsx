@@ -111,10 +111,11 @@ describe('menu-button binding inventory', () => {
     expect(new Set(stories).size).toBe(stories.length);
   });
 
-  it('keeps menu-surface and bottom-sheet ownership explicit', () => {
+  it('keeps menu-surface, bottom-sheet and header/footer ownership explicit', () => {
     expect(MENU_BUTTON_EXCLUSIONS.map(row => row.id)).toEqual([
       'menu-surface-semantics',
       'bottom-sheet-presentation',
+      'header-footer-popover',
     ]);
     for (const exclusion of MENU_BUTTON_EXCLUSIONS) {
       expect(exclusion.owner.length, exclusion.id).toBeGreaterThan(20);
