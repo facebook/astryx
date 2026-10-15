@@ -154,6 +154,26 @@ describe('DiffViewer', () => {
     ).toBe("  const greeting = 'Hello';");
   });
 
+  it('draws no annotation row when the callback returns false', () => {
+    for (const viewMode of ['unified', 'split'] as const) {
+      const {container, unmount} = render(
+        <DiffViewer
+          file={FILE}
+          viewMode={viewMode}
+          renderLineAnnotation={ref =>
+            ref.side === 'new' && ref.lineNumber === 2 && <p>Only note</p>
+          }
+        />,
+      );
+      expect(screen.getByText('Only note')).toBeInTheDocument();
+      // One annotation row on top of the line rows of each view.
+      expect(container.querySelectorAll('tbody tr')).toHaveLength(
+        viewMode === 'unified' ? 8 : 7,
+      );
+      unmount();
+    }
+  });
+
   it('places split-view annotations on their own side', () => {
     const {container} = render(
       <DiffViewer
