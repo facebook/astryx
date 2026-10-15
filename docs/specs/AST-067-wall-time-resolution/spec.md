@@ -77,9 +77,8 @@ Temporal agree on every instant.
 ## Current-state impact
 
 - `plainDateToInstant` in `@astryxdesign/core/utils` is the governed API.
-- Lab `Schedule` turns the days of its week and day ranges into instants through
-  it, so the first and last day of a rendered range follow FR4.
-  `component:Schedule` keeps ownership of how a range is chosen and laid out.
+- Lab `Schedule` turns the days of its week and day ranges into instants through it; `component:Schedule` keeps ownership of how a range is chosen and laid out.
+- Implementation gap: in zones with negative offsets, `plainDateToInstant` resolves a skipped wall time backward (2:30 AM on America/Los_Angeles's spring-forward day becomes 1:30 AM), so a skipped midnight lands on the previous date (America/Santiago, America/Havana) and a Schedule week or day across that change starts a day early; in zones with positive offsets it resolves a repeated wall time to its later occurrence (Europe/Berlin, Australia/Sydney). Verification's named-zone cases are not yet in `plainDate.test.ts` or the Schedule tests.
 - `architecture:public-component-api` continues to own the utility's export and
   compatibility.
 
