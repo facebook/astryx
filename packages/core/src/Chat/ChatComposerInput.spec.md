@@ -123,36 +123,36 @@ imperative editing handle.
 
 ### Representative states
 
-| State                               | Required invariant                                                                                     | Allowed variation                      |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------- |
-| empty                               | Placeholder is visible and the serialized value is empty.                                              | Placeholder copy.                      |
-| typed or imperatively inserted text | Placeholder is absent and the same serialized value is observable to ChatComposer and callbacks.       | Draft content.                         |
-| controlled update                   | External value is reflected without corrupting a live caret or treating a stale echo as authoritative. | Parent update timing.                  |
-| trigger menu open                   | Combobox semantics and active option wiring are exposed; menu interaction owns its keys.               | Search source and item rendering.      |
-| trigger search pending              | Enter submits the draft as typed; no earlier query's row can be picked.                                | Loading copy and source latency.       |
-| trigger menu hidden                 | The editor reports a collapsed combobox and the menu consumes no keys.                                 | Why the menu is hidden.                |
-| file paste or drop                  | Native insertion/navigation is prevented and files reach `onFiles` once.                               | File types and product handling.       |
-| disabled                            | Editing and file callbacks are unavailable and disabled state is exposed.                              | Product reason and surrounding status. |
+| State                               | Required invariant                                                                                           | Allowed variation                      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| empty                               | Placeholder is visible and the serialized value is empty.                                                    | Placeholder copy.                      |
+| typed or imperatively inserted text | Placeholder is absent and the same serialized value is observable to ChatComposer and callbacks.             | Draft content.                         |
+| controlled update                   | External value is reflected without corrupting a live caret or treating a stale echo as authoritative.       | Parent update timing.                  |
+| trigger menu open                   | Combobox semantics and active option wiring are exposed; menu interaction owns its keys.                     | Search source and item rendering.      |
+| trigger search pending              | Enter submits the draft as typed; no earlier query's row can be picked (FR13 records an implementation gap). | Loading copy and source latency.       |
+| trigger menu hidden                 | The editor reports a collapsed combobox and the menu consumes no keys.                                       | Why the menu is hidden.                |
+| file paste or drop                  | Native insertion/navigation is prevented and files reach `onFiles` once.                                     | File types and product handling.       |
+| disabled                            | Editing and file callbacks are unavailable and disabled state is exposed.                                    | Product reason and surrounding status. |
 
 ### Transformation and precedence order
 
 - **ORD1 — Draft source.** Explicit `value` → ChatComposer context value → editor DOM.
 - **ORD2 — Change channel.** Explicit controlled input callback when `value` is explicit → ChatComposer context callback → distinct local callback.
 - **ORD3 — Key handling.** Trigger menu → consumer `onKeyDown` → IME/submit/history behavior.
-- **ORD4 — Plain paste.** Consumer `onPaste` → paste-as-token behavior → plain insertion.
-- **ORD5 — File intake.** Files on clipboard or data transfer → prevent native behavior → emit `onFiles` when enabled.
+- **ORD4 — Plain paste.** Consumer `onPaste` → paste-as-token behavior → plain insertion (FR5 records an implementation gap).
+- **ORD5 — File intake.** Files on clipboard or data transfer → prevent native behavior → emit `onFiles` when enabled (FR6 records an implementation gap).
 
 ### Performance and resources
 
 - **PR1 — Selection work.** Selection reads and writes are scoped to the mounted editable and run only for direct editing actions or controlled synchronization.
-- **PR2 — Async trigger work.** Search cancellation and debounce ownership remain in `useTriggerMenu` and the supplied `SearchSource`.
+- **PR2 — Async trigger work.** Search cancellation goes through the supplied `SearchSource` and its optional `cancel`, and `debounceMs` sets the delay before an async search starts.
 - **PR3 — Portal cleanup.** Token portals are cleaned through the existing token hook when content changes or unmounts.
 
 ## Accessibility contract
 
 - **AR1 — Editing semantics.** Without triggers, the surface is a named multiline textbox; with triggers, it exposes the adopted combobox semantics without invalid multiline ARIA.
 - **AR2 — Disabled state.** Disabled editing is exposed with `aria-disabled` and cannot accept content or file callbacks.
-- **AR3 — Keyboard ownership.** IME, trigger-menu keys, consumer cancellation, Enter submission, and boundary-only history do not steal one another's keys.
+- **AR3 — Keyboard ownership.** IME, trigger-menu keys, consumer cancellation, Enter submission, and boundary-only history do not steal one another's keys (FR15 records an implementation gap).
 - **AR4 — Focus visibility.** When composed in ChatComposer, the semantic editor focus owner drives the shell's shared keyboard focus indicator.
 - **AR5 — Collapsed suggestions.** While the menu is hidden, the editor reports `aria-expanded="false"`, exposes no active descendant, and arrow keys, Enter, and Escape reach the editor and its surroundings.
 
@@ -206,8 +206,8 @@ matches the reference chat composer, where a message may simply start with a
 trigger. An unmatched multi-word phrase hides the menu instead of covering prose
 with an empty panel. Inside an active multi-word query another trigger's
 character does not start a query, so `@Jordan /` keeps the mention query, while
-the same trigger after whitespace starts a new one, as the reference chat
-composer does.
+the same trigger's character starts a new query as FR11 states; both match the
+reference chat composer.
 
 Rejected: word caps, punctuation terminators, or a termination callback; they cut off real names and depend on language.
 
