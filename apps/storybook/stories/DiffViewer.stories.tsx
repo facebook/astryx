@@ -99,7 +99,7 @@ type Story = StoryObj<typeof DiffViewer>;
 /** One file, unified view (the default). */
 export const Default: Story = {};
 
-/** Old file on the start side, new file on the end side. */
+/** Old file on the left, new file on the right. */
 export const Split: Story = {
   args: {viewMode: 'split'},
 };
@@ -110,6 +110,41 @@ export const Wrapped: Story = {
   decorators: [
     Story => (
       <div style={{maxWidth: 720}}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+
+const LONG_LINE_FILE =
+  parseUnifiedDiff(`diff --git a/src/cart/discounts.ts b/src/cart/discounts.ts
+--- a/src/cart/discounts.ts
++++ b/src/cart/discounts.ts
+@@ -1,4 +1,4 @@
+ import type {CartItem} from './types';
+-export const discountFor = (item: CartItem, rules: ReadonlyArray<{sku: string; percent: number}>) => rules.find(rule => rule.sku === item.sku)?.percent ?? 0;
++export const discountFor = (item: CartItem, rules: ReadonlyArray<{sku: string; percent: number; expiresAt?: number}>) => rules.find(rule => rule.sku === item.sku && (rule.expiresAt == null || rule.expiresAt > Date.now()))?.percent ?? 0;
+ 
+ export const NO_DISCOUNT = 0;
+`)[0];
+
+/**
+ * A right-to-left page with lines wider than the viewer: the hunk area stays
+ * left-to-right like a code editor, so every line opens at its start, while
+ * the file header and the annotation row follow the page.
+ */
+export const RightToLeft: Story = {
+  args: {
+    file: LONG_LINE_FILE,
+    viewMode: 'split',
+    renderLineAnnotation: (ref: DiffViewerLineRef) =>
+      ref.side === 'new' && ref.lineNumber === 2 ? (
+        <Text type="body">تحقق من تاريخ انتهاء الخصم قبل الدمج.</Text>
+      ) : null,
+  },
+  decorators: [
+    Story => (
+      <div dir="rtl" style={{maxWidth: 960}}>
         <Story />
       </div>
     ),

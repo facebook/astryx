@@ -96,8 +96,10 @@ export interface DiffViewerProps extends BaseProps<HTMLDivElement> {
   file: DiffViewerFile;
   /**
    * `unified` shows one column with removed lines above their replacements;
-   * `split` shows the old file on the start side and the new file on the end
-   * side, pairing each removed line with the added line that replaced it.
+   * `split` shows the old file on the left and the new file on the right,
+   * pairing each removed line with the added line that replaced it. The hunk
+   * area reads left-to-right in every page direction, like a code editor;
+   * the file header and annotation rows follow the page.
    * @default 'unified'
    */
   viewMode?: DiffViewerViewMode;
@@ -454,8 +456,13 @@ const styles = stylex.create({
     marginInlineStart: 'auto',
     flexShrink: 0,
   },
+  // The hunk area reads left-to-right in every page direction, as code
+  // editors do: line numbers stay on the left and a line wider than the
+  // viewer opens at its start. Under RTL a mirrored table would open scrolled
+  // to the lines' ends, cutting off every line's start.
   viewport: {
     minWidth: 0,
+    direction: 'ltr',
   },
   message: {
     paddingBlock: spacingVars['--spacing-3'],
@@ -530,7 +537,7 @@ const styles = stylex.create({
     color: 'var(--color-syntax-removed-marker)',
   },
   // Code, hunk headers, paths, and counts read left-to-right in every page
-  // direction; only the table's column order (gutters) mirrors under RTL.
+  // direction.
   ltr: {
     direction: 'ltr',
     unicodeBidi: 'isolate',
@@ -584,7 +591,11 @@ const styles = stylex.create({
   markerCol: {
     width: `calc(1ch + ${spacingVars['--spacing-1']} + ${spacingVars['--spacing-2']})`,
   },
+  // Annotation rows hold the caller's content (review comments), which reads
+  // in the page's direction even inside the left-to-right hunk area.
   annotation: {
+    direction: {default: 'ltr', ':is([dir="rtl"] *)': 'rtl'},
+    textAlign: 'start',
     paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
     verticalAlign: 'top',

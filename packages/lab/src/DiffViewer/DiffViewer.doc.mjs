@@ -28,7 +28,7 @@ export const docs = {
 
   usage: {
     description:
-      'Read-only, syntax-highlighted diff of one file for code review surfaces. Renders a file header (path, Added/Deleted/Renamed token, +/− line counts, a headerEnd slot, and an optional disclosure) over the file\'s hunks in unified or split (side-by-side) view. Rows use the same syntax-theme diff slots as CodeBlock with isDiff, so one syntax theme styles both. renderLineAnnotation adds a full-width row under any line (for review comments) and onLineNumberClick turns line numbers into buttons. Build the file model with parseUnifiedDiff(patch), which returns one file per file in a git or diff -u patch. Each changed line carries a visually hidden "Added"/"Removed" label, so the change reads without colour. Rows are plain DOM with no virtualization: collapse or window very large files.',
+      'Read-only, syntax-highlighted diff of one file for code review surfaces. Renders a file header (path, Added/Deleted/Renamed token, +/− line counts, a headerEnd slot, and an optional disclosure) over the file\'s hunks in unified or split (side-by-side) view. Rows use the same syntax-theme diff slots as CodeBlock with isDiff, so one syntax theme styles both. renderLineAnnotation adds a full-width row under any line (for review comments) and onLineNumberClick turns line numbers into buttons. Build the file model with parseUnifiedDiff(patch), which returns one file per file in a git or diff -u patch. Each changed line carries a visually hidden "Added"/"Removed" label, so the change reads without colour. In right-to-left pages the hunk area stays left-to-right, like a code editor, while the file header and annotation rows follow the page. Rows are plain DOM with no virtualization: collapse or window very large files.',
     bestPractices: [
       {
         guidance: true,
@@ -89,7 +89,7 @@ export const docs = {
       name: 'viewMode',
       type: "'unified' | 'split'",
       description:
-        "'unified' shows one column with removed lines above their replacements; 'split' shows the old file on the start side and the new file on the end side, pairing each removed line with the added line that replaced it.",
+        "'unified' shows one column with removed lines above their replacements; 'split' shows the old file on the left and the new file on the right, pairing each removed line with the added line that replaced it.",
       default: "'unified'",
     },
     {
