@@ -140,6 +140,34 @@ describe('createDiffFile', () => {
     expect(newSide).toEqual(['head', ...newLines, 'tail']);
   });
 
+  it('handles a very long text changed only at both ends', () => {
+    // Every line in between is matched by the search, so the edit script
+    // holds one op per line: more than a call can take as spread arguments.
+    const lineCount = 150_000;
+    const base = Array.from({length: lineCount}, (_, i) => `line ${i}`);
+    const next = [...base];
+    next[0] = 'first changed';
+    next[lineCount - 1] = 'last changed';
+    const file = createDiffFile({
+      oldValue: base.join('\n'),
+      newValue: next.join('\n'),
+      contextLines: 1,
+    });
+    expect(file.hunks.map(h => h.header)).toEqual([
+      '@@ -1,2 +1,2 @@',
+      `@@ -${lineCount - 1},2 +${lineCount - 1},2 @@`,
+    ]);
+  });
+
+  it('uses the default context when contextLines is NaN', () => {
+    const file = createDiffFile({
+      oldValue: 'a\nb\nc',
+      newValue: 'a\nB\nc',
+      contextLines: NaN,
+    });
+    expect(file.hunks.map(h => h.header)).toEqual(['@@ -1,3 +1,3 @@']);
+  });
+
   it('marks a rename when the paths differ', () => {
     const file = createDiffFile({
       oldValue: 'a',

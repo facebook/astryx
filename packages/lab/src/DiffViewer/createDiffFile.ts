@@ -41,7 +41,7 @@ export interface CreateDiffFileOptions {
   newPath?: string | null;
   /**
    * Unchanged lines kept around each change. Changes closer together than
-   * twice this share one hunk.
+   * twice this share one hunk. `NaN` falls back to the default.
    * @default 3
    */
   contextLines?: number;
@@ -94,7 +94,11 @@ function diffLines(a: string[], b: string[]): Op[] {
   }
   const middle = myers(a, b, head, tailA, tailB);
   if (middle != null) {
-    ops.push(...middle);
+    // A loop, not a spread: one call argument per op overflows the stack on
+    // long inputs.
+    for (const op of middle) {
+      ops.push(op);
+    }
   } else {
     for (let i = head; i < tailA; i++) {
       ops.push({kind: 'removed', a: i});
@@ -206,7 +210,9 @@ export function createDiffFile({
 }: CreateDiffFileOptions): DiffViewerFile {
   const oldPath = oldPathOption === undefined ? (path ?? null) : oldPathOption;
   const newPath = newPathOption === undefined ? (path ?? null) : newPathOption;
-  const context = Math.max(0, Math.floor(contextLines));
+  const context = Number.isNaN(contextLines)
+    ? 3
+    : Math.max(0, Math.floor(contextLines));
 
   let status: DiffViewerFileStatus = 'modified';
   if (oldPathOption === null) {
