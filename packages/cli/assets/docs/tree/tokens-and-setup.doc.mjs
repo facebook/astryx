@@ -77,7 +77,7 @@ const styles = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'Astryx components ship pre-compiled, so consuming the published package needs no StyleX setup. But `astryx swizzle <Component>` copies the raw StyleX *source* into your app, and StyleX source requires a build-time StyleX compiler to produce atomic CSS. Without one the component compiles but renders completely unstyled: no error, no warning. If a swizzled component looks unstyled, a missing StyleX compiler is almost always why. The same applies if you author your own StyleX with `stylex.create()`.',
+          text: 'Astryx components ship pre-compiled: `astryx.css` and each package\'s own stylesheet hold all of their styles, so consuming the published packages needs no StyleX setup. But `astryx swizzle <Component>` copies the raw StyleX *source* into your app, and StyleX source requires a build-time StyleX compiler to produce atomic CSS. Without one the component compiles but renders completely unstyled: no error, no warning. If a swizzled component looks unstyled, a missing StyleX compiler is almost always why. The same applies if you author your own StyleX with `stylex.create()`.',
         },
         {
           type: 'table',
@@ -105,7 +105,7 @@ const styles = stylex.create({
 
 export default stylexPlugin({
   rsOptions: {
-    // Resolve @astryxdesign/core's StyleX so swizzled component source compiles.
+    // Resolve the Astryx token modules that swizzled source imports.
     aliases: {'@/*': ['./src/*']},
     unstable_moduleResolution: {type: 'commonJS'},
   },
@@ -120,6 +120,7 @@ export default stylexPlugin({
             'Symptom of a missing compiler: swizzled component renders with no styles, but no build or runtime error.',
             'A Babel config turns off SWC in Next.js; skip it if you need `next/font`.',
             'Pure theming (defineTheme + astryx theme build) needs NO StyleX compiler; only swizzled/authored StyleX source does.',
+            'Keep loading `astryx.css` with a StyleX compiler in place. The compiler builds your own and swizzled source only; never add `node_modules/@astryxdesign` to its inputs.',
           ],
         },
       ],
