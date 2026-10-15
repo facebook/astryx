@@ -319,6 +319,10 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   '--tree-list-indent',
   '--_tree-indent',
   '--tree-list-row-gap',
+  // Published by each treeitem while it has keyboard focus and read as its
+  // row's z-index, so the focused row paints above the guide lines. Focus
+  // state, not a value a theme author sets.
+  '--_tree-focus-z',
   // Clipped on the ONE side each on-track connector segment faces the
   // indicator from — trailing above the node, leading below it, mirrored
   // again per axis. No standard property maps onto this purpose-based seam:

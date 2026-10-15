@@ -722,16 +722,48 @@ describe('TreeList', () => {
     });
 
     it('indents inside the row so nested rows keep the full list width', () => {
-      // The row box carries the indent as padding, on top of its own inline
-      // padding, instead of being pushed in by a margin. A nested row's hover
-      // and selected fill therefore spans the list like a root row's, while
-      // its content lands where a margin indent would have put it.
+      // The row box keeps its own inline padding and stays full width; the
+      // indent is padding on a child inside it. A nested row's hover and
+      // selected fill therefore spans the list like a root row's, while its
+      // content lands where a margin indent would have put it.
       render(<TreeList items={deepItems} />);
       const rules = collectCssText();
       expect(rules).toMatch(
-        /padding-inline-start:\s*calc\(\s*var\(--spacing-2\)\s*\+\s*var\(--_tree-indent,\s*0px\)\s*\)/,
+        /padding-inline-start:\s*var\(--_tree-indent,\s*0px\)/,
       );
       expect(rules).not.toMatch(/margin-inline-start:\s*var\(--_tree-indent/);
+
+      const row = screen
+        .getByText('Leaf')
+        .closest<HTMLElement>('.astryx-tree-list-item')!;
+      const indented = row.firstElementChild as HTMLElement;
+      expect(indented.className).toContain('indentedContent');
+      expect(row.className).not.toContain('indentedContent');
+    });
+
+    it("keeps the indent when a caller sets the row's padding", () => {
+      // Caller padding lands on the row box; the indent is on a separate
+      // element inside it, so the two compose instead of one replacing the
+      // other.
+      const items = [
+        {
+          id: 'root',
+          label: 'Root',
+          isExpanded: true,
+          children: [
+            {id: 'leaf', label: 'Leaf', style: {paddingInlineStart: '20px'}},
+          ],
+        },
+      ];
+      render(<TreeList items={items} />);
+      const row = screen
+        .getByText('Leaf')
+        .closest<HTMLElement>('.astryx-tree-list-item')!;
+      expect(row.style.paddingInlineStart).toBe('20px');
+      expect(row.getAttribute('style')).toContain('--_tree-indent');
+      expect((row.firstElementChild as HTMLElement).className).toContain(
+        'indentedContent',
+      );
     });
 
     it('draws guides above full-width rows without taking pointer input', () => {
@@ -744,10 +776,21 @@ describe('TreeList', () => {
       const column = guide!.parentElement!;
       expect(getComputedStyle(column).pointerEvents).toBe('none');
       expect(getComputedStyle(column).zIndex).toBe('1');
-      // The tree items contain that stacking so a guide cannot climb over
+      // The tree contains that stacking so a guide cannot climb over
       // positioned content outside the list.
-      const item = screen.getByText('Root').closest('li')!;
-      expect(getComputedStyle(item).isolation).toBe('isolate');
+      const treeRoot = screen.getByRole('tree').parentElement!;
+      expect(treeRoot.className).toContain('astryx-tree-list');
+      expect(getComputedStyle(treeRoot).isolation).toBe('isolate');
+    });
+
+    it('lifts the focused row above the guides so they never cut its ring', () => {
+      // Each treeitem publishes its own focus as `--_tree-focus-z`, and the
+      // row reads it as its z-index, so the focused row paints above the
+      // guide columns (z-index 1). Nested treeitems redeclare the default.
+      render(<TreeList items={deepItems} />);
+      const rules = collectCssText();
+      expect(rules).toMatch(/--_tree-focus-z:\s*2/);
+      expect(rules).toMatch(/z-index:\s*var\(--_tree-focus-z,\s*auto\)/);
     });
   });
 
