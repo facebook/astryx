@@ -3706,6 +3706,11 @@
       "aliases": []
     },
     {
+      "name": "hook-use-combobox",
+      "path": "hooks/use-combobox",
+      "aliases": []
+    },
+    {
       "name": "hook-use-container-reveal",
       "path": "hooks/use-container-reveal",
       "aliases": []
