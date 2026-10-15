@@ -4,7 +4,7 @@
 
 /**
  * @file useTruncation.ts
- * @input Uses React hooks, sharedResizeObserver
+ * @input Uses React hooks, sharedResizeObserver, MutationObserver
  * @output Exports useTruncation hook for detecting text overflow
  * @position Hook; consumed by Text.tsx, Heading.tsx
  *
@@ -48,6 +48,10 @@ export interface UseTruncationReturn {
  * ResizeObserver instance is shared across all mounted useTruncation hooks,
  * so even hundreds of table cells only create one observer.
  *
+ * Content changes are observed too: an element whose text changes without
+ * resizing (a fixed-width status line) is re-measured, so the tooltip text and
+ * the truncated state follow the current content.
+ *
  * - Single-line: compares scrollWidth > offsetWidth
  * - Multi-line: uses Range.getBoundingClientRect() to measure actual content
  *   height, bypassing -webkit-line-clamp's clamped scrollHeight
@@ -71,6 +75,7 @@ export function useTruncation(
   const [fullText, setFullText] = useState('');
   const elementRef = useRef<HTMLElement | null>(null);
   const unobserveRef = useRef<(() => void) | null>(null);
+  const mutationObserverRef = useRef<MutationObserver | null>(null);
 
   const checkTruncation = useCallback(
     (element: HTMLElement) => {
@@ -113,6 +118,8 @@ export function useTruncation(
       // by element leaves any other observer of the same node untouched.
       unobserveRef.current?.();
       unobserveRef.current = null;
+      mutationObserverRef.current?.disconnect();
+      mutationObserverRef.current = null;
 
       elementRef.current = element;
 
@@ -126,6 +133,19 @@ export function useTruncation(
           });
         } else {
           checkTruncation(element);
+        }
+        // New text in a box that keeps its size fires no resize, so the
+        // captured text and truncated state would otherwise stay stale.
+        if (typeof MutationObserver !== 'undefined') {
+          const mutationObserver = new MutationObserver(() => {
+            checkTruncation(element);
+          });
+          mutationObserver.observe(element, {
+            characterData: true,
+            childList: true,
+            subtree: true,
+          });
+          mutationObserverRef.current = mutationObserver;
         }
       } else {
         setIsTruncated(false);
