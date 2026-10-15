@@ -168,7 +168,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Every Astryx package with components ships its own prebuilt stylesheet. Import it after `astryx.css` for each package you use. All of them place their rules in the same `astryx-base` layer, so your theme overrides win over every package.',
+          text: 'Every Astryx package whose components carry styles ships its own prebuilt stylesheet. Import it after `astryx.css` for each package you use. All of them place their rules in the same `astryx-base` layer, so your theme overrides win over every package.',
         },
         {
           type: 'code',
@@ -178,6 +178,7 @@ export const docs = {
 @import "@astryxdesign/core/astryx.css";
 @import "@astryxdesign/richtext/richtext.css"; /* Rich Text */
 @import "@astryxdesign/lab/lab.css"; /* Lab */
+@import "@astryxdesign/charts/charts.css"; /* Charts */
 @import "@astryxdesign/theme-neutral/theme.css";`,
         },
         {
@@ -187,6 +188,7 @@ export const docs = {
             ['@astryxdesign/core', '@astryxdesign/core/astryx.css'],
             ['@astryxdesign/richtext', '@astryxdesign/richtext/richtext.css'],
             ['@astryxdesign/lab', '@astryxdesign/lab/lab.css'],
+            ['@astryxdesign/charts', '@astryxdesign/charts/charts.css'],
           ],
         },
       ],
@@ -210,7 +212,7 @@ export const docs = {
               'Prebuilt component styles. Required on every path.',
             ],
             [
-              'richtext.css, lab.css',
+              'richtext.css, lab.css, charts.css',
               'astryx-base',
               'Prebuilt styles for each other Astryx package you use. Load after astryx.css.',
             ],
