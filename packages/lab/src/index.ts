@@ -33,6 +33,13 @@ export {
   type EmojiCategory,
 } from './EmojiPicker';
 
+// CommentPin — avatar-first anchor for one or grouped annotation threads
+export {
+  CommentPin,
+  type CommentPinParticipant,
+  type CommentPinProps,
+} from './CommentPin';
+
 // TransferList — controlled dual-panel collection input
 export {
   TransferList,

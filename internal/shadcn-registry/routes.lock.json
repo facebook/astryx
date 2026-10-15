@@ -557,6 +557,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-comment-pin",
+      "path": "components/lab/comment-pin",
+      "aliases": []
+    },
+    {
       "name": "component-lab-diff-viewer",
       "path": "components/lab/diff-viewer",
       "aliases": []
@@ -1883,6 +1888,11 @@
     {
       "name": "example-command-palette-rich-items",
       "path": "examples/command-palette/rich-items",
+      "aliases": []
+    },
+    {
+      "name": "example-comment-pin-host-owned-placement",
+      "path": "examples/comment-pin/host-owned-placement",
       "aliases": []
     },
     {
@@ -4238,6 +4248,11 @@
     {
       "name": "showcase-command-palette-default",
       "path": "showcases/command-palette/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-comment-pin-avatar-first-annotations",
+      "path": "showcases/comment-pin/avatar-first-annotations",
       "aliases": []
     },
     {
