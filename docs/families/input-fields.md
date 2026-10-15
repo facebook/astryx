@@ -77,7 +77,8 @@ form value through a labeled field surface with a content lane. Members use
   models without this content/end-lane geometry. PowerSearch and ChatComposer
   are higher-level compositions that consume member behavior rather than define
   another field primitive. BaseTypeahead is a combobox engine without a field
-  surface.
+  surface. RichTextEditor is a canary package and stays outside this family
+  until a family adoption is recorded.
 
 FR10 and DEC-7 also bind CheckboxList, RadioList, and Slider. They stay
 outside this family's geometry rules, but they compose Field, and every

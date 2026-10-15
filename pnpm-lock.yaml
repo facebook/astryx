@@ -470,6 +470,9 @@ importers:
       '@heroicons/react':
         specifier: ^2.2.0
         version: 2.2.0(react@19.2.7)
+      '@lexical/extension':
+        specifier: ^0.52.0
+        version: 0.52.0(typescript@6.0.3)
       '@lexical/headless':
         specifier: ^0.52.0
         version: 0.52.0(typescript@6.0.3)
@@ -479,6 +482,9 @@ importers:
       '@lexical/react':
         specifier: ^0.52.0
         version: 0.52.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3)(yjs@13.6.31)
+      '@lexical/table':
+        specifier: ^0.52.0
+        version: 0.52.0(typescript@6.0.3)
       '@storybook/addon-docs':
         specifier: ^10.4.6
         version: 10.4.6(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(esbuild@0.28.1)(rollup@4.62.2)(storybook@10.4.6(@testing-library/dom@10.4.1)(@types/react@19.2.17)(prettier@3.9.4)(react@19.2.7))(vite@8.1.3(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0))
