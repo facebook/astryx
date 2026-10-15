@@ -159,6 +159,32 @@ describe('parseUnifiedDiff', () => {
     ]);
   });
 
+  it('parses a long line that looks like a binary line but is not one in linear time', () => {
+    // A commit-message line in `git format-patch` output, before any diff.
+    // Unguarded, the binary-line regex backtracks quadratically on it (about
+    // 1.7 s at 96 KB, several seconds at this size).
+    const crafted = `Binary files ${'a and '.repeat(33_000)}tail`;
+    const start = performance.now();
+    const files = parseUnifiedDiff(
+      [
+        'Subject: [PATCH] update x',
+        '',
+        crafted,
+        '---',
+        'diff --git a/x.ts b/x.ts',
+        '--- a/x.ts',
+        '+++ b/x.ts',
+        '@@ -1 +1 @@',
+        '-a',
+        '+b',
+      ].join('\n'),
+    );
+    expect(performance.now() - start).toBeLessThan(500);
+    expect(files.map(file => [file.newPath, file.isBinary])).toEqual([
+      ['x.ts', false],
+    ]);
+  });
+
   it('reads copies from their copy lines, paths with spaces included', () => {
     // An exact copy has no ---/+++ lines, so only the copy lines name it.
     const files = parseUnifiedDiff(
