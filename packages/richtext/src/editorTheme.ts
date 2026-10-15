@@ -333,6 +333,18 @@ const editorTheme = stylex.create({
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-secondary'],
   },
+  // Cells in a table selection — dragging across cells, Shift+arrow between
+  // them, or selecting a row or column — carry the wash a selected row
+  // carries elsewhere in the system, for the reason `hrSelected` gives: a
+  // person has to see what the next keystroke will replace. Lexical names
+  // this class on every highlighted cell and takes it off when the selection
+  // goes; left unnamed, a cell inside the selection is painted exactly like
+  // one outside it. A selection is what edit mode may show (spec:AST-061
+  // FR9), and a read-only surface never makes one, so the read and edit
+  // surfaces still render the same document the same way.
+  tableCellSelected: {
+    backgroundColor: colorVars['--color-accent-muted'],
+  },
   // Thematic breaks, drawn like core Markdown's rule.
   hr: {
     borderWidth: 0,
@@ -465,6 +477,9 @@ export function sharedEditorTheme(): EditorThemeClasses {
     tableRow: block(editorTheme.tableRow),
     tableCell: block(editorTheme.tableCell),
     tableCellHeader: block(editorTheme.tableCellHeader),
+    // Added on top of the cell's own class by Lexical while the cell is in a
+    // table selection, so it carries no direction of its own.
+    tableCellSelected: className(editorTheme.tableCellSelected),
     tableScrollableWrapper: block(editorTheme.tableScrollableWrapper),
   };
 }
