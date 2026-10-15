@@ -66,6 +66,7 @@ import {
   UNORDERED_LIST,
 } from '@lexical/markdown';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
+import {useLexicalEditable} from '@lexical/react/useLexicalEditable';
 import {INSERT_HORIZONTAL_RULE_COMMAND} from '@lexical/extension';
 import {INSERT_TABLE_COMMAND} from '@lexical/table';
 import {$getSelection, $isRangeSelection, type EditorState} from 'lexical';
@@ -271,12 +272,16 @@ const styles = stylex.create({
  */
 function InsertControls() {
   const [editor] = useLexicalComposerContext();
+  // Read-only and disabled editors take no edits, so these controls disable
+  // with the editor, as RichTextEditorToolbar's own controls do.
+  const isEditable = useLexicalEditable();
   return (
     <>
       <Button
         size="sm"
         variant="ghost"
         label="Table"
+        isDisabled={!isEditable}
         tooltip="Insert a 3×3 table with a header row"
         onClick={() =>
           editor.dispatchCommand(INSERT_TABLE_COMMAND, {
@@ -294,6 +299,7 @@ function InsertControls() {
         size="sm"
         variant="ghost"
         label="Rule"
+        isDisabled={!isEditable}
         tooltip="Insert a horizontal rule"
         onClick={() =>
           editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)
@@ -303,6 +309,7 @@ function InsertControls() {
         size="sm"
         variant="ghost"
         label="Mention"
+        isDisabled={!isEditable}
         tooltip="Insert the demo mention plugin's syntax at the caret"
         onClick={() =>
           editor.update(() => {

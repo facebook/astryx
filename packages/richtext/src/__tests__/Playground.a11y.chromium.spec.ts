@@ -172,6 +172,38 @@ test("the toolbar's endContent slot reaches the editor", async ({page}) => {
   expect(errors).toEqual([]);
 });
 
+test("the endContent controls disable with the editor, like the toolbar's own", async ({
+  page,
+}) => {
+  const errors = await openStory(page);
+  const editor = page.locator(EDITOR);
+  const inserts = ['Table', 'Rule', 'Mention'].map(name =>
+    page.getByRole('button', {name, exact: true}),
+  );
+  const bold = page.getByRole('button', {name: 'Bold', exact: true});
+  for (const state of ['Read-only', 'Disabled']) {
+    await toggle(page, state).click();
+    await expect(editor).toHaveAttribute('contenteditable', 'false');
+    // The toolbar's own controls are the reference this matches.
+    await expect(bold).toBeDisabled();
+    for (const insert of inserts) {
+      await expect(insert, `${state}: insert control`).toBeDisabled();
+    }
+    // A forced click still changes nothing in a non-editable editor.
+    const before = await editor.innerHTML();
+    for (const insert of inserts) {
+      await insert.click({force: true});
+    }
+    expect(await editor.innerHTML(), `${state}: editor content`).toBe(before);
+    await toggle(page, state).click();
+    await expect(editor).toHaveAttribute('contenteditable', 'true');
+    for (const insert of inserts) {
+      await expect(insert, `${state} off: insert control`).toBeEnabled();
+    }
+  }
+  expect(errors).toEqual([]);
+});
+
 test('the shortcut table lists Cmd/Ctrl+K only while the toolbar registers it', async ({
   page,
 }) => {
