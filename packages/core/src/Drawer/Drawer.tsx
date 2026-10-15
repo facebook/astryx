@@ -4,7 +4,7 @@
 
 /**
  * @file Drawer.tsx
- * @input Uses React, StyleX, theme tokens and text defaults, the Dialog purpose type, shared focus/dismissal/depth primitives, container padding lowering, scroll locking/dialog presence, BaseProps, merged refs/props, themeProps
+ * @input Uses React, StyleX, theme tokens, the shared layer text/structure resets and content boundary, the Dialog purpose type, shared focus/dismissal/depth primitives, container padding lowering, scroll locking/dialog presence, BaseProps, merged refs/props, themeProps
  * @output Exports Drawer component and DrawerProps
  * @position Core implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
  *
@@ -66,12 +66,13 @@ import {
   durationVars,
   easeVars,
   shadowVars,
-  typeScaleVars,
-  typographyVars,
 } from '../theme/tokens.stylex';
 import type {DialogPurpose} from '../Dialog';
 import {useFocusTrap, useMergedRefs, useScrollLock} from '../hooks';
 import {LayerDepthProvider, useLayerDismissal} from '../Layer';
+import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
+import {LayerContentBoundary} from '../Layer/layerScopedContext';
 import {composeEventHandlers, mergeProps, themeProps} from '../utils';
 import {container, overlayPaddingReset} from '../Layout';
 import {
@@ -101,25 +102,9 @@ const MOBILE_WIDTH_FULL = '100dvw';
 
 const styles = stylex.create({
   dialog: {
-    // The layer text baseline, applied locally: Drawer does not use the
-    // private content boundary (architecture:layer-runtime).
-    fontFamily: typographyVars['--font-family-body'],
-    fontSize: typeScaleVars['--text-body-size'],
-    fontWeight: typeScaleVars['--text-body-weight'],
-    lineHeight: typeScaleVars['--text-body-leading'],
-    fontStyle: 'normal',
-    textAlign: 'start',
-    textAlignLast: 'auto',
-    textIndent: 0,
-    textTransform: 'none',
-    letterSpacing: 'normal',
-    wordSpacing: 'normal',
-    textShadow: 'none',
-    whiteSpace: 'normal',
-    wordBreak: 'normal',
-    overflowWrap: 'normal',
-    hyphens: 'manual',
     // Reset native <dialog> defaults — the dialog element IS the panel.
+    // The layer text baseline comes from the shared `layerTextReset`, applied
+    // with the structural reset ahead of these styles on the root below.
     position: 'fixed',
     margin: 0,
     padding: 0,
@@ -549,6 +534,8 @@ export function Drawer({
       {...mergeProps(
         themeProps('drawer', {side: anchoredSide}),
         stylex.props(
+          layerTextReset.reset,
+          layerStructureReset.reset,
           styles.dialog,
           overlayPaddingReset.reset,
           sideStyle,
@@ -573,38 +560,40 @@ export function Drawer({
       onKeyDown={onKeyDownProp}
       onCancel={handleCancel}>
       <LayerDepthProvider>
-        {/* Scrollable content area — tabIndex so the dialog's focusing steps
-            land on the panel body rather than the first button inside. */}
-        <div
-          tabIndex={-1}
-          {...stylex.props(
-            styles.content,
-            ...container(
-              usesThemePadding
-                ? {useThemeDefault: 'drawer'}
-                : {
-                    paddingInnerX: paddingToken,
-                    paddingInnerY: paddingToken,
-                    paddingOuterX: paddingToken,
-                    paddingOuterY: paddingToken,
-                  },
-            ),
-            !usesThemePadding &&
-              effectivePadding !== 4 &&
-              paddingStyles[effectivePadding],
-            !usesThemePadding &&
-              effectivePadding !== 4 &&
-              containerPaddingInlineVarStyles[effectivePadding],
-            !usesThemePadding &&
-              effectivePadding !== 4 &&
-              containerPaddingBlockStartVarStyles[effectivePadding],
-            !usesThemePadding &&
-              effectivePadding !== 4 &&
-              containerPaddingBlockEndVarStyles[effectivePadding],
-            styles.contentSafeArea,
-          )}>
-          {children}
-        </div>
+        <LayerContentBoundary>
+          {/* Scrollable content area — tabIndex so the dialog's focusing steps
+              land on the panel body rather than the first button inside. */}
+          <div
+            tabIndex={-1}
+            {...stylex.props(
+              styles.content,
+              ...container(
+                usesThemePadding
+                  ? {useThemeDefault: 'drawer'}
+                  : {
+                      paddingInnerX: paddingToken,
+                      paddingInnerY: paddingToken,
+                      paddingOuterX: paddingToken,
+                      paddingOuterY: paddingToken,
+                    },
+              ),
+              !usesThemePadding &&
+                effectivePadding !== 4 &&
+                paddingStyles[effectivePadding],
+              !usesThemePadding &&
+                effectivePadding !== 4 &&
+                containerPaddingInlineVarStyles[effectivePadding],
+              !usesThemePadding &&
+                effectivePadding !== 4 &&
+                containerPaddingBlockStartVarStyles[effectivePadding],
+              !usesThemePadding &&
+                effectivePadding !== 4 &&
+                containerPaddingBlockEndVarStyles[effectivePadding],
+              styles.contentSafeArea,
+            )}>
+            {children}
+          </div>
+        </LayerContentBoundary>
       </LayerDepthProvider>
     </dialog>
   );

@@ -11,10 +11,14 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
-import {createRef, useState} from 'react';
+import {createContext, createRef, use, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Drawer} from './Drawer';
 import {DrawerHeader} from './DrawerHeader';
+import {Button} from '../Button';
+import {ButtonGroup} from '../ButtonGroup';
+import {layerTextReset} from '../Layer/layerTextReset.stylex';
+import {layerStructureReset} from '../Layer/layerStructureReset.stylex';
 
 // Mock dialog methods since they're not fully implemented in jsdom
 beforeEach(() => {
@@ -446,6 +450,78 @@ describe('Drawer', () => {
       );
       fireEvent.click(screen.getByRole('dialog'));
       expect(handleOpenChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('layer content boundary', () => {
+    // Drawer's content root uses the private layer content boundary, like
+    // Dialog's: surface-scoped ancestor membership stops at the drawer while
+    // ordinary application contexts keep flowing (layerScopedContext.test.tsx
+    // proves the same for the other content roots).
+    it('ends ancestor group membership while explicit and inner-group state hold', () => {
+      const press = vi.fn();
+      render(
+        <ButtonGroup label="Outer" isDisabled>
+          <Button label="Outer member" />
+          <Drawer isOpen onOpenChange={() => {}} label="Details">
+            <Button label="Independent" onClick={press} />
+            <Button label="Explicit disabled" isDisabled />
+            <ButtonGroup label="Inner" isDisabled>
+              <Button label="Inner member" />
+            </ButtonGroup>
+          </Drawer>
+        </ButtonGroup>,
+      );
+      expect(screen.getByRole('button', {name: 'Outer member'})).toBeDisabled();
+      const independent = screen.getByRole('button', {name: 'Independent'});
+      expect(independent).toBeEnabled();
+      fireEvent.click(independent);
+      expect(press).toHaveBeenCalledOnce();
+      expect(
+        screen.getByRole('button', {name: 'Explicit disabled'}),
+      ).toBeDisabled();
+      expect(screen.getByRole('button', {name: 'Inner member'})).toBeDisabled();
+    });
+
+    it('keeps unrelated application contexts flowing into drawer content', () => {
+      const ServiceContext = createContext('fallback');
+      ServiceContext.displayName = 'ServiceContext';
+      function ReadService() {
+        return <output>{use(ServiceContext)}</output>;
+      }
+      render(
+        <ServiceContext value="live service">
+          <Drawer isOpen onOpenChange={() => {}} label="Details">
+            <ReadService />
+          </Drawer>
+        </ServiceContext>,
+      );
+      expect(screen.getByText('live service')).toBeInTheDocument();
+    });
+
+    it('applies the shared text baseline and structural reset on the root dialog', () => {
+      render(
+        <Drawer isOpen onOpenChange={() => {}} label="Details">
+          Content
+        </Drawer>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const classes = dialog.className.split(' ');
+      // The shared resets, not a local copy, supply the layer baseline.
+      for (const cls of (stylex.props(layerTextReset.reset).className ?? '')
+        .split(' ')
+        .filter(Boolean)) {
+        expect(classes).toContain(cls);
+      }
+      for (const cls of (
+        stylex.props(layerStructureReset.reset).className ?? ''
+      )
+        .split(' ')
+        .filter(Boolean)) {
+        expect(classes).toContain(cls);
+      }
+      // The baseline resolves on the root itself, not from the page.
+      expect(getComputedStyle(dialog).textAlign).toBe('start');
     });
   });
 

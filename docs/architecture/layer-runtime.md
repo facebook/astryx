@@ -274,9 +274,9 @@ React contexts carrying surface/group membership, and named structural custom
 properties; structural CSS isolation covers only the channels it names.
 
 The shared private text baseline is applied in both `useLayer` renderers and the
-Dialog, Lightbox, MobileNav, BottomSheetPanel, and ToastViewport content roots.
-Component and caller styling remains stronger. Existing padding normalization,
-hosting, theme inheritance, and writing context remain unchanged.
+Dialog, Drawer, Lightbox, MobileNav, BottomSheetPanel, and ToastViewport content
+roots. Component and caller styling remains stronger. Existing padding
+normalization, hosting, theme inheritance, and writing context remain unchanged.
 
 `createLayerScopedContext` creates surface-scoped contexts whose complete default
 value is provided by `LayerContentBoundary`. Membership-owned disabled state,
@@ -291,12 +291,6 @@ Each boundary snapshots its provider chain at mount so later lazy imports cannot
 remount live content or discard state/focus. Existing native depth-provider seams
 retain their original depth values; raw Layer, sheet panels, and toast content
 use the private content boundary directly. Toast page children stay outside it.
-
-Drawer applies an equivalent text baseline of its own and retains its existing
-hosting, dismissal depth, and ancestor React contexts. It does not use the
-private content boundary, so whole-context isolation for Drawer is not
-implemented. This is a remaining gap, not a claim of complete provider
-isolation.
 
 The private structural reset sits beside the text baseline on the same content
 roots and stops each structural custom property it names by setting it to

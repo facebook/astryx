@@ -263,6 +263,9 @@ decide future target qualification.
   lifetime and supplies logical depth to descendant layers.
 - `architecture:layer-runtime` owns the distinction between native modal hosting,
   non-modal dialog presentation, top-layer behavior, and shared layer plumbing.
+  Drawer's content root applies the shared private text baseline and layer
+  content boundary, as in Dialog: surface-scoped ancestor membership stops at
+  the drawer, while ordinary application contexts keep flowing to its content.
 - `architecture:public-component-api` owns stable API admission and compatibility.
   FR11 records current DOM/ref/event reachability without making a stable
   compatibility decision.
