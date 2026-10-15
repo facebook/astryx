@@ -808,7 +808,11 @@ export const LabCheckboxItems: Story = {
         <DropdownMenuCheckboxItem
           label="Sync folders"
           icon={ArchiveBoxIcon}
-          endContent={<Badge label="Beta" />}
+          endContent={
+            <span data-testid="dropdown-menu-checkbox-item-end-content">
+              <Badge label="Beta" />
+            </span>
+          }
           value={syncFolders}
           onChange={setSyncFolders}
         />

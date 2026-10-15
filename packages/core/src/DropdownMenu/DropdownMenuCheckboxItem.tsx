@@ -4,7 +4,7 @@
 
 /**
  * @file DropdownMenuCheckboxItem.tsx
- * @input React, stylex, Item + CheckboxInput + DropdownMenu context + tokens from core
+ * @input React, stylex, Item + Indicator registry + DropdownMenu context + tokens from core
  * @output DropdownMenuCheckboxItem — a standalone checkable menu item.
  * @position Sub-component; used inside DropdownMenu.
  *
@@ -63,8 +63,8 @@ const styles = stylex.create({
   },
   // Rendered in Item's `marker` slot as a raw flex child, so `order` moves it
   // relative to the label within the row. On touch it moves to the inline-end.
-  // `aria-hidden` + `inert` + pointer-events:none keep the composed CheckboxInput
-  // decorative: it adds no accessible name, and clicks fall through to the row,
+  // `aria-hidden` + `inert` + pointer-events:none keep the composed checkbox
+  // indicator decorative: it adds no accessible name, and clicks fall through to the row,
   // which owns the role and activation.
   // Placement of the marker within the row. The indicator draws its own box
   // (size, fill, border) — these are only the rules the MENU owns: where the

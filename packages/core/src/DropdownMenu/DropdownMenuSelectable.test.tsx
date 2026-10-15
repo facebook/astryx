@@ -68,8 +68,9 @@ describe('DropdownMenuCheckboxItem', () => {
 
   it('composes the caller click handler with the checked-state change', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
-    const onClick = vi.fn();
+    const calls: string[] = [];
+    const onChange = vi.fn(() => calls.push('change'));
+    const onClick = vi.fn(() => calls.push('click'));
     render(
       <DropdownMenu button={{label: 'View'}}>
         <DropdownMenuCheckboxItem
@@ -89,6 +90,7 @@ describe('DropdownMenuCheckboxItem', () => {
     );
     expect(onChange).toHaveBeenCalledWith(true);
     expect(onClick).toHaveBeenCalledOnce();
+    expect(calls).toEqual(['change', 'click']);
   });
 
   it('composes the caller pointer-move handler with menu hover focus', async () => {
