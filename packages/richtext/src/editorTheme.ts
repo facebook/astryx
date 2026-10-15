@@ -317,6 +317,13 @@ const editorTheme = stylex.create({
   table: {
     borderCollapse: 'collapse',
     width: '100%',
+    // The grid's outer edge, matching core Markdown's table: the row and
+    // column lines stop at the table's rim, so without this the top, bottom,
+    // and sides stay open. `border-collapse: collapse` merges it with the
+    // cell lines into one 1px rule rather than doubling up at the edge.
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border'],
   },
   tableRow: {
     borderBottomWidth: '1px',
