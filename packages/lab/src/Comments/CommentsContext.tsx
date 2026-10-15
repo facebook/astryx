@@ -9,7 +9,7 @@
  * @output Exports the Comments family's shared context, the controller hook
  *   that owns its interaction state (selection, reply and edit targets, draft
  *   lifecycle reporting, pending actions, failures, focus hand-offs, delete
- *   confirmation, and edit history), and the dialogs it opens
+ *   confirmation, and edit history), the dialogs it opens, and its announcer
  * @position Internal state layer shared by Comments and a standalone
  *   CommentThread; comment rows read it instead of taking dozens of props
  */
@@ -59,6 +59,8 @@ export type ReplyTarget = {
   comment: AnyComment;
   /** Set when the composer should take focus; each request has its own. */
   focusRequestId?: number;
+  /** The mention the draft was seeded with, which the viewer did not type. */
+  seed?: string;
 };
 
 export type EditTarget = {comment: AnyComment; value: string};
@@ -584,6 +586,7 @@ export function useCommentsController({
         comment: target,
         focusRequestId:
           options?.focus === true ? ++replyFocusRequestRef.current : undefined,
+        seed: isNewTarget ? seededMention : replyTarget?.seed,
       };
       if (isNewTarget) {
         if (replyTarget != null) {
@@ -748,5 +751,5 @@ export function useCommentsController({
     </>
   );
 
-  return {value, dialogs, submit};
+  return {value, dialogs, submit, announce};
 }

@@ -2031,6 +2031,10 @@
     "defaultMessage": "New",
     "description": "Badge on a comment in a lab Comments panel the viewer hasn't read yet."
   },
+  "@astryx.comments.unsavedDraft": {
+    "defaultMessage": "Unsaved draft. Dismiss again to discard it.",
+    "description": "Announced to screen readers when a lab CommentThread refuses its first dismissal because a reply or edit holds unsaved text; a second press outside the thread or a second Escape discards the draft."
+  },
   "@astryx.comments.versionAuthor": {
     "defaultMessage": "by {name}",
     "description": "Byline beside the time of one version in the edit history dialog of a lab Comments panel. `name` is who saved that version."

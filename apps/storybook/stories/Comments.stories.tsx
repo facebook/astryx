@@ -8,6 +8,7 @@ import {
   type CommentUser,
 } from '@astryxdesign/lab';
 import CommentComposerShowcase from '../../../packages/lab/blocks/CommentComposerShowcase';
+import CommentThreadInPopover from '../../../packages/lab/blocks/CommentThreadInPopover';
 import CommentThreadShowcase from '../../../packages/lab/blocks/CommentThreadShowcase';
 
 const meta: Meta = {
@@ -56,6 +57,14 @@ export const Composer: Story = {
 /** One thread on its own: a margin comment beside a document. */
 export const MarginComment: Story = {
   render: () => <CommentThreadShowcase />,
+};
+
+/**
+ * A thread in a Popover that owns its dismissal: with an unsaved reply, the
+ * first press outside or Escape shakes the thread and keeps the draft.
+ */
+export const InPopover: Story = {
+  render: () => <CommentThreadInPopover />,
 };
 
 /** A host-opened thread reveals its body and replies without moving focus. */

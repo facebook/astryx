@@ -1906,6 +1906,11 @@
       "aliases": []
     },
     {
+      "name": "example-comment-thread-in-a-popover",
+      "path": "examples/comment-thread/in-a-popover",
+      "aliases": []
+    },
+    {
       "name": "example-complex-selector-deadline-picker",
       "path": "examples/complex-selector/deadline-picker",
       "aliases": []
