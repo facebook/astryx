@@ -160,25 +160,62 @@ describe('parseUnifiedDiff', () => {
   });
 
   it('reads copies from their copy lines, paths with spaces included', () => {
-    const [file] = parseUnifiedDiff(
+    // An exact copy has no ---/+++ lines, so only the copy lines name it.
+    const files = parseUnifiedDiff(
       [
         'diff --git a/my file.ts b/my copy.ts',
-        'similarity index 90%',
+        'similarity index 100%',
         'copy from my file.ts',
         'copy to my copy.ts',
-        'index 1111111..2222222 100644',
-        '--- a/my file.ts',
-        '+++ b/my copy.ts',
-        '@@ -1 +1 @@',
-        '-export const a = 1;',
-        '+export const b = 1;',
+        'diff --git a/notes.txt "b/caf\\303\\251 notes.txt"',
+        'similarity index 100%',
+        'copy from notes.txt',
+        'copy to "caf\\303\\251 notes.txt"',
       ].join('\n'),
     );
-    expect(file).toMatchObject({
-      oldPath: 'my file.ts',
-      newPath: 'my copy.ts',
-      status: 'modified',
-    });
+    expect(
+      files.map(file => [file.oldPath, file.newPath, file.status]),
+    ).toEqual([
+      ['my file.ts', 'my copy.ts', 'modified'],
+      ['notes.txt', 'café notes.txt', 'modified'],
+    ]);
+  });
+
+  it('reads a headerless binary line from diff -r as a file of its own', () => {
+    const files = parseUnifiedDiff(
+      [
+        'Binary files old/first.png and new/first.png differ',
+        'diff -ruN old/a.txt new/a.txt',
+        '--- old/a.txt\t2024-01-01 00:00:00.000000000 +0000',
+        '+++ new/a.txt\t2024-01-02 00:00:00.000000000 +0000',
+        '@@ -1 +1 @@',
+        '-one',
+        '+uno',
+        'Binary files old/x.png and new/x.png differ',
+        'Binary files /dev/null and new/y.png differ',
+        'diff -ruN old/z.txt new/z.txt',
+        '--- old/z.txt\t2024-01-01 00:00:00.000000000 +0000',
+        '+++ new/z.txt\t2024-01-02 00:00:00.000000000 +0000',
+        '@@ -1 +1 @@',
+        '-two',
+        '+dos',
+      ].join('\n'),
+    );
+    expect(
+      files.map(file => [
+        file.oldPath,
+        file.newPath,
+        file.status,
+        file.isBinary,
+        file.hunks.length,
+      ]),
+    ).toEqual([
+      ['old/first.png', 'new/first.png', 'modified', true, 0],
+      ['old/a.txt', 'new/a.txt', 'modified', false, 1],
+      ['old/x.png', 'new/x.png', 'modified', true, 0],
+      [null, 'new/y.png', 'added', true, 0],
+      ['old/z.txt', 'new/z.txt', 'modified', false, 1],
+    ]);
   });
 
   it('starts a new file at each ---/+++ pair after a hunk', () => {
