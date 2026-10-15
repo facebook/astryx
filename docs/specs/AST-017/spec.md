@@ -1191,7 +1191,7 @@ and dropping the manifest, which would lose the minor's migration inventory.
 ### DEC-19 — Promotion moves codemod source without invalidating its evidence
 
 **Reference:** `spec:AST-017/DEC-19`
-**Decider:** pending owner review
+**Decider:** `cixzhang`, 2026-10-14
 
 A staged codemod and its promoted release copy are one transform at two lifecycle
 locations. Checked-in evidence identifies the transform and resolves whichever location
