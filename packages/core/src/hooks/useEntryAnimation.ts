@@ -12,7 +12,7 @@
  * page paint — statically rendered elements on page load are not animated.
  */
 
-import {useState} from 'react';
+import {useState, useSyncExternalStore} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {durationVars, easeVars, spacingVars} from '../theme/tokens.stylex';
@@ -32,6 +32,12 @@ if (typeof window !== 'undefined') {
     initialPaintComplete = true;
   });
 }
+
+// True only while hydrating server-rendered HTML (and on the server), so
+// hydration matches the server markup even after the page has painted.
+const subscribe = () => () => {};
+const getSnapshot = () => false;
+const getServerSnapshot = () => true;
 
 const slideDown = stylex.keyframes({
   from: {
@@ -99,10 +105,7 @@ const styles = stylex.create({
 });
 
 export type EntryAnimationPreset =
-  | 'slideDown'
-  | 'slideUp'
-  | 'fadeIn'
-  | 'scaleIn';
+  'slideDown' | 'slideUp' | 'fadeIn' | 'scaleIn';
 
 /**
  * Returns a StyleX style for animating an element on mount.
@@ -119,6 +122,11 @@ export type EntryAnimationPreset =
 export function useEntryAnimation(
   preset: EntryAnimationPreset = 'slideDown',
 ): StyleXStyles | null {
-  const [animate] = useState(() => initialPaintComplete);
+  const hydrating = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot,
+  );
+  const [animate] = useState(() => !hydrating && initialPaintComplete);
   return animate ? styles[preset] : null;
 }
