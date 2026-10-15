@@ -266,7 +266,12 @@ export const AsyncSearch: Story = {
           isOpen={isOpen}
           onOpenChange={setIsOpen}
           searchSource={source}
-          input={<CommandPaletteInput placeholder="Search files..." />}
+          input={
+            <CommandPaletteInput
+              label="Search files"
+              placeholder="Search files..."
+            />
+          }
           emptyBootstrapText="Type a filename to search"
           emptySearchText="No files found"
         />
