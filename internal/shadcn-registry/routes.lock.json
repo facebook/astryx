@@ -572,6 +572,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-comments",
+      "path": "components/lab/comments",
+      "aliases": []
+    },
+    {
       "name": "component-lab-diff-viewer",
       "path": "components/lab/diff-viewer",
       "aliases": []
@@ -1908,6 +1913,16 @@
     {
       "name": "example-comment-thread-in-a-popover",
       "path": "examples/comment-thread/in-a-popover",
+      "aliases": []
+    },
+    {
+      "name": "example-comments-inline-comments",
+      "path": "examples/comments/inline-comments",
+      "aliases": []
+    },
+    {
+      "name": "example-comments-inside-a-card",
+      "path": "examples/comments/inside-a-card",
       "aliases": []
     },
     {
@@ -4278,6 +4293,11 @@
     {
       "name": "showcase-comment-thread-margin-comment",
       "path": "showcases/comment-thread/margin-comment",
+      "aliases": []
+    },
+    {
+      "name": "showcase-comments-panel",
+      "path": "showcases/comments/panel",
       "aliases": []
     },
     {

@@ -361,5 +361,9 @@
   {
     "component": "lab/CommentThread",
     "reason": "CommentThread is one Card or Section holding comment rows: an avatar column and a content column in a flex row whose order follows CSS direction, a block-axis avatar rail, header metadata and actions in wrap-capable flex rows, and a reply composer. Insets and the actions' negative bleed use logical properties, its glyphs (reply, resolve, add reaction, copy link, more) are non-directional, and its menus and tooltips are core overlays. Keyboard navigation is Tab order plus the core DropdownMenu, with no component-owned arrow-key semantics."
+  },
+  {
+    "component": "lab/Comments",
+    "reason": "Comments is a block-axis timeline of CommentThread rows and activity events inside the core ChatLayout and ChatMessageList, with the composer docked on the block axis. It adds no horizontal positioning, directional glyphs, or arrow-key behavior of its own: rows, rails, and dividers use logical properties, and the load-earlier control and error Banners are centered or full width."
   }
 ]

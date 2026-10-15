@@ -3,10 +3,11 @@
 /**
  * @file utils.ts
  * @input Comment data types
- * @output Exports the comment family's pure helpers: element ids, Markdown
- *   serialization of images, draft appends, and focus bookkeeping
- * @position Internal helpers shared by CommentThread and CommentComposer; not
- *   exported from the package
+ * @output Exports the Comments family's pure helpers: element ids, Markdown
+ *   serialization of images, draft appends, timeline ordering, and focus
+ *   bookkeeping
+ * @position Internal helpers shared by Comments, CommentThread, and
+ *   CommentComposer; not exported from the package
  */
 
 import type {
@@ -26,6 +27,11 @@ export function commentAnchorId(commentId: string): string {
 /** The element id of a thread's reply composer. */
 export function replyComposerId(parentId: string): string {
   return `${commentAnchorId(parentId)}-reply-composer`;
+}
+
+/** The element id of an activity event row. */
+export function eventAnchorId(eventId: string): string {
+  return `comments-event-${encodeURIComponent(eventId)}`;
 }
 
 /** Whether focus is inside `region`, or already lost to <body>. */
@@ -83,6 +89,15 @@ export function appendDraftInline(value: string, content: string): string {
     return `${value}${content}`;
   }
   return `${value} ${content}`;
+}
+
+/** A createdAt value as epoch milliseconds; seconds are scaled up. */
+export function timelineTime(value: string | number): number {
+  if (typeof value === 'number') {
+    return value < 1_000_000_000_000 ? value * 1_000 : value;
+  }
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
 }
 
 /**

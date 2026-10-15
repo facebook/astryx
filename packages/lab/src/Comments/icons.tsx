@@ -27,6 +27,7 @@ export const COMMENT_ICON_KEYS = {
   delete: 'comment:delete',
   attach: 'comment:attach',
   emoji: 'comment:emoji',
+  event: 'comment:event',
 } as const;
 
 export type CommentIconName = keyof typeof COMMENT_ICON_KEYS;
@@ -96,6 +97,11 @@ const FALLBACK_GLYPHS: Record<
     'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
     'M8.5 14.5a4 4 0 0 0 7 0',
     'M9 10h.01M15 10h.01',
+  ]),
+  // A point on a timeline.
+  event: glyph([
+    'M12 3v5.5M12 15.5V21',
+    'M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z',
   ]),
 };
 

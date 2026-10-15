@@ -213,6 +213,18 @@ export interface CommentThreadData extends CommentData {
   canResolve?: boolean;
 }
 
+/** A timeline row for a status change or other activity on the item. */
+export interface CommentActivityEvent {
+  id: string;
+  /** What happened, as a sentence: "Status changed to Ready for review". */
+  label: string;
+  description?: string;
+  createdAt: string | number;
+  actor?: CommentUser;
+  /** Where the event's time links. */
+  href?: string;
+}
+
 /** Which composer a callback came from. */
 export type CommentComposerContext =
   | {

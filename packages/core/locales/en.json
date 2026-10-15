@@ -2046,5 +2046,45 @@
   "@astryx.comments.viewReplies": {
     "defaultMessage": "View {count, plural, one {# reply} other {# replies}}",
     "description": "Text button under a collapsed comment thread in a lab Comments panel that opens it. `count` is the number of replies."
+  },
+  "@astryx.comments.commentsLabel": {
+    "defaultMessage": "Threads in {label}",
+    "description": "Accessible name of the scrolling list of comment threads in a lab Comments panel. `label` is the panel's own accessible name, e.g. \"Comments\" or \"Launch plan\"."
+  },
+  "@astryx.comments.emptyDescription": {
+    "defaultMessage": "Start the discussion with a comment.",
+    "description": "Description under the empty-state title of a lab Comments panel when the viewer can comment."
+  },
+  "@astryx.comments.emptyReadOnlyDescription": {
+    "defaultMessage": "There is no discussion on this item.",
+    "description": "Description under the empty-state title of a lab Comments panel the viewer can only read."
+  },
+  "@astryx.comments.emptyTitle": {
+    "defaultMessage": "No comments yet",
+    "description": "Title of the empty state of a lab Comments panel with no comments or activity."
+  },
+  "@astryx.comments.label": {
+    "defaultMessage": "Comments",
+    "description": "Default accessible name of the lab Comments region, which holds the comment threads about one item. Hosts usually override it with the item's own noun."
+  },
+  "@astryx.comments.loadFailed": {
+    "defaultMessage": "Comments couldn't load",
+    "description": "Error Banner title in a lab Comments panel when its comments failed to load."
+  },
+  "@astryx.comments.loadOlder": {
+    "defaultMessage": "Load earlier comments",
+    "description": "Button above the threads of a lab Comments panel that loads the previous page of comments."
+  },
+  "@astryx.comments.loading": {
+    "defaultMessage": "Loading comments",
+    "description": "Visually hidden text read by screen readers while a lab Comments panel shows comment-shaped loading placeholders."
+  },
+  "@astryx.comments.olderFailed": {
+    "defaultMessage": "Earlier comments couldn't load",
+    "description": "Error Banner title in a lab Comments panel when the page of earlier comments failed to load; a Retry action follows."
+  },
+  "@astryx.comments.postFailed": {
+    "defaultMessage": "Your comment couldn't be posted.",
+    "description": "Error shown above the new-comment composer of a lab Comments panel when posting failed; the draft is kept and a Retry action follows."
   }
 }

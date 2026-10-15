@@ -20,9 +20,11 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Banner} from '@astryxdesign/core/Banner';
 import {Blockquote} from '@astryxdesign/core/Blockquote';
 import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
 import {Center} from '@astryxdesign/core/Center';
 import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
+import {Item} from '@astryxdesign/core/Item';
 import {
   HStack,
   Layout,
@@ -32,11 +34,13 @@ import {
 } from '@astryxdesign/core/Layout';
 import {Link} from '@astryxdesign/core/Link';
 import {Section} from '@astryxdesign/core/Section';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
 import {Spinner} from '@astryxdesign/core/Spinner';
 import {Text} from '@astryxdesign/core/Text';
 import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 import {Timestamp} from '@astryxdesign/core/Timestamp';
 import {Tooltip} from '@astryxdesign/core/Tooltip';
+import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {useTranslator} from '@astryxdesign/core/i18n';
 import {
   borderVars,
@@ -46,13 +50,15 @@ import {
   radiusVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import type {AnyComment} from './utils';
+import {CommentIcon} from './icons';
+import {eventAnchorId, type AnyComment} from './utils';
 import type {
   CommentAnchor,
   CommentHighlightColor,
   CommentProgress,
   CommentUser,
   CommentVersion,
+  CommentActivityEvent,
 } from './types';
 
 /** The 28px avatar column every comment row, reply, and event aligns to. */
@@ -626,6 +632,62 @@ export function AvatarSpacer() {
   );
 }
 
+export function ActivityEventRow({
+  event,
+  renderEvent,
+}: {
+  event: CommentActivityEvent;
+  renderEvent?: (event: CommentActivityEvent) => ReactNode;
+}) {
+  const anchorId = eventAnchorId(event.id);
+  const href = event.href ?? `#${anchorId}`;
+  if (renderEvent != null) {
+    return (
+      <VStack id={anchorId} width="100%" data-comments-event-id={event.id}>
+        {renderEvent(event)}
+      </VStack>
+    );
+  }
+  return (
+    <Item
+      id={anchorId}
+      data-comments-event-id={event.id}
+      density="compact"
+      align="start"
+      xstyle={partStyles.eventRow}
+      startContent={
+        <Center xstyle={partStyles.avatarSpacer} aria-hidden="true">
+          <CommentIcon name="event" size="md" />
+        </Center>
+      }
+      label={event.label}
+      description={
+        event.actor != null || event.description != null ? (
+          <HStack gap={1} align="center" wrap="wrap">
+            {event.actor != null && <AuthorName author={event.actor} />}
+            {event.description != null && (
+              <Text type="supporting" color="secondary">
+                {event.description}
+              </Text>
+            )}
+          </HStack>
+        ) : undefined
+      }
+      endContent={
+        <Link href={href} type="supporting" color="secondary">
+          <Timestamp
+            value={event.createdAt}
+            format="relative_short"
+            type="inherit"
+            color="inherit"
+            isLive
+          />
+        </Link>
+      }
+    />
+  );
+}
+
 export type HistoryState = {
   comment: AnyComment;
   versions: readonly CommentVersion[];
@@ -719,5 +781,157 @@ export function HistoryDialog({
         }
       />
     </Dialog>
+  );
+}
+
+function LoadingCommentRow({
+  container,
+  index,
+}: {
+  container: 'section' | 'card';
+  index: number;
+}) {
+  const content = (
+    <HStack gap={2} align="start" width="100%">
+      <Skeleton
+        width={AVATAR_SIZE}
+        height={AVATAR_SIZE}
+        radius="rounded"
+        index={index * 7}
+      />
+      <StackItem size="fill">
+        <VStack gap={1} width="100%">
+          <HStack gap={1} align="center" width="100%">
+            <Skeleton
+              width={index === 0 ? '38%' : '30%'}
+              height={spacingVars['--spacing-4']}
+              radius={1}
+              index={index * 7 + 1}
+            />
+            <Skeleton
+              width="18%"
+              height={spacingVars['--spacing-3']}
+              radius={1}
+              index={index * 7 + 2}
+            />
+          </HStack>
+          <Skeleton
+            width="96%"
+            height={spacingVars['--spacing-4']}
+            radius={1}
+            index={index * 7 + 3}
+          />
+          <Skeleton
+            width={index === 0 ? '82%' : '68%'}
+            height={spacingVars['--spacing-4']}
+            radius={1}
+            index={index * 7 + 4}
+          />
+          {index === 0 && (
+            <Skeleton
+              width="54%"
+              height={spacingVars['--spacing-4']}
+              radius={1}
+              index={index * 7 + 5}
+            />
+          )}
+          <HStack gap={1} align="center">
+            <Skeleton
+              width={`calc(${spacingVars['--spacing-8']} + ${spacingVars['--spacing-4']})`}
+              height={spacingVars['--spacing-6']}
+              radius={2}
+              index={index * 7 + 5}
+            />
+            <Skeleton
+              width={spacingVars['--spacing-8']}
+              height={spacingVars['--spacing-6']}
+              radius={2}
+              index={index * 7 + 6}
+            />
+          </HStack>
+        </VStack>
+      </StackItem>
+    </HStack>
+  );
+
+  return container === 'card' ? (
+    <Section
+      variant="transparent"
+      dividers={['top', 'bottom']}
+      padding={3}
+      width="100%"
+      xstyle={partStyles.sectionDividerOverlap}>
+      {content}
+    </Section>
+  ) : (
+    <Card variant="default" elevation="none" padding={3} width="100%">
+      {content}
+    </Card>
+  );
+}
+
+/** Comment-shaped placeholders in the same Card or Section the threads use. */
+export function CommentThreadLoadingSkeleton({
+  container,
+}: {
+  container: 'section' | 'card';
+}) {
+  const t = useTranslator();
+  return (
+    <VStack
+      gap={container === 'card' ? 0 : 2}
+      width="100%"
+      data-comments-loading="threads">
+      <VisuallyHidden>{t('@astryx.comments.loading')}</VisuallyHidden>
+      {[0, 1, 2].map(index => (
+        <LoadingCommentRow key={index} container={container} index={index} />
+      ))}
+    </VStack>
+  );
+}
+
+/** The two-row composer's shape: the input, then its buttons and Post. */
+export function CommentComposerLoadingSkeleton({
+  actionCount,
+}: {
+  actionCount: number;
+}) {
+  const actionSize = spacingVars['--spacing-8'];
+  return (
+    <Card
+      variant="default"
+      elevation="none"
+      padding={2}
+      width="100%"
+      xstyle={partStyles.loadingComposer}
+      data-comments-loading="composer">
+      <VStack gap={2} width="100%">
+        <Skeleton
+          width="42%"
+          height={spacingVars['--spacing-4']}
+          radius={1}
+          index={22}
+        />
+        <HStack gap={1} align="center" justify="between" width="100%">
+          <HStack gap={0.5} align="center">
+            {Array.from({length: actionCount}, (_, offset) => (
+              <Skeleton
+                key={offset}
+                width={actionSize}
+                height={actionSize}
+                radius={2}
+                index={23 + offset}
+              />
+            ))}
+          </HStack>
+          <Skeleton
+            width={actionSize}
+            height={actionSize}
+            radius={2}
+            index={23 + actionCount}
+          />
+        </HStack>
+      </VStack>
+    </Card>
   );
 }

@@ -40,8 +40,10 @@ export {
   type CommentPinProps,
 } from './CommentPin';
 
-// CommentThread and CommentComposer — standalone comment conversation surfaces
+// Comments family — a panel, standalone thread, and controlled composer
 export {
+  Comments,
+  type CommentsProps,
   CommentThread,
   type CommentThreadProps,
   CommentComposer,
@@ -65,6 +67,7 @@ export {
   type CommentUploadedImage,
   type CommentUser,
   type CommentVersion,
+  type CommentActivityEvent,
 } from './Comments';
 
 // TransferList — controlled dual-panel collection input
