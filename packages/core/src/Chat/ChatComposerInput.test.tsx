@@ -1492,6 +1492,55 @@ describe('ChatComposerInput', () => {
       });
     });
 
+    it('drops a late trigger result after the send button sends the draft', async () => {
+      const onSubmit = vi.fn();
+      let resolveSlow: (items: SearchableItem[]) => void = () => {};
+      const source: SearchSource = {
+        bootstrap: async () => [],
+        async search(query: string) {
+          if (query === 'ci') {
+            return new Promise(resolve => {
+              resolveSlow = resolve;
+            });
+          }
+          return Promise.resolve(
+            USERS.filter(u => u.label.toLowerCase().includes(query)),
+          );
+        },
+      };
+      render(
+        <ChatComposer
+          onSubmit={onSubmit}
+          input={
+            <ChatComposerInput
+              triggers={[createMentionTrigger({searchSource: source})]}
+              debounceMs={0}
+            />
+          }
+        />,
+      );
+      const editable = screen.getByRole('combobox');
+      editable.focus();
+
+      typeAtEnd(editable, '@c');
+      await waitFor(() => {
+        expect(editable.getAttribute('aria-activedescendant')).toBeTruthy();
+      });
+      typeAtEnd(editable, '@ci');
+
+      fireEvent.click(screen.getByRole('button', {name: /send/i}));
+      expect(onSubmit).toHaveBeenCalledWith('@ci');
+      await waitFor(() => {
+        expect(editable.textContent).toBe('');
+      });
+
+      await act(async () => {
+        resolveSlow([{id: 'cindy', label: 'Cindy Zhang'}]);
+      });
+      expect(editable).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('option')).not.toBeInTheDocument();
+    });
+
     it('lets Escape reach the consumer while an unmatched multi-word query hides the menu', async () => {
       const onKeyDown = vi.fn();
       render(
