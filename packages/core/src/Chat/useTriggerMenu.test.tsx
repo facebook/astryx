@@ -942,6 +942,26 @@ describe('useTriggerMenu', () => {
     expect(result.current.state.query).toBe('su');
   });
 
+  // 26b. FR10: a tab is a boundary before a trigger and ends a single-token query.
+  it('26b. treats a tab as a trigger boundary and as the end of a single-token query', async () => {
+    const {result} = renderTriggerHook();
+
+    await act(async () => {
+      setCursor('hi\t/su');
+      result.current.handleInput();
+      await Promise.resolve();
+    });
+    expect(result.current.state.activeTrigger?.character).toBe('/');
+    expect(result.current.state.query).toBe('su');
+
+    await act(async () => {
+      setCursor('/su\tx');
+      result.current.handleInput();
+      await Promise.resolve();
+    });
+    expect(result.current.state.isActive).toBe(false);
+  });
+
   // 27. A visible empty menu keeps the arrows.
   it('27. keeps ArrowDown and ArrowUp while a visible menu shows its empty message', async () => {
     const {result} = renderTriggerHook();
