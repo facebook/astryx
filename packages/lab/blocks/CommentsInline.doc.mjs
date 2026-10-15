@@ -6,9 +6,9 @@ export default {
   name: 'Inline comments',
   displayName: 'Inline comments',
   description:
-    'Your app owns anchoring: pass the selected passage as composerAnchor to quote it in the composer, store it on the posted thread, and sync selectedThreadId with the passage you highlight.',
+    'A realistic Markdown document review with highlighted passages synchronized to a Comments side panel. Selecting an unannotated passage starts a quoted thread; replies and resolution update host-owned data.',
   exampleFor: 'Comments',
   isReady: true,
-  aspectRatio: 16 / 9,
-  componentsUsed: ['Comments', 'Card', 'Button', 'Text', 'HStack', 'VStack'],
+  aspectRatio: 3 / 2,
+  componentsUsed: ['Button', 'Card', 'Comments', 'HStack', 'Text', 'VStack'],
 };

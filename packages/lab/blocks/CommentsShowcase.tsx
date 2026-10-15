@@ -3,111 +3,129 @@
 'use client';
 
 /**
- * @input A Markdown-like document, its anchored threads, and controlled
- *   document/thread selection
- * @output A realistic document review: highlighted passages stay synchronized
- *   with a Comments side panel, and a selected passage starts a quoted thread
+ * @input Controlled comments, events, and every Comments callback
+ * @output A working Comments panel: threads with replies, reactions,
+ *   edit history, inline comments, controlled typing and hidden seen metadata,
+ *   a non-interrupting unread-reply reveal, an agent's reply in progress, a
+ *   failed comment, activity events, and earlier comments to load
  * @position Lab Comments's docsite showcase and copyable CLI block
  */
 
 import {useRef, useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
-import {Button} from '@astryxdesign/core/Button';
-import {Card} from '@astryxdesign/core/Card';
-import {HStack, VStack} from '@astryxdesign/core/Layout';
-import {Text} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
 import {
-  borderVars,
-  colorVars,
-  focusVars,
-  radiusVars,
-  spacingVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {
+  DEFAULT_COMMENT_REACTIONS,
   Comments,
-  type CommentAnchor,
   type CommentData,
+  type CommentReactionOption,
   type CommentThreadData,
   type CommentUser,
+  type CommentVersion,
+  type CommentActivityEvent,
 } from '@astryxdesign/lab';
 
 const VIEWER: CommentUser = {id: 'avery', name: 'Avery Kim'};
 const MAYA: CommentUser = {id: 'maya', name: 'Maya Chen'};
-const JORDAN: CommentUser = {id: 'jordan', name: 'Jordan Lee'};
+const NOAH: CommentUser = {id: 'noah', name: 'Noah Williams'};
+const ASSISTANT: CommentUser = {
+  id: 'release-assistant',
+  name: 'Release Assistant',
+  kind: 'agent',
+};
 
-const ROLLOUT_PASSAGE =
-  'The final cohort completes rollout in three days after the dry run.';
-const GUARDRAIL_PASSAGE =
-  'Pause if the 95th percentile exceeds 420 ms for two consecutive checks.';
-const REVIEW_PASSAGE =
-  'Publish the review note after the final cohort is complete.';
+const EVENTS: readonly CommentActivityEvent[] = [
+  {
+    id: 'checklist',
+    label: 'Rollout checklist attached',
+    description: 'Added the launch checklist to the discussion.',
+    createdAt: '2026-09-30T18:46:00Z',
+    actor: MAYA,
+  },
+  {
+    id: 'status',
+    label: 'Status changed to Ready for review',
+    createdAt: '2026-09-30T19:02:00Z',
+  },
+];
 
 const INITIAL_COMMENTS: readonly CommentThreadData[] = [
   {
-    id: 'rollout-window',
+    id: 'plan',
     author: MAYA,
-    body: 'Can we make the dry-run dependency explicit? It explains the extra day.',
-    createdAt: '2026-10-14T17:18:00Z',
-    anchor: {quote: ROLLOUT_PASSAGE},
+    body: 'The revised rollout plan is ready. **Avery**, could you check the final cohort?',
+    createdAt: '2026-09-30T18:30:00Z',
+    isEdited: true,
+    isUnread: true,
+    typingUsers: [NOAH],
+    seenBy: [NOAH],
+    previousVersions: [
+      {
+        id: 'plan-v1',
+        body: 'The revised rollout plan is ready for review.',
+        editedAt: '2026-09-30T18:10:00Z',
+        author: MAYA,
+      },
+    ],
+    reactions: [
+      {
+        key: 'like',
+        label: '👍',
+        description: 'Like',
+        count: 2,
+        reactedByViewer: true,
+        actors: [VIEWER, NOAH],
+      },
+    ],
     replies: [
       {
-        id: 'rollout-reply',
-        author: VIEWER,
-        body: 'Updated. The window now starts after the dry run finishes.',
-        createdAt: '2026-10-14T17:31:00Z',
+        id: 'plan-reply-1',
+        author: NOAH,
+        body: 'I checked the cohort and the guardrail query. Both look good.',
+        createdAt: '2026-09-30T18:42:00Z',
+      },
+      {
+        id: 'plan-reply-2',
+        author: ASSISTANT,
+        body: '',
+        createdAt: '2026-09-30T18:45:00Z',
+        progress: {label: 'Checking the rollout dependencies…'},
       },
     ],
   },
   {
-    id: 'latency-threshold',
-    author: JORDAN,
-    body: 'This matches the alert. I would keep the two-check window to avoid pausing on a single spike.',
-    createdAt: '2026-10-14T18:04:00Z',
-    anchor: {quote: GUARDRAIL_PASSAGE},
-    isUnread: true,
+    id: 'inline',
+    author: NOAH,
+    body: 'Should this say three days? The dry run adds one.',
+    createdAt: '2026-09-30T18:52:00Z',
+    anchor: {quote: 'The final cohort completes rollout in two days.'},
+    replies: [
+      {
+        id: 'inline-reply-1',
+        author: MAYA,
+        body: 'Yes — I updated the rollout window to three days.',
+        createdAt: '2026-09-30T19:04:00Z',
+        isUnread: true,
+      },
+    ],
+  },
+  {
+    id: 'orphaned',
+    author: MAYA,
+    body: 'Typo: "Teh".',
+    createdAt: '2026-09-30T18:55:00Z',
+    anchor: {quote: 'Teh guardrail query runs hourly.', status: 'orphaned'},
+    isResolved: true,
+    resolvedBy: VIEWER,
+  },
+  {
+    id: 'failed',
+    author: VIEWER,
+    body: 'Posting this update failed, but the text is kept.',
+    createdAt: '2026-09-30T19:10:00Z',
+    status: 'error',
+    errorMessage: "Couldn't post this comment.",
   },
 ];
-
-const styles = stylex.create({
-  passage: {
-    appearance: 'none',
-    backgroundColor: colorVars['--color-background-yellow'],
-    borderStyle: 'solid',
-    borderWidth: 0,
-    borderBlockEndWidth: borderVars['--border-width'],
-    borderBlockEndColor: 'transparent',
-    borderRadius: radiusVars['--radius-inner'],
-    color: 'inherit',
-    cursor: 'pointer',
-    font: 'inherit',
-    lineHeight: 'inherit',
-    marginInline: spacingVars['--spacing-0-5'],
-    paddingBlock: 0,
-    paddingInline: spacingVars['--spacing-0-5'],
-    textAlign: 'start',
-    outlineStyle: {
-      default: 'none',
-      ':focus-visible': focusVars['--focus-outline-style'],
-    },
-    outlineWidth: focusVars['--focus-outline-width'],
-    outlineColor: focusVars['--focus-outline-color'],
-    outlineOffset: focusVars['--focus-outline-offset'],
-  },
-  selectedPassage: {
-    borderBlockEndColor: colorVars['--color-border-yellow'],
-  },
-  selectablePassage: {
-    backgroundColor: {
-      default: 'transparent',
-      ':hover': colorVars['--color-background-yellow'],
-    },
-    borderBlockEndStyle: 'dashed',
-    borderBlockEndColor: colorVars['--color-border-emphasized'],
-  },
-  document: {
-    overflowY: 'auto',
-  },
-});
 
 function updateComment(
   comments: readonly CommentThreadData[],
@@ -126,172 +144,198 @@ function updateComment(
   );
 }
 
+function findComment(
+  comments: readonly CommentThreadData[],
+  id: string,
+): CommentData | undefined {
+  for (const comment of comments) {
+    if (comment.id === id) {
+      return comment;
+    }
+    const reply = comment.replies?.find(candidate => candidate.id === id);
+    if (reply != null) {
+      return reply;
+    }
+  }
+  return undefined;
+}
+
 export default function CommentsShowcase() {
   const [comments, setComments] = useState<CommentThreadData[]>(() => [
     ...INITIAL_COMMENTS,
   ]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(
-    'rollout-window',
+    'plan',
   );
-  const [selectedPassage, setSelectedPassage] = useState<string | null>(null);
-  const [composerAnchor, setComposerAnchor] = useState<CommentAnchor>();
+  const [hasOlderComments, setHasOlderComments] = useState(true);
   const nextId = useRef(1);
 
   const post = (body: string, parentCommentId?: string) => {
-    const id = `review-comment-${nextId.current++}`;
-    const comment: CommentData = {
-      id,
+    const comment = {
+      id: `demo-${nextId.current++}`,
       author: VIEWER,
       body,
       createdAt: new Date().toISOString(),
     };
-    if (parentCommentId != null) {
-      setComments(current =>
-        current.map(thread =>
-          thread.id === parentCommentId
-            ? {...thread, replies: [...(thread.replies ?? []), comment]}
-            : thread,
-        ),
-      );
+    setComments(current =>
+      parentCommentId == null
+        ? [...current, comment]
+        : current.map(root =>
+            root.id === parentCommentId
+              ? {...root, replies: [...(root.replies ?? []), comment]}
+              : root,
+          ),
+    );
+  };
+
+  const saveEdit = (commentId: string, body: string) =>
+    setComments(current =>
+      updateComment(current, commentId, comment => ({
+        ...comment,
+        body,
+        isEdited: true,
+        previousVersions: [
+          {
+            id: `${comment.id}-${Date.now()}`,
+            body: comment.body,
+            editedAt: new Date().toISOString(),
+            author: comment.author,
+          },
+          ...(comment.previousVersions ?? []),
+        ],
+      })),
+    );
+
+  const remove = (commentId: string) =>
+    setComments(current =>
+      current
+        .filter(comment => comment.id !== commentId)
+        .map(comment => ({
+          ...comment,
+          replies: comment.replies?.filter(reply => reply.id !== commentId),
+        })),
+    );
+
+  const react = (
+    commentId: string,
+    key: string,
+    picked?: CommentReactionOption,
+  ) => {
+    const option =
+      picked ??
+      DEFAULT_COMMENT_REACTIONS.find(candidate => candidate.key === key);
+    if (option == null) {
       return;
     }
-    setComments(current => [...current, {...comment, anchor: composerAnchor}]);
-    setComposerAnchor(undefined);
-    setSelectedPassage(null);
-    setSelectedThreadId(id);
+    setComments(current =>
+      updateComment(current, commentId, comment => {
+        const existing = comment.reactions?.find(
+          reaction => reaction.key === key,
+        );
+        const reactions =
+          existing == null
+            ? [
+                ...(comment.reactions ?? []),
+                {...option, count: 1, reactedByViewer: true, actors: [VIEWER]},
+              ]
+            : (comment.reactions ?? [])
+                .map(reaction =>
+                  reaction.key === key
+                    ? {
+                        ...reaction,
+                        count:
+                          reaction.count + (reaction.reactedByViewer ? -1 : 1),
+                        reactedByViewer: !reaction.reactedByViewer,
+                      }
+                    : reaction,
+                )
+                .filter(reaction => reaction.count > 0);
+        return {...comment, reactions};
+      }),
+    );
+  };
+
+  const setResolved = (commentId: string, isResolved: boolean) =>
+    setComments(current =>
+      current.map(comment =>
+        comment.id === commentId
+          ? {
+              ...comment,
+              isResolved,
+              resolvedBy: isResolved ? VIEWER : undefined,
+            }
+          : comment,
+      ),
+    );
+
+  const loadVersions = async (
+    commentId: string,
+  ): Promise<readonly CommentVersion[]> => {
+    const comment = findComment(comments, commentId);
+    if (comment == null) {
+      return [];
+    }
+    return [
+      {
+        id: `${comment.id}-current`,
+        body: comment.body,
+        editedAt: comment.updatedAt ?? comment.createdAt,
+        author: comment.author,
+        isCurrent: true,
+      },
+      ...(comment.previousVersions ?? []),
+    ];
   };
 
   return (
-    <HStack gap={3} align="start">
-      <Card width={520} height={620} padding={4}>
-        <VStack gap={4} width="100%" xstyle={styles.document}>
-          <VStack gap={1}>
-            <Text as="h1" type="display-3" weight="bold">
-              Launch plan
-            </Text>
-            <Text type="supporting" color="secondary">
-              Draft · updated today
-            </Text>
-          </VStack>
-
-          <VStack gap={2}>
-            <Text as="h2" type="body" weight="bold">
-              Rollout
-            </Text>
-            <Text type="body">
-              Begin with the internal cohort, then expand by region.
-              <button
-                type="button"
-                {...stylex.props(
-                  styles.passage,
-                  selectedThreadId === 'rollout-window' &&
-                    styles.selectedPassage,
-                )}
-                aria-label={`Open comments on “${ROLLOUT_PASSAGE}”`}
-                onClick={() => {
-                  setSelectedPassage(null);
-                  setComposerAnchor(undefined);
-                  setSelectedThreadId('rollout-window');
-                }}>
-                {ROLLOUT_PASSAGE}
-              </button>
-              Owners confirm each step before the next begins.
-            </Text>
-          </VStack>
-
-          <VStack gap={2}>
-            <Text as="h2" type="body" weight="bold">
-              Guardrails
-            </Text>
-            <Text type="body">
-              Watch latency and error rate throughout the rollout.
-              <button
-                type="button"
-                {...stylex.props(
-                  styles.passage,
-                  selectedThreadId === 'latency-threshold' &&
-                    styles.selectedPassage,
-                )}
-                aria-label={`Open comments on “${GUARDRAIL_PASSAGE}”`}
-                onClick={() => {
-                  setSelectedPassage(null);
-                  setComposerAnchor(undefined);
-                  setSelectedThreadId('latency-threshold');
-                }}>
-                {GUARDRAIL_PASSAGE}
-              </button>
-              Resume only after the metric returns to baseline.
-            </Text>
-          </VStack>
-
-          <VStack gap={2} align="start">
-            <Text as="h2" type="body" weight="bold">
-              Review
-            </Text>
-            <Text type="body">
-              <button
-                type="button"
-                {...stylex.props(
-                  styles.passage,
-                  styles.selectablePassage,
-                  selectedPassage === REVIEW_PASSAGE && styles.selectedPassage,
-                )}
-                aria-label={`Select “${REVIEW_PASSAGE}” for a comment`}
-                onClick={() => {
-                  setSelectedThreadId(null);
-                  setComposerAnchor(undefined);
-                  setSelectedPassage(REVIEW_PASSAGE);
-                }}>
-                {REVIEW_PASSAGE}
-              </button>
-            </Text>
-            {selectedPassage === REVIEW_PASSAGE && (
-              <Button
-                label="Comment on selection"
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setComposerAnchor({quote: REVIEW_PASSAGE});
-                  setSelectedPassage(null);
-                }}
-              />
-            )}
-          </VStack>
-        </VStack>
-      </Card>
-
-      <Card width={360} height={620} padding={0}>
-        <Comments
-          label="Comments on Launch plan"
-          comments={comments}
-          currentUser={VIEWER}
-          container="card"
-          density="compact"
-          selectedThreadId={selectedThreadId}
-          onSelectedThreadChange={setSelectedThreadId}
-          composerAnchor={composerAnchor}
-          onComposerAnchorDismiss={() => setComposerAnchor(undefined)}
-          onSubmit={post}
-          onResolveThread={commentId =>
-            setComments(current =>
-              updateComment(current, commentId, comment => ({
-                ...comment,
-                isResolved: true,
-                resolvedBy: VIEWER,
-              })),
-            )
-          }
-          onReopenThread={commentId =>
-            setComments(current =>
-              updateComment(current, commentId, comment => ({
-                ...comment,
-                isResolved: false,
-                resolvedBy: undefined,
-              })),
-            )
-          }
-        />
-      </Card>
-    </HStack>
+    <VStack width="100%" height="100%">
+      <Comments
+        comments={comments}
+        events={EVENTS}
+        currentUser={VIEWER}
+        selectedThreadId={selectedThreadId}
+        onSelectedThreadChange={setSelectedThreadId}
+        density="compact"
+        hasOlderComments={hasOlderComments}
+        onLoadOlder={() => {
+          setComments(current => [
+            {
+              id: 'older',
+              author: NOAH,
+              body: 'Earlier context loads above the threads.',
+              createdAt: '2026-09-30T17:45:00Z',
+            },
+            ...current,
+          ]);
+          setHasOlderComments(false);
+        }}
+        agentCommands={[
+          {
+            command: 'ask',
+            name: 'Release Assistant',
+            description: 'Ask about the rollout',
+          },
+        ]}
+        onUploadImages={async files =>
+          files.map(file => ({url: URL.createObjectURL(file), alt: file.name}))
+        }
+        onSubmit={post}
+        onSaveEdit={saveEdit}
+        onDelete={remove}
+        onReact={react}
+        onResolveThread={id => setResolved(id, true)}
+        onReopenThread={id => setResolved(id, false)}
+        onRetryComment={commentId =>
+          setComments(current =>
+            updateComment(current, commentId, comment => ({
+              ...comment,
+              status: 'sent',
+              errorMessage: undefined,
+            })),
+          )
+        }
+        loadVersions={loadVersions}
+      />
+    </VStack>
   );
 }
