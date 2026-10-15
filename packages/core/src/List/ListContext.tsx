@@ -5,10 +5,10 @@
 /**
  * @file ListContext.tsx
  * @input Layer-scoped React context
- * @output Exports ListContext for sharing density, dividers, flush rows,
- *   marker style, and optional inline edge compensation between List and
- *   ListItem, and ListMarkerScope, which sets the marker for the items
- *   inside it, or a task item's checkbox in its place
+ * @output Exports ListContext for sharing density, dividers, the row edge
+ *   treatment, and marker style between List and ListItem, and
+ *   ListMarkerScope, which sets the marker for the items inside it, or a
+ *   task item's checkbox in its place
  * @position Internal context; consumed by List.tsx and ListItem.tsx
  */
 
@@ -17,6 +17,12 @@ import {createLayerScopedContext as createContext} from '../Layer/layerScopedCon
 
 export type ListDensity = 'compact' | 'balanced' | 'spacious';
 export type ListMarkerStyle = 'none' | 'disc' | 'decimal' | 'circle';
+
+/**
+ * Where each row's content and its lines and backgrounds sit relative to the
+ * list's edges and the padding of the container around the list.
+ */
+export type ListEdge = 'inset' | 'flush' | 'outset' | 'bleed';
 
 /**
  * Every marker ListItem draws: the public styles, and the square, letter,
@@ -35,9 +41,8 @@ export interface ListTaskMarker {
 export interface ListContextValue {
   density: ListDensity;
   hasDividers: boolean;
-  isFlush: boolean;
+  edge: ListEdge;
   listStyle: ListMarkerStyle;
-  edgeCompensation?: 'inline';
   /**
    * The marker items draw instead of the one `listStyle` names, set by
    * ListMarkerScope; internal. Ignored when `listStyle` is `'none'`.

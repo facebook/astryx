@@ -49,7 +49,7 @@ export const docs = {
       {
         name: '--_item-inset-inline',
         description:
-          'Inline inset of the row. Item derives its paddingInline from this variable, and List reads it to cancel the inset when edgeCompensation="inline". Set paddingInline on `item` in a theme and both stay in sync.',
+          'Inline inset of the row. Item derives its paddingInline from this variable, and List reads it to place rows for its edge treatments (edge="flush", "outset", and "bleed"). Set paddingInline on `item` in a theme and both stay in sync.',
         default: 'var(--spacing-2) (var(--spacing-3) for density="spacious")',
         private: true,
       },

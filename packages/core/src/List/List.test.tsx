@@ -3,15 +3,14 @@
 /**
  * @file List.test.tsx
  * @input Uses vitest, @testing-library/react, List, ListItem
- * @output Unit tests for List and ListItem, including flush rows and bounded
- *   inline edge compensation
+ * @output Unit tests for List and ListItem, including the row edge treatment
  * @position Testing; validates List.tsx and ListItem.tsx implementation
  *
  * SYNC: When modified, update this header
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {rulesDeclaredFor} from '../__tests__/pressState';
 import {List} from './List';
@@ -259,126 +258,15 @@ describe('List', () => {
   });
 
   // ===========================================================================
-  // Inline edge compensation
+  // Edge treatment
   // ===========================================================================
 
-  it('does not apply inline edge compensation styles by default', () => {
-    const {container} = render(
-      <List>
-        <ListItem label="Item" />
-      </List>,
-    );
-    const item = container.querySelector('li')!;
-    expect(item.className).not.toContain('inlineEdgeCompensation');
-  });
+  /** Every injected rule that names one of the element's classes. */
+  function declarationsFor(el: Element): string {
+    return rulesDeclaredFor(el).join('\n').replace(/\s+/g, '');
+  }
 
-  it('applies the clamped cancelling margin to each item when edgeCompensation is inline', () => {
-    // The margin lives on the row element itself — the only place that can
-    // read --_item-inset-inline, which Item sets on the same element (custom
-    // properties cascade downward, so the <ul> cannot read it).
-    const {container} = render(
-      <List edgeCompensation="inline">
-        <ListItem label="Item 1" />
-        <ListItem label="Item 2" />
-      </List>,
-    );
-    const items = container.querySelectorAll('li');
-    expect(items).toHaveLength(2);
-    for (const item of items) {
-      expect(item.className).toContain('inlineEdgeCompensation');
-    }
-    expect(container.querySelector('ul')!.className).not.toContain(
-      'inlineEdgeCompensation',
-    );
-  });
-
-  it('uses the same var-derived cancel for every density', () => {
-    // The cancelling margin reads --_item-inset-inline instead of hardcoding
-    // per-density values, so all densities (and theme paddingInline
-    // overrides on `item`) share one style.
-    for (const density of ['compact', 'balanced', 'spacious'] as const) {
-      const {container, unmount} = render(
-        <List edgeCompensation="inline" density={density}>
-          <ListItem label="Item" />
-        </List>,
-      );
-      expect(container.querySelector('li')!.className).toContain(
-        'inlineEdgeCompensation',
-      );
-      unmount();
-    }
-  });
-
-  it('does not pull the header when edgeCompensation is inline', () => {
-    // The negative margin lives on the row elements, so the header keeps its
-    // position and the row text aligns up to it.
-    const {container} = render(
-      <List edgeCompensation="inline" header={<span>Items</span>}>
-        <ListItem label="Item" />
-      </List>,
-    );
-    expect(container.querySelector('li')!.className).toContain(
-      'inlineEdgeCompensation',
-    );
-    const ul = container.querySelector('ul')!;
-    expect(ul.className).not.toContain('inlineEdgeCompensation');
-    expect(ul.parentElement?.className).not.toContain('inlineEdgeCompensation');
-  });
-
-  it('clamps each inline edge against its own container padding var', () => {
-    // Regression for asymmetric container padding (16px start / 4px end):
-    // clamping BOTH margins against --container-padding-inline-start
-    // over-cancels the end edge by the difference, and the selected row
-    // paints past the outer border (RTL mirrors the spill). Each edge must
-    // clamp against its matching var; logical properties keep RTL correct.
-    // jsdom does no real layout, so assert on the injected StyleX CSS
-    // (runtimeInjection is on in the test config).
-    const {container} = render(
-      <List edgeCompensation="inline">
-        <ListItem label="Item" />
-      </List>,
-    );
-    expect(container.querySelector('li')!.className).toContain(
-      'inlineEdgeCompensation',
-    );
-    let out = '';
-    for (const sheet of Array.from(document.styleSheets)) {
-      try {
-        for (const rule of Array.from(sheet.cssRules)) {
-          out += rule.cssText + '\n';
-        }
-      } catch {
-        // ignore cross-origin sheets
-      }
-    }
-    out += Array.from(document.querySelectorAll('style'))
-      .map(s => s.textContent || '')
-      .join('\n');
-    const css = out.replace(/\s+/g, '');
-    expect(css).toContain(
-      'margin-inline-start:calc(-1*min(var(--_item-inset-inline),var(--container-padding-inline-start,0px)))',
-    );
-    expect(css).toContain(
-      'margin-inline-end:calc(-1*min(var(--_item-inset-inline),var(--container-padding-inline-end,0px)))',
-    );
-    // The end edge must not clamp against the start var (the over-cancel).
-    expect(css).not.toContain(
-      'margin-inline-end:calc(-1*min(var(--_item-inset-inline),var(--container-padding-inline-start,0px)))',
-    );
-  });
-
-  it('does not apply the cancelling margin to a ListItem outside a List', () => {
-    const {container} = render(<ListItem label="Standalone" />);
-    expect(container.querySelector('li')!.className).not.toContain(
-      'inlineEdgeCompensation',
-    );
-  });
-
-  // ===========================================================================
-  // Flush rows
-  // ===========================================================================
-
-  /** The declarations of the inline inset variable that reach the row. */
+  /** The declarations of the row inset variable that reach the row. */
   function insetDeclarations(item: Element): string[] {
     return rulesDeclaredFor(item).filter(rule =>
       rule.includes('--_item-inset-inline:'),
@@ -386,79 +274,151 @@ describe('List', () => {
   }
 
   const ZERO_INSET = /--_item-inset-inline:\s*0(px)?\s*;/;
+  const LIST_REACH = [
+    'margin-inline-start:calc(-1*var(--container-padding-inline-start,0px))',
+    'margin-inline-end:calc(-1*var(--container-padding-inline-end,0px))',
+    'width:calc(100%+var(--container-padding-inline-start,0px)+var(--container-padding-inline-end,0px))',
+  ];
+  const OUTSET_ROW = [
+    'margin-inline-start:max(var(--container-padding-inline-start,0px)-var(--_item-inset-inline),0px)',
+    'margin-inline-end:max(var(--container-padding-inline-end,0px)-var(--_item-inset-inline),0px)',
+  ];
+  const BLEED_ROW = [
+    'padding-inline-start:max(var(--container-padding-inline-start,0px),var(--_item-inset-inline))',
+    'padding-inline-end:max(var(--container-padding-inline-end,0px),var(--_item-inset-inline))',
+  ];
 
-  it('keeps the item inline inset by default', () => {
+  function renderEdge(props: Partial<React.ComponentProps<typeof List>>) {
     const {container} = render(
-      <List>
-        <ListItem label="Item" />
-      </List>,
-    );
-    const item = container.querySelector('li')!;
-    expect(item.className).not.toContain('flushInlineInset');
-    const insets = insetDeclarations(item);
-    expect(insets).toHaveLength(1);
-    expect(insets[0]).not.toMatch(ZERO_INSET);
-  });
-
-  it('removes the inline inset of every item, static or interactive, when isFlush is set', () => {
-    const {container} = render(
-      <List isFlush header={<span>Items</span>}>
+      <List header={<span>Items</span>} {...props}>
         <ListItem label="Static" />
         <ListItem label="Button" onClick={() => {}} />
         <ListItem label="Link" href="/docs" />
       </List>,
     );
-    const items = container.querySelectorAll('li');
-    expect(items).toHaveLength(3);
-    for (const item of items) {
-      expect(item.className).toContain('flushInlineInset');
-    }
-    // The list and its header keep their geometry.
     const ul = container.querySelector('ul')!;
-    expect(ul.className).not.toContain('flushInlineInset');
-    expect(ul.parentElement?.className).not.toContain('flushInlineInset');
+    return {
+      ul,
+      header: ul.parentElement!,
+      items: [...ul.querySelectorAll('li')],
+    };
+  }
+
+  it('keeps the inset and leaves the list and rows in place by default', () => {
+    const {ul, items} = renderEdge({});
+    for (const item of items) {
+      expect(item.className).not.toMatch(/edge(Flush|Outset|Bleed)/);
+      expect(insetDeclarations(item)).toHaveLength(1);
+      expect(insetDeclarations(item)[0]).not.toMatch(ZERO_INSET);
+    }
+    expect(ul.className).not.toContain('reachesContainerPadding');
+    expect(edgeContext(ul)).toBe('inset');
   });
 
-  it('resolves the shared inset variable to zero at every density', () => {
-    // Item derives paddingInline from --_item-inset-inline and edge
-    // compensation reads it, so the one declaration that reaches the row must
-    // be the flush zero, including over spacious density's wider inset.
-    for (const density of ['compact', 'balanced', 'spacious'] as const) {
-      const {container, unmount} = render(
-        <List isFlush density={density}>
-          <ListItem label="Item" />
-        </List>,
-      );
-      const item = container.querySelector('li')!;
-      expect(item).toHaveAttribute('data-density', density);
-      const insets = insetDeclarations(item);
-      expect(insets).toHaveLength(1);
-      expect(insets[0]).toMatch(ZERO_INSET);
-      unmount();
+  /** The edge each row resolved, read from the row's own edge class. */
+  function edgeContext(ul: Element): string {
+    const edges = [...ul.querySelectorAll('li')].map(li => {
+      const match = /edge(Flush|Outset|Bleed)/.exec(li.className);
+      return match ? match[1].toLowerCase() : 'inset';
+    });
+    expect(new Set(edges).size).toBe(1);
+    return edges[0];
+  }
+
+  it('applies one treatment to every row, static or interactive, and never to the header', () => {
+    for (const edge of ['flush', 'outset', 'bleed'] as const) {
+      const {ul, header, items} = renderEdge({edge});
+      expect(items).toHaveLength(3);
+      expect(edgeContext(ul)).toBe(edge);
+      expect(header.className).not.toMatch(/edge|reachesContainerPadding/);
+      cleanup();
     }
   });
 
-  it('leaves edge compensation nothing to cancel on a flush list', () => {
-    // Both apply; the cancelling margin reads the zeroed inset, so it is
-    // min(0px, container padding) = 0 and the row stays in place.
-    const {container} = render(
-      <List isFlush edgeCompensation="inline">
-        <ListItem label="Item" />
-      </List>,
+  it('flush: zeroes the shared inset at every density and leaves the list in place', () => {
+    for (const density of ['compact', 'balanced', 'spacious'] as const) {
+      const {ul, items} = renderEdge({edge: 'flush', density});
+      expect(ul.className).not.toContain('reachesContainerPadding');
+      for (const item of items) {
+        expect(item).toHaveAttribute('data-density', density);
+        const insets = insetDeclarations(item);
+        expect(insets).toHaveLength(1);
+        expect(insets[0]).toMatch(ZERO_INSET);
+      }
+      cleanup();
+    }
+  });
+
+  it('outset: the list reaches the container padding and each row steps back in by what its inset does not fill, per edge', () => {
+    // Each edge reads its own container padding var: one var on both edges
+    // over-reaches the other edge under asymmetric padding (16px start /
+    // 4px end), so a selected row would paint past the outer border.
+    const {ul, items} = renderEdge({edge: 'outset'});
+    const listCss = declarationsFor(ul);
+    for (const declaration of LIST_REACH) {
+      expect(listCss).toContain(declaration);
+    }
+    for (const item of items) {
+      const css = declarationsFor(item);
+      for (const declaration of OUTSET_ROW) {
+        expect(css).toContain(declaration);
+      }
+      expect(css).not.toContain(
+        'margin-inline-end:max(var(--container-padding-inline-start',
+      );
+      expect(insetDeclarations(item)[0]).not.toMatch(ZERO_INSET);
+    }
+  });
+
+  it('bleed: the list reaches the container padding and rows fill it with text on the padding line, per edge', () => {
+    const {ul, items} = renderEdge({edge: 'bleed'});
+    const listCss = declarationsFor(ul);
+    for (const declaration of LIST_REACH) {
+      expect(listCss).toContain(declaration);
+    }
+    for (const item of items) {
+      const css = declarationsFor(item);
+      for (const declaration of BLEED_ROW) {
+        expect(css).toContain(declaration);
+      }
+      expect(css).toContain('border-radius:0');
+      expect(css).not.toMatch(/margin-inline-(start|end):max/);
+    }
+  });
+
+  it('keeps the inline clip on the list for every treatment', () => {
+    for (const edge of ['inset', 'flush', 'outset', 'bleed'] as const) {
+      const {ul} = renderEdge({edge});
+      expect(declarationsFor(ul)).toContain('overflow-x:clip');
+      cleanup();
+    }
+  });
+
+  it('treats the deprecated edgeCompensation="inline" as edge="outset" and warns', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {ul} = renderEdge({edgeCompensation: 'inline'});
+    expect(edgeContext(ul)).toBe('outset');
+    expect(ul.className).toContain('reachesContainerPadding');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('`edgeCompensation` is deprecated'),
     );
-    const item = container.querySelector('li')!;
-    expect(item.className).toContain('flushInlineInset');
-    expect(item.className).toContain('inlineEdgeCompensation');
-    expect(insetDeclarations(item)[0]).toMatch(ZERO_INSET);
+    warn.mockRestore();
+  });
+
+  it('lets edge win over the deprecated edgeCompensation', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {ul} = renderEdge({edge: 'flush', edgeCompensation: 'inline'});
+    expect(edgeContext(ul)).toBe('flush');
+    expect(ul.className).not.toContain('reachesContainerPadding');
+    warn.mockRestore();
   });
 
   it('keeps the inset of a ListItem outside a List', () => {
     const {container} = render(<ListItem label="Standalone" />);
-    expect(container.querySelector('li')!.className).not.toContain(
-      'flushInlineInset',
+    expect(container.querySelector('li')!.className).not.toMatch(
+      /edge(Flush|Outset|Bleed)/,
     );
   });
-
   // ===========================================================================
   // Dividers
   // ===========================================================================

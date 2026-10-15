@@ -4,8 +4,8 @@
 
 /**
  * @file ListItem.tsx
- * @input Uses React, ReactNode, StyleXStyles, theme tokens, List flush rows
- *   and edge compensation, CheckboxInput, and the marker or task checkbox a
+ * @input Uses React, ReactNode, StyleXStyles, theme tokens, the List row edge
+ *   treatment, CheckboxInput, and the marker or task checkbox a
  *   ListMarkerScope sets (Markdown's nested lists and the task items of mixed
  *   lists)
  * @output Exports ListItem component, ListItemProps type
@@ -144,30 +144,37 @@ const styles = stylex.create({
   withCounter: {
     counterIncrement: 'astryx-list',
   },
-  // List's isFlush removes the row's built-in inline inset by zeroing
-  // --_item-inset-inline, the variable Item derives its paddingInline from
-  // and inline edge compensation reads, so the two cannot disagree: a flush
-  // row has no inset left to compensate.
-  flushInlineInset: {
+  // List's edge treatments. Each reads --_item-inset-inline, the variable
+  // Item derives its paddingInline from, on the row itself (custom properties
+  // only cascade downward, so the <ul> cannot read it); density and theme
+  // paddingInline overrides on `item` move it. Each edge resolves against ITS
+  // OWN container padding var, so asymmetric padding never over-reaches an
+  // edge, and logical properties keep RTL correct.
+  //
+  // 'flush': no inset, so content meets the row's edges.
+  edgeFlush: {
     '--_item-inset-inline': '0px',
   },
-  // List's inline edge compensation cancels as much of the row's built-in
-  // inline inset as the container padding allows (e.g. under a heading).
-  // The margins read --_item-inset-inline — the same variable Item derives
-  // its paddingInline from — on the row element itself (custom properties
-  // only cascade downward, so the <ul> could not read it). Density changes
-  // and theme paddingInline overrides on `item` move both values together.
-  // Each edge clamps against ITS OWN container padding var: a single
-  // start-var clamp on both margins over-cancels the end edge under
-  // asymmetric container padding (16px start / 4px end) and the selected
-  // row paints past the outer border. Logical properties keep RTL correct,
-  // and a zero-padding/full-bleed surface (min(inset, 0px) = 0px) leaves
-  // the row in place instead of pulling it outside its content edge.
-  inlineEdgeCompensation: {
+  // 'outset': the list reaches the container's padding edge (List.tsx); the
+  // row steps back in by whatever padding its inset does not fill, so the row
+  // reaches min(inset, container padding) past the content line and its text
+  // lands on that line when the padding is at least the inset.
+  edgeOutset: {
     marginInlineStart:
-      'calc(-1 * min(var(--_item-inset-inline), var(--container-padding-inline-start, 0px)))',
+      'max(var(--container-padding-inline-start, 0px) - var(--_item-inset-inline), 0px)',
     marginInlineEnd:
-      'calc(-1 * min(var(--_item-inset-inline), var(--container-padding-inline-end, 0px)))',
+      'max(var(--container-padding-inline-end, 0px) - var(--_item-inset-inline), 0px)',
+  },
+  // 'bleed': the row fills the list, which reaches the container's padding
+  // edge (List.tsx); its text sits on the container's padding line, never
+  // closer to the row's edge than its own inset. Square corners: the row
+  // meets the container's straight sides.
+  edgeBleed: {
+    paddingInlineStart:
+      'max(var(--container-padding-inline-start, 0px), var(--_item-inset-inline))',
+    paddingInlineEnd:
+      'max(var(--container-padding-inline-end, 0px), var(--_item-inset-inline))',
+    borderRadius: 0,
   },
   withDivider: {
     borderBlockEndWidth: borderVars['--border-width'],
@@ -314,9 +321,8 @@ export function ListItem({
   const ctx = use(ListContext);
   const density = ctx?.density ?? 'balanced';
   const hasDividers = ctx?.hasDividers ?? false;
-  const isFlush = ctx?.isFlush ?? false;
+  const edge = ctx?.edge ?? 'inset';
   const listStyle = ctx?.listStyle ?? 'none';
-  const edgeCompensation = ctx?.edgeCompensation;
   const hasMarkers = listStyle !== 'none';
   // ListMarkerScope may name another marker for this item.
   const markerKind: ListMarker | null =
@@ -376,8 +382,9 @@ export function ListItem({
           hasMarkers && styles.withCounter,
           hasDividers && styles.withDivider,
           hasDividers && embeddedStyles.noRadius,
-          isFlush && styles.flushInlineInset,
-          edgeCompensation === 'inline' && styles.inlineEdgeCompensation,
+          edge === 'flush' && styles.edgeFlush,
+          edge === 'outset' && styles.edgeOutset,
+          edge === 'bleed' && styles.edgeBleed,
           xstyle,
         ] as StyleXStyles
       }

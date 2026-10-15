@@ -7,7 +7,16 @@ export const docs = {
   displayName: 'List',
   group: 'List',
   category: 'Table & List',
-  keywords: ["list","listitem","listbox","menu","collection","items","ul","navlist"],
+  keywords: [
+    'list',
+    'listitem',
+    'listbox',
+    'menu',
+    'collection',
+    'items',
+    'ul',
+    'navlist',
+  ],
   theming: {
     targets: [
       {className: 'astryx-list', visualProps: ['density', 'listStyle']},
@@ -42,22 +51,23 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'isFlush',
-      type: 'boolean',
+      name: 'edge',
+      type: "'inset' | 'flush' | 'outset' | 'bleed'",
       description:
-        "Remove every item's built-in inline inset, so item content starts and ends at the list's inline edges: on the same line as the header, the ends of the dividers, and sibling content such as a section heading. Needs no container padding. Rows keep their size, hit target, and hover and selection backgrounds, which then meet the content edge. Keep the default inset for interactive rows, or use edgeCompensation inside a padded container to keep it while moving row text toward the heading.",
-      default: 'false',
+        "Where each row's text, dividers, and hover and selection backgrounds sit relative to the list's edges and the padding of the container around it (Card, Section, Dialog). 'inset' keeps text inside each row's own padding, so backgrounds have room around it and text starts a little in from a heading above. 'flush' drops the rows' side padding, so text, dividers, and backgrounds start and end at the list's edges, on the heading's line; it needs no container and suits static rows. 'outset' reaches rows into the container's padding by their own padding, so text lands on the heading's line while backgrounds keep room around it; it suits interactive rows in a container. 'bleed' reaches rows to the container's edges with square corners, like Table rows in a Card; text lands on the container's padding line, or keeps the row's own padding when the container's is smaller. Without a padded container, 'outset' and 'bleed' place text as 'inset' does.",
+      default: "'inset'",
     },
     {
       name: 'edgeCompensation',
       type: "'inline'",
       description:
-        "Compensate for item content inset on each inline edge by cancelling the smaller of each item's built-in horizontal inset and the container's published inline padding. The margin reads the same variable the items derive their inline padding from, so it tracks density and theme padding overrides automatically without pulling rows outside zero-padding or full-bleed surfaces. Use under a section heading to bring row text toward the heading text. Content aligns when container padding is at least the item inset; smaller padding leaves some inset uncompensated. Omit to leave item positions unchanged.",
+        'Deprecated: use edge="outset", which this sets. Still works; edge wins when both are set.',
     },
     {
       name: 'header',
       type: 'ReactNode',
-      description: 'Header content, associated with the list via aria-labelledby.',
+      description:
+        'Header content, associated with the list via aria-labelledby.',
       slotElements: [
         {
           __element: 'Text',
@@ -71,7 +81,8 @@ export const docs = {
     {
       name: 'listStyle',
       type: "'none' | 'disc' | 'decimal' | 'circle'",
-      description: "List marker style. 'decimal' renders an <ol> element instead of <ul>.",
+      description:
+        "List marker style. 'decimal' renders an <ol> element instead of <ul>.",
       default: "'none'",
     },
     {
@@ -84,28 +95,67 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
-  components: [
-    {name: 'ListItem'},
-  ],
+  components: [{name: 'ListItem'}],
   usage: {
     description:
       'A vertical collection of items with consistent spacing, dividers, and optional markers. Supports headers, icons, avatars, badges, and interactive items with click or link behavior. Use it to display ordered or unordered groups of related content.',
     bestPractices: [
-      { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
-      { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
-      { guidance: true, description: 'Set isFlush when static items sit under a heading or between dividers, so their text lines up with both.' },
-      { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
-      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
-      { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
+      {
+        guidance: true,
+        description:
+          'Provide a header to label the list and give context to screen readers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use start and end content slots to add icons, avatars, or badges to each item.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card or Section.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.',
+      },
+      {
+        guidance: false,
+        description:
+          'Mix clickable and non-clickable items in the same list without clear visual distinction.',
+      },
     ],
     anatomy: [
-      {name: 'List title', required: true, description: 'Heading that labels the list.'},
-      {name: 'Description', required: false, description: 'Supplementary text below the title.'},
-      {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
-      {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
+      {
+        name: 'List title',
+        required: true,
+        description: 'Heading that labels the list.',
+      },
+      {
+        name: 'Description',
+        required: false,
+        description: 'Supplementary text below the title.',
+      },
+      {
+        name: 'List items',
+        required: true,
+        description: 'Individual entries, which may include icons or images.',
+      },
+      {
+        name: 'Item description',
+        required: false,
+        description: 'Additional detail for an individual list item.',
+      },
     ],
   },
 };
@@ -115,18 +165,58 @@ export const docsZh = {
     description:
       'A vertical collection of items with consistent spacing, dividers, and optional markers. Supports headers, icons, avatars, badges, and interactive items with click or link behavior. Use it to display ordered or unordered groups of related content.',
     bestPractices: [
-      { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
-      { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
-      { guidance: true, description: 'Set isFlush when static items sit under a heading or between dividers, so their text lines up with both.' },
-      { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
-      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
-      { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
+      {
+        guidance: true,
+        description:
+          'Provide a header to label the list and give context to screen readers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use start and end content slots to add icons, avatars, or badges to each item.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card or Section.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.',
+      },
+      {
+        guidance: false,
+        description:
+          'Mix clickable and non-clickable items in the same list without clear visual distinction.',
+      },
     ],
     anatomy: [
-      {name: 'List title', required: true, description: 'Heading that labels the list.'},
-      {name: 'Description', required: false, description: 'Supplementary text below the title.'},
-      {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
-      {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
+      {
+        name: 'List title',
+        required: true,
+        description: 'Heading that labels the list.',
+      },
+      {
+        name: 'Description',
+        required: false,
+        description: 'Supplementary text below the title.',
+      },
+      {
+        name: 'List items',
+        required: true,
+        description: 'Individual entries, which may include icons or images.',
+      },
+      {
+        name: 'Item description',
+        required: false,
+        description: 'Additional detail for an individual list item.',
+      },
     ],
   },
 };
@@ -139,18 +229,58 @@ export const docsDense = {
     description:
       'A vertical collection of items with consistent spacing, dividers, and optional markers. Supports headers, icons, avatars, badges, and interactive items with click or link behavior. Use it to display ordered or unordered groups of related content.',
     bestPractices: [
-      { guidance: true, description: 'Provide a header to label the list and give context to screen readers.' },
-      { guidance: true, description: 'Use start and end content slots to add icons, avatars, or badges to each item.' },
-      { guidance: true, description: 'Set isFlush when static items sit under a heading or between dividers, so their text lines up with both.' },
-      { guidance: false, description: 'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.' },
-      { guidance: false, description: 'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.' },
-      { guidance: false, description: 'Mix clickable and non-clickable items in the same list without clear visual distinction.' },
+      {
+        guidance: true,
+        description:
+          'Provide a header to label the list and give context to screen readers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use start and end content slots to add icons, avatars, or badges to each item.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set edge to line row text up with a heading above the list: flush for static rows, outset or bleed for rows in a Card or Section.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place interactive elements inside an interactive list item; it creates nested click targets and confusing focus behavior.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a list for a single item or for laying out unrelated content; lists imply a meaningful collection.',
+      },
+      {
+        guidance: false,
+        description:
+          'Mix clickable and non-clickable items in the same list without clear visual distinction.',
+      },
     ],
     anatomy: [
-      {name: 'List title', required: true, description: 'Heading that labels the list.'},
-      {name: 'Description', required: false, description: 'Supplementary text below the title.'},
-      {name: 'List items', required: true, description: 'Individual entries, which may include icons or images.'},
-      {name: 'Item description', required: false, description: 'Additional detail for an individual list item.'},
+      {
+        name: 'List title',
+        required: true,
+        description: 'Heading that labels the list.',
+      },
+      {
+        name: 'Description',
+        required: false,
+        description: 'Supplementary text below the title.',
+      },
+      {
+        name: 'List items',
+        required: true,
+        description: 'Individual entries, which may include icons or images.',
+      },
+      {
+        name: 'Item description',
+        required: false,
+        description: 'Additional detail for an individual list item.',
+      },
     ],
   },
 };

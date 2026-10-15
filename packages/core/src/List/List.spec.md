@@ -25,45 +25,44 @@ design_specs: []
 architecture:
   [architecture:container-padding, architecture:public-component-api]
 contributing: [contributing:api-conventions]
-system_specs: [spec:AST-002/DEC-1, spec:AST-002/DEC-2, spec:AST-057/FR9]
+system_specs:
+  [spec:AST-002/DEC-1, spec:AST-002/DEC-2, spec:AST-017/FR4, spec:AST-057/FR9]
 ---
 
 # List component contract
 
 ## Contract at a glance
 
-| Area                    | Contract                                                                                                                                                                                                                                                                                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public contract         | Optional `edgeCompensation?: 'inline'` and `isFlush?: boolean`; omitting either preserves current layout.                                                                                                                                                                                                                                         |
-| Behavior                | With `edgeCompensation`, every ListItem row moves its content toward a neutral host's inline content edges, reaching them when the host inset is at least the Item inset, while retaining Item-owned interaction padding. With `isFlush`, every row drops that inset, so row content shares the list's inline edges with the header and dividers. |
-| End-user impact         | List content can reduce or remove the extra inset beside its optional header and adjacent content without shrinking hover, press, selection, or focus paint. A flush list puts row text on the line of the header and the divider ends in any host.                                                                                               |
-| Builder impact          | Builders opt into compensation only when the List is placed directly in an eligible container-padding host state. `isFlush` has no host requirement and suits rows that need no inset around their paint.                                                                                                                                         |
-| Compatibility/readiness | Additive API; implementation and required real-browser evidence are pending. `isFlush` is additive with a `false` default.                                                                                                                                                                                                                        |
-| Review checks           | Reject header movement, unbounded negative margins, duplicated padding values, physical-edge logic, automatic opt-in, or a ListItem-level public prop. Reject a flush mode that changes block padding, the header, row paint, or hit target, or that zeroes padding without the shared inset source.                                              |
-| Governing rules         | `architecture:container-padding/INV9–INV11`; `spec:AST-002/DEC-1–DEC-2`; `component:List/DEC-3`.                                                                                                                                                                                                                                                  |
+| Area                    | Contract                                                                                                                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public contract         | Optional `edge?: 'inset' \| 'flush' \| 'outset' \| 'bleed'`, default `'inset'`. Deprecated `edgeCompensation?: 'inline'` resolves to `'outset'`.                                                      |
+| Behavior                | One edge treatment applies to every ListItem row and decides where row content and row paint sit relative to the list's edges and the host's padding.                                                 |
+| End-user impact         | Row text can share the line of the list header and a heading above, with row paint stopping at the text, reaching into the host padding, or reaching the host edges.                                  |
+| Builder impact          | One choice per list. `flush` works anywhere; `outset` and `bleed` act only inside a host that publishes container padding.                                                                            |
+| Compatibility/readiness | Additive; omission keeps current geometry; `edgeCompensation` keeps working with a codemod to `edge`.                                                                                                 |
+| Review checks           | Reject header movement, row paint past the host's padding edge, duplicated padding values, physical-edge logic, automatic opt-in, a ListItem-level prop, or a second prop that can contradict `edge`. |
+| Governing rules         | `architecture:container-padding/INV3`, `INV9–INV11`; `spec:AST-002/DEC-1–DEC-2`; `spec:AST-017/FR4`; `spec:AST-057/FR9`.                                                                              |
 
 This table is a review projection; the body below is authoritative.
 
 ## Intent
 
-List owns collection-wide edge alignment because its optional header is not
-horizontally inset while every ListItem retains Item's inline padding. The caller
-knows whether the List is placed in a neutral host where these content lines
-should align; List cannot derive that design relationship from its children.
-
-The same inset gives hover, press, and selection paint room around row content.
-Rows that need no such room, such as static items under a heading or between
-dividers, line up with the header and the divider ends only without the inset.
-List cannot tell that from its rows: interactivity varies per row, while the
-inset must be one decision for the whole collection.
+Every ListItem keeps Item's inline inset so hover, press, and selection paint has
+room around row content. That inset leaves row text off the line of the List
+header, a heading above the list, and the host container's padding. How a
+collection resolves that depends on its rows and its host: static rows need no
+room around paint, interactive rows do, and a list inside a padded container can
+reach into that padding. The caller knows which applies; List cannot derive it
+from its rows, and the choice must hold for the whole collection.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`; omission keeps current List and ListItem geometry.
-- Compatibility class: additive optional props with no default behavior change.
+- Compatibility class: additive optional prop; `edgeCompensation` is a deprecated
+  alias with the same meaning as `edge="outset"`.
 - Controlled/uncontrolled behavior: not applicable.
-- Migration decision: `component:List/DEC-1`, `component:List/DEC-2`, and
-  `component:List/DEC-3`.
+- Migration decision: `component:List/DEC-3`; an `astryx upgrade` codemod renames
+  static `edgeCompensation="inline"` to `edge="outset"`.
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -71,124 +70,118 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Owns**
 
-- The collection-wide `edgeCompensation` opt-in and its propagation to every
-  ListItem row.
-- The collection-wide `isFlush` opt-in, which removes the inline inset of every
-  ListItem row.
-- Keeping the optional header in place while moving row content toward its line.
-- The supported relationship between ListItem row geometry and Item's normal
-  density- and theme-aware inline inset.
+- The collection-wide `edge` treatment and its application to every ListItem row.
+- The deprecated `edgeCompensation` alias and its resolution.
+- Keeping the optional header in place for every treatment.
+- The relationship between row geometry and Item's density- and theme-aware
+  inline inset.
 
 **Does not own / non-goals**
 
 - Container padding values, nesting, or overlay resets — owned by
   `architecture:container-padding`.
-- A ListItem-level compensation prop, automatic host detection, full bleed, or
-  arbitrary margin controls.
-- A ListItem-level flush prop, per-edge or arbitrary inset values, or block
-  padding changes.
+- A ListItem-level edge prop, per-edge or arbitrary inset values, automatic host
+  detection, or block-axis bleed.
 - TabList or Button projections.
 
 ## Public concepts
 
-| Concept           | Closed values or states | Meaning                                                                                                      | Availability by variant/orientation/state                   | Default | Owner            | Stability                        | Invalid-value behavior                             |
-| ----------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- | ------- | ---------------- | -------------------------------- | -------------------------------------------------- |
-| Edge compensation | omitted, `inline`       | Move row content toward both logical host content edges while retaining row-local interaction padding        | Every List density and marker style in an eligible host     | omitted | `component:List` | accepted; implementation pending | Other values are rejected by the public type       |
-| Flush rows        | omitted/`false`, `true` | Every row drops its inline inset, so row content shares the list's inline edges with the header and dividers | Every List density, marker style, divider setting, and host | `false` | `component:List` | accepted                         | Non-boolean values are rejected by the public type |
+| Concept                        | Closed values or states             | Meaning                                                                                 | Availability by variant/orientation/state                                                | Default | Owner            | Stability  | Invalid-value behavior                       |
+| ------------------------------ | ----------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------- | ---------------- | ---------- | -------------------------------------------- |
+| Edge treatment                 | `inset`, `flush`, `outset`, `bleed` | Where row content and row paint sit relative to the list's edges and the host's padding | Every density, marker style, and divider setting; `outset` and `bleed` read host padding | `inset` | `component:List` | accepted   | Other values are rejected by the public type |
+| Edge compensation (deprecated) | omitted, `inline`                   | Same as `edge="outset"`                                                                 | As `outset`                                                                              | omitted | `component:List` | deprecated | Other values are rejected by the public type |
 
 ## Behavioral and layout contract
 
-| ID  | Invariant                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Basis                                                               | Status                                    |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------- |
-| FR1 | List MUST own `edgeCompensation?: 'inline'`; ListItem MUST NOT expose a parallel public prop.                                                                                                                                                                                                                                                                                                                                                             | `component:List/DEC-1`                                              | Accepted contract; implementation pending |
-| FR2 | Omission MUST preserve current header, list, and row geometry. Enabling `inline` MUST leave the optional header in place and apply one compensation policy to every ListItem, including non-interactive rows.                                                                                                                                                                                                                                             | Owner direction                                                     | Accepted contract; implementation pending |
-| FR3 | Each row MUST resolve each logical margin independently as the negative smaller of its own component-owned inline inset and the matching available host inset. Missing host inset MUST resolve to zero. Content reaches the host line only when the host inset is at least the row inset; otherwise it moves toward that line without crossing the host boundary.                                                                                         | `architecture:container-padding/INV9–INV10`; `component:List/DEC-2` | Accepted contract; implementation pending |
-| FR4 | The retained row inset MUST come from the same private density- and theme-derived source as Item's applied inline padding. A consumer override of row padding through `xstyle`, `className`, or `style` is outside the alignment guarantee; `edgeCompensation` MUST NOT mirror or infer that arbitrary CSS.                                                                                                                                               | Shared two-owner geometry contract                                  | Accepted contract; implementation pending |
-| FR5 | Compensation MUST preserve Item's hover, press, selection, focus, content, semantics, and hit target. It MUST NOT make the row a full-bleed surface or pull it past either available host edge.                                                                                                                                                                                                                                                           | Owner direction                                                     | Accepted contract; implementation pending |
-| FR6 | The opt-in is valid only under a host state whose published inline inset matches its applied padding and whose relevant boundary is visually neutral. Current automatic LayoutContent/LayoutPanel states with known publication mismatch are not eligible until that conformance gap is fixed.                                                                                                                                                            | `architecture:container-padding/INV8–INV11`                         | Accepted contract; implementation pending |
-| FR7 | The list element containing the rows MUST clip in the inline axis with `overflow-inline: clip`, never `hidden`, so a row dragged aside for its swipe actions paints no further than the list's inline edge without the list becoming a scroll container.                                                                                                                                                                                                  | `spec:AST-057/FR9`                                                  | Verified by `List.test.tsx`               |
-| FR8 | List MUST own `isFlush?: boolean`, default `false`, and apply it to every ListItem row, including interactive rows; ListItem MUST NOT expose a parallel public prop. Omission or `false` MUST preserve current header, list, and row geometry.                                                                                                                                                                                                            | `component:List/DEC-3`                                              | Accepted contract                         |
-| FR9 | With `isFlush`, each row MUST resolve its inline inset to zero through the same private source that supplies Item's applied inline padding and FR3's compensation, so row content reaches both of the row's logical inline edges and compensation has nothing to cancel. The row box, block padding, gap, markers, start and end content, header, dividers, hover, press, selection, and focus paint, semantics, and hit target MUST keep their geometry. | `component:List/DEC-3`                                              | Accepted contract                         |
+| ID  | Invariant                                                                                                                                                                                                                                                                                   | Basis                                                               | Status                                                |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------- |
+| FR1 | List MUST own `edge` and apply one treatment to every ListItem row, interactive or not; ListItem MUST NOT expose a parallel public prop. `edge` MUST win over `edgeCompensation`, and `edgeCompensation="inline"` alone MUST resolve to `outset`.                                           | `component:List/DEC-1`, `component:List/DEC-3`                      | Accepted contract                                     |
+| FR2 | `inset` MUST preserve current header, list, and row geometry. No treatment MAY move the header or change row block padding, gap, markers, start and end content, semantics, or hit target relative to the row box.                                                                          | Owner direction                                                     | Accepted contract                                     |
+| FR3 | `flush` MUST resolve each row's inline inset to zero through the private source that supplies Item's applied inline padding, so row content and row paint share the list's inline edges. It reads no host padding.                                                                          | `component:List/DEC-3`                                              | Accepted contract                                     |
+| FR4 | `outset` MUST place each row so it reaches past the host content line by the smaller of its own inline inset and the matching host inset, per logical edge, keeping its inset inside. Content reaches the host line when the host inset is at least the row inset.                          | `architecture:container-padding/INV9–INV10`; `component:List/DEC-2` | Accepted contract                                     |
+| FR5 | `bleed` MUST place each row so it reaches the host's padding edge on each logical edge, with square corners. Row content sits on the host content line, or at the row's own inset from its edge when the host inset is smaller.                                                             | `architecture:container-padding/INV3`; `component:List/DEC-4`       | Accepted contract                                     |
+| FR6 | Missing or reset host inset MUST resolve to zero, so `outset` and `bleed` place content as `inset` does outside a padded host. No row paint MAY reach past the host's padding edge.                                                                                                         | `architecture:container-padding/INV6`, `INV9`                       | Accepted contract                                     |
+| FR7 | Each row's retained inset MUST come from the same private density- and theme-derived source as Item's applied inline padding. A consumer override of row padding through `xstyle`, `className`, or `style` is outside the alignment guarantee.                                              | Shared two-owner geometry contract                                  | Accepted contract                                     |
+| FR8 | `outset` and `bleed` are valid only under a host state whose published inline inset matches its applied padding and whose relevant boundary is visually neutral. Automatic LayoutContent/LayoutPanel states with a known publication mismatch are not eligible until that gap is fixed.     | `architecture:container-padding/INV8–INV11`                         | Accepted contract                                     |
+| FR9 | The list element containing the rows MUST clip in the inline axis with `overflow-inline: clip`, never `hidden`. Under `outset` and `bleed` its inline edges MUST reach the host's padding edge, so the clip never cuts resting row paint and a swiped row paints no further than that edge. | `spec:AST-057/FR9`                                                  | Verified by `List.test.tsx` and real-browser geometry |
 
 ### Allowed variation
 
 - Density and `item.paddingInline` theme overrides may change the retained inset;
-  compensation follows the same derived value.
-- `isFlush` replaces only the inline inset; every density keeps its block
-  padding.
-- Container padding may be uniform, asymmetric, zero, or absent; each logical
-  edge resolves independently.
+  every treatment follows the same derived value. A theme override of row inline
+  padding takes precedence over every treatment, as it does over density.
+- Host padding may be uniform, asymmetric, zero, or absent; each logical edge
+  resolves independently.
 - Labels, descriptions, markers, start/end content, interactivity, and selection
-  may vary without changing the collection-wide alignment rule.
+  may vary without changing the collection-wide treatment.
 
 ### Representative states
 
-| State                                | Required invariant                                                                                                                       | Allowed variation                                                                      |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Default/omitted                      | Header and every row keep current geometry.                                                                                              | Any current List content and density.                                                  |
-| Host inset at least Item inset       | Row content reaches the host content line; row-local paint keeps Item padding.                                                           | Uniform or asymmetric inline padding.                                                  |
-| Smaller, zero, or missing host inset | The row moves only by the available inset and is never pulled beyond the host boundary.                                                  | Either logical edge may independently be smaller or zero.                              |
-| LTR or RTL                           | Logical start/end mapping follows direction without changing the `inline` meaning.                                                       | Writing direction.                                                                     |
-| Themed Item padding                  | Row padding and compensation move together.                                                                                              | Supported `item.paddingInline` value.                                                  |
-| Flush                                | Row content shares the list's inline edges with the header and the divider ends; the row box, paint, and hit target keep their geometry. | Any density, marker style, divider setting, host, interactivity, or writing direction. |
-| Flush with edge compensation         | Compensation resolves to zero and rows stay in place.                                                                                    | Any host inset.                                                                        |
+| State                                                  | Required invariant                                                                     | Allowed variation                   |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------- | ----------------------------------- |
+| `inset` (default)                                      | Header and every row keep current geometry.                                            | Any content, density, or host.      |
+| `flush`                                                | Row content and paint share the list's inline edges with the header and divider ends.  | Any host, including none.           |
+| `outset`, host inset at least row inset                | Row content reaches the host content line; row paint reaches past it by the row inset. | Uniform or asymmetric host padding. |
+| `bleed`, host inset at least row inset                 | Row paint reaches the host's padding edge; row content sits on the host content line.  | Uniform or asymmetric host padding. |
+| `outset` or `bleed`, host inset smaller than row inset | Row paint stops at the host's padding edge; content keeps the row inset.               | Either logical edge independently.  |
+| `outset` or `bleed`, no host inset                     | Content placed as `inset`; `bleed` rows are square.                                    | Standalone lists and overlays.      |
+| LTR or RTL                                             | Logical start/end mapping follows direction.                                           | Writing direction.                  |
 
 ### Transformation and precedence order
 
-- **ORD1 — Host bound.** Read the matching published host inset for each selected
-  logical edge, with missing values falling back to zero.
-- **ORD2 — Local inset.** Resolve Item's component-owned inline inset through the
-  same private value that supplies applied padding: density sets it, `isFlush`
-  replaces it with zero, and a theme `item.paddingInline` override replaces
-  either.
-- **ORD3 — Compensation.** Apply the negative minimum of those values to the row;
-  then compose supported consumer styles without claiming alignment for a consumer
+- **ORD1 — Treatment.** Resolve `edge`, else `outset` for `edgeCompensation="inline"`,
+  else `inset`.
+- **ORD2 — Host bound.** Read the matching published host inset for each logical
+  edge, with missing values falling back to zero.
+- **ORD3 — Local inset.** Resolve Item's inline inset through the private value
+  that supplies applied padding: density sets it, `flush` replaces it with zero,
+  and a theme `item.paddingInline` override replaces either.
+- **ORD4 — Placement.** Apply the treatment's geometry from those values; then
+  compose supported consumer styles without claiming alignment for a consumer
   override of row inline padding.
 
 ### Performance and resources
 
-- **PR1 — CSS geometry only.** Edge compensation and `isFlush` MUST add no
-  measurement, observer, listener, state, Effect, or render pass.
+- **PR1 — CSS geometry only.** Every treatment MUST add no measurement, observer,
+  listener, state, Effect, or render pass. Deprecation warnings are dev-only.
 
 ## Accessibility contract
 
-- **AR1 — Interaction geometry remains local.** Compensation and `isFlush` MUST
-  NOT change the interactive element, accessible role/name/state, focus target,
-  tab order, or hit target.
-- **AR2 — Direction remains logical.** The same `inline` value MUST produce the
-  corresponding mirrored geometry under RTL without changing DOM order.
+- **AR1 — Interaction geometry remains local.** No treatment MAY change the
+  interactive element, accessible role/name/state, focus target, or tab order.
+- **AR2 — Direction remains logical.** Each treatment MUST produce the mirrored
+  geometry under RTL without changing DOM order.
 
 ## Design relationships
 
-| Anatomy or state  | Design requirement                                                                                          | Representation authority | Hierarchy role     | Component contract |
-| ----------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------ | ------------------ |
-| Optional header   | Stays on the host content line and is not moved by row compensation.                                        | `component:List/DEC-1`   | Context            | FR2                |
-| ListItem row      | Retains local interaction paint and hit-target padding.                                                     | Item composition         | Supporting surface | FR3–FR5            |
-| Row content       | Moves toward each host content line and reaches it only when the host inset can fully absorb the row inset. | `component:List/DEC-2`   | Prominent          | FR2–FR5            |
-| Flush row content | Starts and ends on the list's inline edges, on the line of the header and the divider ends.                 | `component:List/DEC-3`   | Prominent          | FR8–FR9            |
+| Anatomy or state   | Design requirement                                                                                                        | Representation authority | Hierarchy role     | Component contract |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------ | ------------------ |
+| Optional header    | Stays on the host content line for every treatment.                                                                       | `component:List/DEC-1`   | Context            | FR2                |
+| ListItem row paint | Stops at the content (`flush`), reaches past it by the row inset (`inset`, `outset`), or reaches the host edge (`bleed`). | `component:List/DEC-3`   | Supporting surface | FR3–FR6            |
+| Row content        | Sits inside the row inset (`inset`) or on the host content line when the host inset allows (`flush`, `outset`, `bleed`).  | `component:List/DEC-3`   | Prominent          | FR2–FR5            |
 
 ## Family and system relationships
 
-- `architecture:container-padding` owns host publication, the shared
-  `edgeCompensation` vocabulary, eligibility, logical-edge semantics, and overlay
-  reset.
-- `architecture:public-component-api` and `spec:AST-002` own public API admission.
+- `architecture:container-padding` owns host publication, eligibility,
+  logical-edge semantics, and overlay reset. `outset` is List's edge-compensation
+  projection and `bleed` its bleed projection.
+- `architecture:public-component-api`, `spec:AST-002`, and `spec:AST-017` own
+  public API admission and the deprecation lifecycle.
 - Item remains the implementation owner of row padding and interaction paint;
-  List owns only the collection-level opt-in and row application.
+  List owns only the collection-level treatment and row placement.
 - `spec:AST-057` owns swipe actions on `Item` and the rule that the element
-  containing swipe-capable rows clips in the inline axis; List carries that
-  clip (FR7) and `ListItem` passes `swipeActions` and `swipeBehavior` through
-  to `Item` unchanged.
+  containing swipe-capable rows clips in the inline axis; List carries that clip
+  (FR9) and `ListItem` passes `swipeActions` and `swipeBehavior` through to
+  `Item` unchanged.
 
 ## Verification map
 
-| Contract         | Verification                                                 | Representative states                                                                                                               | Mutation or failure expectation                                                                          | Audit section       |
-| ---------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------- |
-| FR1–FR4          | List, Item, and theme-registry tests                         | omitted/enabled; all densities; theme override; static/interactive rows                                                             | Removing context propagation, duplicating a padding value, or using one host edge for both margins fails | `audit:List/layout` |
-| FR2–FR6, AR1–AR2 | Real-browser List geometry evidence                          | header; LTR/RTL; uniform/asymmetric/zero/missing host inset; host inset smaller/equal/larger than Item inset; hover/selection/focus | Header movement, over-pull, wrong bounded movement, or lost row-local paint fails                        | `audit:List/visual` |
-| FR8–FR9          | List tests                                                   | omitted/`true`; all densities; static and interactive rows; with edge compensation; ListItem outside a List                         | Removing context propagation, or zeroing padding without the shared inset source, fails                  | `audit:List/layout` |
-| FR9, AR1–AR2     | Real-browser List geometry evidence                          | header and dividers; LTR/RTL; static, hovered, and selected rows; with edge compensation in a padded host                           | Row content off the header or divider line, or a changed row box, block padding, or hit target, fails    | `audit:List/visual` |
-| Documentation    | `List.doc.mjs`, Storybook, and `scripts/check-knowledge.mjs` | public prop/default and representative composition                                                                                  | Missing or stale contract, docs, or example fails                                                        | `audit:List/docs`   |
+| Contract              | Verification                                                 | Representative states                                                                                                                                     | Mutation or failure expectation                                                                                                                                      | Audit section       |
+| --------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| FR1–FR7, FR9          | List, Item, and theme-registry tests                         | every treatment; all densities; static and interactive rows; header; deprecated alias alone and with `edge`; ListItem outside a List                      | Removing context propagation, using one host edge for both inline edges, zeroing padding without the shared inset source, or dropping the list's reach or clip fails | `audit:List/layout` |
+| FR2–FR6, FR9, AR1–AR2 | Real-browser List geometry evidence                          | each treatment in a Card at two paddings and standalone; header and dividers; LTR/RTL; hovered and selected rows; a swiped row under `outset` and `bleed` | Header movement, content off the expected line, paint past the host's padding edge, clipped resting paint, or a changed row box fails                                | `audit:List/visual` |
+| Migration             | `astryx upgrade` codemod tests                               | static, aliased, already-migrated, and dynamic callsites                                                                                                  | A dynamic value rewritten or a static one missed fails                                                                                                               | `audit:List/docs`   |
+| Documentation         | `List.doc.mjs`, Storybook, and `scripts/check-knowledge.mjs` | public prop, values, default, deprecation, and representative composition                                                                                 | Missing or stale contract, docs, or example fails                                                                                                                    | `audit:List/docs`   |
 
 ## Decision log
 
@@ -217,21 +210,33 @@ without pulling row paint beyond the host boundary.
 Rejected: `isFullBleed`, because the row may stop inside the host padding and the
 name would promise outer-edge bleed that the component does not provide.
 
-### DEC-3 — List owns a collection-wide flush opt-in
+### DEC-3 — One edge prop names every row edge treatment
 
 **Reference:** `component:List/DEC-3`
 
 **Decider:** pending owner ruling
 
-Rows keep Item's inline inset by default because hover, press, and selection
-paint needs room around the content. Rows that need no such room line up with
-the header and dividers only without it, and only the caller knows which kind of
-rows a collection holds. `isFlush` removes the inset through the source Item and
-compensation share, so it needs no host padding, works beside dividers, and
-leaves compensation nothing to cancel.
+`inset`, `flush`, `outset`, and `bleed` are mutually exclusive answers to one
+question, so one closed-value prop carries them and no combination can
+contradict. `outset` is the bounded compensation of DEC-2; `edgeCompensation`
+remains its deprecated alias.
 
-Rejected: applying the inset only to interactive rows, because a list mixing
-interactive and static rows would place their content on different lines.
+Rejected: separate boolean props beside `edgeCompensation`, because they could
+request two treatments at once.
+
+### DEC-4 — Bleed reaches the host edge and keeps content on its padding line
+
+**Reference:** `component:List/DEC-4`
+
+**Decider:** pending owner ruling
+
+`bleed` matches Table rows in a padded host: row paint reaches the host's padding
+edge with square corners, and content sits on the host content line, never closer
+to the row edge than the row's own inset. It is opt-in, so existing lists keep
+their geometry.
+
+Rejected: bleed as the default inside padded hosts, because it would move every
+existing list in a container.
 
 ## Open questions
 

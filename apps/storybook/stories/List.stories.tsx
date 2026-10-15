@@ -3,19 +3,21 @@
 /**
  * @file List.stories.tsx
  * @input List, ListItem, and Storybook args
- * @output List examples, including flush rows and bounded inline edge
- *   compensation
+ * @output List examples, including the four row edge treatments
  * @position Storybook demonstrations for List consumers
  */
 
-import {useState, type CSSProperties} from 'react';
+import {useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
 import {List, ListItem} from '@astryxdesign/core/List';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Badge} from '@astryxdesign/core/Badge';
+import {Card} from '@astryxdesign/core/Card';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Switch} from '@astryxdesign/core/Switch';
-import {Text} from '@astryxdesign/core/Text';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
 import {
   Cog6ToothIcon,
   BellIcon,
@@ -40,18 +42,12 @@ const meta: Meta<typeof List> = {
       control: 'boolean',
       description: 'Whether to show dividers between items',
     },
-    isFlush: {
-      control: 'boolean',
-      description:
-        "Remove each item's inline inset so row text lines up with the " +
-        'header, the dividers, and sibling content',
-    },
-    edgeCompensation: {
+    edge: {
       control: 'select',
-      options: [undefined, 'inline'],
+      options: ['inset', 'flush', 'outset', 'bleed'],
       description:
-        "Cancel each item's inset up to the padded container edge so row " +
-        'text moves toward sibling content',
+        "Where row text, dividers, and backgrounds sit relative to the list's " +
+        "edges and the container's padding",
     },
     listStyle: {
       control: 'select',
@@ -63,6 +59,14 @@ const meta: Meta<typeof List> = {
 
 export default meta;
 type Story = StoryObj<typeof List>;
+
+const edgeStoryStyles = stylex.create({
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+    gap: 24,
+  },
+});
 
 export const Basic: Story = {
   render: args => (
@@ -134,7 +138,7 @@ export const Spacious: Story = {
 };
 
 export const Flush: Story = {
-  args: {isFlush: true, hasDividers: true},
+  args: {edge: 'flush', hasDividers: true},
   render: args => (
     <div>
       <Text type="label" size="lg">
@@ -151,61 +155,58 @@ export const Flush: Story = {
     docs: {
       description: {
         story:
-          "isFlush removes each item's inline inset, so row text starts on " +
+          'edge="flush" drops the rows\' side padding, so row text starts on ' +
           'the same line as the heading and the ends of the dividers, with no ' +
-          'container padding required. Turn it off to compare with the ' +
-          'default inset.',
+          'container needed. Switch edge to compare.',
       },
     },
   },
 };
 
-const inlineEdgeCompensationContainerStyle: CSSProperties & {
-  '--container-padding-inline-start': string;
-  '--container-padding-inline-end': string;
-} = {
-  paddingInline: 16,
-  '--container-padding-inline-start': '16px',
-  '--container-padding-inline-end': '16px',
-};
+const EDGES = ['inset', 'flush', 'outset', 'bleed'] as const;
 
-export const InlineEdgeCompensation: Story = {
-  args: {edgeCompensation: 'inline'},
+/**
+ * The four edge treatments inside a Card, for a static list with dividers
+ * and an interactive list with a selected row.
+ */
+export const EdgeInCard: Story = {
   render: args => (
-    <div style={inlineEdgeCompensationContainerStyle}>
-      <Text type="label" size="lg">
-        Order items
-      </Text>
-      <List {...args}>
-        <ListItem
-          label="Solstice Mug"
-          description="Ceramic, 12 oz"
-          onClick={() => {}}
-        />
-        <ListItem
-          label="Meridian Notebook"
-          description="Dot grid, A5"
-          onClick={() => {}}
-        />
-        <ListItem
-          label="Field Pen"
-          description="0.5 mm, black ink"
-          onClick={() => {}}
-        />
-      </List>
+    <div {...stylex.props(edgeStoryStyles.grid)}>
+      {EDGES.map(edge => (
+        <Card key={edge} data-edge={edge}>
+          <VStack gap={3}>
+            <Heading level={3}>{`edge="${edge}"`}</Heading>
+            <List {...args} edge={edge} hasDividers>
+              <ListItem label="Ada Lovelace" description="Engineer" />
+              <ListItem label="Grace Hopper" description="Admiral" />
+            </List>
+            <List {...args} edge={edge}>
+              <ListItem
+                label="Inbox"
+                onClick={() => {}}
+                startContent={<Icon icon={InboxIcon} />}
+              />
+              <ListItem
+                label="Sent"
+                isSelected
+                onClick={() => {}}
+                startContent={<Icon icon={PaperAirplaneIcon} />}
+              />
+            </List>
+          </VStack>
+        </Card>
+      ))}
     </div>
   ),
   parameters: {
     docs: {
       description: {
         story:
-          'edgeCompensation="inline" cancels the smaller of each item\'s inline inset ' +
-          'and its container padding on each edge. The 16px container padding ' +
-          'here is sufficient to align row text with the heading; smaller ' +
-          'padding leaves some inset uncompensated. The cancelling margin reads the ' +
-          'same variable the items derive their inline padding from, so it ' +
-          'tracks density and theme padding overrides automatically while ' +
-          'zero-padding containers stay unchanged.',
+          "inset keeps text inside each row's padding. flush puts text, " +
+          "dividers, and backgrounds on the heading's line. outset puts text " +
+          "on the heading's line and reaches backgrounds into the card's " +
+          "padding by the rows' own padding. bleed reaches rows to the card's " +
+          "edges, like Table rows, with text on the card's padding line.",
       },
     },
   },
