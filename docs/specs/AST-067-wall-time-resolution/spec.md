@@ -46,7 +46,7 @@ Temporal agree on every instant.
 ## Requirements
 
 - **FR1 — One instant for every date and wall-clock time.**
-  `plainDateToInstant(date, timeZone, hour, minute)` from
+  `plainDateToInstant(date, timezoneID, hour, minute)` from
   `@astryxdesign/core/utils` MUST return exactly one instant for every valid
   date, wall-clock time, and IANA time zone, including wall times that an offset
   change skips or repeats. `hour` and `minute` default to 0.
@@ -58,11 +58,7 @@ Temporal agree on every instant.
   offset change repeats the wall time, the result MUST be its first occurrence,
   read in the offset in effect before the change, in zones with negative and
   positive offsets alike.
-- **FR4 — The start of a day falls on that day.** With the default time, the
-  result MUST be the first instant of that date in that zone: read back in the
-  zone it is the same date, and the instant one millisecond earlier is the
-  previous date. A day whose midnight is skipped starts at the first instant
-  after the gap.
+- **FR4 — The start of a day falls on that day.** With the default time, the result is FR2's or FR3's resolution of midnight. When the zone observes midnight, or its offset change begins at midnight, that is the first instant of that date: read back in the zone it is the same date, and the instant one millisecond earlier is the previous date. A date the zone skips entirely resolves to the first instant after the gap, on the next date.
 
 ### Platform support
 
@@ -87,7 +83,7 @@ Temporal agree on every instant.
 | Contract | Verification                                        | Representative states                                                                                                                                                                                      | Mutation or failure expectation                                                                                       |
 | -------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | FR1–FR3  | `plainDate.test.ts`                                 | Midnight skipped from a negative offset (America/Santiago, America/Havana); a 2:30 AM gap (America/Los_Angeles); a 30-minute gap (Australia/Lord_Howe); repeated hours in America/Havana and Europe/Berlin | Resolving a gap backward, or a repeated wall time to its later occurrence, fails the instant assertions.              |
-| FR4      | `plainDate.test.ts` and Schedule week and day tests | The Santiago and Havana transition weeks and days                                                                                                                                                          | A start-of-day instant on the previous date fails the date round trip and the column count of the week and day views. |
+| FR4      | `plainDate.test.ts` and Schedule week and day tests | The Santiago and Havana transition weeks and days, including a week and a day that end at the skipped midnight; a date Pacific/Apia skips (2011-12-30)                                                     | A start-of-day instant on the previous date fails the date round trip and the column count of the week and day views. |
 
 ## Decision log
 
