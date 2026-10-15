@@ -40,6 +40,19 @@ export {
   type CommentPinProps,
 } from './CommentPin';
 
+// CommentComposer — controlled composer for new comments, replies, and edits
+export {
+  CommentComposer,
+  type CommentComposerProps,
+  type CommentAgentCommand,
+  type CommentAnchor,
+  type CommentComposerContext,
+  type CommentComposerRenderProps,
+  type CommentHighlightColor,
+  type CommentImageUploader,
+  type CommentUploadedImage,
+} from './Comments';
+
 // TransferList — controlled dual-panel collection input
 export {
   TransferList,

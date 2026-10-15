@@ -1782,5 +1782,53 @@
   "@astryx.emojiPicker.groupFlags": {
     "defaultMessage": "Flags",
     "description": "Heading of the Unicode CLDR emoji group of flags in a lab EmojiPicker."
+  },
+  "@astryx.comments.retry": {
+    "defaultMessage": "Retry",
+    "description": "Action on an error Banner in a lab Comments panel or comment composer that repeats the action that failed."
+  },
+  "@astryx.commentComposer.placeholder": {
+    "defaultMessage": "Write a comment…",
+    "description": "Default placeholder of a lab CommentComposer, the input for a new comment in a discussion."
+  },
+  "@astryx.commentComposer.noAgents": {
+    "defaultMessage": "No agents",
+    "description": "Shown in a lab CommentComposer's slash-command menu when no AI agent matches what was typed after `/`."
+  },
+  "@astryx.commentComposer.agents": {
+    "defaultMessage": "Agents",
+    "description": "Accessible name of a lab CommentComposer's slash-command menu, which lists the AI agents a comment can address."
+  },
+  "@astryx.commentComposer.uploadFailed": {
+    "defaultMessage": "Images couldn't be added",
+    "description": "Error Banner title in a lab CommentComposer when uploading attached images failed; a Retry action follows."
+  },
+  "@astryx.commentComposer.imagesOnly": {
+    "defaultMessage": "Only image files can be added",
+    "description": "Error Banner title in a lab CommentComposer when a non-image file was attached, pasted, or dropped."
+  },
+  "@astryx.commentComposer.chooseImages": {
+    "defaultMessage": "Choose images",
+    "description": "Action on a lab CommentComposer's error Banner that opens the file chooser for images."
+  },
+  "@astryx.commentComposer.imageAlt": {
+    "defaultMessage": "Image attachment",
+    "description": "Alt text a lab CommentComposer writes into the comment for an uploaded image that came with none."
+  },
+  "@astryx.commentComposer.removeQuote": {
+    "defaultMessage": "Remove quoted text",
+    "description": "Button beside the quoted passage in a lab CommentComposer that drops the quote from the new inline comment."
+  },
+  "@astryx.commentComposer.attachImages": {
+    "defaultMessage": "Attach images",
+    "description": "Button in a lab CommentComposer that opens the file chooser to add images to the comment."
+  },
+  "@astryx.commentComposer.addEmoji": {
+    "defaultMessage": "Add emoji",
+    "description": "Button in a lab CommentComposer that opens the emoji picker, and the accessible name of that picker's popover."
+  },
+  "@astryx.commentComposer.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Text button beside the label of a lab CommentComposer that is editing an existing comment; it discards the edit."
   }
 }

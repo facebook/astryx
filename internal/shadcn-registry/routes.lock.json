@@ -557,6 +557,11 @@
       "aliases": []
     },
     {
+      "name": "component-lab-comment-composer",
+      "path": "components/lab/comment-composer",
+      "aliases": []
+    },
+    {
       "name": "component-lab-comment-pin",
       "path": "components/lab/comment-pin",
       "aliases": []
@@ -4248,6 +4253,11 @@
     {
       "name": "showcase-command-palette-default",
       "path": "showcases/command-palette/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-comment-composer-new-comment",
+      "path": "showcases/comment-composer/new-comment",
       "aliases": []
     },
     {
