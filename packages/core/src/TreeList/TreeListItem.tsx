@@ -45,6 +45,10 @@ const styles = stylex.create({
     margin: 0,
     padding: 0,
     position: 'relative',
+    // Contain the guides' `z-index` (TreeListBranches) inside the tree, so a
+    // guide drawn above the rows never climbs over a sticky header or other
+    // positioned content outside the list.
+    isolation: 'isolate',
     width: '100%',
     // The treeitem row is the roving-tabindex focus owner; suppress the
     // native focus ring in favor of the row's :focus-visible outline below.
@@ -82,19 +86,23 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-2'],
+    // Per-level indent, drawn INSIDE the row: the row's own inline padding
+    // plus the computed level distance. The row box itself stays full width,
+    // so a nested row's hover and selected fill spans the list like a root
+    // row's, while its content sits exactly where a margin indent would put
+    // it. Declared here (not inline) so it lives in `@layer astryx-base` and
+    // the theme layer can override it in normal cascade order — an inline
+    // longhand would outrank every layer. The row publishes only the computed
+    // distance as `--_tree-indent`; the per-level step is the public
+    // `--tree-list-indent` lever (see TreeList `root`).
+    paddingInlineStart: `calc(${spacingVars['--spacing-2']} + var(--_tree-indent, 0px))`,
+    paddingInlineEnd: spacingVars['--spacing-2'],
     // No `outline: 'none'` here: this element receives the shared focus ring,
     // which already defaults to none, and the shorthand would erase it.
     overflow: 'hidden',
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
-    // Per-level indent. Declared here (not inline) so it lives in
-    // `@layer astryx-base` and the theme layer can override it in normal
-    // cascade order — an inline longhand would outrank every layer. The row
-    // publishes only the computed distance as `--_tree-indent`; the per-level
-    // step is the public `--tree-list-indent` lever (see TreeList `root`).
-    marginInlineStart: 'var(--_tree-indent, 0px)',
   },
   interactive: {
     cursor: {
@@ -411,8 +419,8 @@ export function TreeListItem({
   // every row sits flush, like a parent at that level. That offset is tied to
   // the chevron's own dimensions, not the indent step, so it does not scale
   // with the lever. Published as the private `--_tree-indent` and consumed by
-  // `contentWrapper`'s stylesheet `margin-inline-start` (kept out of the inline
-  // style so the theme layer can override it — see #4308).
+  // `contentWrapper`'s stylesheet `padding-inline-start` (kept out of the
+  // inline style so the theme layer can override it — see #4308).
   const reservesChevronColumn = !hasChildren && hasExpandableItems;
   const indentDistance = reservesChevronColumn
     ? `calc(${nestedLevel} * var(--tree-list-indent) + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`

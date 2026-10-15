@@ -609,12 +609,12 @@ describe('TreeList', () => {
     });
 
     it("variant='noGuides' preserves per-level indentation on the rows", () => {
-      // Indentation lives on the row's margin-inline-start (not the guide
-      // element), so it must survive when the connectors are suppressed. The
-      // per-row distance is published as the `--_tree-indent` custom property
-      // (not an inline longhand — see #4308), so the theme layer can override
-      // the `margin-inline-start` declaration. A deeper row is indented more
-      // than a shallower one.
+      // Indentation lives inside the row's padding-inline-start (not the
+      // guide element), so it must survive when the connectors are
+      // suppressed. The per-row distance is published as the `--_tree-indent`
+      // custom property (not an inline longhand — see #4308), so the theme
+      // layer can override the `padding-inline-start` declaration. A deeper
+      // row is indented more than a shallower one.
       const {container} = render(
         <TreeList items={deepItems} variant="noGuides" />,
       );
@@ -719,6 +719,35 @@ describe('TreeList', () => {
       };
       expect(indentOf('Mid')).toContain('var(--tree-list-indent)');
       expect(indentOf('Leaf')).toContain('var(--tree-list-indent)');
+    });
+
+    it('indents inside the row so nested rows keep the full list width', () => {
+      // The row box carries the indent as padding, on top of its own inline
+      // padding, instead of being pushed in by a margin. A nested row's hover
+      // and selected fill therefore spans the list like a root row's, while
+      // its content lands where a margin indent would have put it.
+      render(<TreeList items={deepItems} />);
+      const rules = collectCssText();
+      expect(rules).toMatch(
+        /padding-inline-start:\s*calc\(\s*var\(--spacing-2\)\s*\+\s*var\(--_tree-indent,\s*0px\)\s*\)/,
+      );
+      expect(rules).not.toMatch(/margin-inline-start:\s*var\(--_tree-indent/);
+    });
+
+    it('draws guides above full-width rows without taking pointer input', () => {
+      // Guide columns now sit inside deeper rows' boxes. They paint above the
+      // rows so a row fill never breaks the line, and let clicks fall through
+      // to the row underneath.
+      const {container} = render(<TreeList items={deepItems} />);
+      const guide = container.querySelector('.astryx-tree-list-guide');
+      expect(guide).not.toBeNull();
+      const column = guide!.parentElement!;
+      expect(getComputedStyle(column).pointerEvents).toBe('none');
+      expect(getComputedStyle(column).zIndex).toBe('1');
+      // The tree items contain that stacking so a guide cannot climb over
+      // positioned content outside the list.
+      const item = screen.getByText('Root').closest('li')!;
+      expect(getComputedStyle(item).isolation).toBe('isolate');
     });
   });
 
