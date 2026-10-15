@@ -53,10 +53,12 @@ the behavior from hooks; every such field behaves and announces the same way.
 - **FR2 — Expanded state follows the list.** While the list is shown, the field
   MUST expose `aria-expanded="true"` and an `aria-controls` that names the
   listbox. While it is not shown, the field MUST expose `aria-expanded="false"`
-  and MUST NOT reference an element that is not rendered.
-- **FR3 — Roles.** The field MUST expose `role="combobox"` and an accessible
-  name whether it is an `input`, a `textarea`, or a contenteditable element. The
-  list MUST be a named
+  and MUST NOT reference an element that is not rendered. A `textarea` field
+  (FR3) exposes `aria-controls` the same way and carries no `aria-expanded`.
+- **FR3 — Roles.** The field MUST expose an accessible name. An `input` or a
+  contenteditable field MUST expose `role="combobox"`. A `textarea`, which
+  admits no explicit role, keeps its implicit `textbox` role and MUST expose
+  `aria-autocomplete="list"`. The list MUST be a named
   `listbox` whose rows are `option`s, with `aria-selected="true"` on the active
   one. The listbox MAY render anywhere in the document, including the page's
   flow. Controls that are not options MUST render outside the listbox.
@@ -64,9 +66,9 @@ the behavior from hooks; every such field behaves and announces the same way.
   active option, Enter on an active option MUST pick it and only then stop the
   field's own Enter, and Escape MUST hide the list without dismissing an
   enclosing layer in the same press (`family:overlay-dismissal`). While the list
-  is hidden, every key MUST reach the field and its surroundings unchanged. Home
-  and End are outside this requirement until OQ2 is ruled; every other key MUST
-  reach the field unchanged.
+  is hidden, every key MUST reach the field and its surroundings unchanged. While
+  the list is shown, Home and End are outside this requirement until OQ2 is
+  ruled, and every other key MUST reach the field unchanged.
 - **FR5 — Input method.** A key MUST NOT activate a combobox command, including
   Escape's dismissal (`family:overlay-dismissal`), while an input-method
   composition is active.
@@ -111,13 +113,13 @@ the behavior from hooks; every such field behaves and announces the same way.
 
 ## Verification
 
-| Contract | Verification                                                         | Representative states                                                           | Mutation or failure expectation                                                          |
-| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| FR1–FR3  | Chromium accessibility-tree binding under `spec:AST-021`; unit tests | input, textarea, contenteditable; list in a layer and in flow                   | focus leaves the field, or a stale `aria-activedescendant` or `aria-controls` remains    |
-| FR4, FR6 | real keyboard and pointer input in Chromium                          | arrows, Enter, Escape inside a dialog, hover and press                          | a key or press picks, dismisses, or blurs the field at the wrong time                    |
-| FR5      | composition event tests                                              | candidate selection confirmed with Enter                                        | Enter during composition picks an option                                                 |
-| FR7      | shared announcer tests                                               | results, none, a new query                                                      | no announcement, or an announcement from a per-field live region                         |
-| FR8      | CLI hook discovery tests over core's exported hooks                  | each public hook named in DEC-2; a hook exported from a component's entry point | a combobox hook is exported without a hook doc, or `astryx hook <name>` denies it exists |
+| Contract | Verification                                                         | Representative states                                                           | Mutation or failure expectation                                                                                                                            |
+| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3  | Chromium accessibility-tree binding under `spec:AST-021`; unit tests | input, textarea, contenteditable; list in a layer and in flow                   | focus leaves the field, a stale `aria-activedescendant` or `aria-controls` remains, or axe reports `aria-allowed-role` or `aria-allowed-attr` on the field |
+| FR4, FR6 | real keyboard and pointer input in Chromium                          | arrows, Enter, Escape inside a dialog, hover and press                          | a key or press picks, dismisses, or blurs the field at the wrong time                                                                                      |
+| FR5      | composition event tests                                              | candidate selection confirmed with Enter                                        | Enter during composition picks an option                                                                                                                   |
+| FR7      | shared announcer tests                                               | results, none, a new query                                                      | no announcement, or an announcement from a per-field live region                                                                                           |
+| FR8      | CLI hook discovery tests over core's exported hooks                  | each public hook named in DEC-2; a hook exported from a component's entry point | a combobox hook is exported without a hook doc, or `astryx hook <name>` denies it exists                                                                   |
 
 ## Decision log
 
