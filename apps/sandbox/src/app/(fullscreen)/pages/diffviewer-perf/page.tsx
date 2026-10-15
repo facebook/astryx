@@ -49,7 +49,16 @@ import {
 type Scenario = 'multi' | 'single';
 type Syntax = 'on' | 'off';
 
+/** What a run measured, captured when it started so later control changes don't relabel it. */
+interface RunSubject {
+  label: string;
+  totalLines: number;
+  viewMode: DiffViewerViewMode;
+  syntax: Syntax;
+}
+
 interface RunMetrics {
+  subject: RunSubject | null;
   prepareMs: number | null;
   firstFileMs: number | null;
   renderMs: number | null;
@@ -62,7 +71,7 @@ interface RunMetrics {
 interface ScrollMetrics {
   fps: number;
   droppedFrames: number;
-  longTasks: number;
+  longTasks: number | null;
 }
 
 interface Interaction {
@@ -71,6 +80,7 @@ interface Interaction {
 }
 
 const EMPTY_RUN: RunMetrics = {
+  subject: null,
   prepareMs: null,
   firstFileMs: null,
   renderMs: null,
@@ -81,8 +91,13 @@ const EMPTY_RUN: RunMetrics = {
 };
 
 const SCROLL_DURATION_MS = 4000;
+/** Stop looking for the first rendered file after this long. */
+const FIRST_FILE_TIMEOUT_MS = 60_000;
 
-/** Chrome's non-standard heap reading; absent in other browsers. */
+/**
+ * Chrome's non-standard heap reading; absent in other browsers, and coarse in
+ * some (it can stay flat across a run), so callers treat no change as no reading.
+ */
 function usedHeapBytes(): number | null {
   const memory = (
     performance as Performance & {memory?: {usedJSHeapSize: number}}
@@ -97,23 +112,35 @@ function afterNextPaint(start: number, done: (ms: number) => void) {
   });
 }
 
-/** Collects long tasks until the returned stop function is called. */
-function watchLongTasks(): () => {count: number; totalMs: number} {
-  const entries: PerformanceEntry[] = [];
-  let observer: PerformanceObserver | null = null;
-  try {
-    observer = new PerformanceObserver(list => {
-      entries.push(...list.getEntries());
-    });
-    observer.observe({type: 'longtask', buffered: false});
-  } catch {
-    observer = null;
+interface LongTaskReading {
+  count: number;
+  totalMs: number;
+}
+
+/**
+ * Collects long tasks until the returned stop function is called. Returns
+ * null from stop when the browser has no Long Tasks API, so the page shows no
+ * reading rather than a misleading zero.
+ */
+function watchLongTasks(): () => LongTaskReading | null {
+  const isSupported =
+    typeof PerformanceObserver !== 'undefined' &&
+    PerformanceObserver.supportedEntryTypes?.includes('longtask') === true;
+  if (!isSupported) {
+    return () => null;
   }
-  return () => {
-    if (observer != null) {
-      entries.push(...observer.takeRecords());
-      observer.disconnect();
+  const entries: PerformanceEntry[] = [];
+  const observer = new PerformanceObserver(list => {
+    for (const entry of list.getEntries()) {
+      entries.push(entry);
     }
+  });
+  observer.observe({type: 'longtask', buffered: false});
+  return () => {
+    for (const entry of observer.takeRecords()) {
+      entries.push(entry);
+    }
+    observer.disconnect();
     return {
       count: entries.length,
       totalMs: entries.reduce((total, entry) => total + entry.duration, 0),
@@ -187,6 +214,7 @@ export default function DiffViewerPerfPage() {
   const [scroll, setScroll] = useState<ScrollMetrics | null>(null);
   const [interaction, setInteraction] = useState<Interaction | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
   const [runKey, setRunKey] = useState(0);
   const surfaceRef = useRef<HTMLDivElement>(null);
 
@@ -204,6 +232,12 @@ export default function DiffViewerPerfPage() {
   const diffLines = useMemo(() => renderedLineCount(files), [files]);
 
   const runBenchmark = useCallback(() => {
+    const subject: RunSubject = {
+      label: workload.label,
+      totalLines: workload.totalLines,
+      viewMode,
+      syntax,
+    };
     setIsBusy(true);
     setScroll(null);
     setInteraction(null);
@@ -219,40 +253,65 @@ export default function DiffViewerPerfPage() {
         const prepareMs = performance.now() - prepareStart;
         const stopLongTasks = watchLongTasks();
         const renderStart = performance.now();
-        let firstFileMs: number | null = null;
-        const watchFirstFile = () => {
-          if (surfaceRef.current?.querySelector('table') != null) {
-            firstFileMs = performance.now() - renderStart;
+        // Both readings are taken after a paint; the run is published once
+        // both are known, so a late first file is recorded, not replaced.
+        let firstFileMs: number | null | undefined;
+        let rendered: {
+          renderMs: number;
+          longTasks: LongTaskReading | null;
+        } | null = null;
+        const publish = () => {
+          if (firstFileMs === undefined || rendered == null) {
             return;
           }
-          requestAnimationFrame(watchFirstFile);
-        };
-        requestAnimationFrame(watchFirstFile);
-        // Commit synchronously so the timer below starts after this render.
-        flushSync(() => {
-          setFiles(prepared);
-          setRunKey(key => key + 1);
-        });
-        afterNextPaint(renderStart, renderMs => {
-          const longTasks = stopLongTasks();
           const heapAfter = usedHeapBytes();
           setRun({
+            subject,
             prepareMs,
-            firstFileMs: firstFileMs ?? renderMs,
-            renderMs,
-            longTasks: longTasks.count,
-            longTaskMs: longTasks.totalMs,
+            firstFileMs,
+            renderMs: rendered.renderMs,
+            longTasks: rendered.longTasks?.count ?? null,
+            longTaskMs: rendered.longTasks?.totalMs ?? null,
             domNodes: surfaceRef.current?.querySelectorAll('*').length ?? null,
             heapBytes:
-              heapBefore == null || heapAfter == null
+              heapBefore == null ||
+              heapAfter == null ||
+              heapAfter === heapBefore
                 ? null
                 : heapAfter - heapBefore,
           });
           setIsBusy(false);
+        };
+        // Looks for a rendered diff now and then once per frame, so a file
+        // that renders late is caught at the frame it appears.
+        const watchFirstFile = () => {
+          if (surfaceRef.current?.querySelector('table') != null) {
+            afterNextPaint(renderStart, ms => {
+              firstFileMs = ms;
+              publish();
+            });
+            return;
+          }
+          if (performance.now() - renderStart > FIRST_FILE_TIMEOUT_MS) {
+            firstFileMs = null;
+            publish();
+            return;
+          }
+          requestAnimationFrame(watchFirstFile);
+        };
+        // Commit synchronously so the timers below start after this render.
+        flushSync(() => {
+          setFiles(prepared);
+          setRunKey(key => key + 1);
+        });
+        watchFirstFile();
+        afterNextPaint(renderStart, renderMs => {
+          rendered = {renderMs, longTasks: stopLongTasks()};
+          publish();
         });
       }, 0);
     });
-  }, [workload]);
+  }, [workload, viewMode, syntax]);
 
   const timeInteraction = useCallback((label: string, update: () => void) => {
     const start = performance.now();
@@ -299,6 +358,7 @@ export default function DiffViewerPerfPage() {
       return;
     }
     viewport.scrollTop = 0;
+    setIsScrolling(true);
     const stopLongTasks = watchLongTasks();
     const distance = viewport.scrollHeight - viewport.clientHeight;
     const start = performance.now();
@@ -321,13 +381,21 @@ export default function DiffViewerPerfPage() {
       setScroll({
         fps: Math.round((frames / elapsed) * 1000),
         droppedFrames: dropped,
-        longTasks: stopLongTasks().count,
+        longTasks: stopLongTasks()?.count ?? null,
       });
+      setIsScrolling(false);
     };
     requestAnimationFrame(step);
   };
 
-  const controlsDisabled = isBusy;
+  const controlsDisabled = isBusy || isScrolling;
+  // Badges describe the measured run once there is one, else the selection.
+  const shown: RunSubject = run.subject ?? {
+    label: workload.label,
+    totalLines: workload.totalLines,
+    viewMode,
+    syntax,
+  };
 
   return (
     <AppShell contentPadding={4} height="fill">
@@ -417,7 +485,7 @@ export default function DiffViewerPerfPage() {
             <Button
               label="Run benchmark"
               onClick={runBenchmark}
-              isDisabled={isBusy}
+              isDisabled={controlsDisabled}
             />
           </HStack>
         </Section>
@@ -427,15 +495,17 @@ export default function DiffViewerPerfPage() {
             <VStack gap={3}>
               <Heading level={3}>Run metrics</Heading>
               <HStack gap={2} wrap="wrap">
-                <Badge label={workload.label} />
+                <Badge label={shown.label} />
                 <Badge
-                  label={`${workload.totalLines.toLocaleString()} file lines`}
+                  label={`${shown.totalLines.toLocaleString()} file lines`}
                 />
                 <Badge
                   label={`${diffLines.toLocaleString()} diff rows rendered`}
                 />
-                <Badge label={viewMode} />
-                <Badge label={syntax === 'on' ? 'highlighted' : 'plain'} />
+                <Badge label={shown.viewMode} />
+                <Badge
+                  label={shown.syntax === 'on' ? 'highlighted' : 'plain'}
+                />
               </HStack>
               <Grid columns={2} gap={3}>
                 <Metric
@@ -468,7 +538,7 @@ export default function DiffViewerPerfPage() {
                   value={
                     scroll == null
                       ? '—'
-                      : `${scroll.fps} / ${scroll.droppedFrames} / ${scroll.longTasks}`
+                      : `${scroll.fps} / ${scroll.droppedFrames} / ${scroll.longTasks ?? '—'}`
                   }
                 />
                 <Metric
@@ -481,28 +551,30 @@ export default function DiffViewerPerfPage() {
                   label="Scroll test"
                   variant="secondary"
                   onClick={runScrollTest}
-                  isDisabled={files.length === 0 || isBusy}
+                  isDisabled={files.length === 0 || controlsDisabled}
                 />
                 <Button
                   label="Collapse all"
                   variant="secondary"
                   onClick={collapseAll}
-                  isDisabled={files.length === 0 || isBusy}
+                  isDisabled={files.length === 0 || controlsDisabled}
                 />
                 <Button
                   label="Expand all"
                   variant="secondary"
                   onClick={expandAll}
-                  isDisabled={files.length === 0 || isBusy}
+                  isDisabled={files.length === 0 || controlsDisabled}
                 />
               </HStack>
               <Text type="body" color="secondary">
                 Full render runs from the commit to the next painted frame;
-                first file on screen is the first frame with a rendered diff. A
-                long task is a main-thread task over 50 ms; a dropped frame is a
-                gap over 20 ms. Heap growth uses the browser&apos;s heap reading
-                where it has one. The scroll test moves the list from top to
-                bottom over four seconds.
+                first file on screen runs from the commit to the paint after a
+                rendered diff first appears. A long task is a main-thread task
+                over 50 ms; a dropped frame is a gap over 20 ms. A reading the
+                browser cannot give (long tasks without the Long Tasks API, a
+                heap reading that does not move) shows as a dash. Badges name
+                the workload the numbers were measured on. The scroll test moves
+                the list from top to bottom over four seconds.
               </Text>
             </VStack>
           </Card>
