@@ -9,13 +9,13 @@
  * SYNC: When DropdownMenu.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {DropdownMenu} from './DropdownMenu';
+import {DropdownMenu, type DropdownMenuTriggerProps} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
 import {DropdownMenuDivider} from './DropdownMenuDivider';
 import {DropdownMenuGroup} from './DropdownMenuGroup';
@@ -2861,6 +2861,55 @@ describe('DropdownMenu custom trigger', () => {
     );
   });
 
+  it('a disabled custom trigger never opens the bottom sheet', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        items={[{label: 'Edit'}, {label: 'Delete'}]}
+        presentation="bottom-sheet"
+        renderTrigger={({ref, ...props}) => (
+          <button type="button" ref={ref} aria-disabled="true" {...props}>
+            Project actions
+          </button>
+        )}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Project actions'});
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      screen.queryByRole('dialog', {name: 'Project actions'}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('a disabled custom trigger never opens the menu', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        items={[{label: 'Edit'}, {label: 'Delete'}]}
+        renderTrigger={({ref, ...props}) => (
+          <button type="button" ref={ref} aria-disabled="true" {...props}>
+            Row actions
+          </button>
+        )}
+      />,
+    );
+    const trigger = screen.getByRole('button', {name: 'Row actions'});
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.pointer([
+      {keys: '[MouseLeft>]', target: trigger},
+      {keys: '[/MouseLeft]'},
+    ]);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('a custom trigger opens from the keyboard and lands on the first row', async () => {
     const user = userEvent.setup();
     render(
@@ -3039,6 +3088,102 @@ describe('DropdownMenu focus return after a pointer pick', () => {
         stylex.props(focusOutlineStyles.suppressed).className!,
       ),
     );
+  });
+
+  it("asks the browser for no ring on the design system's Button too", async () => {
+    const user = userEvent.setup();
+    const trigger = renderMenu();
+    await user.click(trigger);
+    const focus = vi.spyOn(trigger, 'focus');
+    await user.click(item('Edit'));
+    expect(trigger).toHaveFocus();
+    expect(focus.mock.calls.at(-1)).toEqual([
+      {preventScroll: true, focusVisible: false},
+    ]);
+  });
+
+  describe('a trigger the caller renders', () => {
+    // The style that keeps the ring off the design system's Button cannot
+    // reach a caller's control, so the focus move itself has to: after
+    // pointer input the browser is asked not to match `:focus-visible`, which
+    // it otherwise does on the returned focus (Chromium after a mouse pick,
+    // WebKit after a touch).
+    function renderCustomMenu() {
+      render(
+        <DropdownMenu
+          renderTrigger={props => (
+            <button type="button" {...props}>
+              More
+            </button>
+          )}>
+          <DropdownMenuItem label="Edit" onClick={() => {}} />
+          <DropdownMenuItem label="Delete" onClick={() => {}} />
+        </DropdownMenu>,
+      );
+      return screen.getByRole('button', {name: 'More'});
+    }
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('returns focus after a pointer pick with the browser asked for no ring', async () => {
+      const user = userEvent.setup();
+      const trigger = renderCustomMenu();
+      await user.click(trigger);
+      const focus = vi.spyOn(trigger, 'focus');
+      await user.click(item('Edit'));
+      expect(trigger).toHaveFocus();
+      expect(focus.mock.calls.at(-1)).toEqual([
+        {preventScroll: true, focusVisible: false},
+      ]);
+    });
+
+    it('returns focus after a keyboard pick with the ring left to the browser', async () => {
+      const user = userEvent.setup();
+      const trigger = renderCustomMenu();
+      trigger.focus();
+      await user.keyboard('{ArrowDown}');
+      await waitFor(() => expect(item('Edit')).toHaveFocus());
+      const focus = vi.spyOn(trigger, 'focus');
+      await user.keyboard('{Enter}');
+      await waitFor(() => expect(trigger).toHaveFocus());
+      expect(focus.mock.calls.at(-1)).toEqual([{preventScroll: true}]);
+    });
+
+    it('clears a ring the browser already drew before refocusing after a pointer pick', async () => {
+      const user = userEvent.setup();
+      const trigger = renderCustomMenu();
+      await user.click(trigger);
+      // WebKit's own popover focus restoration can focus the trigger, with a
+      // ring, before the menu moves focus, and focusing the focused element
+      // changes nothing.
+      const hidePopover = HTMLElement.prototype.hidePopover;
+      HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+        hidePopover.call(this);
+        trigger.focus();
+      });
+      const matches = HTMLElement.prototype.matches;
+      vi.spyOn(HTMLElement.prototype, 'matches').mockImplementation(function (
+        this: HTMLElement,
+        selector: string,
+      ) {
+        return selector === ':focus-visible'
+          ? this === trigger
+          : matches.call(this, selector);
+      });
+      const blur = vi.spyOn(trigger, 'blur');
+      const focus = vi.spyOn(trigger, 'focus');
+      await user.click(item('Edit'));
+      expect(blur).toHaveBeenCalledTimes(1);
+      expect(focus.mock.calls.at(-1)).toEqual([
+        {preventScroll: true, focusVisible: false},
+      ]);
+      expect(blur.mock.invocationCallOrder[0]).toBeLessThan(
+        focus.mock.invocationCallOrder.at(-1) ?? 0,
+      );
+      expect(trigger).toHaveFocus();
+    });
   });
 });
 
@@ -3513,11 +3658,12 @@ describe('DropdownMenu header and footer', () => {
         </button>,
       ],
     ])(
-      'treats a %s footer control as unreachable: Tab from the menu closes it',
+      'treats a %s footer control as unreachable: Tab from the menu stays on the menu',
       async (_label, control) => {
         const {menu, hide} = await openHidden(null, control);
         fireEvent.keyDown(menu, {key: 'Tab'});
-        expect(hide).toHaveBeenCalled();
+        expect(menu).toHaveFocus();
+        expect(hide).not.toHaveBeenCalled();
       },
     );
 
@@ -3529,10 +3675,11 @@ describe('DropdownMenu header and footer', () => {
         </div>,
       );
       fireEvent.keyDown(menu, {key: 'Tab'});
-      expect(hide).toHaveBeenCalled();
+      expect(menu).toHaveFocus();
+      expect(hide).not.toHaveBeenCalled();
     });
 
-    it('treats a header control inside a display: none wrapper as unreachable: Shift+Tab from a row closes', async () => {
+    it('treats a header control inside a display: none wrapper as unreachable: Shift+Tab from a row stays', async () => {
       const {menu, hide} = await openHidden(
         <div style={{display: 'none'}}>
           <input aria-label="Filter labels" />
@@ -3543,10 +3690,11 @@ describe('DropdownMenu header and footer', () => {
       const row = screen.getByRole('menuitem', {name: 'Bug', hidden: true});
       await waitFor(() => expect(row).toHaveFocus());
       fireEvent.keyDown(row, {key: 'Tab', shiftKey: true});
-      expect(hide).toHaveBeenCalled();
+      expect(row).toHaveFocus();
+      expect(hide).not.toHaveBeenCalled();
     });
 
-    it('Tab past the last visible footer control closes, ignoring a wrapped hidden one after it', async () => {
+    it('Tab past the last visible footer control wraps to the menu, ignoring a wrapped hidden one after it', async () => {
       const {hide} = await openHidden(
         null,
         <>
@@ -3562,10 +3710,13 @@ describe('DropdownMenu header and footer', () => {
       });
       act(() => create.focus());
       fireEvent.keyDown(create, {key: 'Tab'});
-      expect(hide).toHaveBeenCalled();
+      expect(
+        screen.getByRole('menu', {name: 'Labels', hidden: true}),
+      ).toHaveFocus();
+      expect(hide).not.toHaveBeenCalled();
     });
 
-    it('Tab from an open sub-menu closes the menu when the footer control is in a hidden wrapper', async () => {
+    it('Tab from an open sub-menu returns to the menu when the footer control is in a hidden wrapper', async () => {
       const {user, menu} = await openHidden(
         null,
         <div style={{display: 'none'}}>
@@ -3585,11 +3736,11 @@ describe('DropdownMenu header and footer', () => {
       await waitFor(() => expect(folder).toHaveFocus());
       fireEvent.keyDown(folder, {key: 'Tab'});
       expect(subTrigger).toHaveAttribute('aria-expanded', 'false');
-      // The flyout's own close also hides a popover, so check the root's.
-      expect(menu.closest('[popover]')).not.toHaveAttribute('popover-open');
+      expect(menu).toHaveFocus();
+      expect(menu.closest('[popover]')).toHaveAttribute('popover-open');
     });
 
-    it('treats a hidden header control as unreachable: Shift+Tab from a row closes the menu', async () => {
+    it('treats a hidden header control as unreachable: Shift+Tab from a row stays on the row', async () => {
       const {menu, hide} = await openHidden(
         <input aria-label="Filter labels" hidden />,
         null,
@@ -3598,10 +3749,11 @@ describe('DropdownMenu header and footer', () => {
       const row = screen.getByRole('menuitem', {name: 'Bug', hidden: true});
       await waitFor(() => expect(row).toHaveFocus());
       fireEvent.keyDown(row, {key: 'Tab', shiftKey: true});
-      expect(hide).toHaveBeenCalled();
+      expect(row).toHaveFocus();
+      expect(hide).not.toHaveBeenCalled();
     });
 
-    it('Tab past the last visible footer control closes, ignoring a hidden one after it', async () => {
+    it('Tab past the last visible footer control wraps to the menu, ignoring a hidden one after it', async () => {
       const {hide} = await openHidden(
         null,
         <>
@@ -3617,10 +3769,13 @@ describe('DropdownMenu header and footer', () => {
       });
       act(() => create.focus());
       fireEvent.keyDown(create, {key: 'Tab'});
-      expect(hide).toHaveBeenCalled();
+      expect(
+        screen.getByRole('menu', {name: 'Labels', hidden: true}),
+      ).toHaveFocus();
+      expect(hide).not.toHaveBeenCalled();
     });
 
-    it('Tab from an open sub-menu closes the menu when the footer holds only hidden controls', async () => {
+    it('Tab from an open sub-menu returns to the menu when the footer holds only hidden controls', async () => {
       const {user, menu} = await openHidden(
         null,
         <button type="button" hidden>
@@ -3640,8 +3795,8 @@ describe('DropdownMenu header and footer', () => {
       await waitFor(() => expect(folder).toHaveFocus());
       fireEvent.keyDown(folder, {key: 'Tab'});
       expect(subTrigger).toHaveAttribute('aria-expanded', 'false');
-      // The flyout's own close also hides a popover, so check the root's.
-      expect(menu.closest('[popover]')).not.toHaveAttribute('popover-open');
+      expect(menu).toHaveFocus();
+      expect(menu.closest('[popover]')).toHaveAttribute('popover-open');
     });
   });
 
@@ -3701,7 +3856,7 @@ describe('DropdownMenu header and footer', () => {
     });
   });
 
-  it('Tab past the last footer control closes the menu', async () => {
+  it('Tab past the last footer control wraps to the first header control', async () => {
     await open();
     const hide = vi.mocked(HTMLElement.prototype.hidePopover);
     hide.mockClear();
@@ -3715,11 +3870,13 @@ describe('DropdownMenu header and footer', () => {
     create.focus();
     expect(create).toHaveFocus();
     fireEvent.keyDown(create, {key: 'Tab'});
-    expect(hide).toHaveBeenCalled();
-    expect(screen.getByRole('button', {name: /Labels/})).toHaveFocus();
+    expect(
+      screen.getByRole('textbox', {name: 'Filter labels', hidden: true}),
+    ).toHaveFocus();
+    expect(hide).not.toHaveBeenCalled();
   });
 
-  it('Shift+Tab before the first header control closes the menu', async () => {
+  it('Shift+Tab before the first header control wraps to the last footer control', async () => {
     await open();
     const hide = vi.mocked(HTMLElement.prototype.hidePopover);
     hide.mockClear();
@@ -3733,7 +3890,211 @@ describe('DropdownMenu header and footer', () => {
     field.focus();
     expect(field).toHaveFocus();
     fireEvent.keyDown(field, {key: 'Tab', shiftKey: true});
-    expect(hide).toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', {name: 'Create label', hidden: true}),
+    ).toHaveFocus();
+    expect(hide).not.toHaveBeenCalled();
+  });
+
+  it('is a modal dialog named like the menu, holding the menu, and the trigger points at it', async () => {
+    const {menu} = await open();
+    const dialog = screen.getByRole('dialog', {name: 'Labels', hidden: true});
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toContainElement(menu);
+    expect(dialog).toContainElement(
+      screen.getByRole('textbox', {name: 'Filter labels', hidden: true}),
+    );
+    const trigger = screen.getByRole('button', {name: /Labels/});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    const controlled = document.getElementById(
+      trigger.getAttribute('aria-controls') ?? '',
+    );
+    expect(controlled).not.toBeNull();
+    expect(controlled).toContainElement(dialog);
+    expect(controlled).not.toContainElement(trigger);
+  });
+
+  it('a custom trigger with a header names the dialog and logs no unnamed-dialog warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          header={<input aria-label="Filter labels" />}
+          renderTrigger={props => (
+            <span {...props} role="button" tabIndex={0}>
+              Labels
+            </span>
+          )}>
+          <DropdownMenuItem label="Bug" />
+        </DropdownMenu>,
+      );
+      const trigger = screen.getByRole('button', {name: 'Labels'});
+      expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+      await user.click(trigger);
+      expect(
+        screen.getByRole('dialog', {name: 'Labels', hidden: true}),
+      ).toHaveAttribute('aria-modal', 'true');
+      expect(
+        warn.mock.calls.some(args =>
+          String(args[0]).includes('unnamed dialog'),
+        ),
+      ).toBe(false);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('an icon-only custom trigger with a header still gets a named dialog', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        header={<input aria-label="Filter labels" />}
+        renderTrigger={props => (
+          <button {...props} type="button">
+            <img alt="Labels" src="" />
+          </button>
+        )}>
+        <DropdownMenuItem label="Bug" />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Labels'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(trigger);
+    expect(
+      screen.getByRole('dialog', {name: 'Labels', hidden: true}),
+    ).toHaveAttribute('aria-modal', 'true');
+  });
+
+  it.each([
+    [
+      'its own <label>',
+      (props: DropdownMenuTriggerProps) => (
+        <>
+          <label htmlFor={props.id}>Labels</label>
+          <button {...props} type="button" />
+        </>
+      ),
+    ],
+    [
+      "an input button's value",
+      (props: DropdownMenuTriggerProps) => (
+        <input {...props} type="button" value="Labels" />
+      ),
+    ],
+  ])(
+    'a custom trigger named by %s names the dialog like the menu',
+    async (_label, renderTrigger) => {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          header={<input aria-label="Filter labels" />}
+          renderTrigger={renderTrigger}>
+          <DropdownMenuItem label="Bug" />
+        </DropdownMenu>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Labels'}));
+      expect(
+        screen.getByRole('dialog', {name: 'Labels', hidden: true}),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('menu', {name: 'Labels', hidden: true}),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it('a custom trigger with no readable name still gets a dialog, named by the default label', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        footer={<button type="button">Create label</button>}
+        renderTrigger={props => (
+          <button {...props} type="button" data-testid="bare" />
+        )}>
+        <DropdownMenuItem label="Bug" />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByTestId('bare'));
+    const dialog = screen.getByRole('dialog', {hidden: true});
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog.getAttribute('aria-label')?.trim()).not.toBe('');
+  });
+
+  describe('with a radio group in the header', () => {
+    async function openWithRadios(checked: string | null) {
+      const user = userEvent.setup();
+      render(
+        <DropdownMenu
+          button={{label: 'Labels'}}
+          header={
+            <fieldset>
+              {['Name', 'Date', 'Size'].map(option => (
+                <input
+                  key={option}
+                  type="radio"
+                  name="sort"
+                  aria-label={option}
+                  defaultChecked={option === checked}
+                />
+              ))}
+            </fieldset>
+          }
+          footer={<button type="button">Create label</button>}>
+          <DropdownMenuItem label="Bug" />
+        </DropdownMenu>,
+      );
+      await user.click(screen.getByRole('button', {name: /Labels/}));
+      const menu = screen.getByRole('menu', {name: 'Labels', hidden: true});
+      await waitFor(() => expect(menu).toHaveFocus());
+      const radio = (name: string) =>
+        screen.getByRole('radio', {name, hidden: true});
+      const create = screen.getByRole('button', {
+        name: 'Create label',
+        hidden: true,
+      });
+      return {menu, radio, create};
+    }
+
+    it('Shift+Tab from the menu lands on the checked radio, and Tab leaves the group in one step', async () => {
+      const {menu, radio} = await openWithRadios('Date');
+      fireEvent.keyDown(menu, {key: 'Tab', shiftKey: true});
+      expect(radio('Date')).toHaveFocus();
+      fireEvent.keyDown(radio('Date'), {key: 'Tab'});
+      expect(menu).toHaveFocus();
+    });
+
+    it('Tab wrapping past the footer lands on the checked radio', async () => {
+      const {radio, create} = await openWithRadios('Size');
+      act(() => create.focus());
+      fireEvent.keyDown(create, {key: 'Tab'});
+      expect(radio('Size')).toHaveFocus();
+    });
+
+    it('with none checked, the group is entered at its first radio forward and its last backward', async () => {
+      const {menu, radio, create} = await openWithRadios(null);
+      fireEvent.keyDown(menu, {key: 'Tab', shiftKey: true});
+      expect(radio('Size')).toHaveFocus();
+      act(() => create.focus());
+      fireEvent.keyDown(create, {key: 'Tab'});
+      expect(radio('Name')).toHaveFocus();
+      fireEvent.keyDown(radio('Name'), {key: 'Tab', shiftKey: true});
+      expect(create).toHaveFocus();
+    });
+  });
+
+  it('without a header or footer, there is no dialog and the trigger points at the menu', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Actions'}}>
+        <DropdownMenuItem label="Item 1" />
+      </DropdownMenu>,
+    );
+    const trigger = screen.getByRole('button', {name: /Actions/});
+    await user.click(trigger);
+    const menu = screen.getByRole('menu', {name: 'Actions', hidden: true});
+    expect(screen.queryByRole('dialog', {hidden: true})).toBeNull();
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    expect(trigger).toHaveAttribute('aria-controls', menu.id);
   });
 
   it('leaves keys typed in the header to the field', async () => {

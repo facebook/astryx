@@ -409,7 +409,7 @@
   },
   "@astryx.commandPalette.noResultsFor": {
     "defaultMessage": "No results for {query}",
-    "description": "Screen-reader-only announcement when a CommandPalette query matches nothing. `{query}` is the user's verbatim search text; keep it last if your language allows so truncation-by-AT still conveys the outcome."
+    "description": "Not read by any component: CommandPalette announces its rendered empty-search message (`emptySearchText`) instead. Formerly the screen-reader-only announcement when a query matched nothing; `{query}` was the user's verbatim search text."
   },
   "@astryx.commandPalette.loading": {
     "defaultMessage": "Loading",
@@ -863,6 +863,10 @@
     "defaultMessage": "Search…",
     "description": "Grey placeholder inside the CommandPalette's search input. Imperative verb; trailing `…` is one character."
   },
+  "@astryx.commandPalette.input.label": {
+    "defaultMessage": "Search commands",
+    "description": "Screen-reader-only accessible name for the CommandPalette query input. Distinguish it from the visible placeholder; verb followed by the app actions being searched."
+  },
   "@astryx.commandPalette.list.label": {
     "defaultMessage": "Commands",
     "description": "\"Command\" = an app action a user can invoke (metaphor from CLI), not a Unix command. Screen-reader-only name for the matching-commands list."
@@ -1287,6 +1291,10 @@
     "defaultMessage": "Increment {label}",
     "description": "Accessible label for the NumberInput button that increases the value by one configured step. Example: `Increment Quantity`."
   },
+  "@astryx.numberInput.invalidNumber": {
+    "defaultMessage": "Invalid number",
+    "description": "Screen-reader-only live-region alert in NumberInput when the typed text is not a valid number for the field. The field silently reverts on blur, so this is the only rejection feedback a screen-reader user gets."
+  },
   "@astryx.selector.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the selected value from a Selector. `{label}` is the selector's visible label — example: `Clear Country`."
@@ -1406,6 +1414,10 @@
   "@astryx.textArea.charactersOverLimit": {
     "defaultMessage": "{count, number} {count, plural, one {character} other {characters}} over the limit",
     "description": "Screen-reader-only assertive announcement when the user has typed past a TextArea's maxLength. `{count}` is how many characters over — example: `3 characters over the limit`."
+  },
+  "@astryx.inputClearButton.tooltip": {
+    "defaultMessage": "Clear",
+    "description": "Tooltip shown on hover or keyboard focus over the X button inside an input that clears its value. Verb, imperative. Shown alone beside the field, so it names only the action; the screen-reader label names the field separately."
   },
   "@astryx.textInput.clearLabel": {
     "defaultMessage": "Clear {label}",

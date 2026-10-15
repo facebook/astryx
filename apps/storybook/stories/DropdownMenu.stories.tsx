@@ -791,6 +791,7 @@ export const LabCheckboxItems: Story = {
   render: function LabCheckboxItemsStory() {
     const [showArchived, setShowArchived] = useState(false);
     const [showDrafts, setShowDrafts] = useState(true);
+    const [syncFolders, setSyncFolders] = useState(true);
     return (
       <DropdownMenu button={{label: 'View'}}>
         <DropdownMenuCheckboxItem
@@ -804,8 +805,31 @@ export const LabCheckboxItems: Story = {
           value={showDrafts}
           onChange={setShowDrafts}
         />
+        <DropdownMenuCheckboxItem
+          label="Sync folders"
+          icon={ArchiveBoxIcon}
+          endContent={
+            <span data-testid="dropdown-menu-checkbox-item-end-content">
+              <Badge label="Beta" />
+            </span>
+          }
+          value={syncFolders}
+          onChange={setSyncFolders}
+        />
+        <DropdownMenuCheckboxItem
+          label="Managed by your organization"
+          value={true}
+          isDisabled
+        />
       </DropdownMenu>
     );
+  },
+  tags: ['visual-theme-matrix'],
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
   },
   parameters: {
     docs: {
@@ -1050,6 +1074,40 @@ export const ActionSheetPresentation: Story = {
       trigger.click();
     }
   },
+};
+
+export const ActionSheetCustomTrigger: Story = {
+  name: 'Presentation / action sheet, custom trigger',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: {inline: false, height: '560px'},
+      description: {
+        story:
+          'A control the caller renders opens the bottom-sheet presentation. When the sheet closes, focus returns to that control, with a focus ring only after keyboard input.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <DropdownMenu
+        presentation="bottom-sheet"
+        renderTrigger={props => (
+          <IconButton
+            icon={<EllipsisHorizontalIcon />}
+            label="Project actions"
+            variant="ghost"
+            {...props}
+          />
+        )}
+        items={PROJECT_ACTIONS.map(action => ({
+          ...action,
+          onClick: () => console.log(`${action.label} selected`),
+        }))}
+      />
+    </div>
+  ),
 };
 
 export const SectionedActionSheetPresentation: Story = {
@@ -1436,8 +1494,8 @@ const LABELS = ['Bug', 'Feature', 'Documentation', 'Design', 'Performance'];
  * A filter field above the rows and a "Create" button below them. Both sit in
  * the popover beside the menu, never inside it: the menu holds only its rows,
  * so it stays a valid menu to a screen reader, and the field and button keep
- * their own keys and presses. Tab walks field, menu, button; Tab past the
- * button or Shift+Tab before the field closes the menu.
+ * their own keys and presses. The popover is a modal dialog around the menu:
+ * Tab walks field, menu, button and wraps at either end; Escape closes.
  */
 export const HeaderAndFooter: Story = {
   render: () => {

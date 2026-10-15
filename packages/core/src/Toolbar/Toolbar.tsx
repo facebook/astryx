@@ -6,7 +6,8 @@
  * @file Toolbar.tsx
  * @input Uses Section, SizeContext, useListFocus, useKeyboardHint, StyleX, spacingVars, sizeVars
  * @output Exports Toolbar component and ToolbarProps
- * @position Core implementation; consumed by index.ts
+ * @position Core implementation; consumed by index.ts. Owns toolbar focus and
+ *   keyboard navigation, excluding nested toolbars and popover contents.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Toolbar/Toolbar.doc.mjs
@@ -113,18 +114,18 @@ const dynamicStyles = stylex.create({
 });
 
 /**
- * Default block padding per toolbar size. Inline padding stays owned by the
- * surrounding Section/container so nested toolbars preserve the same content
- * line as adjacent body content.
+ * Default block padding per toolbar size. Inline padding comes from the
+ * parent container (Card, Section, LayoutHeader) via the Section's
+ * theme default — the toolbar only controls its vertical tightness.
  */
 const defaultBlockPaddingForSize: Record<ElementSize, SpacingStep> = {
-  sm: 1,
+  sm: 2,
   md: 2,
   lg: 2,
 };
 
 const blockPaddingVarForSize: Record<ElementSize, string> = {
-  sm: spacingVars['--spacing-1'],
+  sm: spacingVars['--spacing-2'],
   md: spacingVars['--spacing-2'],
   lg: spacingVars['--spacing-2'],
 };
@@ -135,7 +136,7 @@ const blockPaddingVarForSize: Record<ElementSize, string> = {
  * creating even spacing around edge-compensated items (ghost buttons, tabs).
  */
 const edgeCompInsetForSize: Record<ElementSize, string> = {
-  sm: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-1']})`,
+  sm: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
   md: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
   lg: `calc(var(--container-padding-inline-start, ${spacingVars['--spacing-4']}) - ${spacingVars['--spacing-2']})`,
 };
@@ -164,11 +165,10 @@ export interface ToolbarProps extends BaseProps<HTMLDivElement> {
    */
   label: string;
   /**
-   * Size of the toolbar. Coordinates block padding and child components through
-   * SizeContext. Inline padding remains container-owned so nested toolbars share
-   * the surrounding content line.
+   * Size of the toolbar. Coordinates with Button, TextInput, TabList, and Selector —
+   * children inherit this size as their default via SizeContext.
    *
-   * - `'sm'`: Compact — 4px block inset, fits sm buttons/inputs (28px elements)
+   * - `'sm'`: Compact — fits sm buttons/inputs (28px elements)
    * - `'md'`: Standard — fits md buttons/inputs (32px elements)
    * - `'lg'`: Spacious — fits lg buttons/inputs (36px elements)
    * @default 'md'
@@ -249,6 +249,7 @@ export function Toolbar({
 
   const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, input, [tabindex]',
+    boundarySelector: '[role="toolbar"], [popover]',
     orientation,
     hasRovingTabIndex: true,
     hasCaretGuard: true,

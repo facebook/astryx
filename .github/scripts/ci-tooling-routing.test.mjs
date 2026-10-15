@@ -147,10 +147,14 @@ describe('Node-tooling CI routing', () => {
     }
 
     expect(ci.jobs['build-sandbox'].if).toContain(TOOLING_FALSE);
-    for (const candidate of ci.jobs['build-storybook'].steps) {
+    for (const candidate of [
+      ...ci.jobs['build-storybook'].steps,
+      ...ci.jobs.typecheck.steps,
+    ]) {
       if (
         candidate.name === 'Require successful scope classification' ||
-        candidate.name === 'Skip heavy work for a specialized lane'
+        candidate.name === 'Skip heavy work for a specialized lane' ||
+        candidate.name === 'Skip typechecks for a specialized lane'
       ) {
         continue;
       }
@@ -170,7 +174,11 @@ describe('Node-tooling CI routing', () => {
       'test-build',
       'registry-contract',
     ]);
-    expect(ci.jobs.build.needs).toEqual(['build-storybook', 'build-sandbox']);
+    expect(ci.jobs.build.needs).toEqual([
+      'build-storybook',
+      'build-sandbox',
+      'typecheck',
+    ]);
     const testJoin = step(ci.jobs.test, 'Require expected test-owner outcomes');
     expect(testJoin.run).toBe('node .github/scripts/ci-test-join.mjs');
     expect(ci.jobs.test.permissions).toEqual({contents: 'read'});
@@ -190,6 +198,9 @@ describe('Node-tooling CI routing', () => {
     ).run;
     expect(buildJoin).toContain('needs.build-storybook.result');
     expect(buildJoin).toContain('needs.build-sandbox.result');
+    expect(buildJoin).toContain(
+      '[ "${{ needs.typecheck.result }}" = "success" ] || exit 1',
+    );
   });
 
   it('keeps removed preview publication out of the tooling lane', () => {

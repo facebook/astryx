@@ -1314,7 +1314,11 @@ describe('RichTextEditorToolbar', () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(toolbarRegion?.parentElement).toBe(editor);
+    expect(toolbarRegion).toBeInstanceOf(HTMLElement);
     expect(editorBody).toBeInstanceOf(HTMLElement);
+    // The compact gutter is emitted by StyleX; do not regress to a component
+    // inline-style escape hatch. Browser coverage below owns the geometry.
+    expect(toolbarRegion).not.toHaveAttribute('style');
     // Vitest's JSDOM setup does not load compiled StyleX CSS. The WithToolbar
     // story provides visual coverage for flush edges and preserved body inset;
     // here we verify that the dedicated body receives its StyleX layout.
@@ -1421,7 +1425,7 @@ describe('RichTextEditorToolbar', () => {
     const actionRow = screen.getByRole('group', {
       name: 'Formatting actions',
     });
-    expect(actionRow).toHaveAttribute(EDGE_COMP_ATTR);
+    expect(actionRow).not.toHaveAttribute(EDGE_COMP_ATTR);
     for (const name of [
       'Bold',
       'Italic',
@@ -1841,7 +1845,41 @@ describe('RichTextEditorToolbar — new-tab links', () => {
     });
   });
 
-  it('omits new-tab attributes when linkOpensInNewTab is false', async () => {
+  it('passes base props and the ref through to the Astryx Toolbar', () => {
+    const ref = createRef<HTMLDivElement>();
+    const onKeyDown = vi.fn();
+    render(
+      <RichTextEditor
+        label="Notes"
+        toolbar={
+          <RichTextEditorToolbar
+            ref={ref}
+            className="product-toolbar"
+            style={{marginBlockEnd: 3}}
+            data-testid="toolbar-root"
+            aria-describedby="toolbar-help"
+            onKeyDown={onKeyDown}
+          />
+        }
+      />,
+    );
+    // Base props land where core Toolbar puts them: the ref and styling on
+    // its root, every other base prop on the role="toolbar" element inside.
+    const toolbar = screen.getByRole('toolbar');
+    const root = ref.current;
+    expect(root).not.toBeNull();
+    expect(root?.contains(toolbar)).toBe(true);
+    expect(root).toHaveClass('product-toolbar');
+    expect(root?.style.marginBlockEnd).toBe('3px');
+    expect(screen.getByTestId('toolbar-root')).toBe(toolbar);
+    expect(toolbar).toHaveAttribute('aria-describedby', 'toolbar-help');
+    // The toolbar's own label and role survive the spread.
+    expect(toolbar).toHaveAccessibleName('Text formatting');
+    fireEvent.keyDown(toolbar, {key: 'x'});
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits new-tab attributes when hasNewTabLinks is false', async () => {
     let editor!: LexicalEditor;
     const promptForUrl = vi.fn(() => 'example.com');
     render(
@@ -1850,7 +1888,7 @@ describe('RichTextEditorToolbar — new-tab links', () => {
         toolbar={
           <RichTextEditorToolbar
             promptForUrl={promptForUrl}
-            linkOpensInNewTab={false}
+            hasNewTabLinks={false}
           />
         }
         plugins={<CaptureEditor onReady={e => (editor = e)} />}

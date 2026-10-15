@@ -989,6 +989,41 @@ describe('SideNav resizable', () => {
     ).toBeInTheDocument();
   });
 
+  it('names the nav it resizes with aria-controls (APG window splitter)', () => {
+    render(<SideNav resizable>Content</SideNav>);
+    const nav = screen.getByRole('navigation');
+    const handle = screen.getByRole('separator');
+    expect(nav.id).not.toBe('');
+    expect(handle).toHaveAttribute('aria-controls', nav.id);
+  });
+
+  it("keeps a consumer's nav id and points the handle at it", () => {
+    render(
+      <SideNav resizable id="primary-nav">
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation')).toHaveAttribute('id', 'primary-nav');
+    expect(screen.getByRole('separator')).toHaveAttribute(
+      'aria-controls',
+      'primary-nav',
+    );
+  });
+
+  it('keeps the generated nav id when a wrapper forwards id={undefined}', () => {
+    render(
+      <SideNav resizable id={undefined}>
+        Content
+      </SideNav>,
+    );
+    const nav = screen.getByRole('navigation');
+    expect(nav.id).not.toBe('');
+    expect(screen.getByRole('separator')).toHaveAttribute(
+      'aria-controls',
+      nav.id,
+    );
+  });
+
   it('clips the overlay drag handle within the resizable nav bounds', () => {
     render(<SideNav resizable>Content</SideNav>);
     const nav = screen.getByRole('navigation');
