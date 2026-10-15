@@ -689,6 +689,12 @@ test('the insert dialog is tabbable, outside the toolbar roving tab stop', async
 
   await page.keyboard.press('Enter');
   await expect(page.locator(IMAGE)).toHaveCount(1);
+  // And focus lands back in the editor, not on the button that opened the
+  // dialog: a Dialog returns focus to its invoker as it closes, so the next
+  // keystroke would otherwise reopen it instead of typing.
+  await expect(page.locator(EDITOR)).toBeFocused();
+  await page.keyboard.type('after the image');
+  await expect(page.locator(EDITOR)).toContainText('after the image');
   expect(errors).toEqual([]);
 });
 

@@ -955,7 +955,11 @@ export function InsertImageDialog() {
     }
     editor.dispatchCommand(INSERT_IMAGE_COMMAND, {altText: alt, src});
     close();
-    editor.focus();
+    // Deferred a frame, as RichTextEditorToolbar defers it for its link
+    // dialog: the dialog returns focus to its invoker as it closes, so a
+    // `focus()` called before that lands on the toolbar's Image button and
+    // the next keystroke reopens the dialog instead of typing.
+    requestAnimationFrame(() => editor.focus());
   }, [alt, close, editor, src]);
 
   return (
