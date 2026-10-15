@@ -1523,6 +1523,10 @@ function renderBlock(
             language={language}
             isDiff={isDiff}
             isCollapsible
+            // Long lines wrap rather than scroll sideways, as they do in
+            // RichText, so a reader sees whole lines and the read/edit switch
+            // moves no block (spec:AST-061 FR5, DEC-9).
+            isWrapped
             xstyle={[
               contentWidthValue != null
                 ? dynamicStyles.blockWidth(contentWidthValue)

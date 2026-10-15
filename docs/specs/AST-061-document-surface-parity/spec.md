@@ -42,7 +42,9 @@ reflows no line; only editing affordances appear or disappear.
 - Which editor engine a product chooses for editing whole documents, and the
   value that product stores. This record governs how the surfaces render the
   same document; RichText's own role and value are DEC-7.
-- RichText's release channel. RichText stays canary-only.
+- RichText's release channel. Package release-channel metadata decides it
+  (spec:AST-033 FR4), and promotion follows spec:AST-017 FR23; this record
+  does not.
 - Equivalent internal implementations remain valid when they satisfy this
   contract, except the character reference decoder, which DEC-5 makes one
   shared public function.
@@ -132,7 +134,11 @@ RichText adopts DEC-8: its package entry stops exporting `sharedEditorTheme`,
 gains `BaseProps` and a `ref` and renames `linkOpensInNewTab` to `hasNewTabLinks`; and its
 Lexical peer ranges move to the Lexical 0.52 minor.
 `Markdown` renders fenced code unwrapped, scrolling sideways, and adopts the
-FR5 wrap; RichText already wraps fenced code.
+FR5 wrap; RichText already wraps fenced code. RichText's editing surface is
+18px narrower than the reading surface at every width, the field's inset, so a
+line that wraps close to the available width can take one more line in edit
+mode than in read mode, against FR9; at phone width a long fenced code line
+does.
 
 ## Verification
 
