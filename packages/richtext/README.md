@@ -58,14 +58,16 @@ stylesheet beside Core's and your theme's, with no StyleX or Babel setup. Never
 compile richtext's source.
 
 ```tsx
+import '@astryxdesign/core/reset.css';
 import '@astryxdesign/core/astryx.css';
 import '@astryxdesign/theme-neutral/theme.css'; // or your theme's CSS
 import '@astryxdesign/richtext/richtext.css';
 ```
 
 `richtext.css` emits into `@layer astryx-base`, the layer `astryx.css` opens,
-so your theme's token overrides (`@layer astryx-theme`) win over it whatever
-the import order, as long as `astryx.css` comes first.
+so your theme's token overrides (`@layer astryx-theme`) win over it, as long
+as Core's `reset.css` (or a `@layer reset, astryx-base, astryx-theme;` line,
+if your app has its own reset) loads first.
 
 ## Examples
 
