@@ -572,8 +572,10 @@ function ImageComponent({
         editor.registerCommand(
           DRAGSTART_COMMAND,
           (event: DragEvent) => {
-            // The browser's own image drag would drop a copy of the file into
-            // the document; the plugin moves the node instead.
+            // Dragging the image away would have the browser drop a copy of
+            // the file back into the document, under the plugin's own drop
+            // handler. Cancel the native drag; moving an image is a cut and
+            // an insert, which the controls and the editor already do.
             if (event.target !== imageRef.current) {
               return false;
             }
