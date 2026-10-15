@@ -6,7 +6,7 @@
  */
 
 import {render, screen, waitFor} from '@testing-library/react';
-import {describe, it, expect} from 'vitest';
+import {afterEach, describe, it, expect, vi} from 'vitest';
 import {useTruncation} from './useTruncation';
 
 function Probe({text}: {text: string}) {
@@ -35,5 +35,35 @@ describe('useTruncation', () => {
         'writing the second step',
       ),
     );
+  });
+
+  describe('content observation', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('shares one observer across every truncating instance', () => {
+      const NativeMutationObserver = globalThis.MutationObserver;
+      let created = 0;
+      vi.stubGlobal(
+        'MutationObserver',
+        class extends NativeMutationObserver {
+          constructor(callback: MutationCallback) {
+            super(callback);
+            created += 1;
+          }
+        },
+      );
+
+      render(
+        <>
+          {Array.from({length: 50}, (_, index) => (
+            <Probe key={index} text={`cell ${index}`} />
+          ))}
+        </>,
+      );
+
+      expect(created).toBe(1);
+    });
   });
 });

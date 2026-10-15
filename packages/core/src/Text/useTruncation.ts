@@ -4,7 +4,7 @@
 
 /**
  * @file useTruncation.ts
- * @input Uses React hooks, sharedResizeObserver, MutationObserver
+ * @input Uses React hooks, sharedResizeObserver, sharedMutationObserver
  * @output Exports useTruncation hook for detecting text overflow
  * @position Hook; consumed by Text.tsx, Heading.tsx
  *
@@ -14,6 +14,7 @@
 
 import {useCallback, useRef, useState, type RefCallback} from 'react';
 import {observeResize} from '../utils/sharedResizeObserver';
+import {observeContent} from '../utils/sharedMutationObserver';
 
 export interface UseTruncationOptions {
   /**
@@ -43,14 +44,12 @@ export interface UseTruncationReturn {
 /**
  * Hook for detecting text overflow/truncation.
  *
- * Uses a shared ResizeObserver singleton (via observeResize)
- * for efficient detection when content or container changes. A single
- * ResizeObserver instance is shared across all mounted useTruncation hooks,
- * so even hundreds of table cells only create one observer.
- *
- * Content changes are observed too: an element whose text changes without
- * resizing (a fixed-width status line) is re-measured, so the tooltip text and
- * the truncated state follow the current content.
+ * Uses a shared ResizeObserver singleton (via observeResize) for size
+ * changes and a shared MutationObserver singleton (via observeContent) for
+ * content changes, so even hundreds of table cells create one observer of
+ * each kind. Observing content matters because an element whose text changes
+ * without resizing (a fixed-width status line) must still be re-measured for
+ * the tooltip text and the truncated state to follow the current content.
  *
  * - Single-line: compares scrollWidth > offsetWidth
  * - Multi-line: uses Range.getBoundingClientRect() to measure actual content
@@ -75,7 +74,7 @@ export function useTruncation(
   const [fullText, setFullText] = useState('');
   const elementRef = useRef<HTMLElement | null>(null);
   const unobserveRef = useRef<(() => void) | null>(null);
-  const mutationObserverRef = useRef<MutationObserver | null>(null);
+  const unobserveContentRef = useRef<(() => void) | null>(null);
 
   const checkTruncation = useCallback(
     (element: HTMLElement) => {
@@ -118,8 +117,8 @@ export function useTruncation(
       // by element leaves any other observer of the same node untouched.
       unobserveRef.current?.();
       unobserveRef.current = null;
-      mutationObserverRef.current?.disconnect();
-      mutationObserverRef.current = null;
+      unobserveContentRef.current?.();
+      unobserveContentRef.current = null;
 
       elementRef.current = element;
 
@@ -136,17 +135,9 @@ export function useTruncation(
         }
         // New text in a box that keeps its size fires no resize, so the
         // captured text and truncated state would otherwise stay stale.
-        if (typeof MutationObserver !== 'undefined') {
-          const mutationObserver = new MutationObserver(() => {
-            checkTruncation(element);
-          });
-          mutationObserver.observe(element, {
-            characterData: true,
-            childList: true,
-            subtree: true,
-          });
-          mutationObserverRef.current = mutationObserver;
-        }
+        unobserveContentRef.current = observeContent(element, () => {
+          checkTruncation(element);
+        });
       } else {
         setIsTruncated(false);
         setFullText('');
