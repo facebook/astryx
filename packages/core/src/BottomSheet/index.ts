@@ -4,7 +4,7 @@
 
 /**
  * @file index.ts
- * @input BottomSheet.tsx, BottomSheetSwitcher.tsx
+ * @input BottomSheet.tsx, BottomSheetStack.tsx, BottomSheetSwitcher.tsx
  * @output Re-exports the BottomSheet public API
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
@@ -15,5 +15,7 @@ export type {
   BottomSheetProps,
   BottomSheetSnapPoint,
 } from './BottomSheet';
+export {BottomSheetStack} from './BottomSheetStack';
+export type {BottomSheetStackProps} from './BottomSheetStack';
 export {BottomSheetSwitcher} from './BottomSheetSwitcher';
 export type {BottomSheetSwitcherProps} from './BottomSheetSwitcher';

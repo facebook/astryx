@@ -109,6 +109,7 @@
     "/templates/BottomSheetNoScrim/",
     "/templates/BottomSheetShowcase/",
     "/templates/BottomSheetSnapPoints/",
+    "/templates/BottomSheetStackShowcase/",
     "/templates/BottomSheetSwitcherReviewFlow/",
     "/templates/BottomSheetSwitcherShowcase/",
     "/templates/BreadcrumbItemBasic/",

@@ -4,7 +4,7 @@
 
 /**
  * @file BottomSheetSwitcher.tsx
- * @input Uses React context, StyleX, theme tokens, shared layer dismissal, focus/scroll-lock hooks, BottomSheetSwitcherContext
+ * @input Uses React context, react-dom portals, StyleX, theme tokens, shared layer dismissal, focus/scroll-lock hooks, BottomSheetSwitcherContext, BottomSheetStackContext
  * @output Exports BottomSheetSwitcher and BottomSheetSwitcherProps
  * @position Core switcher for mutually exclusive BottomSheet flows
  *
@@ -20,8 +20,19 @@
  * across every handoff. A no-scrim flow calls show() on the same non-modal shell.
  * This keeps one modal boundary and one native ::backdrop without a portal.
  *
+ * Under a BottomSheetStack the whole switcher is one level of that stack: it
+ * registers itself from wherever it is rendered, portals its panels into a box
+ * the stack places in its dialog instead of opening its own, leaves scrim,
+ * focus containment, scroll lock, and Escape/scrim dismissal to the stack, and
+ * reports whether it is open and presented, its active purpose, and its label.
+ * Its handoff machine is unchanged, and its items read the level's view
+ * through the parent-level context it provides around them.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheet.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetStack.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetStackContext.ts
+ * - /packages/core/src/BottomSheet/BottomSheetStackContext.test.tsx
  * - /packages/core/src/BottomSheet/BottomSheetEdgeTint.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.doc.mjs
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.spec.md
@@ -37,16 +48,18 @@ import {
   useMemo,
   useRef,
   useState,
+  type HTMLAttributes,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
   type SyntheticEvent,
 } from 'react';
+import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import {useScrollLock} from '../hooks';
+import {useDevWarning, useScrollLock} from '../hooks';
 import {
   useFocusTrap,
   useFocusTrapEscapeCompatibilitySignal,
@@ -62,8 +75,15 @@ import {
   type BottomSheetSwitcherPhase,
   type BottomSheetSwitcherTransitionEvent,
 } from './BottomSheetSwitcherContext';
+import {useInteractionModalityTracking} from '../utils/interactionModality';
+import {
+  BottomSheetStackParentLevelContext,
+  useBottomSheetStackHost,
+  useBottomSheetStackLevel,
+} from './BottomSheetStackContext';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+
 const styles = stylex.create({
   dialog: {
     position: 'fixed',
@@ -117,6 +137,15 @@ const styles = stylex.create({
     '::backdrop': {
       transitionTimingFunction: 'linear',
     },
+  },
+  // As one level of a BottomSheetStack, the switcher is a full-size, pointer-
+  // transparent element inside the box the host places in its dialog. Its
+  // panels keep their own bottom-anchored positioners and opt back into
+  // pointer input.
+  stackedLevel: {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
   },
 });
 
@@ -226,7 +255,7 @@ export interface BottomSheetSwitcherProps extends BaseProps<HTMLDialogElement> {
 export function BottomSheetSwitcher({
   activeSheet,
   onActiveSheetChange,
-  hasScrim = true,
+  hasScrim,
   children,
   ref,
   xstyle,
@@ -237,6 +266,11 @@ export function BottomSheetSwitcher({
   onKeyDown,
   ...props
 }: BottomSheetSwitcherProps) {
+  // Under a BottomSheetStack the stack owns the dialog and its modality; the
+  // switcher's own `hasScrim` is not consulted there.
+  const stackHost = useBottomSheetStackHost();
+  const isStacked = stackHost != null;
+  const hostHasScrim = isStacked ? stackHost.hasScrim : (hasScrim ?? true);
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const dialogModeRef = useRef<'modal' | 'non-modal' | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -265,7 +299,7 @@ export function BottomSheetSwitcher({
     (activeSheet != null && !unmountedSheetIds.has(activeSheet)) ||
     (visibleTransition.retainedSheet != null &&
       !unmountedSheetIds.has(visibleTransition.retainedSheet));
-  const isModal = hasScrim && isFlowVisible;
+  const isModal = hostHasScrim && isFlowVisible && !isStacked;
   const activeSheetPurpose =
     (activeSheet == null ? null : sheetPurposes.get(activeSheet)) ?? 'info';
   const allowsEscapeDismiss = activeSheetPurpose !== 'required';
@@ -307,7 +341,7 @@ export function BottomSheetSwitcher({
   // without registering the switcher twice in the one shared stack.
   useFocusTrapEscapeCompatibilitySignal(isModal);
   const {shouldDismissOnCloseRequest} = useLayerDismissal({
-    isActive: isFlowVisible,
+    isActive: isFlowVisible && !isStacked,
     escapeBehavior: allowsEscapeDismiss ? 'close' : 'block',
     onDismiss: dismissOnEscape,
     getContainer: () => dialogRef.current,
@@ -322,19 +356,20 @@ export function BottomSheetSwitcher({
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
     if (dialog == null) {
+      // A stacked switcher renders no dialog; the host presents the level.
       return;
     }
 
     if (isFlowVisible) {
-      const nextMode = hasScrim ? 'modal' : 'non-modal';
+      const nextMode = hostHasScrim ? 'modal' : 'non-modal';
       if (dialog.open && dialogModeRef.current !== nextMode) {
         dialog.close();
       }
       if (!dialog.open) {
-        if (hasScrim && triggerRef.current == null) {
+        if (hostHasScrim && triggerRef.current == null) {
           triggerRef.current = document.activeElement as HTMLElement | null;
         }
-        if (hasScrim) {
+        if (hostHasScrim) {
           dialog.showModal();
         } else {
           dialog.show();
@@ -352,7 +387,7 @@ export function BottomSheetSwitcher({
     }
     triggerRef.current = null;
     dialogModeRef.current = null;
-  }, [hasScrim, isFlowVisible]);
+  }, [hostHasScrim, isFlowVisible]);
 
   const getSheetPhase = useCallback(
     (sheetId: string): BottomSheetSwitcherPhase => {
@@ -533,12 +568,44 @@ export function BottomSheetSwitcher({
     [],
   );
 
-  const setScrimOpacity = useCallback((opacity: number) => {
-    dialogRef.current?.style.setProperty(
-      '--_sheet-scrim-opacity',
-      String(opacity),
-    );
+  // Report this level to its host. `dismiss` keeps one identity so the host
+  // can compare reported state by value. Without a host the hook registers
+  // nothing.
+  const onActiveSheetChangeRef = useRef(onActiveSheetChange);
+  useLayoutEffect(() => {
+    onActiveSheetChangeRef.current = onActiveSheetChange;
+  }, [onActiveSheetChange]);
+  const dismissLevel = useCallback(() => {
+    onActiveSheetChangeRef.current(null);
   }, []);
+  const activeLabel =
+    (activeSheet == null ? null : sheetLabels.get(activeSheet)) ??
+    (visibleTransition.retainedSheet == null
+      ? undefined
+      : sheetLabels.get(visibleTransition.retainedSheet));
+  const stackLevel = useBottomSheetStackLevel(stackHost, 'switcher', {
+    isOpen: activeSheet != null && !unmountedSheetIds.has(activeSheet),
+    isPresented: isFlowVisible,
+    purpose: activeSheetPurpose,
+    label: activeLabel,
+    finalFocusRef: undefined,
+    dismiss: dismissLevel,
+  });
+
+  const hostScrimOpacity = isStacked ? stackLevel.onScrimOpacity : null;
+  const setScrimOpacity = useCallback(
+    (opacity: number) => {
+      if (hostScrimOpacity != null) {
+        hostScrimOpacity(opacity);
+        return;
+      }
+      dialogRef.current?.style.setProperty(
+        '--_sheet-scrim-opacity',
+        String(opacity),
+      );
+    },
+    [hostScrimOpacity],
+  );
   const onSheetScrimOpacityChange = useCallback(
     (sheetId: string, opacity: number) => {
       // A pointer captured by the outgoing sheet can keep delivering gesture
@@ -553,13 +620,17 @@ export function BottomSheetSwitcher({
   );
 
   useLayoutEffect(() => {
+    if (isStacked) {
+      // The host fades its one backdrop from its own open-level count.
+      return;
+    }
     setScrimOpacity(activeSheet == null ? 0 : 1);
-  }, [activeSheet, setScrimOpacity]);
+  }, [activeSheet, isStacked, setScrimOpacity]);
 
   const contextValue = useMemo<BottomSheetSwitcherContextValue>(
     () => ({
       activeSheet,
-      hasScrim,
+      hasScrim: hostHasScrim,
       onActiveSheetChange,
       getSheetPhase,
       getSheetAlignmentOffset,
@@ -574,7 +645,7 @@ export function BottomSheetSwitcher({
       activeSheet,
       getSheetAlignmentOffset,
       getSheetPhase,
-      hasScrim,
+      hostHasScrim,
       onActiveSheetChange,
       onSheetEnterStart,
       onSheetScrimOpacityChange,
@@ -584,12 +655,6 @@ export function BottomSheetSwitcher({
       registerSheetPurpose,
     ],
   );
-
-  const activeLabel =
-    (activeSheet == null ? null : sheetLabels.get(activeSheet)) ??
-    (visibleTransition.retainedSheet == null
-      ? undefined
-      : sheetLabels.get(visibleTransition.retainedSheet));
 
   const handleCancel = useCallback(
     (event: SyntheticEvent<HTMLDialogElement>) => {
@@ -612,19 +677,19 @@ export function BottomSheetSwitcher({
   );
   const handleClick = useCallback(
     (event: ReactMouseEvent<HTMLDialogElement>) => {
-      if (hasScrim && event.target === event.currentTarget) {
+      if (hostHasScrim && event.target === event.currentTarget) {
         dismissOnLightInteraction();
       }
     },
-    [dismissOnLightInteraction, hasScrim],
+    [dismissOnLightInteraction, hostHasScrim],
   );
 
   const dialogStyleProps = stylex.props(
     styles.dialog,
     isFlowVisible && styles.dialogOpen,
-    hasScrim && styles.scrim,
-    hasScrim && isFlowVisible && activeSheet == null && styles.scrimClosing,
-    !hasScrim && styles.dialogNonModal,
+    hostHasScrim && styles.scrim,
+    hostHasScrim && isFlowVisible && activeSheet == null && styles.scrimClosing,
+    !hostHasScrim && styles.dialogNonModal,
     xstyle,
   );
   const dialogPresentationProps = mergeProps(
@@ -636,12 +701,62 @@ export function BottomSheetSwitcher({
     props['aria-label'] ??
     (props['aria-labelledby'] == null ? activeLabel : undefined);
 
+  const mergedDialogRef = useMergedRefs(ref, dialogRef, containerRef);
+  // The host returns focus with the shared modality when the stack closes;
+  // the tracking is document-wide, so turning it on here covers the host.
+  useInteractionModalityTracking();
+  useDevWarning(
+    'BottomSheetSwitcher',
+    '`hasScrim` on a BottomSheet or BottomSheetSwitcher inside a ' +
+      'BottomSheetStack is ignored; the stack owns the one scrim. Set ' +
+      '`hasScrim` on the BottomSheetStack instead.',
+    isStacked && hasScrim !== undefined,
+  );
+
+  if (stackHost != null) {
+    // The anchor stays in place for ordering; the level element portals into
+    // the box the host places in its dialog. Items find this level's view
+    // through the parent-level context, and a standalone sheet rendered in a
+    // step's content becomes a level right above this one. The level element
+    // is a <div>; the inherited dialog attributes it receives are the same
+    // HTML attributes under a different element type.
+    const levelProps = props as unknown as HTMLAttributes<HTMLDivElement>;
+    const levelElement = (
+      <div
+        {...levelProps}
+        {...mergeProps(
+          stylex.props(styles.stackedLevel, xstyle),
+          className,
+          style,
+        )}
+        data-bottom-sheet-switcher-level="">
+        <BottomSheetStackParentLevelContext value={stackLevel.id}>
+          <BottomSheetSwitcherContext value={contextValue}>
+            {children}
+          </BottomSheetSwitcherContext>
+        </BottomSheetStackParentLevelContext>
+      </div>
+    );
+    return (
+      <>
+        <span
+          hidden
+          ref={stackLevel.anchorRef}
+          data-bottom-sheet-stack-anchor=""
+        />
+        {stackLevel.portalTarget == null
+          ? null
+          : createPortal(levelElement, stackLevel.portalTarget)}
+      </>
+    );
+  }
+
   return (
     <BottomSheetSwitcherContext value={contextValue}>
       <dialog
         {...props}
         {...dialogPresentationProps}
-        ref={useMergedRefs(ref, dialogRef, containerRef)}
+        ref={mergedDialogRef}
         aria-label={ariaLabel}
         aria-modal={isModal ? 'true' : undefined}
         onCancel={composeEventHandlers(onCancel, handleCancel)}

@@ -4,16 +4,19 @@
 
 /**
  * @file BottomSheet.tsx
- * @input Uses React, StyleX, core hooks, shared layer dismissal, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext
+ * @input Uses React, react-dom portals, StyleX, core hooks, shared layer dismissal, the shared interaction modality, named BottomSheetPanel, BottomSheetSwitcherContext, BottomSheetStackContext
  * @output Exports BottomSheet component and BottomSheetProps
- * @position Public BottomSheet router plus private standalone/switcher hosts
+ * @position Public BottomSheet router plus private standalone/switcher/stacked hosts
  *
- * BottomSheet selects one of two focused hosts. A standalone host owns its
+ * BottomSheet selects one of three focused hosts. A standalone host owns its
  * native dialog lifecycle and joins the shared layer dismissal stack; a
  * switcher item participates in the parent's shared dialog, transition state
- * machine, and dismissal registration. Both render the same BottomSheetPanel,
- * which owns sheet presentation, content padding, gestures, mobile-keyboard
- * accommodation, and motion completion.
+ * machine, and dismissal registration; a stacked item (under a
+ * BottomSheetStack) registers itself as one level of that stack from wherever
+ * it is rendered, portals its panel into a box the stack places in its dialog,
+ * recedes while covered, and reports its state to the stack. All render the
+ * same BottomSheetPanel, which owns sheet presentation, content padding,
+ * gestures, mobile-keyboard accommodation, and motion completion.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/BottomSheet/BottomSheetPanel.tsx
@@ -22,6 +25,10 @@
  * - /packages/core/src/BottomSheet/BottomSheet.test.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.tsx
  * - /packages/core/src/BottomSheet/BottomSheetSwitcher.test.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetStack.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetStack.test.tsx
+ * - /packages/core/src/BottomSheet/BottomSheetStackContext.ts
+ * - /packages/core/src/BottomSheet/BottomSheetStackContext.test.tsx
  * - /packages/core/src/Layer/layerDismissalFamilies.test.tsx
  * - /packages/core/src/Layer/layerDismissalInvariants.test.tsx
  * - /apps/storybook/stories/BottomSheet.stories.tsx
@@ -38,11 +45,17 @@ import {
   type RefObject,
   type ReactNode,
 } from 'react';
+import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
 import type {SpacingStep} from '../utils/types';
-import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  durationVars,
+  easeVars,
+  spacingVars,
+} from '../theme/tokens.stylex';
 import {useDevWarning, useScrollLock} from '../hooks';
 import {LayerDepthProvider} from '../Layer/LayerDepthContext';
 import {useLayerDismissal} from '../Layer/useLayerDismissal';
@@ -59,9 +72,31 @@ import {
   type BottomSheetSwitcherContextValue,
   type BottomSheetSwitcherPhase,
 } from './BottomSheetSwitcherContext';
+import {
+  BottomSheetStackParentLevelContext,
+  useBottomSheetStackHost,
+  useBottomSheetStackLevel,
+  type BottomSheetStackHostContextValue,
+} from './BottomSheetStackContext';
 
 export type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
 import type {BottomSheetHeight, BottomSheetSnapPoint} from './BottomSheetPanel';
+
+// A level covered by a BottomSheetStack recedes behind the top level. Only the
+// two nearest covered levels stay visually distinct; deeper ones share the
+// second step and sit behind it. Each step shrinks the panel about its top
+// edge and lifts it, so a sliver of each covered level shows above the top.
+const STACK_VISUAL_DEPTH_LIMIT = 2;
+const STACK_SCALE_STEP = 0.04;
+
+function transformForStackDepth(depth: number): string {
+  const visualDepth = Math.min(STACK_VISUAL_DEPTH_LIMIT, Math.max(0, depth));
+  if (visualDepth === 0) {
+    return 'translateY(0) scale(1)';
+  }
+  const scale = (1 - visualDepth * STACK_SCALE_STEP).toFixed(2);
+  return `translateY(calc(${spacingVars['--spacing-2']} * -${visualDepth})) scale(${scale})`;
+}
 
 const styles = stylex.create({
   dialog: {
@@ -133,6 +168,20 @@ const styles = stylex.create({
   positionerTop: {
     zIndex: 1,
   },
+  // Stacked levels recede and return with CSS motion only; no per-frame work.
+  positionerStackMotion: {
+    transformOrigin: '50% 0',
+    transitionProperty: 'transform',
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    willChange: 'transform',
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
+  },
+  positionerStackTransform: (transform: string) => ({
+    transform,
+  }),
 });
 
 interface BottomSheetSharedProps extends BaseProps<HTMLDivElement> {
@@ -452,8 +501,30 @@ function SwitcherBottomSheetItem({
     onSheetTransitionComplete,
     onSheetScrimOpacityChange,
   } = switcher;
+  // Under a BottomSheetStack the whole switcher is one level. While another
+  // level covers it, the switcher's interactive sheet renders as covered —
+  // retained in place, inert — and returns to its own phase when uncovered.
+  // The switcher's transition state machine never sees the override. The
+  // switcher provides its level id as the parent level around its children,
+  // which is how this item finds its level's view.
+  const stackHost = useBottomSheetStackHost();
+  const stackLevelId = use(BottomSheetStackParentLevelContext);
+  const stackView =
+    stackHost == null || stackLevelId == null
+      ? null
+      : (stackHost.views.get(stackLevelId) ?? null);
+  const stackDepth = stackView?.depth ?? 0;
+  // Under a host, the host decides when this level is the top. Until it has
+  // placed the level after an activation (one synchronous pass later), the
+  // active sheet renders as covered, so its focus entry waits for the host
+  // to show its dialog and for the level below to record its focus.
+  const isCoveredByStack = stackHost != null && stackView?.isTop !== true;
   const hasValidSheetId = typeof sheetId === 'string' && sheetId.length > 0;
-  const phase = hasValidSheetId ? getSheetPhase(sheetId) : 'hidden';
+  const ownPhase = hasValidSheetId ? getSheetPhase(sheetId) : 'hidden';
+  const phase =
+    isCoveredByStack && (ownPhase === 'active' || ownPhase === 'entering')
+      ? 'covered'
+      : ownPhase;
   const alignmentOffset = hasValidSheetId
     ? getSheetAlignmentOffset(sheetId)
     : 0;
@@ -467,6 +538,7 @@ function SwitcherBottomSheetItem({
   const isPresented = phase !== 'hidden';
   const isTopSheet = phase === 'active' || phase === 'entering';
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const coveredFocusRef = useRef<HTMLElement | null>(null);
   const previousPhaseRef = useRef(phase);
   const previousPhase = previousPhaseRef.current;
   const hasPresentedRef = useRef(false);
@@ -474,6 +546,27 @@ function SwitcherBottomSheetItem({
   useLayoutEffect(() => {
     previousPhaseRef.current = phase;
   }, [phase]);
+
+  // A BottomSheetStack covering this sheet records the element focused inside
+  // it, so an uncover can return focus there (the control that opened the
+  // level above, when it lives here). Only a stack cover records: the
+  // switcher's own handoff keeps today's focus entry. The record is dropped
+  // once the sheet leaves presentation.
+  useLayoutEffect(() => {
+    const wasInteractive =
+      previousPhase === 'active' || previousPhase === 'entering';
+    if (wasInteractive && phase === 'covered' && isCoveredByStack) {
+      const activeElement = document.activeElement;
+      if (
+        activeElement instanceof HTMLElement &&
+        panelRef.current?.contains(activeElement)
+      ) {
+        coveredFocusRef.current = activeElement;
+      }
+    } else if (phase === 'hidden') {
+      coveredFocusRef.current = null;
+    }
+  }, [isCoveredByStack, phase, previousPhase]);
 
   const dismissOnSwipe = useCallback(() => {
     if (purpose === 'info' && hasValidSheetId && activeSheet === sheetId) {
@@ -535,7 +628,21 @@ function SwitcherBottomSheetItem({
       const wasInteractive =
         previousPhase === 'active' || previousPhase === 'entering';
       if (!hasPresentedRef.current || !wasInteractive) {
-        focusPanel(panelRef.current, hasScrim);
+        // An uncover restores the recorded focus while it is still connected
+        // and owned by this sheet; otherwise entry follows the shared rule.
+        const coveredFocus = coveredFocusRef.current;
+        coveredFocusRef.current = null;
+        if (
+          coveredFocus != null &&
+          coveredFocus.isConnected &&
+          panelRef.current?.contains(coveredFocus) === true
+        ) {
+          // Returned focus rings only after keyboard input, as a standalone
+          // sheet's return does (`architecture:interaction-modality` INV1).
+          focusForLastInput(coveredFocus, {preventScroll: true});
+        } else {
+          focusPanel(panelRef.current, hasScrim);
+        }
       }
       hasPresentedRef.current = true;
     } else if (phase === 'hidden') {
@@ -550,10 +657,24 @@ function SwitcherBottomSheetItem({
     isInteractive && !label,
   );
 
+  // A step's content starts a fresh switcher scope so a nested BottomSheet is
+  // standalone unless it establishes a nested BottomSheetSwitcher of its own.
+  // Under a BottomSheetStack the step's content stays in the stack (the switcher
+  // provides the parent level around it), so a sheet opened from the step
+  // becomes a level right above this one.
+  const content: ReactNode = (
+    <BottomSheetSwitcherContext value={null}>
+      {children}
+    </BottomSheetSwitcherContext>
+  );
+
   return (
     <div
       {...stylex.props(
         styles.positioner,
+        stackHost != null && styles.positionerStackMotion,
+        stackHost != null &&
+          styles.positionerStackTransform(transformForStackDepth(stackDepth)),
         !isPresented && styles.positionerHidden,
         isTopSheet && styles.positionerTop,
       )}
@@ -575,14 +696,203 @@ function SwitcherBottomSheetItem({
         onElementChange={handlePanelElementChange}
         onMotionStart={handleMotionStart}
         onMotionComplete={handleMotionComplete}>
-        {/* A switcher item consumes its parent controller. Its content starts a
-            fresh ownership scope so a nested BottomSheet is standalone unless
-            it establishes a nested BottomSheetSwitcher of its own. */}
-        <BottomSheetSwitcherContext value={null}>
-          {children}
-        </BottomSheetSwitcherContext>
+        {content}
       </BottomSheetPanel>
     </div>
+  );
+}
+
+interface StackedBottomSheetItemProps extends StandaloneBottomSheetProps {
+  host: BottomSheetStackHostContextValue;
+}
+
+/**
+ * A standalone-API sheet rendered as one level of a BottomSheetStack. It keeps
+ * the controlled `isOpen` / `onOpenChange` contract and the exit latch of
+ * StandaloneBottomSheet, but renders no dialog of its own: the host owns the
+ * dialog, scrim, modality, scroll lock, and Escape/scrim dismissal. The level
+ * registers itself with the host from wherever it is rendered, portals its
+ * positioner into a box the host places in its dialog, and learns from the
+ * host how many open levels cover it. `hasScrim` is the host's.
+ */
+function StackedBottomSheetItem({
+  host,
+  ref,
+  isOpen,
+  onOpenChange,
+  label,
+  children,
+  height = 'capped',
+  snapPoints,
+  hasScrim: ignoredHasScrim,
+  finalFocusRef,
+  purpose = 'info',
+  xstyle,
+  ...props
+}: StackedBottomSheetItemProps) {
+  const {hasScrim} = host;
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const coveredFocusRef = useRef<HTMLElement | null>(null);
+  const onOpenChangeRef = useRef(onOpenChange);
+  const [isPresented, setIsPresented] = useState(isOpen);
+  const shouldPresent = isOpen || isPresented;
+
+  useLayoutEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
+  // Identity stays stable so the host can compare reported state by value.
+  const dismiss = useCallback(() => {
+    onOpenChangeRef.current(false);
+  }, []);
+
+  const level = useBottomSheetStackLevel(host, 'sheet', {
+    isOpen,
+    isPresented: shouldPresent,
+    purpose,
+    label,
+    finalFocusRef,
+    dismiss,
+  });
+  const {depth, isTop} = level.view;
+  const isCovered = isOpen && !isTop;
+  const isInteractive = isOpen && isTop;
+  const wasInteractiveRef = useRef(false);
+  const wasInteractive = wasInteractiveRef.current;
+  const panelState: BottomSheetPanelState = isOpen
+    ? isCovered
+      ? {kind: 'retained', motion: 'covered', alignmentOffset: 0}
+      : {kind: 'open', entering: false}
+    : isPresented
+      ? {kind: 'exiting'}
+      : {kind: 'hidden'};
+
+  useLayoutEffect(() => {
+    if (isOpen) {
+      // Latch presentation so a later close stays mounted through its exit.
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- latches controlled open state for exit animation
+      setIsPresented(true);
+    }
+  }, [isOpen]);
+
+  // A cover records the element focused in this level, so an uncover can
+  // return focus to the control that opened the level above when it lives
+  // here. The record is dropped once the level leaves presentation.
+  useLayoutEffect(() => {
+    if (wasInteractive && isCovered) {
+      const activeElement = document.activeElement;
+      if (
+        activeElement instanceof HTMLElement &&
+        panelRef.current?.contains(activeElement)
+      ) {
+        coveredFocusRef.current = activeElement;
+      }
+    } else if (!shouldPresent) {
+      coveredFocusRef.current = null;
+    }
+    wasInteractiveRef.current = isInteractive;
+  }, [isCovered, isInteractive, shouldPresent, wasInteractive]);
+
+  // Focus enters when the level becomes the top: on open, and on uncover. The
+  // host has shown its dialog in a layout effect by the time this runs.
+  useEffect(() => {
+    if (!isInteractive || wasInteractive) {
+      return;
+    }
+    const coveredFocus = coveredFocusRef.current;
+    coveredFocusRef.current = null;
+    if (
+      coveredFocus != null &&
+      coveredFocus.isConnected &&
+      panelRef.current?.contains(coveredFocus) === true
+    ) {
+      // Returned focus rings only after keyboard input, as a standalone
+      // sheet's return does (`architecture:interaction-modality` INV1).
+      focusForLastInput(coveredFocus, {preventScroll: true});
+    } else {
+      focusPanel(panelRef.current, hasScrim);
+    }
+  }, [hasScrim, isInteractive, wasInteractive]);
+
+  // The host returns focus with the shared modality when the stack closes;
+  // the tracking is document-wide, so turning it on here covers the host.
+  useInteractionModalityTracking();
+
+  const dismissOnSwipe = useCallback(() => {
+    if (purpose === 'info' && isOpen && !isCovered) {
+      onOpenChangeRef.current(false);
+    }
+  }, [isCovered, isOpen, purpose]);
+  const handlePanelElementChange = useCallback(
+    (element: HTMLDivElement | null) => {
+      panelRef.current = element;
+    },
+    [],
+  );
+  const handleMotionComplete = useCallback(
+    (motion: BottomSheetPanelMotion) => {
+      if (motion === 'exiting' && !isOpen) {
+        setIsPresented(false);
+      }
+    },
+    [isOpen],
+  );
+
+  useDevWarning(
+    'BottomSheet',
+    'requires a non-empty `label` for an accessible name; the open sheet ' +
+      'has no built-in heading to derive one from.',
+    isOpen && !label,
+  );
+  useDevWarning(
+    'BottomSheet',
+    '`hasScrim` on a BottomSheet or BottomSheetSwitcher inside a ' +
+      'BottomSheetStack is ignored; the stack owns the one scrim. Set ' +
+      '`hasScrim` on the BottomSheetStack instead.',
+    ignoredHasScrim !== undefined,
+  );
+
+  // The anchor stays in place for ordering; the positioner portals into the
+  // level's box. The content names this level as its parent and adds no
+  // layer depth, so a sheet rendered inside it becomes a level right above
+  // this one, while a Core layer opened inside it takes its content deeper
+  // and out of the stack.
+  const positioner = (
+    <div
+      {...stylex.props(
+        styles.positioner,
+        styles.positionerStackMotion,
+        styles.positionerStackTransform(transformForStackDepth(depth)),
+        !shouldPresent && styles.positionerHidden,
+      )}
+      hidden={!shouldPresent}>
+      <BottomSheetPanel
+        {...props}
+        ref={ref}
+        state={panelState}
+        height={height}
+        label={label}
+        snapPoints={snapPoints}
+        isSwipeDismissAllowed={purpose === 'info'}
+        isPageScrollLocked={hasScrim}
+        xstyle={xstyle}
+        onDismiss={dismissOnSwipe}
+        onScrimOpacity={level.onScrimOpacity}
+        onElementChange={handlePanelElementChange}
+        onMotionComplete={handleMotionComplete}>
+        <BottomSheetStackParentLevelContext value={level.id}>
+          {children}
+        </BottomSheetStackParentLevelContext>
+      </BottomSheetPanel>
+    </div>
+  );
+
+  return (
+    <>
+      <span hidden ref={level.anchorRef} data-bottom-sheet-stack-anchor="" />
+      {level.portalTarget == null
+        ? null
+        : createPortal(positioner, level.portalTarget)}
+    </>
   );
 }
 
@@ -592,6 +902,7 @@ function SwitcherBottomSheetItem({
  */
 export function BottomSheet(props: BottomSheetProps) {
   const switcher = use(BottomSheetSwitcherContext);
+  const stackHost = useBottomSheetStackHost();
   const runtimeSheetId = (props as {sheetId?: string}).sheetId;
   const hasValidSheetId =
     typeof runtimeSheetId === 'string' && runtimeSheetId.length > 0;
@@ -615,6 +926,14 @@ export function BottomSheet(props: BottomSheetProps) {
       <SwitcherBottomSheetItem
         {...(props as SwitcherBottomSheetProps)}
         switcher={switcher}
+      />
+    );
+  }
+  if (stackHost != null) {
+    return (
+      <StackedBottomSheetItem
+        {...(props as StandaloneBottomSheetProps)}
+        host={stackHost}
       />
     );
   }

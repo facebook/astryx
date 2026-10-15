@@ -53,6 +53,10 @@
     "reason": "BottomSheet owns no inline axis to mirror. The sheet is a centered column inside an insetInline: 0 container; its borders and top corner radii are identical on both inline edges; and its handle spans both inline edges with a centered pill. Motion and scrolling are block-axis only, and header and close chrome come from caller content."
   },
   {
+    "component": "core/BottomSheetStack",
+    "reason": "BottomSheetStack owns no direction-sensitive visual or interaction. Its one shared dialog spans both axes symmetrically; the recede of covered levels is a block-axis lift and a centred scale, and dismissal (Escape, scrim tap, downward swipe) uses no inline direction. It owns no directional glyph, inline ordering, horizontal scroll action, or arrow-key behavior. Each BottomSheet level retains its own independently verified logical layout."
+  },
+  {
     "component": "core/BottomSheetSwitcher",
     "reason": "BottomSheetSwitcher owns no direction-sensitive visual or interaction. Its shared dialog spans both axes symmetrically; sheet handoff, close, swipe, and alignment motion use only the block axis; and it owns no directional glyph, inline ordering, horizontal scroll action, or arrow-key behavior. Each child BottomSheet retains its own independently verified logical layout."
   },

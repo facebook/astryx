@@ -62,6 +62,11 @@
       "aliases": []
     },
     {
+      "name": "component-bottom-sheet-stack",
+      "path": "components/bottom-sheet-stack",
+      "aliases": []
+    },
+    {
       "name": "component-bottom-sheet-switcher",
       "path": "components/bottom-sheet-switcher",
       "aliases": []
@@ -4008,6 +4013,11 @@
     {
       "name": "showcase-blockquote-default",
       "path": "showcases/blockquote/default",
+      "aliases": []
+    },
+    {
+      "name": "showcase-bottom-sheet-stack-default",
+      "path": "showcases/bottom-sheet-stack/default",
       "aliases": []
     },
     {
