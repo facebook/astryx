@@ -18,8 +18,20 @@ editor's `plugins` slot, and `markdownToEditorStateJSON` /
 headlessly (no mounted editor required). It consumes `@astryxdesign/core` theme
 tokens directly (StyleX build mirrors `@astryxdesign/lab` / `@astryxdesign/charts`).
 
-`lexical` and the `@lexical/*` packages are **optional** peer dependencies —
-install them alongside richtext to use the editor. See the RFC:
+## Built on Lexical
+
+RichText is built on [Lexical](https://lexical.dev) and does not hide it:
+`nodes` and `transformers` take Lexical types, `plugins` takes Lexical React
+plugins, and `onChange(editorState, editor)` and the editor ref's
+`getEditorState()` report Lexical types, so you extend the editor with Lexical
+directly. The value you store is serialized Lexical editor state;
+`markdownToEditorStateJSON` and `editorStateJSONToMarkdown` convert it to and
+from Markdown.
+
+RichText supports one Lexical minor at a time, named by its `lexical` and
+`@lexical/*` peer ranges. Those are **optional** peer dependencies, so your
+package manager does not add them: install them at that minor alongside
+richtext. See the RFC:
 [facebook/astryx#3899](https://github.com/facebook/astryx/issues/3899).
 
 It ships to npm **only under the `@canary` dist-tag** — there is never a stable
@@ -56,9 +68,11 @@ you must request that tag explicitly. There is no `latest` version to install.
 
 ```bash
 npm install @astryxdesign/richtext@canary @astryxdesign/core@canary
-# plus the optional lexical peers you use:
-npm install lexical @lexical/react @lexical/markdown @lexical/rich-text
 ```
+
+Then install every `lexical` and `@lexical/*` package listed in richtext's
+`peerDependencies`, at the range shown there (`npm view
+@astryxdesign/richtext@canary peerDependencies` prints them).
 
 > Canary builds track the latest commit on `main` (`0.x.y-canary.<sha>`). They
 > can break between any two versions — pin an exact version if you need
